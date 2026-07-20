@@ -2,7 +2,6 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angu
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { Subscription } from 'rxjs';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthenticationService } from 'src/app/ui/auth/service/authentication.service';
 import { ChatRealtimeNotifierService } from 'src/app/ui/shared/service/chat-realtime-notifier.service';
 import {
@@ -10,9 +9,7 @@ import {
   HeaderProfileState,
   HeaderStateService,
 } from 'src/app/ui/shared/service/header-state.service';
-import { environment } from 'src/environments/environment.prod';
 
-// dami just modified this to sharpen the app header and keep profile/notification state in sync.
 @Component({
   selector: 'app-navbar',
   templateUrl: './navbar.component.html',
@@ -36,12 +33,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   showUnreadNotificationsDialog = false;
   currentUserId = '';
   companyName = 'OptimaX';
-  aiInsight = '';
-  aiLoading = true;
-  showAiPanel = false;
-  aiModel = 'llama-4-scout';
-  aiInsightTime = '';
-  aiInsightIcon = '💡';
   private headerSub?: Subscription;
   private avatarListener = (e: Event) => {
     const url = (e as CustomEvent).detail?.avatarUrl || '';
@@ -51,7 +42,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   constructor(
     private router: Router,
-    private http: HttpClient,
     private authenticationService: AuthenticationService,
     private headerStateService: HeaderStateService,
     private chatRealtimeNotifierService: ChatRealtimeNotifierService,
@@ -65,7 +55,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     this.syncProfileFromSession();
     this.loadCompanyName();
-    this.loadAiInsight();
     window.addEventListener('optimax-avatar-updated', this.avatarListener);
     this.chatRealtimeNotifierService.start(this.resolveCollaborationRouteUuid());
     this.headerSub = this.headerStateService.view$.subscribe((state) => {
@@ -165,85 +154,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.companyName = info?.companyName || 'OptimaX';
       }
     } catch {}
-  }
-
-  refreshAiInsight(): void {
-    sessionStorage.removeItem('optimax_ai_insight');
-    this.loadAiInsight();
-  }
-
-  private pickInsightIcon(text: string): string {
-    const t = text.toLowerCase();
-    if (/payroll|salary|pay|remit/.test(t)) return '💰';
-    if (/leave|absence|holiday/.test(t)) return '🏖️';
-    if (/recruit|hire|candidate|applicant/.test(t)) return '🎯';
-    if (/task|deadline|overdue/.test(t)) return '⏰';
-    if (/team|collaborate|meeting/.test(t)) return '👥';
-    if (/report|analytic|review/.test(t)) return '📊';
-    if (/train|skill|learn/.test(t)) return '📚';
-    if (/approve|pending|action/.test(t)) return '✅';
-    return '💡';
-  }
-
-  private loadAiInsight(): void {
-    // Use cached insight within the same session unless explicitly refreshed
-    const cached = sessionStorage.getItem('optimax_ai_insight');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        this.aiInsight = parsed.text || '';
-        this.aiModel = parsed.model || 'llama-4-scout';
-        this.aiInsightTime = parsed.time || '';
-        this.aiInsightIcon = this.pickInsightIcon(this.aiInsight);
-        this.aiLoading = false;
-        return;
-      } catch {}
-    }
-
-    this.aiLoading = true;
-    this.aiInsight = '';
-    try {
-      const raw = sessionStorage.getItem('userRegData');
-      const user = raw ? JSON.parse(raw) : {};
-      const role = user?.roles || user?.role || 'staff';
-      const hour = new Date().getHours();
-      const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-      const day = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
-
-      const prompt = `You are a smart workplace assistant for ${this.companyName}. The user is a ${role} and it is ${timeOfDay} on ${day}. Generate exactly one short, specific, actionable workplace insight or nudge (10 words max) relevant to their role in an HR/ERP system. Reply with ONLY the insight text — no quotes, no intro phrases.`;
-
-      const token = sessionStorage.getItem('Token') || sessionStorage.getItem('accessToken') || localStorage.getItem('Token2') || '';
-      const headers = new HttpHeaders({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` });
-
-      this.http.post<any>(
-        `${environment.apiBaseUrl}/x/api/v2/ai/agent/prompt`,
-        { prompt, mode: 'chat', responseFormat: 'text' },
-        { headers }
-      ).subscribe({
-        next: (res) => {
-          const text = (res?.response || res?.executiveSummary || '').replace(/[*#_`]/g, '').trim();
-          const insight = text.split(/[.\n]/)[0].trim();
-          const modelUsed = res?.model || 'llama-4-scout';
-          const now = new Intl.DateTimeFormat('en', { hour: '2-digit', minute: '2-digit' }).format(new Date());
-          this.aiInsight = insight;
-          this.aiModel = modelUsed.includes('8b') ? 'llama-3.1-8b' : modelUsed.includes('scout') ? 'llama-4-scout' : modelUsed;
-          this.aiInsightTime = `Generated at ${now}`;
-          this.aiInsightIcon = this.pickInsightIcon(insight);
-          this.aiLoading = false;
-          try {
-            sessionStorage.setItem('optimax_ai_insight', JSON.stringify({
-              text: insight, model: this.aiModel, time: this.aiInsightTime
-            }));
-          } catch {}
-        },
-        error: () => {
-          this.aiInsight = '';
-          this.aiLoading = false;
-        }
-      });
-    } catch {
-      this.aiLoading = false;
-    }
   }
 
   private syncProfileFromSession(): void {

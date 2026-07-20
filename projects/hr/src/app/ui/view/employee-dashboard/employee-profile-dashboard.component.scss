@@ -935,3 +935,94 @@ p { margin-bottom: 0; }
     color: #fff;
   }
 }
+
+// ── Recent Payslips card ──────────────────────────────────────────────────────
+.ep-payslip-card {
+  .ep-card__header { margin-bottom: 16px; }
+}
+
+.ep-payslip-loading,
+.ep-payslip-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+  color: #94a3b8;
+  font-size: 13px;
+  justify-content: center;
+  flex-direction: column;
+
+  i { font-size: 22px; }
+}
+
+.ep-payslip-list { overflow-x: auto; }
+
+.ep-payslip-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 100px 80px;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .12s;
+
+  &:hover { background: #f8fafc; }
+
+  &.ep-payslip-row--head {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #94a3b8;
+    cursor: default;
+    border-bottom: 1px solid #f1f5f9;
+    border-radius: 0;
+    &:hover { background: transparent; }
+  }
+}
+
+.ep-payslip-period {
+  font-weight: 700;
+  color: #2E6276;
+  font-family: monospace;
+}
+
+.ep-payslip-amount { font-weight: 600; color: #1e293b; }
+.ep-payslip-deduct { color: #dc2626; font-weight: 600; }
+.ep-payslip-net    { color: #16a34a; font-weight: 700; }
+
+.ep-payslip-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  background: #f1f5f9;
+  color: #64748b;
+
+  &.ep-payslip-badge--green { background: #dcfce7; color: #15803d; }
+  &.ep-payslip-badge--amber { background: #fef9c3; color: #92400e; }
+  &.ep-payslip-badge--red   { background: #fee2e2; color: #b91c1c; }
+}
+
+.ep-payslip-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #2E6276;
+  cursor: pointer;
+  transition: background .12s;
+
+  &:hover { background: #e0f2fe; border-color: #7dd3fc; }
+}

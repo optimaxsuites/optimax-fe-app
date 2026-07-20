@@ -8,6 +8,7 @@ import { AttendanceComponent } from './ui/view/attendance/attendance.component';
 import { EmployeeManagementComponent } from './ui/view/employee-management/employee-management.component';
 import { PerformanceComponent } from './ui/view/performance/performance.component';
 import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/employee-payroll.component';
+import { PayrollDashboardComponent } from './ui/view/payroll/payroll-dashboard/payroll-dashboard.component';
 import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip-list/employee-payslip-list.component';
 import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
 import { AddEmployeeFormComponent } from './ui/view/employee-management/add-employee-form/add-employee-form.component';
@@ -405,6 +406,10 @@ const routes: Routes = [
   {
     path: 'employee-management/:uuid',
     component: EmployeeManagementComponent,
+  },
+  {
+    path: 'payroll-dashboard/:uuid',
+    component: PayrollDashboardComponent,
   },
   {
     path: 'payroll/:uuid',

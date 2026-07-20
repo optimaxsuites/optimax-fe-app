@@ -225,36 +225,6 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     this.persistUnreadSnapshot(nextTargets);
     this.publishFallbackUnreadNotifications(previousTargets, nextTargets);
 
-    // On first load: push real previews for each channel with unread messages
-    // so the bell dropdown shows actual content instead of a generic "waiting" message.
-    if (isFirstLoad) {
-      const routeUuid = this.resolveCollaborationRouteUuid();
-      const unreadTargets = Array.from(nextTargets.values())
-        .filter(t => t.unreadCount > 0)
-        .slice(0, 5);
-      for (const target of unreadTargets) {
-        const notificationTarget = {
-          workspaceMode: 'chat' as const,
-          route: `/admin/dashboard/communications/${routeUuid}`,
-          channelBackendId: target.type === 'channel' ? target.backendId : undefined,
-          dmUserId: target.type === 'dm' ? target.dmUserId : undefined,
-        };
-        this.loadVerifiedIncomingMessage(
-          target.backendId,
-          { senderName: '', content: '' },
-          0,
-          (latestMessage) =>
-            this.resolveIncomingDisplay(
-              target,
-              { senderName: '', content: '' },
-              latestMessage,
-              (resolved) =>
-                this.publishIncomingNotification(target, resolved, notificationTarget, true),
-            ),
-        );
-      }
-    }
-
     this.channelSubs.forEach((sub, backendId) => {
       if (nextTargets.has(backendId)) {
         return;

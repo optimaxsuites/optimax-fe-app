@@ -250,12 +250,8 @@ export class HeaderStateService {
         unreadChannels: 0,
         unreadDirectMessages: 0,
         unreadMessages: 0,
-        unreadNotifications: Number(parsed?.unreadNotifications || 0),
-        notifications: Array.isArray(parsed?.notifications)
-          ? parsed.notifications.map((entry: any) =>
-              this.sanitizeStoredNotification(entry),
-            )
-          : [],
+        unreadNotifications: 0,
+        notifications: [],
         messagePreviews: [],
         profile: parsed?.profile || null,
       };

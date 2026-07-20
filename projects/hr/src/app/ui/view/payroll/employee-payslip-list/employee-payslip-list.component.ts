@@ -1,43 +1,33 @@
-import { Component } from '@angular/core';
-import { DataService } from '../../../service/data.service';
+import { Component, OnInit } from '@angular/core';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
-interface Allowances {
-  housingAllowance: number;
-  transportationAllowance: number;
-  mealAllowance: number;
-  healthAllowance: number;
-  carAllowance: number;
-  securityAllowance: number;
-  travelAllowance: number;
-  [key: string]: number; 
-}
+import { PayrollService } from '../../../service/payroll.service';
+import { catchError, of } from 'rxjs';
+
 @Component({
   selector: 'app-employee-payslip-list',
   templateUrl: './employee-payslip-list.component.html',
   styleUrl: './employee-payslip-list.component.scss'
 })
-export class EmployeePayslipListComponent {
-  viewSlip: boolean = false
-  activeSlip: any = {}
-filterPayroll() {
-throw new Error('Method not implemented.');
-}
-searchTerm: any;
-filterBySelectedYear() {
-throw new Error('Method not implemented.');
-}
-year: any[] = ["2024"];
-selectedYear: any;
-filterBySelectedMonth() {
-throw new Error('Method not implemented.');
-}
-  data: any = []
-selectedEmployees: any;
-monthNames = [
-  "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
-];
-paySummary: any = {}
-selectedMonth: any;
+export class EmployeePayslipListComponent implements OnInit {
+  viewSlip = false;
+  activeSlip: any = {};
+  loading = true;
+
+  employeeInfo: any = {};
+  payslips: any[] = [];
+  filteredPayslips: any[] = [];
+
+  searchTerm = '';
+  selectedYear: string | null = null;
+  selectedMonth: string | null = null;
+
+  years: string[] = [];
+
+  monthNames = [
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December'
+  ];
+
   payslipColumns: TableColumn[] = [
     {
       header: 'Period',
@@ -47,127 +37,128 @@ selectedMonth: any;
       formatter: (row) => `${this.monthNames[(row?.month || 1) - 1]} ${row?.year ?? ''}`.trim()
     },
     {
-      header: 'Total Allowance',
+      header: 'Base Pay',
       className: 'table-item',
-      formatter: (row) => `₦${this.calculatePayrollSummary(row).totalAllowances.toFixed(2)}`
+      formatter: (row) => this.fmtCurrency(row?.basePay ?? 0)
     },
     {
-      header: 'Total Bonuses',
+      header: 'Allowances',
       className: 'table-item',
-      formatter: (row) => `₦${this.calculatePayrollSummary(row).totalBonuses.toFixed(2)}`
-    },
-    {
-      header: 'Total Deductions',
-      className: 'table-item',
-      formatter: (row) => `₦${this.calculatePayrollSummary(row).totalDeductions.toFixed(2)}`
+      formatter: (row) => this.fmtCurrency(row?.allowances?.amount ?? 0)
     },
     {
       header: 'Gross Pay',
       className: 'table-item',
-      formatter: (row) => `₦${this.calculatePayrollSummary(row).totalGross.toFixed(2)}`
+      formatter: (row) => this.fmtCurrency(row?.grossPay ?? 0)
+    },
+    {
+      header: 'Total Deductions',
+      className: 'table-item',
+      formatter: (row) => this.fmtCurrency(row?.totalDeductions ?? 0)
     },
     {
       header: 'Net Pay',
       className: 'table-item',
-      formatter: (row) => `₦${this.calculatePayrollSummary(row).totalNetPayable.toFixed(2)}`
+      formatter: (row) => this.fmtCurrency(row?.netPayable ?? 0)
+    },
+    {
+      header: 'Status',
+      className: 'table-item',
+      formatter: (row) => row?.runStatus ?? 'COMPLETED'
     }
   ];
+
   payslipActions: TableAction[] = [
-    { id: 'view', label: 'View', icon: 'pi pi-eye' }
+    { id: 'view', label: 'View Payslip', icon: 'pi pi-eye' }
   ];
-  constructor(private dataService: DataService){
 
+  constructor(private payrollService: PayrollService) {}
+
+  ngOnInit(): void {
+    const stored = localStorage.getItem('sharedData');
+    this.employeeInfo = stored ? JSON.parse(stored) : {};
+    this.loadPayslips();
   }
 
-  ngOnInit(){
-    const dataFromStorage = localStorage.getItem("sharedData")
-    this.data =  dataFromStorage ? JSON.parse(dataFromStorage): null
-    console.log(this.paySummary)
+  loadPayslips(): void {
+    this.loading = true;
+    this.payrollService.getPayrollGenerationResponses(1, 500).pipe(
+      catchError(() => of([]))
+    ).subscribe({
+      next: (response: any) => {
+        const runs: any[] = Array.isArray(response) ? response : (response?.content ?? []);
+        const empId = this.employeeInfo?.id;
+
+        const slips: any[] = [];
+        runs.forEach(run => {
+          const employees: any[] = run?.employees ?? [];
+          const match = employees.find(e =>
+            e?.employee?.id === empId || e?.employeeId === empId || e?.id === empId
+          );
+          if (match) {
+            slips.push({
+              ...match,
+              month: run.month,
+              year: run.year,
+              runStatus: (run.payrollApprovalInstance?.status || run.status || 'COMPLETED').toUpperCase()
+            });
+          }
+        });
+
+        slips.sort((a, b) => (+b.year - +a.year) || (+b.month - +a.month));
+        this.payslips = slips;
+        this.filteredPayslips = [...slips];
+        this.years = [...new Set(slips.map(s => String(s.year)))].sort((a, b) => +b - +a);
+        this.loading = false;
+      },
+      error: () => { this.loading = false; }
+    });
   }
 
-
-  calculatePayrollSummary(detail: any) {
-    const payrollSummary = {
-      totalSalary: 0,
-      totalBonuses: 0,
-      totalDeductions: 0,
-      totalAllowances: 0,
-      totalNetPayable: 0,
-      totalTax: 0, 
-      totalInsurance: 0,
-      totalPension: 0,
-      totalGross: 0
-    };
-  console.log(detail)
-
-   
-        if (this.data.type === "salaried") {
-            payrollSummary.totalSalary += detail.salary;
-        } else if (this.data.type === "project-based") {
-            payrollSummary.totalSalary += detail.totalProjectPay;
-        }
-
-
-
-      (detail?.bonuses || []).forEach((bonus: { amount: number; }) => {
-        payrollSummary.totalBonuses += bonus.amount;
-      });
-  
-
-      (detail?.deductions || []).forEach((deduction: { amount: number; reason: string }) => {
-        payrollSummary.totalDeductions += deduction.amount;
-
-        if (deduction.reason.toLocaleLowerCase().includes("tax")) {
-            payrollSummary.totalTax += deduction.amount || 0;
-          }
-    
-          if (deduction.reason.toLocaleLowerCase().includes("insurance") ) {
-            payrollSummary.totalInsurance += deduction.amount || 0;
-          }
-
-          if (deduction.reason.toLocaleLowerCase().includes("pension") ) {
-            payrollSummary.totalPension += deduction.amount || 0;
-          }
-      });
-  
-
-      for (let key in detail?.allowances) {
-        payrollSummary.totalAllowances += detail?.allowances[key as keyof Allowances];
-      }
-  
-     
-
-
-      payrollSummary.totalNetPayable += detail?.netPayable;
-
-
-    const totalGrossForEmployee = (payrollSummary?.totalSalary || 0)
-    + payrollSummary.totalBonuses
-    + payrollSummary.totalAllowances
-
-  payrollSummary.totalGross += totalGrossForEmployee;
-  
-    return payrollSummary;
+  filterPayroll(): void {
+    let result = [...this.payslips];
+    if (this.selectedYear) {
+      result = result.filter(s => String(s.year) === this.selectedYear);
+    }
+    if (this.selectedMonth) {
+      const mIdx = this.monthNames.indexOf(this.selectedMonth) + 1;
+      result = result.filter(s => s.month === mIdx);
+    }
+    if (this.searchTerm?.trim()) {
+      const q = this.searchTerm.toLowerCase();
+      result = result.filter(s =>
+        this.monthNames[s.month - 1]?.toLowerCase().includes(q) ||
+        String(s.year).includes(q)
+      );
+    }
+    this.filteredPayslips = result;
   }
 
-  viewPayrollDetails(slip: any, op?: any) {
-    this.viewSlip = true
-    op?.hide?.();
+  filterBySelectedYear(): void { this.filterPayroll(); }
+  filterBySelectedMonth(): void { this.filterPayroll(); }
+
+  viewPayrollDetails(slip: any): void {
+    this.viewSlip = true;
     this.activeSlip = {
-      empId:this.data.id,
-      name: this.data.name,
-      type: this.data.type,
-      level: this.data.level,
-      department: this.data.department,
-      accountNumber: this.data.accountNumber,
-      bank: this.data.bank,
+      empId: this.employeeInfo.id,
+      name: `${this.employeeInfo.firstName ?? ''} ${this.employeeInfo.lastName ?? ''}`.trim() || this.employeeInfo.name,
+      type: this.employeeInfo.type,
+      level: this.employeeInfo.level,
+      department: this.employeeInfo.department,
+      accountNumber: this.employeeInfo.accountNumber,
+      bank: this.employeeInfo.bank,
       ...slip
-    }
-    }
+    };
+  }
 
-  handlePayslipAction(event: { actionId: string; row: any }) {
+  handlePayslipAction(event: { actionId: string; row: any }): void {
     if (event.actionId === 'view') {
       this.viewPayrollDetails(event.row);
     }
+  }
+
+  fmtCurrency(val: number): string {
+    if (!val) return '₦0.00';
+    return '₦' + Number(val).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 }

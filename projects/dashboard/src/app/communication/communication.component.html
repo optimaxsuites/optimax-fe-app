@@ -77,6 +77,7 @@
       (searchExecuted)="onSearch()"
       (searchClosed)="closeSearch()"
       (jumpTo)="onSidebarJumpTo($event)"
+      (viewProfile)="openDmUserProfile($event)"
     ></app-channel-sidebar>
     <div
       class="absolute right-0 top-0 bottom-0 w-[2px] cursor-col-resize hover:bg-gray-200 transition-colors z-10"
@@ -1494,6 +1495,36 @@
         ></app-message-composer>
         <div *ngIf="activeView === 'threads'" class="threads-inline-note">
           Pick any thread card to open the full conversation and reply from the thread panel.
+        </div>
+
+        <!-- Thread search quick-jump: channels and DM contacts matching the query -->
+        <div
+          *ngIf="activeView === 'threads' && threadInboxQuery && (threadSearchChannelMatches.length || threadSearchDmMatches.length)"
+          class="thread-search-jump px-4 pb-3"
+        >
+          <p class="thread-search-jump-label">Jump to</p>
+          <div class="thread-search-jump-list">
+            <button
+              *ngFor="let ch of threadSearchChannelMatches"
+              type="button"
+              class="thread-search-jump-item"
+              (click)="onSidebarChannelSelected(ch.id)"
+            >
+              <span class="thread-search-jump-icon"><i class="pi pi-hashtag"></i></span>
+              <span class="thread-search-jump-name">{{ ch.name }}</span>
+              <span class="thread-search-jump-sub">Channel</span>
+            </button>
+            <button
+              *ngFor="let dm of threadSearchDmMatches"
+              type="button"
+              class="thread-search-jump-item"
+              (click)="onSidebarDmSelected(dm.id)"
+            >
+              <span class="thread-search-jump-icon"><i class="pi pi-user"></i></span>
+              <span class="thread-search-jump-name">{{ dm.fullName || dm.shortName }}</span>
+              <span class="thread-search-jump-sub">{{ dm.jobTitle || 'Direct message' }}</span>
+            </button>
+          </div>
         </div>
       </div>
 

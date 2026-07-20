@@ -86,7 +86,7 @@ export class NavigationLinksService {
     this.links['attendanceLink'] = '/admin/hr/attendance/' +uuidV4();
     this.links['interviewLink'] = '/admin/hr/interview/' +uuidV4();
     this.links['employeeManagementLink'] = '/admin/hr/employee-management/' +uuidV4();
-    this.links['payroll'] = '/admin/hr/payroll/' +uuidV4();
+    this.links['payroll'] = '/admin/hr/payroll-dashboard/' +uuidV4();
     this.links['projectLink'] = '/admin/hr/project/' +uuidV4();
     this.links['workScheduleLink'] = '/admin/hr/work-schedule/' +uuidV4();
     this.links['allPayslip'] = 'employee-payslip'
