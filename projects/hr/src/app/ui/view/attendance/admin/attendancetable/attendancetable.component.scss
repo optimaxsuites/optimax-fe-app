@@ -1,3 +1,5 @@
+@import '../../styles/brand-colors';
+
 .attendance-wrapper {
   margin-top: 16px;
   margin-left: 2px;
@@ -5,7 +7,7 @@
 }
 
 .attendance-card {
-  background: #ffffff;
+  background: $bg-white;
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
   padding: 18px 20px 10px;
@@ -28,22 +30,22 @@ th {
   padding: 12px 14px;
   font-weight: 600;
   font-size: 1.5rem;
-  color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  color: $bg-white;
+  border-bottom: 1px solid $border-light;
   position: sticky;
   top: 0;
-  z-index: 1;  
+  z-index: 1;
 }
 td {
   padding: 0.8rem 1rem;
   text-align: left;
   font-size: 1.3rem;
-  border-bottom: 1px solid #f1f5f9;
-  color: #111827; 
+  border-bottom: 1px solid $border-light;
+  color: $text-dark;
 }
 
 tbody tr {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid $border-light;
 }
 
 .status {
@@ -52,10 +54,10 @@ tbody tr {
   font-size: 1.2rem;
   font-weight: 600;
 
-  &.present { background: #d1fae5; color: #065f46; }
-  &.absent { background: #fee2e2; color: #7f1d1d; }
-  &.late { background: #fef3c7; color: #92400e; }
-  &.on_leave { background: #e0e7ff; color: #3730a3; }
+  &.present { background: $bg-approved; color: $status-approved; }
+  &.absent { background: $bg-rejected; color: $status-rejected; }
+  &.late { background: $bg-pending; color: $status-pending-dark; }
+  &.on_leave { background: rgba(182, 214, 226, 0.2); color: $primary-blue-green; }
 }
 
 .actions {
@@ -70,23 +72,23 @@ button {
   border: none;
   font-size: 1.2rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
 }
 
 /* View button */
 .actions button:first-child {
-  background: #f3f4f6;
-  color: #374151;
+  background: $bg-light;
+  color: $text-secondary;
 }
 
 .actions button:first-child:hover {
-  background: #e5e7eb;
+  background: $border-light;
 }
 
 /* Correct button (admin action) */
 .correct-btn {
-  background: #2563eb;
-  color: white;
+  background: $primary-blue-green;
+  color: $bg-white;
   border: none;
   padding: 6px 14px;
   border-radius: 8px;
@@ -97,6 +99,6 @@ button {
 }
 
 .correct-btn:hover {
-  background: #1d4ed8;
+  background: $btn-primary-hover;
   transform: translateY(-1px);
 }

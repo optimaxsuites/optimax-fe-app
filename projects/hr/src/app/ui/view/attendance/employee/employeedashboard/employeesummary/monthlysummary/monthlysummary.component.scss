@@ -1,3 +1,5 @@
+@import '../../../../styles/brand-colors';
+
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -5,10 +7,10 @@
 }
 
 .metric-card {
-  background: #ffffff;
+  background: $bg-white;
   border-radius: 18px;
   padding: 1.2rem 1.2rem;
-  border: 1px solid var(--gray-200);
+  border: 1px solid $border-light;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
@@ -18,25 +20,25 @@
 
   .label {
     font-size:1.5rem;
-    color: var(--gray-600);
+    color: $text-secondary;
   }
 
   .value {
     font-size: 2.0rem;
     font-weight: 700;
-    color: var(--gray-900);
+    color: $text-dark;
   }
 
   &.good .value {
-    color: var(--green-600);
+    color: $success;
   }
 
   &.warn .value {
-    color: #f59e0b;
+    color: $warning;
   }
 
   &.bad .value {
-    color: #ef4444;
+    color: $danger;
   }
 
   &::after {
@@ -46,7 +48,7 @@
     top: -40px;
     width: 120px;
     height: 120px;
-    background: var(--green-100);
+    background: rgba(46, 178, 112, 0.1);
     border-radius: 50%;
     opacity: 0.6;
   }

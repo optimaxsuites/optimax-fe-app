@@ -1,0 +1,63 @@
+// ============================================
+// OptimaxHr Brand Color Palette
+// ============================================
+// Centralized color variables for consistency across all attendance modules
+
+// Primary Colors
+$primary-blue-green: #2E6276;      // Primary - Headers, Primary UI
+$primary-celadon-green: #2EB270;   // Success/Approve actions
+$primary-light-blue: #B6D6E2;      // Borders, Light elements
+
+// Status Colors
+$status-pending: #e7de65;          // Pending status
+$status-pending-dark: #8f8500;     // Pending text
+$status-approved: #1e7e4a;         // Approved status
+$status-approved-light: #2EB270;   // Approved highlight
+$status-rejected: #b30000;         // Rejected/Danger
+$status-completed: #1e7e4a;        // Completed status
+
+// Semantic Colors
+$success: $primary-celadon-green;
+$danger: $status-rejected;
+$warning: $status-pending;
+$info: $primary-light-blue;
+
+// Text Colors
+$text-primary: #2E6276;
+$text-secondary: #666666;
+$text-muted: #999999;
+$text-dark: #1a1a1a;
+
+// Background Colors
+$bg-light: #f9f9f9;
+$bg-white: #ffffff;
+$bg-hover: rgba(46, 98, 118, 0.05);
+
+// Status Badge Backgrounds (with opacity)
+$bg-pending: rgba(231, 222, 101, 0.2);
+$bg-pending-border: rgba(231, 222, 101, 0.3);
+$bg-approved: rgba(46, 178, 112, 0.1);
+$bg-approved-border: rgba(46, 178, 112, 0.3);
+$bg-rejected: rgba(233, 55, 55, 0.1);
+$bg-rejected-border: rgba(233, 55, 55, 0.3);
+
+// Border Colors
+$border-light: #e5e5e5;
+$border-primary: $primary-light-blue;
+$border-muted: #ddd;
+
+// Shadow Colors
+$shadow-primary: rgba(46, 98, 118, 0.08);
+$shadow-primary-hover: rgba(46, 178, 112, 0.12);
+$shadow-danger-hover: rgba(179, 0, 0, 0.3);
+$shadow-success-hover: rgba(46, 178, 112, 0.3);
+
+// Button Hover States
+$btn-primary-hover: #1f4252;       // Dark blue-green
+$btn-success-hover: #26904f;       // Dark celadon green
+$btn-danger-hover: #8a0000;        // Dark red
+$btn-secondary-hover: #5a6268;     // Gray
+
+// Transitions
+$transition-fast: all 0.2s ease;
+$transition-default: all 0.3s ease;

@@ -357,6 +357,7 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     LoanDashboardComponent,
     EmployeeLoanHistoryComponent,
     EmployeeDashboardComponent,
+    EmployeeProfileDashboardComponent,
     LoanApprovalUiComponent,
     LoanBalanceIndicatorsComponent,
     LoanDetailsComponent,
@@ -432,7 +433,6 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     HrLettersComponent,
     UserProfileComponent,
     // FooterComponent,
-    // EmployeeRelativesWidgetComponent,
   ],
   imports: [
     LargeSideModalComponent,
@@ -495,6 +495,7 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     MenuModule,
     AutoCompleteModule,
     CooperativeGracePeriodRequestFormModule,
+    EmployeeRelativesWidgetComponent,
   ],
   schemas: [NO_ERRORS_SCHEMA],
   providers: [

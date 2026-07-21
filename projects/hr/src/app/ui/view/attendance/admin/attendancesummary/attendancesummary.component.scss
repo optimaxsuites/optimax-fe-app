@@ -1,3 +1,5 @@
+@import '../../styles/brand-colors';
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -7,7 +9,7 @@
 }
 
 .summary-card {
-  background: #fff;
+  background: $bg-white;
   padding: 14px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
@@ -15,20 +17,20 @@
 
   h4 {
     font-size: 12px;
-    color: #6b7280;
+    color: $text-secondary;
     margin-bottom: 6px;
   }
 
   span {
     font-size: 20px;
     font-weight: 700;
-    color: #111827;
+    color: $text-dark;
   }
 }
 
-.present span { color: #1f9254; }
-.late span { color: #b26a00; }
-.absent span { color: #b42318; }
+.present span { color: $success; }
+.late span { color: $warning; }
+.absent span { color: $danger; }
 
 
 .export-bar {

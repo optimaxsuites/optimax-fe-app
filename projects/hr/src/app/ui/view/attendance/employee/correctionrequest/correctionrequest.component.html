@@ -1,65 +1,129 @@
-<div class="correction-requests-card">
+<div class="correction-requests-container">
   <div class="header">
     <h3>Correction Requests</h3>
-    <button class="add-btn" type="button" (click)="openForm()" title="New correction request">+</button>
+    <button class="btn btn-primary" type="button" (click)="openForm()" title="New correction request">
+      <i class="fas fa-plus"></i> New Request
+    </button>
   </div>
 
   <div class="empty-state" *ngIf="requests.length === 0">
-    <span>No correction requests</span>
-    <p>Missing punch requests you submit will appear here.</p>
+    <i class="fas fa-inbox"></i>
+    <p>No correction requests yet</p>
+    <small>Submit a missing punch request to get started</small>
   </div>
 
-  <table *ngIf="requests.length > 0">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Issue Type</th>
-        <th>Requested Punch</th>
-        <th>Status</th>
-        <th>Details</th>
-        <th>Evidence</th>
-        <th>Notification</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      <tr *ngFor="let req of requests" [class.locked-row]="req.locked">
-        <td>{{ req.date | date:'mediumDate' }}</td>
-        <td>{{ getIssueLabel(req.issueType) }}</td>
-        <td>
-          <span *ngIf="req.requestedClockIn">In: {{ req.requestedClockIn }}</span>
-          <span *ngIf="req.requestedClockOut">Out: {{ req.requestedClockOut }}</span>
-          <span *ngIf="!req.requestedClockIn && !req.requestedClockOut">Not provided</span>
-        </td>
-        <td>
-          <span class="status" [ngClass]="req.status.toLowerCase().replace('_', '-')">
-            {{ getStatusLabel(req.status) }}
+  <div *ngIf="requests.length > 0" class="requests-timeline">
+    <div *ngFor="let req of requests" class="request-card" [class.locked]="req.locked">
+      <!-- Request Header -->
+      <div class="card-header">
+        <div class="request-info">
+          <div class="date-badge">{{ req.date | date:'MMM dd' }}</div>
+          <div class="issue-details">
+            <h4>{{ getIssueLabel(req.issueType) }}</h4>
+            <p class="description">{{ req.description }}</p>
+          </div>
+        </div>
+        <div class="status-badge" [ngClass]="req.status.toLowerCase().replace('_', '-')">
+          {{ getStatusLabel(req.status) }}
+          <span class="locked-badge" *ngIf="req.locked">
+            <i class="fas fa-lock"></i> Locked
           </span>
-          <span class="locked-pill" *ngIf="req.locked">Locked</span>
-        </td>
-        <td>
-          {{ req.description }}
+        </div>
+      </div>
 
-          <div *ngIf="req.status === 'REJECTED'" class="rejection-reason">
-            Rejection Reason: {{ req.rejectionReason }}
+      <!-- Request Details -->
+      <div class="card-body">
+        <div class="details-grid">
+          <div class="detail-item">
+            <label>Requested Time:</label>
+            <span class="value">
+              <span *ngIf="req.requestedClockIn">In: <strong>{{ req.requestedClockIn }}</strong></span>
+              <span *ngIf="req.requestedClockOut">Out: <strong>{{ req.requestedClockOut }}</strong></span>
+              <span *ngIf="!req.requestedClockIn && !req.requestedClockOut">Not provided</span>
+            </span>
           </div>
-        </td>
-        <td>
-          <div class="evidence-text">{{ req.evidence || 'No evidence added' }}</div>
+          <div class="detail-item">
+            <label>Evidence:</label>
+            <span class="value">{{ req.evidence || 'No evidence added' }}</span>
+          </div>
+          <div class="detail-item" *ngIf="req.status === 'REJECTED'">
+            <label>Rejection Reason:</label>
+            <span class="value rejection">{{ req.rejectionReason }}</span>
+          </div>
+          <div class="detail-item" *ngIf="req.latestNotification">
+            <label>Notification:</label>
+            <span class="value">{{ req.latestNotification }}</span>
+          </div>
+        </div>
 
-          <div *ngIf="canResubmit(req)" class="resubmit-box">
-            <textarea
-              rows="2"
-              placeholder="Add more evidence"
-              [(ngModel)]="resubmissionEvidence[req.id]">
-            </textarea>
-            <button type="button" (click)="resubmit(req)">Resubmit</button>
+        <!-- Resubmit Option -->
+        <div *ngIf="canResubmit(req)" class="resubmit-section">
+          <label>Add More Evidence:</label>
+          <textarea
+            rows="3"
+            placeholder="Provide additional evidence to support your request..."
+            [(ngModel)]="resubmissionEvidence[req.id]"
+            class="form-control">
+          </textarea>
+          <button type="button" class="btn btn-sm btn-success mt-2" (click)="resubmit(req)">
+            <i class="fas fa-redo"></i> Resubmit Request
+          </button>
+        </div>
+      </div>
+
+      <!-- Approval Timeline -->
+      <div class="approval-timeline">
+        <h5>Approval Status</h5>
+        <div class="timeline-steps">
+          <div class="timeline-step" [class.completed]="isStepCompleted(req, 'SUBMITTED')">
+            <div class="step-indicator">
+              <i class="fas fa-check"></i>
+            </div>
+            <div class="step-content">
+              <span class="step-label">Submitted</span>
+            </div>
           </div>
-        </td>
-        <td>{{ req.latestNotification }}</td>
-      </tr>
-    </tbody>
-  </table>
+
+          <div class="timeline-connector" [class.completed]="isStepCompleted(req, 'PENDING')"></div>
+
+          <div class="timeline-step" [class.completed]="isStepCompleted(req, 'PENDING')" [class.pending]="isPendingStep(req, 'PENDING_LINE_MANAGER')">
+            <div class="step-indicator">
+              <i *ngIf="isStepCompleted(req, 'PENDING')" class="fas fa-check"></i>
+              <i *ngIf="isPendingStep(req, 'PENDING_LINE_MANAGER')" class="fas fa-hourglass-half"></i>
+            </div>
+            <div class="step-content">
+              <span class="step-label">Manager Review</span>
+            </div>
+          </div>
+
+          <div class="timeline-connector" [class.completed]="isStepCompleted(req, 'UNDER_REVIEW')"></div>
+
+          <div class="timeline-step" [class.completed]="isStepCompleted(req, 'UNDER_REVIEW')" [class.pending]="isPendingStep(req, 'PENDING_HR')" [class.rejected]="isRejected(req)">
+            <div class="step-indicator">
+              <i *ngIf="isStepCompleted(req, 'UNDER_REVIEW')" class="fas fa-check"></i>
+              <i *ngIf="isPendingStep(req, 'PENDING_HR')" class="fas fa-hourglass-half"></i>
+              <i *ngIf="isRejected(req)" class="fas fa-times"></i>
+            </div>
+            <div class="step-content">
+              <span class="step-label">HR Review</span>
+            </div>
+          </div>
+
+          <div class="timeline-connector" [class.completed]="isStepCompleted(req, 'APPROVED')"></div>
+
+          <div class="timeline-step" [class.completed]="isStepCompleted(req, 'APPROVED')">
+            <div class="step-indicator">
+              <i *ngIf="!isRejected(req)" class="fas fa-check"></i>
+              <i *ngIf="isRejected(req)" class="fas fa-times"></i>
+            </div>
+            <div class="step-content">
+              <span class="step-label" [class.rejected]="isRejected(req)">{{ isRejected(req) ? 'Rejected' : 'Approved' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <app-correctionrequestform
     *ngIf="showForm"

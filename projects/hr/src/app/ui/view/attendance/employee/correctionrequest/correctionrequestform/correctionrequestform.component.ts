@@ -14,6 +14,13 @@ export class CorrectionrequestformComponent {
 
   form: FormGroup;
 
+  // TODO: Replace with actual user session data from UserService
+  private currentUser = {
+    employeeId: '1',
+    employeeName: 'Employee',
+    department: 'Engineering'
+  };
+
   issueTypes = [
     { value: 'MISSED_CLOCK', label: 'Missed Clock' },
     { value: 'WRONG_TIME', label: 'Wrong Time' },
@@ -22,9 +29,6 @@ export class CorrectionrequestformComponent {
 
   constructor(private fb: FormBuilder) {
     this.form = this.fb.group({
-      employeeId: ['1', Validators.required],
-      employeeName: ['Employee', Validators.required],
-      department: ['Engineering', Validators.required],
       date: ['', Validators.required],
       issueType: ['', Validators.required],
       requestedClockIn: [''],
@@ -39,9 +43,9 @@ export class CorrectionrequestformComponent {
 
     const newRequest: CorrectionRequest = {
       id: uuidv4(),
-      employeeId: this.form.value.employeeId,
-      employeeName: this.form.value.employeeName,
-      department: this.form.value.department,
+      employeeId: this.currentUser.employeeId,
+      employeeName: this.currentUser.employeeName,
+      department: this.currentUser.department,
       date: this.form.value.date,
       issueType: this.form.value.issueType,
       requestedClockIn: this.form.value.requestedClockIn,

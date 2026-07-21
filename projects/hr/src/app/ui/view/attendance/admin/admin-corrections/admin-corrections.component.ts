@@ -88,4 +88,8 @@ export class AdminCorrectionsComponent implements OnInit {
   canApproveOrReject(req: CorrectionRequest): boolean {
     return this.correctionService.canApproveOrReject(req);
   }
+
+  getPendingCount(): number {
+    return this.requests.filter(req => req.status === 'PENDING').length;
+  }
 }

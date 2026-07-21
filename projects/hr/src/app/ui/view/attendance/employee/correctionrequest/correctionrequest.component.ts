@@ -107,5 +107,26 @@ export class CorrectionrequestComponent  implements OnInit{
     this.resubmissionEvidence[request.id] = '';
   }
 
+  isStepCompleted(request: CorrectionRequest, step: string): boolean {
+    if (request.status === 'REJECTED') return false;
 
+    const completedSteps: { [key: string]: boolean } = {
+      'SUBMITTED': true,
+      'PENDING': request.status !== 'SUBMITTED',
+      'PENDING_LINE_MANAGER': ['UNDER_REVIEW', 'PENDING'].includes(request.status),
+      'PENDING_HR': request.status === 'UNDER_REVIEW',
+      'APPROVED': request.status === 'UNDER_REVIEW'
+    };
+
+    return completedSteps[step] || false;
+  }
+
+  isPendingStep(request: CorrectionRequest, step: string): boolean {
+    return request.status === 'PENDING' && step === 'PENDING_LINE_MANAGER' ||
+           request.status === 'UNDER_REVIEW' && (step === 'PENDING_HR' || step === 'APPROVED');
+  }
+
+  isRejected(request: CorrectionRequest): boolean {
+    return request.status === 'REJECTED';
+  }
 }

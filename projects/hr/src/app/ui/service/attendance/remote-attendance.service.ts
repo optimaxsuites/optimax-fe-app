@@ -30,7 +30,6 @@ const API_ENDPOINTS = {
 export class RemoteAttendanceService {
   private readonly BASE = `${environment.apiBaseUrl}/x/api/v2/hr`;
   private fraudFlagsSubject = new BehaviorSubject<FraudDetectionFlags[]>([]);
-  private deviceFingerprintCache: Map<string, string> = new Map();
 
   fraudFlags$ = this.fraudFlagsSubject.asObservable();
 
@@ -70,7 +69,9 @@ export class RemoteAttendanceService {
           position.coords.latitude,
           position.coords.longitude
         );
-      } catch (err) {}
+      } catch {
+        // GPS location capture failed, continue with other metadata
+      }
     }
 
     return {
@@ -185,7 +186,9 @@ export class RemoteAttendanceService {
         const current = this.fraudFlagsSubject.value;
         this.fraudFlagsSubject.next([...current, savedFlag]);
       }),
-      catchError(err => { throw err; })
+      catchError(err => {
+        throw err;
+      })
     );
   }
 

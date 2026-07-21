@@ -1,5 +1,7 @@
+@import '../../../styles/brand-colors';
+
 .filters {
-  background: #ffffff;
+  background: $bg-white;
   //border: 1px solid #e5e7eb;
   //border-radius: 16px;
   padding: 1rem 1.2rem;
@@ -17,22 +19,22 @@
   width: 100%;
   padding: 0.45rem 0.6rem;
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid $border-light;
   font-size: 1.2rem;
-  color: #111827;
-  background: #f9fafb;
+  color: $text-dark;
+  background: $bg-light;
   outline: none;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
 
   &::placeholder {
-    color: #9ca3af;
+    color: $text-muted;
     font-size: 1.2rem;
   }
 
   &:focus {
-    border-color: #10b981;
-    background: #ffffff;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.12);
+    border-color: $success;
+    background: $bg-white;
+    box-shadow: 0 0 0 2px rgba(46, 178, 112, 0.12);
   }
 }
 
@@ -52,19 +54,19 @@
   justify-self: end;
   width:50%;
 
-  background: #e5e7eb;//#1f9254/*linear-gradient(135deg, #10b981, #34d399)*
-  border: 1px solid #e5e7eb;//none;
+  background: $border-light;
+  border: 1px solid $border-light;
   border-radius: 10px;
-  padding: 0.45rem 0.6rem;//0.45rem 1.1rem;
+  padding: 0.45rem 0.6rem;
   font-size: 1.2rem;
   font-weight: 600;
   color: black;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
 
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+    box-shadow: 0 6px 16px rgba(46, 178, 112, 0.35);
   }
 
   &:active {

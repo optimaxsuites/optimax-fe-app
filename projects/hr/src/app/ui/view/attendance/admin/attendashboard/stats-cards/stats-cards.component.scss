@@ -1,3 +1,5 @@
+@import '../../../styles/brand-colors';
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -7,7 +9,7 @@
 .stat-card {
   padding: 1.2rem;
   border-radius: 12px;
-  background: white;
+  background: $bg-white;
   box-shadow: 0 4px 12px rgba(0,0,0,.05);
 
   p {
@@ -15,7 +17,7 @@
     font-weight: 600;
   }
 
-  &.present { border-left: 6px solid #2ecc71; }
-  &.absent  { border-left: 6px solid #e74c3c; }
-  &.late    { border-left: 6px solid #f39c12; }
+  &.present { border-left: 6px solid $success; }
+  &.absent  { border-left: 6px solid $danger; }
+  &.late    { border-left: 6px solid $warning; }
 }
