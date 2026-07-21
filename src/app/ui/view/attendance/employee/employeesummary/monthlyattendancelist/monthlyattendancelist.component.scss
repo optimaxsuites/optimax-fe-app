@@ -1,7 +1,9 @@
+@import '../../../styles/brand-colors';
+
 .attendance-list {
-  background: #ffffff;
+  background: $bg-white;
   border-radius: 18px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid $border-light;
   padding: 1.3rem 1.5rem;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.05);
   display: flex;
@@ -21,18 +23,18 @@
 
     label {
       font-size: 1.2rem;
-      color: #6b7280;
+      color: $text-secondary;
     }
 
     input {
-      border: 1px solid #e5e7eb;
+      border: 1px solid $border-light;
       border-radius: 8px;
       padding: 0.25rem 0.5rem;
       font-size: 1.2rem;
       outline: none;
 
       &:focus {
-        border-color: #10b981;
+        border-color: $success;
       }
     }
   }
@@ -55,16 +57,16 @@
 
 .table-header {
   font-weight: 600;
-  color: #6b7280;
-  border-bottom: 1px solid #e5e7eb;
+  color: $text-secondary;
+  border-bottom: 1px solid $border-light;
 }
 
 .table-row {
   border-radius: 10px;
-  transition: background 0.2s ease;
+  transition: background $transition-fast;
 
   &:hover {
-    background: #f9fafb;
+    background: $bg-light;
   }
 
   .status {
@@ -72,25 +74,25 @@
   }
 
   &.present .status {
-    color: #059669;
+    color: $status-approved;
   }
 
   &.late .status {
-    color: #f59e0b;
+    color: $warning;
   }
 
   &.absent .status {
-    color: #ef4444;
+    color: $danger;
   }
 
   &.on_leave .status {
-    color: #6366f1;
+    color: $primary-blue-green;
   }
 }
 
 .empty {
   text-align: center;
   font-size: 1.2rem;
-  color: #9ca3af;
+  color: $text-muted;
   padding: 1rem 0;
 }

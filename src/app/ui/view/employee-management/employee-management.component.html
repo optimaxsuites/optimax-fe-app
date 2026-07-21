@@ -269,7 +269,7 @@
         <div class="employee-metrics-grid">
           <div class="employee-meta">
             <span class="employee-meta-label">Level</span>
-            <span class="employee-meta-value">{{ employee?.level?.name || employee?.level || '-' }}</span>
+            <span class="employee-meta-value">{{ employee?.level?.position || employee?.level?.name || employee?.level || '-' }}</span>
           </div>
           <div class="employee-meta">
             <span class="employee-meta-label">Type</span>
@@ -337,7 +337,7 @@
           <span class="dir-list-badge">{{ employee?.department?.name || employee?.department || '—' }}</span>
         </div>
         <div class="dir-list-col dir-list-col--role">{{ employee?.jobTitle || '—' }}</div>
-        <div class="dir-list-col dir-list-col--level">{{ employee?.level?.name || employee?.level || '—' }}</div>
+        <div class="dir-list-col dir-list-col--level">{{ employee?.level?.position || employee?.level?.name || employee?.level || '—' }}</div>
         <div class="dir-list-col dir-list-col--type">
           <span class="dir-list-type-chip">{{ employee?.employmentType?.name || employee?.jobType?.name || '—' }}</span>
         </div>
@@ -515,7 +515,7 @@
               <p class="staff-id-card__role">{{ staffIdEmployee?.jobTitle || 'Role pending' }}</p>
               <div class="staff-id-card__chips">
                 <span>{{ staffIdEmployee?.department?.name || staffIdEmployee?.department || 'Department' }}</span>
-                <span>{{ staffIdEmployee?.level?.name || staffIdEmployee?.level || 'Level' }}</span>
+                <span>{{ staffIdEmployee?.level?.position || staffIdEmployee?.level?.name || staffIdEmployee?.level || 'Level' }}</span>
               </div>
             </div>
           </div>

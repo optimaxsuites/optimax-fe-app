@@ -1,6 +1,8 @@
+@import '../../styles/brand-colors';
+
 .fraud-dashboard-container {
   padding: 2rem;
-  background: #f5f5f5;
+  background: $bg-light;
   min-height: 100vh;
 
   .dashboard-header {
@@ -9,11 +11,11 @@
     align-items: center;
     margin-bottom: 2rem;
     padding-bottom: 1rem;
-    border-bottom: 2px solid #ddd;
+    border-bottom: 2px solid $border-muted;
 
     h2 {
       margin: 0;
-      color: #333;
+      color: $text-dark;
     }
 
     .btn {
@@ -32,7 +34,7 @@
     margin-bottom: 2rem;
 
     .stat-card {
-      background: white;
+      background: $bg-white;
       border-radius: 8px;
       padding: 1.5rem;
       display: flex;
@@ -48,20 +50,20 @@
         justify-content: center;
         font-size: 1.5rem;
         color: white;
-        background: #007bff;
+        background: $primary-blue-green;
         flex-shrink: 0;
 
         &.danger {
-          background: #dc3545;
+          background: $danger;
         }
 
         &.danger-dark {
-          background: #c82333;
+          background: $btn-danger-hover;
         }
 
         &.warning {
-          background: #ffc107;
-          color: #333;
+          background: $status-pending;
+          color: $text-dark;
         }
       }
 
@@ -70,13 +72,13 @@
 
         h4 {
           margin: 0 0 0.25rem;
-          color: #333;
+          color: $text-dark;
           font-size: 1.8rem;
         }
 
         p {
           margin: 0;
-          color: #666;
+          color: $text-secondary;
           font-size: 0.9rem;
         }
       }
@@ -87,7 +89,7 @@
     display: flex;
     gap: 1rem;
     margin-bottom: 2rem;
-    background: white;
+    background: $bg-white;
     padding: 1.5rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -99,12 +101,12 @@
         display: block;
         font-weight: 600;
         margin-bottom: 0.5rem;
-        color: #333;
+        color: $text-dark;
         font-size: 0.95rem;
       }
 
       .form-control {
-        border: 1px solid #ddd;
+        border: 1px solid $border-muted;
         border-radius: 4px;
         padding: 0.75rem;
       }
@@ -114,7 +116,7 @@
   .loading-state {
     text-align: center;
     padding: 3rem;
-    background: white;
+    background: $bg-white;
     border-radius: 8px;
 
     .spinner-border {
@@ -124,17 +126,17 @@
     }
 
     p {
-      color: #666;
+      color: $text-secondary;
     }
   }
 
   .main-content {
     display: grid;
-    grid-template-columns: 1fr 350px;
+    grid-template-columns: 1fr;
     gap: 2rem;
 
     .flags-list {
-      background: white;
+      background: $bg-white;
       border-radius: 8px;
       padding: 1.5rem;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -142,17 +144,17 @@
       h3 {
         margin-top: 0;
         margin-bottom: 1.5rem;
-        color: #333;
+        color: $text-dark;
       }
 
       .empty-state {
         text-align: center;
         padding: 3rem 1rem;
-        color: #999;
+        color: $text-muted;
 
         i {
           font-size: 2.5rem;
-          color: #ddd;
+          color: $border-muted;
           display: block;
           margin-bottom: 1rem;
         }
@@ -163,21 +165,21 @@
       }
 
       .flag-card {
-        border: 2px solid #e0e0e0;
+        border: 2px solid $border-light;
         border-radius: 6px;
         padding: 1rem;
         margin-bottom: 1rem;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: $transition-default;
 
         &:hover {
-          border-color: #007bff;
-          background: #f8f9ff;
+          border-color: $primary-blue-green;
+          background: $bg-hover;
         }
 
         &.selected {
-          border-color: #dc3545;
-          background: #fff5f5;
+          border-color: $danger;
+          background: rgba($status-rejected, 0.05);
         }
 
         .flag-header {
@@ -194,7 +196,7 @@
           .flag-type {
             flex: 1;
             font-weight: 600;
-            color: #333;
+            color: $text-dark;
 
             i {
               margin-right: 0.5rem;
@@ -203,7 +205,7 @@
 
           .time-ago {
             font-size: 0.85rem;
-            color: #999;
+            color: $text-muted;
             white-space: nowrap;
           }
         }
@@ -211,7 +213,7 @@
         .flag-body {
           .description {
             margin: 0 0 0.75rem;
-            color: #333;
+            color: $text-dark;
             font-size: 0.95rem;
           }
 
@@ -219,7 +221,7 @@
             display: flex;
             gap: 1.5rem;
             font-size: 0.85rem;
-            color: #666;
+            color: $text-secondary;
 
             .detail {
               font-family: monospace;
@@ -230,19 +232,17 @@
     }
 
     .details-panel {
-      background: white;
+      background: $bg-white;
       border-radius: 8px;
       padding: 1.5rem;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       height: fit-content;
-      position: sticky;
-      top: 2rem;
 
       h4 {
         margin-top: 0;
         margin-bottom: 1.5rem;
-        color: #333;
-        border-bottom: 2px solid #f0f0f0;
+        color: $text-dark;
+        border-bottom: 2px solid $border-light;
         padding-bottom: 0.75rem;
       }
 
@@ -251,7 +251,7 @@
 
         h5 {
           margin: 0 0 1rem;
-          color: #333;
+          color: $text-dark;
           font-size: 0.95rem;
         }
 
@@ -262,13 +262,13 @@
 
           .label {
             font-weight: 600;
-            color: #666;
+            color: $text-secondary;
             font-size: 0.85rem;
             margin-bottom: 0.25rem;
           }
 
           .value {
-            color: #333;
+            color: $text-dark;
             font-size: 0.9rem;
             word-break: break-all;
 
@@ -282,11 +282,11 @@
 
       .action-section {
         padding-top: 1.5rem;
-        border-top: 1px solid #f0f0f0;
+        border-top: 1px solid $border-light;
 
         h5 {
           margin: 0 0 1rem;
-          color: #333;
+          color: $text-dark;
           font-size: 0.95rem;
         }
 

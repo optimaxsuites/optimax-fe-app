@@ -1,5 +1,7 @@
+@import '../../../../styles/brand-colors';
+
 .filters {
-  background: #ffffff;
+  background: $bg-white;
   //border: 1px solid #e5e7eb;
   //border-radius: 16px;
   padding: 1rem 1.2rem;
@@ -17,22 +19,22 @@
   width: 100%;
   padding: 0.45rem 0.6rem;
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid $border-light;
   font-size: 1.2rem;
-  color: #111827;
-  background: #f9fafb;
+  color: $text-dark;
+  background: $bg-light;
   outline: none;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
 
   &::placeholder {
-    color: #9ca3af;
+    color: $text-muted;
     font-size: 1.2rem;
   }
 
   &:focus {
-    border-color: #10b981;
-    background: #ffffff;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.12);
+    border-color: $success;
+    background: $bg-white;
+    box-shadow: 0 0 0 2px rgba(46, 178, 112, 0.12);
   }
 }
 
@@ -61,29 +63,29 @@
   font-weight: 500;
   cursor: pointer;
   border: none;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
   font-size: 14px;
 }
 
 /* Apply button (primary) */
 .apply-btn {
-  background-color: #e5e7eb;
-  border: 1px solid #e5e7eb;
+  background-color: $border-light;
+  border: 1px solid $border-light;
   color: black;
 
   &:hover {
-    background-color: #d1d5db;
+    background-color: $border-muted;
   }
 }
 
 /* Reset button (secondary) */
 .reset-btn {
-  background-color: #e5e7eb;
+  background-color: $border-light;
   color: black;
-  border: 1px solid #d1d5db;
+  border: 1px solid $border-muted;
 
   &:hover {
-    background-color: #d1d5db;
+    background-color: $border-muted;
   }
 }
 

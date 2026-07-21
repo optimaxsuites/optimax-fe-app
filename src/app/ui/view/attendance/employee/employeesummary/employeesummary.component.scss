@@ -1,3 +1,5 @@
+@import '../../styles/brand-colors';
+
 .summary-container {
   display: flex;
   flex-direction: column;
@@ -6,16 +8,16 @@
 }
 
 .summary-card {
-  background: #ffffff;
+  background: $bg-white;
   border-radius: 20px;
-  border: 1px solid var(--gray-200);
+  border: 1px solid $border-light;
   padding: 1.4rem 1.6rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 
   h2 {
     font-size: 2.2rem;
     font-weight: 600;
-    color: var(--gray-900);
+    color: $text-dark;
     margin-bottom: 1.2rem;
     display: flex;
     align-items: center;
@@ -26,7 +28,7 @@
       width: 6px;
       height: 42px;
       border-radius: 4px;
-      background: var(--green-500);
+      background: $success;
     }
   }
 }

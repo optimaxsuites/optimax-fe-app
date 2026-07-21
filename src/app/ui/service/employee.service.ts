@@ -46,42 +46,9 @@ export class EmployeeService {
 
   uploadEmployeePhoto(employee: any, file: File): Observable<any> {
     const formData = new FormData();
-    // Send the full employee payload so the backend UPDATE doesn't violate NOT NULL constraints
-    const employeePayload = {
-      id: employee.id,
-      firstName: employee.firstName,
-      lastName: employee.lastName,
-      email: employee.email,
-      workEmail: employee.workEmail,
-      phone: employee.phone,
-      address: employee.address ?? null,
-      dob: employee.dob ?? null,
-      nin: employee.nin ?? null,
-      bvn: employee.bvn ?? null,
-      supervisor: employee.supervisor ?? null,
-      jobTitle: employee.jobTitle,
-      employeeStatus: employee.employeeStatus,
-      bankName: employee.bankName ?? null,
-      accountNumber: employee.accountNumber ?? null,
-      userId: employee.userId ?? employee.user?.id ?? employee.user?.userId ?? null,
-      departmentId: employee.department?.id ?? employee.departmentId ?? null,
-      levelId: employee.level?.id ?? employee.levelId ?? null,
-      genderId: employee.gender?.id ?? employee.genderId ?? null,
-      maritalStatusId: employee.maritalStatus?.id ?? employee.maritalStatusId ?? null,
-      religionId: employee.religion?.id ?? employee.religionId ?? null,
-      relationshipId: employee.relationship?.id ?? employee.relationshipId ?? null,
-      jobTypeId: employee.jobType?.id ?? employee.jobTypeId ?? null,
-      employementStartDate: employee.employementStartDate ?? employee.employmentStartDate ?? employee.hireDate ?? null,
-      employmentEndDate: employee.employmentEndDate ?? null,
-      onProbation: employee.onProbation ?? null,
-      probationStartDate: employee.probationStartDate ?? null,
-      probationEndDate: employee.probationEndDate ?? null,
-      appraisalDueDate: employee.appraisalDueDate ?? null,
-    };
-    formData.append('employee', new Blob([JSON.stringify(employeePayload)], { type: 'application/json' }));
     formData.append('file', file, file.name);
     return this.http
-      .post<any>(this.baseurl + `/x/api/v2/hr/employees`, formData)
+      .put<any>(this.baseurl + `/x/api/v2/hr/employees/${employee.id}/photo`, formData)
       .pipe(catchError(this.handleError));
   }
 

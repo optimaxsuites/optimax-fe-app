@@ -1,3 +1,5 @@
+@import '../../../styles/brand-colors';
+
 .attendance-wrapper {
   margin-top: 16px;
   margin-left: 2px;
@@ -5,7 +7,7 @@
 }
 
 .attendance-card {
-  background: #ffffff;
+  background: $bg-white;
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
   padding: 18px 20px 10px;
@@ -28,22 +30,22 @@ th {
   padding: 12px 14px;
   font-weight: 600;
   font-size: 1.5rem;
-  color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  color: $bg-white;
+  border-bottom: 1px solid $border-light;
   position: sticky;
   top: 0;
-  z-index: 1;  
+  z-index: 1;
 }
 td {
   padding: 0.8rem 1rem;
   text-align: left;
   font-size: 1.3rem;
-  border-bottom: 1px solid #f1f5f9;
-  color: #111827; 
+  border-bottom: 1px solid $border-light;
+  color: $text-dark;
 }
 
 tbody tr {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid $border-light;
 }
 
 .status {
@@ -57,23 +59,23 @@ tbody tr {
   letter-spacing: 0.5px;
 
   &.present {
-    background: #4caf50;
-    color: #ffffff;
+    background: $success;
+    color: $bg-white;
   }
 
   &.absent {
-    background: #f44336;
-    color: #ffffff;
+    background: $danger;
+    color: $bg-white;
   }
 
   &.late {
-    background: #ff9800;
-    color: #ffffff;
+    background: $warning;
+    color: $bg-white;
   }
 
   &.on_leave {
-    background: #2196f3;
-    color: #ffffff;
+    background: $info;
+    color: $bg-white;
   }
 }
 
@@ -94,27 +96,27 @@ button {
   border: none;
   font-size: 1.2rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
 }
 
 /* View button */
 .actions button:first-child {
-  background: #f3f4f6;
-  color: #374151;
+  background: $bg-light;
+  color: $text-secondary;
 }
 
 .actions button:first-child:hover {
-  background: #e5e7eb;
+  background: $border-light;
 }
 
 // Open button
 .actions button:last-child {
-  background: #f3f4f6;
-  color: #374151;
+  background: $bg-light;
+  color: $text-secondary;
 }
 
 .actions button:last-child:hover {
-  background: #e5e7eb;
+  background: $border-light;
 }
 
 /* BACKDROP */
@@ -125,7 +127,7 @@ button {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(17, 24, 39, 0.45);
+  background: rgba(26, 26, 26, 0.45);
   backdrop-filter: blur(4px);
   z-index: 1000;
 }
@@ -138,7 +140,7 @@ button {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: #ffffff;
+  background: $bg-white;
   border-radius: 22px;
   width: 420px;
   max-width: 92%;
@@ -147,7 +149,7 @@ button {
 
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
 
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn $transition-fast;
 }
 
 
@@ -162,11 +164,11 @@ button {
   h3 {
     font-size: 2.0rem;
     font-weight: 600;
-    color: var(--gray-900);
+    color: $text-dark;
 
     i {
       margin-right: 6px;
-      color: #64748b;
+      color: $text-muted;
     }
   }
 
@@ -176,18 +178,18 @@ button {
     font-size: 2.0rem;
     font-weight: 600;
     cursor: pointer;
-    color: var(--gray-600);
-    transition: 0.2s ease;
+    color: $text-secondary;
+    transition: $transition-fast;
 
     &:hover {
-      color: var(--gray-900);
+      color: $text-dark;
     }
   }
 }
 
 .employee-info {
   font-size: 1.5rem;
-  color: var(--gray-500);
+  color: $text-secondary;
   margin-bottom: 1rem;
 }
 
@@ -204,13 +206,13 @@ button {
   label {
     font-size: 1.5rem;
     font-weight: 500;
-    color: var(--gray-600);
+    color: $text-secondary;
   }
 
   input,
   select,
   textarea {
-    border: 1px solid var(--gray-200);
+    border: 1px solid $border-light;
     border-radius: 12px;
     padding: 0.55rem 0.7rem;
 
@@ -218,11 +220,11 @@ button {
 
     outline: none;
 
-    transition: 0.2s ease;
+    transition: $transition-fast;
 
     &:focus {
-      border-color: var(--green-500);
-      box-shadow: 0 0 0 3px var(--green-100);
+      border-color: $success;
+      box-shadow: 0 0 0 3px rgba(46, 178, 112, 0.1);
     }
   }
 
@@ -232,16 +234,16 @@ button {
 
   .error {
     font-size: 1.5rem;
-    color: #ef4444;
+    color: $danger;
   }
 }
 
 .location-link {
   cursor: pointer;
-  color: #10b981;
+  color: $success;
   font-size: 1.2rem;
   text-decoration: underline dotted;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
@@ -253,13 +255,13 @@ button {
   }
 
   &:hover {
-    color: #065f46;
+    color: $status-approved;
   }
 
   //blink effect when selected
   &.active {
     animation: locationBlink 0.8s ease 3;
-    color: #065f46;
+    color: $status-approved;
     font-weight: 600;
   }
 }
@@ -284,7 +286,7 @@ button {
 
 .map-address {
   font-size: 1.3rem;
-  color: var(--gray-600);
+  color: $text-secondary;
   margin: 0.3rem 0;
   word-break: break-word;
 }
@@ -292,12 +294,12 @@ button {
 .map-distance {
   font-size: 1.4rem;
   font-weight: 600;
-  color: #10b981;
+  color: $success;
   margin: 0.3rem 0;
 
   i {
     margin-right: 4px;
-    color: #64748b;
+    color: $text-muted;
   }
 }
 
@@ -319,24 +321,24 @@ button {
     border: none;
     cursor: pointer;
 
-    transition: 0.2s ease;
+    transition: $transition-fast;
   }
 
   .cancel-btn {
-    background: var(--gray-100);
-    color: var(--gray-700);
+    background: $bg-light;
+    color: $text-secondary;
 
     &:hover {
-      background: var(--gray-200);
+      background: $border-light;
     }
   }
 
   .submit-btn {
-    background: var(--green-500);
-    color: white;
+    background: $success;
+    color: $bg-white;
 
     &:hover {
-      background: var(--green-600);
+      background: $btn-success-hover;
     }
 
     &:disabled {
@@ -362,13 +364,13 @@ td.empty-state {
     .empty-title {
       font-size: 1.5rem;
       font-weight: 600;
-      color: #4a5568; 
+      color: $text-secondary;
       margin: 0;
     }
 
     .empty-subtitle {
       font-size: 1.25rem;
-      color: #a0aec0;
+      color: $text-muted;
       margin: 0;
     }
   }

@@ -22,7 +22,6 @@ export class RemoteCheckinComponent implements OnInit, OnDestroy {
   errorMessage: string = '';
   successMessage: string = '';
   currentLocation: RemoteAttendanceMetadata | null = null;
-  clockAction: 'IN' | 'OUT' | null = null;
   checkInTime: string = '';
 
   employeeId: number = 1;
@@ -48,7 +47,6 @@ export class RemoteCheckinComponent implements OnInit, OnDestroy {
       this.currentMode = 'confirmation';
     } catch (err) {
       this.errorMessage = 'Failed to capture location. Please try again.';
-      console.error(err);
     } finally {
       this.isLoading = false;
     }
@@ -77,7 +75,6 @@ export class RemoteCheckinComponent implements OnInit, OnDestroy {
           ).subscribe(resolve);
         });
       } catch (fraudErr) {
-        console.warn('Fraud detection unavailable, proceeding without validation:', fraudErr);
         fraudResult = { hasFraudIndicators: false, flags: [], riskScore: 0 };
       }
 
@@ -103,7 +100,6 @@ export class RemoteCheckinComponent implements OnInit, OnDestroy {
       this.currentMode = 'success';
     } catch (err) {
       this.errorMessage = 'Check-in failed. Please try again.';
-      console.error(err);
     } finally {
       this.isLoading = false;
     }

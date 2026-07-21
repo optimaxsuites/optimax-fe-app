@@ -1,3 +1,5 @@
+@import '../../../styles/brand-colors';
+
 .summary-card {
   margin-left: 20px;
   display: grid;
@@ -5,17 +7,17 @@
   gap: 1rem;
 
   .summary-item {
-    background: #ffffff;
+    background: $bg-white;
     border-radius: 14px;
     padding: 1rem;
     text-align: center;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-    border: 1px solid #eef2f7;
+    border: 1px solid $border-light;
 
     span {
       font-size: 1.2rem;
       font-weight: 600;
-      color: #6b7280;
+      color: $text-secondary;
     }
 
     strong {
@@ -26,11 +28,11 @@
     }
 
     &.late strong {
-      color: #dc2626;
+      color: $danger;
     }
 
     &.overtime strong {
-      color: #16a34a;
+      color: $success;
     }
   }
 }

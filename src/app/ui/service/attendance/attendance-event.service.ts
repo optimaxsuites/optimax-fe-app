@@ -10,7 +10,6 @@ import {
   EventType,
   FraudFlagCode
 } from '../../domain/attendance/attendance-event.dto';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable({ providedIn: 'root' })
 export class AttendanceEventService {
@@ -37,10 +36,11 @@ export class AttendanceEventService {
     options?: {
       deviceId?: string;
       rawTemplateHash?: string;
-      ipAddress?: string;
+      deviceIpAddress?: string;
+      connectionIpAddress?: string;
       deviceFingerprint?: string;
-      gpsLat?: number;
-      gpsLng?: number;
+      gpsLatitude?: number;
+      gpsLongitude?: number;
       isCrossBranch?: boolean;
       homeBranchCode?: string;
     }
@@ -67,10 +67,11 @@ export class AttendanceEventService {
       eventTime: new Date().toISOString(),
       eventType,
       rawTemplateHash: options?.rawTemplateHash,
-      ipAddress: options?.ipAddress,
+      deviceIpAddress: options?.deviceIpAddress,
+      connectionIpAddress: options?.connectionIpAddress,
       deviceFingerprint: options?.deviceFingerprint,
-      gpsLat: options?.gpsLat,
-      gpsLng: options?.gpsLng,
+      gpsLatitude: options?.gpsLatitude,
+      gpsLongitude: options?.gpsLongitude,
       fraudFlags: [],
       isCrossBranch: options?.isCrossBranch || false,
       homeBranchCode: options?.homeBranchCode,
@@ -96,7 +97,6 @@ export class AttendanceEventService {
         this.cleanupDedupCache();
       }),
       catchError((err) => {
-        console.error('Error submitting attendance event:', err);
         throw err;
       })
     );
@@ -112,7 +112,7 @@ export class AttendanceEventService {
     deviceId: string,
     templateHash: string,
     eventType: EventType,
-    ipAddress?: string,
+    deviceIpAddress?: string,
     isCrossBranch?: boolean,
     homeBranchCode?: string
   ): Observable<ProcessingResult> {
@@ -125,7 +125,7 @@ export class AttendanceEventService {
       {
         deviceId,
         rawTemplateHash: templateHash,
-        ipAddress,
+        deviceIpAddress,
         isCrossBranch,
         homeBranchCode
       }
@@ -140,10 +140,10 @@ export class AttendanceEventService {
     employeeId: number,
     branchCode: string,
     eventType: EventType,
-    ipAddress: string,
+    connectionIpAddress: string,
     deviceFingerprint: string,
-    gpsLat?: number,
-    gpsLng?: number,
+    gpsLatitude?: number,
+    gpsLongitude?: number,
     isCrossBranch?: boolean,
     homeBranchCode?: string
   ): Observable<ProcessingResult> {
@@ -154,10 +154,10 @@ export class AttendanceEventService {
       branchCode,
       eventType,
       {
-        ipAddress,
+        connectionIpAddress,
         deviceFingerprint,
-        gpsLat,
-        gpsLng,
+        gpsLatitude,
+        gpsLongitude,
         isCrossBranch,
         homeBranchCode
       }
@@ -171,8 +171,7 @@ export class AttendanceEventService {
     employeeCode: string,
     employeeId: number,
     branchCode: string,
-    eventType: EventType,
-    reason?: string
+    eventType: EventType
   ): Observable<ProcessingResult> {
     return this.submitEvent(
       'MANUAL',

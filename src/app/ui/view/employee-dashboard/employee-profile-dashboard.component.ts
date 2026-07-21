@@ -115,7 +115,7 @@ export class EmployeeProfileDashboardComponent {
   showDeleteConfirm = false;
   canManageEmployees = false;
   changeStatusOptions = [
-    { label: 'Active',  value: 'ACTIVE',  color: '#10b981' },
+    { label: 'Active', value: 'ACTIVE', color: '#10b981' },
     { label: 'Joining', value: 'JOINING', color: '#facc15' },
   ];
   private readonly allowanceNameCache = new Map<string, Observable<string>>();
@@ -168,10 +168,10 @@ export class EmployeeProfileDashboardComponent {
   ngOnInit(): void {
     this.canManageEmployees = this.resolveCanManageEmployees();
     this.fetchEmployeeForCurrentUser();
-    this.dataService.getDepartment().subscribe({ next: (d: any[]) => this.departments = d, error: () => {} });
-    this.dataService.getAllLevels().subscribe({ next: (d: any[]) => this.levels = d, error: () => {} });
-    this.dataService.getGender().subscribe({ next: (d: any[]) => this.genders = d, error: () => {} });
-    this.dataService.getJobType().subscribe({ next: (d: any[]) => this.jobTypes = d, error: () => {} });
+    this.dataService.getDepartment().subscribe({ next: (d: any[]) => this.departments = d, error: () => { } });
+    this.dataService.getAllLevels().subscribe({ next: (d: any[]) => this.levels = d, error: () => { } });
+    this.dataService.getGender().subscribe({ next: (d: any[]) => this.genders = d, error: () => { } });
+    this.dataService.getJobType().subscribe({ next: (d: any[]) => this.jobTypes = d, error: () => { } });
   }
 
   private resolveCanManageEmployees(): boolean {
@@ -1091,35 +1091,35 @@ export class EmployeeProfileDashboardComponent {
 
   loadEmployeeRelatives(): void {
     if (!this.employeeInView?.id) return;
-          // this.nextOfKinList = this.employeeInView.nextOfKin || [];
+    // this.nextOfKinList = this.employeeInView.nextOfKin || [];
 
 
     this.employeeService.getNOKByEmployeeId(this.employeeInView.id).subscribe({
-        next: (res: any) => {
-          this.nextOfKinList = res;
-          // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
-        },
-        error: () => {
-          this.nextOfKinList = [];
-        },
-      })
+      next: (res: any) => {
+        this.nextOfKinList = res;
+        // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
+      },
+      error: () => {
+        this.nextOfKinList = [];
+      },
+    })
 
     this.employeeService.getGuarantor(this.employeeInView.id).subscribe({
-        next: (res: any) => {
-          this.guarantorList = res;
-          // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
-        },
-        error: () => {
-          this.guarantorList = [];
-        },
-      })
+      next: (res: any) => {
+        this.guarantorList = res;
+        // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
+      },
+      error: () => {
+        this.guarantorList = [];
+      },
+    })
   }
 
   // NOK Change Request Methods
   openNokChangeRequest(changeType: 'add' | 'edit' | 'delete', record?: NextOfKin): void {
     this.nokChangeType = changeType;
     this.selectedNokRecord = record || null;
-    
+
     if (changeType === 'add') {
       this.nokChangeHeader = 'Add Next of Kin';
     } else if (changeType === 'edit') {
@@ -1127,7 +1127,7 @@ export class EmployeeProfileDashboardComponent {
     } else if (changeType === 'delete') {
       this.nokChangeHeader = `Delete: ${record?.fullName || 'Next of Kin'}`;
     }
-    
+
     this.isNokChangeRequestOpen = true;
   }
 
@@ -1153,7 +1153,7 @@ export class EmployeeProfileDashboardComponent {
   openGuarantorChangeRequest(changeType: 'add' | 'edit' | 'delete', record?: Guarantor): void {
     this.guarantorChangeType = changeType;
     this.selectedGuarantorRecord = record || null;
-    
+
     if (changeType === 'add') {
       this.guarantorChangeHeader = 'Add Guarantor';
     } else if (changeType === 'edit') {
@@ -1161,7 +1161,7 @@ export class EmployeeProfileDashboardComponent {
     } else if (changeType === 'delete') {
       this.guarantorChangeHeader = `Delete: ${record?.fullName || 'Guarantor'}`;
     }
-    
+
     this.isGuarantorChangeRequestOpen = true;
   }
 
@@ -1481,7 +1481,7 @@ export class EmployeeProfileDashboardComponent {
     if (employee?.email) sendTo.push(employee.email);
     if (employee?.workEmail && employee.workEmail !== employee.email) sendTo.push(employee.workEmail);
     sendTo.forEach(email => {
-      this.employeeService.sendNotificationEmail(email, subject, htmlBody).subscribe({ error: () => {} });
+      this.employeeService.sendNotificationEmail(email, subject, htmlBody).subscribe({ error: () => { } });
     });
 
     this.employeeService.sendWelcomeEmail({
@@ -1493,7 +1493,7 @@ export class EmployeeProfileDashboardComponent {
       companyName,
       event: 'JOINING_TO_ACTIVE',
       timestamp: new Date().toISOString(),
-    }).subscribe({ error: () => {} });
+    }).subscribe({ error: () => { } });
   }
 
   private buildWelcomeActiveEmailHtml(d: { name: string; companyName: string; logoUrl: string; hrEmail: string; jobTitle: string; department: string }): string {

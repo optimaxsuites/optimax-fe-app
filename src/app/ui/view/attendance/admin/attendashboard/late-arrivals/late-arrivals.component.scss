@@ -1,6 +1,8 @@
+@import '../../../styles/brand-colors';
+
 :host {
   display: block;
-  background: white;
+  background: $bg-white;
   padding: 1rem;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -21,7 +23,7 @@
   padding: 0.8rem 0;
   font-size: 1.20rem;
   font-weight: 500;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid $border-light;
 
   &:last-child {
     border-bottom: none;
@@ -29,7 +31,7 @@
 }
 
 .late-item.late {
-  color: #dc2626;
+  color: $danger;
   font-weight: 600;
 }
 

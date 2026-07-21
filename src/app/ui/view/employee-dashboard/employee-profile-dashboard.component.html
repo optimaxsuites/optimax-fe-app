@@ -1,3 +1,5 @@
+<p-toast position="top-right" key="global"></p-toast>
+
 <div class="ep-shell">
 
   <!-- Loading state -->
@@ -35,7 +37,7 @@
             </span>
             <span class="ep-chip ep-chip--level">
               <i class="fa-solid fa-layer-group fa-xs"></i>
-              {{ employeeInView?.level?.name || employeeInView?.level || 'No level' }}
+              {{ employeeInView?.level?.position || employeeInView?.level?.name || employeeInView?.level || 'No level' }}
             </span>
             <span class="ep-chip" [ngClass]="{
               'ep-chip--active': employeeInView?.employeeStatus === 'ACTIVE',
@@ -164,7 +166,15 @@
       <div class="ep-summary-card">
         <i class="fa-solid fa-wallet ep-summary-icon ep-summary-icon--blue"></i>
         <span class="ep-summary-label">Net salary</span>
-        <strong class="ep-summary-value">{{ (employeeInView?.salaryDetails?.netSalaryComputed ?? employeeInView?.salaryDetails?.netSalary) | currency:'NGN' }}</strong>
+        <div class="ep-salary-row">
+          <strong class="ep-summary-value">
+            <span *ngIf="salaryVisible">{{ (employeeInView?.salaryDetails?.netSalaryComputed ?? employeeInView?.salaryDetails?.netSalary) | currency:'NGN' }}</span>
+            <span *ngIf="!salaryVisible" class="ep-salary-mask">••••••</span>
+          </strong>
+          <button type="button" class="ep-salary-toggle" (click)="salaryVisible = !salaryVisible" [title]="salaryVisible ? 'Hide salary' : 'Show salary'">
+            <i class="fa-solid" [ngClass]="salaryVisible ? 'fa-eye-slash' : 'fa-eye'"></i>
+          </button>
+        </div>
         <span class="ep-summary-meta">Monthly take-home</span>
       </div>
       <div class="ep-summary-card">
@@ -251,7 +261,7 @@
 
           <div class="ep-field-row">
             <label class="ep-field-label">Level / Grade</label>
-            <span *ngIf="!isEditMode" class="ep-field-value">{{ employeeInView?.level?.name || employeeInView?.level || '—' }}</span>
+            <span *ngIf="!isEditMode" class="ep-field-value">{{ employeeInView?.level?.position || employeeInView?.level?.name || employeeInView?.level || '—' }}</span>
             <ng-select *ngIf="isEditMode" [items]="levels" bindLabel="name" bindValue="id" formControlName="levelId" placeholder="Select level" class="ep-select"></ng-select>
           </div>
 
@@ -355,11 +365,27 @@
         <div class="ep-comp-grid">
           <div class="ep-metric-card">
             <span class="ep-metric-label">Base Salary</span>
-            <span class="ep-metric-value">{{ employeeInView?.salaryDetails?.baseSalary | currency:'NGN' }}</span>
+            <div class="ep-salary-row">
+              <span class="ep-metric-value">
+                <span *ngIf="salaryVisible">{{ employeeInView?.salaryDetails?.baseSalary | currency:'NGN' }}</span>
+                <span *ngIf="!salaryVisible" class="ep-salary-mask">••••••</span>
+              </span>
+              <button type="button" class="ep-salary-toggle" (click)="salaryVisible = !salaryVisible" [title]="salaryVisible ? 'Hide salary' : 'Show salary'">
+                <i class="fa-solid" [ngClass]="salaryVisible ? 'fa-eye-slash' : 'fa-eye'"></i>
+              </button>
+            </div>
           </div>
           <div class="ep-metric-card ep-metric-card--accent">
             <span class="ep-metric-label">Net Salary</span>
-            <span class="ep-metric-value">{{ (employeeInView?.salaryDetails?.netSalaryComputed ?? employeeInView?.salaryDetails?.netSalary) | currency:'NGN' }}</span>
+            <div class="ep-salary-row">
+              <span class="ep-metric-value">
+                <span *ngIf="salaryVisible">{{ (employeeInView?.salaryDetails?.netSalaryComputed ?? employeeInView?.salaryDetails?.netSalary) | currency:'NGN' }}</span>
+                <span *ngIf="!salaryVisible" class="ep-salary-mask">••••••</span>
+              </span>
+              <button type="button" class="ep-salary-toggle" (click)="salaryVisible = !salaryVisible" [title]="salaryVisible ? 'Hide salary' : 'Show salary'">
+                <i class="fa-solid" [ngClass]="salaryVisible ? 'fa-eye-slash' : 'fa-eye'"></i>
+              </button>
+            </div>
           </div>
           <div class="ep-list-block">
             <p class="ep-list-title">Allowances</p>
@@ -538,7 +564,7 @@
               </div>
               <div class="sid-card__field">
                 <span class="sid-card__field-label">Level / Grade</span>
-                <span class="sid-card__field-value">{{ employeeInView?.level?.name || employeeInView?.level || '—' }}</span>
+                <span class="sid-card__field-value">{{ employeeInView?.level?.position || employeeInView?.level?.name || employeeInView?.level || '—' }}</span>
               </div>
               <div class="sid-card__field">
                 <span class="sid-card__field-label">Work Email</span>
