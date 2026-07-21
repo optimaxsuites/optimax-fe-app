@@ -812,14 +812,14 @@ export class QuotationManagementService {
    * always get back the same, stable value instead of inventing a new one
    * per page load.
    */
-  ensureLpoAssigned(quotationId: string): Observable<{ lpoNumber: string; lpoIssuedAt: Date }> {
+  ensureLpoAssigned(quotationId: string): Observable<{ lpoId: string; lpoNumber: string; lpoIssuedAt: Date }> {
     if (isLiveQuotationId(quotationId)) {
       const realId = fromLiveId(quotationId);
       const result = this.vendorService.generateLpoForQuotation(realId);
       if (!result.ok || !result.lpo) {
         return throwError(() => new Error(result.reason ?? 'Unable to generate an LPO for this quotation.'));
       }
-      return of({ lpoNumber: result.lpo.lpoNumber, lpoIssuedAt: result.lpo.issuedDate }).pipe(delay(50));
+      return of({ lpoId: result.lpo.id, lpoNumber: result.lpo.lpoNumber, lpoIssuedAt: result.lpo.issuedDate }).pipe(delay(50));
     }
 
     const found = this.quotations.find(q => q.id === quotationId);
@@ -831,7 +831,9 @@ export class QuotationManagementService {
       found.lpoIssuedAt = new Date();
       this.persist();
     }
-    return of({ lpoNumber: found.lpoNumber, lpoIssuedAt: found.lpoIssuedAt! }).pipe(delay(50));
+    // Local/demo quotations never spawn a separate Lpo entity, so there's no
+    // real Lpo.id to hand back — fall back to the quotation's own id.
+    return of({ lpoId: found.id, lpoNumber: found.lpoNumber, lpoIssuedAt: found.lpoIssuedAt! }).pipe(delay(50));
   }
 
   /** Full audit trail for a quotation, oldest first — for a future timeline/history UI. */
