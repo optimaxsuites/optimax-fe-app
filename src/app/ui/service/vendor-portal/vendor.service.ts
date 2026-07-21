@@ -221,15 +221,12 @@ export class VendorService {
    *  data inline rather than subscribing — always current, since they share
    *  this same singleton instance. */
   getRfqsSnapshot(): Rfq[] {
-    this.loadRfqs();
     return this.rfqs$$.getValue();
   }
   getQuotationsSnapshot(): Quotation[] {
-    this.loadQuotations();
     return this.quotations$$.getValue();
   }
   getLposSnapshot(): Lpo[] {
-    this.loadLpos();
     return this.lpos$$.getValue();
   }
 
@@ -696,16 +693,20 @@ export class VendorService {
         }
       }
 
-      // Sync to procurement request and transition status to PAYMENT_PENDING
+      // Sync to procurement request and transition status to PAYMENT_PENDING.
+      // Resolve the owning ProcurementRequest via the real relationship —
+      // Invoice.lpoId -> Lpo.quotationId -> Quotation.rfqId -> Request.id —
+      // rather than guessing from substrings of the LPO's generated id/number
+      // (lpo-<timestamp> / LPO-<year>-<seq>), which never actually contain
+      // the request id and so never matched anything real.
+      const owningQuotation = lpo
+        ? this.quotations$$.getValue().find((q) => q.id === lpo.quotationId)
+        : undefined;
       const stored = localStorage.getItem(PROCUREMENT_STORAGE_KEYS.REQUESTS);
-      if (stored) {
+      if (stored && owningQuotation) {
         try {
           const requests = JSON.parse(stored);
-          const matchingRequest = requests.find((r: any) =>
-            invoice.lpoId!.includes(r.id) ||
-            `lpo-${r.id}` === invoice.lpoId ||
-            (invoice.lpoNumber && invoice.lpoNumber.includes(r.id.replace('PR-', '')))
-          );
+          const matchingRequest = requests.find((r: any) => r.id === owningQuotation.rfqId);
           if (matchingRequest) {
             matchingRequest.status = 'PAYMENT_PENDING';
             localStorage.setItem(PROCUREMENT_STORAGE_KEYS.REQUESTS, JSON.stringify(requests));

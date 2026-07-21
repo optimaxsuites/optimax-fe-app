@@ -16,6 +16,7 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
   quotationId: string | null = null;
   quotation: VendorQuotation | null = null;
   lpoNumber: string = '';
+  lpoId: string | undefined;
   orderDate: Date = new Date();
   isLoading = false;
   isProcessing = false;
@@ -66,7 +67,8 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
       return;
     }
     this.quotationService.ensureLpoAssigned(quotation.id).pipe(takeUntil(this.destroy$)).subscribe({
-      next: ({ lpoNumber, lpoIssuedAt }) => {
+      next: ({ lpoId, lpoNumber, lpoIssuedAt }) => {
+        this.lpoId = lpoId;
         this.lpoNumber = lpoNumber;
         this.orderDate = lpoIssuedAt;
         if (this.quotation) {
@@ -126,7 +128,9 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
         console.log(`Quotation status updated successfully to ${status}`);
         if (status === 'LPO_SENT') {
           this.procurementService.updateRequest(this.quotation!.rfqId, {
-            status: 'LPO_ISSUED'
+            status: 'LPO_ISSUED',
+            selectedLpoId: this.lpoId,
+            selectedLpoNumber: this.lpoNumber
           }).subscribe({
             next: () => console.log(`Procurement request ${this.quotation!.rfqId} status updated to LPO_ISSUED`),
             error: (err) => console.error('Failed to update procurement request status:', err)
@@ -138,7 +142,9 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
         console.log(`Mock fallback: status updated locally to ${status}`);
         if (status === 'LPO_SENT') {
           this.procurementService.updateRequest(this.quotation!.rfqId, {
-            status: 'LPO_ISSUED'
+            status: 'LPO_ISSUED',
+            selectedLpoId: this.lpoId,
+            selectedLpoNumber: this.lpoNumber
           }).subscribe({
             next: () => console.log(`Procurement request ${this.quotation!.rfqId} status updated to LPO_ISSUED`),
             error: (err) => console.error('Failed to update procurement request status:', err)

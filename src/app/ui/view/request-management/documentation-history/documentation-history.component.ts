@@ -229,10 +229,12 @@ export class DocumentationHistoryComponent implements OnInit {
 
     // 2. Try to load the real generated LPO
     const lpos = loadFromStorage<any[]>(STORAGE_KEYS.LPOS, () => []);
-    const realLpo = lpos.find(l => 
-      (realQuote && (l.quotationId === realQuote.id || l.quotationId === realQuote.id.replace('live:', ''))) ||
-      l.rfqNumber === request.id
-    );
+    const realLpo = (request.selectedLpoId && lpos.find(l => l.id === request.selectedLpoId))
+      || (request.selectedLpoNumber && lpos.find(l => l.lpoNumber === request.selectedLpoNumber))
+      || lpos.find(l => 
+        (realQuote && (l.quotationId === realQuote.id || l.quotationId === realQuote.id.replace('live:', ''))) ||
+        l.rfqNumber === request.id
+      );
 
     if (realLpo) {
       const lpoItems = (realLpo.items || []).map((item: any) => {
