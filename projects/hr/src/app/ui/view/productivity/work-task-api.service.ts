@@ -463,6 +463,16 @@ export class WorkTaskApiService {
     );
   }
 
+  getChannelMembers(channelId: number): Observable<any[]> {
+    const token = sessionStorage.getItem('Token') || sessionStorage.getItem('token') || sessionStorage.getItem('accessToken') || '';
+    const tenantId = sessionStorage.getItem('tenantId') || 'default';
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'X-Tenant-ID': tenantId, 'Content-Type': 'application/json' });
+    return this.http.get<any[]>(
+      `https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/channel-member/channel/${channelId}`,
+      { headers })
+      .pipe(catchError(this.handleError));
+  }
+
   createCollabFeedPost(channelId: number, body: string): Observable<any> {
     const token = sessionStorage.getItem('Token') || sessionStorage.getItem('token') || sessionStorage.getItem('accessToken') || '';
     const tenantId = sessionStorage.getItem('tenantId') || 'default';

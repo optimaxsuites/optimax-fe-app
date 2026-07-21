@@ -1,37 +1,19 @@
 <header class="app-header">
   <div class="app-header__left">
+    <button
+      type="button"
+      class="header-icon mobile-hamburger"
+      (click)="onToggleSidebar()"
+      [class.mobile-hamburger--open]="!sidebarHidden"
+      aria-label="Toggle navigation"
+    >
+      <i class="fas" [class.fa-bars]="sidebarHidden" [class.fa-times]="!sidebarHidden"></i>
+    </button>
     <div class="brand-block">
       <p class="brand-kicker">Enterprise workspace</p>
       <h1>{{ companyName }}</h1>
     </div>
 
-    <!-- AI insight chip -->
-    <button
-      type="button"
-      class="ai-chip"
-      [class.ai-chip--loading]="aiLoading"
-      (click)="aiPanel.toggle($event)"
-    >
-      <span class="ai-chip__icon"><i class="pi pi-sparkles"></i></span>
-      <span *ngIf="aiLoading" class="ai-chip__shimmer"></span>
-      <span *ngIf="!aiLoading && aiInsight" class="ai-chip__text">{{ aiInsight }}</span>
-      <span *ngIf="!aiLoading && !aiInsight" class="ai-chip__text ai-chip__text--muted">AI insights</span>
-    </button>
-
-    <p-overlayPanel #aiPanel styleClass="ai-insight-overlay">
-      <div class="aip">
-        <div class="aip__header">
-          <i class="pi pi-sparkles aip__icon"></i>
-          <span class="aip__title">AI Insight</span>
-          <span class="aip__badge">{{ companyName }}</span>
-        </div>
-        <p class="aip__body" *ngIf="aiInsight">{{ aiInsight }}</p>
-        <p class="aip__body aip__body--muted" *ngIf="!aiInsight && !aiLoading">No insight available right now.</p>
-        <div class="aip__footer">
-          <span class="aip__note"><i class="pi pi-refresh"></i> Refreshes every session</span>
-        </div>
-      </div>
-    </p-overlayPanel>
   </div>
 
   <div class="app-header__right">

@@ -320,6 +320,7 @@
         type="button"
         *ngFor="let employee of mentionResults"
         class="chat-mention-item"
+        (mousedown)="$event.preventDefault()"
         (click)="mentionSelected.emit(employee)"
       >
         {{ mentionLabel(employee) }}

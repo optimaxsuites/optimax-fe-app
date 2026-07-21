@@ -873,6 +873,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   channelsLoading = false;
   channelUnreadCounts: Record<number, number> = {};
   dmUserList: Array<{ id: number; fullName: string; email: string }> = [];
+  private employeeEmailMap: Record<number, string> = {};
 
   // ── Kanban overdue filter ──────────────────────────────────────────────────
   hideOverdue = true;
@@ -971,6 +972,12 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
             };
           })
           .filter(e => !!e.fullName);
+        this.employeeEmailMap = {};
+        (emps || []).forEach((e: any) => {
+          const id = Number(e?.id || 0);
+          const email = String(e?.workEmail || e?.email || '').trim();
+          if (id && email) this.employeeEmailMap[id] = email;
+        });
         this.employeesLoading = false;
         // If employees loaded, patch supervisor review submissions with real names
         this.patchSubmissionsFromUsers(this.allEmployees);
@@ -1288,6 +1295,125 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return uid ? `${HR_BOARD_KEY}_u${uid}` : HR_BOARD_KEY;
   }
 
+  private taskEmailRow(label: string, value: string, shade: boolean): string {
+    const bg = shade ? ' style="background:#f9fafb;"' : '';
+    return `<tr${bg}><td style="padding:8px 12px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">${label}</td><td style="padding:8px 12px;border:1px solid #e5e7eb;">${value}</td></tr>`;
+  }
+
+  private sendTaskCreatedEmails(task: WorkTaskFull): void {
+    const assigneeId = task.assigneeEmployee?.id;
+    const supervisorId = task.supervisorEmployee?.id;
+    const assigneeName = task.assigneeEmployee
+      ? `${task.assigneeEmployee.firstName} ${task.assigneeEmployee.lastName}`.trim()
+      : 'Team Member';
+    const supervisorName = task.supervisorEmployee
+      ? `${task.supervisorEmployee.firstName} ${task.supervisorEmployee.lastName}`.trim()
+      : '';
+    const rows = [
+      this.taskEmailRow('Task', task.title, false),
+      this.taskEmailRow('Priority', task.priority, true),
+      this.taskEmailRow('Status', task.status, false),
+      this.taskEmailRow('Due Date', task.dueDate || 'Not set', true),
+      this.taskEmailRow('Description', task.description || '—', false),
+    ].join('');
+    const wrap = (headerColor: string, heading: string, greeting: string, body: string) =>
+      `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:${headerColor};padding:20px 24px;border-radius:8px 8px 0 0;">
+          <h2 style="color:#fff;margin:0;font-size:20px;">${heading}</h2>
+        </div>
+        <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+          <p style="color:#374151;">Hello <strong>${greeting}</strong>,</p>
+          <p style="color:#374151;">${body}</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;">${rows}</table>
+          <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view and manage this task.</p>
+        </div>
+      </div>`;
+    if (assigneeId && this.employeeEmailMap[assigneeId]) {
+      this.employeeService.sendNotificationEmail(
+        this.employeeEmailMap[assigneeId],
+        `New Task Assigned: ${task.title}`,
+        wrap('#1a73e8', 'New Task Assigned to You', assigneeName, 'A new task has been assigned to you on OptimaX Work Productivity:')
+      ).subscribe({ error: () => {} });
+    }
+    if (supervisorId && this.employeeEmailMap[supervisorId] && supervisorId !== assigneeId) {
+      this.employeeService.sendNotificationEmail(
+        this.employeeEmailMap[supervisorId],
+        `Task Created: ${task.title}`,
+        wrap('#0f766e', 'Task Created Under Your Supervision', supervisorName,
+          `A task has been created and assigned to <strong>${assigneeName}</strong> under your supervision:`)
+      ).subscribe({ error: () => {} });
+    }
+  }
+
+  private sendTaskUpdatedEmails(task: WorkTaskFull): void {
+    const assigneeId = task.assigneeEmployee?.id;
+    const supervisorId = task.supervisorEmployee?.id;
+    const assigneeName = task.assigneeEmployee
+      ? `${task.assigneeEmployee.firstName} ${task.assigneeEmployee.lastName}`.trim()
+      : 'Team Member';
+    const supervisorName = task.supervisorEmployee
+      ? `${task.supervisorEmployee.firstName} ${task.supervisorEmployee.lastName}`.trim()
+      : '';
+    const rows = [
+      this.taskEmailRow('Task', task.title, false),
+      this.taskEmailRow('Status', task.status, true),
+      this.taskEmailRow('Priority', task.priority, false),
+      this.taskEmailRow('Progress', `${task.progress}%`, true),
+      this.taskEmailRow('Due Date', task.dueDate || 'Not set', false),
+    ].join('');
+    const html = (name: string) =>
+      `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#7c3aed;padding:20px 24px;border-radius:8px 8px 0 0;">
+          <h2 style="color:#fff;margin:0;font-size:20px;">Task Updated</h2>
+        </div>
+        <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+          <p style="color:#374151;">Hello <strong>${name}</strong>,</p>
+          <p style="color:#374151;">A task you are involved in has been updated on OptimaX:</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;">${rows}</table>
+          <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view the latest changes.</p>
+        </div>
+      </div>`;
+    if (assigneeId && this.employeeEmailMap[assigneeId]) {
+      this.employeeService.sendNotificationEmail(
+        this.employeeEmailMap[assigneeId], `Task Updated: ${task.title}`, html(assigneeName)
+      ).subscribe({ error: () => {} });
+    }
+    if (supervisorId && this.employeeEmailMap[supervisorId] && supervisorId !== assigneeId) {
+      this.employeeService.sendNotificationEmail(
+        this.employeeEmailMap[supervisorId], `Task Updated: ${task.title}`, html(supervisorName)
+      ).subscribe({ error: () => {} });
+    }
+  }
+
+  private sendChannelUpdateEmails(channelId: number, channelName: string, noteText: string, taskTitle: string): void {
+    this.workTaskApi.getChannelMembers(channelId).pipe(
+      catchError(() => of([]))
+    ).subscribe((members: any[]) => {
+      members.forEach((member: any) => {
+        const userId = Number(member.userId || 0);
+        if (!userId) return;
+        const user = this.dmUserList.find(u => u.id === userId);
+        if (!user?.email) return;
+        const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+          <div style="background:#0369a1;padding:20px 24px;border-radius:8px 8px 0 0;">
+            <h2 style="color:#fff;margin:0;font-size:20px;">Update Posted to #${channelName}</h2>
+          </div>
+          <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+            <p style="color:#374151;">Hello <strong>${user.fullName}</strong>,</p>
+            <p style="color:#374151;">A new update has been posted to <strong>#${channelName}</strong>${taskTitle ? ` regarding &ldquo;<strong>${taskTitle}</strong>&rdquo;` : ''}:</p>
+            <div style="background:#f0f9ff;border-left:4px solid #0369a1;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+              <p style="margin:0;color:#374151;">${noteText}</p>
+            </div>
+            <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view and respond to this update.</p>
+          </div>
+        </div>`;
+        this.employeeService.sendNotificationEmail(
+          user.email, `Channel Update: #${channelName}`, html
+        ).subscribe({ error: () => {} });
+      });
+    });
+  }
+
   private syncTaskToApi(task: BoardTask): void {
     if (!this.apiEnabled) return;
     const userId = this.currentUserId;
@@ -1309,14 +1435,14 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     if (task.apiId) {
       this.subscription.add(
         this.workTaskApi.updateTask(task.apiId, dto).subscribe({
-          next: (updated) => { task.apiId = updated.id; this.save(); },
+          next: (updated) => { task.apiId = updated.id; this.save(); this.sendTaskUpdatedEmails(updated); },
           error: () => this.save(),
         })
       );
     } else {
       this.subscription.add(
         this.workTaskApi.createTask(dto).subscribe({
-          next: (created) => { task.apiId = created.id; this.save(); },
+          next: (created) => { task.apiId = created.id; this.save(); this.sendTaskCreatedEmails(created); },
           error: () => this.save(),
         })
       );
@@ -2160,20 +2286,25 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     if (this.shareTarget === 'channel') {
       if (!this.shareChannelId) { this.showToast('Please select a channel.', 'warn'); return; }
       const ch = this.availableChannels.find(c => c.id === this.shareChannelId);
+      const capturedChannelId = this.shareChannelId;
+      const capturedChannelName = ch?.name || 'channel';
+      const capturedNote = this.shareNote;
+      const capturedTaskTitle = task?.title || '';
       this.showShareModal = false;
       this.subscription.add(
-        this.workTaskApi.sendChannelMessage(this.shareChannelId, this.shareNote).subscribe({
+        this.workTaskApi.sendChannelMessage(capturedChannelId, capturedNote).subscribe({
           next: () => {
-            this.showToast(`Task update posted to #${ch?.name || 'channel'}`, 'success');
+            this.showToast(`Task update posted to #${capturedChannelName}`, 'success');
             if (task) {
-              this.notifService.add(`Shared to #${ch?.name || 'channel'}`, `"${task.title}" was shared`, ch?.name || 'channel', task.id);
+              this.notifService.add(`Shared to #${capturedChannelName}`, `"${task.title}" was shared`, capturedChannelName, task.id);
               if (typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('optimax-notification', {
-                  detail: { title: `Shared to #${ch?.name || 'channel'}`, body: `"${task.title}" was posted`, category: 'module' }
+                  detail: { title: `Shared to #${capturedChannelName}`, body: `"${task.title}" was posted`, category: 'module' }
                 }));
               }
             }
-            this.incrementChannelUnread(this.shareChannelId!);
+            this.incrementChannelUnread(capturedChannelId);
+            this.sendChannelUpdateEmails(capturedChannelId, capturedChannelName, capturedNote, capturedTaskTitle);
           },
           error: () => this.showToast('Failed to post to channel. Check connection.', 'error'),
         })

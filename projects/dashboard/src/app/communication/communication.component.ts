@@ -1033,6 +1033,25 @@ export class CommunicationComponent
     );
   }
 
+  get threadSearchChannelMatches(): Channel[] {
+    const q = this.threadInboxQuery.trim().toLowerCase();
+    if (!q) return [];
+    return this.channels.filter((ch) =>
+      ch.name?.toLowerCase().includes(q) || ch.description?.toLowerCase().includes(q)
+    );
+  }
+
+  get threadSearchDmMatches(): DmContact[] {
+    const q = this.threadInboxQuery.trim().toLowerCase();
+    if (!q) return [];
+    return this.dmContacts.filter((dm) =>
+      dm.fullName?.toLowerCase().includes(q) ||
+      dm.shortName?.toLowerCase().includes(q) ||
+      dm.jobTitle?.toLowerCase().includes(q) ||
+      dm.department?.toLowerCase().includes(q)
+    );
+  }
+
   get canManageChannels(): boolean {
     const rawRole = sessionStorage.getItem('role') || '';
     return rawRole.toUpperCase().includes('ROLE_ADMIN');
@@ -2103,11 +2122,18 @@ export class CommunicationComponent
     this.cdr.detectChanges();
   }
 
+  openDmUserProfile(contact: DmContact): void {
+    const userId = contact.userId || contact.employeeId;
+    if (!userId) return;
+    this.openStaffProfile(userId);
+  }
+
   applyChatMention(employee: ComposerMentionOption): void {
     this.draft = this.replaceMentionToken(this.draft, employee as EmployeeProfile);
     this.chatMentionResults = [];
     this.chatShowMentionMenu = false;
     this.cdr.detectChanges();
+    setTimeout(() => this.messageComposer?.focusComposer(), 0);
   }
 
   applyThreadMention(employee: ComposerMentionOption): void {
@@ -2118,6 +2144,7 @@ export class CommunicationComponent
     this.threadMentionResults = [];
     this.threadShowMentionMenu = false;
     this.cdr.detectChanges();
+    setTimeout(() => this.messageComposer?.focusComposer(), 0);
   }
 
   private chatMentionPool(): EmployeeProfile[] {
@@ -2379,7 +2406,7 @@ export class CommunicationComponent
       if (!raw) return;
       const ids = JSON.parse(raw);
       if (Array.isArray(ids)) {
-        this.seenFeedNotificationIds = new Set(ids.map((value) => Number(value)).filter(Boolean));
+        this.seenFeedNotificationIds = new Set(ids.map((value) => Number(value)).filter(id => !isNaN(id)));
       }
     } catch (_) {}
   }

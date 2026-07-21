@@ -307,16 +307,14 @@ generatePayrolls(){
     this.isLoadingPayroll = true;
     this.payrollService.getPayrollGenerationResponses().subscribe({
         next: response => {
-            this.payrollRecords = response
-            console.log("records", response)
-            this.payrollInView = this.payrollRecords.length > 0 ? this.payrollRecords[this.payrollRecords.length - 1] : {}
-            console.log(this.payrollInView)
+            const records: any[] = Array.isArray(response) ? response : (response?.content ?? []);
+            this.payrollRecords = records;
+            const sorted = [...records].sort((a, b) => (+b.year - +a.year) || (+b.month - +a.month));
+            this.payrollInView = sorted.length > 0 ? sorted[0] : {};
             const currentStage = this.payrollInView?.payrollApprovalInstance?.currentStage;
-            console.log(currentStage)
 
             const assignments = this.getStageAssignments(currentStage);
 
-            const currentUserId = this.currentUserId; 
             this.canSeeApprovalButton = assignments.some((a: any) => this.canCurrentUserApproveAssignment(a));
             this.isDocumentRequired = currentStage?.isDocumentRequired ?? false;
             this.currentStageRequiresComment = currentStage?.requiresComment ?? false;
@@ -324,20 +322,14 @@ generatePayrolls(){
             this.canSeeApproveButton = this.payrollInView?.payrollApprovalInstance?.approval ? true : false;
             const hasEditAction = this.payrollActions.some(action => action.id === 'edit');
             if (this.canEditRecord && !hasEditAction) {
-              this.payrollActions.push({
-                id: 'edit',
-                label: 'Edit',
-                icon: 'pi pi-pencil'
-              });
+              this.payrollActions.push({ id: 'edit', label: 'Edit', icon: 'pi pi-pencil' });
             }
-            this.filteredEmployeePayroll = this.payrollRecords.length > 0 ? this.payrollRecords[this.payrollRecords.length - 1].employees : []
-            console.log("filtered", this.filteredEmployeePayroll)
-            this.years =  Array.from(new Set(this.payrollRecords.map((emp: { year: number }) => emp.year))).sort((a, b) => a - b);
-            const monthIndices = Array.from(new Set(this.payrollRecords.map((emp: { month: number }) => emp.month - 1))); 
-            this.months = monthIndices.map(index => this.monthNames[index]).sort((a, b) => this.monthNames.indexOf(a) - this.monthNames.indexOf(b))
-            this.selectedMonth = this.months[this.months.length - 1]
-            this.selectedYear = this.years[this.years.length - 1]
-            
+            this.years = Array.from(new Set(records.map((r: any) => r.year))).sort((a, b) => a - b);
+            const monthIndices = Array.from(new Set(records.map((r: any) => r.month - 1)));
+            this.months = monthIndices.map(index => this.monthNames[index]).sort((a, b) => this.monthNames.indexOf(a) - this.monthNames.indexOf(b));
+            this.selectedMonth = this.months[this.months.length - 1];
+            this.selectedYear = this.years[this.years.length - 1];
+            this.filteredEmployeePayroll = this.payrollInView?.employees ?? [];
         },
         error: err => {
           console.log(err);

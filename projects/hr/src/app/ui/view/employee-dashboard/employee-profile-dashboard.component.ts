@@ -17,6 +17,7 @@ import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { PayrollService } from '../../service/payroll.service';
 
 export interface NextOfKin {
   id?: number;
@@ -119,6 +120,16 @@ export class EmployeeProfileDashboardComponent {
     { label: 'Active', value: 'ACTIVE', color: '#10b981' },
     { label: 'Joining', value: 'JOINING', color: '#facc15' },
   ];
+  recentPayslips: any[] = [];
+  payslipsLoading = false;
+  viewPayslip = false;
+  activePayslip: any = {};
+
+  readonly payslipMonthNames = [
+    'Jan','Feb','Mar','Apr','May','Jun',
+    'Jul','Aug','Sep','Oct','Nov','Dec'
+  ];
+
   private readonly allowanceNameCache = new Map<string, Observable<string>>();
   private readonly bonusNameCache = new Map<string, Observable<string>>();
   private readonly deductionNameCache = new Map<string, Observable<string>>();
@@ -138,6 +149,7 @@ export class EmployeeProfileDashboardComponent {
     private router: Router,
     private profileChangeRequestService: ProfileChangeRequestService,
     private dataService: DataService,
+    private payrollService: PayrollService,
     // // private companyProfileService: CompanyProfileService,
     private authenticationService: AuthenticationService,
   ) {
@@ -590,6 +602,7 @@ export class EmployeeProfileDashboardComponent {
 
     // Load employee relatives
     this.loadEmployeeRelatives();
+    this.loadRecentPayslips(employee?.id);
 
     if (this.employeeInView?.level) {
       this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
@@ -616,6 +629,56 @@ export class EmployeeProfileDashboardComponent {
         events: this.generateLeaveEvents(this.employeeInView.leaveDetails),
       };
     }
+  }
+
+  loadRecentPayslips(empId?: number): void {
+    if (!empId) return;
+    this.payslipsLoading = true;
+    this.payrollService.getPayrollGenerationResponses(1, 500).pipe(
+      catchError(() => of([]))
+    ).subscribe({
+      next: (response: any) => {
+        const runs: any[] = Array.isArray(response) ? response : (response?.content ?? []);
+        const slips: any[] = [];
+        runs.forEach(run => {
+          const match = (run?.employees ?? []).find((e: any) =>
+            e?.employee?.id === empId || e?.employeeId === empId || e?.id === empId
+          );
+          if (match) {
+            slips.push({
+              ...match,
+              month: run.month,
+              year: run.year,
+              runStatus: (run.payrollApprovalInstance?.status || run.status || 'COMPLETED').toUpperCase()
+            });
+          }
+        });
+        slips.sort((a, b) => (+b.year - +a.year) || (+b.month - +a.month));
+        this.recentPayslips = slips.slice(0, 5);
+        this.payslipsLoading = false;
+      },
+      error: () => { this.payslipsLoading = false; }
+    });
+  }
+
+  openPayslipDetail(slip: any): void {
+    this.activePayslip = {
+      empId: this.employeeInView?.id,
+      name: `${this.employeeInView?.firstName ?? ''} ${this.employeeInView?.lastName ?? ''}`.trim(),
+      department: this.employeeInView?.department?.name || this.employeeInView?.department,
+      level: this.employeeInView?.level?.name || this.employeeInView?.level,
+      accountNumber: this.employeeInView?.accountNumber,
+      bank: this.employeeInView?.bankName,
+      ...slip
+    };
+    this.viewPayslip = true;
+  }
+
+  fmtPayslipAmount(val: number): string {
+    if (!val) return '₦0';
+    if (val >= 1_000_000) return '₦' + (val / 1_000_000).toFixed(1) + 'M';
+    if (val >= 1_000) return '₦' + (val / 1_000).toFixed(1) + 'K';
+    return '₦' + val.toLocaleString();
   }
 
   private applySessionEmployeeFallback(userId: string): void {

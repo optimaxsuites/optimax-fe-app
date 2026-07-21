@@ -528,151 +528,23 @@
   margin-bottom: 0.35rem;
 }
 
-// ─── AI Insight Chip ─────────────────────────────────────────────────────────
-
-.ai-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  height: 2.1rem;
-  padding: 0 0.85rem 0 0.65rem;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border: 1.5px solid #bae6fd;
-  color: #0369a1;
-  cursor: pointer;
-  font-size: 0.78rem;
-  font-weight: 500;
-  max-width: 22rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  overflow: hidden;
-
-  &:hover {
-    border-color: #7dd3fc;
-    box-shadow: 0 2px 8px rgba(3, 105, 161, 0.12);
-  }
-
-  &.ai-chip--loading {
-    pointer-events: none;
-  }
-}
-
-.ai-chip__icon {
-  flex-shrink: 0;
-  font-size: 0.82rem;
-  color: #0ea5e9;
-  animation: ai-pulse 2.4s ease-in-out infinite;
-}
-
-@keyframes ai-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
-}
-
-.ai-chip__text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  &.ai-chip__text--muted { color: #94a3b8; font-style: italic; }
-}
-
-.ai-chip__shimmer {
-  display: block;
-  width: 10rem;
-  height: 0.75rem;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #e0f2fe 25%, #bae6fd 50%, #e0f2fe 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
-}
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-// ─── AI Insight Overlay Panel ────────────────────────────────────────────────
-
-:host ::ng-deep .ai-insight-overlay {
-  margin-top: 0.55rem;
-
-  .p-overlaypanel-content {
-    padding: 0 !important;
-    border-radius: 1rem;
-    overflow: hidden;
-  }
-}
-
-.aip {
-  width: 22rem;
-  background: #fff;
-  border-radius: 1rem;
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06);
-}
-
-.aip__header {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.85rem 1.1rem;
-  background: linear-gradient(135deg, #0c4a6e 0%, #075985 100%);
-}
-
-.aip__icon {
-  font-size: 1rem;
-  color: #38bdf8;
-  animation: ai-pulse 2.4s ease-in-out infinite;
-}
-
-.aip__title {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #f0f9ff;
-  flex: 1;
-}
-
-.aip__badge {
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: #7dd3fc;
-  background: rgba(255,255,255,0.1);
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  letter-spacing: 0.04em;
-  max-width: 8rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.aip__body {
-  margin: 0;
-  padding: 1rem 1.1rem 0.75rem;
-  font-size: 0.88rem;
-  color: #1e293b;
-  line-height: 1.6;
-
-  &.aip__body--muted { color: #94a3b8; font-style: italic; }
-}
-
-.aip__footer {
-  padding: 0.6rem 1.1rem 0.85rem;
-  border-top: 1px solid #f1f5f9;
-}
-
-.aip__note {
-  font-size: 0.68rem;
-  color: #94a3b8;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-
-  i { font-size: 0.62rem; }
-}
 
 // ─── Responsive ──────────────────────────────────────────────────────────────
+
+.mobile-hamburger {
+  display: none;
+  font-size: 1.1rem;
+
+  &--open {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+    color: #0369a1;
+  }
+}
+
+@media (max-width: 992px) {
+  .mobile-hamburger { display: flex; }
+}
 
 @media (max-width: 900px) {
   .app-header { flex-wrap: wrap; }
@@ -689,5 +561,4 @@
 
   .np { width: min(25rem, 95vw); }
 
-  .ai-chip { display: none; }
 }

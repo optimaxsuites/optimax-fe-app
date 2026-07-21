@@ -59,6 +59,7 @@ export class ThreadPanelComponent implements OnChanges, AfterViewChecked {
   @ViewChild('threadScrollEl') threadScrollEl?: ElementRef<HTMLElement>;
 
   private shouldScrollReplies = false;
+  private _scrollRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
   private readonly mentionBoundaryAfterRegex = '(?=$|[\\s.,!?;:()\\[\\]{}"\'`])';
@@ -263,11 +264,18 @@ export class ThreadPanelComponent implements OnChanges, AfterViewChecked {
     input.value = '';
   }
 
+  private _lastScrolledThreadId: string | null = null;
+  private _lastScrolledReplyCount = 0;
+
   ngOnChanges(changes: SimpleChanges): void {
-    if (
-      changes['activeThread'] &&
-      changes['activeThread'].currentValue?.id !== changes['activeThread'].previousValue?.id
-    ) {
+    if (!changes['activeThread']) return;
+    const curr = changes['activeThread'].currentValue;
+    const prev = changes['activeThread'].previousValue;
+    const threadChanged = curr?.id !== prev?.id;
+    const replyCountGrew =
+      curr?.id === this._lastScrolledThreadId &&
+      (curr?.replies?.length ?? 0) > this._lastScrolledReplyCount;
+    if (threadChanged || replyCountGrew) {
       this.shouldScrollReplies = true;
     }
   }
@@ -275,13 +283,29 @@ export class ThreadPanelComponent implements OnChanges, AfterViewChecked {
   ngAfterViewChecked(): void {
     if (this.shouldScrollReplies) {
       this.shouldScrollReplies = false;
-      setTimeout(() => this.scrollRepliesToBottom(), 80);
+      if (this._scrollRetryTimer) {
+        clearTimeout(this._scrollRetryTimer);
+        this._scrollRetryTimer = null;
+      }
+      this.scrollRepliesToBottomWithRetry(0);
     }
   }
 
-  private scrollRepliesToBottom(): void {
+  private scrollRepliesToBottomWithRetry(attempt: number): void {
     const el = this.threadScrollEl?.nativeElement;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    const prevHeight = el.scrollHeight;
+    el.scrollTop = el.scrollHeight;
+    this._lastScrolledThreadId = (this as any).activeThread?.id ?? null;
+    this._lastScrolledReplyCount = (this as any).activeThread?.replies?.length ?? 0;
+    if (attempt < 4) {
+      this._scrollRetryTimer = setTimeout(() => {
+        const currentHeight = this.threadScrollEl?.nativeElement?.scrollHeight ?? 0;
+        if (currentHeight !== prevHeight || attempt < 2) {
+          this.scrollRepliesToBottomWithRetry(attempt + 1);
+        }
+      }, attempt === 0 ? 60 : 200);
+    }
   }
 
   onRenderedContentClick(event: Event): void {
