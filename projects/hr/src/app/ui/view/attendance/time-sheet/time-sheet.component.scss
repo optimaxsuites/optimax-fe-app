@@ -1,0 +1,583 @@
+@import '../styles/brand-colors';
+
+.timesheet-container {
+  padding: 2rem;
+  background: $bg-light;
+  min-height: 100vh;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+// Header
+.ts-header {
+  margin-bottom: 2.5rem;
+
+  h2 {
+    margin: 0 0 0.5rem;
+    font-size: 2rem;
+    font-weight: 700;
+    color: $primary-blue-green;
+  }
+
+  .ts-header-subtitle {
+    margin: 0;
+    font-size: 0.95rem;
+    color: $text-secondary;
+  }
+}
+
+// Workflow Tracker
+.workflow-tracker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  background: $bg-white;
+  padding: 1.5rem 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px $shadow-primary;
+
+  .workflow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 0 0 auto;
+    position: relative;
+
+    .step-circle {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 3px solid $border-light;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      color: $text-secondary;
+      background: $bg-white;
+      transition: all 0.3s ease;
+    }
+
+    .step-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: $text-secondary;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    &.active {
+      .step-circle {
+        border-color: $primary-blue-green;
+        color: $primary-blue-green;
+        background: rgba($primary-blue-green, 0.05);
+        box-shadow: 0 0 0 4px rgba($primary-blue-green, 0.1);
+      }
+
+      .step-label {
+        color: $primary-blue-green;
+        font-weight: 700;
+      }
+    }
+
+    &.completed {
+      .step-circle {
+        border-color: $success;
+        color: white;
+        background: $success;
+      }
+
+      .step-label {
+        color: $success;
+        font-weight: 700;
+      }
+    }
+  }
+
+  .workflow-connector {
+    flex: 1;
+    height: 3px;
+    background: $border-light;
+    transition: $transition-default;
+
+    &.active {
+      background: $success;
+    }
+  }
+}
+
+// Content
+.ts-content {
+  display: grid;
+  gap: 2rem;
+  width: 100%;
+}
+
+// Info Card
+.info-card {
+  background: $bg-white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px $shadow-primary;
+
+  .info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid $border-light;
+
+    h4 {
+      margin: 0 0 0.25rem;
+      font-size: 1.3rem;
+      color: $text-primary;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: $text-secondary;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      color: white;
+      font-weight: 600;
+      font-size: 0.9rem;
+      white-space: nowrap;
+
+      i {
+        font-size: 1rem;
+      }
+    }
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      .label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: $text-secondary;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+
+        &.variance-positive {
+          color: $success;
+        }
+
+        &.variance-negative {
+          color: $danger;
+        }
+      }
+
+      .value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: $text-dark;
+
+        &.variance-positive {
+          color: $success;
+        }
+
+        &.variance-negative {
+          color: $danger;
+        }
+      }
+    }
+  }
+}
+
+// Entries Section
+.entries-section {
+  background: $bg-white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px $shadow-primary;
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid $border-light;
+
+    h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: $text-primary;
+    }
+
+    .btn-edit {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: $primary-blue-green;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: $transition-fast;
+
+      &:hover {
+        background: darken($primary-blue-green, 10%);
+      }
+
+      i {
+        font-size: 0.9rem;
+      }
+    }
+  }
+
+  .entries-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+
+    thead {
+      background: rgba($primary-blue-green, 0.05);
+
+      th {
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        color: $text-primary;
+        font-size: 0.9rem;
+        border-bottom: 2px solid $border-primary;
+      }
+    }
+
+    tbody {
+      tr {
+        border-bottom: 1px solid $border-light;
+        transition: $transition-fast;
+
+        &:hover {
+          background: rgba($primary-blue-green, 0.02);
+        }
+
+        &.edit-mode {
+          background: rgba($status-pending, 0.1);
+        }
+
+        td {
+          padding: 0.75rem;
+          color: $text-dark;
+          font-size: 0.9rem;
+
+          .input-time {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid $border-primary;
+            border-radius: 4px;
+            font-size: 0.9rem;
+
+            &:focus {
+              outline: none;
+              border-color: $primary-blue-green;
+              box-shadow: 0 0 0 3px rgba($primary-blue-green, 0.1);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .edit-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 1px solid $border-light;
+  }
+}
+
+// Actions Section
+.actions-section {
+  background: $bg-white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px $shadow-primary;
+
+  .action-panel {
+    h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.1rem;
+      color: $text-primary;
+    }
+
+    p {
+      margin: 0 0 1rem;
+      color: $text-secondary;
+      font-size: 0.95rem;
+    }
+
+    &.locked {
+      .locked-notice {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        padding: 1.5rem;
+        background: rgba($primary-blue-green, 0.05);
+        border-radius: 6px;
+        border-left: 4px solid $primary-blue-green;
+
+        i {
+          font-size: 1.5rem;
+          color: $primary-blue-green;
+          flex-shrink: 0;
+          margin-top: 0.25rem;
+        }
+
+        div {
+          h3 {
+            margin: 0 0 0.5rem;
+            color: $primary-blue-green;
+          }
+
+          p {
+            margin: 0.25rem 0;
+
+            &.small {
+              font-size: 0.85rem;
+              color: $text-muted;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Forms
+.approval-form,
+.rejection-form {
+  background: rgba($primary-blue-green, 0.02);
+  padding: 1.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba($primary-blue-green, 0.1);
+  margin: 1rem 0;
+
+  .form-group {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: $text-primary;
+      font-size: 0.9rem;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid $border-primary;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 100px;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-blue-green;
+        box-shadow: 0 0 0 3px rgba($primary-blue-green, 0.1);
+      }
+    }
+  }
+
+  .button-group {
+    display: flex;
+    gap: 1rem;
+  }
+}
+
+.rejection-form {
+  border-color: rgba($danger, 0.2);
+  background: rgba($danger, 0.02);
+
+  h4 {
+    margin: 0 0 0.5rem;
+    color: $danger;
+    font-size: 1rem;
+  }
+}
+
+// Buttons
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: $transition-fast;
+
+  i {
+    font-size: 0.9rem;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.btn-primary {
+    background: $primary-blue-green;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: darken($primary-blue-green, 10%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px $shadow-primary-hover;
+    }
+  }
+
+  &.btn-success {
+    background: $success;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: darken($success, 10%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px $shadow-success-hover;
+    }
+  }
+
+  &.btn-danger {
+    background: $danger;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: darken($danger, 10%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px $shadow-danger-hover;
+    }
+  }
+
+  &.btn-secondary {
+    background: $border-primary;
+    color: $text-primary;
+
+    &:hover:not(:disabled) {
+      background: darken($border-primary, 10%);
+    }
+  }
+}
+
+.button-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+// Timeline
+.timeline-info {
+  background: $bg-white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px $shadow-primary;
+
+  h3 {
+    margin: 0 0 1.5rem;
+    color: $text-primary;
+  }
+
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .timeline-item {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      padding: 1rem;
+      background: rgba($success, 0.05);
+      border-left: 3px solid $success;
+      border-radius: 4px;
+
+      .timeline-date {
+        min-width: 120px;
+        font-weight: 600;
+        color: $text-primary;
+        font-size: 0.9rem;
+      }
+
+      .timeline-event {
+        color: $text-dark;
+        font-size: 0.95rem;
+      }
+
+      &.rejected {
+        background: rgba($danger, 0.05);
+        border-left-color: $danger;
+
+        .timeline-date,
+        .timeline-event {
+          color: $danger;
+        }
+      }
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .timesheet-container {
+    padding: 1rem;
+  }
+
+  .ts-header {
+    h2 {
+      font-size: 1.5rem;
+    }
+  }
+
+  .workflow-tracker {
+    flex-wrap: wrap;
+    padding: 1rem;
+  }
+
+  .entries-table {
+    font-size: 0.8rem;
+
+    thead th,
+    tbody td {
+      padding: 0.5rem;
+    }
+  }
+
+  .approval-form,
+  .rejection-form {
+    .button-group {
+      flex-direction: column;
+    }
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

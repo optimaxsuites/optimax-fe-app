@@ -1,63 +1,231 @@
-<div class="timesheet-container table-item">
-  <h2>Employee Timesheet</h2>
+<p-toast position="top-right" key="global"></p-toast>
 
-  <table class="timesheet-table">
-    <thead>
-      <tr>
-        <th>Day</th>
-        <th>Project</th>
-        <th>Task</th>
-        <th>Resumption Time</th>
-        <th>Closing Time</th>
-        <th>Actual Clock-In</th>
-        <th>Actual Clock-Out</th>
-        <th>Hours Worked</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let day of days">
-        <td>{{ day }}</td>
-
-        <td>
-          <select [(ngModel)]="projectAssignments[day]">
-            <option *ngFor="let project of projects" [value]="project">{{ project }}</option>
-          </select>
-        </td>
-
-        <td>
-          <input type="text" [(ngModel)]="taskAssignments[day]" placeholder="Task description">
-        </td>
-
-        <td>{{ day === 'Friday' ? '08:30' : '08:30' }}</td>
-        <td>{{ day === 'Friday' ? '14:30' : '17:30' }}</td>
-        <td>
-          <input type="time" [(ngModel)]="actualClockInTimes[day]" placeholder="Clock-in Time">
-        </td>
-        <td>
-          <input type="time" [(ngModel)]="actualClockOutTimes[day]" placeholder="Clock-out Time">
-        </td>
-        <td>{{ calculateHoursWorked(day) | number: '1.2-2' }}</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="signature-section">
-    <h3>Employee Signature</h3>
-    <textarea [(ngModel)]="employeeSignature" placeholder="Enter your signature"></textarea>
+<div class="timesheet-container">
+  <!-- Header -->
+  <div class="ts-header">
+    <h2>Weekly Timesheet</h2>
+    <p class="ts-header-subtitle">Track and approve work hours</p>
   </div>
 
-  Supervisor Signature
-  <div class="signature-section">
-    <h3>Supervisor Signature</h3>
-    <textarea [(ngModel)]="supervisorSignature" placeholder="Supervisor's signature"></textarea>
+  <!-- Workflow Status Indicator -->
+  <div class="workflow-tracker" *ngIf="selectedTimesheet">
+    <div class="workflow-step" [class.active]="currentStatus === 'DRAFT'" [class.completed]="['SUBMITTED', 'IN_APPROVAL', 'APPROVED', 'LOCKED'].includes(currentStatus)">
+      <div class="step-circle"><i class="fa-solid fa-file"></i></div>
+      <div class="step-label">Draft</div>
+    </div>
+
+    <div class="workflow-connector" [class.active]="['SUBMITTED', 'IN_APPROVAL', 'APPROVED', 'LOCKED'].includes(currentStatus)"></div>
+
+    <div class="workflow-step" [class.active]="currentStatus === 'SUBMITTED'" [class.completed]="['IN_APPROVAL', 'APPROVED', 'LOCKED'].includes(currentStatus)">
+      <div class="step-circle"><i class="fa-solid fa-paper-plane"></i></div>
+      <div class="step-label">Submitted</div>
+    </div>
+
+    <div class="workflow-connector" [class.active]="['IN_APPROVAL', 'APPROVED', 'LOCKED'].includes(currentStatus)"></div>
+
+    <div class="workflow-step" [class.active]="currentStatus === 'IN_APPROVAL'" [class.completed]="['APPROVED', 'LOCKED'].includes(currentStatus)">
+      <div class="step-circle"><i class="fa-solid fa-hourglass"></i></div>
+      <div class="step-label">In Approval</div>
+    </div>
+
+    <div class="workflow-connector" [class.active]="['APPROVED', 'LOCKED'].includes(currentStatus)"></div>
+
+    <div class="workflow-step" [class.active]="currentStatus === 'APPROVED'" [class.completed]="currentStatus === 'LOCKED'">
+      <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+      <div class="step-label">Approved</div>
+    </div>
+
+    <div class="workflow-connector" [class.active]="currentStatus === 'LOCKED'"></div>
+
+    <div class="workflow-step" [class.active]="currentStatus === 'LOCKED'" [class.completed]="false">
+      <div class="step-circle"><i class="fa-solid fa-lock"></i></div>
+      <div class="step-label">Locked</div>
+    </div>
   </div>
 
-  <div class="submit-section">
-    <button (click)="submitTimesheetToSupervisor()">Submit to Supervisor</button>
-  </div>
+  <!-- Main Content -->
+  <div class="ts-content" *ngIf="selectedTimesheet">
+    <!-- Employee Info Card -->
+    <div class="info-card">
+      <div class="info-header">
+        <div>
+          <h4>{{ selectedTimesheet.employeeName }}</h4>
+          <p>{{ selectedTimesheet.departmentName }}</p>
+        </div>
+        <div class="status-badge" [style.background]="getStatusColor(currentStatus)">
+          <i [class]="'fa-solid ' + getStatusIcon(currentStatus)"></i>
+          {{ getStatusLabel(currentStatus) }}
+        </div>
+      </div>
 
-  <div *ngIf="status === 'Submitted to HR'" class="notification">
-    <p>Timesheet has been submitted to HR for approval.</p>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="label">Week</span>
+          <span class="value">{{ selectedTimesheet.weekStartDate }} to {{ selectedTimesheet.weekEndDate }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Scheduled Hours</span>
+          <span class="value">{{ selectedTimesheet.totalScheduledHours }}h</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Actual Hours</span>
+          <span class="value">{{ selectedTimesheet.totalActualHours }}h</span>
+        </div>
+        <div class="info-item">
+          <span class="label" [class.variance-positive]="calculateVariance() >= 0" [class.variance-negative]="calculateVariance() < 0">Variance</span>
+          <span class="value" [class.variance-positive]="calculateVariance() >= 0" [class.variance-negative]="calculateVariance() < 0">
+            {{ calculateVariance() >= 0 ? '+' : '' }}{{ calculateVariance() }}h
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timesheet Entries -->
+    <div class="entries-section">
+      <div class="section-header">
+        <h3>Daily Records</h3>
+        <button *ngIf="canEdit() && !isEditMode" class="btn-edit" (click)="startEdit()">
+          <i class="fa-solid fa-pen"></i> Edit
+        </button>
+      </div>
+
+      <table class="entries-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Day</th>
+            <th>Scheduled</th>
+            <th>Clock In</th>
+            <th>Clock Out</th>
+            <th>Actual Hours</th>
+            <th>Project</th>
+            <th>Task</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let entry of selectedTimesheet.entries" [class.edit-mode]="isEditMode">
+            <td>{{ entry.date }}</td>
+            <td>{{ entry.dayOfWeek }}</td>
+            <td>{{ entry.scheduledHours }}h</td>
+            <td>
+              <input *ngIf="isEditMode" type="time" [(ngModel)]="entry.actualClockIn" class="input-time" />
+              <span *ngIf="!isEditMode">{{ entry.actualClockIn || '-' }}</span>
+            </td>
+            <td>
+              <input *ngIf="isEditMode" type="time" [(ngModel)]="entry.actualClockOut" class="input-time" />
+              <span *ngIf="!isEditMode">{{ entry.actualClockOut || '-' }}</span>
+            </td>
+            <td>{{ entry.actualHoursWorked }}h</td>
+            <td>{{ entry.projectName || '-' }}</td>
+            <td>{{ entry.taskDescription || '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Edit Mode Actions -->
+      <div *ngIf="isEditMode" class="edit-actions">
+        <button class="btn btn-primary" (click)="saveChanges()">Save Changes</button>
+        <button class="btn btn-secondary" (click)="cancelEdit()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Status-Specific Actions -->
+    <div class="actions-section">
+      <!-- DRAFT: Submit -->
+      <div *ngIf="currentStatus === 'DRAFT'" class="action-panel draft">
+        <h3>Ready to Submit?</h3>
+        <p>Once submitted, your timesheet will be sent to your line manager for approval.</p>
+        <button class="btn btn-primary" [disabled]="!canSubmit() || isSubmitting" (click)="submitTimesheet()">
+          <i class="fa-solid fa-paper-plane"></i>
+          {{ isSubmitting ? 'Submitting...' : 'Submit Timesheet' }}
+        </button>
+      </div>
+
+      <!-- IN_APPROVAL: Manager Actions -->
+      <div *ngIf="currentStatus === 'IN_APPROVAL'" class="action-panel approval">
+        <h3>Manager Approval</h3>
+        <p>Review the timesheet entries and approve or request corrections.</p>
+
+        <div class="approval-form">
+          <div class="form-group">
+            <label>Approval Notes (optional)</label>
+            <textarea [(ngModel)]="approvalNotes" placeholder="Add any notes..."></textarea>
+          </div>
+
+          <div class="button-group">
+            <button class="btn btn-success" [disabled]="isApproving" (click)="approveTimesheet()">
+              <i class="fa-solid fa-check"></i>
+              {{ isApproving ? 'Approving...' : 'Approve' }}
+            </button>
+            <button class="btn btn-danger" [disabled]="isApproving" (click)="showRejectionForm = !showRejectionForm">
+              <i class="fa-solid fa-x"></i>
+              Request Correction
+            </button>
+          </div>
+        </div>
+
+        <!-- Rejection Form -->
+        <div *ngIf="showRejectionForm" class="rejection-form">
+          <h4>Request Corrections</h4>
+          <p>Employee will be notified to make corrections.</p>
+          <div class="form-group">
+            <label>Reason for Rejection *</label>
+            <textarea [(ngModel)]="rejectionReason" placeholder="Explain what needs to be corrected..."></textarea>
+          </div>
+          <div class="button-group">
+            <button class="btn btn-danger" [disabled]="!rejectionReason.trim() || isApproving" (click)="rejectTimesheet()">
+              {{ isApproving ? 'Processing...' : 'Confirm Rejection' }}
+            </button>
+            <button class="btn btn-secondary" (click)="showRejectionForm = false">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- APPROVED: Lock -->
+      <div *ngIf="currentStatus === 'APPROVED'" class="action-panel approved">
+        <h3>Ready for Payroll</h3>
+        <p>This timesheet is approved and can be locked for payroll processing.</p>
+        <button class="btn btn-primary" (click)="lockTimesheet()">
+          <i class="fa-solid fa-lock"></i>
+          Lock & Send to Payroll
+        </button>
+      </div>
+
+      <!-- LOCKED: Read-only -->
+      <div *ngIf="currentStatus === 'LOCKED'" class="action-panel locked">
+        <div class="locked-notice">
+          <i class="fa-solid fa-lock"></i>
+          <div>
+            <h3>Timesheet Locked</h3>
+            <p>This timesheet is immutable and has been sent to payroll processing.</p>
+            <p class="small">Corrections can only be made by HR Admin override.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline Info -->
+    <div class="timeline-info" *ngIf="selectedTimesheet.submittedDate || selectedTimesheet.approvalDate || selectedTimesheet.lockedDate">
+      <h3>Timeline</h3>
+      <div class="timeline">
+        <div *ngIf="selectedTimesheet.submittedDate" class="timeline-item">
+          <span class="timeline-date">{{ selectedTimesheet.submittedDate | date:'short' }}</span>
+          <span class="timeline-event">Submitted</span>
+        </div>
+        <div *ngIf="selectedTimesheet.rejectionDate" class="timeline-item rejected">
+          <span class="timeline-date">{{ selectedTimesheet.rejectionDate | date:'short' }}</span>
+          <span class="timeline-event">Rejected - {{ selectedTimesheet.rejectionReason }}</span>
+        </div>
+        <div *ngIf="selectedTimesheet.approvalDate" class="timeline-item">
+          <span class="timeline-date">{{ selectedTimesheet.approvalDate | date:'short' }}</span>
+          <span class="timeline-event">Approved</span>
+        </div>
+        <div *ngIf="selectedTimesheet.lockedDate" class="timeline-item">
+          <span class="timeline-date">{{ selectedTimesheet.lockedDate | date:'short' }}</span>
+          <span class="timeline-event">Locked & Sent to Payroll</span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

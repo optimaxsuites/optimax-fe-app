@@ -248,21 +248,21 @@
   font-size: 12px;
 
   thead {
-    background: $bg-light;
-    border-bottom: 2px solid $border-light;
+    background: #f4f7f9;
   }
 
   th {
     padding: 12px 12px;
     text-align: left;
     font-weight: 600;
-    color: $text-primary;
+    color: #224957;
     white-space: nowrap;
+    border: 1px solid #d0dbe0;
   }
 
   td {
     padding: 11px 12px;
-    border-bottom: 1px solid $border-light;
+    border: 1px solid #d0dbe0;
     color: $text-secondary;
   }
 
@@ -270,7 +270,7 @@
     transition: background $transition-fast;
 
     &:hover {
-      background: $bg-light;
+      background: #f9fbfc;
     }
   }
 
