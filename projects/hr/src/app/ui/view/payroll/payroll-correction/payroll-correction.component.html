@@ -1,0 +1,99 @@
+<div class="corr-page">
+  <!-- Toast -->
+  <div class="corr-toast" *ngIf="showToast" [class.corr-toast--success]="toastType==='success'" [class.corr-toast--error]="toastType==='error'">
+    <i class="fas" [class.fa-check-circle]="toastType==='success'" [class.fa-exclamation-circle]="toastType==='error'" [class.fa-info-circle]="toastType==='info'"></i>
+    {{ toastMsg }}
+  </div>
+
+  <!-- Reapproval confirm modal -->
+  <div class="corr-modal-overlay" *ngIf="showReapproveConfirm">
+    <div class="corr-modal">
+      <h3 class="corr-modal-title"><i class="fas fa-paper-plane"></i> Re-submit for Approval</h3>
+      <p class="corr-modal-desc">{{ dirtyCount }} correction(s) will be saved and the payroll run will be re-submitted to the approval workflow.</p>
+      <textarea class="corr-modal-note" [(ngModel)]="reapproveNote" rows="3" placeholder="Reason for corrections (optional)…"></textarea>
+      <div class="corr-modal-actions">
+        <button class="corr-btn corr-btn--ghost" (click)="showReapproveConfirm = false" [disabled]="saving">Cancel</button>
+        <button class="corr-btn" (click)="confirmReapproval()" [disabled]="saving">
+          <i class="fas" [class.fa-paper-plane]="!saving" [class.fa-spinner]="saving" [class.fa-spin]="saving"></i>
+          {{ saving ? 'Submitting…' : 'Confirm & Re-submit' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="corr-header">
+    <h2 class="corr-title">Payroll Correction</h2>
+    <p class="corr-sub">Edit individual payroll entries after generation. Changes trigger a re-approval workflow.</p>
+  </div>
+
+  <!-- Run selector -->
+  <div class="corr-card">
+    <label class="corr-label">Select Payroll Run to Correct</label>
+    <div *ngIf="loading" class="corr-loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+    <select *ngIf="!loading" class="corr-select" [(ngModel)]="selectedRunId" (change)="selectRun(selectedRunId!)">
+      <option [ngValue]="null" disabled>— choose a run —</option>
+      <option *ngFor="let r of runs" [ngValue]="r.id">{{ runLabel(r) }}</option>
+    </select>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="corr-toolbar" *ngIf="entries.length">
+    <input type="text" class="corr-search" [(ngModel)]="searchTerm" placeholder="Search employee…" />
+    <div class="corr-toolbar-right">
+      <span class="corr-dirty-badge" *ngIf="dirtyCount">{{ dirtyCount }} modified</span>
+      <button class="corr-btn corr-btn--ghost" (click)="resetAll()" [disabled]="!dirtyCount">Reset All</button>
+      <button class="corr-btn" (click)="saveCorrections()" [disabled]="!dirtyCount">
+        <i class="fas fa-save"></i> Save &amp; Re-submit
+      </button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="corr-table-wrap" *ngIf="filteredEntries.length">
+    <table class="corr-table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Original Gross</th>
+          <th>Original Deductions</th>
+          <th>Original Net</th>
+          <th>Adjusted Deductions</th>
+          <th>Adjusted Net</th>
+          <th>Variance</th>
+          <th>Note</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let entry of filteredEntries" [class.corr-row--dirty]="entry.dirty">
+          <td class="corr-name">{{ entry.name }}</td>
+          <td>{{ fmt(entry.originalGross) }}</td>
+          <td>{{ fmt(entry.originalDeductions) }}</td>
+          <td>{{ fmt(entry.originalNet) }}</td>
+          <td>
+            <input type="number" class="corr-input" [(ngModel)]="entry.adjustedDeductions" (ngModelChange)="markDirty(entry)" min="0" />
+          </td>
+          <td>
+            <input type="number" class="corr-input corr-input--net" [(ngModel)]="entry.adjustedNet" (ngModelChange)="markDirty(entry)" min="0" />
+          </td>
+          <td [class.corr-plus]="netDiff(entry) > 0" [class.corr-minus]="netDiff(entry) < 0">
+            {{ netDiff(entry) >= 0 ? '+' : '' }}{{ fmt(netDiff(entry)) }}
+          </td>
+          <td>
+            <input type="text" class="corr-note" [(ngModel)]="entry.note" (ngModelChange)="markDirty(entry)" placeholder="Reason…" />
+          </td>
+          <td>
+            <button class="corr-reset-btn" *ngIf="entry.dirty" (click)="resetEntry(entry)" title="Reset">
+              <i class="fas fa-undo"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="corr-empty" *ngIf="!loading && !entries.length && !selectedRunId">
+    <i class="fas fa-edit"></i>
+    <p>Select a payroll run to begin corrections.</p>
+  </div>
+</div>

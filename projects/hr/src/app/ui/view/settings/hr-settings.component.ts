@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { NavigationLinksService } from '../../shared-component/service/navigation-links/navigation-links.service';
+import { PayrollService } from '../../service/payroll.service';
 
 export type NotifChannel = 'email' | 'in_app' | 'push' | 'sms';
 
@@ -50,9 +51,72 @@ export class HrSettingsComponent implements OnInit {
   employeeUpdateFormLink: string;
   offboardingFormLink: string;
 
+  // ── Payroll settings ───────────────────────────────────────────────────────
+  payrollSettingsLoading = false;
+  payrollSettingsSaving = false;
+  payrollSaveSuccess = false;
+
+  payrollConfig = {
+    payDay: 25,
+    lockDay: 20,
+    workingDaysPerMonth: 22,
+  };
+
+  deductionToggles: Record<string, boolean> = {
+    paye: true,
+    pension: true,
+    nhf: true,
+    nsitf: true,
+    itf: true,
+    healthInsurance: false,
+  };
+
+  allowanceDefaults: Record<string, number> = {
+    housing: 0,
+    transport: 0,
+    meal: 0,
+    health: 0,
+    car: 0,
+    security: 0,
+    travel: 0,
+  };
+
+  get deductionKeys(): string[] { return Object.keys(this.deductionToggles); }
+  get allowanceKeys(): string[] { return Object.keys(this.allowanceDefaults); }
+
+  deductionLabel(key: string): string {
+    const map: Record<string, string> = {
+      paye: 'PAYE Tax', pension: 'Pension (8% Employee)', nhf: 'NHF (2.5%)',
+      nsitf: 'NSITF (1%)', itf: 'ITF (1%)', healthInsurance: 'Health Insurance'
+    };
+    return map[key] ?? key;
+  }
+
+  deductionDesc(key: string): string {
+    const map: Record<string, string> = {
+      paye: 'Pay As You Earn — computed from FIRS tax bands',
+      pension: 'RSA Pension contribution (Employee: 8%, Employer: 10%)',
+      nhf: 'National Housing Fund contribution to FMB',
+      nsitf: 'Nigeria Social Insurance Trust Fund',
+      itf: 'Industrial Training Fund levy',
+      healthInsurance: 'Company health insurance premium deduction'
+    };
+    return map[key] ?? '';
+  }
+
+  allowanceLabel(key: string): string {
+    const map: Record<string, string> = {
+      housing: 'Housing Allowance', transport: 'Transport Allowance',
+      meal: 'Meal Allowance', health: 'Health Allowance',
+      car: 'Car Allowance', security: 'Security Allowance', travel: 'Travel Allowance'
+    };
+    return map[key] ?? key;
+  }
+
   constructor(
     private navLinks: NavigationLinksService,
     private route: ActivatedRoute,
+    private payrollService: PayrollService,
   ) {
     this.preOnboardingLink      = this.navLinks.getLink('preOnboardingForm');
     this.employeeUpdateFormLink = this.navLinks.getLink('employeeUpdateForm');
@@ -64,7 +128,7 @@ export class HrSettingsComponent implements OnInit {
   }
 
   // ── Navigation ─────────────────────────────────────────────────────────────
-  activeSection: 'notifications' | 'odoo' | 'general' | 'forms' = 'notifications';
+  activeSection: 'notifications' | 'odoo' | 'general' | 'forms' | 'payroll' = 'notifications';
 
   // ── Notification prefs ─────────────────────────────────────────────────────
   readonly notifChannels: Array<{ key: NotifChannel; label: string; icon: string; desc: string }> = [
@@ -109,9 +173,45 @@ export class HrSettingsComponent implements OnInit {
     this.loadPrefs();
     this.route.queryParams.subscribe(params => {
       const panel = params['panel'];
-      if (panel && ['notifications', 'odoo', 'general', 'forms'].includes(panel)) {
+      if (panel && ['notifications', 'odoo', 'general', 'forms', 'payroll'].includes(panel)) {
         this.activeSection = panel as typeof this.activeSection;
       }
+    });
+    this.loadPayrollSettings();
+  }
+
+  loadPayrollSettings(): void {
+    this.payrollSettingsLoading = true;
+    this.payrollService.getGeneralSettings(1, 1).subscribe({
+      next: (res: any) => {
+        const s = Array.isArray(res) ? res[0] : (res?.content?.[0] ?? res);
+        if (s) {
+          this.payrollConfig.payDay = s.payDay ?? s.payday ?? 25;
+          this.payrollConfig.lockDay = s.lockDay ?? s.lockdate ?? 20;
+          this.payrollConfig.workingDaysPerMonth = s.workingDaysPerMonth ?? 22;
+        }
+        this.payrollSettingsLoading = false;
+      },
+      error: () => { this.payrollSettingsLoading = false; }
+    });
+  }
+
+  savePayrollSettings(): void {
+    this.payrollSettingsSaving = true;
+    const payload = {
+      payDay: this.payrollConfig.payDay,
+      lockDay: this.payrollConfig.lockDay,
+      workingDaysPerMonth: this.payrollConfig.workingDaysPerMonth,
+      deductions: this.deductionToggles,
+      allowanceDefaults: this.allowanceDefaults,
+    };
+    this.payrollService.postGeneralSettings(payload).subscribe({
+      next: () => {
+        this.payrollSettingsSaving = false;
+        this.payrollSaveSuccess = true;
+        setTimeout(() => { this.payrollSaveSuccess = false; }, 2500);
+      },
+      error: () => { this.payrollSettingsSaving = false; }
     });
   }
 
