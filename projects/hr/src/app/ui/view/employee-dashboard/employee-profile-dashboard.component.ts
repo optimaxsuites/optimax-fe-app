@@ -18,6 +18,7 @@ import JsBarcode from 'jsbarcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { PayrollService } from '../../service/payroll.service';
+import { AttendanceService } from '../../service/attendance.service';
 
 export interface NextOfKin {
   id?: number;
@@ -150,6 +151,7 @@ export class EmployeeProfileDashboardComponent {
     private profileChangeRequestService: ProfileChangeRequestService,
     private dataService: DataService,
     private payrollService: PayrollService,
+    private attendanceService: AttendanceService,
     // // private companyProfileService: CompanyProfileService,
     private authenticationService: AuthenticationService,
   ) {
@@ -616,6 +618,7 @@ export class EmployeeProfileDashboardComponent {
     // Load employee relatives
     this.loadEmployeeRelatives();
     this.loadRecentPayslips(employee?.id);
+    this.loadAttendanceSummary(employee?.id);
 
     if (this.employeeInView?.level) {
       this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
@@ -671,6 +674,35 @@ export class EmployeeProfileDashboardComponent {
         this.payslipsLoading = false;
       },
       error: () => { this.payslipsLoading = false; }
+    });
+  }
+
+  loadAttendanceSummary(empId?: number): void {
+    if (!empId) return;
+    const now = new Date();
+    const cm = now.getMonth() + 1;
+    const cy = now.getFullYear();
+    this.attendanceService.fetchEmployeeRecords(empId).subscribe({
+      next: (records: any[]) => {
+        const thisMonth = records.filter(r => {
+          const dateStr = typeof r.date === 'string' ? r.date
+            : Array.isArray(r.date) ? `${r.date[0]}-${String(r.date[1]).padStart(2,'0')}-${String(r.date[2]).padStart(2,'0')}`
+            : '';
+          if (!dateStr) return false;
+          const d = new Date(dateStr);
+          return d.getMonth() + 1 === cm && d.getFullYear() === cy;
+        });
+        const daysPresent = thisMonth.filter(r => (r.status || '').toUpperCase() === 'PRESENT').length;
+        const daysAbsent  = thisMonth.filter(r => (r.status || '').toUpperCase() === 'ABSENT').length;
+        const lateArrivals = thisMonth.filter(r => (r.status || '').toUpperCase().includes('LATE')).length;
+        if (this.employeeInView) {
+          this.employeeInView = {
+            ...this.employeeInView,
+            attendance: { daysPresent, daysAbsent, lateArrivals }
+          };
+        }
+      },
+      error: () => {}
     });
   }
 

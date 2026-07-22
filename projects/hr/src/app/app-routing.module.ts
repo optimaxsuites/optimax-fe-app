@@ -10,6 +10,8 @@ import { PerformanceComponent } from './ui/view/performance/performance.componen
 import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/employee-payroll.component';
 import { PayrollDashboardComponent } from './ui/view/payroll/payroll-dashboard/payroll-dashboard.component';
 import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip-list/employee-payslip-list.component';
+import { PayrollDisbursementComponent } from './ui/view/payroll/payroll-disbursement/payroll-disbursement.component';
+import { BonusDisbursementComponent } from './ui/view/payroll/bonus-disbursement/bonus-disbursement.component';
 import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
 import { AddEmployeeFormComponent } from './ui/view/employee-management/add-employee-form/add-employee-form.component';
 import { GuarantorConfirmationComponent } from './ui/view/employee-management/guarantor-confirmation/guarantor-confirmation.component';
@@ -67,6 +69,7 @@ import { PreOnboardingFormComponent } from './ui/view/employee-management/pre-on
 import { OffboardingFormComponent } from './ui/view/employee-management/offboarding-form/offboarding-form.component';
 import { EmployeeUpdateFormComponent } from './ui/view/employee-management/employee-update-form/employee-update-form.component';
 import { EmployeeOnboardingFormComponent } from './ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
+import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction/payroll-correction.component';
 
 const DEFAULT_LOAN_ROUTE = 'loan/uu';
 
@@ -418,6 +421,30 @@ const routes: Routes = [
   {
     path: 'payroll-operations/:uuid',
     component: PayrolExtrasComponent,
+  },
+  {
+    path: 'bonus-disbursement/:uuid',
+    component: BonusDisbursementComponent,
+  },
+  {
+    path: 'admin/hr/bonus-disbursement/:uuid',
+    component: BonusDisbursementComponent,
+  },
+  {
+    path: 'payroll-correction/:uuid',
+    component: PayrollCorrectionComponent,
+  },
+  {
+    path: 'admin/hr/payroll-correction/:uuid',
+    component: PayrollCorrectionComponent,
+  },
+  {
+    path: 'payroll-disbursement/:uuid',
+    component: PayrollDisbursementComponent,
+  },
+  {
+    path: 'admin/hr/payroll-disbursement/:uuid',
+    component: PayrollDisbursementComponent,
   },
   {
     path: 'admin/employee-payslip/:uuid',

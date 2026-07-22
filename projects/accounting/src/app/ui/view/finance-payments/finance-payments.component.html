@@ -15,14 +15,32 @@
     </div>
   </div>
 
-  <div class="cbn-notice">
+  <!-- ── Main tabs ── -->
+  <div class="main-tab-bar">
+    <button class="main-tab" [class.active]="activeTab==='tray'" (click)="setTab('tray')">
+      💸 Payment Tray
+      <span class="main-tab-badge" *ngIf="allTransactions.length > 0">{{ allTransactions.length }}</span>
+    </button>
+    <button class="main-tab" [class.active]="activeTab==='history'" (click)="setTab('history')">
+      📋 Payment History
+      <span class="main-tab-badge history-badge" *ngIf="allDisbursements.length > 0">{{ allDisbursements.length }}</span>
+    </button>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       PAYMENT TRAY
+  ════════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab === 'tray'">
+
+  <div class="cbn-notice" *ngIf="requiresSecondAuth > 0">
     <span class="cbn-icon">🛡</span>
     <div>
       <div class="cbn-title">CBN Dual-Authorisation Required</div>
-      <div class="cbn-body">All payment runs above &#8358;500,000 require a second authoriser. A maker cannot also be the checker.</div>
+      <div class="cbn-body">{{ requiresSecondAuth }} payment{{ requiresSecondAuth !== 1 ? 's' : '' }} above ₦500,000 require a second authoriser. A maker cannot also be the checker.</div>
     </div>
   </div>
 
+  <!-- ── Wizard steps ── -->
   <div class="disb-steps">
     <div class="disb-step" [class.active]="wizardStep===1" [class.done]="wizardStep>1" (click)="setStep(1)">
       <div class="disb-bubble">{{ wizardStep > 1 ? '✓' : '1' }}</div><div class="disb-step-label">Tray</div>
@@ -31,71 +49,603 @@
       <div class="disb-bubble">{{ wizardStep > 2 ? '✓' : '2' }}</div><div class="disb-step-label">Review</div>
     </div>
     <div class="disb-step" [class.active]="wizardStep===3" [class.done]="wizardStep>3" (click)="setStep(3)">
-      <div class="disb-bubble">3</div><div class="disb-step-label">Pay</div>
+      <div class="disb-bubble">{{ wizardStep > 3 ? '✓' : '3' }}</div><div class="disb-step-label">Pay</div>
     </div>
     <div class="disb-step" [class.active]="wizardStep===4" [class.done]="wizardStep>4" (click)="setStep(4)">
-      <div class="disb-bubble">4</div><div class="disb-step-label">Confirm</div>
+      <div class="disb-bubble">{{ wizardStep > 4 ? '✓' : '4' }}</div><div class="disb-step-label">Confirm</div>
     </div>
     <div class="disb-step" [class.active]="wizardStep===5">
-      <div class="disb-bubble">5</div><div class="disb-step-label">Ledger</div>
+      <div class="disb-bubble">{{ wizardStep > 5 ? '✓' : '5' }}</div><div class="disb-step-label">Ledger</div>
     </div>
   </div>
 
-  <div class="tray-filter-bar">
-    <button class="tray-tab" [class.active]="activeFilter==='all'" (click)="setFilter('all')">All Sources</button>
-    <button class="tray-tab" [class.active]="activeFilter==='PAYROLL'" (click)="setFilter('PAYROLL')">💼 Payroll</button>
-    <button class="tray-tab" [class.active]="activeFilter==='EXPENSE'" (click)="setFilter('EXPENSE')">🧾 Expense</button>
-    <button class="tray-tab" [class.active]="activeFilter==='LOANS'" (click)="setFilter('LOANS')">💰 Loans</button>
-    <button class="tray-tab" [class.active]="activeFilter==='VENDOR'" (click)="setFilter('VENDOR')">🏢 Vendor/AP</button>
-  </div>
+  <!-- ════════════════════════════════════════
+       STEP 1 — TRAY
+  ════════════════════════════════════════ -->
+  <ng-container *ngIf="wizardStep === 1">
+    <div class="tray-filter-bar">
+      <button class="tray-tab" [class.active]="activeFilter==='all'" (click)="setFilter('all')">All Sources</button>
+      <button class="tray-tab" [class.active]="activeFilter==='PAYROLL'" (click)="setFilter('PAYROLL')">💼 Payroll</button>
+      <button class="tray-tab" [class.active]="activeFilter==='EXPENSE'" (click)="setFilter('EXPENSE')">🧾 Expense</button>
+      <button class="tray-tab" [class.active]="activeFilter==='LOANS'" (click)="setFilter('LOANS')">💰 Loans</button>
+      <button class="tray-tab" [class.active]="activeFilter==='VENDOR'" (click)="setFilter('VENDOR')">🏢 Vendor/AP</button>
+    </div>
 
-  <div class="tray-layout">
-    <div class="tray-left">
-      <div class="tray-header-bar">
-        <span class="tray-header-label">Approved — Awaiting Disbursement</span>
-        <span class="tray-count">{{ requests.length }} pending</span>
-      </div>
+    <div class="tray-layout">
+      <div class="tray-left">
+        <!-- Search bar -->
+        <div class="tray-search-wrap">
+          <i class="pi pi-search tray-search-icon"></i>
+          <input class="tray-search"
+                 type="text"
+                 placeholder="Search by reference, description, employee, module…"
+                 [value]="searchQuery"
+                 (input)="onSearch($any($event.target).value)" />
+          <button class="tray-search-clear" *ngIf="searchQuery" (click)="onSearch('')">✕</button>
+        </div>
 
-      <div *ngIf="loading" class="loading-row"><span>Loading payment tray…</span></div>
-
-      <div class="pay-req-card" *ngFor="let r of requests" [ngClass]="moduleClass(r.sourceModule)">
-        <div class="pay-req-top">
+        <div class="tray-header-bar">
+          <span class="tray-header-label">
+            Approved — Awaiting Disbursement
+            <span *ngIf="searchQuery" class="tray-search-result">· {{ filteredTransactions.length }} result{{ filteredTransactions.length !== 1 ? 's' : '' }}</span>
+          </span>
           <div style="display:flex;align-items:center;gap:10px">
-            <div class="pay-avatar" [ngClass]="avatarClass(r.sourceModule)">{{ avatarText(r) }}</div>
-            <div>
-              <div class="pay-req-name">{{ displayName(r) }}</div>
-              <div class="pay-req-meta">{{ displayMeta(r) }}</div>
+            <span class="tray-count">{{ allTransactions.length }} total</span>
+            <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="selectAll()">Select All</button>
+            <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="deselectAll()" *ngIf="selectedIds.size > 0">Clear</button>
+          </div>
+        </div>
+
+        <div *ngIf="loading" class="loading-row"><span>Loading payment tray…</span></div>
+
+        <div class="pay-req-card"
+             *ngFor="let r of requests"
+             [ngClass]="moduleClass(r.sourceModule)"
+             [class.selected]="selectedIds.has(r.id)"
+             [class.expanded]="expandedId === r.id"
+             (click)="toggleCard(r.id)">
+
+          <!-- Card top row -->
+          <div class="pay-req-top">
+            <div style="display:flex;align-items:center;gap:10px">
+              <label class="card-check" (click)="$event.stopPropagation()">
+                <input type="checkbox" [checked]="selectedIds.has(r.id)" (change)="toggleSelect(r, $event)" />
+                <span class="checkmark"></span>
+              </label>
+              <div class="pay-avatar" [ngClass]="avatarClass(r.sourceModule)">{{ avatarText(r) }}</div>
+              <div>
+                <div class="pay-req-name">{{ displayName(r) }}</div>
+                <div class="pay-req-meta">{{ displayMeta(r) }}</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="pay-module-tag" [ngClass]="tagClass(r.sourceModule)">{{ r.sourceModule }}</span>
+              <i class="pi" [class.pi-chevron-down]="expandedId !== r.id" [class.pi-chevron-up]="expandedId === r.id" style="color:#9ca3af;font-size:13px"></i>
             </div>
           </div>
-          <span class="pay-module-tag" [ngClass]="tagClass(r.sourceModule)">{{ r.sourceModule }}</span>
-        </div>
-        <div class="pay-req-bottom">
-          <div class="pay-amount">{{ formatNgn(r.amount) }}</div>
-          <div>
-            <div class="pay-ref">{{ r.transactionReference }}</div>
-            <div class="pay-action" (click)="setStep(2)" style="cursor:pointer">Review →</div>
+
+          <!-- Card bottom row -->
+          <div class="pay-req-bottom">
+            <div class="pay-amount">{{ formatNgn(r.amount) }}</div>
+            <div>
+              <div class="pay-ref">{{ r.transactionReference }}</div>
+              <div class="pay-status-badge" [class.auth-required]="(r.amount ?? 0) >= 500000">
+                {{ (r.amount ?? 0) >= 500000 ? '🛡 Auth Required' : '✓ Ready' }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Accordion detail -->
+          <div class="pay-accordion" *ngIf="expandedId === r.id" (click)="$event.stopPropagation()">
+            <div class="acc-divider"></div>
+            <div class="acc-grid">
+              <div class="acc-kv">
+                <span class="acc-k">Reference</span>
+                <span class="acc-v mono">{{ r.transactionReference || '—' }}</span>
+              </div>
+              <div class="acc-kv">
+                <span class="acc-k">Amount</span>
+                <span class="acc-v">{{ formatNgn(r.amount) }}</span>
+              </div>
+              <div class="acc-kv">
+                <span class="acc-k">Module</span>
+                <span class="acc-v">{{ r.sourceModule }}</span>
+              </div>
+              <div class="acc-kv">
+                <span class="acc-k">Status</span>
+                <span class="acc-v">{{ r.status }}</span>
+              </div>
+              <div class="acc-kv">
+                <span class="acc-k">Date</span>
+                <span class="acc-v">{{ formatDate(r.transactionDate || r.createdAt) }}</span>
+              </div>
+              <div class="acc-kv" *ngIf="r.externalReference">
+                <span class="acc-k">External Ref</span>
+                <span class="acc-v mono">{{ r.externalReference }}</span>
+              </div>
+              <div class="acc-kv" *ngIf="r.description">
+                <span class="acc-k">Description</span>
+                <span class="acc-v">{{ r.description }}</span>
+              </div>
+              <div class="acc-kv" *ngIf="r.metadata?.employeeName">
+                <span class="acc-k">Employee</span>
+                <span class="acc-v">{{ r.metadata.employeeName }}</span>
+              </div>
+              <div class="acc-kv" *ngIf="r.metadata?.memberName">
+                <span class="acc-k">Member</span>
+                <span class="acc-v">{{ r.metadata.memberName }}</span>
+              </div>
+              <div class="acc-kv" *ngIf="r.metadata?.bankName">
+                <span class="acc-k">Bank</span>
+                <span class="acc-v">{{ r.metadata.bankName }}</span>
+              </div>
+              <div class="acc-kv" *ngIf="r.metadata?.accountNumber">
+                <span class="acc-k">Account No.</span>
+                <span class="acc-v mono">{{ r.metadata.accountNumber }}</span>
+              </div>
+              <div class="acc-kv" *ngIf="r.account?.accountName">
+                <span class="acc-k">GL Account</span>
+                <span class="acc-v">{{ r.account.accountName }}</span>
+              </div>
+            </div>
+            <div class="acc-actions">
+              <label class="acc-select-btn" (click)="$event.stopPropagation()">
+                <input type="checkbox" [checked]="selectedIds.has(r.id)" (change)="toggleSelect(r, $event)" />
+                {{ selectedIds.has(r.id) ? '✓ Selected for payment' : 'Select for payment' }}
+              </label>
+            </div>
           </div>
         </div>
+
+        <div *ngIf="requests.length === 0 && !loading" class="empty-state">
+          {{ searchQuery ? 'No results match your search.' : 'No pending requests for this source.' }}
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-bar" *ngIf="filteredTransactions.length > pageSize">
+          <button class="page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">‹</button>
+          <ng-container *ngFor="let p of pageNumbers">
+            <button class="page-btn" [class.active]="p === currentPage" (click)="goToPage(p)">{{ p }}</button>
+          </ng-container>
+          <button class="page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">›</button>
+          <span class="page-info">Page {{ currentPage }} of {{ totalPages }} · {{ filteredTransactions.length }} items</span>
+        </div>
       </div>
 
-      <div *ngIf="requests.length === 0" class="empty-state">No pending requests for this source.</div>
+      <!-- Sidebar summary -->
+      <div class="tray-right">
+        <div class="tray-sidebar-stat">
+          <div class="tray-sidebar-label">Total Awaiting</div>
+          <div class="tray-sidebar-value">{{ formatNgn(totalAwaiting) }}</div>
+        </div>
+        <div class="tray-sidebar-stat">
+          <div class="tray-sidebar-label">All Requests</div>
+          <div class="tray-sidebar-value">{{ requests.length }}</div>
+        </div>
+        <div class="tray-sidebar-stat" *ngIf="selectedIds.size > 0">
+          <div class="tray-sidebar-label">Selected</div>
+          <div class="tray-sidebar-value" style="color:#2EB270">{{ selectedIds.size }}</div>
+        </div>
+        <div class="tray-sidebar-stat" *ngIf="selectedIds.size > 0">
+          <div class="tray-sidebar-label">Selected Total</div>
+          <div class="tray-sidebar-value" style="font-size:16px">{{ formatNgn(selectedTotal) }}</div>
+        </div>
+        <div class="tray-sidebar-stat" *ngIf="requiresSecondAuth > 0">
+          <div class="tray-sidebar-label">Requires 2nd Auth</div>
+          <div class="tray-sidebar-value" style="color:#dc2626">{{ requiresSecondAuth }}</div>
+        </div>
+        <button class="fd-btn fd-btn-primary"
+                style="width:100%;justify-content:center;margin-top:8px"
+                [disabled]="selectedIds.size === 0"
+                [style.opacity]="selectedIds.size === 0 ? '.45' : '1'"
+                (click)="setStep(2)">
+          Review {{ selectedIds.size > 0 ? '(' + selectedIds.size + ')' : '' }} →
+        </button>
+        <div class="no-select-hint" *ngIf="selectedIds.size === 0">
+          Tick one or more transactions to proceed
+        </div>
+      </div>
     </div>
+  </ng-container>
 
-    <div class="tray-right">
-      <div class="tray-sidebar-stat">
-        <div class="tray-sidebar-label">Total Awaiting</div>
-        <div class="tray-sidebar-value">{{ formatNgn(totalAwaiting) }}</div>
+  <!-- ════════════════════════════════════════
+       STEP 2 — REVIEW
+  ════════════════════════════════════════ -->
+  <ng-container *ngIf="wizardStep === 2">
+    <div class="step-card">
+      <div class="step-card-header">
+        <div class="step-card-title">Review Selected Transactions</div>
+        <div class="step-card-sub">{{ selectedTransactions.length }} transaction{{ selectedTransactions.length !== 1 ? 's' : '' }} selected</div>
       </div>
-      <div class="tray-sidebar-stat">
-        <div class="tray-sidebar-label">Requests</div>
-        <div class="tray-sidebar-value">{{ requests.length }}</div>
+
+      <div class="fd-table-wrap">
+        <table class="fd-table">
+          <thead>
+            <tr>
+              <th>Reference</th>
+              <th>Description</th>
+              <th>Module</th>
+              <th>Date</th>
+              <th style="text-align:right">Amount</th>
+              <th>Auth?</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of selectedTransactions">
+              <td class="mono">{{ t.transactionReference }}</td>
+              <td>{{ displayName(t) }}</td>
+              <td><span class="pay-module-tag" [ngClass]="tagClass(t.sourceModule)">{{ t.sourceModule }}</span></td>
+              <td>{{ formatDate(t.transactionDate || t.createdAt) }}</td>
+              <td style="text-align:right;font-weight:900;color:#2E6276">{{ formatNgn(t.amount) }}</td>
+              <td>
+                <span *ngIf="(t.amount ?? 0) >= 500000" class="auth-badge">🛡 Required</span>
+                <span *ngIf="(t.amount ?? 0) < 500000" class="ready-badge">✓ OK</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <div class="tray-sidebar-stat">
-        <div class="tray-sidebar-label">Requires 2nd Auth</div>
-        <div class="tray-sidebar-value" style="color:#dc2626">{{ requiresSecondAuth }}</div>
+
+      <!-- Module breakdown -->
+      <div class="review-breakdown" *ngIf="byModuleEntries.length > 1">
+        <div class="review-breakdown-title">Breakdown by Module</div>
+        <div class="breakdown-row" *ngFor="let m of byModuleEntries">
+          <span class="pay-module-tag" [ngClass]="tagClass(m.module)">{{ m.module }}</span>
+          <span style="font-size:12px;color:#6b7280">{{ m.count }} item{{ m.count !== 1 ? 's' : '' }}</span>
+          <span style="font-weight:900;color:#2E6276;margin-left:auto">{{ formatNgn(m.total) }}</span>
+        </div>
       </div>
-      <button class="fd-btn fd-btn-primary" style="width:100%;justify-content:center;margin-top:8px" (click)="setStep(2)">Process Selected →</button>
+
+      <!-- Totals bar -->
+      <div class="review-totals">
+        <div class="review-total-row">
+          <span>Total to Disburse</span>
+          <span class="review-total-val">{{ formatNgn(selectedTotal) }}</span>
+        </div>
+        <div class="review-total-row" *ngIf="selectedRequireAuth > 0" style="color:#dc2626">
+          <span>⚠ Transactions requiring dual-auth</span>
+          <span>{{ selectedRequireAuth }}</span>
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <button class="fd-btn fd-btn-outline" (click)="setStep(1)">← Back to Tray</button>
+        <button class="fd-btn fd-btn-primary" (click)="setStep(3)">Continue to Payment →</button>
+      </div>
     </div>
-  </div>
+  </ng-container>
+
+  <!-- ════════════════════════════════════════
+       STEP 3 — PAY
+  ════════════════════════════════════════ -->
+  <ng-container *ngIf="wizardStep === 3">
+    <div class="step-card">
+      <div class="step-card-header">
+        <div class="step-card-title">Payment Method</div>
+        <div class="step-card-sub">Choose how to disburse {{ formatNgn(selectedTotal) }} to {{ selectedTransactions.length }} recipient{{ selectedTransactions.length !== 1 ? 's' : '' }}</div>
+      </div>
+
+      <div class="pay-method-grid">
+        <div class="pay-method-card" [class.selected]="paymentMethod==='paystack'" (click)="paymentMethod='paystack'">
+          <div class="pay-method-icon">💳</div>
+          <div class="pay-method-name">Paystack Transfer</div>
+          <div class="pay-method-desc">Automated bank transfers via Paystack API</div>
+          <div class="pay-method-check" *ngIf="paymentMethod==='paystack'">✓</div>
+        </div>
+        <div class="pay-method-card" [class.selected]="paymentMethod==='manual'" (click)="paymentMethod='manual'">
+          <div class="pay-method-icon">🏦</div>
+          <div class="pay-method-name">Manual Bank Transfer</div>
+          <div class="pay-method-desc">Process transfers manually through your bank portal</div>
+          <div class="pay-method-check" *ngIf="paymentMethod==='manual'">✓</div>
+        </div>
+        <div class="pay-method-card" [class.selected]="paymentMethod==='cash'" (click)="paymentMethod='cash'">
+          <div class="pay-method-icon">💵</div>
+          <div class="pay-method-name">Cash Disbursement</div>
+          <div class="pay-method-desc">Physical cash payout with receipt confirmation</div>
+          <div class="pay-method-check" *ngIf="paymentMethod==='cash'">✓</div>
+        </div>
+      </div>
+
+      <div class="pay-form">
+        <div class="pay-form-row">
+          <label class="pay-form-label">Disbursed From</label>
+          <select class="pay-form-input" [(ngModel)]="disbursedFrom">
+            <option value="ACCOUNT">Bank Account</option>
+            <option value="CASH">Petty Cash</option>
+            <option value="PAYSTACK">Paystack Balance</option>
+          </select>
+        </div>
+        <div class="pay-form-row">
+          <label class="pay-form-label">Schedule Date (optional)</label>
+          <input type="date" class="pay-form-input" [(ngModel)]="scheduleDate" />
+          <div class="pay-form-hint">Leave blank to process immediately</div>
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <button class="fd-btn fd-btn-outline" (click)="setStep(2)">← Back to Review</button>
+        <button class="fd-btn fd-btn-primary" (click)="setStep(4)">Continue to Confirm →</button>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ════════════════════════════════════════
+       STEP 4 — CONFIRM
+  ════════════════════════════════════════ -->
+  <ng-container *ngIf="wizardStep === 4">
+    <div class="step-card">
+      <div class="step-card-header">
+        <div class="step-card-title">Confirm Payment Run</div>
+        <div class="step-card-sub">Final check before disbursement</div>
+      </div>
+
+      <div class="confirm-summary">
+        <div class="confirm-row">
+          <span class="confirm-k">Transactions</span>
+          <span class="confirm-v">{{ selectedTransactions.length }}</span>
+        </div>
+        <div class="confirm-row">
+          <span class="confirm-k">Total Amount</span>
+          <span class="confirm-v large">{{ formatNgn(selectedTotal) }}</span>
+        </div>
+        <div class="confirm-row">
+          <span class="confirm-k">Payment Method</span>
+          <span class="confirm-v">{{ paymentMethod === 'paystack' ? 'Paystack Transfer' : paymentMethod === 'manual' ? 'Manual Bank Transfer' : 'Cash Disbursement' }}</span>
+        </div>
+        <div class="confirm-row">
+          <span class="confirm-k">Disbursed From</span>
+          <span class="confirm-v">{{ disbursedFrom }}</span>
+        </div>
+        <div class="confirm-row" *ngIf="scheduleDate">
+          <span class="confirm-k">Scheduled For</span>
+          <span class="confirm-v">{{ scheduleDate }}</span>
+        </div>
+      </div>
+
+      <div class="cbn-notice" *ngIf="selectedRequireAuth > 0">
+        <span class="cbn-icon">🛡</span>
+        <div>
+          <div class="cbn-title">Dual-Authorisation Required</div>
+          <div class="cbn-body">{{ selectedRequireAuth }} transaction{{ selectedRequireAuth !== 1 ? 's' : '' }} exceed ₦500,000 and need a second authoriser. Enter their approval code below or have them log in to approve.</div>
+        </div>
+      </div>
+
+      <div class="pay-form" *ngIf="selectedRequireAuth > 0">
+        <div class="pay-form-row">
+          <label class="pay-form-label">Second Authoriser Code</label>
+          <input type="text" class="pay-form-input" [(ngModel)]="secondAuthCode" placeholder="Enter authorisation code" />
+          <div class="pay-form-hint">Contact your compliance officer if you don't have this code</div>
+        </div>
+      </div>
+
+      <div class="error-banner" *ngIf="paymentError">
+        <span>⚠ {{ paymentError }}</span>
+      </div>
+
+      <div class="confirm-checklist">
+        <div class="checklist-item">✓ I confirm that all recipient details are correct</div>
+        <div class="checklist-item">✓ I confirm that funds are available in the selected account</div>
+        <div class="checklist-item" *ngIf="selectedRequireAuth > 0">✓ Second authorisation has been obtained for transactions above ₦500,000</div>
+        <div class="checklist-item">✓ This payment run complies with company policy</div>
+      </div>
+
+      <div class="step-nav">
+        <button class="fd-btn fd-btn-outline" (click)="setStep(3)">← Back</button>
+        <button class="fd-btn fd-btn-danger"
+                [disabled]="processing || (selectedRequireAuth > 0 && !secondAuthCode.trim())"
+                [style.opacity]="processing || (selectedRequireAuth > 0 && !secondAuthCode.trim()) ? '.55' : '1'"
+                (click)="processPayment()">
+          <span *ngIf="!processing">Confirm &amp; Disburse {{ formatNgn(selectedTotal) }}</span>
+          <span *ngIf="processing">Processing… ⏳</span>
+        </button>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ════════════════════════════════════════
+       STEP 5 — LEDGER / SUCCESS
+  ════════════════════════════════════════ -->
+  <ng-container *ngIf="wizardStep === 5">
+    <div class="step-card ledger-card">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Payment Run Complete</div>
+      <div class="success-sub">{{ selectedTransactions.length }} payment{{ selectedTransactions.length !== 1 ? 's' : '' }} of {{ formatNgn(selectedTotal) }} have been queued for disbursement.</div>
+
+      <div class="ledger-summary" *ngIf="paymentResult">
+        <div class="confirm-row">
+          <span class="confirm-k">Disbursement ID</span>
+          <span class="confirm-v mono">#{{ paymentResult.id }}</span>
+        </div>
+        <div class="confirm-row">
+          <span class="confirm-k">Status</span>
+          <span class="confirm-v">{{ paymentResult.status }}</span>
+        </div>
+        <div class="confirm-row">
+          <span class="confirm-k">Total Disbursed</span>
+          <span class="confirm-v large">{{ formatNgn(paymentResult.totalDisbursementAmount) }}</span>
+        </div>
+        <div class="confirm-row" *ngIf="paymentResult.monifyReference">
+          <span class="confirm-k">Payment Reference</span>
+          <span class="confirm-v mono">{{ paymentResult.monifyReference }}</span>
+        </div>
+        <div class="confirm-row" *ngIf="paymentResult.disbursedAt">
+          <span class="confirm-k">Processed At</span>
+          <span class="confirm-v">{{ formatDate(paymentResult.disbursedAt) }}</span>
+        </div>
+      </div>
+
+      <div class="ledger-notice">
+        <div class="ledger-notice-title">📒 Journal Entry Posted</div>
+        <div class="ledger-notice-body">
+          A debit journal entry has been raised against your disbursement account. View the full ledger under
+          <strong>Finance → General Ledger</strong> for reconciliation.
+        </div>
+      </div>
+
+      <div class="step-nav" style="justify-content:center">
+        <button class="fd-btn fd-btn-primary" (click)="resetWizard()">Start New Payment Run</button>
+      </div>
+    </div>
+  </ng-container>
+
+  </ng-container> <!-- /tray tab -->
+
+  <!-- ════════════════════════════════════════
+       PAYMENT HISTORY TAB
+  ════════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab === 'history'">
+
+    <div class="step-card" style="padding:20px">
+
+      <!-- Search + refresh -->
+      <div class="history-toolbar">
+        <div class="tray-search-wrap" style="flex:1">
+          <i class="pi pi-search tray-search-icon"></i>
+          <input class="tray-search"
+                 type="text"
+                 placeholder="Search by ID, status, reference, source…"
+                 [value]="historySearch"
+                 (input)="onHistorySearch($any($event.target).value)" />
+          <button class="tray-search-clear" *ngIf="historySearch" (click)="onHistorySearch('')">✕</button>
+        </div>
+        <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="loadHistory()">↺ Refresh</button>
+      </div>
+
+      <div *ngIf="historyLoading" class="loading-row"><span>Loading payment history…</span></div>
+
+      <div class="fd-table-wrap" *ngIf="!historyLoading">
+        <table class="fd-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>ID</th>
+              <th>Date Created</th>
+              <th>Disbursed At</th>
+              <th>Source</th>
+              <th>Transactions</th>
+              <th style="text-align:right">Total Amount</th>
+              <th>Reference</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let d of pagedDisbursements">
+              <!-- Summary row -->
+              <tr class="history-row" (click)="toggleDisbursement(d.id)" style="cursor:pointer">
+                <td>
+                  <i class="pi" [class.pi-chevron-right]="expandedDisbursementId !== d.id"
+                                [class.pi-chevron-down]="expandedDisbursementId === d.id"
+                                style="color:#9ca3af;font-size:12px"></i>
+                </td>
+                <td class="mono">#{{ d.id }}</td>
+                <td>{{ formatDate(d.createdAt) }}</td>
+                <td>{{ d.disbursedAt ? formatDate(d.disbursedAt) : '—' }}</td>
+                <td>{{ d.disbursedFrom || '—' }}</td>
+                <td>{{ (d.transactions?.length > 0) ? d.transactions.length : '—' }}</td>
+                <td style="text-align:right;font-weight:900;color:#2E6276">
+                  {{ d.totalDisbursementAmount > 0 ? formatNgn(d.totalDisbursementAmount) : '—' }}
+                </td>
+                <td class="mono" style="font-size:11px">{{ d.monifyReference || '—' }}</td>
+                <td>
+                  <span class="hist-status-badge" [ngClass]="disbursementStatusClass(d.status)">{{ d.status }}</span>
+                </td>
+              </tr>
+
+              <!-- Expanded detail row — lazy loaded -->
+              <tr *ngIf="expandedDisbursementId === d.id" class="history-detail-row">
+                <td colspan="9" style="padding:0">
+                  <div class="history-detail">
+
+                    <!-- Loading state -->
+                    <div *ngIf="isDetailLoading(d.id)" class="loading-row" style="padding:16px">
+                      <span>Loading details…</span>
+                    </div>
+
+                    <ng-container *ngIf="!isDetailLoading(d.id)">
+                      <ng-container *ngIf="getDisbursementDetail(d.id) as detail">
+
+                        <!-- Summary kv -->
+                        <div class="detail-kv-row">
+                          <div class="acc-kv"><span class="acc-k">Disbursement ID</span><span class="acc-v mono">#{{ detail.id }}</span></div>
+                          <div class="acc-kv"><span class="acc-k">Status</span><span class="acc-v"><span class="hist-status-badge" [ngClass]="disbursementStatusClass(detail.status)">{{ detail.status }}</span></span></div>
+                          <div class="acc-kv"><span class="acc-k">Total Amount</span><span class="acc-v" style="color:#2E6276;font-weight:900">{{ detail.totalDisbursementAmount > 0 ? formatNgn(detail.totalDisbursementAmount) : '—' }}</span></div>
+                          <div class="acc-kv"><span class="acc-k">Source</span><span class="acc-v">{{ detail.disbursedFrom || '—' }}</span></div>
+                          <div class="acc-kv"><span class="acc-k">Payment Ref</span><span class="acc-v mono">{{ detail.monifyReference || '—' }}</span></div>
+                          <div class="acc-kv"><span class="acc-k">Disbursed At</span><span class="acc-v">{{ detail.disbursedAt ? formatDate(detail.disbursedAt) : '—' }}</span></div>
+                        </div>
+
+                        <!-- Transactions -->
+                        <div class="history-detail-title" style="margin-top:14px">Transactions</div>
+                        <table class="fd-table history-inner-table" *ngIf="detail.transactions?.length > 0">
+                          <thead>
+                            <tr><th>Reference</th><th>Module</th><th>Description</th><th style="text-align:right">Amount</th><th>Status</th></tr>
+                          </thead>
+                          <tbody>
+                            <tr *ngFor="let t of detail.transactions">
+                              <td class="mono">{{ t.transactionReference }}</td>
+                              <td><span class="pay-module-tag" [ngClass]="tagClass(t.sourceModule)">{{ t.sourceModule }}</span></td>
+                              <td>{{ t.description || '—' }}</td>
+                              <td style="text-align:right;font-weight:700">{{ formatNgn(t.amount) }}</td>
+                              <td>{{ t.status }}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <div *ngIf="!detail.transactions?.length" style="font-size:12px;color:#94a3b8;padding:8px 0">No transaction details returned by the API.</div>
+
+                        <!-- Recipients -->
+                        <ng-container *ngIf="detail.recipients?.length > 0">
+                          <div class="history-detail-title" style="margin-top:14px">Recipients</div>
+                          <table class="fd-table history-inner-table">
+                            <thead>
+                              <tr><th>Employee</th><th>Bank</th><th>Account</th><th style="text-align:right">Amount</th><th>Status</th><th>Disbursed At</th></tr>
+                            </thead>
+                            <tbody>
+                              <tr *ngFor="let r of detail.recipients">
+                                <td>{{ r.employeeName }}</td>
+                                <td>{{ r.bankName }}</td>
+                                <td class="mono">{{ r.accountNumber }}</td>
+                                <td style="text-align:right;font-weight:700">{{ formatNgn(r.amount) }}</td>
+                                <td><span class="hist-status-badge" [ngClass]="disbursementStatusClass(r.status)">{{ r.status }}</span></td>
+                                <td>{{ r.disbursedAt ? formatDate(r.disbursedAt) : '—' }}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </ng-container>
+
+                      </ng-container>
+
+                      <!-- Fallback if detail fetch failed -->
+                      <div *ngIf="!getDisbursementDetail(d.id) && !isDetailLoading(d.id)"
+                           style="font-size:12px;color:#94a3b8;padding:12px">
+                        Could not load details. Check network or API response.
+                      </div>
+                    </ng-container>
+
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
+
+            <tr *ngIf="pagedDisbursements.length === 0 && !historyLoading">
+              <td colspan="9" class="empty-state">
+                {{ historySearch ? 'No results match your search.' : 'No payment runs recorded yet.' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-bar" *ngIf="filteredDisbursements.length > historyPageSize">
+        <button class="page-btn" [disabled]="historyPage === 1" (click)="goHistoryPage(historyPage - 1)">‹</button>
+        <ng-container *ngFor="let p of historyPageNumbers">
+          <button class="page-btn" [class.active]="p === historyPage" (click)="goHistoryPage(p)">{{ p }}</button>
+        </ng-container>
+        <button class="page-btn" [disabled]="historyPage === historyTotalPages" (click)="goHistoryPage(historyPage + 1)">›</button>
+        <span class="page-info">Page {{ historyPage }} of {{ historyTotalPages }} · {{ filteredDisbursements.length }} records</span>
+      </div>
+
+    </div>
+  </ng-container> <!-- /history tab -->
 
 </div>

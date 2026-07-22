@@ -66,13 +66,34 @@ export class DisbursementService {
   // ── Disbursements ───────────────────────────────────────
 
   /**
-   * Fetch all disbursements for dashboard stats.
+   * Fetch pending disbursements in the processing tray.
    */
   getDisbursements(): Observable<PagedResponse<DisbursementDTO>> {
     const params = new HttpParams().set('size', '200');
     return this.http.get<PagedResponse<DisbursementDTO>>(
       `${this.baseUrl}/disbursements/tray`,
       { headers: this.getHeaders(), params }
+    );
+  }
+
+  /**
+   * Fetch all disbursements for history/reporting (all statuses).
+   */
+  getAllDisbursements(page = 0, size = 200): Observable<PagedResponse<DisbursementDTO>> {
+    const params = new HttpParams().set('page', page.toString()).set('size', size.toString());
+    return this.http.get<PagedResponse<DisbursementDTO>>(
+      `${this.baseUrl}/disbursements`,
+      { headers: this.getHeaders(), params }
+    );
+  }
+
+  /**
+   * Fetch a single disbursement with full transaction and recipient details.
+   */
+  getDisbursementById(id: number): Observable<DisbursementDTO> {
+    return this.http.get<DisbursementDTO>(
+      `${this.baseUrl}/disbursements/${id}`,
+      { headers: this.getHeaders() }
     );
   }
 

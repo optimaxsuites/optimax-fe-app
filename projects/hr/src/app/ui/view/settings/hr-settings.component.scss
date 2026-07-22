@@ -536,3 +536,59 @@
 
   &:hover { background: #1648c0; color: #fff; }
 }
+
+/* ── Payroll Settings ─────────────────────────────────────────────────── */
+.prl-loading { padding: 32px; text-align: center; color: #6b7280; }
+.prl-card {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+  padding: 20px 24px; margin-bottom: 20px;
+  &__title {
+    font-size: 14px; font-weight: 600; color: #111827; margin: 0 0 16px;
+    display: flex; align-items: center; gap: 8px;
+    i { color: #1a73e8; }
+  }
+}
+.prl-sub { font-size: 13px; color: #6b7280; margin: -8px 0 16px; }
+.prl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+.prl-field {
+  display: flex; flex-direction: column; gap: 6px;
+  label { font-size: 12px; font-weight: 500; color: #374151; }
+}
+.prl-hint { font-weight: 400; color: #9ca3af; font-size: 11px; }
+.prl-input {
+  border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px;
+  font-size: 13px; color: #111827; outline: none;
+  &:focus { border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,.1); }
+}
+.prl-toggle-list { display: flex; flex-direction: column; gap: 2px; }
+.prl-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid #f3f4f6;
+  &:last-child { border-bottom: none; }
+}
+.prl-toggle-info { display: flex; flex-direction: column; gap: 2px; }
+.prl-toggle-label { font-size: 13px; font-weight: 500; color: #111827; }
+.prl-toggle-desc { font-size: 11px; color: #9ca3af; }
+.prl-switch {
+  position: relative; display: inline-block; width: 40px; height: 22px;
+  input { opacity: 0; width: 0; height: 0; }
+}
+.prl-slider {
+  position: absolute; cursor: pointer; inset: 0; background: #d1d5db;
+  border-radius: 22px; transition: .2s;
+  &::before {
+    content: ''; position: absolute; height: 16px; width: 16px;
+    left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s;
+  }
+}
+input:checked + .prl-slider { background: #1a73e8; }
+input:checked + .prl-slider::before { transform: translateX(18px); }
+.prl-actions { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.prl-save-btn {
+  background: #1a73e8; color: #fff; border: none; border-radius: 8px;
+  padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  &:hover:not(:disabled) { background: #1557b0; }
+  &:disabled { opacity: .6; cursor: not-allowed; }
+}
+.prl-saved { font-size: 13px; color: #16a34a; display: flex; align-items: center; gap: 6px; }
