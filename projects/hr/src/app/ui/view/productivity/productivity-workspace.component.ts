@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { timeout, catchError, switchMap } from 'rxjs/operators';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -63,11 +64,17 @@ interface SubTask {
   followUps?: FollowUp[];
 }
 interface ActivityEntry { id: string; author: string; text: string; timestamp: string; }
+interface FollowUpReply {
+  id: string; author: string; initials: string; color: string; timestamp: string; text: string;
+}
+
 interface FollowUp {
   id: string; author: string; initials: string; color: string;
   timestamp: string; text: string; photos: string[];
   decision?: string; progress?: number;
   followUpId?: number;
+  replies?: FollowUpReply[];
+  reactions?: Record<string, string[]>; // emoji → array of author names
 }
 
 export interface BoardTask {
@@ -334,7 +341,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     ],
   };
 
-  private static readonly STAGE_STORAGE_KEY = 'hr_pm_stages_v1';
+  private static readonly STAGE_STORAGE_KEY   = 'hr_pm_stages_v1';
+  private static readonly ARCHIVE_STORAGE_KEY  = 'hr_pm_archived_v1';
   private static readonly DEFAULT_STAGES: Array<{ key: string; label: string }> = [
     { key: 'To Do',       label: 'To Do' },
     { key: 'In Progress', label: 'In Progress' },
@@ -349,6 +357,41 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // ── Stage management ──────────────────────────────────────────────────────
   showAddStage = false;
   newStageName = '';
+
+  get customStages(): Array<{ key: TaskStatus; label: string }> {
+    return this.columns.filter(c => !this.isDefaultStage(c.key));
+  }
+
+  // ── Right rail (Archive & Stages) ─────────────────────────────────────────
+  rightRailOpen = false;
+  archivedTasks: BoardTask[] = [];
+
+  private loadArchivedTasks(): void {
+    try {
+      const raw = localStorage.getItem(ProductivityWorkspaceComponent.ARCHIVE_STORAGE_KEY);
+      this.archivedTasks = raw ? JSON.parse(raw) : [];
+    } catch { this.archivedTasks = []; }
+  }
+
+  private saveArchivedTasks(): void {
+    localStorage.setItem(ProductivityWorkspaceComponent.ARCHIVE_STORAGE_KEY, JSON.stringify(this.archivedTasks));
+  }
+
+  archiveTask(task: BoardTask, event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.boardTasks = this.boardTasks.filter(t => t.id !== task.id);
+    this.archivedTasks = [{ ...task }, ...this.archivedTasks];
+    this.saveArchivedTasks();
+    this.save();
+    if (this.selectedTask?.id === task.id) this.closeDetail();
+  }
+
+  unarchiveTask(task: BoardTask): void {
+    this.archivedTasks = this.archivedTasks.filter(t => t.id !== task.id);
+    this.boardTasks = [{ ...task }, ...this.boardTasks];
+    this.saveArchivedTasks();
+    this.save();
+  }
 
   private loadStages(): Array<{ key: string; label: string }> {
     try {
@@ -544,6 +587,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // ── Subtask follow-up expand state ────────────────────────────────────────
   expandedSubtaskIds = new Set<string>();
   subtaskFollowUpText: Record<string, string> = {};
+  replyingToFuId: string | null = null;
+  fuReplyText: Record<string, string> = {};
 
   @HostListener('document:click', ['$event'])
   onDocClick(e: MouseEvent): void {
@@ -914,9 +959,11 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     private readonly sanitizer: DomSanitizer,
     private readonly notifService: HrTaskNotificationService,
     private readonly authService: AuthenticationService,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
+    this.loadArchivedTasks();
     this.loadChannelUnread();
     this.productivityDataService.init();
     this.productivityReviewService.init();
@@ -1076,8 +1123,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   private autoOpenFromUrl(): void {
-    const params = new URLSearchParams(window.location.search);
-    const taskId = params.get('taskId');
+    const taskId = this.route.snapshot.queryParamMap.get('taskId');
     if (!taskId) return;
     const found = this.boardTasks.find(t => t.id === taskId || String(t.apiId) === taskId);
     if (found) {
@@ -1532,8 +1578,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         // My Tasks: only tasks where the logged-in user is an assignee
         if (!isAssignedToMe(t)) return false;
       } else if (this.taskViewMode === 'team') {
-        // My Team: tasks where current user is an assignee (same ownership rule)
-        if (!isAssignedToMe(t)) return false;
+        // Team Tasks: tasks where current user is supervisor/team-lead
+        if (!iAmSupervisor(t)) return false;
       } else if (this.taskViewMode === 'all') {
         // All Tasks (supervisor/admin): tasks I supervise OR tasks I'm assigned to
         if (!iAmSupervisor(t) && !isAssignedToMe(t)) return false;
@@ -1578,6 +1624,56 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   openDetail(task: BoardTask): void { this.selectedTask = task; this.detailPanelVisible = true; this.detailTab = 'overview'; this.newActivityText = ''; }
   closeDetail(): void { this.selectedTask = null; this.detailPanelVisible = false; this.save(); }
+
+  toggleReplyBox(fuId: string): void {
+    this.replyingToFuId = this.replyingToFuId === fuId ? null : fuId;
+    if (!this.fuReplyText[fuId]) this.fuReplyText[fuId] = '';
+  }
+
+  onFuReplyEnter(event: KeyboardEvent, fu: FollowUp): void {
+    if (event.shiftKey) return;
+    event.preventDefault();
+    this.submitFollowUpReply(fu);
+  }
+
+  submitFollowUpReply(fu: FollowUp): void {
+    if (!this.selectedTask) return;
+    const text = (this.fuReplyText[fu.id] || '').trim();
+    if (!text) return;
+    const reply: FollowUpReply = {
+      id: `rep${Date.now()}`,
+      author: this.currentUserFullName || 'You',
+      initials: this.getInitials(this.currentUserFullName || 'You'),
+      color: '#6366f1',
+      timestamp: new Date().toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }),
+      text,
+    };
+    if (!fu.replies) fu.replies = [];
+    fu.replies.push(reply);
+    this.fuReplyText[fu.id] = '';
+    this.replyingToFuId = null;
+    this.save();
+  }
+
+  toggleReaction(fu: FollowUp, emoji: string): void {
+    if (!fu.reactions) fu.reactions = {};
+    const me = this.currentUserFullName || 'You';
+    if (!fu.reactions[emoji]) fu.reactions[emoji] = [];
+    const idx = fu.reactions[emoji].indexOf(me);
+    if (idx > -1) { fu.reactions[emoji].splice(idx, 1); }
+    else { fu.reactions[emoji].push(me); }
+    if (fu.reactions[emoji].length === 0) delete fu.reactions[emoji];
+    this.save();
+  }
+
+  reactionCount(fu: FollowUp, emoji: string): number {
+    return fu.reactions?.[emoji]?.length ?? 0;
+  }
+
+  iReacted(fu: FollowUp, emoji: string): boolean {
+    const me = this.currentUserFullName || 'You';
+    return (fu.reactions?.[emoji] ?? []).includes(me);
+  }
 
   toggleSubtask(task: BoardTask, sub: SubTask): void {
     sub.done = !sub.done;
@@ -2232,7 +2328,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
     // Build rich pre-filled message with task context
     const assigneeList = (task.assignees?.length ? task.assignees : [task.assignee]).filter(Boolean).join(', ') || '—';
-    const taskUrl = `${window.location.origin}/admin/hr/performance/${encodeURIComponent(window.location.pathname.split('/').pop() || 'uu')}`;
+    const taskUrl = `${window.location.origin}${window.location.pathname}`;
     this.shareNote = [
       `📋 *Task: ${task.title}*`,
       `🚦 Status: ${task.status}  |  ⚡ Priority: ${task.priority}`,
