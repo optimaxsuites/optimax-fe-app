@@ -80,6 +80,16 @@ export interface ProcurementRequest {
   selectedVendorId: string;
   selectedVendorName?: string;
   selectedQuotationId?: string;
+  // The real, shared vendor-portal Lpo record's `id` (and, for convenience,
+  // its human-readable `lpoNumber`) — assigned the moment the LPO is
+  // actually generated for this request (see LpoPreviewComponent.updateStatus()
+  // and QuotationManagementService.ensureLpoAssigned()). This is the durable
+  // join key invoices are matched against; VendorService.createInvoice() and
+  // DocumentationHistoryComponent both key off this instead of trying to
+  // infer the link from lpoId/lpoNumber string contents (which don't reliably
+  // encode the request id).
+  selectedLpoId?: string;
+  selectedLpoNumber?: string;
   cancellationReason?: string;
   cancelledAt?: Date;
   cancellationAdditionalNotes?: string;

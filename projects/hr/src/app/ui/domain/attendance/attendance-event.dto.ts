@@ -34,12 +34,13 @@ export interface AttendanceEventDTO {
   rawTemplateHash?: string; // Biometric template hash for verification
 
   // Remote check-in data
-  ipAddress?: string; // IP address of the device
+  deviceIpAddress?: string; // IP address of the biometric device
+  connectionIpAddress?: string; // IP address of the user/connection making the request
   deviceFingerprint?: string; // Device fingerprint for remote check-in
 
   // Location tracking
-  gpsLat?: number; // GPS latitude for location verification
-  gpsLng?: number; // GPS longitude for location verification
+  gpsLatitude?: number; // GPS latitude for location verification
+  gpsLongitude?: number; // GPS longitude for location verification
 
   // Fraud detection
   fraudFlags?: FraudFlagCode[]; // Fraud detection flags
@@ -101,15 +102,19 @@ export interface AttendanceRecordDTO {
 export interface ShiftDTO {
   id?: number;
   name: string;
+  description?: string;
   branchCode?: string;
+  timezone?: string;
   startTime: string; // HH:mm format
   endTime: string; // HH:mm format
   isOvernight?: boolean;
   graceMinutes?: number;
   otThresholdMinutes?: number;
-  daysOfWeek: number[]; // 1=Mon, 7=Sun
-  active?: boolean;
+  daysOfWeek: number[]; // 1=Monday, 7=Sunday (ISO 8601)
+  active: boolean;
+  createdBy?: number;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ScheduleDTO {

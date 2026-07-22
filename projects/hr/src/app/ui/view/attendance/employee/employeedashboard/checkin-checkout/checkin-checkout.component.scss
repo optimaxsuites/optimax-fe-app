@@ -1,5 +1,7 @@
+@import '../../../styles/brand-colors';
+
 .clock-card {
-  background: #ffffff;/*linear-gradient(135deg, #111827, #1f2937)*/;
+  background: $bg-white;/*linear-gradient(135deg, #111827, #1f2937)*/;
   color: black;
   border-radius: 18px;
   padding: 1.6rem;
@@ -14,7 +16,7 @@
     font-weight: 450px;
     border-radius: 18px;
     padding: 1.2rem 1.2rem;
-    border: 1px solid var(--gray-200);
+    border: 1px solid $border-light;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
   }
 
@@ -24,7 +26,7 @@
     font-weight: 450px;
     border-radius: 18px;
     padding: 1.2rem 1.2rem;
-    border: 1px solid var(--gray-200);
+    border: 1px solid $border-light;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
   }
 
@@ -34,7 +36,7 @@
     font-weight: 450px;
     border-radius: 18px;
     padding: 1.2rem 1.2rem;
-    border: 1px solid var(--gray-200);
+    border: 1px solid $border-light;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
   }
 
@@ -51,7 +53,7 @@
       margin: 0;
       font-size: 1.5rem;
       font-weight: 600;
-      color: #9ca3af;
+      color: $text-muted;
     }
   }
 
@@ -65,15 +67,15 @@
       font-weight: 600;
 
       &.in {
-        background: #16a34a;
+        background: $success;
       }
 
       &.out {
-        background: #dc2626;
+        background: $danger;
       }
 
       &.break {
-        background: #f59e0b;
+        background: $warning;
       }
     }
   }
@@ -90,7 +92,7 @@
       font-size: 1.2rem;
       font-weight: 600;
       cursor: pointer;
-      transition: transform 0.15s ease, background 0.2s ease;
+      transition: transform 0.15s ease, background $transition-fast;
 
       &:active {
         transform: scale(0.98);
@@ -98,11 +100,11 @@
     }
 
     .main-btn {
-      background: #1f9254;
-      color: white;
+      background: $status-approved;
+      color: $bg-white;
 
       &:hover {
-        background: #065f46;
+        background: $status-completed;
       }
     }
   }

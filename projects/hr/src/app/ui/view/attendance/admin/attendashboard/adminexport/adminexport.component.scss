@@ -1,3 +1,5 @@
+@import '../../../styles/brand-colors';
+
 .export-card {
   //background: #ffffff;
   //padding: 16px 20px;
@@ -11,18 +13,18 @@
   justify-content: right;
 }
 
-.action-btn {  
+.action-btn {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
   font-size: 14px;
-  border: 1px solid #d1d5db;
+  border: 1px solid $border-light;
   border-radius: 8px;
-  background: #ffffff;
-  color: #374151;
+  background: $bg-white;
+  color: $text-secondary;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
 
   i {
     font-size: 13px;
@@ -31,13 +33,13 @@
 }
 
 .action-btn:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
+  background: $bg-light;
+  border-color: $text-muted;
 }
 
 .file-name {
   font-size: 20px;
-  color: #6b7280;
+  color: $text-secondary;
   margin-top: 6px;
 }
 /*.export-card {
@@ -63,27 +65,27 @@
   border-radius: 8px;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 /* CSV */
 .export-btn.csv {
-  background-color: white/*e0f2fe*/;
-  color: #0369a1;
+  background-color: $bg-white;
+  color: $info;
 
   &:hover {
-    background-color: #bae6fd;
+    background-color: rgba(182, 214, 226, 0.3);
   }
 }
 
 /* Excel */
 .export-btn.excel {
-  background-color: white;//#dcfce7;
-  color: #166534;
+  background-color: $bg-white;
+  color: $status-approved;
 
   &:hover {
-    background-color: #bbf7d0;
+    background-color: rgba(46, 178, 112, 0.1);
   }
 }
 
@@ -104,7 +106,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: white;
+  background: $bg-white;
   padding: 20px;
   border-radius: 12px;
   width: 400px;
@@ -140,12 +142,12 @@
 
 .modal-text {
   font-size: 14px;
-  color: #555;
+  color: $text-secondary;
 }
 
 .remind-text {
   font-size: 12px;
-  color: #555;
+  color: $text-secondary;
 }
 
 /* FILE INPUT */
@@ -153,7 +155,7 @@
 .file-upload input {
   width: 100%;
   padding: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid $border-muted;
   border-radius: 6px;
 }
 
@@ -161,8 +163,8 @@
 
 .template-btn {
   align-self: flex-start;
-  background: #f1f5f9;
-  border: 1px solid #ddd;
+  background: $bg-light;
+  border: 1px solid $border-muted;
   padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
@@ -170,7 +172,7 @@
 }
 
 .template-btn:hover {
-  background: #e2e8f0;
+  background: rgba(229, 229, 229, 0.5);
 }
 
 /* ACTION BUTTONS */
@@ -185,14 +187,14 @@
 .cancel-btn {
   padding: 8px 16px;
   border-radius: 6px;
-  border: 1px solid #ddd;
-  background: white;
+  border: 1px solid $border-muted;
+  background: $bg-white;
   cursor: pointer;
   font-size: 13px;
 }
 
 .cancel-btn:hover {
-  background: #f5f5f5;
+  background: $bg-light;
 }
 
 .import-btn {
@@ -200,8 +202,8 @@
   border-radius: 6px;
   border: none;
 
-  background: #10b981;
-  color: white;
+  background: $success;
+  color: $bg-white;
   font-weight: 500;
   font-size: 13px;
 
@@ -209,7 +211,7 @@
 }
 
 .import-btn:hover {
-  background: #059669;
+  background: $btn-success-hover;
 }
 
 @media (max-width: 768px) {

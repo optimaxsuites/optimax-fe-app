@@ -363,6 +363,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     LoanDashboardComponent,
     EmployeeLoanHistoryComponent,
     EmployeeDashboardComponent,
+    EmployeeProfileDashboardComponent,
     LoanApprovalUiComponent,
     LoanBalanceIndicatorsComponent,
     LoanDetailsComponent,
@@ -440,7 +441,6 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     PayrollCorrectionComponent,
     BonusDisbursementComponent,
     // FooterComponent,
-    // EmployeeRelativesWidgetComponent,
   ],
   imports: [
     LargeSideModalComponent,
@@ -503,6 +503,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     MenuModule,
     AutoCompleteModule,
     CooperativeGracePeriodRequestFormModule,
+    EmployeeRelativesWidgetComponent,
   ],
   schemas: [NO_ERRORS_SCHEMA],
   providers: [

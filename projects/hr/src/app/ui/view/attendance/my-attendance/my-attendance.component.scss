@@ -1,3 +1,5 @@
+@import '../styles/brand-colors';
+
 .attendance-container {
   padding: 20px;
   width: 75.67%;
@@ -17,23 +19,23 @@
 }
 
 .attendance-box {
-  border: 1px solid #ccc;
+  border: 1px solid $border-light;
   border-radius: 8px;
   padding: 10px;
   text-align: left;
-  transition: background-color 0.3s;
+  transition: background-color $transition-default;
 }
 
 .attendance-box:hover {
-  background-color: #f0f0f0;
+  background-color: $bg-light;
 }
 
 .present {
-  background-color: #c8e6c9; /* Green for present */
+  background-color: rgba(46, 178, 112, 0.1);
 }
 
 .absent {
-  background-color: #2f6276; /* Red for absent */
+  background-color: rgba(46, 98, 118, 0.05);
 }
 
 .day {
@@ -57,18 +59,18 @@
 }
 
 .notification.info {
-  background-color: #2196f3;
-  color: white;
+  background-color: $info;
+  color: $bg-white;
 }
 
 .notification.success {
-  background-color: #4caf50;
-  color: white;
+  background-color: $success;
+  color: $bg-white;
 }
 
 .notification.error {
-  background-color: #f44336;
-  color: white;
+  background-color: $danger;
+  color: $bg-white;
 }
 
 /* Modal styling */
@@ -86,7 +88,7 @@
 }
 
 .modal-content {
-  background-color: white;
+  background-color: $bg-white;
   padding: 20px;
   border-radius: 8px;
   width: 80%;
@@ -121,8 +123,8 @@
 
 .modal-footer button {
   padding: 5px 10px;
-  background-color: #2f6276;
-  color: white;
+  background-color: $primary-blue-green;
+  color: $bg-white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -144,30 +146,30 @@
 }
 
 .action-buttons .todo {
-  background-color: #fbc02d;
-  color: white;
+  background-color: $warning;
+  color: $bg-white;
 }
 
 .action-buttons .review {
-  background-color: #03a9f4;
-  color: white;
+  background-color: $info;
+  color: $bg-white;
 }
 
 .action-buttons .add-event {
-  background-color: #4caf50;
-  color: white;
+  background-color: $success;
+  color: $bg-white;
 }
 
 .action-buttons .click-event {
   background-color: #e91e63;
-  color: white;
+  color: $bg-white;
 }
 
 /* Left container styles */
 .left-container {
   width: 35%; /* Takes up 1/3 of the page */
   padding: 10px;
-  background-color: #f9fafb;
+  background-color: $bg-light;
 }
 
 .employee-info {
@@ -194,7 +196,7 @@
 
 .employee-details p {
   margin: 0;
-  color: #2f6276;
+  color: $primary-blue-green;
   font-size: 14px;
 }
 
@@ -239,20 +241,20 @@
   justify-content: space-around;
   align-items: flex-end;
   height: 100px;
-  background-color: #eee;
+  background-color: $border-light;
   padding: 10px;
 }
 
 .chart-bar {
   width: 20px;
-  background-color: #2f6276;
+  background-color: $primary-blue-green;
   text-align: center;
 }
 
 .chart-bar div {
-  background-color: #2f6276;
+  background-color: $primary-blue-green;
   width: 100%;
-  transition: height 0.3s ease;
+  transition: height $transition-default;
 }
 
 .chart-bar span {
@@ -273,7 +275,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: white;
+  background-color: $bg-white;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -308,15 +310,15 @@
 
 .popup-footer button {
   padding: 5px 10px;
-  background-color: #2f6276;
-  color: white;
+  background-color: $primary-blue-green;
+  color: $bg-white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
 }
 
   .my-attendance-container {
-    background-color: white;
+    background-color: $bg-white;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -330,15 +332,15 @@
   button {
     padding: 10px 20px;
     font-size: 16px;
-    background-color: #2f6276;
-    color: white;
+    background-color: $primary-blue-green;
+    color: $bg-white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
   }
 
   h1, h2 {
-    color: #333;
+    color: $text-dark;
   }
 
   ul {
@@ -374,23 +376,23 @@
 }
 
 .attendance-box {
-  border: 1px solid #ccc;
+  border: 1px solid $border-light;
   border-radius: 8px;
   padding: 10px;
   text-align: left;
-  transition: background-color 0.3s;
+  transition: background-color $transition-default;
 }
 
 .attendance-box:hover {
-  background-color: #f0f0f0;
+  background-color: $bg-light;
 }
 
 .present {
-  background-color: #c8e6c9; /* Green for present */
+  background-color: rgba(46, 178, 112, 0.1);
 }
 
 .absent {
-  background-color: #2f6276; /* Red for absent */
+  background-color: rgba(46, 98, 118, 0.05);
 }
 
 .day {
