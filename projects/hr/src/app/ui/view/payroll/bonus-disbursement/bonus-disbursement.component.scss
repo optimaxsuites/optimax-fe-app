@@ -1,0 +1,117 @@
+.bon-page { padding: 24px; max-width: 900px; min-height: 100vh; background: #f9fafb; }
+.bon-toast {
+  position: fixed; top: 20px; right: 20px; z-index: 9999; background: #1e293b;
+  color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 13px;
+  display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.2);
+  &--success { background: #16a34a; } &--error { background: #dc2626; }
+}
+.bon-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 9998;
+  display: flex; align-items: center; justify-content: center;
+}
+.bon-modal {
+  background: #fff; border-radius: 12px; padding: 28px; width: 440px; max-width: 95vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+.bon-modal-title { font-size: 16px; font-weight: 700; color: #111827; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+.bon-modal-note {
+  width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px;
+  font-size: 13px; resize: vertical; outline: none; margin-bottom: 16px;
+  &:focus { border-color: #1a73e8; }
+}
+.bon-modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.bon-header { margin-bottom: 24px; }
+.bon-title { font-size: 22px; font-weight: 700; color: #111827; margin: 0 0 4px; }
+.bon-sub { font-size: 13px; color: #6b7280; margin: 0; }
+.bon-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.bon-stat {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px 18px;
+  &__count { font-size: 22px; font-weight: 700; color: #111827; display: block; }
+  &__label { font-size: 12px; color: #6b7280; }
+  &--green { border-color: #bbf7d0; .bon-stat__count { color: #16a34a; } }
+  &--red { border-color: #fecaca; .bon-stat__count { color: #dc2626; } }
+  &--blue { border-color: #bfdbfe; .bon-stat__count { font-size: 16px; color: #1a73e8; } }
+}
+.bon-tabs { display: flex; gap: 4px; border-bottom: 2px solid #e5e7eb; margin-bottom: 20px; }
+.bon-tab {
+  padding: 10px 18px; font-size: 13px; font-weight: 500; color: #6b7280;
+  border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent;
+  margin-bottom: -2px; display: flex; align-items: center; gap: 6px;
+  &.active { color: #1a73e8; border-bottom-color: #1a73e8; }
+  &:hover:not(.active) { color: #374151; }
+  &--new { margin-left: auto; color: #1a73e8; }
+}
+.bon-badge {
+  background: #fee2e2; color: #dc2626; border-radius: 10px;
+  padding: 1px 7px; font-size: 11px; font-weight: 700;
+}
+.bon-body { min-height: 200px; }
+.bon-loading { padding: 40px; text-align: center; color: #6b7280; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.bon-empty { text-align: center; padding: 60px 20px; color: #9ca3af; i { font-size: 36px; display: block; margin-bottom: 12px; } p { font-size: 14px; } }
+.bon-list { display: flex; flex-direction: column; gap: 10px; }
+.bon-card {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px 18px;
+  &--approved { border-color: #bbf7d0; }
+  &--rejected { border-color: #fecaca; opacity: .85; }
+}
+.bon-card-main { display: flex; align-items: center; gap: 14px; }
+.bon-avatar {
+  width: 40px; height: 40px; border-radius: 50%; background: #e0e7ff;
+  color: #4338ca; font-weight: 700; font-size: 15px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  &--green { background: #dcfce7; color: #16a34a; }
+  &--red { background: #fee2e2; color: #dc2626; }
+}
+.bon-card-info { flex: 1; min-width: 0; }
+.bon-card-name { font-size: 14px; font-weight: 600; color: #111827; }
+.bon-card-meta { font-size: 12px; color: #6b7280; margin-top: 2px; display: flex; align-items: center; gap: 8px; }
+.bon-card-amount {
+  font-size: 16px; font-weight: 700; color: #111827; white-space: nowrap;
+  &--green { color: #16a34a; } &--red { color: #dc2626; }
+}
+.bon-card-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f3f4f6; }
+.bon-card-status { display: flex; gap: 8px; margin-top: 10px; }
+.bon-verdict { font-size: 12px; color: #6b7280; margin-top: 4px; font-style: italic; &--red { color: #dc2626; } }
+.bon-source {
+  padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;
+  background: #f3f4f6; color: #374151;
+  &--commission { background: #fef3c7; color: #92400e; }
+  &--incentive { background: #ede9fe; color: #6d28d9; }
+  &--award { background: #ecfdf5; color: #065f46; }
+}
+.bon-tag {
+  background: #f3f4f6; color: #6b7280; border-radius: 12px; padding: 3px 10px;
+  font-size: 12px; display: flex; align-items: center; gap: 5px;
+  &--green { background: #dcfce7; color: #16a34a; }
+}
+.bon-btn {
+  background: #1a73e8; color: #fff; border: none; border-radius: 8px;
+  padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  &:hover:not(:disabled) { background: #1557b0; }
+  &:disabled { opacity: .6; cursor: not-allowed; }
+  &--sm { padding: 6px 12px; font-size: 12px; }
+  &--ghost { background: #fff; color: #374151; border: 1px solid #d1d5db; &:hover:not(:disabled) { background: #f9fafb; } }
+  &--red { background: #dc2626; &:hover:not(:disabled) { background: #b91c1c; } }
+}
+.bon-form-card {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 24px;
+}
+.bon-form-title { font-size: 15px; font-weight: 600; color: #111827; margin: 0 0 20px; }
+.bon-form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.bon-field {
+  display: flex; flex-direction: column; gap: 6px;
+  label { font-size: 12px; font-weight: 500; color: #374151; }
+  &--full { grid-column: 1 / -1; }
+}
+.bon-select {
+  border: 1px solid #d1d5db; border-radius: 6px; padding: 9px 10px;
+  font-size: 13px; color: #111827; background: #fff; outline: none;
+  &:focus { border-color: #1a73e8; }
+}
+.bon-input {
+  border: 1px solid #d1d5db; border-radius: 6px; padding: 9px 10px;
+  font-size: 13px; color: #111827; outline: none;
+  &:focus { border-color: #1a73e8; }
+}
+.bon-form-actions { display: flex; }

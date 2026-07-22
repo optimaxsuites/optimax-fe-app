@@ -25,6 +25,9 @@
       <button class="snav-item" [class.active]="activeSection === 'forms'" (click)="activeSection = 'forms'">
         <i class="fas fa-file-alt"></i> Forms &amp; Templates
       </button>
+      <button class="snav-item" [class.active]="activeSection === 'payroll'" (click)="activeSection = 'payroll'">
+        <i class="fas fa-money-check-alt"></i> Payroll Config
+      </button>
     </div>
 
     <!-- Right panel -->
@@ -361,6 +364,79 @@
             </button>
           </div>
         </div>
+      </ng-container>
+
+
+      <!-- ══ PAYROLL CONFIG ══ -->
+      <ng-container *ngIf="activeSection === 'payroll'">
+        <div class="section-head">
+          <h3>Payroll Configuration</h3>
+          <p>Set pay schedules, deduction rules, and default allowances for payroll generation.</p>
+        </div>
+
+        <div *ngIf="payrollSettingsLoading" class="prl-loading">
+          <i class="fas fa-spinner fa-spin"></i> Loading payroll settings…
+        </div>
+
+        <ng-container *ngIf="!payrollSettingsLoading">
+          <!-- Pay Schedule -->
+          <div class="prl-card">
+            <h4 class="prl-card__title"><i class="fas fa-calendar-alt"></i> Pay Schedule</h4>
+            <div class="prl-grid">
+              <div class="prl-field">
+                <label>Pay Day <span class="prl-hint">(day of month salaries are paid)</span></label>
+                <input type="number" min="1" max="31" [(ngModel)]="payrollConfig.payDay" class="prl-input" />
+              </div>
+              <div class="prl-field">
+                <label>Lock Day <span class="prl-hint">(day payroll is locked for editing)</span></label>
+                <input type="number" min="1" max="31" [(ngModel)]="payrollConfig.lockDay" class="prl-input" />
+              </div>
+              <div class="prl-field">
+                <label>Working Days / Month</label>
+                <input type="number" min="1" max="31" [(ngModel)]="payrollConfig.workingDaysPerMonth" class="prl-input" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Statutory Deductions -->
+          <div class="prl-card">
+            <h4 class="prl-card__title"><i class="fas fa-minus-circle"></i> Statutory Deductions</h4>
+            <p class="prl-sub">Toggle which deductions are automatically applied during payroll generation.</p>
+            <div class="prl-toggle-list">
+              <div class="prl-toggle-row" *ngFor="let key of deductionKeys">
+                <div class="prl-toggle-info">
+                  <span class="prl-toggle-label">{{ deductionLabel(key) }}</span>
+                  <span class="prl-toggle-desc">{{ deductionDesc(key) }}</span>
+                </div>
+                <label class="prl-switch">
+                  <input type="checkbox" [(ngModel)]="deductionToggles[key]" />
+                  <span class="prl-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Default Allowances -->
+          <div class="prl-card">
+            <h4 class="prl-card__title"><i class="fas fa-plus-circle"></i> Default Allowances (₦)</h4>
+            <p class="prl-sub">Default allowance amounts added to gross pay. Set 0 to exclude.</p>
+            <div class="prl-grid">
+              <div class="prl-field" *ngFor="let key of allowanceKeys">
+                <label>{{ allowanceLabel(key) }}</label>
+                <input type="number" min="0" [(ngModel)]="allowanceDefaults[key]" class="prl-input" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Save -->
+          <div class="prl-actions">
+            <button class="prl-save-btn" (click)="savePayrollSettings()" [disabled]="payrollSettingsSaving">
+              <i class="fas" [class.fa-save]="!payrollSettingsSaving" [class.fa-spinner]="payrollSettingsSaving" [class.fa-spin]="payrollSettingsSaving"></i>
+              {{ payrollSettingsSaving ? 'Saving…' : 'Save Payroll Settings' }}
+            </button>
+            <span class="prl-saved" *ngIf="payrollSaveSuccess"><i class="fas fa-check-circle"></i> Saved</span>
+          </div>
+        </ng-container>
       </ng-container>
 
     </div>

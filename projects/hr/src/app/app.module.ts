@@ -11,6 +11,7 @@ import { EmployeeUpdateFormComponent } from './ui/view/employee-management/emplo
 import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-modal.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
+import { BonusDisbursementComponent } from './ui/view/payroll/bonus-disbursement/bonus-disbursement.component';
 import { EmployeeRelativesWidgetComponent } from './ui/shared-component/employee-relatives-widget/employee-relatives-widget.component';
 import { NgModule, NO_ERRORS_SCHEMA } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -116,6 +117,7 @@ import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/emp
 import { PayrollDashboardComponent } from './ui/view/payroll/payroll-dashboard/payroll-dashboard.component';
 import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip-list/employee-payslip-list.component';
 import { PayslipViewComponent } from './ui/view/payroll/payslip-view/payslip-view.component';
+import { PayrollDisbursementComponent } from './ui/view/payroll/payroll-disbursement/payroll-disbursement.component';
 import { GoalComponent } from './ui/view/performance/goal/goal.component';
 import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
 import { EmployeeGuarantorComponent } from './ui/view/employee-management/employee-guarantor/employee-guarantor.component';
@@ -256,6 +258,7 @@ import { EmployeeChangeRequestsSummaryComponent } from './ui/view/employee-dashb
 import { GuarantorChangeRequestComponent } from './ui/view/profile-change-requests/guarantor-change-request/guarantor-change-request.component';
 // import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
 import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-letters.component';
+import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction/payroll-correction.component';
 
 
 @NgModule({
@@ -292,6 +295,7 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     MyAttendanceComponent,
     EmployeePayrollComponent,
     PayrollDashboardComponent,
+    PayrollDisbursementComponent,
     EmployeePayslipListComponent,
     GuarantorConfirmationComponent,
     ViewEmployeeComponent,
@@ -434,6 +438,8 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     HrReportsComponent,
     HrLettersComponent,
     UserProfileComponent,
+    PayrollCorrectionComponent,
+    BonusDisbursementComponent,
     // FooterComponent,
   ],
   imports: [

@@ -1,0 +1,208 @@
+<div class="disb-page">
+  <!-- Toast -->
+  <div class="disb-toast" *ngIf="showToast" [class.disb-toast--success]="toastType==='success'" [class.disb-toast--error]="toastType==='error'">
+    <i class="fas" [class.fa-check-circle]="toastType==='success'" [class.fa-exclamation-circle]="toastType==='error'" [class.fa-info-circle]="toastType==='info'"></i>
+    {{ toastMsg }}
+  </div>
+
+  <div class="disb-header">
+    <h2 class="disb-title">Payroll Disbursement</h2>
+    <p class="disb-sub">Disburse approved payroll runs via Paystack, GTBank bulk upload, or a custom bank template.</p>
+  </div>
+
+  <!-- Run Selector -->
+  <div class="disb-run-card">
+    <label class="disb-label">Select Approved Payroll Run</label>
+    <div *ngIf="loading" class="disb-loading"><i class="fas fa-spinner fa-spin"></i> Loading runs…</div>
+    <select *ngIf="!loading" class="disb-select" [(ngModel)]="selectedRunId" (change)="selectRun(selectedRunId!)">
+      <option [ngValue]="null" disabled>— choose a run —</option>
+      <option *ngFor="let r of runs" [ngValue]="r.id">{{ runLabel(r) }}</option>
+    </select>
+    <span class="disb-run-empty" *ngIf="!loading && !runs.length">No approved payroll runs found. Approve a run in the Payroll screen first.</span>
+  </div>
+
+  <!-- Employee preview -->
+  <div class="disb-preview" *ngIf="employees.length">
+    <div class="disb-preview-head">
+      <span>{{ employees.length }} employees</span>
+      <span class="disb-total">Total Net: <strong>{{ fmt(totalNet) }}</strong></span>
+    </div>
+    <div class="disb-table-wrap">
+      <table class="disb-table">
+        <thead><tr>
+          <th>#</th><th>Employee</th><th>Account No.</th><th>Bank</th><th>Net Pay</th>
+        </tr></thead>
+        <tbody>
+          <tr *ngFor="let e of employees; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td>{{ (e.employee?.firstName || e.firstName || '') + ' ' + (e.employee?.lastName || e.lastName || '') }}</td>
+            <td>{{ e.employee?.accountNumber || e.accountNumber || '—' }}</td>
+            <td>{{ e.employee?.bankName || e.bankName || '—' }}</td>
+            <td class="disb-amount">{{ fmt(e.netPayable ?? 0) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="disb-tabs" *ngIf="employees.length">
+    <button class="disb-tab" [class.active]="activeTab==='paystack'" (click)="activeTab='paystack'">
+      <i class="fas fa-bolt"></i> Paystack
+    </button>
+    <button class="disb-tab" [class.active]="activeTab==='gtbank'" (click)="activeTab='gtbank'">
+      <i class="fas fa-university"></i> GTBank Excel
+    </button>
+    <button class="disb-tab" [class.active]="activeTab==='template'" (click)="activeTab='template'">
+      <i class="fas fa-sliders-h"></i> Custom Templates
+    </button>
+  </div>
+
+  <div class="disb-tab-body" *ngIf="employees.length">
+
+    <!-- PAYSTACK -->
+    <div *ngIf="activeTab === 'paystack'">
+      <div class="disb-info-box">
+        <i class="fas fa-info-circle"></i>
+        Paystack Bulk Transfer will initiate transfers from your connected Paystack account to each employee's bank account. Ensure your Paystack balance is sufficient: <strong>{{ fmt(totalNet) }}</strong>
+      </div>
+      <button class="disb-action-btn disb-action-btn--green" (click)="initiatePaystackTransfer()" [disabled]="disbursing">
+        <i class="fas" [class.fa-paper-plane]="!disbursing" [class.fa-spinner]="disbursing" [class.fa-spin]="disbursing"></i>
+        {{ disbursing ? 'Initiating…' : 'Initiate Paystack Transfer' }}
+      </button>
+    </div>
+
+    <!-- GTBANK -->
+    <div *ngIf="activeTab === 'gtbank'">
+      <div class="disb-info-box">
+        <i class="fas fa-info-circle"></i>
+        Downloads an <strong>.xlsx</strong> file matching GTBank's Bulk Payment template exactly.
+        Log in to GTBank Internet Banking → <em>Bulk Payment</em> → <em>Upload File</em> and select this file.
+      </div>
+
+      <!-- Summary strip -->
+      <div class="disb-summary-strip">
+        <div class="disb-sum-item">
+          <span class="disb-sum-label">Employees</span>
+          <span class="disb-sum-value">{{ employees.length }}</span>
+        </div>
+        <div class="disb-sum-item">
+          <span class="disb-sum-label">Gross Pay</span>
+          <span class="disb-sum-value">{{ fmt(totalGross) }}</span>
+        </div>
+        <div class="disb-sum-item">
+          <span class="disb-sum-label">Total Deductions</span>
+          <span class="disb-sum-value">{{ fmt(totalDeductions) }}</span>
+        </div>
+        <div class="disb-sum-item disb-sum-item--net">
+          <span class="disb-sum-label">Net Disbursement</span>
+          <span class="disb-sum-value">{{ fmt(totalNet) }}</span>
+        </div>
+      </div>
+
+      <!-- Column preview matching actual GTBank file -->
+      <div class="disb-gtbank-cols">
+        <div class="disb-col-chip" *ngFor="let c of ['PaymentAmount','PaymentDate','Reference','Remark','VendorCode','VendorName','VendorAcctNumber','VendorBankSortCode']">
+          <i class="fas fa-columns"></i> {{ c }}
+        </div>
+      </div>
+
+      <div class="disb-action-row">
+        <button class="disb-action-btn" (click)="downloadGTBank()" [disabled]="generatingFile">
+          <i class="fas" [class.fa-download]="!generatingFile" [class.fa-spinner]="generatingFile" [class.fa-spin]="generatingFile"></i>
+          {{ generatingFile ? 'Generating…' : 'Download GTBank Excel (.xlsx)' }}
+        </button>
+
+        <!-- Post to Finance -->
+        <button class="disb-action-btn disb-action-btn--finance" (click)="postToFinance()" [disabled]="postingToFinance || financePosted">
+          <i class="fas" [class.fa-book]="!postingToFinance && !financePosted" [class.fa-spinner]="postingToFinance" [class.fa-spin]="postingToFinance" [class.fa-check]="financePosted"></i>
+          {{ financePosted ? 'Posted to Finance' : (postingToFinance ? 'Posting…' : 'Post Journal Entry to Finance') }}
+        </button>
+      </div>
+
+      <div class="disb-finance-note" *ngIf="!financePosted">
+        <i class="fas fa-lightbulb"></i>
+        After uploading to GTBank and confirming payment, click <strong>Post Journal Entry to Finance</strong>
+        to automatically create the accounting record:
+        <em>Dr Salary Expense / Cr Payroll Payable</em> — visible in Finance → Journal Entries.
+      </div>
+      <div class="disb-finance-success" *ngIf="financePosted">
+        <i class="fas fa-check-circle"></i>
+        Journal entry posted. View it in <strong>Finance → Journal Entries</strong> (source: PAYROLL_DISBURSEMENT).
+      </div>
+    </div>
+
+    <!-- TEMPLATE -->
+    <div *ngIf="activeTab === 'template'">
+      <!-- Saved templates -->
+      <div class="disb-saved-tmpls" *ngIf="templates.length">
+        <h4 class="disb-section-label">Saved Templates</h4>
+        <div class="disb-tmpl-row" *ngFor="let t of templates">
+          <span class="disb-tmpl-name"><i class="fas fa-file-csv"></i> {{ t.name }}</span>
+          <div class="disb-tmpl-actions">
+            <button class="disb-mini-btn" (click)="loadTemplateForEdit(t)"><i class="fas fa-edit"></i></button>
+            <button class="disb-mini-btn disb-mini-btn--download" (click)="selectedTemplateId = t.id; downloadCustomTemplate()"><i class="fas fa-download"></i></button>
+            <button class="disb-mini-btn disb-mini-btn--del" (click)="deleteTemplate(t.id)"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Builder -->
+      <h4 class="disb-section-label">{{ builderTemplateLabel }} Template</h4>
+      <div class="disb-builder">
+        <div class="disb-builder-row">
+          <div class="prl-field">
+            <label>Template Name</label>
+            <input type="text" class="prl-input" [(ngModel)]="builderTemplate.name" placeholder="e.g. Access Bank Bulk" />
+          </div>
+          <div class="prl-field">
+            <label>Delimiter</label>
+            <select class="disb-select" [(ngModel)]="builderTemplate.delimiter">
+              <option *ngFor="let d of delimiterOptions" [value]="d.value">{{ d.label }}</option>
+            </select>
+          </div>
+          <div class="prl-field disb-toggle-field">
+            <label>Include Header Row</label>
+            <label class="prl-switch">
+              <input type="checkbox" [(ngModel)]="builderTemplate.includeHeader" />
+              <span class="prl-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Columns -->
+        <div class="disb-col-list" *ngIf="builderTemplate.columns.length">
+          <div class="disb-col-item" *ngFor="let col of builderTemplate.columns; let i = index">
+            <span class="disb-col-header">{{ col.header }}</span>
+            <span class="disb-col-type">{{ col.type === 'static' ? 'Static: ' + col.staticValue : 'Field: ' + col.field }}</span>
+            <button class="disb-mini-btn disb-mini-btn--del" (click)="removeColumn(i)"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+
+        <!-- Add column -->
+        <div class="disb-add-col">
+          <input type="text" class="prl-input" [(ngModel)]="newColHeader" placeholder="Column header" style="flex:1" />
+          <select class="disb-select" [(ngModel)]="newColType">
+            <option value="dynamic">Dynamic Field</option>
+            <option value="static">Static Value</option>
+          </select>
+          <select *ngIf="newColType==='dynamic'" class="disb-select" [(ngModel)]="newColField">
+            <option *ngFor="let f of fieldOptions" [value]="f">{{ f }}</option>
+          </select>
+          <input *ngIf="newColType==='static'" type="text" class="prl-input" [(ngModel)]="newColStatic" placeholder="Static value" style="width:120px" />
+          <button class="disb-action-btn" (click)="addColumn()" style="padding:8px 14px"><i class="fas fa-plus"></i></button>
+        </div>
+
+        <button class="disb-action-btn disb-action-btn--green" (click)="saveBuilderTemplate()">
+          <i class="fas fa-save"></i> Save Template
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="disb-empty" *ngIf="!loading && !employees.length && selectedRunId === null">
+    <i class="fas fa-hand-holding-usd"></i>
+    <p>Select an approved payroll run to begin disbursement.</p>
+  </div>
+</div>

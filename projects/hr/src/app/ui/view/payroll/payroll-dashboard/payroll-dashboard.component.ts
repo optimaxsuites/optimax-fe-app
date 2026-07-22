@@ -152,12 +152,15 @@ export class PayrollDashboardComponent implements OnInit, OnDestroy {
   navigate(target: string): void {
     const uuid = uuidV4();
     const routes: Record<string, string> = {
-      payroll:     `/admin/hr/payroll/${uuid}`,
-      operations:  `/admin/hr/payroll-operations/${uuid}`,
-      settings:    `/admin/hr/settings/${uuid}`,
-      employees:   `/admin/hr/employee-management/${uuid}`,
-      attendance:  `/admin/hr/attendance/${uuid}`,
-      analytics:   `/admin/hr/analytics/${uuid}`,
+      payroll:       `/admin/hr/payroll/${uuid}`,
+      operations:    `/admin/hr/payroll-operations/${uuid}`,
+      disbursement:  `/admin/hr/payroll-disbursement/${uuid}`,
+      correction:    `/admin/hr/payroll-correction/${uuid}`,
+      bonus:         `/admin/hr/bonus-disbursement/${uuid}`,
+      settings:      `/admin/hr/settings/${uuid}`,
+      employees:     `/admin/hr/employee-management/${uuid}`,
+      attendance:    `/admin/hr/attendance/${uuid}`,
+      analytics:     `/admin/hr/analytics/${uuid}`,
     };
     const path = routes[target];
     if (path) this.router.navigateByUrl(path);

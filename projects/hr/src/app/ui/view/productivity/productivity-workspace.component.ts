@@ -1295,20 +1295,48 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return uid ? `${HR_BOARD_KEY}_u${uid}` : HR_BOARD_KEY;
   }
 
+  private resolveEmail(employeeRef: any, fallbackEmpId?: number): string | null {
+    // 1. Direct map lookup by HR employee ID
+    const id = employeeRef?.id ?? fallbackEmpId;
+    if (id && this.employeeEmailMap[id]) return this.employeeEmailMap[id];
+    // 2. Name-match against dmUserList (which has emails from auth/users API)
+    if (employeeRef?.firstName || employeeRef?.lastName) {
+      const full = `${employeeRef.firstName || ''} ${employeeRef.lastName || ''}`.trim().toLowerCase();
+      const match = this.dmUserList.find(u => {
+        const ul = u.fullName.toLowerCase();
+        return ul === full || ul.includes(full) || full.includes(ul);
+      });
+      if (match?.email) return match.email;
+    }
+    // 3. Lookup by emp ID → name → dmUserList
+    if (id) {
+      const emp = this.allEmployees.find(e => String(e.id) === String(id));
+      if (emp) {
+        const full = emp.fullName.toLowerCase();
+        const match = this.dmUserList.find(u => {
+          const ul = u.fullName.toLowerCase();
+          return ul === full || ul.includes(full) || full.includes(ul);
+        });
+        if (match?.email) return match.email;
+      }
+    }
+    return null;
+  }
+
   private taskEmailRow(label: string, value: string, shade: boolean): string {
     const bg = shade ? ' style="background:#f9fafb;"' : '';
     return `<tr${bg}><td style="padding:8px 12px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">${label}</td><td style="padding:8px 12px;border:1px solid #e5e7eb;">${value}</td></tr>`;
   }
 
-  private sendTaskCreatedEmails(task: WorkTaskFull): void {
-    const assigneeId = task.assigneeEmployee?.id;
-    const supervisorId = task.supervisorEmployee?.id;
+  private sendTaskCreatedEmails(task: WorkTaskFull, origin?: BoardTask): void {
+    const assigneeId = task.assigneeEmployee?.id ?? origin?.assigneeEmployeeId;
+    const supervisorId = task.supervisorEmployee?.id ?? origin?.supervisorEmployeeId;
     const assigneeName = task.assigneeEmployee
       ? `${task.assigneeEmployee.firstName} ${task.assigneeEmployee.lastName}`.trim()
-      : 'Team Member';
+      : origin?.assignee || 'Team Member';
     const supervisorName = task.supervisorEmployee
       ? `${task.supervisorEmployee.firstName} ${task.supervisorEmployee.lastName}`.trim()
-      : '';
+      : origin?.team || '';
     const rows = [
       this.taskEmailRow('Task', task.title, false),
       this.taskEmailRow('Priority', task.priority, true),
@@ -1328,16 +1356,18 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view and manage this task.</p>
         </div>
       </div>`;
-    if (assigneeId && this.employeeEmailMap[assigneeId]) {
+    const assigneeEmail = this.resolveEmail(task.assigneeEmployee, assigneeId);
+    const supervisorEmail = this.resolveEmail(task.supervisorEmployee, supervisorId);
+    if (assigneeEmail) {
       this.employeeService.sendNotificationEmail(
-        this.employeeEmailMap[assigneeId],
+        assigneeEmail,
         `New Task Assigned: ${task.title}`,
         wrap('#1a73e8', 'New Task Assigned to You', assigneeName, 'A new task has been assigned to you on OptimaX Work Productivity:')
       ).subscribe({ error: () => {} });
     }
-    if (supervisorId && this.employeeEmailMap[supervisorId] && supervisorId !== assigneeId) {
+    if (supervisorEmail && supervisorEmail !== assigneeEmail) {
       this.employeeService.sendNotificationEmail(
-        this.employeeEmailMap[supervisorId],
+        supervisorEmail,
         `Task Created: ${task.title}`,
         wrap('#0f766e', 'Task Created Under Your Supervision', supervisorName,
           `A task has been created and assigned to <strong>${assigneeName}</strong> under your supervision:`)
@@ -1345,15 +1375,15 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     }
   }
 
-  private sendTaskUpdatedEmails(task: WorkTaskFull): void {
-    const assigneeId = task.assigneeEmployee?.id;
-    const supervisorId = task.supervisorEmployee?.id;
+  private sendTaskUpdatedEmails(task: WorkTaskFull, origin?: BoardTask): void {
+    const assigneeId = task.assigneeEmployee?.id ?? origin?.assigneeEmployeeId;
+    const supervisorId = task.supervisorEmployee?.id ?? origin?.supervisorEmployeeId;
     const assigneeName = task.assigneeEmployee
       ? `${task.assigneeEmployee.firstName} ${task.assigneeEmployee.lastName}`.trim()
-      : 'Team Member';
+      : origin?.assignee || 'Team Member';
     const supervisorName = task.supervisorEmployee
       ? `${task.supervisorEmployee.firstName} ${task.supervisorEmployee.lastName}`.trim()
-      : '';
+      : origin?.team || '';
     const rows = [
       this.taskEmailRow('Task', task.title, false),
       this.taskEmailRow('Status', task.status, true),
@@ -1373,14 +1403,16 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view the latest changes.</p>
         </div>
       </div>`;
-    if (assigneeId && this.employeeEmailMap[assigneeId]) {
+    const assigneeEmail = this.resolveEmail(task.assigneeEmployee, assigneeId);
+    const supervisorEmail = this.resolveEmail(task.supervisorEmployee, supervisorId);
+    if (assigneeEmail) {
       this.employeeService.sendNotificationEmail(
-        this.employeeEmailMap[assigneeId], `Task Updated: ${task.title}`, html(assigneeName)
+        assigneeEmail, `Task Updated: ${task.title}`, html(assigneeName)
       ).subscribe({ error: () => {} });
     }
-    if (supervisorId && this.employeeEmailMap[supervisorId] && supervisorId !== assigneeId) {
+    if (supervisorEmail && supervisorEmail !== assigneeEmail) {
       this.employeeService.sendNotificationEmail(
-        this.employeeEmailMap[supervisorId], `Task Updated: ${task.title}`, html(supervisorName)
+        supervisorEmail, `Task Updated: ${task.title}`, html(supervisorName)
       ).subscribe({ error: () => {} });
     }
   }
@@ -1435,14 +1467,14 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     if (task.apiId) {
       this.subscription.add(
         this.workTaskApi.updateTask(task.apiId, dto).subscribe({
-          next: (updated) => { task.apiId = updated.id; this.save(); this.sendTaskUpdatedEmails(updated); },
+          next: (updated) => { task.apiId = updated.id; this.save(); this.sendTaskUpdatedEmails(updated, task); },
           error: () => this.save(),
         })
       );
     } else {
       this.subscription.add(
         this.workTaskApi.createTask(dto).subscribe({
-          next: (created) => { task.apiId = created.id; this.save(); this.sendTaskCreatedEmails(created); },
+          next: (created) => { task.apiId = created.id; this.save(); this.sendTaskCreatedEmails(created, task); },
           error: () => this.save(),
         })
       );
