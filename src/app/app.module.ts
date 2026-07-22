@@ -112,6 +112,7 @@ import {
 import { AttendanceSheetsComponent } from './ui/view/attendance/attendance-sheet/attendance-sheet.component';
 import { NotificationComponent } from './ui/view/attendance/notification/notification.component';
 import { TimeSheetComponent } from './ui/view/attendance/time-sheet/time-sheet.component';
+import { TimesheetApprovalsComponent } from './ui/view/workschedule-shifts/timesheet-approvals/timesheet-approvals.component';
 import { MyAttendanceComponent } from './ui/view/attendance/my-attendance/my-attendance.component';
 import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/employee-payroll.component';
 import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip-list/employee-payslip-list.component';
@@ -280,6 +281,7 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     PerformanceComponent,
     NotificationComponent,
     TimeSheetComponent,
+    TimesheetApprovalsComponent,
     MyAttendanceComponent,
     EmployeePayrollComponent,
     EmployeePayslipListComponent,
