@@ -1130,18 +1130,14 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       );
     }
 
-    // Load employees for dropdowns — persist subscription so we catch data regardless of load order
+    // Load employees for dropdowns
     this.employeesLoading = true;
-    this.employeeService.ensureEmployeesLoaded();
     this.subscription.add(
-      this.employeeService.employees$.subscribe(emps => {
-        if ((emps || []).length > 0) this.applyEmployeeList(emps);
+      this.employeeService.getAllEmployee().subscribe({
+        next: (emps: any[]) => this.applyEmployeeList(emps),
+        error: () => { this.employeesLoading = false; }
       })
     );
-    // Also try active-only endpoint — replaces list with filtered set when backend is deployed
-    this.employeeService.getActiveEmployees().subscribe({
-      next: (active: any[]) => { if ((active || []).length > 0) this.applyEmployeeList(active); }
-    });
 
     // Load users from the users API to populate supervisor review with DM users
     this.subscription.add(
