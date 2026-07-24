@@ -87,6 +87,15 @@ export class EmployeeService {
     return from(promise);
   }
 
+  getActiveEmployees(): Observable<any[]> {
+    return this.http
+      .get<any[]>(this.baseurl + '/x/api/v2/hr/employees/active')
+      .pipe(
+        map((data: any) => Array.isArray(data) ? data : (data?.content ?? data?.data ?? [])),
+        catchError(() => of([]))
+      );
+  }
+
   getAllEmployee(force = false): Observable<any[]> {
     if (!force && this.employeesLoaded) {
       return of(this.employeesSubject.value);

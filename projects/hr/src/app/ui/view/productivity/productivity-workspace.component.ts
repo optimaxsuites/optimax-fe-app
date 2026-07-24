@@ -1130,34 +1130,73 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       );
     }
 
-    // Load employees for dropdowns
+    // Load employees for dropdowns — active employees with login accounts only
     this.employeesLoading = true;
-    this.employeeService.ensureEmployeesLoaded();
     this.subscription.add(
-      this.employeeService.employees$.subscribe(emps => {
-        this.allEmployees = (emps || [])
-          .map((e: any) => {
-            const fn = String(e?.firstName || e?.firstname || '').trim();
-            const ln = String(e?.lastName || e?.lastname || '').trim();
-            const full = (`${fn} ${ln}`).trim() || String(e?.fullName || e?.name || '').trim();
-            return {
-              id: String(e?.id || ''),
-              fullName: full,
-              department: String(e?.department?.name || e?.department || ''),
-              role: String(e?.jobTitle || e?.designation || ''),
-              supervisor: String(e?.supervisor?.fullName || e?.supervisorName || ''),
-            };
-          })
-          .filter(e => !!e.fullName);
-        this.employeeEmailMap = {};
-        (emps || []).forEach((e: any) => {
-          const id = Number(e?.id || 0);
-          const email = String(e?.workEmail || e?.email || '').trim();
-          if (id && email) this.employeeEmailMap[id] = email;
-        });
-        this.employeesLoading = false;
-        // If employees loaded, patch supervisor review submissions with real names
-        this.patchSubmissionsFromUsers(this.allEmployees);
+      this.employeeService.getActiveEmployees().subscribe({
+        next: (emps: any[]) => {
+          const mapped = (emps || [])
+            .filter((e: any) => e?.userId != null)
+            .map((e: any) => {
+              const fn = String(e?.firstName || e?.firstname || '').trim();
+              const ln = String(e?.lastName || e?.lastname || '').trim();
+              const full = (`${fn} ${ln}`).trim() || String(e?.fullName || e?.name || '').trim();
+              return {
+                id: String(e?.id || ''),
+                userId: e?.userId,
+                fullName: full,
+                department: String(e?.department?.name || e?.department || ''),
+                role: String(e?.jobTitle || e?.designation || ''),
+                supervisor: String(e?.supervisor || ''),
+              };
+            })
+            .filter(e => !!e.fullName);
+          if (mapped.length > 0) {
+            this.allEmployees = mapped;
+          } else {
+            // Fallback to full list if active+login list is empty (e.g. userId not yet linked)
+            this.employeeService.ensureEmployeesLoaded();
+          }
+          this.employeeEmailMap = {};
+          (emps || []).forEach((e: any) => {
+            const id = Number(e?.id || 0);
+            const email = String(e?.workEmail || e?.email || '').trim();
+            if (id && email) this.employeeEmailMap[id] = email;
+          });
+          this.employeesLoading = false;
+          this.patchSubmissionsFromUsers(this.allEmployees);
+        },
+        error: () => {
+          // Fallback to BehaviorSubject-cached list
+          this.employeeService.ensureEmployeesLoaded();
+          this.subscription.add(
+            this.employeeService.employees$.subscribe(emps => {
+              this.allEmployees = (emps || [])
+                .map((e: any) => {
+                  const fn = String(e?.firstName || e?.firstname || '').trim();
+                  const ln = String(e?.lastName || e?.lastname || '').trim();
+                  const full = (`${fn} ${ln}`).trim() || String(e?.fullName || e?.name || '').trim();
+                  return {
+                    id: String(e?.id || ''),
+                    userId: e?.userId,
+                    fullName: full,
+                    department: String(e?.department?.name || e?.department || ''),
+                    role: String(e?.jobTitle || e?.designation || ''),
+                    supervisor: String(e?.supervisor || ''),
+                  };
+                })
+                .filter(e => !!e.fullName);
+              this.employeeEmailMap = {};
+              (emps || []).forEach((e: any) => {
+                const id = Number(e?.id || 0);
+                const email = String(e?.workEmail || e?.email || '').trim();
+                if (id && email) this.employeeEmailMap[id] = email;
+              });
+              this.employeesLoading = false;
+              this.patchSubmissionsFromUsers(this.allEmployees);
+            })
+          );
+        }
       })
     );
 
