@@ -1130,22 +1130,18 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       );
     }
 
-    // Load employees for dropdowns
+    // Load employees for dropdowns — persist subscription so we catch data regardless of load order
     this.employeesLoading = true;
+    this.employeeService.ensureEmployeesLoaded();
     this.subscription.add(
-      this.employeeService.getAllEmployee().subscribe({
-        next: (emps: any[]) => {
-          this.applyEmployeeList(emps);
-          // Try active-only endpoint on top — overrides with a cleaner list when available
-          this.employeeService.getActiveEmployees().subscribe({
-            next: (active: any[]) => { if ((active || []).length > 0) this.applyEmployeeList(active); }
-          });
-        },
-        error: () => {
-          this.employeesLoading = false;
-        }
+      this.employeeService.employees$.subscribe(emps => {
+        if ((emps || []).length > 0) this.applyEmployeeList(emps);
       })
     );
+    // Also try active-only endpoint — replaces list with filtered set when backend is deployed
+    this.employeeService.getActiveEmployees().subscribe({
+      next: (active: any[]) => { if ((active || []).length > 0) this.applyEmployeeList(active); }
+    });
 
     // Load users from the users API to populate supervisor review with DM users
     this.subscription.add(
@@ -1190,6 +1186,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         };
       })
       .filter(e => !!e.fullName);
+    this.employeesLoading = false;
     if (mapped.length === 0) return;
     this.allEmployees = mapped;
     this.employeeEmailMap = {};
@@ -1198,7 +1195,6 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       const email = String(e?.workEmail || e?.email || '').trim();
       if (id && email) this.employeeEmailMap[id] = email;
     });
-    this.employeesLoading = false;
     this.patchSubmissionsFromUsers(this.allEmployees);
   }
 
