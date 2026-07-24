@@ -1983,7 +1983,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 540px;
+  width: min(860px, 92vw);
   height: 100vh;
   z-index: 1050;
   background: #fff;
@@ -3547,4 +3547,93 @@
 .kcard-act-btn.arc-btn {
   color: #f59e0b;
   &:hover { color: #d97706; background: #fffbeb; }
+}
+
+// ── Group-by list headers ─────────────────────────────────────────────────────
+.list-group-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; background: #f1f5f9;
+  font-size: 0.8rem; font-weight: 700; color: #374151;
+  border-bottom: 1px solid #e2e8f0; border-top: 2px solid #2563eb;
+  margin-top: 8px;
+  .list-group-count {
+    margin-left: auto; background: #2563eb; color: #fff;
+    border-radius: 10px; padding: 1px 7px; font-size: 0.72rem;
+  }
+}
+
+// ── Deadline extension row ─────────────────────────────────────────────────────
+.dl-extend-btn {
+  margin-left: 8px; padding: 2px 8px; font-size: 11px;
+  color: #dc2626; border: 1px solid #fca5a5; border-radius: 5px;
+  background: #fff; cursor: pointer; white-space: nowrap;
+  &:hover { background: #fef2f2; }
+}
+
+.dl-extend-row {
+  display: flex; align-items: center; gap: 6px; margin-top: 4px;
+  grid-column: 1 / -1;
+  input { width: 150px; }
+}
+
+// Deadline extension row inside detail-fields grid must span full width
+.detail-fields .dl-extend-row {
+  grid-column: 1 / -1;
+}
+
+// Assignee df row allow wrapping for reassign controls
+.detail-fields .df {
+  overflow: visible;
+}
+
+// ── Cost chip on kanban card ───────────────────────────────────────────────────
+.kcard-cost-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+  padding: 1px 6px; font-size: 9.5px; font-weight: 700; color: #15803d;
+}
+
+// ── Closed status tag (in detail panel) ───────────────────────────────────────
+.closed-tag {
+  background: #fee2e2; color: #dc2626;
+  border-radius: 5px; padding: 1px 6px; font-size: 11px; font-weight: 700;
+  text-decoration: line-through;
+}
+
+// ── Cost chip in detail panel ─────────────────────────────────────────────────
+.cost-chip {
+  background: #f0fdf4; color: #15803d;
+  border: 1px solid #bbf7d0; border-radius: 6px;
+  padding: 2px 8px; font-size: 12px; font-weight: 700;
+}
+
+// ── Archive search ────────────────────────────────────────────────────────────
+.rail-archive-search {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px; background: #f8fafc;
+  border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 8px;
+  i { font-size: 11px; color: #9ca3af; flex-shrink: 0; }
+}
+
+.rail-search-input {
+  border: none; background: transparent; outline: none;
+  font-size: 12px; color: #374151; width: 100%;
+  &::placeholder { color: #9ca3af; }
+}
+
+// ── Closed task row in archive ─────────────────────────────────────────────────
+.rail-task-closed { opacity: 0.78; }
+
+.rail-title-closed {
+  text-decoration: line-through; color: #9ca3af;
+}
+
+.rail-closed-badge {
+  display: inline-block; background: #fee2e2; color: #dc2626;
+  border-radius: 4px; padding: 0 5px; font-size: 10px; font-weight: 700;
+  margin-left: 4px;
+}
+
+.rail-cost-meta {
+  display: block; font-size: 10px; color: #15803d; font-weight: 600; margin-top: 1px;
 }

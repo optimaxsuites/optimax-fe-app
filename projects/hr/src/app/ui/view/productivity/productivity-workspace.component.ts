@@ -42,6 +42,7 @@ import {
   WorkTaskPriority as ApiTaskPriority,
   SubtaskDTO,
   FollowUpDTO,
+  FollowUpReplyDTO,
   PerformanceGoalFull,
   PerformanceGoalDTO,
   KpiDTO,
@@ -87,6 +88,11 @@ export interface BoardTask {
   inlineText?: string;
   expanded?: boolean;
   supervisorGrade?: number;   // 1-5 rating set by supervisor
+  // Cost tracking (optional)
+  cost?: number;
+  costCurrency?: string;
+  // Closed flag — task set to "Closed" gets archived automatically
+  closed?: boolean;
   // API-sync fields
   apiId?: number;
   assigneeEmployeeId?: number;
@@ -365,6 +371,22 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // ── Right rail (Archive & Stages) ─────────────────────────────────────────
   rightRailOpen = false;
   archivedTasks: BoardTask[] = [];
+  archiveSearchText = '';
+
+  get filteredArchivedTasks(): BoardTask[] {
+    const q = this.archiveSearchText.trim().toLowerCase();
+    if (!q) return this.archivedTasks;
+    return this.archivedTasks.filter(t =>
+      t.title.toLowerCase().includes(q) ||
+      (t.assignee || '').toLowerCase().includes(q) ||
+      (t.team || '').toLowerCase().includes(q) ||
+      (t.status || '').toLowerCase().includes(q) ||
+      (t.tags || []).some(tag => tag.toLowerCase().includes(q))
+    );
+  }
+
+  /** Statuses that appear only in forms (not board columns) */
+  readonly extraStatuses: TaskStatus[] = ['Closed'];
 
   private loadArchivedTasks(): void {
     try {
@@ -384,13 +406,21 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.saveArchivedTasks();
     this.save();
     if (this.selectedTask?.id === task.id) this.closeDetail();
+    if (this.apiEnabled && task.apiId) {
+      const status = task.closed ? 'CLOSED' : 'ARCHIVED';
+      this.workTaskApi.updateTaskStatus(task.apiId, status as any).subscribe({ error: () => {} });
+    }
   }
 
   unarchiveTask(task: BoardTask): void {
     this.archivedTasks = this.archivedTasks.filter(t => t.id !== task.id);
-    this.boardTasks = [{ ...task }, ...this.boardTasks];
+    const restored = { ...task, closed: false };
+    this.boardTasks = [restored, ...this.boardTasks];
     this.saveArchivedTasks();
     this.save();
+    if (this.apiEnabled && task.apiId) {
+      this.workTaskApi.updateTaskStatus(task.apiId, 'TO_DO').subscribe({ error: () => {} });
+    }
   }
 
   private loadStages(): Array<{ key: string; label: string }> {
@@ -440,8 +470,12 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return role.includes('ADMIN') || role.includes('SUPERVISOR') || role.includes('MANAGER');
   }
 
+  get currentUserDisplayName(): string {
+    return sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || '';
+  }
+
   get currentUserFullName(): string {
-    return (sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || '').toLowerCase();
+    return this.currentUserDisplayName.toLowerCase();
   }
 
   // ── Subtask inline edit ───────────────────────────────────────────────────
@@ -580,6 +614,101 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   taskViewMode: 'mine' | 'all' | 'team' = 'mine';
   viewDropOpen = false;
 
+  // ── Group-by ──────────────────────────────────────────────────────────────
+  groupBy: 'none' | 'assignee' | 'team' | 'status' | 'priority' = 'none';
+
+  get groupedBoard(): Array<{ key: string; tasks: BoardTask[] }> {
+    if (this.groupBy === 'none') return [{ key: '', tasks: this.filteredBoard }];
+    const map = new Map<string, BoardTask[]>();
+    for (const t of this.filteredBoard) {
+      let key = '';
+      if (this.groupBy === 'assignee') key = t.assignee || 'Unassigned';
+      else if (this.groupBy === 'team') key = t.team || 'No Team';
+      else if (this.groupBy === 'status') key = t.status;
+      else if (this.groupBy === 'priority') key = t.priority;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    }
+    return Array.from(map.entries()).map(([k, v]) => ({ key: k, tasks: v }));
+  }
+
+  // ── Deadline extension ────────────────────────────────────────────────────
+  extendingDeadline = false;
+  newDeadlineDate = '';
+
+  extendDeadline(task: BoardTask): void {
+    if (!this.newDeadlineDate) return;
+    task.dueDate = this.newDeadlineDate;
+    this.extendingDeadline = false;
+    this.newDeadlineDate = '';
+    this.save();
+    this.showToast('Deadline extended', 'success');
+    if (this.apiEnabled && task.apiId) {
+      const aEmp = this.allEmployees.find(e => e.fullName === task.assignee);
+      const sEmp = this.allEmployees.find(e => e.fullName === task.team);
+      this.subscription.add(
+        this.workTaskApi.updateTask(task.apiId, {
+          title: task.title,
+          dueDate: this.newDeadlineDate,
+          assigneeEmployeeId: aEmp ? Number(aEmp.id) : task.assigneeEmployeeId,
+          supervisorEmployeeId: sEmp ? Number(sEmp.id) : task.supervisorEmployeeId,
+        }).subscribe({ error: () => {} })
+      );
+    }
+  }
+
+  // ── Quick reassign ────────────────────────────────────────────────────────
+  reassignMode = false;
+  reassignEmployeeName = '';
+
+  quickReassign(task: BoardTask): void {
+    const name = this.reassignEmployeeName.trim();
+    if (!name) return;
+    task.assignee = name;
+    task.assignees = [name];
+    const emp = this.allEmployees.find(e => e.fullName === name);
+    if (emp) task.assigneeEmployeeId = Number(emp.id);
+    this.reassignMode = false;
+    this.reassignEmployeeName = '';
+    this.save();
+    this.showToast('Task reassigned', 'success');
+    if (this.apiEnabled && task.apiId) {
+      this.subscription.add(
+        this.workTaskApi.updateTask(task.apiId, {
+          title: task.title,
+          assigneeEmployeeId: emp ? Number(emp.id) : task.assigneeEmployeeId,
+        }).subscribe({ error: () => {} })
+      );
+    }
+  }
+
+  // ── Notification sound (Web Audio API) ────────────────────────────────────
+  private playNotifSound(type: 'post' | 'reply' = 'post'): void {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      if (type === 'reply') {
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1100, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.18);
+      } else {
+        osc.frequency.setValueAtTime(660, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.25);
+      }
+    } catch { /* AudioContext not available */ }
+  }
+
   // ── Report period ─────────────────────────────────────────────────────────
   reportPeriod: 'weekly' | 'monthly' | 'quarterly' = 'weekly';
   reportDropOpen = false;
@@ -595,6 +724,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     const el = e.target as HTMLElement;
     if (!el.closest('.task-view-dropdown')) this.viewDropOpen = false;
     if (!el.closest('.report-period-dropdown')) this.reportDropOpen = false;
+    if (this.rightRailOpen && !el.closest('.right-rail')) this.rightRailOpen = false;
   }
 
   setTaskViewMode(mode: 'mine' | 'all' | 'team'): void {
@@ -1081,12 +1211,36 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       : employeeId
         ? this.workTaskApi.getTasksByAssignee(employeeId)
         : this.workTaskApi.getAllTasks();
+    // Cache follow-up replies and reactions before overwriting so they survive the remap
+    const prevFuData = new Map<string, { replies?: FollowUpReply[]; reactions?: Record<string, string[]> }>();
+    this.boardTasks.forEach(bt => {
+      (bt.followUps ?? []).forEach(fu => {
+        if ((fu.replies?.length || 0) > 0 || Object.keys(fu.reactions ?? {}).length > 0) {
+          prevFuData.set(String(fu.followUpId ?? fu.id), { replies: fu.replies, reactions: fu.reactions });
+        }
+      });
+    });
+
+    const archivedRequest = (isSupervisor || wantsAll)
+      ? this.workTaskApi.getArchivedTasks()
+      : employeeId
+        ? this.workTaskApi.getArchivedByAssignee(employeeId)
+        : this.workTaskApi.getArchivedTasks();
+
     this.subscription.add(
       tasksRequest.pipe(timeout(8000)).subscribe({
         next: (apiTasks) => {
           const mapped = (apiTasks && apiTasks.length > 0)
             ? apiTasks.map(t => this.mapApiTaskToBoard(t))
             : [];
+          // Restore locally-saved replies and reactions onto their follow-ups after remapping
+          mapped.forEach(bt => {
+            (bt.followUps ?? []).forEach(fu => {
+              const key = String(fu.followUpId ?? fu.id);
+              const prev = prevFuData.get(key);
+              if (prev) { fu.replies = prev.replies; fu.reactions = prev.reactions; }
+            });
+          });
           const apiIds = new Set(mapped.map(t => t.id));
           if (isSupervisor || wantsAll) {
             // Full board: merge API results with any locally-created tasks
@@ -1104,6 +1258,22 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           this.mergeLocalImports(true);
           this.boardLoading = false;
           this.autoOpenFromUrl();
+          // Load archived tasks from API
+          archivedRequest.pipe(timeout(8000)).subscribe({
+            next: (archivedApiTasks) => {
+              if (archivedApiTasks && archivedApiTasks.length > 0) {
+                const mappedArchived = archivedApiTasks.map(t => ({
+                  ...this.mapApiTaskToBoard(t),
+                  closed: t.status === 'CLOSED'
+                }));
+                const existingApiIds = new Set(mappedArchived.map(t => t.apiId));
+                const localArchived = this.archivedTasks.filter(t => !t.apiId || !existingApiIds.has(t.apiId));
+                this.archivedTasks = [...mappedArchived, ...localArchived];
+                this.saveArchivedTasks();
+              }
+            },
+            error: () => {}
+          });
         },
         error: () => {
           this.apiEnabled = false;
@@ -1267,18 +1437,40 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         subtaskId: s.id,
       })),
       activity: [],
-      followUps: (t.followUps ?? []).map(f => ({
-        id: String(f.id),
-        followUpId: f.id,
-        author: f.authorEmployee ? `${f.authorEmployee.firstName} ${f.authorEmployee.lastName}`.trim() : 'Unknown',
-        initials: this.getInitials(f.authorEmployee ? `${f.authorEmployee.firstName} ${f.authorEmployee.lastName}`.trim() : 'U'),
-        color: '#2563eb',
-        timestamp: this.formatTs(this.normDateTime((f as any).createdAt)),
-        text: f.text,
-        photos: f.photoUrls ? f.photoUrls.split(',').filter(u => u.trim()) : [],
-        decision: f.decision,
-        progress: f.progress ?? 0,
-      })),
+      followUps: (t.followUps ?? []).map(f => {
+        const authorName = f.authorEmployee
+          ? `${f.authorEmployee.firstName} ${f.authorEmployee.lastName}`.trim()
+          : ((f as any).authorEmployeeId && (f as any).authorEmployeeId === this.resolvedEmployeeId)
+            ? this.currentUserDisplayName
+            : 'Team Member';
+        const apiReplies: FollowUpReply[] = (f.replies ?? []).map(r => {
+          const rAuthor = r.authorEmployee
+            ? `${r.authorEmployee.firstName} ${r.authorEmployee.lastName}`.trim()
+            : (this.resolvedEmployeeId && (r as any).authorEmployeeId === this.resolvedEmployeeId
+              ? this.currentUserDisplayName : 'Team Member');
+          return {
+            id: `api${r.id}`,
+            author: rAuthor || 'Team Member',
+            initials: this.getInitials(rAuthor || 'TM'),
+            color: '#6366f1',
+            timestamp: this.formatTs(this.normDateTime((r as any).createdAt)),
+            text: r.text,
+          };
+        });
+        return {
+          id: String(f.id),
+          followUpId: f.id,
+          author: authorName || 'Team Member',
+          initials: this.getInitials(authorName || 'TM'),
+          color: '#2563eb',
+          timestamp: this.formatTs(this.normDateTime((f as any).createdAt)),
+          text: f.text,
+          photos: f.photoUrls ? f.photoUrls.split(',').filter(u => u.trim()) : [],
+          decision: f.decision,
+          progress: f.progress ?? 0,
+          replies: apiReplies,
+        };
+      }),
       apiId: t.id,
       createdByUserId: t.createdByUserId,
     } as any;
@@ -1542,6 +1734,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       id: `hr${Date.now()}`, title: '', description: '', assignee: '', assignees: [], team: '',
       status: 'To Do', priority: 'Medium', startDate: new Date().toISOString().slice(0, 10),
       dueDate: '', weight: 10, progress: 0, tags: [], subtasks: [], activity: [],
+      cost: undefined, costCurrency: 'NGN',
     };
     this.newTaskSubtasks = [];
   }
@@ -1640,10 +1833,11 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     if (!this.selectedTask) return;
     const text = (this.fuReplyText[fu.id] || '').trim();
     if (!text) return;
+    const displayName = this.currentUserDisplayName || 'You';
     const reply: FollowUpReply = {
       id: `rep${Date.now()}`,
-      author: this.currentUserFullName || 'You',
-      initials: this.getInitials(this.currentUserFullName || 'You'),
+      author: displayName,
+      initials: this.getInitials(displayName),
       color: '#6366f1',
       timestamp: new Date().toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }),
       text,
@@ -1653,6 +1847,21 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.fuReplyText[fu.id] = '';
     this.replyingToFuId = null;
     this.save();
+    this.playNotifSound('reply');
+
+    if (this.apiEnabled && fu.followUpId) {
+      const dto: FollowUpReplyDTO = {
+        followUpId: fu.followUpId,
+        authorEmployeeId: this.resolvedEmployeeId || undefined,
+        text,
+      };
+      this.subscription.add(
+        this.workTaskApi.createReply(dto).subscribe({
+          next: (created) => { reply.id = `api${created.id}`; this.save(); },
+          error: () => {},
+        })
+      );
+    }
   }
 
   toggleReaction(fu: FollowUp, emoji: string): void {
@@ -1832,15 +2041,23 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     t.startDate   = d.startDate || '';
     t.dueDate     = d.dueDate   || '';
     t.weight      = d.weight    ?? t.weight;
+    t.cost        = d.cost;
+    t.costCurrency = d.costCurrency || 'NGN';
     const aEmp = this.allEmployees.find(e => e.fullName === t.assignee);
     const sEmp = this.allEmployees.find(e => e.fullName === t.team);
     if (aEmp) t.assigneeEmployeeId   = Number(aEmp.id);
     if (sEmp) t.supervisorEmployeeId = Number(sEmp.id);
-    this.save();
     this.showEditTask = false;
     this.editingTask  = null;
-    this.showToast('Task updated', 'success');
-    if (this.apiEnabled) this.syncTaskToApi(t);
+    if (t.status === 'Closed') {
+      t.closed = true;
+      this.archiveTask(t);
+      this.showToast('Task closed and moved to archive', 'info');
+    } else {
+      this.save();
+      this.showToast('Task updated', 'success');
+      if (this.apiEnabled) this.syncTaskToApi(t);
+    }
   }
 
   cancelEditTask(): void { this.showEditTask = false; this.editingTask = null; }
@@ -2127,6 +2344,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     task.inlineText = '';
     this.inlinePhotos[task.id] = [];
     this.save();
+    this.playNotifSound('post');
     this.showToast('Update posted successfully', 'success');
     const recipients = task.assignees?.length ? task.assignees : [task.assignee];
     recipients.forEach(r => r && this.notifService.add(
