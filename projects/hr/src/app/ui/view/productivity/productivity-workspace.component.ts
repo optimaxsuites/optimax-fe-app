@@ -1132,10 +1132,31 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
     // Load employees for dropdowns
     this.employeesLoading = true;
+    this.employeeService.ensureEmployeesLoaded();
     this.subscription.add(
-      this.employeeService.getAllEmployee().subscribe({
-        next: (emps: any[]) => this.applyEmployeeList(emps),
-        error: () => { this.employeesLoading = false; }
+      this.employeeService.employees$.subscribe(emps => {
+        this.allEmployees = (emps || [])
+          .map((e: any) => {
+            const fn = String(e?.firstName || e?.firstname || '').trim();
+            const ln = String(e?.lastName || e?.lastname || '').trim();
+            const full = (`${fn} ${ln}`).trim() || String(e?.fullName || e?.name || '').trim();
+            return {
+              id: String(e?.id || ''),
+              fullName: full,
+              department: String(e?.department?.name || e?.department || ''),
+              role: String(e?.jobTitle || e?.designation || ''),
+              supervisor: String(e?.supervisor?.fullName || e?.supervisorName || ''),
+            };
+          })
+          .filter(e => !!e.fullName);
+        this.employeeEmailMap = {};
+        (emps || []).forEach((e: any) => {
+          const id = Number(e?.id || 0);
+          const email = String(e?.workEmail || e?.email || '').trim();
+          if (id && email) this.employeeEmailMap[id] = email;
+        });
+        this.employeesLoading = false;
+        this.patchSubmissionsFromUsers(this.allEmployees);
       })
     );
 
@@ -1164,34 +1185,6 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         error: () => {},
       })
     );
-  }
-
-  private applyEmployeeList(emps: any[]): void {
-    const mapped = (emps || [])
-      .map((e: any) => {
-        const fn = String(e?.firstName || e?.firstname || '').trim();
-        const ln = String(e?.lastName || e?.lastname || '').trim();
-        const full = (`${fn} ${ln}`).trim() || String(e?.fullName || e?.name || '').trim();
-        return {
-          id: String(e?.id || ''),
-          userId: e?.userId ?? e?.user?.id ?? null,
-          fullName: full,
-          department: String(e?.department?.name || e?.department || ''),
-          role: String(e?.jobTitle || e?.designation || ''),
-          supervisor: String(e?.supervisor || ''),
-        };
-      })
-      .filter(e => !!e.fullName);
-    this.employeesLoading = false;
-    if (mapped.length === 0) return;
-    this.allEmployees = mapped;
-    this.employeeEmailMap = {};
-    (emps || []).forEach((e: any) => {
-      const id = Number(e?.id || 0);
-      const email = String(e?.workEmail || e?.email || '').trim();
-      if (id && email) this.employeeEmailMap[id] = email;
-    });
-    this.patchSubmissionsFromUsers(this.allEmployees);
   }
 
   private patchSubmissionsFromUsers(users: Array<{ id: string; fullName: string; department: string; role: string; supervisor: string }>): void {
