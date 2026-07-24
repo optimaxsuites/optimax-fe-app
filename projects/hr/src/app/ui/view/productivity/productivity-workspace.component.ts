@@ -952,7 +952,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   insights: ProductivityInsight[] = [];
 
   // ── Employee dropdowns (loaded from HR microservice) ──────────────────────
-  allEmployees: Array<{ id: string; fullName: string; department: string; role: string; supervisor: string }> = [];
+  allEmployees: Array<{ id: string; userId: string; fullName: string; department: string; role: string; supervisor: string }> = [];
   employeesLoading = false;
 
   get employeeNames(): string[] {
@@ -1035,7 +1035,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // ── Supervisor review form state ───────────────────────────────────────────
   supReviewDecision = 'Approved';
   supReviewNote = '';
-  supReviewFiles: Array<{ name: string; url: string; isImage: boolean }> = [];
+  supReviewFiles: Array<{ name: string; url: string; isImage: boolean; uploading?: boolean }> = [];
+  get supReviewUploading(): boolean { return this.supReviewFiles.some(f => f.uploading); }
 
   // ── Share modal state ──────────────────────────────────────────────────────
   showShareModal = false;
@@ -1132,9 +1133,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
     // Load employees for dropdowns
     this.employeesLoading = true;
-    this.employeeService.ensureEmployeesLoaded();
-    this.subscription.add(
-      this.employeeService.employees$.subscribe(emps => {
+    this.employeeService.refreshEmployees().subscribe({
+      next: (emps) => {
         this.allEmployees = (emps || [])
           .map((e: any) => {
             const fn = String(e?.firstName || e?.firstname || '').trim();
@@ -1142,6 +1142,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
             const full = (`${fn} ${ln}`).trim() || String(e?.fullName || e?.name || '').trim();
             return {
               id: String(e?.id || ''),
+              userId: String(e?.userId || e?.user?.id || ''),
               fullName: full,
               department: String(e?.department?.name || e?.department || ''),
               role: String(e?.jobTitle || e?.designation || ''),
@@ -1156,10 +1157,10 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           if (id && email) this.employeeEmailMap[id] = email;
         });
         this.employeesLoading = false;
-        // If employees loaded, patch supervisor review submissions with real names
         this.patchSubmissionsFromUsers(this.allEmployees);
-      })
-    );
+      },
+      error: () => { this.employeesLoading = false; }
+    });
 
     // Load users from the users API to populate supervisor review with DM users
     this.subscription.add(
@@ -1465,7 +1466,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           color: '#2563eb',
           timestamp: this.formatTs(this.normDateTime((f as any).createdAt)),
           text: f.text,
-          photos: f.photoUrls ? f.photoUrls.split(',').filter(u => u.trim()) : [],
+          photos: f.photoUrls ? (f.photoUrls.includes('||') ? f.photoUrls.split('||') : f.photoUrls.split(',')).filter((u: string) => u.trim()) : [],
           decision: f.decision,
           progress: f.progress ?? 0,
           replies: apiReplies,
@@ -2479,7 +2480,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         text: newFu.text,
         progress: newFu.progress,
         authorEmployeeId: this.selectedTask.assigneeEmployeeId,
-        photoUrls: photos.join(','),
+        photoUrls: photos.filter(p => p && !p.startsWith('data:')).join('||'),
       };
       this.subscription.add(
         this.workTaskApi.createFollowUp(dto).subscribe({
@@ -2488,15 +2489,26 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         })
       );
     }
+    this.sendFollowUpEmails(
+      this.selectedTask,
+      this.newActivityText,
+      `Task Update: ${this.selectedTask.title}`,
+      '#2563eb',
+      'Task Progress Update'
+    );
   }
 
   // ── Post supervisor review ─────────────────────────────────────────────────
   postSupervisorReview(): void {
     if (!this.selectedTask) return;
     if (!this.supReviewNote.trim()) { this.showToast('Please enter review feedback before submitting.', 'warn'); return; }
+    if (this.supReviewUploading) {
+      this.showToast('Please wait for file uploads to complete before submitting.', 'warn');
+      return;
+    }
 
     const decisionLabel = this.supReviewDecision;
-    const photos = this.supReviewFiles.map(f => f.url);
+    const photos = this.supReviewFiles.map(f => f.url).filter(Boolean);
     const fu: FollowUp = {
       id: `sv${Date.now()}`,
       author: this.selectedTask.team || 'Supervisor',
@@ -2516,19 +2528,29 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       this.selectedTask.progress = 100;
     }
 
+    const reviewNote = this.supReviewNote.trim();
     this.supReviewNote = '';
     this.supReviewDecision = 'Approved';
     this.supReviewFiles = [];
     this.save();
     this.showToast('Supervisor review posted', 'success');
 
+    this.sendFollowUpEmails(
+      this.selectedTask,
+      reviewNote,
+      `Supervisor Review: ${this.selectedTask.title}`,
+      '#7c3aed',
+      `Supervisor Review — ${decisionLabel}`
+    );
+
     if (this.apiEnabled && this.selectedTask.apiId) {
       const dto: FollowUpDTO = {
         workTaskId: this.selectedTask.apiId,
+        authorEmployeeId: this.selectedTask.supervisorEmployeeId,
         text: fu.text,
         decision: fu.decision,
         progress: fu.progress,
-        photoUrls: photos.join(','),
+        photoUrls: photos.filter(p => !p.startsWith('data:')).join('||'),
       };
       this.subscription.add(
         this.workTaskApi.createFollowUp(dto).subscribe({ error: () => {} })
@@ -2590,20 +2612,101 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.shareChannelId = null;
   }
 
+  isImageUrl(url: string): boolean {
+    if (!url) return false;
+    if (url.startsWith('data:image/')) return true;
+    const u = url.toLowerCase().split('?')[0];
+    return !!u.match(/\.(jpe?g|png|gif|webp|svg|bmp)$/);
+  }
+
+  fuImages(photos: string[]): string[] {
+    return (photos || []).filter(p => this.isImageUrl(p));
+  }
+
+  fuDocs(photos: string[]): string[] {
+    return (photos || []).filter(p => p && !this.isImageUrl(p));
+  }
+
+  private resolveEmailByName(name: string): string | null {
+    if (!name) return null;
+    const emp = this.allEmployees.find(e => e.fullName.toLowerCase() === name.toLowerCase());
+    if (emp) {
+      const empId = Number(emp.id);
+      if (empId && this.employeeEmailMap[empId]) return this.employeeEmailMap[empId];
+      if (emp.userId) {
+        const u = this.dmUserList.find(u => String(u.id) === emp.userId);
+        if (u?.email) return u.email;
+      }
+    }
+    const u = this.dmUserList.find(u =>
+      u.fullName.toLowerCase() === name.toLowerCase() ||
+      u.fullName.toLowerCase().includes(name.toLowerCase()) ||
+      name.toLowerCase().includes(u.fullName.toLowerCase())
+    );
+    return u?.email || null;
+  }
+
+  private sendFollowUpEmails(task: BoardTask, noteText: string, subject: string, headingColor: string, heading: string): void {
+    const assigneeName = (task.assignees?.length ? task.assignees[0] : task.assignee) || 'Team Member';
+    const supervisorName = task.team || '';
+    const plain = noteText.replace(/<[^>]*>/g, '').trim().slice(0, 300);
+    const rows = [
+      this.taskEmailRow('Task', task.title, false),
+      this.taskEmailRow('Status', task.status, true),
+      this.taskEmailRow('Progress', `${task.progress}%`, false),
+      this.taskEmailRow('Update', plain, true),
+    ].join('');
+    const makeHtml = (name: string) =>
+      `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:${headingColor};padding:20px 24px;border-radius:8px 8px 0 0;">
+          <h2 style="color:#fff;margin:0;font-size:20px;">${heading}</h2>
+        </div>
+        <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+          <p style="color:#374151;">Hello <strong>${name}</strong>,</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;">${rows}</table>
+          <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view and respond.</p>
+        </div>
+      </div>`;
+    const assigneeEmail = this.employeeEmailMap[Number(task.assigneeEmployeeId)] || this.resolveEmailByName(assigneeName);
+    const supervisorEmail = this.employeeEmailMap[Number(task.supervisorEmployeeId)] || this.resolveEmailByName(supervisorName);
+    if (assigneeEmail) {
+      this.employeeService.sendNotificationEmail(assigneeEmail, subject, makeHtml(assigneeName)).subscribe({ error: () => {} });
+    }
+    if (supervisorEmail && supervisorEmail !== assigneeEmail) {
+      this.employeeService.sendNotificationEmail(supervisorEmail, subject, makeHtml(supervisorName)).subscribe({ error: () => {} });
+    }
+  }
+
   private sendShareDm(recipientName: string, task: BoardTask | null, note: string, label: string): void {
     const myUserId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || 0);
     if (!myUserId) { this.showToast('Unable to resolve your user account. Please re-login.', 'error'); return; }
-    const match = this.dmUserList.find(u =>
-      u.fullName.toLowerCase() === recipientName.toLowerCase() ||
-      u.fullName.toLowerCase().includes(recipientName.toLowerCase()) ||
-      recipientName.toLowerCase().includes(u.fullName.toLowerCase())
+
+    // Resolve recipient auth user ID — prefer userId from HR employee record over name matching
+    const emp = this.allEmployees.find(e =>
+      e.fullName.toLowerCase() === recipientName.toLowerCase() ||
+      e.fullName.toLowerCase().includes(recipientName.toLowerCase()) ||
+      recipientName.toLowerCase().includes(e.fullName.toLowerCase())
     );
-    if (!match) {
+    let recipientUserId: number | null = null;
+    if (emp?.userId) {
+      recipientUserId = Number(emp.userId) || null;
+    }
+    if (!recipientUserId) {
+      const match = this.dmUserList.find(u =>
+        u.fullName.toLowerCase() === recipientName.toLowerCase() ||
+        u.fullName.toLowerCase().includes(recipientName.toLowerCase()) ||
+        recipientName.toLowerCase().includes(u.fullName.toLowerCase())
+      );
+      recipientUserId = match?.id ?? null;
+    }
+    if (!recipientUserId) {
       this.showToast(`User "${recipientName}" not found in system. Ensure they have a login account.`, 'warn');
       return;
     }
+
+    const capturedRecipientId = recipientUserId;
     this.subscription.add(
-      this.workTaskApi.getOrCreateDmChannel(myUserId, match.id).pipe(
+      this.workTaskApi.getOrCreateDmChannel(myUserId, capturedRecipientId).pipe(
         switchMap(channel => {
           const channelId = channel.id ?? channel.channelId;
           return this.workTaskApi.sendChannelMessage(channelId, note);
@@ -2618,6 +2721,23 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
                 detail: { title: `Task shared: ${task.title}`, body: `Update delivered to ${recipientName} via DM`, category: 'module' }
               }));
             }
+          }
+          // Also send email notification to the recipient
+          const recipientEmail = this.resolveEmailByName(recipientName);
+          if (recipientEmail && task) {
+            const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+              <div style="background:#0369a1;padding:20px 24px;border-radius:8px 8px 0 0;">
+                <h2 style="color:#fff;margin:0;font-size:20px;">Task Update — ${task.title}</h2>
+              </div>
+              <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+                <p style="color:#374151;">Hello <strong>${recipientName}</strong>,</p>
+                <div style="background:#f0f9ff;border-left:4px solid #0369a1;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+                  <p style="margin:0;white-space:pre-wrap;color:#374151;">${note}</p>
+                </div>
+                <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view this task.</p>
+              </div>
+            </div>`;
+            this.employeeService.sendNotificationEmail(recipientEmail, `Task Update: ${task.title}`, html).subscribe({ error: () => {} });
           }
         },
         error: () => this.showToast(`Failed to deliver message to ${recipientName}. Check connection.`, 'error'),
