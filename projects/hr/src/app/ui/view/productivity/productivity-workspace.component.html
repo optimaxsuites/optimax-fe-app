@@ -1665,25 +1665,35 @@
                 <small>{{ fu.timestamp }}</small>
               </div>
               <div class="tl-note" [innerHTML]="sanitizeHtml(fu.text)"></div>
-              <!-- Photos carousel in timeline entry -->
-              <div class="tl-carousel" *ngIf="fu.photos?.length">
-                <div class="carousel-single" *ngIf="fu.photos.length === 1">
-                  <img [src]="fu.photos[0]" (click)="openLightbox(fu.photos, 0)" class="carousel-img" alt="update photo">
+              <!-- Attachments: document chips + images carousel -->
+              <ng-container *ngIf="fu.photos?.length">
+                <!-- Document chips -->
+                <div class="fu-doc-chips" *ngIf="fuDocs(fu.photos).length">
+                  <a *ngFor="let doc of fuDocs(fu.photos)" [href]="doc" target="_blank" rel="noopener" class="fu-doc-chip">
+                    <i class="fas fa-file"></i>
+                    {{ doc.split('/').pop()?.split('?')[0] || 'Reference doc' }}
+                  </a>
                 </div>
-                <div class="carousel-multi" *ngIf="fu.photos.length > 1">
-                  <button class="carousel-nav left" (click)="prevFuPhoto(fu.id, fu.photos.length, $event)">‹</button>
-                  <img [src]="fuCurrentPhoto(fu.id, fu.photos)"
-                       (click)="openLightbox(fu.photos, fuPhotoIndex[fu.id] ?? 0)"
-                       class="carousel-img" alt="update photo">
-                  <button class="carousel-nav right" (click)="nextFuPhoto(fu.id, fu.photos.length, $event)">›</button>
-                  <div class="carousel-dots">
-                    <span *ngFor="let _ of fu.photos; let pi = index"
-                          class="carousel-dot"
-                          [class.active]="pi === (fuPhotoIndex[fu.id] ?? 0)"></span>
+                <!-- Images carousel -->
+                <div class="tl-carousel" *ngIf="fuImages(fu.photos).length">
+                  <div class="carousel-single" *ngIf="fuImages(fu.photos).length === 1">
+                    <img [src]="fuImages(fu.photos)[0]" (click)="openLightbox(fuImages(fu.photos), 0)" class="carousel-img" alt="update photo">
                   </div>
-                  <span class="carousel-counter">{{ (fuPhotoIndex[fu.id] ?? 0) + 1 }}/{{ fu.photos.length }}</span>
+                  <div class="carousel-multi" *ngIf="fuImages(fu.photos).length > 1">
+                    <button class="carousel-nav left" (click)="prevFuPhoto(fu.id, fuImages(fu.photos).length, $event)">‹</button>
+                    <img [src]="fuCurrentPhoto(fu.id, fuImages(fu.photos))"
+                         (click)="openLightbox(fuImages(fu.photos), fuPhotoIndex[fu.id] ?? 0)"
+                         class="carousel-img" alt="update photo">
+                    <button class="carousel-nav right" (click)="nextFuPhoto(fu.id, fuImages(fu.photos).length, $event)">›</button>
+                    <div class="carousel-dots">
+                      <span *ngFor="let _ of fuImages(fu.photos); let pi = index"
+                            class="carousel-dot"
+                            [class.active]="pi === (fuPhotoIndex[fu.id] ?? 0)"></span>
+                    </div>
+                    <span class="carousel-counter">{{ (fuPhotoIndex[fu.id] ?? 0) + 1 }}/{{ fuImages(fu.photos).length }}</span>
+                  </div>
                 </div>
-              </div>
+              </ng-container>
               <div class="tl-decision dec-changes" *ngIf="fu.decision === 'Changes'">🔄 Changes Requested</div>
               <div class="tl-decision dec-approved" *ngIf="fu.decision === 'Approved'">✅ Approved</div>
               <div class="prog-marker" *ngIf="fu.progress !== undefined">📈 Progress reported: {{ fu.progress }}%</div>
@@ -1776,7 +1786,10 @@
             </label>
             <button class="btn btn-o btn-sm" style="margin-left:0" (click)="openShareModal(selectedTask, 'supervisor')">📤 Share Update</button>
             <button class="btn btn-sm" style="background:#7c3aed;color:#fff;border:none;margin-left:auto;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:600"
-                    (click)="postSupervisorReview()" [disabled]="!supReviewNote.trim()">Post Supervisor Review</button>
+                    (click)="postSupervisorReview()"
+                    [disabled]="!supReviewNote.trim() || supReviewUploading">
+              {{ supReviewUploading ? 'Uploading…' : 'Post Supervisor Review' }}
+            </button>
           </div>
         </div>
 

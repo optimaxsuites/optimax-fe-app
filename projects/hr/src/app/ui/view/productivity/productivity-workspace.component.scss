@@ -2793,6 +2793,37 @@
   }
 }
 
+.fu-doc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.fu-doc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: #1d4ed8;
+  text-decoration: none;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    background: #dbeafe;
+  }
+
+  i { font-size: 11px; }
+}
+
 .inline-file-chip {
   display: flex;
   align-items: center;
