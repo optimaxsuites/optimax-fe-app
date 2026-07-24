@@ -4,7 +4,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 
 // ── Enums ────────────────────────────────────────────────────────────────────
-export type WorkTaskStatus = 'TO_DO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
+export type WorkTaskStatus = 'TO_DO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'ARCHIVED' | 'CLOSED';
 export type WorkTaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type SubtaskStatus = 'OPEN' | 'IN_PROGRESS' | 'BLOCKED';
 export type GoalStatus = 'DRAFT' | 'SUBMITTED' | 'REVIEWED';
@@ -33,6 +33,14 @@ export interface WorkTaskSubtask {
   dependency?: string;
 }
 
+export interface WorkTaskFollowUpReply {
+  id: number;
+  followUpId: number;
+  authorEmployee?: EmployeeRef;
+  text: string;
+  createdAt: string;
+}
+
 export interface WorkTaskFollowUp {
   id: number;
   workTaskId: number;
@@ -42,6 +50,13 @@ export interface WorkTaskFollowUp {
   progress: number;
   photoUrls?: string;
   createdAt: string;
+  replies?: WorkTaskFollowUpReply[];
+}
+
+export interface FollowUpReplyDTO {
+  followUpId: number;
+  authorEmployeeId?: number;
+  text: string;
 }
 
 export interface WorkTaskFull {
@@ -209,6 +224,21 @@ export class WorkTaskApiService {
       .pipe(catchError(this.handleError));
   }
 
+  getArchivedTasks(): Observable<WorkTaskFull[]> {
+    return this.http.get<WorkTaskFull[]>(`${this.base}/workTasks/archived?size=200`)
+      .pipe(catchError(this.handleError));
+  }
+
+  getArchivedByAssignee(employeeId: number): Observable<WorkTaskFull[]> {
+    return this.http.get<WorkTaskFull[]>(`${this.base}/workTasks/archived/byAssignee/${employeeId}?size=200`)
+      .pipe(catchError(this.handleError));
+  }
+
+  getArchivedBySupervisor(employeeId: number): Observable<WorkTaskFull[]> {
+    return this.http.get<WorkTaskFull[]>(`${this.base}/workTasks/archived/bySupervisor/${employeeId}?size=200`)
+      .pipe(catchError(this.handleError));
+  }
+
   getTask(id: number): Observable<WorkTaskFull> {
     return this.http.get<WorkTaskFull>(`${this.base}/workTasks/${id}`)
       .pipe(catchError(this.handleError));
@@ -283,6 +313,22 @@ export class WorkTaskApiService {
 
   deleteFollowUp(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/taskFollowUps/${id}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  // ── Follow-up Replies ──────────────────────────────────────────────────────
+  getReplies(followUpId: number): Observable<WorkTaskFollowUpReply[]> {
+    return this.http.get<WorkTaskFollowUpReply[]>(`${this.base}/taskFollowUpReplies/byFollowUp/${followUpId}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  createReply(dto: FollowUpReplyDTO): Observable<WorkTaskFollowUpReply> {
+    return this.http.post<WorkTaskFollowUpReply>(`${this.base}/taskFollowUpReplies`, dto)
+      .pipe(catchError(this.handleError));
+  }
+
+  deleteReply(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/taskFollowUpReplies/${id}`)
       .pipe(catchError(this.handleError));
   }
 

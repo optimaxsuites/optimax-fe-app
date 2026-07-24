@@ -159,6 +159,15 @@
           </div>
         </div>
 
+        <!-- Group by -->
+        <select class="pm-select" [(ngModel)]="groupBy" title="Group tasks by…">
+          <option value="none">No Grouping</option>
+          <option value="assignee">Group by Assignee</option>
+          <option value="team">Group by Team</option>
+          <option value="status">Group by Status</option>
+          <option value="priority">Group by Priority</option>
+        </select>
+
         <input type="text" class="pm-search" placeholder="🔍 Search tasks…" [(ngModel)]="searchText">
         <select class="pm-select" [(ngModel)]="filterStatus">
           <option value="">All Statuses</option>
@@ -277,6 +286,9 @@
                 </div>
               </div>
               <span [style.color]="isTaskOverdue(task) ? '#dc2626' : 'inherit'">📅 {{ task.dueDate ? formatRawDate(task.dueDate) : '—' }}</span>
+              <span *ngIf="task.cost" class="kcard-cost-chip" title="Estimated cost">
+                <i class="fas fa-dollar-sign" style="font-size:9px"></i> {{ task.costCurrency || 'NGN' }} {{ fmt(task.cost) }}
+              </span>
               <span *ngIf="task.team" class="kcard-supervisor" [title]="'Supervisor: ' + task.team">
                 <i class="fas fa-user-tie" style="font-size:10px;margin-right:3px;color:#7c3aed"></i>{{ task.team }}
               </span>
@@ -413,46 +425,52 @@
             <span>Task / Sub-task</span><span>Owner</span><span>Status</span>
             <span>Start → Due</span><span>Progress</span><span>Sub-tasks</span><span>Actions</span>
           </div>
-          <ng-container *ngFor="let task of filteredBoard">
-            <div class="tree-row parent" [class.expanded]="task.expanded" (click)="toggleRow(task)">
-              <div class="tree-cell">
-                <span class="tree-toggle-icon">{{ task.expanded ? '▼' : '▶' }}</span>
-                <span [class.td-title]="true">{{ task.title }}</span>
-              </div>
-              <div class="tree-cell">{{ task.assignee }}</div>
-              <div class="tree-cell">
-                <span class="badge" [ngClass]="statusClass(task.status) === 'status-done' ? 'b-green' : isTaskOverdue(task) ? 'b-red' : 'b-yellow'">{{ task.status }}</span>
-              </div>
-              <div class="tree-cell">{{ formatDate(task.startDate) }} → {{ formatDate(task.dueDate) }}</div>
-              <div class="tree-cell">
-                <div class="prog-wrap" style="width:80px;display:inline-block"><div class="prog-bar" [class.g]="task.progress===100" [style.width.%]="task.progress"></div></div>
-                {{ task.progress }}%
-              </div>
-              <div class="tree-cell">{{ completedSubtasks(task) }}/{{ task.subtasks.length }}</div>
-              <div class="tree-cell">
-                <button class="btn-ghost" style="padding:3px 8px;font-size:12px" (click)="openDetail(task);$event.stopPropagation()">Open</button>
-              </div>
+          <ng-container *ngFor="let group of groupedBoard">
+            <!-- Group header (shown only when groupBy is active) -->
+            <div *ngIf="groupBy !== 'none'" class="list-group-header">
+              <i class="fas fa-layer-group"></i> {{ group.key }} <span class="list-group-count">{{ group.tasks.length }}</span>
             </div>
-            <ng-container *ngIf="task.expanded">
-              <div class="tree-preview" *ngIf="task.followUps?.length">
-                <div class="tree-preview-block">
-                  <strong>Latest update · {{ task.followUps[0].author }} · {{ task.followUps[0].timestamp }}</strong>
-                  <p [innerHTML]="sanitizeHtml(task.followUps[0].text)"></p>
-                </div>
-              </div>
-              <div class="tree-row child" *ngFor="let sub of task.subtasks">
-                <div class="tree-cell" style="padding-left:32px">↳ {{ sub.title }}</div>
-                <div class="tree-cell">{{ sub.assignee }}</div>
+            <ng-container *ngFor="let task of group.tasks">
+              <div class="tree-row parent" [class.expanded]="task.expanded" (click)="toggleRow(task)">
                 <div class="tree-cell">
-                  <span class="badge" [ngClass]="sub.done ? 'b-green' : sub.status === 'blocked' ? 'b-red' : sub.status === 'ip' ? 'b-yellow' : 'b-gray'">
-                    {{ sub.done ? 'Done' : sub.status === 'blocked' ? 'Blocked' : sub.status === 'ip' ? 'In Progress' : 'Open' }}
-                  </span>
+                  <span class="tree-toggle-icon">{{ task.expanded ? '▼' : '▶' }}</span>
+                  <span [class.td-title]="true">{{ task.title }}</span>
                 </div>
-                <div class="tree-cell">{{ formatRawDate(sub.startDate) }} → {{ formatRawDate(sub.dueDate) }}</div>
-                <div class="tree-cell">{{ sub.done ? '100%' : '—' }}</div>
-                <div class="tree-cell">{{ sub.dependency || '—' }}</div>
-                <div class="tree-cell"></div>
+                <div class="tree-cell">{{ task.assignee }}</div>
+                <div class="tree-cell">
+                  <span class="badge" [ngClass]="statusClass(task.status) === 'status-done' ? 'b-green' : isTaskOverdue(task) ? 'b-red' : 'b-yellow'">{{ task.status }}</span>
+                </div>
+                <div class="tree-cell">{{ formatDate(task.startDate) }} → {{ formatDate(task.dueDate) }}</div>
+                <div class="tree-cell">
+                  <div class="prog-wrap" style="width:80px;display:inline-block"><div class="prog-bar" [class.g]="task.progress===100" [style.width.%]="task.progress"></div></div>
+                  {{ task.progress }}%
+                </div>
+                <div class="tree-cell">{{ completedSubtasks(task) }}/{{ task.subtasks.length }}</div>
+                <div class="tree-cell">
+                  <button class="btn-ghost" style="padding:3px 8px;font-size:12px" (click)="openDetail(task);$event.stopPropagation()">Open</button>
+                </div>
               </div>
+              <ng-container *ngIf="task.expanded">
+                <div class="tree-preview" *ngIf="task.followUps?.length">
+                  <div class="tree-preview-block">
+                    <strong>Latest update · {{ task.followUps[0].author }} · {{ task.followUps[0].timestamp }}</strong>
+                    <p [innerHTML]="sanitizeHtml(task.followUps[0].text)"></p>
+                  </div>
+                </div>
+                <div class="tree-row child" *ngFor="let sub of task.subtasks">
+                  <div class="tree-cell" style="padding-left:32px">↳ {{ sub.title }}</div>
+                  <div class="tree-cell">{{ sub.assignee }}</div>
+                  <div class="tree-cell">
+                    <span class="badge" [ngClass]="sub.done ? 'b-green' : sub.status === 'blocked' ? 'b-red' : sub.status === 'ip' ? 'b-yellow' : 'b-gray'">
+                      {{ sub.done ? 'Done' : sub.status === 'blocked' ? 'Blocked' : sub.status === 'ip' ? 'In Progress' : 'Open' }}
+                    </span>
+                  </div>
+                  <div class="tree-cell">{{ formatRawDate(sub.startDate) }} → {{ formatRawDate(sub.dueDate) }}</div>
+                  <div class="tree-cell">{{ sub.done ? '100%' : '—' }}</div>
+                  <div class="tree-cell">{{ sub.dependency || '—' }}</div>
+                  <div class="tree-cell"></div>
+                </div>
+              </ng-container>
             </ng-container>
           </ng-container>
         </div>
@@ -1432,11 +1450,40 @@
           <div class="df"><label>Type</label><span>{{ selectedTask.tags[0] || 'Task' }}</span></div>
           <div class="df"><label>Priority</label><span [style.color]="selectedTask.priority === 'Critical' || selectedTask.priority === 'High' ? '#dc2626' : '#374151'">{{ selectedTask.priority }}</span></div>
           <div class="df"><label>Start</label><span>{{ formatDate(selectedTask.startDate) }}</span></div>
-          <div class="df"><label>Due</label><span [style.color]="isTaskOverdue(selectedTask) ? '#dc2626' : '#374151'">{{ formatDate(selectedTask.dueDate) }}{{ isTaskOverdue(selectedTask) ? ' ⚠️' : '' }}</span></div>
-          <div class="df"><label>Assignee</label><span>{{ selectedTask.assignee }}</span></div>
+          <div class="df"><label>Due</label>
+            <span [style.color]="isTaskOverdue(selectedTask) ? '#dc2626' : '#374151'">{{ formatDate(selectedTask.dueDate) }}{{ isTaskOverdue(selectedTask) ? ' ⚠️' : '' }}</span>
+            <button *ngIf="isTaskOverdue(selectedTask)" class="btn-ghost dl-extend-btn" (click)="extendingDeadline = !extendingDeadline; newDeadlineDate = ''">
+              <i class="fas fa-calendar-plus"></i> Extend
+            </button>
+          </div>
+          <div *ngIf="extendingDeadline && isTaskOverdue(selectedTask)" class="dl-extend-row">
+            <input type="date" class="prl-input" [(ngModel)]="newDeadlineDate" [min]="selectedTask.dueDate">
+            <button class="btn btn-p btn-sm" (click)="extendDeadline(selectedTask)" [disabled]="!newDeadlineDate">Apply</button>
+            <button class="btn btn-o btn-sm" (click)="extendingDeadline = false">Cancel</button>
+          </div>
+          <div class="df"><label>Assignee</label>
+            <span *ngIf="!reassignMode">{{ selectedTask.assignee }}</span>
+            <span *ngIf="!reassignMode" class="btn-ghost" style="margin-left:8px;cursor:pointer;font-size:11px;color:#6366f1" (click)="reassignMode = true; reassignEmployeeName = selectedTask.assignee">
+              <i class="fas fa-user-edit"></i> Reassign
+            </span>
+            <div *ngIf="reassignMode" class="dl-extend-row">
+              <input type="text" class="prl-input" [(ngModel)]="reassignEmployeeName" placeholder="Employee name" list="reassign-emp-list">
+              <datalist id="reassign-emp-list">
+                <option *ngFor="let e of allEmployees" [value]="e.fullName"></option>
+              </datalist>
+              <button class="btn btn-p btn-sm" (click)="quickReassign(selectedTask)">Save</button>
+              <button class="btn btn-o btn-sm" (click)="reassignMode = false">Cancel</button>
+            </div>
+          </div>
           <div class="df"><label>Supervisor / Team</label><span>{{ selectedTask.team }}</span></div>
           <div class="df"><label>Perf. Weight</label><span>{{ selectedTask.weight }}%</span></div>
-          <div class="df"><label>Status</label><span>{{ selectedTask.status }}</span></div>
+          <div class="df"><label>Status</label>
+            <span [class.closed-tag]="selectedTask.status === 'Closed'">{{ selectedTask.status }}</span>
+          </div>
+          <div class="df" *ngIf="selectedTask.cost">
+            <label>Est. Cost</label>
+            <span class="cost-chip">{{ selectedTask.costCurrency || 'NGN' }} {{ fmt(selectedTask.cost) }}</span>
+          </div>
         </div>
         <div style="margin-bottom:12px">
           <div style="font-size:12px;color:#4b5563;margin-bottom:5px">Overall Progress</div>
@@ -1787,13 +1834,26 @@
         <i class="fas fa-archive"></i> Archived
         <span class="rail-count">{{ archivedTasks.length }}</span>
       </div>
-      <div *ngIf="!archivedTasks.length" class="rail-empty">
-        No archived tasks. Hit the 📦 button on any card to archive it.
+      <!-- Archive search -->
+      <div *ngIf="archivedTasks.length" class="rail-archive-search">
+        <i class="fas fa-search"></i>
+        <input class="rail-search-input" [(ngModel)]="archiveSearchText" placeholder="Search archive…">
       </div>
-      <div *ngFor="let t of archivedTasks" class="rail-task-row" (click)="openDetail(t)">
+      <div *ngIf="!archivedTasks.length" class="rail-empty">
+        No archived tasks. Hit the 📦 button on any card or set status to "Closed" to archive.
+      </div>
+      <div *ngIf="archivedTasks.length && !filteredArchivedTasks.length" class="rail-empty">
+        No results for "{{ archiveSearchText }}"
+      </div>
+      <div *ngFor="let t of filteredArchivedTasks" class="rail-task-row" [class.rail-task-closed]="t.closed" (click)="openDetail(t)">
         <div class="rail-task-info">
-          <span class="rail-task-title">{{ t.title }}</span>
-          <span class="rail-task-meta">{{ t.assignee }} · {{ t.status }}</span>
+          <span class="rail-task-title" [class.rail-title-closed]="t.closed">{{ t.title }}</span>
+          <span class="rail-task-meta">
+            {{ t.assignee }}
+            <span *ngIf="t.closed" class="rail-closed-badge">Closed</span>
+            <span *ngIf="!t.closed"> · {{ t.status }}</span>
+          </span>
+          <span *ngIf="t.cost" class="rail-cost-meta">{{ t.costCurrency || 'NGN' }} {{ fmt(t.cost) }}</span>
         </div>
         <button class="rail-icon-btn rail-restore-btn"
                 (click)="unarchiveTask(t); $event.stopPropagation()"
@@ -1962,6 +2022,7 @@
           <label>Status</label>
           <select [(ngModel)]="editTaskDraft.status">
             <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+            <option value="Closed" style="color:#dc2626">⊗ Closed (archive)</option>
           </select>
         </div>
         <div class="form-row">
@@ -1981,9 +2042,21 @@
           <input type="date" [(ngModel)]="editTaskDraft.dueDate">
         </div>
       </div>
-      <div class="form-row">
-        <label>Weight (%)</label>
-        <input type="number" [(ngModel)]="editTaskDraft.weight" min="0" max="100">
+      <div class="form-2col">
+        <div class="form-row">
+          <label>Weight (%)</label>
+          <input type="number" [(ngModel)]="editTaskDraft.weight" min="0" max="100">
+        </div>
+        <div class="form-row">
+          <label>Est. Cost <span style="font-size:10px;color:#9ca3af">(optional)</span></label>
+          <div style="display:flex;gap:4px">
+            <select style="width:72px" [(ngModel)]="editTaskDraft.costCurrency">
+              <option value="NGN">NGN</option><option value="USD">USD</option>
+              <option value="GBP">GBP</option><option value="EUR">EUR</option>
+            </select>
+            <input type="number" min="0" step="any" [(ngModel)]="editTaskDraft.cost" placeholder="0.00" style="flex:1">
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -2082,9 +2155,21 @@
           <input type="date" [(ngModel)]="newTask.dueDate">
         </div>
       </div>
-      <div class="form-row">
-        <label>Weight (%)</label>
-        <input type="number" [(ngModel)]="newTask.weight" min="0" max="100">
+      <div class="form-2col">
+        <div class="form-row">
+          <label>Weight (%)</label>
+          <input type="number" [(ngModel)]="newTask.weight" min="0" max="100">
+        </div>
+        <div class="form-row">
+          <label>Est. Cost <span style="font-size:10px;color:#9ca3af">(optional)</span></label>
+          <div style="display:flex;gap:4px">
+            <select style="width:72px" [(ngModel)]="newTask.costCurrency">
+              <option value="NGN">NGN</option><option value="USD">USD</option>
+              <option value="GBP">GBP</option><option value="EUR">EUR</option>
+            </select>
+            <input type="number" min="0" step="any" [(ngModel)]="newTask.cost" placeholder="0.00" style="flex:1">
+          </div>
+        </div>
       </div>
       <!-- Subtasks -->
       <div class="form-row" style="margin-top:8px">

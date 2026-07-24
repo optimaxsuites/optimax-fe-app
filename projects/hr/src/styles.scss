@@ -221,7 +221,12 @@ app-employee-dashboard,
 app-employee-repayment-schedule,
 app-loan-dashboard,
 app-cooperative-loan-detail,
-app-cooperative-loans {
+app-cooperative-loans,
+app-attendance,
+app-attendance-details,
+app-attendance-sheet,
+app-my-attendance,
+app-attendance-reports {
   table {
     width: 100%;
     border-collapse: separate;
@@ -295,13 +300,19 @@ app-employee-dashboard,
 app-employee-history,
 app-cooperative-members,
 app-loan-reports,
-app-loan-dashboard {
+app-loan-dashboard,
+app-attendance,
+app-attendance-details,
+app-attendance-sheet,
+app-my-attendance,
+app-attendance-reports {
   table.simple-table tbody tr:nth-child(even) td,
   table.loans-table tbody tr:nth-child(even) td,
   table.history-table tbody tr:nth-child(even) td,
   table.members-table tbody tr:nth-child(even) td,
   table.reports-table tbody tr:nth-child(even) td,
-  table.loan-table tbody tr:nth-child(even) td {
+  table.loan-table tbody tr:nth-child(even) td,
+  table.attendance-table tbody tr:nth-child(even) td {
     background: #f9fbfc;
   }
 
@@ -310,7 +321,8 @@ app-loan-dashboard {
   table.history-table tbody tr:hover td,
   table.members-table tbody tr:hover td,
   table.reports-table tbody tr:hover td,
-  table.loan-table tbody tr:hover td {
+  table.loan-table tbody tr:hover td,
+  table.attendance-table tbody tr:hover td {
     background: #f8fbfc;
   }
 }

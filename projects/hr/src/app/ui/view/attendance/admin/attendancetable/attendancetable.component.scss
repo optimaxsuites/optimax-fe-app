@@ -16,8 +16,7 @@
 
 .attendance-table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
 }
 
 thead tr{
@@ -30,8 +29,9 @@ th {
   padding: 12px 14px;
   font-weight: 600;
   font-size: 1.5rem;
-  color: $bg-white;
-  border-bottom: 1px solid $border-light;
+  color: #224957;
+  background-color: #f4f7f9;
+  border: 1px solid #d0dbe0;
   position: sticky;
   top: 0;
   z-index: 1;
@@ -40,13 +40,10 @@ td {
   padding: 0.8rem 1rem;
   text-align: left;
   font-size: 1.3rem;
-  border-bottom: 1px solid $border-light;
+  border: 1px solid #d0dbe0;
   color: $text-dark;
 }
 
-tbody tr {
-  border-bottom: 1px solid $border-light;
-}
 
 .status {
   padding: 0.2rem 0.6rem;
