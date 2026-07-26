@@ -1,194 +1,217 @@
-<div class="flex gap-4 items-center">
-  <i class="pi pi-receipt text-4xl text-customBlue"></i>
-  <div>
-      <p class="text-customBlue/60">User and Roles Management</p>
-      <p class="text-customBlue font-semibold text-[17px]">Roles and permission </p>
-  </div>
-</div>
+<div class="rp-page">
 
-<hr/>
-
-<div class="mb-4 mt-3 px-3 flex items-center">
-    <p *ngIf="showAddForm" class="text-xl font-semibold text-customBlue capitalize flex-1">
-      <span>New</span> Role structure
-    </p>
-    <button 
-      class="bg-customBlue text-white font-bold p-3 rounded-xl ml-auto disabled:bg-customBlueHover disabled:cursor-not-allowed" 
-      (click)="toogleForm()"
-    >
-      {{ showAddForm ? "Cancel" : "Create New" }}
+  <!-- Page header -->
+  <div class="rp-header">
+    <div class="rp-header__icon"><i class="fas fa-shield-alt"></i></div>
+    <div class="rp-header__text">
+      <h2 class="rp-header__title">Roles &amp; Permissions</h2>
+      <p class="rp-header__sub">Define roles and control what each role can view, edit, create, or delete.</p>
+    </div>
+    <button class="rp-btn rp-btn--primary" *ngIf="!showAddForm" (click)="toogleForm()">
+      <i class="fas fa-plus"></i> New Role
+    </button>
+    <button class="rp-btn rp-btn--ghost" *ngIf="showAddForm" (click)="toogleForm()">
+      <i class="fas fa-times"></i> Cancel
     </button>
   </div>
 
-  
-  
+  <!-- ══ Role list ══ -->
+  @if(!showAddForm) {
 
-@if(!showAddForm){
-  <mat-accordion>
-    @for(role of roles; track role.roleName){
-      <mat-expansion-panel #panel>
-        <mat-expansion-panel-header>
-          <mat-panel-title class="capitalize">
-            {{ role.roleName }}
-          </mat-panel-title>
-          <mat-panel-description class="action-buttons">
-            <button (click)="editCompensation(role,  $event)" class="text-customGreen hover:bg-green-50 p-3 rounded-xl">
-              <i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2"></i>
-              <span *ngIf="panel.expanded">{{ role.isEditing ? 'Save Changes' : 'Edit' }}</span>
-            </button>
-            <button (click)="confirmCompensationDelete(role, $event)" class="text-red-500 hover:bg-red-50 p-3 rounded-xl" *ngIf="!role.isEditing">
-              <i class="fa-solid fa-trash text-2xl pr-2"></i>
-              <span *ngIf="panel.expanded">Delete</span>
-            </button>
-          </mat-panel-description>
-        </mat-expansion-panel-header>
-  
-        <div class="">
-          <table class="w-full border-collapse border border-gray-300">
+  <!-- Search -->
+  <div class="rp-search-bar">
+    <i class="fas fa-search rp-search-bar__icon"></i>
+    <input type="text" class="rp-search-bar__input" placeholder="Search roles…"
+           [(ngModel)]="roleSearchTerm" (ngModelChange)="applyRoleSearch()" />
+  </div>
+
+  <div class="rp-list">
+    @for(role of filteredRoles; track role.roleName) {
+    <div class="rp-card" [class.rp-card--editing]="role.isEditing">
+
+      <!-- Card head -->
+      <div class="rp-card__head">
+        <div class="rp-role-icon"><i class="fas fa-user-shield"></i></div>
+        <div class="rp-card__info">
+          <p class="rp-card__name">{{ role.roleName }}</p>
+          <p class="rp-card__desc" *ngIf="role.roleDescription">{{ role.roleDescription }}</p>
+        </div>
+        <div class="rp-card__actions">
+          <button class="rp-icon-btn rp-icon-btn--blue"
+            (click)="editCompensation(role, $event)"
+            [title]="role.isEditing ? 'Save Changes' : 'Edit Role'">
+            <i class="fas" [class.fa-pen]="!role.isEditing" [class.fa-save]="role.isEditing"></i>
+          </button>
+          <button class="rp-icon-btn rp-icon-btn--red"
+            (click)="confirmCompensationDelete(role, $event)"
+            *ngIf="!role.isEditing"
+            title="Delete role">
+            <i class="fas fa-trash"></i>
+          </button>
+          <button class="rp-icon-btn rp-icon-btn--slate rp-icon-btn--toggle"
+            (click)="role._expanded = !role._expanded"
+            [title]="role._expanded ? 'Collapse' : 'Expand permissions'">
+            <i class="fas" [class.fa-chevron-down]="!role._expanded" [class.fa-chevron-up]="role._expanded"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Permission table (collapsible) -->
+      <div class="rp-card__perms" *ngIf="role._expanded">
+        @for(module of modules; track module.title) {
+        <div class="rp-module">
+          <div class="rp-module__title">{{ module.title }}</div>
+          <table class="rp-table">
             <thead>
-              <tr class="bg-gray-100">
-                <th class="border border-gray-300 px-4 py-2">Permission</th>
-                <th class="border border-gray-300 px-4 py-2 text-center">View</th>
-                <th class="border border-gray-300 px-4 py-2 text-center">Edit</th>
-                <th class="border border-gray-300 px-4 py-2 text-center">Delete</th>
-                <th class="border border-gray-300 px-4 py-2 text-center">Create</th>
-                <th class="border border-gray-300 px-4 py-2 text-center">Super</th>
+              <tr>
+                <th class="rp-th rp-th--name">Permission</th>
+                <th class="rp-th">View</th>
+                <th class="rp-th">Edit</th>
+                <th class="rp-th">Delete</th>
+                <th class="rp-th">Create</th>
+                <th class="rp-th rp-th--super">Super</th>
               </tr>
             </thead>
             <tbody>
-              @for(module of modules; track module.title) {
-                <tr class="bg-gray-200 font-bold">
-                  <td colspan="6" class="border border-gray-300 px-4 py-2 capitalize text-customBlue">
-                    <div class="py-2">{{ module.title }}</div> 
-                  </td>
-                </tr>
-            
-                @for(form of module.appRegister; track form.appName) {
-                  <tr class="border-t-4 border-transparent"> 
-                    <td class="border border-gray-300 px-4 py-2 capitalize">{{ form.appName }}</td>
-                  
-                    <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [(ngModel)]="role.permissions[module.title][form.appName].canView" [disabled]="!role.isEditing"
-                        (change)="revokeRoleSuperuserIfPermissionUnchecked(role, module.title, form.appName)" />
-                    </td>
-                  
-                    <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [(ngModel)]="role.permissions[module.title][form.appName].canEdit" [disabled]="!role.isEditing"
-                        (change)="revokeRoleSuperuserIfPermissionUnchecked(role, module.title, form.appName)" />
-                    </td>
-                  
-                    <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [(ngModel)]="role.permissions[module.title][form.appName].canDelete" [disabled]="!role.isEditing"
-                        (change)="revokeRoleSuperuserIfPermissionUnchecked(role, module.title, form.appName)" />
-                    </td>
-                  
-                    <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [(ngModel)]="role.permissions[module.title][form.appName].canCreate" [disabled]="!role.isEditing"
-                        (change)="revokeRoleSuperuserIfPermissionUnchecked(role, module.title, form.appName)" />
-                    </td>
-
-                    <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [(ngModel)]="role.permissions[module.title][form.appName].superuser" [disabled]="!role.isEditing"
-                        (change)="updateRoleSuperuserPermissions(role, module.title, form.appName)" />
-                    </td>
-                  </tr>
-                  
-                }
+              @for(form of module.appRegister; track form.appName) {
+              <tr class="rp-tr">
+                <td class="rp-td rp-td--name">{{ form.appName }}</td>
+                <td class="rp-td rp-td--chk">
+                  <input type="checkbox" class="rp-chk"
+                    [(ngModel)]="role.permissions[module.title][form.appName].canView"
+                    [disabled]="!role.isEditing"
+                    (change)="revokeRoleSuperuserIfPermissionUnchecked(role, module.title, form.appName)" />
+                </td>
+                <td class="rp-td rp-td--chk">
+                  <input type="checkbox" class="rp-chk"
+                    [(ngModel)]="role.permissions[module.title][form.appName].canEdit"
+                    [disabled]="!role.isEditing"
+                    (change)="revokeRoleSuperuserIfPermissionUnchecked(role, module.title, form.appName)" />
+                </td>
+                <td class="rp-td rp-td--chk">
+                  <input type="checkbox" class="rp-chk"
+                    [(ngModel)]="role.permissions[module.title][form.appName].canDelete"
+                    [disabled]="!role.isEditing"
+                    (change)="revokeRoleSuperuserIfPermissionUnchecked(role, module.title, form.appName)" />
+                </td>
+                <td class="rp-td rp-td--chk">
+                  <input type="checkbox" class="rp-chk"
+                    [(ngModel)]="role.permissions[module.title][form.appName].canCreate"
+                    [disabled]="!role.isEditing"
+                    (change)="revokeRoleSuperuserIfPermissionUnchecked(role, module.title, form.appName)" />
+                </td>
+                <td class="rp-td rp-td--chk">
+                  <input type="checkbox" class="rp-chk rp-chk--super"
+                    [(ngModel)]="role.permissions[module.title][form.appName].superuser"
+                    [disabled]="!role.isEditing"
+                    (change)="updateRoleSuperuserPermissions(role, module.title, form.appName)" />
+                </td>
+              </tr>
               }
             </tbody>
-            
           </table>
         </div>
-      </mat-expansion-panel>
+        }
+      </div>
+
+    </div>
     }
-    @empty {<li>There are no items.</li>}
-  </mat-accordion>
-  
-}
-
-
-@if(showAddForm){
-
-
-  <div class="px-4 ">
-    <div class="py-3  flex flex-col gap-1">
-      <label for="name" class="font-semibold text-customBlue">Role Name</label>
-      <input type="text" placeholder="Role name" id="name" class="editInput" [(ngModel)]="newRole.roleName">
+    @empty {
+    <div class="rp-empty">
+      <i class="fas fa-shield-alt"></i>
+      <p>No roles yet. Create your first role to get started.</p>
     </div>
-  
-    <div class=" mb-4 flex flex-col gap-1">
-      <label for="name" class="font-semibold text-customBlue">Description</label>
-      <textarea placeholder="Role description" id="name" class="editInput" [(ngModel)]="newRole.roleDescription"></textarea>
-    </div>
+    }
+  </div>
 
-    <mat-accordion class="">
-      @for( module of modules; track module.title){
-        <mat-expansion-panel #panel>
-          <mat-expansion-panel-header>
-            <mat-panel-title class="capitalize">
-              {{ module.title }}
-            </mat-panel-title>
-            <mat-panel-description class="action-buttons p-3">
-              <button class="p-3 rounded-xl" >
-                <!-- <i class="fa-solid fa-trash text-2xl pr-2"></i>
-                <span *ngIf="panel.expanded">Delete</span> -->
-              </button>
-            </mat-panel-description>
-          </mat-expansion-panel-header>
-
-  
-      <table class="w-full border-collapse border border-gray-300">
-        <thead>
-          <tr class="bg-gray-100">
-            <th class="border border-gray-300 px-4 py-2">Permission</th>
-            <th class="border border-gray-300 px-4 py-2 text-center">View</th>
-            <th class="border border-gray-300 px-4 py-2 text-center">Edit</th>
-            <th class="border border-gray-300 px-4 py-2 text-center">Delete</th>
-            <th class="border border-gray-300 px-4 py-2 text-center">Create</th>
-            <th class="border border-gray-300 px-4 py-2 text-center">Super</th>
-
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let form of module.appRegister">
-            <td class="border border-gray-300 px-4 py-2 capitalize">{{ form.appName }}</td>
-            <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canView"
-                     (change)="revokeSuperuserIfPermissionUnchecked(module.title, form.appName)" />
-            </td>
-            <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canEdit"
-                     (change)="revokeSuperuserIfPermissionUnchecked(module.title, form.appName)" />
-            </td>
-            <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canDelete"
-                     (change)="revokeSuperuserIfPermissionUnchecked(module.title, form.appName)" />
-            </td>
-            <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canCreate"
-                     (change)="revokeSuperuserIfPermissionUnchecked(module.title, form.appName)" />
-            </td>
-            <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].superuser" 
-                     (change)="updateSuperuserPermissions(module.title, form.appName)" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </mat-expansion-panel>
   }
-  @empty {<li>There are no items.</li>}
-  </mat-accordion>
 
-    <!-- </div> -->
-  
-    <div class="text-right my-3">
-      <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-customGreenHover disabled:cursor-not-allowed"
-        (click)="submitRole()" [disabled]="newRole.roleName === ''">
-        Add
+  <!-- ══ Create role form ══ -->
+  @if(showAddForm) {
+
+  <div class="rp-form-card">
+    <div class="rp-form-card__head">
+      <i class="fas fa-plus-circle"></i>
+      <h3>New Role</h3>
+    </div>
+
+    <div class="rp-form-section">
+      <div class="rp-form-grid">
+        <div class="rp-field">
+          <label class="rp-field-label">Role Name <span class="rp-req">*</span></label>
+          <input type="text" class="rp-input" placeholder="e.g. Sales Manager" [(ngModel)]="newRole.roleName" />
+        </div>
+        <div class="rp-field rp-field--full">
+          <label class="rp-field-label">Description</label>
+          <textarea class="rp-input rp-input--textarea" placeholder="Briefly describe this role…" [(ngModel)]="newRole.roleDescription" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modules & permissions -->
+    <div class="rp-modules-section">
+      @for(module of modules; track module.title) {
+      <div class="rp-module rp-module--form">
+        <button type="button" class="rp-module__toggle" (click)="module._expanded = !module._expanded">
+          <span class="rp-module__title">{{ module.title }}</span>
+          <i class="fas" [class.fa-chevron-down]="!module._expanded" [class.fa-chevron-up]="module._expanded"></i>
+        </button>
+        <div class="rp-card__perms" *ngIf="module._expanded">
+          <table class="rp-table">
+            <thead>
+              <tr>
+                <th class="rp-th rp-th--name">Permission</th>
+                <th class="rp-th">View</th>
+                <th class="rp-th">Edit</th>
+                <th class="rp-th">Delete</th>
+                <th class="rp-th">Create</th>
+                <th class="rp-th rp-th--super">Super</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let form of module.appRegister" class="rp-tr">
+                <td class="rp-td rp-td--name">{{ form.appName }}</td>
+                <td class="rp-td rp-td--chk">
+                  <input type="checkbox" class="rp-chk"
+                    [(ngModel)]="newRole.permissions[module.title][form.appName].canView"
+                    (change)="revokeSuperuserIfPermissionUnchecked(module.title, form.appName)" />
+                </td>
+                <td class="rp-td rp-td--chk">
+                  <input type="checkbox" class="rp-chk"
+                    [(ngModel)]="newRole.permissions[module.title][form.appName].canEdit"
+                    (change)="revokeSuperuserIfPermissionUnchecked(module.title, form.appName)" />
+                </td>
+                <td class="rp-td rp-td--chk">
+                  <input type="checkbox" class="rp-chk"
+                    [(ngModel)]="newRole.permissions[module.title][form.appName].canDelete"
+                    (change)="revokeSuperuserIfPermissionUnchecked(module.title, form.appName)" />
+                </td>
+                <td class="rp-td rp-td--chk">
+                  <input type="checkbox" class="rp-chk"
+                    [(ngModel)]="newRole.permissions[module.title][form.appName].canCreate"
+                    (change)="revokeSuperuserIfPermissionUnchecked(module.title, form.appName)" />
+                </td>
+                <td class="rp-td rp-td--chk">
+                  <input type="checkbox" class="rp-chk rp-chk--super"
+                    [(ngModel)]="newRole.permissions[module.title][form.appName].superuser"
+                    (change)="updateSuperuserPermissions(module.title, form.appName)" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      }
+    </div>
+
+    <div class="rp-form-actions">
+      <button class="rp-btn rp-btn--ghost" (click)="toogleForm()">Cancel</button>
+      <button class="rp-btn rp-btn--primary" (click)="submitRole()" [disabled]="!newRole.roleName">
+        <i class="fas fa-plus"></i> Create Role
       </button>
     </div>
   </div>
-  
 
-}
+  }
+
+</div>

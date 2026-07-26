@@ -1,4 +1,5 @@
 <p-toast position="top-right" key="global"></p-toast>
+<p-toast position="top-right" key="tl"></p-toast>
 
 <div class="ep-shell">
 
@@ -250,7 +251,7 @@
           <div class="ep-field-row">
             <label class="ep-field-label">Job Title</label>
             <span *ngIf="!isEditMode" class="ep-field-value">{{ employeeInView?.jobTitle || '—' }}</span>
-            <ng-select *ngIf="isEditMode" [items]="jobTitleOptions" formControlName="jobTitle" placeholder="Select job title" class="ep-select"></ng-select>
+            <ng-select *ngIf="isEditMode" [items]="jobTitleOptions" [addTag]="true" formControlName="jobTitle" placeholder="Select or type job title" class="ep-select"></ng-select>
           </div>
 
           <div class="ep-field-row">
@@ -262,7 +263,7 @@
           <div class="ep-field-row">
             <label class="ep-field-label">Level / Grade</label>
             <span *ngIf="!isEditMode" class="ep-field-value">{{ employeeInView?.level?.position || employeeInView?.level?.name || employeeInView?.level || '—' }}</span>
-            <ng-select *ngIf="isEditMode" [items]="levels" bindLabel="name" bindValue="id" formControlName="levelId" placeholder="Select level" class="ep-select"></ng-select>
+            <ng-select *ngIf="isEditMode" [items]="levels" bindLabel="displayLabel" bindValue="id" formControlName="levelId" placeholder="Select level" class="ep-select"></ng-select>
           </div>
 
           <div class="ep-field-row">
@@ -274,7 +275,7 @@
           <div class="ep-field-row">
             <label class="ep-field-label">Supervisor</label>
             <span *ngIf="!isEditMode" class="ep-field-value">{{ employeeInView?.supervisor || '—' }}</span>
-            <ng-select *ngIf="isEditMode" [items]="supervisorOptions" formControlName="supervisor" placeholder="Select supervisor" class="ep-select"></ng-select>
+            <ng-select *ngIf="isEditMode" [items]="supervisorOptions" [addTag]="true" formControlName="supervisor" placeholder="Select supervisor" class="ep-select"></ng-select>
           </div>
 
           <div class="ep-field-row">
@@ -444,17 +445,6 @@
 
     </div>
 
-    <!-- Relatives widget -->
-    <div class="ep-section-pad">
-      <app-employee-relatives-widget
-        [nextOfKinList]="nextOfKinList"
-        [guarantorList]="guarantorList"
-        [employeeName]="employeeInView?.firstName + ' ' + employeeInView?.lastName"
-        (openNokChangeRequest)="openNokChangeRequest($event.type, $event.contact)"
-        (openGuarantorChangeRequest)="openGuarantorChangeRequest($event.type, $event.contact)">
-      </app-employee-relatives-widget>
-    </div>
-
     <!-- Recent Payslips -->
     <div class="ep-section-pad">
       <div class="ep-card ep-payslip-card">
@@ -486,7 +476,7 @@
             class="ep-payslip-row"
             (click)="openPayslipDetail(slip)">
             <span class="ep-payslip-period">{{ payslipMonthNames[(slip.month || 1) - 1] }} {{ slip.year }}</span>
-            <span class="ep-payslip-amount">{{ fmtPayslipAmount(slip.grossPay ?? 0) }}</span>
+            <span class="ep-payslip-amount">{{ fmtPayslipAmount(slip.grossPay ?? slip.basePay ?? 0) }}</span>
             <span class="ep-payslip-deduct">{{ fmtPayslipAmount(slip.totalDeductions ?? 0) }}</span>
             <span class="ep-payslip-net">{{ fmtPayslipAmount(slip.netPayable ?? 0) }}</span>
             <span>
@@ -507,6 +497,18 @@
       </div>
     </div>
 
+    <!-- Relatives widget -->
+    <div class="ep-section-pad">
+      <app-employee-relatives-widget
+        [nextOfKinList]="nextOfKinList"
+        [guarantorList]="guarantorList"
+        [canManage]="canManageEmployees"
+        [employeeName]="employeeInView?.firstName + ' ' + employeeInView?.lastName"
+        (openNokChangeRequest)="openNokChangeRequest($event.type, $event.contact)"
+        (openGuarantorChangeRequest)="openGuarantorChangeRequest($event.type, $event.contact)">
+      </app-employee-relatives-widget>
+    </div>
+
   </div>
 
   <ng-template #emptyState>
@@ -521,6 +523,35 @@
 <app-large-side-modal *ngIf="viewPayslip" (close)="viewPayslip = false">
   <app-payslip-view [payslip]="activePayslip"></app-payslip-view>
 </app-large-side-modal>
+
+<!-- Exit reason modal -->
+<div *ngIf="showExitReasonModal" class="ep-confirm-backdrop">
+  <div class="ep-confirm-card ep-confirm-card--wide">
+    <div class="ep-confirm-icon ep-confirm-icon--red"><i class="fas fa-user-minus"></i></div>
+    <h3 class="ep-confirm-title">Reason for Status Change</h3>
+    <p class="ep-confirm-body">
+      You are marking <strong>{{ employeeInView?.firstName }} {{ employeeInView?.lastName }}</strong> as
+      <strong>{{ getStatusLabel(pendingExitStatus) }}</strong>.
+      A reason is required and will be recorded on file.
+    </p>
+    <div class="ep-exit-reason-field">
+      <textarea
+        class="ep-exit-reason-input"
+        placeholder="Enter reason (e.g. end of contract, voluntary resignation…)"
+        [(ngModel)]="exitReasonText"
+        rows="4"
+        maxlength="500">
+      </textarea>
+      <span class="ep-exit-reason-count">{{ exitReasonText.length }}/500</span>
+    </div>
+    <div class="ep-confirm-actions">
+      <button type="button" class="ep-btn ep-btn--cancel" (click)="cancelExitReason()">Cancel</button>
+      <button type="button" class="ep-btn ep-btn--danger" (click)="confirmExitReason()" [disabled]="!exitReasonText.trim()">
+        Confirm
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- Delete confirmation dialog -->
 <div *ngIf="showDeleteConfirm" class="ep-confirm-backdrop">
@@ -551,6 +582,7 @@
     [employee]="employeeInView"
     [nokRecord]="selectedNokRecord"
     [changeType]="nokChangeType"
+    [adminDirectMode]="canManageEmployees"
     (requestSubmitted)="onNokChangeRequestSubmitted($event)"
   ></app-nok-change-request>
 </app-modal>
@@ -560,6 +592,7 @@
     [employee]="employeeInView"
     [guarantorRecord]="selectedGuarantorRecord"
     [changeType]="guarantorChangeType"
+    [adminDirectMode]="canManageEmployees"
     (requestSubmitted)="onGuarantorChangeRequestSubmitted($event)"
   ></app-guarantor-change-request>
 </app-modal>

@@ -143,3 +143,44 @@
   background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px;
   i { margin-right: 6px; }
 }
+
+// Payroll exemption
+.disb-skipped-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  font-size: 13px;
+  margin-bottom: 12px;
+
+  i { flex-shrink: 0; font-size: 15px; }
+}
+
+.disb-exempt-badge {
+  display: inline-block;
+  margin-left: 10px;
+  background: #fef3c7; color: #92400e;
+  font-size: 11px; font-weight: 600;
+  padding: 1px 7px; border-radius: 10px;
+}
+.disb-th-exempt { width: 56px; text-align: center; }
+.disb-td-exempt { text-align: center; }
+.disb-exempt-chk { cursor: pointer; display: flex; justify-content: center; }
+.disb-exempt-chk input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: #f97316; }
+.disb-row--exempted {
+  opacity: 0.5;
+  td { text-decoration: line-through; }
+}
+.disb-exempt-tag {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px; font-weight: 700; letter-spacing: .5px;
+  color: #92400e; background: #fef3c7;
+  padding: 1px 6px; border-radius: 4px;
+  vertical-align: middle; text-decoration: none !important;
+}
+.disb-amount--exempted { text-decoration: line-through; color: #94a3b8 !important; }

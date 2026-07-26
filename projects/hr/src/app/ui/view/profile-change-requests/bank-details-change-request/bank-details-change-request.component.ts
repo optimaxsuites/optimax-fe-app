@@ -355,13 +355,8 @@ export class BankDetailsChangeRequestComponent implements OnInit, OnChanges {
    * Cancel and reset form
    */
   cancelRequest(): void {
-    if (this.bankDetailsForm.dirty) {
-      const confirmation = confirm('Are you sure you want to cancel? Any unsaved changes will be lost.');
-      if (confirmation) {
-        this.bankDetailsForm.reset();
-        this.loadCurrentBankDetails();
-      }
-    }
+    this.bankDetailsForm.reset();
+    this.loadCurrentBankDetails();
   }
 
   /**

@@ -1,17 +1,430 @@
-p {
-    margin-bottom: 0;
+$blue:   #1e40af;
+$green:  #10b981;
+$red:    #ef4444;
+$slate:  #64748b;
+$bg:     #f8fafc;
+$border: #e2e8f0;
+$text:   #1e293b;
+$muted:  #94a3b8;
+$gold:   #f59e0b;
+
+p { margin-bottom: 0; }
+
+// ── Page shell ───────────────────────────────────────────────────────────────
+.rp-page {
+  padding: 24px;
+  background: $bg;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.action-buttons {
+// ── Header ───────────────────────────────────────────────────────────────────
+.rp-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 14px;
+  padding: 18px 22px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+
+  &__icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
+    background: rgba($blue,.08);
     display: flex;
-    justify-content: flex-end;
     align-items: center;
-    // gap: 20px;
-  }
-  
-
-  input[type="checkbox"] {
-    @apply accent-customGreen cursor-pointer disabled:accent-customGreen disabled:cursor-not-allowed disabled:opacity-100;
+    justify-content: center;
+    color: $blue;
+    font-size: 20px;
+    flex-shrink: 0;
   }
 
+  &__text { flex: 1; }
 
+  &__title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: $text;
+  }
+
+  &__sub {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: $muted;
+  }
+}
+
+// ── Buttons ───────────────────────────────────────────────────────────────────
+.rp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+
+  &:disabled { opacity: .5; cursor: not-allowed; }
+
+  &--primary {
+    background: $blue;
+    color: #fff;
+    &:hover:not(:disabled) { background: darken($blue, 6%); }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: $slate;
+    border: 1px solid $border;
+    &:hover:not(:disabled) { background: #f1f5f9; }
+  }
+}
+
+// ── Search bar ────────────────────────────────────────────────────────────────
+.rp-search-bar {
+  position: relative;
+
+  &__icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $muted;
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  &__input {
+    width: 100%;
+    padding: 9px 12px 9px 34px;
+    border: 1px solid $border;
+    border-radius: 9px;
+    font-size: 13px;
+    background: #fff;
+    color: $text;
+    outline: none;
+    box-sizing: border-box;
+
+    &::placeholder { color: $muted; }
+    &:focus { border-color: $blue; box-shadow: 0 0 0 3px rgba($blue,.08); }
+  }
+}
+
+// ── Role card list ────────────────────────────────────────────────────────────
+.rp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rp-card {
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: box-shadow .15s;
+
+  &:hover { box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+
+  &--editing {
+    border-color: rgba($blue,.35);
+    box-shadow: 0 0 0 3px rgba($blue,.07);
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+  }
+
+  &__info { flex: 1; min-width: 0; }
+
+  &__name {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: $text;
+    text-transform: capitalize;
+  }
+
+  &__desc {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: $muted;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  &__perms {
+    border-top: 1px solid $border;
+    padding: 0 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-top: 16px;
+    background: #fafbfc;
+  }
+}
+
+// ── Role icon ────────────────────────────────────────────────────────────────
+.rp-role-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: rgba($blue,.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $blue;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+// ── Icon buttons ─────────────────────────────────────────────────────────────
+.rp-icon-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background .15s, transform .1s;
+
+  &:active { transform: scale(.93); }
+
+  &--blue {
+    background: rgba($blue,.08);
+    color: $blue;
+    &:hover { background: rgba($blue,.16); }
+  }
+
+  &--red {
+    background: #fee2e2;
+    color: #b91c1c;
+    &:hover { background: #fecaca; }
+  }
+
+  &--slate {
+    background: #f1f5f9;
+    color: $slate;
+    &:hover { background: #e2e8f0; }
+  }
+}
+
+// ── Module block ─────────────────────────────────────────────────────────────
+.rp-module {
+  &__title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: $blue;
+    margin-bottom: 8px;
+  }
+
+  &--form {
+    border: 1px solid $border;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  &__toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: $text;
+    transition: background .15s;
+
+    &:hover { background: #f1f5f9; }
+
+    i { color: $muted; font-size: 11px; }
+  }
+
+  .rp-card__perms {
+    border-top: 1px solid $border;
+    padding: 12px 14px;
+    background: #fff;
+  }
+}
+
+// ── Permission table ──────────────────────────────────────────────────────────
+.rp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.rp-th {
+  padding: 8px 12px;
+  background: #f1f5f9;
+  color: $muted;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  text-align: center;
+  border: 1px solid $border;
+
+  &--name { text-align: left; width: 35%; }
+  &--super { color: $gold; }
+}
+
+.rp-tr {
+  &:hover td { background: #fafbfc; }
+}
+
+.rp-td {
+  padding: 8px 12px;
+  border: 1px solid $border;
+  color: $text;
+  vertical-align: middle;
+
+  &--name {
+    font-size: 13px;
+    text-transform: capitalize;
+    font-weight: 500;
+  }
+
+  &--chk { text-align: center; }
+}
+
+.rp-chk {
+  width: 15px;
+  height: 15px;
+  accent-color: $blue;
+  cursor: pointer;
+
+  &:disabled { opacity: .45; cursor: not-allowed; }
+
+  &--super {
+    accent-color: $gold;
+    &:disabled { opacity: .45; }
+  }
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+.rp-empty {
+  text-align: center;
+  padding: 56px 24px;
+  color: $muted;
+
+  i { font-size: 36px; margin-bottom: 12px; display: block; }
+  p  { font-size: 14px; margin: 0; }
+}
+
+// ── Create form card ──────────────────────────────────────────────────────────
+.rp-form-card {
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 24px;
+    border-bottom: 1px solid $border;
+    background: #fafbfc;
+
+    i { color: $blue; font-size: 18px; }
+
+    h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: $text;
+    }
+  }
+}
+
+.rp-form-section {
+  padding: 20px 24px;
+  border-bottom: 1px solid $border;
+}
+
+.rp-modules-section {
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-bottom: 1px solid $border;
+}
+
+.rp-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.rp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  &--full { grid-column: 1 / -1; }
+}
+
+.rp-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: $slate;
+}
+
+.rp-req { color: $red; }
+
+.rp-input {
+  padding: 9px 12px;
+  border: 1px solid $border;
+  border-radius: 8px;
+  font-size: 13px;
+  color: $text;
+  background: #fff;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  width: 100%;
+  box-sizing: border-box;
+
+  &::placeholder { color: $muted; }
+  &:focus { border-color: $blue; box-shadow: 0 0 0 3px rgba($blue,.08); }
+
+  &--textarea { resize: vertical; min-height: 60px; font-family: inherit; }
+}
+
+.rp-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  background: #fafbfc;
+}

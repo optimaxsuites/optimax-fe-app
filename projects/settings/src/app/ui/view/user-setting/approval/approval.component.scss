@@ -1,48 +1,602 @@
-p {
-    margin-bottom: 0;
+$blue:   #1e40af;
+$green:  #10b981;
+$red:    #ef4444;
+$slate:  #64748b;
+$bg:     #f8fafc;
+$border: #e2e8f0;
+$text:   #1e293b;
+$muted:  #94a3b8;
+
+p { margin-bottom: 0; }
+
+// ── Page shell ───────────────────────────────────────────────────────────────
+.aw-page {
+  padding: 24px;
+  background: $bg;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.action-buttons {
+// ── Header ───────────────────────────────────────────────────────────────────
+.aw-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 14px;
+  padding: 18px 22px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+
+  &__icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
+    background: rgba($blue,.08);
     display: flex;
-    justify-content: flex-end;
     align-items: center;
-    // gap: 20px;
-  }
-  
-
-  input[type="checkbox"] {
-    @apply accent-customGreen cursor-pointer disabled:accent-customGreen disabled:cursor-not-allowed disabled:opacity-100;
+    justify-content: center;
+    color: $blue;
+    font-size: 20px;
+    flex-shrink: 0;
   }
 
+  &__text { flex: 1; }
 
-// .workflow-accordion {
-//   ::ng-deep .mat-expansion-panel-body {
-//     padding: 3 !important;
-//   }
-// }
+  &__title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: $text;
+  }
 
-.strategy-card {
-  input:checked + div {
-    border-color: #2E6276 !important; // Replace with your customBlue
-    background-color: rgba(var(--custom-blue-rgb), 0.05);
+  &__sub {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: $muted;
   }
 }
 
-// Simple fade-in animation for when "isEnabled" is checked
-.animate-in {
-  animation: fadeIn 0.3s ease-out;
+// ── Search bar ────────────────────────────────────────────────────────────────
+.aw-search-bar {
+  position: relative;
+
+  &__icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $muted;
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  &__input {
+    width: 100%;
+    padding: 9px 12px 9px 34px;
+    border: 1px solid $border;
+    border-radius: 9px;
+    font-size: 13px;
+    background: #fff;
+    color: $text;
+    outline: none;
+    box-sizing: border-box;
+
+    &::placeholder { color: $muted; }
+    &:focus { border-color: $blue; box-shadow: 0 0 0 3px rgba($blue,.08); }
+  }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+// ── Module list ───────────────────────────────────────────────────────────────
+.aw-modules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-select {
+// ── Module card ───────────────────────────────────────────────────────────────
+.aw-module-card {
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+
+  &__head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: #fff;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background .15s;
+
+    &:hover { background: #f8fafc; }
+  }
+
+  &__icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba($blue,.07);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $blue;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  &__name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 700;
+    color: $text;
+    text-transform: capitalize;
+  }
+
+  &__chevron {
+    color: $muted;
+    font-size: 12px;
+  }
+
+  &__body {
+    border-top: 1px solid $border;
+    padding: 16px;
+    background: #fafbfc;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+// ── App card ──────────────────────────────────────────────────────────────────
+.aw-app-card {
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 10px;
+  overflow: hidden;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  &__name {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: $text;
+  }
+
+  &__hint {
+    margin: 3px 0 0;
+    font-size: 11px;
+    color: $muted;
+  }
+
+  &__body {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+// ── Toggle switch ─────────────────────────────────────────────────────────────
+.aw-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+
+  &__input { display: none; }
+
+  &__track {
+    position: relative;
+    width: 42px;
+    height: 22px;
+    background: #cbd5e1;
+    border-radius: 11px;
+    transition: background .2s;
+    flex-shrink: 0;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform .2s;
+    }
+  }
+
+  &__input:checked ~ &__track {
+    background: $blue;
+    &::after { transform: translateX(20px); }
+  }
+
+  &__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: $muted;
+  }
+
+  &__input:checked ~ &__label { color: $blue; }
+}
+
+// ── Action tabs ───────────────────────────────────────────────────────────────
+.aw-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  width: fit-content;
+  border: 1px solid $border;
+}
+
+.aw-tab {
+  padding: 6px 18px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  color: $muted;
+  cursor: pointer;
+  transition: background .15s, color .15s, box-shadow .15s;
+
+  &--active {
+    background: #fff;
+    color: $blue;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+}
+
+// ── Action bar (enable + add stage) ──────────────────────────────────────────
+.aw-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid $border;
+
+  &__label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: $slate;
+  }
+
+  &__controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+}
+
+// ── Stages ────────────────────────────────────────────────────────────────────
+.aw-stages {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.aw-stage {
+  display: flex;
+  gap: 14px;
+
+  &__number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba($blue,.1);
+    color: $blue;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  &__body {
+    flex: 1;
+    background: #fff;
+    border: 1px solid $border;
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+
+  &__flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    padding: 10px 0;
+    border-top: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+  }
+}
+
+// ── Form fields ───────────────────────────────────────────────────────────────
+.aw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &__label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: $muted;
+  }
+}
+
+.aw-input {
+  padding: 8px 10px;
+  border: 1px solid $border;
+  border-radius: 7px;
+  font-size: 13px;
+  color: $text;
+  background: #f8fafc;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+
+  &:focus { border-color: $blue; box-shadow: 0 0 0 3px rgba($blue,.08); background: #fff; }
+
+  &--sm { width: 72px; text-align: center; }
+}
+
+.aw-select {
+  padding: 8px 30px 8px 10px;
+  border: 1px solid $border;
+  border-radius: 7px;
+  font-size: 13px;
+  color: $text;
+  background: #f8fafc url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") no-repeat right 8px center / 14px;
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.5rem center;
-  background-size: 1em;
-  padding-right: 2.5rem;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+
+  &:focus { border-color: $blue; background-color: #fff; }
+
+  &--danger { color: $red; }
+
+  &--assign {
+    flex: 1;
+    font-size: 12px;
+
+    &:disabled { opacity: .4; cursor: not-allowed; }
+  }
+}
+
+// ── Checkboxes ────────────────────────────────────────────────────────────────
+.aw-check-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: $slate;
+  user-select: none;
+}
+
+.aw-chk {
+  width: 15px;
+  height: 15px;
+  accent-color: $blue;
+  cursor: pointer;
+}
+
+// ── Quorum box ────────────────────────────────────────────────────────────────
+.aw-quorum-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  width: fit-content;
+
+  &__label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    color: $blue;
+  }
+}
+
+// ── Approvers section ─────────────────────────────────────────────────────────
+.aw-approvers {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &__title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: $muted;
+    margin: 0 0 4px;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+.aw-assign-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.aw-or {
+  font-size: 10px;
+  font-weight: 700;
+  color: $muted;
+  flex-shrink: 0;
+  letter-spacing: .4px;
+}
+
+.aw-remove-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: #fee2e2;
+  color: $red;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s;
+
+  &:hover { background: #fecaca; }
+}
+
+.aw-add-approver-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: $blue;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .15s;
+
+  &:hover { opacity: .75; }
+}
+
+.aw-remove-stage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: $red;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  cursor: pointer;
+  transition: opacity .15s;
+
+  &:hover { opacity: .7; }
+}
+
+// ── Save bar ──────────────────────────────────────────────────────────────────
+.aw-save-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid $border;
+  margin-top: 4px;
+}
+
+// ── Buttons ───────────────────────────────────────────────────────────────────
+.aw-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background .15s;
+
+  &--primary {
+    background: $blue;
+    color: #fff;
+    &:hover { background: darken($blue, 6%); }
+  }
+
+  &--outline {
+    background: transparent;
+    color: $blue;
+    border: 1px solid $blue;
+    &:hover { background: rgba($blue,.06); }
+  }
+}
+
+// ── Loading ───────────────────────────────────────────────────────────────────
+.aw-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  color: $muted;
+  font-size: 14px;
+  gap: 14px;
+}
+
+.aw-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid $border;
+  border-top-color: $blue;
+  border-radius: 50%;
+  animation: aw-spin .7s linear infinite;
+}
+
+@keyframes aw-spin {
+  to { transform: rotate(360deg); }
 }

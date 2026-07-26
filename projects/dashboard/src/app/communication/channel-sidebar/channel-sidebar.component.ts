@@ -52,7 +52,7 @@ export class ChannelSidebarComponent {
   @Input() employeesLoading = false;
   @Input() employeesError: string | null = null;
   @Input() soundEnabled = true;
-  @Input() selectedRingtone = 'classic';
+  @Input() selectedRingtone = 'whatsapp';
   @Input() ringtoneOptions: Array<{ value: string; label: string }> = [];
   @Input() workspaceName = '';
   @Input() canCreateChannels = false;

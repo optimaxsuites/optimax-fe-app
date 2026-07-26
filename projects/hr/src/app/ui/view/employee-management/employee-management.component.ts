@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 // // import { CompanyProfileService }
 import { NavigationLinksService } from '../../shared-component/service/navigation-links/navigation-links.service';
@@ -35,7 +35,7 @@ import jsPDF from 'jspdf';
   providers: [MessageService, ConfirmationService]
 
 })
-export class EmployeeManagementComponent {
+export class EmployeeManagementComponent implements OnDestroy {
   private readonly minimumLoaderDurationMs = 900;
   
   tabsConfig: TabConfig[] = [
@@ -260,6 +260,8 @@ salaryStructure: any[] = [];
 employees: any = []
 filteredEmployees: any[] = [];
 loading = false;
+onlineUserIds = new Set<number>();
+private presenceInterval: any;
 selectedEmployeeType: any;
 calendarOptions: CalendarOptions = {}
 currentPage = 1;
@@ -304,14 +306,73 @@ handleDateClick(arg: DateClickArg) {
     this.openImportDialog = false;
     this.openAddForm = true;
   }
+  private readonly presenceUrl = 'https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/presence';
+  private readonly PRESENCE_STALE_MS = 2 * 60 * 1000; // 2 minutes
+
   ngOnInit() {
     this.fetchEmployees();
+    this.startPresencePolling();
     window.addEventListener('employee-record-changed', () => {
       this.fetchEmployees();
       this.viewEmployee = false;
       this.employeeInView = {};
       localStorage.removeItem('employeeInView');
     });
+
+    // Narrower event: only update the changed employee in-place (no full refresh)
+    window.addEventListener('employee-status-changed', (e: any) => {
+      const { id, employeeStatus } = e.detail || {};
+      if (!id) return;
+      const target = this.employees.find((emp: any) => emp.id === id);
+      if (target) {
+        target.employeeStatus = employeeStatus;
+        this.applyFilters();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    clearInterval(this.presenceInterval);
+  }
+
+  private getAuthToken(): string | null {
+    for (const key of ['Token', 'token', 'accessToken', 'Token2', 'accessToken2']) {
+      const v = sessionStorage.getItem(key) || localStorage.getItem(key);
+      if (v && v !== 'undefined' && v !== 'null') return v.trim();
+    }
+    return null;
+  }
+
+  private startPresencePolling(): void {
+    this.pollPresence();
+    this.presenceInterval = setInterval(() => this.pollPresence(), 30_000);
+  }
+
+  private pollPresence(): void {
+    const token = this.getAuthToken();
+    if (!token) return;
+    const now = Date.now();
+    this.http.get<any[]>(this.presenceUrl, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).subscribe({
+      next: (records) => {
+        const onlineIds = new Set<number>();
+        (records || []).forEach(r => {
+          if (r.presenceStatus === 'ONLINE' && r.userId) {
+            const updatedMs = r.updatedAt ? new Date(r.updatedAt).getTime() : 0;
+            if (now - updatedMs <= this.PRESENCE_STALE_MS) {
+              onlineIds.add(Number(r.userId));
+            }
+          }
+        });
+        this.onlineUserIds = onlineIds;
+      },
+      error: () => { /* silently ignore if AI service is down */ }
+    });
+  }
+
+  isOnline(employee: any): boolean {
+    return employee?.userId != null && this.onlineUserIds.has(Number(employee.userId));
   }
 
   async getProfileImage(fileName: string){

@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { timeout, catchError, switchMap } from 'rxjs/operators';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -41,6 +42,7 @@ import {
   WorkTaskPriority as ApiTaskPriority,
   SubtaskDTO,
   FollowUpDTO,
+  FollowUpReplyDTO,
   PerformanceGoalFull,
   PerformanceGoalDTO,
   KpiDTO,
@@ -63,11 +65,17 @@ interface SubTask {
   followUps?: FollowUp[];
 }
 interface ActivityEntry { id: string; author: string; text: string; timestamp: string; }
+interface FollowUpReply {
+  id: string; author: string; initials: string; color: string; timestamp: string; text: string;
+}
+
 interface FollowUp {
   id: string; author: string; initials: string; color: string;
   timestamp: string; text: string; photos: string[];
   decision?: string; progress?: number;
   followUpId?: number;
+  replies?: FollowUpReply[];
+  reactions?: Record<string, string[]>; // emoji → array of author names
 }
 
 export interface BoardTask {
@@ -80,6 +88,11 @@ export interface BoardTask {
   inlineText?: string;
   expanded?: boolean;
   supervisorGrade?: number;   // 1-5 rating set by supervisor
+  // Cost tracking (optional)
+  cost?: number;
+  costCurrency?: string;
+  // Closed flag — task set to "Closed" gets archived automatically
+  closed?: boolean;
   // API-sync fields
   apiId?: number;
   assigneeEmployeeId?: number;
@@ -334,7 +347,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     ],
   };
 
-  private static readonly STAGE_STORAGE_KEY = 'hr_pm_stages_v1';
+  private static readonly STAGE_STORAGE_KEY   = 'hr_pm_stages_v1';
+  private static readonly ARCHIVE_STORAGE_KEY  = 'hr_pm_archived_v1';
   private static readonly DEFAULT_STAGES: Array<{ key: string; label: string }> = [
     { key: 'To Do',       label: 'To Do' },
     { key: 'In Progress', label: 'In Progress' },
@@ -349,6 +363,65 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // ── Stage management ──────────────────────────────────────────────────────
   showAddStage = false;
   newStageName = '';
+
+  get customStages(): Array<{ key: TaskStatus; label: string }> {
+    return this.columns.filter(c => !this.isDefaultStage(c.key));
+  }
+
+  // ── Right rail (Archive & Stages) ─────────────────────────────────────────
+  rightRailOpen = false;
+  archivedTasks: BoardTask[] = [];
+  archiveSearchText = '';
+
+  get filteredArchivedTasks(): BoardTask[] {
+    const q = this.archiveSearchText.trim().toLowerCase();
+    if (!q) return this.archivedTasks;
+    return this.archivedTasks.filter(t =>
+      t.title.toLowerCase().includes(q) ||
+      (t.assignee || '').toLowerCase().includes(q) ||
+      (t.team || '').toLowerCase().includes(q) ||
+      (t.status || '').toLowerCase().includes(q) ||
+      (t.tags || []).some(tag => tag.toLowerCase().includes(q))
+    );
+  }
+
+  /** Statuses that appear only in forms (not board columns) */
+  readonly extraStatuses: TaskStatus[] = ['Closed'];
+
+  private loadArchivedTasks(): void {
+    try {
+      const raw = localStorage.getItem(ProductivityWorkspaceComponent.ARCHIVE_STORAGE_KEY);
+      this.archivedTasks = raw ? JSON.parse(raw) : [];
+    } catch { this.archivedTasks = []; }
+  }
+
+  private saveArchivedTasks(): void {
+    localStorage.setItem(ProductivityWorkspaceComponent.ARCHIVE_STORAGE_KEY, JSON.stringify(this.archivedTasks));
+  }
+
+  archiveTask(task: BoardTask, event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.boardTasks = this.boardTasks.filter(t => t.id !== task.id);
+    this.archivedTasks = [{ ...task }, ...this.archivedTasks];
+    this.saveArchivedTasks();
+    this.save();
+    if (this.selectedTask?.id === task.id) this.closeDetail();
+    if (this.apiEnabled && task.apiId) {
+      const status = task.closed ? 'CLOSED' : 'ARCHIVED';
+      this.workTaskApi.updateTaskStatus(task.apiId, status as any).subscribe({ error: () => {} });
+    }
+  }
+
+  unarchiveTask(task: BoardTask): void {
+    this.archivedTasks = this.archivedTasks.filter(t => t.id !== task.id);
+    const restored = { ...task, closed: false };
+    this.boardTasks = [restored, ...this.boardTasks];
+    this.saveArchivedTasks();
+    this.save();
+    if (this.apiEnabled && task.apiId) {
+      this.workTaskApi.updateTaskStatus(task.apiId, 'TO_DO').subscribe({ error: () => {} });
+    }
+  }
 
   private loadStages(): Array<{ key: string; label: string }> {
     try {
@@ -397,8 +470,12 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return role.includes('ADMIN') || role.includes('SUPERVISOR') || role.includes('MANAGER');
   }
 
+  get currentUserDisplayName(): string {
+    return sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || '';
+  }
+
   get currentUserFullName(): string {
-    return (sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || '').toLowerCase();
+    return this.currentUserDisplayName.toLowerCase();
   }
 
   // ── Subtask inline edit ───────────────────────────────────────────────────
@@ -537,6 +614,101 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   taskViewMode: 'mine' | 'all' | 'team' = 'mine';
   viewDropOpen = false;
 
+  // ── Group-by ──────────────────────────────────────────────────────────────
+  groupBy: 'none' | 'assignee' | 'team' | 'status' | 'priority' = 'none';
+
+  get groupedBoard(): Array<{ key: string; tasks: BoardTask[] }> {
+    if (this.groupBy === 'none') return [{ key: '', tasks: this.filteredBoard }];
+    const map = new Map<string, BoardTask[]>();
+    for (const t of this.filteredBoard) {
+      let key = '';
+      if (this.groupBy === 'assignee') key = t.assignee || 'Unassigned';
+      else if (this.groupBy === 'team') key = t.team || 'No Team';
+      else if (this.groupBy === 'status') key = t.status;
+      else if (this.groupBy === 'priority') key = t.priority;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    }
+    return Array.from(map.entries()).map(([k, v]) => ({ key: k, tasks: v }));
+  }
+
+  // ── Deadline extension ────────────────────────────────────────────────────
+  extendingDeadline = false;
+  newDeadlineDate = '';
+
+  extendDeadline(task: BoardTask): void {
+    if (!this.newDeadlineDate) return;
+    task.dueDate = this.newDeadlineDate;
+    this.extendingDeadline = false;
+    this.newDeadlineDate = '';
+    this.save();
+    this.showToast('Deadline extended', 'success');
+    if (this.apiEnabled && task.apiId) {
+      const aEmp = this.allEmployees.find(e => e.fullName === task.assignee);
+      const sEmp = this.allEmployees.find(e => e.fullName === task.team);
+      this.subscription.add(
+        this.workTaskApi.updateTask(task.apiId, {
+          title: task.title,
+          dueDate: this.newDeadlineDate,
+          assigneeEmployeeId: aEmp ? Number(aEmp.id) : task.assigneeEmployeeId,
+          supervisorEmployeeId: sEmp ? Number(sEmp.id) : task.supervisorEmployeeId,
+        }).subscribe({ error: () => {} })
+      );
+    }
+  }
+
+  // ── Quick reassign ────────────────────────────────────────────────────────
+  reassignMode = false;
+  reassignEmployeeName = '';
+
+  quickReassign(task: BoardTask): void {
+    const name = this.reassignEmployeeName.trim();
+    if (!name) return;
+    task.assignee = name;
+    task.assignees = [name];
+    const emp = this.allEmployees.find(e => e.fullName === name);
+    if (emp) task.assigneeEmployeeId = Number(emp.id);
+    this.reassignMode = false;
+    this.reassignEmployeeName = '';
+    this.save();
+    this.showToast('Task reassigned', 'success');
+    if (this.apiEnabled && task.apiId) {
+      this.subscription.add(
+        this.workTaskApi.updateTask(task.apiId, {
+          title: task.title,
+          assigneeEmployeeId: emp ? Number(emp.id) : task.assigneeEmployeeId,
+        }).subscribe({ error: () => {} })
+      );
+    }
+  }
+
+  // ── Notification sound (Web Audio API) ────────────────────────────────────
+  private playNotifSound(type: 'post' | 'reply' = 'post'): void {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      if (type === 'reply') {
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1100, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.18);
+      } else {
+        osc.frequency.setValueAtTime(660, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.25);
+      }
+    } catch { /* AudioContext not available */ }
+  }
+
   // ── Report period ─────────────────────────────────────────────────────────
   reportPeriod: 'weekly' | 'monthly' | 'quarterly' = 'weekly';
   reportDropOpen = false;
@@ -544,12 +716,15 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // ── Subtask follow-up expand state ────────────────────────────────────────
   expandedSubtaskIds = new Set<string>();
   subtaskFollowUpText: Record<string, string> = {};
+  replyingToFuId: string | null = null;
+  fuReplyText: Record<string, string> = {};
 
   @HostListener('document:click', ['$event'])
   onDocClick(e: MouseEvent): void {
     const el = e.target as HTMLElement;
     if (!el.closest('.task-view-dropdown')) this.viewDropOpen = false;
     if (!el.closest('.report-period-dropdown')) this.reportDropOpen = false;
+    if (this.rightRailOpen && !el.closest('.right-rail')) this.rightRailOpen = false;
   }
 
   setTaskViewMode(mode: 'mine' | 'all' | 'team'): void {
@@ -777,7 +952,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   insights: ProductivityInsight[] = [];
 
   // ── Employee dropdowns (loaded from HR microservice) ──────────────────────
-  allEmployees: Array<{ id: string; fullName: string; department: string; role: string; supervisor: string }> = [];
+  allEmployees: Array<{ id: string; userId: string; fullName: string; department: string; role: string; supervisor: string }> = [];
   employeesLoading = false;
 
   get employeeNames(): string[] {
@@ -860,7 +1035,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // ── Supervisor review form state ───────────────────────────────────────────
   supReviewDecision = 'Approved';
   supReviewNote = '';
-  supReviewFiles: Array<{ name: string; url: string; isImage: boolean }> = [];
+  supReviewFiles: Array<{ name: string; url: string; isImage: boolean; uploading?: boolean }> = [];
+  get supReviewUploading(): boolean { return this.supReviewFiles.some(f => f.uploading); }
 
   // ── Share modal state ──────────────────────────────────────────────────────
   showShareModal = false;
@@ -914,9 +1090,11 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     private readonly sanitizer: DomSanitizer,
     private readonly notifService: HrTaskNotificationService,
     private readonly authService: AuthenticationService,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
+    this.loadArchivedTasks();
     this.loadChannelUnread();
     this.productivityDataService.init();
     this.productivityReviewService.init();
@@ -955,9 +1133,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
     // Load employees for dropdowns
     this.employeesLoading = true;
-    this.employeeService.ensureEmployeesLoaded();
-    this.subscription.add(
-      this.employeeService.employees$.subscribe(emps => {
+    this.employeeService.refreshEmployees().subscribe({
+      next: (emps) => {
         this.allEmployees = (emps || [])
           .map((e: any) => {
             const fn = String(e?.firstName || e?.firstname || '').trim();
@@ -965,6 +1142,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
             const full = (`${fn} ${ln}`).trim() || String(e?.fullName || e?.name || '').trim();
             return {
               id: String(e?.id || ''),
+              userId: String(e?.userId || e?.user?.id || ''),
               fullName: full,
               department: String(e?.department?.name || e?.department || ''),
               role: String(e?.jobTitle || e?.designation || ''),
@@ -979,10 +1157,10 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           if (id && email) this.employeeEmailMap[id] = email;
         });
         this.employeesLoading = false;
-        // If employees loaded, patch supervisor review submissions with real names
         this.patchSubmissionsFromUsers(this.allEmployees);
-      })
-    );
+      },
+      error: () => { this.employeesLoading = false; }
+    });
 
     // Load users from the users API to populate supervisor review with DM users
     this.subscription.add(
@@ -1034,12 +1212,36 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       : employeeId
         ? this.workTaskApi.getTasksByAssignee(employeeId)
         : this.workTaskApi.getAllTasks();
+    // Cache follow-up replies and reactions before overwriting so they survive the remap
+    const prevFuData = new Map<string, { replies?: FollowUpReply[]; reactions?: Record<string, string[]> }>();
+    this.boardTasks.forEach(bt => {
+      (bt.followUps ?? []).forEach(fu => {
+        if ((fu.replies?.length || 0) > 0 || Object.keys(fu.reactions ?? {}).length > 0) {
+          prevFuData.set(String(fu.followUpId ?? fu.id), { replies: fu.replies, reactions: fu.reactions });
+        }
+      });
+    });
+
+    const archivedRequest = (isSupervisor || wantsAll)
+      ? this.workTaskApi.getArchivedTasks()
+      : employeeId
+        ? this.workTaskApi.getArchivedByAssignee(employeeId)
+        : this.workTaskApi.getArchivedTasks();
+
     this.subscription.add(
       tasksRequest.pipe(timeout(8000)).subscribe({
         next: (apiTasks) => {
           const mapped = (apiTasks && apiTasks.length > 0)
             ? apiTasks.map(t => this.mapApiTaskToBoard(t))
             : [];
+          // Restore locally-saved replies and reactions onto their follow-ups after remapping
+          mapped.forEach(bt => {
+            (bt.followUps ?? []).forEach(fu => {
+              const key = String(fu.followUpId ?? fu.id);
+              const prev = prevFuData.get(key);
+              if (prev) { fu.replies = prev.replies; fu.reactions = prev.reactions; }
+            });
+          });
           const apiIds = new Set(mapped.map(t => t.id));
           if (isSupervisor || wantsAll) {
             // Full board: merge API results with any locally-created tasks
@@ -1057,6 +1259,22 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           this.mergeLocalImports(true);
           this.boardLoading = false;
           this.autoOpenFromUrl();
+          // Load archived tasks from API
+          archivedRequest.pipe(timeout(8000)).subscribe({
+            next: (archivedApiTasks) => {
+              if (archivedApiTasks && archivedApiTasks.length > 0) {
+                const mappedArchived = archivedApiTasks.map(t => ({
+                  ...this.mapApiTaskToBoard(t),
+                  closed: t.status === 'CLOSED'
+                }));
+                const existingApiIds = new Set(mappedArchived.map(t => t.apiId));
+                const localArchived = this.archivedTasks.filter(t => !t.apiId || !existingApiIds.has(t.apiId));
+                this.archivedTasks = [...mappedArchived, ...localArchived];
+                this.saveArchivedTasks();
+              }
+            },
+            error: () => {}
+          });
         },
         error: () => {
           this.apiEnabled = false;
@@ -1076,8 +1294,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   private autoOpenFromUrl(): void {
-    const params = new URLSearchParams(window.location.search);
-    const taskId = params.get('taskId');
+    const taskId = this.route.snapshot.queryParamMap.get('taskId');
     if (!taskId) return;
     const found = this.boardTasks.find(t => t.id === taskId || String(t.apiId) === taskId);
     if (found) {
@@ -1221,18 +1438,40 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         subtaskId: s.id,
       })),
       activity: [],
-      followUps: (t.followUps ?? []).map(f => ({
-        id: String(f.id),
-        followUpId: f.id,
-        author: f.authorEmployee ? `${f.authorEmployee.firstName} ${f.authorEmployee.lastName}`.trim() : 'Unknown',
-        initials: this.getInitials(f.authorEmployee ? `${f.authorEmployee.firstName} ${f.authorEmployee.lastName}`.trim() : 'U'),
-        color: '#2563eb',
-        timestamp: this.formatTs(this.normDateTime((f as any).createdAt)),
-        text: f.text,
-        photos: f.photoUrls ? f.photoUrls.split(',').filter(u => u.trim()) : [],
-        decision: f.decision,
-        progress: f.progress ?? 0,
-      })),
+      followUps: (t.followUps ?? []).map(f => {
+        const authorName = f.authorEmployee
+          ? `${f.authorEmployee.firstName} ${f.authorEmployee.lastName}`.trim()
+          : ((f as any).authorEmployeeId && (f as any).authorEmployeeId === this.resolvedEmployeeId)
+            ? this.currentUserDisplayName
+            : 'Team Member';
+        const apiReplies: FollowUpReply[] = (f.replies ?? []).map(r => {
+          const rAuthor = r.authorEmployee
+            ? `${r.authorEmployee.firstName} ${r.authorEmployee.lastName}`.trim()
+            : (this.resolvedEmployeeId && (r as any).authorEmployeeId === this.resolvedEmployeeId
+              ? this.currentUserDisplayName : 'Team Member');
+          return {
+            id: `api${r.id}`,
+            author: rAuthor || 'Team Member',
+            initials: this.getInitials(rAuthor || 'TM'),
+            color: '#6366f1',
+            timestamp: this.formatTs(this.normDateTime((r as any).createdAt)),
+            text: r.text,
+          };
+        });
+        return {
+          id: String(f.id),
+          followUpId: f.id,
+          author: authorName || 'Team Member',
+          initials: this.getInitials(authorName || 'TM'),
+          color: '#2563eb',
+          timestamp: this.formatTs(this.normDateTime((f as any).createdAt)),
+          text: f.text,
+          photos: f.photoUrls ? (f.photoUrls.includes('||') ? f.photoUrls.split('||') : f.photoUrls.split(',')).filter((u: string) => u.trim()) : [],
+          decision: f.decision,
+          progress: f.progress ?? 0,
+          replies: apiReplies,
+        };
+      }),
       apiId: t.id,
       createdByUserId: t.createdByUserId,
     } as any;
@@ -1496,6 +1735,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       id: `hr${Date.now()}`, title: '', description: '', assignee: '', assignees: [], team: '',
       status: 'To Do', priority: 'Medium', startDate: new Date().toISOString().slice(0, 10),
       dueDate: '', weight: 10, progress: 0, tags: [], subtasks: [], activity: [],
+      cost: undefined, costCurrency: 'NGN',
     };
     this.newTaskSubtasks = [];
   }
@@ -1532,8 +1772,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         // My Tasks: only tasks where the logged-in user is an assignee
         if (!isAssignedToMe(t)) return false;
       } else if (this.taskViewMode === 'team') {
-        // My Team: tasks where current user is an assignee (same ownership rule)
-        if (!isAssignedToMe(t)) return false;
+        // Team Tasks: tasks where current user is supervisor/team-lead
+        if (!iAmSupervisor(t)) return false;
       } else if (this.taskViewMode === 'all') {
         // All Tasks (supervisor/admin): tasks I supervise OR tasks I'm assigned to
         if (!iAmSupervisor(t) && !isAssignedToMe(t)) return false;
@@ -1578,6 +1818,72 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   openDetail(task: BoardTask): void { this.selectedTask = task; this.detailPanelVisible = true; this.detailTab = 'overview'; this.newActivityText = ''; }
   closeDetail(): void { this.selectedTask = null; this.detailPanelVisible = false; this.save(); }
+
+  toggleReplyBox(fuId: string): void {
+    this.replyingToFuId = this.replyingToFuId === fuId ? null : fuId;
+    if (!this.fuReplyText[fuId]) this.fuReplyText[fuId] = '';
+  }
+
+  onFuReplyEnter(event: KeyboardEvent, fu: FollowUp): void {
+    if (event.shiftKey) return;
+    event.preventDefault();
+    this.submitFollowUpReply(fu);
+  }
+
+  submitFollowUpReply(fu: FollowUp): void {
+    if (!this.selectedTask) return;
+    const text = (this.fuReplyText[fu.id] || '').trim();
+    if (!text) return;
+    const displayName = this.currentUserDisplayName || 'You';
+    const reply: FollowUpReply = {
+      id: `rep${Date.now()}`,
+      author: displayName,
+      initials: this.getInitials(displayName),
+      color: '#6366f1',
+      timestamp: new Date().toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }),
+      text,
+    };
+    if (!fu.replies) fu.replies = [];
+    fu.replies.push(reply);
+    this.fuReplyText[fu.id] = '';
+    this.replyingToFuId = null;
+    this.save();
+    this.playNotifSound('reply');
+
+    if (this.apiEnabled && fu.followUpId) {
+      const dto: FollowUpReplyDTO = {
+        followUpId: fu.followUpId,
+        authorEmployeeId: this.resolvedEmployeeId || undefined,
+        text,
+      };
+      this.subscription.add(
+        this.workTaskApi.createReply(dto).subscribe({
+          next: (created) => { reply.id = `api${created.id}`; this.save(); },
+          error: () => {},
+        })
+      );
+    }
+  }
+
+  toggleReaction(fu: FollowUp, emoji: string): void {
+    if (!fu.reactions) fu.reactions = {};
+    const me = this.currentUserFullName || 'You';
+    if (!fu.reactions[emoji]) fu.reactions[emoji] = [];
+    const idx = fu.reactions[emoji].indexOf(me);
+    if (idx > -1) { fu.reactions[emoji].splice(idx, 1); }
+    else { fu.reactions[emoji].push(me); }
+    if (fu.reactions[emoji].length === 0) delete fu.reactions[emoji];
+    this.save();
+  }
+
+  reactionCount(fu: FollowUp, emoji: string): number {
+    return fu.reactions?.[emoji]?.length ?? 0;
+  }
+
+  iReacted(fu: FollowUp, emoji: string): boolean {
+    const me = this.currentUserFullName || 'You';
+    return (fu.reactions?.[emoji] ?? []).includes(me);
+  }
 
   toggleSubtask(task: BoardTask, sub: SubTask): void {
     sub.done = !sub.done;
@@ -1736,15 +2042,23 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     t.startDate   = d.startDate || '';
     t.dueDate     = d.dueDate   || '';
     t.weight      = d.weight    ?? t.weight;
+    t.cost        = d.cost;
+    t.costCurrency = d.costCurrency || 'NGN';
     const aEmp = this.allEmployees.find(e => e.fullName === t.assignee);
     const sEmp = this.allEmployees.find(e => e.fullName === t.team);
     if (aEmp) t.assigneeEmployeeId   = Number(aEmp.id);
     if (sEmp) t.supervisorEmployeeId = Number(sEmp.id);
-    this.save();
     this.showEditTask = false;
     this.editingTask  = null;
-    this.showToast('Task updated', 'success');
-    if (this.apiEnabled) this.syncTaskToApi(t);
+    if (t.status === 'Closed') {
+      t.closed = true;
+      this.archiveTask(t);
+      this.showToast('Task closed and moved to archive', 'info');
+    } else {
+      this.save();
+      this.showToast('Task updated', 'success');
+      if (this.apiEnabled) this.syncTaskToApi(t);
+    }
   }
 
   cancelEditTask(): void { this.showEditTask = false; this.editingTask = null; }
@@ -2031,6 +2345,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     task.inlineText = '';
     this.inlinePhotos[task.id] = [];
     this.save();
+    this.playNotifSound('post');
     this.showToast('Update posted successfully', 'success');
     const recipients = task.assignees?.length ? task.assignees : [task.assignee];
     recipients.forEach(r => r && this.notifService.add(
@@ -2165,7 +2480,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         text: newFu.text,
         progress: newFu.progress,
         authorEmployeeId: this.selectedTask.assigneeEmployeeId,
-        photoUrls: photos.join(','),
+        photoUrls: photos.filter(p => p && !p.startsWith('data:')).join('||'),
       };
       this.subscription.add(
         this.workTaskApi.createFollowUp(dto).subscribe({
@@ -2174,15 +2489,26 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         })
       );
     }
+    this.sendFollowUpEmails(
+      this.selectedTask,
+      this.newActivityText,
+      `Task Update: ${this.selectedTask.title}`,
+      '#2563eb',
+      'Task Progress Update'
+    );
   }
 
   // ── Post supervisor review ─────────────────────────────────────────────────
   postSupervisorReview(): void {
     if (!this.selectedTask) return;
     if (!this.supReviewNote.trim()) { this.showToast('Please enter review feedback before submitting.', 'warn'); return; }
+    if (this.supReviewUploading) {
+      this.showToast('Please wait for file uploads to complete before submitting.', 'warn');
+      return;
+    }
 
     const decisionLabel = this.supReviewDecision;
-    const photos = this.supReviewFiles.map(f => f.url);
+    const photos = this.supReviewFiles.map(f => f.url).filter(Boolean);
     const fu: FollowUp = {
       id: `sv${Date.now()}`,
       author: this.selectedTask.team || 'Supervisor',
@@ -2202,19 +2528,29 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       this.selectedTask.progress = 100;
     }
 
+    const reviewNote = this.supReviewNote.trim();
     this.supReviewNote = '';
     this.supReviewDecision = 'Approved';
     this.supReviewFiles = [];
     this.save();
     this.showToast('Supervisor review posted', 'success');
 
+    this.sendFollowUpEmails(
+      this.selectedTask,
+      reviewNote,
+      `Supervisor Review: ${this.selectedTask.title}`,
+      '#7c3aed',
+      `Supervisor Review — ${decisionLabel}`
+    );
+
     if (this.apiEnabled && this.selectedTask.apiId) {
       const dto: FollowUpDTO = {
         workTaskId: this.selectedTask.apiId,
+        authorEmployeeId: this.selectedTask.supervisorEmployeeId,
         text: fu.text,
         decision: fu.decision,
         progress: fu.progress,
-        photoUrls: photos.join(','),
+        photoUrls: photos.filter(p => !p.startsWith('data:')).join('||'),
       };
       this.subscription.add(
         this.workTaskApi.createFollowUp(dto).subscribe({ error: () => {} })
@@ -2232,7 +2568,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
     // Build rich pre-filled message with task context
     const assigneeList = (task.assignees?.length ? task.assignees : [task.assignee]).filter(Boolean).join(', ') || '—';
-    const taskUrl = `${window.location.origin}/admin/hr/performance/${encodeURIComponent(window.location.pathname.split('/').pop() || 'uu')}`;
+    const taskUrl = `${window.location.origin}${window.location.pathname}`;
     this.shareNote = [
       `📋 *Task: ${task.title}*`,
       `🚦 Status: ${task.status}  |  ⚡ Priority: ${task.priority}`,
@@ -2276,20 +2612,101 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.shareChannelId = null;
   }
 
+  isImageUrl(url: string): boolean {
+    if (!url) return false;
+    if (url.startsWith('data:image/')) return true;
+    const u = url.toLowerCase().split('?')[0];
+    return !!u.match(/\.(jpe?g|png|gif|webp|svg|bmp)$/);
+  }
+
+  fuImages(photos: string[]): string[] {
+    return (photos || []).filter(p => this.isImageUrl(p));
+  }
+
+  fuDocs(photos: string[]): string[] {
+    return (photos || []).filter(p => p && !this.isImageUrl(p));
+  }
+
+  private resolveEmailByName(name: string): string | null {
+    if (!name) return null;
+    const emp = this.allEmployees.find(e => e.fullName.toLowerCase() === name.toLowerCase());
+    if (emp) {
+      const empId = Number(emp.id);
+      if (empId && this.employeeEmailMap[empId]) return this.employeeEmailMap[empId];
+      if (emp.userId) {
+        const u = this.dmUserList.find(u => String(u.id) === emp.userId);
+        if (u?.email) return u.email;
+      }
+    }
+    const u = this.dmUserList.find(u =>
+      u.fullName.toLowerCase() === name.toLowerCase() ||
+      u.fullName.toLowerCase().includes(name.toLowerCase()) ||
+      name.toLowerCase().includes(u.fullName.toLowerCase())
+    );
+    return u?.email || null;
+  }
+
+  private sendFollowUpEmails(task: BoardTask, noteText: string, subject: string, headingColor: string, heading: string): void {
+    const assigneeName = (task.assignees?.length ? task.assignees[0] : task.assignee) || 'Team Member';
+    const supervisorName = task.team || '';
+    const plain = noteText.replace(/<[^>]*>/g, '').trim().slice(0, 300);
+    const rows = [
+      this.taskEmailRow('Task', task.title, false),
+      this.taskEmailRow('Status', task.status, true),
+      this.taskEmailRow('Progress', `${task.progress}%`, false),
+      this.taskEmailRow('Update', plain, true),
+    ].join('');
+    const makeHtml = (name: string) =>
+      `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:${headingColor};padding:20px 24px;border-radius:8px 8px 0 0;">
+          <h2 style="color:#fff;margin:0;font-size:20px;">${heading}</h2>
+        </div>
+        <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+          <p style="color:#374151;">Hello <strong>${name}</strong>,</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;">${rows}</table>
+          <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view and respond.</p>
+        </div>
+      </div>`;
+    const assigneeEmail = this.employeeEmailMap[Number(task.assigneeEmployeeId)] || this.resolveEmailByName(assigneeName);
+    const supervisorEmail = this.employeeEmailMap[Number(task.supervisorEmployeeId)] || this.resolveEmailByName(supervisorName);
+    if (assigneeEmail) {
+      this.employeeService.sendNotificationEmail(assigneeEmail, subject, makeHtml(assigneeName)).subscribe({ error: () => {} });
+    }
+    if (supervisorEmail && supervisorEmail !== assigneeEmail) {
+      this.employeeService.sendNotificationEmail(supervisorEmail, subject, makeHtml(supervisorName)).subscribe({ error: () => {} });
+    }
+  }
+
   private sendShareDm(recipientName: string, task: BoardTask | null, note: string, label: string): void {
     const myUserId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || 0);
     if (!myUserId) { this.showToast('Unable to resolve your user account. Please re-login.', 'error'); return; }
-    const match = this.dmUserList.find(u =>
-      u.fullName.toLowerCase() === recipientName.toLowerCase() ||
-      u.fullName.toLowerCase().includes(recipientName.toLowerCase()) ||
-      recipientName.toLowerCase().includes(u.fullName.toLowerCase())
+
+    // Resolve recipient auth user ID — prefer userId from HR employee record over name matching
+    const emp = this.allEmployees.find(e =>
+      e.fullName.toLowerCase() === recipientName.toLowerCase() ||
+      e.fullName.toLowerCase().includes(recipientName.toLowerCase()) ||
+      recipientName.toLowerCase().includes(e.fullName.toLowerCase())
     );
-    if (!match) {
+    let recipientUserId: number | null = null;
+    if (emp?.userId) {
+      recipientUserId = Number(emp.userId) || null;
+    }
+    if (!recipientUserId) {
+      const match = this.dmUserList.find(u =>
+        u.fullName.toLowerCase() === recipientName.toLowerCase() ||
+        u.fullName.toLowerCase().includes(recipientName.toLowerCase()) ||
+        recipientName.toLowerCase().includes(u.fullName.toLowerCase())
+      );
+      recipientUserId = match?.id ?? null;
+    }
+    if (!recipientUserId) {
       this.showToast(`User "${recipientName}" not found in system. Ensure they have a login account.`, 'warn');
       return;
     }
+
+    const capturedRecipientId = recipientUserId;
     this.subscription.add(
-      this.workTaskApi.getOrCreateDmChannel(myUserId, match.id).pipe(
+      this.workTaskApi.getOrCreateDmChannel(myUserId, capturedRecipientId).pipe(
         switchMap(channel => {
           const channelId = channel.id ?? channel.channelId;
           return this.workTaskApi.sendChannelMessage(channelId, note);
@@ -2304,6 +2721,23 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
                 detail: { title: `Task shared: ${task.title}`, body: `Update delivered to ${recipientName} via DM`, category: 'module' }
               }));
             }
+          }
+          // Also send email notification to the recipient
+          const recipientEmail = this.resolveEmailByName(recipientName);
+          if (recipientEmail && task) {
+            const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+              <div style="background:#0369a1;padding:20px 24px;border-radius:8px 8px 0 0;">
+                <h2 style="color:#fff;margin:0;font-size:20px;">Task Update — ${task.title}</h2>
+              </div>
+              <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+                <p style="color:#374151;">Hello <strong>${recipientName}</strong>,</p>
+                <div style="background:#f0f9ff;border-left:4px solid #0369a1;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+                  <p style="margin:0;white-space:pre-wrap;color:#374151;">${note}</p>
+                </div>
+                <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view this task.</p>
+              </div>
+            </div>`;
+            this.employeeService.sendNotificationEmail(recipientEmail, `Task Update: ${task.title}`, html).subscribe({ error: () => {} });
           }
         },
         error: () => this.showToast(`Failed to deliver message to ${recipientName}. Check connection.`, 'error'),

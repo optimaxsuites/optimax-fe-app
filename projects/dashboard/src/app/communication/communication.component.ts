@@ -682,14 +682,15 @@ export class CommunicationComponent
   messagesLoading = false;
   conversationAccessMessage = '';
   soundEnabled = true;
-  selectedRingtone = 'classic';
+  selectedRingtone = 'whatsapp';
   workspaceName = '';
   readonly ringtoneOptions = [
-    { value: 'classic', label: 'Classic ping' },
-    { value: 'soft', label: 'Soft chime' },
-    { value: 'crystal', label: 'Crystal bell' },
-    { value: 'pulse', label: 'Pulse' },
-    { value: 'doorbell', label: 'Doorbell' },
+    { value: 'whatsapp', label: 'WhatsApp' },
+    { value: 'tritone', label: 'iPhone Tri-tone' },
+    { value: 'chime', label: 'iPhone Chime' },
+    { value: 'note', label: 'iPhone Note' },
+    { value: 'marimba', label: 'iPhone Marimba' },
+    { value: 'ping', label: 'iPhone Ping' },
   ];
   readonly chatReactionOptions: ChatReactionOption[] = [
     { code: 'LIKE', emoji: '👍', label: 'Like' },
@@ -770,7 +771,9 @@ export class CommunicationComponent
   ) {}
 
   ngOnInit() {
-    this.selectedRingtone = localStorage.getItem('optimax_message_ringtone') || 'classic';
+    const savedTone = localStorage.getItem('optimax_message_ringtone') || 'whatsapp';
+    const validTones = this.ringtoneOptions.map(r => r.value);
+    this.selectedRingtone = validTones.includes(savedTone) ? savedTone : 'whatsapp';
     try {
       const raw = sessionStorage.getItem('userPrimaryInfoRegData') || localStorage.getItem('userPrimaryInfoRegData');
       if (raw) {
@@ -4159,7 +4162,7 @@ export class CommunicationComponent
               accountState: e.accountState || e.user?.accountState || '',
               jobTitle: e.jobTitle,
               department: e.department?.name,
-              phone: e.phoneNumber || '',
+              phone: e.phoneNumber || e.phone || '',
               online: false,
               dob: e.dob,
             };
@@ -6966,94 +6969,149 @@ export class CommunicationComponent
       const ctx = this.ensureNotificationAudioContext();
       if (!ctx) return;
       if (typeof ctx.resume === 'function' && ctx.state === 'suspended') {
-        void ctx.resume().catch(() => {});
-      }
-
-      if (this.selectedRingtone === 'doorbell' && !urgent) {
-        this.playDoorbellSound(ctx);
-        this.triggerMobileHaptics(urgent);
+        void ctx.resume().then(() => this._playTone(ctx, urgent)).catch(() => {});
         return;
       }
-
-      const peakGain = urgent ? 0.42 : 0.24;
-      const tones =
-        urgent
-          ? [
-              { type: 'triangle' as OscillatorType, frequency: 880, start: 0, stop: 0.16 },
-              { type: 'sine' as OscillatorType, frequency: 1174, start: 0.2, stop: 0.38 },
-              { type: 'triangle' as OscillatorType, frequency: 988, start: 0.46, stop: 0.78 },
-            ]
-          : this.selectedRingtone === 'crystal'
-          ? [
-              { type: 'sine' as OscillatorType, frequency: 1046, start: 0, stop: 0.18 },
-              { type: 'triangle' as OscillatorType, frequency: 1318, start: 0.05, stop: 0.32 },
-            ]
-          : this.selectedRingtone === 'pulse'
-            ? [
-                { type: 'square' as OscillatorType, frequency: 620, start: 0, stop: 0.12 },
-                { type: 'square' as OscillatorType, frequency: 620, start: 0.16, stop: 0.28 },
-                { type: 'triangle' as OscillatorType, frequency: 880, start: 0.31, stop: 0.46 },
-              ]
-            : this.selectedRingtone === 'soft'
-              ? [
-                  { type: 'sine' as OscillatorType, frequency: 660, start: 0, stop: 0.22 },
-                  { type: 'sine' as OscillatorType, frequency: 784, start: 0.08, stop: 0.3 },
-                ]
-              : [
-                  { type: 'triangle' as OscillatorType, frequency: 740, start: 0, stop: 0.28 },
-                  { type: 'sine' as OscillatorType, frequency: 988, start: 0.03, stop: 0.22 },
-                ];
-
-      // Find the natural duration of one ring (max stop time of all tones)
-      const oneDuration = tones.reduce((max, t) => Math.max(max, t.stop), 0);
-      const ringGap = 0.12;
-      const ringOffsets = urgent ? [0] : [0, oneDuration + ringGap, (oneDuration + ringGap) * 2];
-
-      ringOffsets.forEach((ringOffset) => {
-        const master = ctx.createGain();
-        master.gain.setValueAtTime(0.0001, ctx.currentTime + ringOffset);
-        master.gain.exponentialRampToValueAtTime(peakGain, ctx.currentTime + ringOffset + 0.02);
-        master.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + ringOffset + oneDuration);
-        master.connect(ctx.destination);
-        tones.forEach((tone) => {
-          const oscillator = ctx.createOscillator();
-          oscillator.type = tone.type;
-          oscillator.frequency.setValueAtTime(tone.frequency, ctx.currentTime + ringOffset + tone.start);
-          oscillator.connect(master);
-          oscillator.start(ctx.currentTime + ringOffset + tone.start);
-          oscillator.stop(ctx.currentTime + ringOffset + tone.stop);
-        });
-      });
-      this.triggerMobileHaptics(urgent);
+      this._playTone(ctx, urgent);
     } catch (_) {}
   }
 
-  private playDoorbellSound(ctx: AudioContext): void {
-    const ringOffsets = [0, 0.85, 1.70];
-    ringOffsets.forEach((offset) => {
-      const dingGain = ctx.createGain();
-      dingGain.gain.setValueAtTime(0.0001, ctx.currentTime + offset);
-      dingGain.gain.exponentialRampToValueAtTime(0.28, ctx.currentTime + offset + 0.02);
-      dingGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.5);
-      dingGain.connect(ctx.destination);
-      const ding = ctx.createOscillator();
-      ding.type = 'sine';
-      ding.frequency.setValueAtTime(880, ctx.currentTime + offset);
-      ding.connect(dingGain);
-      ding.start(ctx.currentTime + offset);
-      ding.stop(ctx.currentTime + offset + 0.5);
+  private _makeMasterChain(ctx: AudioContext, peakGain: number, attackAt: number, decayEnd: number): GainNode {
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-6, ctx.currentTime);
+    compressor.knee.setValueAtTime(3, ctx.currentTime);
+    compressor.ratio.setValueAtTime(4, ctx.currentTime);
+    compressor.attack.setValueAtTime(0.003, ctx.currentTime);
+    compressor.release.setValueAtTime(0.1, ctx.currentTime);
+    compressor.connect(ctx.destination);
 
-      const dongGain = ctx.createGain();
-      dongGain.gain.setValueAtTime(0.0001, ctx.currentTime + offset + 0.28);
-      dongGain.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + offset + 0.30);
-      dongGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.78);
-      dongGain.connect(ctx.destination);
-      const dong = ctx.createOscillator();
-      dong.type = 'sine';
-      dong.frequency.setValueAtTime(698, ctx.currentTime + offset + 0.28);
-      dong.connect(dongGain);
-      dong.start(ctx.currentTime + offset + 0.28);
-      dong.stop(ctx.currentTime + offset + 0.78);
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.0001, attackAt);
+    master.gain.exponentialRampToValueAtTime(peakGain, attackAt + 0.015);
+    master.gain.exponentialRampToValueAtTime(0.0001, decayEnd);
+    master.connect(compressor);
+    return master;
+  }
+
+  private _addOsc(ctx: AudioContext, dest: AudioNode, type: OscillatorType, freq: number, start: number, stop: number): void {
+    const osc = ctx.createOscillator();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, start);
+    osc.connect(dest);
+    osc.start(start);
+    osc.stop(stop);
+  }
+
+  private _playTone(ctx: AudioContext, urgent: boolean): void {
+    const tone = urgent ? 'urgent' : this.selectedRingtone;
+    switch (tone) {
+      case 'whatsapp':   this.playWhatsapp(ctx); break;
+      case 'tritone':    this.playIphoneTritone(ctx); break;
+      case 'chime':      this.playIphoneChime(ctx); break;
+      case 'note':       this.playIphoneNote(ctx); break;
+      case 'marimba':    this.playIphoneMarimba(ctx); break;
+      case 'ping':       this.playIphonePing(ctx); break;
+      default:           this.playIphoneTritone(ctx); break;
+    }
+    this.triggerMobileHaptics(urgent);
+  }
+
+  // ── WhatsApp: two quick descending pops (played twice) ────────────────────
+  private playWhatsapp(ctx: AudioContext): void {
+    [0, 0.52].forEach(offset => {
+      const t = ctx.currentTime + offset;
+      const m1 = this._makeMasterChain(ctx, 0.82, t, t + 0.18);
+      this._addOsc(ctx, m1, 'sine', 862, t, t + 0.18);
+      const m2 = this._makeMasterChain(ctx, 0.72, t + 0.2, t + 0.38);
+      this._addOsc(ctx, m2, 'sine', 756, t + 0.2, t + 0.38);
+    });
+  }
+
+  // ── iPhone Tri-tone: 3-note ascending arpeggio (played twice) ─────────────
+  private playIphoneTritone(ctx: AudioContext): void {
+    [0, 0.72].forEach(offset => {
+      const t = ctx.currentTime + offset;
+      const notes = [
+        { freq: 659, s: 0,    e: 0.18 },
+        { freq: 784, s: 0.2,  e: 0.38 },
+        { freq: 880, s: 0.4,  e: 0.60 },
+      ];
+      notes.forEach(n => {
+        const m = this._makeMasterChain(ctx, 0.80, t + n.s, t + n.e);
+        this._addOsc(ctx, m, 'sine', n.freq, t + n.s, t + n.e);
+        // Add slight harmonic for warmth
+        const mh = this._makeMasterChain(ctx, 0.20, t + n.s, t + n.e);
+        this._addOsc(ctx, mh, 'sine', n.freq * 2, t + n.s, t + n.e);
+      });
+    });
+  }
+
+  // ── iPhone Chime: 4-note descending bell cascade ───────────────────────────
+  private playIphoneChime(ctx: AudioContext): void {
+    const notes = [
+      { freq: 1047, s: 0,    e: 0.32 },
+      { freq: 784,  s: 0.28, e: 0.58 },
+      { freq: 659,  s: 0.54, e: 0.84 },
+      { freq: 523,  s: 0.80, e: 1.10 },
+    ];
+    const t = ctx.currentTime;
+    notes.forEach(n => {
+      const m = this._makeMasterChain(ctx, 0.78, t + n.s, t + n.e);
+      this._addOsc(ctx, m, 'sine', n.freq, t + n.s, t + n.e);
+      const mh = this._makeMasterChain(ctx, 0.18, t + n.s, t + n.e);
+      this._addOsc(ctx, mh, 'triangle', n.freq * 2, t + n.s, t + n.e);
+    });
+  }
+
+  // ── iPhone Note: warm single piano-like note with harmonic decay ───────────
+  private playIphoneNote(ctx: AudioContext): void {
+    const t = ctx.currentTime;
+    // Fundamental
+    const m = this._makeMasterChain(ctx, 0.85, t, t + 0.55);
+    this._addOsc(ctx, m, 'sine', 880, t, t + 0.55);
+    // 2nd harmonic (octave)
+    const m2 = this._makeMasterChain(ctx, 0.35, t, t + 0.40);
+    this._addOsc(ctx, m2, 'sine', 1760, t, t + 0.40);
+    // 3rd harmonic
+    const m3 = this._makeMasterChain(ctx, 0.15, t, t + 0.28);
+    this._addOsc(ctx, m3, 'triangle', 2640, t, t + 0.28);
+    // Play twice
+    const t2 = ctx.currentTime + 0.65;
+    const m4 = this._makeMasterChain(ctx, 0.75, t2, t2 + 0.45);
+    this._addOsc(ctx, m4, 'sine', 880, t2, t2 + 0.45);
+    const m5 = this._makeMasterChain(ctx, 0.28, t2, t2 + 0.32);
+    this._addOsc(ctx, m5, 'sine', 1760, t2, t2 + 0.32);
+  }
+
+  // ── iPhone Marimba: 4-note xylophone-style pattern ────────────────────────
+  private playIphoneMarimba(ctx: AudioContext): void {
+    const pattern = [
+      { freq: 784,  s: 0,    e: 0.14 },
+      { freq: 659,  s: 0.16, e: 0.30 },
+      { freq: 880,  s: 0.32, e: 0.46 },
+      { freq: 987,  s: 0.48, e: 0.64 },
+      { freq: 784,  s: 0.76, e: 0.90 },
+      { freq: 659,  s: 0.92, e: 1.06 },
+    ];
+    const t = ctx.currentTime;
+    pattern.forEach(n => {
+      const m = this._makeMasterChain(ctx, 0.80, t + n.s, t + n.e);
+      this._addOsc(ctx, m, 'triangle', n.freq, t + n.s, t + n.e);
+      // Marimba characteristic: add a softer fundamental
+      const m2 = this._makeMasterChain(ctx, 0.25, t + n.s, t + n.e);
+      this._addOsc(ctx, m2, 'sine', n.freq, t + n.s, t + n.e);
+    });
+  }
+
+  // ── iPhone Ping: crisp high single tone (played 3×) ───────────────────────
+  private playIphonePing(ctx: AudioContext): void {
+    [0, 0.35, 0.70].forEach(offset => {
+      const t = ctx.currentTime + offset;
+      const m = this._makeMasterChain(ctx, 0.82, t, t + 0.22);
+      this._addOsc(ctx, m, 'sine', 2093, t, t + 0.22);
+      // Sub harmonic for body
+      const m2 = this._makeMasterChain(ctx, 0.30, t, t + 0.18);
+      this._addOsc(ctx, m2, 'sine', 1046, t, t + 0.18);
     });
   }
 
@@ -9401,7 +9459,7 @@ export class CommunicationComponent
       userId,
       name,
       email: employee?.user?.email || employee?.email || this.userEmailCache[userId] || '',
-      phone: employee?.phoneNumber || '',
+      phone: employee?.phoneNumber || employee?.phone || '',
       jobTitle: employee?.jobTitle || '',
       department: employee?.department?.name || '',
       avatarUrl: (employee ? this.getEmpImageUrl(employee) : undefined) || this.userAvatarCache[userId],

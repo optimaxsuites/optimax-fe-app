@@ -22,23 +22,45 @@
   </div>
 
   <!-- Employee preview -->
+  <!-- Non-active employees skipped notice -->
+  <div class="disb-skipped-notice" *ngIf="skippedCount > 0">
+    <i class="fas fa-info-circle"></i>
+    <span>
+      <strong>{{ skippedCount }} employee{{ skippedCount !== 1 ? 's' : '' }}</strong>
+      with non-Active employment status
+      {{ skippedCount !== 1 ? 'were' : 'was' }} excluded from this disbursement.
+    </span>
+  </div>
+
   <div class="disb-preview" *ngIf="employees.length">
     <div class="disb-preview-head">
-      <span>{{ employees.length }} employees</span>
+      <span>
+        {{ includedEmployees.length }} / {{ employees.length }} employees
+        <span *ngIf="exemptedIds.size > 0" class="disb-exempt-badge">{{ exemptedIds.size }} exempted</span>
+      </span>
       <span class="disb-total">Total Net: <strong>{{ fmt(totalNet) }}</strong></span>
     </div>
     <div class="disb-table-wrap">
       <table class="disb-table">
         <thead><tr>
+          <th class="disb-th-exempt" title="Exempt from this disbursement">Exempt</th>
           <th>#</th><th>Employee</th><th>Account No.</th><th>Bank</th><th>Net Pay</th>
         </tr></thead>
         <tbody>
-          <tr *ngFor="let e of employees; let i = index">
+          <tr *ngFor="let e of employees; let i = index" [class.disb-row--exempted]="isExempted(e)">
+            <td class="disb-td-exempt">
+              <label class="disb-exempt-chk" title="Exempt from disbursement">
+                <input type="checkbox" [checked]="isExempted(e)" (change)="toggleExempt(e)" />
+              </label>
+            </td>
             <td>{{ i + 1 }}</td>
-            <td>{{ (e.employee?.firstName || e.firstName || '') + ' ' + (e.employee?.lastName || e.lastName || '') }}</td>
+            <td>
+              {{ (e.employee?.firstName || e.firstName || '') + ' ' + (e.employee?.lastName || e.lastName || '') }}
+              <span *ngIf="isExempted(e)" class="disb-exempt-tag">EXEMPT</span>
+            </td>
             <td>{{ e.employee?.accountNumber || e.accountNumber || '—' }}</td>
             <td>{{ e.employee?.bankName || e.bankName || '—' }}</td>
-            <td class="disb-amount">{{ fmt(e.netPayable ?? 0) }}</td>
+            <td class="disb-amount" [class.disb-amount--exempted]="isExempted(e)">{{ fmt(e.netPayable ?? 0) }}</td>
           </tr>
         </tbody>
       </table>

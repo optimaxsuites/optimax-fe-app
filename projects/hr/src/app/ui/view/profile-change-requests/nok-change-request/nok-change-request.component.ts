@@ -4,6 +4,7 @@ import { MessageService } from 'primeng/api';
 import { ProfileChangeRequestService } from '../../../service/profile-change-request.service';
 import { ProfileChangeRequestDTO } from '../../../model/profile-change-request.model';
 import { MailNotificationService } from '../../../service/mailNotification.service';
+import { EmployeeService } from '../../../service/employee.service';
 
 export interface NextOfKin {
   id?: number;
@@ -28,7 +29,8 @@ export class NokChangeRequestComponent implements OnInit, OnChanges {
   @Input() employee: any | null = null;
   @Input() nokRecord: NextOfKin | null = null;
   @Input() changeType: NokChangeType = 'add';
-  @Output() requestSubmitted = new EventEmitter<ProfileChangeRequestDTO>();
+  @Input() adminDirectMode = false;
+  @Output() requestSubmitted = new EventEmitter<any>();
 
   nokForm!: FormGroup;
   isSubmitting = false;
@@ -38,7 +40,8 @@ export class NokChangeRequestComponent implements OnInit, OnChanges {
     private fb: FormBuilder,
     private profileChangeRequestService: ProfileChangeRequestService,
     private messageService: MessageService,
-    private mailNotificationService: MailNotificationService
+    private mailNotificationService: MailNotificationService,
+    private employeeService: EmployeeService
   ) {}
 
   ngOnInit(): void {
@@ -108,8 +111,34 @@ export class NokChangeRequestComponent implements OnInit, OnChanges {
 
   private submitAddRequest(): void {
     this.isSubmitting = true;
-
     const formValue = this.nokForm.value;
+
+    if (this.adminDirectMode) {
+      const dto = {
+        fullName: formValue.fullName,
+        email: formValue.email || null,
+        phone: formValue.phone || null,
+        address: formValue.address || null,
+        relationship: formValue.relationship || null,
+        DOB: formValue.DOB || null,
+        emergencyContact: formValue.emergencyContact ? 'YES' : 'NO',
+        employeeId: this.employee.id,
+      };
+      const fd = new FormData();
+      fd.append('nextOfKinDTO', new Blob([JSON.stringify(dto)], { type: 'application/json' }));
+      this.employeeService.addNOK(fd).subscribe({
+        next: () => {
+          this.isSubmitting = false;
+          this.requestSubmitted.emit(dto);
+        },
+        error: () => {
+          this.isSubmitting = false;
+          this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Could not save next of kin.' });
+        }
+      });
+      return;
+    }
+
     const request: ProfileChangeRequestDTO = {
       employeeId: this.employee.id,
       employeeName: `${this.employee.firstName} ${this.employee.lastName}`,
@@ -133,41 +162,48 @@ export class NokChangeRequestComponent implements OnInit, OnChanges {
     this.profileChangeRequestService.submitProfileChangeRequest(request).subscribe({
       next: () => {
         this.isSubmitting = false;
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Request submitted',
-          detail: 'Your next of kin addition request has been submitted for HR review.',
-          key: 'tl'
-        });
         this.requestSubmitted.emit(request);
       },
-      error: (error) => {
+      error: () => {
         this.isSubmitting = false;
-        console.error('Error submitting NOK add request:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Submission Error',
-          detail: 'Failed to submit your request. Please try again.'
-        });
+        this.messageService.add({ severity: 'error', summary: 'Submission Error', detail: 'Failed to submit your request. Please try again.' });
       }
     });
   }
 
   private submitEditRequest(): void {
-    console.log("here oooo")
-    console.log("nok", this.nokRecord)
     if (!this.nokRecord?.id) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Record ID not found.',
-        key: 'tl'
-      });
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Record ID not found.' });
       return;
     }
 
     this.isSubmitting = true;
     const formValue = this.nokForm.value;
+
+    if (this.adminDirectMode) {
+      const payload = {
+        fullName: formValue.fullName,
+        email: formValue.email || null,
+        phone: formValue.phone || null,
+        address: formValue.address || null,
+        relationship: formValue.relationship || null,
+        DOB: formValue.DOB || null,
+        emergencyContact: formValue.emergencyContact ? 'YES' : 'NO',
+        employeeId: this.employee.id,
+      };
+      this.employeeService.updateNOK(this.nokRecord.id!, payload).subscribe({
+        next: () => {
+          this.isSubmitting = false;
+          this.requestSubmitted.emit(payload);
+        },
+        error: () => {
+          this.isSubmitting = false;
+          this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Could not update next of kin.' });
+        }
+      });
+      return;
+    }
+
     const request: ProfileChangeRequestDTO = {
       employeeId: this.employee.id,
       employeeName: `${this.employee.firstName} ${this.employee.lastName}`,
@@ -175,7 +211,7 @@ export class NokChangeRequestComponent implements OnInit, OnChanges {
       requestType: 'change',
       fieldChangeType: 'NOK',
       request: [
-        {fieldName: 'id', value: this.nokRecord.id, oldValue: this.nokRecord.id },
+        { fieldName: 'id', value: this.nokRecord.id, oldValue: this.nokRecord.id },
         { fieldName: 'fullName', value: formValue.fullName, oldValue: this.nokRecord.fullName },
         { fieldName: 'email', value: formValue.email || null, oldValue: this.nokRecord.email || null },
         { fieldName: 'phone', value: formValue.phone || null, oldValue: this.nokRecord.phone || null },
@@ -192,37 +228,37 @@ export class NokChangeRequestComponent implements OnInit, OnChanges {
     this.profileChangeRequestService.submitProfileChangeRequest(request).subscribe({
       next: () => {
         this.isSubmitting = false;
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Request submitted',
-          detail: 'Your next of kin update request has been submitted for HR review.',
-          key: 'global'
-        });
         this.requestSubmitted.emit(request);
       },
-      error: (error) => {
+      error: () => {
         this.isSubmitting = false;
-        console.error('Error submitting NOK edit request:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Submission Error',
-          detail: 'Failed to submit your request. Please try again.'
-        });
+        this.messageService.add({ severity: 'error', summary: 'Submission Error', detail: 'Failed to submit your request. Please try again.' });
       }
     });
   }
 
   private submitDeleteRequest(): void {
     if (!this.nokRecord?.id) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Record ID not found.'
-      });
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Record ID not found.' });
       return;
     }
 
     this.isSubmitting = true;
+
+    if (this.adminDirectMode) {
+      this.employeeService.deleteNOK(this.nokRecord.id!).subscribe({
+        next: () => {
+          this.isSubmitting = false;
+          this.requestSubmitted.emit({ deleted: true, id: this.nokRecord!.id });
+        },
+        error: () => {
+          this.isSubmitting = false;
+          this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Could not delete next of kin.' });
+        }
+      });
+      return;
+    }
+
     const request: ProfileChangeRequestDTO = {
       employeeId: this.employee.id,
       employeeName: `${this.employee.firstName} ${this.employee.lastName}`,
@@ -241,12 +277,6 @@ export class NokChangeRequestComponent implements OnInit, OnChanges {
     this.profileChangeRequestService.submitProfileChangeRequest(request).subscribe({
       next: () => {
         this.isSubmitting = false;
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Request submitted',
-          detail: 'Your next of kin deletion request has been submitted for HR review.',
-          key: 'tl'
-        });
         this.requestSubmitted.emit(request);
       },
       error: (error) => {

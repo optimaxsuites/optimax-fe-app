@@ -159,6 +159,15 @@
           </div>
         </div>
 
+        <!-- Group by -->
+        <select class="pm-select" [(ngModel)]="groupBy" title="Group tasks by…">
+          <option value="none">No Grouping</option>
+          <option value="assignee">Group by Assignee</option>
+          <option value="team">Group by Team</option>
+          <option value="status">Group by Status</option>
+          <option value="priority">Group by Priority</option>
+        </select>
+
         <input type="text" class="pm-search" placeholder="🔍 Search tasks…" [(ngModel)]="searchText">
         <select class="pm-select" [(ngModel)]="filterStatus">
           <option value="">All Statuses</option>
@@ -252,6 +261,9 @@
                   <button class="kcard-act-btn edit-btn" title="Edit task" (click)="openEditTask(task, $event)">
                     <i class="fas fa-pencil-alt"></i>
                   </button>
+                  <button class="kcard-act-btn arc-btn" title="Archive task" (click)="archiveTask(task, $event)">
+                    <i class="fas fa-archive"></i>
+                  </button>
                   <button class="kcard-act-btn del-btn" title="Delete task" (click)="deleteTask(task, $event)">
                     <i class="fas fa-trash"></i>
                   </button>
@@ -274,6 +286,9 @@
                 </div>
               </div>
               <span [style.color]="isTaskOverdue(task) ? '#dc2626' : 'inherit'">📅 {{ task.dueDate ? formatRawDate(task.dueDate) : '—' }}</span>
+              <span *ngIf="task.cost" class="kcard-cost-chip" title="Estimated cost">
+                <i class="fas fa-dollar-sign" style="font-size:9px"></i> {{ task.costCurrency || 'NGN' }} {{ fmt(task.cost) }}
+              </span>
               <span *ngIf="task.team" class="kcard-supervisor" [title]="'Supervisor: ' + task.team">
                 <i class="fas fa-user-tie" style="font-size:10px;margin-right:3px;color:#7c3aed"></i>{{ task.team }}
               </span>
@@ -410,46 +425,52 @@
             <span>Task / Sub-task</span><span>Owner</span><span>Status</span>
             <span>Start → Due</span><span>Progress</span><span>Sub-tasks</span><span>Actions</span>
           </div>
-          <ng-container *ngFor="let task of filteredBoard">
-            <div class="tree-row parent" [class.expanded]="task.expanded" (click)="toggleRow(task)">
-              <div class="tree-cell">
-                <span class="tree-toggle-icon">{{ task.expanded ? '▼' : '▶' }}</span>
-                <span [class.td-title]="true">{{ task.title }}</span>
-              </div>
-              <div class="tree-cell">{{ task.assignee }}</div>
-              <div class="tree-cell">
-                <span class="badge" [ngClass]="statusClass(task.status) === 'status-done' ? 'b-green' : isTaskOverdue(task) ? 'b-red' : 'b-yellow'">{{ task.status }}</span>
-              </div>
-              <div class="tree-cell">{{ formatDate(task.startDate) }} → {{ formatDate(task.dueDate) }}</div>
-              <div class="tree-cell">
-                <div class="prog-wrap" style="width:80px;display:inline-block"><div class="prog-bar" [class.g]="task.progress===100" [style.width.%]="task.progress"></div></div>
-                {{ task.progress }}%
-              </div>
-              <div class="tree-cell">{{ completedSubtasks(task) }}/{{ task.subtasks.length }}</div>
-              <div class="tree-cell">
-                <button class="btn-ghost" style="padding:3px 8px;font-size:12px" (click)="openDetail(task);$event.stopPropagation()">Open</button>
-              </div>
+          <ng-container *ngFor="let group of groupedBoard">
+            <!-- Group header (shown only when groupBy is active) -->
+            <div *ngIf="groupBy !== 'none'" class="list-group-header">
+              <i class="fas fa-layer-group"></i> {{ group.key }} <span class="list-group-count">{{ group.tasks.length }}</span>
             </div>
-            <ng-container *ngIf="task.expanded">
-              <div class="tree-preview" *ngIf="task.followUps?.length">
-                <div class="tree-preview-block">
-                  <strong>Latest update · {{ task.followUps[0].author }} · {{ task.followUps[0].timestamp }}</strong>
-                  <p [innerHTML]="sanitizeHtml(task.followUps[0].text)"></p>
-                </div>
-              </div>
-              <div class="tree-row child" *ngFor="let sub of task.subtasks">
-                <div class="tree-cell" style="padding-left:32px">↳ {{ sub.title }}</div>
-                <div class="tree-cell">{{ sub.assignee }}</div>
+            <ng-container *ngFor="let task of group.tasks">
+              <div class="tree-row parent" [class.expanded]="task.expanded" (click)="toggleRow(task)">
                 <div class="tree-cell">
-                  <span class="badge" [ngClass]="sub.done ? 'b-green' : sub.status === 'blocked' ? 'b-red' : sub.status === 'ip' ? 'b-yellow' : 'b-gray'">
-                    {{ sub.done ? 'Done' : sub.status === 'blocked' ? 'Blocked' : sub.status === 'ip' ? 'In Progress' : 'Open' }}
-                  </span>
+                  <span class="tree-toggle-icon">{{ task.expanded ? '▼' : '▶' }}</span>
+                  <span [class.td-title]="true">{{ task.title }}</span>
                 </div>
-                <div class="tree-cell">{{ formatRawDate(sub.startDate) }} → {{ formatRawDate(sub.dueDate) }}</div>
-                <div class="tree-cell">{{ sub.done ? '100%' : '—' }}</div>
-                <div class="tree-cell">{{ sub.dependency || '—' }}</div>
-                <div class="tree-cell"></div>
+                <div class="tree-cell">{{ task.assignee }}</div>
+                <div class="tree-cell">
+                  <span class="badge" [ngClass]="statusClass(task.status) === 'status-done' ? 'b-green' : isTaskOverdue(task) ? 'b-red' : 'b-yellow'">{{ task.status }}</span>
+                </div>
+                <div class="tree-cell">{{ formatDate(task.startDate) }} → {{ formatDate(task.dueDate) }}</div>
+                <div class="tree-cell">
+                  <div class="prog-wrap" style="width:80px;display:inline-block"><div class="prog-bar" [class.g]="task.progress===100" [style.width.%]="task.progress"></div></div>
+                  {{ task.progress }}%
+                </div>
+                <div class="tree-cell">{{ completedSubtasks(task) }}/{{ task.subtasks.length }}</div>
+                <div class="tree-cell">
+                  <button class="btn-ghost" style="padding:3px 8px;font-size:12px" (click)="openDetail(task);$event.stopPropagation()">Open</button>
+                </div>
               </div>
+              <ng-container *ngIf="task.expanded">
+                <div class="tree-preview" *ngIf="task.followUps?.length">
+                  <div class="tree-preview-block">
+                    <strong>Latest update · {{ task.followUps[0].author }} · {{ task.followUps[0].timestamp }}</strong>
+                    <p [innerHTML]="sanitizeHtml(task.followUps[0].text)"></p>
+                  </div>
+                </div>
+                <div class="tree-row child" *ngFor="let sub of task.subtasks">
+                  <div class="tree-cell" style="padding-left:32px">↳ {{ sub.title }}</div>
+                  <div class="tree-cell">{{ sub.assignee }}</div>
+                  <div class="tree-cell">
+                    <span class="badge" [ngClass]="sub.done ? 'b-green' : sub.status === 'blocked' ? 'b-red' : sub.status === 'ip' ? 'b-yellow' : 'b-gray'">
+                      {{ sub.done ? 'Done' : sub.status === 'blocked' ? 'Blocked' : sub.status === 'ip' ? 'In Progress' : 'Open' }}
+                    </span>
+                  </div>
+                  <div class="tree-cell">{{ formatRawDate(sub.startDate) }} → {{ formatRawDate(sub.dueDate) }}</div>
+                  <div class="tree-cell">{{ sub.done ? '100%' : '—' }}</div>
+                  <div class="tree-cell">{{ sub.dependency || '—' }}</div>
+                  <div class="tree-cell"></div>
+                </div>
+              </ng-container>
             </ng-container>
           </ng-container>
         </div>
@@ -1429,11 +1450,40 @@
           <div class="df"><label>Type</label><span>{{ selectedTask.tags[0] || 'Task' }}</span></div>
           <div class="df"><label>Priority</label><span [style.color]="selectedTask.priority === 'Critical' || selectedTask.priority === 'High' ? '#dc2626' : '#374151'">{{ selectedTask.priority }}</span></div>
           <div class="df"><label>Start</label><span>{{ formatDate(selectedTask.startDate) }}</span></div>
-          <div class="df"><label>Due</label><span [style.color]="isTaskOverdue(selectedTask) ? '#dc2626' : '#374151'">{{ formatDate(selectedTask.dueDate) }}{{ isTaskOverdue(selectedTask) ? ' ⚠️' : '' }}</span></div>
-          <div class="df"><label>Assignee</label><span>{{ selectedTask.assignee }}</span></div>
+          <div class="df"><label>Due</label>
+            <span [style.color]="isTaskOverdue(selectedTask) ? '#dc2626' : '#374151'">{{ formatDate(selectedTask.dueDate) }}{{ isTaskOverdue(selectedTask) ? ' ⚠️' : '' }}</span>
+            <button *ngIf="isTaskOverdue(selectedTask)" class="btn-ghost dl-extend-btn" (click)="extendingDeadline = !extendingDeadline; newDeadlineDate = ''">
+              <i class="fas fa-calendar-plus"></i> Extend
+            </button>
+          </div>
+          <div *ngIf="extendingDeadline && isTaskOverdue(selectedTask)" class="dl-extend-row">
+            <input type="date" class="prl-input" [(ngModel)]="newDeadlineDate" [min]="selectedTask.dueDate">
+            <button class="btn btn-p btn-sm" (click)="extendDeadline(selectedTask)" [disabled]="!newDeadlineDate">Apply</button>
+            <button class="btn btn-o btn-sm" (click)="extendingDeadline = false">Cancel</button>
+          </div>
+          <div class="df"><label>Assignee</label>
+            <span *ngIf="!reassignMode">{{ selectedTask.assignee }}</span>
+            <span *ngIf="!reassignMode" class="btn-ghost" style="margin-left:8px;cursor:pointer;font-size:11px;color:#6366f1" (click)="reassignMode = true; reassignEmployeeName = selectedTask.assignee">
+              <i class="fas fa-user-edit"></i> Reassign
+            </span>
+            <div *ngIf="reassignMode" class="dl-extend-row">
+              <input type="text" class="prl-input" [(ngModel)]="reassignEmployeeName" placeholder="Employee name" list="reassign-emp-list">
+              <datalist id="reassign-emp-list">
+                <option *ngFor="let e of allEmployees" [value]="e.fullName"></option>
+              </datalist>
+              <button class="btn btn-p btn-sm" (click)="quickReassign(selectedTask)">Save</button>
+              <button class="btn btn-o btn-sm" (click)="reassignMode = false">Cancel</button>
+            </div>
+          </div>
           <div class="df"><label>Supervisor / Team</label><span>{{ selectedTask.team }}</span></div>
           <div class="df"><label>Perf. Weight</label><span>{{ selectedTask.weight }}%</span></div>
-          <div class="df"><label>Status</label><span>{{ selectedTask.status }}</span></div>
+          <div class="df"><label>Status</label>
+            <span [class.closed-tag]="selectedTask.status === 'Closed'">{{ selectedTask.status }}</span>
+          </div>
+          <div class="df" *ngIf="selectedTask.cost">
+            <label>Est. Cost</label>
+            <span class="cost-chip">{{ selectedTask.costCurrency || 'NGN' }} {{ fmt(selectedTask.cost) }}</span>
+          </div>
         </div>
         <div style="margin-bottom:12px">
           <div style="font-size:12px;color:#4b5563;margin-bottom:5px">Overall Progress</div>
@@ -1615,28 +1665,82 @@
                 <small>{{ fu.timestamp }}</small>
               </div>
               <div class="tl-note" [innerHTML]="sanitizeHtml(fu.text)"></div>
-              <!-- Photos carousel in timeline entry -->
-              <div class="tl-carousel" *ngIf="fu.photos?.length">
-                <div class="carousel-single" *ngIf="fu.photos.length === 1">
-                  <img [src]="fu.photos[0]" (click)="openLightbox(fu.photos, 0)" class="carousel-img" alt="update photo">
+              <!-- Attachments: document chips + images carousel -->
+              <ng-container *ngIf="fu.photos?.length">
+                <!-- Document chips -->
+                <div class="fu-doc-chips" *ngIf="fuDocs(fu.photos).length">
+                  <a *ngFor="let doc of fuDocs(fu.photos)" [href]="doc" target="_blank" rel="noopener" class="fu-doc-chip">
+                    <i class="fas fa-file"></i>
+                    {{ doc.split('/').pop()?.split('?')[0] || 'Reference doc' }}
+                  </a>
                 </div>
-                <div class="carousel-multi" *ngIf="fu.photos.length > 1">
-                  <button class="carousel-nav left" (click)="prevFuPhoto(fu.id, fu.photos.length, $event)">‹</button>
-                  <img [src]="fuCurrentPhoto(fu.id, fu.photos)"
-                       (click)="openLightbox(fu.photos, fuPhotoIndex[fu.id] ?? 0)"
-                       class="carousel-img" alt="update photo">
-                  <button class="carousel-nav right" (click)="nextFuPhoto(fu.id, fu.photos.length, $event)">›</button>
-                  <div class="carousel-dots">
-                    <span *ngFor="let _ of fu.photos; let pi = index"
-                          class="carousel-dot"
-                          [class.active]="pi === (fuPhotoIndex[fu.id] ?? 0)"></span>
+                <!-- Images carousel -->
+                <div class="tl-carousel" *ngIf="fuImages(fu.photos).length">
+                  <div class="carousel-single" *ngIf="fuImages(fu.photos).length === 1">
+                    <img [src]="fuImages(fu.photos)[0]" (click)="openLightbox(fuImages(fu.photos), 0)" class="carousel-img" alt="update photo">
                   </div>
-                  <span class="carousel-counter">{{ (fuPhotoIndex[fu.id] ?? 0) + 1 }}/{{ fu.photos.length }}</span>
+                  <div class="carousel-multi" *ngIf="fuImages(fu.photos).length > 1">
+                    <button class="carousel-nav left" (click)="prevFuPhoto(fu.id, fuImages(fu.photos).length, $event)">‹</button>
+                    <img [src]="fuCurrentPhoto(fu.id, fuImages(fu.photos))"
+                         (click)="openLightbox(fuImages(fu.photos), fuPhotoIndex[fu.id] ?? 0)"
+                         class="carousel-img" alt="update photo">
+                    <button class="carousel-nav right" (click)="nextFuPhoto(fu.id, fuImages(fu.photos).length, $event)">›</button>
+                    <div class="carousel-dots">
+                      <span *ngFor="let _ of fuImages(fu.photos); let pi = index"
+                            class="carousel-dot"
+                            [class.active]="pi === (fuPhotoIndex[fu.id] ?? 0)"></span>
+                    </div>
+                    <span class="carousel-counter">{{ (fuPhotoIndex[fu.id] ?? 0) + 1 }}/{{ fuImages(fu.photos).length }}</span>
+                  </div>
                 </div>
-              </div>
+              </ng-container>
               <div class="tl-decision dec-changes" *ngIf="fu.decision === 'Changes'">🔄 Changes Requested</div>
               <div class="tl-decision dec-approved" *ngIf="fu.decision === 'Approved'">✅ Approved</div>
               <div class="prog-marker" *ngIf="fu.progress !== undefined">📈 Progress reported: {{ fu.progress }}%</div>
+
+              <!-- Reaction bar -->
+              <div class="fu-reactions">
+                <button *ngFor="let emoji of ['👍','👎','❤️','🎉','🔥','🤔']"
+                        class="fu-react-btn"
+                        [class.reacted]="iReacted(fu, emoji)"
+                        (click)="toggleReaction(fu, emoji)"
+                        [title]="reactionCount(fu, emoji) > 0 ? (reactionCount(fu, emoji) + ' reaction(s)') : emoji">
+                  {{ emoji }}<span *ngIf="reactionCount(fu, emoji) > 0" class="fu-react-count">{{ reactionCount(fu, emoji) }}</span>
+                </button>
+                <button class="fu-reply-toggle" (click)="toggleReplyBox(fu.id)">
+                  <i class="fas fa-reply"></i> Reply<span *ngIf="(fu.replies?.length || 0) > 0"> ({{ fu.replies!.length }})</span>
+                </button>
+              </div>
+
+              <!-- Existing replies -->
+              <div class="fu-replies" *ngIf="fu.replies?.length">
+                <div class="fu-reply-entry" *ngFor="let rep of fu.replies">
+                  <div class="fu-ava-sm" [style.background]="rep.color">{{ rep.initials }}</div>
+                  <div class="fu-reply-body">
+                    <span class="fu-reply-author">{{ rep.author }}</span>
+                    <span class="fu-reply-ts">{{ rep.timestamp }}</span>
+                    <div class="fu-reply-text">{{ rep.text }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Reply compose box -->
+              <div class="fu-reply-compose" *ngIf="replyingToFuId === fu.id">
+                <div class="fu-ava-sm" style="background:#6366f1">{{ getInitials(currentUserFullName) }}</div>
+                <div class="fu-reply-input-wrap">
+                  <textarea class="fu-reply-input"
+                            [(ngModel)]="fuReplyText[fu.id]"
+                            placeholder="Write a reply…"
+                            rows="2"
+                            (keydown.enter)="onFuReplyEnter($event, fu)"></textarea>
+                  <div class="fu-reply-actions">
+                    <button class="fu-reply-send" (click)="submitFollowUpReply(fu)" [disabled]="!fuReplyText[fu.id]?.trim()">
+                      <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                    <button class="fu-reply-cancel" (click)="replyingToFuId = null">Cancel</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <!-- Activity entries -->
@@ -1682,7 +1786,10 @@
             </label>
             <button class="btn btn-o btn-sm" style="margin-left:0" (click)="openShareModal(selectedTask, 'supervisor')">📤 Share Update</button>
             <button class="btn btn-sm" style="background:#7c3aed;color:#fff;border:none;margin-left:auto;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:600"
-                    (click)="postSupervisorReview()" [disabled]="!supReviewNote.trim()">Post Supervisor Review</button>
+                    (click)="postSupervisorReview()"
+                    [disabled]="!supReviewNote.trim() || supReviewUploading">
+              {{ supReviewUploading ? 'Uploading…' : 'Post Supervisor Review' }}
+            </button>
           </div>
         </div>
 
@@ -1690,6 +1797,87 @@
 
     </ng-container>
   </div>
+
+<!-- ══ RIGHT RAIL — Archive & Stages ════════════════════════════════════ -->
+<div class="right-rail" [class.open]="rightRailOpen">
+
+  <!-- Vertical toggle tab -->
+  <button class="right-rail-tab" (click)="rightRailOpen = !rightRailOpen"
+          [title]="rightRailOpen ? 'Close panel' : 'Archive & custom stages'">
+    <span class="right-rail-tab-text">Archive &amp; Stages</span>
+    <i class="fas" [class.fa-chevron-right]="rightRailOpen" [class.fa-chevron-left]="!rightRailOpen"></i>
+  </button>
+
+  <!-- Rail body -->
+  <div class="right-rail-body">
+
+    <!-- ── Custom Stages ── -->
+    <div class="rail-section">
+      <div class="rail-section-head">
+        <i class="fas fa-columns"></i> Custom Stages
+        <span class="rail-count">{{ customStages.length }}</span>
+      </div>
+      <div *ngIf="!customStages.length" class="rail-empty">
+        No custom stages yet. Add one below.
+      </div>
+      <div *ngFor="let s of customStages" class="rail-stage-row">
+        <span class="rail-stage-dot"></span>
+        <span class="rail-stage-name">{{ s.label }}</span>
+        <span class="rail-stage-cnt">{{ columnTasks(s.key).length }}</span>
+        <button class="rail-icon-btn rail-del-btn" (click)="removeStage(s.key)" title="Remove stage">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="rail-add-stage">
+        <input class="rail-input" [(ngModel)]="newStageName"
+               placeholder="New stage name…"
+               (keyup.enter)="addStage()"
+               (keyup.escape)="newStageName = ''">
+        <button class="rail-add-btn" (click)="addStage()" [disabled]="!newStageName.trim()">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="rail-divider"></div>
+
+    <!-- ── Archived Tasks ── -->
+    <div class="rail-section">
+      <div class="rail-section-head">
+        <i class="fas fa-archive"></i> Archived
+        <span class="rail-count">{{ archivedTasks.length }}</span>
+      </div>
+      <!-- Archive search -->
+      <div *ngIf="archivedTasks.length" class="rail-archive-search">
+        <i class="fas fa-search"></i>
+        <input class="rail-search-input" [(ngModel)]="archiveSearchText" placeholder="Search archive…">
+      </div>
+      <div *ngIf="!archivedTasks.length" class="rail-empty">
+        No archived tasks. Hit the 📦 button on any card or set status to "Closed" to archive.
+      </div>
+      <div *ngIf="archivedTasks.length && !filteredArchivedTasks.length" class="rail-empty">
+        No results for "{{ archiveSearchText }}"
+      </div>
+      <div *ngFor="let t of filteredArchivedTasks" class="rail-task-row" [class.rail-task-closed]="t.closed" (click)="openDetail(t)">
+        <div class="rail-task-info">
+          <span class="rail-task-title" [class.rail-title-closed]="t.closed">{{ t.title }}</span>
+          <span class="rail-task-meta">
+            {{ t.assignee }}
+            <span *ngIf="t.closed" class="rail-closed-badge">Closed</span>
+            <span *ngIf="!t.closed"> · {{ t.status }}</span>
+          </span>
+          <span *ngIf="t.cost" class="rail-cost-meta">{{ t.costCurrency || 'NGN' }} {{ fmt(t.cost) }}</span>
+        </div>
+        <button class="rail-icon-btn rail-restore-btn"
+                (click)="unarchiveTask(t); $event.stopPropagation()"
+                title="Restore to board">
+          <i class="fas fa-undo"></i>
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /right-rail-body -->
+</div><!-- /right-rail -->
 
 </div><!-- /pm-page -->
 
@@ -1847,6 +2035,7 @@
           <label>Status</label>
           <select [(ngModel)]="editTaskDraft.status">
             <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+            <option value="Closed" style="color:#dc2626">⊗ Closed (archive)</option>
           </select>
         </div>
         <div class="form-row">
@@ -1866,9 +2055,21 @@
           <input type="date" [(ngModel)]="editTaskDraft.dueDate">
         </div>
       </div>
-      <div class="form-row">
-        <label>Weight (%)</label>
-        <input type="number" [(ngModel)]="editTaskDraft.weight" min="0" max="100">
+      <div class="form-2col">
+        <div class="form-row">
+          <label>Weight (%)</label>
+          <input type="number" [(ngModel)]="editTaskDraft.weight" min="0" max="100">
+        </div>
+        <div class="form-row">
+          <label>Est. Cost <span style="font-size:10px;color:#9ca3af">(optional)</span></label>
+          <div style="display:flex;gap:4px">
+            <select style="width:72px" [(ngModel)]="editTaskDraft.costCurrency">
+              <option value="NGN">NGN</option><option value="USD">USD</option>
+              <option value="GBP">GBP</option><option value="EUR">EUR</option>
+            </select>
+            <input type="number" min="0" step="any" [(ngModel)]="editTaskDraft.cost" placeholder="0.00" style="flex:1">
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1967,9 +2168,21 @@
           <input type="date" [(ngModel)]="newTask.dueDate">
         </div>
       </div>
-      <div class="form-row">
-        <label>Weight (%)</label>
-        <input type="number" [(ngModel)]="newTask.weight" min="0" max="100">
+      <div class="form-2col">
+        <div class="form-row">
+          <label>Weight (%)</label>
+          <input type="number" [(ngModel)]="newTask.weight" min="0" max="100">
+        </div>
+        <div class="form-row">
+          <label>Est. Cost <span style="font-size:10px;color:#9ca3af">(optional)</span></label>
+          <div style="display:flex;gap:4px">
+            <select style="width:72px" [(ngModel)]="newTask.costCurrency">
+              <option value="NGN">NGN</option><option value="USD">USD</option>
+              <option value="GBP">GBP</option><option value="EUR">EUR</option>
+            </select>
+            <input type="number" min="0" step="any" [(ngModel)]="newTask.cost" placeholder="0.00" style="flex:1">
+          </div>
+        </div>
       </div>
       <!-- Subtasks -->
       <div class="form-row" style="margin-top:8px">

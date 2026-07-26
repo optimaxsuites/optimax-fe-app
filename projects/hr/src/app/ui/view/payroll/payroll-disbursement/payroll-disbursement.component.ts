@@ -62,6 +62,8 @@ export class PayrollDisbursementComponent implements OnInit, OnDestroy {
   selectedRunId: number | null = null;
   selectedRun: any = null;
   employees: any[] = [];
+  skippedCount = 0;
+  exemptedIds = new Set<any>();
   disbursing = false;
   postingToFinance = false;
   financePosted = false;
@@ -151,24 +153,47 @@ export class PayrollDisbursementComponent implements OnInit, OnDestroy {
   selectRun(runId: number): void {
     this.selectedRunId = runId;
     this.selectedRun = this.runs.find(r => r.id === runId) ?? null;
-    this.employees = this.selectedRun?.employees ?? [];
+    const all: any[] = this.selectedRun?.employees ?? [];
+    this.employees = all.filter(e =>
+      (e.employee?.employeeStatus ?? e.employeeStatus ?? 'ACTIVE') === 'ACTIVE'
+    );
+    this.skippedCount = all.length - this.employees.length;
+    this.exemptedIds = new Set();
     this.financePosted = false;
   }
 
+  get includedEmployees(): any[] {
+    return this.employees.filter(e => !this.exemptedIds.has(this.empKey(e)));
+  }
+
+  empKey(e: any): any { return e.id ?? e.employee?.id; }
+
+  toggleExempt(e: any): void {
+    const key = this.empKey(e);
+    this.exemptedIds.has(key) ? this.exemptedIds.delete(key) : this.exemptedIds.add(key);
+    this.exemptedIds = new Set(this.exemptedIds);
+  }
+
+  isExempted(e: any): boolean { return this.exemptedIds.has(this.empKey(e)); }
+
   runLabel(run: any): string {
-    return `${this.monthNames[(+run.month - 1)]} ${run.year} — ${(run.employees ?? []).length} employees`;
+    const all: any[] = run.employees ?? [];
+    const active = all.filter(e =>
+      (e.employee?.employeeStatus ?? e.employeeStatus ?? 'ACTIVE') === 'ACTIVE'
+    ).length;
+    return `${this.monthNames[(+run.month - 1)]} ${run.year} — ${active} active employees`;
   }
 
   get totalNet(): number {
-    return this.employees.reduce((s, e) => s + (+(e.netPayable ?? 0)), 0);
+    return this.includedEmployees.reduce((s, e) => s + (+(e.netPayable ?? 0)), 0);
   }
 
   get totalGross(): number {
-    return this.employees.reduce((s, e) => s + (+(e.grossPay ?? 0)), 0);
+    return this.includedEmployees.reduce((s, e) => s + (+(e.grossPay ?? 0)), 0);
   }
 
   get totalDeductions(): number {
-    return this.employees.reduce((s, e) => s + (+(e.totalDeductions ?? 0)), 0);
+    return this.includedEmployees.reduce((s, e) => s + (+(e.totalDeductions ?? 0)), 0);
   }
 
   fmt(v: number): string {
@@ -177,9 +202,9 @@ export class PayrollDisbursementComponent implements OnInit, OnDestroy {
 
   // ── Paystack ──────────────────────────────────────────────────────────────
   initiatePaystackTransfer(): void {
-    if (!this.selectedRunId || !this.employees.length) return;
+    if (!this.selectedRunId || !this.includedEmployees.length) return;
     this.disbursing = true;
-    const transferPayload = this.employees.map(e => ({
+    const transferPayload = this.includedEmployees.map(e => ({
       amount: Math.round((e.netPayable ?? 0) * 100),
       recipient: e.employee?.accountNumber ?? e.accountNumber,
       reference: `PAY${e.id ?? Date.now()}`,
@@ -188,13 +213,13 @@ export class PayrollDisbursementComponent implements OnInit, OnDestroy {
     console.log('Paystack bulk transfer payload:', transferPayload);
     setTimeout(() => {
       this.disbursing = false;
-      this.showAlert('Paystack transfer initiated for ' + this.employees.length + ' employees.', 'success');
+      this.showAlert('Paystack transfer initiated for ' + this.includedEmployees.length + ' employees.', 'success');
     }, 1200);
   }
 
   // ── GTBank XLSX download ──────────────────────────────────────────────────
   downloadGTBank(): void {
-    if (!this.employees.length) { this.showAlert('Select a payroll run first.', 'error'); return; }
+    if (!this.includedEmployees.length) { this.showAlert('Select a payroll run first.', 'error'); return; }
     this.generatingFile = true;
 
     const today = new Date();
@@ -207,7 +232,7 @@ export class PayrollDisbursementComponent implements OnInit, OnDestroy {
       'VendorCode', 'VendorName', 'VendorAcctNumber', 'VendorBankSortCode'
     ];
 
-    const rows = this.employees.map((e, i) => {
+    const rows = this.includedEmployees.map((e, i) => {
       const empName = `${e.employee?.firstName ?? ''} ${e.employee?.lastName ?? ''}`.trim();
       const bankName = (e.employee?.bankName ?? '').toLowerCase();
       return [
@@ -242,13 +267,13 @@ export class PayrollDisbursementComponent implements OnInit, OnDestroy {
 
   // ── Custom template CSV ───────────────────────────────────────────────────
   downloadCustomTemplate(): void {
-    if (!this.selectedTemplateId || !this.employees.length) {
+    if (!this.selectedTemplateId || !this.includedEmployees.length) {
       this.showAlert('Select a run and a template first.', 'error'); return;
     }
     const tmpl = this.templates.find(t => t.id === this.selectedTemplateId);
     if (!tmpl) return;
     this.generatingFile = true;
-    const empDtos = this.employees.map(e => this.mapToEmployeePayroll(e));
+    const empDtos = this.includedEmployees.map(e => this.mapToEmployeePayroll(e));
     const csv = this.payrollService.generateCSV(empDtos, tmpl);
     this.downloadFile(csv, `${tmpl.name.replace(/\s+/g, '_')}_payroll.csv`, 'text/csv');
     this.generatingFile = false;
@@ -257,7 +282,7 @@ export class PayrollDisbursementComponent implements OnInit, OnDestroy {
 
   // ── Post payroll disbursement to Finance/Accounting ───────────────────────
   postToFinance(): void {
-    if (!this.selectedRun || !this.employees.length) {
+    if (!this.selectedRun || !this.includedEmployees.length) {
       this.showAlert('Select a payroll run first.', 'error'); return;
     }
     this.postingToFinance = true;
@@ -277,14 +302,14 @@ export class PayrollDisbursementComponent implements OnInit, OnDestroy {
       sourceModule: 'HR',
       sourceId: this.selectedRun.id,
       amount: this.totalNet,
-      description: `Payroll Disbursement — ${month} ${year} (${this.employees.length} employees)`,
+      description: `Payroll Disbursement — ${month} ${year} (${this.includedEmployees.length} employees)`,
       currency: 'NGN',
       transactionDate: new Date().toISOString().split('T')[0],
       metadata: {
         grossPay:       this.totalGross,
         totalDeductions: this.totalDeductions,
         netPayable:     this.totalNet,
-        employeeCount:  this.employees.length,
+        employeeCount:  this.includedEmployees.length,
         month,
         year,
       }
