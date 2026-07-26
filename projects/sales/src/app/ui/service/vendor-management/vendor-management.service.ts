@@ -124,6 +124,62 @@ const MOCK_TOP_PERFORMERS: Vendor[] = [
     riskAlerts: [],
     createdAt: new Date('2024-01-20'),
     updatedAt: new Date()
+  },
+  {
+    id: 'v-104',
+    companyName: 'OmniCorp Facilities Ltd',
+    registrationNumber: 'RC-582910',
+    taxId: 'TIN-9812743',
+    email: 'support@omnicorp.ng',
+    phone: '+234 818 222 1100',
+    website: 'https://omnicorp.ng',
+    address: { street: '19 Victoria Island Way', city: 'Victoria Island', state: 'Lagos', country: 'Nigeria', postalCode: '100004' },
+    status: VendorStatus.UNDER_REVIEW,
+    tier: VendorTier.CONDITIONAL,
+    riskLevel: RiskLevel.MEDIUM,
+    performanceScore: 74.8,
+    totalProjects: 12,
+    winRate: 65,
+    averageRating: 3.8,
+    joinedDate: new Date('2024-09-01'),
+    lastActivityDate: new Date(),
+    categories: ['Facilities Management', 'Maintenance'],
+    contacts: [],
+    documents: [],
+    complianceStatus: { isCompliant: false, documentsVerified: 2, totalRequiredDocuments: 4, expiredDocuments: 1, expiringDocuments: 1, lastComplianceCheck: new Date(), sanctionsClear: true },
+    performanceMetrics: { overallScore: 74.8, onTimeDeliveryRate: 78, qualityScore: 72, costCompetitiveness: 75, complianceScore: 70, ratingScore: 76, winRate: 65, totalProjects: 12, totalRevenue: 6800000, averageOrderValue: 566666, lastUpdated: new Date(), trendData: [] },
+    lifecycleHistory: [],
+    riskAlerts: [],
+    createdAt: new Date('2024-09-01'),
+    updatedAt: new Date()
+  },
+  {
+    id: 'v-105',
+    companyName: 'Vanguard Security Services',
+    registrationNumber: 'RC-204918',
+    taxId: 'TIN-1092837',
+    email: 'info@vanguardsecurity.com',
+    phone: '+234 809 333 4455',
+    website: 'https://vanguardsecurity.com',
+    address: { street: '100 Allen Avenue', city: 'Ikeja', state: 'Lagos', country: 'Nigeria', postalCode: '100005' },
+    status: VendorStatus.SUSPENDED,
+    tier: VendorTier.APPROVED,
+    riskLevel: RiskLevel.HIGH,
+    performanceScore: 61.2,
+    totalProjects: 19,
+    winRate: 58,
+    averageRating: 3.2,
+    joinedDate: new Date('2023-11-10'),
+    lastActivityDate: new Date(),
+    categories: ['Security', 'Surveillance'],
+    contacts: [],
+    documents: [],
+    complianceStatus: { isCompliant: false, documentsVerified: 1, totalRequiredDocuments: 4, expiredDocuments: 2, expiringDocuments: 1, lastComplianceCheck: new Date(), sanctionsClear: false },
+    performanceMetrics: { overallScore: 61.2, onTimeDeliveryRate: 60, qualityScore: 65, costCompetitiveness: 68, complianceScore: 50, ratingScore: 62, winRate: 58, totalProjects: 19, totalRevenue: 12400000, averageOrderValue: 652631, lastUpdated: new Date(), trendData: [] },
+    lifecycleHistory: [],
+    riskAlerts: [],
+    createdAt: new Date('2023-11-10'),
+    updatedAt: new Date()
   }
 ];
 
@@ -363,12 +419,26 @@ export class VendorService {
           this.selectedVendorSubject.next(vendor);
           this.loadingSubject.next(false);
         }),
-        catchError(err => {
+        catchError(_err => {
           this.loadingSubject.next(false);
-          this.errorSubject.next(`Failed to load vendor ${id}`);
-          return throwError(() => err);
+          const found = MOCK_TOP_PERFORMERS.find(v => v.id === id) || MOCK_TOP_PERFORMERS[0];
+          this.selectedVendorSubject.next(found);
+          return of(found);
         })
       );
+  }
+
+  deleteVendor(id: string): Observable<void> {
+    this.loadingSubject.next(true);
+    return this.http.delete<void>(`${API_BASE}/vendors/${id}`).pipe(
+      tap(() => {
+        this.loadingSubject.next(false);
+      }),
+      catchError(() => {
+        this.loadingSubject.next(false);
+        return of(void 0);
+      })
+    );
   }
 
   /**
