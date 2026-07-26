@@ -91,6 +91,18 @@
               </div>
 
               <div class="form-group">
+                <label>Item Category <span class="required">*</span></label>
+                <select formControlName="categoryId" class="form-control"
+                  [class.error]="item.get('categoryId')?.invalid && item.get('categoryId')?.touched">
+                  <option value="" disabled>Select Category</option>
+                  <option *ngFor="let cat of procurementCategories" [value]="cat.categoryId">{{ cat.name }}</option>
+                </select>
+                <small class="error-message" *ngIf="item.get('categoryId')?.invalid && item.get('categoryId')?.touched">
+                  {{ getItemErrorMessage(i, 'categoryId') }}
+                </small>
+              </div>
+
+              <div class="form-group">
                 <label>Quantity <span class="required">*</span></label>
                 <input type="number" formControlName="quantity" min="1" class="form-control"
                   [class.error]="item.get('quantity')?.invalid && item.get('quantity')?.touched">

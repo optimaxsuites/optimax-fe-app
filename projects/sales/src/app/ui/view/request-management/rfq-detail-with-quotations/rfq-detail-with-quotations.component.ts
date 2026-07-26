@@ -2,7 +2,14 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { QuotationManagementService } from '../../../service/procurement/quotation-management.service';
-import { RFQWithQuotations, VendorQuotation, VendorQuotationStatus } from '../../../domain/procurement-request/procurement.dto';
+import { VendorQuotation, VendorQuotationStatus } from '../../../domain/procurement-request/procurement.dto';
+import { ExtendedProcurementRequest } from '../../../service/procurement/rfq-quotation-bridge.util';
+
+export interface LocalRFQWithQuotations {
+  rfq: ExtendedProcurementRequest;
+  quotations: VendorQuotation[];
+  summary: any;
+}
 
 @Component({
   selector: 'app-rfq-detail-with-quotations',
@@ -11,7 +18,7 @@ import { RFQWithQuotations, VendorQuotation, VendorQuotationStatus } from '../..
 })
 export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
   rfqId: string | null = null;
-  rfqData: RFQWithQuotations | null = null;
+  rfqData: LocalRFQWithQuotations | null = null;
   isLoading = false;
   showVendorSummaryModal = false;
   selectedQuotation: VendorQuotation | null = null;
@@ -62,7 +69,7 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
   loadMockData(): void {
     this.rfqData = {
       rfq: {
-        id: this.rfqId || 'rfq1',
+        id: Number(this.rfqId) || 1,
         customerId: 'cust1',
         customerName: 'Optimax Industries',
         procurementType: 'PRODUCT',
@@ -70,38 +77,43 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
         description: 'Procurement of laptops, printers, and office furniture',
         items: [
           {
-            id: 'item1',
+            id: 1,
             name: 'Dell XPS 15 Laptop',
             description: '15-inch laptop with i7 processor',
             quantity: 10,
             unit: 'Pieces',
-            estimatedBudget: 1500000,
-            attachments: []
+            estimatedBudget: 1500000
           },
           {
-            id: 'item2',
+            id: 2,
             name: 'HP LaserJet Printer',
             description: 'Multifunction laser printer',
             quantity: 5,
             unit: 'Pieces',
-            estimatedBudget: 500000,
-            attachments: []
+            estimatedBudget: 500000
           }
         ],
         totalBudget: 2000000,
         currency: 'NGN',
-        deliveryLocation: 'Lagos, Nigeria',
-        deliveryDeadline: new Date('2024-02-15'),
         status: 'VENDORS_QUOTING',
-        attachments: [],
         createdAt: new Date('2024-01-10'),
+        createdBy: 'ADMIN',
         updatedAt: new Date('2024-01-10'),
+        updatedBy: 'ADMIN',
+        suggestedVendorIds: [],
+        suggestedVendors: [],
         selectedVendorId: '',
+        selectedVendorName: '',
+        selectedQuotationId: '',
+        approvalStatus: 'APPROVED',
+        approvedBy: 'ADMIN',
+        approvedAt: new Date(),
         rfqExpiryDate: new Date('2024-01-30')
       },
       quotations: [
         {
-          id: 'q1',
+          id: 1,
+          quotationId: 'q1',
           rfqId: this.rfqId || 'rfq1',
           vendorId: 'v1',
           vendorName: 'TechPro Solutions Ltd',
@@ -109,8 +121,8 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
           vendorRating: 4.8,
           status: 'SUBMITTED',
           items: [
-            { id: 'qi1', name: 'Dell XPS 15', description: '15-inch i7 laptop', quantity: 10, unitPrice: 145000, totalPrice: 1450000, availability: 'AVAILABLE' },
-            { id: 'qi2', name: 'HP LaserJet', description: 'Multifunction printer', quantity: 5, unitPrice: 95000, totalPrice: 475000, availability: 'AVAILABLE' }
+            { id: 'qi1' as any, name: 'Dell XPS 15', description: '15-inch i7 laptop', quantity: 10, unitPrice: 145000, totalPrice: 1450000, availability: 'AVAILABLE' },
+            { id: 'qi2' as any, name: 'HP LaserJet', description: 'Multifunction printer', quantity: 5, unitPrice: 95000, totalPrice: 475000, availability: 'AVAILABLE' }
           ],
           totalAmount: 1925000,
           currency: 'NGN',
@@ -122,7 +134,8 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
           isViewed: false
         },
         {
-          id: 'q2',
+          id: 2,
+          quotationId: 'q2',
           rfqId: this.rfqId || 'rfq1',
           vendorId: 'v2',
           vendorName: 'Global Supplies Inc',
@@ -130,8 +143,8 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
           vendorRating: 4.6,
           status: 'ACCEPTED',
           items: [
-            { id: 'qi3', name: 'Dell XPS 15', description: '15-inch i7 laptop', quantity: 10, unitPrice: 142000, totalPrice: 1420000, availability: 'AVAILABLE' },
-            { id: 'qi4', name: 'HP LaserJet', description: 'Multifunction printer', quantity: 5, unitPrice: 88000, totalPrice: 440000, availability: 'AVAILABLE' }
+            { id: 'qi3' as any, name: 'Dell XPS 15', description: '15-inch i7 laptop', quantity: 10, unitPrice: 142000, totalPrice: 1420000, availability: 'AVAILABLE' },
+            { id: 'qi4' as any, name: 'HP LaserJet', description: 'Multifunction printer', quantity: 5, unitPrice: 88000, totalPrice: 440000, availability: 'AVAILABLE' }
           ],
           totalAmount: 1860000,
           currency: 'NGN',
@@ -143,7 +156,8 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
           isViewed: true
         },
         {
-          id: 'q3',
+          id: 3,
+          quotationId: 'q3',
           rfqId: this.rfqId || 'rfq1',
           vendorId: 'v3',
           vendorName: 'Quality Goods Co',
@@ -162,7 +176,8 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
           isViewed: true
         },
         {
-          id: 'q4',
+          id: 4,
+          quotationId: 'q4',
           rfqId: this.rfqId || 'rfq1',
           vendorId: 'v4',
           vendorName: 'Premium Electronics Hub',
@@ -213,7 +228,7 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
     this.selectedQuotation = null;
   }
 
-  acceptQuotation(quotationId: string): void {
+  acceptQuotation(quotationId: string | number): void {
     if (confirm('Are you sure you want to accept this quotation? You\'ll generate and send the LPO as a separate step afterward.')) {
       this.isProcessing = true;
       this.quotationService.acceptQuotation(quotationId).subscribe({
@@ -232,7 +247,7 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
     }
   }
 
-  rejectQuotation(quotationId: string): void {
+  rejectQuotation(quotationId: string | number): void {
     const reason = prompt('Please provide a reason for rejecting this quotation:');
     if (reason !== null && reason.trim()) {
       this.isProcessing = true;
@@ -252,10 +267,10 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
     }
   }
 
-  cancelPendingVendor(rfqId: string, vendorId: string, vendorName: string): void {
+  cancelPendingVendor(rfqId: number, vendorId: string, vendorName: string): void {
     if (confirm(`Are you sure you want to cancel the RFQ sent to ${vendorName}? This action cannot be undone.`)) {
       this.isProcessing = true;
-      this.quotationService.cancelPendingQuotation(rfqId, vendorId).subscribe({
+      this.quotationService.cancelPendingQuotation(String(rfqId), vendorId).subscribe({
         next: () => {
           this.isProcessing = false;
           this.loadRFQDetails(); // Refresh data

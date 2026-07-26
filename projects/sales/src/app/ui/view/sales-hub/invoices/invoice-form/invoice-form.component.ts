@@ -33,8 +33,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   generatedInvoiceNumber: string = '';
 
   // ============ WIZARD STATE ============
-  currentStep: 1 | 2 | 3 = 1;
-  totalSteps = 3;
+  currentStep: 1 | 2 | 3 | 4 = 1;
+  totalSteps = 4;
   selectedTemplate: QuoteTemplate | null = null;
   selectedAction: 'pdf' | 'email' | 'both' = 'pdf';
 
@@ -52,6 +52,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       subtotal: this.subtotal,
       taxAmount: this.totalTax || this.taxAmount,
       discountAmount: this.discountAmount,
+      additionalCharges: this.additionalCharges,
+      additionalChargeItems: this.additionalChargeItems,
       totalAmount: this.grandTotal,
       notes: this.invoiceForm.get('notes')?.value,
       terms: this.invoiceForm.get('terms')?.value,
@@ -68,18 +70,58 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   showNotes = false;
   showAdvanced = false;
   showSignature = false;
+
+  // ============ STEP 2: PAYMENT TERMS STATE ============
+  selectedPresetTerm: 'Net 15' | 'Net 30' | 'Net 60' | 'Due on Receipt' | 'Custom' = 'Net 30';
+  paymentMode: 'ONE-OFF' | 'MONTHLY' = 'ONE-OFF';
+  paymentMethod: any = 'BANK_TRANSFER';
+  paymentPeriodDays: number = 30;
+  numberOfInstallments: number = 1;
+  depositPercentage: number = 0;
+  lateFeeRate: number = 0;
+  customTermsText: string = 'Payment is due within 30 days from invoice issue date. Late payments may be subject to a 1.5% monthly interest fee.';
+
+  presetTermsList: { id: 'Net 15' | 'Net 30' | 'Net 60' | 'Due on Receipt' | 'Custom'; name: string; days: number; desc: string; icon: string }[] = [
+    { id: 'Net 15', name: 'Net 15', days: 15, desc: 'Payment due within 15 days of issue', icon: 'fa-calendar-day' },
+    { id: 'Net 30', name: 'Net 30', days: 30, desc: 'Standard terms — payment due in 30 days', icon: 'fa-calendar-week' },
+    { id: 'Net 60', name: 'Net 60', days: 60, desc: 'Extended terms — payment due in 60 days', icon: 'fa-calendar-alt' },
+    { id: 'Due on Receipt', name: 'Due on Receipt', days: 0, desc: 'Immediate payment required upon receipt', icon: 'fa-receipt' },
+    { id: 'Custom', name: 'Custom Terms', days: 30, desc: 'Configure custom period and conditions', icon: 'fa-sliders-h' }
+  ];
+
+  paymentMethodsList: { value: string; label: string; icon: string }[] = [
+    { value: 'BANK_TRANSFER', label: 'Bank Transfer (EFT)', icon: 'fa-university' },
+    { value: 'CARD', label: 'Credit / Debit Card', icon: 'fa-credit-card' },
+    { value: 'CASH', label: 'Cash Payment', icon: 'fa-money-bill-wave' },
+    { value: 'CHEQUE', label: 'Cheque', icon: 'fa-money-check' },
+    { value: 'POS', label: 'Point of Sale (POS)', icon: 'fa-cash-register' },
+    { value: 'MOBILE_MONEY', label: 'Mobile Money', icon: 'fa-mobile-alt' }
+  ];
   showAttachments = false;
-  showAdditionalInfo = false;
-  showContactDetails = false;
+  showEmail = false;
+  showAddress = false;
+  showPhone = false;
 
   // Additional Option data bindings
   signatureText = '';
-  additionalInfoText = '';
   contactPhone = '';
   contactEmail = '';
+  contactAddress = '';
   attachmentFileName = '';
   logoFileName = '';
   logoUrl = '';
+
+  // Custom modal variables
+  showDiscountModal = false;
+  showChargesModal = false;
+  modalDiscountAmount = 0;
+  modalDiscountType: 'PERCENTAGE' | 'FIXED' = 'FIXED';
+  
+  // Additional charges breakdown
+  additionalChargeItems: { id?: number; label: string; amount: number }[] = [];
+  modalChargesList: { id?: number; label: string; amount: number }[] = [];
+  newChargeLabel = '';
+  newChargeAmount: number | null = null;
 
   // Shipping Details data bindings
   showShippingDetails = false;
@@ -109,8 +151,6 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   // Tax settings
   taxRate = 0;
-  discountType: 'PERCENTAGE' | 'FIXED' = 'PERCENTAGE';
-  discountValue = 0;
 
   // Calculated totals - THESE ARE THE PROPERTIES
   subtotal: number = 0;
@@ -267,6 +307,20 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     this.calculateTotals();
   }
 
+  get discountType(): 'PERCENTAGE' | 'FIXED' {
+    return this.invoiceForm.get('discountType')?.value || 'PERCENTAGE';
+  }
+  set discountType(val: 'PERCENTAGE' | 'FIXED') {
+    this.invoiceForm.patchValue({ discountType: val });
+  }
+
+  get discountValue(): number {
+    return Number(this.invoiceForm.get('discountValue')?.value) || 0;
+  }
+  set discountValue(val: number) {
+    this.invoiceForm.patchValue({ discountValue: val });
+  }
+
   // ✅ SINGLE calculateTotals method - removed duplicate
   calculateTotals(): void {
     this.subtotal = 0;
@@ -291,6 +345,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       this.discountAmount = discountValue;
     }
 
+    // Sum itemized additional charges if available
+    if (this.additionalChargeItems && this.additionalChargeItems.length > 0) {
+      this.additionalCharges = this.additionalChargeItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    }
+
     // Calculate tax on after discount
     const taxRate = this.invoiceForm.get('taxRate')?.value || 0;
     const afterDiscount = this.subtotal - this.discountAmount;
@@ -302,7 +361,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   // Product selection
   onProductSelect(index: number, productId: string): void {
-    const product = this.products.find(p => p.id === productId);
+    const product = this.products.find(p => p.productId === productId || String(p.id) === productId);
     if (product) {
       const itemForm = this.items.at(index);
       itemForm.patchValue({
@@ -330,7 +389,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   selectProductFromModal(product: Product, index: number): void {
     const itemForm = this.items.at(index);
     itemForm.patchValue({
-      productId: product.id,
+      productId: product.productId || String(product.id),
       productName: product.name,
       description: product.description,
       unitPrice: product.unitPrice,
@@ -343,7 +402,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   // Customer selection
   onCustomerSelect(customerId: string): void {
-    const customer = this.customers.find(c => c.id === customerId);
+    const customer = this.customers.find(c => c.customerId === customerId || String(c.id) === customerId);
     if (customer) {
       this.invoiceForm.patchValue({ customerName: customer.name });
       this.selectedCustomerBankAccounts = customer.bankAccounts || [];
@@ -443,18 +502,23 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     const defaultDueDate = new Date();
     defaultDueDate.setDate(defaultDueDate.getDate() + 30);
 
+    const custId = quote.customerId.customerId || String(quote.customerId.id);
+    const custName = quote.customerName.name || String(quote.customerName);
+
+    const addOpts = Array.isArray(quote.additionalOptions) ? quote.additionalOptions[0] : (quote.additionalOptions as any);
+
     this.invoiceForm.patchValue({
-      customerId: quote.customerId,
-      customerName: quote.customerName,
+      customerId: custId,
+      customerName: custName,
       currency: quote.currency,
-      notes: quote.notes,
-      terms: quote.terms,
-      paymentTerms: quote.terms || 'Net 30',
+      notes: addOpts?.notes || '',
+      terms: addOpts?.terms || '',
+      paymentTerms: addOpts?.terms || 'Net 30',
       dueDate: this.formatDateForInput(defaultDueDate)
     });
 
-    this.logoUrl = quote.logoUrl || '';
-    this.logoFileName = quote.logoUrl ? 'Saved Logo' : '';
+    this.logoUrl = quote.logoUrl?.[0] || '';
+    this.logoFileName = quote.logoUrl?.[0] ? 'Saved Logo' : '';
 
     // Add items from quote
     quote.items.forEach((item: any) => {
@@ -476,19 +540,38 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   private populateForm(invoice: Invoice): void {
     this.quoteId = invoice.quoteId || '';
     this.loadedInvoiceSelectedCustomerBank = invoice.selectedCustomerBank || null;
+    
+    const custId = invoice.customerId.customerId || String(invoice.customerId.id);
+    const custName = invoice.customerName.name || String(invoice.customerName);
+
     this.invoiceForm.patchValue({
-      customerId: invoice.customerId,
-      customerName: invoice.customerName,
+      customerId: custId,
+      customerName: custName,
       issueDate: this.formatDateForInput(invoice.issueDate),
       dueDate: this.formatDateForInput(invoice.dueDate),
       currency: invoice.currency,
       notes: invoice.notes,
-      paymentTerms: invoice.paymentTerms
+      paymentTerms: (invoice.paymentTerms as any)?.label || 'Net 30'
     });
-    this.onCustomerSelect(invoice.customerId);
+    this.onCustomerSelect(custId);
 
     this.logoUrl = invoice.logoUrl || '';
     this.logoFileName = invoice.logoUrl ? 'Saved Logo' : '';
+
+    if (Array.isArray(invoice.additionalCharges)) {
+      const labels = invoice.additionalChargesLabel || [];
+      this.additionalChargeItems = invoice.additionalCharges.map((amt, idx) => ({
+        id: idx + 1,
+        label: labels[idx] || `Charge #${idx + 1}`,
+        amount: Number(amt) || 0
+      }));
+    } else if (typeof (invoice as any).additionalCharges === 'number' && (invoice as any).additionalCharges > 0) {
+      this.additionalChargeItems = [{
+        id: 1,
+        label: 'Additional Charge',
+        amount: Number((invoice as any).additionalCharges)
+      }];
+    }
 
     // Clear existing items
     while (this.items.length) {
@@ -547,13 +630,17 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     for (let i = 0; i < this.items.length; i++) {
       const item = this.items.at(i).getRawValue();
       items.push({
-        id: Math.random().toString(36).substr(2, 9),
+        id: Math.floor(Math.random() * 1000000),
+        productId: item.productId,
         productName: item.productName,
         description: item.description,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
+        discount: item.discount || 0,
+        taxRate: item.taxRate || 0,
+        amount: item.total,
         total: item.total
-      });
+      } as any);
     }
 
     const selectedBankIdx = formValue.selectedCustomerBankIndex;
@@ -564,22 +651,60 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       selectedCustomerBank = this.loadedInvoiceSelectedCustomerBank;
     }
 
-    const invoiceData: Partial<Invoice> = {
+    const customerObj: Customer = this.customers.find(c => c.customerId === formValue.customerId || String(c.id) === formValue.customerId) || {
+      id: 1,
       customerId: formValue.customerId,
-      customerName: formValue.customerName,
+      name: formValue.customerName,
+      email: '',
+      phone: '',
+      address: [''],
+      deliverAddress: [''],
+      createdBy: 'System',
+      createdAt: new Date(),
+      totalSpent: 0,
+      totalOrders: 0,
+      status: 'ACTIVE'
+    };
+
+    const invoiceData: any = {
+      customerId: customerObj,
+      customerName: customerObj,
       currency: formValue.currency,
       issueDate: new Date(formValue.issueDate),
       dueDate: new Date(formValue.dueDate),
       notes: formValue.notes,
-      paymentTerms: formValue.paymentTerms,
+      shippingAddress: this.showShippingDetails ? this.shippingAddress : undefined,
+      paymentTerms: [{
+        id: 1,
+        customerId: customerObj,
+        customerName: customerObj,
+        paymentPeriod: this.paymentPeriodDays || 30,
+        paymentMethod: this.paymentMethod,
+        paymentMode: this.paymentMode,
+        amount: this.grandTotal,
+        balanceDue: this.grandTotal,
+        installmentNumber: this.numberOfInstallments || 1,
+        completedInstallments: 0
+      }],
+      additionalOptions: [{
+        signatureText: '',
+        attachments: [],
+        email: customerObj.email,
+        address: Array.isArray(customerObj.address) ? customerObj.address[0] : customerObj.address,
+        phone: customerObj.phone,
+        notes: formValue.notes || '',
+        terms: this.customTermsText || formValue.terms || ''
+      }],
       items: items,
       subtotal: this.subtotal,
       taxAmount: this.taxAmount,
       discountAmount: this.discountAmount,
+      additionalCharges: this.additionalChargeItems.map(item => Number(item.amount) || 0),
+      additionalChargesLabel: this.additionalChargeItems.map(item => item.label || ''),
       totalAmount: this.grandTotal,
       amountPaid: 0,
       balanceDue: this.grandTotal,
-      status: (this.currentStep === 3 ? 'SENT' : 'DRAFT') as InvoiceStatus,
+      status: (this.currentStep === 4 ? 'SENT' : 'DRAFT') as InvoiceStatus,
       quoteId: this.quoteId || undefined,
       logoUrl: this.logoUrl,
       selectedCustomerBank: selectedCustomerBank
@@ -643,9 +768,10 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     return new Date().toISOString().split('T')[0];
   }
 
-  formatCurrency(amount: number): string {
-    const currency = this.invoiceForm.get('currency')?.value || 'NGN';
-    return new Intl.NumberFormat('en-NG', { style: 'currency', currency }).format(amount);
+  formatCurrency(amount: number, customCurrency?: string): string {
+    const currency = customCurrency || this.invoiceForm.get('currency')?.value || 'NGN';
+    const symbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '₦';
+    return `${symbol}${(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
   isFieldInvalid(fieldName: string): boolean {
@@ -703,17 +829,17 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   // Mock data
   private setMockCustomers(): void {
     this.customers = [
-      { id: 'CUST-001', name: 'Mama Nkechi Enterprises', email: 'contact@mamankechi.com', phone: '+234 123 456 789', address: 'Lagos, Nigeria', taxId: '', createdAt: new Date(), totalSpent: 0, totalOrders: 0, status: 'ACTIVE' },
-      { id: 'CUST-002', name: 'Tech Solutions Ltd', email: 'info@techsolutions.com', phone: '+234 234 567 890', address: 'Abuja, Nigeria', taxId: '', createdAt: new Date(), totalSpent: 0, totalOrders: 0, status: 'ACTIVE' }
-    ];
+      { id: 1, customerId: 'CUST-001', name: 'Mama Nkechi Enterprises', email: 'contact@mamankechi.com', phone: '+234 123 456 789', address: 'Lagos, Nigeria', taxId: '', createdAt: new Date(), totalSpent: 0, totalOrders: 0, status: 'ACTIVE' },
+      { id: 2, customerId: 'CUST-002', name: 'Tech Solutions Ltd', email: 'info@techsolutions.com', phone: '+234 234 567 890', address: 'Abuja, Nigeria', taxId: '', createdAt: new Date(), totalSpent: 0, totalOrders: 0, status: 'ACTIVE' }
+    ] as any;
   }
 
   private setMockProducts(): void {
     this.products = [
-      { id: 'PROD-001', name: 'Executive Office Chair', sku: 'CHR-001', description: 'Ergonomic executive office chair', unitPrice: 50000, costPrice: 30000, currency: 'NGN', stockQuantity: 50, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
-      { id: 'PROD-002', name: 'Standing Desk', sku: 'DSK-001', description: 'Adjustable standing desk', unitPrice: 120000, costPrice: 80000, currency: 'NGN', stockQuantity: 30, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
-      { id: 'PROD-003', name: 'Laptop - Dell XPS', sku: 'LAP-001', description: 'Dell XPS 13 laptop', unitPrice: 850000, costPrice: 700000, currency: 'NGN', stockQuantity: 15, category: 'Electronics', taxRate: 7.5, images: [], status: 'ACTIVE' }
-    ];
+      { id: 1, productId: 'PROD-001', name: 'Executive Office Chair', sku: 'CHR-001', description: 'Ergonomic executive office chair', unitPrice: 50000, costPrice: 30000, currency: 'NGN', stockQuantity: 50, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
+      { id: 2, productId: 'PROD-002', name: 'Standing Desk', sku: 'DSK-001', description: 'Adjustable standing desk', unitPrice: 120000, costPrice: 80000, currency: 'NGN', stockQuantity: 30, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
+      { id: 3, productId: 'PROD-003', name: 'Laptop - Dell XPS', sku: 'LAP-001', description: 'Dell XPS 13 laptop', unitPrice: 850000, costPrice: 700000, currency: 'NGN', stockQuantity: 15, category: 'Electronics', taxRate: 7.5, images: [], status: 'ACTIVE' }
+    ] as any;
     this.filteredProducts = this.products;
   }
 
@@ -729,62 +855,70 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     }
   }
 
-  addCustomFields(): void {
-    alert('Custom Fields feature is under development.');
+  triggerLogoUpload(): void {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = (e: any) => this.onLogoSelected(e);
+    fileInput.click();
   }
 
-  addNewGroup(): void {
-    alert('Add New Group feature is under development.');
-  }
+  addNewGroup(): void {}
 
   addShippingDetails(): void {
     this.showShippingDetails = !this.showShippingDetails;
   }
 
   addDiscounts(): void {
-    const discountType = this.invoiceForm.get('discountType')?.value || 'PERCENTAGE';
-    const discountValue = this.invoiceForm.get('discountValue')?.value || 0;
-    
-    const input = prompt(
-      'Enter discount amount (e.g. 10% or 5000):',
-      discountValue ? `${discountValue}${discountType === 'PERCENTAGE' ? '%' : ''}` : ''
-    );
-    if (input !== null) {
-      const valStr = input.trim();
-      if (valStr.endsWith('%')) {
-        const val = parseFloat(valStr.slice(0, -1));
-        if (!isNaN(val)) {
-          this.invoiceForm.patchValue({
-            discountType: 'PERCENTAGE',
-            discountValue: val
-          });
-          this.calculateTotals();
-        }
-      } else {
-        const val = parseFloat(valStr);
-        if (!isNaN(val)) {
-          this.invoiceForm.patchValue({
-            discountType: 'FIXED',
-            discountValue: val
-          });
-          this.calculateTotals();
-        }
-      }
-    }
+    this.modalDiscountAmount = this.discountValue;
+    this.modalDiscountType = this.discountType;
+    this.showDiscountModal = true;
+  }
+
+  saveDiscountModal(): void {
+    this.discountType = this.modalDiscountType;
+    this.discountValue = this.modalDiscountType === 'PERCENTAGE' ? Math.min(this.modalDiscountAmount, 100) : this.modalDiscountAmount;
+    this.calculateTotals();
+    this.showDiscountModal = false;
   }
 
   addAdditionalCharges(): void {
-    const input = prompt(
-      'Enter additional charges (fixed amount):',
-      this.additionalCharges ? `${this.additionalCharges}` : ''
-    );
-    if (input !== null) {
-      const val = parseFloat(input.trim());
-      if (!isNaN(val)) {
-        this.additionalCharges = val;
-        this.calculateTotals();
-      }
+    this.modalChargesList = this.additionalChargeItems.map(item => ({ ...item }));
+    this.newChargeLabel = '';
+    this.newChargeAmount = null;
+    this.showChargesModal = true;
+  }
+
+  addChargeItemToModal(): void {
+    if (!this.newChargeLabel.trim()) {
+      alert('Please enter a label for the additional charge (e.g. Shipping, Handling).');
+      return;
     }
+    if (this.newChargeAmount === null || this.newChargeAmount === undefined || this.newChargeAmount < 0) {
+      alert('Please enter a valid charge amount.');
+      return;
+    }
+    this.modalChargesList.push({
+      id: Math.floor(Math.random() * 1000000),
+      label: this.newChargeLabel.trim(),
+      amount: Number(this.newChargeAmount)
+    });
+    this.newChargeLabel = '';
+    this.newChargeAmount = null;
+  }
+
+  removeChargeItemFromModal(index: number): void {
+    this.modalChargesList.splice(index, 1);
+  }
+
+  get modalTotalCharges(): number {
+    return this.modalChargesList.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  }
+
+  saveChargesModal(): void {
+    this.additionalChargeItems = this.modalChargesList.map(item => ({ ...item }));
+    this.calculateTotals();
+    this.showChargesModal = false;
   }
 
   editBilledBy(): void {
@@ -820,15 +954,86 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ============ STEP 2 PAYMENT TERMS HELPERS ============
+  selectPresetTerm(preset: 'Net 15' | 'Net 30' | 'Net 60' | 'Due on Receipt' | 'Custom'): void {
+    this.selectedPresetTerm = preset;
+    const issueDateVal = this.invoiceForm.get('issueDate')?.value || this.formatDateForInput(new Date());
+    const baseDate = new Date(issueDateVal);
+
+    let days = 30;
+    switch (preset) {
+      case 'Net 15': days = 15; break;
+      case 'Net 30': days = 30; break;
+      case 'Net 60': days = 60; break;
+      case 'Due on Receipt': days = 0; break;
+      case 'Custom': days = this.paymentPeriodDays || 30; break;
+    }
+
+    this.paymentPeriodDays = days;
+    const dueDate = new Date(baseDate);
+    dueDate.setDate(dueDate.getDate() + days);
+
+    const defaultTermsMap: Record<string, string> = {
+      'Net 15': 'Payment is due within 15 days of invoice date.',
+      'Net 30': 'Payment is due within 30 days of invoice date. Thank you for your business!',
+      'Net 60': 'Payment is due within 60 days of invoice date.',
+      'Due on Receipt': 'Payment is due immediately upon receipt of this invoice.',
+      'Custom': this.customTermsText || `Payment is due within ${days} days.`
+    };
+
+    this.customTermsText = defaultTermsMap[preset] || defaultTermsMap['Net 30'];
+
+    const termLabel = preset === 'Custom' ? `Custom (${days} days)` : preset;
+    this.invoiceForm.patchValue({
+      paymentTerms: termLabel,
+      dueDate: this.formatDateForInput(dueDate),
+      terms: this.customTermsText
+    });
+  }
+
+  onCustomDaysChange(days: number): void {
+    this.paymentPeriodDays = days || 0;
+    const issueDateVal = this.invoiceForm.get('issueDate')?.value || this.formatDateForInput(new Date());
+    const baseDate = new Date(issueDateVal);
+    const dueDate = new Date(baseDate);
+    dueDate.setDate(dueDate.getDate() + (days || 0));
+
+    this.invoiceForm.patchValue({
+      paymentTerms: `Custom (${days} days)`,
+      dueDate: this.formatDateForInput(dueDate)
+    });
+  }
+
+  get installmentSchedule(): { number: number; amount: number; dueDate: string }[] {
+    if (this.paymentMode === 'ONE-OFF' || this.numberOfInstallments <= 1) return [];
+    const total = this.grandTotal || 0;
+    const count = this.numberOfInstallments || 1;
+    const perInstallment = total / count;
+    const issueDateVal = this.invoiceForm.get('issueDate')?.value || this.formatDateForInput(new Date());
+
+    const schedule = [];
+    for (let i = 1; i <= count; i++) {
+      const dt = new Date(issueDateVal);
+      dt.setMonth(dt.getMonth() + (i - 1));
+      schedule.push({
+        number: i,
+        amount: perInstallment,
+        dueDate: this.formatDateForInput(dt)
+      });
+    }
+    return schedule;
+  }
+
+  get calculatedDepositAmount(): number {
+    return (this.grandTotal || 0) * ((this.depositPercentage || 0) / 100);
+  }
+
   // ============ WIZARD NAVIGATION ============
-  goToStep(step: 1 | 2 | 3): void {
+  goToStep(step: 1 | 2 | 3 | 4): void {
     if (step > this.currentStep) {
-      if (this.currentStep === 1 && !this.validateStep1()) {
-        return;
-      }
-      if (this.currentStep === 2 && !this.validateStep2()) {
-        return;
-      }
+      if (this.currentStep === 1 && !this.validateStep1()) return;
+      if (this.currentStep === 2 && !this.validateStep2()) return;
+      if (this.currentStep === 3 && !this.validateStep3()) return;
     }
     this.currentStep = step;
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -845,12 +1050,17 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         this.currentStep = 3;
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
+    } else if (this.currentStep === 3) {
+      if (this.validateStep3()) {
+        this.currentStep = 4;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   }
 
   prevStep(): void {
     if (this.currentStep > 1) {
-      this.currentStep = (this.currentStep - 1) as 1 | 2;
+      this.currentStep = (this.currentStep - 1) as 1 | 2 | 3 | 4;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
@@ -865,6 +1075,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     } else if (this.currentStep === 2) {
       this.nextStep();
     } else if (this.currentStep === 3) {
+      this.nextStep();
+    } else if (this.currentStep === 4) {
       this.onSubmit();
     }
   }
@@ -913,6 +1125,14 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   private validateStep2(): boolean {
+    if (this.paymentMode === 'MONTHLY' && (!this.numberOfInstallments || this.numberOfInstallments < 1)) {
+      alert('Please enter a valid number of installments (min 1)');
+      return false;
+    }
+    return true;
+  }
+
+  private validateStep3(): boolean {
     if (!this.selectedTemplate) {
       this.selectedTemplate = {
         id: 'standard',
@@ -1018,7 +1238,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   getProductSku(productId: string): string {
     if (!productId) return 'N/A';
-    const product = this.products.find(p => p.id === productId);
+    const product = this.products.find(p => p.productId === productId || String(p.id) === productId);
     return product ? product.sku : 'N/A';
   }
 
@@ -1094,8 +1314,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
             this.quickCustomerBankAccounts.removeAt(0);
           }
           setTimeout(() => {
-            this.invoiceForm.patchValue({ customerId: savedCust.id });
-            this.onCustomerSelect(savedCust.id);
+            this.invoiceForm.patchValue({ customerId: savedCust.customerId || String(savedCust.id) });
+            this.onCustomerSelect(savedCust.customerId || String(savedCust.id));
           });
         },
         error: (err) => {
@@ -1108,8 +1328,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       const tempId = `TEMP-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
       const tempCust: Customer = {
         ...newCust,
-        id: tempId
-      };
+        id: Math.floor(Math.random() * 1000000),
+        customerId: tempId
+      } as any;
       this.customers = [...this.customers, tempCust];
       this.showNewCustomerModal = false;
       this.quickCustomerForm.reset({ savePermanently: true });

@@ -1,7 +1,7 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Quote, Invoice, SalesOrder } from '../../../../domain/sales/sales.dto';
+import { Quote, Invoice, SalesandTransactions, AdditionalQuoteOptions } from '../../../../domain/sales/sales.dto';
 
 import { CommonModule } from '@angular/common';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
@@ -29,6 +29,11 @@ export class QuoteDetailComponent implements OnInit {
     private router: Router,
     private salesService: SalesService
   ) {}
+
+  get additionalOpts(): AdditionalQuoteOptions | undefined {
+    if (!this.quote?.additionalOptions) return undefined;
+    return Array.isArray(this.quote.additionalOptions) ? this.quote.additionalOptions[0] : (this.quote.additionalOptions as any);
+  }
 
   ngOnInit(): void {
     const id = this.detailId || this.route.snapshot.paramMap.get('id');
@@ -178,104 +183,138 @@ export class QuoteDetailComponent implements OnInit {
     return result;
   }
 
+  showSendQuoteModal = false;
+  showAcceptQuoteModal = false;
+  showDeclineQuoteModal = false;
+  showDeleteQuoteModal = false;
+  
+  pendingQuoteNumber = '';
+  pendingCustomerName = '';
+
   sendQuote(): void {
-    if (this.quote && confirm(`Send quote ${this.quote.quoteNumber} to ${this.quote.customerName}?`)) {
-      this.salesService.updateQuote(this.quote.id, { status: 'SENT' }).subscribe({
-        next: (updated: Quote) => {
-          this.quote = updated;
-          alert(`Quote ${this.quote!.quoteNumber} has been sent to ${this.quote!.customerName}`);
-        },
-        error: (err: any) => {
-          console.error('Error sending quote:', err);
-          alert('Failed to send quote. Please try again.');
-        }
-      });
-    }
+    if (!this.quote) return;
+    const custName = (this.quote.customerName as any)?.name || this.quote.customerName || 'Customer';
+    this.pendingQuoteNumber = this.quote.quoteNumber || '';
+    this.pendingCustomerName = custName;
+    this.showSendQuoteModal = true;
+  }
+
+  confirmSendQuote(): void {
+    if (!this.quote) return;
+    this.showSendQuoteModal = false;
+    this.salesService.updateQuote(String(this.quote.id), { status: 'SENT' }).subscribe({
+      next: (updated: Quote) => {
+        this.quote = updated;
+      },
+      error: (err: any) => {
+        console.error('Error sending quote:', err);
+      }
+    });
   }
 
   acceptQuote(): void {
-    if (this.quote && confirm(`Accept quote ${this.quote.quoteNumber}?`)) {
-      this.salesService.updateQuote(this.quote.id, { status: 'CONVERTED' }).subscribe({
-        next: (updated: Quote) => {
-          this.quote = updated;
-          
-          const orderData: Partial<SalesOrder> = {
-            quoteId: updated.id,
+    if (!this.quote) return;
+    const custName = (this.quote.customerName as any)?.name || this.quote.customerName || 'Customer';
+    this.pendingQuoteNumber = this.quote.quoteNumber || '';
+    this.pendingCustomerName = custName;
+    this.showAcceptQuoteModal = true;
+  }
+
+  confirmAcceptQuote(): void {
+    if (!this.quote) return;
+    this.showAcceptQuoteModal = false;
+    this.salesService.updateQuote(String(this.quote.id), { status: 'CONVERTED' }).subscribe({
+      next: (updated: Quote) => {
+        this.quote = updated;
+        
+        const addOpts = Array.isArray(updated.additionalOptions) ? updated.additionalOptions[0] : (updated.additionalOptions as any);
+        const orderData: Partial<SalesandTransactions> = {
+          quoteId: updated,
+          customerId: updated.customerId,
+          customerName: updated.customerName,
+          items: updated,
+          subtotal: updated.subtotal,
+          taxAmount: updated.taxAmount,
+          discountAmount: updated.discountAmount,
+          totalAmount: updated.totalAmount,
+          currency: updated.currency,
+          status: 'QUOTE_ACCEPTED',
+          orderDate: new Date(),
+          customerNotes: addOpts?.notes || '',
+          billingAddress: addOpts?.address || '',
+          shippingAddress: addOpts?.address || '',
+          PaymentTerms: {
+            id: 1,
             customerId: updated.customerId,
             customerName: updated.customerName,
-            items: updated.items.map(item => ({
-              id: Math.random().toString(36).substr(2, 9),
-              productId: item.productId,
-              productName: item.productName,
-              description: item.description,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              discount: item.discount || 0,
-              total: item.total
-            })),
-            subtotal: updated.subtotal,
-            taxAmount: updated.taxAmount,
-            discountAmount: updated.discountAmount,
-            totalAmount: updated.totalAmount,
-            currency: updated.currency,
-            status: 'PENDING',
-            orderDate: new Date(),
-            notes: updated.notes,
-            logoUrl: updated.logoUrl
-          };
+            paymentPeriod: 30,
+            amount: updated.totalAmount,
+            balanceDue: updated.totalAmount,
+            installmentNumber: 1,
+            completedInstallments: 0
+          }
+        };
 
-          this.salesService.createSalesOrder(orderData).subscribe({
-            next: (createdOrder: SalesOrder) => {
-              alert(`Quote ${updated.quoteNumber} accepted. Sales Order ${createdOrder.orderNumber} has been created.`);
-              const uuid = this.route.snapshot.paramMap.get('uuid');
-              if (uuid) {
-                this.router.navigate(['/admin/sales/orders', createdOrder.id, uuid]);
-              } else {
-                this.router.navigate(['/admin/sales/orders', createdOrder.id]);
-              }
-            },
-            error: (orderErr: any) => {
-              console.error('Error creating sales order from quote:', orderErr);
-              alert('Quote was accepted, but failed to create sales order.');
+        this.salesService.createSalesandTransactions(orderData).subscribe({
+          next: (createdTx) => {
+            const uuid = this.route.snapshot.paramMap.get('uuid');
+            if (uuid) {
+              this.router.navigate(['/admin/sales/orders', createdTx.id, uuid]);
+            } else {
+              this.router.navigate(['/admin/sales/orders', createdTx.id]);
             }
-          });
-        },
-        error: (err: any) => {
-          console.error('Error accepting quote:', err);
-          alert('Failed to accept quote. Please try again.');
-        }
-      });
-    }
+          },
+          error: (orderErr: any) => {
+            console.error('Error creating sales order from quote:', orderErr);
+          }
+        });
+      },
+      error: (err: any) => {
+        console.error('Error accepting quote:', err);
+      }
+    });
   }
 
   declineQuote(): void {
-    if (this.quote && confirm(`Decline quote ${this.quote.quoteNumber}?`)) {
-      this.salesService.updateQuote(this.quote.id, { status: 'DECLINED' }).subscribe({
-        next: (updated: Quote) => {
-          this.quote = updated;
-          alert(`Quote ${this.quote!.quoteNumber} has been marked as declined`);
-        },
-        error: (err: any) => {
-          console.error('Error declining quote:', err);
-          alert('Failed to decline quote. Please try again.');
-        }
-      });
-    }
+    if (!this.quote) return;
+    const custName = (this.quote.customerName as any)?.name || this.quote.customerName || 'Customer';
+    this.pendingQuoteNumber = this.quote.quoteNumber || '';
+    this.pendingCustomerName = custName;
+    this.showDeclineQuoteModal = true;
+  }
+
+  confirmDeclineQuote(): void {
+    if (!this.quote) return;
+    this.showDeclineQuoteModal = false;
+    this.salesService.updateQuote(String(this.quote.id), { status: 'DECLINED' }).subscribe({
+      next: (updated: Quote) => {
+        this.quote = updated;
+      },
+      error: (err: any) => {
+        console.error('Error declining quote:', err);
+      }
+    });
   }
 
   deleteQuote(): void {
-    if (this.quote && confirm(`Delete quote ${this.quote.quoteNumber}? This action cannot be undone.`)) {
-      this.salesService.updateQuote(this.quote.id, { status: 'EXPIRED' }).subscribe({
-        next: () => {
-          alert(`Quote ${this.quote!.quoteNumber} deleted successfully`);
-          this.goBack();
-        },
-        error: (err: any) => {
-          console.error('Error deleting quote:', err);
-          alert('Failed to delete quote. Please try again.');
-        }
-      });
-    }
+    if (!this.quote) return;
+    const custName = (this.quote.customerName as any)?.name || this.quote.customerName || 'Customer';
+    this.pendingQuoteNumber = this.quote.quoteNumber || '';
+    this.pendingCustomerName = custName;
+    this.showDeleteQuoteModal = true;
+  }
+
+  confirmDeleteQuote(): void {
+    if (!this.quote) return;
+    this.showDeleteQuoteModal = false;
+    this.salesService.updateQuote(String(this.quote.id), { status: 'EXPIRED' }).subscribe({
+      next: () => {
+        this.goBack();
+      },
+      error: (err: any) => {
+        console.error('Error deleting quote:', err);
+      }
+    });
   }
 
   goBack(): void {
@@ -305,13 +344,13 @@ export class QuoteDetailComponent implements OnInit {
 
   editQuote(): void {
     if (this.edit.observed) {
-      this.edit.emit(this.quote!.id);
+      this.edit.emit(String(this.quote!.id));
     } else {
       const uuid = this.route.snapshot.paramMap.get('uuid');
       if (uuid) {
-        this.router.navigate(['/admin/sales/quotes', this.quote!.id, 'edit', uuid]);
+        this.router.navigate(['/admin/sales/quotes', String(this.quote!.id), 'edit', uuid]);
       } else {
-        this.router.navigate(['/admin/sales/quotes', this.quote!.id, 'edit']);
+        this.router.navigate(['/admin/sales/quotes', String(this.quote!.id), 'edit']);
       }
     }
   }
@@ -320,9 +359,9 @@ export class QuoteDetailComponent implements OnInit {
     if (this.quote && this.quote.customerId) {
       const uuid = this.route.snapshot.paramMap.get('uuid');
       if (uuid) {
-        this.router.navigate(['/admin/sales/customers', this.quote.customerId, uuid]);
+        this.router.navigate(['/admin/sales/customers', this.quote.customerId.customerId, uuid]);
       } else {
-        this.router.navigate(['/admin/sales/customers', this.quote.customerId]);
+        this.router.navigate(['/admin/sales/customers', this.quote.customerId.customerId]);
       }
     }
   }

@@ -4,6 +4,8 @@ import { Component, EventEmitter, Output, Input, OnChanges, OnInit, SimpleChange
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
+import { ProcurementCategory } from '../../../domain/procurement-request/procurement.dto';
+import { parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 import { v4 as uuidV4 } from 'uuid';
 
 @Component({
@@ -18,6 +20,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
 
   serviceForm: FormGroup;
   currencies = ['NGN', 'USD', 'EUR', 'GBP'];
+  procurementCategories: ProcurementCategory[] = [];
   serviceCategories = [
     'Consulting',
     'IT Services',
@@ -62,6 +65,12 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
   } // <-- THIS BRACE WAS MISSING
 
   ngOnInit(): void {
+    this.procurementRequestService.getProcurementCategories().subscribe({
+      next: (cats) => {
+        this.procurementCategories = cats;
+      }
+    });
+
     this.route.paramMap.subscribe(params => {
       const uuid = params.get('uuid');
       if (uuid) {
@@ -73,7 +82,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
 
   loadRequest(uuid: string): void {
     this.isLoading = true;
-    this.procurementRequestService.getRequest(uuid).subscribe({
+    this.procurementRequestService.getRequest(parseIdToNumber(uuid)).subscribe({
       next: (req) => {
         if (req && req.id) {
           this.isNewRequest = false;
@@ -144,6 +153,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
           id: item.id || this.generateId(),
           name: item.name || '',
           description: item.description || '',
+          categoryId: item.category?.categoryId || item.categoryId || '',
           serviceCategory: item.serviceCategory || '',
           quantity: item.quantity || 1,
           estimatedBudget: item.estimatedBudget || 0,
@@ -182,6 +192,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       id: [this.generateId()],
       name: ['', [Validators.required, Validators.minLength(3)]],
       description: ['', Validators.required],
+      categoryId: ['', Validators.required],
       serviceCategory: ['', Validators.required],
       quantity: [1, [Validators.required, Validators.min(1)]],
       estimatedBudget: [0, [Validators.required, Validators.min(0)]],
@@ -259,6 +270,16 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       const formValue = this.serviceForm.value;
       formValue.totalBudget = this.getTotalBudget();
       formValue.procurementType = 'SERVICE';
+
+      if (formValue.items && Array.isArray(formValue.items)) {
+        formValue.items = formValue.items.map((it: any) => {
+          const matchedCategory = this.procurementCategories.find(c => c.categoryId === it.categoryId);
+          return {
+            ...it,
+            category: matchedCategory || { id: 0, categoryId: it.categoryId || 'GENERAL', name: it.categoryId || 'General' }
+          };
+        });
+      }
       
       const firstItem = formValue.items && formValue.items[0];
       if (firstItem) {
@@ -271,7 +292,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       const requestId = this.requestId || uuidV4();
       
       if (this.isEditMode && this.requestId) {
-        this.procurementRequestService.updateRequest(this.requestId, formValue).subscribe({
+        this.procurementRequestService.updateRequest(parseIdToNumber(this.requestId), formValue).subscribe({
           next: (req) => {
             this.router.navigate(['/admin/sales/commerce/requests/new/service', req.id, 'template']);
           },
@@ -306,6 +327,16 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
     formValue.procurementType = 'SERVICE';
     formValue.status = 'DRAFT';
 
+    if (formValue.items && Array.isArray(formValue.items)) {
+      formValue.items = formValue.items.map((it: any) => {
+        const matchedCategory = this.procurementCategories.find(c => c.categoryId === it.categoryId);
+        return {
+          ...it,
+          category: matchedCategory || { id: 0, categoryId: it.categoryId || 'GENERAL', name: it.categoryId || 'General' }
+        };
+      });
+    }
+
     const firstItem = formValue.items && formValue.items[0];
     if (firstItem) {
       formValue.currency = firstItem.currency || 'NGN';
@@ -321,7 +352,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
     const requestId = this.requestId || uuidV4();
 
     if (this.isEditMode && this.requestId) {
-      this.procurementRequestService.updateRequest(this.requestId, formValue).subscribe({
+      this.procurementRequestService.updateRequest(parseIdToNumber(this.requestId), formValue).subscribe({
         next: (req) => {
           this.router.navigate(['/admin/sales/commerce/requests']);
         },

@@ -4,7 +4,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Product } from '../../../../domain/sales/sales.dto';
+import { Product, ProductVariant, MeasurementUnit, Supplier } from '../../../../domain/sales/sales.dto';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 
 @Component({
@@ -30,12 +30,11 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
   variantModalForm!: FormGroup;
   
   // Mock data
-  branches: string[] = ['Abuja', 'Lagos', 'Port Harcourt', 'Kano', 'Enugu'];
   categories: string[] = [];
   taxOptions: string[] = ['VAT 7.5%', 'VAT 5%', 'No Tax', '0%'];
   discountOptions: string[] = ['No Discount', '5%', '10%', '15%', '20%', '25%', '50%'];
-  measurementUnits: string[] = ['Each', 'Kg', 'g', 'L', 'mL', 'm', 'cm', 'Box', 'Pack', 'Carton'];
-  suppliers: string[] = ['Supplier A', 'Supplier B', 'Supplier C'];
+  measurementUnits: MeasurementUnit[] = [];
+  suppliers: Supplier[] = [];
   
   // Product variants
   variants: any[] = [];
@@ -80,7 +79,9 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
       quantity: [0, [Validators.required, Validators.min(0)]],
       color: [''],
       size: [''],
-      material: ['']
+      material: [''],
+      model: [''],
+      year: ['']
     });
   }
 
@@ -88,6 +89,8 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
     this.productId = this.route.snapshot.paramMap.get('id') || '';
     this.isEditMode = !!this.productId;
     this.loadCategories();
+    this.loadUnits();
+    this.loadSuppliers();
     
     if (this.isEditMode) {
       this.loadProduct();
@@ -102,6 +105,22 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
     });
   }
 
+  loadUnits(): void {
+    this.salesService.getMeasurementUnits().subscribe({
+      next: (units) => {
+        this.measurementUnits = units;
+      }
+    });
+  }
+
+  loadSuppliers(): void {
+    this.salesService.getSuppliers().subscribe({
+      next: (sups) => {
+        this.suppliers = sups;
+      }
+    });
+  }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
@@ -112,12 +131,11 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
       // General Information
       name: ['', [Validators.required, Validators.minLength(2)]],
       description: ['', [Validators.required, Validators.minLength(10)]],
-      branch: ['Abuja', Validators.required],
       category: ['', Validators.required],
       
       // Identifiers
       partNumber: [''],
-      sku: [{ value: '', disabled: true }],
+      sku: [''],
       code: [''],
       measurementUnit: ['Each'],
       
@@ -134,7 +152,7 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
       movementDate: [new Date().toISOString().split('T')[0]],
       movementQuantity: [1, [Validators.min(1)]],
       movementPurchasePrice: [0],
-      movementTax: ['Select tax'],
+      movementTax: [''],
       
       // Additional
       reference: [''],
@@ -175,7 +193,9 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
             costPrice: prod.costPrice,
             sellingPrice: prod.unitPrice,
             quantity: prod.stockQuantity,
-            measurementUnit: 'Each',
+            measurementUnit: typeof prod.measurementUnit === 'object' ? prod.measurementUnit?.name : (prod.measurementUnit || 'Each'),
+            supplier: typeof prod.supplier === 'object' ? prod.supplier?.name : (prod.supplier || ''),
+            selectedSupplier: typeof prod.supplier === 'object' ? prod.supplier?.name : (prod.supplier || ''),
             isComboProduct: prod.isComboProduct || false
           });
           this.images = prod.images || [];
@@ -227,6 +247,24 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
     this.isSubmitting = true;
     const formData = this.productForm.getRawValue();
     
+    const selectedUnitName = formData.measurementUnit || 'Each';
+    const foundUnit = this.measurementUnits.find(u => u.name === selectedUnitName);
+    const selectedUnit: MeasurementUnit = foundUnit || {
+      id: 1,
+      unitId: 'UNT-001',
+      name: selectedUnitName,
+      code: selectedUnitName.substring(0, 3).toLowerCase(),
+      description: 'Default unit'
+    };
+
+    const selectedSupplierName = formData.supplier || formData.selectedSupplier || '';
+    const foundSupplier = this.suppliers.find(s => s.name === selectedSupplierName);
+    const selectedSupplier: Supplier = foundSupplier || {
+      id: 1,
+      supplierId: 'SUP-001',
+      name: selectedSupplierName || 'Default Supplier'
+    };
+
     const productData: Partial<Product> = {
       name: formData.name,
       description: formData.description,
@@ -235,6 +273,8 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
       costPrice: formData.costPrice,
       stockQuantity: formData.quantity,
       category: formData.category,
+      measurementUnit: selectedUnit,
+      supplier: selectedSupplier,
       taxRate: this.extractTaxRate(formData.taxes),
       currency: 'NGN',
       status: formData.quantity > 0 ? 'ACTIVE' : 'OUT_OF_STOCK',
@@ -287,7 +327,9 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
       quantity: 0,
       color: '',
       size: '',
-      material: ''
+      material: '',
+      model: '',
+      year: ''
     });
     this.showVariantModal = true;
   }
@@ -302,7 +344,9 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
       quantity: variant.get('quantity')?.value || 0,
       color: variant.get('attributes.color')?.value || '',
       size: variant.get('attributes.size')?.value || '',
-      material: variant.get('attributes.material')?.value || ''
+      material: variant.get('attributes.material')?.value || '',
+      model: variant.get('attributes.model')?.value || '',
+      year: variant.get('attributes.year')?.value || ''
     });
     this.showVariantModal = true;
   }
@@ -313,20 +357,22 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const formValues = this.variantModalForm.value;
+    const formValues = this.variantModalForm.getRawValue();
     const variantData = {
-      name: formValues.name,
-      sku: formValues.sku || `VAR-${Date.now()}`,
-      price: formValues.price,
-      quantity: formValues.quantity,
+      name: formValues.name.trim(),
+      sku: formValues.sku.trim() || `VAR-${Date.now().toString().slice(-6)}`,
+      price: Number(formValues.price) || 0,
+      quantity: Number(formValues.quantity) || 0,
       attributes: {
-        color: formValues.color,
-        size: formValues.size,
-        material: formValues.material
+        color: formValues.color ? formValues.color.trim() : '',
+        size: formValues.size ? formValues.size.trim() : '',
+        material: formValues.material ? formValues.material.trim() : '',
+        model: formValues.model ? formValues.model.trim() : '',
+        year: formValues.year ? String(formValues.year).trim() : ''
       }
     };
 
-    if (this.currentVariantIndex !== null) {
+    if (this.currentVariantIndex !== null && this.currentVariantIndex < this.variantsArray.length) {
       // Editing an existing variant
       const variantGroup = this.variantsArray.at(this.currentVariantIndex);
       variantGroup.patchValue(variantData);
@@ -340,10 +386,18 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
         attributes: this.fb.group({
           color: [variantData.attributes.color],
           size: [variantData.attributes.size],
-          material: [variantData.attributes.material]
+          material: [variantData.attributes.material],
+          model: [variantData.attributes.model],
+          year: [variantData.attributes.year]
         })
       });
       this.variantsArray.push(variantGroup);
+    }
+
+    // Auto-update total stock quantity if variants are present and main stock is 0
+    const totalVariantQty = this.variantsArray.controls.reduce((sum, ctrl) => sum + (Number(ctrl.get('quantity')?.value) || 0), 0);
+    if (totalVariantQty > 0 && (this.productForm.get('quantity')?.value === 0 || !this.productForm.get('quantity')?.value)) {
+      this.productForm.patchValue({ quantity: totalVariantQty });
     }
 
     this.showVariantModal = false;
@@ -421,16 +475,24 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
     const newSupplier = prompt('Enter new supplier name:');
     if (newSupplier && newSupplier.trim()) {
       const trimmed = newSupplier.trim();
-      if (!this.suppliers.includes(trimmed)) {
-        this.suppliers.push(trimmed);
-        this.productForm.patchValue({
-          supplier: trimmed,
-          selectedSupplier: trimmed
-        });
-        alert(`Supplier "${trimmed}" added successfully.`);
-      } else {
+      if (this.suppliers.some(s => s.name.toLowerCase() === trimmed.toLowerCase())) {
         alert(`Supplier "${trimmed}" already exists.`);
+        return;
       }
+      this.salesService.createSupplier({ name: trimmed }).subscribe({
+        next: (updatedSups) => {
+          this.suppliers = updatedSups;
+          this.productForm.patchValue({
+            supplier: trimmed,
+            selectedSupplier: trimmed
+          });
+          alert(`Supplier "${trimmed}" added successfully.`);
+        },
+        error: (err) => {
+          console.error('Error adding supplier:', err);
+          alert('Failed to add supplier');
+        }
+      });
     }
   }
 

@@ -38,6 +38,7 @@ import {
   QuotationHistoryEntry as ProcHistoryEntry,
   QuotationHistoryAction as ProcHistoryAction,
   VendorQuotationStatus,
+  RFQAttachment,
 } from '../../domain/procurement-request/procurement.dto';
 import {
   Rfq,
@@ -49,16 +50,34 @@ import {
   ItemAvailability,
 } from '../../domain/vendor-portal/vendor.dto';
 
+export interface ExtendedProcurementRequest extends ProcurementRequest {
+  selectedVendors?: string[];
+  deliveryLocation?: string;
+  deliveryDeadline?: Date;
+  attachments?: RFQAttachment[];
+  rfqTemplateId?: string;
+  selectedLpoId?: string | number;
+  selectedLpoNumber?: string;
+}
+
+export function parseIdToNumber(id: any): number {
+  if (id === null || id === undefined) return 0;
+  if (typeof id === 'number') return id;
+  const idStr = String(id);
+  const match = idStr.match(/\d+/);
+  return match ? parseInt(match[0], 10) : 0;
+}
+
 export const LIVE_ID_PREFIX = 'live:';
 
-export function isLiveQuotationId(id: string): boolean {
-  return id.startsWith(LIVE_ID_PREFIX);
+export function isLiveQuotationId(id: string | number): boolean {
+  return String(id).startsWith(LIVE_ID_PREFIX);
 }
 export function toLiveId(sharedId: string): string {
   return `${LIVE_ID_PREFIX}${sharedId}`;
 }
-export function fromLiveId(liveId: string): string {
-  return liveId.slice(LIVE_ID_PREFIX.length);
+export function fromLiveId(liveId: string | number): string {
+  return String(liveId).slice(LIVE_ID_PREFIX.length);
 }
 
 // Request statuses at or beyond this point mean vendors have been (or are
@@ -98,7 +117,7 @@ function mapRequestStatusToRfqStatus(req: ProcurementRequest): RfqStatus {
  *  ProcurementRequest, so a Quotation's `rfqId` joins straight back to it. */
 export function procurementRequestToRfq(req: ProcurementRequest): Rfq {
   const items: RfqItem[] = req.items.map((item) => ({
-    id: item.id,
+    id: String(item.id),
     name: item.name,
     description: item.description,
     quantity: item.quantity,
@@ -107,16 +126,16 @@ export function procurementRequestToRfq(req: ProcurementRequest): Rfq {
   }));
 
   return {
-    id: req.id,
-    rfqNumber: req.rfqTitle ? `RFQ-${req.id}` : `RFQ-${req.id}`,
+    id: String(req.id),
+    rfqNumber: `RFQ-${req.id}`,
     clientName: req.customerName,
     issuedDate: req.createdAt,
-    dueDate: req.rfqExpiryDate ?? req.deliveryDeadline,
+    dueDate: req.rfqExpiryDate ?? new Date(),
     status: mapRequestStatusToRfqStatus(req),
     isRead: false, // VendorService.upsertExternalRfq() preserves the real flag if this Rfq already exists
     items,
     clientInstructions: req.specialInstructions,
-    deliveryAddress: req.deliveryLocation,
+    deliveryAddress: undefined,
     currency: req.currency,
     category:
       req.serviceCategory ??
@@ -171,20 +190,6 @@ function mapSharedStatus(q: Quotation, hasLpo: boolean): VendorQuotationStatus {
   }
 }
 
-function mapSharedHistoryEntry(entry: SharedHistoryEntry): ProcHistoryEntry {
-  return {
-    id: entry.id,
-    version: entry.version,
-    action: HISTORY_ACTION_TO_PROCUREMENT[entry.action],
-    actor: entry.actor,
-    note: entry.note,
-    amount: entry.total,
-    timestamp: entry.timestamp,
-  };
-}
-
-/** A shared vendor.dto Quotation, as seen from procurement's side. `hasLpo`
- *  should be true if a matching Lpo already exists for this quotation. */
 export function sharedQuotationToVendorQuotation(
   q: Quotation,
   hasLpo: boolean,
@@ -193,21 +198,22 @@ export function sharedQuotationToVendorQuotation(
 ): VendorQuotation {
   const declineEntry = [...q.history].reverse().find((h) => h.action === 'REJECTED');
   const lastEntry = q.history[q.history.length - 1];
-  const matchingRequest = requests.find((r) => r.id === q.rfqId);
+  const matchingRequest = requests.find((r) => String(r.id) === String(q.rfqId));
 
-  return {
-    id: toLiveId(q.id),
+  const result: any = {
+    id: toLiveId(q.id) as any,
     rfqId: q.rfqId,
     rfqTitle: rfqTitle ?? (matchingRequest ? matchingRequest.title : q.rfqNumber),
     vendorId: q.vendorId ?? 'vendor-001',
     vendorName: q.vendorName ?? 'Connected Vendor',
     vendorCode: q.vendorCode ?? 'VEN-LIVE',
     vendorRating: q.vendorRating ?? 4.5,
+    quotationId: q.id,
     status: mapSharedStatus(q, hasLpo),
     items: q.items.map((item) => {
-      const origItem = matchingRequest?.items.find((i) => i.id === item.rfqItemId);
+      const origItem = matchingRequest?.items.find((i) => String(i.id) === String(item.rfqItemId));
       return {
-        id: item.rfqItemId,
+        id: parseIdToNumber(item.rfqItemId) as any,
         name: origItem ? origItem.name : item.name,
         description: item.description,
         quantity: item.quantity,
@@ -239,6 +245,18 @@ export function sharedQuotationToVendorQuotation(
     version: q.version,
     revisionCount: q.revisionCount,
     revisionRequestedAt: q.revisionRequestedAt,
-    history: q.history.map(mapSharedHistoryEntry),
   };
+
+  result.history = q.history.map((entry) => ({
+    id: parseIdToNumber(entry.id),
+    version: entry.version,
+    action: HISTORY_ACTION_TO_PROCUREMENT[entry.action],
+    actor: entry.actor,
+    note: entry.note,
+    amount: entry.total,
+    timestamp: entry.timestamp,
+    quoteId: result,
+  }));
+
+  return result as VendorQuotation;
 }

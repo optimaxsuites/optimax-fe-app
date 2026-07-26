@@ -88,8 +88,8 @@
 
             <div class="billing-details">
               <h4>Bill To</h4>
-              <strong>{{ quote.customerName }}</strong>
-              <p *ngIf="quote.customerId">Customer ID: {{ quote.customerId }}</p>
+              <strong>{{ quote.customerName?.name || quote.customerName }}</strong>
+              <p *ngIf="quote.customerId">Customer ID: {{ quote.customerId?.customerId || quote.customerId }}</p>
             </div>
 
             <!-- Items Table -->
@@ -122,13 +122,13 @@
             <!-- Notes & Totals -->
             <div class="footer-section">
               <div class="notes-section">
-                <div *ngIf="quote.notes" class="note-block">
+                <div *ngIf="additionalOpts?.notes" class="note-block">
                   <h5><i class="fas fa-sticky-note"></i> Notes</h5>
-                  <p>{{ quote.notes }}</p>
+                  <p>{{ additionalOpts?.notes }}</p>
                 </div>
-                <div *ngIf="quote.terms" class="note-block">
+                <div *ngIf="additionalOpts?.terms" class="note-block">
                   <h5><i class="fas fa-gavel"></i> Terms & Conditions</h5>
-                  <p>{{ quote.terms }}</p>
+                  <p>{{ additionalOpts?.terms }}</p>
                 </div>
               </div>
               <div class="totals-section">
@@ -215,10 +215,10 @@
           <div class="card-body">
             <div class="customer-info">
               <div class="customer-avatar">
-                <span>{{ quote.customerName.charAt(0).toUpperCase() || '?' }}</span>
+                <span>{{ ($any(quote).customerName?.name || '').charAt(0).toUpperCase() || '?' }}</span>
               </div>
               <div class="customer-details">
-                <strong>{{ quote.customerName }}</strong>
+                <strong>{{ $any(quote).customerName?.name || quote.customerName }}</strong>
               </div>
             </div>
             <button class="btn-view-customer" (click)="viewCustomer()">
@@ -296,14 +296,130 @@
   <p>Loading quote details...</p>
 </div>
 
-<!-- Error State -->
-<div *ngIf="!isLoading && !quote" class="error-state">
-  <div class="error-content">
-    <i class="fas fa-file-invoice fa-4x"></i>
-    <h2>Quote Not Found</h2>
-    <p>The quote you're looking for doesn't exist or has been removed.</p>
-    <button class="btn-primary" (click)="goBack()">
-      <i class="fas fa-arrow-left"></i> Back to Quotes
-    </button>
+<!-- Custom Send Quote Confirmation Modal Overlay -->
+<div class="custom-modal-backdrop" *ngIf="showSendQuoteModal" (click)="showSendQuoteModal = false">
+  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge" style="background: rgba(46, 178, 112, 0.12); color: #2EB270;">
+          <i class="fas fa-paper-plane"></i>
+        </div>
+        <h3>Send Quote</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="showSendQuoteModal = false">&times;</button>
+    </div>
+
+    <div class="custom-modal-body" style="padding: 1.5rem; text-align: center;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(46, 178, 112, 0.1); color: #2EB270; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem auto;">
+        <i class="fas fa-paper-plane"></i>
+      </div>
+      <h4 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; font-weight: 700; color: #0f172a;">Send Quotation?</h4>
+      <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
+        Send quote <strong>{{ pendingQuoteNumber }}</strong> to <strong>{{ pendingCustomerName }}</strong>?
+      </p>
+    </div>
+
+    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
+      <button type="button" class="btn-modal-cancel" (click)="showSendQuoteModal = false">Cancel</button>
+      <button type="button" class="btn-modal-save" (click)="confirmSendQuote()">
+        <i class="fas fa-paper-plane"></i> Send Quote
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Accept Quote Confirmation Modal Overlay -->
+<div class="custom-modal-backdrop" *ngIf="showAcceptQuoteModal" (click)="showAcceptQuoteModal = false">
+  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge" style="background: rgba(46, 178, 112, 0.12); color: #2EB270;">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <h3>Accept Quotation</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="showAcceptQuoteModal = false">&times;</button>
+    </div>
+
+    <div class="custom-modal-body" style="padding: 1.5rem; text-align: center;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(46, 178, 112, 0.1); color: #2EB270; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem auto;">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <h4 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; font-weight: 700; color: #0f172a;">Customer Accepted?</h4>
+      <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
+        Mark quote <strong>{{ pendingQuoteNumber }}</strong> for <strong>{{ pendingCustomerName }}</strong> as accepted? This will automatically generate a Sales Order.
+      </p>
+    </div>
+
+    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
+      <button type="button" class="btn-modal-cancel" (click)="showAcceptQuoteModal = false">Cancel</button>
+      <button type="button" class="btn-modal-save" (click)="confirmAcceptQuote()">
+        <i class="fas fa-check-circle"></i> Accept &amp; Create Order
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Decline Quote Confirmation Modal Overlay -->
+<div class="custom-modal-backdrop" *ngIf="showDeclineQuoteModal" (click)="showDeclineQuoteModal = false">
+  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+          <i class="fas fa-times-circle"></i>
+        </div>
+        <h3>Decline Quotation</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="showDeclineQuoteModal = false">&times;</button>
+    </div>
+
+    <div class="custom-modal-body" style="padding: 1.5rem; text-align: center;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem auto;">
+        <i class="fas fa-times-circle"></i>
+      </div>
+      <h4 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; font-weight: 700; color: #0f172a;">Customer Declined?</h4>
+      <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
+        Mark quote <strong>{{ pendingQuoteNumber }}</strong> for <strong>{{ pendingCustomerName }}</strong> as declined?
+      </p>
+    </div>
+
+    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
+      <button type="button" class="btn-modal-cancel" (click)="showDeclineQuoteModal = false">Cancel</button>
+      <button type="button" class="btn-modal-save" (click)="confirmDeclineQuote()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);">
+        <i class="fas fa-times-circle"></i> Mark as Declined
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Delete Quote Confirmation Modal Overlay -->
+<div class="custom-modal-backdrop" *ngIf="showDeleteQuoteModal" (click)="showDeleteQuoteModal = false">
+  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+          <i class="fas fa-trash-alt"></i>
+        </div>
+        <h3>Delete Quotation</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="showDeleteQuoteModal = false">&times;</button>
+    </div>
+
+    <div class="custom-modal-body" style="padding: 1.5rem; text-align: center;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem auto;">
+        <i class="fas fa-trash-alt"></i>
+      </div>
+      <h4 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; font-weight: 700; color: #0f172a;">Delete Quotation?</h4>
+      <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
+        Are you sure you want to delete quote <strong>{{ pendingQuoteNumber }}</strong>? This action cannot be undone.
+      </p>
+    </div>
+
+    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
+      <button type="button" class="btn-modal-cancel" (click)="showDeleteQuoteModal = false">Cancel</button>
+      <button type="button" class="btn-modal-save" (click)="confirmDeleteQuote()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);">
+        <i class="fas fa-trash-alt"></i> Delete Quote
+      </button>
+    </div>
   </div>
 </div>

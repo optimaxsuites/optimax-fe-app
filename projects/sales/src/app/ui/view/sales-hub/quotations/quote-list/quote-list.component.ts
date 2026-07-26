@@ -1,5 +1,3 @@
-// src/app/ui/view/sales-module/quote-list/quote-list.component.ts
-
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -30,10 +28,10 @@ import { InvoiceFormComponent } from '../../invoices/invoice-form/invoice-form.c
 })
 export class QuoteListComponent implements OnInit, OnDestroy {
   protected readonly Math = Math;
-  
+
   quotes: Quote[] = [];
   isLoading = true;
-  selectedQuoteIds: string[] = [];
+  selectedQuoteIds: any[] = [];
 
   showQuoteModal = false;
   showQuoteDetail = false;
@@ -48,21 +46,23 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     }
   }
 
-  openEditQuoteModal(quoteId: string): void {
+  openEditQuoteModal(quoteId: string | number): void {
+    const quoteIdStr = String(quoteId);
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/quotes', quoteId, 'edit', uuid]);
+      this.router.navigate(['/admin/sales/quotes', quoteIdStr, 'edit', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/quotes', quoteId, 'edit']);
+      this.router.navigate(['/admin/sales/quotes', quoteIdStr, 'edit']);
     }
   }
 
-  openQuoteDetail(quoteId: string): void {
+  openQuoteDetail(quoteId: string | number): void {
+    const quoteIdStr = String(quoteId);
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/quotes', quoteId, uuid]);
+      this.router.navigate(['/admin/sales/quotes', quoteIdStr, uuid]);
     } else {
-      this.router.navigate(['/admin/sales/quotes', quoteId]);
+      this.router.navigate(['/admin/sales/quotes', quoteIdStr]);
     }
   }
 
@@ -83,10 +83,11 @@ export class QuoteListComponent implements OnInit, OnDestroy {
 
   showInvoiceModal = false;
 
-  openInvoiceModal(quoteId: string): void {
+  openInvoiceModal(quoteId: string | number): void {
+    const quoteIdStr = String(quoteId);
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
-    this.router.navigate(path, { queryParams: { quoteId: quoteId } });
+    this.router.navigate(path, { queryParams: { quoteId: quoteIdStr } });
   }
 
   closeInvoiceModal(): void {
@@ -98,7 +99,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     this.closeInvoiceModal();
     this.loadQuotes();
   }
-  
+
   // Filters
   filters = {
     status: 'ALL',
@@ -108,13 +109,13 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     page: 0,
     size: 10
   };
-  
+
   // Pagination
   currentPage = 0;
   pageSize = 10;
   totalElements = 0;
   totalPages = 0;
-  
+
   // Stats
   stats = {
     total: 0,
@@ -125,7 +126,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     expired: 0,
     converted: 0
   };
-  
+
   statusOptions: { value: QuoteStatus | 'ALL'; label: string; icon: string; color: string }[] = [
     { value: 'ALL', label: 'All Quotes', icon: 'M4 6h16M4 12h16M4 18h16', color: 'gray' },
     { value: 'DRAFT', label: 'Draft', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z', color: 'gray' },
@@ -135,14 +136,14 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     { value: 'EXPIRED', label: 'Expired', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: 'orange' },
     { value: 'CONVERTED', label: 'Converted', icon: 'M13 7l5 5m0 0l-5 5m5-5H6', color: 'purple' }
   ];
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
     private salesService: SalesService,
     private route: ActivatedRoute,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadQuotes();
@@ -155,7 +156,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
 
   loadQuotes(): void {
     this.isLoading = true;
-    
+
     this.salesService.getQuotes(this.filters).subscribe({
       next: (response: any) => {
         this.quotes = response.data;
@@ -271,15 +272,15 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     const maxVisible = 5;
     let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
     let end = Math.min(this.totalPages, start + maxVisible);
-    
+
     if (end - start < maxVisible) {
       start = Math.max(0, end - maxVisible);
     }
-    
+
     return Array.from({ length: end - start }, (_, i) => start + i);
   }
 
-  toggleSelection(quoteId: string, event: any): void {
+  toggleSelection(quoteId: any, event: any): void {
     if (event.target.checked) {
       this.selectedQuoteIds.push(quoteId);
     } else {
@@ -295,7 +296,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     }
   }
 
-  isSelected(quoteId: string): boolean {
+  isSelected(quoteId: any): boolean {
     return this.selectedQuoteIds.includes(quoteId);
   }
 
@@ -303,24 +304,37 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     return this.quotes.length > 0 && this.selectedQuoteIds.length === this.quotes.length;
   }
 
+  showSendQuoteModal = false;
+  pendingSendQuote: Quote | null = null;
+  pendingSendQuoteNumber = '';
+  pendingSendCustomerName = '';
+
   sendQuote(quote: Quote): void {
-    if (confirm(`Send quote ${quote.quoteNumber} to ${quote.customerName}?`)) {
-      this.salesService.updateQuote(quote.id, { status: 'SENT' }).subscribe({
-        next: (updated: Quote) => {
-          alert(`Quote ${updated.quoteNumber} has been sent to ${updated.customerName}`);
-          this.loadQuotes();
-        },
-        error: (error: any) => {
-          console.error('Error sending quote:', error);
-          alert('Failed to send quote. Please try again.');
-        }
-      });
-    }
+    const custName = (quote.customerName as any)?.name || quote.customerName || 'Customer';
+    this.pendingSendQuote = quote;
+    this.pendingSendQuoteNumber = quote.quoteNumber;
+    this.pendingSendCustomerName = custName;
+    this.showSendQuoteModal = true;
+  }
+
+  confirmSendQuote(): void {
+    if (!this.pendingSendQuote) return;
+    const targetQuote = this.pendingSendQuote;
+    this.showSendQuoteModal = false;
+    this.salesService.updateQuote(String(targetQuote.id), { status: 'SENT' }).subscribe({
+      next: (updated: Quote) => {
+        this.loadQuotes();
+      },
+      error: (error: any) => {
+        console.error('Error sending quote:', error);
+        alert('Failed to send quote. Please try again.');
+      }
+    });
   }
 
   deleteQuote(quote: Quote): void {
     if (confirm(`Delete quote ${quote.quoteNumber}? This action cannot be undone.`)) {
-      this.salesService.updateQuote(quote.id, { status: 'EXPIRED' }).subscribe({
+      this.salesService.updateQuote(String(quote.id), { status: 'EXPIRED' }).subscribe({
         next: () => {
           alert(`Quote ${quote.quoteNumber} deleted successfully`);
           this.loadQuotes();
@@ -337,66 +351,66 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   private setMockQuotes(): void {
     this.quotes = [
       {
-        id: '1', quoteNumber: 'QT-001', customerId: 'CUST-001', customerName: 'Mama Nkechi Enterprises',
+        id: 1, quoteNumber: 'QT-001', customerId: 'CUST-001', customerName: 'Mama Nkechi Enterprises',
         items: [], subtotal: 500000, taxAmount: 0, discountAmount: 0, totalAmount: 500000,
         currency: 'NGN', status: 'ACCEPTED', validUntil: new Date('2026-07-15'),
         createdAt: new Date('2026-06-10'), expiresAt: new Date('2026-07-15'), notes: '', terms: ''
       },
       {
-        id: '2', quoteNumber: 'QT-002', customerId: 'CUST-002', customerName: 'Tech Solutions Ltd',
+        id: 2, quoteNumber: 'QT-002', customerId: 'CUST-002', customerName: 'Tech Solutions Ltd',
         items: [], subtotal: 1250000, taxAmount: 0, discountAmount: 0, totalAmount: 1250000,
         currency: 'NGN', status: 'SENT', validUntil: new Date('2026-07-05'),
         createdAt: new Date('2026-06-09'), expiresAt: new Date('2026-07-05'), notes: '', terms: ''
       },
       {
-        id: '3', quoteNumber: 'QT-003', customerId: 'CUST-003', customerName: 'Global Services NG',
+        id: 3, quoteNumber: 'QT-003', customerId: 'CUST-003', customerName: 'Global Services NG',
         items: [], subtotal: 350000, taxAmount: 0, discountAmount: 0, totalAmount: 350000,
         currency: 'NGN', status: 'DRAFT', validUntil: new Date('2026-06-28'),
         createdAt: new Date('2026-06-08'), expiresAt: new Date('2026-06-28'), notes: '', terms: ''
       },
       {
-        id: '4', quoteNumber: 'QT-004', customerId: 'CUST-004', customerName: 'Aliko Dangote Wholesale',
+        id: 4, quoteNumber: 'QT-004', customerId: 'CUST-004', customerName: 'Aliko Dangote Wholesale',
         items: [], subtotal: 750000, taxAmount: 0, discountAmount: 0, totalAmount: 750000,
         currency: 'NGN', status: 'DECLINED', validUntil: new Date('2026-06-25'),
         createdAt: new Date('2026-06-07'), expiresAt: new Date('2026-06-25'), notes: '', terms: ''
       },
       {
-        id: '5', quoteNumber: 'QT-005', customerId: 'CUST-005', customerName: 'Obinna Electronics',
+        id: 5, quoteNumber: 'QT-005', customerId: 'CUST-005', customerName: 'Obinna Electronics',
         items: [], subtotal: 250000, taxAmount: 0, discountAmount: 0, totalAmount: 250000,
         currency: 'NGN', status: 'EXPIRED', validUntil: new Date('2026-06-01'),
         createdAt: new Date('2026-05-20'), expiresAt: new Date('2026-06-01'), notes: '', terms: ''
       },
       {
-        id: '6', quoteNumber: 'QT-006', customerId: 'CUST-001', customerName: 'Mama Nkechi Enterprises',
+        id: 6, quoteNumber: 'QT-006', customerId: 'CUST-001', customerName: 'Mama Nkechi Enterprises',
         items: [], subtotal: 1800000, taxAmount: 0, discountAmount: 0, totalAmount: 1800000,
         currency: 'NGN', status: 'CONVERTED', validUntil: new Date('2026-06-20'),
         createdAt: new Date('2026-05-25'), expiresAt: new Date('2026-06-20'), notes: '', terms: ''
       },
       {
-        id: '7', quoteNumber: 'QT-007', customerId: 'CUST-002', customerName: 'Tech Solutions Ltd',
+        id: 7, quoteNumber: 'QT-007', customerId: 'CUST-002', customerName: 'Tech Solutions Ltd',
         items: [], subtotal: 950000, taxAmount: 0, discountAmount: 0, totalAmount: 950000,
         currency: 'NGN', status: 'SENT', validUntil: new Date('2026-07-10'),
         createdAt: new Date('2026-06-11'), expiresAt: new Date('2026-07-10'), notes: '', terms: ''
       },
       {
-        id: '8', quoteNumber: 'QT-008', customerId: 'CUST-003', customerName: 'Global Services NG',
+        id: 8, quoteNumber: 'QT-008', customerId: 'CUST-003', customerName: 'Global Services NG',
         items: [], subtotal: 430000, taxAmount: 0, discountAmount: 0, totalAmount: 430000,
         currency: 'NGN', status: 'ACCEPTED', validUntil: new Date('2026-07-12'),
         createdAt: new Date('2026-06-12'), expiresAt: new Date('2026-07-12'), notes: '', terms: ''
       },
       {
-        id: '9', quoteNumber: 'QT-009', customerId: 'CUST-004', customerName: 'Aliko Dangote Wholesale',
+        id: 9, quoteNumber: 'QT-009', customerId: 'CUST-004', customerName: 'Aliko Dangote Wholesale',
         items: [], subtotal: 620000, taxAmount: 0, discountAmount: 0, totalAmount: 620000,
         currency: 'NGN', status: 'DRAFT', validUntil: new Date('2026-07-20'),
         createdAt: new Date('2026-06-13'), expiresAt: new Date('2026-07-20'), notes: '', terms: ''
       },
       {
-        id: '10', quoteNumber: 'QT-010', customerId: 'CUST-005', customerName: 'Obinna Electronics',
+        id: 10, quoteNumber: 'QT-010', customerId: 'CUST-005', customerName: 'Obinna Electronics',
         items: [], subtotal: 1500000, taxAmount: 0, discountAmount: 0, totalAmount: 1500000,
         currency: 'NGN', status: 'CONVERTED', validUntil: new Date('2026-06-30'),
         createdAt: new Date('2026-06-05'), expiresAt: new Date('2026-06-30'), notes: '', terms: ''
       }
-    ];
+    ] as any;
     this.totalElements = this.quotes.length;
     this.totalPages = 1;
   }

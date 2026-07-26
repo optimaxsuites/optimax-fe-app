@@ -1,18 +1,18 @@
-// procurement.dto.ts
+// Constants
+export const MAX_QUOTATION_REVISIONS = 3;
 
-/**
- * RequestStatus represents the current phase in the RFQ (Request for Quotation)
- * and procurement request lifecycle.
- */
+// Enums
 export type RequestStatus =
   | 'PENDING'             // Initial request state, waiting for procurement team processing
   | 'VENDORS_QUOTING'     // RFQ is active and open for selected vendors to submit pricing quotations
+  | 'PENDING_VENDOR_QUOTES'// RFQ is active and awaiting vendor quotations
   | 'VENDOR_SELECTED'     // A specific vendor quotation has been approved and accepted by the buyer
   | 'LPO_ISSUED'          // A Local Purchase Order (LPO) has been generated and officially sent to the vendor
   | 'PAYMENT_PENDING'     // Fulfillment is complete, awaiting final invoice settlement authorization
   | 'PAYMENT_CONFIRMED'   // Payment has been successfully released and confirmed for this request
   | 'DELIVERY_IN_PROGRESS'// Vendor is in the process of shipping/delivering goods or executing services
   | 'DELIVERED'           // Procurement items have been fully received and verified at the destination
+  | 'COMPLETED'           // Delivery confirmed, vendor reviewed, procurement lifecycle fully closed
   | 'CANCELLED'           // The request has been cancelled/aborted by the procurement department
   | 'DRAFT'               // Draft request saved locally by the initiator before formal submission
   | 'PENDING_APPROVAL'    // Awaiting internal managerial approval or review board authorization
@@ -20,17 +20,99 @@ export type RequestStatus =
   | 'APPROVED';           // Approved internally, ready to be sent to vendor portal
 
 
-
-/**
- * ProcurementType determines whether the request is for physical items (PRODUCTS)
- * or external services (SERVICES), impacting the validation and routing forms.
- */
 export type ProcurementType =
   | 'PRODUCT'             // Materials, goods, hardware or physical equipment procurement
   | 'SERVICE';            // Professional labor, cleaning, maintenance, or consultation services
 
-export interface Attachment {
-  id: string;
+
+export type VendorQuotationStatus =
+  | 'PENDING'           // Vendor has been invited/suggested but has not submitted a response yet
+  | 'SUBMITTED'         // Vendor has successfully submitted their quotation details to the buyer
+  | 'ACCEPTED'          // Buyer approved this specific quotation, triggering subsequent LPO steps
+  | 'DECLINED'          // Vendor declined to quote, or buyer rejected the submitted quotation
+  | 'EXPIRED'           // The quotation is no longer valid because its validity period has elapsed
+  | 'WITHDRAWN'         // The vendor withdrew their quotation before the buyer could accept/decline it
+  | 'LPO_GENERATED'     // Customer generated the Local Purchase Order draft from this quotation
+  | 'LPO_SENT'          // Customer has sent the finalized LPO document to the vendor
+  | 'REVIEW_REQUESTED'; // Customer requested changes or price adjustments, expecting a revised quote
+
+
+export type VendorReviewStatus =
+  | 'PENDING_REVIEW'      // Delivery confirmed but no review submitted yet
+  | 'SUBMITTED'           // Buyer has submitted their review
+  | 'ACKNOWLEDGED';       // Vendor has seen / acknowledged the review
+
+
+export type VendorCriteriaCategories =
+  | 'QUALITY'
+  | 'DELIVERY_TIMELINESS'
+  | 'COST'
+  | 'SERVICE_SUPPORT'
+  | 'COMPLIANCE'
+  | 'OVERALL';
+
+
+export type ApprovalStatus =
+  | 'DRAFT'
+  | 'PENDING'
+  | 'IN_APPROVAL'
+  | 'APPROVED'
+  | 'REJECTED';
+
+
+
+export type QuotationHistoryAction =
+  | 'CREATED'            // Quotation record was created (draft, not yet sent) — mirrors the shared vendor-side event
+  | 'SUBMITTED'          // Vendor submitted (or the demo simulated a submission of) this quotation
+  | 'VIEWED'             // Buyer opened/reviewed the quotation for the first time
+  | 'REVIEW_REQUESTED'   // Buyer sent the quotation back to the vendor for changes
+  | 'RESUBMITTED'        // Vendor resubmitted an updated quotation after a revision request
+  | 'ACCEPTED'           // Buyer accepted this quotation, triggering LPO generation
+  | 'DECLINED'           // Buyer declined this quotation, or it was auto-declined because another was accepted
+  | 'LPO_GENERATED'      // An LPO draft was generated from this accepted quotation
+  | 'LPO_SENT'           // The finalized LPO was sent to the vendor
+  | 'WITHDRAWN'          // The pending/unanswered quotation was cancelled/withdrawn
+  | 'STATUS_CHANGED';    // Catch-all for direct status updates not covered above
+
+
+export type AvailabilityStatus =
+  | 'AVAILABLE'
+  | 'PARTIAL'
+  | 'UNAVAILABLE'
+  | 'SUBSTITUTE'; // should be an array
+
+
+export type ActorStatus =
+  | 'VENDOR'
+  | 'CUSTOMER'
+  | 'ADMIN'    // Admin is the person who does the internal approval
+  | 'SYSTEM';
+
+
+export type ProcurementLpoStatus =
+  | 'DRAFT'               // LPO created but not yet sent to the vendor
+  | 'SENT'                // LPO has been dispatched to the vendor
+  | 'ACKNOWLEDGED'        // Vendor has confirmed receipt of the LPO
+  | 'PARTIALLY_FULFILLED' // Vendor has delivered some but not all line items
+  | 'FULFILLED'           // All line items have been delivered and received
+  | 'CANCELLED'           // LPO was revoked/cancelled before fulfilment
+  | 'DISPUTED';           // Discrepancy raised — under review
+
+
+export type ProcurementInvoiceStatus =
+  | 'RECEIVED'            // Invoice received from the vendor
+  | 'UNDER_REVIEW'        // Procurement / finance team is verifying the invoice
+  | 'APPROVED'            // Invoice verified and approved for payment
+  | 'REJECTED'            // Invoice rejected due to discrepancies
+  | 'PAYMENT_SCHEDULED'   // Payment has been scheduled / queued
+  | 'PAID'                // Payment completed
+  | 'OVERDUE'             // Payment due date has passed without settlement
+  | 'DISPUTED';           // Invoice is under dispute (amount mismatch, quality issues, etc.)
+
+
+// DTOs
+export interface RFQAttachment {
+  id: number;
   fileName: string;
   fileUrl: string;
   uploadedAt: Date;
@@ -38,15 +120,68 @@ export interface Attachment {
   type?: string;
 }
 
-export interface RequestItem {
-  id: string;
+export interface ProcurementCategory {
+  id: number;
+  categoryId: string;
   name: string;
+  description?: string;
+}
+
+export interface VendorReviewCriteria {
+  category: VendorCriteriaCategories
+  score: number[];           // 1–5 star rating for this dimension
+  averageScore?: number;         // Optional weighting factor for weighted average (0–1, defaults to equal weight)
+  comments?: string[];        // Free-text justification for this score
+}
+
+export interface ReviewAttachments {
+  id: number;
+  fileName: string;
+  fileUrl: string;
+  uploadedAt: Date;
+  size?: number;
+  type?: string;
+
+}
+
+export interface VendorReview {
+  id: number;
+  ratingId: string;
+  procurementRequestId: ProcurementRequest;   // The ProcurementRequest this review belongs to
+  rfqId: string;                   // The originating RFQ reference
+  vendorId: string;                // Reviewed vendor
+  vendorName: string;              // Vendor display name (denormalized for convenience)
+  reviewerName: string;            // Name of the person who submitted the review
+  reviewerRole?: string;           // Role/title of the reviewer (e.g. 'Procurement Manager')
+  status: VendorReviewStatus;
+  overallRating: number;           // Computed weighted average of all criteria scores (1–5)
+  criteria: VendorReviewCriteria[];
+  strengths?: string;              // Free-text: what the vendor did well
+  improvements?: string;           // Free-text: areas for improvement
+  recommendForFuture: boolean;     // Would the buyer use this vendor again?
+  attachments?: ReviewAttachments[];      // Supporting evidence (photos, reports)
+  submittedAt?: Date;
+  acknowledgedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface RequestItem {
+  id: number;
+  name: string;
+  category?: ProcurementCategory;
   description: string;
   quantity: number;
   unit: string;
   unitPrice?: number;
   estimatedBudget: number;
-  attachments: Attachment[];
+  attachments?: RFQAttachment[];
+  brandName?: string;
+  model?: string;
+  color?: string;
+  size?: string;
+  material?: string;
+  warrantyPeriod?: string;
   specifications?: Record<string, any>;
   currency?: string;
   deliveryMode?: string;
@@ -62,7 +197,8 @@ export interface RequestItem {
 }
 
 export interface ProcurementRequest {
-  id: string;
+  id: number;
+  rfqId?: string;
   customerId: string;
   customerName: string;
   procurementType: ProcurementType;
@@ -71,15 +207,13 @@ export interface ProcurementRequest {
   items: RequestItem[];
   totalBudget: number;
   currency: string;
-  deliveryLocation: string;
-  deliveryDeadline: Date;
   status: RequestStatus;
-  attachments: Attachment[];
   createdAt: Date;
+  createdBy: string;
   updatedAt: Date;
-  selectedVendorId: string;
-  selectedVendorName?: string;
-  selectedQuotationId?: string;
+  updatedBy: string;
+  suggestedVendorIds: VendorSuggestion[]; // vendors suggestd by ai
+  suggestedVendors: VendorSuggestion[];
   // The real, shared vendor-portal Lpo record's `id` (and, for convenience,
   // its human-readable `lpoNumber`) — assigned the moment the LPO is
   // actually generated for this request (see LpoPreviewComponent.updateStatus()
@@ -88,26 +222,28 @@ export interface ProcurementRequest {
   // DocumentationHistoryComponent both key off this instead of trying to
   // infer the link from lpoId/lpoNumber string contents (which don't reliably
   // encode the request id).
-  selectedLpoId?: string;
-  selectedLpoNumber?: string;
   cancellationReason?: string;
   cancelledAt?: Date;
   cancellationAdditionalNotes?: string;
   // RFQ Settings
   rfqTitle?: string;
   rfqExpiryDate?: Date;
-  rfqTemplateId?: string;
-  targetVendors?: string[];
+  selectedVendorId: string;
+  selectedVendorName: string;
+  selectedQuotationId: string;
   // Approval
-  approvalStatus?: 'DRAFT' | 'PENDING' | 'IN_APPROVAL' | 'APPROVED' | 'REJECTED';
-  approvedBy?: string;
-  approvedAt?: Date;
+  approvalStatus: ApprovalStatus
+  approvedBy: string;
+  approvedAt: Date;
   approvalComments?: string;
   // Vendor Selection
-  selectedVendors?: string[];
-  deliveryMode?: string;
   specialInstructions?: string;
   serviceCategory?: string;
+  // Post-delivery vendor review
+  vendorReview?: VendorReview;
+  // LPO & Invoice references
+  lpoId?: string;                  // Reference to the ProcurementLpo issued for this request
+  invoiceId?: string;              // Reference to the ProcurementInvoice received for this request
 }
 
 export interface RequestFilters {
@@ -152,11 +288,13 @@ export interface RFQTemplateSection {
 
 // Vendor Suggestion
 export interface VendorSuggestion {
+  id: number;
   vendorId: string;
   vendorName: string;
   vendorCode: string;
   categories: string[];
   rating: number;
+  reviews: string[]
   totalProjects: number;
   completionRate: number;
   averageResponseTime: number;
@@ -165,111 +303,27 @@ export interface VendorSuggestion {
   reason: string;
 }
 
-export interface MasterOrder {
-  id: string;
-  customerId: string;
-  customerName: string;
-  orderName: string;
-  items: OrderItem[];
-  totalBudget: number;
-  currency: string;
-  masterDeliveryLocation: string;
-  masterDeliveryDeadline: Date;
-  masterSpecialInstructions?: string;
-  selectedVendors?: string[];
-  rfqExpiryDate: Date;
-  status: MasterOrderStatus;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface OrderItem {
-  id: string;
-  productName: string;
-  description: string;
-  quantity: number;
-  budget: number;
-  currency: string;
-  deliveryLocation?: string;
-  specialInstructions?: string;
-  attachments?: Attachment[];
-}
-
-export type MasterOrderStatus =
-  | 'DRAFT'
-  | 'PENDING_VENDOR_QUOTES'
-  | 'VENDOR_SELECTION_IN_PROGRESS'
-  | 'PARTIALLY_AWARDED'
-  | 'FULLY_AWARDED'
-  | 'COMPLETED'
-  | 'CANCELLED';
-
-
-/**
- * VendorQuotationStatus represents the lifecycle of a vendor's response
- * to an RFQ, including submission, buyer reviews, awards, and LPO issuances.
- */
-export type VendorQuotationStatus =
-  | 'PENDING'           // Vendor has been invited/suggested but has not submitted a response yet
-  | 'SUBMITTED'         // Vendor has successfully submitted their quotation details to the buyer
-  | 'ACCEPTED'          // Buyer approved this specific quotation, triggering subsequent LPO steps
-  | 'DECLINED'          // Vendor declined to quote, or buyer rejected the submitted quotation
-  | 'EXPIRED'           // The quotation is no longer valid because its validity period has elapsed
-  | 'WITHDRAWN'         // The vendor withdrew their quotation before the buyer could accept/decline it
-  | 'LPO_GENERATED'     // Customer generated the Local Purchase Order draft from this quotation
-  | 'LPO_SENT'          // Customer has sent the finalized LPO document to the vendor
-  | 'REVIEW_REQUESTED'; // Customer requested changes or price adjustments, expecting a revised quote
-
-/**
- * Ceiling on how many times the buyer (procurement) can send a vendor's
- * quotation back for changes before the negotiation should be escalated,
- * the vendor contacted directly, or the RFQ re-issued.
- *
- * Mirrors MAX_REVISION_ROUNDS in the vendor portal's vendor.dto.ts — kept as
- * a separate constant (rather than a shared import) so the procurement and
- * vendor-portal domains stay decoupled, but the value must be kept in sync
- * with that file if it ever changes.
- */
-export const MAX_QUOTATION_REVISIONS = 3;
-
-/**
- * One entry in a quotation's audit trail. Captures every step of the
- * negotiation — submission, revision requests, resubmissions,
- * award/decline/withdrawal — so the procurement team can see the full
- * back-and-forth instead of just the current status. Append-only: existing
- * entries are never edited or removed.
- */
-export type QuotationHistoryAction =
-  | 'CREATED'            // Quotation record was created (draft, not yet sent) — mirrors the shared vendor-side event
-  | 'SUBMITTED'          // Vendor submitted (or the demo simulated a submission of) this quotation
-  | 'VIEWED'             // Buyer opened/reviewed the quotation for the first time
-  | 'REVIEW_REQUESTED'   // Buyer sent the quotation back to the vendor for changes
-  | 'RESUBMITTED'        // Vendor resubmitted an updated quotation after a revision request
-  | 'ACCEPTED'           // Buyer accepted this quotation, triggering LPO generation
-  | 'DECLINED'           // Buyer declined this quotation, or it was auto-declined because another was accepted
-  | 'LPO_GENERATED'      // An LPO draft was generated from this accepted quotation
-  | 'LPO_SENT'           // The finalized LPO was sent to the vendor
-  | 'WITHDRAWN'          // The pending/unanswered quotation was cancelled/withdrawn
-  | 'STATUS_CHANGED';    // Catch-all for direct status updates not covered above
 
 export interface QuotationHistoryEntry {
-  id: string;
+  id: number;
+  quoteId: VendorQuotation
   version: number;          // quotation version this entry applies to (see VendorQuotation.version)
   action: QuotationHistoryAction;
-  actor: 'VENDOR' | 'CUSTOMER' | 'SYSTEM';
+  actor: ActorStatus;
   note?: string;             // free-text detail — revision instructions, decline reason, resubmission summary, etc.
   amount?: number;           // totalAmount at the time of this entry, where relevant (submission/resubmission/acceptance)
   timestamp: Date;
 }
 
 export interface VendorQuotation {
-  id: string;
+  id: number;
   rfqId: string;
   rfqTitle?: string;
   vendorId: string;
   vendorName: string;
   vendorCode: string;
   vendorRating: number;
+  quotationId: String;
   status: VendorQuotationStatus;
   items: QuotationItemDetail[];
   totalAmount: number;
@@ -307,13 +361,13 @@ export interface VendorQuotation {
 }
 
 export interface QuotationItemDetail {
-  id: string;
+  id: number;
   name: string;
   description: string;
   quantity: number; // Requested quantity from the customer
   unitPrice: number;
   totalPrice: number;
-  availability: 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE' | 'SUBSTITUTE'; // Current availability status committed by the vendor
+  availability: AvailabilityStatus // Current availability status committed by the vendor
   alternativeProduct?: string; // Alternative product name (applicable only when availability is SUBSTITUTE)
   availableQuantity?: number; // Partial quantity the vendor can provide (applicable only when availability is PARTIAL)
   deliveryDate?: Date;
@@ -331,4 +385,119 @@ export interface RFQWithQuotations {
     declined: number;
     expired: number;
   };
+}
+
+
+export interface ProcurementLpoItem {
+  id: string;
+  name: string;                  // Product or service name
+  description: string;
+  quantity: number;               // Ordered quantity
+  unit: string;                   // Unit of measure (e.g., pcs, hours)
+  unitPrice: number;
+  totalPrice: number;             // quantity × unitPrice
+  deliveredQuantity?: number;     // How many have been received so far
+  deliveryDate?: Date;            // Expected delivery date for this item
+}
+
+/**
+ * ProcurementLpo is the buyer's record of a Local Purchase Order issued
+ * to a vendor after accepting their quotation. It references the originating
+ * RFQ, quotation, and vendor for full traceability.
+ */
+export interface ProcurementLpo {
+  id: number;
+  lpoNumber: string;              // Formatted LPO reference (e.g., LPO-2026-4821)
+  procurementRequestId: ProcurementRequest;   // Parent ProcurementRequest
+  rfqId: string;                  // Originating RFQ
+  quotationId: string;            // Accepted VendorQuotation
+  vendorId: string;
+  vendorName: string;
+  vendorEmail?: string;
+  vendorPhone?: string;
+  status: ProcurementLpoStatus;
+  items: ProcurementLpoItem[];
+  subtotal: number;
+  taxRate?: number;               // Tax percentage (e.g. 7.5 for 7.5%)
+  taxAmount: number;
+  totalAmount: number;            // subtotal + taxAmount
+  currency: string;
+  deliveryAddress: string;
+  deliveryDeadline: Date;
+  paymentTerms: string;           // e.g., 'Net 30', '50% upfront, 50% on delivery'
+  specialConditions?: string;     // Additional terms / clauses
+  attachments?: RFQAttachment[];
+  issuedAt?: Date;                // When the LPO was sent to the vendor
+  acknowledgedAt?: Date;          // When the vendor confirmed receipt
+  fulfilledAt?: Date;             // When all items were delivered
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+
+
+export interface ProcurementInvoiceItem {
+  id: number;
+  lpoItemId?: string;             // Links back to the corresponding LPO line item
+  name: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+
+export interface ProcurementInvoice {
+  id: string;
+  invoiceNumber: string;           // Vendor's invoice reference number
+  procurementRequestId: ProcurementRequest;    // Parent ProcurementRequest
+  lpoId: ProcurementLpo;                   // The LPO this invoice is billed against
+  lpoNumber: ProcurementLpo;               // LPO reference for display
+  quotationId?: VendorQuotation;            // Original accepted quotation
+  vendorId: string;
+  vendorName: string;
+  vendorEmail?: string;
+  status: ProcurementInvoiceStatus;
+  items: ProcurementInvoiceItem[];
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  currency: string;
+  amountPaid: number;              // How much has been paid so far
+  amountOutstanding: number;       // totalAmount - amountPaid
+  invoiceDate: Date;               // Date the vendor issued the invoice
+  dueDate: Date;                   // Payment deadline
+  receivedAt: Date;                // When procurement received it
+  approvedAt?: Date;               // When finance approved it
+  paidAt?: Date;                   // When payment was completed
+  rejectionReason?: string;        // Reason for rejection (if REJECTED)
+  disputeReason?: string;          // Reason for dispute (if DISPUTED)
+  notes?: string;
+  attachments?: RFQAttachment[];      // Invoice PDF, supporting documents
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+
+/**
+ * ProcurementPaymentRecord captures each payment event against an invoice.
+ * Supports partial payments (multiple records per invoice).
+ */
+export interface ProcurementPaymentRecord {
+  id: string;
+  invoiceId: string;
+  invoiceNumber: string;
+  lpoNumber: string;
+  vendorId: string;
+  vendorName: string;
+  amount: number;
+  currency: string;
+  paymentDate: Date;
+  paymentMethod: 'BANK_TRANSFER' | 'CHEQUE' | 'CASH' | 'ONLINE' | 'MOBILE_MONEY';
+  referenceNumber: string;         // Bank reference / transaction ID
+  approvedBy?: string;             // Finance officer who authorized the payment
+  notes?: string;
+  attachments?: RFQAttachment[];      // Payment receipt / proof of transfer
+  createdAt: Date;
 }

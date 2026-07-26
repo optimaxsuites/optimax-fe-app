@@ -31,7 +31,7 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
   // Expose Math to template
   Math = Math;
   
-  invoices: Invoice[] = [];
+  invoices: any[] = [];
   isLoading = true;
   selectedInvoiceIds: string[] = [];
 
@@ -258,36 +258,54 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
 
+  showReminderModal = false;
+  showDeleteInvoiceModal = false;
+  pendingInvoice: Invoice | null = null;
+  pendingInvoiceNumber = '';
+  pendingCustomerName = '';
+
   sendReminder(invoice: Invoice): void {
-    if (confirm(`Send payment reminder for ${invoice.invoiceNumber} to ${invoice.customerName}?`)) {
-      this.salesService.updateInvoice(invoice.id, { status: 'SENT' }).subscribe({
-        next: () => {
-          alert(`Payment reminder sent to ${invoice.customerName}`);
-          this.loadInvoices();
-        },
-        error: (error: any) => {
-          console.error('Error sending reminder:', error);
-          alert('Failed to send reminder. Please try again.');
-        }
-      });
-    }
+    const custName = (invoice.customerName as any)?.name || invoice.customerName || 'Customer';
+    this.pendingInvoice = invoice;
+    this.pendingInvoiceNumber = invoice.invoiceNumber;
+    this.pendingCustomerName = custName;
+    this.showReminderModal = true;
   }
 
-
+  confirmSendReminder(): void {
+    if (!this.pendingInvoice) return;
+    const targetInvoice = this.pendingInvoice;
+    this.showReminderModal = false;
+    this.salesService.updateInvoice(targetInvoice.id, { status: 'SENT' }).subscribe({
+      next: () => {
+        this.loadInvoices();
+      },
+      error: (error: any) => {
+        console.error('Error sending reminder:', error);
+      }
+    });
+  }
 
   deleteInvoice(invoice: Invoice): void {
-    if (confirm(`Delete invoice ${invoice.invoiceNumber}? This action cannot be undone.`)) {
-      this.salesService.updateInvoice(invoice.id, { status: 'CANCELLED' }).subscribe({
-        next: () => {
-          alert(`Invoice ${invoice.invoiceNumber} deleted successfully`);
-          this.loadInvoices();
-        },
-        error: (error: any) => {
-          console.error('Error deleting invoice:', error);
-          alert('Failed to delete invoice. Please try again.');
-        }
-      });
-    }
+    const custName = (invoice.customerName as any)?.name || invoice.customerName || 'Customer';
+    this.pendingInvoice = invoice;
+    this.pendingInvoiceNumber = invoice.invoiceNumber;
+    this.pendingCustomerName = custName;
+    this.showDeleteInvoiceModal = true;
+  }
+
+  confirmDeleteInvoice(): void {
+    if (!this.pendingInvoice) return;
+    const targetInvoice = this.pendingInvoice;
+    this.showDeleteInvoiceModal = false;
+    this.salesService.updateInvoice(targetInvoice.id, { status: 'CANCELLED' }).subscribe({
+      next: () => {
+        this.loadInvoices();
+      },
+      error: (error: any) => {
+        console.error('Error deleting invoice:', error);
+      }
+    });
   }
 
   getPageNumbers(): number[] {
@@ -333,7 +351,7 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
         currency: 'NGN', status: 'SENT', issueDate: new Date('2026-06-05'),
         dueDate: new Date('2026-06-19'), paidAt: undefined, notes: '', paymentTerms: 'Net 30'
       }
-    ];
+    ] as any;
     this.totalElements = this.invoices.length;
     this.totalPages = 1;
   }

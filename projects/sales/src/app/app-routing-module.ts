@@ -19,7 +19,7 @@ import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-det
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
 import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/customer-form/customer-form.component';
 import { CustomerDetailComponent } from './ui/view/sales-hub/customer-management/customer-detail/customer-detail.component';
-import { SalesOrdersDetailComponent } from './ui/view/sales-hub/sales-order/sales-orders-detail/sales-orders-detail.component';
+import { SalesAndTransactionsDetailComponent } from './ui/view/sales-hub/sales-and-transactions/sales-and-transactions-detail/sales-and-transactions-detail.component';
 import { ProductServiceCatalogFormComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog-form/product-service-catalog-form.component';
 import { ProductServiceCatalogDetailComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog-detail/product-service-catalog-detail.component';
 import { RfqDetailWithQuotationsComponent } from './ui/view/request-management/rfq-detail-with-quotations/rfq-detail-with-quotations.component';
@@ -28,7 +28,7 @@ import { QuotationDetailComponent } from './ui/view/request-management/quotation
 import { LpoPreviewComponent } from './ui/view/request-management/lpo-preview/lpo-preview.component';
 import { RequestForQuotationDraftsComponent } from './ui/view/request-management/request-for-quotation-drafts/request-for-quotation-drafts.component';
 import { ApprovalRfqDetailComponent } from './ui/view/request-management/approval-rfq-detail/approval-rfq-detail.component';
-
+import { VendorManagementComponent } from './ui/view/vendor-management/vendor-management.component';
 export const routes: Routes = [
   // {
   //   path: "",
@@ -40,12 +40,22 @@ export const routes: Routes = [
   //   redirectTo: 'commerce/requests',
   //   pathMatch: 'full'
   // },
+  // {
+  //   path: '',
+  //   redirectTo: 'sales-hub',
+  //   pathMatch: 'full'
+  // },
   {
-    path: '',
-    redirectTo: 'sales-hub',
+    path: "",
+    redirectTo: 'manage-vendors',
     pathMatch: 'full'
   },
 
+  // -- Vendor Management --
+  {
+    path: 'manage-vendors',
+    component: VendorManagementComponent
+  },
   // --- Sales Hub ---
   {
     path: 'sales-hub',
@@ -165,14 +175,22 @@ export const routes: Routes = [
     component: ProductServiceCatalogDetailComponent
   },
 
-  // --- Sales Orders ---
+  // --- Sales & Transactions ---
+  {
+    path: 'sales-and-transactions/:id',
+    component: SalesAndTransactionsDetailComponent
+  },
+  {
+    path: 'sales-and-transactions/:id/:uuid',
+    component: SalesAndTransactionsDetailComponent
+  },
   {
     path: 'orders/:id',
-    component: SalesOrdersDetailComponent
+    component: SalesAndTransactionsDetailComponent
   },
   {
     path: 'orders/:id/:uuid',
-    component: SalesOrdersDetailComponent
+    component: SalesAndTransactionsDetailComponent
   },
 
   // --- Other routes ---

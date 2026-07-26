@@ -48,14 +48,6 @@
           <i class="fas fa-paper-plane"></i> Send Invoice
         </button>
 
-
-
-        <!-- Record Payment (if balance due is > 0 and status is not CANCELLED) -->
-        <button *ngIf="invoice.balanceDue > 0 && invoice.status !== 'CANCELLED'" (click)="openPaymentModal()"
-          class="btn-action send" style="background-color: #137333; color: white;">
-          <i class="fas fa-plus"></i> Record Payment
-        </button>
-
         <!-- Download PDF -->
         <button (click)="downloadPDF()" class="btn-action download" [disabled]="isDownloading">
           <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading"
@@ -104,8 +96,8 @@
 
             <div class="billing-details">
               <h4>Bill To</h4>
-              <strong>{{ invoice.customerName }}</strong>
-              <p *ngIf="invoice.customerId">Customer ID: {{ invoice.customerId }}</p>
+              <strong>{{ invoice.customerName?.name || invoice.customerName }}</strong>
+              <p *ngIf="invoice.customerId">Customer ID: {{ invoice.customerId?.customerId || invoice.customerId }}</p>
             </div>
 
             <!-- Items Table -->
@@ -259,14 +251,19 @@
                 <div class="ledger-meta" style="display: flex; flex-direction: column;">
                   <span class="payment-no" style="font-weight: 600; font-size: 0.85rem; color: #0f1a2e;">{{
                     p.paymentNumber }}</span>
-                  <span class="payment-date" style="font-size: 0.75rem; color: #7a8a9e;">{{ formatDate(p.paymentDate)
+                  <span class="payment-date" style="font-size: 0.75rem; color: #7a8a9e;">{{ formatDate(p.orderDate)
                     }}</span>
                 </div>
-                <div class="ledger-amount" style="display: flex; flex-direction: column; text-align: right;">
-                  <span class="amount" style="font-weight: 700; font-size: 0.85rem; color: #137333;">{{
-                    formatCurrency(p.amount) }}</span>
-                  <span class="method" style="font-size: 0.75rem; color: #7a8a9e;">via {{ p.method.replace('_', ' ') |
-                    titlecase }}</span>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <div class="ledger-amount" style="display: flex; flex-direction: column; text-align: right;">
+                    <span class="amount" style="font-weight: 700; font-size: 0.85rem; color: #137333;">{{
+                      formatCurrency(p.paidAmount || 0) }}</span>
+                    <span class="method" style="font-size: 0.75rem; color: #7a8a9e;">via {{ (p.paymentMethod || 'CASH').replace('_', ' ') |
+                      titlecase }}</span>
+                  </div>
+                  <button (click)="openReceiptForPayment(p.id)" title="View Payment Receipt" style="background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 0.35rem 0.65rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                    <i class="fas fa-receipt"></i> Receipt
+                  </button>
                 </div>
               </div>
             </div>
@@ -276,12 +273,6 @@
               <p><i class="fas fa-info-circle" style="margin-right: 0.25rem;"></i> No payment transactions recorded yet.
               </p>
             </div>
-
-            <button *ngIf="invoice.balanceDue > 0 && invoice.status !== 'CANCELLED'" class="btn-view-customer"
-              style="background-color: #137333; color: white; margin-top: 1.25rem; width: 100%; display: flex; justify-content: center; gap: 0.5rem;"
-              (click)="openPaymentModal()">
-              <i class="fas fa-plus"></i> Record Payment
-            </button>
           </div>
         </div>
 
@@ -297,10 +288,10 @@
           <div class="card-body">
             <div class="customer-info">
               <div class="customer-avatar">
-                <span>{{ invoice.customerName.charAt(0).toUpperCase() || '?' }}</span>
+                <span>{{ (invoice.customerName?.name || '').charAt(0).toUpperCase() || '?' }}</span>
               </div>
               <div class="customer-details">
-                <strong>{{ invoice.customerName }}</strong>
+                <strong>{{ invoice.customerName?.name || invoice.customerName }}</strong>
               </div>
             </div>
             <button class="btn-view-customer" (click)="viewCustomer()">
@@ -325,12 +316,6 @@
               </button>
 
 
-
-              <!-- Record Payment -->
-              <button *ngIf="invoice.balanceDue > 0 && invoice.status !== 'CANCELLED'" (click)="openPaymentModal()"
-                class="btn-action-mobile send" style="background-color: #137333; color: white;">
-                <i class="fas fa-plus"></i> Record Payment
-              </button>
 
               <!-- Download PDF -->
               <button (click)="downloadPDF()" class="btn-action-mobile download" [disabled]="isDownloading">
@@ -375,91 +360,69 @@
   </div>
 </div>
 
-<!-- Record Payment Modal Overlay -->
-<app-modal *ngIf="showPaymentModal && invoice" header="Record Payment for {{ invoice.invoiceNumber }}"
-  (close)="closePaymentModal()">
-  <form (ngSubmit)="savePayment()" class="payment-modal-form" style="color: #0f1a2e; padding: 0.5rem;">
+<!-- Official Payment Receipt Overlay -->
+<app-payment-receipt *ngIf="showReceiptModal" [paymentId]="selectedReceiptPaymentId" (closed)="closeReceipt()"></app-payment-receipt>
 
-    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
-      <!-- Customer (Read Only) -->
-      <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
-        <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Customer</label>
-        <div class="read-only-box"
-          style="padding: 0.6rem 0.85rem; border: 1px solid #eef2f7; border-radius: 10px; background-color: #f8fafc; font-weight: 600;">
-          {{ invoice.customerName }}
+<!-- Custom Send Invoice Confirmation Modal Overlay -->
+<div class="custom-modal-backdrop" *ngIf="showSendInvoiceModal" (click)="showSendInvoiceModal = false">
+  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge" style="background: rgba(46, 178, 112, 0.12); color: #2EB270;">
+          <i class="fas fa-paper-plane"></i>
         </div>
+        <h3>Send Invoice</h3>
       </div>
-
-      <!-- Balance Due (Read Only) -->
-      <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
-        <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Outstanding Balance</label>
-        <div class="read-only-box"
-          style="padding: 0.6rem 0.85rem; border: 1px solid #eef2f7; border-radius: 10px; background-color: #f8fafc; font-weight: 600; color: #c5221f;">
-          {{ formatCurrency(invoice.balanceDue) }}
-        </div>
-      </div>
-
-      <!-- Payment Date -->
-      <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
-        <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Payment Date <span
-            style="color: #c5221f;">*</span></label>
-        <input type="date" class="form-control" name="paymentDate" [(ngModel)]="paymentDate" required
-          style="padding: 0.6rem 0.85rem; border: 1.5px solid #dce3ec; border-radius: 10px;">
-      </div>
-
-      <!-- Amount -->
-      <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
-        <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Amount Received <span
-            style="color: #c5221f;">*</span></label>
-        <div style="position: relative; display: flex; align-items: center;">
-          <span style="position: absolute; left: 0.85rem; font-weight: 700; color: #7a8a9e; font-size: 0.85rem;">{{
-            invoice.currency }}</span>
-          <input type="number" class="form-control" name="paymentAmount" [(ngModel)]="paymentAmount" min="1" step="0.01"
-            required
-            style="padding: 0.6rem 0.85rem 0.6rem 2.75rem; border: 1.5px solid #dce3ec; border-radius: 10px; width: 100%;">
-        </div>
-      </div>
-
-      <!-- Method -->
-      <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
-        <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Payment Method <span
-            style="color: #c5221f;">*</span></label>
-        <select class="form-control" name="paymentMethod" [(ngModel)]="paymentMethod" required
-          style="padding: 0.6rem 0.85rem; border: 1.5px solid #dce3ec; border-radius: 10px; background-color: white;">
-          <option *ngFor="let opt of paymentMethodOptions" [value]="opt.value">{{ opt.label }}</option>
-        </select>
-      </div>
-
-      <!-- Reference -->
-      <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
-        <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Reference / Txn ID</label>
-        <input type="text" class="form-control" name="paymentReference" [(ngModel)]="paymentReference"
-          placeholder="e.g. Bank ref, check number"
-          style="padding: 0.6rem 0.85rem; border: 1.5px solid #dce3ec; border-radius: 10px;">
-      </div>
-
-      <!-- Notes -->
-      <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: column; gap: 0.35rem;">
-        <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Notes</label>
-        <textarea class="form-control" name="paymentNotes" [(ngModel)]="paymentNotes" rows="2"
-          placeholder="Internal memo regarding payment..."
-          style="padding: 0.6rem 0.85rem; border: 1.5px solid #dce3ec; border-radius: 10px; resize: vertical;"></textarea>
-      </div>
+      <button type="button" class="btn-close-modal" (click)="showSendInvoiceModal = false">&times;</button>
     </div>
 
-    <!-- Actions -->
-    <div
-      style="display: flex; justify-content: flex-end; gap: 0.75rem; padding-top: 1.25rem; border-top: 1px solid #eef2f7;">
-      <button type="button" class="btn-secondary" (click)="closePaymentModal()" [disabled]="isSavingPayment"
-        style="padding: 0.65rem 1.5rem; font-weight: 700; border-radius: 10px; background: white; border: 1.5px solid #dce3ec; cursor: pointer; color: #4a5a6e;">
-        Cancel
-      </button>
-      <button type="submit" [disabled]="isSavingPayment || paymentAmount <= 0"
-        style="padding: 0.65rem 1.5rem; font-weight: 700; border-radius: 10px; background: #137333; border: 1.5px solid #137333; color: white; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;">
-        <i class="fas" [class.fa-spinner]="isSavingPayment" [class.fa-spin]="isSavingPayment"
-          [class.fa-save]="!isSavingPayment"></i>
-        {{ isSavingPayment ? 'Recording...' : 'Record Payment' }}
+    <div class="custom-modal-body" style="padding: 1.5rem; text-align: center;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(46, 178, 112, 0.1); color: #2EB270; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem auto;">
+        <i class="fas fa-paper-plane"></i>
+      </div>
+      <h4 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; font-weight: 700; color: #0f172a;">Send Invoice?</h4>
+      <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
+        Send invoice <strong>{{ pendingInvoiceNumber }}</strong> to <strong>{{ pendingCustomerName }}</strong>?
+      </p>
+    </div>
+
+    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
+      <button type="button" class="btn-modal-cancel" (click)="showSendInvoiceModal = false">Cancel</button>
+      <button type="button" class="btn-modal-save" (click)="confirmSendInvoice()">
+        <i class="fas fa-paper-plane"></i> Send Invoice
       </button>
     </div>
-  </form>
-</app-modal>
+  </div>
+</div>
+
+<!-- Custom Cancel Invoice Confirmation Modal Overlay -->
+<div class="custom-modal-backdrop" *ngIf="showCancelInvoiceModal" (click)="showCancelInvoiceModal = false">
+  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+          <i class="fas fa-ban"></i>
+        </div>
+        <h3>Cancel Invoice</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="showCancelInvoiceModal = false">&times;</button>
+    </div>
+
+    <div class="custom-modal-body" style="padding: 1.5rem; text-align: center;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem auto;">
+        <i class="fas fa-ban"></i>
+      </div>
+      <h4 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; font-weight: 700; color: #0f172a;">Cancel Invoice?</h4>
+      <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
+        Are you sure you want to cancel invoice <strong>{{ pendingInvoiceNumber }}</strong>?
+      </p>
+    </div>
+
+    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
+      <button type="button" class="btn-modal-cancel" (click)="showCancelInvoiceModal = false">Close</button>
+      <button type="button" class="btn-modal-save" (click)="confirmCancelInvoice()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);">
+        <i class="fas fa-ban"></i> Cancel Invoice
+      </button>
+    </div>
+  </div>
+</div>
