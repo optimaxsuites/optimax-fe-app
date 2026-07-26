@@ -4,6 +4,7 @@ import { ApprovalService } from '../../../service/approval-inbox/approval.servic
 import { ApprovalRequest, ApprovalStatus, ApprovalFilters, ApprovalStats } from '../../../domain/approval-inbox/approval-request.dto';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 import { RequestStatus } from '../../../domain/procurement-request/procurement.dto';
+import { parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 
 @Component({
   selector: 'app-approval-inbox',
@@ -225,29 +226,17 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
   }
 
   private updateProcurementRequestStatus(requestId: string, status: 'APPROVED' | 'REJECTED', requestType: string): void {
-    if (requestType === 'ORDER') {
-      this.procurementService.updateOrderStatus(requestId, status === 'APPROVED' ? 'PENDING_VENDOR_QUOTES' : 'CANCELLED')
-        .subscribe({
-          next: () => {
-            console.log(`Master order ${requestId} updated to ${status === 'APPROVED' ? 'PENDING_VENDOR_QUOTES' : 'CANCELLED'}`);
-          },
-          error: (error: any) => {
-            console.error('Error updating order status:', error);
-          }
-        });
-    } else {
-      const nextStatus = status === 'APPROVED' ? 'APPROVED' : 'REJECTED';
-      this.procurementService.updateRequest(requestId, {
-        status: nextStatus as RequestStatus
-      }).subscribe({
-        next: () => {
-          console.log(`Procurement request ${requestId} updated to ${nextStatus}`);
-        },
-        error: (error: any) => {
-          console.error('Error updating procurement status:', error);
-        }
-      });
-    }
+    const nextStatus = status === 'APPROVED' ? 'APPROVED' : 'REJECTED';
+    this.procurementService.updateRequest(parseIdToNumber(requestId), {
+      status: nextStatus as RequestStatus
+    }).subscribe({
+      next: () => {
+        console.log(`Procurement request ${requestId} updated to ${nextStatus}`);
+      },
+      error: (error: any) => {
+        console.error('Error updating request status:', error);
+      }
+    });
   }
 
   getStatusIcon(status: ApprovalStatus): string {

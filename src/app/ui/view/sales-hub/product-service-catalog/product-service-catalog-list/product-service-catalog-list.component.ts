@@ -4,7 +4,7 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Product, Category } from '../../../../domain/sales/sales.dto';
+import { Product, Category, MeasurementUnit, Supplier } from '../../../../domain/sales/sales.dto';
 
 @Component({
   selector: 'app-product-list',
@@ -18,9 +18,9 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   protected readonly Math = Math;
   
   viewMode: 'list' | 'icon' = 'icon';
-  products: Product[] = [];
+  products: any[] = [];
   isLoading = true;
-  selectedProductIds: string[] = [];
+  selectedProductIds: any[] = [];
 
   setViewMode(mode: 'list' | 'icon'): void {
     this.viewMode = mode;
@@ -60,6 +60,26 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   newCategoryDesc = '';
   editingCategory: Category | null = null;
   viewingCategoryDetails: Category | null = null;
+
+  // Measurement Units
+  rawUnits: MeasurementUnit[] = [];
+  showUnitModal = false;
+  newUnitName = '';
+  newUnitCode = '';
+  newUnitDesc = '';
+  editingUnit: MeasurementUnit | null = null;
+  viewingUnitDetails: MeasurementUnit | null = null;
+
+  // Suppliers
+  rawSuppliers: Supplier[] = [];
+  showSupplierModal = false;
+  newSupplierName = '';
+  newSupplierEmail = '';
+  newSupplierPhone = '';
+  newSupplierAddress = '';
+  newSupplierContactPerson = '';
+  editingSupplier: Supplier | null = null;
+  viewingSupplierDetails: Supplier | null = null;
   
   statusOptions: { value: string; label: string; color: string }[] = [
     { value: 'ALL', label: 'All Products', color: 'gray' },
@@ -78,6 +98,8 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadCategories();
+    this.loadUnits();
+    this.loadSuppliers();
     this.loadProducts();
   }
 
@@ -186,16 +208,16 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
     }
   }
 
-  confirmDeleteCategory(id: string, name: string): void {
+  confirmDeleteCategory(id: string | number, name: string): void {
     if (confirm(`Are you sure you want to delete the category "${name}"?`)) {
       this.salesService.deleteCategory(id).subscribe({
         next: (updatedCats) => {
           this.rawCategories = updatedCats;
           this.categories = ['ALL', ...updatedCats.map(c => c.name)];
-          if (this.editingCategory?.id === id) {
+          if (this.editingCategory && String(this.editingCategory.id) === String(id)) {
             this.cancelEditCategory();
           }
-          if (this.viewingCategoryDetails?.id === id) {
+          if (this.viewingCategoryDetails && String(this.viewingCategoryDetails.id) === String(id)) {
             this.viewingCategoryDetails = null;
           }
           alert('Category deleted successfully!');
@@ -203,6 +225,274 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error deleting category:', err);
           alert('Failed to delete category');
+        }
+      });
+    }
+  }
+
+  loadUnits(): void {
+    this.salesService.getMeasurementUnits().subscribe({
+      next: (units) => {
+        this.rawUnits = units;
+      }
+    });
+  }
+
+  openUnitModal(): void {
+    this.showUnitModal = true;
+    this.editingUnit = null;
+    this.viewingUnitDetails = null;
+    this.newUnitName = '';
+    this.newUnitCode = '';
+    this.newUnitDesc = '';
+  }
+
+  closeUnitModal(): void {
+    this.showUnitModal = false;
+    this.editingUnit = null;
+    this.viewingUnitDetails = null;
+    this.newUnitName = '';
+    this.newUnitCode = '';
+    this.newUnitDesc = '';
+  }
+
+  startEditUnit(unit: MeasurementUnit): void {
+    this.editingUnit = unit;
+    this.viewingUnitDetails = null;
+    this.newUnitName = unit.name;
+    this.newUnitCode = unit.code || '';
+    this.newUnitDesc = unit.description || '';
+  }
+
+  startViewUnit(unit: MeasurementUnit): void {
+    this.viewingUnitDetails = unit;
+    this.editingUnit = null;
+  }
+
+  closeUnitDetails(): void {
+    this.viewingUnitDetails = null;
+  }
+
+  cancelEditUnit(): void {
+    this.editingUnit = null;
+    this.newUnitName = '';
+    this.newUnitCode = '';
+    this.newUnitDesc = '';
+  }
+
+  submitUnit(): void {
+    const trimmedName = this.newUnitName.trim();
+    if (!trimmedName) {
+      alert('Please enter a unit name');
+      return;
+    }
+
+    if (this.editingUnit) {
+      // Update Mode
+      const isDuplicate = this.rawUnits.some(
+        u => u.id !== this.editingUnit?.id && u.name.toLowerCase() === trimmedName.toLowerCase()
+      );
+      if (isDuplicate) {
+        alert('Another unit already has this name');
+        return;
+      }
+
+      this.salesService.updateMeasurementUnit(this.editingUnit.unitId, {
+        name: trimmedName,
+        code: this.newUnitCode.trim(),
+        description: this.newUnitDesc.trim()
+      }).subscribe({
+        next: (updatedUnits) => {
+          this.rawUnits = updatedUnits;
+          this.cancelEditUnit();
+          alert('Measurement Unit updated successfully!');
+        },
+        error: (err) => {
+          console.error('Error updating unit:', err);
+          alert('Failed to update unit');
+        }
+      });
+    } else {
+      // Create Mode
+      if (this.rawUnits.some(u => u.name.toLowerCase() === trimmedName.toLowerCase())) {
+        alert('Measurement Unit already exists');
+        return;
+      }
+
+      this.salesService.createMeasurementUnit({
+        name: trimmedName,
+        code: this.newUnitCode.trim(),
+        description: this.newUnitDesc.trim()
+      }).subscribe({
+        next: (updatedUnits) => {
+          this.rawUnits = updatedUnits;
+          this.newUnitName = '';
+          this.newUnitCode = '';
+          this.newUnitDesc = '';
+          alert('Measurement Unit added successfully!');
+        },
+        error: (err) => {
+          console.error('Error adding unit:', err);
+          alert('Failed to add unit');
+        }
+      });
+    }
+  }
+
+  confirmDeleteUnit(id: string | number | undefined, name: string): void {
+    if (id === undefined) return;
+    if (confirm(`Are you sure you want to delete the unit "${name}"?`)) {
+      this.salesService.deleteMeasurementUnit(id).subscribe({
+        next: (updatedUnits) => {
+          this.rawUnits = updatedUnits;
+          if (this.editingUnit && String(this.editingUnit.id) === String(id)) {
+            this.cancelEditUnit();
+          }
+          if (this.viewingUnitDetails && String(this.viewingUnitDetails.id) === String(id)) {
+            this.viewingUnitDetails = null;
+          }
+          alert('Measurement Unit deleted successfully!');
+        },
+        error: (err) => {
+          console.error('Error deleting unit:', err);
+          alert('Failed to delete unit');
+        }
+      });
+    }
+  }
+
+  loadSuppliers(): void {
+    this.salesService.getSuppliers().subscribe({
+      next: (sups) => {
+        this.rawSuppliers = sups;
+      }
+    });
+  }
+
+  openSupplierModal(): void {
+    this.showSupplierModal = true;
+    this.editingSupplier = null;
+    this.viewingSupplierDetails = null;
+    this.newSupplierName = '';
+    this.newSupplierEmail = '';
+    this.newSupplierPhone = '';
+    this.newSupplierAddress = '';
+    this.newSupplierContactPerson = '';
+  }
+
+  closeSupplierModal(): void {
+    this.showSupplierModal = false;
+    this.editingSupplier = null;
+    this.viewingSupplierDetails = null;
+    this.newSupplierName = '';
+    this.newSupplierEmail = '';
+    this.newSupplierPhone = '';
+    this.newSupplierAddress = '';
+    this.newSupplierContactPerson = '';
+  }
+
+  startEditSupplier(supplier: Supplier): void {
+    this.editingSupplier = supplier;
+    this.viewingSupplierDetails = null;
+    this.newSupplierName = supplier.name;
+    this.newSupplierEmail = supplier.email || '';
+    this.newSupplierPhone = supplier.phone || '';
+    this.newSupplierAddress = supplier.address || '';
+    this.newSupplierContactPerson = supplier.contactPerson || '';
+  }
+
+  startViewSupplier(supplier: Supplier): void {
+    this.viewingSupplierDetails = supplier;
+    this.editingSupplier = null;
+  }
+
+  closeSupplierDetails(): void {
+    this.viewingSupplierDetails = null;
+  }
+
+  cancelEditSupplier(): void {
+    this.editingSupplier = null;
+    this.newSupplierName = '';
+    this.newSupplierEmail = '';
+    this.newSupplierPhone = '';
+    this.newSupplierAddress = '';
+    this.newSupplierContactPerson = '';
+  }
+
+  submitSupplier(): void {
+    const trimmedName = this.newSupplierName.trim();
+    if (!trimmedName) {
+      alert('Please enter a supplier name');
+      return;
+    }
+
+    const payload: Partial<Supplier> = {
+      name: trimmedName,
+      email: this.newSupplierEmail.trim(),
+      phone: this.newSupplierPhone.trim(),
+      address: this.newSupplierAddress.trim(),
+      contactPerson: this.newSupplierContactPerson.trim()
+    };
+
+    if (this.editingSupplier) {
+      // Update Mode
+      const isDuplicate = this.rawSuppliers.some(
+        s => s.id !== this.editingSupplier?.id && s.name.toLowerCase() === trimmedName.toLowerCase()
+      );
+      if (isDuplicate) {
+        alert('Another supplier already has this name');
+        return;
+      }
+
+      this.salesService.updateSupplier(this.editingSupplier.supplierId, payload).subscribe({
+        next: (updatedSups) => {
+          this.rawSuppliers = updatedSups;
+          this.cancelEditSupplier();
+          alert('Supplier updated successfully!');
+        },
+        error: (err) => {
+          console.error('Error updating supplier:', err);
+          alert('Failed to update supplier');
+        }
+      });
+    } else {
+      // Create Mode
+      if (this.rawSuppliers.some(s => s.name.toLowerCase() === trimmedName.toLowerCase())) {
+        alert('Supplier already exists');
+        return;
+      }
+
+      this.salesService.createSupplier(payload).subscribe({
+        next: (updatedSups) => {
+          this.rawSuppliers = updatedSups;
+          this.closeSupplierModal();
+          alert('Supplier added successfully!');
+        },
+        error: (err) => {
+          console.error('Error adding supplier:', err);
+          alert('Failed to add supplier');
+        }
+      });
+    }
+  }
+
+  confirmDeleteSupplier(id: string | number | undefined, name: string): void {
+    if (id === undefined) return;
+    if (confirm(`Are you sure you want to delete the supplier "${name}"?`)) {
+      this.salesService.deleteSupplier(id).subscribe({
+        next: (updatedSups) => {
+          this.rawSuppliers = updatedSups;
+          if (this.editingSupplier && String(this.editingSupplier.id) === String(id)) {
+            this.cancelEditSupplier();
+          }
+          if (this.viewingSupplierDetails && String(this.viewingSupplierDetails.id) === String(id)) {
+            this.viewingSupplierDetails = null;
+          }
+          alert('Supplier deleted successfully!');
+        },
+        error: (err) => {
+          console.error('Error deleting supplier:', err);
+          alert('Failed to delete supplier');
         }
       });
     }
@@ -274,23 +564,23 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
     this.loadProducts();
   }
 
-  toggleSelection(productId: string, event: any): void {
+  toggleSelection(productId: any, event: any): void {
     if (event.target.checked) {
       this.selectedProductIds.push(productId);
     } else {
-      this.selectedProductIds = this.selectedProductIds.filter(id => id !== productId);
+      this.selectedProductIds = this.selectedProductIds.filter(id => String(id) !== String(productId));
     }
   }
 
   toggleSelectAll(event: any): void {
     if (event.target.checked) {
-      this.selectedProductIds = this.products.map(p => p.id);
+      this.selectedProductIds = this.products.map(p => p.productId || String(p.id));
     } else {
       this.selectedProductIds = [];
     }
   }
 
-  isSelected(productId: string): boolean {
+  isSelected(productId: any): boolean {
     return this.selectedProductIds.includes(productId);
   }
 
@@ -409,7 +699,8 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   private setMockProducts(): void {
     this.products = [
       {
-        id: 'PROD-001',
+        id: 1,
+        productId: 'PROD-001',
         name: 'Executive Office Chair',
         sku: 'CHR-001',
         description: 'Ergonomic executive office chair with lumbar support',
@@ -423,7 +714,8 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
         status: 'ACTIVE'
       },
       {
-        id: 'PROD-002',
+        id: 2,
+        productId: 'PROD-002',
         name: 'Standing Desk',
         sku: 'DSK-001',
         description: 'Adjustable height standing desk',
@@ -437,7 +729,8 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
         status: 'ACTIVE'
       },
       {
-        id: 'PROD-003',
+        id: 3,
+        productId: 'PROD-003',
         name: 'Laptop - Dell XPS',
         sku: 'LAP-001',
         description: 'Dell XPS 13 laptop',
@@ -451,7 +744,8 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
         status: 'OUT_OF_STOCK'
       },
       {
-        id: 'PROD-004',
+        id: 4,
+        productId: 'PROD-004',
         name: 'Conference Table',
         sku: 'TBL-001',
         description: 'Large conference table',
@@ -465,7 +759,8 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
         status: 'ACTIVE'
       },
       {
-        id: 'PROD-005',
+        id: 5,
+        productId: 'PROD-005',
         name: 'Printer - HP LaserJet',
         sku: 'PRN-001',
         description: 'HP LaserJet printer',
@@ -479,7 +774,8 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
         status: 'DISCONTINUED'
       },
       {
-        id: 'PROD-006',
+        id: 6,
+        productId: 'PROD-006',
         name: 'Office Chair - Standard',
         sku: 'CHR-002',
         description: 'Standard office chair',
@@ -492,7 +788,7 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
         images: [],
         status: 'ACTIVE'
       }
-    ];
+    ] as any;
     this.totalElements = this.products.length;
     this.totalPages = 1;
   }

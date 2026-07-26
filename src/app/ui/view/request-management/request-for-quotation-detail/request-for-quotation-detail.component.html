@@ -139,7 +139,7 @@
           </div>
           <div class="card-body">
             <div class="attachments-grid">
-              <div *ngFor="let file of request.attachments" class="attachment-file-card">
+              <div *ngFor="let file of (request.attachments || [])" class="attachment-file-card">
                 <div class="file-icon">
                   <i class="fas" [class]="getFileIcon(file.type)"></i>
                 </div>

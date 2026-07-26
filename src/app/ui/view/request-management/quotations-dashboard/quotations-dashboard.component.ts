@@ -130,7 +130,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
   }
 
   loadMockData(): void {
-    this.quotations = [
+    const mockDbRaw: any[] = [
       {
         id: 'q1',
         rfqId: 'RFQ1',
@@ -372,6 +372,12 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
         updatedAt: new Date('2026-06-15T00:00:00')
       }
     ];
+    this.quotations = mockDbRaw.map((q, idx) => ({
+      ...q,
+      id: idx + 1,
+      quotationId: String(idx + 1),
+      items: (q.items || []).map((it: any) => ({ ...it, id: it.id as any }))
+    })) as VendorQuotation[];
     this.rfqGroups = this.groupQuotations(this.quotations);
     this.calculateStats();
     this.applyFilters();
@@ -540,8 +546,8 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
     this.applyFilters();
   }
 
-  viewQuotationDetail(quotationId: string): void {
-    this.router.navigate(['/admin/sales/commerce/quotations', quotationId]);
+  viewQuotationDetail(quotationId: string | number): void {
+    this.router.navigate(['/admin/sales/commerce/quotations', String(quotationId)]);
   }
 
   getStatusBadgeClass(status: string): string {

@@ -90,7 +90,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
   }
 
   loadMockData(): void {
-    const mockDb: VendorQuotation[] = [
+    const mockDbRaw: any[] = [
       {
         id: 'q1',
         rfqId: 'RFQ1',
@@ -373,12 +373,20 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       }
     ];
 
-    const found = mockDb.find(q => q.id === this.quotationId);
+    const mockDb = mockDbRaw.map((q, idx) => ({
+      ...q,
+      id: idx + 1,
+      quotationId: String(idx + 1),
+      items: (q.items || []).map((it: any) => ({ ...it, id: it.id as any }))
+    })) as VendorQuotation[];
+
+    const found = mockDb.find(q => String(q.id) === String(this.quotationId));
     if (found) {
       this.quotation = { ...found };
     } else {
       this.quotation = {
-        id: this.quotationId || 'q1',
+        id: Number(this.quotationId) || 1,
+        quotationId: String(this.quotationId) || 'q1',
         rfqId: 'RFQ1',
         vendorId: 'v1',
         vendorName: 'TechPro Solutions Ltd',
@@ -388,7 +396,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
         vendorPhone: '+234-800-555-0101',
         status: 'SUBMITTED',
         items: [
-          { id: 'qi1', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 150000, totalPrice: 300000, availability: 'AVAILABLE' }
+          { id: 'qi1' as any, name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 150000, totalPrice: 300000, availability: 'AVAILABLE' }
         ],
         totalAmount: 300000,
         currency: 'NGN',
@@ -563,7 +571,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
 
   loadMockAllQuotations(rfqId: string): void {
     if (rfqId === 'RFQ1' || rfqId === 'rfq1' || rfqId === 'RFQ5' || rfqId === 'rfq5') {
-      this.allQuotationsForRfq = [
+      const raw: any[] = [
         {
           id: 'q1',
           rfqId: rfqId,
@@ -599,10 +607,16 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
           expiresAt: new Date()
         }
       ];
+      this.allQuotationsForRfq = raw.map((q, idx) => ({
+        ...q,
+        id: idx + 1,
+        quotationId: String(idx + 1)
+      })) as VendorQuotation[];
     } else {
       this.allQuotationsForRfq = [
         this.quotation || {
-          id: this.quotationId || 'q1',
+          id: Number(this.quotationId) || 1,
+          quotationId: String(this.quotationId) || 'q1',
           rfqId: rfqId,
           vendorId: 'v1',
           vendorName: 'TechPro Solutions Ltd',
@@ -617,7 +631,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
           deliveryTimeline: '5-7 business days',
           updatedAt: new Date(),
           expiresAt: new Date()
-        }
+        } as any
       ];
     }
   }

@@ -5,6 +5,7 @@ import { ApprovalService } from '../../../service/approval-inbox/approval.servic
 import { ApprovalRequest, ApprovalStatus, ApprovalLevel, ApprovalComment } from '../../../domain/approval-inbox/approval-request.dto';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 import { RequestStatus, ProcurementRequest } from '../../../domain/procurement-request/procurement.dto';
+import { ExtendedProcurementRequest, parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 
 @Component({
   selector: 'app-approval-rfq-detail',
@@ -14,7 +15,7 @@ import { RequestStatus, ProcurementRequest } from '../../../domain/procurement-r
 export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
   approvalId: string | null = null;
   approval: ApprovalRequest | null = null;
-  procurementRequest: ProcurementRequest | null = null;
+  procurementRequest: ExtendedProcurementRequest | null = null;
   isLoading = true;
   showApproveModal = false;
   showRejectModal = false;
@@ -63,11 +64,11 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
   }
 
   loadProcurementDetails(requestId: string): void {
-    this.procurementService.getRequest(requestId)
+    this.procurementService.getRequest(parseIdToNumber(requestId))
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (req) => {
-          this.procurementRequest = req;
+          this.procurementRequest = req as ExtendedProcurementRequest;
           this.isLoading = false;
         },
         error: (err) => {
@@ -128,29 +129,17 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
   }
 
   private updateProcurementRequestStatus(requestId: string, status: 'APPROVED' | 'REJECTED', requestType: string): void {
-    if (requestType === 'ORDER') {
-      this.procurementService.updateOrderStatus(requestId, status === 'APPROVED' ? 'PENDING_VENDOR_QUOTES' : 'CANCELLED')
-        .subscribe({
-          next: () => {
-            console.log(`Master order ${requestId} updated to ${status === 'APPROVED' ? 'PENDING_VENDOR_QUOTES' : 'CANCELLED'}`);
-          },
-          error: (error: any) => {
-            console.error('Error updating order status:', error);
-          }
-        });
-    } else {
-      const nextStatus = status === 'APPROVED' ? 'APPROVED' : 'REJECTED';
-      this.procurementService.updateRequest(requestId, {
-        status: nextStatus as RequestStatus
-      }).subscribe({
-        next: () => {
-          console.log(`Procurement request ${requestId} updated to ${nextStatus}`);
-        },
-        error: (error: any) => {
-          console.error('Error updating procurement status:', error);
-        }
-      });
-    }
+    const nextStatus = status === 'APPROVED' ? 'APPROVED' : 'REJECTED';
+    this.procurementService.updateRequest(parseIdToNumber(requestId), {
+      status: nextStatus as RequestStatus
+    }).subscribe({
+      next: () => {
+        console.log(`Procurement request ${requestId} updated to ${nextStatus}`);
+      },
+      error: (error: any) => {
+        console.error('Error updating request status:', error);
+      }
+    });
   }
 
   addComment(): void {

@@ -312,7 +312,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
       return;
     }
     this.isSavingProduct = true;
-    this.salesService.createProduct(this.productForm).subscribe({
+    this.salesService.createProduct(this.productForm as any).subscribe({
       next: () => {
         this.isSavingProduct = false;
         alert('Product created successfully!');

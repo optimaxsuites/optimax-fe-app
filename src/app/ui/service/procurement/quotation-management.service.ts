@@ -19,6 +19,7 @@ import {
   isLiveQuotationId,
   fromLiveId,
   sharedQuotationToVendorQuotation,
+  parseIdToNumber,
 } from './rfq-quotation-bridge.util';
 
 @Injectable({
@@ -61,7 +62,7 @@ export class QuotationManagementService {
       .map(q => sharedQuotationToVendorQuotation(q, lpos.some(l => l.quotationId === q.id), undefined, requests));
   }
 
-  private findLiveQuotation(quotationId: string) {
+  private findLiveQuotation(quotationId: string | number) {
     return this.vendorService.getQuotationsSnapshot().find(q => q.id === fromLiveId(quotationId));
   }
 
@@ -140,7 +141,8 @@ export class QuotationManagementService {
     timestamp: Date | undefined,
   ): QuotationHistoryEntry {
     return {
-      id: `hist-${q.id}-${action.toLowerCase()}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      quoteId: q,
       version: q.version ?? 1,
       action,
       actor,
@@ -161,9 +163,9 @@ export class QuotationManagementService {
   }
 
   private buildDefaultQuotations(): VendorQuotation[] {
-    return [
+    const list: any[] = [
       {
-        id: 'q1',
+        id: 1,
         rfqId: 'RFQ1',
         rfqTitle: 'Office Equipment & IT Hardware',
         vendorId: 'v1',
@@ -174,8 +176,8 @@ export class QuotationManagementService {
         vendorPhone: '+234-800-555-0101',
         status: 'SUBMITTED',
         items: [
-          { id: 'qi1', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 150000, totalPrice: 300000, availability: 'AVAILABLE' },
-          { id: 'qi2', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 150000, totalPrice: 150000, availability: 'SUBSTITUTE', alternativeProduct: 'Canon imageCLASS LBP226dw' }
+          { id: 1, name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 150000, totalPrice: 300000, availability: 'AVAILABLE' },
+          { id: 2, name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 150000, totalPrice: 150000, availability: 'SUBSTITUTE', alternativeProduct: 'Canon imageCLASS LBP226dw' }
         ],
         totalAmount: 450000,
         currency: 'NGN',
@@ -189,7 +191,7 @@ export class QuotationManagementService {
         notes: 'Price includes delivery and initial configuration support.'
       },
       {
-        id: 'q2',
+        id: 2,
         rfqId: 'RFQ1',
         rfqTitle: 'Office Equipment & IT Hardware',
         vendorId: 'v2',
@@ -200,8 +202,8 @@ export class QuotationManagementService {
         vendorPhone: '+234-811-333-2211',
         status: 'ACCEPTED',
         items: [
-          { id: 'qi3', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 140000, totalPrice: 280000, availability: 'PARTIAL', availableQuantity: 1 },
-          { id: 'qi4', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 140000, totalPrice: 140000, availability: 'UNAVAILABLE' }
+          { id: 3, name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 140000, totalPrice: 280000, availability: 'PARTIAL', availableQuantity: 1 },
+          { id: 4, name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 140000, totalPrice: 140000, availability: 'UNAVAILABLE' }
         ],
         totalAmount: 420000,
         currency: 'NGN',
@@ -215,7 +217,7 @@ export class QuotationManagementService {
         notes: 'Bulk discount applied to unit rates.'
       },
       {
-        id: 'q3',
+        id: 3,
         rfqId: 'RFQ1',
         rfqTitle: 'Office Equipment & IT Hardware',
         vendorId: 'v3',
@@ -239,7 +241,7 @@ export class QuotationManagementService {
         notes: 'We cannot commit to the 3-day turnaround required.'
       },
       {
-        id: 'q4',
+        id: 4,
         rfqId: 'RFQ2',
         rfqTitle: 'Premium Ergonomic Chairs',
         vendorId: 'v4',
@@ -259,7 +261,7 @@ export class QuotationManagementService {
         updatedAt: new Date('2026-01-16T00:00:00')
       },
       {
-        id: 'q5',
+        id: 5,
         rfqId: 'RFQ2',
         rfqTitle: 'Premium Ergonomic Chairs',
         vendorId: 'v5',
@@ -279,7 +281,7 @@ export class QuotationManagementService {
         updatedAt: new Date('2024-01-11T00:00:00')
       },
       {
-        id: 'q6',
+        id: 6,
         rfqId: 'RFQ3',
         rfqTitle: 'AWS Cloud Infrastructure Consulting',
         vendorId: 'v6',
@@ -290,7 +292,7 @@ export class QuotationManagementService {
         vendorPhone: '+234-803-777-6655',
         status: 'SUBMITTED',
         items: [
-          { id: 'qi5', name: 'AWS Solutions Architecture Services', description: 'Migration setup, end-to-end audit, server deployment', quantity: 1, unitPrice: 12000000, totalPrice: 12000000, availability: 'AVAILABLE' }
+          { id: 5, name: 'AWS Solutions Architecture Services', description: 'Migration setup, end-to-end audit, server deployment', quantity: 1, unitPrice: 12000000, totalPrice: 12000000, availability: 'AVAILABLE' }
         ],
         totalAmount: 12000000,
         currency: 'NGN',
@@ -304,7 +306,7 @@ export class QuotationManagementService {
         notes: 'Price includes post-migration support for 3 months.'
       },
       {
-        id: 'q7',
+        id: 7,
         rfqId: 'RFQ3',
         rfqTitle: 'AWS Cloud Infrastructure Consulting',
         vendorId: 'v1',
@@ -324,7 +326,7 @@ export class QuotationManagementService {
         updatedAt: new Date('2026-06-26T00:00:00')
       },
       {
-        id: 'q8',
+        id: 8,
         rfqId: 'RFQ4',
         rfqTitle: 'Janitorial & Corporate Cleaning Services',
         vendorId: 'v8',
@@ -335,7 +337,7 @@ export class QuotationManagementService {
         vendorPhone: '+234-802-123-4567',
         status: 'ACCEPTED',
         items: [
-          { id: 'qi6', name: 'Office Cleaning Services', description: 'Monthly deep sanitisation and cleanup', quantity: 6, unitPrice: 400000, totalPrice: 2400000, availability: 'AVAILABLE' }
+          { id: 6, name: 'Office Cleaning Services', description: 'Monthly deep sanitisation and cleanup', quantity: 6, unitPrice: 400000, totalPrice: 2400000, availability: 'AVAILABLE' }
         ],
         totalAmount: 2400000,
         currency: 'NGN',
@@ -349,7 +351,7 @@ export class QuotationManagementService {
         notes: 'Quotes covers basic cleaning supplies.'
       },
       {
-        id: 'q9',
+        id: 9,
         rfqId: 'RFQ4',
         rfqTitle: 'Janitorial & Corporate Cleaning Services',
         vendorId: 'v5',
@@ -373,7 +375,7 @@ export class QuotationManagementService {
         notes: 'Lagos Mainland area only.'
       },
       {
-        id: 'q10',
+        id: 10,
         rfqId: 'RFQ5',
         rfqTitle: 'Office Furniture Procurement',
         vendorId: 'v10',
@@ -384,7 +386,7 @@ export class QuotationManagementService {
         vendorPhone: '+234-909-555-1122',
         status: 'SUBMITTED',
         items: [
-          { id: 'qi7', name: 'High-Back Ergonomic Desk Chairs', description: 'Adjustable dynamic mesh lumbar support chairs', quantity: 20, unitPrice: 90000, totalPrice: 1800000, availability: 'AVAILABLE' }
+          { id: 7, name: 'High-Back Ergonomic Desk Chairs', description: 'Adjustable dynamic mesh lumbar support chairs', quantity: 20, unitPrice: 90000, totalPrice: 1800000, availability: 'AVAILABLE' }
         ],
         totalAmount: 1800000,
         currency: 'NGN',
@@ -398,7 +400,7 @@ export class QuotationManagementService {
         notes: 'Chairs will be assembled on-site.'
       },
       {
-        id: 'q11',
+        id: 11,
         rfqId: 'RFQ5',
         rfqTitle: 'Office Furniture Procurement',
         vendorId: 'v3',
@@ -409,7 +411,7 @@ export class QuotationManagementService {
         vendorPhone: '+234-802-999-8877',
         status: 'SUBMITTED',
         items: [
-          { id: 'qi8', name: 'High-Back Ergonomic Desk Chairs', description: 'Adjustable dynamic mesh lumbar support chairs', quantity: 20, unitPrice: 97500, totalPrice: 1950000, availability: 'AVAILABLE' }
+          { id: 8, name: 'High-Back Ergonomic Desk Chairs', description: 'Adjustable dynamic mesh lumbar support chairs', quantity: 20, unitPrice: 97500, totalPrice: 1950000, availability: 'AVAILABLE' }
         ],
         totalAmount: 1950000,
         currency: 'NGN',
@@ -423,7 +425,7 @@ export class QuotationManagementService {
         notes: 'Fast delivery guaranteed.'
       },
       {
-        id: 'q12',
+        id: 12,
         rfqId: 'RFQ5',
         rfqTitle: 'Office Furniture Procurement',
         vendorId: 'v2',
@@ -443,6 +445,10 @@ export class QuotationManagementService {
         updatedAt: new Date('2026-06-15T00:00:00')
       }
     ];
+    return list.map(q => ({
+      ...q,
+      quotationId: String(q.id)
+    })) as VendorQuotation[];
   }
 
   private reloadFromStorage(): void {
@@ -456,10 +462,10 @@ export class QuotationManagementService {
     );
 
     this.quotations = this.normalizeAll(rawQuotations).map((q) => {
-      const match = requests.find((r) => r.id === q.rfqId);
+      const match = requests.find((r) => String(r.id) === String(q.rfqId));
       if (match) {
         const mappedItems = q.items.map((item) => {
-          const origItem = match.items.find((i) => i.id === item.id);
+          const origItem = match.items.find((i) => String(i.id) === String(item.id));
           return {
             ...item,
             name: origItem ? origItem.name : item.name,
@@ -496,14 +502,14 @@ export class QuotationManagementService {
 
     const rfqData: RFQWithQuotations = {
       rfq: {
-        id: rfqId,
+        id: parseIdToNumber(rfqId),
         customerId: 'cust-101',
         customerName: 'Optimax Industries',
         procurementType: rfqId.toLowerCase() === 'rfq3' ? 'SERVICE' : 'PRODUCT',
         title: rfqTitle,
         description: `Procurement details for ${rfqTitle}.`,
         items: matchingQuotes[0]?.items.map((it, idx) => ({
-          id: `item-${idx}`,
+          id: idx + 1,
           name: it.name,
           description: it.description,
           quantity: it.quantity,
@@ -518,9 +524,18 @@ export class QuotationManagementService {
         status: accepted > 0 ? 'VENDOR_SELECTED' : 'VENDORS_QUOTING',
         attachments: [],
         createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(),
-        selectedVendorId: matchingQuotes.find(q => q.status === 'ACCEPTED')?.vendorId || ''
-      },
+        createdBy: 'ADMIN',
+        updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+        updatedBy: 'ADMIN',
+        suggestedVendorIds: [],
+        suggestedVendors: [],
+        selectedVendorId: matchingQuotes.find(q => q.status === 'ACCEPTED')?.vendorId || '',
+        selectedVendorName: matchingQuotes.find(q => q.status === 'ACCEPTED')?.vendorName || '',
+        selectedQuotationId: matchingQuotes.find(q => q.status === 'ACCEPTED')?.id?.toString() || '',
+        approvalStatus: 'APPROVED',
+        approvedBy: 'ADMIN',
+        approvedAt: new Date()
+      } as any,
       quotations: matchingQuotes,
       summary: {
         totalVendors: matchingQuotes.length,
@@ -536,7 +551,7 @@ export class QuotationManagementService {
   }
 
   // Get detailed quotation by ID
-  getQuotationDetail(quotationId: string): Observable<VendorQuotation> {
+  getQuotationDetail(quotationId: string | number): Observable<VendorQuotation> {
     if (isLiveQuotationId(quotationId)) {
       const realId = fromLiveId(quotationId);
       const liveQ = this.vendorService.getQuotationsSnapshot().find(q => q.id === realId);
@@ -548,7 +563,7 @@ export class QuotationManagementService {
       }
     }
     this.reloadFromStorage();
-    const found = this.quotations.find(q => q.id === quotationId);
+    const found = this.quotations.find(q => String(q.id) === String(quotationId));
     if (!found) {
       return throwError(() => new Error(`Quotation not found: ${quotationId}`));
     }
@@ -556,7 +571,7 @@ export class QuotationManagementService {
   }
 
   // Accept a quotation
-  acceptQuotation(quotationId: string, notes?: string): Observable<{ message: string }> {
+  acceptQuotation(quotationId: string | number, notes?: string): Observable<{ message: string }> {
     if (isLiveQuotationId(quotationId)) {
       const realId = fromLiveId(quotationId);
       const result = this.vendorService.acceptQuotation(realId, notes);
@@ -568,12 +583,12 @@ export class QuotationManagementService {
       const liveQ = this.vendorService.getQuotationsSnapshot().find(q => q.id === realId);
       if (liveQ) {
         const requests = loadFromStorage<ProcurementRequest[]>(PROCUREMENT_STORAGE_KEYS.REQUESTS, () => []);
-        const reqIdx = requests.findIndex(r => r.id === liveQ.rfqId);
+        const reqIdx = requests.findIndex(r => String(r.id) === String(liveQ.rfqId));
         if (reqIdx !== -1) {
           requests[reqIdx] = {
             ...requests[reqIdx],
             status: 'VENDOR_SELECTED',
-            selectedQuotationId: quotationId,
+            selectedQuotationId: String(quotationId),
             selectedVendorId: liveQ.vendorId || '',
             selectedVendorName: liveQ.vendorName || '',
             updatedAt: new Date()
@@ -585,7 +600,7 @@ export class QuotationManagementService {
       return of({ message: 'Quotation successfully accepted.' }).pipe(delay(100));
     }
 
-    const found = this.quotations.find(q => q.id === quotationId);
+    const found = this.quotations.find(q => String(q.id) === String(quotationId));
     if (found) {
       found.status = 'ACCEPTED';
       found.updatedAt = new Date();
@@ -596,7 +611,7 @@ export class QuotationManagementService {
 
       // Decline other quotations for same RFQ
       this.quotations.forEach(q => {
-        if (q.rfqId === found.rfqId && q.id !== found.id && (q.status === 'SUBMITTED' || q.status === 'PENDING' || q.status === 'REVIEW_REQUESTED')) {
+        if (q.rfqId === found.rfqId && String(q.id) !== String(found.id) && (q.status === 'SUBMITTED' || q.status === 'PENDING' || q.status === 'REVIEW_REQUESTED')) {
           q.status = 'DECLINED';
           q.declineReason = 'Another quotation was accepted for this RFQ';
           q.updatedAt = new Date();
@@ -616,7 +631,7 @@ export class QuotationManagementService {
   }
 
   // Send LPO to vendor
-  sendLpoToVendor(quotationId: string, lpoNumber: string): Observable<{ message: string }> {
+  sendLpoToVendor(quotationId: string | number, lpoNumber: string): Observable<{ message: string }> {
     if (isLiveQuotationId(quotationId)) {
       // For a live quotation, the LPO itself was already generated (and is
       // already visible to the vendor in their shared store) the moment the
@@ -625,7 +640,7 @@ export class QuotationManagementService {
       return of({ message: 'The LPO has already been delivered to the vendor.' }).pipe(delay(100));
     }
 
-    const found = this.quotations.find(q => q.id === quotationId);
+    const found = this.quotations.find(q => String(q.id) === String(quotationId));
     if (found) {
       found.status = 'LPO_SENT';
       found.updatedAt = new Date();
@@ -640,14 +655,14 @@ export class QuotationManagementService {
   }
 
   // Update quotation status
-  updateQuotationStatus(quotationId: string, status: VendorQuotationStatus): Observable<{ message: string }> {
+  updateQuotationStatus(quotationId: string | number, status: VendorQuotationStatus): Observable<{ message: string }> {
     if (isLiveQuotationId(quotationId)) {
       return throwError(() => new Error(
         'This is a live vendor quotation — use accept, decline, or request changes instead of a direct status update.'
       ));
     }
 
-    const found = this.quotations.find(q => q.id === quotationId);
+    const found = this.quotations.find(q => String(q.id) === String(quotationId));
     if (found) {
       found.status = status;
       found.updatedAt = new Date();
@@ -662,7 +677,7 @@ export class QuotationManagementService {
   }
 
   // Reject a quotation
-  rejectQuotation(quotationId: string, reason: string): Observable<{ message: string }> {
+  rejectQuotation(quotationId: string | number, reason: string): Observable<{ message: string }> {
     if (isLiveQuotationId(quotationId)) {
       const result = this.vendorService.rejectQuotation(fromLiveId(quotationId), reason);
       if (!result.ok) {
@@ -671,7 +686,7 @@ export class QuotationManagementService {
       return of({ message: 'Quotation declined successfully.' }).pipe(delay(100));
     }
 
-    const found = this.quotations.find(q => q.id === quotationId);
+    const found = this.quotations.find(q => String(q.id) === String(quotationId));
     if (found) {
       found.status = 'DECLINED';
       found.declineReason = reason;
@@ -687,7 +702,7 @@ export class QuotationManagementService {
   }
 
   // Request Changes (Review Requested) — capped at MAX_QUOTATION_REVISIONS (3) round trips.
-  requestChanges(quotationId: string, notes: string): Observable<{ message: string }> {
+  requestChanges(quotationId: string | number, notes: string): Observable<{ message: string }> {
     if (isLiveQuotationId(quotationId)) {
       const result = this.vendorService.requestRevision(fromLiveId(quotationId), notes);
       if (!result.ok) {
@@ -696,7 +711,7 @@ export class QuotationManagementService {
       return of({ message: 'Request changes notes sent to the vendor.' }).pipe(delay(100));
     }
 
-    const found = this.quotations.find(q => q.id === quotationId);
+    const found = this.quotations.find(q => String(q.id) === String(quotationId));
     if (!found) {
       return throwError(() => new Error(`Quotation not found: ${quotationId}`));
     }
@@ -723,14 +738,14 @@ export class QuotationManagementService {
   }
 
   // Simulate vendor resubmission (overwriting old quotation details)
-  simulateVendorResubmit(quotationId: string, newTotal: number, newNotes?: string): Observable<{ message: string }> {
+  simulateVendorResubmit(quotationId: string | number, newTotal: number, newNotes?: string): Observable<{ message: string }> {
     if (isLiveQuotationId(quotationId)) {
       return throwError(() => new Error(
         'This is a live quotation from a connected vendor — resubmission has to come from the vendor\'s own portal, it can\'t be simulated from procurement.'
       ));
     }
 
-    const found = this.quotations.find(q => q.id === quotationId);
+    const found = this.quotations.find(q => String(q.id) === String(quotationId));
     if (found) {
       const newVersion = (found.version ?? 1) + 1;
       found.status = 'SUBMITTED';
@@ -788,13 +803,13 @@ export class QuotationManagementService {
   }
 
   // Mark quotation as viewed
-  markAsViewed(quotationId: string): Observable<void> {
+  markAsViewed(quotationId: string | number): Observable<void> {
     if (isLiveQuotationId(quotationId)) {
       this.vendorService.markQuotationViewedByCustomer(fromLiveId(quotationId));
       return of(void 0).pipe(delay(50));
     }
 
-    const found = this.quotations.find(q => q.id === quotationId);
+    const found = this.quotations.find(q => String(q.id) === String(quotationId));
     if (found && !found.isViewed) {
       found.isViewed = true;
       found.history = [
@@ -812,7 +827,7 @@ export class QuotationManagementService {
    * always get back the same, stable value instead of inventing a new one
    * per page load.
    */
-  ensureLpoAssigned(quotationId: string): Observable<{ lpoId: string; lpoNumber: string; lpoIssuedAt: Date }> {
+  ensureLpoAssigned(quotationId: string | number): Observable<{ lpoId: string; lpoNumber: string; lpoIssuedAt: Date }> {
     if (isLiveQuotationId(quotationId)) {
       const realId = fromLiveId(quotationId);
       const result = this.vendorService.generateLpoForQuotation(realId);
@@ -822,7 +837,7 @@ export class QuotationManagementService {
       return of({ lpoId: result.lpo.id, lpoNumber: result.lpo.lpoNumber, lpoIssuedAt: result.lpo.issuedDate }).pipe(delay(50));
     }
 
-    const found = this.quotations.find(q => q.id === quotationId);
+    const found = this.quotations.find(q => String(q.id) === String(quotationId));
     if (!found) {
       return throwError(() => new Error(`Quotation not found: ${quotationId}`));
     }
@@ -833,11 +848,11 @@ export class QuotationManagementService {
     }
     // Local/demo quotations never spawn a separate Lpo entity, so there's no
     // real Lpo.id to hand back — fall back to the quotation's own id.
-    return of({ lpoId: found.id, lpoNumber: found.lpoNumber, lpoIssuedAt: found.lpoIssuedAt! }).pipe(delay(50));
+    return of({ lpoId: String(found.id), lpoNumber: found.lpoNumber, lpoIssuedAt: found.lpoIssuedAt! }).pipe(delay(50));
   }
 
   /** Full audit trail for a quotation, oldest first — for a future timeline/history UI. */
-  getQuotationHistory(quotationId: string): Observable<QuotationHistoryEntry[]> {
+  getQuotationHistory(quotationId: string | number): Observable<QuotationHistoryEntry[]> {
     if (isLiveQuotationId(quotationId)) {
       const live = this.findLiveQuotation(quotationId);
       if (!live) {
@@ -847,7 +862,7 @@ export class QuotationManagementService {
       const requests = loadFromStorage<ProcurementRequest[]>(PROCUREMENT_STORAGE_KEYS.REQUESTS, () => []);
       return of(sharedQuotationToVendorQuotation(live, hasLpo, undefined, requests).history ?? []).pipe(delay(50));
     }
-    const found = this.quotations.find(q => q.id === quotationId);
+    const found = this.quotations.find(q => String(q.id) === String(quotationId));
     if (!found) {
       return throwError(() => new Error(`Quotation not found: ${quotationId}`));
     }

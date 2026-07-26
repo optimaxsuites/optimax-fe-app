@@ -1,18 +1,16 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
-import { 
-  ProcurementRequest, 
-  RequestFilters, 
-  PaginatedResponse, 
-  MasterOrder,
+import {
+  ProcurementRequest,
+  RequestFilters,
+  PaginatedResponse,
   RFQTemplate,
   VendorSuggestion,
   ProcurementType,
   RequestStatus,
-  OrderItem,
   RFQTemplateSection,
-  MasterOrderStatus
+  ProcurementCategory
 } from '../../domain/procurement-request/procurement.dto';
 import { PROCUREMENT_STORAGE_KEYS, loadFromStorage, saveToStorage } from './procurement-store.util';
 import { VendorService } from '../vendor-portal/vendor.service';
@@ -33,7 +31,7 @@ export class ProcurementRequestService {
    * cancellation still propagate instead of leaving a stale mirror behind).
    */
   private syncRfqMirror(request: ProcurementRequest): void {
-    const alreadyShared = this.vendorService.getRfqsSnapshot().some(r => r.id === request.id);
+    const alreadyShared = this.vendorService.getRfqsSnapshot().some(r => r.id === String(request.id));
     if (requestIsVendorVisible(request.status) || alreadyShared) {
       this.vendorService.upsertExternalRfq(procurementRequestToRfq(request));
     }
@@ -44,54 +42,10 @@ export class ProcurementRequestService {
     () => this.buildDefaultRequests(),
   );
 
-  private orders: MasterOrder[] = loadFromStorage(
-    PROCUREMENT_STORAGE_KEYS.ORDERS,
-    () => this.buildDefaultOrders(),
-  );
-
-  private buildDefaultOrders(): MasterOrder[] {
-    return [
-    {
-      id: 'MO-001',
-      customerId: 'CUST-101',
-      customerName: 'HQ Corporate Operations',
-      orderName: 'Q3 Corporate Facility Upgrades',
-      totalBudget: 18500000,
-      currency: 'NGN',
-      masterDeliveryLocation: 'HQ Office, Lekki Phase 1, Lagos',
-      masterDeliveryDeadline: new Date('2026-08-15'),
-      status: 'PENDING_VENDOR_QUOTES',
-      rfqExpiryDate: new Date('2026-07-15'),
-      items: [
-        {
-          id: 'oi-1',
-          productName: 'Premium Ergonomic Chairs',
-          description: 'High quality ergonomic mesh desk chairs',
-          quantity: 50,
-          budget: 10000000,
-          currency: 'NGN',
-          deliveryLocation: 'HQ Office, Lekki Phase 1, Lagos'
-        },
-        {
-          id: 'oi-2',
-          productName: 'Modular Conference Tables',
-          description: 'Wooden conference table with cable management',
-          quantity: 5,
-          budget: 8500000,
-          currency: 'NGN',
-          deliveryLocation: 'HQ Office, Lekki Phase 1, Lagos'
-        }
-      ],
-      createdAt: new Date('2026-06-15'),
-      updatedAt: new Date('2026-06-15')
-    }
-    ];
-  }
-
   private buildDefaultRequests(): ProcurementRequest[] {
     return [
       {
-        id: 'PR-001',
+        id: 1,
         customerId: 'CUST-101',
         customerName: 'HQ Corporate Operations',
         procurementType: 'PRODUCT',
@@ -99,27 +53,32 @@ export class ProcurementRequestService {
         description: 'Procurement of 10 developer-grade laptops for the engineering department to support high-performance compiling.',
         items: [
           {
-            id: 'item-1',
+            id: 1,
             name: 'MacBook Pro 16"',
             description: 'M3 Max, 32GB RAM, 1TB SSD',
             quantity: 10,
             unit: 'Pieces',
-            estimatedBudget: 15000000,
-            attachments: []
+            estimatedBudget: 15000000
           }
         ],
         totalBudget: 15000000,
         currency: 'NGN',
-        deliveryLocation: 'HQ Office, Lekki Phase 1, Lagos',
-        deliveryDeadline: new Date('2026-07-20'),
         status: 'PENDING',
-        attachments: [],
         createdAt: new Date('2026-06-25'),
+        createdBy: 'ADMIN',
         updatedAt: new Date('2026-06-25'),
-        selectedVendorId: ''
+        updatedBy: 'ADMIN',
+        suggestedVendorIds: [],
+        suggestedVendors: [],
+        selectedVendorId: '',
+        selectedVendorName: '',
+        selectedQuotationId: '',
+        approvalStatus: 'PENDING',
+        approvedBy: '',
+        approvedAt: new Date()
       },
       {
-        id: 'PR-002',
+        id: 2,
         customerId: 'CUST-102',
         customerName: 'HQ Corporate Operations',
         procurementType: 'SERVICE',
@@ -127,27 +86,32 @@ export class ProcurementRequestService {
         description: 'Monthly cleaning and facility sanitisation services contract for HQ operations.',
         items: [
           {
-            id: 'item-2',
+            id: 2,
             name: 'Office Cleaning Services',
             description: 'Daily sanitisation and general facility cleanup services',
             quantity: 6,
             unit: 'Months',
-            estimatedBudget: 2400000,
-            attachments: []
+            estimatedBudget: 2400000
           }
         ],
         totalBudget: 2400000,
         currency: 'NGN',
-        deliveryLocation: 'HQ Office, Lekki Phase 1, Lagos',
-        deliveryDeadline: new Date('2026-12-31'),
         status: 'VENDORS_QUOTING',
-        attachments: [],
         createdAt: new Date('2026-06-20'),
+        createdBy: 'ADMIN',
         updatedAt: new Date('2026-06-20'),
-        selectedVendorId: ''
+        updatedBy: 'ADMIN',
+        suggestedVendorIds: [],
+        suggestedVendors: [],
+        selectedVendorId: '',
+        selectedVendorName: '',
+        selectedQuotationId: '',
+        approvalStatus: 'PENDING',
+        approvedBy: '',
+        approvedAt: new Date()
       },
       {
-        id: 'PR-003',
+        id: 3,
         customerId: 'CUST-101',
         customerName: 'Marketing Department',
         procurementType: 'PRODUCT',
@@ -155,27 +119,32 @@ export class ProcurementRequestService {
         description: 'Procurement of ergonomic chairs to replace worn-out seating in the marketing and sales division.',
         items: [
           {
-            id: 'item-3',
+            id: 3,
             name: 'Ergonomic Desk Chair',
             description: 'Mesh back, adjustable armrests, and dynamic lumbar support',
             quantity: 25,
             unit: 'Pieces',
-            estimatedBudget: 3500000,
-            attachments: []
+            estimatedBudget: 3500000
           }
         ],
         totalBudget: 3500000,
         currency: 'NGN',
-        deliveryLocation: 'HQ Office, Lekki Phase 1, Lagos',
-        deliveryDeadline: new Date('2026-07-15'),
         status: 'VENDOR_SELECTED',
-        attachments: [],
         createdAt: new Date('2026-06-18'),
+        createdBy: 'ADMIN',
         updatedAt: new Date('2026-06-18'),
-        selectedVendorId: ''
+        updatedBy: 'ADMIN',
+        suggestedVendorIds: [],
+        suggestedVendors: [],
+        selectedVendorId: '',
+        selectedVendorName: '',
+        selectedQuotationId: '',
+        approvalStatus: 'APPROVED',
+        approvedBy: 'ADMIN',
+        approvedAt: new Date()
       },
       {
-        id: 'PR-004',
+        id: 4,
         customerId: 'CUST-103',
         customerName: 'IT Operations',
         procurementType: 'SERVICE',
@@ -183,27 +152,32 @@ export class ProcurementRequestService {
         description: 'Migration services for transferring on-premise CRM tools to AWS Cloud Infrastructure.',
         items: [
           {
-            id: 'item-4',
+            id: 4,
             name: 'AWS Solutions Architecture Services',
             description: 'End-to-end audit, migration layout plan, and server deployment',
             quantity: 1,
             unit: 'Units',
-            estimatedBudget: 12500000,
-            attachments: []
+            estimatedBudget: 12500000
           }
         ],
         totalBudget: 12500000,
         currency: 'NGN',
-        deliveryLocation: 'Remote / Virtual Deployment',
-        deliveryDeadline: new Date('2026-09-30'),
         status: 'LPO_ISSUED',
-        attachments: [],
         createdAt: new Date('2026-06-10'),
+        createdBy: 'ADMIN',
         updatedAt: new Date('2026-06-10'),
-        selectedVendorId: ''
+        updatedBy: 'ADMIN',
+        suggestedVendorIds: [],
+        suggestedVendors: [],
+        selectedVendorId: '',
+        selectedVendorName: '',
+        selectedQuotationId: '',
+        approvalStatus: 'APPROVED',
+        approvedBy: 'ADMIN',
+        approvedAt: new Date()
       },
       {
-        id: 'PR-005',
+        id: 5,
         customerId: 'CUST-101',
         customerName: 'HQ Corporate Operations',
         procurementType: 'PRODUCT',
@@ -211,26 +185,29 @@ export class ProcurementRequestService {
         description: 'Procurement of premium height-adjustable executive desks for the management office.',
         items: [
           {
-            id: 'item-5',
+            id: 5,
             name: 'Premium Standing Desk',
             description: 'Dual-motor, steel frame, bamboo top executive standing desk',
             quantity: 15,
             unit: 'Pieces',
-            estimatedBudget: 4500000,
-            attachments: []
+            estimatedBudget: 4500000
           }
         ],
         totalBudget: 4500000,
         currency: 'NGN',
-        deliveryLocation: 'HQ Office, Lekki Phase 1, Lagos',
-        deliveryDeadline: new Date('2026-08-15'),
         status: 'DELIVERED',
-        attachments: [],
         createdAt: new Date('2026-06-12'),
+        createdBy: 'ADMIN',
         updatedAt: new Date('2026-07-02'),
+        updatedBy: 'ADMIN',
+        suggestedVendorIds: [],
+        suggestedVendors: [],
         selectedVendorId: 'VND-001',
         selectedVendorName: 'Apex Tech Distributors',
-        selectedQuotationId: 'q-pr005'
+        selectedQuotationId: 'q-pr005',
+        approvalStatus: 'APPROVED',
+        approvedBy: 'ADMIN',
+        approvedAt: new Date()
       }
     ];
   }
@@ -246,9 +223,7 @@ export class ProcurementRequestService {
     saveToStorage(PROCUREMENT_STORAGE_KEYS.REQUESTS, this.requests);
   }
 
-  private persistOrders(): void {
-    saveToStorage(PROCUREMENT_STORAGE_KEYS.ORDERS, this.orders);
-  }
+  // Orders removed — ProcurementRequest is the single source of truth
 
   getRequests(filters: RequestFilters): Observable<PaginatedResponse<ProcurementRequest>> {
     this.reloadRequests();
@@ -260,8 +235,8 @@ export class ProcurementRequestService {
 
     if (filters.searchTerm) {
       const term = filters.searchTerm.toLowerCase();
-      filtered = filtered.filter(r => 
-        r.id.toLowerCase().includes(term) ||
+      filtered = filtered.filter(r =>
+        String(r.id).toLowerCase().includes(term) ||
         r.title.toLowerCase().includes(term) ||
         r.description.toLowerCase().includes(term)
       );
@@ -284,7 +259,7 @@ export class ProcurementRequestService {
     return of(response).pipe(delay(200));
   }
 
-  getRequest(id: string): Observable<ProcurementRequest> {
+  getRequest(id: number): Observable<ProcurementRequest> {
     this.reloadRequests();
     const request = this.requests.find(r => r.id === id);
     if (!request) {
@@ -293,15 +268,10 @@ export class ProcurementRequestService {
     return of(request).pipe(delay(100));
   }
 
-  private generateNextId(): string {
-    const numericIds = this.requests
-      .map(r => r.id)
-      .filter(id => id.startsWith('PR-'))
-      .map(id => parseInt(id.replace('PR-', ''), 10))
-      .filter(num => !isNaN(num));
-    const maxId = numericIds.length > 0 ? Math.max(...numericIds) : 0;
-    const nextId = maxId + 1;
-    return `PR-${String(nextId).padStart(3, '0')}`;
+  private generateNextId(): number {
+    const ids = this.requests.map(r => r.id);
+    const maxId = ids.length > 0 ? Math.max(...ids) : 0;
+    return maxId + 1;
   }
 
   createRequest(request: Partial<ProcurementRequest>): Observable<ProcurementRequest> {
@@ -315,23 +285,28 @@ export class ProcurementRequestService {
       description: request.description || '',
       items: (request.items || []).map((item, idx) => ({
         ...item,
-        id: item.id || `item-gen-${idx}`,
+        id: item.id || (id * 100 + idx),
         name: item.name || 'Generic Item',
         description: item.description || '',
         quantity: item.quantity || 1,
         unit: item.unit || 'Units',
-        estimatedBudget: item.estimatedBudget || 0,
-        attachments: item.attachments || []
+        estimatedBudget: item.estimatedBudget || 0
       })),
       totalBudget: request.totalBudget || 0,
       currency: request.currency || 'NGN',
-      deliveryLocation: request.deliveryLocation || 'Office HQ',
-      deliveryDeadline: request.deliveryDeadline ? new Date(request.deliveryDeadline) : new Date(),
       status: request.status || 'PENDING',
-      attachments: request.attachments || [],
       createdAt: new Date(),
+      createdBy: request.createdBy || 'ADMIN',
       updatedAt: new Date(),
-      selectedVendorId: ''
+      updatedBy: request.updatedBy || 'ADMIN',
+      suggestedVendorIds: request.suggestedVendorIds || [],
+      suggestedVendors: request.suggestedVendors || [],
+      selectedVendorId: request.selectedVendorId || '',
+      selectedVendorName: request.selectedVendorName || '',
+      selectedQuotationId: request.selectedQuotationId || '',
+      approvalStatus: request.approvalStatus || 'PENDING',
+      approvedBy: request.approvedBy || '',
+      approvedAt: request.approvedAt || new Date()
     };
 
     this.requests.unshift(newRequest);
@@ -340,7 +315,7 @@ export class ProcurementRequestService {
     return of(newRequest).pipe(delay(200));
   }
 
-  updateRequest(id: string, request: Partial<ProcurementRequest>): Observable<ProcurementRequest> {
+  updateRequest(id: number, request: Partial<ProcurementRequest>): Observable<ProcurementRequest> {
     const idx = this.requests.findIndex(r => r.id === id);
     if (idx !== -1) {
       this.requests[idx] = { ...this.requests[idx], ...request, updatedAt: new Date() };
@@ -351,7 +326,7 @@ export class ProcurementRequestService {
     throw new Error(`Request not found: ${id}`);
   }
 
-  cancelRequest(id: string, reason: string): Observable<void> {
+  cancelRequest(id: number, reason: string): Observable<void> {
     const request = this.requests.find(r => r.id === id);
     if (request) {
       request.status = 'CANCELLED';
@@ -363,25 +338,13 @@ export class ProcurementRequestService {
     return of(undefined).pipe(delay(100));
   }
 
-  deleteRequest(id: string): Observable<void> {
+  deleteRequest(id: number): Observable<void> {
     this.requests = this.requests.filter(r => r.id !== id);
     this.persistRequests();
     return of(undefined).pipe(delay(100));
   }
 
-  getOrders(): Observable<MasterOrder[]> {
-    return of(this.orders).pipe(delay(200));
-  }
-
-  getOrder(id: string): Observable<MasterOrder> {
-    const order = this.orders.find(o => o.id === id);
-    if (!order) {
-      throw new Error(`Order not found: ${id}`);
-    }
-    return of(order).pipe(delay(100));
-  }
-
-  getSavedVendorRating(requestId: string, vendorId: string): any {
+  getSavedVendorRating(requestId: number, vendorId: string): any {
     return { rating: 4.5, count: 12 };
   }
 
@@ -427,14 +390,16 @@ export class ProcurementRequestService {
     });
   }
 
-  getVendorSuggestions(requestId: string): Observable<VendorSuggestion[]> {
+  getVendorSuggestions(requestId: number): Observable<VendorSuggestion[]> {
     const suggestions: VendorSuggestion[] = [
       {
+        id: 1,
         vendorId: 'VND-001',
         vendorName: 'Apex Tech Distributors',
         vendorCode: 'VND-APX',
         categories: ['Technology'],
         rating: 4.8,
+        reviews: ['Excellent service', 'Fast delivery'],
         totalProjects: 30,
         completionRate: 98,
         averageResponseTime: 2.4,
@@ -443,11 +408,13 @@ export class ProcurementRequestService {
         reason: 'Authorized dealer with highly competitive prices'
       },
       {
+        id: 2,
         vendorId: 'VND-002',
         vendorName: 'Lagos Clean Services',
         vendorCode: 'VND-LCS',
         categories: ['Cleaning'],
         rating: 4.5,
+        reviews: ['Good quality', 'Reliable'],
         totalProjects: 15,
         completionRate: 92,
         averageResponseTime: 4.1,
@@ -470,12 +437,16 @@ export class ProcurementRequestService {
     return of(['PRODUCT', 'SERVICE']);
   }
 
-  updateOrderStatus(id: string, status: MasterOrderStatus): Observable<MasterOrder> {
-    const idx = this.orders.findIndex(o => o.id === id);
-    if (idx !== -1) {
-      this.orders[idx] = { ...this.orders[idx], status, updatedAt: new Date() };
-      return of(this.orders[idx]).pipe(delay(100));
-    }
-    return throwError(() => new Error(`Order not found: ${id}`));
+  getProcurementCategories(): Observable<ProcurementCategory[]> {
+    const categories: ProcurementCategory[] = [
+      { id: 1, categoryId: 'CAT-001', name: 'IT & Electronics', description: 'Computers, hardware, peripherals, and office gadgets' },
+      { id: 2, categoryId: 'CAT-002', name: 'Office Furniture & Fixtures', description: 'Chairs, desks, conference tables, and storage' },
+      { id: 3, categoryId: 'CAT-003', name: 'Stationery & Office Supplies', description: 'Paper, pens, toner, and general office consumables' },
+      { id: 4, categoryId: 'CAT-004', name: 'Industrial & Maintenance', description: 'Tools, spare parts, cleaning supplies, and machinery' },
+      { id: 5, categoryId: 'CAT-005', name: 'Professional & Advisory Services', description: 'Consulting, auditing, legal, and advisory services' },
+      { id: 6, categoryId: 'CAT-006', name: 'Logistics, Freight & Transport', description: 'Freight, courier, fleet management, and shipping' },
+      { id: 7, categoryId: 'CAT-007', name: 'Facility Operations & Utilities', description: 'HVAC, security systems, cleaning, and maintenance' }
+    ];
+    return of(categories);
   }
 }

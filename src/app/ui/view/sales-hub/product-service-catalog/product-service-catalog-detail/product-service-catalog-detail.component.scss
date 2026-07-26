@@ -716,3 +716,58 @@
     gap: 0.5rem;
   }
 }
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.875rem;
+  }
+  
+  th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.75rem;
+  }
+  
+  td {
+    vertical-align: middle;
+    color: #334155;
+  }
+  
+  tr {
+    transition: background 0.15s ease;
+    
+    &:hover {
+      background: #f8fafc;
+    }
+  }
+
+  .font-bold {
+    font-weight: 600;
+  }
+
+  .font-mono {
+    font-family: monospace;
+  }
+
+  .text-muted {
+    color: #64748b;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  .text-success {
+    color: #059669;
+  }
+}

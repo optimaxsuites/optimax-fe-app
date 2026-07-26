@@ -1,189 +1,373 @@
+// Enum Structures
+export type CustomerStatus = 'ACTIVE' | 'INACTIVE' | 'BLACKLISTED';
+
+export type ProductStatus = 'ACTIVE' | 'DISCONTINUED' | 'OUT_OF_STOCK';
+
+export type QuoteStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED' | 'CONVERTED';
+
+export type InvoiceStatus = 'DRAFT' | 'SENT' | 'CANCELLED';
+
+export type PaymentMode = 'MONTHLY' | 'ONE-OFF';
+
+export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'CARD' | 'CHEQUE' | 'POS' | 'MOBILE_MONEY';
+
+export type SaleLifecycleStatus =
+  | 'QUOTE_SENT'
+  | 'QUOTE_ACCEPTED'
+  | 'QUOTE_REJECTED'
+  | 'QUOTE_CONVERTED'
+  | 'INVOICE_SENT'
+  | 'INVOICE_CANCELLED'
+  | 'PAYMENT_PENDING'
+  | 'PAYMENT_IN_PROGRESS'
+  | 'PAYMENT_COMPLETED'
+  | 'PAYMENT_FAILED'
+  | 'PAYMENT_REFUNDED'
+  | 'RECEIPT_GENERATED'
+  | 'DELIVERY_PENDING'
+  | 'DISPATCHED'
+  | 'IN_TRANSIT'
+  | 'DELIVERED'
+  | 'RETURNED'
+  ;
+
+// DTOs
 export interface CustomerBankDetails {
   bankName: string;
   accountName: string;
   accountNumber: string;
-  routingNumber?: string;
+  routingNumber?: string; // remove later
 }
 
 export interface Customer {
-  id: string;
+  id: number;
+  customerId: string;
   name: string;
   email: string;
   phone: string;
-  address: string;
+  address: string[]; // billing address
+  deliverAddress: string[];
   taxId?: string;
+  createdBy: string;
   createdAt: Date;
   totalSpent: number;
   totalOrders: number;
-  status: 'ACTIVE' | 'INACTIVE' | 'BLACKLISTED';
+  status: CustomerStatus;
   notes?: string;
   bankAccounts?: CustomerBankDetails[];
 }
 
+export interface ProductVariantAttributes {
+  color?: string;
+  size?: string;
+  material?: string;
+  model?: string;
+  year?: string | number;
+  [key: string]: any;
+}
+
+export interface ProductVariant {
+  id?: number;
+  variantId: string;
+  name: string;
+  sku: string;
+  price: number;
+  quantity: number;
+  attributes?: ProductVariantAttributes;
+}
+
+export interface Category {
+  id: number;
+  categoryId: string;
+  name: string;
+  description?: string;
+}
+
+export interface MeasurementUnit {
+  id?: number;
+  unitId: string;
+  name: string;
+  code?: string;
+  description?: string;
+}
+
+export interface Supplier {
+  id?: number;
+  supplierId: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  contactPerson?: string;
+}
+
+export interface StockMovement {
+  id?: number;
+  supplierId?: Supplier;
+  movementDate: Date | string;
+  movementQuantity: number;
+  movementPurchasePrice?: number;
+  movementTax?: number;
+  reference?: string;
+}
+
+export interface ComboProduct {
+  id?: number;
+  comboId: string;
+  comboName: string;
+  quantity: number;
+  unitPrice?: number;
+}
+
 export interface Product {
-  id: string;
+  id: number;
+  productId: string;
   name: string;
   sku: string;
   description: string;
+  measurementUnit?: MeasurementUnit;
+  partNumber: string;
+  code: string;
+  reorderThreshold: number;
+  weight: number;
   unitPrice: number;
   costPrice: number;
+  sellingPrice: number;
   currency: string;
   stockQuantity: number;
-  category: string;
+  expiryDate: Date;
+  discount: number;
+  supplier: Supplier;
+  category: Category;
+  stockMovement: StockMovement;
   taxRate: number;
   images: string[];
-  status: 'ACTIVE' | 'DISCONTINUED' | 'OUT_OF_STOCK';
-  variants?: any[];
+  status: ProductStatus;
+  variants?: ProductVariant[];
   isComboProduct?: boolean;
+  comboItems?: ComboProduct[];
+  noOfTimesSoldPerMonth: number;
 }
 
+export interface QuoteItem {
+  id: number;
+  productId: string;
+  productName: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  taxRate: number;
+  amount: number;
+  total: number;
+}
+
+export interface QuoteAttachments {
+  id?: number;
+  fileName?: string;
+  fileUrl?: string;
+  uploadedAt?: Date | string;
+  size?: number;
+  type?: string;
+}
+
+export interface AdditionalQuoteOptions {
+  signatureText: string;
+  attachments: QuoteAttachments[];
+  email: string;
+  address: string;
+  phone: string;
+  notes: string;
+  terms: string
+}
+
+
 export interface Quote {
-  id: string;
+  id: number;
   quoteNumber: string;
-  customerId: string;
-  customerName: string;
+  customerId: Customer;
+  customerName: Customer;
+  selectedCustomerBank: CustomerBankDetails;
+  merchantDetails: MerchantInfo;
+  logoUrl: string[];
   items: QuoteItem[];
   subtotal: number;
   taxAmount: number;
   discountAmount: number;
+  additionalCharges: number[];
+  additionalChargesLabel?: string[];
   totalAmount: number;
   currency: string;
   status: QuoteStatus;
   validUntil: Date;
+  createdBy: string;
   createdAt: Date;
   expiresAt: Date;
-  notes?: string;
-  terms?: string;
-  logoUrl?: string;
-  selectedCustomerBank?: CustomerBankDetails;
+  additionalOptions?: AdditionalQuoteOptions[];
 }
 
-export interface QuoteItem {
-  id: string;
-  productId: string;
-  productName: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  discount: number;
-  total: number;
-}
 
-export type QuoteStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED' | 'CONVERTED';
-
-
-export interface SalesOrder {
-  id: string;
-  orderNumber: string;
-  quoteId?: string;
-  customerId: string;
-  customerName: string;
-  items: SalesOrderItem[];
+export interface SalesandTransactions {
+  id: number;
+  orderId: string;
+  quoteId: Quote;
+  paymentNumber: string;
+  invoiceId: Invoice;
+  customerId: Customer;
+  customerName: Customer;
+  items: Quote;
   subtotal: number;
   taxAmount: number;
   discountAmount: number;
+  additionalCharges: number[];
+  additionalChargesLabel: string[];
   totalAmount: number;
   currency: string;
-  status: OrderStatus;
+  status: SaleLifecycleStatus;
   orderDate: Date;
-  expectedDeliveryDate?: Date;
-  actualDeliveryDate?: Date;
-  notes?: string;
-  shippingAddress?: string;  
-  logoUrl?: string;
+  expectedDeliveryDate: Date;
+  actualDeliveryDate: Date;
+  quoteSentDate: Date;
+  quoteAcceptedOrRejectedDate: Date;
+  quoteConvertedDate: Date;
+  invoiceSentDate: Date;
+  invoiceCancelledDate?: Date;
+  customerNotes: string;
+  billingAddress: string;
+  paidAmount: number;
+  paymentMethod: PaymentMethod;
+  PaymentMode: PaymentMode;
+  PaymentTerms: PaymentTerms;
+  balanceDue: number;
+  installmentNumber: number;
+  completedInstallments: number;
+  reference: string;
+  transactionNotes: string;
+  deliveryNumber: string;
+  shippingAddress: string;
+  carrier: string;
+  trackingNumber: string;
+  dispatchedAt: Date;
+  deliveredAt: Date;
+  returnedAt: Date;
+  signature: string;
 }
 
-export interface SalesOrderItem {
-  id: string;
-  productId: string;
+
+export interface PaymentTerms {
+  id?: number;
+  customerId: Customer;
+  customerName: Customer;
+  InvoiceId?: SalesandTransactions;
+  orderId?: SalesandTransactions;
+  paymentMethod?: PaymentMethod;
+  paymentMode?: PaymentMode;
+  paymentPeriod: number;
+  amount: number;
+  balanceDue: number;
+  installmentNumber: number;
+  completedInstallments: number;
+}
+
+export interface InvoiceItem {
+  id: number;
   productName: string;
   description: string;
   quantity: number;
   unitPrice: number;
   discount: number;
+  taxRate: number;
+  amount: number;
   total: number;
 }
 
 
-export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+export interface InvoiceAttachments {
+  id: number;
+  fileName: string;
+  fileUrl: string;
+  uploadedAt: Date;
+  size: number;
+  type: string;
+}
+
+
+export interface AdditionalInvoiceOptions {
+  signatureText: string;
+  attachments: InvoiceAttachments[];
+  email: string;
+  address: string;
+  phone: string;
+  notes: string;
+  terms: string
+}
 
 export interface Invoice {
-  id: string;
+  id: number;
   invoiceNumber: string;
   orderId: string;
   quoteId?: string;
-  customerId: string;
-  customerName: string;
+  customerId: Customer;
+  customerName: Customer;
+  selectedCustomerBank?: CustomerBankDetails;
+  merchantDetails?: MerchantInfo;
+  logoUrl?: string;
   items: InvoiceItem[];
   subtotal: number;
   taxAmount: number;
   discountAmount: number;
+  additionalCharges: number[];
+  additionalChargesLabel?: string[];
   totalAmount: number;
-  amountPaid: number;
-  balanceDue: number;
   currency: string;
   status: InvoiceStatus;
   issueDate: Date;
   dueDate: Date;
   paidAt?: Date;
   notes?: string;
-  paymentTerms: string;
-  logoUrl?: string;
-  selectedCustomerBank?: CustomerBankDetails;
+  shippingAddress?: string;
+  paymentTerms: PaymentTerms[];
+  additionalOptions: AdditionalInvoiceOptions[]
 }
 
-export type InvoiceStatus = 'DRAFT' | 'SENT' | 'CANCELLED';
 
-export interface InvoiceItem {
-  id: string;
-  productName: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
+export interface MerchantBankDetails {
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
 }
 
-export interface Payment {
-  id: string;
-  paymentNumber: string;
-  invoiceId: string;
-  customerId: string;
-  customerName: string;
+export interface MerchantInfo {
+  id: number;
+  merchantId: string;
+  name: string;
+  companyName: string;
+  bankDetails: MerchantBankDetails;
+  address: string[];
+  phone: string;
+  email: string;
+  taxId: string;
+  website?: string;
+  logoUrl?: string[];
+}
+
+
+export interface PaymentReceipt {
+  receiptNumber: string;
+  payment: SalesandTransactions;
+  invoice: Invoice;
+  customer?: Customer;
+  merchantInfo: MerchantInfo;
+  issuedAt: Date;
+}
+
+export interface TopCustomers {
+  customerId: Customer;
+  productName: SalesandTransactions;
   amount: number;
-  currency: string;
-  method: PaymentMethod;
-  reference: string;
-  status: PaymentStatus;
-  paymentDate: Date;
-  notes?: string;
+  month: string;
 }
 
-export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'CARD' | 'CHEQUE' | 'POS' | 'MOBILE_MONEY';
-export type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
-
-export interface DeliveryNote {
-  id: string;
-  deliveryNumber: string;
-  orderId: string;
-  customerId: string;
-  customerName: string;
-  customerAddress: string;
-  items: DeliveryItem[];
-  carrier: string;
-  trackingNumber?: string;
-  status: DeliveryStatus;
-  dispatchedAt?: Date;
-  deliveredAt?: Date;
-  signature?: string;
-}
-
-export interface DeliveryItem {
-  productName: string;
-  quantity: number;
-  unit: string;
-}
-
-export type DeliveryStatus = 'PENDING' | 'DISPATCHED' | 'IN_TRANSIT' | 'DELIVERED' | 'RETURNED';
 
 export interface SalesSummary {
   totalRevenue: number;
@@ -202,14 +386,13 @@ export interface RevenueChartData {
 }
 
 export interface TopProduct {
-  productId: string;
-  productName: string;
+  productId: Product;
+  productName: Product;
   quantitySold: number;
+  month: string;
   revenue: number;
 }
 
-export interface Category {
-  id: string;
-  name: string;
-  description?: string;
-}
+
+
+

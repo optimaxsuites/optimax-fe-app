@@ -6,7 +6,7 @@ import { v4 as uuidV4 } from 'uuid';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil, forkJoin, filter } from 'rxjs';
 import { saveAs } from 'file-saver';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
-import { ProcurementRequest, RequestFilters, RequestStatus, PaginatedResponse, MasterOrder } from '../../../domain/procurement-request/procurement.dto';
+import { ProcurementRequest, RequestFilters, RequestStatus, PaginatedResponse } from '../../../domain/procurement-request/procurement.dto';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 
 
@@ -15,6 +15,8 @@ interface ExtendedProcurementRequest extends ProcurementRequest {
   _rowType?: 'ORDER' | 'SINGLE';
   _itemCount?: number;
   quantity?: number;
+  deliveryLocation?: string;
+  deliveryDeadline?: Date;
 }
 
 @Component({
@@ -112,7 +114,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
     return this.showCancelDialog;
   }
 
-  readonly statusClassMap: Record<RequestStatus, string> = {
+  readonly statusClassMap: Partial<Record<RequestStatus, string>> = {
     'DRAFT': 'status-chip status-draft',
     'PENDING_APPROVAL': 'status-chip status-pending-approval',
     'REJECTED': 'status-chip status-rejected',
@@ -124,6 +126,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
     'PAYMENT_CONFIRMED': 'status-chip status-payment-confirmed',
     'DELIVERY_IN_PROGRESS': 'status-chip status-delivery',
     'DELIVERED': 'status-chip status-delivered',
+    'COMPLETED': 'status-chip status-completed',
     'CANCELLED': 'status-chip status-cancelled',
     'APPROVED': 'status-chip status-approved'
   };
@@ -178,7 +181,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
     this.closeCancelModal();
     this.loadRequests();
   }
-  
+
   requests: ProcurementRequest[] = [];
   isLoading = false;
   totalElements = 0;
@@ -326,7 +329,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
 
   loadRequests(): void {
     this.isLoading = true;
-    
+
     const filters: RequestFilters = {
       status: this.filterForm.get('status')?.value,
       searchTerm: this.filterForm.get('searchTerm')?.value,
@@ -336,47 +339,17 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
       size: this.pageSize
     };
 
-    forkJoin({
-      page: this.procurementRequestService.getRequests(filters),
-      orders: this.procurementRequestService.getOrders()
-    })
+    this.procurementRequestService.getRequests(filters)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ({ page, orders }) => {
+        next: (page) => {
           this.requests = page.data;
           this.totalElements = page.totalElements;
           this.totalPages = page.totalPages;
           this.selectedRequests = this.selectedRequests.filter((selected) =>
             this.requests.some((request) => request.id === selected.id)
           );
-          let orderRows = orders.map((o: any) => this.mapOrderToRow(o));
-          
-          if (filters.searchTerm) {
-            const term = filters.searchTerm.toLowerCase();
-            orderRows = orderRows.filter((o: any) =>
-              o.id.toLowerCase().includes(term) ||
-              o.title.toLowerCase().includes(term) ||
-              (o.description && o.description.toLowerCase().includes(term))
-            );
-          }
-
-          if (filters.status && filters.status !== 'ALL') {
-            orderRows = orderRows.filter((o: any) => o.status === filters.status);
-          }
-
-          if (filters.dateFrom) {
-            const from = new Date(filters.dateFrom);
-            orderRows = orderRows.filter((o: any) => o.createdAt && new Date(o.createdAt) >= from);
-          }
-
-          if (filters.dateTo) {
-            const to = new Date(filters.dateTo);
-            to.setHours(23, 59, 59, 999);
-            orderRows = orderRows.filter((o: any) => o.createdAt && new Date(o.createdAt) <= to);
-          }
-
-          // Cast to ExtendedProcurementRequest[]
-          this.allRows = [...orderRows, ...this.requests] as ExtendedProcurementRequest[];
+          this.allRows = [...this.requests] as ExtendedProcurementRequest[];
           this.sortAllRows();
           this.isLoading = false;
           // Update dashboard data after loading
@@ -388,30 +361,6 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
         }
       });
   }
-
-  private mapOrderToRow(order: MasterOrder): ExtendedProcurementRequest {
-  return {
-    id: order.id,
-    title: order.orderName || 'Order',
-    description: order.orderName || 'Order description',
-    quantity: order.items ? order.items.reduce((s: number, i: any) => s + i.quantity, 0) : 0,
-    totalBudget: order.totalBudget || 0,
-    currency: order.currency || 'NGN',
-    deliveryLocation: order.masterDeliveryLocation || '',
-    deliveryDeadline: order.masterDeliveryDeadline || new Date(),
-    status: 'PENDING' as RequestStatus,
-    attachments: [],
-    customerId: order.customerId || '',
-    customerName: order.customerName || '',
-    createdAt: order.createdAt || new Date(),
-    updatedAt: order.updatedAt || new Date(),
-    selectedVendorId: '',
-    procurementType: 'PRODUCT',
-    items: [],
-    _rowType: 'ORDER',
-    _itemCount: order.items ? order.items.length : 0
-  };
-}
 
 
   onPageChange(page: number): void {
@@ -425,7 +374,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
     this.loadRequests();
   }
 
-  get selectedRequestIds(): string[] {
+  get selectedRequestIds(): number[] {
     return this.selectedRequests.map((request) => request.id);
   }
 
@@ -451,7 +400,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
     return this.selectedRequests.length > 0 && this.selectedRequests.length < this.requests.length;
   }
 
-  toggleSelection(requestId: string, event: Event): void {
+  toggleSelection(requestId: number, event: Event): void {
     const target = event.target as HTMLInputElement;
 
     if (target.checked) {
@@ -465,7 +414,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
     this.selectedRequests = this.selectedRequests.filter((request) => request.id !== requestId);
   }
 
-  isSelected(requestId: string): boolean {
+  isSelected(requestId: number): boolean {
     return this.selectedRequests.some((request) => request.id === requestId);
   }
 
@@ -476,7 +425,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   }
 
   getStatusLabel(status: RequestStatus): string {
-    const labels: Record<RequestStatus, string> = {
+    const labels: Partial<Record<RequestStatus, string>> = {
       'DRAFT': 'Draft',
       'PENDING_APPROVAL': 'Pending Approval',
       'REJECTED': 'Rejected',
@@ -488,6 +437,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
       'PAYMENT_CONFIRMED': 'Payment Confirmed',
       'DELIVERY_IN_PROGRESS': 'Delivery in Progress',
       'DELIVERED': 'Delivered',
+      'COMPLETED': 'Completed',
       'CANCELLED': 'Cancelled',
       'APPROVED': 'Approved'
     };
@@ -496,7 +446,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   }
 
   getStatusBadgeClass(status: RequestStatus): string {
-    const classes: Record<RequestStatus, string> = {
+    const classes: Partial<Record<RequestStatus, string>> = {
       'DRAFT': 'px-2 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-800',
       'PENDING_APPROVAL': 'px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800',
       'REJECTED': 'px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800',
@@ -508,10 +458,11 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
       'PAYMENT_CONFIRMED': 'px-2 py-1 text-xs font-medium rounded-full bg-teal-100 text-teal-800',
       'DELIVERY_IN_PROGRESS': 'px-2 py-1 text-xs font-medium rounded-full bg-cyan-100 text-cyan-800',
       'DELIVERED': 'px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800',
+      'COMPLETED': 'px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800',
       'CANCELLED': 'px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800',
       'APPROVED': 'px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800'
     };
-    return classes[status] || classes['PENDING'];
+    return classes[status] || classes['PENDING'] || 'px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800';
   }
 
   formatCurrency(amount: number, currency: string): string {
@@ -609,11 +560,11 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
     const maxVisible = 5;
     let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
     let end = Math.min(this.totalPages, start + maxVisible);
-    
+
     if (end - start < maxVisible) {
       start = Math.max(0, end - maxVisible);
     }
-    
+
     return Array.from({ length: end - start }, (_, i) => start + i);
   }
 
@@ -648,7 +599,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
 
   private getTopProducts(): any[] {
     const productMap = new Map<string, { name: string, count: number, budget: number }>();
-    
+
     this.requests.forEach(req => {
       const key = req.title || 'Unknown';
       if (productMap.has(key)) {
@@ -663,15 +614,15 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
         });
       }
     });
-    
+
     return Array.from(productMap.values())
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
   }
 
   openNewRequest(): void {
-  this.router.navigate(['/admin/sales/commerce/requests/new']);
-}
+    this.router.navigate(['/admin/sales/commerce/requests/new']);
+  }
 
   viewAllRequests(): void {
     this.router.navigate(['/admin/sales/commerce/requests']);
@@ -705,12 +656,12 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
 
   getLineChartPathProcurement(): string {
     if (!this.procurementData || this.procurementData.length === 0) return '';
-    
+
     const width = 480;
     const height = 180;
     const padding = 20;
     const maxValue = this.getMaxProcurementValue();
-    
+
     return this.procurementData.map((d, i) => {
       const x = padding + (i / (this.procurementData.length - 1)) * (width - padding * 2);
       const y = height - padding - (d.value / maxValue) * (height - padding * 2);
@@ -720,18 +671,18 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
 
   getLineChartAreaPathProcurement(): string {
     if (!this.procurementData || this.procurementData.length === 0) return '';
-    
+
     const width = 480;
     const height = 180;
     const padding = 20;
     const maxValue = this.getMaxProcurementValue();
-    
+
     const points = this.procurementData.map((d, i) => {
       const x = padding + (i / (this.procurementData.length - 1)) * (width - padding * 2);
       const y = height - padding - (d.value / maxValue) * (height - padding * 2);
       return x + ',' + y;
     }).join(' ');
-    
+
     return 'M' + points + ' L' + (width - padding) + ',' + (height - padding) + ' L' + padding + ',' + (height - padding) + ' Z';
   }
 
@@ -751,22 +702,22 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
 
   getProcurementConicGradient(): string {
     if (!this.procurementData || this.procurementData.length === 0) return '#e2e8f0';
-    
+
     const total = this.procurementData.reduce((sum, d) => sum + d.value, 0);
     if (total === 0) return '#e2e8f0';
-    
+
     const colors = ['#184440', '#2a736e', '#3a9a93', '#5ab0a8', '#7ac4bc', '#9ad8d0', '#baece4', '#d4f0ec'];
-    
+
     let gradient = '';
     let currentAngle = 0;
-    
+
     this.procurementData.forEach((d, i) => {
       const percentage = (d.value / total) * 100;
       const color = colors[i % colors.length];
       gradient += `${color} ${currentAngle}deg ${currentAngle + percentage * 3.6}deg, `;
       currentAngle += percentage * 3.6;
     });
-    
+
     return `conic-gradient(${gradient.slice(0, -2)})`;
   }
 
@@ -784,7 +735,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   // ============ HELPER METHODS ============
 
   getStatusClassForBadge(status: RequestStatus): string {
-    const classes: Record<RequestStatus, string> = {
+    const classes: Partial<Record<RequestStatus, string>> = {
       'DRAFT': 'draft',
       'PENDING_APPROVAL': 'pending',
       'REJECTED': 'rejected',
@@ -796,6 +747,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
       'PAYMENT_CONFIRMED': 'payment-confirmed',
       'DELIVERY_IN_PROGRESS': 'delivery',
       'DELIVERED': 'delivered',
+      'COMPLETED': 'completed',
       'CANCELLED': 'cancelled',
       'APPROVED': 'approved'
     };

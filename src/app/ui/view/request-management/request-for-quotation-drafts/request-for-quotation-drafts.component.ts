@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 import { ProcurementRequest, RequestStatus } from '../../../domain/procurement-request/procurement.dto';
+import { ExtendedProcurementRequest } from '../../../service/procurement/rfq-quotation-bridge.util';
 
 @Component({
   selector: 'app-request-for-quotation-drafts',
@@ -10,7 +11,7 @@ import { ProcurementRequest, RequestStatus } from '../../../domain/procurement-r
   styleUrls: ['./request-for-quotation-drafts.component.scss']
 })
 export class RequestForQuotationDraftsComponent implements OnInit, OnDestroy {
-  drafts: ProcurementRequest[] = [];
+  drafts: ExtendedProcurementRequest[] = [];
   isLoading = false;
   private destroy$ = new Subject<void>();
 

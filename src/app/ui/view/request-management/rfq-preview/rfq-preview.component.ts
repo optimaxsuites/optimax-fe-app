@@ -3,6 +3,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProcurementRequest, RFQTemplate, VendorSuggestion } from '../../../domain/procurement-request/procurement.dto';
+import { ExtendedProcurementRequest, parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 import { ApprovalService } from '../../../service/approval-inbox/approval.service';
 import { jsPDF } from 'jspdf';
@@ -14,7 +15,7 @@ import html2canvas from 'html2canvas';
   styleUrls: ['./rfq-preview.component.scss']
 })
 export class RfqPreviewComponent implements OnInit {
-  request: ProcurementRequest | null = null;
+  request: ExtendedProcurementRequest | null = null;
   template: RFQTemplate | null = null;
   vendors: VendorSuggestion[] = [];
   isLoading = false;
@@ -38,15 +39,15 @@ export class RfqPreviewComponent implements OnInit {
 
   loadRequestDetails(id: string): void {
     this.isLoading = true;
-    this.procurementService.getRequest(id).subscribe({
+    this.procurementService.getRequest(parseIdToNumber(id)).subscribe({
       next: (req) => {
-        this.request = req;
+        this.request = req as ExtendedProcurementRequest;
         this.isLoading = false;
-        if (req.rfqTemplateId) {
-          this.loadTemplateDetails(req.rfqTemplateId);
+        if (this.request?.rfqTemplateId) {
+          this.loadTemplateDetails(this.request.rfqTemplateId);
         }
-        if (req.selectedVendors && req.selectedVendors.length > 0) {
-          this.loadVendorDetails(req.selectedVendors);
+        if (this.request.selectedVendors && this.request.selectedVendors.length > 0) {
+          this.loadVendorDetails(this.request.selectedVendors);
         }
       },
       error: (err) => {
@@ -96,11 +97,13 @@ export class RfqPreviewComponent implements OnInit {
     // If we have vendor IDs from the request, fetch vendor details
     // For now, use mock data
     this.vendors = vendorIds.map(id => ({
+      id: 0,
       vendorId: id,
       vendorName: `Vendor ${id.substring(0, 4)}`,
       vendorCode: `V${id.substring(0, 4)}`,
       categories: ['General'],
       rating: 4.5,
+      reviews: [],
       totalProjects: 50,
       completionRate: 95,
       averageResponseTime: 2.5,
@@ -164,7 +167,7 @@ export class RfqPreviewComponent implements OnInit {
   onSubmit(): void {
     if (this.requestId && this.request) {
       this.isSubmitting = true;
-      this.procurementService.updateRequest(this.requestId, {
+      this.procurementService.updateRequest(parseIdToNumber(this.requestId), {
         status: 'PENDING_APPROVAL'
       }).subscribe({
         next: (updatedRequest) => {
@@ -179,8 +182,8 @@ export class RfqPreviewComponent implements OnInit {
     }
   }
 
-  createApprovalRequest(req: ProcurementRequest): void {
-    const urgency = this.calculateUrgency(req.deliveryDeadline);
+  createApprovalRequest(req: ExtendedProcurementRequest): void {
+    const urgency = req.deliveryDeadline ? this.calculateUrgency(req.deliveryDeadline) : 'LOW';
     
     const approvals = [{ level: 1, approverRole: 'Department Head', required: true }];
 

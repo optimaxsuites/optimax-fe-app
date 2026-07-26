@@ -20,14 +20,14 @@
           <strong>{{ invoiceId }}</strong>
         </div>
         <button type="button" class="btn-save-header" [disabled]="isSubmitting" (click)="onHeaderActionClick()">
-          <i *ngIf="!isSubmitting" class="fas" [class.fa-arrow-right]="currentStep < 3" [class.fa-check]="currentStep === 3"></i>
+          <i *ngIf="!isSubmitting" class="fas" [class.fa-arrow-right]="currentStep < 4" [class.fa-check]="currentStep === 4"></i>
           <div *ngIf="isSubmitting" class="spinner-mini"></div>
-          <span>{{ isSubmitting ? 'Saving...' : (currentStep === 1 ? 'Continue to Template' : (currentStep === 2 ? 'Continue to Preview' : (isEditMode ? 'Update' : 'Create'))) }}</span>
+          <span>{{ isSubmitting ? 'Saving...' : (currentStep === 1 ? 'Continue to Payment Terms' : (currentStep === 2 ? 'Continue to Template' : (currentStep === 3 ? 'Continue to Preview' : (isEditMode ? 'Update Invoice' : 'Create Invoice')))) }}</span>
         </button>
       </div>
     </div>
 
-    <!-- Wizard Steps Indicator -->
+    <!-- Wizard Steps Indicator (4 Steps) -->
     <div class="wizard-steps-indicator" *ngIf="!isLoading">
       <div class="wizard-step" [class.active]="currentStep === 1" [class.completed]="currentStep > 1" (click)="goToStep(1)">
         <div class="step-icon">
@@ -41,20 +41,30 @@
       <div class="step-connector" [class.completed]="currentStep > 1"></div>
       <div class="wizard-step" [class.active]="currentStep === 2" [class.completed]="currentStep > 2" (click)="goToStep(2)">
         <div class="step-icon">
-          <i class="fas fa-palette"></i>
+          <i class="fas fa-file-contract"></i>
         </div>
         <div class="step-info">
           <span class="step-num">Step 2</span>
-          <span class="step-name">Template Design</span>
+          <span class="step-name">Payment Terms</span>
         </div>
       </div>
       <div class="step-connector" [class.completed]="currentStep > 2"></div>
-      <div class="wizard-step" [class.active]="currentStep === 3" (click)="goToStep(3)">
+      <div class="wizard-step" [class.active]="currentStep === 3" [class.completed]="currentStep > 3" (click)="goToStep(3)">
+        <div class="step-icon">
+          <i class="fas fa-palette"></i>
+        </div>
+        <div class="step-info">
+          <span class="step-num">Step 3</span>
+          <span class="step-name">Template Design</span>
+        </div>
+      </div>
+      <div class="step-connector" [class.completed]="currentStep > 3"></div>
+      <div class="wizard-step" [class.active]="currentStep === 4" (click)="goToStep(4)">
         <div class="step-icon">
           <i class="fas fa-file-pdf"></i>
         </div>
         <div class="step-info">
-          <span class="step-num">Step 3</span>
+          <span class="step-num">Step 4</span>
           <span class="step-name">Preview & Delivery</span>
         </div>
       </div>
@@ -117,8 +127,8 @@
                   </select>
                 </div>
                 <div class="form-group flex-1" style="display: flex; align-items: flex-end; justify-content: flex-end;">
-                  <button type="button" class="btn-link" (click)="addCustomFields()">
-                    <i class="fas fa-plus-circle"></i> Add Custom Fields
+                  <button type="button" class="btn-link" (click)="triggerLogoUpload()">
+                    <i class="fas fa-upload"></i> Upload Logo
                   </button>
                 </div>
               </div>
@@ -350,7 +360,13 @@
                   <span class="summary-label">Discount <span *ngIf="invoiceForm.get('discountValue')?.value > 0 && invoiceForm.get('discountType')?.value === 'PERCENTAGE'">({{ invoiceForm.get('discountValue')?.value }}%)</span></span>
                   <span class="summary-value discount">-{{ formatCurrency(discountAmount) }}</span>
                 </div>
-                <div class="summary-item" *ngIf="additionalCharges > 0">
+                <ng-container *ngIf="additionalChargeItems.length > 0">
+                  <div class="summary-item" *ngFor="let charge of additionalChargeItems">
+                    <span class="summary-label">{{ charge.label }}</span>
+                    <span class="summary-value">+{{ formatCurrency(charge.amount) }}</span>
+                  </div>
+                </ng-container>
+                <div class="summary-item" *ngIf="additionalChargeItems.length === 0 && additionalCharges > 0">
                   <span class="summary-label">Additional Charges</span>
                   <span class="summary-value">+{{ formatCurrency(additionalCharges) }}</span>
                 </div>
@@ -405,11 +421,14 @@
                 <button type="button" class="btn-option-link" [class.active]="showAttachments" (click)="showAttachments = !showAttachments">
                   <i class="fas fa-paperclip"></i> Add Attachments
                 </button>
-                <button type="button" class="btn-option-link" [class.active]="showAdditionalInfo" (click)="showAdditionalInfo = !showAdditionalInfo">
-                  <i class="fas fa-info-circle"></i> Add Additional Info
+                <button type="button" class="btn-option-link" [class.active]="showEmail" (click)="showEmail = !showEmail">
+                  <i class="fas fa-envelope"></i> Add Email
                 </button>
-                <button type="button" class="btn-option-link" [class.active]="showContactDetails" (click)="showContactDetails = !showContactDetails">
-                  <i class="fas fa-address-card"></i> Add Contact Details
+                <button type="button" class="btn-option-link" [class.active]="showAddress" (click)="showAddress = !showAddress">
+                  <i class="fas fa-map-marker-alt"></i> Add Address
+                </button>
+                <button type="button" class="btn-option-link" [class.active]="showPhone" (click)="showPhone = !showPhone">
+                  <i class="fas fa-phone"></i> Add Phone
                 </button>
                 <button type="button" class="btn-option-link" [class.active]="showNotes" (click)="showNotes = !showNotes">
                   <i class="fas fa-sticky-note"></i> Add Notes
@@ -420,18 +439,29 @@
               </div>
 
               <!-- Interactive Input Panels -->
-              <div class="options-panels-wrapper" *ngIf="showSignature || showAttachments || showAdditionalInfo || showContactDetails || showNotes || showTerms">
+              <div class="options-panels-wrapper" *ngIf="showSignature || showAttachments || showEmail || showAddress || showPhone || showNotes || showTerms">
                 
-                <!-- Contact Details Panel -->
-                <div class="option-panel-item" *ngIf="showContactDetails">
-                  <label class="form-label required">Contact Details</label>
-                  <div class="form-row">
-                    <div class="form-group flex-1">
-                      <input type="tel" [(ngModel)]="contactPhone" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="Phone Number">
-                    </div>
-                    <div class="form-group flex-1">
-                      <input type="email" [(ngModel)]="contactEmail" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="Email Address">
-                    </div>
+                <!-- Email Panel -->
+                <div class="option-panel-item" *ngIf="showEmail">
+                  <label class="form-label">Email Address</label>
+                  <div class="form-group">
+                    <input type="email" [(ngModel)]="contactEmail" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="client@company.com">
+                  </div>
+                </div>
+
+                <!-- Address Panel -->
+                <div class="option-panel-item" *ngIf="showAddress">
+                  <label class="form-label">Billing / Shipping Address</label>
+                  <div class="form-group">
+                    <textarea [(ngModel)]="contactAddress" [ngModelOptions]="{standalone: true}" class="form-textarea" placeholder="Street Address, City, Country..."></textarea>
+                  </div>
+                </div>
+
+                <!-- Phone Panel -->
+                <div class="option-panel-item" *ngIf="showPhone">
+                  <label class="form-label">Phone Number</label>
+                  <div class="form-group">
+                    <input type="tel" [(ngModel)]="contactPhone" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="+234 800 000 0000">
                   </div>
                 </div>
 
@@ -454,14 +484,6 @@
                     <span class="upload-text" *ngIf="!attachmentFileName">Click to upload files or drop here</span>
                     <span class="upload-text" *ngIf="attachmentFileName">Selected: <strong>{{ attachmentFileName }}</strong></span>
                     <input type="file" (change)="onFileSelected($event)" class="file-input-overlay">
-                  </div>
-                </div>
-
-                <!-- Additional Info Panel -->
-                <div class="option-panel-item" *ngIf="showAdditionalInfo">
-                  <label class="form-label">Additional Information</label>
-                  <div class="form-group">
-                    <textarea [(ngModel)]="additionalInfoText" [ngModelOptions]="{standalone: true}" class="form-textarea" placeholder="Add supplementary details..."></textarea>
                   </div>
                 </div>
 
@@ -493,61 +515,7 @@
                 <p class="recurring-hint">A draft invoice will be created with the same details every next period.</p>
               </div>
 
-              <!-- Advanced -->
-              <div class="advanced-section">
-                <button type="button" class="btn-link" (click)="showAdvanced = !showAdvanced">
-                  <i class="fas fa-chevron-down" [style.transform]="showAdvanced ? 'rotate(180deg)' : 'rotate(0deg)'"></i>
-                  Advanced options
-                </button>
-                <div *ngIf="showAdvanced" class="advanced-panel">
-                  <div class="form-group">
-                    <label class="form-label">Display unit as</label>
-                    <select class="form-control">
-                      <option>Merge with quantity</option>
-                      <option>Show tax summary in invoice</option>
-                      <option>Do not show</option>
-                      <option>Hide place/country of supply</option>
-                    </select>
-                  </div>
-                  <div class="checkbox-grid">
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Add original images in line items</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Show thumbnails in separate column</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Show description in full width</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Hide subtotal for group items</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Show SKU in Invoice</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Show Serial Numbers in Invoice</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Display Batch Details in columns</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
+
             </div>
           </div>
         </div>
@@ -557,14 +525,204 @@
             Cancel
           </button>
           <button type="button" class="btn-continue" (click)="nextStep()">
-            Continue to Template Selection <i class="fas fa-arrow-right"></i>
+            Continue to Payment Terms <i class="fas fa-arrow-right"></i>
           </button>
         </div>
       </div>
     </div>
 
-      <!-- STEP 2: Select Template Design -->
-      <div *ngIf="currentStep === 2" class="wizard-step-content select-template-container">
+      <!-- STEP 2: Configure Payment Terms -->
+      <div *ngIf="currentStep === 2" class="wizard-step-content payment-terms-step-container">
+        <!-- Step Description Header Card -->
+        <div class="step-card-desc glass">
+          <div class="desc-icon-bg">
+            <i class="fas fa-file-contract"></i>
+          </div>
+          <div class="desc-text">
+            <h3>Configure Payment Terms & Financial Schedule</h3>
+            <p>Select due date terms, payment modes, accepted payment methods, and installment schedules for this invoice.</p>
+          </div>
+        </div>
+
+        <div class="payment-terms-grid">
+          <!-- Preset Terms Cards -->
+          <div class="form-card glass full-width">
+            <div class="card-header">
+              <div class="card-header-icon"><i class="fas fa-clock"></i></div>
+              <h3>Standard Payment Terms & Due Date</h3>
+            </div>
+            <div class="card-body">
+              <div class="preset-terms-cards">
+                <div 
+                  *ngFor="let term of presetTermsList" 
+                  class="preset-term-card"
+                  [class.active]="selectedPresetTerm === term.id"
+                  (click)="selectPresetTerm(term.id)"
+                >
+                  <div class="term-card-radio">
+                    <i class="fas" [class.fa-check-circle]="selectedPresetTerm === term.id" [class.fa-circle]="selectedPresetTerm !== term.id"></i>
+                  </div>
+                  <div class="term-card-icon"><i class="fas" [class]="term.icon"></i></div>
+                  <div class="term-card-info">
+                    <h4>{{ term.name }}</h4>
+                    <p>{{ term.desc }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Custom Days Input (if Custom selected) -->
+              <div *ngIf="selectedPresetTerm === 'Custom'" class="custom-days-box">
+                <div class="form-group flex-1">
+                  <label class="form-label required">Payment Period (Days from Issue Date)</label>
+                  <div class="input-with-addon">
+                    <input 
+                      type="number" 
+                      min="0" 
+                      max="365" 
+                      [value]="paymentPeriodDays" 
+                      (input)="onCustomDaysChange(+$any($event.target).value)" 
+                      class="form-control"
+                    />
+                    <span class="input-addon">Days</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Mode & Installments -->
+          <div class="form-card glass">
+            <div class="card-header">
+              <div class="card-header-icon"><i class="fas fa-layer-group"></i></div>
+              <h3>Payment Mode & Schedule</h3>
+            </div>
+            <div class="card-body">
+              <div class="payment-mode-selector">
+                <label class="mode-option" [class.selected]="paymentMode === 'ONE-OFF'">
+                  <input type="radio" name="payMode" value="ONE-OFF" [(ngModel)]="paymentMode" [ngModelOptions]="{standalone: true}">
+                  <div class="mode-content">
+                    <i class="fas fa-bolt"></i>
+                    <div>
+                      <strong>One-Off Payment</strong>
+                      <span>Single lump-sum payment</span>
+                    </div>
+                  </div>
+                </label>
+                <label class="mode-option" [class.selected]="paymentMode === 'MONTHLY'">
+                  <input type="radio" name="payMode" value="MONTHLY" [(ngModel)]="paymentMode" [ngModelOptions]="{standalone: true}">
+                  <div class="mode-content">
+                    <i class="fas fa-calendar-alt"></i>
+                    <div>
+                      <strong>Monthly / Installments</strong>
+                      <span>Split total over scheduled periods</span>
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Installments Config -->
+              <div *ngIf="paymentMode === 'MONTHLY'" class="installments-config">
+                <div class="form-group">
+                  <label class="form-label">Number of Installments</label>
+                  <div class="installments-input-row">
+                    <input type="range" min="2" max="12" [(ngModel)]="numberOfInstallments" [ngModelOptions]="{standalone: true}" class="form-range">
+                    <span class="installments-count-badge">{{ numberOfInstallments }} Installments</span>
+                  </div>
+                </div>
+
+                <!-- Installments Schedule Table Preview -->
+                <div *ngIf="installmentSchedule.length > 0" class="installments-schedule-table">
+                  <div class="table-title"><i class="fas fa-list-ol"></i> Scheduled Breakdown:</div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Estimated Due Date</th>
+                        <th class="text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of installmentSchedule">
+                        <td>Installment #{{ item.number }}</td>
+                        <td>{{ item.dueDate | date:'mediumDate' }}</td>
+                        <td class="text-right"><strong>{{ formatCurrency(item.amount, invoiceForm.get('currency')?.value || 'NGN') }}</strong></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Methods & Bank Account Selection -->
+          <div class="form-card glass">
+            <div class="card-header">
+              <div class="card-header-icon"><i class="fas fa-university"></i></div>
+              <h3>Payment Method & Bank Details</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Preferred Payment Method</label>
+                <select [(ngModel)]="paymentMethod" [ngModelOptions]="{standalone: true}" class="form-control">
+                  <option *ngFor="let pm of paymentMethodsList" [value]="pm.value">{{ pm.label }}</option>
+                </select>
+              </div>
+
+              <!-- Selected Customer Bank Account -->
+              <div class="form-group margin-top-md" *ngIf="selectedCustomerBankAccounts.length > 0">
+                <label class="form-label">Target Receiving Bank Account</label>
+                <select formControlName="selectedCustomerBankIndex" class="form-control">
+                  <option [value]="-1">-- Select Bank Account --</option>
+                  <option *ngFor="let bank of selectedCustomerBankAccounts; let idx = index" [value]="idx">
+                    {{ bank.bankName }} - {{ bank.accountNumber }} ({{ bank.accountName }})
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upfront Deposit & Late Fee Rules -->
+          <div class="form-card glass full-width">
+            <div class="card-header">
+              <div class="card-header-icon"><i class="fas fa-percentage"></i></div>
+              <h3>Deposit & Financial Terms Notes</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label">Upfront Deposit Required (%)</label>
+                  <input type="number" min="0" max="100" [(ngModel)]="depositPercentage" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="0">
+                  <span class="field-hint" *ngIf="depositPercentage > 0">
+                    Deposit Amount: <strong>{{ formatCurrency(calculatedDepositAmount, invoiceForm.get('currency')?.value || 'NGN') }}</strong>
+                  </span>
+                </div>
+                <div class="form-group flex-1">
+                  <label class="form-label">Late Payment Interest Rate (%/month)</label>
+                  <input type="number" min="0" max="50" step="0.5" [(ngModel)]="lateFeeRate" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="0">
+                </div>
+              </div>
+
+              <div class="form-group margin-top-md">
+                <label class="form-label">Invoice Payment Terms & Legal Notes</label>
+                <textarea rows="3" [(ngModel)]="customTermsText" [ngModelOptions]="{standalone: true}" (ngModelChange)="invoiceForm.patchValue({terms: customTermsText})" class="form-control" placeholder="Specify explicit payment conditions..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 Footer Actions -->
+        <div class="wizard-actions-footer">
+          <button type="button" class="btn-cancel" (click)="prevStep()">
+            <i class="fas fa-arrow-left"></i> Back to Details
+          </button>
+          <button type="button" class="btn-continue" (click)="nextStep()">
+            Continue to Template Selection <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Select Template Design -->
+      <div *ngIf="currentStep === 3" class="wizard-step-content select-template-container">
         <div class="step-card-desc glass">
           <div class="desc-icon-bg">
             <i class="fas fa-magic"></i>
@@ -584,10 +742,10 @@
           ></app-template-types>
         </div>
 
-        <!-- Step 2 Footer Actions -->
+        <!-- Step 3 Footer Actions -->
         <div class="wizard-actions-footer">
           <button type="button" class="btn-cancel" (click)="prevStep()">
-            <i class="fas fa-arrow-left"></i> Back to Details
+            <i class="fas fa-arrow-left"></i> Back to Payment Terms
           </button>
           <button type="button" class="btn-continue" (click)="nextStep()">
             Continue to Preview & Options <i class="fas fa-arrow-right"></i>
@@ -595,8 +753,8 @@
         </div>
       </div>
 
-      <!-- STEP 3: Preview & Delivery Options -->
-      <div *ngIf="currentStep === 3" class="wizard-step-content preview-delivery-container">
+      <!-- STEP 4: Preview & Delivery Options -->
+      <div *ngIf="currentStep === 4" class="wizard-step-content preview-delivery-container">
         <div class="preview-delivery-grid">
           <!-- Left Column: Live Document Preview -->
           <div class="preview-document-column">
@@ -1423,6 +1581,146 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Discount Modal Overlay -->
+<div class="custom-modal-backdrop" *ngIf="showDiscountModal" (click)="showDiscountModal = false">
+  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge" style="background: rgba(46, 178, 112, 0.12); color: #2EB270;">
+          <i class="fas fa-percent"></i>
+        </div>
+        <h3>Apply Discount</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="showDiscountModal = false">&times;</button>
+    </div>
+
+    <div class="custom-modal-body" style="padding: 1.5rem;">
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: #334155; margin-bottom: 0.5rem; display: block;">Discount Type</label>
+        <div class="segmented-control" style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px; gap: 4px;">
+          <button type="button" 
+                  [class.active]="modalDiscountType === 'FIXED'" 
+                  (click)="modalDiscountType = 'FIXED'"
+                  style="flex: 1; padding: 0.5rem; border: none; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease;"
+                  [style.background]="modalDiscountType === 'FIXED' ? '#ffffff' : 'transparent'"
+                  [style.color]="modalDiscountType === 'FIXED' ? '#0f172a' : '#64748b'"
+                  [style.box-shadow]="modalDiscountType === 'FIXED' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'">
+            Fixed Amount
+          </button>
+          <button type="button" 
+                  [class.active]="modalDiscountType === 'PERCENTAGE'" 
+                  (click)="modalDiscountType = 'PERCENTAGE'"
+                  style="flex: 1; padding: 0.5rem; border: none; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease;"
+                  [style.background]="modalDiscountType === 'PERCENTAGE' ? '#ffffff' : 'transparent'"
+                  [style.color]="modalDiscountType === 'PERCENTAGE' ? '#0f172a' : '#64748b'"
+                  [style.box-shadow]="modalDiscountType === 'PERCENTAGE' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'">
+            Percentage (%)
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label" style="font-weight: 700; font-size: 0.85rem; color: #334155; margin-bottom: 0.5rem; display: block;">
+          {{ modalDiscountType === 'PERCENTAGE' ? 'Discount Percentage' : 'Discount Amount' }}
+        </label>
+        <div class="input-with-addon" style="display: flex; align-items: center; border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; background: #ffffff;">
+          <span style="padding: 0.65rem 1rem; background: #f8fafc; color: #64748b; font-weight: 600; font-size: 0.9rem; border-right: 1px solid #cbd5e1;">
+            {{ modalDiscountType === 'PERCENTAGE' ? '%' : '₦' }}
+          </span>
+          <input type="number" 
+                 [(ngModel)]="modalDiscountAmount" 
+                 [ngModelOptions]="{standalone: true}" 
+                 min="0" 
+                 [max]="modalDiscountType === 'PERCENTAGE' ? 100 : 999999999" 
+                 placeholder="0.00" 
+                 style="flex: 1; padding: 0.65rem 0.85rem; border: none; outline: none; font-size: 1rem; font-weight: 600; color: #0f172a;">
+        </div>
+      </div>
+    </div>
+
+    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
+      <button type="button" class="btn-modal-cancel" (click)="showDiscountModal = false">Cancel</button>
+      <button type="button" class="btn-modal-save" (click)="saveDiscountModal()">
+        <i class="fas fa-check"></i> Apply Discount
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Additional Charges Modal Overlay -->
+<div class="custom-modal-backdrop" *ngIf="showChargesModal" (click)="showChargesModal = false">
+  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 500px;">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge" style="background: rgba(46, 178, 112, 0.12); color: #2EB270;">
+          <i class="fas fa-plus-circle"></i>
+        </div>
+        <h3>Additional Charges</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="showChargesModal = false">&times;</button>
+    </div>
+
+    <div class="custom-modal-body" style="padding: 1.5rem;">
+      <p style="margin: 0 0 1rem 0; font-size: 0.85rem; color: #64748b;">
+        Add fee items (e.g. Shipping, Handling, Installation) to include in the invoice total.
+      </p>
+
+      <!-- Input row to add new itemized charge -->
+      <div class="add-charge-input-row" style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
+        <input type="text" 
+               [(ngModel)]="newChargeLabel" 
+               [ngModelOptions]="{standalone: true}"
+               placeholder="Charge label (e.g. Shipping)" 
+               style="flex: 1.5; padding: 0.6rem 0.75rem; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.85rem; outline: none;">
+        <input type="number" 
+               [(ngModel)]="newChargeAmount" 
+               [ngModelOptions]="{standalone: true}"
+               min="0" 
+               placeholder="Amount (₦)" 
+               style="flex: 1; padding: 0.6rem 0.75rem; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.85rem; outline: none;">
+        <button type="button" 
+                (click)="addChargeItemToModal()"
+                style="padding: 0.6rem 1rem; background: #2EB270; color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;">
+          <i class="fas fa-plus"></i> Add
+        </button>
+      </div>
+
+      <!-- Itemized charges list -->
+      <div class="charges-list-container" style="max-height: 200px; overflow-y: auto; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.5rem;">
+        <div *ngIf="modalChargesList.length === 0" style="padding: 1.5rem; text-align: center; color: #94a3b8; font-size: 0.85rem;">
+          No additional charges added yet.
+        </div>
+        <div class="charge-item-row" 
+             *ngFor="let charge of modalChargesList; let i = index" 
+             style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.75rem; background: #ffffff; border-radius: 8px; margin-bottom: 0.35rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+          <span style="font-weight: 600; font-size: 0.875rem; color: #0f172a;">{{ charge.label }}</span>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-weight: 700; font-size: 0.9rem; color: #2EB270;">+{{ formatCurrency(charge.amount) }}</span>
+            <button type="button" 
+                    (click)="removeChargeItemFromModal(i)" 
+                    style="border: none; background: transparent; color: #ef4444; cursor: pointer; padding: 0.2rem 0.4rem; font-size: 0.85rem;">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total charges breakdown badge -->
+      <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: rgba(46, 178, 112, 0.08); border-radius: 10px; color: #166534;">
+        <span style="font-weight: 600; font-size: 0.85rem;">Total Additional Charges:</span>
+        <span style="font-weight: 800; font-size: 1rem; color: #2EB270;">+{{ formatCurrency(modalTotalCharges) }}</span>
+      </div>
+    </div>
+
+    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
+      <button type="button" class="btn-modal-cancel" (click)="showChargesModal = false">Cancel</button>
+      <button type="button" class="btn-modal-save" (click)="saveChargesModal()">
+        <i class="fas fa-check"></i> Save Charges
+      </button>
     </div>
   </div>
 </div>

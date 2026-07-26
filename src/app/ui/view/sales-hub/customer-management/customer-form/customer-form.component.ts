@@ -16,7 +16,7 @@ import { MessageService } from 'primeng/api';
   styleUrls: ['./customer-form.component.scss']
 })
 export class CustomerFormComponent implements OnInit, OnDestroy {
-  @Input() editId?: string;
+  @Input() editId?: string | number;
   @Output() saved = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
  
@@ -25,7 +25,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
   isSubmitting = false;
   isLoading = false;
   isEditMode = false;
-  customerId: string = '';
+  customerId: string | number = '';
 
   // UI State
   showPasswordField = false;
@@ -79,7 +79,8 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
 
     this.customerId = this.editId || this.route.snapshot.paramMap.get('id') || '';
-    this.isEditMode = !!this.customerId;
+    const cleanId = String(this.customerId);
+    this.isEditMode = !!cleanId;
 
     if (this.isEditMode) {
       this.loadCustomer();
@@ -94,7 +95,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
 
   private loadCustomer(): void {
     this.isLoading = true;
-    this.salesService.getCustomerById(this.customerId).subscribe({
+    this.salesService.getCustomerById(String(this.customerId)).subscribe({
       next: (customer: Customer | null) => {
         if (customer) {
           this.customerStats = customer;
@@ -163,7 +164,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
 
     let request;
     if (this.isEditMode) {
-      request = this.salesService.updateCustomer(this.customerId, customerData);
+      request = this.salesService.updateCustomer(String(this.customerId), customerData);
     } else {
       request = this.salesService.createCustomer(customerData);
     }
