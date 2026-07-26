@@ -26,6 +26,7 @@ import {
   LpoStatus,
   MonthlyMetric,
 } from '../../../domain/vendor-portal/vendor.dto';
+import { TableColumn } from '../../../shared-component/view/table/table.component';
 
 // ── Chart option shapes ──────────────────────────────────────────────────────
 // Same ApexCharts config pattern used elsewhere in the app (see
@@ -77,6 +78,35 @@ export class VendorDashboardComponent implements OnInit, OnDestroy {
 
   trendChart: Partial<TrendChartOptions> = {};
   pipelineChart: Partial<PipelineChartOptions> = {};
+
+  // Column configs for <app-table> — the same shared data-table component
+  // used on the RFQ/Quotations page, so these mini "quick access" tables
+  // are visually identical to it rather than a second, plainer table style.
+  // appTableBody overrides the <td> rendering but header count/order must
+  // still match these column arrays exactly.
+  upcomingRfqColumns: TableColumn[] = [
+    { header: 'RFQ', field: 'rfqNumber' },
+    { header: 'Client', field: 'clientName' },
+    { header: 'Due', align: 'right' },
+    { header: 'Status', align: 'right' },
+  ];
+
+  recentLpoColumns: TableColumn[] = [
+    { header: 'Order', field: 'lpoNumber' },
+    { header: 'Client', field: 'clientName' },
+    { header: 'Items' },
+    { header: 'Amount', align: 'right' },
+    { header: 'Delivery', align: 'right' },
+    { header: 'Status', align: 'right' },
+  ];
+
+  recentQuotationColumns: TableColumn[] = [
+    { header: 'Quotation', field: 'quotationNumber' },
+    { header: 'Client', field: 'clientName' },
+    { header: 'Valid Until', align: 'right' },
+    { header: 'Total', align: 'right' },
+    { header: 'Status', align: 'right' },
+  ];
 
   constructor(private vendorService: VendorService) {}
 
@@ -235,6 +265,73 @@ export class VendorDashboardComponent implements OnInit, OnDestroy {
     return map[status] ?? status;
   }
 
+  // ── Status → (tone, icon) for <app-vp-status> ──────────────────────────────────
+  // Same mapping used on the RFQ page — shape carries the meaning, colour reinforces it.
+  rfqStatusTone(s: string): 'info' | 'success' | 'danger' | 'neutral' {
+    const map: Record<string, 'info' | 'success' | 'danger' | 'neutral'> = {
+      open: 'info', converted: 'success', expired: 'danger', closed: 'neutral',
+    };
+    return map[s] ?? 'neutral';
+  }
+  rfqStatusIcon(s: string): 'dot' | 'check' | 'x' | 'dash' {
+    const map: Record<string, 'dot' | 'check' | 'x' | 'dash'> = {
+      open: 'dot', converted: 'check', expired: 'x', closed: 'dash',
+    };
+    return map[s] ?? 'dot';
+  }
+  quotStatusTone(s: string): 'neutral' | 'info' | 'warning' | 'success' | 'danger' {
+    const map: Record<string, 'neutral' | 'info' | 'warning' | 'success' | 'danger'> = {
+      draft: 'neutral', sent: 'info', revision_requested: 'warning', accepted: 'success', rejected: 'danger', withdrawn: 'neutral',
+    };
+    return map[s] ?? 'neutral';
+  }
+  quotStatusIcon(s: string): 'dash' | 'clock' | 'half' | 'check' | 'x' {
+    const map: Record<string, 'dash' | 'clock' | 'half' | 'check' | 'x'> = {
+      draft: 'dash', sent: 'clock', revision_requested: 'half', accepted: 'check', rejected: 'x', withdrawn: 'dash',
+    };
+    return map[s] ?? 'dash';
+  }
+  lpoStatusTone(s: string): 'warning' | 'success' | 'info' | 'danger' | 'neutral' {
+    const map: Record<string, 'warning' | 'success' | 'info' | 'danger' | 'neutral'> = {
+      pending: 'warning', accepted: 'info', fulfilled: 'success', rejected: 'danger', cancelled: 'neutral',
+    };
+    return map[s] ?? 'neutral';
+  }
+  lpoStatusIcon(s: string): 'clock' | 'dot' | 'check' | 'x' | 'dash' {
+    const map: Record<string, 'clock' | 'dot' | 'check' | 'x' | 'dash'> = {
+      pending: 'clock', accepted: 'dot', fulfilled: 'check', rejected: 'x', cancelled: 'dash',
+    };
+    return map[s] ?? 'dot';
+  }
+
+  // ── Hero sparkline ────────────────────────────────────────────────────────────
+  // A quiet 6-point line built from the same monthly revenue history the trend
+  // chart already renders — gives the revenue hero tile some texture without
+  // asking for another full chart. Points are normalised into a fixed
+  // viewBox so it never needs the actual pixel scale of the parent element.
+  sparklinePoints(metrics: MonthlyMetric[] | undefined): string {
+    if (!metrics || metrics.length < 2) return '';
+    const values = metrics.map((m) => m.revenue);
+    const max = Math.max(...values, 1);
+    const min = Math.min(...values, 0);
+    const range = max - min || 1;
+    const w = 100;
+    const h = 32;
+    const stepX = w / (values.length - 1);
+    return values
+      .map((v, i) => {
+        const x = i * stepX;
+        const y = h - ((v - min) / range) * h;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+  }
+
+  // ── Rating stars (data already existed via getPerformanceStats — just wasn't rendered) ──
+  ratingLabel(rating: number): string {
+    return rating.toFixed(1);
+  }
+
   // ── Formatting helpers ────────────────────────────────────────────────────────
   fmtDate(d: Date | undefined): string {
     if (!d) return '—';
@@ -293,27 +390,27 @@ export class VendorDashboardComponent implements OnInit, OnDestroy {
         zoom: { enabled: false },
         fontFamily: 'inherit',
       },
-      colors: ['#c9dde8', '#224957', '#16a34a'],
+      colors: ['#c3ccd2', '#224957', '#17845a'],
       stroke: { curve: 'smooth', width: [2, 2, 3] },
       dataLabels: { enabled: false },
       xaxis: {
         categories: metrics.map((m) => m.month.split(' ')[0]),
         axisBorder: { show: false },
         axisTicks:  { show: false },
-        labels: { style: { colors: '#9ab0bb', fontSize: '11px', fontFamily: 'inherit' } },
+        labels: { style: { colors: '#9aa7ae', fontSize: '11px', fontFamily: 'inherit' } },
       },
       yaxis: {
-        labels: { style: { colors: '#9ab0bb', fontSize: '11px', fontFamily: 'inherit' } },
+        labels: { style: { colors: '#9aa7ae', fontSize: '11px', fontFamily: 'inherit' } },
       },
       legend: {
         position: 'top',
         horizontalAlign: 'right',
         fontSize: '11px',
         fontFamily: 'inherit',
-        labels: { colors: '#5a7380' },
+        labels: { colors: '#566670' },
       },
       grid: {
-        borderColor: '#f0f4f8',
+        borderColor: '#eef2f5',
         strokeDashArray: 4,
         yaxis: { lines: { show: true } },
         xaxis: { lines: { show: false } },
@@ -345,14 +442,14 @@ export class VendorDashboardComponent implements OnInit, OnDestroy {
       ],
       chart: { type: 'donut', height: 272, fontFamily: 'inherit' },
       labels: ['Draft', 'Sent', 'Needs Revision', 'Accepted', 'Rejected / Other'],
-      colors: ['#d97706', '#2563eb', '#ea580c', '#16a34a', '#c9dde8'],
+      colors: ['#9aa7ae', '#2461d9', '#b3690a', '#17845a', '#e5eaed'],
       stroke: { show: true, width: 2, colors: ['#ffffff'] },
       dataLabels: { enabled: false },
       legend: {
         position: 'bottom',
         fontSize: '11px',
         fontFamily: 'inherit',
-        labels: { colors: '#5a7380' },
+        labels: { colors: '#566670' },
         itemMargin: { horizontal: 8, vertical: 3 },
       },
       plotOptions: {
@@ -361,14 +458,14 @@ export class VendorDashboardComponent implements OnInit, OnDestroy {
             size: '72%',
             labels: {
               show: true,
-              name:  { show: true, fontSize: '11px', color: '#9ab0bb', offsetY: 20 },
-              value: { show: true, fontSize: '22px', fontWeight: 700, color: '#1a2c35', offsetY: -16 },
+              name:  { show: true, fontSize: '11px', color: '#9aa7ae', offsetY: 20 },
+              value: { show: true, fontSize: '22px', fontWeight: 700, color: '#14181b', offsetY: -16 },
               total: {
                 show: true,
                 showAlways: true,
                 label: 'Win Rate',
                 fontSize: '11px',
-                color: '#9ab0bb',
+                color: '#9aa7ae',
                 formatter: () => `${stats.conversionRate}%`,
               },
             },

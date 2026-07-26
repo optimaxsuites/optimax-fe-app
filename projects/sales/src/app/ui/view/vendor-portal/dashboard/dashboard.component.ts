@@ -3,6 +3,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, take } from 'rxjs/operators';
 
 import { VendorService, computeQuotationTotals, isQuotationSubmittable } from '../../../service/vendor-portal/vendor.service';
+import { VendorPortalNavService } from '../../../service/vendor-portal/vendor-portal-nav.service';
 import {
   Rfq,
   Quotation,
@@ -12,6 +13,8 @@ import {
   MAX_REVISION_ROUNDS,
   Lpo,
   VendorProfile,
+  RfqAttachment,
+  RfqAttachmentType,
 } from '../../../domain/vendor-portal/vendor.dto';
 import { TableColumn } from '../../../shared-component/view/table/table.component';
 
@@ -143,7 +146,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     },
   ];
 
-  constructor(private vendorService: VendorService) {}
+  constructor(
+    private vendorService: VendorService,
+    private nav: VendorPortalNavService,
+  ) {}
 
   ngOnInit(): void {
     this.vendorService.loadRfqs();
@@ -177,6 +183,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
 
     this.refreshStats();
+
+    // Command palette hand-off: "open RFQ-2026-004" / "open QT-..." lands here.
+    this.nav.focusRequest$.pipe(takeUntil(this.destroy$)).subscribe((req) => {
+      if (!req) return;
+      if (req.kind === 'rfq') {
+        const rfq = this.rfqs.find((r) => r.id === req.id);
+        if (rfq) {
+          this.activeTable = 'rfqs';
+          this.onRfqRowClick(rfq);
+          this.nav.clearFocusRequest();
+        }
+      } else if (req.kind === 'quotation') {
+        const q = this.quotations.find((x) => x.id === req.id);
+        if (q) {
+          this.activeTable = 'quotations';
+          this.openQuotationSidePanel(q);
+          this.nav.clearFocusRequest();
+        }
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -585,6 +611,71 @@ export class DashboardComponent implements OnInit, OnDestroy {
   downloadQuotation(q: Quotation, e: MouseEvent): void {
     e.stopPropagation();
     console.log('Download Quotation', q.quotationNumber);
+  }
+
+  // Full spec viewing — opens/downloads an RFQ attachment (spec sheet,
+  // drawing, terms doc, etc). In this demo environment files are mock URLs,
+  // so we just surface the intent; a real backend would stream the file.
+  downloadAttachment(file: RfqAttachment, e: MouseEvent): void {
+    e.stopPropagation();
+    window.open(file.url, '_blank', 'noopener');
+  }
+
+  // ── Status → (tone, icon) mapping for <app-vp-status> ──────────────────────────
+  // Shape (icon) carries the meaning; tone (color) reinforces it — see
+  // status-badge.component.ts for the rationale.
+  rfqStatusTone(s: string): 'info' | 'success' | 'danger' | 'neutral' {
+    const map: Record<string, 'info' | 'success' | 'danger' | 'neutral'> = {
+      open: 'info',
+      converted: 'success',
+      expired: 'danger',
+      closed: 'neutral',
+    };
+    return map[s] ?? 'neutral';
+  }
+  rfqStatusIcon(s: string): 'dot' | 'check' | 'x' | 'dash' {
+    const map: Record<string, 'dot' | 'check' | 'x' | 'dash'> = {
+      open: 'dot',
+      converted: 'check',
+      expired: 'x',
+      closed: 'dash',
+    };
+    return map[s] ?? 'dot';
+  }
+  quotStatusTone(s: string): 'neutral' | 'info' | 'warning' | 'success' | 'danger' {
+    const map: Record<string, 'neutral' | 'info' | 'warning' | 'success' | 'danger'> = {
+      draft: 'neutral',
+      sent: 'info',
+      revision_requested: 'warning',
+      accepted: 'success',
+      rejected: 'danger',
+      withdrawn: 'neutral',
+    };
+    return map[s] ?? 'neutral';
+  }
+  quotStatusIcon(s: string): 'dash' | 'clock' | 'half' | 'check' | 'x' {
+    const map: Record<string, 'dash' | 'clock' | 'half' | 'check' | 'x'> = {
+      draft: 'dash',
+      sent: 'clock',
+      revision_requested: 'half',
+      accepted: 'check',
+      rejected: 'x',
+      withdrawn: 'dash',
+    };
+    return map[s] ?? 'dash';
+  }
+
+  attachmentIconBg(type: RfqAttachmentType): string {
+    const map: Record<RfqAttachmentType, string> = {
+      pdf: 'bg-[#fceeed] text-[#c02c2c]',
+      doc: 'bg-[#eaf1fd] text-[#2461d9]',
+      xls: 'bg-[#e7f6ef] text-[#17845a]',
+      image: 'bg-[#f3ecfb] text-[#7c3aed]',
+      dwg: 'bg-[#fdf1e0] text-[#b3690a]',
+      zip: 'bg-[#eef2f5] text-[#566670]',
+      other: 'bg-[#eef2f5] text-[#566670]',
+    };
+    return map[type] ?? map.other;
   }
 
   // ── Formatting ────────────────────────────────────────────────────────────────
