@@ -3,7 +3,7 @@ import { MenuItem } from '../../domain/menuItem.dto';
 import { NavigationLinksService } from '../navigation-links/navigation-links.service';
 import { BehaviorSubject, map, Observable } from 'rxjs';
 import { AppRegisterServiceService } from '../app-register-service.service';
- 
+
 @Injectable({
   providedIn: 'root'
 })
@@ -95,6 +95,14 @@ export class MenuItemsService {
           icon: 'fas fa-shopping-cart',
           description: 'View and manage vendor purchase requests.'
         },
+        {
+          label: 'Vendor Management',
+          code: 'COM_VENDOR_MGMT',
+          route: this.navigationLink.getLink('VMLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-shopping-cart',
+          description: 'View and manage vendor onboarding and lifecycle.'
+        },
 
         // ── Partners ──────────────────────────────────────────────────────────
         { label: 'Partners', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
@@ -118,7 +126,7 @@ export class MenuItemsService {
           description: 'View and manage reports and analytics.'
         }
       ]
-    },    
+    },
     {
       label: 'Purchase',
       code: 'PURCHASE',
@@ -129,7 +137,7 @@ export class MenuItemsService {
       shortDescription: 'Manage purchase orders and buying activities.',
       locked: true,
       active: false
-    },    
+    },
     {
       label: 'Inventory',
       code: 'INVENTORY',
@@ -140,7 +148,7 @@ export class MenuItemsService {
       shortDescription: 'Track and manage stock levels and inventory flow.',
       locked: true,
       active: false
-    },    
+    },
     {
       label: 'Finance',
       code: 'optimaXAccounting',
@@ -465,7 +473,7 @@ export class MenuItemsService {
       shortDescription: 'Track execution, reviews, and operational productivity in one workspace.',
       locked: true,
       active: true
-    },    
+    },
     {
       label: 'Point of Sale (POS)',
       code: 'optimaXPOS',
@@ -665,7 +673,7 @@ export class MenuItemsService {
           description: 'Process guest payments and manage billing.'
         }
       ]
-    },    
+    },
     {
       label: 'CRM',
       code: 'CRM',
@@ -679,43 +687,43 @@ export class MenuItemsService {
       submenu: [
         // ── Overview ──────────────────────────────────────────────────────────
         { label: 'Overview', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
-        { label: 'Dashboard',    code: 'CRM_DASHBOARD',  route: this.navigationLink.getLink('crmLink'),             roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-tachometer-alt',   description: 'CRM overview dashboard.' },
+        { label: 'Dashboard', code: 'CRM_DASHBOARD', route: this.navigationLink.getLink('crmLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-tachometer-alt', description: 'CRM overview dashboard.' },
 
         // ── Customers ─────────────────────────────────────────────────────────
         { label: 'Customers', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
-        { label: 'Contacts',     code: 'CRM_CONTACTS',   route: this.navigationLink.getLink('crmContactsLink'),     roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-address-book',     description: 'Manage CRM contacts.' },
-        { label: 'Accounts',     code: 'CRM_ACCOUNTS',   route: this.navigationLink.getLink('crmAccountsLink'),     roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-building',         description: 'Manage CRM accounts.' },
+        { label: 'Contacts', code: 'CRM_CONTACTS', route: this.navigationLink.getLink('crmContactsLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-address-book', description: 'Manage CRM contacts.' },
+        { label: 'Accounts', code: 'CRM_ACCOUNTS', route: this.navigationLink.getLink('crmAccountsLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-building', description: 'Manage CRM accounts.' },
 
         // ── Sales ─────────────────────────────────────────────────────────────
         { label: 'Sales', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
-        { label: 'Pipeline',     code: 'CRM_PIPELINE',   route: this.navigationLink.getLink('crmPipelineLink'),     roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-stream',           description: 'Manage sales pipeline.' },
-        { label: 'Leads',        code: 'CRM_LEADS',      route: this.navigationLink.getLink('crmLeadsLink'),        roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-crosshairs',       description: 'Manage leads.' },
-        { label: 'Quotes & CPQ', code: 'CRM_QUOTES',     route: this.navigationLink.getLink('crmQuotesLink'),       roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-file-invoice',     description: 'Manage quotes and CPQ.' },
+        { label: 'Pipeline', code: 'CRM_PIPELINE', route: this.navigationLink.getLink('crmPipelineLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-stream', description: 'Manage sales pipeline.' },
+        { label: 'Leads', code: 'CRM_LEADS', route: this.navigationLink.getLink('crmLeadsLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-crosshairs', description: 'Manage leads.' },
+        { label: 'Quotes & CPQ', code: 'CRM_QUOTES', route: this.navigationLink.getLink('crmQuotesLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-file-invoice', description: 'Manage quotes and CPQ.' },
 
         // ── Marketing ─────────────────────────────────────────────────────────
         { label: 'Marketing', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
-        { label: 'Campaigns',    code: 'CRM_CAMPAIGNS',  route: this.navigationLink.getLink('crmCampaignsLink'),    roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-bullhorn',         description: 'Manage marketing campaigns.' },
-        { label: 'Activities',   code: 'CRM_ACTIVITIES', route: this.navigationLink.getLink('crmActivitiesLink'),   roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-calendar-alt',     description: 'Manage CRM activities.' },
+        { label: 'Campaigns', code: 'CRM_CAMPAIGNS', route: this.navigationLink.getLink('crmCampaignsLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-bullhorn', description: 'Manage marketing campaigns.' },
+        { label: 'Activities', code: 'CRM_ACTIVITIES', route: this.navigationLink.getLink('crmActivitiesLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-calendar-alt', description: 'Manage CRM activities.' },
 
         // ── Service ───────────────────────────────────────────────────────────
         { label: 'Service', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
-        { label: 'Contracts',    code: 'CRM_CONTRACTS',  route: this.navigationLink.getLink('crmContractsLink'),    roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-file-contract',    description: 'Manage CRM contracts.' },
-        { label: 'Support',      code: 'CRM_SUPPORT',    route: this.navigationLink.getLink('crmTicketsLink'),      roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-headset',          description: 'Manage support tickets.' },
+        { label: 'Contracts', code: 'CRM_CONTRACTS', route: this.navigationLink.getLink('crmContractsLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-file-contract', description: 'Manage CRM contracts.' },
+        { label: 'Support', code: 'CRM_SUPPORT', route: this.navigationLink.getLink('crmTicketsLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-headset', description: 'Manage support tickets.' },
 
         // ── Insights ──────────────────────────────────────────────────────────
         { label: 'Insights', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
-        { label: 'Reports',      code: 'CRM_REPORTS',    route: this.navigationLink.getLink('crmReportsLink'),      roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-chart-bar',        description: 'Pre-built and custom CRM reports.' },
+        { label: 'Reports', code: 'CRM_REPORTS', route: this.navigationLink.getLink('crmReportsLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-chart-bar', description: 'Pre-built and custom CRM reports.' },
 
         // ── Configuration ─────────────────────────────────────────────────────
         { label: 'Configuration', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
-        { label: 'Automation',   code: 'CRM_AUTOMATION', route: this.navigationLink.getLink('crmAutomationLink'),   roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-bolt',             description: 'Workflows and automation rules.' },
-        { label: 'Government',   code: 'CRM_GOVERNMENT', route: this.navigationLink.getLink('crmGovernmentLink'),   roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-landmark',         description: 'Government and public sector CRM.' },
-        { label: 'Commissions',  code: 'CRM_COMMISSION', route: this.navigationLink.getLink('crmCommissionLink'),   roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-money-bill-wave',  description: 'Commission schemes, sales targets, actuals, and approval.', doNotRegisterAsPermission: true },
-        { label: 'CRM Settings', code: 'CRM_SETTINGS',   route: this.navigationLink.getLink('crmSettingsLink'),     roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-cog',              description: 'CRM configuration settings.' },
+        { label: 'Automation', code: 'CRM_AUTOMATION', route: this.navigationLink.getLink('crmAutomationLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-bolt', description: 'Workflows and automation rules.' },
+        { label: 'Government', code: 'CRM_GOVERNMENT', route: this.navigationLink.getLink('crmGovernmentLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-landmark', description: 'Government and public sector CRM.' },
+        { label: 'Commissions', code: 'CRM_COMMISSION', route: this.navigationLink.getLink('crmCommissionLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-money-bill-wave', description: 'Commission schemes, sales targets, actuals, and approval.', doNotRegisterAsPermission: true },
+        { label: 'CRM Settings', code: 'CRM_SETTINGS', route: this.navigationLink.getLink('crmSettingsLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-cog', description: 'CRM configuration settings.' },
       ],
-    },    
+    },
     {
-      label: 'Expense', 
+      label: 'Expense',
       code: 'optimaXExpense',
       icon: 'fas fa-money-bill-wave',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
@@ -763,7 +771,7 @@ export class MenuItemsService {
           description: 'Generate financial reports based on expense data and categories.'
         }
       ]
-    },    
+    },
     {
       label: 'Vendor',
       code: 'VENDOR',
@@ -774,7 +782,7 @@ export class MenuItemsService {
       shortDescription: 'Track and manage supplier details, contracts, and compliance.',
       locked: true,
       active: false
-    },    
+    },
     {
       label: 'Tender',
       code: 'TENDER',
@@ -785,7 +793,7 @@ export class MenuItemsService {
       shortDescription: 'Manage procurement notices, bids, and evaluation processes.',
       locked: true,
       active: false
-    },    
+    },
     {
       label: 'Settings',
       route: this.navigationLink.getLink('settingsLink'),
@@ -989,16 +997,16 @@ export class MenuItemsService {
     },
   ];
 
-  appList  = []
+  appList = []
   private unlockedModules$ = new BehaviorSubject<MenuItem[]>([]);
   private modulesRolePermissions = [
     {
       name: 'POS',
-      forms: ['product','report', 'sales', 'inventory', 'checkout']
+      forms: ['product', 'report', 'sales', 'inventory', 'checkout']
     },
     {
       name: 'Human Resources',
-      forms: ['employee','recruitment', 'Job vacancy', 'leave', 'loan', 'attendance', 'payroll']
+      forms: ['employee', 'recruitment', 'Job vacancy', 'leave', 'loan', 'attendance', 'payroll']
     },
     {
       name: 'Work Productivity',
@@ -1006,7 +1014,7 @@ export class MenuItemsService {
     },
   ]
   private settingsMenuItemsSubject = new BehaviorSubject<MenuItem[]>([]);
-  settingsMenuItems$ = this.settingsMenuItemsSubject.asObservable(); 
+  settingsMenuItems$ = this.settingsMenuItemsSubject.asObservable();
   // private menuItemsSubject = new BehaviorSubject<MenuItem[]>([]);
   // menuItems$ = this.menuItemsSubject.asObservable(); 
 
@@ -1014,12 +1022,12 @@ export class MenuItemsService {
   constructor(public navigationLink: NavigationLinksService, private appRegisterService: AppRegisterServiceService) {
     const token = sessionStorage.getItem('Token');
     if (token) {
-     this.getRegisterApps()
+      this.getRegisterApps()
     }
-  
-   
+
+
   }
-  
+
   private getRegisteredItemCode(app: any): string {
     return String(app?.uid || app?.appCode || app?.code || app?.name || '').trim();
   }
@@ -1028,12 +1036,12 @@ export class MenuItemsService {
     return String(app?.appName || app?.label || app?.title || app?.name || '').trim();
   }
 
-  async getRegisterApps(){
+  async getRegisterApps() {
     this.appRegisterService.getRegisteredApp().subscribe({
       next: (app: any) => {
         this.appList = app;
-         this.loadUnlockedModules(); 
-         this.loadUnlockedSettingsModules();
+        this.loadUnlockedModules();
+        this.loadUnlockedSettingsModules();
       },
       error: (error: any) => {
         console.error('Error fetching app data:', error);
@@ -1053,13 +1061,13 @@ export class MenuItemsService {
     const module = this.menuItems.find(m => m.label === label);
     if (module) {
       module.locked = false;
-      if(module.label === "POS"){
+      if (module.label === "POS") {
         const checkoutModule = this.menuItems.find(module => module.label === 'Checkout');
         if (checkoutModule) {
           checkoutModule.locked = false;
         }
       }
-      this.saveUnlockedModules(); 
+      this.saveUnlockedModules();
       // this.unlockedModules$.next(this.getUnlockedModules());
 
     }
@@ -1068,24 +1076,24 @@ export class MenuItemsService {
   private saveUnlockedModules() {
     const unlockedRoutes = this.menuItems.filter(m => !m.locked).map(m => m.label);
     localStorage.setItem('unlockedModules', JSON.stringify(unlockedRoutes));
-  } 
+  }
 
- loadUnlockedModules() {
+  loadUnlockedModules() {
     const unlockedRoutes = this.appList.map((app: any) => this.getRegisteredItemCode(app)).filter(Boolean)
     const unlockedLabels = this.appList.map((app: any) => this.getRegisteredItemLabel(app)).filter(Boolean)
-    
+
     let unlockedCount = 0;
-  
+
     this.menuItems.forEach(module => {
       if (unlockedRoutes.includes(module.code || 'null') || unlockedLabels.includes(module.label)) {
         module.locked = false;
-  
+
         if (module.label !== 'Dashboard') {
           unlockedCount++;
         }
       }
     });
-  
+
     if (unlockedCount > 0) {
       const settingsModule = this.menuItems.find(module => module.label === 'Settings');
       if (settingsModule) {
@@ -1100,7 +1108,7 @@ export class MenuItemsService {
     // const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
     const unlockedRoutes = this.appList.map((app: any) => this.getRegisteredItemCode(app)).filter(Boolean)
     const unlockedLabels = this.appList.map((app: any) => this.getRegisteredItemLabel(app)).filter(Boolean)
-  
+
     const alwaysUnlocked = ['General Settings', 'User and Roles Management', 'MODULE_REGISTRY', 'BUG_TRACKER'];
     this.settingsMenuItems.forEach((module) => {
       if (alwaysUnlocked.includes(module.code || '')) {
@@ -1109,10 +1117,10 @@ export class MenuItemsService {
         module.locked = !(unlockedRoutes.includes(module.code || 'null') || unlockedLabels.includes(module.label));
       }
     });
-    this.settingsMenuItemsSubject.next([...this.settingsMenuItems]); 
+    this.settingsMenuItemsSubject.next([...this.settingsMenuItems]);
 
   }
-  
+
   getUnlockedModules(): MenuItem[] {
     let unlockedModules = this.menuItems.filter(module => !module.locked || module.label === 'Dashboard');
 
@@ -1122,12 +1130,12 @@ export class MenuItemsService {
         module.label === 'Settings' ? { ...module, locked: false } : module
       );
     }
-  
+
     return [...unlockedModules];
-   
+
   }
 
-  getUnlockedModulesRole(){
+  getUnlockedModulesRole() {
     let unlockedModules = this.settingsMenuItems.filter(module => !module.locked);
     return this.modulesRolePermissions.filter(module => unlockedModules.some(m => m.label === module.name))
   }
@@ -1142,7 +1150,7 @@ export class MenuItemsService {
       return !module.locked;
     });
   }
-  
+
   getAllModules() {
     return this.menuItems.filter(module => module.label !== 'Dashboard' && module.label !== 'Settings' && module.label !== 'Checkout');
   }
@@ -1152,62 +1160,62 @@ export class MenuItemsService {
   }
 
   getMenuItems$(): Observable<MenuItem[]> {
-  if (this.isSuperUser()) {
-    return this.getUnlockedModulesObservable();
+    if (this.isSuperUser()) {
+      return this.getUnlockedModulesObservable();
+    }
+
+    return this.getUnlockedModulesObservable().pipe(
+      map(modules => {
+        const allowed = this.getUserPermissions();
+
+        const filterSubmenu = (submenu: any[]) => {
+          return submenu.filter(item =>
+            item.doNotRegisterAsPermission ||
+            allowed.codes.includes(item.code) ||
+            allowed.labels.some(l => l.toLowerCase() === item.label?.toLowerCase())
+          );
+        };
+
+        const filteredMenus = modules
+          .map(menu => {
+            if (menu.code === 'dashboard') {
+              return menu;
+            }
+
+            if (menu.submenu) {
+              const filteredSubmenu = filterSubmenu(menu.submenu);
+              if (filteredSubmenu.length > 0) {
+                return { ...menu, submenu: filteredSubmenu, locked: false };
+              } else {
+                return null;
+              }
+            }
+
+            return menu.doNotRegisterAsPermission || allowed.codes.includes(menu.code ?? "") ? menu : null;
+          })
+          .filter(Boolean) as MenuItem[];
+
+        return filteredMenus;
+      })
+    );
   }
 
-  return this.getUnlockedModulesObservable().pipe(
-    map(modules => {
-      const allowed = this.getUserPermissions();
-
-      const filterSubmenu = (submenu: any[]) => {
-        return submenu.filter(item =>
-          item.doNotRegisterAsPermission ||
-          allowed.codes.includes(item.code) ||
-          allowed.labels.some(l => l.toLowerCase() === item.label?.toLowerCase())
-        );
-      };
-
-      const filteredMenus = modules
-        .map(menu => {
-          if (menu.code === 'dashboard') {
-            return menu;
-          }
-
-          if (menu.submenu) {
-            const filteredSubmenu = filterSubmenu(menu.submenu);
-            if (filteredSubmenu.length > 0) {
-              return { ...menu, submenu: filteredSubmenu, locked: false };
-            } else {
-              return null;
-            }
-          }
-
-          return menu.doNotRegisterAsPermission || allowed.codes.includes(menu.code ?? "") ? menu : null;
-        })
-        .filter(Boolean) as MenuItem[];
-
-      return filteredMenus;
-    })
-  );
-}
-
   getUserPermissions(): { codes: string[], labels: string[] } {
-  const user = JSON.parse(sessionStorage.getItem('userApplicationRole') || '{}');
-  if (!user?.appRole?.appRolePermissionList) return { codes: [], labels: [] };
+    const user = JSON.parse(sessionStorage.getItem('userApplicationRole') || '{}');
+    if (!user?.appRole?.appRolePermissionList) return { codes: [], labels: [] };
 
-  const perms = user.appRole.appRolePermissionList
-    .filter((perm: any) => perm.canView || perm.superuser);
+    const perms = user.appRole.appRolePermissionList
+      .filter((perm: any) => perm.canView || perm.superuser);
 
-  return {
-    codes:  perms.map((p: any) => p.appRegister?.appCode).filter(Boolean),
-    labels: perms.map((p: any) => p.appRegister?.appName).filter(Boolean),
-  };
-}
+    return {
+      codes: perms.map((p: any) => p.appRegister?.appCode).filter(Boolean),
+      labels: perms.map((p: any) => p.appRegister?.appName).filter(Boolean),
+    };
+  }
 
-isSuperUser(): boolean {
-  const roles = sessionStorage.getItem("role");
-  return roles?.includes("ROLE_ADMIN") ?? false;
-}
+  isSuperUser(): boolean {
+    const roles = sessionStorage.getItem("role");
+    return roles?.includes("ROLE_ADMIN") ?? false;
+  }
 
 }
