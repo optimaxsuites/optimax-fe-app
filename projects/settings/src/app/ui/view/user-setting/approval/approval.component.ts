@@ -28,11 +28,20 @@ export class ApprovalComponent implements OnInit {
   // This main form will hold all submodules as dynamic groups
   approvalForm: FormGroup;
   modules: any[] = [];
+  filteredDisplayModules: any[] = [];
+  moduleSearchTerm = '';
   roles: any[] = [];
   users: any[] = [];
   readonly AVAILABLE_ACTIONS = ['CREATE', 'UPDATE', 'DELETE'];
   selectedAction: { [key: string]: string } = {}
   private readonly submoduleControlNameByIds = new Map<string, string>();
+
+  applyModuleSearch(): void {
+    const term = this.moduleSearchTerm.toLowerCase().trim();
+    this.filteredDisplayModules = term
+      ? this.modules.filter(m => m.title.toLowerCase().includes(term))
+      : [...this.modules];
+  }
 
   constructor(
     private fb: FormBuilder, 
@@ -58,6 +67,7 @@ export class ApprovalComponent implements OnInit {
     this.moduleService.getModules().subscribe({
         next: (modules) => {
           this.modules = modules;
+          this.filteredDisplayModules = [...modules];
           this.buildApprovalForm();
           
           // Load existing configurations from backend

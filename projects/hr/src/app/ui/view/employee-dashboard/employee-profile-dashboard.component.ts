@@ -112,14 +112,47 @@ export class EmployeeProfileDashboardComponent {
 
   statusDropdownOpen = false;
   changingStatus = false;
+
+  // Exit reason modal
+  showExitReasonModal = false;
+  pendingExitStatus = '';
+  exitReasonText = '';
+  readonly EXIT_STATUSES = new Set(['TERMINATED', 'RESIGNED', 'FIRED', 'INTERNSHIP_ENDED']);
+
+  private isAdmin(): boolean {
+    try {
+      const basicRole = sessionStorage.getItem('role') || '';
+      if (basicRole.includes('ROLE_ADMIN')) return true;
+      const appRole = JSON.parse(sessionStorage.getItem('userApplicationRole') || '{}');
+      return (appRole?.appRole?.name || '').toLowerCase().includes('admin');
+    } catch { return false; }
+  }
+
+  private showApiError(err: any, friendlyMsg: string): void {
+    if (this.isAdmin()) {
+      const tech = err?.error?.message || err?.error?.detail || err?.message || JSON.stringify(err?.error || err);
+      this.messageService.add({ severity: 'error', summary: 'Error (Admin Detail)', detail: tech, key: 'tl', life: 0 });
+    } else {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: friendlyMsg, key: 'tl', life: 5000 });
+    }
+  }
   deletingEmployee = false;
   resendingCredentials = false;
   uploadingPhoto = false;
   showDeleteConfirm = false;
   canManageEmployees = false;
+  salaryVisible = false;
+  jobTitleOptions: string[] = [];
+  supervisorOptions: string[] = [];
   changeStatusOptions = [
-    { label: 'Active', value: 'ACTIVE', color: '#10b981' },
-    { label: 'Joining', value: 'JOINING', color: '#facc15' },
+    { label: 'Active',            value: 'ACTIVE',            color: '#10b981' },
+    { label: 'Joining',           value: 'JOINING',           color: '#facc15' },
+    { label: 'Suspended',         value: 'SUSPENDED',         color: '#f97316' },
+    { label: 'On Leave',          value: 'ON_LEAVE',          color: '#3b82f6' },
+    { label: 'Terminated',        value: 'TERMINATED',        color: '#ef4444' },
+    { label: 'Resigned',          value: 'RESIGNED',          color: '#8b5cf6' },
+    { label: 'Contract',          value: 'CONTRACT',          color: '#64748b' },
+    { label: 'Internship Ended',  value: 'INTERNSHIP_ENDED',  color: '#a855f7' },
   ];
   recentPayslips: any[] = [];
   payslipsLoading = false;
@@ -184,9 +217,25 @@ export class EmployeeProfileDashboardComponent {
     this.canManageEmployees = this.resolveCanManageEmployees();
     this.fetchEmployeeForCurrentUser();
     this.dataService.getDepartment().subscribe({ next: (d: any[]) => this.departments = d, error: () => { } });
-    this.dataService.getAllLevels().subscribe({ next: (d: any[]) => this.levels = d, error: () => { } });
+    this.dataService.getAllLevels().subscribe({ next: (d: any[]) => this.levels = (d || []).map((l: any) => ({ ...l, displayLabel: l.position?.trim() || l.name })), error: () => { } });
     this.dataService.getGender().subscribe({ next: (d: any[]) => this.genders = d, error: () => { } });
     this.dataService.getJobType().subscribe({ next: (d: any[]) => this.jobTypes = d, error: () => { } });
+    this.employeeService.getAllEmployee().subscribe({
+      next: (emps: any[]) => {
+        this.employees = emps;
+        const titles = new Set<string>();
+        const supervisors = new Set<string>();
+        emps.forEach((e: any) => {
+          const title = (e?.jobTitle || '').trim();
+          if (title) titles.add(title);
+          const name = `${e?.firstName || ''} ${e?.lastName || ''}`.trim();
+          if (name) supervisors.add(name);
+        });
+        this.jobTitleOptions = Array.from(titles).sort();
+        this.supervisorOptions = Array.from(supervisors).sort();
+      },
+      error: () => {}
+    });
   }
 
   private resolveCanManageEmployees(): boolean {
@@ -645,7 +694,7 @@ export class EmployeeProfileDashboardComponent {
         const slips: any[] = [];
         runs.forEach(run => {
           const match = (run?.employees ?? []).find((e: any) =>
-            e?.employee?.id === empId || e?.employeeId === empId || e?.id === empId
+            String(e?.employee?.id) === String(empId) || String(e?.employeeId) === String(empId)
           );
           if (match) {
             slips.push({
@@ -694,13 +743,14 @@ export class EmployeeProfileDashboardComponent {
   }
 
   openPayslipDetail(slip: any): void {
+    const emp = this.employeeInView || slip?.employee || {};
     this.activePayslip = {
-      empId: this.employeeInView?.id,
-      name: `${this.employeeInView?.firstName ?? ''} ${this.employeeInView?.lastName ?? ''}`.trim(),
-      department: this.employeeInView?.department?.name || this.employeeInView?.department,
-      level: this.employeeInView?.level?.name || this.employeeInView?.level,
-      accountNumber: this.employeeInView?.accountNumber,
-      bank: this.employeeInView?.bankName,
+      empId: emp.id,
+      name: `${emp.firstName ?? ''} ${emp.lastName ?? ''}`.trim(),
+      department: emp.department?.name || emp.department,
+      level: emp.level?.name || emp.level,
+      accountNumber: emp.accountNumber,
+      bank: emp.bankName,
       ...slip
     };
     this.viewPayslip = true;
@@ -793,15 +843,22 @@ export class EmployeeProfileDashboardComponent {
 
     this.saving = true;
     this.employeeService.updateEmployee(data, this.employeeInView.id).subscribe({
-      next: (response) => {
-        const updated = response?.data ?? response ?? {};
-        this.employeeInView = { ...this.employeeInView, ...updated, ...patch };
+      next: () => {
+        this.employeeService.getEmployeeById(this.employeeInView.id).subscribe({
+          next: (fresh: any) => {
+            this.applyEmployeeView(fresh);
+            localStorage.setItem('employeeInView', JSON.stringify(fresh));
+          },
+          error: () => {
+            this.employeeInView = { ...this.employeeInView, ...patch };
+            this.patchEditForm();
+          }
+        });
         this.originalProfilePhotoUrl =
           this.employeeInView?.imageUrl || this.employeeProfilePhotoUrl || null;
         this.pendingProfilePhotoDataUrl = null;
         this.pendingProfilePhotoName = null;
         this.pendingProfilePhotoFile = null;
-        this.patchEditForm();
         this.messageService.add({
           severity: 'success',
           summary: 'Profile updated',
@@ -811,13 +868,8 @@ export class EmployeeProfileDashboardComponent {
         this.isEditMode = false;
         this.isEditOpen = false;
       },
-      error: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Update failed',
-          detail: 'Unable to save changes. Please try again.',
-          key: 'global',
-        });
+      error: (err: any) => {
+        this.showApiError(err, 'Unable to save changes. Please try again.');
       },
       complete: () => {
         this.saving = false;
@@ -1297,33 +1349,65 @@ export class EmployeeProfileDashboardComponent {
     this.statusDropdownOpen = false;
     if (!this.employeeInView || this.employeeInView.employeeStatus === newStatus || this.changingStatus) return;
 
+    if (this.EXIT_STATUSES.has(newStatus)) {
+      this.pendingExitStatus = newStatus;
+      this.exitReasonText = '';
+      this.showExitReasonModal = true;
+      return;
+    }
+
+    this.applyStatusChange(newStatus, '');
+  }
+
+  confirmExitReason(): void {
+    if (!this.exitReasonText.trim()) return;
+    this.showExitReasonModal = false;
+    this.applyStatusChange(this.pendingExitStatus, this.exitReasonText.trim());
+    this.pendingExitStatus = '';
+    this.exitReasonText = '';
+  }
+
+  cancelExitReason(): void {
+    this.showExitReasonModal = false;
+    this.pendingExitStatus = '';
+    this.exitReasonText = '';
+  }
+
+  getStatusLabel(value: string): string {
+    return this.changeStatusOptions.find(o => o.value === value)?.label ?? value;
+  }
+
+  private applyStatusChange(newStatus: string, exitReason: string): void {
     const prevStatus = this.employeeInView.employeeStatus;
     this.changingStatus = true;
     const name = `${this.employeeInView.firstName ?? ''} ${this.employeeInView.lastName ?? ''}`.trim();
     const label = this.changeStatusOptions.find(o => o.value === newStatus)?.label ?? newStatus;
 
-    const payload = {
-      ...this.employeeInView,
-      employeeStatus: newStatus,
-      department: this.employeeInView.department?.id ?? this.employeeInView.department,
-      level: this.employeeInView.level?.id ?? this.employeeInView.level,
-    };
+    const { data: basePayload } = this.buildUpdatePayload();
+    const currentUser = sessionStorage.getItem('username') || localStorage.getItem('username') || '';
+    const payload: any = { ...basePayload, employeeStatus: newStatus };
+    if (exitReason) {
+      payload.exitReason = exitReason;
+      payload.exitReasonBy = currentUser;
+    }
 
     this.employeeService.updateEmployee(payload, this.employeeInView.id).pipe(
       finalize(() => { this.changingStatus = false; })
     ).subscribe({
       next: () => {
-        this.employeeInView = { ...this.employeeInView, employeeStatus: newStatus };
+        this.employeeInView = { ...this.employeeInView, employeeStatus: newStatus, exitReason, exitReasonBy: currentUser };
         localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView));
         this.messageService.add({ severity: 'success', summary: 'Status Updated', detail: `${name} is now marked as ${label}.`, key: 'tl', life: 3000 });
         if (newStatus === 'ACTIVE' && prevStatus !== 'ACTIVE') {
           this.dispatchWelcomeToActiveNotifications(this.employeeInView, name);
         }
-        window.dispatchEvent(new CustomEvent('employee-record-changed'));
+        // Narrower event — updates only this employee in the list without a full refresh
+        window.dispatchEvent(new CustomEvent('employee-status-changed', {
+          detail: { id: this.employeeInView.id, employeeStatus: newStatus }
+        }));
       },
       error: (err) => {
-        const msg = err?.error?.message || err?.message || 'Failed to update status.';
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: msg, key: 'tl', life: 4000 });
+        this.showApiError(err, 'Unable to update employment status. Please try again.');
       }
     });
   }

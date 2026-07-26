@@ -114,7 +114,9 @@ export class AdminCreationFormComponent implements OnChanges {
 
     this.metadataService.ensureMetaLoaded();
     this.metadataService.departments$.subscribe(data => (this.departments = data));
-    this.metadataService.levels$.subscribe(data => (this.levels = data))
+    this.metadataService.levels$.subscribe(data =>
+      this.levels = (data || []).map((l: any) => ({ ...l, displayLabel: l.position?.trim() || l.name }))
+    )
     this.metadataService.leaves$.subscribe(data => (this.leaves = data));
    this.metadataService.employment$.subscribe(data => this.employments = data);
     this.metadataService.gender$.subscribe(data => (this.gender = data));

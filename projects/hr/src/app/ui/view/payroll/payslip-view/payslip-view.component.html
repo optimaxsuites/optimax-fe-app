@@ -1,95 +1,177 @@
-<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:2px solid #e5e7eb;margin-bottom:8px;">
-  <!-- Company profile section commented out -->
-  <p style="font-size:11px;color:#9ca3af;margin:0;">Payslip</p>
-</div>
-<div class="py-3 text-customBlue table-item">
-  <p class="text-center text-[20px] font-semibold">Payslip for {{ periodLabel }}</p>
+<div class="ps-wrapper">
 
-  <div class="my-5 px-5 flex justify-between w-full gap-10">
-    <div class="w-1/2">
-      <p class="bg-customGreen px-2 py-3 text-gray-50 rounded-md w-[50%] font-semibold">Employee Information</p>
-      <div class="flex flex-col gap-2 px-2">
-        <p class="font-semibold text-[15px] py-1">{{ payslip.name }}</p>
-        <p><span>ID: </span>{{ payslip.empId }}</p>
-        <p><span>Level: </span>{{ payslip.level }}</p>
-        <p><span>Department: </span>{{ payslip.department }}</p>
-        <p><span>Account Number: </span>{{ payslip.accountNumber }}</p>
-        <p><span>Bank Name: </span>{{ payslip.bank }}</p>
+  <!-- Action bar — excluded from PDF capture -->
+  <div class="ps-actions">
+    <div class="ps-actions__left">
+      <i class="fas fa-file-invoice-dollar ps-actions__icon"></i>
+      <div>
+        <p class="ps-actions__title">{{ payslip?.name || 'Employee' }}</p>
+        <p class="ps-actions__sub">{{ periodLabel }} Payslip</p>
       </div>
     </div>
-
-    <div class="w-1/2 grid grid-cols-3 gap-y-4">
-      <div>
-        <p class="title">Pay Date</p>
-        <p class="titleLight">{{ payDateLabel }}</p>
-      </div>
-      <div>
-        <p class="title">Pay Type</p>
-        <p class="titleLight">{{ payslip.type || 'Salary' }}</p>
-      </div>
-      <div>
-        <p class="title">Period</p>
-        <p class="titleLight">{{ periodLabel }}</p>
-      </div>
-      <div>
-        <p class="title">Payroll ID #</p>
-        <p class="titleLight">{{ payslip.empId }}/{{ payslip.month }}/{{ payslip.year }}</p>
-      </div>
-      <div>
-        <p class="title">Pay Method</p>
-        <p class="titleLight">Bank Transfer</p>
-      </div>
-      <div>
-        <p class="title">Days Worked</p>
-        <p class="titleLight">{{ payslip.daysWorked || '-' }}</p>
-      </div>
+    <div class="ps-actions__btns">
+      <button class="ps-btn ps-btn--outline" (click)="printPayslip()" [disabled]="isGeneratingPdf">
+        <i class="fas fa-print"></i>
+        Print
+      </button>
+      <button class="ps-btn ps-btn--primary" (click)="downloadPdf()" [disabled]="isGeneratingPdf">
+        <i class="fas" [class.fa-download]="!isGeneratingPdf" [class.fa-spinner]="isGeneratingPdf"
+          [class.fa-spin]="isGeneratingPdf"></i>
+        {{ isGeneratingPdf ? 'Generating…' : 'Download PDF' }}
+      </button>
     </div>
   </div>
 
-  <div class="px-5">
-    <table style="width:100%;min-height:fit-content;max-height:1000px;">
-      <thead>
-        <tr>
-          <th class="table-item" style="width: 70%;">Standard Summary</th>
-          <th class="table-item" style="width: 30%;">Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr class="bg-gray-50">
-          <td class="table-item">Base Salary</td>
-          <td class="table-item">{{ formatMoney(payslip.salary || payslip.basePay || 0) }}</td>
-        </tr>
-        <tr class="bg-gray-50">
-          <td class="table-item">Total Allowances</td>
-          <td class="table-item">{{ formatMoney(allowanceTotal) }}</td>
-        </tr>
-        <tr class="bg-gray-50">
-          <td class="table-item">Total Additions</td>
-          <td class="table-item">{{ formatMoney(additionsTotal) }}</td>
-        </tr>
-        <tr class="bg-gray-50">
-          <td class="table-item">Total Deductions</td>
-          <td class="table-item">{{ formatMoney(deductionsTotal) }}</td>
-        </tr>
-        <tr class="bg-green-300 font-bold text-[12px]">
-          <td class="table-item">Gross Pay</td>
-          <td class="table-item">{{ formatMoney(grossPay) }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <!-- Payslip document — captured by html2canvas -->
+  <div class="ps-doc" #payslipDoc>
 
-  <div class="px-5 my-7">
-    <table style="width:100%;min-height:fit-content;max-height:1000px;">
-      <tbody>
-        <tr class="bg-customGreen text-gray-50 font-bold text-[12px]">
-          <td class="table-item" style="width: 70%;">Net Pay</td>
-          <td class="table-item" style="width: 30%;">{{ formatMoney(payslip.netPayable || 0) }}</td>
-        </tr>
-      </tbody>
-    </table>
-    <p class="px-1 pt-3 text-[12px] text-gray-500">
-      Detailed additions and deduction lines remain available in salary details and payroll review.
-    </p>
-  </div>
+    <!-- ── Header ── -->
+    <div class="ps-header">
+      <div class="ps-header__brand">
+        <img *ngIf="logoUrl" [src]="logoUrl" alt="Company logo" class="ps-header__logo" crossorigin="anonymous" />
+        <div *ngIf="!logoUrl" class="ps-header__logo-placeholder">
+          <i class="fas fa-building"></i>
+        </div>
+        <div class="ps-header__names">
+          <p class="ps-header__company">{{ companyName }}</p>
+          <p class="ps-header__sub">Human Resources Department</p>
+        </div>
+      </div>
+      <div class="ps-header__right">
+        <p class="ps-header__label">PAYSLIP</p>
+        <p class="ps-header__period">{{ periodLabel }}</p>
+        <span class="ps-status" [ngClass]="statusClass()">{{ payslip?.runStatus || 'DRAFT' }}</span>
+      </div>
+    </div>
+
+    <!-- ── Employee Info Grid ── -->
+    <div class="ps-infobar">
+      <div class="ps-infobar__item">
+        <span class="ps-infobar__key">Employee Name</span>
+        <span class="ps-infobar__val">{{ payslip?.name || '—' }}</span>
+      </div>
+      <div class="ps-infobar__item">
+        <span class="ps-infobar__key">Employee ID</span>
+        <span class="ps-infobar__val">#{{ payslip?.empId || '—' }}</span>
+      </div>
+      <div class="ps-infobar__item">
+        <span class="ps-infobar__key">Department</span>
+        <span class="ps-infobar__val">{{ payslip?.department || '—' }}</span>
+      </div>
+      <div class="ps-infobar__item">
+        <span class="ps-infobar__key">Level / Grade</span>
+        <span class="ps-infobar__val">{{ payslip?.level || '—' }}</span>
+      </div>
+      <div class="ps-infobar__item">
+        <span class="ps-infobar__key">Pay Date</span>
+        <span class="ps-infobar__val">{{ payDateLabel }}</span>
+      </div>
+      <div class="ps-infobar__item">
+        <span class="ps-infobar__key">Pay Method</span>
+        <span class="ps-infobar__val">Bank Transfer</span>
+      </div>
+      <div class="ps-infobar__item">
+        <span class="ps-infobar__key">Bank</span>
+        <span class="ps-infobar__val">{{ payslip?.bank || '—' }}</span>
+      </div>
+      <div class="ps-infobar__item">
+        <span class="ps-infobar__key">Account Number</span>
+        <span class="ps-infobar__val">{{ payslip?.accountNumber || '—' }}</span>
+      </div>
+      <div class="ps-infobar__item" *ngIf="payslip?.daysWorked">
+        <span class="ps-infobar__key">Days Worked</span>
+        <span class="ps-infobar__val">{{ payslip.daysWorked }}</span>
+      </div>
+      <div class="ps-infobar__item" *ngIf="overtimePay > 0">
+        <span class="ps-infobar__key">Overtime Hours</span>
+        <span class="ps-infobar__val">{{ payslip?.overtimeHours || 0 }} hrs</span>
+      </div>
+    </div>
+
+    <!-- ── Earnings & Deductions ── -->
+    <div class="ps-body">
+
+      <!-- Earnings -->
+      <div class="ps-section">
+        <div class="ps-section__head ps-section__head--earn">
+          <i class="fas fa-arrow-trend-up"></i>
+          <span>Earnings</span>
+        </div>
+        <table class="ps-table">
+          <tbody>
+            <tr>
+              <td>Base Salary</td>
+              <td class="ps-table__amt">{{ fmt(payslip?.basePay || 0) }}</td>
+            </tr>
+            <tr *ngIf="allowanceTotal > 0">
+              <td>Allowances</td>
+              <td class="ps-table__amt">{{ fmt(allowanceTotal) }}</td>
+            </tr>
+            <tr *ngIf="overtimePay > 0">
+              <td>Overtime Pay</td>
+              <td class="ps-table__amt">{{ fmt(overtimePay) }}</td>
+            </tr>
+            <tr *ngIf="bonusTotal > 0">
+              <td>Bonuses &amp; Commissions</td>
+              <td class="ps-table__amt">{{ fmt(bonusTotal) }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="ps-table__total ps-table__total--earn">
+              <td>Gross Pay</td>
+              <td class="ps-table__amt">{{ fmt(grossPay) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Deductions -->
+      <div class="ps-section">
+        <div class="ps-section__head ps-section__head--ded">
+          <i class="fas fa-arrow-trend-down"></i>
+          <span>Deductions</span>
+        </div>
+        <table class="ps-table">
+          <tbody>
+            <tr *ngFor="let line of deductionLines">
+              <td>{{ line.label }}</td>
+              <td class="ps-table__amt">{{ fmt(line.amount) }}</td>
+            </tr>
+            <tr *ngIf="deductionLines.length === 0">
+              <td colspan="2" class="ps-table__empty">No deductions recorded</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="ps-table__total ps-table__total--ded">
+              <td>Total Deductions</td>
+              <td class="ps-table__amt">{{ fmt(totalDeductions) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- ── Net Pay ── -->
+    <div class="ps-netpay">
+      <div class="ps-netpay__inner">
+        <div class="ps-netpay__label-group">
+          <p class="ps-netpay__label">Net Pay</p>
+          <p class="ps-netpay__period">{{ periodLabel }}</p>
+        </div>
+        <p class="ps-netpay__amount">{{ fmt(netPay) }}</p>
+      </div>
+      <p class="ps-netpay__note">
+        <i class="fas fa-circle-info"></i>
+        Amount credited to {{ payslip?.bank || 'your bank account' }} · {{ payslip?.accountNumber || '' }}
+      </p>
+    </div>
+
+    <!-- ── Footer ── -->
+    <div class="ps-footer">
+      <p>{{ companyName }} &nbsp;·&nbsp; Generated {{ today }}</p>
+      <p>This payslip is confidential. Please do not share outside of HR &amp; Finance.</p>
+    </div>
+
+  </div><!-- /ps-doc -->
 </div>

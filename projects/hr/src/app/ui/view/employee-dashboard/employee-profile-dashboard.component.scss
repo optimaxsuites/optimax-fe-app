@@ -830,6 +830,41 @@ p { margin-bottom: 0; }
   }
 }
 
+// Exit reason modal extensions
+.ep-confirm-card--wide { max-width: 520px; text-align: left; }
+
+.ep-confirm-icon--red { color: #ef4444; }
+
+.ep-exit-reason-field {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.ep-exit-reason-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1e293b;
+  resize: vertical;
+  outline: none;
+  transition: border-color .15s;
+
+  &::placeholder { color: #94a3b8; }
+  &:focus { border-color: #1e40af; box-shadow: 0 0 0 3px rgba(30,64,175,.08); }
+}
+
+.ep-exit-reason-count {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  font-size: 10px;
+  color: #94a3b8;
+}
+
 /* ── Mobile responsive ──────────────────────────────────────────── */
 @media (max-width: 767px) {
   .ep-cover {

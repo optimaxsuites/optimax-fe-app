@@ -55,8 +55,16 @@ export class RolesNpermissionComponent {
   showAddForm: boolean =false;
   isEditing = false;
   editIndex: number | undefined = undefined;
-  roles: Role[] = [
-  ];
+  roles: Role[] = [];
+  filteredRoles: Role[] = [];
+  roleSearchTerm = '';
+
+  applyRoleSearch(): void {
+    const term = this.roleSearchTerm.toLowerCase().trim();
+    this.filteredRoles = term
+      ? this.roles.filter(r => r.roleName.toLowerCase().includes(term) || (r.roleDescription || '').toLowerCase().includes(term))
+      : [...this.roles];
+  }
   
   modules:any = []
   newRole: Role = {
@@ -117,7 +125,7 @@ export class RolesNpermissionComponent {
           isEditing: false
         };
       });
-
+      this.filteredRoles = [...this.roles];
       this.cdr.detectChanges();
 
     });
@@ -192,6 +200,7 @@ initializePermissions() {
     this.moduleService.deleteRole(role.id).subscribe({
       next: () => {
         this.roles = this.roles.filter(r => r.id !== role.id);
+        this.applyRoleSearch();
         this.messageService.add({
           severity: 'success',
           summary: 'Deleted',
@@ -411,6 +420,7 @@ initializePermissions() {
             });
   
             this.roles.push({ ...this.newRole, isEditing: false });
+            this.applyRoleSearch();
             this.newRole = { roleName: '', roleDescription: '', permissions: {},  appRolePermissionList:[], id: 0 };
             this.initializePermissions();
             this.showAddForm = false;

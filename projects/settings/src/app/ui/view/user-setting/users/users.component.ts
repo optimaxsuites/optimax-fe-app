@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { AuthenticationService } from '../../../sharedComponents/service/auth-service/authentication.service';
 import { environment } from '../../../sharedComponents/service/environments/environment.prod';
@@ -7,7 +7,7 @@ import { NavigationLinksService } from '../../../sharedComponents/service/naviga
 import { ModulesService } from '../../../service/modules.service';
 import { UserService } from '../../../sharedComponents/service/user.service';
 
- import { catchError, forkJoin, map, Observable, of } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of } from 'rxjs';
 import { getLimitsForModule } from '../../pos/branches/branches.component';
 import { DataService } from '../../../service/data.service';
 
@@ -55,15 +55,22 @@ interface UserWithExtras extends user {
   styleUrl: './users.component.scss'
 })
 export class UsersComponent {
-filterBySelectedEmployeeType() {
-throw new Error('Method not implemented.');
+private runFilters(): void {
+  let result = [...this.users];
+  const term = (this.searchTerm || '').toLowerCase().trim();
+  if (term) {
+    result = result.filter((u: any) =>
+      (u.username || u.name || '').toLowerCase().includes(term) ||
+      (u.email || '').toLowerCase().includes(term)
+    );
+  }
+  this.filteredUsers = result;
+  this.currentPage = 1;
 }
-filterBySelectedPosition() {
-throw new Error('Method not implemented.');
-}
-applyFilters() {
-throw new Error('Method not implemented.');
-}
+
+filterBySelectedEmployeeType() { this.runFilters(); }
+filterBySelectedPosition() { this.runFilters(); }
+applyFilters() { this.runFilters(); }
 codeAuthType: boolean = false
 openAddForm: boolean = false
 uniqueLevels = ['admin', 'checkout', 'inventory manager']
@@ -81,6 +88,37 @@ users: any[] = [
 ];
 
 isLoading: boolean = false;
+
+currentPage = 1;
+pageSize = 10;
+
+get totalPages(): number {
+  return Math.ceil(this.filteredUsers.length / this.pageSize) || 1;
+}
+
+get pagedUsers(): UserWithExtras[] {
+  const start = (this.currentPage - 1) * this.pageSize;
+  return this.filteredUsers.slice(start, start + this.pageSize) as UserWithExtras[];
+}
+
+get pageNumbers(): number[] {
+  const total = this.totalPages;
+  const current = this.currentPage;
+  const range: number[] = [];
+  const delta = 2;
+  for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) {
+    range.push(i);
+  }
+  return range;
+}
+
+goToPage(page: number): void {
+  if (page >= 1 && page <= this.totalPages) this.currentPage = page;
+}
+
+prevPage(): void { this.goToPage(this.currentPage - 1); }
+nextPage(): void { this.goToPage(this.currentPage + 1); }
+minVal(a: number, b: number): number { return Math.min(a, b); }
 
 newUser: user ={
   // fullname: '',
@@ -149,7 +187,8 @@ fetchUsers(){
         map(((roleObj: any) => roleObj?.branch.id ?? ''))
       )
     }));
-
+    this.filteredUsers = [...this.users];
+    this.currentPage = 1;
     },
     error(err){
       console.log(err)
@@ -363,74 +402,24 @@ submitUser() {
 
 
 assignRole(user: any, event: any){
+  const roleName = this.selectedRole?.name ?? '';
 
-  console.log(user)
+  const doAssign = (existingId: number) => {
+    const roleRequest = { id: existingId, userId: user.id, appRoleId: this.selectedRole?.id };
+    this.authenticationService.userApplicationRole(roleRequest).subscribe({
+      next: () => {
+        user.appRoles$ = of(roleName);
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Role assigned successfully!', key: 'tl', life: 3000 });
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to assign role, try again later!', key: 'tl', life: 3000 });
+      }
+    });
+  };
 
   this.authenticationService.getUserApplicationRole(user.id).subscribe({
-    next: (response) => {
-      console.log("User application role:", response);
-      // this.selectedRole = response?.appRole || {};
-          const roleRequest = {
-            id: response ? response.id : 0,
-            userId: user.id,
-            appRoleId: this.selectedRole?.id
-      }
-
-      this.authenticationService.userApplicationRole(roleRequest).subscribe({
-          next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'Role assigned successfully!',
-              key: 'tl',
-              life: 3000,
-            });
-            // this.editCompensation(user, event)
-            this.fetchUsers()
-          },
-          error: (err) => {
-            console.error(err);
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'Failed to assign role, try again later!',
-              key: 'tl',
-              life: 3000,
-            });
-          }
-        })
-    },
-    error: (error) => {
-      console.error("Error fetching user application role:", error);
-      const roleRequest = {
-        userId: user.id,
-        appRoleId: this.selectedRole?.id
-  }
-
-  this.authenticationService.userApplicationRole(roleRequest).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Role assigned successfully!',
-          key: 'tl',
-          life: 3000,
-        });
-        // this.editCompensation(user, event)
-        this.fetchUsers()
-      },
-      error: (err) => {
-        console.error(err);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to assign role, try again later!',
-          key: 'tl',
-          life: 3000,
-        });
-      }
-    })
-    }
+    next: (response) => doAssign(response ? response.id : 0),
+    error: ()         => doAssign(0),
   })
   
 
@@ -438,19 +427,15 @@ assignRole(user: any, event: any){
 }
 
 assignBranch(user: any, event: any) {
+  const branchName = this.selectedBranch?.name ?? '';
   user.userBranchId$.pipe(
     catchError(() => of(0))
   ).subscribe((branchId: any) => {
-    const roleRequest = {
-      id: branchId || 0,
-      userId: user.id,
-      branchId: this.selectedBranch?.id
-    };
-
+    const roleRequest = { id: branchId || 0, userId: user.id, branchId: this.selectedBranch?.id };
     this.authenticationService.userBranchRole(roleRequest).subscribe({
       next: () => {
+        user.userBranchName$ = of(branchName);
         this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Branch assigned!' });
-        this.editCompensation(user, event);
       },
       error: () => {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to assign branch!' });

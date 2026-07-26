@@ -174,13 +174,13 @@
         <!-- Salary breakdown (optional) -->
         <ng-container *ngIf="includeSalaryBreakdown && salaryDetails">
           <div class="hl-salary-breakdown">
-            <h4 class="hl-salary-breakdown__title">Salary Breakdown</h4>
+            <h4 class="hl-salary-breakdown__title">Monthly Salary Breakdown</h4>
             <table class="hl-salary-table">
               <tbody>
 
                 <!-- Base salary -->
                 <tr class="hl-salary-row hl-salary-row--base">
-                  <td class="hl-salary-label">Base Salary</td>
+                  <td class="hl-salary-label">Base Salary <span class="hl-salary-period">/month</span></td>
                   <td class="hl-salary-amount">{{ formatCurrency(salaryBreakdown.baseSalary) }}</td>
                 </tr>
 
@@ -231,7 +231,7 @@
 
                 <!-- Net salary -->
                 <tr class="hl-salary-row hl-salary-row--net">
-                  <td class="hl-salary-label">Net Pay</td>
+                  <td class="hl-salary-label">Net Pay <span class="hl-salary-period">/month</span></td>
                   <td class="hl-salary-amount">{{ formatCurrency(salaryBreakdown.netSalary) }}</td>
                 </tr>
 
