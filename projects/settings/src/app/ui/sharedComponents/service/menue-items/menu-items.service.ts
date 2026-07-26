@@ -100,7 +100,7 @@ export class MenuItemsService {
           code: 'COM_VENDOR_MGMT',
           route: this.navigationLink.getLink('VMLink'),
           roles: ['ROLE_USER'],
-          icon: 'fas fa-shopping-cart',
+          icon: 'fas fa-circle-user-circle-check',
           description: 'View and manage vendor onboarding and lifecycle.'
         },
 
