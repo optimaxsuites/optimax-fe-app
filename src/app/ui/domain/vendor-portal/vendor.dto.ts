@@ -48,6 +48,22 @@ export interface RfqItem {
   referenceImages?: RfqImage[];
 }
 
+// A general document attachment on an RFQ — specs, drawings, terms & conditions,
+// data sheets, etc. Distinct from RfqImage (which is a small inline reference
+// photo shown under an item) — this is a downloadable file the vendor needs to
+// fully understand the request before pricing it. See PRD §6.2 "Full Spec Viewing".
+export type RfqAttachmentType = 'pdf' | 'doc' | 'xls' | 'image' | 'dwg' | 'zip' | 'other';
+
+export interface RfqAttachment {
+  id: string;
+  fileName: string;
+  fileType: RfqAttachmentType;
+  fileSize: string;       // display string, e.g. "2.4 MB"
+  url: string;
+  label?: string;         // short human description, e.g. "Technical drawing — Rev B"
+  uploadedDate: Date;
+}
+
 export interface Rfq {
   id: string;
   rfqNumber: string;
@@ -64,6 +80,12 @@ export interface Rfq {
   currency: string;
   category: string;
   totalEstimatedValue?: number;
+  // Full spec attachments — drawings, data sheets, terms & conditions, etc.
+  attachments?: RfqAttachment[];
+  // True when the customer specifically invited this vendor to quote, rather
+  // than the RFQ being open to the whole registered category. See PRD §6.2
+  // "Direct Targeting". Surfaced as a badge so vendors can prioritise warmer leads.
+  isDirectInvite?: boolean;
 }
 
 // ─── Quotation ────────────────────────────────────────────────────────────────

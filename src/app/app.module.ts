@@ -58,6 +58,8 @@ import { ProfileCardComponent } from './ui/shared-component/view/profile-card/pr
 import { ProfileInfoComponent } from './ui/shared-component/view/profile-info/profile-info.component';
 import { UserInterfaceComponent } from './ui/shared-component/view/user-interface/user-interface.component';
 import { BackButtonComponent } from './ui/shared-component/view/back-button/back-button.component';
+import { VpStatusBadgeComponent } from './ui/view/vendor-portal/shared/status-badge/status-badge.component';
+import { CommandPaletteComponent } from './ui/view/vendor-portal/shared/command-palette/command-palette.component';
 import { TableComponent } from './ui/shared-component/view/table/table.component';
 import { SidebarComponent } from './ui/shared-component/view/sidebar/sidebar.component';
 import { SharedOverlayModule } from './shared-overlay.module';
@@ -92,6 +94,7 @@ import { DocumentationHistoryComponent } from './ui/view/request-management/docu
 
 import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.component';
 import { FinanceComponent } from './ui/view/vendor-portal/finance/finance.component';
+import { PipelineComponent } from './ui/view/vendor-portal/pipeline/pipeline.component';
 import { LpoComponent } from './ui/view/vendor-portal/lpo/lpo.component';
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
 import { SalesDashboardComponent } from './ui/view/sales-hub/sales-dashboard/sales-dashboard.component';
@@ -143,6 +146,7 @@ import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/ven
     DocumentationHistoryComponent,
     DashboardComponent,
     FinanceComponent,
+    PipelineComponent,
     LpoComponent,
     VendorPortalComponent,
     // SalesDashboardComponent,
@@ -216,6 +220,8 @@ import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/ven
     ProfileInfoComponent,
     UserInterfaceComponent,
     BackButtonComponent,
+    VpStatusBadgeComponent,
+    CommandPaletteComponent,
 
     QuoteFormComponent,
     InvoiceListComponent,

@@ -33,6 +33,21 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   applicationNumber = '';
   autoSaveTimer: any;
 
+  // Inline, non-blocking validation banner — replaces window.alert() for the
+  // handful of cross-field checks (e.g. "pick at least one category") that
+  // can't be expressed as a single control's Validators. A native alert()
+  // stops the whole browser tab and reads as a crash, not a form; this reads
+  // as part of the form.
+  stepError: string | null = null;
+  private stepErrorTimer: any;
+
+  // Real save-state, not a permanently-on green dot. Ticks to 'saving' the
+  // instant a step is persisted and back to 'idle' a moment later, so the
+  // indicator actually reports something happening rather than asserting a
+  // constant truth.
+  saveState: 'idle' | 'saving' | 'saved' = 'idle';
+  private saveStateTimer: any;
+
   readonly steps = [
     { n: 1, label: 'Business Identity',   icon: '🏢' },
     { n: 2, label: 'Legal & Compliance',  icon: '⚖️' },
@@ -143,6 +158,8 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     if (this.autoSaveTimer) clearInterval(this.autoSaveTimer);
+    clearTimeout(this.stepErrorTimer);
+    clearTimeout(this.saveStateTimer);
   }
 
   // ── Build forms ───────────────────────────────────────────────────────────
@@ -373,6 +390,7 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   nextStep(): void {
     const form = this.currentFormGroup;
     if (!this.validateStep(form)) return;
+    this.stepError = null;
     this.autoSaveStep();
     if (this.currentStep < this.totalSteps) {
       this.currentStep++;
@@ -381,6 +399,7 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   }
 
   prevStep(): void {
+    this.stepError = null;
     this.autoSaveStep();
     if (this.currentStep > 1) {
       this.currentStep--;
@@ -390,6 +409,7 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
 
   goToStep(n: number): void {
     if (n < this.currentStep) {
+      this.stepError = null;
       this.autoSaveStep();
       this.currentStep = n;
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -416,14 +436,23 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
     }
     // Step-specific extra validations
     if (this.currentStep === 5 && this.selectedCategories.length === 0) {
-      alert('Please select at least one supply category.');
+      this.showStepError('Please select at least one supply category.');
       return false;
     }
     if (this.currentStep === 3 && this.selectedRegions.length === 0) {
-      alert('Please select at least one delivery region.');
+      this.showStepError('Please select at least one delivery region.');
       return false;
     }
     return true;
+  }
+
+  private showStepError(message: string): void {
+    this.stepError = message;
+    clearTimeout(this.stepErrorTimer);
+    this.stepErrorTimer = setTimeout(() => (this.stepError = null), 5000);
+    setTimeout(() => {
+      document.querySelector('.vr-banner--error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
   }
 
   private autoSaveStep(): void {
@@ -435,6 +464,16 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
       case 5: this.regService.saveStep5({ ...this.form5.value, supplyCategories: this.selectedCategories, majorClients: this.majorClients, keyPersonnelList: this.keyPersonnel }); break;
       case 6: this.regService.saveStep6({ ...this.form6.value, uploadedDocuments: this.uploadedDocuments }); break;
     }
+    this.pulseSaveState();
+  }
+
+  private pulseSaveState(): void {
+    this.saveState = 'saving';
+    clearTimeout(this.saveStateTimer);
+    this.saveStateTimer = setTimeout(() => {
+      this.saveState = 'saved';
+      this.saveStateTimer = setTimeout(() => (this.saveState = 'idle'), 2200);
+    }, 350);
   }
 
   // ── Submit ────────────────────────────────────────────────────────────────
@@ -446,11 +485,12 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
       .filter(d => d.required && !this.uploadedDocuments.find(u => u.type === d.type));
 
     if (requiredMissing.length > 0) {
-      alert(`Please upload required document: "${requiredMissing[0].label}"`);
+      this.showStepError(`Please upload required document: "${requiredMissing[0].label}"`);
       return;
     }
 
     this.isSubmitting = true;
+    this.stepError = null;
     this.autoSaveStep();
 
     const fullReg = {
@@ -472,7 +512,7 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.isSubmitting = false;
-        alert('Submission failed. Please check your connection and try again.');
+        this.showStepError('Submission failed. Please check your connection and try again.');
       },
     });
   }
@@ -519,8 +559,8 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   onLogoSelected(e: Event): void {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { alert('Please select an image file.'); return; }
-    if (file.size > 5 * 1024 * 1024) { alert('Logo must be under 5 MB.'); return; }
+    if (!file.type.startsWith('image/')) { this.showStepError('Please select an image file.'); return; }
+    if (file.size > 5 * 1024 * 1024) { this.showStepError('Logo must be under 5 MB.'); return; }
     const reader = new FileReader();
     reader.onload = ev => { this.logoPreview = ev.target?.result as string; };
     reader.readAsDataURL(file);
@@ -536,7 +576,7 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   onDocFileSelected(e: Event): void {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file || !this.uploadingDocType) return;
-    if (file.size > 15 * 1024 * 1024) { alert(`${file.name} exceeds 15 MB.`); return; }
+    if (file.size > 15 * 1024 * 1024) { this.showStepError(`${file.name} exceeds 15 MB.`); return; }
 
     this.regService.uploadFile(file, this.uploadingDocType)
       .pipe(take(1))
@@ -573,4 +613,20 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   get maxYear(): number { return this.currentYear; }
 
   formatSize(bytes: number): string { return this.regService.formatSize(bytes); }
+
+  // ── Review summary (Step 6) ──────────────────────────────────────────────────
+  // A quiet, read-only recap of what was entered in steps 1–5, with a jump-back
+  // link per row — so the very last thing before submitting a 6-step form is a
+  // chance to catch a typo, not a wall of new document-upload fields.
+  get reviewRows(): { label: string; value: string; step: number }[] {
+    const f1 = this.form1.value, f3 = this.form3.value, f4 = this.form4.value, f5 = this.form5.value;
+    return [
+      { label: 'Business name', value: f1.businessName || '—', step: 1 },
+      { label: 'Business type', value: f1.businessType ? this.BUSINESS_TYPE_LABELS[f1.businessType as BusinessType] : '—', step: 1 },
+      { label: 'Supply categories', value: this.selectedCategories.length ? this.selectedCategories.map(c => this.SUPPLY_CATEGORY_LABELS[c]).join(', ') : '—', step: 5 },
+      { label: 'Primary contact', value: f3.primaryContactName ? `${f3.primaryContactName} · ${f3.primaryContactEmail}` : '—', step: 3 },
+      { label: 'Delivery regions', value: this.selectedRegions.length ? `${this.selectedRegions.length} region${this.selectedRegions.length === 1 ? '' : 's'}` : '—', step: 3 },
+      { label: 'Primary bank account', value: f4.primaryBankName ? `${f4.primaryBankName} · ****${(f4.primaryAccountNumber || '').slice(-4)}` : '—', step: 4 },
+    ];
+  }
 }

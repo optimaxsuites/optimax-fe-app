@@ -174,6 +174,20 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
     return m[status] ?? 'badge';
   }
 
+  verificationTone(status: VendorProfile['verificationStatus']): 'success' | 'info' | 'danger' {
+    const m: Record<VendorProfile['verificationStatus'], 'success' | 'info' | 'danger'> = {
+      verified: 'success', pending: 'info', unverified: 'danger',
+    };
+    return m[status] ?? 'danger';
+  }
+
+  verificationIcon(status: VendorProfile['verificationStatus']): 'check' | 'clock' | 'x' {
+    const m: Record<VendorProfile['verificationStatus'], 'check' | 'clock' | 'x'> = {
+      verified: 'check', pending: 'clock', unverified: 'x',
+    };
+    return m[status] ?? 'x';
+  }
+
   verificationLabel(status: VendorProfile['verificationStatus']): string {
     const m: Record<VendorProfile['verificationStatus'], string> = {
       verified:   'Verified',
@@ -282,6 +296,20 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
       pending_review: 'badge-pending',
     };
     return `badge ${m[status] ?? ''}`;
+  }
+
+  statusTone(status: DocumentStatus): 'success' | 'warning' | 'danger' | 'info' {
+    const m: Record<DocumentStatus, 'success' | 'warning' | 'danger' | 'info'> = {
+      active: 'success', expiring_soon: 'warning', expired: 'danger', pending_review: 'info',
+    };
+    return m[status] ?? 'info';
+  }
+
+  statusIcon(status: DocumentStatus): 'check' | 'clock' | 'x' | 'half' {
+    const m: Record<DocumentStatus, 'check' | 'clock' | 'x' | 'half'> = {
+      active: 'check', expiring_soon: 'clock', expired: 'x', pending_review: 'half',
+    };
+    return m[status] ?? 'half';
   }
 
   statusLabel(status: DocumentStatus): string {

@@ -40,6 +40,7 @@
   <!-- Top bar -->
   <header class="vr-topbar">
     <div class="vr-topbar-brand">
+      <span class="vr-topbar-title">Vendor Registration</span>
       <div class="vr-topbar-sep"></div>
       <span class="vr-topbar-sub">{{ steps[currentStep - 1].label }}</span>
     </div>
@@ -52,12 +53,23 @@
           >{{ (currentStep / totalSteps) * 100 | number: '1.0-0' }}%</span
         >
       </div>
-      <div class="vr-autosave">
-        <span class="dot"></span>
-        Draft auto-saved
+      <div class="vr-autosave" [class.is-saving]="saveState === 'saving'" [class.is-saved]="saveState === 'saved'">
+        <span class="vr-autosave__spinner" *ngIf="saveState === 'saving'"></span>
+        <svg *ngIf="saveState === 'saved'" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+        <span class="dot" *ngIf="saveState === 'idle'"></span>
+        <span>{{ saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Draft saved' }}</span>
       </div>
     </div>
   </header>
+
+  <!-- Inline validation banner — replaces window.alert() -->
+  <div class="vr-banner vr-banner--error" *ngIf="stepError" role="alert">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>{{ stepError }}</span>
+    <button type="button" class="vr-banner__close" (click)="stepError = null" aria-label="Dismiss">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
 
   <!-- Body -->
   <div class="vr-body">
@@ -65,6 +77,7 @@
     <aside class="vr-sidebar">
       <div class="vr-sidebar-section">
         <div class="vr-sidebar-label">Registration Steps</div>
+        <div class="vr-step-rail">
         <div
           *ngFor="let step of steps"
           class="vr-step-item"
@@ -94,6 +107,7 @@
             <div class="vr-step-sub" *ngIf="currentStep === step.n">In progress</div>
             <div class="vr-step-sub" *ngIf="currentStep > step.n">Completed</div>
           </div>
+        </div>
         </div>
       </div>
       <div class="vr-sidebar-footer">
@@ -2042,6 +2056,19 @@
           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
           (change)="onDocFileSelected($event)"
         />
+
+        <!-- Review summary — the last thing before submitting a 6-step form
+             should be a chance to catch a typo, not straight into more fields. -->
+        <div class="vr-section">
+          <div class="vr-section-head"><h3>Review Your Details</h3></div>
+          <div class="vr-review-list">
+            <div class="vr-review-row" *ngFor="let row of reviewRows">
+              <span class="vr-review-row__label">{{ row.label }}</span>
+              <span class="vr-review-row__value">{{ row.value }}</span>
+              <button type="button" class="vr-review-row__edit" (click)="goToStep(row.step)">Edit</button>
+            </div>
+          </div>
+        </div>
 
         <div class="vr-section">
           <div class="vr-section-head">
