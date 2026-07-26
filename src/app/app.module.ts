@@ -123,7 +123,7 @@ import { VendorProfileComponent } from './ui/view/vendor-portal/vendor-profile/v
 import { VendorManagementComponent } from './ui/view/vendor-management/vendor-management.component';
 import { VendorManagementDashboardComponent } from './ui/view/vendor-management/vendor-management-dashboard/vendor-management-dashboard.component';
 import { VendorManagementListComponent } from './ui/view/vendor-management/vendor-management-list/vendor-management-list.component';
-
+import { VendorManagementDetailComponent } from './ui/view/vendor-management/vendor-management-detail/vendor-management-detail.component';
 
 @NgModule({
   declarations: [
@@ -167,6 +167,7 @@ import { VendorManagementListComponent } from './ui/view/vendor-management/vendo
     VendorManagementComponent,
     VendorManagementDashboardComponent,
     VendorManagementListComponent,
+    VendorManagementDetailComponent,
   ],
   imports: [
     // BrowserModule,
@@ -239,8 +240,8 @@ import { VendorManagementListComponent } from './ui/view/vendor-management/vendo
     CustomerFormComponent,
     ProductServiceCatalogListComponent,
     TemplateTypesComponent,
-
-
+    VpStatusBadgeComponent,
+    CommandPaletteComponent,
   ],
   exports: [TableComponent],
   providers: [

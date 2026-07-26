@@ -582,12 +582,26 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     });
   }
 
+  // Detail Modal Overlay
+  showVendorDetail: boolean = false;
+  selectedVendorId: string = '';
+
   // ============================================================
-  // NAVIGATION
+  // NAVIGATION & DETAIL OVERLAY
   // ============================================================
 
+  openVendorDetail(id: string): void {
+    this.selectedVendorId = id;
+    this.showVendorDetail = true;
+  }
+
+  closeVendorDetail(): void {
+    this.showVendorDetail = false;
+    this.selectedVendorId = '';
+  }
+
   navigateToVendor(id: string): void {
-    this.router.navigate(['/vendor-management', id, 'profile']);
+    this.openVendorDetail(id);
   }
 
   navigateToOnboarding(): void {
@@ -595,7 +609,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   }
 
   navigateToVendorDetail(id: string): void {
-    this.router.navigate(['/vendor-management', id, 'profile']);
+    this.openVendorDetail(id);
   }
 
   // ============================================================
@@ -603,7 +617,18 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   // ============================================================
 
   viewVendor(id: string): void {
-    this.router.navigate(['/vendor-management', id, 'profile']);
+    this.openVendorDetail(id);
+  }
+
+  deleteVendor(vendor: Vendor): void {
+    if (confirm(`Are you sure you want to delete ${vendor.companyName}?`)) {
+      this.vendorService.deleteVendor(vendor.id).subscribe({
+        next: () => {
+          this.loadVendors();
+        },
+        error: (err) => console.error('Failed to delete vendor:', err)
+      });
+    }
   }
 
   editVendor(id: string): void {
@@ -675,8 +700,8 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     return getRiskLevelColor(level);
   }
 
-  getStatusLabel(status: VendorStatus): string {
-    const map: Record<VendorStatus, string> = {
+  getStatusLabel(status: VendorStatus | string): string {
+    const map: Record<string, string> = {
       [VendorStatus.ACTIVE]: 'Active',
       [VendorStatus.INACTIVE]: 'Inactive',
       [VendorStatus.PENDING_ONBOARDING]: 'Pending Onboarding',
@@ -688,8 +713,8 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     return map[status] || status;
   }
 
-  getTierLabel(tier: VendorTier): string {
-    const map: Record<VendorTier, string> = {
+  getTierLabel(tier: VendorTier | string): string {
+    const map: Record<string, string> = {
       [VendorTier.PREFERRED]: '⭐ Preferred',
       [VendorTier.APPROVED]: '✓ Approved',
       [VendorTier.CONDITIONAL]: '⚠️ Conditional'

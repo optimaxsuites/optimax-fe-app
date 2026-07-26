@@ -3,28 +3,27 @@
     <div class="list-wrapper">
 
         <!-- ============================================================
-    HEADER
-    ============================================================ -->
-        <div class="page-header">
+        HEADER - Dark Blue Premium Card
+        ============================================================ -->
+        <div class="dashboard-header">
             <div class="header-left">
-                <div class="header-breadcrumb">
-                    <span>Vendor Management</span>
-                    <i class="fas fa-chevron-right"></i>
-                    <span class="current">Vendor Directory</span>
+                <div class="header-badge">
+                    <span class="pulse-dot"></span>
+                    Live Directory
                 </div>
                 <h1 class="page-title">Vendor Directory</h1>
                 <p class="page-subtitle">Manage and monitor all vendors across the marketplace</p>
             </div>
             <div class="header-actions">
-                <button class="btn-secondary" (click)="refresh()" [disabled]="isLoading">
+                <button class="btn-secondary-glow" (click)="refresh()" [disabled]="isLoading">
                     <i class="fas fa-sync-alt" [class.spinning]="isLoading"></i>
                     Refresh
                 </button>
-                <button class="btn-secondary" (click)="exportAll()" [disabled]="isExporting">
+                <button class="btn-secondary-glow" (click)="exportAll()" [disabled]="isExporting">
                     <i class="fas fa-file-export"></i>
                     {{ isExporting ? 'Exporting...' : 'Export All' }}
                 </button>
-                <button class="btn-primary" (click)="navigateToOnboarding()">
+                <button (click)="navigateToOnboarding()" class="btn-primary-glow">
                     <i class="fas fa-user-plus"></i>
                     Onboard Vendor
                 </button>
@@ -32,8 +31,8 @@
         </div>
 
         <!-- ============================================================
-    STATS BAR
-    ============================================================ -->
+        STATS BAR
+        ============================================================ -->
         <div class="stats-bar" *ngIf="!isLoading">
             <div class="stat-item">
                 <span class="stat-value">{{ stats.total }}</span>
@@ -62,8 +61,8 @@
         </div>
 
         <!-- ============================================================
-    TOOLBAR
-    ============================================================ -->
+        TOOLBAR
+        ============================================================ -->
         <div class="toolbar">
             <div class="toolbar-left">
                 <!-- Search -->
@@ -145,10 +144,10 @@
         </div>
 
         <!-- ============================================================
-    FILTER DRAWER
-    ============================================================ -->
+        FILTER DRAWER
+        ============================================================ -->
         <div class="filter-drawer" [class.open]="showFilterDrawer">
-            <div class="filter-drawer-content">
+            <div class="filter-drawer-content" [formGroup]="filterForm">
                 <div class="filter-drawer-header">
                     <h3><i class="fas fa-sliders-h"></i> Advanced Filters</h3>
                     <button class="close-btn" (click)="showFilterDrawer = false">
@@ -224,72 +223,70 @@
         </div>
 
         <!-- ============================================================
-    TABLE
-    ============================================================ -->
+        TABLE - Shared Sales Hub / Procurement Style
+        ============================================================ -->
         <div class="table-container" #tableContainer>
             <div class="table-wrapper">
-                <table class="vendor-table">
+                <table class="data-table">
                     <thead>
                         <tr>
                             <!-- Select -->
-                            <th *ngIf="visibleColumns.select" class="col-select">
+                            <th *ngIf="visibleColumns.select" class="checkbox-col">
                                 <input type="checkbox" [checked]="selectAll" (change)="toggleSelectAll()" />
                             </th>
 
                             <!-- Rank -->
-                            <th *ngIf="visibleColumns.rank" class="col-rank" (click)="toggleSort('rank')">
+                            <th *ngIf="visibleColumns.rank" class="sn-col" (click)="toggleSort('rank')">
                                 # <i class="fas" [class]="getSortIcon('rank')"></i>
                             </th>
 
                             <!-- Company -->
-                            <th *ngIf="visibleColumns.company" class="col-company" (click)="toggleSort('companyName')">
+                            <th *ngIf="visibleColumns.company" (click)="toggleSort('companyName')">
                                 Company <i class="fas" [class]="getSortIcon('companyName')"></i>
                             </th>
 
                             <!-- Tier -->
-                            <th *ngIf="visibleColumns.tier" class="col-tier" (click)="toggleSort('tier')">
+                            <th *ngIf="visibleColumns.tier" (click)="toggleSort('tier')">
                                 Tier <i class="fas" [class]="getSortIcon('tier')"></i>
                             </th>
 
                             <!-- Status -->
-                            <th *ngIf="visibleColumns.status" class="col-status" (click)="toggleSort('status')">
+                            <th *ngIf="visibleColumns.status" (click)="toggleSort('status')">
                                 Status <i class="fas" [class]="getSortIcon('status')"></i>
                             </th>
 
                             <!-- Risk -->
-                            <th *ngIf="visibleColumns.risk" class="col-risk" (click)="toggleSort('riskLevel')">
+                            <th *ngIf="visibleColumns.risk" (click)="toggleSort('riskLevel')">
                                 Risk <i class="fas" [class]="getSortIcon('riskLevel')"></i>
                             </th>
 
                             <!-- Performance -->
-                            <th *ngIf="visibleColumns.performance" class="col-performance"
-                                (click)="toggleSort('performanceScore')">
+                            <th *ngIf="visibleColumns.performance" (click)="toggleSort('performanceScore')">
                                 Performance <i class="fas" [class]="getSortIcon('performanceScore')"></i>
                             </th>
 
                             <!-- Projects -->
-                            <th *ngIf="visibleColumns.projects" class="col-projects"
-                                (click)="toggleSort('totalProjects')">
+                            <th *ngIf="visibleColumns.projects" (click)="toggleSort('totalProjects')">
                                 Projects <i class="fas" [class]="getSortIcon('totalProjects')"></i>
                             </th>
 
                             <!-- Revenue -->
-                            <th *ngIf="visibleColumns.revenue" class="col-revenue" (click)="toggleSort('totalRevenue')">
+                            <th *ngIf="visibleColumns.revenue" (click)="toggleSort('totalRevenue')">
                                 Revenue <i class="fas" [class]="getSortIcon('totalRevenue')"></i>
                             </th>
 
                             <!-- Documents -->
-                            <th *ngIf="visibleColumns.documents" class="col-documents">
+                            <th *ngIf="visibleColumns.documents">
                                 Docs
                             </th>
 
                             <!-- Joined -->
-                            <th *ngIf="visibleColumns.joined" class="col-joined" (click)="toggleSort('joinedDate')">
+                            <th *ngIf="visibleColumns.joined" (click)="toggleSort('joinedDate')">
                                 Joined <i class="fas" [class]="getSortIcon('joinedDate')"></i>
                             </th>
 
                             <!-- Actions -->
-                            <th *ngIf="visibleColumns.actions" class="col-actions">Actions</th>
+                            <th *ngIf="visibleColumns.actions" class="actions-heading">Actions</th>
                         </tr>
                     </thead>
 
@@ -316,17 +313,17 @@
 
                         <!-- Vendor Rows -->
                         <tr *ngFor="let vendor of filteredVendors; let i = index"
-                            [class.selected]="isSelected(vendor.id)" (click)="navigateToVendor(vendor.id)">
-                            <td *ngIf="visibleColumns.select" class="col-select" (click)="$event.stopPropagation()">
+                            [class.selected]="isSelected(vendor.id)" (click)="openVendorDetail(vendor.id)">
+                            <td *ngIf="visibleColumns.select" class="checkbox-col" (click)="$event.stopPropagation()">
                                 <input type="checkbox" [checked]="isSelected(vendor.id)"
                                     (change)="toggleSelectVendor(vendor.id)" />
                             </td>
 
-                            <td *ngIf="visibleColumns.rank" class="col-rank">
+                            <td *ngIf="visibleColumns.rank" class="sn-col">
                                 {{ (currentPage - 1) * pageSize + i + 1 }}
                             </td>
 
-                            <td *ngIf="visibleColumns.company" class="col-company">
+                            <td *ngIf="visibleColumns.company">
                                 <div class="company-info">
                                     <div class="company-avatar">
                                         {{ vendor.companyName.charAt(0) }}
@@ -338,56 +335,55 @@
                                 </div>
                             </td>
 
-                            <td *ngIf="visibleColumns.tier" class="col-tier">
-                                <span class="tier-badge" [class.preferred]="vendor.tier === VendorTier.PREFERRED"
-                                    [class.approved]="vendor.tier === VendorTier.APPROVED"
-                                    [class.conditional]="vendor.tier === VendorTier.CONDITIONAL">
+                            <td *ngIf="visibleColumns.tier">
+                                <span class="tier-badge" [class.tier-preferred]="vendor.tier === VendorTier.PREFERRED"
+                                    [class.tier-approved]="vendor.tier === VendorTier.APPROVED"
+                                    [class.tier-conditional]="vendor.tier === VendorTier.CONDITIONAL">
                                     {{ getVendorTierLabel(vendor.tier) }}
                                 </span>
                             </td>
 
-                            <td *ngIf="visibleColumns.status" class="col-status">
-                                <span class="status-badge"
-                                    [style.background]="getVendorStatusColor(vendor.status) + '20'"
-                                    [style.color]="getVendorStatusColor(vendor.status)">
-                                    <span class="status-dot"
-                                        [style.background]="getVendorStatusColor(vendor.status)"></span>
+                            <td *ngIf="visibleColumns.status">
+                                <span class="status-badge" [class.status-active]="vendor.status === VendorStatus.ACTIVE"
+                                    [class.status-suspended]="vendor.status === VendorStatus.SUSPENDED || vendor.status === VendorStatus.OFFBOARDED"
+                                    [class.status-pending]="vendor.status === VendorStatus.PENDING_ONBOARDING || vendor.status === VendorStatus.UNDER_REVIEW">
+                                    <span class="status-dot"></span>
                                     {{ getStatusLabel(vendor.status) }}
                                 </span>
                             </td>
 
-                            <td *ngIf="visibleColumns.risk" class="col-risk">
-                                <span class="risk-badge" [style.background]="getRiskLevelColor(vendor.riskLevel) + '20'"
-                                    [style.color]="getRiskLevelColor(vendor.riskLevel)">
-                                    <i
-                                        class="fas fa-{{ vendor.riskLevel === RiskLevel.HIGH ? 'exclamation-triangle' : vendor.riskLevel === RiskLevel.MEDIUM ? 'exclamation-circle' : 'check-circle' }}"></i>
+                            <td *ngIf="visibleColumns.risk">
+                                <span class="risk-badge" [class.risk-high]="vendor.riskLevel === RiskLevel.HIGH"
+                                    [class.risk-medium]="vendor.riskLevel === RiskLevel.MEDIUM"
+                                    [class.risk-low]="vendor.riskLevel === RiskLevel.LOW">
+                                    <i class="fas" [class.fa-exclamation-triangle]="vendor.riskLevel === RiskLevel.HIGH"
+                                       [class.fa-exclamation-circle]="vendor.riskLevel === RiskLevel.MEDIUM"
+                                       [class.fa-check-circle]="vendor.riskLevel === RiskLevel.LOW"></i>
                                     {{ vendor.riskLevel }}
                                 </span>
                             </td>
 
-                            <td *ngIf="visibleColumns.performance" class="col-performance">
+                            <td *ngIf="visibleColumns.performance">
                                 <div class="performance-cell">
                                     <div class="performance-bar">
-                                        <div class="performance-fill" [style.width.%]="vendor.performanceScore"
-                                            [style.background]="getPerformanceColor(vendor.performanceScore)"></div>
+                                        <div class="performance-fill" [style.width.%]="vendor.performanceScore"></div>
                                     </div>
-                                    <span class="performance-score"
-                                        [style.color]="getPerformanceColor(vendor.performanceScore)">
+                                    <span class="performance-score">
                                         {{ vendor.performanceScore.toFixed(0) }}%
                                     </span>
                                 </div>
                             </td>
 
-                            <td *ngIf="visibleColumns.projects" class="col-projects">
+                            <td *ngIf="visibleColumns.projects">
                                 {{ formatNumber(vendor.totalProjects || vendor.performanceMetrics?.totalProjects || 0)
                                 }}
                             </td>
 
-                            <td *ngIf="visibleColumns.revenue" class="col-revenue">
+                            <td *ngIf="visibleColumns.revenue">
                                 {{ formatCurrency(vendor.performanceMetrics?.totalRevenue || 0) }}
                             </td>
 
-                            <td *ngIf="visibleColumns.documents" class="col-documents">
+                            <td *ngIf="visibleColumns.documents">
                                 <div class="doc-status-summary" *ngIf="getDocumentStatusCount(vendor) as docStats">
                                     <span class="doc-dot valid" *ngIf="docStats.valid > 0"
                                         title="{{ docStats.valid }} valid"></span>
@@ -399,23 +395,20 @@
                                 </div>
                             </td>
 
-                            <td *ngIf="visibleColumns.joined" class="col-joined">
+                            <td *ngIf="visibleColumns.joined">
                                 {{ formatDate(vendor.joinedDate) }}
                             </td>
 
-                            <td *ngIf="visibleColumns.actions" class="col-actions" (click)="$event.stopPropagation()">
-                                <div class="action-buttons">
-                                    <button class="action-btn" title="View Profile" (click)="viewVendor(vendor.id)">
+                            <td *ngIf="visibleColumns.actions" class="actions-col" (click)="$event.stopPropagation()">
+                                <div class="actions-wrapper">
+                                    <button class="action-btn view-btn" (click)="openVendorDetail(vendor.id)" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="action-btn" title="Performance" (click)="viewPerformance(vendor.id)">
-                                        <i class="fas fa-chart-line"></i>
+                                    <button class="action-btn edit-btn" (click)="editVendor(vendor.id)" title="Edit Vendor">
+                                        <i class="fas fa-pencil-alt"></i>
                                     </button>
-                                    <button class="action-btn" title="Documents" (click)="viewDocuments(vendor.id)">
-                                        <i class="fas fa-file-alt"></i>
-                                    </button>
-                                    <button class="action-btn more" title="More Actions">
-                                        <i class="fas fa-ellipsis-v"></i>
+                                    <button class="action-btn delete-btn" (click)="deleteVendor(vendor)" title="Delete Vendor">
+                                        <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </div>
                             </td>
@@ -426,8 +419,8 @@
         </div>
 
         <!-- ============================================================
-    PAGINATION
-    ============================================================ -->
+        PAGINATION
+        ============================================================ -->
         <div class="pagination-bar" *ngIf="!isLoading && filteredVendors.length > 0">
             <div class="pagination-info">
                 Showing {{ (currentPage - 1) * pageSize + 1 }} to
@@ -453,3 +446,10 @@
 
     </div>
 </div>
+
+<!-- ============================================================
+VENDOR DETAIL OVERLAY MODAL
+============================================================ -->
+<app-side-modal *ngIf="showVendorDetail" (close)="closeVendorDetail()">
+    <app-vendor-management-detail [vendorId]="selectedVendorId" (close)="closeVendorDetail()"></app-vendor-management-detail>
+</app-side-modal>

@@ -128,14 +128,14 @@
                             [class.fa-chart-line]="tab === 'performance'" [class.fa-shield-alt]="tab === 'risk'"
                             [class.fa-file-alt]="tab === 'documents'" [class.fa-file-contract]="tab === 'contracts'"
                             [class.fa-history]="tab === 'activity'"></i>
-                        {{ tabLabels[tab as keyof typeof tabLabels] }}
+                        {{ getTabLabel(tab) }}
                         <span class="tab-badge"
-                            *ngIf="tab === 'risk' && riskAlerts.filter(a => a.status === 'OPEN').length > 0">
-                            {{ riskAlerts.filter(a => a.status === 'OPEN').length }}
+                            *ngIf="tab === 'risk' && openRiskAlertsCount > 0">
+                            {{ openRiskAlertsCount }}
                         </span>
                         <span class="tab-badge"
-                            *ngIf="tab === 'documents' && documents.filter(d => d.status === 'EXPIRING_SOON' || d.status === 'EXPIRED').length > 0">
-                            {{ documents.filter(d => d.status === 'EXPIRING_SOON' || d.status === 'EXPIRED').length }}
+                            *ngIf="tab === 'documents' && expiringOrExpiredDocsCount > 0">
+                            {{ expiringOrExpiredDocsCount }}
                         </span>
                     </button>
                 </div>
@@ -327,7 +327,7 @@
                                 <div class="kpi-value" [style.color]="kpi.color">{{ kpi.value }}</div>
                                 <div class="kpi-label">{{ kpi.label }}</div>
                                 <div class="kpi-bar" *ngIf="kpi.label !== 'Total Projects'">
-                                    <div class="kpi-fill" [style.width.%]="parseFloat(kpi.value)"
+                                    <div class="kpi-fill" [style.width.%]="parseKpiValue(kpi.value)"
                                         [style.background]="kpi.color"></div>
                                 </div>
                             </div>
@@ -354,12 +354,12 @@
 
                                     <!-- Area under line -->
                                     <polygon
-                                        [attr.points]="getPerformanceChartAreaPath(performance.trendData.map(d => d.score), getMaxPerformance())"
+                                        [attr.points]="getPerformanceChartAreaPath(getPerformanceScores(), getMaxPerformance())"
                                         class="chart-area" />
 
                                     <!-- Main line -->
                                     <polyline
-                                        [attr.points]="getPerformanceChartPath(performance.trendData.map(d => d.score), getMaxPerformance())"
+                                        [attr.points]="getPerformanceChartPath(getPerformanceScores(), getMaxPerformance())"
                                         class="chart-line" />
 
                                     <!-- Data points -->

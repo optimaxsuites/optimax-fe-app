@@ -3,7 +3,7 @@
 // IMPORTS
 // ============================================================
 
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -37,21 +37,23 @@ import {
   templateUrl: './vendor-management-detail.component.html',
   styleUrls: ['./vendor-management-detail.component.scss']
 })
-export class VendorManagementDetailComponent implements OnInit, OnDestroy, AfterViewInit {
+export class VendorManagementDetailComponent implements OnInit, OnDestroy, AfterViewInit, OnChanges {
 
   // ============================================================
-  // VIEW CHILDREN
+  // VIEW CHILDREN & INPUTS / OUTPUTS
   // ============================================================
 
   @ViewChild('headerElement') headerElement!: ElementRef;
   @ViewChild('tabsContainer') tabsContainer!: ElementRef;
+
+  @Input() vendorId: string = '';
+  @Output() close = new EventEmitter<void>();
 
   // ============================================================
   // STATE
   // ============================================================
 
   // Core
-  vendorId: string = '';
   vendor: Vendor | null = null;
   isLoading: boolean = true;
   isSaving: boolean = false;
@@ -81,6 +83,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
 
   // UI
   Math = Math;
+  parseFloat = parseFloat;
   showConfirmDialog: boolean = false;
   confirmAction: 'suspend' | 'activate' | 'offboard' | 'delete' | null = null;
   confirmMessage: string = '';
@@ -117,14 +120,18 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   // ============================================================
 
   ngOnInit(): void {
-    this.route.params.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(params => {
-      this.vendorId = params['id'];
-      if (this.vendorId) {
-        this.loadVendorData();
-      }
-    });
+    if (this.vendorId) {
+      this.loadVendorData();
+    } else {
+      this.route.params.pipe(
+        takeUntil(this.destroy$)
+      ).subscribe(params => {
+        if (params['id']) {
+          this.vendorId = params['id'];
+          this.loadVendorData();
+        }
+      });
+    }
 
     // Subscribe to vendor updates from service
     this.vendorService.selectedVendor$
@@ -136,6 +143,20 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
           this.isLoading = false;
         }
       });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['vendorId'] && !changes['vendorId'].firstChange && this.vendorId) {
+      this.loadVendorData();
+    }
+  }
+
+  goBack(): void {
+    if (this.close.observed) {
+      this.close.emit();
+    } else {
+      this.location.back();
+    }
   }
 
   ngAfterViewInit(): void {
@@ -328,7 +349,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   // TAB MANAGEMENT
   // ============================================================
 
-  setActiveTab(tab: typeof this.activeTab): void {
+  setActiveTab(tab: any): void {
     this.activeTab = tab;
     // Update URL query param
     this.router.navigate([], {
@@ -479,12 +500,33 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   }
 
   // ============================================================
-  // NAVIGATION
+  // TEMPLATE HELPERS & GETTERS
   // ============================================================
 
-  goBack(): void {
-    this.location.back();
+  getTabLabel(tab: string): string {
+    return this.tabLabels[tab as keyof typeof this.tabLabels] || tab;
   }
+
+  get openRiskAlertsCount(): number {
+    return this.riskAlerts ? this.riskAlerts.filter(a => a.status === 'OPEN').length : 0;
+  }
+
+  get expiringOrExpiredDocsCount(): number {
+    return this.documents ? this.documents.filter(d => d.status === DocumentStatus.EXPIRING_SOON || d.status === DocumentStatus.EXPIRED).length : 0;
+  }
+
+  getPerformanceScores(): number[] {
+    return this.performance?.trendData?.map(d => d.score) || [];
+  }
+
+  parseKpiValue(val: any): number {
+    if (typeof val === 'number') return val;
+    return parseFloat(val) || 0;
+  }
+
+  // ============================================================
+  // NAVIGATION
+  // ============================================================
 
   navigateToEdit(): void {
     this.router.navigate(['/vendor-management', this.vendorId, 'edit']);

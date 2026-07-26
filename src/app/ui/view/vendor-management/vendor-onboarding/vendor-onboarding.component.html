@@ -1,1 +1,659 @@
-<p>vendor-onboarding works!</p>
+<!-- vendor-onboarding.component.html -->
+<div class="vendor-onboarding">
+    <div class="onboarding-wrapper">
+
+        <!-- ============================================================
+    HEADER
+    ============================================================ -->
+        <div class="page-header">
+            <div class="header-left">
+                <div class="header-breadcrumb">
+                    <span>Vendor Management</span>
+                    <i class="fas fa-chevron-right"></i>
+                    <span class="current">Onboard Vendor</span>
+                </div>
+                <h1 class="page-title">Onboard New Vendor</h1>
+                <p class="page-subtitle">Register a new vendor in the marketplace with all required information</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-secondary" (click)="resetForm()">
+                    <i class="fas fa-undo"></i>
+                    Reset Form
+                </button>
+                <button class="btn-secondary" (click)="saveDraft()">
+                    <i class="fas fa-save"></i>
+                    Save Draft
+                </button>
+                <button class="btn-primary" (click)="goToStep(4)">
+                    <i class="fas fa-file-alt"></i>
+                    Review & Submit
+                </button>
+            </div>
+        </div>
+
+        <!-- ============================================================
+    ERROR DISPLAY
+    ============================================================ -->
+        <div class="error-banner" *ngIf="error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="close-btn" (click)="error = null">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- ============================================================
+    SUCCESS DISPLAY
+    ============================================================ -->
+        <div class="success-banner" *ngIf="showSuccess">
+            <i class="fas fa-check-circle"></i>
+            <div>
+                <h3>Vendor Onboarded Successfully!</h3>
+                <p>Redirecting to vendor profile...</p>
+            </div>
+        </div>
+
+        <!-- ============================================================
+    STEPPER
+    ============================================================ -->
+        <div class="stepper-container">
+            <div class="stepper">
+                <div *ngFor="let title of stepTitles; let i = index" class="step-item"
+                    [class.complete]="getStepStatus(i + 1) === 'complete'"
+                    [class.current]="getStepStatus(i + 1) === 'current'"
+                    [class.incomplete]="getStepStatus(i + 1) === 'incomplete'" (click)="goToStep(i + 1)">
+                    <div class="step-number">
+                        <i class="fas" [class]="getStepIcon(i + 1)"></i>
+                        <span class="step-label">{{ i + 1 }}</span>
+                    </div>
+                    <div class="step-title">{{ title }}</div>
+                    <div class="step-connector" *ngIf="i < stepTitles.length - 1">
+                        <div class="connector-line" [class.complete]="getStepStatus(i + 1) === 'complete'"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+    STEP CONTENT
+    ============================================================ -->
+        <div class="step-content" (keydown)="onKeydown($event)">
+
+            <!-- STEP 1: Company Details -->
+            <div *ngIf="currentStep === 1" class="step-panel">
+                <div class="step-header">
+                    <h2><i class="fas fa-building"></i> Company Details</h2>
+                    <p>Enter the basic company information for the vendor</p>
+                </div>
+
+                <form [formGroup]="companyForm">
+                    <!-- Company Name & Registration -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="companyName">
+                                Company Name <span class="required">*</span>
+                            </label>
+                            <input id="companyName" type="text" formControlName="companyName"
+                                placeholder="Enter company name"
+                                [class.error]="companyForm.get('companyName')?.invalid && companyForm.get('companyName')?.touched" />
+                            <span class="field-error"
+                                *ngIf="companyForm.get('companyName')?.invalid && companyForm.get('companyName')?.touched">
+                                Company name is required
+                            </span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="registrationNumber">
+                                Registration Number <span class="required">*</span>
+                            </label>
+                            <input id="registrationNumber" type="text" formControlName="registrationNumber"
+                                placeholder="e.g., RC-1234567"
+                                [class.error]="companyForm.get('registrationNumber')?.invalid && companyForm.get('registrationNumber')?.touched" />
+                            <span class="field-error"
+                                *ngIf="companyForm.get('registrationNumber')?.invalid && companyForm.get('registrationNumber')?.touched">
+                                Registration number is required
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Tax ID & Email -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taxId">
+                                Tax ID <span class="required">*</span>
+                            </label>
+                            <input id="taxId" type="text" formControlName="taxId" placeholder="e.g., TIN-123456789"
+                                [class.error]="companyForm.get('taxId')?.invalid && companyForm.get('taxId')?.touched" />
+                            <span class="field-error"
+                                *ngIf="companyForm.get('taxId')?.invalid && companyForm.get('taxId')?.touched">
+                                Tax ID is required
+                            </span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">
+                                Email Address <span class="required">*</span>
+                            </label>
+                            <input id="email" type="email" formControlName="email" placeholder="contact@company.com"
+                                [class.error]="companyForm.get('email')?.invalid && companyForm.get('email')?.touched" />
+                            <span class="field-error"
+                                *ngIf="companyForm.get('email')?.invalid && companyForm.get('email')?.touched">
+                                Valid email is required
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Phone & Website -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="phone">
+                                Phone Number <span class="required">*</span>
+                            </label>
+                            <input id="phone" type="tel" formControlName="phone" placeholder="+234 800 000 0000"
+                                [class.error]="companyForm.get('phone')?.invalid && companyForm.get('phone')?.touched" />
+                            <span class="field-error"
+                                *ngIf="companyForm.get('phone')?.invalid && companyForm.get('phone')?.touched">
+                                Valid phone number is required
+                            </span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="website">Website</label>
+                            <input id="website" type="url" formControlName="website"
+                                placeholder="https://company.com" />
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="description">Description</label>
+                            <textarea id="description" formControlName="description"
+                                placeholder="Describe the company's business, services, and expertise..." rows="3"
+                                [class.error]="companyForm.get('description')?.invalid && companyForm.get('description')?.touched"></textarea>
+                            <span class="char-count">{{ (companyForm.get('description')?.value?.length || 0)
+                                }}/500</span>
+                        </div>
+                    </div>
+
+                    <!-- Categories -->
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label>
+                                Business Categories <span class="required">*</span>
+                                <span class="field-hint">Select all that apply</span>
+                            </label>
+                            <div class="category-grid">
+                                <div *ngFor="let category of categoryOptions" class="category-chip"
+                                    [class.selected]="isCategorySelected(category)" (click)="toggleCategory(category)">
+                                    <i class="fas" [class.fa-check-circle]="isCategorySelected(category)"
+                                        [class.fa-plus-circle]="!isCategorySelected(category)"></i>
+                                    {{ category }}
+                                </div>
+                            </div>
+                            <span class="field-error"
+                                *ngIf="companyForm.get('categories')?.invalid && companyForm.get('categories')?.touched">
+                                Please select at least one category
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-map-marker-alt"></i> Address</h3>
+                        <div formGroupName="address">
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="street">
+                                        Street Address <span class="required">*</span>
+                                    </label>
+                                    <input id="street" type="text" formControlName="street"
+                                        placeholder="123 Business Street"
+                                        [class.error]="companyForm.get('address.street')?.invalid && companyForm.get('address.street')?.touched" />
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="city">
+                                        City <span class="required">*</span>
+                                    </label>
+                                    <input id="city" type="text" formControlName="city" placeholder="Lagos"
+                                        [class.error]="companyForm.get('address.city')?.invalid && companyForm.get('address.city')?.touched" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="state">
+                                        State/Province <span class="required">*</span>
+                                    </label>
+                                    <input id="state" type="text" formControlName="state" placeholder="Lagos State"
+                                        [class.error]="companyForm.get('address.state')?.invalid && companyForm.get('address.state')?.touched" />
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="country">
+                                        Country <span class="required">*</span>
+                                    </label>
+                                    <input id="country" type="text" formControlName="country" placeholder="Nigeria"
+                                        [class.error]="companyForm.get('address.country')?.invalid && companyForm.get('address.country')?.touched" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="postalCode">Postal Code</label>
+                                    <input id="postalCode" type="text" formControlName="postalCode"
+                                        placeholder="100001" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="step-actions">
+                    <button class="btn-secondary" (click)="prevStep()" disabled>
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <button class="btn-primary" (click)="nextStep()">
+                        Next: Bank & Contacts <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 2: Bank & Contacts -->
+            <div *ngIf="currentStep === 2" class="step-panel">
+                <div class="step-header">
+                    <h2><i class="fas fa-university"></i> Bank & Contacts</h2>
+                    <p>Enter banking details and contact persons for the vendor</p>
+                </div>
+
+                <form [formGroup]="bankContactForm">
+                    <!-- Bank Details -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-university"></i> Bank Details</h3>
+                        <div formGroupName="bankDetails">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="bankName">
+                                        Bank Name <span class="required">*</span>
+                                    </label>
+                                    <input id="bankName" type="text" formControlName="bankName"
+                                        placeholder="e.g., First Bank of Nigeria"
+                                        [class.error]="bankContactForm.get('bankDetails.bankName')?.invalid && bankContactForm.get('bankDetails.bankName')?.touched" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="accountNumber">
+                                        Account Number <span class="required">*</span>
+                                    </label>
+                                    <input id="accountNumber" type="text" formControlName="accountNumber"
+                                        placeholder="0123456789"
+                                        [class.error]="bankContactForm.get('bankDetails.accountNumber')?.invalid && bankContactForm.get('bankDetails.accountNumber')?.touched" />
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="accountName">
+                                        Account Name <span class="required">*</span>
+                                    </label>
+                                    <input id="accountName" type="text" formControlName="accountName"
+                                        placeholder="Company Account Name"
+                                        [class.error]="bankContactForm.get('bankDetails.accountName')?.invalid && bankContactForm.get('bankDetails.accountName')?.touched" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="swiftCode">SWIFT Code</label>
+                                    <input id="swiftCode" type="text" formControlName="swiftCode"
+                                        placeholder="e.g., FBNINGLA" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contacts -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-address-book"></i> Contact Persons</h3>
+                            <button type="button" class="btn-add" (click)="addContact()">
+                                <i class="fas fa-plus"></i> Add Contact
+                            </button>
+                        </div>
+
+                        <div *ngFor="let contact of contacts.controls; let i = index" class="contact-card"
+                            [formGroup]="contact">
+                            <div class="contact-header">
+                                <span class="contact-number">Contact #{{ i + 1 }}</span>
+                                <button type="button" class="btn-remove" (click)="removeContact(i)"
+                                    *ngIf="contacts.length > 1">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label [for]="'contactName' + i">
+                                        Full Name <span class="required">*</span>
+                                    </label>
+                                    <input [id]="'contactName' + i" type="text" formControlName="name"
+                                        placeholder="John Doe"
+                                        [class.error]="contact.get('name')?.invalid && contact.get('name')?.touched" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label [for]="'contactEmail' + i">
+                                        Email <span class="required">*</span>
+                                    </label>
+                                    <input [id]="'contactEmail' + i" type="email" formControlName="email"
+                                        placeholder="john@company.com"
+                                        [class.error]="contact.get('email')?.invalid && contact.get('email')?.touched" />
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label [for]="'contactPhone' + i">
+                                        Phone <span class="required">*</span>
+                                    </label>
+                                    <input [id]="'contactPhone' + i" type="tel" formControlName="phone"
+                                        placeholder="+234 800 000 0000"
+                                        [class.error]="contact.get('phone')?.invalid && contact.get('phone')?.touched" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label [for]="'contactRole' + i">
+                                        Role <span class="required">*</span>
+                                    </label>
+                                    <input [id]="'contactRole' + i" type="text" formControlName="role"
+                                        placeholder="CEO, Manager, etc."
+                                        [class.error]="contact.get('role')?.invalid && contact.get('role')?.touched" />
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" formControlName="isPrimary" />
+                                        <span>Primary Contact</span>
+                                    </label>
+                                    <span class="field-hint">The primary contact will receive all important
+                                        communications</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="step-actions">
+                    <button class="btn-secondary" (click)="prevStep()">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <button class="btn-primary" (click)="nextStep()">
+                        Next: Documents <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 3: Documents -->
+            <div *ngIf="currentStep === 3" class="step-panel">
+                <div class="step-header">
+                    <h2><i class="fas fa-file-upload"></i> Documents</h2>
+                    <p>Upload required and supporting documents for vendor verification</p>
+                </div>
+
+                <!-- Upload Area -->
+                <div class="upload-area" (dragover)="$event.preventDefault()" (drop)="$event.preventDefault()">
+                    <input #fileInput type="file" multiple (change)="onFileSelected($event)"
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display: none;" />
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Drag & Drop Files Here</h3>
+                        <p>or click to browse files</p>
+                        <button class="btn-upload" (click)="fileInput.click()">
+                            <i class="fas fa-folder-open"></i> Browse Files
+                        </button>
+                        <div class="upload-hints">
+                            <span>Supported formats: PDF, JPEG, PNG, DOC</span>
+                            <span>Maximum file size: 10MB per file</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Required Documents Notice -->
+                <div class="required-notice">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Required documents: </span>
+                    <span *ngFor="let cat of documentCategories | filter: 'required': true; let last = last">
+                        {{ cat.label }}<span *ngIf="!last">, </span>
+                    </span>
+                </div>
+
+                <!-- Uploaded Documents -->
+                <div class="uploaded-documents" *ngIf="uploadedDocuments.length > 0">
+                    <div class="documents-header">
+                        <h3><i class="fas fa-file-alt"></i> Uploaded Documents ({{ uploadedDocuments.length }})</h3>
+                    </div>
+
+                    <div *ngFor="let doc of uploadedDocuments; let i = index" class="document-item">
+                        <div class="doc-icon">
+                            <i class="fas" [class]="getDocumentIcon(doc.fileName)"></i>
+                        </div>
+
+                        <div class="doc-info">
+                            <span class="doc-name">{{ doc.fileName }}</span>
+                            <span class="doc-size">{{ getFileSize(doc.file.size || 0) }}</span>
+                        </div>
+
+                        <div class="doc-metadata">
+                            <div class="doc-category">
+                                <label>Category</label>
+                                <select [value]="doc.category"
+                                    (change)="updateDocumentCategory(i, $event.target.value)">
+                                    <option *ngFor="let cat of documentCategories" [value]="cat.value">
+                                        {{ cat.label }} {{ cat.required ? '*' : '' }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="doc-dates">
+                                <div class="date-group">
+                                    <label>Issue Date</label>
+                                    <input type="date" [value]="formatDate(doc.issueDate)"
+                                        (change)="updateDocumentDates(i, 'issueDate', $event.target.value)" />
+                                </div>
+                                <div class="date-group">
+                                    <label>Expiry Date</label>
+                                    <input type="date" [value]="formatDate(doc.expiryDate)"
+                                        (change)="updateDocumentDates(i, 'expiryDate', $event.target.value)" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn-remove-doc" (click)="removeDocument(i)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn-secondary" (click)="prevStep()">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <button class="btn-primary" (click)="nextStep()">
+                        Next: Review <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 4: Review & Submit -->
+            <div *ngIf="currentStep === 4" class="step-panel">
+                <div class="step-header">
+                    <h2><i class="fas fa-clipboard-check"></i> Review & Submit</h2>
+                    <p>Review all information before submitting the vendor onboarding request</p>
+                </div>
+
+                <!-- Review Content -->
+                <div class="review-container">
+                    <!-- Company Details -->
+                    <div class="review-section">
+                        <h3><i class="fas fa-building"></i> Company Details</h3>
+                        <div class="review-grid">
+                            <div class="review-item">
+                                <span class="review-label">Company Name</span>
+                                <span class="review-value">{{ companyForm.get('companyName')?.value }}</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Registration Number</span>
+                                <span class="review-value">{{ companyForm.get('registrationNumber')?.value }}</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Tax ID</span>
+                                <span class="review-value">{{ companyForm.get('taxId')?.value }}</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Email</span>
+                                <span class="review-value">{{ companyForm.get('email')?.value }}</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Phone</span>
+                                <span class="review-value">{{ companyForm.get('phone')?.value }}</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Website</span>
+                                <span class="review-value">{{ companyForm.get('website')?.value || '—' }}</span>
+                            </div>
+                            <div class="review-item full-width">
+                                <span class="review-label">Description</span>
+                                <span class="review-value">{{ companyForm.get('description')?.value || '—' }}</span>
+                            </div>
+                            <div class="review-item full-width">
+                                <span class="review-label">Categories</span>
+                                <span class="review-value">
+                                    <span *ngFor="let cat of companyForm.get('categories')?.value; let last = last"
+                                        class="review-tag">
+                                        {{ cat }}<span *ngIf="!last">, </span>
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="review-address">
+                            <h4>Address</h4>
+                            <div class="review-grid">
+                                <div class="review-item full-width">
+                                    <span class="review-label">Street</span>
+                                    <span class="review-value">{{ companyForm.get('address.street')?.value }}</span>
+                                </div>
+                                <div class="review-item">
+                                    <span class="review-label">City</span>
+                                    <span class="review-value">{{ companyForm.get('address.city')?.value }}</span>
+                                </div>
+                                <div class="review-item">
+                                    <span class="review-label">State</span>
+                                    <span class="review-value">{{ companyForm.get('address.state')?.value }}</span>
+                                </div>
+                                <div class="review-item">
+                                    <span class="review-label">Country</span>
+                                    <span class="review-value">{{ companyForm.get('address.country')?.value }}</span>
+                                </div>
+                                <div class="review-item">
+                                    <span class="review-label">Postal Code</span>
+                                    <span class="review-value">{{ companyForm.get('address.postalCode')?.value || '—'
+                                        }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bank & Contacts -->
+                    <div class="review-section">
+                        <h3><i class="fas fa-university"></i> Bank & Contacts</h3>
+
+                        <div class="review-bank">
+                            <h4>Bank Details</h4>
+                            <div class="review-grid">
+                                <div class="review-item">
+                                    <span class="review-label">Bank Name</span>
+                                    <span class="review-value">{{ bankContactForm.get('bankDetails.bankName')?.value
+                                        }}</span>
+                                </div>
+                                <div class="review-item">
+                                    <span class="review-label">Account Number</span>
+                                    <span class="review-value">{{
+                                        bankContactForm.get('bankDetails.accountNumber')?.value }}</span>
+                                </div>
+                                <div class="review-item">
+                                    <span class="review-label">Account Name</span>
+                                    <span class="review-value">{{ bankContactForm.get('bankDetails.accountName')?.value
+                                        }}</span>
+                                </div>
+                                <div class="review-item">
+                                    <span class="review-label">SWIFT Code</span>
+                                    <span class="review-value">{{ bankContactForm.get('bankDetails.swiftCode')?.value ||
+                                        '—' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="review-contacts">
+                            <h4>Contacts</h4>
+                            <div *ngFor="let contact of contacts.controls; let i = index" class="review-contact">
+                                <span class="contact-badge">#{{ i + 1 }}</span>
+                                <div class="contact-details">
+                                    <span class="contact-name">{{ contact.get('name')?.value }}</span>
+                                    <span class="contact-role">{{ contact.get('role')?.value }}</span>
+                                    <span class="contact-email">{{ contact.get('email')?.value }}</span>
+                                    <span class="contact-phone">{{ contact.get('phone')?.value }}</span>
+                                    <span class="contact-primary" *ngIf="contact.get('isPrimary')?.value">★
+                                        Primary</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documents -->
+                    <div class="review-section">
+                        <h3><i class="fas fa-file-alt"></i> Documents</h3>
+                        <div class="review-documents">
+                            <div *ngFor="let doc of uploadedDocuments" class="review-doc">
+                                <i class="fas" [class]="getDocumentIcon(doc.fileName)"></i>
+                                <span class="doc-name">{{ doc.fileName }}</span>
+                                <span class="doc-category">{{ getCategoryLabel(doc.category) }}</span>
+                                <span class="doc-status">
+                                    <i class="fas fa-check-circle" style="color: #2EB270;"></i>
+                                    Ready
+                                </span>
+                            </div>
+                            <div *ngIf="uploadedDocuments.length === 0" class="no-docs">
+                                No documents uploaded
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn-secondary" (click)="prevStep()">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <button class="btn-submit" (click)="submitOnboarding()" [disabled]="isSubmitting">
+                        <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-paper-plane]="!isSubmitting"
+                            [class.fa-spin]="isSubmitting"></i>
+                        {{ isSubmitting ? 'Submitting...' : 'Submit Onboarding' }}
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================================
+    PROGRESS INDICATOR
+    ============================================================ -->
+        <div class="progress-footer">
+            <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="((currentStep - 1) / (totalSteps - 1)) * 100"></div>
+            </div>
+            <span class="progress-text">Step {{ currentStep }} of {{ totalSteps }}</span>
+        </div>
+
+    </div>
+</div>
