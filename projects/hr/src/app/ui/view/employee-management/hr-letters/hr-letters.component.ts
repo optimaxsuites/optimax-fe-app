@@ -308,6 +308,11 @@ export class HrLettersComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    try {
+      const biz = JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}');
+      this.companyProfile = { companyName: biz?.companyName || biz?.company?.name || '', logoUrl: biz?.logoUrl || biz?.logo || '' };
+    } catch {}
+
     const stored = localStorage.getItem('employeeInView');
     if (stored) {
       try { this.employee = JSON.parse(stored); } catch { this.employee = {}; }

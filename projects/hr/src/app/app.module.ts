@@ -299,6 +299,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     PayrollDashboardComponent,
     PayrollDisbursementComponent,
     EmployeePayslipListComponent,
+    PayslipViewComponent,
     GuarantorConfirmationComponent,
     ViewEmployeeComponent,
     EmployeeNokComponent,

@@ -1,200 +1,223 @@
-<div class="flex gap-4 items-center mb-6">
-  <i class="pi pi-cog text-4xl text-customBlue"></i>
-  <div>
-    <p class="text-customBlue/60">User and Roles Management</p>
-    <p class="text-customBlue font-semibold text-[17px]">Approval Workflow Settings</p>
+<div class="aw-page">
+
+  <!-- Page header -->
+  <div class="aw-header">
+    <div class="aw-header__icon"><i class="fas fa-project-diagram"></i></div>
+    <div class="aw-header__text">
+      <h2 class="aw-header__title">Approval Workflows</h2>
+      <p class="aw-header__sub">Configure multi-stage approval chains for create, update, and delete actions across modules.</p>
+    </div>
   </div>
-</div>
 
-<hr class="mb-4" />
+  @if (approvalForm.get('submodules')) {
 
-@if (approvalForm.get('submodules')) {
-<mat-accordion [formGroup]="approvalForm">
-  @for(module of modules; track module.title) {
-  <mat-expansion-panel #panel class="mb-3 border border-gray-100 shadow-sm overflow-hidden">
-    <mat-expansion-panel-header>
-      <mat-panel-title class="capitalize font-bold text-customBlue flex items-center gap-2">
-        {{ module.title }}
-      </mat-panel-title>
-    </mat-expansion-panel-header>
+  <!-- Search -->
+  <div class="aw-search-bar">
+    <i class="fas fa-search aw-search-bar__icon"></i>
+    <input type="text" class="aw-search-bar__input" placeholder="Search modules…"
+           [(ngModel)]="moduleSearchTerm" (ngModelChange)="applyModuleSearch()" />
+  </div>
 
-    <div class="flex flex-col gap-4 py-4 px-2 bg-slate-50/50" formGroupName="submodules">
-      @for(app of module.appRegister; track app.id) {
+  <div [formGroup]="approvalForm" class="aw-modules-list">
 
-      @if (approvalForm.get('submodules.' + module.title + '_' + app.appName)) {
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm" [formGroupName]="module.title + '_' + app.appName">
+    @for(module of filteredDisplayModules; track module.title) {
+    <div class="aw-module-card">
 
-        <div class="flex justify-between items-center p-5 border-b border-gray-50">
-          <div>
-            <h4 class="text-lg font-bold text-slate-800">{{ app.appName }}</h4>
-            <p class="text-[10px] text-gray-400">Configure triggers for Create, Update, and Delete actions</p>
-          </div>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" formControlName="isEnabled" class="sr-only peer">
-            <div
-              class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-customBlue after:content-[''] after:absolute after:top-[3px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full">
+      <!-- Module header (accordion toggle) -->
+      <button type="button" class="aw-module-card__head" (click)="module._expanded = !module._expanded">
+        <div class="aw-module-card__icon"><i class="fas fa-cubes"></i></div>
+        <span class="aw-module-card__name">{{ module.title }}</span>
+        <i class="fas aw-module-card__chevron"
+           [class.fa-chevron-down]="!module._expanded"
+           [class.fa-chevron-up]="module._expanded"></i>
+      </button>
+
+      <!-- Module body -->
+      <div class="aw-module-card__body" *ngIf="module._expanded" formGroupName="submodules">
+
+        @for(app of module.appRegister; track app.id) {
+        @if (approvalForm.get('submodules.' + module.title + '_' + app.appName)) {
+
+        <div class="aw-app-card" [formGroupName]="module.title + '_' + app.appName">
+
+          <!-- App header: name + enable toggle -->
+          <div class="aw-app-card__head">
+            <div>
+              <h4 class="aw-app-card__name">{{ app.appName }}</h4>
+              <p class="aw-app-card__hint">Configure triggers for Create, Update, and Delete actions</p>
             </div>
-            <span class="ml-3 text-sm font-medium text-gray-400">
-              {{ approvalForm.get('submodules.' + module.title + '_' + app.appName + '.isEnabled')?.value ? 'Active' : 'Disabled' }}
-            </span>
-          </label>
-        </div>
-
-        @if (approvalForm.get('submodules.' + module.title + '_' + app.appName + '.isEnabled')?.value) {
-        <div class="p-5">
-          <div class="flex gap-2 mb-6 p-1 bg-gray-100 rounded-xl w-fit border border-gray-200">
-            @for(action of AVAILABLE_ACTIONS; track action) {
-            <button type="button" (click)="selectedAction[module.title + '_' + app.appName] = action"
-              [class.bg-white]="selectedAction[module.title + '_' + app.appName] === action"
-              [class.text-customBlue]="selectedAction[module.title + '_' + app.appName] === action"
-              [class.shadow-sm]="selectedAction[module.title + '_' + app.appName] === action"
-              class="px-6 py-1.5 rounded-lg text-sm font-bold transition-all text-gray-500">
-              {{ action }}
-            </button>
-            }
+            <label class="aw-toggle">
+              <input type="checkbox" formControlName="isEnabled" class="aw-toggle__input" />
+              <span class="aw-toggle__track"></span>
+              <span class="aw-toggle__label">
+                {{ approvalForm.get('submodules.' + module.title + '_' + app.appName + '.isEnabled')?.value ? 'Active' : 'Disabled' }}
+              </span>
+            </label>
           </div>
 
-          <div formGroupName="actions">
-            <div [formGroupName]="selectedAction[module.title + '_' + app.appName]">
+          @if (approvalForm.get('submodules.' + module.title + '_' + app.appName + '.isEnabled')?.value) {
+          <div class="aw-app-card__body">
 
-              <div class="flex justify-between items-center mb-6 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                <div>
-                  <h5 class="text-sm font-bold text-slate-800 uppercase">
+            <!-- Action tabs -->
+            <div class="aw-tabs">
+              @for(action of AVAILABLE_ACTIONS; track action) {
+              <button type="button"
+                class="aw-tab"
+                [class.aw-tab--active]="selectedAction[module.title + '_' + app.appName] === action"
+                (click)="selectedAction[module.title + '_' + app.appName] = action">
+                {{ action }}
+              </button>
+              }
+            </div>
+
+            <div formGroupName="actions">
+              <div [formGroupName]="selectedAction[module.title + '_' + app.appName]">
+
+                <!-- Action header bar -->
+                <div class="aw-action-bar">
+                  <span class="aw-action-bar__label">
                     On {{ selectedAction[module.title + '_' + app.appName] }} Approval
-                  </h5>
+                  </span>
+                  <div class="aw-action-bar__controls">
+                    <label class="aw-check-label">
+                      <input type="checkbox" formControlName="isEnabled" class="aw-chk" />
+                      <span>Enable Workflow</span>
+                    </label>
+                    <button type="button" class="aw-btn aw-btn--outline"
+                      (click)="addStage(module.title, app.appName, selectedAction[module.title + '_' + app.appName])">
+                      <i class="fas fa-plus"></i> Add Stage
+                    </button>
+                  </div>
                 </div>
 
-                <div class="flex items-center gap-4">
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" formControlName="isEnabled" class="rounded text-customBlue">
-                    <span class="text-sm font-bold text-gray-600">Enable Workflow</span>
-                  </label>
-                  <button type="button" 
-                    (click)="addStage(module.title, app.appName, selectedAction[module.title + '_' + app.appName])"
-                    class="text-sm border border-customBlue text-customBlue px-3 py-1 rounded-lg hover:bg-customBlue hover:text-white transition-all">
-                    + Add New Stage
-                  </button>
-                </div>
-              </div>
-
-              @if (approvalForm.get('submodules.' + module.title + '_' + app.appName + '.actions.' + selectedAction[module.title + '_' + app.appName] + '.isEnabled')?.value) {
-                <div formArrayName="stages" class="space-y-6">
+                @if (approvalForm.get('submodules.' + module.title + '_' + app.appName + '.actions.' + selectedAction[module.title + '_' + app.appName] + '.isEnabled')?.value) {
+                <div formArrayName="stages" class="aw-stages">
                   @for(stage of getStages(module.title, app.appName, selectedAction[module.title + '_' + app.appName]).controls; track stage; let sIndex = $index) {
-                  <div [formGroupName]="sIndex" class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase">Stage Name</label>
-                        <input formControlName="name" class="w-full bg-slate-50 border border-gray-200 p-2 rounded text-sm font-bold">
-                      </div>
-                      <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase">Approval Type</label>
-                        <select formControlName="approvalType" class="w-full bg-slate-50 border border-gray-200 p-2 rounded text-sm">
-                          <option value="ANY">ANY</option>
-                          <option value="ALL">ALL</option>
-                          <option value="QUORUM">QUORUM</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase">On Rejection</label>
-                        <select formControlName="rejectionPolicy" class="w-full bg-slate-50 border border-gray-200 p-2 rounded text-sm text-red-600">
-                          <option value="STOP">Terminate</option>
-                          <option value="STEP-BACK">Previous Stage</option>
-                          <option value="RESTART">Restart Flow</option>
-                        </select>
-                      </div>
-                    </div>
+                  <div [formGroupName]="sIndex" class="aw-stage">
 
-                    <div class="flex flex-wrap items-center gap-6 py-2 border-y border-gray-50 my-4">
-                      <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" formControlName="isOptional" class="rounded">
-                        <span class="text-sm font-semibold text-gray-500">Optional Stage</span>
-                      </label>
-                      <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" formControlName="allowSelfApproval" class="rounded">
-                        <span class="text-sm font-semibold text-gray-500">Self Approval</span>
-                      </label>
-                      <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" formControlName="isDocumentRequired" class="rounded">
-                        <span class="text-sm font-semibold text-gray-500">Document Required</span>
-                      </label>
-                      <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" formControlName="requiresComment" class="rounded">
-                        <span class="text-sm font-semibold text-gray-500">Force Comment</span>
-                      </label>
-                    </div>
+                    <div class="aw-stage__number">{{ sIndex + 1 }}</div>
 
-                    <div class="flex gap-4 items-center mt-3">
-                        <!-- <div class="flex items-center gap-2 p-2 bg-slate-50 rounded border border-gray-100 w-fit">
-                          <span class="text-[10px] font-bold text-gray-400 uppercase">SLA (Hours):</span>
-                          <input type="number" formControlName="slaHours" class="w-14 border rounded p-1 text-center text-xs">
-                        </div> -->
-
-                        @if(stage.get('approvalType')?.value === 'QUORUM') {
-                          <div class="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-100 w-fit">
-                            <span class="text-[10px] font-bold text-customBlue uppercase">Min. Approvals:</span>
-                            <input type="number" formControlName="minApprovals" class="w-12 border rounded p-1 text-center text-sm">
-                          </div>
-                        }
-                      </div>
-
-                    <div class="bg-slate-50/50 rounded-lg p-4">
-                      <div formArrayName="assignment" class="space-y-2">
-                        @for(assign of getAssignments(module.title, app.appName, selectedAction[module.title + '_' + app.appName], sIndex).controls; track assign; let aIndex = $index) {
-                        <div [formGroupName]="aIndex" class="flex gap-2 items-center bg-white p-2 rounded border border-gray-100 shadow-sm">
-                          <select formControlName="roleId" class="flex-grow text-sm disabled:bg-gray-100 disabled:text-gray-200 disabled:cursor-not-allowed" [attr.disabled]="assign.get('userId')?.value ? true : null">
-                            <option [ngValue]="null">Select Role</option>
-                            @for(role of roles; track role.id) { <option [value]="role.id">👥 {{ getRoleOptionLabel(role) }}</option> }
-                          </select>
-                          <span class="text-[10px] font-bold text-gray-300">OR</span>
-                          <select formControlName="userId" class="flex-grow text-sm disabled:bg-gray-100 disabled:text-gray-200 disabled:cursor-not-allowed" [attr.disabled]="assign.get('roleId')?.value ? true : null">
-                            <option [ngValue]="null">Select User</option>
-                            @for(user of users; track user.id) { <option [value]="user.id">👤 {{ getUserOptionLabel(user) }}</option> }
-                          </select>
-                          <button type="button" 
-                              (click)="removeAssignment(module.title, app.appName, selectedAction[module.title + '_' + app.appName], sIndex, aIndex)" 
-                              class="text-red-400">
-                              <i class="pi pi-trash"></i>
-                            </button>
+                    <div class="aw-stage__body">
+                      <!-- Stage settings row -->
+                      <div class="aw-stage__grid">
+                        <div class="aw-field">
+                          <label class="aw-field__label">Stage Name</label>
+                          <input formControlName="name" class="aw-input" placeholder="e.g. Line Manager">
                         </div>
-                        }
-                        <button type="button" 
-                          (click)="addAssignment(module.title, app.appName, selectedAction[module.title + '_' + app.appName], sIndex)" 
-                          class="text-sm font-bold text-customBlue">
-                          + Add Approver
+                        <div class="aw-field">
+                          <label class="aw-field__label">Approval Type</label>
+                          <select formControlName="approvalType" class="aw-select">
+                            <option value="ANY">ANY — First approver</option>
+                            <option value="ALL">ALL — Everyone must approve</option>
+                            <option value="QUORUM">QUORUM — Minimum count</option>
+                          </select>
+                        </div>
+                        <div class="aw-field">
+                          <label class="aw-field__label">On Rejection</label>
+                          <select formControlName="rejectionPolicy" class="aw-select aw-select--danger">
+                            <option value="STOP">Terminate Flow</option>
+                            <option value="STEP-BACK">Return to Previous Stage</option>
+                            <option value="RESTART">Restart Entire Flow</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <!-- Flags -->
+                      <div class="aw-stage__flags">
+                        <label class="aw-check-label">
+                          <input type="checkbox" formControlName="isOptional" class="aw-chk" />
+                          <span>Optional Stage</span>
+                        </label>
+                        <label class="aw-check-label">
+                          <input type="checkbox" formControlName="allowSelfApproval" class="aw-chk" />
+                          <span>Self Approval</span>
+                        </label>
+                        <label class="aw-check-label">
+                          <input type="checkbox" formControlName="isDocumentRequired" class="aw-chk" />
+                          <span>Document Required</span>
+                        </label>
+                        <label class="aw-check-label">
+                          <input type="checkbox" formControlName="requiresComment" class="aw-chk" />
+                          <span>Force Comment</span>
+                        </label>
+                      </div>
+
+                      @if(stage.get('approvalType')?.value === 'QUORUM') {
+                      <div class="aw-quorum-box">
+                        <span class="aw-quorum-box__label">Min. Approvals Required</span>
+                        <input type="number" formControlName="minApprovals" class="aw-input aw-input--sm" min="1" />
+                      </div>
+                      }
+
+                      <!-- Approver assignment -->
+                      <div class="aw-approvers">
+                        <p class="aw-approvers__title">Approvers</p>
+                        <div formArrayName="assignment" class="aw-approvers__list">
+                          @for(assign of getAssignments(module.title, app.appName, selectedAction[module.title + '_' + app.appName], sIndex).controls; track assign; let aIndex = $index) {
+                          <div [formGroupName]="aIndex" class="aw-assign-row">
+                            <select formControlName="roleId" class="aw-select aw-select--assign"
+                              [attr.disabled]="assign.get('userId')?.value ? true : null">
+                              <option [ngValue]="null">&#128101; Select Role</option>
+                              @for(role of roles; track role.id) {
+                              <option [value]="role.id">&#128101; {{ getRoleOptionLabel(role) }}</option>
+                              }
+                            </select>
+                            <span class="aw-or">OR</span>
+                            <select formControlName="userId" class="aw-select aw-select--assign"
+                              [attr.disabled]="assign.get('roleId')?.value ? true : null">
+                              <option [ngValue]="null">&#128100; Select User</option>
+                              @for(user of users; track user.id) {
+                              <option [value]="user.id">&#128100; {{ getUserOptionLabel(user) }}</option>
+                              }
+                            </select>
+                            <button type="button" class="aw-remove-btn"
+                              (click)="removeAssignment(module.title, app.appName, selectedAction[module.title + '_' + app.appName], sIndex, aIndex)">
+                              <i class="fas fa-times"></i>
+                            </button>
+                          </div>
+                          }
+                        </div>
+                        <button type="button" class="aw-add-approver-btn"
+                          (click)="addAssignment(module.title, app.appName, selectedAction[module.title + '_' + app.appName], sIndex)">
+                          <i class="fas fa-user-plus"></i> Add Approver
                         </button>
                       </div>
-                    </div>
 
-                    <button type="button" (click)="removeStage(module.title, app.appName, selectedAction[module.title + '_' + app.appName], sIndex)"
-                      class="mt-4 text-[10px] text-red-400 hover:text-red-600 uppercase font-bold tracking-widest">
-                      Remove Stage
-                    </button>
+                      <button type="button" class="aw-remove-stage-btn"
+                        (click)="removeStage(module.title, app.appName, selectedAction[module.title + '_' + app.appName], sIndex)">
+                        <i class="fas fa-trash-alt"></i> Remove Stage
+                      </button>
+                    </div>
                   </div>
                   }
                 </div>
-              }
-            </div>
-          </div>
+                }
 
-          <div class="mt-8 flex justify-end border-t border-gray-100 pt-5">
-            <button type="button" (click)="saveSettings(module, app)"
-              class="bg-customBlue text-white px-6 py-2 rounded-xl hover:bg-blue-700 shadow-md transition-all">
-              <span class="font-bold text-sm">Save All Workflows</span>
-            </button>
+              </div>
+            </div>
+
+            <div class="aw-save-bar">
+              <button type="button" class="aw-btn aw-btn--primary" (click)="saveSettings(module, app)">
+                <i class="fas fa-save"></i> Save Workflows
+              </button>
+            </div>
+
           </div>
+          }
         </div>
+
+        }
         }
       </div>
-      }
-      }
     </div>
-  </mat-expansion-panel>
+    }
+  </div>
+
+  } @else {
+  <div class="aw-loading">
+    <div class="aw-spinner"></div>
+    <p>Initializing Approval Engine…</p>
+  </div>
   }
-</mat-accordion>
-} @else {
-<div class="flex flex-col items-center justify-center p-20">
-  <mat-spinner diameter="40"></mat-spinner>
-  <p class="text-gray-500 mt-4">Initializing Approval Engine....</p>
+
 </div>
-}

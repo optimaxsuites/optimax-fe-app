@@ -1,200 +1,138 @@
-<div class="bank-details-change-container">
-  <form [formGroup]="bankDetailsForm" (ngSubmit)="submitRequest()" class="change-request-form">
-    <!-- Current Bank Details Section -->
-    <div class="form-section">
-      <h4 class="section-title">Current Bank Details</h4>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="currentBankName">Current Bank Name</label>
-          <input
-            type="text"
-            id="currentBankName"
-            formControlName="currentBankName"
-            class="form-control"
-            readonly
-            placeholder="Your current bank"
-          />
-          <small class="form-text" *ngIf="currentBankDetails?.bankName">
-            Currently registered: <strong>{{ currentBankDetails.bankName }}</strong>
-          </small>
-        </div>
+<p-toast key="tl" position="top-right"></p-toast>
 
-        <div class="form-group">
-          <label for="currentAccountNumber">Current Account Number</label>
-          <input
-            type="text"
-            id="currentAccountNumber"
-            formControlName="currentAccountNumber"
-            class="form-control"
-            readonly
-            placeholder="Your current account number"
-          />
-          <small class="form-text" *ngIf="currentBankDetails?.accountNumber">
-            Currently registered: <strong>****{{ currentBankDetails.accountNumber?.slice(-4) }}</strong>
-          </small>
-        </div>
+<div class="bdc-wrapper">
+
+  <!-- Header -->
+  <div class="bdc-header">
+    <div class="bdc-header__icon"><i class="fas fa-university"></i></div>
+    <div>
+      <h3 class="bdc-header__title">Change Bank / Account Details</h3>
+      <p class="bdc-header__sub">Submit a request to update your salary payment account. HR will review and apply the change.</p>
+    </div>
+  </div>
+
+  <!-- Current details (read-only card) -->
+  <div class="bdc-current-card" *ngIf="currentBankDetails?.bankName || currentBankDetails?.accountNumber">
+    <p class="bdc-current-card__label"><i class="fas fa-info-circle"></i> Current registered bank details</p>
+    <div class="bdc-current-card__row">
+      <div class="bdc-current-card__item">
+        <span class="bdc-current-card__key">Bank</span>
+        <span class="bdc-current-card__val">{{ currentBankDetails?.bankName || '—' }}</span>
+      </div>
+      <div class="bdc-current-card__item">
+        <span class="bdc-current-card__key">Account Number</span>
+        <span class="bdc-current-card__val">
+          {{ currentBankDetails?.accountNumber ? ('•••• •••• ' + currentBankDetails.accountNumber.slice(-4)) : '—' }}
+        </span>
       </div>
     </div>
+  </div>
 
-    <!-- New Bank Details Section -->
-    <div class="form-section">
-      <h4 class="section-title">New Bank Details</h4>
+  <!-- Form -->
+  <form [formGroup]="bankDetailsForm" (ngSubmit)="submitRequest()" class="bdc-form">
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="newBankName">
-            <span class="required">*</span>
-            New Bank Name
-          </label>
-          <p-autoComplete
-            #autoComplete
-            formControlName="newBankName"
-            [suggestions]="filteredBanks"
-            field="name"
-            [dropdown]="true"
-            [forceSelection]="false"
-            placeholder="Select or search for a bank"
-            (completeMethod)="onBankSearch($event)"
-            class="w-100"
-            [styleClass]="'form-control p-input'"
-          >
-            <ng-template let-bank pTemplate="item">
-              <div class="bank-option">
-                <strong>{{ bank.name }}</strong>
-                <span class="bank-abbr">{{ bank.abbreviation }}</span>
-              </div>
-            </ng-template>
-          </p-autoComplete>
-          <small class="form-error" *ngIf="hasError('newBankName', 'required')">
-            Bank name is required
-          </small>
-        </div>
+    <!-- New bank details -->
+    <div class="bdc-card">
+      <div class="bdc-card__head">
+        <span class="bdc-card__step">New Details</span>
+        <h4 class="bdc-card__title">Enter your new bank information</h4>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="newAccountNumber">
-            <span class="required">*</span>
-            New Account Number
-          </label>
-          <input
-            type="text"
-            id="newAccountNumber"
-            formControlName="newAccountNumber"
-            class="form-control"
-            placeholder="Enter your new 10-digit account number"
-            maxlength="10"
-            (blur)="validateAccountNumber('newAccountNumber')"
-            inputmode="numeric"
-          />
-          <small class="form-error" *ngIf="hasError('newAccountNumber', 'required')">
-            Account number is required
-          </small>
-          <small class="form-error" *ngIf="hasError('newAccountNumber', 'pattern')">
-            Account number must be 10 digits
-          </small>
-          <small class="form-hint">
-            <i class="fa-solid fa-info-circle"></i>
-            Nigerian bank account numbers are 10 digits
-          </small>
+      <!-- Bank search -->
+      <div class="bdc-field">
+        <label class="bdc-label">Bank Name <span class="bdc-req">*</span></label>
+        <p-autoComplete
+          formControlName="newBankName"
+          [suggestions]="filteredBanks"
+          field="name"
+          [dropdown]="true"
+          [forceSelection]="false"
+          placeholder="Search or select your bank"
+          (completeMethod)="onBankSearch($event)"
+          [styleClass]="'bdc-autocomplete' + (hasError('newBankName','required') ? ' bdc-autocomplete--error' : '')">
+          <ng-template let-bank pTemplate="item">
+            <div class="bdc-bank-opt">
+              <strong>{{ bank.name }}</strong>
+              <span class="bdc-bank-abbr">{{ bank.abbreviation }}</span>
+            </div>
+          </ng-template>
+        </p-autoComplete>
+        <small class="bdc-error" *ngIf="hasError('newBankName','required')">Bank name is required</small>
+      </div>
+
+      <!-- Account numbers -->
+      <div class="bdc-grid-2">
+        <div class="bdc-field">
+          <label class="bdc-label">New Account Number <span class="bdc-req">*</span></label>
+          <div class="bdc-input-wrap">
+            <i class="fas fa-hashtag bdc-input-icon"></i>
+            <input type="text" formControlName="newAccountNumber" class="bdc-input"
+              [class.bdc-input--error]="hasError('newAccountNumber','required') || hasError('newAccountNumber','pattern')"
+              placeholder="10-digit account number" maxlength="10" inputmode="numeric"
+              (blur)="validateAccountNumber('newAccountNumber')" />
+          </div>
+          <small class="bdc-error" *ngIf="hasError('newAccountNumber','required')">Account number is required</small>
+          <small class="bdc-error" *ngIf="hasError('newAccountNumber','pattern')">Must be exactly 10 digits</small>
         </div>
 
-        <div class="form-group">
-          <label for="confirmAccountNumber">
-            <span class="required">*</span>
-            Confirm Account Number
-          </label>
-          <input
-            type="text"
-            id="confirmAccountNumber"
-            formControlName="confirmAccountNumber"
-            class="form-control"
-            placeholder="Re-enter your new account number"
-            maxlength="10"
-            (blur)="validateAccountNumber('confirmAccountNumber')"
-            inputmode="numeric"
-          />
-          <small class="form-error" *ngIf="hasError('confirmAccountNumber', 'required')">
-            Please confirm the account number
-          </small>
-          <small class="form-error" *ngIf="hasError('confirmAccountNumber', 'pattern')">
-            Account number must be 10 digits
-          </small>
-          <small
-            class="form-error"
-            *ngIf="bankDetailsForm.hasError('accountMismatch') && bankDetailsForm.get('confirmAccountNumber')?.touched"
-          >
+        <div class="bdc-field">
+          <label class="bdc-label">Confirm Account Number <span class="bdc-req">*</span></label>
+          <div class="bdc-input-wrap">
+            <i class="fas fa-check-double bdc-input-icon"></i>
+            <input type="text" formControlName="confirmAccountNumber" class="bdc-input"
+              [class.bdc-input--error]="hasError('confirmAccountNumber','required') || hasError('confirmAccountNumber','pattern') || (bankDetailsForm.hasError('accountMismatch') && bankDetailsForm.get('confirmAccountNumber')?.touched)"
+              placeholder="Re-enter account number" maxlength="10" inputmode="numeric"
+              (blur)="validateAccountNumber('confirmAccountNumber')" />
+          </div>
+          <small class="bdc-error" *ngIf="hasError('confirmAccountNumber','required')">Please confirm account number</small>
+          <small class="bdc-error" *ngIf="hasError('confirmAccountNumber','pattern')">Must be exactly 10 digits</small>
+          <small class="bdc-error" *ngIf="bankDetailsForm.hasError('accountMismatch') && bankDetailsForm.get('confirmAccountNumber')?.touched">
             Account numbers do not match
           </small>
         </div>
       </div>
     </div>
 
-    <!-- Reason Section -->
-    <div class="form-section">
-      <h4 class="section-title">Reason for Change</h4>
-      <div class="form-row">
-        <div class="form-group full-width">
-          <label for="reason">
-            <span class="required">*</span>
-            Please provide a reason for this change
-          </label>
-          <textarea
-            id="reason"
-            formControlName="reason"
-            class="form-control"
-            placeholder="E.g., Account closure, switching to better bank rates, etc."
-            rows="4"
-            maxlength="500"
-          ></textarea>
-          <small class="form-hint">
-            Minimum 10 characters, Maximum 500 characters
-            ({{ bankDetailsForm.get('reason')?.value?.length || 0 }}/500)
-          </small>
-          <small class="form-error" *ngIf="hasError('reason', 'required')">
-            Reason is required
-          </small>
-          <small class="form-error" *ngIf="hasError('reason', 'minlength')">
-            Reason must be at least 10 characters long
-          </small>
-          <small class="form-error" *ngIf="hasError('reason', 'maxlength')">
-            Reason cannot exceed 500 characters
+    <!-- Reason -->
+    <div class="bdc-card">
+      <div class="bdc-card__head">
+        <span class="bdc-card__step">Reason</span>
+        <h4 class="bdc-card__title">Why are you changing your bank details?</h4>
+      </div>
+      <div class="bdc-field">
+        <label class="bdc-label">Reason for change <span class="bdc-req">*</span></label>
+        <textarea formControlName="reason" class="bdc-textarea"
+          [class.bdc-input--error]="hasError('reason','required') || hasError('reason','minlength')"
+          placeholder="E.g. Account closed, switching bank, incorrect account details…"
+          rows="4" maxlength="500"></textarea>
+        <div class="bdc-char-row">
+          <div>
+            <small class="bdc-error" *ngIf="hasError('reason','required')">Reason is required</small>
+            <small class="bdc-error" *ngIf="hasError('reason','minlength')">Minimum 10 characters</small>
+          </div>
+          <small class="bdc-char-count" [class.bdc-char-count--near]="(bankDetailsForm.get('reason')?.value?.length || 0) > 420">
+            {{ bankDetailsForm.get('reason')?.value?.length || 0 }} / 500
           </small>
         </div>
       </div>
     </div>
 
-    <!-- Info Box -->
-    <div class="info-box">
-      <i class="fa-solid fa-lightbulb"></i>
-      <div>
-        <strong>Processing Information</strong>
-        <p>
-          Your bank details change request will be reviewed by HR. Ensure all details are correct before submitting.
-          Once approved, the changes will be effective for your next salary disbursement.
-        </p>
-      </div>
+    <!-- Info notice -->
+    <div class="bdc-notice">
+      <i class="fas fa-shield-alt"></i>
+      <p>Your request will be reviewed by HR before any changes are applied. Changes typically take effect on the next salary run after approval.</p>
     </div>
 
-    <!-- Form Actions -->
-    <div class="form-actions">
-      <button
-        type="button"
-        class="btn btn-secondary"
-        (click)="cancelRequest()"
-        [disabled]="isSubmitting"
-      >
-        <i class="fa-solid fa-times"></i>
-        Cancel
+    <!-- Actions -->
+    <div class="bdc-actions">
+      <button type="button" class="bdc-btn bdc-btn--ghost" (click)="cancelRequest()" [disabled]="isSubmitting">
+        <i class="fas fa-times"></i> Discard
       </button>
-      <button
-        type="submit"
-        class="btn btn-primary"
-        [disabled]="!bankDetailsForm.valid || isSubmitting"
-      >
-        <i class="fa-solid fa-paper-plane"></i>
-        {{ isSubmitting ? 'Submitting...' : 'Submit Request' }}
+      <button type="submit" class="bdc-btn bdc-btn--primary" [disabled]="bankDetailsForm.invalid || isSubmitting">
+        <i class="fas" [class.fa-paper-plane]="!isSubmitting" [class.fa-spinner]="isSubmitting" [class.fa-spin]="isSubmitting"></i>
+        {{ isSubmitting ? 'Submitting…' : 'Submit Request' }}
       </button>
     </div>
+
   </form>
 </div>
