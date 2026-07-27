@@ -5,6 +5,7 @@
      decoratively. No drop shadows; hierarchy comes from a single hairline
      border weight and spacing, not elevation.
 ════════════════════════════════════════════════════ -->
+<ng-container *ngIf="!isDetailOpen">
 <div class="min-h-screen bg-[#fbfcfd] px-6 py-7 max-w-[1360px] mx-auto font-sans text-[#14181b]">
 
   <!-- Page header -->
@@ -206,11 +207,11 @@
             <td class="app-table-main-col">
               <div class="flex items-center gap-2">
                 <span *ngIf="!row.isRead" class="w-2 h-2 rounded-full bg-blue-600 shrink-0 ring-2 ring-blue-100"></span>
-                <span class="font-semibold text-[#1a2c35] text-sm">{{ row.rfqNumber }}</span>
+                <span class="font-semibold text-[#1a2c35] text-base">{{ row.rfqNumber }}</span>
                 <svg *ngIf="row.isDirectInvite" width="12" height="12" viewBox="0 0 24 24" fill="#224957" class="shrink-0" title="Client invited you directly">
                   <path d="M12 2 14.9 8.6 22 9.3 16.6 14.1 18.2 21.2 12 17.5 5.8 21.2 7.4 14.1 2 9.3 9.1 8.6z"/>
                 </svg>
-                <span *ngIf="row.attachments?.length" class="inline-flex items-center gap-0.5 text-[11px] text-[#8a949c] shrink-0" title="{{ row.attachments?.length }} attachment(s)">
+                <span *ngIf="row.attachments?.length" class="inline-flex items-center gap-0.5 text-[12px] text-[#8a949c] shrink-0" title="{{ row.attachments?.length }} attachment(s)">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                   {{ row.attachments?.length }}
                 </span>
@@ -218,22 +219,22 @@
             </td>
 
             <!-- 2. Client -->
-            <td class="text-sm text-[#1a2c35]">{{ row.clientName }}</td>
+            <td class="text-base text-[#1a2c35]">{{ row.clientName }}</td>
 
             <!-- 3. Category -->
-            <td class="text-sm text-[#5a7380]">{{ row.category }}</td>
+            <td class="text-base text-[#5a7380]">{{ row.category }}</td>
 
             <!-- 4. Due date with urgency pill -->
-            <td class="text-sm whitespace-nowrap" [ngClass]="dueDateClass(row)">
+            <td class="text-base whitespace-nowrap" [ngClass]="dueDateClass(row)">
               {{ fmtDate(row.dueDate) }}
               <span *ngIf="row.status==='open' && isDueSoon(row.dueDate) && !isExpired(row.dueDate)"
-                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600">Soon</span>
+                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[12px] font-bold bg-amber-50 text-amber-600">Soon</span>
               <span *ngIf="row.status==='open' && isExpired(row.dueDate)"
-                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-600">Overdue</span>
+                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[12px] font-bold bg-red-50 text-red-600">Overdue</span>
             </td>
 
             <!-- 5. Estimated value -->
-            <td class="text-sm font-medium text-[#1a2c35] text-right whitespace-nowrap">
+            <td class="text-base font-medium text-[#1a2c35] text-right whitespace-nowrap">
               {{ row.totalEstimatedValue ? fmtCurrency(row.totalEstimatedValue, row.currency) : '—' }}
             </td>
 
@@ -255,19 +256,19 @@
           <ng-template appTableBody let-row>
 
             <!-- 1. Quotation No. -->
-            <td class="app-table-main-col text-sm font-semibold text-[#1a2c35]">
+            <td class="app-table-main-col text-base font-semibold text-[#1a2c35]">
               {{ row.quotationNumber }}
-              <span *ngIf="row.version > 1" class="ml-1 text-[10px] font-semibold text-[#94a9b3]">v{{ row.version }}</span>
+              <span *ngIf="row.version > 1" class="ml-1 text-[12px] font-semibold text-[#94a9b3]">v{{ row.version }}</span>
             </td>
 
             <!-- 2. Client -->
-            <td class="text-sm text-[#1a2c35]">{{ row.clientName }}</td>
+            <td class="text-base text-[#1a2c35]">{{ row.clientName }}</td>
 
             <!-- 3. Created date -->
-            <td class="text-sm text-[#5a7380] whitespace-nowrap">{{ fmtDate(row.createdDate) }}</td>
+            <td class="text-base text-[#5a7380] whitespace-nowrap">{{ fmtDate(row.createdDate) }}</td>
 
             <!-- 4. Total value — always shown, bold -->
-            <td class="text-sm font-semibold text-[#224957] text-right whitespace-nowrap">
+            <td class="text-base font-semibold text-[#224957] text-right whitespace-nowrap">
               {{ row.total > 0 ? fmtCurrency(row.total, row.currency) : '—' }}
             </td>
 
@@ -291,29 +292,29 @@
               <div class="flex items-center gap-2">
                 <span *ngIf="!row.isRead" class="w-2 h-2 rounded-full bg-[#224957] shrink-0 ring-2 ring-[#e8f2f7]"></span>
                 <div>
-                  <p class="font-semibold text-[#1a2c35] text-sm">{{ row.lpoNumber }}</p>
-                  <p *ngIf="row.quotationNumber" class="text-xs text-[#5a7380]">Quot: {{ row.quotationNumber }}</p>
+                  <p class="font-semibold text-[#1a2c35] text-base">{{ row.lpoNumber }}</p>
+                  <p *ngIf="row.quotationNumber" class="text-sm text-[#5a7380]">Quot: {{ row.quotationNumber }}</p>
                 </div>
               </div>
             </td>
 
             <!-- 2. Client + RFQ ref -->
             <td>
-              <p class="text-sm text-[#1a2c35]">{{ row.clientName }}</p>
-              <p *ngIf="row.rfqNumber" class="text-xs text-[#5a7380]">RFQ: {{ row.rfqNumber }}</p>
+              <p class="text-base text-[#1a2c35]">{{ row.clientName }}</p>
+              <p *ngIf="row.rfqNumber" class="text-sm text-[#5a7380]">RFQ: {{ row.rfqNumber }}</p>
             </td>
 
             <!-- 3. Delivery date -->
-            <td class="text-sm whitespace-nowrap" [ngClass]="deliveryDateClass(row)">
+            <td class="text-base whitespace-nowrap" [ngClass]="deliveryDateClass(row)">
               {{ fmtDate(row.deliveryDate) }}
               <span *ngIf="(row.status==='pending'||row.status==='accepted') && isDueSoon(row.deliveryDate) && !isExpired(row.deliveryDate)"
-                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600">Soon</span>
+                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[12px] font-bold bg-amber-50 text-amber-600">Soon</span>
               <span *ngIf="(row.status==='pending'||row.status==='accepted') && isExpired(row.deliveryDate)"
-                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-600">Overdue</span>
+                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[12px] font-bold bg-red-50 text-red-600">Overdue</span>
             </td>
 
             <!-- 4. Total value -->
-            <td class="text-sm font-semibold text-[#224957] text-right whitespace-nowrap">
+            <td class="text-base font-semibold text-[#224957] text-right whitespace-nowrap">
               {{ fmtCurrency(row.total, row.currency) }}
             </td>
 
@@ -328,7 +329,7 @@
       <ng-container *ngIf="activeTable==='invoices'">
         <div class="flex justify-end px-1 pb-3">
           <button (click)="openBlankInvoiceModal()"
-            class="flex items-center gap-2 px-3.5 py-2 bg-[#224957] text-white text-xs font-semibold rounded-lg hover:bg-[#2d6478] transition-colors">
+            class="flex items-center gap-2 px-3.5 py-2 bg-[#224957] text-white text-sm font-semibold rounded-lg hover:bg-[#2d6478] transition-colors">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             New Invoice
           </button>
@@ -341,25 +342,25 @@
 
             <!-- 1. Invoice No. + LPO ref -->
             <td class="app-table-main-col">
-              <p class="font-semibold text-[#1a2c35] text-sm">{{ row.invoiceNumber }}</p>
-              <p *ngIf="row.lpoNumber" class="text-xs text-[#5a7380]">LPO: {{ row.lpoNumber }}</p>
+              <p class="font-semibold text-[#1a2c35] text-base">{{ row.invoiceNumber }}</p>
+              <p *ngIf="row.lpoNumber" class="text-sm text-[#5a7380]">LPO: {{ row.lpoNumber }}</p>
             </td>
 
             <!-- 2. Client -->
-            <td class="text-sm text-[#1a2c35]">{{ row.clientName }}</td>
+            <td class="text-base text-[#1a2c35]">{{ row.clientName }}</td>
 
             <!-- 3. Issued + Due -->
             <td>
-              <p class="text-sm text-[#1a2c35]">{{ fmtDate(row.issuedDate) }}</p>
-              <p class="text-xs" [class.text-red-500]="row.status==='overdue'" [class.text-[#5a7380]]="row.status!=='overdue'">
+              <p class="text-base text-[#1a2c35]">{{ fmtDate(row.issuedDate) }}</p>
+              <p class="text-sm" [class.text-red-500]="row.status==='overdue'" [class.text-[#5a7380]]="row.status!=='overdue'">
                 Due {{ fmtDate(row.dueDate) }}
               </p>
             </td>
 
             <!-- 4. Total + outstanding -->
             <td class="text-right">
-              <p class="text-sm font-semibold text-[#224957]">{{ fmtCurrency(row.total, row.currency) }}</p>
-              <p *ngIf="row.amountOutstanding > 0" class="text-xs text-amber-600">
+              <p class="text-base font-semibold text-[#224957]">{{ fmtCurrency(row.total, row.currency) }}</p>
+              <p *ngIf="row.amountOutstanding > 0" class="text-sm text-amber-600">
                 {{ fmtCurrency(row.amountOutstanding, row.currency) }} due
               </p>
             </td>
@@ -374,125 +375,177 @@
     </div>
   </div>
 </div>
+</ng-container>
 
 
 <!-- ═══════════════════════════════════════════════════
      LAYER 1A — RFQ SIDE PANEL
 ════════════════════════════════════════════════════ -->
 <ng-container *ngIf="showRfqPanel && selectedRfq">
-  <div class="fixed inset-0 z-[1000]" style="background:rgba(15,30,36,0.4);backdrop-filter:blur(2px)" (click)="closeRfqPanel()"></div>
-  <aside class="fixed top-0 right-0 h-full z-[1001] w-[640px] max-w-[95vw] bg-white shadow-2xl flex flex-col panel-slide">
+<div class="min-h-screen bg-[#fbfcfd] px-8 py-8 max-w-[1320px] mx-auto font-sans text-[#14181b] page-in">
 
-    <!-- Head -->
-    <div class="px-6 pt-5 pb-4 border-b border-[#eef2f6] sticky top-0 bg-white z-10">
-      <div class="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <div class="flex items-center gap-2 mb-0.5">
-            <h2 class="text-lg font-bold text-[#1a2c35]">{{ selectedRfq.rfqNumber }}</h2>
-            <app-vp-status [tone]="rfqStatusTone(selectedRfq.status)" [icon]="rfqStatusIcon(selectedRfq.status)" [label]="selectedRfq.status"></app-vp-status>
-            <span *ngIf="selectedRfq.isDirectInvite" class="inline-flex items-center gap-1 text-[11px] font-semibold text-[#224957] bg-[#e8f2f7] border border-[#cfe3ea] px-2 py-0.5 rounded-full">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 14.9 8.6 22 9.3 16.6 14.1 18.2 21.2 12 17.5 5.8 21.2 7.4 14.1 2 9.3 9.1 8.6z"/></svg>
-              Invited you directly
-            </span>
-          </div>
-          <p class="text-sm text-[#5a7380]">{{ selectedRfq.clientName }}<span *ngIf="selectedRfq.clientEmail"> · {{ selectedRfq.clientEmail }}</span></p>
-        </div>
-        <button (click)="closeRfqPanel()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
+  <button (click)="closeRfqPanel()" class="flex items-center gap-1.5 text-base font-semibold text-[#5a7380] hover:text-[#224957] transition-colors mb-6">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Back to Pipeline
+  </button>
+
+  <!-- Head -->
+  <div class="mb-8">
+    <div class="flex items-center gap-3 mb-2 flex-wrap">
+      <h1 class="text-3xl font-bold text-[#14181b] tracking-tight">{{ selectedRfq.rfqNumber }}</h1>
+      <app-vp-status [tone]="rfqStatusTone(selectedRfq.status)" [icon]="rfqStatusIcon(selectedRfq.status)" [label]="selectedRfq.status"></app-vp-status>
+      <span *ngIf="selectedRfq.isDirectInvite" class="inline-flex items-center gap-1.5 text-base font-semibold text-[#224957] bg-[#e8f2f7] border border-[#cfe3ea] px-3 py-1 rounded-full">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 14.9 8.6 22 9.3 16.6 14.1 18.2 21.2 12 17.5 5.8 21.2 7.4 14.1 2 9.3 9.1 8.6z"/></svg>
+        Invited you directly
+      </span>
+    </div>
+    <p class="text-lg text-[#5a7380]">{{ selectedRfq.clientName }}<span *ngIf="selectedRfq.clientEmail"> · {{ selectedRfq.clientEmail }}</span></p>
+  </div>
+
+  <!-- Two-column layout: content does the reading, sidebar does the deciding -->
+  <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
+
+    <!-- ═══ MAIN COLUMN ═══ -->
+    <div class="flex flex-col gap-8 min-w-0">
+
+      <div *ngIf="selectedRfq.clientInstructions">
+        <h3 class="text-base font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-2.5">Client Instructions</h3>
+        <div class="bg-white border border-[#e6edf2] border-l-[4px] border-l-[#224957] rounded-xl px-6 py-5 text-lg text-[#1a2c35] leading-relaxed whitespace-pre-line">{{ selectedRfq.clientInstructions }}</div>
       </div>
-      <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-        <span class="text-[#5a7380]">Issued <strong class="text-[#1a2c35]">{{ fmtDate(selectedRfq.issuedDate) }}</strong></span>
-        <span [class.text-red-600]="isExpired(selectedRfq.dueDate)" [class.text-amber-600]="!isExpired(selectedRfq.dueDate)&&isDueSoon(selectedRfq.dueDate)" [class.text-[#5a7380]]="!isExpired(selectedRfq.dueDate)&&!isDueSoon(selectedRfq.dueDate)">
-          Due <strong>{{ fmtDate(selectedRfq.dueDate) }}</strong>
-          <span *ngIf="isExpired(selectedRfq.dueDate)"> · EXPIRED</span>
-          <span *ngIf="!isExpired(selectedRfq.dueDate)&&isDueSoon(selectedRfq.dueDate)"> · Due soon</span>
-        </span>
-        <span *ngIf="selectedRfq.paymentTerms" class="text-[#5a7380]">Payment: <strong class="text-[#1a2c35]">{{ selectedRfq.paymentTerms }}</strong></span>
-        <span class="text-[#5a7380]">Currency: <strong class="text-[#1a2c35]">{{ selectedRfq.currency }}</strong></span>
+
+      <div>
+        <h3 class="text-base font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-2.5">Requested Items ({{ selectedRfq.items.length }})</h3>
+        <div class="flex flex-col gap-4">
+          <div *ngFor="let item of selectedRfq.items; let i = index" class="border border-[#e6edf2] rounded-2xl overflow-hidden shrink-0 bg-white">
+            <div class="p-6 flex items-start gap-4">
+              <span class="w-8 h-8 rounded-full bg-[#e8f2f7] text-[#224957] text-sm font-bold flex items-center justify-center shrink-0 mt-0.5">{{ i+1 }}</span>
+              <div class="flex-1 min-w-0">
+                <h4 class="text-xl font-semibold text-[#1a2c35]">{{ item.name }}</h4>
+                <p class="text-lg text-[#5a7380] mt-1.5">{{ item.description }}</p>
+                <p *ngIf="item.specifications" class="text-lg text-[#1a2c35] mt-3 bg-[#f5f7f9] rounded-lg px-5 py-3"><strong class="text-[#224957]">Spec:</strong> {{ item.specifications }}</p>
+              </div>
+              <span class="shrink-0 text-lg font-semibold bg-[#e8f2f7] text-[#224957] px-4 py-2 rounded-lg whitespace-nowrap">{{ item.quantity }} {{ item.unit }}</span>
+            </div>
+            <!-- Reference photos — large thumbnails, click to expand full-size -->
+            <div *ngIf="item.referenceImages?.length" class="flex gap-3 flex-wrap px-6 py-4 border-t border-[#eef2f6] bg-[#f5f7f9]">
+              <button
+                type="button"
+                *ngFor="let img of item.referenceImages"
+                (click)="openLightbox(img, $event)"
+                class="group/img flex flex-col gap-1.5 text-left"
+              >
+                <span class="relative block w-32 h-28 rounded-xl overflow-hidden border border-[#e6edf2] shadow-sm">
+                  <img [src]="img.url" [alt]="img.label||'Reference'" class="w-full h-full object-cover transition-transform duration-200 group-hover/img:scale-105" />
+                  <span class="absolute inset-0 bg-black/0 group-hover/img:bg-black/25 transition-colors flex items-center justify-center">
+                    <svg class="opacity-0 group-hover/img:opacity-100 transition-opacity text-white" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/>
+                    </svg>
+                  </span>
+                </span>
+                <span class="text-sm text-[#5a7380] max-w-[8rem] truncate">{{ img.label||'Reference' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Body -->
-    <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
-      <div *ngIf="selectedRfq.clientInstructions">
-        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Client Instructions</h3>
-        <div class="bg-[#f9fcfd] border border-[#e6edf2] border-l-[3px] border-l-[#224957] rounded-xl px-4 py-3 text-sm text-[#1a2c35] leading-relaxed whitespace-pre-line">{{ selectedRfq.clientInstructions }}</div>
+    <!-- ═══ SIDEBAR — everything you'd need without scrolling the items list ═══ -->
+    <aside class="flex flex-col gap-5 lg:sticky lg:top-8">
+
+      <!-- Actions card — the decision, right at the top -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 flex flex-col gap-2.5">
+        <button *ngIf="selectedRfq.status==='open' && !rfqHasQuotation(selectedRfq.id)" (click)="openConvertModal(selectedRfq)"
+          class="w-full px-5 py-3.5 text-lg font-semibold rounded-xl bg-[#224957] text-white hover:bg-[#2d6478] transition-colors shadow-sm">
+          Convert to Quotation →
+        </button>
+        <button *ngIf="rfqHasQuotation(selectedRfq.id)" (click)="viewQuotationFromRfq(selectedRfq)"
+          class="w-full px-5 py-3.5 text-lg font-semibold rounded-xl bg-[#e8f2f7] text-[#224957] hover:bg-[#d2e8f2] transition-colors">
+          View Quotation
+        </button>
+        <button (click)="downloadRfq(selectedRfq, $event)"
+          class="w-full px-5 py-3 text-base font-medium rounded-xl border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">
+          ↓ Download RFQ
+        </button>
+        <p class="text-sm text-green-600 font-medium text-center pt-1" *ngIf="rfqHasQuotation(selectedRfq.id)">✓ Quotation already created</p>
+        <p class="text-sm text-[#5a7380] text-center pt-1" *ngIf="selectedRfq.status==='expired'">This RFQ has expired</p>
       </div>
-      <div>
-        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Details</h3>
-        <div class="grid grid-cols-2 gap-3">
-          <div *ngIf="selectedRfq.deliveryAddress" class="flex flex-col gap-0.5">
-            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Delivery Address</span>
-            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedRfq.deliveryAddress }}</span>
-          </div>
-          <div *ngIf="selectedRfq.totalEstimatedValue" class="flex flex-col gap-0.5">
-            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Estimated Budget</span>
-            <span class="text-sm text-[#1a2c35] font-medium">{{ fmtCurrency(selectedRfq.totalEstimatedValue, selectedRfq.currency) }}</span>
-          </div>
-          <div *ngIf="selectedRfq.category" class="flex flex-col gap-0.5">
-            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Category</span>
-            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedRfq.category }}</span>
-          </div>
+
+      <!-- Key dates & terms -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 flex flex-col gap-4">
+        <div>
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Issued</p>
+          <p class="text-lg text-[#1a2c35] font-medium">{{ fmtDate(selectedRfq.issuedDate) }}</p>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Due</p>
+          <p class="text-lg font-medium"
+            [class.text-red-600]="isExpired(selectedRfq.dueDate)"
+            [class.text-amber-600]="!isExpired(selectedRfq.dueDate)&&isDueSoon(selectedRfq.dueDate)"
+            [class.text-[#1a2c35]]="!isExpired(selectedRfq.dueDate)&&!isDueSoon(selectedRfq.dueDate)">
+            {{ fmtDate(selectedRfq.dueDate) }}
+            <span *ngIf="isExpired(selectedRfq.dueDate)" class="block text-sm font-bold uppercase tracking-wide">Expired</span>
+            <span *ngIf="!isExpired(selectedRfq.dueDate)&&isDueSoon(selectedRfq.dueDate)" class="block text-sm font-bold uppercase tracking-wide">Due soon</span>
+          </p>
+        </div>
+        <div *ngIf="selectedRfq.totalEstimatedValue">
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Estimated Budget</p>
+          <p class="text-lg text-[#1a2c35] font-medium">{{ fmtCurrency(selectedRfq.totalEstimatedValue, selectedRfq.currency) }}</p>
+        </div>
+        <div *ngIf="selectedRfq.category">
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Category</p>
+          <p class="text-lg text-[#1a2c35] font-medium">{{ selectedRfq.category }}</p>
+        </div>
+        <div *ngIf="selectedRfq.paymentTerms">
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Payment Terms</p>
+          <p class="text-lg text-[#1a2c35] font-medium">{{ selectedRfq.paymentTerms }}</p>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Currency</p>
+          <p class="text-lg text-[#1a2c35] font-medium">{{ selectedRfq.currency }}</p>
+        </div>
+        <div *ngIf="selectedRfq.deliveryAddress">
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Delivery Address</p>
+          <p class="text-lg text-[#1a2c35] font-medium leading-snug">{{ selectedRfq.deliveryAddress }}</p>
         </div>
       </div>
-      <div *ngIf="selectedRfq.attachments?.length">
-        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Attachments ({{ selectedRfq.attachments?.length }})</h3>
-        <div class="flex flex-col gap-1.5">
+
+      <!-- Attachments -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5" *ngIf="selectedRfq.attachments?.length">
+        <p class="text-sm font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-3">Attachments ({{ selectedRfq.attachments?.length }})</p>
+        <div class="flex flex-col gap-2">
           <button
             type="button"
             *ngFor="let file of selectedRfq.attachments"
             (click)="downloadAttachment(file, $event)"
-            class="group flex items-center gap-3 w-full text-left border border-[#e6edf2] rounded-xl px-3.5 py-2.5 hover:border-[#224957] hover:bg-[#f9fcfd] transition-colors"
+            class="group flex items-center gap-3 w-full text-left border border-[#e6edf2] rounded-xl px-3.5 py-3 hover:border-[#224957] hover:bg-[#f9fcfd] transition-colors"
           >
-            <span class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" [ngClass]="attachmentIconBg(file.fileType)">
-              <span class="text-[10px] font-bold uppercase">{{ file.fileType }}</span>
+            <span class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" [ngClass]="attachmentIconBg(file.fileType)">
+              <span class="text-xs font-bold uppercase">{{ file.fileType }}</span>
             </span>
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-[#1a2c35] truncate">{{ file.label || file.fileName }}</p>
-              <p class="text-xs text-[#8a949c] truncate">{{ file.fileName }} · {{ file.fileSize }}</p>
+              <p class="text-base font-medium text-[#1a2c35] truncate">{{ file.label || file.fileName }}</p>
+              <p class="text-sm text-[#8a949c] truncate">{{ file.fileSize }}</p>
             </div>
-            <svg class="shrink-0 text-[#9ab0bb] group-hover:text-[#224957] transition-colors" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>
-            </svg>
           </button>
         </div>
       </div>
-      <div>
-        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Requested Items ({{ selectedRfq.items.length }})</h3>
-        <div class="flex flex-col gap-2.5">
-          <div *ngFor="let item of selectedRfq.items; let i = index" class="border border-[#e6edf2] rounded-xl overflow-hidden shrink-0">
-            <div class="p-4 flex items-start gap-3">
-              <span class="w-5 h-5 rounded-full bg-[#e8f2f7] text-[#224957] text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">{{ i+1 }}</span>
-              <div class="flex-1 min-w-0">
-                <h4 class="text-base font-semibold text-[#1a2c35]">{{ item.name }}</h4>
-                <p class="text-sm text-[#5a7380] mt-1">{{ item.description }}</p>
-                <p *ngIf="item.specifications" class="text-sm text-[#1a2c35] mt-2 bg-[#f5f7f9] rounded-lg px-3 py-2"><strong class="text-[#224957]">Spec:</strong> {{ item.specifications }}</p>
-              </div>
-              <span class="shrink-0 text-sm font-semibold bg-[#e8f2f7] text-[#224957] px-2.5 py-1 rounded-lg whitespace-nowrap">{{ item.quantity }} {{ item.unit }}</span>
-            </div>
-            <div *ngIf="item.referenceImages?.length" class="flex gap-2 flex-wrap px-3.5 py-2.5 border-t border-[#eef2f6] bg-[#f5f7f9]">
-              <div *ngFor="let img of item.referenceImages" class="flex flex-col gap-1">
-                <img [src]="img.url" [alt]="img.label||'Reference'" class="w-14 h-10 object-cover rounded-lg border border-[#e6edf2]" />
-                <span class="text-xs text-[#5a7380]">{{ img.label||'Reference' }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    </aside>
+  </div>
+</div>
+</ng-container>
 
-    <!-- Footer -->
-    <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] flex items-center justify-between gap-3 flex-wrap sticky bottom-0">
-      <span class="text-sm text-green-600 font-medium" *ngIf="rfqHasQuotation(selectedRfq.id)">✓ Quotation already created</span>
-      <span class="text-sm text-[#5a7380]" *ngIf="selectedRfq.status==='expired'">This RFQ has expired</span>
-      <div class="flex items-center gap-2 ml-auto">
-        <button (click)="downloadRfq(selectedRfq, $event)" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">↓ Download RFQ</button>
-        <button *ngIf="selectedRfq.status==='open' && !rfqHasQuotation(selectedRfq.id)" (click)="openConvertModal(selectedRfq)" class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors">Convert to Quotation →</button>
-        <button *ngIf="rfqHasQuotation(selectedRfq.id)" (click)="viewQuotationFromRfq(selectedRfq)" class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#e8f2f7] text-[#224957] hover:bg-[#d2e8f2] transition-colors">View Quotation</button>
-      </div>
-    </div>
-  </aside>
+<!-- Image lightbox — expands any reference photo to full size -->
+<ng-container *ngIf="lightboxImage">
+  <div class="fixed inset-0 z-[1200] bg-black/85 flex items-center justify-center p-6" (click)="closeLightbox()">
+    <button (click)="closeLightbox()" class="absolute top-5 right-5 w-11 h-11 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <figure class="max-w-[90vw] max-h-[85vh] flex flex-col items-center gap-3" (click)="$event.stopPropagation()">
+      <img [src]="lightboxImage.url" [alt]="lightboxImage.label" class="max-w-full max-h-[75vh] rounded-xl object-contain shadow-2xl" />
+      <figcaption class="text-white/80 text-base">{{ lightboxImage.label }}</figcaption>
+    </figure>
+  </div>
 </ng-container>
 
 
@@ -500,112 +553,87 @@
      LAYER 1B — QUOTATION SIDE PANEL
 ════════════════════════════════════════════════════ -->
 <ng-container *ngIf="showQuotationPanel && selectedQuotation">
-  <div class="fixed inset-0 z-[1000]" style="background:rgba(15,30,36,0.4);backdrop-filter:blur(2px)" (click)="closeQuotationPanel()"></div>
-  <aside class="fixed top-0 right-0 h-full z-[1001] w-[640px] max-w-[95vw] bg-white shadow-2xl flex flex-col panel-slide">
+<div class="min-h-screen bg-[#fbfcfd] px-8 py-8 max-w-[1320px] mx-auto font-sans text-[#14181b] page-in">
 
-    <!-- Head -->
-    <div class="px-6 pt-5 pb-4 border-b border-[#eef2f6] sticky top-0 bg-white z-10">
-      <div class="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <div class="flex items-center gap-2 mb-0.5">
-            <h2 class="text-lg font-bold text-[#1a2c35]">{{ selectedQuotation.quotationNumber }}</h2>
-            <span class="text-xs font-semibold text-[#94a9b3]" *ngIf="selectedQuotation.version > 1">v{{ selectedQuotation.version }}</span>
-            <app-vp-status [tone]="quotStatusTone(selectedQuotation.status)" [icon]="quotStatusIcon(selectedQuotation.status)" [label]="quotStatusLabel(selectedQuotation.status)"></app-vp-status>
-          </div>
-          <p class="text-sm text-[#5a7380]">
-            {{ selectedQuotation.clientName }} · RFQ ref:
-            <button (click)="viewRfqFromQuotation(selectedQuotation)" class="text-[#224957] font-semibold underline decoration-dotted hover:text-[#2d6478]">{{ selectedQuotation.rfqNumber }}</button>
-          </p>
-        </div>
-        <button (click)="closeQuotationPanel()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div class="flex items-center gap-1.5 mb-3">
-        <ng-container *ngFor="let s of quotationLifecycleStages(selectedQuotation); let last = last">
-          <span class="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
-            [class.bg-[#e8f2f7]]="s.state==='done'" [class.text-[#224957]]="s.state==='done'"
-            [class.bg-amber-50]="s.state==='current'" [class.text-amber-700]="s.state==='current'"
-            [class.bg-red-50]="s.state==='stopped'" [class.text-red-600]="s.state==='stopped'"
-            [class.bg-[#f5f7f9]]="s.state==='upcoming'" [class.text-[#94a9b3]]="s.state==='upcoming'">{{ s.label }}</span>
-          <span *ngIf="!last" class="text-[#d5dee3] text-xs">—</span>
-        </ng-container>
-        <button
-          *ngIf="selectedQuotation.status === 'accepted'"
-          (click)="viewLpoFromQuotation(selectedQuotation)"
-          class="ml-1 text-xs font-semibold text-[#224957] hover:underline whitespace-nowrap">
-          View LPO →
-        </button>
-      </div>
-      <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#5a7380]">
-        <span>Created <strong class="text-[#1a2c35]">{{ fmtDate(selectedQuotation.createdDate) }}</strong></span>
-        <span *ngIf="selectedQuotation.sentDate">Sent <strong class="text-[#1a2c35]">{{ fmtDate(selectedQuotation.sentDate) }}</strong></span>
-        <span>Valid until <strong [class.text-red-600]="isExpired(selectedQuotation.validUntil)" class="text-[#1a2c35]">{{ fmtDate(selectedQuotation.validUntil) }}</strong></span>
-      </div>
+  <button (click)="closeQuotationPanel()" class="flex items-center gap-1.5 text-base font-semibold text-[#5a7380] hover:text-[#224957] transition-colors mb-6">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Back to Pipeline
+  </button>
+
+  <!-- Head -->
+  <div class="mb-8">
+    <div class="flex items-center gap-3 mb-2 flex-wrap">
+      <h1 class="text-3xl font-bold text-[#14181b] tracking-tight">{{ selectedQuotation.quotationNumber }}</h1>
+      <span class="text-sm font-semibold text-[#94a9b3]" *ngIf="selectedQuotation.version > 1">v{{ selectedQuotation.version }}</span>
+      <app-vp-status [tone]="quotStatusTone(selectedQuotation.status)" [icon]="quotStatusIcon(selectedQuotation.status)" [label]="quotStatusLabel(selectedQuotation.status)"></app-vp-status>
     </div>
+    <p class="text-lg text-[#5a7380]">
+      {{ selectedQuotation.clientName }} · RFQ ref:
+      <button (click)="viewRfqFromQuotation(selectedQuotation)" class="text-[#224957] font-semibold underline decoration-dotted hover:text-[#2d6478]">{{ selectedQuotation.rfqNumber }}</button>
+    </p>
+  </div>
 
-    <!-- Body -->
-    <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+  <!-- Two-column layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
+
+    <!-- ═══ MAIN COLUMN ═══ -->
+    <div class="flex flex-col gap-8 min-w-0">
 
       <!-- Revision request banner -->
-      <div *ngIf="selectedQuotation.status==='revision_requested'" class="flex gap-3 px-4 py-3.5 bg-orange-50 border border-orange-200 rounded-xl">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-500 shrink-0 mt-0.5"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.99 6.57 2.64L21 8"/><polyline points="21 3 21 8 16 8"/></svg>
+      <div *ngIf="selectedQuotation.status==='revision_requested'" class="flex gap-3 px-5 py-4 bg-orange-50 border border-orange-200 rounded-xl">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-500 shrink-0 mt-0.5"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.99 6.57 2.64L21 8"/><polyline points="21 3 21 8 16 8"/></svg>
         <div class="flex-1 min-w-0">
-          <p class="text-xs font-bold text-orange-800 uppercase tracking-wide mb-1">Client requested changes</p>
-          <p class="text-sm text-orange-900 leading-relaxed">{{ selectedQuotation.revisionRequestNote }}</p>
-          <p class="text-xs text-orange-600 mt-1.5">{{ fmtDateTime(selectedQuotation.revisionRequestedAt) }} · Revision {{ selectedQuotation.revisionCount }} of {{ MAX_REVISION_ROUNDS }}</p>
+          <p class="text-base font-bold text-orange-800 uppercase tracking-wide mb-1">Client requested changes</p>
+          <p class="text-lg text-orange-900 leading-relaxed">{{ selectedQuotation.revisionRequestNote }}</p>
+          <p class="text-base text-orange-600 mt-1.5">{{ fmtDateTime(selectedQuotation.revisionRequestedAt) }} · Revision {{ selectedQuotation.revisionCount }} of {{ MAX_REVISION_ROUNDS }}</p>
         </div>
       </div>
 
       <div>
-        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Items ({{ selectedQuotation.items.length }})</h3>
-        <div class="flex flex-col gap-2">
+        <h3 class="text-base font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-2.5">Items ({{ selectedQuotation.items.length }})</h3>
+        <div class="flex flex-col gap-3">
           <div *ngFor="let item of selectedQuotation.items; trackBy: trackByRfqItemId"
-            class="border border-[#e6edf2] rounded-xl p-4"
+            class="border border-[#e6edf2] rounded-xl p-5 bg-white"
             [class.opacity-60]="item.availability==='unavailable'">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-4">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
-                  <p class="text-base font-semibold text-[#1a2c35] truncate">{{ item.name }}</p>
+                  <p class="text-xl font-semibold text-[#1a2c35] truncate">{{ item.name }}</p>
                   <span *ngIf="item.availability!=='available'" [ngClass]="'item-tag item-tag-'+item.availability">{{ itemAvailabilityLabel(item.availability) }}</span>
                 </div>
-                <p class="text-sm text-[#5a7380] mt-1">
+                <p class="text-lg text-[#5a7380] mt-1">
                   <ng-container *ngIf="item.availability==='partial'">Offering <strong class="text-[#1a2c35]">{{ item.offeredQuantity }}</strong> of {{ item.quantity }} {{ item.unit }} requested</ng-container>
                   <ng-container *ngIf="item.availability!=='partial'">{{ item.quantity }} {{ item.unit }}</ng-container>
                 </p>
               </div>
               <div class="text-right shrink-0">
                 <ng-container *ngIf="item.availability!=='unavailable' && item.unitPrice !== null">
-                  <p class="text-sm text-[#5a7380]">{{ fmtCurrency(item.unitPrice, selectedQuotation.currency) }} / {{ item.unit }}</p>
-                  <p class="text-base font-bold text-[#224957]">{{ fmtCurrency(item.totalPrice!, selectedQuotation.currency) }}</p>
+                  <p class="text-lg text-[#5a7380]">{{ fmtCurrency(item.unitPrice, selectedQuotation.currency) }} / {{ item.unit }}</p>
+                  <p class="text-lg font-bold text-[#224957]">{{ fmtCurrency(item.totalPrice!, selectedQuotation.currency) }}</p>
                 </ng-container>
-                <span *ngIf="item.availability==='unavailable'" class="text-sm font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">Unavailable</span>
-                <span *ngIf="item.availability!=='unavailable' && item.unitPrice===null" class="text-sm text-[#94a9b3]">Not priced yet</span>
+                <span *ngIf="item.availability==='unavailable'" class="text-lg font-semibold text-red-500 bg-red-50 px-2.5 py-1 rounded-full">Unavailable</span>
+                <span *ngIf="item.availability!=='unavailable' && item.unitPrice===null" class="text-lg text-[#94a9b3]">Not priced yet</span>
               </div>
             </div>
-            <p *ngIf="item.availability==='substitute' && item.substituteDescription" class="text-sm text-[#1a2c35] mt-2 bg-[#f5f7f9] rounded-lg px-3 py-2"><strong>Offering instead:</strong> {{ item.substituteDescription }}</p>
-            <p *ngIf="(item.availability==='partial' || item.availability==='unavailable') && item.exceptionNote" class="text-sm text-[#1a2c35] mt-2 bg-[#f5f7f9] rounded-lg px-3 py-2"><strong>Note:</strong> {{ item.exceptionNote }}</p>
+            <p *ngIf="item.availability==='substitute' && item.substituteDescription" class="text-lg text-[#1a2c35] mt-2 bg-[#f5f7f9] rounded-lg px-4 py-2.5"><strong>Offering instead:</strong> {{ item.substituteDescription }}</p>
+            <p *ngIf="(item.availability==='partial' || item.availability==='unavailable') && item.exceptionNote" class="text-lg text-[#1a2c35] mt-2 bg-[#f5f7f9] rounded-lg px-4 py-2.5"><strong>Note:</strong> {{ item.exceptionNote }}</p>
           </div>
         </div>
       </div>
-      <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4 flex flex-col gap-1.5">
-        <div class="flex justify-between text-sm text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedQuotation.subtotal, selectedQuotation.currency) }}</span></div>
-        <div class="flex justify-between text-sm text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedQuotation.tax, selectedQuotation.currency) }}</span></div>
-        <div class="flex justify-between text-base font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5"><span class="text-[#1a2c35]">Total</span><span class="text-[#224957] text-lg">{{ fmtCurrency(selectedQuotation.total, selectedQuotation.currency) }}</span></div>
-      </div>
+
       <div *ngIf="selectedQuotation.notes">
-        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Notes</h3>
-        <p class="text-sm text-[#1a2c35] leading-relaxed bg-[#f9fcfd] border border-[#e6edf2] rounded-xl px-4 py-3">{{ selectedQuotation.notes }}</p>
+        <h3 class="text-base font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-2.5">Notes</h3>
+        <p class="text-lg text-[#1a2c35] leading-relaxed bg-white border border-[#e6edf2] rounded-xl px-5 py-4">{{ selectedQuotation.notes }}</p>
       </div>
 
       <!-- Negotiation history -->
       <div *ngIf="selectedQuotation.history.length">
-        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">History</h3>
-        <div class="flex flex-col gap-2.5">
-          <div *ngFor="let h of selectedQuotation.history" class="flex gap-2.5">
-            <span class="w-2 h-2 rounded-full mt-1.5 shrink-0" [class.bg-[#224957]]="h.actor==='VENDOR'" [class.bg-orange-500]="h.actor==='CUSTOMER'"></span>
+        <h3 class="text-base font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-2.5">History</h3>
+        <div class="flex flex-col gap-3">
+          <div *ngFor="let h of selectedQuotation.history" class="flex gap-3">
+            <span class="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0" [class.bg-[#224957]]="h.actor==='VENDOR'" [class.bg-orange-500]="h.actor==='CUSTOMER'"></span>
             <div class="flex-1 min-w-0">
-              <p class="text-sm text-[#1a2c35]">
+              <p class="text-lg text-[#1a2c35]">
                 <strong>{{ h.actor==='VENDOR' ? 'You' : selectedQuotation.clientName }}</strong>
                 <span class="text-[#5a7380]">
                   <ng-container [ngSwitch]="h.action">
@@ -619,28 +647,81 @@
                   </ng-container>
                 </span>
               </p>
-              <p *ngIf="h.note" class="text-sm text-[#5a7380] mt-0.5 italic">"{{ h.note }}"</p>
-              <p class="text-xs text-[#94a9b3] mt-0.5">{{ fmtDateTime(h.timestamp) }}</p>
+              <p *ngIf="h.note" class="text-lg text-[#5a7380] mt-0.5 italic">"{{ h.note }}"</p>
+              <p class="text-base text-[#94a9b3] mt-0.5">{{ fmtDateTime(h.timestamp) }}</p>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Footer -->
-    <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] flex items-center gap-2 justify-end flex-wrap sticky bottom-0">
-      <button *ngIf="selectedQuotation.status==='sent'" (click)="openSimulateDecision(selectedQuotation)"
-        title="Stand-in for the client's own action until the client portal is wired to the same backend"
-        class="px-3 py-1.5 text-xs font-medium rounded-lg border border-dashed border-orange-300 bg-orange-50 text-orange-700 hover:border-orange-400 transition-colors">🧪 Simulate Client Decision</button>
-      <button *ngIf="selectedQuotation.status==='sent' || selectedQuotation.status==='revision_requested'" (click)="openWithdrawConfirm(selectedQuotation)"
-        class="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-red-500 hover:border-red-300 transition-colors">Withdraw</button>
-      <button (click)="downloadQuotation(selectedQuotation, $event)" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">↓ Download</button>
-      <button *ngIf="isEditableStatus(selectedQuotation)" (click)="openQuotationEditor(selectedQuotation)" class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors">
-        {{ selectedQuotation.status==='revision_requested' ? 'Revise & Resubmit →' : 'Edit Quotation →' }}
-      </button>
-      <button *ngIf="!isEditableStatus(selectedQuotation)" (click)="openQuotationViewer(selectedQuotation)" class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#e8f2f7] text-[#224957] hover:bg-[#d2e8f2] transition-colors">View Full Details</button>
-    </div>
-  </aside>
+    <!-- ═══ SIDEBAR ═══ -->
+    <aside class="flex flex-col gap-5 lg:sticky lg:top-8">
+
+      <!-- Actions -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 flex flex-col gap-2.5">
+        <button *ngIf="isEditableStatus(selectedQuotation)" (click)="openQuotationEditor(selectedQuotation)"
+          class="w-full px-5 py-3.5 text-lg font-semibold rounded-xl bg-[#224957] text-white hover:bg-[#2d6478] transition-colors shadow-sm">
+          {{ selectedQuotation.status==='revision_requested' ? 'Revise & Resubmit →' : 'Edit Quotation →' }}
+        </button>
+        <button *ngIf="!isEditableStatus(selectedQuotation)" (click)="openQuotationViewer(selectedQuotation)"
+          class="w-full px-5 py-3.5 text-lg font-semibold rounded-xl bg-[#e8f2f7] text-[#224957] hover:bg-[#d2e8f2] transition-colors">
+          View Full Details
+        </button>
+        <button *ngIf="selectedQuotation.status==='sent'" (click)="openSimulateDecision(selectedQuotation)"
+          title="Stand-in for the client's own action until the client portal is wired to the same backend"
+          class="w-full px-5 py-3 text-base font-medium rounded-xl border border-dashed border-orange-300 bg-orange-50 text-orange-700 hover:border-orange-400 transition-colors">🧪 Simulate Client Decision</button>
+        <button (click)="downloadQuotation(selectedQuotation, $event)"
+          class="w-full px-5 py-3 text-base font-medium rounded-xl border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">↓ Download</button>
+        <button *ngIf="selectedQuotation.status==='sent' || selectedQuotation.status==='revision_requested'" (click)="openWithdrawConfirm(selectedQuotation)"
+          class="w-full px-5 py-3 text-base font-medium rounded-xl border border-[#e6edf2] bg-white text-red-500 hover:border-red-300 transition-colors">Withdraw</button>
+      </div>
+
+      <!-- Pipeline progress -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5">
+        <p class="text-sm font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-3">Pipeline Stage</p>
+        <div class="flex flex-wrap gap-2">
+          <ng-container *ngFor="let s of quotationLifecycleStages(selectedQuotation)">
+            <span class="text-base font-bold uppercase tracking-wide px-3 py-1.5 rounded-full"
+              [class.bg-[#e8f2f7]]="s.state==='done'" [class.text-[#224957]]="s.state==='done'"
+              [class.bg-amber-50]="s.state==='current'" [class.text-amber-700]="s.state==='current'"
+              [class.bg-red-50]="s.state==='stopped'" [class.text-red-600]="s.state==='stopped'"
+              [class.bg-[#f5f7f9]]="s.state==='upcoming'" [class.text-[#94a9b3]]="s.state==='upcoming'">{{ s.label }}</span>
+          </ng-container>
+        </div>
+        <button
+          *ngIf="selectedQuotation.status === 'accepted'"
+          (click)="viewLpoFromQuotation(selectedQuotation)"
+          class="mt-3 text-base font-semibold text-[#224957] hover:underline">
+          View LPO →
+        </button>
+      </div>
+
+      <!-- Dates -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 flex flex-col gap-4">
+        <div>
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Created</p>
+          <p class="text-lg text-[#1a2c35] font-medium">{{ fmtDate(selectedQuotation.createdDate) }}</p>
+        </div>
+        <div *ngIf="selectedQuotation.sentDate">
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Sent</p>
+          <p class="text-lg text-[#1a2c35] font-medium">{{ fmtDate(selectedQuotation.sentDate) }}</p>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Valid Until</p>
+          <p class="text-lg font-medium" [class.text-red-600]="isExpired(selectedQuotation.validUntil)" [class.text-[#1a2c35]]="!isExpired(selectedQuotation.validUntil)">{{ fmtDate(selectedQuotation.validUntil) }}</p>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 flex flex-col gap-2">
+        <div class="flex justify-between text-lg text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedQuotation.subtotal, selectedQuotation.currency) }}</span></div>
+        <div class="flex justify-between text-lg text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedQuotation.tax, selectedQuotation.currency) }}</span></div>
+        <div class="flex justify-between text-xl font-bold border-t border-[#e6edf2] pt-2 mt-1"><span class="text-[#1a2c35]">Total</span><span class="text-[#224957] text-2xl">{{ fmtCurrency(selectedQuotation.total, selectedQuotation.currency) }}</span></div>
+      </div>
+    </aside>
+  </div>
+</div>
 </ng-container>
 
 
@@ -935,161 +1016,165 @@
      LPO SIDE PANEL
 ════════════════════════════════════════════════════ -->
 <ng-container *ngIf="showLpoPanel && selectedLpo">
-  <div class="fixed inset-0 z-[1000]" style="background:rgba(15,30,36,0.4);backdrop-filter:blur(2px)" (click)="closeLpoPanel()"></div>
-  <aside class="fixed top-0 right-0 h-full z-[1001] w-[640px] max-w-[95vw] bg-white shadow-2xl flex flex-col panel-slide">
+<div class="min-h-screen bg-[#fbfcfd] px-8 py-8 max-w-[1320px] mx-auto font-sans text-[#14181b] page-in">
 
-    <!-- Head -->
-    <div class="px-6 pt-5 pb-4 border-b border-[#eef2f6] sticky top-0 bg-white z-10">
-      <div class="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <div class="flex items-center gap-2 mb-0.5">
-            <h2 class="text-lg font-bold text-[#1a2c35]">{{ selectedLpo.lpoNumber }}</h2>
-            <app-vp-status [tone]="lpoStatusTone(selectedLpo.status)" [icon]="lpoStatusIcon(selectedLpo.status)" [label]="selectedLpo.status"></app-vp-status>
-          </div>
-          <p class="text-sm text-[#5a7380]">
-            {{ selectedLpo.clientName }}<span *ngIf="selectedLpo.clientEmail"> · {{ selectedLpo.clientEmail }}</span>
-          </p>
-        </div>
-        <button (click)="closeLpoPanel()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <!-- Where this sits in the pipeline -->
-      <div class="flex items-center gap-1.5 mb-3">
-        <ng-container *ngFor="let s of lpoLifecycleStages(selectedLpo); let last = last">
-          <span class="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
-            [class.bg-[#e8f2f7]]="s.state==='done'" [class.text-[#224957]]="s.state==='done'"
-            [class.bg-amber-50]="s.state==='current'" [class.text-amber-700]="s.state==='current'"
-            [class.bg-red-50]="s.state==='stopped'" [class.text-red-600]="s.state==='stopped'"
-            [class.bg-[#f5f7f9]]="s.state==='upcoming'" [class.text-[#94a9b3]]="s.state==='upcoming'">{{ s.label }}</span>
-          <span *ngIf="!last" class="text-[#d5dee3] text-xs">—</span>
-        </ng-container>
-      </div>
-      <p class="text-sm text-[#5a7380] mb-3" *ngIf="selectedLpo.quotationNumber || selectedLpo.rfqNumber">
-        Raised from
-        <button *ngIf="selectedLpo.quotationNumber" (click)="viewQuotationFromLpo(selectedLpo)" class="font-semibold text-[#224957] hover:underline">Quotation {{ selectedLpo.quotationNumber }}</button>
-        <span *ngIf="selectedLpo.quotationNumber && selectedLpo.rfqNumber"> · </span>
-        <strong class="text-[#1a2c35]" *ngIf="selectedLpo.rfqNumber">RFQ {{ selectedLpo.rfqNumber }}</strong>
-      </p>
-      <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-        <span class="text-[#5a7380]">Issued <strong class="text-[#1a2c35]">{{ fmtDate(selectedLpo.issuedDate) }}</strong></span>
-        <span [class.text-red-600]="isExpired(selectedLpo.deliveryDate)"
-              [class.text-amber-600]="!isExpired(selectedLpo.deliveryDate) && isDueSoon(selectedLpo.deliveryDate)"
-              [class.text-[#5a7380]]="!isExpired(selectedLpo.deliveryDate) && !isDueSoon(selectedLpo.deliveryDate)">
-          Delivery <strong>{{ fmtDate(selectedLpo.deliveryDate) }}</strong>
-          <span *ngIf="isExpired(selectedLpo.deliveryDate)"> · OVERDUE</span>
-          <span *ngIf="!isExpired(selectedLpo.deliveryDate) && isDueSoon(selectedLpo.deliveryDate)"> · Due soon</span>
-        </span>
-        <span class="text-[#5a7380]">Payment: <strong class="text-[#1a2c35]">{{ selectedLpo.paymentTerms }}</strong></span>
-      </div>
+  <button (click)="closeLpoPanel()" class="flex items-center gap-1.5 text-base font-semibold text-[#5a7380] hover:text-[#224957] transition-colors mb-6">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Back to Pipeline
+  </button>
+
+  <!-- Head -->
+  <div class="mb-8">
+    <div class="flex items-center gap-3 mb-2 flex-wrap">
+      <h1 class="text-3xl font-bold text-[#14181b] tracking-tight">{{ selectedLpo.lpoNumber }}</h1>
+      <app-vp-status [tone]="lpoStatusTone(selectedLpo.status)" [icon]="lpoStatusIcon(selectedLpo.status)" [label]="selectedLpo.status"></app-vp-status>
     </div>
+    <p class="text-lg text-[#5a7380]">
+      {{ selectedLpo.clientName }}<span *ngIf="selectedLpo.clientEmail"> · {{ selectedLpo.clientEmail }}</span>
+    </p>
+  </div>
 
-    <!-- Body -->
-    <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+  <!-- Two-column layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
+
+    <!-- ═══ MAIN COLUMN ═══ -->
+    <div class="flex flex-col gap-8 min-w-0">
 
       <!-- Rejection banner -->
       <div *ngIf="selectedLpo.status === 'rejected' && selectedLpo.rejectionReason"
-        class="flex items-start gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
-        <svg class="shrink-0 mt-0.5 text-red-500" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        class="flex items-start gap-3 bg-red-50 border border-red-100 rounded-xl px-5 py-4">
+        <svg class="shrink-0 mt-0.5 text-red-500" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <div>
-          <p class="text-xs font-bold text-red-600 mb-0.5">Rejection Reason</p>
-          <p class="text-sm text-red-700 leading-relaxed">{{ selectedLpo.rejectionReason }}</p>
+          <p class="text-base font-bold text-red-600 mb-1">Rejection Reason</p>
+          <p class="text-lg text-red-700 leading-relaxed">{{ selectedLpo.rejectionReason }}</p>
         </div>
       </div>
 
       <!-- Special conditions -->
       <div *ngIf="selectedLpo.specialConditions">
-        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Special Conditions</h3>
-        <div class="bg-[#f9fcfd] border border-[#e6edf2] border-l-[3px] border-l-[#224957] rounded-xl px-4 py-3 text-sm text-[#1a2c35] leading-relaxed whitespace-pre-line">{{ selectedLpo.specialConditions }}</div>
-      </div>
-
-      <!-- Delivery info -->
-      <div>
-        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Delivery Details</h3>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="col-span-2 flex flex-col gap-0.5">
-            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Delivery Address</span>
-            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.deliveryAddress }}</span>
-          </div>
-          <div class="flex flex-col gap-0.5">
-            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Payment Terms</span>
-            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.paymentTerms }}</span>
-          </div>
-          <div class="flex flex-col gap-0.5">
-            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Currency</span>
-            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.currency }}</span>
-          </div>
-        </div>
+        <h3 class="text-base font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-2.5">Special Conditions</h3>
+        <div class="bg-white border border-[#e6edf2] border-l-[4px] border-l-[#224957] rounded-xl px-6 py-5 text-lg text-[#1a2c35] leading-relaxed whitespace-pre-line">{{ selectedLpo.specialConditions }}</div>
       </div>
 
       <!-- Items -->
       <div>
-        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Ordered Items ({{ selectedLpo.items.length }})</h3>
-        <div class="flex flex-col gap-2">
+        <h3 class="text-base font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-2.5">Ordered Items ({{ selectedLpo.items.length }})</h3>
+        <div class="flex flex-col gap-3">
           <div *ngFor="let item of selectedLpo.items; let i = index"
-            class="border border-[#e6edf2] rounded-xl p-4 flex items-center gap-3">
-            <span class="w-5 h-5 rounded-full bg-[#e8f2f7] text-[#224957] text-[9px] font-bold flex items-center justify-center shrink-0">{{ i+1 }}</span>
+            class="border border-[#e6edf2] rounded-xl p-5 flex items-center gap-4 bg-white">
+            <span class="w-8 h-8 rounded-full bg-[#e8f2f7] text-[#224957] text-sm font-bold flex items-center justify-center shrink-0">{{ i+1 }}</span>
             <div class="flex-1 min-w-0">
-              <p class="text-base font-semibold text-[#1a2c35]">{{ item.name }}</p>
-              <p class="text-sm text-[#5a7380] mt-1">{{ item.description }}</p>
-              <p class="text-sm text-[#5a7380] mt-1">{{ item.quantity }} {{ item.unit }} × {{ fmtCurrency(item.unitPrice, selectedLpo.currency) }}</p>
+              <p class="text-lg font-semibold text-[#1a2c35]">{{ item.name }}</p>
+              <p class="text-lg text-[#5a7380] mt-1">{{ item.description }}</p>
+              <p class="text-lg text-[#5a7380] mt-1">{{ item.quantity }} {{ item.unit }} × {{ fmtCurrency(item.unitPrice, selectedLpo.currency) }}</p>
             </div>
-            <span class="text-base font-bold text-[#224957] shrink-0">{{ fmtCurrency(item.totalPrice, selectedLpo.currency) }}</span>
+            <span class="text-lg font-bold text-[#224957] shrink-0">{{ fmtCurrency(item.totalPrice, selectedLpo.currency) }}</span>
           </div>
         </div>
       </div>
-
-      <!-- Totals -->
-      <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4 flex flex-col gap-1.5">
-        <div class="flex justify-between text-sm text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.subtotal, selectedLpo.currency) }}</span></div>
-        <div class="flex justify-between text-sm text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.tax, selectedLpo.currency) }}</span></div>
-        <div class="flex justify-between text-base font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5">
-          <span class="text-[#1a2c35]">Total</span>
-          <span class="text-lg text-[#224957]">{{ fmtCurrency(selectedLpo.total, selectedLpo.currency) }}</span>
-        </div>
-      </div>
-
     </div>
 
-    <!-- Footer -->
-    <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] sticky bottom-0">
-      <div class="flex items-center gap-2 justify-end flex-wrap">
-        <button (click)="downloadLpo(selectedLpo, $event)"
-          class="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">
-          ↓ Download LPO
-        </button>
+    <!-- ═══ SIDEBAR ═══ -->
+    <aside class="flex flex-col gap-5 lg:sticky lg:top-8">
 
+      <!-- Actions -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 flex flex-col gap-2.5">
         <ng-container *ngIf="selectedLpo.status === 'pending'">
-          <button (click)="openRejectModal(selectedLpo)"
-            class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors">
-            Reject
-          </button>
           <button (click)="openAcceptModal(selectedLpo)"
-            class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors">
+            class="w-full px-5 py-3.5 text-lg font-semibold rounded-xl bg-[#224957] text-white hover:bg-[#2d6478] transition-colors shadow-sm">
             Accept LPO ✓
+          </button>
+          <button (click)="openRejectModal(selectedLpo)"
+            class="w-full px-5 py-3.5 text-lg font-semibold rounded-xl bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors">
+            Reject
           </button>
         </ng-container>
 
         <button *ngIf="selectedLpo.status === 'accepted' && !lpoFullyInvoiced(selectedLpo)"
           (click)="createInvoiceFromLpo(selectedLpo)"
-          class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors flex items-center gap-1.5">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          class="w-full px-5 py-3.5 text-lg font-semibold rounded-xl bg-[#224957] text-white hover:bg-[#2d6478] transition-colors flex items-center justify-center gap-2 shadow-sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Create Invoice
         </button>
-        <span *ngIf="selectedLpo.status === 'accepted' && lpoFullyInvoiced(selectedLpo)" class="text-xs font-medium text-[#5a7380] flex items-center gap-1.5">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <p *ngIf="selectedLpo.status === 'accepted' && lpoFullyInvoiced(selectedLpo)" class="text-base font-medium text-[#5a7380] flex items-center justify-center gap-2 py-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           Fully invoiced
-        </span>
-
-        <span *ngIf="selectedLpo.status === 'fulfilled'" class="text-xs font-medium text-blue-600 flex items-center gap-1.5">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </p>
+        <p *ngIf="selectedLpo.status === 'fulfilled'" class="text-base font-medium text-blue-600 flex items-center justify-center gap-2 py-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           Fulfilled
-        </span>
-        <span *ngIf="selectedLpo.status === 'rejected'" class="text-xs font-medium text-red-500">LPO rejected</span>
-      </div>
-    </div>
+        </p>
+        <p *ngIf="selectedLpo.status === 'rejected'" class="text-base font-medium text-red-500 text-center py-2">LPO rejected</p>
 
-  </aside>
+        <button (click)="downloadLpo(selectedLpo, $event)"
+          class="w-full px-5 py-3 text-base font-medium rounded-xl border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">
+          ↓ Download LPO
+        </button>
+      </div>
+
+      <!-- Pipeline progress -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5">
+        <p class="text-sm font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-3">Pipeline Stage</p>
+        <div class="flex flex-wrap gap-2 mb-3">
+          <ng-container *ngFor="let s of lpoLifecycleStages(selectedLpo)">
+            <span class="text-base font-bold uppercase tracking-wide px-3 py-1.5 rounded-full"
+              [class.bg-[#e8f2f7]]="s.state==='done'" [class.text-[#224957]]="s.state==='done'"
+              [class.bg-amber-50]="s.state==='current'" [class.text-amber-700]="s.state==='current'"
+              [class.bg-red-50]="s.state==='stopped'" [class.text-red-600]="s.state==='stopped'"
+              [class.bg-[#f5f7f9]]="s.state==='upcoming'" [class.text-[#94a9b3]]="s.state==='upcoming'">{{ s.label }}</span>
+          </ng-container>
+        </div>
+        <p class="text-base text-[#5a7380]" *ngIf="selectedLpo.quotationNumber || selectedLpo.rfqNumber">
+          Raised from
+          <button *ngIf="selectedLpo.quotationNumber" (click)="viewQuotationFromLpo(selectedLpo)" class="font-semibold text-[#224957] hover:underline">Quotation {{ selectedLpo.quotationNumber }}</button>
+          <span *ngIf="selectedLpo.quotationNumber && selectedLpo.rfqNumber"> · </span>
+          <strong class="text-[#1a2c35]" *ngIf="selectedLpo.rfqNumber">RFQ {{ selectedLpo.rfqNumber }}</strong>
+        </p>
+      </div>
+
+      <!-- Dates & terms -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 flex flex-col gap-4">
+        <div>
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Issued</p>
+          <p class="text-lg text-[#1a2c35] font-medium">{{ fmtDate(selectedLpo.issuedDate) }}</p>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Delivery Date</p>
+          <p class="text-lg font-medium"
+            [class.text-red-600]="isExpired(selectedLpo.deliveryDate)"
+            [class.text-amber-600]="!isExpired(selectedLpo.deliveryDate) && isDueSoon(selectedLpo.deliveryDate)"
+            [class.text-[#1a2c35]]="!isExpired(selectedLpo.deliveryDate) && !isDueSoon(selectedLpo.deliveryDate)">
+            {{ fmtDate(selectedLpo.deliveryDate) }}
+            <span *ngIf="isExpired(selectedLpo.deliveryDate)" class="block text-sm font-bold uppercase tracking-wide">Overdue</span>
+            <span *ngIf="!isExpired(selectedLpo.deliveryDate) && isDueSoon(selectedLpo.deliveryDate)" class="block text-sm font-bold uppercase tracking-wide">Due soon</span>
+          </p>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Payment Terms</p>
+          <p class="text-lg text-[#1a2c35] font-medium">{{ selectedLpo.paymentTerms }}</p>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Currency</p>
+          <p class="text-lg text-[#1a2c35] font-medium">{{ selectedLpo.currency }}</p>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Delivery Address</p>
+          <p class="text-lg text-[#1a2c35] font-medium leading-snug">{{ selectedLpo.deliveryAddress }}</p>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 flex flex-col gap-2">
+        <div class="flex justify-between text-lg text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.subtotal, selectedLpo.currency) }}</span></div>
+        <div class="flex justify-between text-lg text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.tax, selectedLpo.currency) }}</span></div>
+        <div class="flex justify-between text-xl font-bold border-t border-[#e6edf2] pt-2 mt-1">
+          <span class="text-[#1a2c35]">Total</span>
+          <span class="text-2xl text-[#224957]">{{ fmtCurrency(selectedLpo.total, selectedLpo.currency) }}</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
 </ng-container>
 
 
@@ -1097,129 +1182,147 @@
      INVOICE SIDE PANEL
 ════════════════════════════════════════════════════ -->
 <ng-container *ngIf="showInvoicePanel && selectedInvoice">
-  <div class="fixed inset-0 z-[1000]" style="background:rgba(15,30,36,0.4);backdrop-filter:blur(2px)" (click)="closeInvoicePanel()"></div>
-  <aside class="fixed top-0 right-0 h-full z-[1001] w-[600px] max-w-[95vw] bg-white shadow-2xl flex flex-col panel-slide">
+<div class="min-h-screen bg-[#fbfcfd] px-8 py-8 max-w-[1320px] mx-auto font-sans text-[#14181b] page-in">
 
-    <!-- Head -->
-    <div class="px-6 pt-5 pb-4 border-b border-[#eef2f6] sticky top-0 bg-white z-10">
-      <div class="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <div class="flex items-center gap-2 mb-0.5">
-            <h2 class="text-lg font-bold text-[#1a2c35]">{{ selectedInvoice.invoiceNumber }}</h2>
-            <app-vp-status [tone]="invoiceStatusTone(selectedInvoice.status)" [icon]="invoiceStatusIcon(selectedInvoice.status)" [label]="selectedInvoice.status"></app-vp-status>
-          </div>
-          <p class="text-sm text-[#5a7380]">
-            {{ selectedInvoice.clientName }}<span *ngIf="selectedInvoice.clientEmail"> · {{ selectedInvoice.clientEmail }}</span>
-          </p>
-        </div>
-        <button (click)="closeInvoicePanel()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div class="flex items-center gap-1.5 mb-3">
-        <ng-container *ngFor="let s of invoiceLifecycleStages(selectedInvoice); let last = last">
-          <span class="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
-            [class.bg-[#e8f2f7]]="s.state==='done'" [class.text-[#224957]]="s.state==='done'"
-            [class.bg-amber-50]="s.state==='current'" [class.text-amber-700]="s.state==='current'"
-            [class.bg-[#f5f7f9]]="s.state==='upcoming'" [class.text-[#94a9b3]]="s.state==='upcoming'">{{ s.label }}</span>
-          <span *ngIf="!last" class="text-[#d5dee3] text-xs">—</span>
-        </ng-container>
-      </div>
-      <p class="text-sm text-[#5a7380] mb-3" *ngIf="selectedInvoice.lpoNumber || selectedInvoice.quotationNumber">
-        Billed from
-        <button *ngIf="selectedInvoice.lpoNumber" (click)="viewLpoFromInvoice(selectedInvoice)" class="font-semibold text-[#224957] hover:underline">LPO {{ selectedInvoice.lpoNumber }}</button>
-        <span *ngIf="selectedInvoice.lpoNumber && selectedInvoice.quotationNumber"> · </span>
-        <strong class="text-[#1a2c35]" *ngIf="selectedInvoice.quotationNumber">Quotation {{ selectedInvoice.quotationNumber }}</strong>
-      </p>
-      <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#5a7380]">
-        <span>Issued <strong class="text-[#1a2c35]">{{ fmtDate(selectedInvoice.issuedDate) }}</strong></span>
-        <span [class.text-red-500]="selectedInvoice.status==='overdue'">Due <strong>{{ fmtDate(selectedInvoice.dueDate) }}</strong></span>
-        <span *ngIf="selectedInvoice.paidDate">Paid <strong class="text-green-600">{{ fmtDate(selectedInvoice.paidDate) }}</strong></span>
-      </div>
+  <button (click)="closeInvoicePanel()" class="flex items-center gap-1.5 text-base font-semibold text-[#5a7380] hover:text-[#224957] transition-colors mb-6">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Back to Pipeline
+  </button>
+
+  <!-- Head -->
+  <div class="mb-8">
+    <div class="flex items-center gap-3 mb-2 flex-wrap">
+      <h1 class="text-3xl font-bold text-[#14181b] tracking-tight">{{ selectedInvoice.invoiceNumber }}</h1>
+      <app-vp-status [tone]="invoiceStatusTone(selectedInvoice.status)" [icon]="invoiceStatusIcon(selectedInvoice.status)" [label]="selectedInvoice.status"></app-vp-status>
     </div>
+    <p class="text-lg text-[#5a7380]">
+      {{ selectedInvoice.clientName }}<span *ngIf="selectedInvoice.clientEmail"> · {{ selectedInvoice.clientEmail }}</span>
+    </p>
+  </div>
 
-    <!-- Body -->
-    <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+  <!-- Two-column layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
 
-      <!-- Payment progress bar -->
-      <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4">
-        <div class="flex justify-between text-sm text-[#5a7380] mb-2">
-          <span>Payment progress</span>
-          <span><strong class="text-[#1a2c35]">{{ paymentProgress(selectedInvoice) }}%</strong> paid</span>
-        </div>
-        <div class="w-full h-2 bg-[#e6edf2] rounded-full overflow-hidden">
-          <div class="h-full rounded-full transition-all"
-            [style.width.%]="paymentProgress(selectedInvoice)"
-            [class.bg-green-500]="selectedInvoice.status==='paid'"
-            [class.bg-amber-400]="selectedInvoice.status!=='paid' && paymentProgress(selectedInvoice)>0"
-            [class.bg-[#e6edf2]]="paymentProgress(selectedInvoice)===0"></div>
-        </div>
-        <div class="flex justify-between text-sm mt-2">
-          <span class="text-green-600 font-medium">Paid: {{ fmtCurrency(selectedInvoice.amountPaid, selectedInvoice.currency) }}</span>
-          <span *ngIf="selectedInvoice.amountOutstanding > 0" class="text-amber-600 font-medium">Outstanding: {{ fmtCurrency(selectedInvoice.amountOutstanding, selectedInvoice.currency) }}</span>
-        </div>
-      </div>
+    <!-- ═══ MAIN COLUMN ═══ -->
+    <div class="flex flex-col gap-8 min-w-0">
 
       <!-- Line items -->
       <div>
-        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Line Items</h3>
-        <div class="flex flex-col gap-2">
+        <h3 class="text-base font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-2.5">Line Items</h3>
+        <div class="flex flex-col gap-3">
           <div *ngFor="let item of selectedInvoice.items"
-            class="flex items-start justify-between gap-3 border border-[#e6edf2] rounded-xl p-4">
+            class="flex items-start justify-between gap-4 border border-[#e6edf2] rounded-xl p-5 bg-white">
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-[#1a2c35]">{{ item.description }}</p>
-              <p class="text-sm text-[#5a7380] mt-1">{{ item.quantity }} {{ item.unit }} × {{ fmtCurrency(item.unitPrice, selectedInvoice.currency) }}</p>
+              <p class="text-lg font-medium text-[#1a2c35]">{{ item.description }}</p>
+              <p class="text-lg text-[#5a7380] mt-1">{{ item.quantity }} {{ item.unit }} × {{ fmtCurrency(item.unitPrice, selectedInvoice.currency) }}</p>
             </div>
-            <span class="text-base font-bold text-[#224957] shrink-0">{{ fmtCurrency(item.totalPrice, selectedInvoice.currency) }}</span>
+            <span class="text-lg font-bold text-[#224957] shrink-0">{{ fmtCurrency(item.totalPrice, selectedInvoice.currency) }}</span>
           </div>
-        </div>
-      </div>
-
-      <!-- Totals -->
-      <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4 flex flex-col gap-1.5">
-        <div class="flex justify-between text-sm text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedInvoice.subtotal, selectedInvoice.currency) }}</span></div>
-        <div class="flex justify-between text-sm text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedInvoice.tax, selectedInvoice.currency) }}</span></div>
-        <div class="flex justify-between text-base font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5">
-          <span>Total</span><span class="text-[#224957] text-lg">{{ fmtCurrency(selectedInvoice.total, selectedInvoice.currency) }}</span>
         </div>
       </div>
 
       <!-- Bank details -->
       <div *ngIf="selectedInvoice.bankDetails">
-        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Payment Details</h3>
-        <div class="border border-[#e6edf2] rounded-xl p-4 grid grid-cols-2 gap-3">
-          <div class="flex flex-col gap-0.5">
-            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Bank</span>
-            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedInvoice.bankDetails.bankName }}</span>
+        <h3 class="text-base font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-2.5">Payment Details</h3>
+        <div class="border border-[#e6edf2] rounded-xl p-6 grid grid-cols-2 gap-5 bg-white">
+          <div class="flex flex-col gap-1">
+            <span class="text-base text-[#5a7380] font-semibold uppercase tracking-wide">Bank</span>
+            <span class="text-lg text-[#1a2c35] font-medium">{{ selectedInvoice.bankDetails.bankName }}</span>
           </div>
-          <div class="flex flex-col gap-0.5">
-            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Account Name</span>
-            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedInvoice.bankDetails.accountName }}</span>
+          <div class="flex flex-col gap-1">
+            <span class="text-base text-[#5a7380] font-semibold uppercase tracking-wide">Account Name</span>
+            <span class="text-lg text-[#1a2c35] font-medium">{{ selectedInvoice.bankDetails.accountName }}</span>
           </div>
-          <div class="flex flex-col gap-0.5 col-span-2">
-            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Account Number</span>
-            <span class="text-sm text-[#1a2c35] font-medium font-mono tracking-wider">{{ selectedInvoice.bankDetails.accountNumber }}</span>
+          <div class="flex flex-col gap-1 col-span-2">
+            <span class="text-base text-[#5a7380] font-semibold uppercase tracking-wide">Account Number</span>
+            <span class="text-lg text-[#1a2c35] font-medium font-mono tracking-wider">{{ selectedInvoice.bankDetails.accountNumber }}</span>
           </div>
         </div>
       </div>
 
       <!-- Notes -->
       <div *ngIf="selectedInvoice.notes">
-        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Notes</h3>
-        <p class="text-sm text-[#1a2c35] leading-relaxed bg-[#f9fcfd] border border-[#e6edf2] rounded-xl px-4 py-3">{{ selectedInvoice.notes }}</p>
+        <h3 class="text-base font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-2.5">Notes</h3>
+        <p class="text-lg text-[#1a2c35] leading-relaxed bg-white border border-[#e6edf2] rounded-xl px-5 py-4">{{ selectedInvoice.notes }}</p>
+      </div>
+    </div>
+
+    <!-- ═══ SIDEBAR ═══ -->
+    <aside class="flex flex-col gap-5 lg:sticky lg:top-8">
+
+      <!-- Actions -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5">
+        <button (click)="downloadInvoice(selectedInvoice, $event)"
+          class="w-full px-5 py-3.5 text-lg font-semibold rounded-xl bg-[#224957] text-white hover:bg-[#2d6478] transition-colors shadow-sm">
+          ↓ Download Invoice
+        </button>
       </div>
 
-    </div>
+      <!-- Payment progress -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5">
+        <div class="flex justify-between text-lg text-[#5a7380] mb-2">
+          <span>Payment progress</span>
+          <span><strong class="text-[#1a2c35]">{{ paymentProgress(selectedInvoice) }}%</strong></span>
+        </div>
+        <div class="w-full h-2.5 bg-[#e6edf2] rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all"
+            [style.width.%]="paymentProgress(selectedInvoice)"
+            [class.bg-green-500]="selectedInvoice.status==='paid'"
+            [class.bg-amber-400]="selectedInvoice.status!=='paid' && paymentProgress(selectedInvoice)>0"
+            [class.bg-[#e6edf2]]="paymentProgress(selectedInvoice)===0"></div>
+        </div>
+        <div class="flex flex-col gap-1 text-base mt-3">
+          <span class="text-green-600 font-medium">Paid: {{ fmtCurrency(selectedInvoice.amountPaid, selectedInvoice.currency) }}</span>
+          <span *ngIf="selectedInvoice.amountOutstanding > 0" class="text-amber-600 font-medium">Outstanding: {{ fmtCurrency(selectedInvoice.amountOutstanding, selectedInvoice.currency) }}</span>
+        </div>
+      </div>
 
-    <!-- Footer -->
-    <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] flex items-center justify-end sticky bottom-0">
-      <button (click)="downloadInvoice(selectedInvoice, $event)"
-        class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors">
-        ↓ Download Invoice
-      </button>
-    </div>
+      <!-- Pipeline progress -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5">
+        <p class="text-sm font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-3">Pipeline Stage</p>
+        <div class="flex flex-wrap gap-2 mb-3">
+          <ng-container *ngFor="let s of invoiceLifecycleStages(selectedInvoice)">
+            <span class="text-base font-bold uppercase tracking-wide px-3 py-1.5 rounded-full"
+              [class.bg-[#e8f2f7]]="s.state==='done'" [class.text-[#224957]]="s.state==='done'"
+              [class.bg-amber-50]="s.state==='current'" [class.text-amber-700]="s.state==='current'"
+              [class.bg-[#f5f7f9]]="s.state==='upcoming'" [class.text-[#94a9b3]]="s.state==='upcoming'">{{ s.label }}</span>
+          </ng-container>
+        </div>
+        <p class="text-base text-[#5a7380]" *ngIf="selectedInvoice.lpoNumber || selectedInvoice.quotationNumber">
+          Billed from
+          <button *ngIf="selectedInvoice.lpoNumber" (click)="viewLpoFromInvoice(selectedInvoice)" class="font-semibold text-[#224957] hover:underline">LPO {{ selectedInvoice.lpoNumber }}</button>
+          <span *ngIf="selectedInvoice.lpoNumber && selectedInvoice.quotationNumber"> · </span>
+          <strong class="text-[#1a2c35]" *ngIf="selectedInvoice.quotationNumber">Quotation {{ selectedInvoice.quotationNumber }}</strong>
+        </p>
+      </div>
 
-  </aside>
+      <!-- Dates -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 flex flex-col gap-4">
+        <div>
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Issued</p>
+          <p class="text-lg text-[#1a2c35] font-medium">{{ fmtDate(selectedInvoice.issuedDate) }}</p>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Due</p>
+          <p class="text-lg font-medium" [class.text-red-500]="selectedInvoice.status==='overdue'" [class.text-[#1a2c35]]="selectedInvoice.status!=='overdue'">{{ fmtDate(selectedInvoice.dueDate) }}</p>
+        </div>
+        <div *ngIf="selectedInvoice.paidDate">
+          <p class="text-sm font-semibold text-[#5a7380] uppercase tracking-wide mb-1">Paid</p>
+          <p class="text-lg text-green-600 font-medium">{{ fmtDate(selectedInvoice.paidDate) }}</p>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 flex flex-col gap-2">
+        <div class="flex justify-between text-lg text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedInvoice.subtotal, selectedInvoice.currency) }}</span></div>
+        <div class="flex justify-between text-lg text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedInvoice.tax, selectedInvoice.currency) }}</span></div>
+        <div class="flex justify-between text-xl font-bold border-t border-[#e6edf2] pt-2 mt-1">
+          <span>Total</span><span class="text-[#224957] text-2xl">{{ fmtCurrency(selectedInvoice.total, selectedInvoice.currency) }}</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
 </ng-container>
 
 

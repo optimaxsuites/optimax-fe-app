@@ -21,14 +21,14 @@ export type VpStatusIcon = 'dot' | 'half' | 'check' | 'x' | 'dash' | 'clock';
   template: `
     <span class="vp-status" [class]="'vp-status--' + tone">
       <span class="vp-status__icon" aria-hidden="true">
-        <svg *ngIf="icon === 'dot'" viewBox="0 0 8 8" width="8" height="8">
+        <svg *ngIf="icon === 'dot'" viewBox="0 0 8 8" width="9" height="9">
           <circle cx="4" cy="4" r="4" fill="currentColor" />
         </svg>
-        <svg *ngIf="icon === 'half'" viewBox="0 0 8 8" width="8" height="8">
+        <svg *ngIf="icon === 'half'" viewBox="0 0 8 8" width="9" height="9">
           <circle cx="4" cy="4" r="3.5" fill="none" stroke="currentColor" stroke-width="1.4" />
           <path d="M4 0.5A3.5 3.5 0 0 1 4 7.5Z" fill="currentColor" />
         </svg>
-        <svg *ngIf="icon === 'check'" viewBox="0 0 8 8" width="8" height="8">
+        <svg *ngIf="icon === 'check'" viewBox="0 0 8 8" width="9" height="9">
           <circle cx="4" cy="4" r="4" fill="currentColor" />
           <path
             d="M2.2 4.1 3.5 5.4 5.9 2.7"
@@ -39,7 +39,7 @@ export type VpStatusIcon = 'dot' | 'half' | 'check' | 'x' | 'dash' | 'clock';
             stroke-linejoin="round"
           />
         </svg>
-        <svg *ngIf="icon === 'x'" viewBox="0 0 8 8" width="8" height="8">
+        <svg *ngIf="icon === 'x'" viewBox="0 0 8 8" width="9" height="9">
           <circle cx="4" cy="4" r="4" fill="currentColor" opacity="0.16" />
           <path
             d="M2.6 2.6 5.4 5.4M5.4 2.6 2.6 5.4"
@@ -48,10 +48,10 @@ export type VpStatusIcon = 'dot' | 'half' | 'check' | 'x' | 'dash' | 'clock';
             stroke-linecap="round"
           />
         </svg>
-        <svg *ngIf="icon === 'dash'" viewBox="0 0 8 8" width="8" height="8">
+        <svg *ngIf="icon === 'dash'" viewBox="0 0 8 8" width="9" height="9">
           <circle cx="4" cy="4" r="3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2 1.6" />
         </svg>
-        <svg *ngIf="icon === 'clock'" viewBox="0 0 8 8" width="8" height="8">
+        <svg *ngIf="icon === 'clock'" viewBox="0 0 8 8" width="9" height="9">
           <circle cx="4" cy="4" r="3.5" fill="none" stroke="currentColor" stroke-width="1.3" />
           <path d="M4 2.1V4l1.3 1" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
         </svg>
@@ -68,9 +68,9 @@ export type VpStatusIcon = 'dot' | 'half' | 'check' | 'x' | 'dash' | 'clock';
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        padding: 3px 9px 3px 7px;
+        padding: 4px 10px 4px 8px;
         border-radius: 999px;
-        font-size: 0.72rem;
+        font-size: 0.8125rem;
         font-weight: 600;
         line-height: 1.35;
         white-space: nowrap;
