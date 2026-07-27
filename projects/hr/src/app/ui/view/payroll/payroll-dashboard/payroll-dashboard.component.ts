@@ -86,7 +86,7 @@ export class PayrollDashboardComponent implements OnInit, OnDestroy {
     // Current month run
     const thisMonthRun = runs.find(r => +r.month === cm && +r.year === cy);
     if (thisMonthRun) {
-      const emps: any[] = thisMonthRun.employees ?? [];
+      const emps: any[] = this.activeOnly(thisMonthRun.employees ?? []);
       this.totalGrossThisMonth     = emps.reduce((s, e) => s + (+(e.grossPay ?? 0)), 0);
       this.totalNetThisMonth       = emps.reduce((s, e) => s + (+(e.netPayable ?? 0)), 0);
       this.totalDeductionsThisMonth = emps.reduce((s, e) => s + (+(e.totalDeductions ?? 0)), 0);
@@ -111,7 +111,7 @@ export class PayrollDashboardComponent implements OnInit, OnDestroy {
       const m = d.getMonth() + 1;
       const y = d.getFullYear();
       const run = runs.find(r => +r.month === m && +r.year === y);
-      const emps: any[] = run?.employees ?? [];
+      const emps: any[] = this.activeOnly(run?.employees ?? []);
       const gross = emps.reduce((s, e) => s + (+(e.grossPay ?? 0)), 0);
       const net   = emps.reduce((s, e) => s + (+(e.netPayable ?? 0)), 0);
       bars.push({ label: this.monthNames[m - 1], grossRaw: gross, netRaw: net, grossPct: 0, netPct: 0 });
@@ -128,12 +128,22 @@ export class PayrollDashboardComponent implements OnInit, OnDestroy {
     return (run.payrollApprovalInstance?.status || run.status || 'DRAFT').toUpperCase();
   }
 
+  private activeOnly(emps: any[]): any[] {
+    return emps.filter((e: any) =>
+      (e.employee?.employeeStatus ?? e.employeeStatus ?? 'ACTIVE') === 'ACTIVE'
+    );
+  }
+
+  runEmployeeCount(run: any): number {
+    return this.activeOnly(run.employees ?? []).length;
+  }
+
   runGross(run: any): number {
-    return (run.employees ?? []).reduce((s: number, e: any) => s + (+(e.grossPay ?? 0)), 0);
+    return this.activeOnly(run.employees ?? []).reduce((s: number, e: any) => s + (+(e.grossPay ?? 0)), 0);
   }
 
   runNet(run: any): number {
-    return (run.employees ?? []).reduce((s: number, e: any) => s + (+(e.netPayable ?? 0)), 0);
+    return this.activeOnly(run.employees ?? []).reduce((s: number, e: any) => s + (+(e.netPayable ?? 0)), 0);
   }
 
   runPeriod(run: any): string {

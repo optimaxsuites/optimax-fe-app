@@ -293,7 +293,7 @@
         <div class="employee-extra-grid">
           <div class="employee-extra-item">
             <span class="employee-extra-label">Joined</span>
-            <strong class="employee-extra-value">{{ employee?.hireDate || employee?.employmentStartDate || '-' }}</strong>
+            <strong class="employee-extra-value">{{ fmtDate(employee?.hireDate || employee?.employementStartDate || employee?.employmentStartDate) }}</strong>
           </div>
           <div class="employee-extra-item">
             <span class="employee-extra-label">Employee ID</span>
@@ -329,6 +329,7 @@
         <span class="dir-list-col dir-list-col--role">Role</span>
         <span class="dir-list-col dir-list-col--level">Level</span>
         <span class="dir-list-col dir-list-col--type">Type</span>
+        <span class="dir-list-col dir-list-col--status">Status</span>
         <span class="dir-list-col dir-list-col--joined">Joined</span>
         <span class="dir-list-col dir-list-col--actions"></span>
       </div>
@@ -354,7 +355,12 @@
         <div class="dir-list-col dir-list-col--type">
           <span class="dir-list-type-chip">{{ employee?.employmentType?.name || employee?.jobType?.name || '—' }}</span>
         </div>
-        <div class="dir-list-col dir-list-col--joined">{{ employee?.hireDate || employee?.employmentStartDate || '—' }}</div>
+        <div class="dir-list-col dir-list-col--status">
+          <span class="emp-status-badge" [ngClass]="empStatusClass(employee)">
+            {{ (employee?.employeeStatus || 'ACTIVE') | titlecase }}
+          </span>
+        </div>
+        <div class="dir-list-col dir-list-col--joined">{{ fmtDate(employee?.hireDate || employee?.employementStartDate || employee?.employmentStartDate) }}</div>
         <div class="dir-list-col dir-list-col--actions">
           <button
             type="button"

@@ -375,6 +375,32 @@ handleDateClick(arg: DateClickArg) {
     return employee?.userId != null && this.onlineUserIds.has(Number(employee.userId));
   }
 
+  fmtDate(value: any): string {
+    if (!value) return '—';
+    if (Array.isArray(value)) {
+      const [year, month, day] = value;
+      if (!year) return '—';
+      return new Date(+year, +month - 1, +day).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  empStatusClass(employee: any): string {
+    switch (employee?.employeeStatus) {
+      case 'ACTIVE':           return 'emp-status--active';
+      case 'JOINING':          return 'emp-status--joining';
+      case 'SUSPENDED':        return 'emp-status--suspended';
+      case 'ON_LEAVE':         return 'emp-status--onleave';
+      case 'TERMINATED':
+      case 'RESIGNED':
+      case 'FIRED':
+      case 'INTERNSHIP_ENDED': return 'emp-status--terminated';
+      case 'CONTRACT':         return 'emp-status--contract';
+      default:                 return 'emp-status--active';
+    }
+  }
+
   async getProfileImage(fileName: string){
   //  this.getEmployeesProfilePhotoUrl(fileName)
   return this.employeeProfilePhotoUrl

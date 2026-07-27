@@ -249,6 +249,7 @@ actionItems: any = []
   canSeeApprovalButton: any;
   isDocumentRequired: any;
   canEditRecord: any;
+  salaryInputMode: 'monthly' | 'yearly' = 'monthly';
 // payrollRecords: any[] = []
 constructor(   private employeeService: EmployeeService,  private sanitizer: DomSanitizer, private payrollService: PayrollService, private mailNotificationService: MailNotificationService, private messageService: MessageService) {
     this.generateYears();
@@ -278,17 +279,19 @@ constructor(   private employeeService: EmployeeService,  private sanitizer: Dom
      
 }
 ngOnInit(){
-    // this.handlePeriodChange()
-    //    this.fetchEmployees()
   const userId = sessionStorage.getItem('userid') || localStorage.getItem('userid')
   this.currentUserId = this.extractUserId(userId);
-  this.employeeService.getEmployeeByUserId(this.currentUserId).subscribe({  
-    next: data => {this.currentUser = data; console.log(data)},
-    error: err => console.log(err)
+  this.employeeService.getEmployeeByUserId(this.currentUserId).subscribe({
+    next: data => {this.currentUser = data;},
+    error: () => {}
   })
+  this.payrollService.getGeneralSettingsById().subscribe({
+    next: (res: any) => { this.salaryInputMode = (res?.salaryInputMode as 'monthly' | 'yearly') || 'monthly'; },
+    error: () => {}
+  });
   this.loadApproverDirectory();
   this.loadApproverRoles();
-  this.generatePayrolls()    
+  this.generatePayrolls();
 }
 
 formatCurrency(value: number | null | undefined): string {
@@ -329,7 +332,7 @@ generatePayrolls(){
             this.months = monthIndices.map(index => this.monthNames[index]).sort((a, b) => this.monthNames.indexOf(a) - this.monthNames.indexOf(b));
             this.selectedMonth = this.months[this.months.length - 1];
             this.selectedYear = this.years[this.years.length - 1];
-            this.filteredEmployeePayroll = this.payrollInView?.employees ?? [];
+            this.filteredEmployeePayroll = this.activeOnly(this.payrollInView?.employees ?? []);
         },
         error: err => {
           console.log(err);
@@ -602,13 +605,17 @@ private buildEmployeeFullName(employee: any): string {
 
   }
 
-   private calculateNetSalary(details: any): number {
+  private toMonthly(amount: number): number {
+    return this.salaryInputMode === 'yearly' ? Math.round(amount / 12) : amount;
+  }
+
+  private calculateNetSalary(details: any): number {
     if (!details) return 0;
-    const base = this.toNumber(details.baseSalary);
-    const allowances = this.sumAmounts(details.allowance, ['amount', 'value']);
-    const bonuses = this.sumAmounts(details.bonus, ['amount', 'value']);
-    const overtime = this.sumAmounts(details.overtime, ['amount', 'rate', 'value']);
-    const deductions = this.sumAmounts(details.deductions, ['amount', 'value']);
+    const base = this.toMonthly(this.toNumber(details.baseSalary));
+    const allowances = this.toMonthly(this.sumAmounts(details.allowance, ['amount', 'value']));
+    const bonuses = this.toMonthly(this.sumAmounts(details.bonus, ['amount', 'value']));
+    const overtime = this.toMonthly(this.sumAmounts(details.overtime, ['amount', 'rate', 'value']));
+    const deductions = this.toMonthly(this.sumAmounts(details.deductions, ['amount', 'value']));
     return base + allowances + bonuses + overtime - deductions;
   }
 
@@ -1163,7 +1170,7 @@ private buildEmployeeFullName(employee: any): string {
       const hourlyRate = employee.hourlyRate ?? this.getLevelRate(employee.level, 'hourly');
       return hourlyRate * (employee.hoursWorked ?? 0);
     }
-    return employee.salary ?? this.getLevelRate(employee.level, 'monthly');
+    return this.toMonthly(employee.salary ?? this.getLevelRate(employee.level, 'monthly'));
   }
 
   private getBasePayLabel(payType: PayType): string {
@@ -1240,7 +1247,7 @@ private buildEmployeeFullName(employee: any): string {
       console.log(this.selectedYear, this.selectedMonth)
 
         if (currentPayroll) {
-                const normalizedPayroll = await Promise.all(currentPayroll.employees.map(emp => this.applyPayrollRules(emp)));
+                const normalizedPayroll = await Promise.all(this.activeOnly(currentPayroll.employees).map(emp => this.applyPayrollRules(emp)));
                 this.payType = Array.from(new Set(normalizedPayroll.map(emp => emp.type)));
                 this.department = Array.from(new Set(normalizedPayroll.map(emp => emp.department)));
                 this.level = Array.from(new Set(normalizedPayroll.map(emp => emp.level)));
@@ -1565,6 +1572,12 @@ download(format: string) {
 }
 
 
+
+  private activeOnly(emps: any[]): any[] {
+    return emps.filter((e: any) =>
+      (e.employee?.employeeStatus ?? e.employeeStatus ?? 'ACTIVE') === 'ACTIVE'
+    );
+  }
 
   private resetPagination() {
     this.currentPage = 1;

@@ -125,13 +125,13 @@
       <p class="mt-5 mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-500">
         {{ isProbation ? '3' : '3' }}. Remuneration &amp; Payroll Breakdown
       </p>
-      <p class="mb-2 text-[12px]">Your compensation package is structured as follows:</p>
+      <p class="mb-2 text-[12px]">Your annual compensation package is structured as follows:</p>
 
       <table class="w-full mb-1 border-collapse text-[12px]">
         <thead>
           <tr class="bg-slate-800 text-white">
             <th class="py-1.5 px-3 text-left font-semibold text-[11px]">Component</th>
-            <th class="py-1.5 px-3 text-right font-semibold text-[11px]">Amount (₦)</th>
+            <th class="py-1.5 px-3 text-right font-semibold text-[11px]">Annual Amount (₦)</th>
           </tr>
         </thead>
         <tbody>
@@ -173,12 +173,18 @@
 
           <!-- Net -->
           <tr class="bg-emerald-50">
-            <td class="py-2 px-3 font-bold text-emerald-800">Net Monthly Pay</td>
+            <td class="py-2 px-3 font-bold text-emerald-800">
+              {{ isConsultant ? 'Total Consultancy Fee (for the period)' : 'Net Annual Package' }}
+            </td>
             <td class="py-2 px-3 text-right font-mono font-bold text-emerald-800">{{ fmt2(netSalary) }}</td>
           </tr>
         </tbody>
       </table>
-      <p class="text-[10px] text-slate-400 mb-4 italic">All figures are in Nigerian Naira (₦) per month. Deductions include statutory obligations (tax, pension, NHF, etc.).</p>
+      <p class="text-[10px] text-slate-400 mb-4 italic">
+        All figures are cumulative annual totals in Nigerian Naira (₦).
+        {{ isConsultant ? 'Consultancy fee covers the full period of engagement.' : 'Monthly payroll disbursement is 1/12 of the annual package.' }}
+        Deductions include statutory obligations (tax, pension, NHF, etc.).
+      </p>
     </ng-container>
 
     <!-- ── Conditions ──────────────────────────────────────────── -->
