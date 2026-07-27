@@ -97,7 +97,7 @@ export class MenuItemsService {
         },
         {
           label: 'Vendor Management',
-          code: 'COM_VENDOR_MGMT',
+          code: 'VENDOR-MGMT',
           route: this.navigationLink.getLink('VMLink'),
           roles: ['ROLE_USER'],
           icon: 'fas fa-circle-user-circle-check',
