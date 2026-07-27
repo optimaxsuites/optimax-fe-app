@@ -1,7 +1,7 @@
 <!-- ═══════════════════════════════════════════════════
      VENDOR PROFILE & SETTINGS
 ════════════════════════════════════════════════════ -->
-<div class="min-h-screen bg-[#f5f7f9] px-6 py-8 max-w-[1440px] mx-auto font-sans text-[#1a2c35]">
+<div class="min-h-screen bg-[#fbfcfd] px-6 py-8 max-w-[1440px] mx-auto font-sans text-[#1a2c35]">
 
   <div class="flex items-start justify-between mb-6 gap-4 flex-wrap">
     <div>
@@ -44,16 +44,14 @@
   <div *ngIf="activeTab === 'profile' && profile" class="grid grid-cols-3 gap-5">
 
     <!-- ── Left: identity card ── -->
-    <div class="bg-white border border-[#e6edf2] rounded-2xl p-6 shadow-sm flex flex-col items-center text-center">
-      <div class="w-20 h-20 rounded-2xl bg-[#e8f2f7] text-[#224957] flex items-center justify-center text-2xl font-bold mb-4">
+    <div class="bg-white border border-[#e6edf2] rounded-xl p-6 flex flex-col items-center text-center">
+      <div class="w-20 h-20 rounded-xl bg-[#e8f2f7] text-[#224957] flex items-center justify-center text-2xl font-bold mb-4">
         {{ profile.companyName.charAt(0) }}
       </div>
       <h2 class="text-lg font-bold text-[#1a2c35] leading-tight">{{ profile.companyName }}</h2>
       <p *ngIf="profile.tradingName" class="text-xs text-[#5a7380] mt-0.5">Trading as {{ profile.tradingName }}</p>
 
-      <span [ngClass]="verificationBadge(profile.verificationStatus)" class="mt-3">
-        {{ verificationLabel(profile.verificationStatus) }}
-      </span>
+      <app-vp-status [tone]="verificationTone(profile.verificationStatus)" [icon]="verificationIcon(profile.verificationStatus)" [label]="verificationLabel(profile.verificationStatus)" class="mt-3"></app-vp-status>
 
       <div class="w-full border-t border-[#eef2f6] my-5"></div>
 
@@ -80,7 +78,7 @@
     <div class="col-span-2 flex flex-col gap-5">
 
       <!-- Company details -->
-      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm">
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5">
         <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380] mb-4">Company Details</p>
         <div class="grid grid-cols-2 gap-x-6 gap-y-4">
           <div>
@@ -107,7 +105,7 @@
       </div>
 
       <!-- Contact details -->
-      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm">
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5">
         <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380] mb-4">Contact Information</p>
         <div class="grid grid-cols-2 gap-x-6 gap-y-4">
           <div>
@@ -135,7 +133,7 @@
       </div>
 
       <!-- Bank details -->
-      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm">
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5">
         <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380] mb-4">Bank Details</p>
         <p class="text-[11px] text-[#9ab0bb] -mt-3 mb-4">Used as the default payment account on generated invoices</p>
         <div class="grid grid-cols-3 gap-x-6 gap-y-4">
@@ -173,7 +171,7 @@
 
     <!-- Stats cards -->
     <div class="grid grid-cols-4 gap-4 mb-5" *ngIf="stats">
-      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between mb-3">
           <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Total Documents</span>
           <span class="w-8 h-8 rounded-lg bg-[#e8f2f7] text-[#224957] flex items-center justify-center">
@@ -183,7 +181,7 @@
         <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.total }}</div>
         <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.active }}</strong> currently active</p>
       </div>
-      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between mb-3">
           <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Expiring Soon</span>
           <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -196,7 +194,7 @@
           <ng-container *ngIf="stats.expiringSoon === 0">All up to date</ng-container>
         </p>
       </div>
-      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between mb-3">
           <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Expired</span>
           <span class="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
@@ -209,7 +207,7 @@
           <ng-container *ngIf="stats.expired === 0">None expired</ng-container>
         </p>
       </div>
-      <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between mb-3">
           <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Pending Review</span>
           <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -240,7 +238,7 @@
     </div>
 
     <!-- Document list -->
-    <div class="bg-white border border-[#e6edf2] rounded-2xl overflow-hidden shadow-sm">
+    <div class="bg-white border border-[#e6edf2] rounded-xl overflow-hidden">
       <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#eef2f6] flex-wrap gap-3">
         <h2 class="text-sm font-semibold text-[#1a2c35]">All Documents</h2>
         <div class="flex gap-1.5 flex-wrap">
@@ -265,7 +263,7 @@
             <div class="text-right shrink-0 hidden md:block">
               <p class="text-xs text-[#5a7380]">{{ doc.expiryDate ? 'Expires ' + fmtDate(doc.expiryDate) : 'No expiry' }}</p>
             </div>
-            <span [ngClass]="statusBadge(doc.status)" class="shrink-0">{{ statusLabel(doc.status) }}</span>
+            <app-vp-status [tone]="statusTone(doc.status)" [icon]="statusIcon(doc.status)" [label]="statusLabel(doc.status)" class="shrink-0"></app-vp-status>
             <div class="flex items-center gap-1 shrink-0">
               <button (click)="downloadDoc(doc, $event)" class="w-7 h-7 rounded-lg hover:bg-[#eef2f6] flex items-center justify-center text-[#5a7380]">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -299,7 +297,7 @@
           <span class="text-3xl">{{ categoryIcon(selectedDoc.category) }}</span>
           <div>
             <p class="font-semibold text-[#1a2c35]">{{ selectedDoc.name }}</p>
-            <span [ngClass]="statusBadge(selectedDoc.status)" class="mt-1 inline-block">{{ statusLabel(selectedDoc.status) }}</span>
+            <app-vp-status [tone]="statusTone(selectedDoc.status)" [icon]="statusIcon(selectedDoc.status)" [label]="statusLabel(selectedDoc.status)" class="mt-1 inline-block"></app-vp-status>
           </div>
         </div>
         <div class="space-y-3 text-sm">
@@ -320,7 +318,7 @@
     <!-- Upload modal -->
     <div *ngIf="showUploadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" (click)="closeUploadModal()">
       <div class="absolute inset-0 bg-black/30"></div>
-      <div class="modal-pop relative bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl" (click)="$event.stopPropagation()">
+      <div class="modal-pop relative bg-white rounded-xl w-full max-w-md p-6 shadow-2xl" (click)="$event.stopPropagation()">
         <h3 class="text-lg font-bold text-[#1a2c35] mb-4">Upload Document</h3>
         <div class="mb-4">
           <label class="text-xs font-semibold text-[#5a7380] mb-1.5 block">Document Name</label>
@@ -365,7 +363,7 @@
     <!-- Delete confirm -->
     <div *ngIf="showDeleteConfirm && docToDelete" class="fixed inset-0 z-50 flex items-center justify-center p-4" (click)="closeDeleteConfirm()">
       <div class="absolute inset-0 bg-black/30"></div>
-      <div class="modal-pop relative bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl text-center" (click)="$event.stopPropagation()">
+      <div class="modal-pop relative bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl text-center" (click)="$event.stopPropagation()">
         <div class="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         </div>
@@ -415,7 +413,7 @@
     <div class="grid grid-cols-12 gap-5 items-start">
 
       <!-- ════ LEFT RAIL — saved templates ════ -->
-      <div class="col-span-2 bg-white border border-[#e6edf2] rounded-2xl overflow-hidden shadow-sm">
+      <div class="col-span-2 bg-white border border-[#e6edf2] rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-[#eef2f6]">
           <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Saved Templates</p>
         </div>
@@ -444,7 +442,7 @@
       </div>
 
       <!-- ════ CENTRE — editor ════ -->
-      <div class="col-span-4 bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm">
+      <div class="col-span-4 bg-white border border-[#e6edf2] rounded-xl p-5">
         <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380] mb-5">
           {{ editingTemplate ? 'Edit: ' + editingTemplate.name : 'New Template' }}
         </p>
@@ -739,20 +737,28 @@
           </button>
         </div>
 
+        <!-- The page "floats" on a neutral canvas rather than sitting flush
+             against the tab background — the same presentation convention
+             as Figma/Canva artboards, and it reads as a page precisely
+             because something distinguishes it from its surroundings even
+             with the portal's no-shadow rule (contrast + margin, not elevation). -->
+        <div class="bg-[#eef2f5] rounded-xl p-6">
+
         <!-- ══ CLASSIC preview ══ — clean letterhead, ruled table ══ -->
         <div #previewRef *ngIf="templateForm.baseStyle === 'classic'"
-          class="bg-white rounded-2xl shadow-sm border border-[#e6edf2] overflow-hidden preview-root">
+          class="bg-white rounded-xl border border-[#d8dee3] overflow-hidden preview-root">
 
           <!-- Letterhead -->
           <div class="px-7 pt-7 pb-5 border-b-2" [style.border-color]="templateForm.accentColor">
-            <div class="flex items-start gap-6"
+            <div class="flex items-start"
               [class.justify-between]="templateForm.logoPosition !== 'center'"
               [class.flex-row-reverse]="templateForm.logoPosition === 'right'"
               [class.flex-col]="templateForm.logoPosition === 'center'"
+              [class.space-y-6]="templateForm.logoPosition === 'center'"
               [class.items-center]="templateForm.logoPosition === 'center'">
 
               <!-- Logo + company -->
-              <div class="flex flex-col gap-1" [class.items-center]="templateForm.logoPosition === 'center'">
+              <div class="flex flex-col space-y-1" [class.items-center]="templateForm.logoPosition === 'center'">
                 <ng-container *ngIf="templateForm.logoUrl; else classicInitial">
                   <img [src]="templateForm.logoUrl" class="h-11 max-w-[150px] object-contain mb-1"
                     [class.mx-auto]="templateForm.logoPosition === 'center'" alt="Company logo" />
@@ -794,33 +800,34 @@
 
         <!-- ══ BOLD preview ══ — full-width accent header bar ══ -->
         <div #previewRef *ngIf="templateForm.baseStyle === 'bold'"
-          class="bg-white rounded-2xl shadow-sm border border-[#e6edf2] overflow-hidden preview-root">
+          class="bg-white rounded-xl border border-[#d8dee3] overflow-hidden preview-root">
 
           <!-- Full-width accent header, with a quiet geometric echo instead of a busy texture -->
           <div class="px-7 py-6 relative overflow-hidden" [style.background-color]="templateForm.accentColor">
-            <div class="absolute -right-8 -top-12 w-36 h-36 rounded-full bg-white/[0.06] pointer-events-none"></div>
-            <div class="absolute right-14 -bottom-16 w-28 h-28 rounded-full bg-white/[0.06] pointer-events-none"></div>
+            <div class="absolute -right-8 -top-12 w-36 h-36 rounded-full pointer-events-none" style="background-color: rgba(255,255,255,0.06)"></div>
+            <div class="absolute right-14 -bottom-16 w-28 h-28 rounded-full pointer-events-none" style="background-color: rgba(255,255,255,0.06)"></div>
 
-            <div class="relative flex items-start gap-6"
+            <div class="relative flex items-start"
               [class.justify-between]="templateForm.logoPosition !== 'center'"
               [class.flex-row-reverse]="templateForm.logoPosition === 'right'"
               [class.flex-col]="templateForm.logoPosition === 'center'"
+              [class.space-y-4]="templateForm.logoPosition === 'center'"
               [class.items-center]="templateForm.logoPosition === 'center'">
 
-              <div class="flex items-center gap-3">
+              <div class="flex items-center space-x-3">
                 <ng-container *ngIf="templateForm.logoUrl; else boldInitial">
-                  <div class="w-11 h-11 rounded-lg bg-white/95 flex items-center justify-center overflow-hidden shrink-0 p-1">
+                  <div class="w-11 h-11 rounded-lg flex items-center justify-center overflow-hidden shrink-0 p-1" style="background-color: rgba(255,255,255,0.95)">
                     <img [src]="templateForm.logoUrl" class="max-w-full max-h-full object-contain" alt="Company logo" />
                   </div>
                 </ng-container>
                 <ng-template #boldInitial>
-                  <div class="w-11 h-11 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-base shrink-0">
+                  <div class="w-11 h-11 rounded-lg flex items-center justify-center text-white font-bold text-base shrink-0" style="background-color: rgba(255,255,255,0.2)">
                     {{ profile?.companyName?.charAt(0) || 'A' }}
                   </div>
                 </ng-template>
                 <div>
                   <p class="text-white font-bold text-sm">{{ profile?.companyName }}</p>
-                  <p class="text-white/70 text-[10px]">{{ profile?.address }}</p>
+                  <p class="text-[10px]" style="color: rgba(255,255,255,0.7)">{{ profile?.address }}</p>
                 </div>
               </div>
 
@@ -829,11 +836,11 @@
           </div>
 
           <!-- Dark summary strip — the total, up front -->
-          <div class="px-7 py-3 bg-[#1a2c35] flex items-center justify-between flex-wrap gap-2">
-            <div class="text-[10px] text-white/60 flex flex-wrap gap-x-4 gap-y-1">
-              <span>No: <span class="text-white font-medium">{{ previewSample.docNumber }}</span></span>
-              <span>Date: <span class="text-white font-medium">{{ previewSample.date }}</span></span>
-              <span>{{ templateDocType === 'invoice' ? 'Due' : 'Valid Until' }}: <span class="text-white font-medium">{{ previewSample.dueDate }}</span></span>
+          <div class="px-7 py-3 bg-[#1a2c35] flex items-center justify-between flex-wrap">
+            <div class="text-[10px] flex flex-wrap" style="color: rgba(255,255,255,0.6)">
+              <span style="margin-right: 16px; margin-bottom: 4px">No: <span class="text-white font-medium">{{ previewSample.docNumber }}</span></span>
+              <span style="margin-right: 16px; margin-bottom: 4px">Date: <span class="text-white font-medium">{{ previewSample.date }}</span></span>
+              <span style="margin-bottom: 4px">{{ templateDocType === 'invoice' ? 'Due' : 'Valid Until' }}: <span class="text-white font-medium">{{ previewSample.dueDate }}</span></span>
             </div>
             <p class="text-white font-bold text-sm">{{ fmtCurrency(previewSample.total) }}</p>
           </div>
@@ -849,33 +856,32 @@
 
         <!-- ══ SIDEBAR preview ══ — rotated doc label on left edge ══ -->
         <div #previewRef *ngIf="templateForm.baseStyle === 'sidebar'"
-          class="bg-white rounded-2xl shadow-sm border border-[#e6edf2] overflow-hidden preview-root flex">
+          class="bg-white rounded-xl border border-[#d8dee3] overflow-hidden preview-root flex">
 
           <!-- Vertical rail -->
           <div class="w-11 shrink-0 flex flex-col items-center justify-between py-6" [style.background-color]="templateForm.accentColor">
             <ng-container *ngIf="templateForm.logoUrl; else sidebarInitial">
-              <div class="w-7 h-7 rounded bg-white/90 flex items-center justify-center overflow-hidden p-0.5 shrink-0">
+              <div class="w-7 h-7 rounded flex items-center justify-center overflow-hidden p-0.5 shrink-0" style="background-color: rgba(255,255,255,0.9)">
                 <img [src]="templateForm.logoUrl" class="max-w-full max-h-full object-contain" alt="Company logo" />
               </div>
             </ng-container>
             <ng-template #sidebarInitial>
-              <div class="w-7 h-7 rounded bg-white/20 flex items-center justify-center text-white font-bold text-[11px] shrink-0">
+              <div class="w-7 h-7 rounded flex items-center justify-center text-white font-bold text-[11px] shrink-0" style="background-color: rgba(255,255,255,0.2)">
                 {{ profile?.companyName?.charAt(0) || 'A' }}
               </div>
             </ng-template>
 
-            <p class="text-white font-black text-[11px] tracking-[0.2em] whitespace-nowrap"
-              style="writing-mode:vertical-rl;transform:rotate(180deg)">
+            <p class="text-white font-black text-[11px] tracking-[0.2em] whitespace-nowrap" style="transform: rotate(-90deg)">
               {{ docLabel() }} · {{ previewSample.docNumber }}
             </p>
 
-            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
+            <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color: rgba(255,255,255,0.4)"></span>
           </div>
 
           <!-- Main body -->
           <div class="flex-1 flex flex-col min-w-0">
 
-            <div class="px-7 pt-7 pb-4 border-b border-[#f0f4f8] flex items-start justify-between gap-4">
+            <div class="px-7 pt-7 pb-4 border-b border-[#f0f4f8] flex items-start justify-between">
               <div class="min-w-0">
                 <p class="text-sm font-bold text-[#1a2c35]">{{ profile?.companyName }}</p>
                 <p class="text-[10px] text-[#9ab0bb]">{{ profile?.address }}, {{ profile?.city }}</p>
@@ -902,7 +908,7 @@
 
         <!-- ══ MODERN preview ══ — two-tone header, label boxes ══ -->
         <div #previewRef *ngIf="templateForm.baseStyle === 'modern'"
-          class="bg-white rounded-2xl shadow-sm border border-[#e6edf2] overflow-hidden preview-root">
+          class="bg-white rounded-xl border border-[#d8dee3] overflow-hidden preview-root">
 
           <!-- Two-tone header: tinted "from" panel + dark meta panel -->
           <div class="flex flex-col sm:flex-row" [class.sm:flex-row-reverse]="templateForm.logoPosition === 'right'">
@@ -922,11 +928,11 @@
             </div>
             <div class="flex-1 px-7 py-5 bg-[#1a2c35] flex flex-col justify-center items-start sm:items-end text-left sm:text-right">
               <p class="text-white font-bold text-lg tracking-wide mb-1.5">{{ docLabel() }}</p>
-              <p class="text-white/50 text-[10px]">No. <span class="text-white/90 font-medium">{{ previewSample.docNumber }}</span></p>
-              <p class="text-white/50 text-[10px]">Date <span class="text-white/90 font-medium">{{ previewSample.date }}</span></p>
-              <p class="text-white/50 text-[10px]">
+              <p class="text-[10px]" style="color: rgba(255,255,255,0.5)">No. <span class="font-medium" style="color: rgba(255,255,255,0.9)">{{ previewSample.docNumber }}</span></p>
+              <p class="text-[10px]" style="color: rgba(255,255,255,0.5)">Date <span class="font-medium" style="color: rgba(255,255,255,0.9)">{{ previewSample.date }}</span></p>
+              <p class="text-[10px]" style="color: rgba(255,255,255,0.5)">
                 {{ templateDocType === 'invoice' ? 'Due' : 'Valid Until' }}
-                <span class="text-white/90 font-medium">{{ previewSample.dueDate }}</span>
+                <span class="font-medium" style="color: rgba(255,255,255,0.9)">{{ previewSample.dueDate }}</span>
               </p>
             </div>
           </div>
@@ -935,14 +941,14 @@
           <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
 
           <!-- Modern's signature moment: a statement-style total instead of a plain rule-off row -->
-          <div class="mx-7 mb-3 px-5 py-4 rounded-xl flex items-center justify-between gap-3 flex-wrap"
+          <div class="mx-7 mb-3 px-5 py-4 rounded-xl flex items-center justify-between flex-wrap"
             [style.background-color]="templateForm.accentColor">
-            <span class="text-white/80 text-[11px] font-bold uppercase tracking-widest">
+            <span class="text-[11px] font-bold uppercase tracking-widest" style="color: rgba(255,255,255,0.8)">
               {{ templateDocType === 'invoice' ? 'Amount Due' : 'Quotation Total' }}
             </span>
             <span class="text-white text-xl font-bold">{{ fmtCurrency(previewSample.total) }}</span>
           </div>
-          <div *ngIf="templateForm.density === 'detailed'" class="px-7 pb-3 -mt-1 flex justify-end gap-6 text-[11px] text-[#5a7380]">
+          <div *ngIf="templateForm.density === 'detailed'" class="px-7 pb-3 -mt-1 flex justify-end space-x-6 text-[11px] text-[#5a7380]">
             <span>Subtotal <strong class="text-[#1a2c35] font-medium">{{ fmtCurrency(previewSample.subtotal) }}</strong></span>
             <span>Tax <strong class="text-[#1a2c35] font-medium">{{ fmtCurrency(previewSample.tax) }}</strong></span>
           </div>
@@ -950,6 +956,8 @@
           <ng-container *ngTemplateOutlet="bankBlock"></ng-container>
           <ng-container *ngTemplateOutlet="signatureBlock"></ng-container>
           <ng-container *ngTemplateOutlet="footerBlock"></ng-container>
+        </div>
+
         </div>
 
         <p class="text-[10px] text-[#9ab0bb] mt-2 px-1">
@@ -968,7 +976,7 @@
 
     <ng-template #billToBlock>
       <div class="px-7 py-3.5 border-b border-[#f0f4f8]">
-        <div class="flex gap-1.5 items-center mb-1">
+        <div class="flex space-x-1.5 items-center mb-1">
           <span class="w-1 h-3 rounded-full" [style.background-color]="templateForm.accentColor"></span>
           <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest">{{ templateDocType === 'invoice' ? 'Bill To' : 'Quote For' }}</p>
         </div>
@@ -1023,7 +1031,7 @@
       <div *ngIf="templateForm.showBankDetails && profile"
         class="px-7 py-3 bg-[#f8fafb] border-t border-[#f0f4f8]">
         <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest mb-1.5">Payment Details</p>
-        <div class="flex gap-6 text-[10px] flex-wrap">
+        <div class="flex space-x-6 text-[10px] flex-wrap">
           <div><p class="text-[#9ab0bb]">Bank</p><p class="font-medium text-[#1a2c35]">{{ profile.bankDetails.bankName }}</p></div>
           <div><p class="text-[#9ab0bb]">Account</p><p class="font-medium text-[#1a2c35]">{{ profile.bankDetails.accountName }}</p></div>
           <div><p class="text-[#9ab0bb]">Number</p><p class="font-medium text-[#1a2c35] font-mono">{{ maskAccountNumber(profile.bankDetails.accountNumber) }}</p></div>
@@ -1033,7 +1041,7 @@
 
     <ng-template #signatureBlock>
       <div class="px-7 py-4 border-t border-[#f0f4f8]">
-        <div class="flex items-end justify-between gap-4">
+        <div class="flex items-end justify-between">
           <div *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380] min-w-0">
             <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest mb-1">Notes</p>
             <p>{{ templateForm.notesDefault || 'All amounts in NGN unless otherwise stated.' }}</p>
@@ -1059,7 +1067,7 @@
     <!-- ════ SIGNATURE PAD MODAL ════ -->
     <div *ngIf="showSignaturePad" class="fixed inset-0 z-50 flex items-center justify-center p-4" (click)="closeSignaturePad()">
       <div class="absolute inset-0 bg-black/40"></div>
-      <div class="modal-pop relative bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="modal-pop relative bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden" (click)="$event.stopPropagation()">
 
         <!-- Modal header -->
         <div class="flex items-center justify-between px-5 py-4 border-b border-[#eef2f6]">

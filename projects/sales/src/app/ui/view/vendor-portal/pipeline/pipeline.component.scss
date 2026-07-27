@@ -1,0 +1,80 @@
+// ── KPI cards ───────────────────────────────────────────────────────────────
+// Deliberately monochrome by default — colour is reserved for the moment a
+// card becomes the active filter, not spent decoratively on four different
+// icon-chip hues. No box-shadow anywhere; a single hairline border does all
+// the separation work, and its colour is the only thing that moves on
+// hover/selection.
+.vp-kpi {
+  background: #ffffff;
+  border: 1px solid #e5eaed;
+  border-radius: 12px;
+  padding: 15px 16px;
+  width: 100%;
+  cursor: pointer;
+  transition: border-color 150ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    border-color: #c3ccd2;
+  }
+
+  &--active {
+    border-color: #224957;
+    background: #f7fafb;
+  }
+}
+.vp-kpi__icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef2f5;
+  color: #71828a;
+  transition: background-color 150ms ease, color 150ms ease;
+
+  &--active {
+    background: #dcebf0;
+    color: #224957;
+  }
+}
+
+// ── Side panel slide-in ───────────────────────────────────────────────────────
+.panel-slide {
+  animation: panelSlide 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+@keyframes panelSlide {
+  from {
+    transform: translateX(32px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+// ── Centre modal pop ──────────────────────────────────────────────────────────
+.modal-pop {
+  animation: modalPop 0.22s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+// ── Due-date text helpers (returned by dueDateClass() in .ts) ─────────────────
+.text-danger {
+  color: #dc2626;
+}
+.text-warning {
+  color: #d97706;
+  font-weight: 500;
+}
+

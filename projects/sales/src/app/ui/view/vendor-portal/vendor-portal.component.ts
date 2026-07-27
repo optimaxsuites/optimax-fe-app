@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { FinanceComponent } from './finance/finance.component';
+import { PipelineComponent } from './pipeline/pipeline.component';
 import { LpoComponent } from './lpo/lpo.component';
 import { PerformanceComponent } from './performance/performance.component';
 import { DocumentsComponent } from './documents/documents.component';
@@ -28,15 +29,23 @@ export class VendorPortalComponent {
       icon: 'fa-solid fa-table-columns',
     },
     {
-      name: 'RFQ',
-      component: DashboardComponent,
-      icon: 'fa-solid fa-table-columns',
-    },
-    {
-      name: 'Finance',
-      component: FinanceComponent,
+      name: 'Pipeline',
+      component: PipelineComponent,
       icon: 'fa-solid fa-file-invoice-dollar',
     },
+    // Merged into "Pipeline" above (RFQ → Quotation → LPO → Invoice, one
+    // component, one KPI rail, one 4-way switch) — kept here, unreferenced,
+    // rather than deleted outright, in case anything else still imports them.
+    // {
+    //   name: 'RFQ',
+    //   component: DashboardComponent,
+    //   icon: 'fa-solid fa-table-columns',
+    // },
+    // {
+    //   name: 'Finance',
+    //   component: FinanceComponent,
+    //   icon: 'fa-solid fa-file-invoice-dollar',
+    // },
     // {
     //   name: 'LPO',
     //   component: LpoComponent,

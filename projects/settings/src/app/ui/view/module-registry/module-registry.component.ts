@@ -27,6 +27,7 @@ const TS_MODULE_CODES: { code: string; label: string; submenus: { code: string; 
       // { code: 'AI_ANALYSIS', label: 'AI Analysis' },
       { code: 'COM_SALES', label: 'Sales Hub' },
       { code: 'PROCURE_MGMT', label: 'Procurement Hub' },
+      { code: 'VENDOR-MGMT', label: 'Vendor Management' },
       // { code: 'DELIVERY_MGMT', label: 'Delivery Management' },
       // { code: 'DOC_MGMT', label: 'Document Management' },
       // { code: 'QUOTE_MGMT', label: 'Quote Management' },
@@ -87,17 +88,17 @@ const TS_MODULE_CODES: { code: string; label: string; submenus: { code: string; 
   {
     code: 'CRM', label: 'CRM',
     submenus: [
-      { code: 'CRM_CONTACTS',   label: 'Contacts' },
-      { code: 'CRM_ACCOUNTS',   label: 'Accounts' },
-      { code: 'CRM_PIPELINE',   label: 'Pipeline' },
-      { code: 'CRM_DEALS',      label: 'Deals' },
-      { code: 'CRM_LEADS',      label: 'Leads' },
+      { code: 'CRM_CONTACTS', label: 'Contacts' },
+      { code: 'CRM_ACCOUNTS', label: 'Accounts' },
+      { code: 'CRM_PIPELINE', label: 'Pipeline' },
+      { code: 'CRM_DEALS', label: 'Deals' },
+      { code: 'CRM_LEADS', label: 'Leads' },
       { code: 'CRM_ACTIVITIES', label: 'Activities' },
-      { code: 'CRM_CAMPAIGNS',  label: 'Campaigns' },
-      { code: 'CRM_QUOTES',     label: 'Quotes' },
-      { code: 'CRM_CONTRACTS',  label: 'Contracts' },
-      { code: 'CRM_TICKETS',    label: 'Tickets' },
-      { code: 'CRM_SETTINGS',   label: 'CRM Settings' },
+      { code: 'CRM_CAMPAIGNS', label: 'Campaigns' },
+      { code: 'CRM_QUOTES', label: 'Quotes' },
+      { code: 'CRM_CONTRACTS', label: 'Contracts' },
+      { code: 'CRM_TICKETS', label: 'Tickets' },
+      { code: 'CRM_SETTINGS', label: 'CRM Settings' },
     ]
   },
 ];
@@ -127,7 +128,7 @@ export class ModuleRegistryComponent implements OnInit {
     private moduleService: ModulesService,
     private messageService: MessageService,
     private confirmationService: ConfirmationService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadModules();

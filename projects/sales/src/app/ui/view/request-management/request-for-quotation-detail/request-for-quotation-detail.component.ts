@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProcurementRequest, RFQTemplate, VendorSuggestion } from '../../../domain/procurement-request/procurement.dto';
+import { ExtendedProcurementRequest, parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -11,7 +12,7 @@ import html2canvas from 'html2canvas';
   styleUrls: ['./request-for-quotation-detail.component.scss']
 })
 export class RequestForQuotationDetailComponent implements OnInit {
-  request: ProcurementRequest | null = null;
+  request: ExtendedProcurementRequest | null = null;
   isLoading = false;
   isDownloading = false;
   showCancelDialog = false;
@@ -34,12 +35,12 @@ export class RequestForQuotationDetailComponent implements OnInit {
 
   loadRequestDetails(id: string): void {
     this.isLoading = true;
-    this.procurementService.getRequest(id).subscribe({
+    this.procurementService.getRequest(parseIdToNumber(id)).subscribe({
       next: (req) => {
-        this.request = req;
+        this.request = req as ExtendedProcurementRequest;
         this.isLoading = false;
-        if (req.rfqTemplateId) {
-          this.loadTemplateDetails(req.rfqTemplateId);
+        if (this.request?.rfqTemplateId) {
+          this.loadTemplateDetails(this.request.rfqTemplateId);
         }
         this.loadVendorSuggestions(id);
       },
@@ -59,7 +60,7 @@ export class RequestForQuotationDetailComponent implements OnInit {
   }
 
   loadVendorSuggestions(requestId: string): void {
-    this.procurementService.getVendorSuggestions(requestId).subscribe({
+    this.procurementService.getVendorSuggestions(parseIdToNumber(requestId)).subscribe({
       next: (suggestions) => {
         if (this.request?.selectedVendors && this.request.selectedVendors.length > 0) {
           this.vendors = suggestions.filter(v => 

@@ -108,12 +108,26 @@
               </div>
 
               <div class="form-group">
-                <label>Service Category <span class="required">*</span></label>
+                <label>Item Category <span class="required">*</span></label>
+                <select 
+                  formControlName="categoryId" 
+                  class="form-control"
+                  [class.error]="item.get('categoryId')?.invalid && item.get('categoryId')?.touched">
+                  <option value="" disabled>Select Category</option>
+                  <option *ngFor="let cat of procurementCategories" [value]="cat.categoryId">{{ cat.name }}</option>
+                </select>
+                <small class="error-message" *ngIf="item.get('categoryId')?.invalid && item.get('categoryId')?.touched">
+                  {{ getItemErrorMessage(i, 'categoryId') }}
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label>Service Domain <span class="required">*</span></label>
                 <select 
                   formControlName="serviceCategory" 
                   class="form-control"
                   [class.error]="item.get('serviceCategory')?.invalid && item.get('serviceCategory')?.touched">
-                  <option value="">Select Category</option>
+                  <option value="">Select Domain</option>
                   <option *ngFor="let category of serviceCategories" [value]="category">{{ category }}</option>
                 </select>
                 <small class="error-message" *ngIf="item.get('serviceCategory')?.invalid && item.get('serviceCategory')?.touched">

@@ -30,9 +30,9 @@ import { QuoteFormComponent } from '../../quotations/quote-form/quote-form.compo
 export class CustomerListComponent implements OnInit, OnDestroy {
   
   Math = Math;
-  customers: Customer[] = [];
+  customers: any[] = [];
   isLoading = true;
-  selectedCustomerIds: string[] = [];
+  selectedCustomerIds: any[] = [];
 
   showCustomerModal = false;
   showCustomerDetails = false;
@@ -209,23 +209,23 @@ export class CustomerListComponent implements OnInit, OnDestroy {
     this.loadCustomers();
   }
 
-  toggleSelection(customerId: string, event: any): void {
+  toggleSelection(customerId: any, event: any): void {
     if (event.target.checked) {
       this.selectedCustomerIds.push(customerId);
     } else {
-      this.selectedCustomerIds = this.selectedCustomerIds.filter(id => id !== customerId);
+      this.selectedCustomerIds = this.selectedCustomerIds.filter(id => String(id) !== String(customerId));
     }
   }
 
   toggleSelectAll(event: any): void {
     if (event.target.checked) {
-      this.selectedCustomerIds = this.customers.map(c => c.id);
+      this.selectedCustomerIds = this.customers.map(c => c.customerId || String(c.id));
     } else {
       this.selectedCustomerIds = [];
     }
   }
 
-  isSelected(customerId: string): boolean {
+  isSelected(customerId: any): boolean {
     return this.selectedCustomerIds.includes(customerId);
   }
 
@@ -302,31 +302,31 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   private setMockCustomers(): void {
     this.customers = [
       {
-        id: 'CUST-001', name: 'Mama Nkechi Enterprises', email: 'contact@mamankechi.com',
+        id: 1, customerId: 'CUST-001', name: 'Mama Nkechi Enterprises', email: 'contact@mamankechi.com',
         phone: '+234 803 123 4567', address: 'Lagos, Nigeria', taxId: 'TAX-001',
         createdAt: new Date('2026-01-15'), totalSpent: 2845000, totalOrders: 12, status: 'ACTIVE'
       },
       {
-        id: 'CUST-002', name: 'Tech Solutions Ltd', email: 'info@techsolutions.ng',
+        id: 2, customerId: 'CUST-002', name: 'Tech Solutions Ltd', email: 'info@techsolutions.ng',
         phone: '+234 812 345 6789', address: 'Abuja, Nigeria', taxId: 'TAX-002',
         createdAt: new Date('2026-02-20'), totalSpent: 1250000, totalOrders: 5, status: 'ACTIVE'
       },
       {
-        id: 'CUST-003', name: 'Global Services NG', email: 'hello@globalservices.ng',
+        id: 3, customerId: 'CUST-003', name: 'Global Services NG', email: 'hello@globalservices.ng',
         phone: '+234 705 678 9012', address: 'Port Harcourt, Nigeria', taxId: 'TAX-003',
         createdAt: new Date('2026-03-10'), totalSpent: 350000, totalOrders: 2, status: 'ACTIVE'
       },
       {
-        id: 'CUST-004', name: 'Aliko Dangote Wholesale', email: 'info@dangote.com',
+        id: 4, customerId: 'CUST-004', name: 'Aliko Dangote Wholesale', email: 'info@dangote.com',
         phone: '+234 802 222 3333', address: 'Kano, Nigeria', taxId: 'TAX-004',
         createdAt: new Date('2026-01-05'), totalSpent: 750000, totalOrders: 3, status: 'ACTIVE'
       },
       {
-        id: 'CUST-005', name: 'Obinna Electronics', email: 'contact@obinnaelectronics.com',
+        id: 5, customerId: 'CUST-005', name: 'Obinna Electronics', email: 'contact@obinnaelectronics.com',
         phone: '+234 809 444 5555', address: 'Onitsha, Nigeria', taxId: 'TAX-005',
         createdAt: new Date('2026-04-01'), totalSpent: 0, totalOrders: 0, status: 'INACTIVE'
       }
-    ];
+    ] as any;
     this.totalElements = this.customers.length;
     this.totalPages = 1;
   }

@@ -29,6 +29,18 @@ import { MessageService } from 'primeng/api';
 export class QuoteFormComponent implements OnInit, OnDestroy {
   @Input() editId?: string;
   @Input() customerId?: string;
+
+  // Custom modal variables
+  showDiscountModal = false;
+  showChargesModal = false;
+  modalDiscountAmount = 0;
+  modalDiscountType: 'PERCENTAGE' | 'FIXED' = 'FIXED';
+  
+  // Additional charges breakdown
+  additionalChargeItems: { id?: number; label: string; amount: number }[] = [];
+  modalChargesList: { id?: number; label: string; amount: number }[] = [];
+  newChargeLabel = '';
+  newChargeAmount: number | null = null;
   @Output() saved = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
   
@@ -61,22 +73,17 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   showAdvanced = false;
   showSignature = false;
   showAttachments = false;
-  showAdditionalInfo = false;
-  showContactDetails = false;
+  showEmail = false;
+  showAddress = false;
+  showPhone = false;
 
   // Additional Option data bindings
   signatureText = '';
-  additionalInfoText = '';
   contactPhone = '';
   contactEmail = '';
+  contactAddress = '';
   attachmentFileName = '';
   
-  // Shipping Details data bindings
-  showShippingDetails = false;
-  shippingAddress = '';
-  shippingMethod = '';
-  shippingDate = '';
-
   // Discount & Additional charges
   discountType: 'PERCENTAGE' | 'FIXED' = 'PERCENTAGE';
   discountValue = 0;
@@ -122,6 +129,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       subtotal: this.subtotal,
       taxAmount: this.totalTax,
       discountAmount: this.discountAmount,
+      additionalCharges: this.additionalCharges,
+      additionalChargeItems: this.additionalChargeItems,
       totalAmount: this.grandTotal,
       notes: this.quoteForm.get('notes')?.value,
       terms: this.quoteForm.get('terms')?.value,
@@ -427,7 +436,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     } else {
       this.discountAmount = this.discountValue;
     }
-    this.grandTotal = this.subtotal + this.totalTax - this.discountAmount + this.additionalCharges;
+    this.additionalCharges = this.additionalChargeItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    this.grandTotal = Math.max(0, this.subtotal + this.totalTax - this.discountAmount + this.additionalCharges);
   }
 
   // Product selection
@@ -435,7 +445,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     const productId = event?.target?.value || event?.value || '';
     if (!productId) return;
     
-    const product = this.products.find(p => p.id === productId);
+    const product = this.products.find(p => String(p.id) === String(productId) || p.productId === productId);
     if (product) {
       const itemForm = this.items.at(index);
       itemForm.patchValue({
@@ -476,7 +486,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   // Customer selection
   onCustomerSelect(customerId: string): void {
-    const customer = this.customers.find(c => c.id === customerId);
+    const customer = this.customers.find(c => c.customerId === customerId || String(c.id) === customerId);
     if (customer) {
       this.quoteForm.patchValue({ customerName: customer.name });
       this.selectedCustomerBankAccounts = customer.bankAccounts || [];
@@ -518,7 +528,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         this.setMockCustomers();
         if (this.customerId) {
           this.quoteForm.patchValue({ customerId: this.customerId });
-          const customer = this.customers.find(c => c.id === this.customerId);
+          const customer = this.customers.find(c => c.customerId === this.customerId || String(c.id) === this.customerId);
           if (customer) {
             this.quoteForm.patchValue({ customerName: customer.name });
           }
@@ -545,7 +555,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   private checkAndAddProductFromParam(): void {
     if (!this.isEditMode && this.productId) {
-      const product = this.products.find(p => p.id === this.productId);
+      const product = this.products.find(p => String(p.id) === String(this.productId) || p.productId === this.productId);
       if (product && this.items.length === 0) {
         // Clear items form array first to avoid empty/default item
         while (this.items.length) {
@@ -557,12 +567,13 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         const index = this.items.length - 1;
         const itemForm = this.items.at(index);
         itemForm.patchValue({
-          productId: product.id,
+          // Use the internal product identifier for the select control
+          productId: String(product.id),
           productName: product.name,
           description: product.description || '',
           quantity: 1,
           unitPrice: product.unitPrice,
-          taxRate: 0
+          taxRate: product.taxRate || 0
         });
         
         this.calculateItemTotal(itemForm);
@@ -571,13 +582,15 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         if (this.customers && this.customers.length > 0) {
           const firstCustomer = this.customers[0];
           this.quoteForm.patchValue({
-            customerId: firstCustomer.id,
+            customerId: firstCustomer.customerId || String(firstCustomer.id),
             customerName: firstCustomer.name
           });
+          this.onCustomerSelect(firstCustomer.customerId || String(firstCustomer.id));
         }
         
-        // Skip straight to Step 3 (Live Document Preview) so they can view as a preview before sending!
-        this.currentStep = 3;
+        // Stay on Step 2 (Line Items) so the seller can edit details before moving to template preview
+        // this.currentStep = 3;
+        this.currentStep = 1;
         
         // Set a default template if not set
         if (!this.selectedTemplate) {
@@ -639,19 +652,65 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   private populateForm(quote: Quote): void {
     this.loadedQuoteSelectedCustomerBank = quote.selectedCustomerBank;
+    const addOpts = Array.isArray(quote.additionalOptions) ? quote.additionalOptions[0] : (quote.additionalOptions as any);
     this.quoteForm.patchValue({
-      customerId: quote.customerId,
-      customerName: quote.customerName,
+      customerId: quote.customerId.customerId || String(quote.customerId.id),
+      customerName: quote.customerName.name || String(quote.customerName),
       currency: quote.currency,
       quoteDate: this.formatDateForInput(quote.createdAt),
       validUntil: this.formatDateForInput(quote.validUntil),
-      notes: quote.notes,
-      terms: quote.terms
+      notes: addOpts?.notes || '',
+      terms: addOpts?.terms || ''
     });
-    this.onCustomerSelect(quote.customerId);
+    this.onCustomerSelect(quote.customerId.customerId || String(quote.customerId.id));
     
-    this.logoUrl = quote.logoUrl || '';
-    this.logoFileName = quote.logoUrl ? 'Saved Logo' : '';
+    this.logoUrl = quote.logoUrl?.[0] || '';
+    this.logoFileName = quote.logoUrl?.[0] ? 'Saved Logo' : '';
+    
+    if (addOpts) {
+      if (addOpts.signatureText) {
+        this.showSignature = true;
+        this.signatureText = addOpts.signatureText;
+      }
+      const firstAtt = Array.isArray(addOpts.attachments) ? addOpts.attachments[0] : addOpts.attachments;
+      if (firstAtt?.fileName) {
+        this.showAttachments = true;
+        this.attachmentFileName = firstAtt.fileName;
+      }
+      if (addOpts.email) {
+        this.showEmail = true;
+        this.contactEmail = addOpts.email;
+      }
+      if (addOpts.address) {
+        this.showAddress = true;
+        this.contactAddress = addOpts.address;
+      }
+      if (addOpts.phone) {
+        this.showPhone = true;
+        this.contactPhone = addOpts.phone;
+      }
+      if (addOpts.notes) {
+        this.showNotes = true;
+      }
+      if (addOpts.terms) {
+        this.showTerms = true;
+      }
+    }
+    
+    if (Array.isArray(quote.additionalCharges)) {
+      const labels = quote.additionalChargesLabel || [];
+      this.additionalChargeItems = quote.additionalCharges.map((amt, idx) => ({
+        id: idx + 1,
+        label: labels[idx] || `Charge #${idx + 1}`,
+        amount: Number(amt) || 0
+      }));
+    } else if (typeof (quote as any).additionalCharges === 'number' && (quote as any).additionalCharges > 0) {
+      this.additionalChargeItems = [{
+        id: 1,
+        label: 'Additional Charge',
+        amount: Number((quote as any).additionalCharges)
+      }];
+    }
     
     // Clear existing items
     while (this.items.length) {
@@ -719,8 +778,6 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
           });
         }
       }
-
-      alert('Please fill in all required fields');
       return;
     }
 
@@ -730,20 +787,21 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     }
 
     this.isSubmitting = true;
+    const formValue = this.quoteForm.value;
     
-    const formValue = this.quoteForm.getRawValue();
     const items: QuoteItem[] = [];
-    
     for (let i = 0; i < this.items.length; i++) {
       const item = this.items.at(i).getRawValue();
       items.push({
-        id: Math.random().toString(36).substr(2, 9),
+        id: Math.floor(Math.random() * 1000000),
         productId: item.productId,
         productName: item.productName,
         description: item.description,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         discount: 0,
+        taxRate: 0,
+        amount: item.total,
         total: item.total
       });
     }
@@ -756,22 +814,46 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       selectedCustomerBank = this.loadedQuoteSelectedCustomerBank;
     }
 
-    const quoteData: Partial<Quote> = {
+    const customerObj: Customer = this.customers.find(c => c.customerId === formValue.customerId || String(c.id) === formValue.customerId) || {
+      id: 1,
       customerId: formValue.customerId,
-      customerName: formValue.customerName,
+      name: formValue.customerName,
+      email: '',
+      phone: '',
+      address: [''],
+      deliverAddress: [''],
+      createdBy: 'System',
+      createdAt: new Date(),
+      totalSpent: 0,
+      totalOrders: 0,
+      status: 'ACTIVE'
+    };
+
+    const quoteData: Partial<Quote> = {
+      customerId: customerObj,
+      customerName: customerObj,
       currency: formValue.currency,
       validUntil: new Date(formValue.validUntil),
-      notes: formValue.notes,
-      terms: formValue.terms,
+      additionalOptions: [{
+        signatureText: this.signatureText,
+        attachments: [{ id: 1, fileName: this.attachmentFileName, fileUrl: '', uploadedAt: new Date(), size: 0, type: '' }],
+        email: this.contactEmail || customerObj.email || '',
+        address: this.contactAddress || (Array.isArray(customerObj.address) ? customerObj.address[0] : customerObj.address) || '',
+        phone: this.contactPhone || customerObj.phone || '',
+        notes: formValue.notes || '',
+        terms: formValue.terms || ''
+      }],
       items: items,
       subtotal: this.subtotal,
       taxAmount: this.totalTax,
       discountAmount: this.discountAmount,
+      additionalCharges: this.additionalChargeItems.map(item => Number(item.amount) || 0),
+      additionalChargesLabel: this.additionalChargeItems.map(item => item.label || ''),
       totalAmount: this.grandTotal,
       status: 'DRAFT' as QuoteStatus,
       createdAt: new Date(formValue.quoteDate),
       expiresAt: new Date(formValue.validUntil),
-      logoUrl: this.logoUrl,
+      logoUrl: this.logoUrl ? [this.logoUrl] : [],
       selectedCustomerBank: selectedCustomerBank
     };
     
@@ -788,14 +870,6 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         
         // Handle delivery action
         await this.handleDeliveryAction(response, this.selectedAction);
-        
-        alert(this.isEditMode ? 'Quote updated successfully!' : 'Quote created successfully!');
-        const uuid = this.route.snapshot.paramMap.get('uuid');
-        if (uuid) {
-          this.router.navigate(['/admin/sales/quotes', response.id, uuid]);
-        } else {
-          this.router.navigate(['/admin/sales/quotes', response.id]);
-        }
       },
       error: (error: any) => {
         console.error('Error saving quote:', error);
@@ -811,25 +885,64 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     this.onSubmit();
   }
 
+  showSendQuoteModal = false;
+  pendingSendQuoteNumber = '';
+  pendingSendCustomerName = '';
+  private pendingDeliveryQuote: Quote | null = null;
+
   // Handle delivery actions
   private async handleDeliveryAction(quote: Quote, action: 'pdf' | 'email' | 'both'): Promise<void> {
     try {
-      if (action === 'pdf' || action === 'both') {
+      if (action === 'pdf') {
         const pdfBlob = await this.generateQuotePDF(quote);
         const link = document.createElement('a');
         link.href = URL.createObjectURL(pdfBlob);
         link.download = `Quote-${quote.quoteNumber}.pdf`;
         link.click();
         URL.revokeObjectURL(link.href);
-      }
-      
-      if (action === 'email' || action === 'both') {
-        await this.sendQuoteEmail(quote);
-        alert(`Quote ${quote.quoteNumber} sent to ${quote.customerName}`);
+        this.navigateAfterSubmit(quote);
+      } else {
+        // 'email' or 'both' -> Trigger custom Send Quote modal popup
+        this.pendingDeliveryQuote = quote;
+        const custName = (quote.customerName as any)?.name || String(quote.customerName || 'Customer');
+        this.pendingSendQuoteNumber = quote.quoteNumber;
+        this.pendingSendCustomerName = custName;
+        this.showSendQuoteModal = true;
       }
     } catch (error) {
       console.error('Error in delivery action:', error);
       alert('There was an issue with the delivery. Please try again.');
+    }
+  }
+
+  async confirmSendQuote(): Promise<void> {
+    if (!this.pendingDeliveryQuote) return;
+    const quote = this.pendingDeliveryQuote;
+    this.showSendQuoteModal = false;
+
+    if (this.selectedAction === 'both') {
+      try {
+        const pdfBlob = await this.generateQuotePDF(quote);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(pdfBlob);
+        link.download = `Quote-${quote.quoteNumber}.pdf`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      } catch (e) {
+        console.error('Error generating PDF during delivery:', e);
+      }
+    }
+
+    await this.sendQuoteEmail(quote);
+    this.navigateAfterSubmit(quote);
+  }
+
+  private navigateAfterSubmit(response: Quote): void {
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/quotes', response.id, uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/quotes', response.id]);
     }
   }
 
@@ -914,7 +1027,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   getProductSku(productId: string): string {
     if (!productId) return 'N/A';
-    const product = this.products.find(p => p.id === productId);
+    const product = this.products.find(p => p.productId === productId || String(p.id) === productId);
     return product ? product.sku : 'N/A';
   }
 
@@ -963,61 +1076,80 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   // Mock data
   private setMockCustomers(): void {
     this.customers = [
-      { id: 'CUST-001', name: 'Mama Nkechi Enterprises', email: 'contact@mamankechi.com', phone: '+234 803 123 4567', address: 'Lagos, Nigeria', taxId: 'TAX-001', createdAt: new Date(), totalSpent: 500000, totalOrders: 1, status: 'ACTIVE' },
-      { id: 'CUST-002', name: 'Tech Solutions Ltd', email: 'info@techsolutions.ng', phone: '+234 812 345 6789', address: 'Abuja, Nigeria', taxId: 'TAX-002', createdAt: new Date(), totalSpent: 1250000, totalOrders: 1, status: 'ACTIVE' }
-    ];
+      { id: 1, customerId: 'CUST-001', name: 'Mama Nkechi Enterprises', email: 'contact@mamankechi.com', phone: '+234 803 123 4567', address: 'Lagos, Nigeria', taxId: 'TAX-001', createdAt: new Date(), totalSpent: 500000, totalOrders: 1, status: 'ACTIVE' },
+      { id: 2, customerId: 'CUST-002', name: 'Tech Solutions Ltd', email: 'info@techsolutions.ng', phone: '+234 812 345 6789', address: 'Abuja, Nigeria', taxId: 'TAX-002', createdAt: new Date(), totalSpent: 1250000, totalOrders: 1, status: 'ACTIVE' }
+    ] as any;
   }
 
   private setMockProducts(): void {
     this.products = [
-      { id: 'PROD-001', name: 'Executive Office Chair', sku: 'CHR-001', description: 'Ergonomic executive office chair', unitPrice: 50000, costPrice: 30000, currency: 'NGN', stockQuantity: 50, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
-      { id: 'PROD-002', name: 'Standing Desk', sku: 'DSK-001', description: 'Adjustable standing desk', unitPrice: 120000, costPrice: 80000, currency: 'NGN', stockQuantity: 30, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
-      { id: 'PROD-003', name: 'Laptop - Dell XPS', sku: 'LAP-001', description: 'Dell XPS 13 laptop', unitPrice: 850000, costPrice: 700000, currency: 'NGN', stockQuantity: 15, category: 'Electronics', taxRate: 7.5, images: [], status: 'ACTIVE' }
-    ];
+      { id: 1, productId: 'PROD-001', name: 'Executive Office Chair', sku: 'CHR-001', description: 'Ergonomic executive office chair', unitPrice: 50000, costPrice: 30000, currency: 'NGN', stockQuantity: 50, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
+      { id: 2, productId: 'PROD-002', name: 'Standing Desk', sku: 'DSK-001', description: 'Adjustable standing desk', unitPrice: 120000, costPrice: 80000, currency: 'NGN', stockQuantity: 30, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
+      { id: 3, productId: 'PROD-003', name: 'Laptop - Dell XPS', sku: 'LAP-001', description: 'Dell XPS 13 laptop', unitPrice: 850000, costPrice: 700000, currency: 'NGN', stockQuantity: 15, category: 'Electronics', taxRate: 7.5, images: [], status: 'ACTIVE' }
+    ] as any;
     this.filteredProducts = this.products;
   }
 
   // ============ UI Action Methods ============
   
-  addCustomFields(): void {
-    alert('Custom Fields feature is under development.');
-  }
-
-  addNewGroup(): void {
-    alert('Add New Group feature is under development.');
-  }
-
-  addShippingDetails(): void {
-    this.showShippingDetails = !this.showShippingDetails;
+  triggerLogoUpload(): void {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = (e: any) => this.onLogoSelected(e);
+    fileInput.click();
   }
 
   addDiscounts(): void {
-    const value = prompt('Enter discount amount:');
-    if (value !== null) {
-      const numValue = parseFloat(value);
-      if (!isNaN(numValue) && numValue >= 0) {
-        const type = confirm('Click OK for Percentage, Cancel for Fixed Amount');
-        if (type) {
-          this.discountType = 'PERCENTAGE';
-          this.discountValue = Math.min(numValue, 100);
-        } else {
-          this.discountType = 'FIXED';
-          this.discountValue = numValue;
-        }
-        this.calculateTotals();
-      }
-    }
+    this.modalDiscountAmount = this.discountValue;
+    this.modalDiscountType = this.discountType;
+    this.showDiscountModal = true;
+  }
+
+  saveDiscountModal(): void {
+    this.discountType = this.modalDiscountType;
+    this.discountValue = this.modalDiscountType === 'PERCENTAGE' ? Math.min(this.modalDiscountAmount, 100) : this.modalDiscountAmount;
+    this.calculateTotals();
+    this.showDiscountModal = false;
   }
 
   addAdditionalCharges(): void {
-    const value = prompt('Enter additional charges amount:');
-    if (value !== null) {
-      const numValue = parseFloat(value);
-      if (!isNaN(numValue) && numValue >= 0) {
-        this.additionalCharges = numValue;
-        this.calculateTotals();
-      }
+    this.modalChargesList = this.additionalChargeItems.map(item => ({ ...item }));
+    this.newChargeLabel = '';
+    this.newChargeAmount = null;
+    this.showChargesModal = true;
+  }
+
+  addChargeItemToModal(): void {
+    if (!this.newChargeLabel.trim()) {
+      alert('Please enter a label for the additional charge (e.g. Shipping, Handling).');
+      return;
     }
+    if (this.newChargeAmount === null || this.newChargeAmount === undefined || this.newChargeAmount < 0) {
+      alert('Please enter a valid charge amount.');
+      return;
+    }
+    this.modalChargesList.push({
+      id: Math.floor(Math.random() * 1000000),
+      label: this.newChargeLabel.trim(),
+      amount: Number(this.newChargeAmount)
+    });
+    this.newChargeLabel = '';
+    this.newChargeAmount = null;
+  }
+
+  removeChargeItemFromModal(index: number): void {
+    this.modalChargesList.splice(index, 1);
+  }
+
+  get modalTotalCharges(): number {
+    return this.modalChargesList.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  }
+
+  saveChargesModal(): void {
+    this.additionalChargeItems = this.modalChargesList.map(item => ({ ...item }));
+    this.calculateTotals();
+    this.showChargesModal = false;
   }
 
   editBilledBy(): void {
@@ -1130,8 +1262,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
             this.quickCustomerBankAccounts.removeAt(0);
           }
           setTimeout(() => {
-            this.quoteForm.patchValue({ customerId: savedCust.id });
-            this.onCustomerSelect(savedCust.id);
+            this.quoteForm.patchValue({ customerId: savedCust.customerId || String(savedCust.id) });
+            this.onCustomerSelect(savedCust.customerId || String(savedCust.id));
           });
         },
         error: (err) => {
@@ -1144,8 +1276,9 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       const tempId = `TEMP-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
       const tempCust: Customer = {
         ...newCust,
-        id: tempId
-      };
+        id: Math.floor(Math.random() * 1000000),
+        customerId: tempId
+      } as any;
       this.customers = [...this.customers, tempCust];
       this.showNewCustomerModal = false;
       this.quickCustomerForm.reset({ savePermanently: true });

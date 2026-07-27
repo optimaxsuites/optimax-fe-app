@@ -58,6 +58,8 @@ import { ProfileCardComponent } from './ui/shared-component/view/profile-card/pr
 import { ProfileInfoComponent } from './ui/shared-component/view/profile-info/profile-info.component';
 import { UserInterfaceComponent } from './ui/shared-component/view/user-interface/user-interface.component';
 import { BackButtonComponent } from './ui/shared-component/view/back-button/back-button.component';
+import { VpStatusBadgeComponent } from './ui/view/vendor-portal/shared/status-badge/status-badge.component';
+import { CommandPaletteComponent } from './ui/view/vendor-portal/shared/command-palette/command-palette.component';
 import { TableComponent } from './ui/shared-component/view/table/table.component';
 import { SidebarComponent } from './ui/shared-component/view/sidebar/sidebar.component';
 import { SharedOverlayModule } from './shared-overlay.module';
@@ -92,13 +94,15 @@ import { DocumentationHistoryComponent } from './ui/view/request-management/docu
 
 import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.component';
 import { FinanceComponent } from './ui/view/vendor-portal/finance/finance.component';
+import { PipelineComponent } from './ui/view/vendor-portal/pipeline/pipeline.component';
 import { LpoComponent } from './ui/view/vendor-portal/lpo/lpo.component';
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
 import { SalesDashboardComponent } from './ui/view/sales-hub/sales-dashboard/sales-dashboard.component';
 import { ProductServiceCatalogListComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog-list/product-service-catalog-list.component';
 import { DeliveryManagementComponent } from './ui/view/sales-hub/delivery-management/delivery-management.component';
 import { PaymentProcessingComponent } from './ui/view/sales-hub/payment-processing/payment-processing.component';
-import { SalesOrdersListComponent } from './ui/view/sales-hub/sales-order/sales-orders-list/sales-orders-list.component';
+import { SalesAndTransactionsListComponent } from './ui/view/sales-hub/sales-and-transactions/sales-and-transactions-list/sales-and-transactions-list.component';
+import { SalesAndTransactionsDetailComponent } from './ui/view/sales-hub/sales-and-transactions/sales-and-transactions-detail/sales-and-transactions-detail.component';
 import { SalesHubComponent } from './ui/view/sales-hub/sales-hub.component';
 import { QuoteFormComponent } from './ui/view/sales-hub/quotations/quote-form/quote-form.component';
 import { QuoteDetailComponent } from './ui/view/sales-hub/quotations/quote-detail/quote-detail.component';
@@ -112,10 +116,16 @@ import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/c
 
 import { VendorRegistrationComponent } from './ui/view/vendor-portal/vendor-registration/vendor-registration.component';
 import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/template-types.component';
-import {VendorDashboardComponent} from './ui/view/vendor-portal/vendor-dashboard/vendor-dashboard.component';
+import { VendorDashboardComponent } from './ui/view/vendor-portal/vendor-dashboard/vendor-dashboard.component';
 import { NgApexchartsModule } from 'ng-apexcharts';
-import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/vendor-profile.component';
+import { VendorProfileComponent } from './ui/view/vendor-portal/vendor-profile/vendor-profile.component';
 
+import { VendorManagementComponent } from './ui/view/vendor-management/vendor-management.component';
+import { VendorManagementDashboardComponent } from './ui/view/vendor-management/vendor-management-dashboard/vendor-management-dashboard.component';
+import { VendorManagementListComponent } from './ui/view/vendor-management/vendor-management-list/vendor-management-list.component';
+import { VendorManagementDetailComponent } from './ui/view/vendor-management/vendor-management-detail/vendor-management-detail.component';
+import { VendorOnboardingComponent } from './ui/view/vendor-management/vendor-onboarding/vendor-onboarding.component';
+import { VendorEditComponent } from './ui/view/vendor-management/vendor-edit-form/vendor-edit-form.component';
 
 @NgModule({
   declarations: [
@@ -143,6 +153,7 @@ import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/ven
     DocumentationHistoryComponent,
     DashboardComponent,
     FinanceComponent,
+    PipelineComponent,
     LpoComponent,
     VendorPortalComponent,
     // SalesDashboardComponent,
@@ -155,6 +166,12 @@ import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/ven
     VendorRegistrationComponent,
     VendorDashboardComponent,
     VendorProfileComponent,
+    VendorManagementComponent,
+    VendorManagementDashboardComponent,
+    VendorManagementListComponent,
+    VendorManagementDetailComponent,
+    VendorOnboardingComponent,        // <- ADD THIS
+    VendorEditComponent,
   ],
   imports: [
     // BrowserModule,
@@ -216,7 +233,8 @@ import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/ven
     ProfileInfoComponent,
     UserInterfaceComponent,
     BackButtonComponent,
-
+    SalesAndTransactionsListComponent,
+    SalesAndTransactionsDetailComponent,
     QuoteFormComponent,
     InvoiceListComponent,
     InvoiceFormComponent,
@@ -224,10 +242,10 @@ import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/ven
     QuoteDetailComponent,
     InvoiceDetailComponent,
     CustomerFormComponent,
-    SalesOrdersListComponent,
     ProductServiceCatalogListComponent,
     TemplateTypesComponent,
-
+    VpStatusBadgeComponent,
+    CommandPaletteComponent,
 
   ],
   exports: [TableComponent],
@@ -255,4 +273,4 @@ import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/ven
   ],
   bootstrap: [App]
 })
-export class AppModule {}
+export class AppModule { }

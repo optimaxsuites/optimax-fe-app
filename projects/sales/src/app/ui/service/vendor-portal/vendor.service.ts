@@ -229,6 +229,9 @@ export class VendorService {
   getLposSnapshot(): Lpo[] {
     return this.lpos$$.getValue();
   }
+  getInvoicesSnapshot(): Invoice[] {
+    return this.invoices$$.getValue();
+  }
 
   /** Buyer (procurement) opened this quotation for the first time. */
   markQuotationViewedByCustomer(id: string): void {
@@ -1068,6 +1071,36 @@ export class VendorService {
         deliveryAddress: '2 Elephant Cement House, Victoria Island, Lagos',
         paymentTerms: 'Net 30',
         clientInstructions: `All quoted items must comply with ISO 9001:2015. Delivery during business hours (8 am–5 pm) only. Include manufacturer warranty docs with each item. Single consolidated delivery required — no partial deliveries. Quote in NGN only; VAT must be separated. Deliver within 21 days of PO issuance. Notify our logistics team 48 hrs before arrival.`,
+        isDirectInvite: true,
+        attachments: [
+          {
+            id: 'att-001-1',
+            fileName: 'RFQ-2026-001-Technical-Specification.pdf',
+            fileType: 'pdf',
+            fileSize: '2.4 MB',
+            url: 'https://example.com/files/rfq-001-spec.pdf',
+            label: 'Full technical specification',
+            uploadedDate: new Date('2026-06-06'),
+          },
+          {
+            id: 'att-001-2',
+            fileName: 'Instrumentation-Layout-RevB.dwg',
+            fileType: 'dwg',
+            fileSize: '5.1 MB',
+            url: 'https://example.com/files/rfq-001-layout.dwg',
+            label: 'Piping & instrumentation layout — Rev B',
+            uploadedDate: new Date('2026-06-06'),
+          },
+          {
+            id: 'att-001-3',
+            fileName: 'Standard-Terms-and-Conditions.pdf',
+            fileType: 'pdf',
+            fileSize: '412 KB',
+            url: 'https://example.com/files/rfq-001-terms.pdf',
+            label: 'Standard purchase terms & conditions',
+            uploadedDate: new Date('2026-06-06'),
+          },
+        ],
         items: [
           {
             id: 'rfq-001-i1',
@@ -1124,6 +1157,17 @@ export class VendorService {
         deliveryAddress: '2 Old Dock Rd, Apapa, Lagos',
         paymentTerms: 'Advance payment',
         clientInstructions: `All IT equipment must include original manufacturer receipts. Minimum quotation validity: 30 days.`,
+        attachments: [
+          {
+            id: 'att-002-1',
+            fileName: 'IT-Supplies-Requirement-Sheet.xlsx',
+            fileType: 'xls',
+            fileSize: '86 KB',
+            url: 'https://example.com/files/rfq-002-requirements.xlsx',
+            label: 'Itemised requirement sheet',
+            uploadedDate: new Date('2026-06-05'),
+          },
+        ],
         items: [
           {
             id: 'rfq-002-i1',
@@ -1206,6 +1250,27 @@ export class VendorService {
         deliveryAddress: '22–24 Industrial Ave, Ilupeju, Lagos',
         paymentTerms: 'Net 60',
         clientInstructions: `All packaging must meet NAFDAC and SON requirements.`,
+        isDirectInvite: true,
+        attachments: [
+          {
+            id: 'att-004-1',
+            fileName: 'Packaging-Artwork-Guidelines.pdf',
+            fileType: 'pdf',
+            fileSize: '3.8 MB',
+            url: 'https://example.com/files/rfq-004-artwork.pdf',
+            label: 'Artwork & branding guidelines',
+            uploadedDate: new Date('2026-05-28'),
+          },
+          {
+            id: 'att-004-2',
+            fileName: 'NAFDAC-Compliance-Checklist.doc',
+            fileType: 'doc',
+            fileSize: '190 KB',
+            url: 'https://example.com/files/rfq-004-compliance.doc',
+            label: 'NAFDAC / SON compliance checklist',
+            uploadedDate: new Date('2026-05-28'),
+          },
+        ],
         items: [
           {
             id: 'rfq-004-i1',

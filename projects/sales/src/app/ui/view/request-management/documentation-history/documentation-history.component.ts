@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 import { ProcurementRequest } from '../../../domain/procurement-request/procurement.dto';
+import { ExtendedProcurementRequest } from '../../../service/procurement/rfq-quotation-bridge.util';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { STORAGE_KEYS, loadFromStorage } from '../../../service/vendor-portal/local-store.util';
@@ -12,10 +13,10 @@ import { PROCUREMENT_STORAGE_KEYS } from '../../../service/procurement/procureme
   styleUrl: './documentation-history.component.scss'
 })
 export class DocumentationHistoryComponent implements OnInit {
-  requests: ProcurementRequest[] = [];
+  requests: ExtendedProcurementRequest[] = [];
   isLoading = false;
   showModal = false;
-  selectedRequest: ProcurementRequest | null = null;
+  selectedRequest: ExtendedProcurementRequest | null = null;
   selectedDocType: 'rfq' | 'quotation' | 'lpo' | 'invoice' = 'rfq';
   isDownloading = false;
 
@@ -37,8 +38,8 @@ export class DocumentationHistoryComponent implements OnInit {
         let list = response.data || [];
         const hasDelivered = list.some(r => r.status === 'DELIVERED');
         if (!hasDelivered) {
-          const mockDelivered: ProcurementRequest = {
-            id: 'PR-005',
+          const mockDelivered: ExtendedProcurementRequest = {
+            id: 'PR-005' as any,
             customerId: 'CUST-101',
             customerName: 'HQ Corporate Operations',
             procurementType: 'PRODUCT',
@@ -46,7 +47,7 @@ export class DocumentationHistoryComponent implements OnInit {
             description: 'Procurement of premium height-adjustable executive desks for the management office.',
             items: [
               {
-                id: 'item-5',
+                id: 'item-5' as any,
                 name: 'Premium Standing Desk',
                 description: 'Dual-motor, steel frame, bamboo top executive standing desk',
                 quantity: 15,
@@ -65,11 +66,18 @@ export class DocumentationHistoryComponent implements OnInit {
             updatedAt: new Date('2026-07-02'),
             selectedVendorId: 'VND-001',
             selectedVendorName: 'Apex Tech Distributors',
-            selectedQuotationId: 'q-pr005'
+            selectedQuotationId: 'q-pr005',
+            approvalStatus: 'APPROVED',
+            approvedBy: 'ADMIN',
+            approvedAt: new Date('2026-06-14'),
+            createdBy: 'ADMIN',
+            updatedBy: 'ADMIN',
+            suggestedVendorIds: [],
+            suggestedVendors: []
           };
           list = [mockDelivered, ...list];
         }
-        this.requests = list;
+        this.requests = list as ExtendedProcurementRequest[];
         this.isLoading = false;
       },
       error: (err) => {
@@ -79,7 +87,7 @@ export class DocumentationHistoryComponent implements OnInit {
     });
   }
 
-  openArchiveModal(request: ProcurementRequest): void {
+  openArchiveModal(request: ExtendedProcurementRequest): void {
     this.selectedRequest = request;
     this.showModal = true;
     this.selectedDocType = 'rfq';
@@ -148,7 +156,7 @@ export class DocumentationHistoryComponent implements OnInit {
     return labels[status] || status;
   }
 
-  generateMockDocuments(request: ProcurementRequest): void {
+  generateMockDocuments(request: ExtendedProcurementRequest): void {
     const vendorName = request.selectedVendorName || 'Apex Tech Distributors';
     const vendorCode = request.selectedVendorId || 'VND-001';
 
@@ -210,7 +218,8 @@ export class DocumentationHistoryComponent implements OnInit {
       const totalQuoteAmount = quoteItems.reduce((acc, curr) => acc + curr.totalPrice, 0);
 
       this.mockQuotation = {
-        id: `QT-${request.id.replace('PR-', '')}`,
+        id: `QT-${String(request.id).replace('PR-', '')}`,
+        quotationId: `QT-${String(request.id).replace('PR-', '')}`,
         vendorName: vendorName,
         vendorCode: vendorCode,
         vendorRating: 4.8,
@@ -233,13 +242,13 @@ export class DocumentationHistoryComponent implements OnInit {
       || (request.selectedLpoNumber && lpos.find(l => l.lpoNumber === request.selectedLpoNumber))
       || lpos.find(l => 
         (realQuote && (l.quotationId === realQuote.id || l.quotationId === realQuote.id.replace('live:', ''))) ||
-        l.rfqNumber === request.id
+        String(l.rfqNumber) === String(request.id)
       );
 
     if (realLpo) {
       const lpoItems = (realLpo.items || []).map((item: any) => {
         const rfqItemId = item.id.replace('lpo-item-', '');
-        const origItem = request.items.find(ri => ri.id === rfqItemId);
+        const origItem = request.items.find(ri => String(ri.id) === String(rfqItemId));
         const name = origItem ? origItem.name : (item.name || '');
         return {
           id: item.id,
@@ -267,7 +276,7 @@ export class DocumentationHistoryComponent implements OnInit {
       };
     } else {
       this.mockLpo = {
-        lpoNumber: `LPO-2026-${request.id.replace('PR-', '')}`,
+        lpoNumber: `LPO-2026-${String(request.id).replace('PR-', '')}`,
         orderDate: new Date(request.createdAt.getTime() + 2 * 24 * 60 * 60 * 1000),
         vendorName: vendorName,
         vendorCode: vendorCode,
@@ -291,8 +300,8 @@ export class DocumentationHistoryComponent implements OnInit {
         realInvoice = list.find((inv: any) => 
           (realLpo && (inv.lpoId === realLpo.id || inv.lpoNumber === realLpo.lpoNumber)) ||
           inv.lpoId === `lpo-${request.id}` || 
-          inv.lpoId === request.id ||
-          (inv.lpoNumber && inv.lpoNumber.includes(request.id.replace('PR-', '')))
+          String(inv.lpoId) === String(request.id) ||
+          (inv.lpoNumber && inv.lpoNumber.includes(String(request.id).replace('PR-', '')))
         );
       }
     } catch (e) {
@@ -304,12 +313,12 @@ export class DocumentationHistoryComponent implements OnInit {
       const alignedItems = request.items.map((ri: any) => {
         const invItem = realInvoice.items.find((item: any) => 
           item.lpoItemId && (
-            item.lpoItemId.endsWith(ri.id) || 
-            item.lpoItemId.replace('lpo-item-', '').replace('item-', '') === ri.id.replace('item-', '')
+            item.lpoItemId.endsWith(String(ri.id)) || 
+            item.lpoItemId.replace('lpo-item-', '').replace('item-', '') === String(ri.id).replace('item-', '')
           )
         );
         if (invItem) {
-          const origItem = request.items.find(x => x.id === ri.id);
+          const origItem = request.items.find(x => String(x.id) === String(ri.id));
           const name = origItem ? origItem.name : (invItem.name || invItem.description || '');
           return {
             id: invItem.id,
@@ -347,7 +356,7 @@ export class DocumentationHistoryComponent implements OnInit {
       };
     } else {
       this.mockInvoice = {
-        invoiceNumber: `INV-2026-${request.id.replace('PR-', '')}`,
+        invoiceNumber: `INV-2026-${String(request.id).replace('PR-', '')}`,
         orderId: request.id,
         customerName: request.customerName,
         items: request.items.map((item, idx) => ({

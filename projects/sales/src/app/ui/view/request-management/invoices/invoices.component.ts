@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { ProcurementRequest } from '../../../domain/procurement-request/procurement.dto';
+import { ExtendedProcurementRequest } from '../../../service/procurement/rfq-quotation-bridge.util';
 
 @Component({
   selector: 'app-invoices',
@@ -7,7 +7,7 @@ import { ProcurementRequest } from '../../../domain/procurement-request/procurem
   styleUrl: './invoices.component.scss'
 })
 export class InvoicesComponent {
-  @Input() request: ProcurementRequest | null = null;
+  @Input() request: ExtendedProcurementRequest | null = null;
   @Input() invoice: any = null;
 
   formatCurrency(amount: number): string {
@@ -28,5 +28,11 @@ export class InvoicesComponent {
       month: 'long',
       day: 'numeric'
     });
+  }
+
+  getRequestIdSuffix(id: any): string {
+    if (!id) return '';
+    const str = String(id);
+    return str.includes('-') ? str.split('-')[1] : str;
   }
 }

@@ -3,19 +3,20 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Invoice, InvoiceStatus, Payment, PaymentMethod, PaymentStatus } from '../../../../domain/sales/sales.dto';
+import { Invoice, InvoiceStatus, PaymentMethod, SaleLifecycleStatus, SalesandTransactions } from '../../../../domain/sales/sales.dto';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
+import { PaymentReceiptComponent } from '../../payment-receipt/payment-receipt.component';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-invoice-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, BackButtonComponent, SharedOverlayModule],
+  imports: [CommonModule, FormsModule, BackButtonComponent, SharedOverlayModule, PaymentReceiptComponent],
   templateUrl: './invoice-detail.component.html',
   styleUrls: ['./invoice-detail.component.scss']
 })
@@ -24,13 +25,26 @@ export class InvoiceDetailComponent implements OnInit {
   @Output() closed = new EventEmitter<void>();
   @Output() edit = new EventEmitter<string>();
 
-  invoice: Invoice | null = null;
+  invoice: any = null;
   isLoading = true;
   showPaymentModal = false;
   paymentAmount = 0;
   isDownloading = false;
 
-  invoicePayments: Payment[] = [];
+  selectedReceiptPaymentId?: string | number;
+  showReceiptModal = false;
+
+  openReceiptForPayment(paymentId: string | number): void {
+    this.selectedReceiptPaymentId = paymentId;
+    this.showReceiptModal = true;
+  }
+
+  closeReceipt(): void {
+    this.selectedReceiptPaymentId = undefined;
+    this.showReceiptModal = false;
+  }
+
+  invoicePayments: SalesandTransactions[] = [];
   paymentMethod: PaymentMethod = 'BANK_TRANSFER';
   paymentReference = '';
   paymentNotes = '';
@@ -79,8 +93,8 @@ export class InvoiceDetailComponent implements OnInit {
     });
   }
 
-  loadPaymentsForInvoice(invoiceId: string): void {
-    this.salesService.getPayments({ invoiceId, size: 100 }).subscribe({
+  loadPaymentsForInvoice(invoiceId: string | number): void {
+    this.salesService.getSalesandTransactions({ invoiceId, size: 100 }).subscribe({
       next: (res) => {
         this.invoicePayments = res.data;
         this.isLoading = false;
@@ -94,7 +108,7 @@ export class InvoiceDetailComponent implements OnInit {
 
   openPaymentModal(): void {
     if (this.invoice) {
-      this.paymentAmount = this.invoice.balanceDue;
+      this.paymentAmount = this.invoice.balanceDue || 0;
       this.paymentMethod = 'BANK_TRANSFER';
       this.paymentReference = '';
       this.paymentNotes = '';
@@ -113,33 +127,36 @@ export class InvoiceDetailComponent implements OnInit {
       return;
     }
     
-    if (this.paymentAmount > this.invoice.balanceDue) {
-      if (!confirm(`The amount exceeds the invoice's balance due (${this.formatCurrency(this.invoice.balanceDue)}). Proceed?`)) {
+    const balanceDue = this.invoice.balanceDue || 0;
+    if (this.paymentAmount > balanceDue) {
+      if (!confirm(`The amount exceeds the invoice's balance due (${this.formatCurrency(balanceDue)}). Proceed?`)) {
         return;
       }
     }
 
     this.isSavingPayment = true;
     
-    const payload: Partial<Payment> = {
-      invoiceId: this.invoice.id,
+    const payload: Partial<SalesandTransactions> = {
+      invoiceId: this.invoice,
       customerId: this.invoice.customerId,
       customerName: this.invoice.customerName,
-      amount: this.paymentAmount,
+      paidAmount: this.paymentAmount,
+      totalAmount: this.invoice.totalAmount,
       currency: this.invoice.currency,
-      method: this.paymentMethod,
+      paymentMethod: this.paymentMethod,
       reference: this.paymentReference.trim() || `REF-${Math.floor(100000 + Math.random() * 900000)}`,
-      status: 'COMPLETED' as PaymentStatus,
-      paymentDate: new Date(this.paymentDate),
-      notes: this.paymentNotes.trim()
+      status: 'PAYMENT_COMPLETED',
+      orderDate: new Date(this.paymentDate),
+      transactionNotes: this.paymentNotes.trim(),
+      balanceDue: Math.max(0, balanceDue - this.paymentAmount)
     };
 
-    this.salesService.recordPayment(payload).subscribe({
+    this.salesService.createSalesandTransactions(payload).subscribe({
       next: (res) => {
         this.isSavingPayment = false;
         this.showPaymentModal = false;
-        alert(`Payment recorded successfully with transaction: ${res.paymentNumber}`);
         this.loadInvoice(this.invoice!.id);
+        this.openReceiptForPayment(String(res.id) || '');
       },
       error: (err) => {
         this.isSavingPayment = false;
@@ -208,7 +225,7 @@ export class InvoiceDetailComponent implements OnInit {
 
   getTotalQuantity(): number {
     if (!this.invoice || !this.invoice.items) return 0;
-    return this.invoice.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    return this.invoice.items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
   }
 
   getTotalInWords(amount: number): string {
@@ -269,41 +286,55 @@ export class InvoiceDetailComponent implements OnInit {
 
 
 
+  showSendInvoiceModal = false;
+  showCancelInvoiceModal = false;
+  pendingInvoiceNumber = '';
+  pendingCustomerName = '';
+
   sendInvoice(): void {
-    if (this.invoice && confirm(`Send invoice ${this.invoice.invoiceNumber} to ${this.invoice.customerName}?`)) {
-      this.salesService.updateInvoice(this.invoice.id, { status: 'SENT' }).subscribe({
-        next: (updated: Invoice) => {
-          this.invoice = updated;
-          alert(`Invoice ${updated.invoiceNumber} has been sent successfully.`);
-          
-          if (updated.quoteId) {
-            this.salesService.updateQuote(updated.quoteId, { status: 'CONVERTED' }).subscribe({
-              next: () => console.log(`Quote ${updated.quoteId} updated to CONVERTED`),
-              error: (err) => console.error('Error updating quote to CONVERTED:', err)
-            });
-          }
-        },
-        error: (err: any) => {
-          console.error('Error sending invoice:', err);
-          alert('Failed to send invoice. Please try again.');
+    if (!this.invoice) return;
+    const custName = (this.invoice.customerName as any)?.name || this.invoice.customerName || 'Customer';
+    this.pendingInvoiceNumber = this.invoice.invoiceNumber || '';
+    this.pendingCustomerName = custName;
+    this.showSendInvoiceModal = true;
+  }
+
+  confirmSendInvoice(): void {
+    if (!this.invoice) return;
+    this.showSendInvoiceModal = false;
+    this.salesService.updateInvoice(this.invoice.id, { status: 'SENT' }).subscribe({
+      next: (updated: Invoice) => {
+        this.invoice = updated;
+        if (updated.quoteId) {
+          this.salesService.updateQuote(updated.quoteId, { status: 'CONVERTED' }).subscribe({
+            next: () => console.log(`Quote ${updated.quoteId} updated to CONVERTED`),
+            error: (err) => console.error('Error updating quote to CONVERTED:', err)
+          });
         }
-      });
-    }
+      },
+      error: (err: any) => {
+        console.error('Error sending invoice:', err);
+      }
+    });
   }
 
   cancelInvoice(): void {
-    if (this.invoice && confirm(`Are you sure you want to cancel invoice ${this.invoice.invoiceNumber}?`)) {
-      this.salesService.updateInvoice(this.invoice.id, { status: 'CANCELLED' }).subscribe({
-        next: (updated: Invoice) => {
-          this.invoice = updated;
-          alert(`Invoice ${updated.invoiceNumber} has been cancelled.`);
-        },
-        error: (err: any) => {
-          console.error('Error cancelling invoice:', err);
-          alert('Failed to cancel invoice. Please try again.');
-        }
-      });
-    }
+    if (!this.invoice) return;
+    this.pendingInvoiceNumber = this.invoice.invoiceNumber || '';
+    this.showCancelInvoiceModal = true;
+  }
+
+  confirmCancelInvoice(): void {
+    if (!this.invoice) return;
+    this.showCancelInvoiceModal = false;
+    this.salesService.updateInvoice(this.invoice.id, { status: 'CANCELLED' }).subscribe({
+      next: (updated: Invoice) => {
+        this.invoice = updated;
+      },
+      error: (err: any) => {
+        console.error('Error cancelling invoice:', err);
+      }
+    });
   }
 
   goBack(): void {

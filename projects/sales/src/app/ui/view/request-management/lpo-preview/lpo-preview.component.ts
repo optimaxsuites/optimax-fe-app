@@ -4,6 +4,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { QuotationManagementService } from '../../../service/procurement/quotation-management.service';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 import { VendorQuotation } from '../../../domain/procurement-request/procurement.dto';
+import { parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -127,11 +128,11 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
       next: () => {
         console.log(`Quotation status updated successfully to ${status}`);
         if (status === 'LPO_SENT') {
-          this.procurementService.updateRequest(this.quotation!.rfqId, {
+          this.procurementService.updateRequest(parseIdToNumber(this.quotation!.rfqId), {
             status: 'LPO_ISSUED',
             selectedLpoId: this.lpoId,
             selectedLpoNumber: this.lpoNumber
-          }).subscribe({
+          } as any).subscribe({
             next: () => console.log(`Procurement request ${this.quotation!.rfqId} status updated to LPO_ISSUED`),
             error: (err) => console.error('Failed to update procurement request status:', err)
           });
@@ -141,11 +142,11 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
         // Mock fallback: do nothing, we already set it locally
         console.log(`Mock fallback: status updated locally to ${status}`);
         if (status === 'LPO_SENT') {
-          this.procurementService.updateRequest(this.quotation!.rfqId, {
+          this.procurementService.updateRequest(parseIdToNumber(this.quotation!.rfqId), {
             status: 'LPO_ISSUED',
             selectedLpoId: this.lpoId,
             selectedLpoNumber: this.lpoNumber
-          }).subscribe({
+          } as any).subscribe({
             next: () => console.log(`Procurement request ${this.quotation!.rfqId} status updated to LPO_ISSUED`),
             error: (err) => console.error('Failed to update procurement request status:', err)
           });
@@ -155,7 +156,7 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
   }
 
   loadMockQuotation(): void {
-    const mockDb: VendorQuotation[] = [
+    const mockDbRaw: any[] = [
       {
         id: 'q1',
         rfqId: 'RFQ1',
@@ -438,12 +439,20 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
       }
     ];
 
-    const found = mockDb.find(q => q.id === this.quotationId);
+    const mockDb = mockDbRaw.map((q, idx) => ({
+      ...q,
+      id: idx + 1,
+      quotationId: String(idx + 1),
+      items: (q.items || []).map((it: any) => ({ ...it, id: it.id as any }))
+    })) as VendorQuotation[];
+
+    const found = mockDb.find(q => String(q.id) === String(this.quotationId));
     if (found) {
       this.quotation = { ...found };
     } else {
       this.quotation = {
-        id: this.quotationId || 'q1',
+        id: Number(this.quotationId) || 1,
+        quotationId: String(this.quotationId) || 'q1',
         rfqId: 'RFQ1',
         vendorId: 'v1',
         vendorName: 'TechPro Solutions Ltd',
@@ -453,7 +462,7 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
         vendorPhone: '+234-800-555-0101',
         status: 'ACCEPTED',
         items: [
-          { id: 'qi1', name: 'Dell XPS 15 Laptop', description: '15-inch laptop with i7 processor, 16GB RAM, 512GB SSD', quantity: 10, unitPrice: 145000, totalPrice: 1450000, availability: 'AVAILABLE' }
+          { id: 'qi1' as any, name: 'Dell XPS 15 Laptop', description: '15-inch laptop with i7 processor, 16GB RAM, 512GB SSD', quantity: 10, unitPrice: 145000, totalPrice: 1450000, availability: 'AVAILABLE' }
         ],
         totalAmount: 1450000,
         currency: 'NGN',

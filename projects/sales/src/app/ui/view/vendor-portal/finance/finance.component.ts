@@ -3,6 +3,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, take } from 'rxjs/operators';
 
 import { VendorService } from '../../../service/vendor-portal/vendor.service';
+import { VendorPortalNavService } from '../../../service/vendor-portal/vendor-portal-nav.service';
 import {
   Lpo, Invoice, FinanceStats, LpoStats,
   InvoiceLineItem, VendorProfile,
@@ -104,7 +105,10 @@ export class FinanceComponent implements OnInit, OnDestroy {
     { header: 'Status',       field: 'status',        sortable: true },
   ];
 
-  constructor(private vendorService: VendorService) {}
+  constructor(
+    private vendorService: VendorService,
+    private nav: VendorPortalNavService,
+  ) {}
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────────
   ngOnInit(): void {
@@ -121,6 +125,26 @@ export class FinanceComponent implements OnInit, OnDestroy {
       .subscribe(p => this.profile = p);
 
     this.refreshStats();
+
+    // Command palette hand-off: "open LPO-2026-..." / "open INV-..." lands here.
+    this.nav.focusRequest$.pipe(takeUntil(this.destroy$)).subscribe((req) => {
+      if (!req) return;
+      if (req.kind === 'lpo') {
+        const lpo = this.lpos.find((l) => l.id === req.id);
+        if (lpo) {
+          this.activeTable = 'lpos';
+          this.onLpoRowClick(lpo);
+          this.nav.clearFocusRequest();
+        }
+      } else if (req.kind === 'invoice') {
+        const inv = this.invoices.find((i) => i.id === req.id);
+        if (inv) {
+          this.activeTable = 'invoices';
+          this.onInvoiceRowClick(inv);
+          this.nav.clearFocusRequest();
+        }
+      }
+    });
   }
 
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }

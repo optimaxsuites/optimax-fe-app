@@ -1,99 +1,113 @@
 <!-- ═══════════════════════════════════════════════════
      DASHBOARD PAGE
+     Visual language: restrained, monochrome-first — color is reserved for
+     meaning (an active filter, an urgent deadline, a status), never used
+     decoratively. No drop shadows; hierarchy comes from a single hairline
+     border weight and spacing, not elevation.
 ════════════════════════════════════════════════════ -->
-<div class="min-h-screen bg-[#f5f7f9] px-6 py-8 max-w-[1440px] mx-auto font-sans text-[#1a2c35]">
+<div class="min-h-screen bg-[#fbfcfd] px-6 py-7 max-w-[1360px] mx-auto font-sans text-[#14181b]">
 
   <!-- Page header -->
-  <div class="mb-7 flex items-start justify-between gap-4">
+  <div class="mb-6 flex items-start justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-[#224957] tracking-tight">Dashboard</h1>
-      <p class="text-sm text-[#5a7380] mt-0.5">Overview of your active RFQs and quotations</p>
+      <h1 class="text-[1.375rem] font-semibold text-[#14181b] tracking-[-0.01em]">Dashboard</h1>
+      <p class="text-[13px] text-[#71828a] mt-0.5">Overview of your active RFQs and quotations</p>
     </div>
     <button (click)="resetDemoData()"
       title="Dev/demo tool — clears everything simulated in this browser's local storage and reloads the starting dataset"
-      class="shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg border border-dashed border-[#d5dee3] bg-white text-[#94a9b3] hover:border-red-300 hover:text-red-500 transition-colors">↺ Reset Demo Data</button>
+      class="shrink-0 px-2.5 py-1.5 text-[12px] font-medium rounded-md border border-dashed border-[#d3d9de] bg-transparent text-[#9aa7ae] hover:border-red-300 hover:text-red-500 transition-colors">↺ Reset demo data</button>
   </div>
 
   <!-- ── Stats cards ─────────────────────────────────────── -->
-  <div class="grid grid-cols-4 gap-4 mb-5" *ngIf="stats">
-    <button (click)="filterCard('rfqs','open')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
-      [class.ring-2]="rfqFilter==='open' && activeTable==='rfqs'" [class.ring-[#224957]]="rfqFilter==='open' && activeTable==='rfqs'">
+  <div class="grid grid-cols-4 gap-3 mb-5" *ngIf="stats">
+    <button (click)="filterCard('rfqs','open')"
+      class="vp-kpi text-left"
+      [class.vp-kpi--active]="rfqFilter==='open' && activeTable==='rfqs'">
       <div class="flex items-center justify-between mb-3">
-        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Open RFQs</span>
-        <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span class="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[#71828a]">Open RFQs</span>
+        <span class="vp-kpi__icon" [class.vp-kpi__icon--active]="rfqFilter==='open' && activeTable==='rfqs'">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         </span>
       </div>
-      <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.openRfqs }}</div>
-      <p class="text-xs" [class.text-amber-600]="stats.unreadRfqs > 0" [class.text-[#5a7380]]="!stats.unreadRfqs">
+      <div class="text-[1.75rem] font-semibold tracking-[-0.02em] tabular-nums mb-1">{{ stats.openRfqs }}</div>
+      <p class="text-[12px]" [class.text-[#b3690a]]="stats.unreadRfqs > 0" [class.text-[#71828a]]="!stats.unreadRfqs">
         <ng-container *ngIf="stats.unreadRfqs > 0"><strong>{{ stats.unreadRfqs }} unread</strong> — needs attention</ng-container>
         <ng-container *ngIf="stats.unreadRfqs === 0">All RFQs reviewed</ng-container>
       </p>
     </button>
-    <button (click)="filterCard('rfqs','due_soon')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
-      [class.ring-2]="rfqFilter==='due_soon' && activeTable==='rfqs'" [class.ring-[#224957]]="rfqFilter==='due_soon' && activeTable==='rfqs'">
+
+    <button (click)="filterCard('rfqs','due_soon')"
+      class="vp-kpi text-left"
+      [class.vp-kpi--active]="rfqFilter==='due_soon' && activeTable==='rfqs'">
       <div class="flex items-center justify-between mb-3">
-        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Due Soon</span>
-        <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[#71828a]">Due Soon</span>
+        <span class="vp-kpi__icon" [class.vp-kpi__icon--active]="rfqFilter==='due_soon' && activeTable==='rfqs'">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </span>
       </div>
-      <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.pendingResponseDueSoon }}</div>
-      <p class="text-xs" [class.text-red-500]="stats.pendingResponseDueSoon > 0" [class.text-[#5a7380]]="!stats.pendingResponseDueSoon">
+      <div class="text-[1.75rem] font-semibold tracking-[-0.02em] tabular-nums mb-1">{{ stats.pendingResponseDueSoon }}</div>
+      <p class="text-[12px]" [class.text-[#c02c2c]]="stats.pendingResponseDueSoon > 0" [class.text-[#71828a]]="!stats.pendingResponseDueSoon">
         <ng-container *ngIf="stats.pendingResponseDueSoon > 0">Due within <strong>3 days</strong></ng-container>
         <ng-container *ngIf="stats.pendingResponseDueSoon === 0">No urgent deadlines</ng-container>
       </p>
     </button>
-    <button (click)="filterCard('quotations',undefined,'sent')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
-      [class.ring-2]="quotFilter==='sent' && activeTable==='quotations'" [class.ring-[#224957]]="quotFilter==='sent' && activeTable==='quotations'">
+
+    <button (click)="filterCard('quotations',undefined,'sent')"
+      class="vp-kpi text-left"
+      [class.vp-kpi--active]="quotFilter==='sent' && activeTable==='quotations'">
       <div class="flex items-center justify-between mb-3">
-        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Quotations Sent</span>
-        <span class="w-8 h-8 rounded-lg bg-[#e8f2f7] text-[#224957] flex items-center justify-center">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        <span class="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[#71828a]">Quotations Sent</span>
+        <span class="vp-kpi__icon" [class.vp-kpi__icon--active]="quotFilter==='sent' && activeTable==='quotations'">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </span>
       </div>
-      <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.sentQuotations }}</div>
-      <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.draftQuotations }}</strong> still in draft</p>
+      <div class="text-[1.75rem] font-semibold tracking-[-0.02em] tabular-nums mb-1">{{ stats.sentQuotations }}</div>
+      <p class="text-[12px] text-[#71828a]"><strong class="text-[#14181b]">{{ stats.draftQuotations }}</strong> still in draft</p>
     </button>
-    <button (click)="filterCard('quotations',undefined,'accepted')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
-      [class.ring-2]="quotFilter==='accepted' && activeTable==='quotations'" [class.ring-[#224957]]="quotFilter==='accepted' && activeTable==='quotations'">
+
+    <button (click)="filterCard('quotations',undefined,'accepted')"
+      class="vp-kpi text-left"
+      [class.vp-kpi--active]="quotFilter==='accepted' && activeTable==='quotations'">
       <div class="flex items-center justify-between mb-3">
-        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Win Rate</span>
-        <span class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        <span class="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[#71828a]">Win Rate</span>
+        <span class="vp-kpi__icon" [class.vp-kpi__icon--active]="quotFilter==='accepted' && activeTable==='quotations'">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
         </span>
       </div>
-      <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.conversionRate }}%</div>
-      <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.acceptedQuotations }}</strong> accepted of {{ stats.sentQuotations + stats.acceptedQuotations }} sent</p>
+      <div class="text-[1.75rem] font-semibold tracking-[-0.02em] tabular-nums mb-1">{{ stats.conversionRate }}%</div>
+      <p class="text-[12px] text-[#71828a]"><strong class="text-[#14181b]">{{ stats.acceptedQuotations }}</strong> accepted of {{ stats.sentQuotations + stats.acceptedQuotations }} sent</p>
     </button>
   </div>
 
-  <!-- ── Activity pills ──────────────────────────────────── -->
-  <div class="flex flex-wrap gap-2 mb-7" *ngIf="stats">
-    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e6edf2] rounded-full text-xs text-[#5a7380] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span><strong class="text-[#1a2c35]">{{ stats.totalRfqs }}</strong>&nbsp;Total RFQs</span>
-    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e6edf2] rounded-full text-xs text-[#5a7380] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span><strong class="text-[#1a2c35]">{{ stats.draftQuotations }}</strong>&nbsp;Drafts</span>
-    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e6edf2] rounded-full text-xs text-[#5a7380] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span><strong class="text-[#1a2c35]">{{ stats.sentQuotations }}</strong>&nbsp;Sent</span>
+  <!-- ── Meta summary + urgent action pill ──────────────────
+       One quiet line of context instead of five repeating colour
+       chips — the counts already live in the cards above; this row's
+       only job is to surface the one thing that needs a decision. ── -->
+  <div class="flex items-center justify-between gap-3 mb-6 min-h-[26px]" *ngIf="stats">
+    <p class="text-[12px] text-[#8a949c]">
+      {{ stats.totalRfqs }} total RFQs · {{ stats.draftQuotations }} drafts · {{ stats.sentQuotations }} sent{{ stats.unreadRfqs > 0 ? ' · ' + stats.unreadRfqs + ' unread' : '' }}
+    </p>
     <button *ngIf="stats.revisionRequestedQuotations > 0" (click)="filterCard('quotations',undefined,'revision_requested')"
-      class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-orange-200 rounded-full text-xs text-orange-700 font-medium hover:border-orange-400 transition-colors cursor-pointer">
-      <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span><strong class="text-orange-700">{{ stats.revisionRequestedQuotations }}</strong>&nbsp;Needs Revision
+      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium text-[#b3690a] bg-[#fdf1e0] hover:bg-[#fbe7c8] transition-colors cursor-pointer">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#b3690a]"></span>{{ stats.revisionRequestedQuotations }} awaiting revision
     </button>
-    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e6edf2] rounded-full text-xs text-[#5a7380] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span><strong class="text-[#1a2c35]">{{ stats.unreadRfqs }}</strong>&nbsp;Unread</span>
   </div>
+
 
   <!-- ══════════════════════════════════════════════════════
        TABLE SECTION
   ═════════════════════════════════════════════════════════ -->
-  <div class="bg-white border border-[#e6edf2] rounded-2xl overflow-hidden shadow-sm">
-    <div class="flex items-center px-5 py-3.5 border-b border-[#eef2f6]">
-      <div class="flex bg-[#f5f7f9] border border-[#e6edf2] rounded-xl p-0.5">
+  <div class="bg-white border border-[#e5eaed] rounded-xl overflow-hidden">
+    <div class="flex items-center px-4 py-3 border-b border-[#eef2f5]">
+      <div class="flex bg-[#f6f8fa] border border-[#e5eaed] rounded-lg p-0.5">
         <button class="flex items-center gap-2 px-4 py-2 rounded-[9px] text-sm font-medium transition-all"
           [class.bg-white]="activeTable==='rfqs'" [class.text-[#224957]]="activeTable==='rfqs'"
           [class.font-semibold]="activeTable==='rfqs'" [class.shadow-sm]="activeTable==='rfqs'"
           [class.text-[#5a7380]]="activeTable!=='rfqs'" (click)="switchTable('rfqs')">
           Requests for Quotation
           <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold"
-            [class.bg-blue-600]="unreadCount>0" [class.text-white]="unreadCount>0"
-            [class.bg-[#e6edf2]]="unreadCount===0" [class.text-[#5a7380]]="unreadCount===0">{{ rfqs.length }}</span>
+            [class.bg-[#224957]]="unreadCount>0" [class.text-white]="unreadCount>0"
+            [class.bg-[#eef2f5]]="unreadCount===0" [class.text-[#8a949c]]="unreadCount===0">{{ rfqs.length }}</span>
         </button>
         <button class="flex items-center gap-2 px-4 py-2 rounded-[9px] text-sm font-medium transition-all"
           [class.bg-white]="activeTable==='quotations'" [class.text-[#224957]]="activeTable==='quotations'"
@@ -101,8 +115,8 @@
           [class.text-[#5a7380]]="activeTable!=='quotations'" (click)="switchTable('quotations')">
           My Quotations
           <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold"
-            [class.bg-amber-500]="draftCount>0" [class.text-white]="draftCount>0"
-            [class.bg-[#e6edf2]]="draftCount===0" [class.text-[#5a7380]]="draftCount===0">{{ quotations.length }}</span>
+            [class.bg-[#b3690a]]="draftCount>0" [class.text-white]="draftCount>0"
+            [class.bg-[#eef2f5]]="draftCount===0" [class.text-[#8a949c]]="draftCount===0">{{ quotations.length }}</span>
         </button>
       </div>
     </div>
@@ -145,11 +159,18 @@
           (rowClick)="onRfqRowClick($event)">
           <ng-template appTableBody let-row>
 
-            <!-- 1. RFQ No. + unread dot -->
+            <!-- 1. RFQ No. + unread dot + direct-invite + attachment count -->
             <td class="app-table-main-col">
               <div class="flex items-center gap-2">
                 <span *ngIf="!row.isRead" class="w-2 h-2 rounded-full bg-blue-600 shrink-0 ring-2 ring-blue-100"></span>
                 <span class="font-semibold text-[#1a2c35] text-sm">{{ row.rfqNumber }}</span>
+                <svg *ngIf="row.isDirectInvite" width="12" height="12" viewBox="0 0 24 24" fill="#224957" class="shrink-0" title="Client invited you directly">
+                  <path d="M12 2 14.9 8.6 22 9.3 16.6 14.1 18.2 21.2 12 17.5 5.8 21.2 7.4 14.1 2 9.3 9.1 8.6z"/>
+                </svg>
+                <span *ngIf="row.attachments?.length" class="inline-flex items-center gap-0.5 text-[11px] text-[#8a949c] shrink-0" title="{{ row.attachments?.length }} attachment(s)">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                  {{ row.attachments?.length }}
+                </span>
               </div>
             </td>
 
@@ -174,7 +195,9 @@
             </td>
 
             <!-- 6. Status badge -->
-            <td><span [ngClass]="rfqBadge(row.status)">{{ row.status }}</span></td>
+            <td>
+              <app-vp-status [tone]="rfqStatusTone(row.status)" [icon]="rfqStatusIcon(row.status)" [label]="row.status"></app-vp-status>
+            </td>
 
           </ng-template>
         </app-table>
@@ -206,7 +229,7 @@
             </td>
 
             <!-- 5. Status badge -->
-            <td><span [ngClass]="quotBadge(row.status)">{{ quotStatusLabel(row.status) }}</span></td>
+            <td><app-vp-status [tone]="quotStatusTone(row.status)" [icon]="quotStatusIcon(row.status)" [label]="quotStatusLabel(row.status)"></app-vp-status></td>
 
           </ng-template>
         </app-table>
@@ -230,7 +253,11 @@
         <div>
           <div class="flex items-center gap-2 mb-0.5">
             <h2 class="text-lg font-bold text-[#1a2c35]">{{ selectedRfq.rfqNumber }}</h2>
-            <span [ngClass]="rfqBadge(selectedRfq.status)">{{ selectedRfq.status }}</span>
+            <app-vp-status [tone]="rfqStatusTone(selectedRfq.status)" [icon]="rfqStatusIcon(selectedRfq.status)" [label]="selectedRfq.status"></app-vp-status>
+            <span *ngIf="selectedRfq.isDirectInvite" class="inline-flex items-center gap-1 text-[11px] font-semibold text-[#224957] bg-[#e8f2f7] border border-[#cfe3ea] px-2 py-0.5 rounded-full">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 14.9 8.6 22 9.3 16.6 14.1 18.2 21.2 12 17.5 5.8 21.2 7.4 14.1 2 9.3 9.1 8.6z"/></svg>
+              Invited you directly
+            </span>
           </div>
           <p class="text-sm text-[#5a7380]">{{ selectedRfq.clientName }}<span *ngIf="selectedRfq.clientEmail"> · {{ selectedRfq.clientEmail }}</span></p>
         </div>
@@ -271,6 +298,28 @@
             <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Category</span>
             <span class="text-sm text-[#1a2c35] font-medium">{{ selectedRfq.category }}</span>
           </div>
+        </div>
+      </div>
+      <div *ngIf="selectedRfq.attachments?.length">
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Attachments ({{ selectedRfq.attachments?.length }})</h3>
+        <div class="flex flex-col gap-1.5">
+          <button
+            type="button"
+            *ngFor="let file of selectedRfq.attachments"
+            (click)="downloadAttachment(file, $event)"
+            class="group flex items-center gap-3 w-full text-left border border-[#e6edf2] rounded-xl px-3.5 py-2.5 hover:border-[#224957] hover:bg-[#f9fcfd] transition-colors"
+          >
+            <span class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" [ngClass]="attachmentIconBg(file.fileType)">
+              <span class="text-[10px] font-bold uppercase">{{ file.fileType }}</span>
+            </span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-[#1a2c35] truncate">{{ file.label || file.fileName }}</p>
+              <p class="text-xs text-[#8a949c] truncate">{{ file.fileName }} · {{ file.fileSize }}</p>
+            </div>
+            <svg class="shrink-0 text-[#9ab0bb] group-hover:text-[#224957] transition-colors" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>
+            </svg>
+          </button>
         </div>
       </div>
       <div>
@@ -325,7 +374,7 @@
           <div class="flex items-center gap-2 mb-0.5">
             <h2 class="text-lg font-bold text-[#1a2c35]">{{ selectedQuotation.quotationNumber }}</h2>
             <span class="text-xs font-semibold text-[#94a9b3]" *ngIf="selectedQuotation.version > 1">v{{ selectedQuotation.version }}</span>
-            <span [ngClass]="quotBadge(selectedQuotation.status)">{{ quotStatusLabel(selectedQuotation.status) }}</span>
+            <app-vp-status [tone]="quotStatusTone(selectedQuotation.status)" [icon]="quotStatusIcon(selectedQuotation.status)" [label]="quotStatusLabel(selectedQuotation.status)"></app-vp-status>
           </div>
           <p class="text-sm text-[#5a7380]">
             {{ selectedQuotation.clientName }} · RFQ ref:
@@ -467,7 +516,7 @@
           <div class="flex items-center gap-2 mb-0.5">
             <h2 class="text-lg font-bold text-[#1a2c35]">{{ editingQuotation.quotationNumber }}</h2>
             <span class="text-xs font-semibold text-[#94a9b3]" *ngIf="editingQuotation.version > 1">v{{ editingQuotation.version }}</span>
-            <span [ngClass]="quotBadge(editingQuotation.status)">{{ quotStatusLabel(editingQuotation.status) }}</span>
+            <app-vp-status [tone]="quotStatusTone(editingQuotation.status)" [icon]="quotStatusIcon(editingQuotation.status)" [label]="quotStatusLabel(editingQuotation.status)"></app-vp-status>
           </div>
           <p class="text-sm text-[#5a7380]">{{ isQuotationReadOnly ? 'Viewing' : 'Editing' }} · {{ editingQuotation.clientName }} · RFQ: {{ editingQuotation.rfqNumber }}</p>
         </div>

@@ -993,7 +993,7 @@
     max-width: 480px;
     width: 100%;
     text-align: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,.06);
+    box-shadow: none;
   }
 
   .vr-success-icon {
@@ -1036,4 +1036,151 @@
   .vr-g2, .vr-g3, .vr-g4 { grid-template-columns: 1fr; }
   .vr-span2, .vr-span3 { grid-column: auto; }
   .vr-iso-grid { grid-template-columns: 1fr; }
+}
+
+// ─── Stepper connecting rail ──────────────────────────────────────────────────
+// A single vertical line threading through every step number — the dots read
+// as one continuous path being walked, not six unrelated numbered boxes. The
+// circle's own background matches the sidebar so it visually "cuts" the line.
+.vr-step-rail {
+  position: relative;
+  padding-left: 3px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 18px;
+    bottom: 18px;
+    width: 1.5px;
+    background: var(--gray-200);
+  }
+
+  .vr-step-item { position: relative; z-index: 1; }
+  .vr-step-num  { background: var(--gray-0); }
+}
+
+// ─── Autosave indicator — an honest, transient state rather than a
+//     permanently-on "saved" claim ────────────────────────────────────────────
+.vr-autosave {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--gray-500);
+  min-width: 82px;
+  transition: color var(--t);
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gray-300);
+    flex-shrink: 0;
+  }
+
+  &.is-saving { color: var(--gray-600); }
+  &.is-saved  { color: var(--green); }
+}
+
+.vr-autosave__spinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--gray-200);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: spin .6s linear infinite;
+}
+
+// ─── Validation banner — replaces window.alert() ─────────────────────────────
+.vr-banner {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 32px;
+  font-size: 12.5px;
+  font-weight: 500;
+  animation: vrBannerIn .18s cubic-bezier(.16,1,.3,1) both;
+
+  &--error {
+    background: var(--red-pale);
+    color: #991b1b;
+    border-bottom: 1px solid #fecaca;
+  }
+
+  svg { flex-shrink: 0; }
+  span { flex: 1; }
+}
+
+.vr-banner__close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: .6;
+  cursor: pointer;
+  transition: opacity var(--t), background var(--t);
+
+  &:hover { opacity: 1; background: rgba(0,0,0,.06); }
+}
+
+@keyframes vrBannerIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ─── Review summary (Step 6) ──────────────────────────────────────────────────
+.vr-review-list {
+  padding: 4px 4px;
+}
+
+.vr-review-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--gray-100);
+
+  &:last-child { border-bottom: none; }
+}
+
+.vr-review-row__label {
+  width: 160px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.vr-review-row__value {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vr-review-row__edit {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--brand);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  transition: background var(--t);
+
+  &:hover { background: var(--brand-pale); }
 }

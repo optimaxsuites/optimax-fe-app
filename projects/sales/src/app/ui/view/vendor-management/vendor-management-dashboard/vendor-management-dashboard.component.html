@@ -1,0 +1,462 @@
+<!-- vendor-dashboard.component.html -->
+<div class="vendor-dashboard">
+    <div class="dashboard-wrapper">
+
+        <!-- Header - Dark Blue Premium Card -->
+        <div class="dashboard-header">
+            <div class="header-left">
+                <div class="header-badge">
+                    <span class="pulse-dot"></span>
+                    Live Dashboard
+                </div>
+                <h1 class="page-title">Vendor Command Center</h1>
+                <p class="page-subtitle">Real-time insights, vendor performance, risk monitoring, and compliance at a
+                    glance</p>
+            </div>
+            <div class="header-actions">
+                <div class="date-range-selector">
+                    <button class="range-btn" [class.active]="dateRange === 'week'" (click)="changeDateRange('week')">
+                        <i class="fas fa-calendar-week"></i> Week
+                    </button>
+                    <button class="range-btn" [class.active]="dateRange === 'month'" (click)="changeDateRange('month')">
+                        <i class="fas fa-calendar-alt"></i> Month
+                    </button>
+                    <button class="range-btn" [class.active]="dateRange === 'quarter'"
+                        (click)="changeDateRange('quarter')">
+                        <i class="fas fa-chart-line"></i> Quarter
+                    </button>
+                    <button class="range-btn" [class.active]="dateRange === 'year'" (click)="changeDateRange('year')">
+                        <i class="fas fa-calendar"></i> Year
+                    </button>
+                </div>
+                <button (click)="navigateToOnboarding()" class="btn-primary-glow">
+                    <i class="fas fa-user-plus"></i>
+                    Onboard Vendor
+                </button>
+                <button (click)="openCustomizationModal()" class="btn-customize-gear" title="Customize Dashboard">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="loading-state">
+            <div class="spinner-glow"></div>
+            <p>Loading your vendor dashboard...</p>
+        </div>
+
+        <!-- Dashboard Content -->
+        <ng-container *ngIf="!isLoading && stats">
+
+            <!-- ROW 1: Stats Cards Grid -->
+            <div class="stats-grid" *ngIf="customization.showStatsGrid">
+                <div class="stat-card stat-card-vendors" (click)="navigateToVendors()">
+                    <div class="stat-card-glow"></div>
+                    <div class="stat-card-inner">
+                        <div class="stat-icon-wrapper vendors">
+                            <i class="fas fa-store"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Total Vendors</span>
+                            <span class="stat-value animate-number">{{ totalVendorsCount }}</span>
+                            <div class="stat-meta">
+                                <span class="stat-trend positive">
+                                    <i class="fas fa-arrow-up"></i> {{ monthOverMonthGrowth }}%
+                                </span>
+                                <span class="stat-period">vs last month</span>
+                            </div>
+                        </div>
+                        <div class="stat-sub-stats">
+                            <span class="sub-stat">
+                                <span class="sub-dot active"></span> {{ activeVendorsCount }} Active
+                            </span>
+                            <span class="sub-stat">
+                                <span class="sub-dot pending"></span> {{ pendingOnboardingCount }} Pending
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card stat-card-performance" (click)="navigateToPerformance()">
+                    <div class="stat-card-glow"></div>
+                    <div class="stat-card-inner">
+                        <div class="stat-icon-wrapper performance">
+                            <i class="fas fa-chart-simple"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Avg Performance</span>
+                            <span class="stat-value animate-number">{{ averagePerformanceScore.toFixed(1) }}%</span>
+                            <div class="stat-meta">
+                                <span class="stat-trend positive">
+                                    <i class="fas fa-arrow-up"></i> 4.2%
+                                </span>
+                                <span class="stat-period">vs last month</span>
+                            </div>
+                        </div>
+                        <div class="stat-ring">
+                            <svg viewBox="0 0 36 36">
+                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    fill="none" stroke="#e2e8f0" stroke-width="3" />
+                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    fill="none" stroke="#2E6276" stroke-width="3"
+                                    [attr.stroke-dasharray]="averagePerformanceScore + ', 100'" />
+                            </svg>
+                            <span class="ring-label">{{ averagePerformanceScore.toFixed(0) }}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card stat-card-risk" (click)="navigateToRisk()">
+                    <div class="stat-card-glow"></div>
+                    <div class="stat-card-inner">
+                        <div class="stat-icon-wrapper risk">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Risk Alerts</span>
+                            <span class="stat-value animate-number" [class.high-risk]="highRiskVendorsCount > 0">
+                                {{ riskAlertsCount }}
+                            </span>
+                            <div class="stat-meta">
+                                <span class="stat-trend" [class.negative]="highRiskVendorsCount > 0"
+                                    [class.positive]="highRiskVendorsCount === 0">
+                                    <i
+                                        class="fas fa-{{ highRiskVendorsCount > 0 ? 'exclamation-triangle' : 'check-circle' }}"></i>
+                                    {{ highRiskVendorsCount > 0 ? highRiskVendorsCount + ' high risk' : 'All clear' }}
+                                </span>
+                                <span class="stat-period">vendors</span>
+                            </div>
+                        </div>
+                        <div class="stat-badge" [class.danger]="highRiskVendorsCount > 0"
+                            [class.success]="highRiskVendorsCount === 0">
+                            <i class="fas fa-{{ highRiskVendorsCount > 0 ? 'exclamation' : 'check' }}"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card stat-card-documents" (click)="navigateToVendors()">
+                    <div class="stat-card-glow"></div>
+                    <div class="stat-card-inner">
+                        <div class="stat-icon-wrapper documents">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Expiring Documents</span>
+                            <span class="stat-value animate-number" [class.warning]="expiringDocumentsCount > 0">
+                                {{ expiringDocumentsCount }}
+                            </span>
+                            <div class="stat-meta">
+                                <span class="stat-trend" [class.negative]="expiringDocumentsCount > 5"
+                                    [class.positive]="expiringDocumentsCount <= 5">
+                                    <i
+                                        class="fas fa-{{ expiringDocumentsCount > 5 ? 'exclamation-triangle' : 'clock' }}"></i>
+                                    {{ expiringDocumentsCount > 5 ? 'Action needed' : 'Under control' }}
+                                </span>
+                                <span class="stat-period">documents</span>
+                            </div>
+                        </div>
+                        <div class="stat-progress">
+                            <div class="progress-bar"
+                                [style.width.%]="getCompliancePercentage()">
+                            </div>
+                            <span class="progress-label">{{ getCompliancePercentage().toFixed(0) }}% compliant</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROW 2: Performance & Analytics Board -->
+            <div class="analytics-board" *ngIf="customization.showPerformanceChart">
+                <div class="board-header">
+                    <div class="board-title-group">
+                        <h2>
+                            <i class="fas fa-chart-line"></i>
+                            Performance Analytics
+                            <span class="period-badge">
+                                {{ dateRange === 'week' ? 'This Week' : dateRange === 'month' ? 'This Month' : dateRange
+                                === 'quarter' ? 'This Quarter' : 'This Year' }}
+                            </span>
+                        </h2>
+                        <p>Track vendor performance, trends, and key metrics</p>
+                    </div>
+                    <div class="board-actions">
+                        <div class="view-toggle">
+                            <button class="active">
+                                <i class="fas fa-chart-line"></i> Overview
+                            </button>
+                            <button (click)="navigateToPerformance()">
+                                <i class="fas fa-arrow-right"></i> Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="charts-grid">
+                    <!-- Primary Chart - Performance Trend -->
+                    <div class="chart-card-premium">
+                        <div class="card-header-premium">
+                            <div class="card-title">
+                                <i class="fas fa-chart-area"></i>
+                                <div>
+                                    <h3>Vendor Performance Trend</h3>
+                                    <span class="subtitle">Average score over time</span>
+                                </div>
+                            </div>
+                            <div class="card-actions">
+                                <button class="pill-filter active">Score</button>
+                                <button class="pill-filter">Delivery</button>
+                                <button class="pill-filter">Quality</button>
+                            </div>
+                        </div>
+
+                        <div class="line-chart-premium">
+                            <svg viewBox="0 0 500 280" preserveAspectRatio="xMidYMid meet">
+                                <defs>
+                                    <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#2E6276;stop-opacity:0.3" />
+                                        <stop offset="100%" style="stop-color:#2E6276;stop-opacity:0.0" />
+                                    </linearGradient>
+                                    <linearGradient id="deliveryGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#2EB270;stop-opacity:0.25" />
+                                        <stop offset="100%" style="stop-color:#2EB270;stop-opacity:0.0" />
+                                    </linearGradient>
+                                </defs>
+
+                                <!-- Grid lines -->
+                                <line *ngFor="let i of [0, 50, 100, 150, 200, 250]" x1="20" [attr.y1]="20 + i" x2="480"
+                                    [attr.y2]="20 + i" class="chart-grid" />
+
+                                <!-- Score Area -->
+                                <polygon [attr.points]="getLineChartAreaPath()" class="chart-area" />
+
+                                <!-- Score Line -->
+                                <polyline [attr.points]="getLineChartPath()" class="chart-line" />
+
+                                <!-- Delivery Line (secondary) -->
+                                <polyline *ngIf="performanceData.length > 0"
+                                    [attr.points]="getDeliveryLineChartPath()"
+                                    class="chart-line-delivery" />
+
+                                <!-- Data Points - Score -->
+                                <circle *ngFor="let d of performanceData; let idx = index" [attr.cx]="getPointX(idx)"
+                                    [attr.cy]="getPointY(d.score)" r="5" class="chart-dot-premium">
+                                    <title>{{ d.month }}: {{ d.score.toFixed(1) }}%</title>
+                                </circle>
+
+                                <!-- Data Points - Delivery -->
+                                <circle *ngFor="let d of performanceData; let idx = index" [attr.cx]="getPointX(idx)"
+                                    [attr.cy]="getPointY(d.onTimeDelivery)" r="4" class="chart-dot-delivery">
+                                    <title>{{ d.month }}: {{ d.onTimeDelivery.toFixed(1) }}% delivery</title>
+                                </circle>
+
+                                <!-- X-axis labels -->
+                                <text *ngFor="let d of performanceData; let idx = index" [attr.x]="getPointX(idx)"
+                                    y="270" class="chart-label">
+                                    {{ d.month }}
+                                </text>
+
+                                <!-- Legend -->
+                                <text x="320" y="30" class="chart-legend">
+                                    <tspan>● Score</tspan>
+                                </text>
+                                <text x="400" y="30" class="chart-legend delivery">
+                                    <tspan>● Delivery</tspan>
+                                </text>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Chart - Vendor Distribution -->
+                    <div class="chart-card-premium">
+                        <div class="card-header-premium">
+                            <div class="card-title">
+                                <i class="fas fa-chart-pie"></i>
+                                <div>
+                                    <h3>Vendor Distribution</h3>
+                                    <span class="subtitle">Tier & risk breakdown</span>
+                                </div>
+                            </div>
+                            <div class="card-actions">
+                                <button class="pill-filter active">Tier</button>
+                                <button class="pill-filter">Risk</button>
+                            </div>
+                        </div>
+
+                        <div class="pie-chart-premium">
+                            <div class="callout-chart-wrapper">
+                                <div class="pie-circle" [style.background]="getConicGradient()"></div>
+
+                                <svg class="callout-svg" viewBox="0 0 580 360" width="100%" height="100%">
+                                    <path *ngFor="let callout of getChartCallouts()" [attr.d]="callout.linePath"
+                                        fill="none" stroke="#0a1628" stroke-width="1.5" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+
+                                    <g *ngFor="let callout of getChartCallouts()">
+                                        <text [attr.x]="callout.textX" [attr.y]="callout.textY - 8"
+                                            [attr.text-anchor]="callout.textAnchor" class="callout-text-month">
+                                            {{ callout.label }}
+                                        </text>
+                                        <text [attr.x]="callout.textX" [attr.y]="callout.textY + 8"
+                                            [attr.text-anchor]="callout.textAnchor" class="callout-text-data">
+                                            {{ callout.amount }} ({{ callout.percent }})
+                                        </text>
+                                    </g>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Quick Stats -->
+                        <div class="quick-stats">
+                            <div class="quick-stat" *ngFor="let tier of vendorTierData">
+                                <span class="quick-dot" [style.background]="tier.color"></span>
+                                <span class="quick-label">{{ tier.label }}</span>
+                                <span class="quick-value">{{ tier.value }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROW 3: Insights Cards -->
+            <div class="insights-row" *ngIf="customization.showPerformanceChart">
+                <div class="insight-card" *ngFor="let metric of getInsightMetrics()"
+                    [style.border-left-color]="metric.color">
+                    <div class="insight-icon" [style.background]="metric.color + '15'" [style.color]="metric.color">
+                        <i
+                            class="fas fa-{{ metric.label.includes('Performance') ? 'chart-simple' : metric.label.includes('Active') ? 'store' : metric.label.includes('Pending') ? 'clock' : 'exclamation-triangle' }}"></i>
+                    </div>
+                    <div class="insight-content">
+                        <span class="insight-label">{{ metric.label }}</span>
+                        <span class="insight-value">{{ metric.value }}</span>
+                    </div>
+                    <div class="insight-trend" [style.color]="metric.trend === 'up' ? '#2EB270' : '#DC2626'">
+                        <i class="fas fa-arrow-{{ metric.trend === 'up' ? 'up' : 'down' }}"></i>
+                        {{ metric.percent }}%
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROW 4: Recent Activity, Expiring Documents, Top Performers -->
+            <div class="three-columns-cards">
+
+                <!-- Recent Activity -->
+                <div class="data-table-card glass" *ngIf="customization.showRecentActivity">
+                    <div class="card-header">
+                        <h3><i class="fas fa-bolt"></i> Recent Activity</h3>
+                        <button class="view-link" (click)="navigateToVendors()">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="activity-list">
+                        <div *ngFor="let activity of recentActivity" class="activity-item">
+                            <div class="activity-icon" [style.background]="activity.color + '20'"
+                                [style.color]="activity.color">
+                                <i class="fas fa-{{ activity.icon }}"></i>
+                            </div>
+                            <div class="activity-content">
+                                <span class="activity-title">{{ activity.event }}</span>
+                                <span class="activity-description">{{ activity.description }}</span>
+                                <span class="activity-time">{{ formatDate(activity.timestamp) }}</span>
+                            </div>
+                            <button class="activity-action" (click)="navigateToVendor(activity.vendorId)">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div *ngIf="recentActivity.length === 0" class="empty-table-row">
+                            <i class="fas fa-inbox"></i> No recent activity
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expiring Documents -->
+                <div class="data-table-card glass" *ngIf="customization.showExpiringDocuments">
+                    <div class="card-header">
+                        <h3><i class="fas fa-file-signature"></i> Expiring Documents</h3>
+                        <button class="view-link" (click)="navigateToVendors()">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="documents-list">
+                        <div *ngFor="let doc of expiringDocuments" class="document-item">
+                            <div class="doc-status" [style.background]="getDocumentStatusColor(doc.status)">
+                                <span class="status-dot"></span>
+                            </div>
+                            <div class="doc-content">
+                                <span class="doc-name">{{ doc.name }}</span>
+                                <span class="doc-vendor">{{ doc.vendorName || 'Unknown Vendor' }}</span>
+                            </div>
+                            <div class="doc-expiry">
+                                <span class="doc-days" [class.critical]="getDaysUntilExpiry(doc.expiryDate) < 7"
+                                    [class.warning]="getDaysUntilExpiry(doc.expiryDate) < 30">
+                                    {{ getDaysUntilExpiry(doc.expiryDate) }} days
+                                </span>
+                                <span class="doc-date">{{ formatDate(doc.expiryDate) }}</span>
+                            </div>
+                        </div>
+                        <div *ngIf="expiringDocuments.length === 0" class="empty-table-row">
+                            <i class="fas fa-check-circle"></i> All documents are up to date
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Performers -->
+                <div class="products-card glass" *ngIf="customization.showTopPerformers">
+                    <div class="card-header">
+                        <h3><i class="fas fa-trophy"></i> Top Performers</h3>
+                        <button class="view-link" (click)="navigateToVendors()">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="performers-list">
+                        <div *ngFor="let vendor of topPerformers; let i = index" class="performer-item"
+                            [class.top]="i === 0">
+                            <div class="performer-rank" [class.gold]="i === 0" [class.silver]="i === 1"
+                                [class.bronze]="i === 2">
+                                <span *ngIf="i === 0">🥇</span>
+                                <span *ngIf="i === 1">🥈</span>
+                                <span *ngIf="i === 2">🥉</span>
+                                <span *ngIf="i > 2">#{{ i + 1 }}</span>
+                            </div>
+                            <div class="performer-info">
+                                <span class="performer-name">{{ vendor.companyName }}</span>
+                                <span class="performer-tier" [style.color]="getVendorStatusColor(vendor.status)">
+                                    {{ getVendorTierLabel(vendor.tier) }}
+                                </span>
+                            </div>
+                            <div class="performer-score">
+                                <span class="score-value">{{ vendor.performanceScore.toFixed(0) }}%</span>
+                                <div class="score-bar">
+                                    <div class="score-fill" [style.width.%]="vendor.performanceScore"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="topPerformers.length === 0" class="empty-table-row">
+                            <i class="fas fa-inbox"></i> No top performers yet
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </ng-container>
+
+        <!-- SVG Gradients -->
+        <svg style="position: absolute; width: 0; height: 0;">
+            <defs>
+                <linearGradient id="vendorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#2E6276;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#2E6276;stop-opacity:0" />
+                </linearGradient>
+                <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#2E6276;stop-opacity:0.35" />
+                    <stop offset="100%" style="stop-color:#2E6276;stop-opacity:0.0" />
+                </linearGradient>
+                <linearGradient id="deliveryGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#2EB270;stop-opacity:0.25" />
+                    <stop offset="100%" style="stop-color:#2EB270;stop-opacity:0.0" />
+                </linearGradient>
+            </defs>
+        </svg>
+    </div>
+</div>

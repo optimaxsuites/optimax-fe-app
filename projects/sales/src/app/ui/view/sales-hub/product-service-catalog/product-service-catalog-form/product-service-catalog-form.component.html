@@ -54,16 +54,10 @@
             </div>
             <div class="card-body">
               <div class="form-row">
-                <div class="form-group flex-2">
+                <div class="form-group flex-1">
                   <label class="form-label required">Name</label>
                   <input type="text" formControlName="name" class="form-control" placeholder="Enter product name">
                   <div class="form-error" *ngIf="isFieldInvalid('name')">{{ getFieldError('name') }}</div>
-                </div>
-                <div class="form-group flex-1">
-                  <label class="form-label required">Branch</label>
-                  <select formControlName="branch" class="form-control">
-                    <option *ngFor="let branch of branches" [value]="branch">{{ branch }}</option>
-                  </select>
                 </div>
               </div>
               <div class="form-group">
@@ -83,7 +77,7 @@
                 <div class="form-group flex-1">
                   <label class="form-label">Measurement Unit</label>
                   <select formControlName="measurementUnit" class="form-control">
-                    <option *ngFor="let unit of measurementUnits" [value]="unit">{{ unit }}</option>
+                    <option *ngFor="let unit of measurementUnits" [value]="unit.name">{{ unit.name }}</option>
                   </select>
                 </div>
               </div>
@@ -194,7 +188,7 @@
                   <div class="supplier-select-wrapper">
                     <select formControlName="supplier" class="form-control">
                       <option value="">Select supplier</option>
-                      <option *ngFor="let sup of suppliers" [value]="sup">{{ sup }}</option>
+                      <option *ngFor="let sup of suppliers" [value]="sup.name">{{ sup.name }}</option>
                     </select>
                     <button type="button" class="btn-add-supplier" (click)="addSupplier()">+</button>
                   </div>
@@ -255,15 +249,39 @@
               </div>
               <div *ngFor="let variant of variantsArray.controls; let i = index" class="variant-item">
                 <div class="variant-info">
-                  <span class="variant-name">{{ variant.get('name')?.value || 'Variant ' + (i + 1) }}</span>
-                  <span class="variant-price">₦{{ variant.get('price')?.value | number:'1.2-2' }}</span>
-                  <span class="variant-qty">{{ variant.get('quantity')?.value }} units</span>
+                  <div class="variant-title-row" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem;">
+                    <strong class="variant-name" style="color: #0f172a; font-size: 0.95rem;">{{ variant.get('name')?.value || 'Variant ' + (i + 1) }}</strong>
+                    <span class="variant-sku-badge" *ngIf="variant.get('sku')?.value" style="background: #f1f5f9; color: #475569; font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 4px; font-family: monospace;">
+                      SKU: {{ variant.get('sku')?.value }}
+                    </span>
+                  </div>
+                  <div class="variant-attributes" *ngIf="variant.get('attributes.color')?.value || variant.get('attributes.size')?.value || variant.get('attributes.material')?.value || variant.get('attributes.model')?.value || variant.get('attributes.year')?.value" style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.35rem;">
+                    <span class="attr-tag" *ngIf="variant.get('attributes.color')?.value" style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                      Color: {{ variant.get('attributes.color')?.value }}
+                    </span>
+                    <span class="attr-tag" *ngIf="variant.get('attributes.size')?.value" style="background: #fef3c7; color: #92400e; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                      Size: {{ variant.get('attributes.size')?.value }}
+                    </span>
+                    <span class="attr-tag" *ngIf="variant.get('attributes.material')?.value" style="background: #f3e8ff; color: #6b21a8; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                      Material: {{ variant.get('attributes.material')?.value }}
+                    </span>
+                    <span class="attr-tag" *ngIf="variant.get('attributes.model')?.value" style="background: #dcfce7; color: #15803d; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                      Model: {{ variant.get('attributes.model')?.value }}
+                    </span>
+                    <span class="attr-tag" *ngIf="variant.get('attributes.year')?.value" style="background: #ffe4e6; color: #be123c; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                      Year: {{ variant.get('attributes.year')?.value }}
+                    </span>
+                  </div>
+                  <div class="variant-meta" style="display: flex; gap: 1rem; font-size: 0.85rem;">
+                    <span class="variant-price" style="font-weight: 700; color: #059669;">₦{{ (variant.get('price')?.value || 0) | number:'1.2-2' }}</span>
+                    <span class="variant-qty" style="color: #64748b;">{{ variant.get('quantity')?.value || 0 }} units in stock</span>
+                  </div>
                 </div>
-                <div class="variant-actions">
-                  <button type="button" class="btn-icon-sm" (click)="openEditVariantModal(i)">
+                <div class="variant-actions" style="display: flex; gap: 0.35rem;">
+                  <button type="button" class="btn-icon-sm" (click)="openEditVariantModal(i)" title="Edit Variant">
                     <i class="fas fa-edit"></i>
                   </button>
-                  <button type="button" class="btn-icon-sm btn-danger" (click)="removeVariant(i)">
+                  <button type="button" class="btn-icon-sm btn-danger" (click)="removeVariant(i)" title="Remove Variant">
                     <i class="fas fa-trash-alt"></i>
                   </button>
                 </div>
@@ -348,13 +366,10 @@
                     <input type="text" formControlName="movementPurchasePrice" class="form-control" placeholder="N/A" readonly>
                   </div>
                 </div>
-                <div class="form-group flex-1">
-                  <label class="form-label required">Tax</label>
-                  <select formControlName="movementTax" class="form-control">
-                    <option value="Select tax">Select tax</option>
-                    <option *ngFor="let tax of taxOptions" [value]="tax">{{ tax }}</option>
-                  </select>
-                </div>
+                 <div class="form-group flex-1">
+                   <label class="form-label required">Tax</label>
+                   <input type="text" formControlName="movementTax" class="form-control" placeholder="e.g. VAT 7.5%, 5%, etc.">
+                 </div>
               </div>
             </div>
           </div>
@@ -388,7 +403,7 @@
                 <label class="form-label">Select supplier</label>
                 <select formControlName="selectedSupplier" class="form-control">
                   <option value="">Select supplier</option>
-                  <option *ngFor="let sup of suppliers" [value]="sup">{{ sup }}</option>
+                  <option *ngFor="let sup of suppliers" [value]="sup.name">{{ sup.name }}</option>
                 </select>
               </div>
             </div>
@@ -433,10 +448,10 @@
 
 <!-- Variant Modal -->
 <div class="modal-overlay" *ngIf="showVariantModal" (click)="showVariantModal = false">
-  <div class="modal-container" (click)="$event.stopPropagation()" [formGroup]="variantModalForm">
+  <form class="modal-container" (click)="$event.stopPropagation()" [formGroup]="variantModalForm" (ngSubmit)="saveVariant()">
     <div class="modal-header">
       <h3><i class="fas fa-cube"></i> {{ currentVariantIndex !== null ? 'Edit Variant' : 'Add Variant' }}</h3>
-      <button class="modal-close" (click)="showVariantModal = false">×</button>
+      <button type="button" class="modal-close" (click)="showVariantModal = false">×</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
@@ -449,7 +464,7 @@
       <div class="form-row">
         <div class="form-group flex-1">
           <label class="form-label">SKU</label>
-          <input type="text" formControlName="sku" class="form-control" placeholder="Variant SKU">
+          <input type="text" formControlName="sku" class="form-control" placeholder="Variant SKU (auto-generated if empty)">
         </div>
         <div class="form-group flex-1">
           <label class="form-label required">Price</label>
@@ -458,14 +473,14 @@
             <input type="number" formControlName="price" class="form-control" placeholder="0.00" step="0.01">
           </div>
           <div class="form-error" *ngIf="variantModalForm.get('price')?.invalid && variantModalForm.get('price')?.touched">
-            Price must be at least 0
+            Price must be 0 or greater
           </div>
         </div>
         <div class="form-group flex-1">
           <label class="form-label required">Quantity</label>
           <input type="number" formControlName="quantity" class="form-control" placeholder="0" min="0">
           <div class="form-error" *ngIf="variantModalForm.get('quantity')?.invalid && variantModalForm.get('quantity')?.touched">
-            Quantity must be at least 0
+            Quantity must be 0 or greater
           </div>
         </div>
       </div>
@@ -483,12 +498,22 @@
           <input type="text" formControlName="material" class="form-control" placeholder="e.g., Wood">
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label">Model</label>
+          <input type="text" formControlName="model" class="form-control" placeholder="e.g., XPS 13, Pro Max">
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label">Year</label>
+          <input type="text" formControlName="year" class="form-control" placeholder="e.g., 2026">
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button type="button" class="btn-cancel" (click)="showVariantModal = false">Cancel</button>
-      <button type="button" class="btn-save" (click)="saveVariant()">
+      <button type="submit" class="btn-save">
         {{ currentVariantIndex !== null ? 'Save Changes' : 'Add Variant' }}
       </button>
     </div>
-  </div>
+  </form>
 </div>

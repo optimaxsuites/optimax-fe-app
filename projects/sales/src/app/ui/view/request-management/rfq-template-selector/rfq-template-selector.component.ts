@@ -4,6 +4,7 @@ import { Component, EventEmitter, Output, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { RFQTemplate } from '../../../domain/procurement-request/procurement.dto';
+import { ExtendedProcurementRequest, parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 
 @Component({
@@ -49,13 +50,14 @@ export class RfqTemplateSelectorComponent implements OnInit {
         
         const uuid = this.route.snapshot.paramMap.get('uuid');
         if (uuid) {
-          this.procurementService.getRequest(uuid).subscribe({
+          this.procurementService.getRequest(parseIdToNumber(uuid)).subscribe({
             next: (req) => {
-              if (req && req.rfqTemplateId) {
-                this.selectedTemplateId = req.rfqTemplateId;
+              const extendedReq = req as ExtendedProcurementRequest;
+              if (extendedReq && extendedReq.rfqTemplateId) {
+                this.selectedTemplateId = extendedReq.rfqTemplateId;
                 this.templateForm.patchValue({ 
-                  templateId: req.rfqTemplateId,
-                  customMessage: req.rfqTitle || ''
+                  templateId: extendedReq.rfqTemplateId,
+                  customMessage: extendedReq.rfqTitle || ''
                 });
               } else {
                 this.selectDefaultTemplate(templates);
@@ -150,10 +152,10 @@ export class RfqTemplateSelectorComponent implements OnInit {
     if (this.templateForm.valid) {
       const uuid = this.route.snapshot.paramMap.get('uuid');
       if (uuid) {
-        this.procurementService.updateRequest(uuid, {
+        this.procurementService.updateRequest(parseIdToNumber(uuid), {
           rfqTemplateId: this.templateForm.get('templateId')?.value,
           rfqTitle: this.templateForm.get('customMessage')?.value
-        }).subscribe(() => {
+        } as any).subscribe(() => {
           const typePath = this.router.url.includes('/service') ? 'service' : 'product';
           this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid, 'vendors']);
         });

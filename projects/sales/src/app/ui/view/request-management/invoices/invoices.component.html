@@ -4,7 +4,7 @@
       <div class="app-logo-mark invoice"><i class="fas fa-receipt"></i></div>
       <div>
         <h2>COMMERCIAL INVOICE</h2>
-        <p class="ref-num">Invoice Number: {{ invoice?.invoiceNumber || ('INV-2026-' + (request.id.substring(3) || '999')) }}</p>
+        <p class="ref-num">Invoice Number: {{ invoice?.invoiceNumber || ('INV-2026-' + (getRequestIdSuffix(request.id) || '999')) }}</p>
       </div>
     </div>
     <div class="doc-meta-section">
@@ -18,7 +18,7 @@
       </div>
       <div class="meta-row">
         <span class="meta-label">Reference LPO:</span>
-        <span class="meta-value">{{ invoice?.lpoNumber || ('LPO-2026-' + (request.id.substring(3) || '888')) }}</span>
+        <span class="meta-value">{{ invoice?.lpoNumber || ('LPO-2026-' + (getRequestIdSuffix(request.id) || '888')) }}</span>
       </div>
     </div>
   </div>
