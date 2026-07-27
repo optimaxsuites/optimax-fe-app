@@ -76,16 +76,58 @@
     </div>
 
     <div class="sm:col-span-2 flex items-center gap-3 py-2">
-      <input type="checkbox" formControlName="overtimeEnabled" 
+      <input type="checkbox" formControlName="overtimeEnabled"
              class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
       <label class=" font-medium text-gray-700">Enable Overtime</label>
     </div>
+
+    <!-- Salary Input Mode -->
+    <div class="sm:col-span-2 pt-2">
+      <label class="block font-medium text-gray-700 mb-1">Salary Input Mode</label>
+      <p class="text-xs text-gray-500 mb-3">
+        How salary figures are entered in the system. HR letters always show annual totals; payroll always disburses monthly.
+      </p>
+      <div class="flex gap-3">
+        <button type="button"
+          (click)="salaryInputMode = 'monthly'"
+          [class.bg-customBlue]="salaryInputMode === 'monthly'"
+          [class.text-white]="salaryInputMode === 'monthly'"
+          [class.border-customBlue]="salaryInputMode === 'monthly'"
+          [class.bg-white]="salaryInputMode !== 'monthly'"
+          [class.text-gray-700]="salaryInputMode !== 'monthly'"
+          class="flex-1 rounded-md border px-4 py-3 text-sm font-medium transition-colors text-left">
+          <div class="flex items-center gap-2 mb-0.5">
+            <i class="fas fa-calendar-day text-[13px]"></i>
+            <span>Monthly Input</span>
+          </div>
+          <div class="text-xs opacity-70">Figures entered per month — ×12 in HR letters, used as-is in payroll</div>
+        </button>
+        <button type="button"
+          (click)="salaryInputMode = 'yearly'"
+          [class.bg-customBlue]="salaryInputMode === 'yearly'"
+          [class.text-white]="salaryInputMode === 'yearly'"
+          [class.border-customBlue]="salaryInputMode === 'yearly'"
+          [class.bg-white]="salaryInputMode !== 'yearly'"
+          [class.text-gray-700]="salaryInputMode !== 'yearly'"
+          class="flex-1 rounded-md border px-4 py-3 text-sm font-medium transition-colors text-left">
+          <div class="flex items-center gap-2 mb-0.5">
+            <i class="fas fa-calendar-alt text-[13px]"></i>
+            <span>Annual Input</span>
+          </div>
+          <div class="text-xs opacity-70">Figures entered per year — shown as-is in HR letters, ÷12 in payroll</div>
+        </button>
+      </div>
+    </div>
   </div>
 
-  <div class="pt-4 flex justify-end">
-    <button type="submit" 
-            class="inline-flex justify-center rounded-md border border-transparent bg-customBlue py-2 px-4  font-medium text-white shadow-sm hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-customBlue focus:ring-offset-2">
-      Save Settings
+  <div class="pt-4 flex items-center justify-end gap-3">
+    <span *ngIf="saved" class="text-sm text-green-600 flex items-center gap-1">
+      <i class="fas fa-check-circle"></i> Saved
+    </span>
+    <button type="submit" [disabled]="saving"
+            class="inline-flex justify-center items-center gap-2 rounded-md border border-transparent bg-customBlue py-2 px-4 font-medium text-white shadow-sm hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-customBlue focus:ring-offset-2 disabled:opacity-60">
+      <i class="fas" [class.fa-save]="!saving" [class.fa-spinner]="saving" [class.fa-spin]="saving"></i>
+      {{ saving ? 'Saving…' : 'Save Settings' }}
     </button>
   </div>
 </form>

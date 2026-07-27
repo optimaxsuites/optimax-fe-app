@@ -26,11 +26,15 @@ export class PayrollService {
 
   // --- General Settings ---
   getGeneralSettings(page = 1, size = 10): Observable<any> {
-    return this.http.get(`${this.baseUrl}/x/api/v2/hr/generalSettingss`, { params: { page, size } })
+    return this.http.get(`${this.baseUrl}/x/api/v2/hr/generalSettings`, { params: { page, size } })
       .pipe(catchError(this.handleError));
   }
-  getGeneralSettingsByID(page = 1, size = 10): Observable<any> {
-    return this.http.get(`${this.baseUrl}/x/api/v2/hr/generalSettingss/1`, { params: { page, size } })
+  getGeneralSettingsByID(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/x/api/v2/hr/generalSettings/1`)
+      .pipe(catchError(this.handleError));
+  }
+  updateGeneralSettings(id: number, payload: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/x/api/v2/hr/generalSettings/${id}`, payload)
       .pipe(catchError(this.handleError));
   }
 
@@ -164,7 +168,7 @@ export class PayrollService {
 
   // ---------------- POST Endpoints ----------------
   postGeneralSettings(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/x/api/v2/hr/generalSettingss`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/generalSettings`, payload)
       .pipe(catchError(this.handleError));
   }
 

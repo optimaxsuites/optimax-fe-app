@@ -57,7 +57,9 @@ export class PayrollCorrectionComponent implements OnInit, OnDestroy {
   selectRun(runId: number): void {
     this.selectedRunId = runId;
     this.selectedRun = this.runs.find(r => r.id === runId) ?? null;
-    const emps: any[] = this.selectedRun?.employees ?? [];
+    const emps: any[] = (this.selectedRun?.employees ?? []).filter((e: any) =>
+      (e.employee?.employeeStatus ?? e.employeeStatus ?? 'ACTIVE') === 'ACTIVE'
+    );
     this.entries = emps.map((e, i) => ({
       empIndex: i,
       employeeId: e.employee?.id ?? e.employeeId ?? e.id,

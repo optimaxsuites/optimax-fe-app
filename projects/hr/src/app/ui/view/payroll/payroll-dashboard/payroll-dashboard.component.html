@@ -145,7 +145,7 @@
         <tbody>
           <tr *ngFor="let run of recentRuns">
             <td class="ref-cell">{{ runPeriod(run) }}</td>
-            <td>{{ (run.employees ?? []).length }}</td>
+            <td>{{ runEmployeeCount(run) }}</td>
             <td class="amount-cell">{{ fmt(runGross(run)) }}</td>
             <td>{{ fmt(runGross(run) - runNet(run)) }}</td>
             <td class="amount-cell">{{ fmt(runNet(run)) }}</td>

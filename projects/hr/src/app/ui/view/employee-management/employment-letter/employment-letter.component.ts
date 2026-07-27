@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-// import { CompanyProfileService }
 import { EmployeeService } from '../../../service/employee.service';
+import { PayrollService } from '../../../service/payroll.service';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -14,11 +14,12 @@ export class EmploymentLetterComponent implements OnInit {
   companyProfile: any = {};
   salaryDetails: any = null;
   generatingPdf = false;
+  salaryInputMode: 'monthly' | 'yearly' = 'monthly';
   today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
 
   constructor(
-    // private companyProfileService: CompanyProfileService,
     private employeeService: EmployeeService,
+    private payrollService: PayrollService,
   ) {}
 
   ngOnInit() {
@@ -27,7 +28,6 @@ export class EmploymentLetterComponent implements OnInit {
       try { this.employee = JSON.parse(stored); } catch { this.employee = {}; }
     }
 
-    // Salary from cached profile data if already fetched by dashboard tab
     if (this.employee?.salaryDetails) {
       this.salaryDetails = this.employee.salaryDetails;
     } else if (this.employee?.level?.id) {
@@ -36,6 +36,13 @@ export class EmploymentLetterComponent implements OnInit {
         error: () => {}
       });
     }
+
+    this.payrollService.getGeneralSettingsById().subscribe({
+      next: (res: any) => {
+        this.salaryInputMode = (res?.salaryInputMode as 'monthly' | 'yearly') || 'monthly';
+      },
+      error: () => {}
+    });
   }
 
   async generatePdf() {
@@ -109,22 +116,32 @@ export class EmploymentLetterComponent implements OnInit {
     return this.companyProfile?.logoUrl || '';
   }
 
-  // ── Salary getters ────────────────────────────────────────
+  // HR letters always show annual figures regardless of input mode
+  private toAnnual(amount: number): number {
+    return this.salaryInputMode === 'monthly' ? Math.round(amount * 12) : amount;
+  }
+
+  get isConsultant(): boolean {
+    const t = (this.employee?.jobType?.name || this.employee?.jobType || '').toString().toUpperCase();
+    return t.includes('CONSULT') || t.includes('CONTRACT') || t.includes('FREELAN');
+  }
+
+  // ── Salary getters (always annual) ───────────────────────
 
   get baseSalary(): number {
-    return this.n(this.salaryDetails?.baseSalary);
+    return this.toAnnual(this.n(this.salaryDetails?.baseSalary));
   }
 
   get allowancesTotal(): number {
-    return this.sumAmounts(this.salaryDetails?.allowance);
+    return this.toAnnual(this.sumAmounts(this.salaryDetails?.allowance));
   }
 
   get bonusesTotal(): number {
-    return this.sumAmounts(this.salaryDetails?.bonuses);
+    return this.toAnnual(this.sumAmounts(this.salaryDetails?.bonuses));
   }
 
   get deductionsTotal(): number {
-    return this.sumAmounts(this.salaryDetails?.deductions);
+    return this.toAnnual(this.sumAmounts(this.salaryDetails?.deductions));
   }
 
   get grossSalary(): number {
@@ -176,7 +193,7 @@ export class EmploymentLetterComponent implements OnInit {
 
   private toLines(arr: any): { label: string; amount: number }[] {
     if (!Array.isArray(arr)) return [];
-    return arr.map((i: any) => ({ label: i?.name || i?.type || i?.allowanceType?.name || i?.deductionType?.name || 'Item', amount: this.n(i?.amount ?? i?.value) }));
+    return arr.map((i: any) => ({ label: i?.name || i?.type || i?.allowanceType?.name || i?.deductionType?.name || 'Item', amount: this.toAnnual(this.n(i?.amount ?? i?.value)) }));
   }
 
   fmt2(n: number): string {
