@@ -1,3 +1,4 @@
+// app-routing-module.ts
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { RequestForQuotationFormComponent } from './ui/view/request-management/request-for-quotation-form/request-for-quotation-form.component';
@@ -29,33 +30,38 @@ import { LpoPreviewComponent } from './ui/view/request-management/lpo-preview/lp
 import { RequestForQuotationDraftsComponent } from './ui/view/request-management/request-for-quotation-drafts/request-for-quotation-drafts.component';
 import { ApprovalRfqDetailComponent } from './ui/view/request-management/approval-rfq-detail/approval-rfq-detail.component';
 import { VendorManagementComponent } from './ui/view/vendor-management/vendor-management.component';
+import { VendorManagementDashboardComponent } from './ui/view/vendor-management/vendor-management-dashboard/vendor-management-dashboard.component';
+import { VendorManagementListComponent } from './ui/view/vendor-management/vendor-management-list/vendor-management-list.component';
+import { VendorManagementDetailComponent } from './ui/view/vendor-management/vendor-management-detail/vendor-management-detail.component';
+import { VendorOnboardingComponent } from './ui/view/vendor-management/vendor-onboarding/vendor-onboarding.component';
+import { VendorEditComponent } from './ui/view/vendor-management/vendor-edit-form/vendor-edit-form.component';
+
 export const routes: Routes = [
-  // {
-  //   path: "",
-  //   redirectTo: 'vendor-portal/',
-  //   pathMatch: 'full'
-  // },
-  // {
-  //   path: "",
-  //   redirectTo: 'commerce/requests',
-  //   pathMatch: 'full'
-  // },
-  // {
-  //   path: '',
-  //   redirectTo: 'sales-hub',
-  //   pathMatch: 'full'
-  // },
+  // Default redirect
   {
     path: "",
     redirectTo: 'manage-vendors',
     pathMatch: 'full'
   },
 
-  // -- Vendor Management --
+  // --- Vendor Management ---
   {
     path: 'manage-vendors',
     component: VendorManagementComponent
   },
+  {
+    path: 'manage-vendors/onboarding',
+    component: VendorOnboardingComponent
+  },
+  {
+    path: 'manage-vendors/:id/profile',
+    component: VendorManagementDetailComponent
+  },
+  {
+    path: 'manage-vendors/:id/edit',
+    component: VendorEditComponent
+  },
+
   // --- Sales Hub ---
   {
     path: 'sales-hub',
@@ -193,7 +199,7 @@ export const routes: Routes = [
     component: SalesAndTransactionsDetailComponent
   },
 
-  // --- Other routes ---
+  // --- Request Management Routes ---
   {
     path: 'commerce/requests',
     component: RequestManagementComponent
@@ -274,7 +280,6 @@ export const routes: Routes = [
     path: 'commerce/quotations/:id/:uuid',
     component: QuotationDetailComponent
   },
-  // RFQ Detail with Quotations
   {
     path: 'commerce/requests/:id/quotations',
     component: RfqDetailWithQuotationsComponent
@@ -287,6 +292,8 @@ export const routes: Routes = [
     path: 'commerce/requests/approvals/:id',
     component: ApprovalRfqDetailComponent
   },
+
+  // --- Vendor Portal ---
   {
     path: 'vendor-portal',
     component: VendorPortalComponent
@@ -295,6 +302,8 @@ export const routes: Routes = [
     path: 'vendor-portal/:uuid',
     component: VendorPortalComponent
   },
+
+  // --- Reports ---
   {
     path: 'reports/:uuid',
     redirectTo: 'sales-hub',
@@ -304,6 +313,12 @@ export const routes: Routes = [
     path: 'reports',
     redirectTo: 'sales-hub',
     pathMatch: 'full'
+  },
+
+  // Wildcard redirect - catch all unknown routes
+  {
+    path: '**',
+    redirectTo: 'manage-vendors'
   }
 ];
 

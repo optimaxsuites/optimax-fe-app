@@ -6,7 +6,7 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil, switchMap } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import {
   VendorService
 } from '../../../service/vendor-management/vendor-management.service';
@@ -306,7 +306,9 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
 
   clearSearch(): void {
     this.filterForm.patchValue({ search: '' });
-    this.searchInput.nativeElement.value = '';
+    if (this.searchInput) {
+      this.searchInput.nativeElement.value = '';
+    }
     this.currentPage = 1;
     this.loadVendors();
   }
@@ -526,13 +528,10 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
       return;
     }
 
-    // In real implementation, this would call a bulk API endpoint
-    // For now, we'll update each vendor individually
     const ids = Array.from(this.selectedVendors);
     ids.forEach(id => {
       this.vendorService.updateVendorStatus(id, status).subscribe({
         next: () => {
-          // Update local data
           const vendor = this.vendors.find(v => v.id === id);
           if (vendor) vendor.status = status;
         },
@@ -542,7 +541,6 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
 
     this.selectedVendors.clear();
     this.selectAll = false;
-    // Reload after all updates
     setTimeout(() => this.loadVendors(), 2000);
   }
 
@@ -551,12 +549,21 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
       return;
     }
 
-    // In real implementation, this would call a bulk delete API
-    // For now, we'll show a message
-    console.log(`Deleting ${this.selectedVendors.size} vendors...`);
+    const ids = Array.from(this.selectedVendors);
+    ids.forEach(id => {
+      this.vendorService.deleteVendor(id).subscribe({
+        next: () => {
+          // Remove from local list
+          this.vendors = this.vendors.filter(v => v.id !== id);
+          this.filteredVendors = this.filteredVendors.filter(v => v.id !== id);
+        },
+        error: (err) => console.error('Failed to delete vendor:', err)
+      });
+    });
+
     this.selectedVendors.clear();
     this.selectAll = false;
-    this.loadVendors();
+    setTimeout(() => this.loadVendors(), 2000);
   }
 
   private exportSelected(): void {
@@ -582,46 +589,45 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     });
   }
 
-  // Detail Modal Overlay
-  showVendorDetail: boolean = false;
-  selectedVendorId: string = '';
-
   // ============================================================
-  // NAVIGATION & DETAIL OVERLAY
+  // NAVIGATION - UPDATED to use router.navigate
   // ============================================================
-
-  openVendorDetail(id: string): void {
-    this.selectedVendorId = id;
-    this.showVendorDetail = true;
-  }
-
-  closeVendorDetail(): void {
-    this.showVendorDetail = false;
-    this.selectedVendorId = '';
-  }
 
   navigateToVendor(id: string): void {
-    this.openVendorDetail(id);
+    this.router.navigate(['/manage-vendors', id, 'profile']);
   }
 
   navigateToOnboarding(): void {
-    this.router.navigate(['/vendor-management/onboarding']);
+    this.router.navigate(['/manage-vendors/onboarding']);
   }
 
   navigateToVendorDetail(id: string): void {
-    this.openVendorDetail(id);
+    this.router.navigate(['/manage-vendors', id, 'profile']);
   }
 
   // ============================================================
-  // ACTIONS
+  // ACTIONS - UPDATED
   // ============================================================
 
+  /**
+   * View vendor details - navigates to profile page
+   */
   viewVendor(id: string): void {
-    this.openVendorDetail(id);
+    this.router.navigate(['/manage-vendors', id, 'profile']);
   }
 
+  /**
+   * Edit vendor - navigates to edit page
+   */
+  editVendor(id: string): void {
+    this.router.navigate(['/manage-vendors', id, 'edit']);
+  }
+
+  /**
+   * Delete vendor with confirmation
+   */
   deleteVendor(vendor: Vendor): void {
-    if (confirm(`Are you sure you want to delete ${vendor.companyName}?`)) {
+    if (confirm(`Are you sure you want to delete ${vendor.companyName}? This action cannot be undone.`)) {
       this.vendorService.deleteVendor(vendor.id).subscribe({
         next: () => {
           this.loadVendors();
@@ -631,20 +637,25 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     }
   }
 
-  editVendor(id: string): void {
-    this.router.navigate(['/vendor-management', id, 'edit']);
-  }
-
+  /**
+   * View performance - navigates to profile with performance tab
+   */
   viewPerformance(id: string): void {
-    this.router.navigate(['/vendor-management', id, 'performance']);
+    this.router.navigate(['/manage-vendors', id, 'profile'], { queryParams: { tab: 'performance' } });
   }
 
+  /**
+   * View risk - navigates to profile with risk tab
+   */
   viewRisk(id: string): void {
-    this.router.navigate(['/vendor-management', id, 'risk']);
+    this.router.navigate(['/manage-vendors', id, 'profile'], { queryParams: { tab: 'risk' } });
   }
 
+  /**
+   * View documents - navigates to profile with documents tab
+   */
   viewDocuments(id: string): void {
-    this.router.navigate(['/vendor-management', id, 'documents']);
+    this.router.navigate(['/manage-vendors', id, 'profile'], { queryParams: { tab: 'documents' } });
   }
 
   // ============================================================
@@ -666,7 +677,6 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     this.columnConfigs.forEach(col => {
       col.visible = col.key !== 'select' && col.key !== 'actions' || col.key === 'select' || col.key === 'actions';
     });
-    // Reset visibleColumns
     this.visibleColumns = {
       select: true,
       rank: true,

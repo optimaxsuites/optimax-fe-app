@@ -5,21 +5,17 @@
 
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, FormArray, AbstractControl } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import {
   VendorService
 } from '../../../service/vendor-management/vendor-management.service';
 import {
   OnboardingData,
-  VendorStatus,
-  VendorTier,
-  RiskLevel,
   DocumentCategory,
   FileUploadData,
   VendorAddress,
-  BankDetails,
-  VendorContact
+  BankDetails
 } from '../../../domain/vendor-management/vendor-management.dto';
 
 // ============================================================
@@ -130,6 +126,35 @@ export class VendorOnboardingComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
+  // GETTERS
+  // ============================================================
+
+  get contacts(): FormArray {
+    return this.bankContactForm.get('contacts') as FormArray;
+  }
+
+  get documentsArray(): FormArray {
+    return this.documentsForm.get('documents') as FormArray;
+  }
+
+  get f() {
+    return this.companyForm.controls;
+  }
+
+  get bf() {
+    return this.bankContactForm.controls;
+  }
+
+  // ============================================================
+  // COMPUTED PROPERTIES
+  // ============================================================
+
+  // FIXED: Replaces the filter pipe
+  get requiredDocumentCategories() {
+    return this.documentCategories.filter(c => c.required);
+  }
+
+  // ============================================================
   // FORM BUILDING
   // ============================================================
 
@@ -181,26 +206,6 @@ export class VendorOnboardingComponent implements OnInit, OnDestroy {
       role: ['', [Validators.required]],
       isPrimary: [false]
     });
-  }
-
-  // ============================================================
-  // GETTERS
-  // ============================================================
-
-  get contacts(): FormArray {
-    return this.bankContactForm.get('contacts') as FormArray;
-  }
-
-  get documentsArray(): FormArray {
-    return this.documentsForm.get('documents') as FormArray;
-  }
-
-  get f() {
-    return this.companyForm.controls;
-  }
-
-  get bf() {
-    return this.bankContactForm.controls;
   }
 
   // ============================================================
@@ -294,6 +299,11 @@ export class VendorOnboardingComponent implements OnInit, OnDestroy {
     }
   }
 
+  // FIXED: Helper to cast AbstractControl to FormGroup for template
+  getContactFormGroup(control: AbstractControl): FormGroup {
+    return control as FormGroup;
+  }
+
   // ============================================================
   // CATEGORY MANAGEMENT
   // ============================================================
@@ -371,12 +381,15 @@ export class VendorOnboardingComponent implements OnInit, OnDestroy {
     this.uploadedDocuments.splice(index, 1);
   }
 
-  updateDocumentCategory(index: number, category: DocumentCategory): void {
+  updateDocumentCategory(index: number, event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const category = select.value as DocumentCategory;
     this.uploadedDocuments[index].category = category;
   }
 
-  updateDocumentDates(index: number, field: 'issueDate' | 'expiryDate', value: string): void {
-    const date = new Date(value);
+  updateDocumentDates(index: number, field: 'issueDate' | 'expiryDate', event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const date = new Date(input.value);
     if (!isNaN(date.getTime())) {
       this.uploadedDocuments[index][field] = date;
     }
@@ -459,7 +472,7 @@ export class VendorOnboardingComponent implements OnInit, OnDestroy {
           localStorage.removeItem('vendorOnboardingDraft');
           // Navigate after delay
           setTimeout(() => {
-            this.router.navigate(['/vendor-management', result.vendorId, 'profile']);
+            this.router.navigate(['/manage-vendors', result.vendorId, 'profile']);
           }, 3000);
         },
         error: (err) => {
@@ -474,7 +487,7 @@ export class VendorOnboardingComponent implements OnInit, OnDestroy {
   // DRAFT SAVE/RESTORE
   // ============================================================
 
-  private saveDraft(): void {
+  saveDraft(): void {
     try {
       const draft = {
         companyForm: this.companyForm.value,
@@ -484,7 +497,6 @@ export class VendorOnboardingComponent implements OnInit, OnDestroy {
           category: d.category,
           issueDate: d.issueDate,
           expiryDate: d.expiryDate,
-          // Note: We can't save the File object, so we'll skip it
         })),
         currentStep: this.currentStep
       };
