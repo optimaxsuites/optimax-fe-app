@@ -69,8 +69,7 @@
                 <div class="search-wrapper">
                     <i class="fas fa-search search-icon"></i>
                     <input #searchInput type="text" class="search-input"
-                        placeholder="Search vendors by name, email, or ID..."
-                        (input)="onSearchInput($event)"
+                        placeholder="Search vendors by name, email, or ID..." (input)="onSearchInput($event)"
                         [value]="filterForm.get('search')?.value || ''" />
                     <button class="search-clear" *ngIf="filterForm.get('search')?.value" (click)="clearSearch()">
                         <i class="fas fa-times"></i>
@@ -223,7 +222,7 @@
         </div>
 
         <!-- ============================================================
-        TABLE - Shared Sales Hub / Procurement Style
+        TABLE
         ============================================================ -->
         <div class="table-container" #tableContainer>
             <div class="table-wrapper">
@@ -311,9 +310,9 @@
                             </td>
                         </tr>
 
-                        <!-- Vendor Rows -->
+                        <!-- Vendor Rows - Removed row click -->
                         <tr *ngFor="let vendor of filteredVendors; let i = index"
-                            [class.selected]="isSelected(vendor.id)" (click)="openVendorDetail(vendor.id)">
+                            [class.selected]="isSelected(vendor.id)">
                             <td *ngIf="visibleColumns.select" class="checkbox-col" (click)="$event.stopPropagation()">
                                 <input type="checkbox" [checked]="isSelected(vendor.id)"
                                     (change)="toggleSelectVendor(vendor.id)" />
@@ -357,8 +356,8 @@
                                     [class.risk-medium]="vendor.riskLevel === RiskLevel.MEDIUM"
                                     [class.risk-low]="vendor.riskLevel === RiskLevel.LOW">
                                     <i class="fas" [class.fa-exclamation-triangle]="vendor.riskLevel === RiskLevel.HIGH"
-                                       [class.fa-exclamation-circle]="vendor.riskLevel === RiskLevel.MEDIUM"
-                                       [class.fa-check-circle]="vendor.riskLevel === RiskLevel.LOW"></i>
+                                        [class.fa-exclamation-circle]="vendor.riskLevel === RiskLevel.MEDIUM"
+                                        [class.fa-check-circle]="vendor.riskLevel === RiskLevel.LOW"></i>
                                     {{ vendor.riskLevel }}
                                 </span>
                             </td>
@@ -399,15 +398,19 @@
                                 {{ formatDate(vendor.joinedDate) }}
                             </td>
 
+                            <!-- Actions - Updated with correct navigation -->
                             <td *ngIf="visibleColumns.actions" class="actions-col" (click)="$event.stopPropagation()">
                                 <div class="actions-wrapper">
-                                    <button class="action-btn view-btn" (click)="openVendorDetail(vendor.id)" title="View Details">
+                                    <button class="action-btn view-btn" (click)="viewVendor(vendor.id)"
+                                        title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="action-btn edit-btn" (click)="editVendor(vendor.id)" title="Edit Vendor">
+                                    <button class="action-btn edit-btn" (click)="editVendor(vendor.id)"
+                                        title="Edit Vendor">
                                         <i class="fas fa-pencil-alt"></i>
                                     </button>
-                                    <button class="action-btn delete-btn" (click)="deleteVendor(vendor)" title="Delete Vendor">
+                                    <button class="action-btn delete-btn" (click)="deleteVendor(vendor)"
+                                        title="Delete Vendor">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </div>
@@ -446,10 +449,3 @@
 
     </div>
 </div>
-
-<!-- ============================================================
-VENDOR DETAIL OVERLAY MODAL
-============================================================ -->
-<app-side-modal *ngIf="showVendorDetail" (close)="closeVendorDetail()">
-    <app-vendor-management-detail [vendorId]="selectedVendorId" (close)="closeVendorDetail()"></app-vendor-management-detail>
-</app-side-modal>

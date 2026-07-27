@@ -124,6 +124,8 @@ import { VendorManagementComponent } from './ui/view/vendor-management/vendor-ma
 import { VendorManagementDashboardComponent } from './ui/view/vendor-management/vendor-management-dashboard/vendor-management-dashboard.component';
 import { VendorManagementListComponent } from './ui/view/vendor-management/vendor-management-list/vendor-management-list.component';
 import { VendorManagementDetailComponent } from './ui/view/vendor-management/vendor-management-detail/vendor-management-detail.component';
+import { VendorOnboardingComponent } from './ui/view/vendor-management/vendor-onboarding/vendor-onboarding.component';
+import { VendorEditComponent } from './ui/view/vendor-management/vendor-edit-form/vendor-edit-form.component';
 
 @NgModule({
   declarations: [
@@ -168,6 +170,8 @@ import { VendorManagementDetailComponent } from './ui/view/vendor-management/ven
     VendorManagementDashboardComponent,
     VendorManagementListComponent,
     VendorManagementDetailComponent,
+    VendorOnboardingComponent,        // <- ADD THIS
+    VendorEditComponent,
   ],
   imports: [
     // BrowserModule,
@@ -242,6 +246,7 @@ import { VendorManagementDetailComponent } from './ui/view/vendor-management/ven
     TemplateTypesComponent,
     VpStatusBadgeComponent,
     CommandPaletteComponent,
+
   ],
   exports: [TableComponent],
   providers: [

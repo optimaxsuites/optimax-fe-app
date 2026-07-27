@@ -3,8 +3,8 @@
     <div class="onboarding-wrapper">
 
         <!-- ============================================================
-    HEADER
-    ============================================================ -->
+        HEADER
+        ============================================================ -->
         <div class="page-header">
             <div class="header-left">
                 <div class="header-breadcrumb">
@@ -32,8 +32,8 @@
         </div>
 
         <!-- ============================================================
-    ERROR DISPLAY
-    ============================================================ -->
+        ERROR DISPLAY
+        ============================================================ -->
         <div class="error-banner" *ngIf="error">
             <i class="fas fa-exclamation-circle"></i>
             <span>{{ error }}</span>
@@ -43,8 +43,8 @@
         </div>
 
         <!-- ============================================================
-    SUCCESS DISPLAY
-    ============================================================ -->
+        SUCCESS DISPLAY
+        ============================================================ -->
         <div class="success-banner" *ngIf="showSuccess">
             <i class="fas fa-check-circle"></i>
             <div>
@@ -54,8 +54,8 @@
         </div>
 
         <!-- ============================================================
-    STEPPER
-    ============================================================ -->
+        STEPPER
+        ============================================================ -->
         <div class="stepper-container">
             <div class="stepper">
                 <div *ngFor="let title of stepTitles; let i = index" class="step-item"
@@ -75,8 +75,8 @@
         </div>
 
         <!-- ============================================================
-    STEP CONTENT
-    ============================================================ -->
+        STEP CONTENT
+        ============================================================ -->
         <div class="step-content" (keydown)="onKeydown($event)">
 
             <!-- STEP 1: Company Details -->
@@ -320,8 +320,9 @@
                             </button>
                         </div>
 
+                        <!-- FIXED: Added getContactFormGroup to cast AbstractControl to FormGroup -->
                         <div *ngFor="let contact of contacts.controls; let i = index" class="contact-card"
-                            [formGroup]="contact">
+                            [formGroup]="getContactFormGroup(contact)">
                             <div class="contact-header">
                                 <span class="contact-number">Contact #{{ i + 1 }}</span>
                                 <button type="button" class="btn-remove" (click)="removeContact(i)"
@@ -419,11 +420,11 @@
                     </div>
                 </div>
 
-                <!-- Required Documents Notice -->
+                <!-- Required Documents Notice - FIXED: removed filter pipe -->
                 <div class="required-notice">
                     <i class="fas fa-info-circle"></i>
                     <span>Required documents: </span>
-                    <span *ngFor="let cat of documentCategories | filter: 'required': true; let last = last">
+                    <span *ngFor="let cat of requiredDocumentCategories; let last = last">
                         {{ cat.label }}<span *ngIf="!last">, </span>
                     </span>
                 </div>
@@ -447,8 +448,7 @@
                         <div class="doc-metadata">
                             <div class="doc-category">
                                 <label>Category</label>
-                                <select [value]="doc.category"
-                                    (change)="updateDocumentCategory(i, $event.target.value)">
+                                <select [value]="doc.category" (change)="updateDocumentCategory(i, $event)">
                                     <option *ngFor="let cat of documentCategories" [value]="cat.value">
                                         {{ cat.label }} {{ cat.required ? '*' : '' }}
                                     </option>
@@ -459,12 +459,12 @@
                                 <div class="date-group">
                                     <label>Issue Date</label>
                                     <input type="date" [value]="formatDate(doc.issueDate)"
-                                        (change)="updateDocumentDates(i, 'issueDate', $event.target.value)" />
+                                        (change)="updateDocumentDates(i, 'issueDate', $event)" />
                                 </div>
                                 <div class="date-group">
                                     <label>Expiry Date</label>
                                     <input type="date" [value]="formatDate(doc.expiryDate)"
-                                        (change)="updateDocumentDates(i, 'expiryDate', $event.target.value)" />
+                                        (change)="updateDocumentDates(i, 'expiryDate', $event)" />
                                 </div>
                             </div>
                         </div>
@@ -597,6 +597,7 @@
 
                         <div class="review-contacts">
                             <h4>Contacts</h4>
+                            <!-- FIXED: Cast AbstractControl to FormGroup for review section -->
                             <div *ngFor="let contact of contacts.controls; let i = index" class="review-contact">
                                 <span class="contact-badge">#{{ i + 1 }}</span>
                                 <div class="contact-details">
@@ -646,8 +647,8 @@
         </div>
 
         <!-- ============================================================
-    PROGRESS INDICATOR
-    ============================================================ -->
+        PROGRESS INDICATOR
+        ============================================================ -->
         <div class="progress-footer">
             <div class="progress-bar">
                 <div class="progress-fill" [style.width.%]="((currentStep - 1) / (totalSteps - 1)) * 100"></div>
