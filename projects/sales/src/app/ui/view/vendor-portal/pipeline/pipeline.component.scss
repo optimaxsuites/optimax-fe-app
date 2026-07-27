@@ -39,18 +39,27 @@
   }
 }
 
-// ── Side panel slide-in ───────────────────────────────────────────────────────
-.panel-slide {
-  animation: panelSlide 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+.vp-icon-chip--danger,
+.vp-kpi__icon--danger {
+  background: #fceeed;
+  color: #c02c2c;
 }
-@keyframes panelSlide {
+
+// ── Full-page detail transition ───────────────────────────────────────────────
+// Replaces the old drawer's slide-from-the-right — there's no drawer anymore,
+// a row click now swaps the whole view for a real page, so it gets a page-like
+// entrance: a quiet fade + slight rise, not a panel sliding into a corner.
+.page-in {
+  animation: pipelinePageIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes pipelinePageIn {
   from {
-    transform: translateX(32px);
     opacity: 0;
+    transform: translateY(10px);
   }
   to {
-    transform: translateX(0);
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
