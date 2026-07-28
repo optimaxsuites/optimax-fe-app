@@ -47,8 +47,9 @@ export class EmployeeService {
   uploadEmployeePhoto(employee: any, file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file, file.name);
+    const context = new HttpContext().set(SUPPRESS_ERROR_TOAST, true);
     return this.http
-      .put<any>(this.baseurl + `/x/api/v2/hr/employees/${employee.id}/photo`, formData)
+      .put<any>(this.baseurl + `/x/api/v2/hr/employees/${employee.id}/photo`, formData, { context })
       .pipe(catchError(this.handleError));
   }
 

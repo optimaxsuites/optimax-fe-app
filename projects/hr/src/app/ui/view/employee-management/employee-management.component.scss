@@ -548,9 +548,10 @@ p{
 
     &--name   { @apply flex items-center gap-3 flex-[2]; }
     &--dept   { @apply flex-[1.2]; }
-    &--role   { @apply flex-[1.4] text-slate-500; }
-    &--level  { @apply flex-[1]; }
-    &--type   { @apply flex-[1]; }
+    &--role   { @apply flex-[1.2] text-slate-500; }
+    &--level  { @apply flex-[0.9]; }
+    &--type   { @apply flex-[0.9]; }
+    &--status { @apply flex-[1]; }
     &--joined { @apply flex-[1] text-slate-400 text-xs; }
     &--actions { @apply flex items-center justify-end gap-2 flex-shrink-0 w-[108px]; }
 }

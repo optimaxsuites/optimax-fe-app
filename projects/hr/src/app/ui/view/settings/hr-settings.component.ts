@@ -192,7 +192,9 @@ export class HrSettingsComponent implements OnInit {
         }
         this.payrollSettingsLoading = false;
       },
-      error: () => { this.payrollSettingsLoading = false; }
+      error: () => {
+        this.payrollSettingsLoading = false;
+      }
     });
   }
 
