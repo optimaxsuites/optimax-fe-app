@@ -221,10 +221,12 @@
                 <div class="subsection">
                   <label class="subsection-label">Quotation From</label>
                   <div class="billed-details">
-                    <div class="billed-avatar">EO</div>
+                    <div class="billed-avatar">{{ getBilledByInitials() }}</div>
                     <div class="billed-info">
-                      <strong>Eseose Odion</strong>
-                      <span>Nigeria</span>
+                      <strong>{{ billedBy.name }}</strong>
+                      <span>{{ billedBy.address || 'No address set' }}</span>
+                      <span *ngIf="billedBy.email" style="font-size: 0.8rem; color: #64748b;">{{ billedBy.email }}</span>
+                      <span *ngIf="billedBy.phone" style="font-size: 0.8rem; color: #64748b;">{{ billedBy.phone }}</span>
                     </div>
                     <button type="button" class="btn-edit" (click)="editBilledBy()">
                       <i class="fas fa-pencil-alt"></i> Edit
@@ -503,59 +505,64 @@
                       <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo" style="max-height: 55px; max-width: 160px; object-fit: contain;">
                       <div class="company-logo-placeholder-circle" *ngIf="!logoUrl" style="width: 45px; height: 45px; border-radius: 50%; background: rgba(163, 38, 56, 0.08); color: #A32638; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 700;">C</div>
                     </div>
-                    <h1 class="emirates-company-name">CENTRIFUGE INFORMATION TECHNOLOGY LIMITED</h1>
-                    <p class="emirates-company-sub">RC 834975 | Suite 203, Jinifa Plaza, Samuel Ademulegun Street, CBD, Abuja, Nigeria</p>
-                    <p class="emirates-company-contact">www.centrifugegroup.com | damilola&#64;centrifugegroup.com | Tel: +234 815 502 6555</p>
-                  </div>
-
+                     <h1 class="emirates-company-name">{{ billedBy.name | uppercase }}</h1>
+                     <p class="emirates-company-sub">{{ billedBy.address }}</p>
+                     <p class="emirates-company-contact">
+                       <span *ngIf="billedBy.email">Email: {{ billedBy.email }}</span>
+                       <span *ngIf="billedBy.email && billedBy.phone"> | </span>
+                       <span *ngIf="billedBy.phone">Tel: {{ billedBy.phone }}</span>
+                     </p>
+                   </div>
+ 
+                   <div class="emirates-divider"></div>
+ 
+                   <!-- Centered Document Title -->
+                   <div class="emirates-title-block">
+                     <h2 class="emirates-title">QUOTATION</h2>
+                   </div>
+ 
+                   <!-- Metadata & Status Block -->
+                   <div class="emirates-meta-grid">
+                     <div class="meta-item">
+                       <strong>Quote No:</strong> <span>{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span>
+                     </div>
+                     <div class="meta-item">
+                       <strong>Quote Date:</strong> <span>{{ quoteForm.get('quoteDate')?.value || today }}</span>
+                     </div>
+                     <div class="meta-item">
+                       <strong>Valid Until:</strong> <span>{{ quoteForm.get('validUntil')?.value }}</span>
+                     </div>
+                     <div class="meta-item">
+                       <strong>Status:</strong> <span class="status-badge unpaid">PENDING</span>
+                     </div>
+                   </div>
+ 
                   <div class="emirates-divider"></div>
-
-                  <!-- Centered Document Title -->
-                  <div class="emirates-title-block">
-                    <h2 class="emirates-title">QUOTATION</h2>
-                  </div>
-
-                  <!-- Metadata & Status Block -->
-                  <div class="emirates-meta-grid">
-                    <div class="meta-item">
-                      <strong>Quote No:</strong> <span>{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span>
-                    </div>
-                    <div class="meta-item">
-                      <strong>Quote Date:</strong> <span>{{ quoteForm.get('quoteDate')?.value || today }}</span>
-                    </div>
-                    <div class="meta-item">
-                      <strong>Valid Until:</strong> <span>{{ quoteForm.get('validUntil')?.value }}</span>
-                    </div>
-                    <div class="meta-item">
-                      <strong>Status:</strong> <span class="status-badge unpaid">PENDING</span>
-                    </div>
-                  </div>
-
-                  <div class="emirates-divider"></div>
-
-                  <!-- Parties Block -->
-                  <div class="emirates-parties-grid">
-                    <div class="parties-box">
-                      <h4 class="parties-heading">BILL TO</h4>
-                      <strong>{{ quoteForm.get('customerName')?.value || 'Emirates Airlines' }}</strong>
-                      <p>{{ quoteForm.get('customerId')?.value ? 'ID: ' + quoteForm.get('customerId')?.value : 'Abuja, FCT, Nigeria' }}</p>
-                      <p *ngIf="quoteDataForTemplate?.customerEmail">{{ quoteDataForTemplate?.customerEmail }}</p>
-                      <!-- Customer Bank Account Details -->
-                      <div class="client-bank-subbox" *ngIf="quoteDataForTemplate?.selectedCustomerBank" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed rgba(186, 153, 83, 0.3); font-size: 0.8rem;">
-                        <p style="margin: 0; color: #BA9953; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Customer Bank Details</p>
-                        <p style="margin: 0; color: #1a2d4a; font-weight: 600;">Bank: {{ quoteDataForTemplate.selectedCustomerBank.bankName }}</p>
-                        <p style="margin: 0; color: #4a5a6e;">Acc Name: {{ quoteDataForTemplate.selectedCustomerBank.accountName }}</p>
-                        <p style="margin: 0; color: #1a2d4a; font-weight: 600;">Acc No: {{ quoteDataForTemplate.selectedCustomerBank.accountNumber }}</p>
-                        <p style="margin: 0; color: #4a5a6e;" *ngIf="quoteDataForTemplate.selectedCustomerBank.routingNumber">Sort Code: {{ quoteDataForTemplate.selectedCustomerBank.routingNumber }}</p>
-                      </div>
-                    </div>
-                    <div class="parties-box">
-                      <h4 class="parties-heading">FROM</h4>
-                      <strong>Centrifuge Information Technology Limited</strong>
-                      <p>Suite 203, Jinifa Plaza</p>
-                      <p>Samuel Ademulegun Street, CBD, Abuja, Nigeria</p>
-                    </div>
-                  </div>
+ 
+                   <!-- Parties Block -->
+                   <div class="emirates-parties-grid">
+                     <div class="parties-box">
+                       <h4 class="parties-heading">BILL TO</h4>
+                       <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
+                       <p *ngIf="selectedCustomer?.address">{{ selectedCustomer.address }}</p>
+                       <p *ngIf="selectedCustomer?.email">{{ selectedCustomer.email }}</p>
+                       <!-- Customer Bank Account Details -->
+                       <div class="client-bank-subbox" *ngIf="quoteDataForTemplate?.selectedCustomerBank" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed rgba(186, 153, 83, 0.3); font-size: 0.8rem;">
+                         <p style="margin: 0; color: #BA9953; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Customer Bank Details</p>
+                         <p style="margin: 0; color: #1a2d4a; font-weight: 600;">Bank: {{ quoteDataForTemplate.selectedCustomerBank.bankName }}</p>
+                         <p style="margin: 0; color: #4a5a6e;">Acc Name: {{ quoteDataForTemplate.selectedCustomerBank.accountName }}</p>
+                         <p style="margin: 0; color: #1a2d4a; font-weight: 600;">Acc No: {{ quoteDataForTemplate.selectedCustomerBank.accountNumber }}</p>
+                         <p style="margin: 0; color: #4a5a6e;" *ngIf="quoteDataForTemplate.selectedCustomerBank.routingNumber">Sort Code: {{ quoteDataForTemplate.selectedCustomerBank.routingNumber }}</p>
+                       </div>
+                     </div>
+                     <div class="parties-box">
+                       <h4 class="parties-heading">FROM</h4>
+                       <strong>{{ billedBy.name }}</strong>
+                       <p>{{ billedBy.address }}</p>
+                       <p *ngIf="billedBy.email">Email: {{ billedBy.email }}</p>
+                       <p *ngIf="billedBy.phone">Tel: {{ billedBy.phone }}</p>
+                     </div>
+                   </div>
 
                   <!-- Project Metadata -->
                   <div class="emirates-project-ref">
@@ -635,21 +642,26 @@
                     <p class="payment-terms-text">
                       Payment terms: Net 25 days from invoice date (as per Purchase Order). All prices inclusive of VAT at 7.5% as per Nigerian tax regulations.
                     </p>
-                    <div class="bank-details-box">
+                    <div class="bank-details-box" *ngIf="billedBy.bankName || billedBy.accountName || billedBy.accountNumber">
                       <strong>Bank Details:</strong>
-                      <p>Bank: Stanbic IBTC Bank Plc</p>
-                      <p>Account Name: Centrifuge Information Technology Ltd</p>
-                      <p>Account Number: 0013604661</p>
+                      <p *ngIf="billedBy.bankName">Bank: {{ billedBy.bankName }}</p>
+                      <p *ngIf="billedBy.accountName">Account Name: {{ billedBy.accountName }}</p>
+                      <p *ngIf="billedBy.accountNumber">Account Number: {{ billedBy.accountNumber }}</p>
+                      <p *ngIf="billedBy.routingNumber">Sort Code / Routing Number: {{ billedBy.routingNumber }}</p>
                     </div>
-                    <p class="enquiries-text">For enquiries: damilola&#64;centrifugegroup.com | +234 815 502 6555</p>
+                    <p class="enquiries-text" *ngIf="billedBy.email || billedBy.phone">
+                      For enquiries: <span *ngIf="billedBy.email">{{ billedBy.email }}</span>
+                      <span *ngIf="billedBy.email && billedBy.phone"> | </span>
+                      <span *ngIf="billedBy.phone">{{ billedBy.phone }}</span>
+                    </p>
                   </div>
 
                   <!-- Signatures Grid -->
                   <div class="emirates-signatures-grid">
                     <div class="sig-box">
                       <p><strong>Authorised by:</strong></p>
-                      <p class="sig-name">Damilola Awe</p>
-                      <p class="sig-title">General Managing Director</p>
+                      <p class="sig-name">{{ signatureText || billedBy.name }}</p>
+                      <p class="sig-title" *ngIf="!signatureText">Authorized Signatory</p>
                       <div class="sig-line">Signature: ___________________</div>
                       <p class="sig-date">Date: {{ quoteForm.get('quoteDate')?.value || today }}</p>
                     </div>
@@ -677,9 +689,13 @@
                       <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo" style="max-height: 55px; max-width: 160px; object-fit: contain;">
                       <div class="company-logo-placeholder-circle" *ngIf="!logoUrl" style="width: 45px; height: 45px; border-radius: 50%; background: rgba(163, 38, 56, 0.08); color: #A32638; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 700;">C</div>
                     </div>
-                    <h1 class="emirates-company-name">CENTRIFUGE INFORMATION TECHNOLOGY LIMITED</h1>
-                    <p class="emirates-company-sub">RC 834975 | Suite 203, Jinifa Plaza, Samuel Ademulegun Street, CBD, Abuja, Nigeria</p>
-                    <p class="emirates-company-contact">www.centrifugegroup.com | damilola&#64;centrifugegroup.com | Tel: +234 815 502 6555</p>
+                    <h1 class="emirates-company-name">{{ billedBy.name | uppercase }}</h1>
+                    <p class="emirates-company-sub">{{ billedBy.address }}</p>
+                    <p class="emirates-company-contact">
+                      <span *ngIf="billedBy.email">Email: {{ billedBy.email }}</span>
+                      <span *ngIf="billedBy.email && billedBy.phone"> | </span>
+                      <span *ngIf="billedBy.phone">Tel: {{ billedBy.phone }}</span>
+                    </p>
                   </div>
 
                   <div class="emirates-divider"></div>
@@ -711,15 +727,16 @@
                   <div class="emirates-parties-grid">
                     <div class="parties-box">
                       <h4 class="parties-heading">BILL TO</h4>
-                      <strong>{{ quoteForm.get('customerName')?.value || 'Emirates Airlines' }}</strong>
-                      <p>{{ quoteForm.get('customerId')?.value ? 'ID: ' + quoteForm.get('customerId')?.value : 'Abuja, FCT, Nigeria' }}</p>
-                      <p *ngIf="quoteDataForTemplate?.customerEmail">{{ quoteDataForTemplate?.customerEmail }}</p>
+                      <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
+                      <p *ngIf="selectedCustomer?.address">{{ selectedCustomer.address }}</p>
+                      <p *ngIf="selectedCustomer?.email">{{ selectedCustomer.email }}</p>
                     </div>
                     <div class="parties-box">
                       <h4 class="parties-heading">FROM</h4>
-                      <strong>Centrifuge Information Technology Limited</strong>
-                      <p>Suite 203, Jinifa Plaza</p>
-                      <p>Samuel Ademulegun Street, CBD, Abuja, Nigeria</p>
+                      <strong>{{ billedBy.name }}</strong>
+                      <p>{{ billedBy.address }}</p>
+                      <p *ngIf="billedBy.email">Email: {{ billedBy.email }}</p>
+                      <p *ngIf="billedBy.phone">Tel: {{ billedBy.phone }}</p>
                     </div>
                   </div>
 
@@ -801,21 +818,26 @@
                     <p class="payment-terms-text">
                       Payment terms: Net 25 days from invoice date (as per Purchase Order). All prices inclusive of VAT at 7.5% as per Nigerian tax regulations.
                     </p>
-                    <div class="bank-details-box">
+                    <div class="bank-details-box" *ngIf="billedBy.bankName || billedBy.accountName || billedBy.accountNumber">
                       <strong>Bank Details:</strong>
-                      <p>Bank: Stanbic IBTC Bank Plc</p>
-                      <p>Account Name: Centrifuge Information Technology Ltd</p>
-                      <p>Account Number: 0013604661</p>
+                      <p *ngIf="billedBy.bankName">Bank: {{ billedBy.bankName }}</p>
+                      <p *ngIf="billedBy.accountName">Account Name: {{ billedBy.accountName }}</p>
+                      <p *ngIf="billedBy.accountNumber">Account Number: {{ billedBy.accountNumber }}</p>
+                      <p *ngIf="billedBy.routingNumber">Sort Code / Routing Number: {{ billedBy.routingNumber }}</p>
                     </div>
-                    <p class="enquiries-text">For enquiries: damilola&#64;centrifugegroup.com | +234 815 502 6555</p>
+                    <p class="enquiries-text" *ngIf="billedBy.email || billedBy.phone">
+                      For enquiries: <span *ngIf="billedBy.email">{{ billedBy.email }}</span>
+                      <span *ngIf="billedBy.email && billedBy.phone"> | </span>
+                      <span *ngIf="billedBy.phone">{{ billedBy.phone }}</span>
+                    </p>
                   </div>
 
                   <!-- Signatures Grid -->
                   <div class="emirates-signatures-grid">
                     <div class="sig-box">
                       <p><strong>Authorised by:</strong></p>
-                      <p class="sig-name">Damilola Awe</p>
-                      <p class="sig-title">General Managing Director</p>
+                      <p class="sig-name">{{ signatureText || billedBy.name }}</p>
+                      <p class="sig-title" *ngIf="!signatureText">Authorized Signatory</p>
                       <div class="sig-line">Signature: ___________________</div>
                       <p class="sig-date">Date: {{ quoteForm.get('quoteDate')?.value || today }}</p>
                     </div>
@@ -847,13 +869,10 @@
                         <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo" style="max-height: 50px; max-width: 150px; object-fit: contain; display: block; margin-left: auto;">
                         <div class="company-logo-placeholder-circle" *ngIf="!logoUrl" style="width: 40px; height: 40px; border-radius: 4px; background: rgba(27, 54, 93, 0.08); color: #1B365D; display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 700; margin-left: auto;">13</div>
                       </div>
-                      <h2 class="thcomms-company-name">13TH COMMUNICATIONS LTD</h2>
-                      <p>Shop 10 Ecopie Plaza, Arad Road</p>
-                      <p>Kubwa</p>
-                      <p>Abuja – FCT., Federal Capital Territory</p>
-                      <p>Nigeria</p>
-                      <p>Tel: 8022254773</p>
-                      <p>Email/Web: 13thcomms.ng</p>
+                      <h2 class="thcomms-company-name">{{ billedBy.name }}</h2>
+                      <p>{{ billedBy.address }}</p>
+                      <p *ngIf="billedBy.phone">Tel: {{ billedBy.phone }}</p>
+                      <p *ngIf="billedBy.email">Email/Web: {{ billedBy.email }}</p>
                     </div>
                   </div>
 
@@ -861,9 +880,9 @@
                   <div class="thcomms-meta-parties">
                     <div class="parties-left">
                       <h3 class="section-title">BILL TO</h3>
-                      <strong>{{ quoteForm.get('customerName')?.value || 'Customer' }}</strong>
-                      <p>{{ quoteForm.get('customerId')?.value ? 'ID: ' + quoteForm.get('customerId')?.value : 'FCT, Nigeria' }}</p>
-                      <p *ngIf="quoteDataForTemplate?.customerEmail">{{ quoteDataForTemplate?.customerEmail }}</p>
+                      <strong>{{ selectedCustomer?.name || 'Customer' }}</strong>
+                      <p *ngIf="selectedCustomer?.address">{{ selectedCustomer.address }}</p>
+                      <p *ngIf="selectedCustomer?.email">{{ selectedCustomer.email }}</p>
                     </div>
                     <div class="meta-right">
                       <table class="meta-table">
@@ -958,11 +977,12 @@
                       <p *ngIf="!quoteForm.get('notes')?.value">1] All prices net of VAT, WHT and other applicable taxes</p>
                     </div>
 
-                    <div class="payment-details-box">
+                    <div class="payment-details-box" *ngIf="billedBy.bankName || billedBy.accountName || billedBy.accountNumber">
                       <h4 class="section-title">Payment Details:</h4>
-                      <strong>13th Communications Ltd</strong>
-                      <p>Account Number: 5822787815</p>
-                      <p>Bank Name: MoniePoint</p>
+                      <strong *ngIf="billedBy.accountName">{{ billedBy.accountName }}</strong>
+                      <p *ngIf="billedBy.accountNumber">Account Number: {{ billedBy.accountNumber }}</p>
+                      <p *ngIf="billedBy.bankName">Bank Name: {{ billedBy.bankName }}</p>
+                      <p *ngIf="billedBy.routingNumber">Sort Code / Routing Number: {{ billedBy.routingNumber }}</p>
                     </div>
                   </div>
 
@@ -981,9 +1001,13 @@
                       <i class="fas fa-building" *ngIf="!logoUrl"></i>
                     </div>
                     <div>
-                      <h2 class="company-name">Centrifuge Information Technology Limited</h2>
-                      <p class="company-address">Suite 203, Jinifa Plaza, Samuel Ademulegun Street, CBD, Abuja, Nigeria</p>
-                      <p class="company-email">Website: www.centrifugegroup.com | damilola&#64;centrifugegroup.com</p>
+                      <h2 class="company-name">{{ billedBy.name }}</h2>
+                      <p class="company-address">{{ billedBy.address }}</p>
+                      <p class="company-email">
+                        <span *ngIf="billedBy.email">Email: {{ billedBy.email }}</span>
+                        <span *ngIf="billedBy.email && billedBy.phone"> | </span>
+                        <span *ngIf="billedBy.phone">Tel: {{ billedBy.phone }}</span>
+                      </p>
                     </div>
                   </div>
                   <div class="doc-meta-info">
@@ -998,15 +1022,20 @@
                 <div class="doc-parties">
                   <div class="parties-col" *ngIf="selectedTemplate?.sections?.showVendorInfo !== false">
                     <span class="parties-label">Quotation From:</span>
-                    <strong>Eseose Odion</strong>
-                    <p>Nigeria</p>
+                    <strong>{{ billedBy.name }}</strong>
+                    <p>{{ billedBy.address }}</p>
                   </div>
                   <div class="parties-col">
                     <span class="parties-label">Quotation For:</span>
-                    <strong>{{ quoteForm.get('customerName')?.value || 'Client Name' }}</strong>
-                    <p *ngIf="quoteForm.get('customerId')?.value">ID: {{ quoteForm.get('customerId')?.value }}</p>
-                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && quoteDataForTemplate?.customerEmail">
-                      Email: {{ quoteDataForTemplate?.customerEmail }}
+                    <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
+                    <p *ngIf="selectedCustomer?.address && selectedTemplate?.sections?.showCustomerDetails !== false">
+                      {{ selectedCustomer.address }}
+                    </p>
+                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.email">
+                      Email: {{ selectedCustomer.email }}
+                    </p>
+                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.phone">
+                      Tel: {{ selectedCustomer.phone }}
                     </p>
                   </div>
                 </div>
@@ -1195,9 +1224,9 @@
               <div class="form-error" *ngIf="isQuickFieldInvalid('email')">Valid email is required</div>
             </div>
             <div class="form-group flex-1">
-              <label class="form-label required">Phone Number</label>
-              <input type="tel" formControlName="phone" class="form-control" [class.is-invalid]="isQuickFieldInvalid('phone')" placeholder="e.g. +234 800 000 0000">
-              <div class="form-error" *ngIf="isQuickFieldInvalid('phone')">Valid phone is required</div>
+              <label class="form-label">Phone Number</label>
+              <input type="tel" formControlName="phone" class="form-control" [class.is-invalid]="isQuickFieldInvalid('phone')" placeholder="e.g. +234 800 000 0000 (Optional)">
+              <div class="form-error" *ngIf="isQuickFieldInvalid('phone')">Please enter a valid phone number</div>
             </div>
           </div>
 
@@ -1434,4 +1463,73 @@
       </div>
     </div>
   </div>
+  <!-- Billed By Edit Modal -->
+  <div class="custom-modal-backdrop" *ngIf="showBilledByModal" (click)="cancelBilledByEdit()">
+    <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 520px;">
+      <div class="custom-modal-header">
+        <div class="header-title-group">
+          <div class="icon-badge">
+            <i class="fas fa-building"></i>
+          </div>
+          <h3>Edit Quotation From</h3>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="cancelBilledByEdit()">&times;</button>
+      </div>
+
+      <div class="custom-modal-body" style="color: #334155;">
+        <h4 style="color: #BA9953; margin: 0 0 1rem 0; font-size: 0.95rem; font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.25rem;">SENDER INFORMATION</h4>
+        
+        <div class="field-group">
+          <label>Name / Company <span style="color: #ef4444;">*</span></label>
+          <input type="text" [(ngModel)]="billedByDraft.name" placeholder="Enter sender name or company..." style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
+          <div class="field-group" style="flex: 1;">
+            <label>Email Address</label>
+            <input type="email" [(ngModel)]="billedByDraft.email" placeholder="e.g. billing@company.com" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
+          </div>
+          <div class="field-group" style="flex: 1;">
+            <label>Phone Number</label>
+            <input type="tel" [(ngModel)]="billedByDraft.phone" placeholder="e.g. +234 800 000 0000" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
+          </div>
+        </div>
+
+        <div class="field-group" style="margin-top: 0.75rem;">
+          <label>Address</label>
+          <textarea [(ngModel)]="billedByDraft.address" placeholder="Enter physical / billing address..." rows="2" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem; resize: vertical;"></textarea>
+        </div>
+
+        <h4 style="color: #BA9953; margin: 1.25rem 0 1rem 0; font-size: 0.95rem; font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.25rem;">BANK DETAILS</h4>
+
+        <div style="display: flex; gap: 0.75rem;">
+          <div class="field-group" style="flex: 1;">
+            <label>Bank Name</label>
+            <input type="text" [(ngModel)]="billedByDraft.bankName" placeholder="e.g. Stanbic IBTC" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
+          </div>
+          <div class="field-group" style="flex: 1;">
+            <label>Account Name</label>
+            <input type="text" [(ngModel)]="billedByDraft.accountName" placeholder="e.g. Corporate Account" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
+          <div class="field-group" style="flex: 1;">
+            <label>Account Number</label>
+            <input type="text" [(ngModel)]="billedByDraft.accountNumber" placeholder="e.g. 0013604661" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
+          </div>
+          <div class="field-group" style="flex: 1;">
+            <label>Sort Code / Routing No</label>
+            <input type="text" [(ngModel)]="billedByDraft.routingNumber" placeholder="Optional" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
+          </div>
+        </div>
+      </div>
+
+      <div class="custom-modal-footer">
+        <button type="button" class="btn-modal-cancel" (click)="cancelBilledByEdit()">Cancel</button>
+        <button type="button" class="btn-modal-save" (click)="saveBilledBy()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
 </div>
