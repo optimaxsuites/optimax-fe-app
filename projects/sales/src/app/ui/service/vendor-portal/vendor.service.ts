@@ -887,6 +887,20 @@ export class VendorService {
     return of([]);
   }
 
+  getLposByVendorId(vendorId: string | number): Observable<any[]> {
+    const params = new HttpParams().set('vendorId', String(vendorId)).set('page', '0').set('size', '100');
+    return this.http.get<any[]>(`${this.baseUrl}/vendor-lpos`, { params }).pipe(
+      catchError(() => of([])),
+    );
+  }
+
+  getInvoicesByVendorId(vendorId: string | number): Observable<any[]> {
+    const params = new HttpParams().set('vendorId', String(vendorId)).set('page', '0').set('size', '100');
+    return this.http.get<any[]>(`${this.baseUrl}/vendor-invoices`, { params }).pipe(
+      catchError(() => of([])),
+    );
+  }
+
   /** Dev tooling: clears in-memory state so a fresh reload re-fetches from backend. */
   resetDemoData(): void {
     this.rfqs$$.next([]);
