@@ -146,6 +146,25 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   searchProductTerm = '';
   currentItemIndex = 0;
 
+  // Billed By (Invoice From) editable data
+  showBilledByModal = false;
+  billedBy = {
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    bankName: '',
+    accountName: '',
+    accountNumber: '',
+    routingNumber: ''
+  };
+  billedByDraft = { ...this.billedBy };
+
+  get selectedCustomer(): Customer | undefined {
+    const custId = this.invoiceForm.get('customerId')?.value;
+    return this.customers.find(c => c.customerId === custId || String(c.id) === custId);
+  }
+
   // Currency
   currencies = ['NGN', 'USD', 'EUR', 'GBP'];
 
@@ -193,7 +212,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     this.quickCustomerForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       email: ['', [Validators.required, Validators.email]],
-      phone: ['', [Validators.required, Validators.pattern(/^[0-9+\-\s()]{7,20}$/)]],
+      phone: ['', [Validators.pattern(/^[0-9+\-\s()]{7,20}$/)]],  // phone is optional
       address: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(255)]],
       taxId: ['', [Validators.maxLength(50)]],
       savePermanently: [true],
@@ -520,6 +539,20 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     this.logoUrl = quote.logoUrl?.[0] || '';
     this.logoFileName = quote.logoUrl?.[0] ? 'Saved Logo' : '';
 
+    if (quote.merchantDetails) {
+      this.billedBy = {
+        name: quote.merchantDetails.name || quote.merchantDetails.companyName || '',
+        email: quote.merchantDetails.email || '',
+        phone: quote.merchantDetails.phone || '',
+        address: Array.isArray(quote.merchantDetails.address) ? quote.merchantDetails.address.join(', ') : (quote.merchantDetails.address || ''),
+        bankName: quote.merchantDetails.bankDetails?.bankName || '',
+        accountName: quote.merchantDetails.bankDetails?.accountName || '',
+        accountNumber: quote.merchantDetails.bankDetails?.accountNumber || '',
+        routingNumber: quote.merchantDetails.website || ''
+      };
+      this.billedByDraft = { ...this.billedBy };
+    }
+
     // Add items from quote
     quote.items.forEach((item: any) => {
       this.addLineItem();
@@ -554,6 +587,20 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       paymentTerms: (invoice.paymentTerms as any)?.label || 'Net 30'
     });
     this.onCustomerSelect(custId);
+
+    if (invoice.merchantDetails) {
+      this.billedBy = {
+        name: invoice.merchantDetails.name || invoice.merchantDetails.companyName || '',
+        email: invoice.merchantDetails.email || '',
+        phone: invoice.merchantDetails.phone || '',
+        address: Array.isArray(invoice.merchantDetails.address) ? invoice.merchantDetails.address.join(', ') : (invoice.merchantDetails.address || ''),
+        bankName: invoice.merchantDetails.bankDetails?.bankName || '',
+        accountName: invoice.merchantDetails.bankDetails?.accountName || '',
+        accountNumber: invoice.merchantDetails.bankDetails?.accountNumber || '',
+        routingNumber: invoice.merchantDetails.website || ''
+      };
+      this.billedByDraft = { ...this.billedBy };
+    }
 
     this.logoUrl = invoice.logoUrl || '';
     this.logoFileName = invoice.logoUrl ? 'Saved Logo' : '';
@@ -755,7 +802,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   navigateToInvoices(): void {
-    this.router.navigate(['/sales/invoices']);
+    this.router.navigate(['/admin/sales/sales-hub']);
   }
 
   // Helper methods
@@ -922,7 +969,30 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   editBilledBy(): void {
-    alert('Edit Billed By feature is under development.');
+    this.billedByDraft = { ...this.billedBy };
+    this.showBilledByModal = true;
+  }
+
+  saveBilledBy(): void {
+    if (!this.billedByDraft.name || this.billedByDraft.name.trim().length === 0) {
+      alert('Name is required for the sender.');
+      return;
+    }
+    this.billedBy = { ...this.billedByDraft };
+    this.showBilledByModal = false;
+  }
+
+  cancelBilledByEdit(): void {
+    this.showBilledByModal = false;
+  }
+
+  getBilledByInitials(): string {
+    if (!this.billedBy.name) return '??';
+    const parts = this.billedBy.name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0].substring(0, 2).toUpperCase();
   }
 
   addDescription(index: number): void {

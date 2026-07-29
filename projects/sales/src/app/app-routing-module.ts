@@ -38,9 +38,14 @@ import { VendorEditComponent } from './ui/view/vendor-management/vendor-edit-for
 
 export const routes: Routes = [
   // Default redirect
+  // {
+  //   path: "",
+  //   redirectTo: 'manage-vendors',
+  //   pathMatch: 'full'
+  // },
   {
     path: "",
-    redirectTo: 'manage-vendors',
+    redirectTo: 'sales-hub',
     pathMatch: 'full'
   },
 
@@ -50,7 +55,15 @@ export const routes: Routes = [
     component: VendorManagementComponent
   },
   {
+    path: 'manage-vendors/:uuid',
+    component: VendorManagementComponent
+  },
+  {
     path: 'manage-vendors/onboarding',
+    component: VendorOnboardingComponent
+  },
+  {
+    path: 'manage-vendors/onboarding/:uuid',
     component: VendorOnboardingComponent
   },
   {
@@ -314,12 +327,6 @@ export const routes: Routes = [
     redirectTo: 'sales-hub',
     pathMatch: 'full'
   },
-
-  // Wildcard redirect - catch all unknown routes
-  {
-    path: '**',
-    redirectTo: 'manage-vendors'
-  }
 ];
 
 @NgModule({

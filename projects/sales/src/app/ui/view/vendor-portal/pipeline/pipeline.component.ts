@@ -241,6 +241,14 @@ export class PipelineComponent implements OnInit, OnDestroy {
   clearLpoFilter():     void { this.lpoFilter     = 'all'; }
   clearInvoiceFilter(): void { this.invoiceFilter = 'all'; }
 
+  // Whether a full-page record detail is currently open. When true, the list
+  // page (KPI rail + segmented tables) is hidden and one detail page takes
+  // over the whole view — a real "drill in" navigation rather than an
+  // overlay/drawer floating on top of the list.
+  get isDetailOpen(): boolean {
+    return this.showRfqPanel || this.showQuotationPanel || this.showLpoPanel || this.showInvoicePanel;
+  }
+
   get filteredRfqs(): Rfq[] {
     if (this.rfqFilter === 'all')      return this.rfqs;
     if (this.rfqFilter === 'due_soon') return this.rfqs.filter(r => r.status === 'open' && this.isDueSoon(r.dueDate));
@@ -275,9 +283,10 @@ export class PipelineComponent implements OnInit, OnDestroy {
     this.selectedRfq = rfq;
     this.showRfqPanel = true;
     if (!rfq.isRead) { this.vendorService.markRfqAsRead(rfq.id); }
+    window.scrollTo({ top: 0 });
   }
 
-  closeRfqPanel(): void { this.showRfqPanel = false; this.selectedRfq = null; }
+  closeRfqPanel(): void { this.showRfqPanel = false; this.selectedRfq = null; window.scrollTo({ top: 0 }); }
 
   rfqHasQuotation(rfqId: string): boolean { return this.vendorService.rfqHasQuotation(rfqId); }
 
@@ -304,9 +313,10 @@ export class PipelineComponent implements OnInit, OnDestroy {
   openQuotationSidePanel(q: Quotation): void {
     this.selectedQuotation = q;
     this.showQuotationPanel = true;
+    window.scrollTo({ top: 0 });
   }
 
-  closeQuotationPanel(): void { this.showQuotationPanel = false; this.selectedQuotation = null; }
+  closeQuotationPanel(): void { this.showQuotationPanel = false; this.selectedQuotation = null; window.scrollTo({ top: 0 }); }
 
   // Where this quotation sits in the RFQ → Quotation → LPO → Invoice chain.
   // Now that LPOs/Invoices live in the same component, this reads real
@@ -550,9 +560,10 @@ export class PipelineComponent implements OnInit, OnDestroy {
     this.selectedLpo = lpo;
     this.showLpoPanel = true;
     if (!lpo.isRead) { this.vendorService.markLpoAsRead(lpo.id); }
+    window.scrollTo({ top: 0 });
   }
 
-  closeLpoPanel(): void { this.showLpoPanel = false; this.selectedLpo = null; }
+  closeLpoPanel(): void { this.showLpoPanel = false; this.selectedLpo = null; window.scrollTo({ top: 0 }); }
 
   openAcceptModal(lpo: Lpo): void { this.lpoToAccept = lpo; this.showAcceptModal = true; }
   closeAcceptModal(): void { this.showAcceptModal = false; this.lpoToAccept = null; }
@@ -772,9 +783,10 @@ export class PipelineComponent implements OnInit, OnDestroy {
   onInvoiceRowClick(inv: Invoice): void {
     this.selectedInvoice = inv;
     this.showInvoicePanel = true;
+    window.scrollTo({ top: 0 });
   }
 
-  closeInvoicePanel(): void { this.showInvoicePanel = false; this.selectedInvoice = null; }
+  closeInvoicePanel(): void { this.showInvoicePanel = false; this.selectedInvoice = null; window.scrollTo({ top: 0 }); }
 
   // Jump back from an invoice to the LPO it was raised against, if any.
   viewLpoFromInvoice(inv: Invoice): void {
@@ -843,6 +855,17 @@ export class PipelineComponent implements OnInit, OnDestroy {
   downloadQuotation(q: Quotation, e: MouseEvent): void { e.stopPropagation(); console.log('Download Quotation', q.quotationNumber); }
   downloadLpo(lpo: Lpo, e: MouseEvent): void { e.stopPropagation(); console.log('[Pipeline] Download LPO:', lpo.lpoNumber); }
   downloadInvoice(inv: Invoice, e: MouseEvent): void { e.stopPropagation(); console.log('[Pipeline] Download Invoice:', inv.invoiceNumber); }
+
+  // ── Reference image lightbox (RFQ item photos) ────────────────────────────────
+  lightboxImage: { url: string; label: string } | null = null;
+
+  openLightbox(img: { url: string; label?: string }, e: MouseEvent): void {
+    e.stopPropagation();
+    this.lightboxImage = { url: img.url, label: img.label || 'Reference image' };
+  }
+  closeLightbox(): void {
+    this.lightboxImage = null;
+  }
 
   downloadAttachment(file: RfqAttachment, e: MouseEvent): void {
     e.stopPropagation();

@@ -61,6 +61,7 @@ import { BackButtonComponent } from './ui/shared-component/view/back-button/back
 import { VpStatusBadgeComponent } from './ui/view/vendor-portal/shared/status-badge/status-badge.component';
 import { CommandPaletteComponent } from './ui/view/vendor-portal/shared/command-palette/command-palette.component';
 import { TableComponent } from './ui/shared-component/view/table/table.component';
+import { TableBodyDirective } from './ui/shared-component/view/table/table-body.directive';
 import { SidebarComponent } from './ui/shared-component/view/sidebar/sidebar.component';
 import { SharedOverlayModule } from './shared-overlay.module';
 
@@ -131,6 +132,7 @@ import { VendorEditComponent } from './ui/view/vendor-management/vendor-edit-for
   declarations: [
     App,
     TableComponent,
+    TableBodyDirective,
     SidebarComponent,
     NavTabComponent,
     RequestManagementComponent,
@@ -273,4 +275,4 @@ import { VendorEditComponent } from './ui/view/vendor-management/vendor-edit-for
   ],
   bootstrap: [App]
 })
-export class AppModule { }
+export class AppModule {}
