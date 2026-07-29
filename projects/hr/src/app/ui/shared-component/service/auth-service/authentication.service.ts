@@ -141,6 +141,15 @@ export class AuthenticationService {
       .pipe(catchError(this.handleError));
   }
 
+  changePassword(username: string, oldPassword: string, newPassword: string): Observable<any> {
+    const payload = JSON.stringify({ username, oldPassword, newPassword });
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/us/ur/changepassword', payload, {
+        headers: { 'Content-Type': 'application/json' },
+      })
+      .pipe(catchError(this.handleError));
+  }
+
   userVerification(token: string): Observable<any> {
     // console.log((this.getBaseApiUrl() + "/x/api/v2/us/register/verify?token="+"---"+JSON.stringify(token)))
 

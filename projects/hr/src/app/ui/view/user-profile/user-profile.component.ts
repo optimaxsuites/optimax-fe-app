@@ -166,24 +166,33 @@ export class UserProfileComponent implements OnInit {
 
   changePassword(): void {
     if (this.passwordForm.invalid) return;
-    const { newPassword } = this.passwordForm.value;
-    const email = this.userData.email || sessionStorage.getItem('email') || '';
+    const { currentPassword, newPassword, confirmPassword } = this.passwordForm.value;
 
-    if (!email) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No email found for this account.', key: 'up', life: 4000 });
+    if (newPassword !== confirmPassword) {
+      this.messageService.add({ severity: 'error', summary: 'Mismatch', detail: 'New passwords do not match.', key: 'up', life: 3000 });
+      return;
+    }
+
+    const username = this.userData.username || sessionStorage.getItem('username') || localStorage.getItem('username') || '';
+    if (!username) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not determine account username. Please log out and back in.', key: 'up', life: 4000 });
       return;
     }
 
     this.savingPassword = true;
-    this.authService.resetPasswordByAdmin(email, newPassword).subscribe({
-      next: () => {
+    this.authService.changePassword(username, currentPassword, newPassword).subscribe({
+      next: (res: any) => {
         this.savingPassword = false;
-        this.passwordForm.reset();
-        this.messageService.add({ severity: 'success', summary: 'Done', detail: 'Password changed successfully.', key: 'up', life: 3000 });
+        if (res?.code === '1000') {
+          this.passwordForm.reset();
+          this.messageService.add({ severity: 'success', summary: 'Done', detail: 'Password updated successfully.', key: 'up', life: 3000 });
+        } else {
+          this.messageService.add({ severity: 'error', summary: 'Failed', detail: res?.message || 'Could not change password.', key: 'up', life: 4000 });
+        }
       },
       error: () => {
         this.savingPassword = false;
-        this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Could not change password. Please try again.', key: 'up', life: 4000 });
+        this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Incorrect current password or server error.', key: 'up', life: 4000 });
       },
     });
   }
