@@ -182,7 +182,7 @@ export class ProcurementRequestService {
   }
 
   getSavedVendorRating(_requestId: number, _vendorId: string): any {
-    return { rating: 4.5, count: 12 };
+    return { rating: 0, count: 0 };
   }
 
   getCategories(): Observable<string[]> {

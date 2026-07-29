@@ -66,33 +66,13 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
 
   private loadOrderHistory(): void {
     this.isLoadingOrders = true;
-    // Mock data - replace with actual service call
-    setTimeout(() => {
-      this.orderHistory = [
-        {
-          id: 'ORD-001',
-          date: new Date('2026-06-10'),
-          total: 500000,
-          status: 'COMPLETED',
-          items: 3
-        },
-        {
-          id: 'ORD-002',
-          date: new Date('2026-06-05'),
-          total: 1250000,
-          status: 'PROCESSING',
-          items: 2
-        },
-        {
-          id: 'ORD-003',
-          date: new Date('2026-05-28'),
-          total: 350000,
-          status: 'DELIVERED',
-          items: 1
-        }
-      ];
-      this.isLoadingOrders = false;
-    }, 500);
+    this.salesService.getSalesandTransactions({ customerId: this.customerId, page: 0, size: 10 }).subscribe({
+      next: (res: any) => {
+        this.orderHistory = res.data || [];
+        this.isLoadingOrders = false;
+      },
+      error: () => { this.isLoadingOrders = false; }
+    });
   }
 
   editCustomer(): void {
@@ -130,17 +110,19 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   }
 
   confirmDelete(): void {
-    // Call service to delete customer
-    alert(`Customer ${this.customer?.name} has been deleted`);
-    let uuid = this.route.snapshot.paramMap.get('uuid');
-    if (uuid === 'edit') {
-      uuid = null;
-    }
-    if (uuid) {
-      this.router.navigate(['/admin/sales/sales-hub', uuid]);
-    } else {
-      this.router.navigate(['/admin/sales/sales-hub']);
-    }
+    this.salesService.deleteCustomer(this.customer!.id).subscribe({
+      next: () => {
+        const uuid = this.route.snapshot.paramMap.get('uuid') === 'edit' ? null : this.route.snapshot.paramMap.get('uuid');
+        if (uuid) {
+          this.router.navigate(['/admin/sales/sales-hub', uuid]);
+        } else {
+          this.router.navigate(['/admin/sales/sales-hub']);
+        }
+      },
+      error: (err: any) => {
+        console.error('Failed to delete customer:', err);
+      }
+    });
   }
 
   viewOrder(orderId: string): void {

@@ -724,29 +724,42 @@ export class VendorService {
     });
   }
 
-  uploadDocument(doc: Omit<VendorDocument, 'id' | 'uploadedDate' | 'status'>): VendorDocument {
-    const now = new Date();
-    const status = this.resolveDocStatus(doc.expiryDate);
-    const newDoc: VendorDocument = {
-      ...doc,
-      id: `doc-${Date.now()}`,
-      uploadedDate: now,
-      status,
-    };
-    this.documents$$.next([newDoc, ...this.documents$$.getValue()]);
-    return newDoc;
+  uploadDocument(vendorId: string, doc: Omit<VendorDocument, 'id' | 'uploadedDate' | 'status'>): Observable<VendorDocument> {
+    const payload = { ...doc, vendorId };
+    return this.http.post<VendorDocument>(`${this.baseUrl}/vendors/${vendorId}/documents`, payload).pipe(
+      tap((saved) => this.documents$$.next([saved, ...this.documents$$.getValue()])),
+      catchError((err) => { console.error('[VendorService] uploadDocument failed:', err); return of(null as any); }),
+    );
   }
 
   deleteDocument(id: string): void {
     this.documents$$.next(this.documents$$.getValue().filter((d) => d.id !== id));
+    this.http.delete(`${this.baseUrl}/vendors/documents/${id}`).pipe(
+      catchError((err) => { console.error('[VendorService] deleteDocument failed:', err); return of(null); }),
+    ).subscribe();
   }
 
   // ── Vendor Profile ─────────────────────────────────────────────────────────────
-  updateProfile(patch: Partial<VendorProfile>): void {
-    this.profile$$.next({ ...this.profile$$.getValue(), ...patch });
-  }
   getProfile(): Observable<VendorProfile> {
+    const vendorId = this.vendorId;
+    if (vendorId) {
+      this.http.get<VendorProfile>(`${this.baseUrl}/vendor-profiles/${vendorId}`).pipe(
+        tap((profile) => { if (profile) this.profile$$.next(profile); }),
+        catchError((err) => { console.error('[VendorService] getProfile failed:', err); return of(null); }),
+      ).subscribe();
+    }
     return this.profile$;
+  }
+
+  updateProfile(patch: Partial<VendorProfile>): void {
+    const updated = { ...this.profile$$.getValue(), ...patch };
+    this.profile$$.next(updated);
+    const vendorId = this.vendorId;
+    if (vendorId) {
+      this.http.put(`${this.baseUrl}/vendor-profiles/${vendorId}`, updated).pipe(
+        catchError((err) => { console.error('[VendorService] updateProfile failed:', err); return of(null); }),
+      ).subscribe();
+    }
   }
 
   // ── Document Templates (branding) ────────────────────────────────────────────
@@ -946,36 +959,21 @@ export class VendorService {
   }
 
   private buildPerformanceStats(): PerformanceStats {
-    const months: MonthlyMetric[] = [
-      { month: 'Jan 2026', rfqs: 8, quoted: 6, won: 3, revenue: 2_850_000 },
-      { month: 'Feb 2026', rfqs: 11, quoted: 9, won: 5, revenue: 4_200_000 },
-      { month: 'Mar 2026', rfqs: 7, quoted: 7, won: 4, revenue: 3_600_000 },
-      { month: 'Apr 2026', rfqs: 14, quoted: 11, won: 6, revenue: 6_100_000 },
-      { month: 'May 2026', rfqs: 9, quoted: 8, won: 4, revenue: 3_900_000 },
-      { month: 'Jun 2026', rfqs: 5, quoted: 4, won: 2, revenue: 1_800_000 },
-    ];
-    const topClients: ClientPerformance[] = [
-      { clientName: 'Dangote Industries Ltd', totalOrders: 8, totalRevenue: 9_200_000, onTimeRate: 92, acceptanceRate: 78 },
-      { clientName: 'GTBank Facilities Management', totalOrders: 5, totalRevenue: 4_800_000, onTimeRate: 100, acceptanceRate: 83 },
-      { clientName: 'Nestlé Nigeria Plc', totalOrders: 4, totalRevenue: 7_100_000, onTimeRate: 88, acceptanceRate: 67 },
-      { clientName: 'Flour Mills of Nigeria Plc', totalOrders: 3, totalRevenue: 2_400_000, onTimeRate: 100, acceptanceRate: 75 },
-      { clientName: 'Access Bank Plc', totalOrders: 3, totalRevenue: 3_200_000, onTimeRate: 95, acceptanceRate: 60 },
-    ];
     return {
-      avgRfqResponseHours: 18,
-      rfqResponseRate: 84,
-      quotationAcceptanceRate: 61,
-      onTimeDeliveryRate: 94,
-      totalRevenueYtd: 22_450_000,
-      totalRevenueAllTime: 58_300_000,
-      revenueGrowthPct: 23,
-      totalRfqsReceived: 54,
-      totalQuotationsSubmitted: 45,
-      totalLposAccepted: 24,
-      totalLposFulfilled: 19,
-      overallRating: 4.3,
-      monthlyMetrics: months,
-      topClients,
+      avgRfqResponseHours: 0,
+      rfqResponseRate: 0,
+      quotationAcceptanceRate: 0,
+      onTimeDeliveryRate: 0,
+      totalRevenueYtd: 0,
+      totalRevenueAllTime: 0,
+      revenueGrowthPct: 0,
+      totalRfqsReceived: 0,
+      totalQuotationsSubmitted: 0,
+      totalLposAccepted: 0,
+      totalLposFulfilled: 0,
+      overallRating: 0,
+      monthlyMetrics: [],
+      topClients: [],
     };
   }
 }

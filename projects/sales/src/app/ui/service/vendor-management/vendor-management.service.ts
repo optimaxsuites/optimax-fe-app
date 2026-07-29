@@ -178,11 +178,10 @@ export class VendorService {
       );
   }
 
-  /**
-   * Delete vendor — no backend DELETE endpoint; returns void stub
-   */
   deleteVendor(id: string): Observable<void> {
-    return of(void 0);
+    return this.http.delete<void>(`${this.baseUrl}/vendors/${id}`).pipe(
+      catchError((err) => { console.error('[VendorManagementService] deleteVendor failed:', err); return of(void 0); })
+    );
   }
 
   /**

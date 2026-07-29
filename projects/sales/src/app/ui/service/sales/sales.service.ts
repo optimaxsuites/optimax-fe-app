@@ -29,19 +29,15 @@ import {
 import { environment } from '../../shared-component/service/environments/environment';
 
 export const defaultMerchantInfo: MerchantInfo = {
-  id: 1,
-  merchantId: 'MCH-001',
-  name: 'OptiMax ERP',
-  companyName: 'OptiMax Sales Hub Ltd',
-  bankDetails: {
-    bankName: 'Access Bank',
-    accountName: 'OptiMax Sales Hub Ltd',
-    accountNumber: '0011223344'
-  },
-  address: ['14 Commerce Boulevard, Suite 500, Victoria Island', 'Lagos, Nigeria'],
-  phone: '+234 800 123 4567',
-  email: 'info@optimax.com',
-  taxId: 'TIN-9876543210',
+  id: 0,
+  merchantId: '',
+  name: '',
+  companyName: '',
+  bankDetails: { bankName: '', accountName: '', accountNumber: '' },
+  address: [],
+  phone: '',
+  email: '',
+  taxId: '',
   logoUrl: []
 };
 
@@ -424,20 +420,17 @@ export class SalesService {
   // ============================================
 
   getMerchantInfo(): MerchantInfo {
+    const tenant = window.location.hostname.split('.')[0] || 'merchant';
     return {
-      id: 1,
-      merchantId: 'MCH-001',
-      name: 'Queen Sheba Enterprise Systems',
-      companyName: 'Queen Sheba Enterprise Systems',
-      bankDetails: {
-        bankName: 'Access Bank',
-        accountName: 'Queen Sheba Enterprise Systems',
-        accountNumber: '0011223344'
-      },
-      address: ['14 Commerce Boulevard, Suite 500, Victoria Island', 'Lagos, Nigeria'],
-      phone: '+234 800 123 4567',
-      email: 'finance@queensheba.erp',
-      taxId: 'TIN-98472910-001',
+      id: 0,
+      merchantId: '',
+      name: tenant,
+      companyName: tenant,
+      bankDetails: { bankName: '', accountName: '', accountNumber: '' },
+      address: [],
+      phone: '',
+      email: '',
+      taxId: '',
       logoUrl: []
     };
   }
