@@ -145,7 +145,6 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
       },
       error: (error: any) => {
         console.error('Error loading invoices:', error);
-        this.setMockInvoices();
         this.calculateStats();
         this.isLoading = false;
       }
@@ -320,39 +319,4 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     return Array.from({ length: end - start }, (_, i) => start + i);
   }
 
-  // Mock data for development
-  private setMockInvoices(): void {
-    this.invoices = [
-      {
-        id: '1', invoiceNumber: 'INV-001', orderId: 'ORD-001', customerId: 'CUST-001',
-        customerName: 'Mama Nkechi Enterprises', items: [], subtotal: 500000, taxAmount: 0,
-        discountAmount: 0, totalAmount: 500000, amountPaid: 500000, balanceDue: 0,
-        currency: 'NGN', status: 'SENT', issueDate: new Date('2026-06-10'),
-        dueDate: new Date('2026-06-20'), paidAt: new Date('2026-06-15'), notes: '', paymentTerms: 'Net 30'
-      },
-      {
-        id: '2', invoiceNumber: 'INV-002', orderId: 'ORD-002', customerId: 'CUST-002',
-        customerName: 'Tech Solutions Ltd', items: [], subtotal: 1250000, taxAmount: 0,
-        discountAmount: 0, totalAmount: 1250000, amountPaid: 0, balanceDue: 1250000,
-        currency: 'NGN', status: 'SENT', issueDate: new Date('2026-06-09'),
-        dueDate: new Date('2026-06-25'), paidAt: undefined, notes: '', paymentTerms: 'Net 30'
-      },
-      {
-        id: '3', invoiceNumber: 'INV-003', orderId: 'ORD-003', customerId: 'CUST-003',
-        customerName: 'Global Services NG', items: [], subtotal: 350000, taxAmount: 0,
-        discountAmount: 0, totalAmount: 350000, amountPaid: 0, balanceDue: 350000,
-        currency: 'NGN', status: 'CANCELLED', issueDate: new Date('2026-05-20'),
-        dueDate: new Date('2026-06-01'), paidAt: undefined, notes: '', paymentTerms: 'Net 30'
-      },
-      {
-        id: '4', invoiceNumber: 'INV-004', orderId: 'ORD-004', customerId: 'CUST-004',
-        customerName: 'Aliko Dangote Wholesale', items: [], subtotal: 750000, taxAmount: 0,
-        discountAmount: 0, totalAmount: 750000, amountPaid: 500000, balanceDue: 250000,
-        currency: 'NGN', status: 'SENT', issueDate: new Date('2026-06-05'),
-        dueDate: new Date('2026-06-19'), paidAt: undefined, notes: '', paymentTerms: 'Net 30'
-      }
-    ] as any;
-    this.totalElements = this.invoices.length;
-    this.totalPages = 1;
-  }
 }
