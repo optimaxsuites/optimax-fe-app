@@ -143,8 +143,13 @@ export class VendorService {
       if (filters.search) params = params.set('search', filters.search);
     }
 
-    return this.http.get<VendorListResponse>(`${this.baseUrl}/vendors`, { params })
+    return this.http.get<any>(`${this.baseUrl}/vendors`, { params })
       .pipe(
+        map(res => {
+          const vendors: Vendor[] = Array.isArray(res) ? res : (res?.vendors ?? res?.data ?? []);
+          const listResponse: VendorListResponse = { vendors, total: vendors.length, page, limit, totalPages: 1 };
+          return listResponse;
+        }),
         tap(response => {
           this.vendorsSubject.next(response.vendors);
           this.loadingSubject.next(false);

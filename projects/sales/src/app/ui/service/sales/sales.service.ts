@@ -99,17 +99,17 @@ export class SalesService {
   getQuotes(filters: any): Observable<{ data: Quote[]; total: number }> {
     let params = new HttpParams().set('tenantId', this.tenantId);
 
-    if (filters?.page !== undefined) params = params.set('page', String(filters.page));
+    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
     if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.searchTerm) params = params.set('search', filters.searchTerm);
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
     if (filters?.customerId) params = params.set('customerId', filters.customerId);
 
     return this.http.get<any>(`${this.base}/quotes`, { params }).pipe(
-      map(res => ({
-        data: res.data ?? [],
-        total: res.totalElements ?? 0
-      })),
+      map(res => {
+        const arr: Quote[] = Array.isArray(res) ? res : (res?.data ?? []);
+        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+      }),
       catchError(() => of({ data: [], total: 0 }))
     );
   }
@@ -121,7 +121,8 @@ export class SalesService {
   }
 
   createQuote(data: Partial<Quote>): Observable<Quote> {
-    return this.http.post<Quote>(`${this.base}/quotes`, { ...data, tenantId: this.tenantId });
+    const quoteNumber = data.quoteNumber || `QT-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+    return this.http.post<Quote>(`${this.base}/quotes`, { ...data, quoteNumber, tenantId: this.tenantId });
   }
 
   updateQuote(id: string | number, data: Partial<Quote>): Observable<Quote> {
@@ -146,17 +147,17 @@ export class SalesService {
   getInvoices(filters: any): Observable<{ data: Invoice[]; total: number }> {
     let params = new HttpParams().set('tenantId', this.tenantId);
 
-    if (filters?.page !== undefined) params = params.set('page', String(filters.page));
+    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
     if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.searchTerm) params = params.set('search', filters.searchTerm);
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
     if (filters?.customerId) params = params.set('customerId', filters.customerId);
 
     return this.http.get<any>(`${this.base}/invoices`, { params }).pipe(
-      map(res => ({
-        data: res.data ?? [],
-        total: res.totalElements ?? 0
-      })),
+      map(res => {
+        const arr: Invoice[] = Array.isArray(res) ? res : (res?.data ?? []);
+        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+      }),
       catchError(() => of({ data: [], total: 0 }))
     );
   }
@@ -168,7 +169,8 @@ export class SalesService {
   }
 
   createInvoice(data: Partial<Invoice>): Observable<Invoice> {
-    return this.http.post<Invoice>(`${this.base}/invoices`, { ...data, tenantId: this.tenantId });
+    const invoiceNumber = data.invoiceNumber || `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+    return this.http.post<Invoice>(`${this.base}/invoices`, { ...data, invoiceNumber, tenantId: this.tenantId });
   }
 
   updateInvoice(id: string | number, data: Partial<Invoice>): Observable<Invoice> {
@@ -193,16 +195,16 @@ export class SalesService {
   getCustomers(filters: any): Observable<{ data: Customer[]; total: number }> {
     let params = new HttpParams().set('tenantId', this.tenantId);
 
-    if (filters?.page !== undefined) params = params.set('page', String(filters.page));
+    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
     if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.searchTerm) params = params.set('search', filters.searchTerm);
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
 
     return this.http.get<any>(`${this.base}/customers`, { params }).pipe(
-      map(res => ({
-        data: res.data ?? [],
-        total: res.totalElements ?? 0
-      })),
+      map(res => {
+        const arr: Customer[] = Array.isArray(res) ? res : (res?.data ?? []);
+        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+      }),
       catchError(() => of({ data: [], total: 0 }))
     );
   }
@@ -235,17 +237,17 @@ export class SalesService {
   getProducts(filters: any): Observable<{ data: Product[]; total: number }> {
     let params = new HttpParams().set('tenantId', this.tenantId);
 
-    if (filters?.page !== undefined) params = params.set('page', String(filters.page));
+    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
     if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.searchTerm) params = params.set('search', filters.searchTerm);
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
     if (filters?.category && filters.category !== 'ALL') params = params.set('categoryId', String(filters.category));
 
     return this.http.get<any>(`${this.base}/products`, { params }).pipe(
-      map(res => ({
-        data: res.data ?? [],
-        total: res.totalElements ?? 0
-      })),
+      map(res => {
+        const arr: Product[] = Array.isArray(res) ? res : (res?.data ?? []);
+        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+      }),
       catchError(() => of({ data: [], total: 0 }))
     );
   }
@@ -317,17 +319,17 @@ export class SalesService {
   getSalesandTransactions(filters: any): Observable<{ data: SalesandTransactions[]; total: number }> {
     let params = new HttpParams().set('tenantId', this.tenantId);
 
-    if (filters?.page !== undefined) params = params.set('page', String(filters.page));
+    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
     if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
     if (filters?.customerId) params = params.set('customerId', filters.customerId);
     if (filters?.searchTerm) params = params.set('search', filters.searchTerm);
 
     return this.http.get<any>(`${this.base}/sales-orders`, { params }).pipe(
-      map(res => ({
-        data: res.data ?? [],
-        total: res.totalElements ?? 0
-      })),
+      map(res => {
+        const arr: SalesandTransactions[] = Array.isArray(res) ? res : (res?.data ?? []);
+        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+      }),
       catchError(() => of({ data: [], total: 0 }))
     );
   }
@@ -339,7 +341,9 @@ export class SalesService {
   }
 
   createSalesandTransactions(data: Partial<SalesandTransactions>): Observable<SalesandTransactions> {
-    return this.http.post<SalesandTransactions>(`${this.base}/sales-orders`, { ...data, tenantId: this.tenantId });
+    const d = data as any;
+    const orderNumber = d.orderNumber || `SO-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+    return this.http.post<SalesandTransactions>(`${this.base}/sales-orders`, { ...data, orderNumber, tenantId: this.tenantId });
   }
 
   updateSalesandTransactions(id: string | number, data: Partial<SalesandTransactions>): Observable<SalesandTransactions> {
@@ -364,16 +368,16 @@ export class SalesService {
   getPayments(filters: any): Observable<{ data: any[]; total: number }> {
     let params = new HttpParams().set('tenantId', this.tenantId);
 
-    if (filters?.page !== undefined) params = params.set('page', String(filters.page));
+    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
     if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.invoiceId) params = params.set('invoiceId', filters.invoiceId);
     if (filters?.customerId) params = params.set('customerId', filters.customerId);
 
     return this.http.get<any>(`${this.base}/payments`, { params }).pipe(
-      map(res => ({
-        data: res.data ?? [],
-        total: res.totalElements ?? 0
-      })),
+      map(res => {
+        const arr: any[] = Array.isArray(res) ? res : (res?.data ?? []);
+        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+      }),
       catchError(() => of({ data: [], total: 0 }))
     );
   }
@@ -393,16 +397,16 @@ export class SalesService {
   getDeliveryNotes(filters: any): Observable<{ data: any[]; total: number }> {
     let params = new HttpParams().set('tenantId', this.tenantId);
 
-    if (filters?.page !== undefined) params = params.set('page', String(filters.page));
+    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
     if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.salesOrderId) params = params.set('salesOrderId', filters.salesOrderId);
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
 
     return this.http.get<any>(`${this.base}/delivery-notes`, { params }).pipe(
-      map(res => ({
-        data: res.data ?? [],
-        total: res.totalElements ?? 0
-      })),
+      map(res => {
+        const arr: any[] = Array.isArray(res) ? res : (res?.data ?? []);
+        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+      }),
       catchError(() => of({ data: [], total: 0 }))
     );
   }

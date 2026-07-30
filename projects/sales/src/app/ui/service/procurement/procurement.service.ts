@@ -34,7 +34,7 @@ export class ProcurementRequestService {
   getRequests(filters: RequestFilters): Observable<PaginatedResponse<ProcurementRequest>> {
     let params = new HttpParams()
       .set('tenantId', this.tenantId)
-      .set('page', String(filters.page || 0))
+      .set('page', String((filters.page || 0) + 1))
       .set('size', String(filters.size || 10));
 
     if (filters.status && filters.status !== 'ALL') {
@@ -47,9 +47,20 @@ export class ProcurementRequestService {
       params = params.set('search', filters.searchTerm);
     }
 
-    return this.http.get<PaginatedResponse<ProcurementRequest>>(
-      `${this.baseUrl}/procurement-requests`,
+    return this.http.get<any>(
+      `${this.baseUrl}/procurement-requests/`,
       { params }
+    ).pipe(
+      map((res: any) => {
+        const arr: ProcurementRequest[] = Array.isArray(res) ? res : (res?.data ?? []);
+        return {
+          data: arr,
+          totalElements: arr.length,
+          totalPages: 1,
+          currentPage: filters.page || 0,
+          pageSize: filters.size || 10
+        } as PaginatedResponse<ProcurementRequest>;
+      })
     );
   }
 
@@ -61,8 +72,8 @@ export class ProcurementRequestService {
 
   createRequest(request: Partial<ProcurementRequest>): Observable<ProcurementRequest> {
     return this.http.post<ProcurementRequest>(
-      `${this.baseUrl}/procurement-requests`,
-      request
+      `${this.baseUrl}/procurement-requests/`,
+      { ...request, tenantId: this.tenantId }
     );
   }
 
@@ -143,11 +154,11 @@ export class ProcurementRequestService {
   }
 
   getRFQTemplates(): Observable<RFQTemplate[]> {
-    const params = new HttpParams().set('tenantId', this.tenantId);
-    return this.http.get<RFQTemplate[]>(
-      `${this.baseUrl}/rfq-templates`,
+    const params = new HttpParams().set('tenantId', this.tenantId).set('page', '1').set('size', '50');
+    return this.http.get<any>(
+      `${this.baseUrl}/rfq-templates/`,
       { params }
-    );
+    ).pipe(map(res => Array.isArray(res) ? res : (res?.data ?? [])));
   }
 
   getRFQTemplate(id: string): Observable<RFQTemplate> {
@@ -158,15 +169,15 @@ export class ProcurementRequestService {
 
   createRFQTemplate(template: Partial<RFQTemplate>): Observable<RFQTemplate> {
     return this.http.post<RFQTemplate>(
-      `${this.baseUrl}/rfq-templates`,
-      template
+      `${this.baseUrl}/rfq-templates/`,
+      { ...template, tenantId: this.tenantId }
     );
   }
 
   updateRFQTemplate(id: string, template: Partial<RFQTemplate>): Observable<RFQTemplate> {
     return this.http.put<RFQTemplate>(
       `${this.baseUrl}/rfq-templates/${id}`,
-      template
+      { ...template, tenantId: this.tenantId }
     );
   }
 

@@ -99,16 +99,13 @@ export class MenuItemsService {
        {
         label: 'Commerce',
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
-        // route: this.navigationLink.getLink('HRSettings'),
-  
-        icon: 'pi pi-users', 
+        icon: 'pi pi-shopping-bag',
         submenu: [
-          { label: 'Sales Hub', route: this.navigationLink.getLink('SHLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-          { label: 'Procurement Management', route: this.navigationLink.getLink('PMLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
-          { label: 'Vendor Portal', route: this.navigationLink.getLink('VPLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
-          { label: 'Reports', route: this.navigationLink.getLink('RALink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-          { label: 'Score Sheet', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-  
+          { label: 'Sales Hub', route: this.navigationLink.getLink('SHLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
+          { label: 'Procurement Management', route: this.navigationLink.getLink('PMLink'), roles: ['ROLE_USER'], icon: 'pi pi-file-edit' },
+          { label: 'Vendor Portal', route: this.navigationLink.getLink('VPLink'), roles: ['ROLE_USER'], icon: 'pi pi-truck' },
+          { label: 'Vendor Management', route: this.navigationLink.getLink('VMLink'), roles: ['ROLE_USER'], icon: 'pi pi-building' },
+          { label: 'Reports & Analytics', route: this.navigationLink.getLink('RALink'), roles: ['ROLE_USER'], icon: 'pi pi-chart-bar' },
         ],
       },
       {

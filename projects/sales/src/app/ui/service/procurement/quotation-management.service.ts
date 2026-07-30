@@ -33,11 +33,11 @@ export class QuotationManagementService {
   getQuotationsByRfq(rfqId: string): Observable<VendorQuotation[]> {
     const params = new HttpParams()
       .set('tenantId', this.tenantId)
-      .set('page', '0')
+      .set('page', '1')
       .set('size', '100')
       .set('rfqId', rfqId);
     return this.http.get<any>(`${this.baseUrl}/vendor-quotations`, { params }).pipe(
-      map(res => res?.data ?? res ?? [])
+      map(res => Array.isArray(res) ? res : (res?.data ?? res ?? []))
     );
   }
 
@@ -48,7 +48,7 @@ export class QuotationManagementService {
   getAllQuotations(filters?: any): Observable<VendorQuotation[]> {
     let params = new HttpParams()
       .set('tenantId', this.tenantId)
-      .set('page', String(filters?.page || 0))
+      .set('page', String((filters?.page || 0) + 1))
       .set('size', String(filters?.size || 50));
 
     if (filters?.rfqId) { params = params.set('rfqId', filters.rfqId); }
@@ -56,7 +56,7 @@ export class QuotationManagementService {
     if (filters?.status) { params = params.set('status', filters.status); }
 
     return this.http.get<any>(`${this.baseUrl}/vendor-quotations`, { params }).pipe(
-      map(res => res?.data ?? res ?? [])
+      map(res => Array.isArray(res) ? res : (res?.data ?? res ?? []))
     );
   }
 

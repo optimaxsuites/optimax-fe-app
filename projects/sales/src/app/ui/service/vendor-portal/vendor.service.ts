@@ -254,7 +254,7 @@ export class VendorService {
   loadRfqs(): void {
     const params = new HttpParams()
       .set('vendorId', this.vendorId)
-      .set('page', '0')
+      .set('page', '1')
       .set('size', '100');
     this.http.get<Rfq[]>(`${this.baseUrl}/vendor-rfqs`, { params }).pipe(
       catchError((err) => { console.error('[VendorService] loadRfqs failed:', err); return of([] as Rfq[]); }),
@@ -264,7 +264,7 @@ export class VendorService {
   loadQuotations(): void {
     const params = new HttpParams()
       .set('vendorId', this.vendorId)
-      .set('page', '0')
+      .set('page', '1')
       .set('size', '100');
     this.http.get<Quotation[]>(`${this.baseUrl}/vendor-quotations`, { params }).pipe(
       catchError((err) => { console.error('[VendorService] loadQuotations failed:', err); return of([] as Quotation[]); }),
@@ -561,7 +561,7 @@ export class VendorService {
   loadLpos(): void {
     const params = new HttpParams()
       .set('vendorId', this.vendorId)
-      .set('page', '0')
+      .set('page', '1')
       .set('size', '100');
     this.http.get<Lpo[]>(`${this.baseUrl}/vendor-lpos`, { params }).pipe(
       catchError((err) => { console.error('[VendorService] loadLpos failed:', err); return of([] as Lpo[]); }),
@@ -657,7 +657,7 @@ export class VendorService {
   getInvoices(): Observable<Invoice[]> {
     const params = new HttpParams()
       .set('vendorId', this.vendorId)
-      .set('page', '0')
+      .set('page', '1')
       .set('size', '100');
     this.http.get<Invoice[]>(`${this.baseUrl}/vendor-invoices`, { params }).pipe(
       catchError((err) => { console.error('[VendorService] getInvoices failed:', err); return of([] as Invoice[]); }),
