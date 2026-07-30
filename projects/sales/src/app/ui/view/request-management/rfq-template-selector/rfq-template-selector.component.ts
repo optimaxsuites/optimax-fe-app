@@ -74,9 +74,8 @@ export class RfqTemplateSelectorComponent implements OnInit {
           this.isLoading = false;
         }
       },
-      error: () => {
-        this.loadMockTemplates();
-        this.selectDefaultTemplate(this.templates);
+      error: (err) => {
+        console.error('Error loading RFQ templates:', err);
         this.isLoading = false;
       }
     });
@@ -88,55 +87,6 @@ export class RfqTemplateSelectorComponent implements OnInit {
       this.selectedTemplateId = defaultTemplate.id;
       this.templateForm.patchValue({ templateId: defaultTemplate.id });
     }
-  }
-
-  loadMockTemplates(): void {
-    this.templates = [
-      {
-        id: 't1',
-        name: 'Standard RFQ',
-        description: 'Balanced and professional layout suitable for most procurements',
-        layout: 'STANDARD',
-        isDefault: true,
-        sections: [],
-        createdBy: 'system',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: 't2',
-        name: 'Minimal RFQ',
-        description: 'Clean and concise design for quick responses',
-        layout: 'MINIMAL',
-        isDefault: false,
-        sections: [],
-        createdBy: 'system',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: 't3',
-        name: 'Detailed RFQ',
-        description: 'Comprehensive template with detailed sections',
-        layout: 'DETAILED',
-        isDefault: false,
-        sections: [],
-        createdBy: 'system',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: 't4',
-        name: 'Corporate RFQ',
-        description: 'Formal design with company branding options',
-        layout: 'CORPORATE',
-        isDefault: false,
-        sections: [],
-        createdBy: 'system',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
   }
 
   selectTemplate(templateId: string): void {

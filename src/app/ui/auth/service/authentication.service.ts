@@ -134,6 +134,16 @@ export class AuthenticationService {
       .pipe(catchError(this.handleError))
   }
 
+  changePassword(username: string, oldPassword: string, newPassword: string): Observable<any> {
+    const payload = JSON.stringify({ username, oldPassword, newPassword });
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/us/ur/changepassword', payload, {
+        headers: { 'Content-Type': 'application/json' },
+        withCredentials: true,
+      })
+      .pipe(catchError(this.handleError));
+  }
+
   requestPasswordReset(email: string): Observable<any> {
     const payload = {
       email,

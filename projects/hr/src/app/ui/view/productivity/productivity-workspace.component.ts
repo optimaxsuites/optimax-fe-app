@@ -1775,8 +1775,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         // Team Tasks: tasks where current user is supervisor/team-lead
         if (!iAmSupervisor(t)) return false;
       } else if (this.taskViewMode === 'all') {
-        // All Tasks (supervisor/admin): tasks I supervise OR tasks I'm assigned to
-        if (!iAmSupervisor(t) && !isAssignedToMe(t)) return false;
+        // All Tasks: show every task, no user-involvement filter
       }
 
       // ── Toolbar filters ───────────────────────────────────────────────────

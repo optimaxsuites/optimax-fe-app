@@ -544,14 +544,6 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       },
       error: (error: any) => {
         console.error('Error loading customers:', error);
-        this.setMockCustomers();
-        if (this.customerId) {
-          this.quoteForm.patchValue({ customerId: this.customerId });
-          const customer = this.customers.find(c => c.customerId === this.customerId || String(c.id) === this.customerId);
-          if (customer) {
-            this.quoteForm.patchValue({ customerName: customer.name });
-          }
-        }
         this.checkAndAddProductFromParam();
       }
     });
@@ -566,7 +558,6 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       },
       error: (error: any) => {
         console.error('Error loading products:', error);
-        this.setMockProducts();
         this.checkAndAddProductFromParam();
       }
     });
@@ -1122,22 +1113,6 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     return field ? (field.invalid && (field.dirty || field.touched)) : false;
   }
 
-  // Mock data
-  private setMockCustomers(): void {
-    this.customers = [
-      { id: 1, customerId: 'CUST-001', name: 'Mama Nkechi Enterprises', email: 'contact@mamankechi.com', phone: '+234 803 123 4567', address: 'Lagos, Nigeria', taxId: 'TAX-001', createdAt: new Date(), totalSpent: 500000, totalOrders: 1, status: 'ACTIVE' },
-      { id: 2, customerId: 'CUST-002', name: 'Tech Solutions Ltd', email: 'info@techsolutions.ng', phone: '+234 812 345 6789', address: 'Abuja, Nigeria', taxId: 'TAX-002', createdAt: new Date(), totalSpent: 1250000, totalOrders: 1, status: 'ACTIVE' }
-    ] as any;
-  }
-
-  private setMockProducts(): void {
-    this.products = [
-      { id: 1, productId: 'PROD-001', name: 'Executive Office Chair', sku: 'CHR-001', description: 'Ergonomic executive office chair', unitPrice: 50000, costPrice: 30000, currency: 'NGN', stockQuantity: 50, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
-      { id: 2, productId: 'PROD-002', name: 'Standing Desk', sku: 'DSK-001', description: 'Adjustable standing desk', unitPrice: 120000, costPrice: 80000, currency: 'NGN', stockQuantity: 30, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
-      { id: 3, productId: 'PROD-003', name: 'Laptop - Dell XPS', sku: 'LAP-001', description: 'Dell XPS 13 laptop', unitPrice: 850000, costPrice: 700000, currency: 'NGN', stockQuantity: 15, category: 'Electronics', taxRate: 7.5, images: [], status: 'ACTIVE' }
-    ] as any;
-    this.filteredProducts = this.products;
-  }
 
   // ============ UI Action Methods ============
   

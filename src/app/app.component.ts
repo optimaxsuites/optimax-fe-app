@@ -7,6 +7,8 @@ import { OfflineService } from 'projects/POS/src/app/ui/service/offline.service'
 import { TOUR_STEPS, TourStep } from './ui/onboarding/tour-guide';
 import { AuthenticationService } from './ui/auth/service/authentication.service';
 import { TenantService } from './ui/tenants/service/tenant.service';
+import { SessionExpiredService } from './ui/auth/service/session-expired.service';
+import { ConfirmationService } from 'primeng/api';
 
 // damilola worked on this: root app boot/login session flow adjustments around the full application shell.
 declare global {
@@ -64,7 +66,9 @@ export class AppComponent implements OnInit {
     private checkoutService: CheckoutService,
     private offlineService: OfflineService,
     private authenticationService: AuthenticationService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private sessionExpiredService: SessionExpiredService,
+    private confirmationService: ConfirmationService,
   ) {
     // Keep a single online/offline listener. Update the BehaviorSubject so consumers can react.
     window.addEventListener('online', () => this._isOffline.next(false));
@@ -94,6 +98,17 @@ export class AppComponent implements OnInit {
     this.syncSessionAuthToLocalStorage();
     this.checkEligibility();
     this.checkOnboardingStatus();
+    this.sessionExpiredService.expired$.subscribe(() => {
+      this.confirmationService.confirm({
+        key: 'sessionExpired',
+        header: 'Session Expired',
+        message: 'Your session has expired. Please log in again to continue.',
+        icon: 'pi pi-exclamation-circle',
+        acceptLabel: 'Log In',
+        rejectVisible: false,
+        accept: () => this.authenticationService.logout(),
+      });
+    });
    const originalNavigate = this.router.navigate.bind(this.router);
     const originalNavigateByUrl = this.router.navigateByUrl.bind(this.router);
 

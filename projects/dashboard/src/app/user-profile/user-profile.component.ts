@@ -114,13 +114,15 @@ export class DashUserProfileComponent implements OnInit {
   }
 
   private loadPostCount(): void {
-    const userId = Number(sessionStorage.getItem('userid') || '0');
+    const rawId = sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || '0';
+    const userId = String(rawId).trim();
     this.collabService.getFeedPosts('', undefined, 1, 200, false).subscribe({
       next: (result) => {
         if (result?.content) {
-          this.postCount = result.content.filter(
-            (p) => (p.author?.id ?? p.author?.userId) === userId,
-          ).length;
+          this.postCount = result.content.filter((p) => {
+            const authorId = String(p.authorUserId ?? p.author?.id ?? p.author?.userId ?? '').trim();
+            return authorId && authorId === userId;
+          }).length;
         } else {
           this.postCount = 0;
         }
@@ -197,16 +199,33 @@ export class DashUserProfileComponent implements OnInit {
 
   changePassword(): void {
     if (this.passwordForm.invalid) return;
-    if (this.passwordForm.value.newPassword !== this.passwordForm.value.confirmPassword) {
+    const { currentPassword, newPassword, confirmPassword } = this.passwordForm.value;
+    if (newPassword !== confirmPassword) {
       this.messageService.add({ severity: 'error', summary: 'Mismatch', detail: 'New passwords do not match.' });
       return;
     }
+    const username = sessionStorage.getItem('username') || localStorage.getItem('username') || '';
+    if (!username) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Unable to identify account. Please log out and back in.' });
+      return;
+    }
     this.savingPassword = true;
-    setTimeout(() => {
-      this.savingPassword = false;
-      this.passwordForm.reset();
-      this.messageService.add({ severity: 'success', summary: 'Password updated', detail: 'Your password has been changed.' });
-    }, 800);
+    this.authService.changePassword(username, currentPassword, newPassword).subscribe({
+      next: (res: any) => {
+        this.savingPassword = false;
+        if (res?.code === '1000') {
+          this.passwordForm.reset();
+          this.messageService.add({ severity: 'success', summary: 'Password updated', detail: 'Your password has been changed. Please log in again.' });
+          setTimeout(() => this.authService.logout(), 2000);
+        } else {
+          this.messageService.add({ severity: 'error', summary: 'Failed', detail: res?.message || 'Could not change password.' });
+        }
+      },
+      error: () => {
+        this.savingPassword = false;
+        this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Incorrect current password or server error.' });
+      },
+    });
   }
 
   get displayName(): string {
