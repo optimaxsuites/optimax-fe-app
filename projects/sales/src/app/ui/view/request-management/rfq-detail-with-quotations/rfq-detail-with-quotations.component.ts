@@ -24,6 +24,7 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
   selectedQuotation: VendorQuotation | null = null;
   showQuotationDetailModal = false;
   isProcessing = false;
+  activeTab: 'quotations' | 'messages' = 'quotations';
 
   private destroy$ = new Subject<void>();
 

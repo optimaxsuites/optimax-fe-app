@@ -779,3 +779,47 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+.detail-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+
+  .tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .75rem 1.5rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    font-size: .9rem;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all .18s;
+
+    &:hover { color: #184440; }
+    &.active {
+      color: #184440;
+      border-bottom-color: #184440;
+      font-weight: 700;
+    }
+
+    .tab-count {
+      background: #184440;
+      color: white;
+      border-radius: 20px;
+      font-size: .72rem;
+      font-weight: 700;
+      padding: .1rem .45rem;
+      line-height: 1.4;
+    }
+  }
+}
+
+.tab-panel-messages {
+  margin-bottom: 2rem;
+}

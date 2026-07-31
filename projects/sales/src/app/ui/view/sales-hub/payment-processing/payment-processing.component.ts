@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
-import { environment } from '../../shared-component/service/environments/environment';
+import { environment } from '../../../shared-component/service/environments/environment';
 
 interface PaymentRecord {
   id: string;
@@ -96,11 +96,11 @@ export class PaymentProcessingComponent implements OnInit, OnDestroy {
   private mapToPaymentRecord(item: any): PaymentRecord {
     const amount = item.totalAmount ?? item.amount ?? item.total ?? 0;
     const amountPaid = item.amountPaid ?? item.paidAmount ?? 0;
-    let status: PaymentRecord['status'] = item.status ?? 'PENDING';
-
-    // Normalise statuses that may come differently from the API
-    if (status === 'UNPAID') status = 'PENDING';
-    if (status === 'PARTIALLY_PAID') status = 'PARTIAL';
+    const rawStatus = String(item.status ?? 'PENDING');
+    const statusMap: Record<string, string> = { UNPAID: 'PENDING', PARTIALLY_PAID: 'PARTIAL' };
+    const normalised = statusMap[rawStatus] ?? rawStatus;
+    const status: PaymentRecord['status'] = (['PENDING','PARTIAL','PAID','OVERDUE','DISPUTED'].includes(normalised)
+      ? normalised : 'PENDING') as PaymentRecord['status'];
 
     return {
       id: item.id ?? item._id ?? '',
