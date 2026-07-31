@@ -1,734 +1,610 @@
 // request-for-quotation-form.component.scss
+$primary: #184440;
+$primary-light: #1a6b64;
+$border: #e5e7eb;
+$bg: #f5f7fa;
+$text: #111827;
+$text-muted: #6b7280;
+$error: #dc2626;
 
-.procurement-product-form,
-.procurement-service-form {
-  background: #f3f6f9;
+.procurement-product-form {
+  background: $bg;
   min-height: 100vh;
   padding-bottom: 3rem;
 
-  // ── Header Banner ─────────────────────────────────────────────────────────
-  .page-header-banner {
-    background: linear-gradient(135deg, #184440 0%, #1a6b64 100%);
-    padding: 2rem 2.5rem 1.75rem;
-    margin-bottom: 2rem;
-
-    .banner-top-row {
-      display: flex;
-      align-items: center;
-      gap: 1.25rem;
-      margin-bottom: 1.75rem;
-    }
-
-    .header-main {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .header-icon-wrap {
-      width: 52px;
-      height: 52px;
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-
-      i { font-size: 1.5rem; color: white; }
-    }
-
-    .header-text {
-      h2 {
-        font-size: 1.45rem;
-        font-weight: 700;
-        color: white;
-        margin: 0 0 0.2rem;
-      }
-      .subtitle {
-        color: rgba(255, 255, 255, 0.72);
-        font-size: 0.9rem;
-        margin: 0;
-      }
-    }
-
-    // Step progress
-    .step-progress {
-      display: flex;
-      align-items: flex-start;
-      gap: 0;
-
-      .step {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.35rem;
-
-        .step-dot {
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.15);
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 0.82rem;
-          font-weight: 700;
-          color: rgba(255, 255, 255, 0.5);
-          transition: all 0.2s;
-        }
-
-        .step-label {
-          font-size: 0.7rem;
-          color: rgba(255, 255, 255, 0.5);
-          white-space: nowrap;
-          font-weight: 500;
-        }
-
-        &.active {
-          .step-dot {
-            background: white;
-            color: #184440;
-            border-color: white;
-            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25);
-          }
-          .step-label { color: white; font-weight: 700; }
-        }
-
-        &.completed {
-          .step-dot {
-            background: rgba(255, 255, 255, 0.85);
-            color: #184440;
-            border-color: rgba(255, 255, 255, 0.85);
-          }
-          .step-label { color: rgba(255, 255, 255, 0.85); }
-        }
-      }
-
-      .step-line {
-        flex: 1;
-        height: 2px;
-        background: rgba(255, 255, 255, 0.22);
-        margin-top: 16px;
-        min-width: 30px;
-      }
-    }
-  }
-
-  // ── Form Body ─────────────────────────────────────────────────────────────
-  .form-body {
-    max-width: 1050px;
-    margin: 0 auto;
-    padding: 0 2rem;
-  }
-
-  // ── Section cards ─────────────────────────────────────────────────────────
-  .form-section {
+  // ── Page Header ─────────────────────────────────────────────────────────────
+  .page-header {
     background: white;
-    border-radius: 14px;
-    padding: 1.75rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-    border-left: 4px solid #184440;
-  }
+    border-bottom: 1px solid $border;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 
-  .section-title-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.9rem;
-    border-bottom: 1.5px solid #f0f4f4;
+    .header-main-row {
+      display: flex;
+      align-items: center;
+      gap: .9rem;
+      padding: 1rem 2rem;
+    }
 
-    &.no-border { border-bottom: none; padding-bottom: 0; }
-    &.no-margin  { margin-bottom: 0; }
-
-    .section-icon {
-      width: 34px;
-      height: 34px;
+    .page-icon {
+      width: 40px;
+      height: 40px;
       background: #edf4f3;
-      color: #184440;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.9rem;
-      flex-shrink: 0;
-    }
-
-    .section-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #1a1a2e;
-      margin: 0;
-    }
-  }
-
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.9rem;
-    border-bottom: 1.5px solid #f0f4f4;
-  }
-
-  // ── Fields ────────────────────────────────────────────────────────────────
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
-
-    &.full-width { grid-template-columns: 1fr; }
-
-    @media (max-width: 768px) { grid-template-columns: 1fr; }
-  }
-
-  .field-grid {
-    display: grid;
-    gap: 1rem;
-    margin-bottom: 1rem;
-
-    &.cols-2 { grid-template-columns: 1fr 1fr; }
-    &.cols-4 { grid-template-columns: repeat(4, 1fr); }
-
-    @media (max-width: 900px) {
-      &.cols-4 { grid-template-columns: 1fr 1fr; }
-    }
-    @media (max-width: 600px) {
-      &.cols-2, &.cols-4 { grid-template-columns: 1fr; }
-    }
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-
-    label {
-      font-size: 0.83rem;
-      font-weight: 600;
-      color: #374151;
-      margin-bottom: 0.4rem;
-
-      .required { color: #e53e3e; margin-left: 0.2rem; }
-    }
-
-    .form-control {
-      padding: 0.62rem 0.85rem;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 8px;
-      font-size: 0.93rem;
-      background: #fff;
-      transition: all 0.18s ease;
-      color: #1a1a2e;
-
-      &:focus {
-        outline: none;
-        border-color: #184440;
-        box-shadow: 0 0 0 3px rgba(24, 68, 64, 0.1);
-      }
-
-      &.error { border-color: #e53e3e; background: #fff8f8; }
-
-      &.has-prefix { border-radius: 0 8px 8px 0; border-left: none; }
-
-      &:disabled { background: #f7fafc; cursor: not-allowed; color: #888; }
-    }
-
-    textarea.form-control { resize: vertical; min-height: 72px; }
-
-    select.form-control { cursor: pointer; }
-
-    .error-message { color: #e53e3e; font-size: 0.78rem; margin-top: 0.25rem; }
-    .help-text { font-size: 0.74rem; color: #64748b; margin-top: 0.3rem; display: block; }
-  }
-
-  .input-prefix-wrap {
-    display: flex;
-    .input-prefix {
-      display: flex;
-      align-items: center;
-      padding: 0 0.7rem;
-      background: #f0f4f4;
-      border: 1.5px solid #e2e8f0;
-      border-right: none;
-      border-radius: 8px 0 0 8px;
-      color: #374151;
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-  }
-
-  // ── Subsection labels ─────────────────────────────────────────────────────
-  .subsection-label {
-    font-size: 0.82rem;
-    font-weight: 700;
-    color: #184440;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin: 1.25rem 0 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    &.no-margin { margin: 0; }
-
-    i { font-size: 0.85rem; }
-  }
-
-  // ── Part lookup bar ───────────────────────────────────────────────────────
-  .lookup-bar {
-    background: #f8fcfb;
-    border: 1.5px dashed #b2d4d1;
-    border-radius: 10px;
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.25rem;
-
-    .lookup-label {
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: #184440;
-      display: block;
-      margin-bottom: 0.5rem;
-
-      i { margin-right: 0.4rem; }
-    }
-
-    .input-with-button {
-      display: flex;
-      gap: 0.5rem;
-
-      .form-control { flex: 1; }
-
-      .btn-lookup {
-        padding: 0.6rem 1.2rem;
-        background: #184440;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 0.88rem;
-        font-weight: 600;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        white-space: nowrap;
-        transition: all 0.18s ease;
-
-        &:hover:not(:disabled) { background: #0d2e2a; transform: translateY(-1px); }
-        &:disabled { opacity: 0.55; cursor: not-allowed; }
-      }
-    }
-  }
-
-  // ── Add Item button ───────────────────────────────────────────────────────
-  .btn-add-item {
-    padding: 0.45rem 1.1rem;
-    background: #184440;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    transition: all 0.18s ease;
-
-    &:hover { background: #0d2e2a; transform: translateY(-1px); }
-  }
-
-  // ── Item cards ────────────────────────────────────────────────────────────
-  .items-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .item-card {
-    border: 1.5px solid #e2e8f0;
-    border-radius: 12px;
-    overflow: hidden;
-    background: #fafbfc;
-
-    .item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.85rem 1.25rem;
-      background: linear-gradient(90deg, #184440 0%, #1e5a55 100%);
-
-      .item-number {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-
-        .number-badge {
-          width: 26px;
-          height: 26px;
-          background: rgba(255,255,255,0.2);
-          color: white;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 0.78rem;
-          font-weight: 700;
-        }
-
-        .item-title {
-          font-weight: 600;
-          color: white;
-          font-size: 0.92rem;
-        }
-      }
-
-      .btn-remove-item {
-        background: rgba(255,255,255,0.12);
-        border: 1px solid rgba(255,255,255,0.25);
-        color: rgba(255,255,255,0.85);
-        cursor: pointer;
-        padding: 0.3rem 0.75rem;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-        transition: all 0.18s ease;
-
-        &:hover:not(:disabled) { background: rgba(229,62,62,0.4); color: white; }
-        &:disabled { opacity: 0.35; cursor: not-allowed; }
-      }
-    }
-
-    .item-body {
-      padding: 1.25rem;
-    }
-  }
-
-  // ── Specifications ────────────────────────────────────────────────────────
-  .specifications-section {
-    margin-top: 0.5rem;
-    padding: 1rem 1.1rem;
-    background: #f8faf9;
-    border-radius: 8px;
-    border: 1px solid #e8f0ef;
-
-    .spec-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.85rem;
-    }
-
-    .spec-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.75rem;
-      margin-bottom: 0.75rem;
-
-      @media (max-width: 768px) { grid-template-columns: 1fr 1fr; }
-      @media (max-width: 480px) { grid-template-columns: 1fr; }
-
-      .form-group label { font-size: 0.78rem; }
-      .form-control { padding: 0.45rem 0.65rem; font-size: 0.85rem; }
-    }
-
-    .btn-add-field {
-      padding: 0.22rem 0.65rem;
-      background: #edf4f3;
-      color: #184440;
-      border: 1px solid #c4d9d7;
-      border-radius: 6px;
-      font-size: 0.78rem;
-      font-weight: 500;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      transition: background 0.15s;
-
-      &:hover { background: #d8ecea; }
-    }
-
-    .custom-fields {
-      margin-top: 0.75rem;
-      border-top: 1px dashed #d0dcdb;
-      padding-top: 0.75rem;
-
-      .custom-field-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr auto;
-        gap: 0.5rem;
-        margin-bottom: 0.5rem;
-        align-items: center;
-
-        .form-group { margin-bottom: 0; }
-
-        .btn-remove-field {
-          background: none;
-          border: none;
-          color: #e53e3e;
-          cursor: pointer;
-          padding: 0.25rem;
-          font-size: 1rem;
-
-          &:hover { opacity: 0.7; }
-        }
-      }
-    }
-  }
-
-  // ── Attachments ───────────────────────────────────────────────────────────
-  .attachments-section {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px dashed #e2e8f0;
-
-    .attachments-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.75rem;
-
-      .btn-upload {
-        padding: 0.3rem 0.85rem;
-        background: #edf4f3;
-        color: #184440;
-        border: 1px solid #c4d9d7;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        font-weight: 500;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        transition: background 0.15s;
-
-        i { font-size: 0.9rem; }
-        &:hover { background: #d8ecea; }
-      }
-    }
-
-    .attachments-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-
-      .attachment-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.35rem 0.75rem;
-        background: white;
-        border: 1.5px solid #e2e8f0;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-
-        .attachment-icon { color: #184440; font-size: 1.05rem; }
-
-        .attachment-info {
-          display: flex;
-          flex-direction: column;
-          .attachment-name { font-size: 0.8rem; font-weight: 600; }
-          .attachment-size { font-size: 0.7rem; color: #888; }
-        }
-
-        .btn-remove-attachment {
-          background: none;
-          border: none;
-          color: #aaa;
-          cursor: pointer;
-          padding: 0.1rem 0.2rem;
-          &:hover { color: #e53e3e; }
-        }
-      }
-    }
-  }
-
-  // ── Qualifications (service form) ─────────────────────────────────────────
-  .qualifications-section {
-    margin-top: 1rem;
-    padding: 1rem 1.1rem;
-    background: #f8faf9;
-    border-radius: 8px;
-    border: 1px solid #e8f0ef;
-
-    .qualifications-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.75rem;
-    }
-
-    .btn-add-qualification {
-      padding: 0.22rem 0.65rem;
-      background: #edf4f3;
-      color: #184440;
-      border: 1px solid #c4d9d7;
-      border-radius: 6px;
-      font-size: 0.78rem;
-      font-weight: 500;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      transition: background 0.15s;
-
-      &:hover { background: #d8ecea; }
-    }
-
-    .qualifications-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-
-      .qualification-item {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-
-        .form-control { flex: 1; padding: 0.45rem 0.65rem; font-size: 0.88rem; }
-
-        .btn-remove-qualification {
-          background: none;
-          border: none;
-          color: #e53e3e;
-          cursor: pointer;
-          padding: 0.25rem;
-          &:hover { opacity: 0.7; }
-        }
-      }
-    }
-  }
-
-  // ── Budget Summary ────────────────────────────────────────────────────────
-  .budget-summary {
-    background: linear-gradient(135deg, #184440 0%, #1a6b64 100%);
-    border-radius: 14px;
-    padding: 1.2rem 1.75rem;
-    margin: 1.5rem 0;
-
-    .budget-summary-inner {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .budget-icon-wrap {
-      width: 44px;
-      height: 44px;
-      background: rgba(255,255,255,0.15);
       border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
+      color: $primary;
+      font-size: 1rem;
       flex-shrink: 0;
-
-      i { font-size: 1.2rem; color: white; }
     }
 
-    .summary-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-
-      .summary-label { font-size: 0.82rem; color: rgba(255,255,255,0.7); font-weight: 500; }
-      .summary-value { font-size: 1.75rem; font-weight: 800; color: white; line-height: 1.2; }
-    }
-
-    .budget-items-count {
-      text-align: right;
-      span {
-        background: rgba(255,255,255,0.15);
-        color: white;
-        font-size: 0.82rem;
-        padding: 0.3rem 0.8rem;
-        border-radius: 20px;
-        font-weight: 500;
+    .page-title {
+      h2 {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: $text;
+        margin: 0 0 .1rem;
+      }
+      p {
+        font-size: .95rem;
+        color: $text-muted;
+        margin: 0;
       }
     }
   }
 
-  // ── Form Actions ──────────────────────────────────────────────────────────
+  // ── Step Bar ─────────────────────────────────────────────────────────────────
+  .step-bar {
+    background: white;
+    border-bottom: 1px solid $border;
+    padding: .75rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .step-list {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+
+    .step-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid #d1d5db;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .88rem;
+      font-weight: 700;
+      color: #9ca3af;
+      background: white;
+      flex-shrink: 0;
+      transition: all .2s;
+    }
+
+    .step-name {
+      font-size: .92rem;
+      color: #9ca3af;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    &.active {
+      .step-circle {
+        border-color: $primary;
+        background: $primary;
+        color: white;
+        box-shadow: 0 0 0 3px rgba(24,68,64,.15);
+      }
+      .step-name { color: $primary; font-weight: 700; }
+    }
+
+    &.completed {
+      .step-circle {
+        border-color: $primary;
+        background: #edf4f3;
+        color: $primary;
+      }
+      .step-name { color: #374151; font-weight: 600; }
+    }
+  }
+
+  .step-connector {
+    width: 48px;
+    height: 2px;
+    background: #e5e7eb;
+    margin: 0 .4rem;
+    &.done { background: $primary; }
+  }
+
+  // ── Form Body ────────────────────────────────────────────────────────────────
+  .form-body {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem;
+  }
+
+  // ── Form Card ────────────────────────────────────────────────────────────────
+  .form-card {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid $border;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+
+    .card-title-row {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      margin-bottom: 1.1rem;
+      padding-bottom: .85rem;
+      border-bottom: 1px solid #f3f4f6;
+
+      &.no-mb { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    }
+
+    .card-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.1rem;
+      padding-bottom: .85rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .card-icon {
+      width: 32px;
+      height: 32px;
+      background: #f3f4f6;
+      color: $primary;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .85rem;
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: $text;
+      margin: 0;
+    }
+  }
+
+  // ── Field Layout ─────────────────────────────────────────────────────────────
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: .85rem;
+    margin-bottom: .85rem;
+
+    &.cols-2 { grid-template-columns: 1fr 1fr; }
+    &.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    &.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+    @media (max-width: 900px) { &.cols-4 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 700px) {
+      &.cols-2, &.cols-3, &.cols-4 { grid-template-columns: 1fr; }
+    }
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+
+    &.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: .95rem;
+      font-weight: 600;
+      color: #374151;
+      display: block;
+    }
+  }
+
+  // ── Field Input ──────────────────────────────────────────────────────────────
+  .field-input {
+    width: 100%;
+    padding: .7rem .95rem;
+    border: 1.5px solid $border;
+    border-radius: 7px;
+    font-size: 1rem;
+    color: $text;
+    background: #fafafa;
+    transition: border-color .18s, box-shadow .18s;
+    box-sizing: border-box;
+    font-family: inherit;
+
+    &::placeholder { color: #c4c8d0; font-size: .97rem; }
+
+    &:focus {
+      outline: none;
+      border-color: $primary;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(24,68,64,.08);
+    }
+
+    &.is-error { border-color: $error; background: #fef8f8; }
+    &:disabled { background: #f3f4f6; cursor: not-allowed; color: #9ca3af; }
+
+    &.flex-1 { flex: 1; }
+    &.prefix-input { border-radius: 0 7px 7px 0; border-left: none; }
+  }
+
+  select.field-input { cursor: pointer; }
+  textarea.field-input { resize: vertical; min-height: 68px; }
+
+  .req { color: $error; font-size: .92rem; }
+  .err-msg { font-size: .85rem; color: $error; margin-top: .1rem; }
+
+  // ── Currency Prefix ───────────────────────────────────────────────────────────
+  .prefix-wrap {
+    display: flex;
+    .prefix {
+      display: flex;
+      align-items: center;
+      padding: 0 .8rem;
+      background: #f3f4f6;
+      border: 1.5px solid $border;
+      border-right: none;
+      border-radius: 7px 0 0 7px;
+      color: $text-muted;
+      font-weight: 600;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+  }
+
+  // ── Sub Section Head ─────────────────────────────────────────────────────────
+  .sub-section-head {
+    font-size: .88rem;
+    font-weight: 700;
+    color: $primary;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    margin: .9rem 0 .65rem;
+
+    &.no-mb { margin: 0; }
+    i { font-size: .9rem; }
+  }
+
+  // ── Part Lookup ───────────────────────────────────────────────────────────────
+  .lookup-strip {
+    background: #f9fafb;
+    border: 1.5px dashed #d1d5db;
+    border-radius: 8px;
+    padding: .85rem 1rem;
+    margin-bottom: 1rem;
+
+    .strip-label {
+      font-size: .92rem;
+      font-weight: 600;
+      color: #4b5563;
+      display: block;
+      margin-bottom: .45rem;
+      i { color: $primary; margin-right: .3rem; }
+    }
+
+    .strip-row {
+      display: flex;
+      gap: .5rem;
+    }
+
+    .btn-lookup {
+      padding: .65rem 1.2rem;
+      background: $primary;
+      color: white;
+      border: none;
+      border-radius: 7px;
+      font-size: .97rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      white-space: nowrap;
+      transition: background .18s;
+      &:hover:not(:disabled) { background: #0d2e2a; }
+      &:disabled { opacity: .5; cursor: not-allowed; }
+    }
+  }
+
+  // ── Add Item Button ───────────────────────────────────────────────────────────
+  .btn-add-item {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .5rem 1.1rem;
+    background: $primary;
+    color: white;
+    border: none;
+    border-radius: 7px;
+    font-size: .97rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .18s;
+    &:hover { background: #0d2e2a; }
+  }
+
+  // ── Item Card ─────────────────────────────────────────────────────────────────
+  .items-stack { display: flex; flex-direction: column; gap: 1rem; }
+
+  .item-card {
+    border: 1.5px solid $border;
+    border-radius: 9px;
+    overflow: hidden;
+    background: #fafbfc;
+
+    .item-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .6rem 1rem;
+      background: #f3f4f6;
+      border-bottom: 1px solid $border;
+    }
+
+    .item-badge {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      .badge-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: $primary;
+        color: white;
+        font-size: .72rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .badge-label { font-size: .97rem; font-weight: 600; color: #374151; }
+    }
+
+    .btn-remove {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      padding: .32rem .75rem;
+      background: white;
+      border: 1.5px solid #fca5a5;
+      color: #dc2626;
+      border-radius: 6px;
+      font-size: .88rem;
+      cursor: pointer;
+      transition: all .18s;
+      &:hover:not(:disabled) { background: #fef2f2; }
+      &:disabled { opacity: .35; cursor: not-allowed; }
+    }
+
+    .item-body { padding: 1rem; }
+  }
+
+  // ── Spec Block ────────────────────────────────────────────────────────────────
+  .spec-block {
+    background: #f9fafb;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: .85rem 1rem;
+    margin-top: .5rem;
+
+    .spec-block-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .75rem;
+    }
+
+    .btn-add-field {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      padding: .25rem .75rem;
+      background: white;
+      border: 1.5px solid #d1d5db;
+      border-radius: 6px;
+      font-size: .88rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: #374151;
+      transition: all .15s;
+      &:hover { border-color: $primary; color: $primary; }
+    }
+  }
+
+  .custom-fields { margin-top: .65rem; border-top: 1px dashed #d1d5db; padding-top: .65rem; }
+  .custom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: .5rem;
+    margin-bottom: .4rem;
+    align-items: center;
+    .field-group { margin-bottom: 0; }
+    .btn-remove-field {
+      background: none;
+      border: none;
+      color: $error;
+      cursor: pointer;
+      font-size: .95rem;
+      padding: .25rem;
+      &:hover { opacity: .7; }
+    }
+  }
+
+  // ── Attachments ───────────────────────────────────────────────────────────────
+  .attach-block {
+    margin-top: .75rem;
+    padding-top: .75rem;
+    border-top: 1px dashed $border;
+
+    .attach-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .6rem;
+    }
+
+    .btn-upload {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      padding: .32rem .85rem;
+      background: white;
+      border: 1.5px solid #d1d5db;
+      border-radius: 6px;
+      font-size: .9rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: $primary;
+      transition: all .15s;
+      &:hover { border-color: $primary; background: #edf4f3; }
+    }
+
+    .attach-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .45rem;
+    }
+
+    .attach-chip {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      padding: .35rem .8rem;
+      background: white;
+      border: 1.5px solid $border;
+      border-radius: 7px;
+      font-size: .9rem;
+
+      i { color: $primary; }
+      .attach-info { display: flex; flex-direction: column; }
+      .attach-name { font-weight: 600; }
+      .attach-size { color: $text-muted; font-size: .7rem; }
+      .btn-rm-att { background: none; border: none; color: #9ca3af; cursor: pointer; padding: 0 .1rem; font-size: .82rem; &:hover { color: $error; } }
+    }
+  }
+
+  // ── Budget Bar ────────────────────────────────────────────────────────────────
+  .budget-bar {
+    background: white;
+    border: 1.5px solid $border;
+    border-left: 4px solid $primary;
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+
+    .budget-bar-inner {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .budget-icon {
+      width: 38px;
+      height: 38px;
+      background: #edf4f3;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $primary;
+      font-size: .95rem;
+      flex-shrink: 0;
+    }
+
+    .budget-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      .budget-label { font-size: .92rem; color: $text-muted; font-weight: 500; }
+      .budget-value { font-size: 1.75rem; font-weight: 800; color: $primary; line-height: 1.2; }
+    }
+
+    .count-pill {
+      display: inline-block;
+      background: #edf4f3;
+      color: $primary;
+      font-size: .92rem;
+      font-weight: 600;
+      padding: .3rem .85rem;
+      border-radius: 20px;
+    }
+  }
+
+  // ── Form Actions ──────────────────────────────────────────────────────────────
   .form-actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
-    margin-top: 0.5rem;
 
-    .actions-right {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-    }
+    .actions-right { display: flex; gap: .65rem; align-items: center; }
 
-    .btn-secondary {
-      padding: 0.65rem 1.5rem;
-      background: white;
-      color: #374151;
-      border: 1.5px solid #d0d8d8;
-      border-radius: 8px;
-      font-size: 0.93rem;
-      font-weight: 500;
-      cursor: pointer;
+    .btn-ghost {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      transition: all 0.18s ease;
-
-      &:hover { background: #f0f4f4; }
+      gap: .4rem;
+      padding: .65rem 1.35rem;
+      background: white;
+      color: #374151;
+      border: 1.5px solid $border;
+      border-radius: 7px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .18s;
+      &:hover { background: #f3f4f6; }
     }
 
     .btn-draft {
-      padding: 0.65rem 1.5rem;
-      background: white;
-      color: #0f766e;
-      border: 1.5px dashed #0f766e;
-      border-radius: 8px;
-      font-size: 0.93rem;
-      font-weight: 500;
-      cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      transition: all 0.18s ease;
-
-      &:hover {
-        background: #f0fdfa;
-        border-style: solid;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(13, 148, 136, 0.12);
-      }
+      gap: .4rem;
+      padding: .65rem 1.35rem;
+      background: white;
+      color: $primary;
+      border: 1.5px dashed $primary;
+      border-radius: 7px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .18s;
+      &:hover { background: #edf4f3; border-style: solid; }
     }
 
     .btn-primary {
-      padding: 0.65rem 1.75rem;
-      background: #184440;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.93rem;
-      font-weight: 600;
-      cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      transition: all 0.18s ease;
-
-      i { font-size: 0.9rem; }
-
-      &:hover {
-        background: #0d2e2a;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 14px rgba(24, 68, 64, 0.28);
-      }
-
-      &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+      gap: .4rem;
+      padding: .65rem 1.6rem;
+      background: $primary;
+      color: white;
+      border: none;
+      border-radius: 7px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .18s;
+      &:hover { background: #0d2e2a; box-shadow: 0 4px 12px rgba(24,68,64,.25); transform: translateY(-1px); }
+      &:disabled { opacity: .5; cursor: not-allowed; transform: none; }
     }
   }
 }

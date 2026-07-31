@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, switchMap } from 'rxjs/operators';
 import {
   SalesSummary,
   RevenueChartData,
@@ -293,21 +293,21 @@ export class SalesService {
 
   createCategory(catData: Partial<Category>): Observable<Category[]> {
     return this.http.post<any>(`${this.base}/categories`, { ...catData, tenantId: this.tenantId }).pipe(
-      map(() => []),
+      switchMap(() => this.getCategories()),
       catchError(() => of([]))
     );
   }
 
   updateCategory(id: string | number, catData: Partial<Category>): Observable<Category[]> {
     return this.http.put<any>(`${this.base}/categories/${id}`, { ...catData, tenantId: this.tenantId }).pipe(
-      map(() => []),
+      switchMap(() => this.getCategories()),
       catchError(() => of([]))
     );
   }
 
   deleteCategory(id: string | number): Observable<Category[]> {
     return this.http.delete<any>(`${this.base}/categories/${id}`).pipe(
-      map(() => []),
+      switchMap(() => this.getCategories()),
       catchError(() => of([]))
     );
   }
@@ -440,54 +440,82 @@ export class SalesService {
   }
 
   // ============================================
-  // MEASUREMENT UNITS — no backend endpoint, local stubs
+  // MEASUREMENT UNITS
   // ============================================
 
+  private readonly defaultUnits: MeasurementUnit[] = [
+    { id: 1, unitId: 'UNT-001', name: 'Each', code: 'pcs', description: 'Single item count' },
+    { id: 2, unitId: 'UNT-002', name: 'Kilogram', code: 'kg', description: 'Mass weight unit' },
+    { id: 3, unitId: 'UNT-003', name: 'Gram', code: 'g', description: 'Mass weight unit' },
+    { id: 4, unitId: 'UNT-004', name: 'Liter', code: 'L', description: 'Liquid volume unit' },
+    { id: 5, unitId: 'UNT-005', name: 'Milliliter', code: 'mL', description: 'Liquid volume unit' },
+    { id: 6, unitId: 'UNT-006', name: 'Meter', code: 'm', description: 'Linear length unit' },
+    { id: 7, unitId: 'UNT-007', name: 'Centimeter', code: 'cm', description: 'Linear length unit' },
+    { id: 8, unitId: 'UNT-008', name: 'Box', code: 'box', description: 'Box package' },
+    { id: 9, unitId: 'UNT-009', name: 'Pack', code: 'pack', description: 'Pack container unit' },
+    { id: 10, unitId: 'UNT-010', name: 'Carton', code: 'ctn', description: 'Carton container unit' }
+  ];
+
   getMeasurementUnits(): Observable<MeasurementUnit[]> {
-    return of([
-      { id: 1, unitId: 'UNT-001', name: 'Each', code: 'pcs', description: 'Single item count' },
-      { id: 2, unitId: 'UNT-002', name: 'Kilogram', code: 'kg', description: 'Mass weight unit' },
-      { id: 3, unitId: 'UNT-003', name: 'Gram', code: 'g', description: 'Mass weight unit' },
-      { id: 4, unitId: 'UNT-004', name: 'Liter', code: 'L', description: 'Liquid volume unit' },
-      { id: 5, unitId: 'UNT-005', name: 'Milliliter', code: 'mL', description: 'Liquid volume unit' },
-      { id: 6, unitId: 'UNT-006', name: 'Meter', code: 'm', description: 'Linear length unit' },
-      { id: 7, unitId: 'UNT-007', name: 'Centimeter', code: 'cm', description: 'Linear length unit' },
-      { id: 8, unitId: 'UNT-008', name: 'Box', code: 'box', description: 'Box package containing multiple items' },
-      { id: 9, unitId: 'UNT-009', name: 'Pack', code: 'pack', description: 'Pack container unit' },
-      { id: 10, unitId: 'UNT-010', name: 'Carton', code: 'ctn', description: 'Carton container unit' }
-    ]);
+    const params = new HttpParams().set('tenantId', this.tenantId);
+    return this.http.get<any>(`${this.base}/measurement-units`, { params }).pipe(
+      map(res => res.data ?? res ?? []),
+      catchError(() => of(this.defaultUnits))
+    );
   }
 
   createMeasurementUnit(unitData: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
-    return of([]);
+    return this.http.post<any>(`${this.base}/measurement-units`, { ...unitData, tenantId: this.tenantId }).pipe(
+      switchMap(() => this.getMeasurementUnits()),
+      catchError(() => of([]))
+    );
   }
 
   updateMeasurementUnit(id: string | number, unitData: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
-    return of([]);
+    return this.http.put<any>(`${this.base}/measurement-units/${id}`, { ...unitData, tenantId: this.tenantId }).pipe(
+      switchMap(() => this.getMeasurementUnits()),
+      catchError(() => of([]))
+    );
   }
 
   deleteMeasurementUnit(id: string | number): Observable<MeasurementUnit[]> {
-    return of([]);
+    return this.http.delete<any>(`${this.base}/measurement-units/${id}`).pipe(
+      switchMap(() => this.getMeasurementUnits()),
+      catchError(() => of([]))
+    );
   }
 
   // ============================================
-  // SUPPLIERS — no backend endpoint, local stubs
+  // SUPPLIERS
   // ============================================
 
   getSuppliers(): Observable<Supplier[]> {
-    return of([]);
+    const params = new HttpParams().set('tenantId', this.tenantId);
+    return this.http.get<any>(`${this.base}/suppliers`, { params }).pipe(
+      map(res => res.data ?? res ?? []),
+      catchError(() => of([]))
+    );
   }
 
   createSupplier(supplierData: Partial<Supplier>): Observable<Supplier[]> {
-    return of([]);
+    return this.http.post<any>(`${this.base}/suppliers`, { ...supplierData, tenantId: this.tenantId }).pipe(
+      switchMap(() => this.getSuppliers()),
+      catchError(() => of([]))
+    );
   }
 
   updateSupplier(id: string | number, supplierData: Partial<Supplier>): Observable<Supplier[]> {
-    return of([]);
+    return this.http.put<any>(`${this.base}/suppliers/${id}`, { ...supplierData, tenantId: this.tenantId }).pipe(
+      switchMap(() => this.getSuppliers()),
+      catchError(() => of([]))
+    );
   }
 
   deleteSupplier(id: string | number): Observable<Supplier[]> {
-    return of([]);
+    return this.http.delete<any>(`${this.base}/suppliers/${id}`).pipe(
+      switchMap(() => this.getSuppliers()),
+      catchError(() => of([]))
+    );
   }
 
   // ============================================

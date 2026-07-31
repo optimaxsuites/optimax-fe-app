@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../shared-component/environments/environment';
+import { environment } from '../../../shared-component/service/environments/environment';
 
 export interface DeliveryLineItem {
   name: string;
