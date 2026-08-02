@@ -496,7 +496,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     console.log('Deleting vendor...');
     this.showConfirmDialog = false;
     this.confirmAction = null;
-    this.router.navigate(['/vendor-management/list']);
+    this.router.navigate(['/commerce/manage-vendors']);
   }
 
   // ============================================================
@@ -529,7 +529,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   // ============================================================
 
   navigateToEdit(): void {
-    this.router.navigate(['/vendor-management', this.vendorId, 'edit']);
+    this.router.navigate(['/commerce/manage-vendors', this.vendorId, 'edit']);
   }
 
   navigateToPerformance(): void {
