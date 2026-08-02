@@ -41,16 +41,16 @@ import { VendorEditComponent } from './ui/view/vendor-management/vendor-edit-for
 
 export const routes: Routes = [
   // Default redirect
-  // {
-  //   path: "",
-  //   redirectTo: 'manage-vendors',
-  //   pathMatch: 'full'
-  // },
   {
     path: "",
-    redirectTo: 'sales-hub',
+    redirectTo: 'commerce/manage-vendors',
     pathMatch: 'full'
   },
+  // {
+  //   path: "",
+  //   redirectTo: 'sales-hub',
+  //   pathMatch: 'full'
+  // },
 
   // --- Vendor Management ---
   {
