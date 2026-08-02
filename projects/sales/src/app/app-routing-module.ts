@@ -54,29 +54,29 @@ export const routes: Routes = [
 
   // --- Vendor Management ---
   {
-    path: 'manage-vendors',
-    component: VendorManagementComponent
-  },
-  {
-    path: 'manage-vendors/:uuid',
-    component: VendorManagementComponent
-  },
-  {
-    path: 'manage-vendors/onboarding',
-    component: VendorOnboardingComponent
-  },
-  {
-    path: 'manage-vendors/onboarding/:uuid',
-    component: VendorOnboardingComponent
-  },
-  {
-    path: 'manage-vendors/:id/profile',
-    component: VendorManagementDetailComponent
-  },
-  {
-    path: 'manage-vendors/:id/edit',
-    component: VendorEditComponent
-  },
+      path: 'commerce/manage-vendors',
+      component: VendorManagementComponent
+    },
+    {
+      path: 'commerce/manage-vendors/:uuid',
+      component: VendorManagementComponent
+    },
+    {
+      path: 'commerce/manage-vendors/onboarding',
+      component: VendorOnboardingComponent
+    },
+    {
+      path: 'commerce/manage-vendors/onboarding/:uuid',
+      component: VendorOnboardingComponent
+    },
+    {
+      path: 'commerce/manage-vendors/:id/profile',
+      component: VendorManagementDetailComponent
+    },
+    {
+      path: 'commerce/manage-vendors/:id/edit',
+      component: VendorEditComponent
+    },
 
   // --- Sales Hub ---
   {

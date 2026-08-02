@@ -40,7 +40,7 @@ export class NavigationLinksService {
     // this.links['docGenLink'] = '/admin/commerce/document-management/' +uuidV4();
     this.links['SHLink'] = '/admin/sales/sales-hub/' + uuidV4();
     this.links['PMLink'] = '/admin/sales/commerce/requests/home/' + uuidV4();
-    this.links['VMLink'] = '/manage-vendors';
+    this.links['VMLink'] = '/admin/sales/commerce/manage-vendors';
     this.links['newRequestLink'] = '/admin/sales/commerce/requests/new/';
     this.links['draftsLink'] = '/admin/sales/commerce/requests/drafts/';
     // this.links['QTLink'] = '/admin/commerce/quote-management/' +uuidV4();
