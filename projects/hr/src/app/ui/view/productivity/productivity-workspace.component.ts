@@ -67,6 +67,7 @@ interface SubTask {
 interface ActivityEntry { id: string; author: string; text: string; timestamp: string; }
 interface FollowUpReply {
   id: string; author: string; initials: string; color: string; timestamp: string; text: string;
+  authorEmployeeId?: number;
 }
 
 interface FollowUp {
@@ -93,6 +94,7 @@ export interface BoardTask {
   costCurrency?: string;
   // Closed flag — task set to "Closed" gets archived automatically
   closed?: boolean;
+  closedReason?: string;
   // API-sync fields
   apiId?: number;
   assigneeEmployeeId?: number;
@@ -399,6 +401,35 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     localStorage.setItem(ProductivityWorkspaceComponent.ARCHIVE_STORAGE_KEY, JSON.stringify(this.archivedTasks));
   }
 
+  // ── Close-task modal state ────────────────────────────────────────────────
+  showCloseTaskModal = false;
+  closeTaskRef: BoardTask | null = null;
+  closeTaskReason = '';
+
+  closeTask(task: BoardTask, e: Event): void {
+    e.stopPropagation();
+    this.closeTaskRef = task;
+    this.closeTaskReason = '';
+    this.showCloseTaskModal = true;
+  }
+
+  confirmCloseTask(): void {
+    const task = this.closeTaskRef;
+    if (!task) return;
+    task.closed = true;
+    task.status = 'Closed' as any;
+    task.closedReason = this.closeTaskReason.trim() || undefined;
+    this.showCloseTaskModal = false;
+    this.closeTaskRef = null;
+    this.archiveTask(task);
+    this.showToast('Task closed and moved to archive', 'info');
+  }
+
+  cancelCloseTask(): void {
+    this.showCloseTaskModal = false;
+    this.closeTaskRef = null;
+  }
+
   archiveTask(task: BoardTask, event?: MouseEvent): void {
     event?.stopPropagation();
     this.boardTasks = this.boardTasks.filter(t => t.id !== task.id);
@@ -406,9 +437,43 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.saveArchivedTasks();
     this.save();
     if (this.selectedTask?.id === task.id) this.closeDetail();
-    if (this.apiEnabled && task.apiId) {
+
+    if (!this.apiEnabled) return;
+
+    const persist = (apiId: number) => {
       const status = task.closed ? 'CLOSED' : 'ARCHIVED';
-      this.workTaskApi.updateTaskStatus(task.apiId, status as any).subscribe({ error: () => {} });
+      this.workTaskApi.updateTaskStatus(apiId, status as any, task.closedReason).subscribe({ error: () => {} });
+    };
+
+    if (task.apiId) {
+      persist(task.apiId);
+    } else {
+      // Task never synced — create it first so it gets a DB record, then mark it archived/closed
+      const userId = this.currentUserId;
+      const dto: WorkTaskDTO = {
+        title: task.title,
+        description: task.description,
+        assigneeEmployeeId: task.assigneeEmployeeId,
+        supervisorEmployeeId: task.supervisorEmployeeId,
+        status: task.closed ? 'CLOSED' : 'ARCHIVED',
+        priority: this.toApiPriority(task.priority),
+        startDate: task.startDate || undefined,
+        dueDate: task.dueDate || undefined,
+        weight: task.weight,
+        progress: task.progress,
+        tags: task.tags?.join(','),
+        createdByUserId: task.createdByUserId || (userId || undefined),
+        closedReason: task.closedReason,
+      };
+      this.subscription.add(
+        this.workTaskApi.createTask(dto).subscribe({
+          next: (created) => {
+            task.apiId = created.id;
+            this.saveArchivedTasks();
+          },
+          error: () => {},
+        })
+      );
     }
   }
 
@@ -1094,6 +1159,12 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.subscription.add(
+      this.route.queryParamMap.subscribe(params => {
+        const taskId = params.get('taskId');
+        if (taskId && this.boardTasks.length) this.tryOpenTaskById(taskId);
+      })
+    );
     this.loadArchivedTasks();
     this.loadChannelUnread();
     this.productivityDataService.init();
@@ -1112,12 +1183,15 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
     // Always resolve the current user's employee ID so "My Tasks" filter works for everyone.
     // The board-loading logic (getAllTasks vs getTasksByAssignee) stays role-dependent inside loadBoardFromApi().
+    // When a taskId is in the URL (shared link), load ALL tasks so the linked task is always findable.
+    const hasLinkedTask = !!this.route.snapshot.queryParamMap.get('taskId');
+    const defaultViewMode: 'mine' | 'all' = hasLinkedTask ? 'all' : 'mine';
     const cachedEmpId = Number(sessionStorage.getItem('employeeId') || localStorage.getItem('employeeId') || 0);
     const cachedEmpUserId = sessionStorage.getItem('employeeUserId') || '';
     const currentUserId2 = sessionStorage.getItem('userid') || '';
     if (cachedEmpId && cachedEmpUserId === currentUserId2) {
       this.resolvedEmployeeId = cachedEmpId;
-      this.taskViewMode = 'mine';
+      this.taskViewMode = defaultViewMode;
       this.loadBoardFromApi();
     } else {
       this.subscription.add(
@@ -1125,7 +1199,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           .pipe(timeout(6000), catchError(() => of(0)))
           .subscribe(empId => {
             this.resolvedEmployeeId = empId;
-            this.taskViewMode = 'mine';
+            this.taskViewMode = defaultViewMode;
             this.loadBoardFromApi();
           })
       );
@@ -1265,7 +1339,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
               if (archivedApiTasks && archivedApiTasks.length > 0) {
                 const mappedArchived = archivedApiTasks.map(t => ({
                   ...this.mapApiTaskToBoard(t),
-                  closed: t.status === 'CLOSED'
+                  closed: t.status === 'CLOSED',
+                  closedReason: (t as any).closedReason ?? undefined
                 }));
                 const existingApiIds = new Set(mappedArchived.map(t => t.apiId));
                 const localArchived = this.archivedTasks.filter(t => !t.apiId || !existingApiIds.has(t.apiId));
@@ -1295,12 +1370,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   private autoOpenFromUrl(): void {
     const taskId = this.route.snapshot.queryParamMap.get('taskId');
-    if (!taskId) return;
-    const found = this.boardTasks.find(t => t.id === taskId || String(t.apiId) === taskId);
-    if (found) {
-      this.pmSection = 'board';
-      this.openDetail(found);
-    }
+    if (taskId) this.tryOpenTaskById(taskId);
   }
 
   private getLocalImportTasks(): BoardTask[] {
@@ -1439,16 +1509,27 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       })),
       activity: [],
       followUps: (t.followUps ?? []).map(f => {
+        const fuEmpId: number = (f as any).authorEmployeeId ?? 0;
         const authorName = f.authorEmployee
           ? `${f.authorEmployee.firstName} ${f.authorEmployee.lastName}`.trim()
-          : ((f as any).authorEmployeeId && (f as any).authorEmployeeId === this.resolvedEmployeeId)
+          : fuEmpId === this.resolvedEmployeeId && this.resolvedEmployeeId
             ? this.currentUserDisplayName
-            : 'Team Member';
+            : (() => {
+                if (!fuEmpId) return '';
+                const found = this.allEmployees.find(e => String(e.id) === String(fuEmpId));
+                return found?.fullName || '';
+              })();
         const apiReplies: FollowUpReply[] = (f.replies ?? []).map(r => {
+          const empId: number = (r as any).authorEmployeeId ?? 0;
           const rAuthor = r.authorEmployee
             ? `${r.authorEmployee.firstName} ${r.authorEmployee.lastName}`.trim()
-            : (this.resolvedEmployeeId && (r as any).authorEmployeeId === this.resolvedEmployeeId
-              ? this.currentUserDisplayName : 'Team Member');
+            : empId === this.resolvedEmployeeId && this.resolvedEmployeeId
+              ? this.currentUserDisplayName
+              : (() => {
+                  if (!empId) return '';
+                  const found = this.allEmployees.find(e => String(e.id) === String(empId));
+                  return found?.fullName || '';
+                })();
           return {
             id: `api${r.id}`,
             author: rAuthor || 'Team Member',
@@ -1456,6 +1537,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
             color: '#6366f1',
             timestamp: this.formatTs(this.normDateTime((r as any).createdAt)),
             text: r.text,
+            authorEmployeeId: empId || undefined,
           };
         });
         return {
@@ -1816,7 +1898,18 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   openDetail(task: BoardTask): void { this.selectedTask = task; this.detailPanelVisible = true; this.detailTab = 'overview'; this.newActivityText = ''; }
+  openDetailFromList(task: BoardTask, e: Event): void { e.stopPropagation(); this.openDetail(task); }
   closeDetail(): void { this.selectedTask = null; this.detailPanelVisible = false; this.save(); }
+
+  private tryOpenTaskById(taskId: string): void {
+    const found = this.boardTasks.find(t => t.id === taskId || String(t.apiId) === taskId);
+    if (found) { this.pmSection = 'board'; this.openDetail(found); return; }
+    // Task not in current view — switch to all-tasks mode and reload so linked task is found
+    if (this.taskViewMode !== 'all') {
+      this.taskViewMode = 'all';
+      this.loadBoardFromApi();
+    }
+  }
 
   toggleReplyBox(fuId: string): void {
     this.replyingToFuId = this.replyingToFuId === fuId ? null : fuId;
@@ -1862,6 +1955,13 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         })
       );
     }
+    this.sendFollowUpEmails(
+      this.selectedTask,
+      text,
+      `Reply on Task Update: ${this.selectedTask.title}`,
+      '#6366f1',
+      `Reply from ${displayName}`
+    );
   }
 
   toggleReaction(fu: FollowUp, emoji: string): void {
@@ -2568,17 +2668,22 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     // Build rich pre-filled message with task context
     const assigneeList = (task.assignees?.length ? task.assignees : [task.assignee]).filter(Boolean).join(', ') || '—';
     const taskUrl = `${window.location.origin}${window.location.pathname}`;
+    const latestFollowUp = (task.followUps ?? []).filter(f => f.text?.trim()).slice(-1)[0] ?? null;
+    const latestComment = latestFollowUp
+      ? `💬 Latest comment (${latestFollowUp.author}): ${latestFollowUp.text.replace(/<[^>]*>/g, '').trim().slice(0, 250)}`
+      : '';
     this.shareNote = [
       `📋 *Task: ${task.title}*`,
       `🚦 Status: ${task.status}  |  ⚡ Priority: ${task.priority}`,
       `👥 Assignee(s): ${assigneeList}`,
       `📅 Due: ${task.dueDate ? this.formatDate(task.dueDate) : '—'}  |  📊 Progress: ${task.progress}%`,
       task.tags?.length ? `🏷️ Tags: ${task.tags.join(', ')}` : '',
+      latestComment,
       ``,
       `🔗 View task: ${taskUrl}?taskId=${task.id}`,
       ``,
       `Note: `,
-    ].filter(l => l !== undefined).join('\n');
+    ].filter(l => l !== undefined && l !== '').join('\n');
 
     if (target === 'channel') {
       // Always reload channels to avoid stale/duplicate list
