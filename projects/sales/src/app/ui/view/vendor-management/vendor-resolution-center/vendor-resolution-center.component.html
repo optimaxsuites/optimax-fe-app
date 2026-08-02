@@ -1,0 +1,436 @@
+<!-- vendor-resolution-center.component.html -->
+<div class="resolution">
+    <div class="resolution-wrapper">
+
+        <!-- Header -->
+        <div class="resolution-header">
+            <div class="header-left">
+                <div class="header-badge">
+                    <i class="fas fa-shield-heart"></i>
+                    Trust & Relationship Layer
+                </div>
+                <h1 class="page-title">Vendor Resolution Center</h1>
+                <p class="page-subtitle">Every conversation and every disagreement, anchored to a real record —
+                    with outcomes that feed straight back into risk and performance.</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-refresh" (click)="loadAll()" title="Refresh">
+                    <i class="fas fa-rotate"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <div class="toast" *ngIf="actionFeedback">
+            <i class="fas fa-check-circle"></i> {{ actionFeedback }}
+        </div>
+
+        <div *ngIf="isLoading" class="loading-state">
+            <div class="spinner-glow"></div>
+            <p>Loading conversations and disputes...</p>
+        </div>
+
+        <ng-container *ngIf="!isLoading">
+
+            <!-- SUMMARY STRIP -->
+            <div class="summary-strip" *ngIf="summary">
+                <div class="summary-card">
+                    <div class="summary-icon convos"><i class="fas fa-comments"></i></div>
+                    <div class="summary-content">
+                        <span class="summary-value">{{ summary.openConversations }}</span>
+                        <span class="summary-label">Open Conversations</span>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon disputes"><i class="fas fa-scale-balanced"></i></div>
+                    <div class="summary-content">
+                        <span class="summary-value">{{ summary.openDisputes }}</span>
+                        <span class="summary-label">Open Disputes</span>
+                        <span class="summary-sub critical" *ngIf="summary.overdueDisputes > 0">
+                            <i class="fas fa-circle-exclamation"></i> {{ summary.overdueDisputes }} overdue
+                        </span>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon response"><i class="fas fa-bolt"></i></div>
+                    <div class="summary-content">
+                        <span class="summary-value">{{ formatDuration(summary.avgFirstResponseMinutes) }}</span>
+                        <span class="summary-label">Avg First-Response Time</span>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon resolution-time"><i class="fas fa-flag-checkered"></i></div>
+                    <div class="summary-content">
+                        <span class="summary-value">{{ formatDuration(summary.avgResolutionMinutes) }}</span>
+                        <span class="summary-label">Avg Resolution Time</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN TABS -->
+            <div class="workspace-subnav">
+                <button [class.active]="activeMainTab === 'inbox'" (click)="setMainTab('inbox')">
+                    <i class="fas fa-inbox"></i> Inbox
+                </button>
+                <button [class.active]="activeMainTab === 'disputes'" (click)="setMainTab('disputes')">
+                    <i class="fas fa-scale-balanced"></i> Disputes
+                    <span class="nav-badge" *ngIf="summary && summary.overdueDisputes">{{ summary.overdueDisputes }}</span>
+                </button>
+            </div>
+
+            <!-- ============================================================ -->
+            <!-- INBOX -->
+            <!-- ============================================================ -->
+            <div class="inbox-layout" *ngIf="activeMainTab === 'inbox'">
+
+                <!-- Thread list -->
+                <div class="thread-panel">
+                    <div class="thread-filters">
+                        <input type="text" [(ngModel)]="inboxSearch" name="inboxSearch" placeholder="Search vendor, subject, record..." />
+                        <select [(ngModel)]="inboxStatusFilter" name="inboxStatusFilter">
+                            <option value="ALL">All statuses</option>
+                            <option value="OPEN">Open</option>
+                            <option value="AWAITING_VENDOR">Awaiting Vendor</option>
+                            <option value="AWAITING_STAFF">Awaiting Staff</option>
+                            <option value="RESOLVED">Resolved</option>
+                            <option value="ARCHIVED">Archived</option>
+                        </select>
+                        <select [(ngModel)]="inboxLinkedTypeFilter" name="inboxLinkedTypeFilter">
+                            <option value="ALL">All records</option>
+                            <option value="RFQ">RFQ</option>
+                            <option value="PO">Purchase Order</option>
+                            <option value="INVOICE">Invoice</option>
+                            <option value="CONTRACT">Contract</option>
+                            <option value="DOCUMENT">Document</option>
+                            <option value="NONE">General</option>
+                        </select>
+                    </div>
+
+                    <div class="thread-list">
+                        <div class="thread-row" *ngFor="let t of filteredThreads" [class.selected]="t.id === selectedThreadId"
+                            (click)="selectThread(t.id)">
+                            <div class="thread-row-top">
+                                <span class="thread-linked-icon"><i class="fas" [ngClass]="linkedTypeIcon(t.linkedRecord.type)"></i></span>
+                                <strong class="thread-vendor">{{ t.vendorName }}</strong>
+                                <span class="unread-dot" *ngIf="t.unreadCount > 0">{{ t.unreadCount }}</span>
+                            </div>
+                            <div class="thread-subject">{{ t.subject }}</div>
+                            <div class="thread-preview">{{ t.lastMessagePreview }}</div>
+                            <div class="thread-row-bottom">
+                                <span class="status-pill" [style.background]="statusColor(t.status) + '18'" [style.color]="statusColor(t.status)">
+                                    {{ statusLabel(t.status) }}
+                                </span>
+                                <span class="dispute-tag" *ngIf="t.hasLinkedDispute"><i class="fas fa-scale-balanced"></i> Dispute</span>
+                                <span class="thread-time">{{ timeAgo(t.lastMessageAt) }}</span>
+                            </div>
+                        </div>
+                        <div class="empty-state" *ngIf="filteredThreads.length === 0">
+                            <i class="fas fa-inbox"></i>
+                            <p>No conversations match these filters.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thread detail -->
+                <div class="thread-detail" *ngIf="selectedThread as st; else noThread">
+                    <div class="detail-topbar">
+                        <div>
+                            <h3>{{ st.subject }}</h3>
+                            <div class="detail-linked" *ngIf="st.linkedRecord.type !== 'NONE'">
+                                <i class="fas" [ngClass]="linkedTypeIcon(st.linkedRecord.type)"></i>
+                                Linked to {{ st.linkedRecord.label }}
+                            </div>
+                            <div class="detail-vendor">{{ st.vendorName }}</div>
+                        </div>
+                        <div class="detail-actions">
+                            <button class="btn-secondary sm" (click)="markResolved()" *ngIf="st.status !== 'RESOLVED'">
+                                <i class="fas fa-check"></i> Mark Resolved
+                            </button>
+                            <button class="btn-secondary sm" (click)="archiveThread()" *ngIf="st.status !== 'ARCHIVED'">
+                                <i class="fas fa-box-archive"></i> Archive
+                            </button>
+                            <button class="btn-danger sm" (click)="openEscalateForm()" *ngIf="!st.hasLinkedDispute">
+                                <i class="fas fa-triangle-exclamation"></i> Escalate to Dispute
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="detail-metrics">
+                        <span><i class="fas fa-stopwatch"></i> First response: {{ formatDuration(st.firstResponseTimeMinutes) }}</span>
+                        <span><i class="fas fa-flag-checkered"></i> Resolution: {{ formatDuration(st.resolutionTimeMinutes) }}</span>
+                    </div>
+
+                    <!-- Escalate mini form -->
+                    <div class="inline-form" *ngIf="showEscalateForm">
+                        <h4>Escalate to Dispute Case</h4>
+                        <label>Category</label>
+                        <select [(ngModel)]="escalateCategory" name="escalateCategory">
+                            <option *ngFor="let c of disputeCategories" [value]="c">{{ categoryLabel(c) }}</option>
+                        </select>
+                        <label>Subject</label>
+                        <input type="text" [(ngModel)]="escalateSubject" name="escalateSubject" />
+                        <div class="inline-form-actions">
+                            <button class="btn-primary sm" (click)="confirmEscalate()">
+                                <i class="fas fa-scale-balanced"></i> Open Dispute Case
+                            </button>
+                            <button class="btn-secondary sm" (click)="cancelEscalateForm()">Cancel</button>
+                        </div>
+                    </div>
+
+                    <!-- Messages -->
+                    <div class="message-list">
+                        <div class="message-bubble" *ngFor="let m of st.messages" [class.from-company]="m.sender === 'COMPANY'"
+                            [class.from-vendor]="m.sender === 'VENDOR'">
+                            <div class="message-meta">
+                                <strong>{{ m.authorName }}</strong>
+                                <span>{{ timeAgo(m.timestamp) }}</span>
+                            </div>
+                            <p class="message-content">{{ m.content }}</p>
+                            <div class="message-attachments" *ngIf="m.attachments.length">
+                                <div class="attachment-chip" *ngFor="let att of m.attachments">
+                                    <i class="fas fa-paperclip"></i>
+                                    <span>{{ att.fileName }}</span>
+                                    <span class="version-tag" *ngIf="att.versions.length > 1">v{{ att.versions.length }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Internal notes -->
+                    <div class="internal-notes" *ngIf="st.internalNotes.length || composingNote">
+                        <div class="internal-notes-header">
+                            <i class="fas fa-lock"></i>
+                            <span>Internal Notes — staff only, never visible to the vendor</span>
+                        </div>
+                        <div class="note-item" *ngFor="let n of st.internalNotes">
+                            <strong>{{ n.authorName }}</strong>
+                            <span class="note-time">{{ timeAgo(n.timestamp) }}</span>
+                            <p>{{ n.content }}</p>
+                        </div>
+                        <div class="note-composer" *ngIf="composingNote">
+                            <textarea [(ngModel)]="noteText" name="noteText" rows="2" placeholder="Add a private note visible only to staff..."></textarea>
+                            <div class="composer-actions">
+                                <button class="btn-primary sm" (click)="addNote()"><i class="fas fa-lock"></i> Add Note</button>
+                                <button class="btn-secondary sm" (click)="toggleNoteComposer()">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Compose bar -->
+                    <div class="compose-bar">
+                        <div class="template-picker" *ngIf="showTemplatePicker">
+                            <div class="template-option" *ngFor="let tpl of cannedTemplates" (click)="applyTemplate(tpl)">
+                                <strong>{{ tpl.name }}</strong>
+                                <span>{{ tpl.content }}</span>
+                            </div>
+                        </div>
+                        <textarea [(ngModel)]="composeText" name="composeText" rows="3" placeholder="Write a reply..."></textarea>
+                        <div class="compose-actions">
+                            <button class="btn-secondary sm" (click)="showTemplatePicker = !showTemplatePicker">
+                                <i class="fas fa-layer-group"></i> Templates
+                            </button>
+                            <button class="btn-secondary sm" (click)="toggleNoteComposer()" *ngIf="!composingNote">
+                                <i class="fas fa-lock"></i> Internal Note
+                            </button>
+                            <button class="btn-primary sm send" (click)="sendMessage()" [disabled]="!composeText.trim()">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <ng-template #noThread>
+                    <div class="thread-detail empty">
+                        <i class="fas fa-comment-slash"></i>
+                        <p>Select a conversation to view its history.</p>
+                    </div>
+                </ng-template>
+            </div>
+
+            <!-- ============================================================ -->
+            <!-- DISPUTES -->
+            <!-- ============================================================ -->
+            <div class="disputes-layout" *ngIf="activeMainTab === 'disputes'">
+                <div class="panel-toolbar">
+                    <h2>Dispute Pipeline</h2>
+                    <div class="toolbar-controls">
+                        <select [(ngModel)]="disputeStageFilter" name="disputeStageFilter">
+                            <option value="ALL">All stages</option>
+                            <option *ngFor="let s of disputeStages" [value]="s">{{ stageLabel(s) }}</option>
+                        </select>
+                        <div class="view-toggle">
+                            <button [class.active]="disputeViewMode === 'kanban'" (click)="disputeViewMode = 'kanban'"><i class="fas fa-columns"></i></button>
+                            <button [class.active]="disputeViewMode === 'table'" (click)="disputeViewMode = 'table'"><i class="fas fa-list"></i></button>
+                        </div>
+                        <button class="btn-primary sm" (click)="openNewDisputeForm()">
+                            <i class="fas fa-plus"></i> New Case
+                        </button>
+                    </div>
+                </div>
+
+                <!-- New dispute mini form -->
+                <div class="inline-form standalone" *ngIf="showNewDisputeForm">
+                    <h4>Open a Dispute Case Directly</h4>
+                    <div class="form-grid">
+                        <div>
+                            <label>Vendor Name</label>
+                            <input type="text" [(ngModel)]="newDisputeVendorName" name="newDisputeVendorName" placeholder="e.g. Titan Freight Networks" />
+                        </div>
+                        <div>
+                            <label>Category</label>
+                            <select [(ngModel)]="newDisputeCategory" name="newDisputeCategory">
+                                <option *ngFor="let c of disputeCategories" [value]="c">{{ categoryLabel(c) }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Subject</label>
+                            <input type="text" [(ngModel)]="newDisputeSubject" name="newDisputeSubject" placeholder="Brief description" />
+                        </div>
+                        <div>
+                            <label>Linked Record (optional)</label>
+                            <input type="text" [(ngModel)]="newDisputeLinkedLabel" name="newDisputeLinkedLabel" placeholder="e.g. PO-8891" />
+                        </div>
+                    </div>
+                    <div class="inline-form-actions">
+                        <button class="btn-primary sm" (click)="confirmNewDispute()"><i class="fas fa-scale-balanced"></i> Open Case</button>
+                        <button class="btn-secondary sm" (click)="cancelNewDisputeForm()">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Kanban view -->
+                <div class="kanban-board" *ngIf="disputeViewMode === 'kanban'">
+                    <div class="kanban-column" *ngFor="let stage of disputeStages">
+                        <div class="kanban-column-header" [style.color]="stageColor(stage)">
+                            {{ stageLabel(stage) }}
+                            <span class="col-count">{{ casesByStage(stage).length }}</span>
+                        </div>
+                        <div class="kanban-card" *ngFor="let c of casesByStage(stage)" [class.selected]="c.id === selectedCaseId"
+                            (click)="selectCase(c.id)" [class.overdue]="slaStatus(c) === 'overdue'" [class.at-risk]="slaStatus(c) === 'at-risk'">
+                            <div class="kc-top">
+                                <i class="fas" [ngClass]="categoryIcon(c.category)"></i>
+                                <span class="kc-case-num">{{ c.caseNumber }}</span>
+                            </div>
+                            <strong class="kc-vendor">{{ c.vendorName }}</strong>
+                            <p class="kc-subject">{{ c.subject }}</p>
+                            <div class="kc-sla" [ngClass]="slaStatus(c)">
+                                <i class="fas fa-clock"></i> {{ slaRemainingLabel(c) }}
+                            </div>
+                        </div>
+                        <div class="kanban-empty" *ngIf="casesByStage(stage).length === 0">No cases</div>
+                    </div>
+                </div>
+
+                <!-- Table view -->
+                <div class="dispute-table" *ngIf="disputeViewMode === 'table'">
+                    <div class="dt-header-row">
+                        <span>Case</span>
+                        <span>Vendor</span>
+                        <span>Category</span>
+                        <span>Stage</span>
+                        <span>SLA</span>
+                    </div>
+                    <div class="dt-row" *ngFor="let c of filteredDisputeCases" (click)="selectCase(c.id)" [class.selected]="c.id === selectedCaseId">
+                        <span class="dt-case">{{ c.caseNumber }}</span>
+                        <span>{{ c.vendorName }}</span>
+                        <span><i class="fas" [ngClass]="categoryIcon(c.category)"></i> {{ categoryLabel(c.category) }}</span>
+                        <span class="stage-pill" [style.background]="stageColor(c.stage) + '18'" [style.color]="stageColor(c.stage)">
+                            {{ stageLabel(c.stage) }}
+                        </span>
+                        <span class="sla-pill" [ngClass]="slaStatus(c)">{{ slaRemainingLabel(c) }}</span>
+                    </div>
+                </div>
+
+                <!-- Case detail -->
+                <div class="case-detail" *ngIf="selectedCase as sc">
+                    <div class="case-detail-header">
+                        <div>
+                            <h3>{{ sc.caseNumber }} — {{ sc.vendorName }}</h3>
+                            <span class="case-subject">{{ sc.subject }}</span>
+                        </div>
+                        <span class="stage-pill lg" [style.background]="stageColor(sc.stage) + '18'" [style.color]="stageColor(sc.stage)">
+                            {{ stageLabel(sc.stage) }}
+                        </span>
+                    </div>
+
+                    <div class="case-meta-row">
+                        <span><i class="fas" [ngClass]="categoryIcon(sc.category)"></i> {{ categoryLabel(sc.category) }}</span>
+                        <span *ngIf="sc.linkedRecord.type !== 'NONE'"><i class="fas" [ngClass]="linkedTypeIcon(sc.linkedRecord.type)"></i> {{ sc.linkedRecord.label }}</span>
+                        <span><i class="fas fa-user"></i> {{ sc.ownerName }}</span>
+                        <span class="sla-pill" [ngClass]="slaStatus(sc)"><i class="fas fa-clock"></i> {{ slaRemainingLabel(sc) }}</span>
+                    </div>
+
+                    <div class="case-outcome" *ngIf="sc.outcome">
+                        <i class="fas fa-gavel"></i> Outcome: <strong>{{ outcomeLabel(sc.outcome) }}</strong>
+                    </div>
+
+                    <div class="case-timeline">
+                        <span class="timeline-label">Timeline</span>
+                        <div class="timeline-item" *ngFor="let ev of sc.timeline">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-top">
+                                    <strong>{{ ev.action }}</strong>
+                                    <span>{{ timeAgo(ev.timestamp) }}</span>
+                                </div>
+                                <span class="timeline-actor">{{ ev.actor }}</span>
+                                <p *ngIf="ev.note">{{ ev.note }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="case-evidence" *ngIf="sc.evidence.length">
+                        <span class="evidence-label">Evidence Attachments</span>
+                        <div class="evidence-chip" *ngFor="let e of sc.evidence">
+                            <i class="fas fa-paperclip"></i> {{ e.fileName }}
+                            <span>{{ e.uploadedBy }}</span>
+                        </div>
+                    </div>
+
+                    <div class="case-actions" *ngIf="sc.stage !== 'CLOSED'">
+                        <button class="btn-primary sm" (click)="advanceStage(sc)" *ngIf="nextStage(sc.stage) && nextStage(sc.stage) !== 'CLOSED'">
+                            <i class="fas fa-forward"></i> Move to {{ stageLabel(nextStage(sc.stage)!) }}
+                        </button>
+                        <button class="btn-danger sm" (click)="showCloseForm = true">
+                            <i class="fas fa-flag-checkered"></i> Close Case
+                        </button>
+                        <button class="btn-secondary sm" title="Export case file for legal/compliance">
+                            <i class="fas fa-file-export"></i> Export Case File
+                        </button>
+                    </div>
+
+                    <!-- Close form -->
+                    <div class="inline-form" *ngIf="showCloseForm">
+                        <h4>Close Case — Structured Outcome Required</h4>
+                        <label>Outcome</label>
+                        <select [(ngModel)]="closeOutcome" name="closeOutcome">
+                            <option *ngFor="let o of disputeOutcomes" [value]="o">{{ outcomeLabel(o) }}</option>
+                        </select>
+                        <label>Closing Note (optional)</label>
+                        <textarea [(ngModel)]="closeNote" name="closeNote" rows="2"></textarea>
+                        <div class="inline-form-actions">
+                            <button class="btn-primary sm" (click)="confirmClose(sc)"><i class="fas fa-check"></i> Confirm Close</button>
+                            <button class="btn-secondary sm" (click)="cancelClose()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audit log -->
+                <div class="audit-log-card">
+                    <h3><i class="fas fa-file-shield"></i> Audit-Ready Compliance Trail</h3>
+                    <div class="audit-entry" *ngFor="let a of auditLog">
+                        <div class="audit-icon"><i class="fas fa-fingerprint"></i></div>
+                        <div class="audit-content">
+                            <div class="audit-top">
+                                <strong>{{ a.action }}</strong>
+                                <span>{{ timeAgo(a.timestamp) }}</span>
+                            </div>
+                            <span class="audit-target">{{ a.targetLabel }}</span>
+                            <p>{{ a.details }}</p>
+                            <span class="audit-actor">{{ a.actor }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </ng-container>
+    </div>
+</div>
