@@ -59,6 +59,8 @@ import {
 } from '../../domain/vendor-management/vendor-management.dto';
 import { environment } from '../../shared-component/service/environments/environment';
 
+const API_BASE = environment.apiBaseUrl;
+
 // ============================================================
 // MOCK DATA — AI VENDOR INTELLIGENCE (SENTINEL)
 // ============================================================
