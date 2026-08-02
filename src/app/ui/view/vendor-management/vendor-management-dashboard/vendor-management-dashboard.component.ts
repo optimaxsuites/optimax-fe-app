@@ -167,30 +167,7 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
       { label: 'High Risk', value: stats.highRiskVendors, color: '#DC2626' }
     ];
 
-    // Generate mock performance data (would come from API in real app)
-    this.performanceData = this.generateMockPerformanceData();
-  }
-
-  // ============================================================
-  // MOCK DATA (temporary - would come from API)
-  // ============================================================
-
-  private generateMockPerformanceData(): any[] {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentMonth = new Date().getMonth();
-    const data = [];
-
-    for (let i = 5; i >= 0; i--) {
-      const idx = (currentMonth - i + 12) % 12;
-      data.push({
-        month: months[idx],
-        score: 65 + Math.random() * 25,
-        onTimeDelivery: 70 + Math.random() * 25,
-        quality: 65 + Math.random() * 30
-      });
-    }
-
-    return data;
+    this.performanceData = [];
   }
 
   // ============================================================

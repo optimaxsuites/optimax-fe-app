@@ -92,6 +92,7 @@ import { ApprovalRfqDetailComponent } from './ui/view/request-management/approva
 import { InvoicesComponent } from './ui/view/request-management/invoices/invoices.component';
 
 import { DocumentationHistoryComponent } from './ui/view/request-management/documentation-history/documentation-history.component';
+import { ProcurementMessagingComponent } from './ui/view/request-management/procurement-messaging/procurement-messaging.component';
 
 import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.component';
 import { FinanceComponent } from './ui/view/vendor-portal/finance/finance.component';
@@ -155,6 +156,7 @@ import { VendorResolutionCenterComponent } from './ui/view/vendor-management/ven
     ApprovalRfqDetailComponent,
     InvoicesComponent,
     DocumentationHistoryComponent,
+    ProcurementMessagingComponent,
     DashboardComponent,
     FinanceComponent,
     PipelineComponent,

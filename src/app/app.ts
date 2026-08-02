@@ -60,7 +60,8 @@ export class App {
       username: 'developer',
       password: '123456',
       project: 'ERP',
-      apiKey: '',
+      clientId: 'optimax-erp-web',
+      appVersion: '2026.05.30',
     };
 
     // if (!loginDetails.username || !loginDetails.password) {
@@ -102,15 +103,14 @@ export class App {
     sessionStorage.setItem('fullname', data.fullname);
     sessionStorage.setItem('email', data.email);
     sessionStorage.setItem('userid', data.id);
-    const tokenStartIndex = data.accessToken.indexOf('=') + 1;
-    const token = data.accessToken.substring(
-      tokenStartIndex,
-      data.accessToken.indexOf(';')
-    );
+    const raw: string = data.accessToken || '';
+    const token = raw.includes('=') && raw.includes(';')
+      ? raw.substring(raw.indexOf('=') + 1, raw.indexOf(';'))
+      : raw;
     sessionStorage.setItem('Token', token);
     localStorage.setItem('Token2', token);
-    sessionStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('accessToken2', data.accessToken);
+    sessionStorage.setItem('accessToken', raw);
+    localStorage.setItem('accessToken2', raw);
     sessionStorage['userRegData'] = JSON.stringify(data);
 
     this.getUserBranchInfo(data);

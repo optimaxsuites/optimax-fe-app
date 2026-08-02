@@ -65,124 +65,22 @@ export class VendorSelectionComponent implements OnInit {
               }
               this.isLoading = false;
             },
-            error: () => {
-              this.loadMockVendors(req);
+            error: (err: any) => {
+              console.error('Error loading vendor suggestions:', err);
+              this.vendors = [];
               this.isLoading = false;
             }
           });
         },
-        error: () => {
-          this.loadMockVendors();
+        error: (err: any) => {
+          console.error('Error loading request for vendor suggestions:', err);
+          this.vendors = [];
           this.isLoading = false;
         }
       });
     } else {
-      this.loadMockVendors();
+      this.vendors = [];
       this.isLoading = false;
-    }
-  }
-
-  loadMockVendors(req?: any): void {
-    this.vendors = [
-      {
-        id: 1,
-        vendorId: 'v1',
-        vendorName: 'TechPro Solutions Ltd',
-        vendorCode: 'TPS001',
-        categories: ['Electronics', 'IT Services', 'Hardware'],
-        rating: 4.8,
-        reviews: ['Excellent service', 'Fast delivery'],
-        totalProjects: 156,
-        completionRate: 98.5,
-        averageResponseTime: 2.3,
-        matchScore: 95,
-        isRecommended: true,
-        reason: 'Top-rated vendor with excellent track record'
-      },
-      {
-        id: 2,
-        vendorId: 'v2',
-        vendorName: 'Global Supplies Inc',
-        vendorCode: 'GSI002',
-        categories: ['Office Supplies', 'Furniture', 'Electronics'],
-        rating: 4.6,
-        reviews: ['Great range', 'Consistent quality'],
-        totalProjects: 234,
-        completionRate: 96.2,
-        averageResponseTime: 3.1,
-        matchScore: 89,
-        isRecommended: true,
-        reason: 'High completion rate and broad product range'
-      },
-      {
-        id: 3,
-        vendorId: 'v3',
-        vendorName: 'Quality Goods Co',
-        vendorCode: 'QGC003',
-        categories: ['Hardware', 'Tools', 'Industrial'],
-        rating: 4.4,
-        reviews: ['Solid products', 'Good value'],
-        totalProjects: 89,
-        completionRate: 94.8,
-        averageResponseTime: 4.2,
-        matchScore: 82,
-        isRecommended: true,
-        reason: 'Specialized in industrial equipment'
-      },
-      {
-        id: 4,
-        vendorId: 'v4',
-        vendorName: 'Express Logistics & Supply',
-        vendorCode: 'ELS004',
-        categories: ['Logistics', 'Warehousing', 'Transport'],
-        rating: 4.2,
-        reviews: ['Timely deliveries', 'Affordable'],
-        totalProjects: 67,
-        completionRate: 92.3,
-        averageResponseTime: 5.1,
-        matchScore: 76,
-        isRecommended: false,
-        reason: 'Good match for logistics requirements'
-      },
-      {
-        id: 5,
-        vendorId: 'v5',
-        vendorName: 'Premium Electronics Hub',
-        vendorCode: 'PEH005',
-        categories: ['Electronics', 'IT Services'],
-        rating: 4.9,
-        reviews: ['Best electronics vendor', 'Top notch'],
-        totalProjects: 203,
-        completionRate: 99.1,
-        averageResponseTime: 1.8,
-        matchScore: 97,
-        isRecommended: true,
-        reason: 'Specialist in electronics with excellent reviews'
-      },
-      {
-        id: 6,
-        vendorId: 'v6',
-        vendorName: 'Consulting Partners Ltd',
-        vendorCode: 'CPL006',
-        categories: ['Consulting', 'Training', 'IT Services'],
-        rating: 4.7,
-        reviews: ['Professional team', 'Thorough work'],
-        totalProjects: 145,
-        completionRate: 97.4,
-        averageResponseTime: 2.7,
-        matchScore: 91,
-        isRecommended: false,
-        reason: 'Strong consulting background'
-      }
-    ];
-
-    this.selectedVendors.clear();
-    if (req && req.selectedVendors && req.selectedVendors.length > 0) {
-      req.selectedVendors.forEach((vId: string) => this.selectedVendors.add(vId));
-    } else {
-      // Auto-select top 3 recommended
-      const recommended = this.vendors.filter(v => v.isRecommended).slice(0, 3);
-      recommended.forEach(v => this.selectedVendors.add(v.vendorId));
     }
   }
 

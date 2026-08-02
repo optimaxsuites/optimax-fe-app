@@ -195,7 +195,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       categoryId: ['', Validators.required],
       serviceCategory: ['', Validators.required],
       quantity: [1, [Validators.required, Validators.min(1)]],
-      estimatedBudget: [0, [Validators.required, Validators.min(0)]],
+      estimatedBudget: [null, [Validators.required, Validators.min(0.01)]],
       currency: ['NGN', Validators.required],
       deliveryMode: ['STANDARD', Validators.required],
       deliveryDeadline: ['', Validators.required],

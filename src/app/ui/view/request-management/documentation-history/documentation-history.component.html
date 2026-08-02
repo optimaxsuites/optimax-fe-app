@@ -238,19 +238,19 @@
         </div>
 
         <!-- ================== QUOTATION DETAILS PREVIEW ================== -->
-        <div class="doc-sheet quotation-sheet" *ngIf="selectedDocType === 'quotation' && mockQuotation">
+        <div class="doc-sheet quotation-sheet" *ngIf="selectedDocType === 'quotation' && quotationDoc">
           <div class="doc-header">
             <div class="doc-logo-section">
               <div class="app-logo-mark vendor"><i class="fas fa-comment-dollar"></i></div>
               <div>
                 <h2>VENDOR QUOTATION</h2>
-                <p class="ref-num">Quote Reference: #{{ mockQuotation.id }}</p>
+                <p class="ref-num">Quote Reference: #{{ quotationDoc.id }}</p>
               </div>
             </div>
             <div class="doc-meta-section">
-              <p><strong>Vendor Name:</strong> {{ mockQuotation.vendorName }}</p>
-              <p><strong>Code:</strong> {{ mockQuotation.vendorCode }}</p>
-              <p><strong>Rating:</strong> ★ {{ mockQuotation.vendorRating }} / 5.0</p>
+              <p><strong>Vendor Name:</strong> {{ quotationDoc.vendorName }}</p>
+              <p><strong>Code:</strong> {{ quotationDoc.vendorCode }}</p>
+              <p><strong>Rating:</strong> ★ {{ quotationDoc.vendorRating }} / 5.0</p>
             </div>
           </div>
 
@@ -261,19 +261,19 @@
             <table class="flat-info-table">
               <tr>
                 <td><strong>Email Address:</strong></td>
-                <td>{{ mockQuotation.vendorEmail }}</td>
+                <td>{{ quotationDoc.vendorEmail }}</td>
               </tr>
               <tr>
                 <td><strong>Phone Number:</strong></td>
-                <td>{{ mockQuotation.vendorPhone }}</td>
+                <td>{{ quotationDoc.vendorPhone }}</td>
               </tr>
               <tr>
                 <td><strong>Validity Period:</strong></td>
-                <td>{{ mockQuotation.validityDays }} Days</td>
+                <td>{{ quotationDoc.validityDays }} Days</td>
               </tr>
               <tr>
                 <td><strong>Estimated Delivery:</strong></td>
-                <td>{{ mockQuotation.deliveryTimeline }}</td>
+                <td>{{ quotationDoc.deliveryTimeline }}</td>
               </tr>
             </table>
           </div>
@@ -291,41 +291,41 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let item of mockQuotation.items">
+                <tr *ngFor="let item of quotationDoc.items">
                   <td><strong>{{ item.name }}</strong></td>
                   <td>{{ item.description }}</td>
                   <td class="text-right">{{ item.quantity }}</td>
-                  <td class="text-right">{{ formatCurrency(item.unitPrice, mockQuotation.currency) }}</td>
-                  <td class="text-right font-semibold">{{ formatCurrency(item.totalPrice, mockQuotation.currency) }}
+                  <td class="text-right">{{ formatCurrency(item.unitPrice, quotationDoc.currency) }}</td>
+                  <td class="text-right font-semibold">{{ formatCurrency(item.totalPrice, quotationDoc.currency) }}
                   </td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr class="grand-total-row">
                   <td colspan="4" class="text-right font-bold">GRAND TOTAL AMOUNT:</td>
-                  <td class="text-right font-bold text-lg text-teal-700">{{ formatCurrency(mockQuotation.totalAmount,
-                    mockQuotation.currency) }}</td>
+                  <td class="text-right font-bold text-lg text-teal-700">{{ formatCurrency(quotationDoc.totalAmount,
+                    quotationDoc.currency) }}</td>
                 </tr>
               </tfoot>
             </table>
             <div class="notes-footer">
-              <strong>Notes:</strong> {{ mockQuotation.notes }}
+              <strong>Notes:</strong> {{ quotationDoc.notes }}
             </div>
           </div>
         </div>
 
         <!-- ================== LPO DETAILS PREVIEW ================== -->
-        <div class="doc-sheet lpo-sheet" *ngIf="selectedDocType === 'lpo' && mockLpo">
+        <div class="doc-sheet lpo-sheet" *ngIf="selectedDocType === 'lpo' && lpoDoc">
           <div class="doc-header">
             <div class="doc-logo-section">
               <div class="app-logo-mark lpo"><i class="fas fa-file-invoice"></i></div>
               <div>
                 <h2>LOCAL PURCHASE ORDER</h2>
-                <p class="ref-num">LPO Number: {{ mockLpo.lpoNumber }}</p>
+                <p class="ref-num">LPO Number: {{ lpoDoc.lpoNumber }}</p>
               </div>
             </div>
             <div class="doc-meta-section">
-              <p><strong>Date Issued:</strong> {{ formatDate(mockLpo.orderDate) }}</p>
+              <p><strong>Date Issued:</strong> {{ formatDate(lpoDoc.orderDate) }}</p>
               <p><strong>RFQ Reference:</strong> #{{ selectedRequest.id }}</p>
             </div>
           </div>
@@ -341,10 +341,10 @@
             </div>
             <div class="party-card">
               <h4>VENDOR DETAILS</h4>
-              <strong class="party-name">{{ mockLpo.vendorName }}</strong>
-              <p>Vendor Code: {{ mockLpo.vendorCode }}</p>
-              <p class="contact-line"><i class="fas fa-envelope"></i> {{ mockLpo.vendorEmail }}</p>
-              <p class="contact-line"><i class="fas fa-phone"></i> {{ mockLpo.vendorPhone }}</p>
+              <strong class="party-name">{{ lpoDoc.vendorName }}</strong>
+              <p>Vendor Code: {{ lpoDoc.vendorCode }}</p>
+              <p class="contact-line"><i class="fas fa-envelope"></i> {{ lpoDoc.vendorEmail }}</p>
+              <p class="contact-line"><i class="fas fa-phone"></i> {{ lpoDoc.vendorPhone }}</p>
             </div>
           </div>
 
@@ -360,21 +360,21 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let item of mockLpo.items">
+                <tr *ngFor="let item of lpoDoc.items">
                   <td>
                     <strong>{{ item.name }}</strong>
                     <div class="item-desc">{{ item.description }}</div>
                   </td>
                   <td class="text-right">{{ item.quantity }}</td>
-                  <td class="text-right">{{ formatCurrency(item.unitPrice, mockLpo.currency) }}</td>
-                  <td class="text-right font-semibold">{{ formatCurrency(item.totalPrice, mockLpo.currency) }}</td>
+                  <td class="text-right">{{ formatCurrency(item.unitPrice, lpoDoc.currency) }}</td>
+                  <td class="text-right font-semibold">{{ formatCurrency(item.totalPrice, lpoDoc.currency) }}</td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr class="grand-total-row">
                   <td colspan="3" class="text-right font-bold">GRAND TOTAL VALUE:</td>
-                  <td class="text-right font-bold text-teal-800">{{ formatCurrency(mockLpo.totalAmount,
-                    mockLpo.currency) }}</td>
+                  <td class="text-right font-bold text-teal-800">{{ formatCurrency(lpoDoc.totalAmount,
+                    lpoDoc.currency) }}</td>
                 </tr>
               </tfoot>
             </table>
@@ -383,10 +383,10 @@
           <div class="lpo-terms-section">
             <h4>LPO Terms & Conditions</h4>
             <ol>
-              <li>Delivery timeline must be within {{ mockLpo.deliveryTimeline }} of LPO issue date.</li>
+              <li>Delivery timeline must be within {{ lpoDoc.deliveryTimeline }} of LPO issue date.</li>
               <li>All items must match specifications. Faulty items will be returned at vendor cost.</li>
               <li>Invoice must be submitted immediately upon full delivery and fulfillment of items.</li>
-              <li>This Purchase Order is valid for {{ mockLpo.validityDays }} days.</li>
+              <li>This Purchase Order is valid for {{ lpoDoc.validityDays }} days.</li>
             </ol>
           </div>
 
@@ -399,13 +399,13 @@
             <div class="sig-line">
               <div class="line"></div>
               <strong>Authorized Vendor Signatory</strong>
-              <p>{{ mockLpo.vendorName }}</p>
+              <p>{{ lpoDoc.vendorName }}</p>
             </div>
           </div>
         </div>
 
         <!-- ================== INVOICE DETAILS PREVIEW ================== -->
-        <app-invoices *ngIf="selectedDocType === 'invoice'" [request]="selectedRequest" [invoice]="mockInvoice"></app-invoices>
+        <app-invoices *ngIf="selectedDocType === 'invoice'" [request]="selectedRequest" [invoice]="invoiceDoc"></app-invoices>
 
       </div>
     </div>

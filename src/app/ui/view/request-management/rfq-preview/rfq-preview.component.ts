@@ -53,22 +53,8 @@ export class RfqPreviewComponent implements OnInit {
       error: (err) => {
         console.error('Error loading request details:', err);
         this.isLoading = false;
-        // If request not found, try to load from localStorage or generate mock
-        this.loadFromLocalStorage(id);
       }
     });
-  }
-
-  loadFromLocalStorage(id: string): void {
-    try {
-      const saved = localStorage.getItem(`rfq_draft_${id}`);
-      if (saved) {
-        this.request = JSON.parse(saved);
-        this.isLoading = false;
-      }
-    } catch (e) {
-      console.warn('No draft found in localStorage');
-    }
   }
 
   loadTemplateDetails(templateId: string): void {
@@ -93,24 +79,8 @@ export class RfqPreviewComponent implements OnInit {
     });
   }
 
-  loadVendorDetails(vendorIds: string[]): void {
-    // If we have vendor IDs from the request, fetch vendor details
-    // For now, use mock data
-    this.vendors = vendorIds.map(id => ({
-      id: 0,
-      vendorId: id,
-      vendorName: `Vendor ${id.substring(0, 4)}`,
-      vendorCode: `V${id.substring(0, 4)}`,
-      categories: ['General'],
-      rating: 4.5,
-      reviews: [],
-      totalProjects: 50,
-      completionRate: 95,
-      averageResponseTime: 2.5,
-      matchScore: 85,
-      isRecommended: true,
-      reason: 'Good match for requirements'
-    }));
+  loadVendorDetails(_vendorIds: string[]): void {
+    this.vendors = [];
   }
 
   formatBudget(value: number, currency?: string): string {
@@ -210,7 +180,6 @@ export class RfqPreviewComponent implements OnInit {
     this.approvalService.createApprovalRequest(approvalData).subscribe({
       next: () => {
         this.isSubmitting = false;
-        localStorage.removeItem(`rfq_draft_${this.requestId}`);
         this.router.navigate(['/admin/sales/commerce/requests']);
       },
       error: (err) => {

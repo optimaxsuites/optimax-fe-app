@@ -66,44 +66,13 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
 
   private loadSalesHistory(): void {
     this.isLoadingHistory = true;
-    // Mock data - replace with actual service call
-    setTimeout(() => {
-      this.salesHistory = [
-        { 
-          id: 'SALE-001', 
-          date: new Date('2026-06-15'), 
-          quantity: 5, 
-          customer: 'Mama Nkechi Enterprises', 
-          total: 250000,
-          status: 'COMPLETED'
-        },
-        { 
-          id: 'SALE-002', 
-          date: new Date('2026-06-12'), 
-          quantity: 3, 
-          customer: 'Tech Solutions Ltd', 
-          total: 150000,
-          status: 'COMPLETED'
-        },
-        { 
-          id: 'SALE-003', 
-          date: new Date('2026-06-08'), 
-          quantity: 2, 
-          customer: 'Global Services NG', 
-          total: 100000,
-          status: 'PENDING'
-        },
-        { 
-          id: 'SALE-004', 
-          date: new Date('2026-06-01'), 
-          quantity: 10, 
-          customer: 'Aliko Dangote Wholesale', 
-          total: 500000,
-          status: 'COMPLETED'
-        }
-      ];
-      this.isLoadingHistory = false;
-    }, 500);
+    this.salesService.getSalesandTransactions({ page: 0, size: 10 }).subscribe({
+      next: (res: any) => {
+        this.salesHistory = res.data || [];
+        this.isLoadingHistory = false;
+      },
+      error: () => { this.isLoadingHistory = false; }
+    });
   }
 
   editProduct(): void {

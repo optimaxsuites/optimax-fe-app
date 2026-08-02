@@ -516,7 +516,6 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
       },
       error: (error: any) => {
         console.error('Error loading products:', error);
-        this.setMockProducts();
         this.calculateStats();
         this.isLoading = false;
       }
@@ -695,101 +694,4 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
     return Array.from({ length: end - start }, (_, i) => start + i);
   }
 
-  // Mock data for development
-  private setMockProducts(): void {
-    this.products = [
-      {
-        id: 1,
-        productId: 'PROD-001',
-        name: 'Executive Office Chair',
-        sku: 'CHR-001',
-        description: 'Ergonomic executive office chair with lumbar support',
-        unitPrice: 50000,
-        costPrice: 30000,
-        currency: 'NGN',
-        stockQuantity: 50,
-        category: 'Furniture',
-        taxRate: 7.5,
-        images: [],
-        status: 'ACTIVE'
-      },
-      {
-        id: 2,
-        productId: 'PROD-002',
-        name: 'Standing Desk',
-        sku: 'DSK-001',
-        description: 'Adjustable height standing desk',
-        unitPrice: 120000,
-        costPrice: 80000,
-        currency: 'NGN',
-        stockQuantity: 3,
-        category: 'Furniture',
-        taxRate: 7.5,
-        images: [],
-        status: 'ACTIVE'
-      },
-      {
-        id: 3,
-        productId: 'PROD-003',
-        name: 'Laptop - Dell XPS',
-        sku: 'LAP-001',
-        description: 'Dell XPS 13 laptop',
-        unitPrice: 850000,
-        costPrice: 700000,
-        currency: 'NGN',
-        stockQuantity: 0,
-        category: 'Electronics',
-        taxRate: 7.5,
-        images: [],
-        status: 'OUT_OF_STOCK'
-      },
-      {
-        id: 4,
-        productId: 'PROD-004',
-        name: 'Conference Table',
-        sku: 'TBL-001',
-        description: 'Large conference table',
-        unitPrice: 250000,
-        costPrice: 180000,
-        currency: 'NGN',
-        stockQuantity: 10,
-        category: 'Furniture',
-        taxRate: 7.5,
-        images: [],
-        status: 'ACTIVE'
-      },
-      {
-        id: 5,
-        productId: 'PROD-005',
-        name: 'Printer - HP LaserJet',
-        sku: 'PRN-001',
-        description: 'HP LaserJet printer',
-        unitPrice: 150000,
-        costPrice: 120000,
-        currency: 'NGN',
-        stockQuantity: 25,
-        category: 'Electronics',
-        taxRate: 7.5,
-        images: [],
-        status: 'DISCONTINUED'
-      },
-      {
-        id: 6,
-        productId: 'PROD-006',
-        name: 'Office Chair - Standard',
-        sku: 'CHR-002',
-        description: 'Standard office chair',
-        unitPrice: 30000,
-        costPrice: 20000,
-        currency: 'NGN',
-        stockQuantity: 100,
-        category: 'Furniture',
-        taxRate: 7.5,
-        images: [],
-        status: 'ACTIVE'
-      }
-    ] as any;
-    this.totalElements = this.products.length;
-    this.totalPages = 1;
-  }
 }

@@ -45,8 +45,24 @@
     </div>
   </div>
 
+  <!-- Tab Navigation -->
+  <div class="detail-tabs">
+    <button class="tab-btn" [class.active]="activeTab === 'quotations'" (click)="activeTab = 'quotations'">
+      <i class="fas fa-file-invoice"></i> Vendor Quotations
+      <span class="tab-count" *ngIf="rfqData?.quotations?.length">{{ rfqData!.quotations.length }}</span>
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'messages'" (click)="activeTab = 'messages'">
+      <i class="fas fa-comments"></i> Messages
+    </button>
+  </div>
+
+  <!-- Messaging Tab -->
+  <div *ngIf="activeTab === 'messages' && rfqId" class="tab-panel-messages">
+    <app-procurement-messaging [rfqId]="rfqId"></app-procurement-messaging>
+  </div>
+
   <!-- Vendor Quotations Summary Cards -->
-  <div class="quotations-summary">
+  <div class="quotations-summary" *ngIf="activeTab === 'quotations'">
     <h3>Vendor Quotations</h3>
     <div class="quotation-cards">
       <div *ngFor="let quote of rfqData.quotations" class="quotation-card"

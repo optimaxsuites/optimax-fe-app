@@ -115,58 +115,28 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     this.isLoading = true;
 
     this.salesService.getDashboardStats(this.dateRange).subscribe({
-      next: (stats: any) => {
-        this.stats = stats;
-      },
-      error: (error: any) => {
-        console.error('Error loading stats:', error);
-        this.setMockStats();
-      }
+      next: (stats: any) => { this.stats = stats; },
+      error: (error: any) => { console.error('Error loading stats:', error); }
     });
 
     this.salesService.getRecentQuotes(3).subscribe({
-      next: (quotes: any[]) => {
-        this.recentQuotes = quotes.slice(0, 3);
-      },
-      error: (error: any) => {
-        console.error('Error loading quotes:', error);
-        this.setMockQuotes();
-        this.recentQuotes = this.recentQuotes.slice(0, 3);
-      }
+      next: (quotes: any[]) => { this.recentQuotes = quotes.slice(0, 3); },
+      error: (error: any) => { console.error('Error loading quotes:', error); }
     });
 
     this.salesService.getRecentInvoices(3).subscribe({
-      next: (invoices: any[]) => {
-        this.recentInvoices = invoices.slice(0, 3);
-      },
-      error: (error: any) => {
-        console.error('Error loading invoices:', error);
-        this.setMockInvoices();
-        this.recentInvoices = this.recentInvoices.slice(0, 3);
-      }
+      next: (invoices: any[]) => { this.recentInvoices = invoices.slice(0, 3); },
+      error: (error: any) => { console.error('Error loading invoices:', error); }
     });
 
     this.salesService.getTopProducts(3).subscribe({
-      next: (products: any[]) => {
-        this.topProducts = products.slice(0, 3);
-      },
-      error: (error: any) => {
-        console.error('Error loading products:', error);
-        this.setMockProducts();
-        this.topProducts = this.topProducts.slice(0, 3);
-      }
+      next: (products: any[]) => { this.topProducts = products.slice(0, 3); },
+      error: (error: any) => { console.error('Error loading products:', error); }
     });
 
     this.salesService.getRevenueChart(this.dateRange).subscribe({
-      next: (data: any[]) => {
-        this.revenueData = data;
-        this.isLoading = false;
-      },
-      error: (error: any) => {
-        console.error('Error loading chart:', error);
-        this.setMockChartData();
-        this.isLoading = false;
-      }
+      next: (data: any[]) => { this.revenueData = data; this.isLoading = false; },
+      error: (error: any) => { console.error('Error loading chart:', error); this.isLoading = false; }
     });
   }
 
@@ -388,64 +358,6 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
       'COMPLETED': 'Completed'
     };
     return labels[status] || status;
-  }
-
-  // ============================================
-  // MOCK DATA (for development)
-  // ============================================
-
-  private setMockStats(): void {
-    this.stats = {
-      totalRevenue: 2845000,
-      totalQuotes: 24,
-      pendingQuotes: 8,
-      acceptedQuotes: 16,
-      totalInvoices: 18,
-      paidInvoices: 12,
-      overdueInvoices: 2,
-      totalCustomers: 45
-    };
-  }
-
-  private setMockQuotes(): void {
-    this.recentQuotes = [
-      { id: 'QT-001', customerName: 'Mama Nkechi Enterprises', total: 500000, status: 'ACCEPTED', date: new Date('2026-06-10') },
-      { id: 'QT-002', customerName: 'Tech Solutions Ltd', total: 1250000, status: 'SENT', date: new Date('2026-06-09') },
-      { id: 'QT-003', customerName: 'Global Services NG', total: 350000, status: 'PENDING', date: new Date('2026-06-08') },
-      { id: 'QT-004', customerName: 'Furniture Hub', total: 750000, status: 'ACCEPTED', date: new Date('2026-06-07') },
-      { id: 'QT-005', customerName: 'Office Supplies Ltd', total: 250000, status: 'DECLINED', date: new Date('2026-06-06') }
-    ];
-  }
-
-  private setMockInvoices(): void {
-    this.recentInvoices = [
-      { id: 'INV-001', customerName: 'Mama Nkechi Enterprises', total: 500000, status: 'PAID', dueDate: new Date('2026-06-20') },
-      { id: 'INV-002', customerName: 'Tech Solutions Ltd', total: 1250000, status: 'UNPAID', dueDate: new Date('2026-06-25') },
-      { id: 'INV-003', customerName: 'Furniture Hub', total: 750000, status: 'PAID', dueDate: new Date('2026-06-15') },
-      { id: 'INV-004', customerName: 'Global Services NG', total: 350000, status: 'OVERDUE', dueDate: new Date('2026-06-01') },
-      { id: 'INV-005', customerName: 'Office Supplies Ltd', total: 250000, status: 'PENDING', dueDate: new Date('2026-06-28') }
-    ];
-  }
-
-  private setMockProducts(): void {
-    this.topProducts = [
-      { name: 'Executive Office Chair', quantity: 45, revenue: 2250000 },
-      { name: 'Standing Desk', quantity: 28, revenue: 1400000 },
-      { name: 'Laptop - Dell XPS', quantity: 12, revenue: 1800000 },
-      { name: 'Conference Table', quantity: 8, revenue: 1200000 },
-      { name: 'Printer - HP LaserJet', quantity: 15, revenue: 750000 }
-    ];
-  }
-
-  private setMockChartData(): void {
-    this.revenueData = [
-      { month: 'Jan', amount: 450000 },
-      { month: 'Feb', amount: 520000 },
-      { month: 'Mar', amount: 480000 },
-      { month: 'Apr', amount: 610000 },
-      { month: 'May', amount: 580000 },
-      { month: 'Jun', amount: 2845000 }
-    ];
   }
 
   // ============================================
