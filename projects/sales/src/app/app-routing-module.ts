@@ -58,16 +58,16 @@ export const routes: Routes = [
     component: VendorManagementComponent
   },
   {
-    path: 'commerce/manage-vendors/:uuid',
-    component: VendorManagementComponent
-  },
-  {
     path: 'commerce/manage-vendors/onboarding',
     component: VendorOnboardingComponent
   },
   {
     path: 'commerce/manage-vendors/onboarding/:uuid',
     component: VendorOnboardingComponent
+  },
+  {
+    path: 'commerce/manage-vendors/:uuid',
+    component: VendorManagementComponent
   },
   {
     path: 'commerce/manage-vendors/:id/profile',

@@ -472,7 +472,7 @@ export class VendorOnboardingComponent implements OnInit, OnDestroy {
           localStorage.removeItem('vendorOnboardingDraft');
           // Navigate after delay
           setTimeout(() => {
-            this.router.navigate(['/admin/sales/commerce/manage-vendors', result.vendorId, 'profile']);
+            this.router.navigate(['/commerce/manage-vendors', result.vendorId, 'profile']);
           }, 3000);
         },
         error: (err) => {
