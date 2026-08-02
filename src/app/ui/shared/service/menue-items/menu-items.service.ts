@@ -197,11 +197,18 @@ export class MenuItemsService {
       route: this.navigationLink.getLink('vendorLink'),
       locked: true,
       active: false
-
-      // submenu: [
-      //   { label: 'Registration', route: this.navigationLink.getLink('vendorLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-plus' },
-      //   { label: 'Incoming RFQ ', route: this.navigationLink.getLink('vendorRfqLink'), roles: ['ROLE_USER'], icon: 'fas fa-inbox' },
-      // ],
+    },
+    {
+      label: 'Vendor Management',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      icon: 'fas fa-building-user',
+      route: this.navigationLink.getLink('VMLink'),
+      locked: true,
+      active: true,
+      submenu: [
+        { label: 'All Vendors', route: this.navigationLink.getLink('VMLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-list' },
+        { label: 'Onboarding', route: this.navigationLink.getLink('VMLink') + '/onboarding', roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-user-plus' },
+      ],
     },
     {
       label: 'Settings',

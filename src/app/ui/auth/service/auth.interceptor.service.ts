@@ -5,14 +5,19 @@ import {
   HttpHandler,
   HttpEvent,
 } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { NavigationLinksService } from '../../shared/service/navigation-links/navigation-links.service';
+import { SessionExpiredService } from './session-expired.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
+  private sessionExpiredTriggered = false;
+
   constructor(
     private router: Router,
+    private sessionExpiredService: SessionExpiredService,
     // private navigationLink: NavigationLinksService
   ) {}
 
@@ -61,6 +66,24 @@ export class AuthInterceptor implements HttpInterceptor {
       setHeaders: headers,
     });
 
-    return next.handle(updatedRequest);
+    return next.handle(updatedRequest).pipe(
+      catchError((error) => {
+        if (error.status === 401 && !this.sessionExpiredTriggered && this.isTokenExpired(accessToken)) {
+          this.sessionExpiredTriggered = true;
+          this.sessionExpiredService.trigger();
+        }
+        return throwError(() => error);
+      }),
+    );
+  }
+
+  private isTokenExpired(token: string): boolean {
+    if (!token) return true;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return Date.now() / 1000 > (payload.exp || 0);
+    } catch {
+      return false;
+    }
   }
 }

@@ -73,6 +73,7 @@ export interface WorkTaskFull {
   progress: number;
   tags?: string;
   createdByUserId?: number;
+  closedReason?: string;
   createdAt: string;
   updatedAt: string;
   subtasks: WorkTaskSubtask[];
@@ -93,6 +94,7 @@ export interface WorkTaskDTO {
   progress?: number;
   tags?: string;
   createdByUserId?: number;
+  closedReason?: string;
 }
 
 export interface SubtaskDTO {
@@ -254,8 +256,9 @@ export class WorkTaskApiService {
       .pipe(catchError(this.handleError));
   }
 
-  updateTaskStatus(id: number, status: WorkTaskStatus): Observable<WorkTaskFull> {
-    return this.http.patch<WorkTaskFull>(`${this.base}/workTasks/${id}/status?status=${status}`, {})
+  updateTaskStatus(id: number, status: WorkTaskStatus, closedReason?: string): Observable<WorkTaskFull> {
+    const reason = closedReason ? `&closedReason=${encodeURIComponent(closedReason)}` : '';
+    return this.http.patch<WorkTaskFull>(`${this.base}/workTasks/${id}/status?status=${status}${reason}`, {})
       .pipe(catchError(this.handleError));
   }
 

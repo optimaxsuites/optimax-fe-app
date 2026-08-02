@@ -711,6 +711,8 @@ export class CommunicationComponent
   private userEmailCache: Record<number, string> = {};
   private imageCache: Record<string, string> = {};
   private userAvatarCache: Record<number, string> = {};
+  private feedAuthorCache: Record<number, string> = {};
+  private feedAuthorFetchPending = new Set<number>();
   private readStateMap: Record<number, number[]> = {};
   private lastMessageBackendId: number | null = null;
   private attachmentPreviewCache: Record<string, string> = {};
@@ -2344,7 +2346,7 @@ export class CommunicationComponent
     const source = [...featuredPosts, ...posts].slice(0, 3);
     return source.map((post, index) => ({
       id: post.id || index + 1,
-      author: this.feedAuthorName(post.author),
+      author: this.feedAuthorName(post.author, post.authorUserId),
       role: (post.moduleCodes || []).slice(0, 2).join(' • ') || (post.postType || 'UPDATE'),
       timeAgo: this.feedPublishedLabel(post.publishedAt || post.createdAt),
       content: this.extractTextFromHtml(post.summary || post.body || '').slice(0, 140) || 'New collaboration highlight available.',
@@ -2356,7 +2358,7 @@ export class CommunicationComponent
     return posts.slice(0, 3).map((post, index) => ({
       id: post.id || index + 1,
       title: post.title || `${post.postType || 'Update'} follow-up`,
-      owner: this.feedAuthorName(post.author),
+      owner: this.feedAuthorName(post.author, post.authorUserId),
       due: this.feedPublishedLabel(post.publishedAt || post.createdAt),
       status: index === 0 ? 'Pending' : index === 1 ? 'In Progress' : 'Review',
     }));
@@ -2554,10 +2556,32 @@ export class CommunicationComponent
     this.cdr.detectChanges();
   }
 
-  feedAuthorName(user?: any): string {
-    if (!user) return 'Unknown author';
+  feedAuthorName(user?: any, authorUserId?: number | null): string {
+    if (!user) {
+      if (!authorUserId) return 'Unknown author';
+      const cached = this.feedAuthorCache[authorUserId];
+      if (cached) return cached;
+      this.resolveFeedAuthorName(authorUserId);
+      return '';
+    }
     const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
     return fullName || user.fullname || user.username || `User ${user.userId || user.id || ''}`.trim();
+  }
+
+  private resolveFeedAuthorName(userId: number): void {
+    if (this.feedAuthorFetchPending.has(userId)) return;
+    this.feedAuthorFetchPending.add(userId);
+    this.collabService.getUserPrimaryInfoByUserId(userId).subscribe({
+      next: (info) => {
+        const name = info?.fullname || info?.username || '';
+        if (name) {
+          this.feedAuthorCache[userId] = name;
+          this.cdr.detectChanges();
+        }
+        this.feedAuthorFetchPending.delete(userId);
+      },
+      error: () => { this.feedAuthorFetchPending.delete(userId); },
+    });
   }
 
   feedAuthorInitials(user?: any): string {
@@ -2582,7 +2606,7 @@ export class CommunicationComponent
   }
 
   isOwnFeedPost(post: CollabFeedPost): boolean {
-    const authorUserId = Number(post.author?.userId || post.author?.id || 0);
+    const authorUserId = Number(post.authorUserId || post.author?.userId || post.author?.id || 0);
     return !!authorUserId && authorUserId === Number(this.me.userId || 0);
   }
 

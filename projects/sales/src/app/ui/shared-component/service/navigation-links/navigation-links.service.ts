@@ -44,7 +44,10 @@ export class NavigationLinksService {
 		this.links["PMLink"] = "/admin/sales/commerce/requests/home/" + uuidV4();
 		// this.links["VPLink"] = "/admin/commerce/vendor-portal/" + uuidV4();
 		this.links["VPLink"] = "/admin/sales/vendor-portal/" + uuidV4();
-		// this.links["RALink"] = "/admin/sales/reports/" + uuidV4();
+		this.links["RALink"] = "/admin/sales/reports/" + uuidV4();
+		this.links["VMLink"] = "/manage-vendors/" + uuidV4();
+		this.links["deliveriesLink"] = "/admin/sales/deliveries/" + uuidV4();
+		this.links["paymentsLink"] = "/admin/sales/payments/" + uuidV4();
 		
 		//  resources ================================================================================================================
 		this.links["posLink"] = "/admin/pos/" + uuidV4();

@@ -140,9 +140,9 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
       measurementUnit: ['Each'],
       
       // Pricing & Inventory
-      costPrice: [0, [Validators.required, Validators.min(0)]],
-      sellingPrice: [0, [Validators.required, Validators.min(0)]],
-      quantity: [0, [Validators.required, Validators.min(0)]],
+      costPrice: [null, [Validators.required, Validators.min(0.01)]],
+      sellingPrice: [null, [Validators.required, Validators.min(0.01)]],
+      quantity: [null, [Validators.required, Validators.min(0)]],
       expiryDate: [''],
       discount: ['No Discount'],
       taxes: ['VAT 7.5%'],

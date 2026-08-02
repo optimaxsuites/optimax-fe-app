@@ -9,6 +9,9 @@ import { VendorSelectionComponent } from './ui/view/request-management/vendor-se
 import { RequestForQuotationDetailComponent } from './ui/view/request-management/request-for-quotation-detail/request-for-quotation-detail.component';
 import { RfqPreviewComponent } from './ui/view/request-management/rfq-preview/rfq-preview.component';
 import { RequestManagementComponent } from './ui/view/request-management/request-management.component';
+import { ProcurementMessagingComponent } from './ui/view/request-management/procurement-messaging/procurement-messaging.component';
+import { DeliveryManagementComponent } from './ui/view/sales-hub/delivery-management/delivery-management.component';
+import { PaymentProcessingComponent } from './ui/view/sales-hub/payment-processing/payment-processing.component';
 import { SalesDashboardComponent } from './ui/view/sales-hub/sales-dashboard/sales-dashboard.component';
 import { SalesHubComponent } from './ui/view/sales-hub/sales-hub.component';
 import { QuoteListComponent } from './ui/view/sales-hub/quotations/quote-list/quote-list.component';
@@ -314,6 +317,34 @@ export const routes: Routes = [
   {
     path: 'vendor-portal/:uuid',
     component: VendorPortalComponent
+  },
+
+  // --- Procurement Messaging ---
+  {
+    path: 'commerce/requests/:id/messages',
+    component: ProcurementMessagingComponent
+  },
+  {
+    path: 'commerce/requests/:id/messages/:uuid',
+    component: ProcurementMessagingComponent
+  },
+
+  // --- Delivery & Payments ---
+  {
+    path: 'deliveries',
+    component: DeliveryManagementComponent
+  },
+  {
+    path: 'deliveries/:uuid',
+    component: DeliveryManagementComponent
+  },
+  {
+    path: 'payments',
+    component: PaymentProcessingComponent
+  },
+  {
+    path: 'payments/:uuid',
+    component: PaymentProcessingComponent
   },
 
   // --- Reports ---

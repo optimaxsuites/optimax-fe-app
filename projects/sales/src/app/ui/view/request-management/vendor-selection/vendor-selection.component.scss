@@ -1,4 +1,50 @@
 // vendor-selection/vendor-selection.component.scss
+$primary: #184440;
+$border: #e5e7eb;
+
+// ── Shared page header + step bar ─────────────────────────────────────────────
+.page-header {
+  background: white;
+  border-bottom: 1px solid $border;
+  margin: -2rem -2rem 1.5rem; // pull edge-to-edge inside the padded wrapper
+
+  .header-main-row {
+    display: flex; align-items: center; gap: .9rem; padding: 1rem 2rem;
+  }
+  .page-icon {
+    width: 40px; height: 40px; background: #edf4f3; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: $primary; font-size: 1rem; flex-shrink: 0;
+  }
+  .page-title {
+    h2 { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0 0 .1rem; }
+    p { font-size: .8rem; color: #6b7280; margin: 0; }
+  }
+}
+
+.step-bar {
+  background: white; border-top: 1px solid $border;
+  padding: .75rem 2rem; display: flex; align-items: center; justify-content: center;
+}
+.step-list { display: flex; align-items: center; }
+.step-item {
+  display: flex; align-items: center; gap: .45rem;
+  .step-circle {
+    width: 28px; height: 28px; border-radius: 50%; border: 2px solid #d1d5db;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; font-weight: 700; color: #9ca3af; background: white; flex-shrink: 0;
+  }
+  .step-name { font-size: .78rem; color: #9ca3af; font-weight: 500; white-space: nowrap; }
+  &.active {
+    .step-circle { border-color: $primary; background: $primary; color: white; box-shadow: 0 0 0 3px rgba(24,68,64,.15); }
+    .step-name { color: $primary; font-weight: 700; }
+  }
+  &.completed {
+    .step-circle { border-color: $primary; background: #edf4f3; color: $primary; }
+    .step-name { color: #374151; font-weight: 600; }
+  }
+}
+.step-connector { width: 48px; height: 2px; background: #e5e7eb; margin: 0 .4rem; &.done { background: $primary; } }
 
 .vendor-selection {
   padding: 2rem;

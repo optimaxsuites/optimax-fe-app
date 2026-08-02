@@ -240,7 +240,8 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
     if (!this.uploadForm.fileName)    { this.uploadErrors['fileName'] = 'Please select a file.'; }
     if (Object.keys(this.uploadErrors).length > 0) return;
 
-    this.vendorService.uploadDocument({
+    const vendorId = sessionStorage.getItem('userid') || '';
+    this.vendorService.uploadDocument(vendorId, {
       name:       this.uploadForm.name.trim(),
       category:   this.uploadForm.category,
       fileUrl:    '#',
@@ -250,7 +251,7 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
       expiryDate: this.uploadForm.expiryDate ? new Date(this.uploadForm.expiryDate) : undefined,
       notes:      this.uploadForm.notes || undefined,
       isRequired: this.uploadForm.isRequired,
-    });
+    }).subscribe();
 
     this.vendorService.getDocumentStats().pipe(take(1)).subscribe(s => this.stats = s);
     this.closeUploadModal();

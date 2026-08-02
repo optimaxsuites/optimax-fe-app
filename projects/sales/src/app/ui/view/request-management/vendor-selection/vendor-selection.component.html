@@ -1,13 +1,28 @@
 <!-- vendor-selection/vendor-selection.component.html -->
 
 <div class="vendor-selection">
-  <div class="vendor-header">
-    <div class="header-content">
-      <h2>Select Vendors</h2>
-      <p class="subtitle">AI recommends the best vendors based on your requirements</p>
+
+  <!-- Page Header (matches product form / template selector) -->
+  <div class="page-header">
+    <div class="header-main-row">
+      <div class="page-icon"><i class="fas fa-users-cog"></i></div>
+      <div class="page-title">
+        <h2>Select Vendors</h2>
+        <p>AI recommends the best vendors based on your requirements</p>
+      </div>
     </div>
-    <div class="form-progress">
-      <span class="step-badge">Step 4 of 5</span>
+    <div class="step-bar">
+      <div class="step-list">
+        <div class="step-item completed"><span class="step-circle"><i class="fas fa-check"></i></span><span class="step-name">Type</span></div>
+        <div class="step-connector done"></div>
+        <div class="step-item completed"><span class="step-circle"><i class="fas fa-check"></i></span><span class="step-name">Details</span></div>
+        <div class="step-connector done"></div>
+        <div class="step-item completed"><span class="step-circle"><i class="fas fa-check"></i></span><span class="step-name">Template</span></div>
+        <div class="step-connector done"></div>
+        <div class="step-item active"><span class="step-circle">4</span><span class="step-name">Vendors</span></div>
+        <div class="step-connector"></div>
+        <div class="step-item"><span class="step-circle">5</span><span class="step-name">Submit</span></div>
+      </div>
     </div>
   </div>
 

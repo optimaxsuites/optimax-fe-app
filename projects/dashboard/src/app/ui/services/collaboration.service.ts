@@ -241,6 +241,7 @@ export interface CollabFeedComment {
   postId: number;
   parentCommentId?: number;
   threadRootCommentId?: number;
+  authorUserId?: number | null;
   author?: CollabFeedUser;
   content: string;
   mediaItems?: CollabFeedMediaItem[];
@@ -264,6 +265,7 @@ export interface CollabFeedReactionUser {
 
 export interface CollabFeedPost {
   id: number;
+  authorUserId?: number | null;
   author?: CollabFeedUser;
   channel?: CollabChannel;
   title?: string;

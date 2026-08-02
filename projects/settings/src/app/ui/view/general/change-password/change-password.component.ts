@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { environment } from '../../../sharedComponents/service/environments/environment';
 
@@ -32,6 +33,7 @@ export class ChangePasswordComponent {
   constructor(
     private fb: FormBuilder,
     private http: HttpClient,
+    private router: Router,
     private messageService: MessageService
   ) {
     this.changePasswordForm = this.fb.group({
@@ -54,8 +56,8 @@ export class ChangePasswordComponent {
       });
       return;
     }
-    const username = sessionStorage.getItem('username') || '';
     this.loading = true;
+    const username = sessionStorage.getItem('username') || localStorage.getItem('username') || '';
     const payload = JSON.stringify({ username, oldPassword: currentPassword, newPassword });
     this.http
       .post<any>(`${environment.apiBaseUrl}/x/api/v2/us/ur/changepassword`, payload, {
@@ -67,9 +69,14 @@ export class ChangePasswordComponent {
           if (res?.code === '1000') {
             this.messageService.add({
               severity: 'success', summary: 'Password updated',
-              detail: 'Your password has been changed successfully.', life: 3000,
+              detail: 'Your password has been changed. Please log in again.', life: 3000,
             });
             this.changePasswordForm.reset();
+            setTimeout(() => {
+              sessionStorage.clear();
+              localStorage.clear();
+              this.router.navigate(['/']);
+            }, 2500);
           } else {
             this.messageService.add({
               severity: 'error', summary: 'Failed',

@@ -261,6 +261,9 @@
                   <button class="kcard-act-btn edit-btn" title="Edit task" (click)="openEditTask(task, $event)">
                     <i class="fas fa-pencil-alt"></i>
                   </button>
+                  <button class="kcard-act-btn close-btn" title="Close task" (click)="closeTask(task, $event)">
+                    <i class="fas fa-check-circle"></i>
+                  </button>
                   <button class="kcard-act-btn arc-btn" title="Archive task" (click)="archiveTask(task, $event)">
                     <i class="fas fa-archive"></i>
                   </button>
@@ -447,14 +450,21 @@
                 </div>
                 <div class="tree-cell">{{ completedSubtasks(task) }}/{{ task.subtasks.length }}</div>
                 <div class="tree-cell">
-                  <button class="btn-ghost" style="padding:3px 8px;font-size:12px" (click)="openDetail(task);$event.stopPropagation()">Open</button>
+                  <button class="btn-ghost" style="padding:3px 8px;font-size:12px" (click)="openDetailFromList(task, $event)">Open</button>
                 </div>
               </div>
               <ng-container *ngIf="task.expanded">
-                <div class="tree-preview" *ngIf="task.followUps?.length">
-                  <div class="tree-preview-block">
-                    <strong>Latest update · {{ task.followUps[0].author }} · {{ task.followUps[0].timestamp }}</strong>
+                <div class="tree-preview">
+                  <div class="tree-preview-block" *ngIf="task.followUps?.length">
+                    <strong>Latest update · {{ task.followUps[0].author || 'Team Member' }} · {{ task.followUps[0].timestamp }}</strong>
                     <p [innerHTML]="sanitizeHtml(task.followUps[0].text)"></p>
+                  </div>
+                  <div class="tree-preview-block" *ngIf="!task.followUps?.length && task.description">
+                    <strong>Description</strong>
+                    <p [innerHTML]="sanitizeHtml(task.description)"></p>
+                  </div>
+                  <div class="tree-preview-block" *ngIf="!task.followUps?.length && !task.description && !task.subtasks.length" style="color:#9ca3af;font-style:italic">
+                    No updates yet — click <strong>Open</strong> to view or add details.
                   </div>
                 </div>
                 <div class="tree-row child" *ngFor="let sub of task.subtasks">
@@ -1480,6 +1490,10 @@
           <div class="df"><label>Status</label>
             <span [class.closed-tag]="selectedTask.status === 'Closed'">{{ selectedTask.status }}</span>
           </div>
+          <div class="df" *ngIf="selectedTask.closed && selectedTask.closedReason">
+            <label>Closed Reason</label>
+            <span style="color:#dc2626;font-style:italic">{{ selectedTask.closedReason }}</span>
+          </div>
           <div class="df" *ngIf="selectedTask.cost">
             <label>Est. Cost</label>
             <span class="cost-chip">{{ selectedTask.costCurrency || 'NGN' }} {{ fmt(selectedTask.cost) }}</span>
@@ -1567,7 +1581,7 @@
               <div *ngFor="let fu of (sub.followUps || [])" class="sub-fu-entry">
                 <span class="fu-ava-sm" style="background:#6366f1">{{ fu.initials }}</span>
                 <div class="sub-fu-body">
-                  <strong>{{ fu.author }}</strong>
+                  <strong>{{ fu.author || 'Team Member' }}</strong>
                   <span class="sub-fu-ts">{{ fu.timestamp | date:'MMM d, h:mm a' }}</span>
                   <p [innerHTML]="sanitizeHtml(fu.text)"></p>
                 </div>
@@ -1717,7 +1731,7 @@
                 <div class="fu-reply-entry" *ngFor="let rep of fu.replies">
                   <div class="fu-ava-sm" [style.background]="rep.color">{{ rep.initials }}</div>
                   <div class="fu-reply-body">
-                    <span class="fu-reply-author">{{ rep.author }}</span>
+                    <span class="fu-reply-author">{{ rep.author || 'Team Member' }}</span>
                     <span class="fu-reply-ts">{{ rep.timestamp }}</span>
                     <div class="fu-reply-text">{{ rep.text }}</div>
                   </div>
@@ -1866,6 +1880,7 @@
             <span *ngIf="t.closed" class="rail-closed-badge">Closed</span>
             <span *ngIf="!t.closed"> · {{ t.status }}</span>
           </span>
+          <span *ngIf="t.closed && t.closedReason" class="rail-closed-reason">{{ t.closedReason }}</span>
           <span *ngIf="t.cost" class="rail-cost-meta">{{ t.costCurrency || 'NGN' }} {{ fmt(t.cost) }}</span>
         </div>
         <button class="rail-icon-btn rail-restore-btn"
@@ -1882,6 +1897,28 @@
 </div><!-- /pm-page -->
 
 <!-- ══ TOAST STACK ══════════════════════════════════════════════════════════════ -->
+<!-- ══ CLOSE TASK MODAL ══════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" *ngIf="showCloseTaskModal" (click)="cancelCloseTask()"></div>
+<div class="close-task-modal" *ngIf="showCloseTaskModal" (click)="$event.stopPropagation()">
+  <div class="ctm-header">
+    <i class="fas fa-check-circle" style="color:#16a34a;margin-right:8px"></i>
+    Close Task
+  </div>
+  <div class="ctm-body">
+    <p class="ctm-task-title">{{ closeTaskRef?.title }}</p>
+    <label class="ctm-label">Reason for closing <span style="color:#9ca3af;font-weight:400">(optional)</span></label>
+    <textarea class="ctm-reason-input" [(ngModel)]="closeTaskReason" rows="3"
+              placeholder="e.g. Completed ahead of schedule, no longer required, superseded by another task…"
+              autofocus></textarea>
+  </div>
+  <div class="ctm-footer">
+    <button class="btn-ghost" (click)="cancelCloseTask()">Cancel</button>
+    <button class="btn-close-confirm" (click)="confirmCloseTask()">
+      <i class="fas fa-check-circle"></i> Confirm Close
+    </button>
+  </div>
+</div>
+
 <div class="toast-stack">
   <div class="toast-item" *ngFor="let t of toasts"
        [class.toast-success]="t.type === 'success'"
