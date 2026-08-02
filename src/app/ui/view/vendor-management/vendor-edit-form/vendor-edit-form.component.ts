@@ -441,7 +441,7 @@ export class VendorEditComponent implements OnInit, OnDestroy {
 
   private goToProfile(): void {
     if (this.vendorId) {
-      this.router.navigate(['/manage-vendors', this.vendorId, 'profile']);
+      this.router.navigate(['/admin/sales/commerce/manage-vendors', this.vendorId, 'profile']);
     } else {
       this.location.back();
     }

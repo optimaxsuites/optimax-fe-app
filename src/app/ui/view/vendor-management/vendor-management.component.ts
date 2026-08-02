@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { TabConfig } from '../../shared-component/service/interface/data';
 import { VendorManagementDashboardComponent } from './vendor-management-dashboard/vendor-management-dashboard.component';
 import { VendorManagementListComponent } from './vendor-management-list/vendor-management-list.component';
+import { VendorAiIntelligenceComponent } from './vendor-ai-intelligence/vendor-ai-intelligence.component';
+import { VendorResolutionCenterComponent } from './vendor-resolution-center/vendor-resolution-center.component';
 
 @Component({
   selector: 'app-vendor-management',
@@ -19,6 +21,16 @@ export class VendorManagementComponent {
       name: 'Vendor Directory',
       component: VendorManagementListComponent,
       icon: 'fa-sharp fa-solid fa-store',
+    },
+    {
+      name: 'AI Vendor Intelligence',
+      component: VendorAiIntelligenceComponent,
+      icon: 'fa-sharp fa-solid fa-wand-magic-sparkles',
+    },
+    {
+      name: 'Resolution Center',
+      component: VendorResolutionCenterComponent,
+      icon: 'fa-sharp fa-solid fa-scale-balanced',
     },
   ];
 }

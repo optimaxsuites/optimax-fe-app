@@ -544,8 +544,8 @@
                      <div class="parties-box">
                        <h4 class="parties-heading">BILL TO</h4>
                        <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
-                       <p *ngIf="selectedCustomer?.address">{{ selectedCustomer.address }}</p>
-                       <p *ngIf="selectedCustomer?.email">{{ selectedCustomer.email }}</p>
+                       <p *ngIf="selectedCustomer?.address">{{ selectedCustomer?.address }}</p>
+                       <p *ngIf="selectedCustomer?.email">{{ selectedCustomer?.email }}</p>
                        <!-- Customer Bank Account Details -->
                        <div class="client-bank-subbox" *ngIf="quoteDataForTemplate?.selectedCustomerBank" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed rgba(186, 153, 83, 0.3); font-size: 0.8rem;">
                          <p style="margin: 0; color: #BA9953; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Customer Bank Details</p>
@@ -728,8 +728,8 @@
                     <div class="parties-box">
                       <h4 class="parties-heading">BILL TO</h4>
                       <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
-                      <p *ngIf="selectedCustomer?.address">{{ selectedCustomer.address }}</p>
-                      <p *ngIf="selectedCustomer?.email">{{ selectedCustomer.email }}</p>
+                      <p *ngIf="selectedCustomer?.address">{{ selectedCustomer?.address }}</p>
+                      <p *ngIf="selectedCustomer?.email">{{ selectedCustomer?.email }}</p>
                     </div>
                     <div class="parties-box">
                       <h4 class="parties-heading">FROM</h4>
@@ -881,8 +881,8 @@
                     <div class="parties-left">
                       <h3 class="section-title">BILL TO</h3>
                       <strong>{{ selectedCustomer?.name || 'Customer' }}</strong>
-                      <p *ngIf="selectedCustomer?.address">{{ selectedCustomer.address }}</p>
-                      <p *ngIf="selectedCustomer?.email">{{ selectedCustomer.email }}</p>
+                      <p *ngIf="selectedCustomer?.address">{{ selectedCustomer?.address }}</p>
+                      <p *ngIf="selectedCustomer?.email">{{ selectedCustomer?.email }}</p>
                     </div>
                     <div class="meta-right">
                       <table class="meta-table">
@@ -1029,13 +1029,13 @@
                     <span class="parties-label">Quotation For:</span>
                     <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
                     <p *ngIf="selectedCustomer?.address && selectedTemplate?.sections?.showCustomerDetails !== false">
-                      {{ selectedCustomer.address }}
+                      {{ selectedCustomer?.address }}
                     </p>
                     <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.email">
-                      Email: {{ selectedCustomer.email }}
+                      Email: {{ selectedCustomer?.email }}
                     </p>
                     <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.phone">
-                      Tel: {{ selectedCustomer.phone }}
+                      Tel: {{ selectedCustomer?.phone }}
                     </p>
                   </div>
                 </div>
