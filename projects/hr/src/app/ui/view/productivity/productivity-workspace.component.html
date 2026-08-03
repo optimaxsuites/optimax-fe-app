@@ -250,7 +250,7 @@
 
             <!-- Card top: Type badge (left) | Status/Priority badge + actions (right) -->
             <div class="kcard-top">
-              <span class="badge" [ngClass]="tagBadgeClass(task.tags[0])">{{ task.tags[0] || 'Task' }}</span>
+              <span class="badge" [ngClass]="tagBadgeClass(task.tags?.[0])">{{ task.tags?.[0] || 'Task' }}</span>
               <div class="kcard-top-right">
                 <span class="badge b-red" *ngIf="isTaskOverdue(task)">🔴 OVERDUE {{ overdueDays(task) }}d</span>
                 <span class="badge b-purple" *ngIf="!isTaskOverdue(task) && task.status === 'In Review'">In Review</span>
@@ -315,8 +315,8 @@
             </div>
 
             <!-- Sub-tasks strip with coloured status dots -->
-            <div class="sub-strip" *ngIf="task.subtasks.length">
-              <div class="sub-item" *ngFor="let sub of task.subtasks | slice:0:4">
+            <div class="sub-strip" *ngIf="task.subtasks?.length">
+              <div class="sub-item" *ngFor="let sub of (task.subtasks || []) | slice:0:4">
                 <div class="sub-dot" [ngClass]="subDotClass(sub)"></div>
                 <span>{{ sub.status === 'blocked' && !sub.done ? '🚫 ' : '' }}{{ sub.title }}{{ sub.done ? ' ✓' : '' }}</span>
               </div>
@@ -428,12 +428,12 @@
             <span>Task / Sub-task</span><span>Owner</span><span>Status</span>
             <span>Start → Due</span><span>Progress</span><span>Sub-tasks</span><span>Actions</span>
           </div>
-          <ng-container *ngFor="let group of groupedBoard">
+          <ng-container *ngFor="let group of groupedBoard; trackBy: trackGroup">
             <!-- Group header (shown only when groupBy is active) -->
             <div *ngIf="groupBy !== 'none'" class="list-group-header">
               <i class="fas fa-layer-group"></i> {{ group.key }} <span class="list-group-count">{{ group.tasks.length }}</span>
             </div>
-            <ng-container *ngFor="let task of group.tasks">
+            <ng-container *ngFor="let task of group.tasks; trackBy: trackTask">
               <div class="tree-row parent" [class.expanded]="task.expanded" (click)="toggleRow(task)">
                 <div class="tree-cell">
                   <span class="tree-toggle-icon">{{ task.expanded ? '▼' : '▶' }}</span>
@@ -448,7 +448,7 @@
                   <div class="prog-wrap" style="width:80px;display:inline-block"><div class="prog-bar" [class.g]="task.progress===100" [style.width.%]="task.progress"></div></div>
                   {{ task.progress }}%
                 </div>
-                <div class="tree-cell">{{ completedSubtasks(task) }}/{{ task.subtasks.length }}</div>
+                <div class="tree-cell">{{ completedSubtasks(task) }}/{{ task.subtasks?.length || 0 }}</div>
                 <div class="tree-cell">
                   <button class="btn-ghost" style="padding:3px 8px;font-size:12px" (click)="openDetailFromList(task, $event)">Open</button>
                 </div>
@@ -463,11 +463,11 @@
                     <strong>Description</strong>
                     <p [innerHTML]="sanitizeHtml(task.description)"></p>
                   </div>
-                  <div class="tree-preview-block" *ngIf="!task.followUps?.length && !task.description && !task.subtasks.length" style="color:#9ca3af;font-style:italic">
+                  <div class="tree-preview-block" *ngIf="!task.followUps?.length && !task.description && !task.subtasks?.length" style="color:#9ca3af;font-style:italic">
                     No updates yet — click <strong>Open</strong> to view or add details.
                   </div>
                 </div>
-                <div class="tree-row child" *ngFor="let sub of task.subtasks">
+                <div class="tree-row child" *ngFor="let sub of (task.subtasks || []); trackBy: trackSubtask">
                   <div class="tree-cell" style="padding-left:32px">↳ {{ sub.title }}</div>
                   <div class="tree-cell">{{ sub.assignee }}</div>
                   <div class="tree-cell">
@@ -537,52 +537,16 @@
     <!-- ════════════════ REPORTS ════════════════ -->
     <ng-container *ngSwitchCase="'reports'">
 
-      <!-- Loading state -->
-      <div class="rep-loading" *ngIf="reportsLoading">
-        <div class="rep-spinner"></div>
-        <span>Loading analytics from HR microservice…</span>
-      </div>
+      <ng-container>
 
-      <!-- Error state -->
-      <div class="rep-error" *ngIf="reportsError && !reportsLoading">
-        <span>⚠️ Could not load report data.</span>
-        <button class="btn btn-o btn-sm" (click)="loadReports()">Retry</button>
-      </div>
-
-      <ng-container *ngIf="!reportsLoading">
-
-        <!-- Section header -->
+        <!-- ── Section header ─────────────────────────────────────── -->
         <div class="section-head">
-          <h3>Reports &amp; Analytics</h3>
-          <p>Live data from HR microservice — workforce, payroll, attendance and performance indicators.</p>
+          <h3>Performance Charts</h3>
+          <p>Task completion, engagement, supervisor feedback and due-date intensity — drillable to individual tasks.</p>
         </div>
 
-        <!-- KPI cards from executive report -->
-        <div class="rep-kpi-grid" *ngIf="execReport">
-          <div class="rep-kpi">
-            <div class="rep-kpi-lbl">Total Employees</div>
-            <div class="rep-kpi-val" style="color:#2563eb">{{ execReport.totalEmployees | number }}</div>
-            <div class="rep-kpi-sub">{{ execReport.activeEmployees | number }} active</div>
-          </div>
-          <div class="rep-kpi">
-            <div class="rep-kpi-lbl">Total Payroll</div>
-            <div class="rep-kpi-val" style="color:#16a34a">₦{{ execReport.totalPayroll | number:'1.0-0' }}</div>
-            <div class="rep-kpi-sub">Monthly gross payroll</div>
-          </div>
-          <div class="rep-kpi">
-            <div class="rep-kpi-lbl">Loans Outstanding</div>
-            <div class="rep-kpi-val" style="color:#d97706">₦{{ execReport.totalOutstandingBalance | number:'1.0-0' }}</div>
-            <div class="rep-kpi-sub">{{ execReport.totalOverdueLoanRecords }} overdue</div>
-          </div>
-          <div class="rep-kpi">
-            <div class="rep-kpi-lbl">Advance Loans</div>
-            <div class="rep-kpi-val" style="color:#7c3aed">{{ execReport.totalAdvanceLoanRecords }}</div>
-            <div class="rep-kpi-sub">{{ execReport.totalCooperativeLoanRecords }} cooperative</div>
-          </div>
-        </div>
-
-        <!-- Fallback KPI from board metrics when exec report not loaded -->
-        <div class="rep-kpi-grid" *ngIf="!execReport && !reportsLoading">
+        <!-- ── KPI summary row ─────────────────────────────────────── -->
+        <div class="rep-kpi-grid">
           <div class="rep-kpi" *ngFor="let m of boardMetrics">
             <div class="rep-kpi-lbl">{{ m.label }}</div>
             <div class="rep-kpi-val" [style.color]="m.color">{{ m.value }}</div>
@@ -590,275 +554,59 @@
           </div>
         </div>
 
-        <!-- Two-column section: Workforce + Payroll -->
-        <div class="rep-row-2">
-
-          <!-- Workforce Overview -->
-          <div class="panel-card" *ngIf="workforceReport">
-            <h4 class="panel-card-title">Workforce Overview</h4>
-            <div class="rep-stat-list">
-              <div class="rep-stat-row" *ngFor="let item of workforceReportRows()">
-                <span class="rep-stat-lbl">{{ item.label }}</span>
-                <span class="rep-stat-val">{{ item.value }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Payroll Summary -->
-          <div class="panel-card" *ngIf="payrollReport">
-            <h4 class="panel-card-title">Payroll Summary</h4>
-            <div class="rep-stat-list">
-              <div class="rep-stat-row" *ngFor="let item of payrollReportRows()">
-                <span class="rep-stat-lbl">{{ item.label }}</span>
-                <span class="rep-stat-val" [style.color]="item.color || '#374151'">{{ item.value }}</span>
-              </div>
-            </div>
-          </div>
+        <!-- ── Chart filter bar ────────────────────────────────────── -->
+        <div class="chart-filter-bar">
+          <select class="chart-filter-sel" [(ngModel)]="chartFilterAssignee">
+            <option value="">All Assignees</option>
+            <option *ngFor="let a of chartAllAssignees" [value]="a">{{ a }}</option>
+          </select>
+          <select class="chart-filter-sel" [(ngModel)]="chartFilterSupervisor">
+            <option value="">All Supervisors</option>
+            <option *ngFor="let s of chartAllSupervisors" [value]="s">{{ s }}</option>
+          </select>
+          <select class="chart-filter-sel" [(ngModel)]="chartFilterPriority">
+            <option value="">All Priorities</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
+          </select>
+          <select class="chart-filter-sel" [(ngModel)]="chartFilterTag">
+            <option value="">All Tags</option>
+            <option *ngFor="let t of chartAllTags" [value]="t">{{ t }}</option>
+          </select>
+          <button class="chart-filter-reset" (click)="resetChartFilters()" title="Clear filters">
+            <i class="fas fa-times"></i> Clear
+          </button>
         </div>
 
-        <!-- Two-column section: Leave+Attendance + Turnover -->
-        <div class="rep-row-2">
-
-          <!-- Leave & Attendance -->
-          <div class="panel-card" *ngIf="leaveReport">
-            <h4 class="panel-card-title">Leave &amp; Attendance</h4>
-            <div class="rep-stat-list">
-              <div class="rep-stat-row" *ngFor="let item of leaveReportRows()">
-                <span class="rep-stat-lbl">{{ item.label }}</span>
-                <span class="rep-stat-val">{{ item.value }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Employee Turnover -->
-          <div class="panel-card" *ngIf="turnoverReport">
-            <h4 class="panel-card-title">Employee Turnover</h4>
-            <div class="rep-stat-list">
-              <div class="rep-stat-row" *ngFor="let item of turnoverReportRows()">
-                <span class="rep-stat-lbl">{{ item.label }}</span>
-                <span class="rep-stat-val" [style.color]="item.color || '#374151'">{{ item.value }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── HR Risk Summary ─────────────────────────────────────────── -->
-        <div class="rep-row-2" *ngIf="riskReport">
-          <div class="panel-card">
-            <h4 class="panel-card-title"><i class="fas fa-shield-alt" style="color:#dc2626;margin-right:6px"></i>HR Risk Summary</h4>
-            <div class="rep-stat-list">
-              <div class="rep-stat-row" *ngFor="let item of riskReportRows()">
-                <span class="rep-stat-lbl">{{ item.label }}</span>
-                <span class="rep-stat-val" [style.color]="item.color || '#374151'">{{ item.value }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Probation Tracking summary card -->
-          <div class="panel-card" *ngIf="probationReport">
-            <h4 class="panel-card-title"><i class="fas fa-user-clock" style="color:#d97706;margin-right:6px"></i>Probation Tracking</h4>
-            <div class="rep-kpi-grid" style="grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:0">
-              <div class="rep-kpi" style="padding:12px">
-                <div class="rep-kpi-lbl">On Probation</div>
-                <div class="rep-kpi-val" style="color:#2563eb;font-size:22px">{{ probationReport.totalOnProbation }}</div>
-              </div>
-              <div class="rep-kpi" style="padding:12px">
-                <div class="rep-kpi-lbl">Due Soon</div>
-                <div class="rep-kpi-val" style="color:#d97706;font-size:22px">{{ probationReport.probationDueSoon }}</div>
-              </div>
-              <div class="rep-kpi" style="padding:12px">
-                <div class="rep-kpi-lbl">Overdue</div>
-                <div class="rep-kpi-val" style="color:#dc2626;font-size:22px">{{ probationReport.probationOverdue }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Probation Tracking detail table ─────────────────────── -->
-        <div class="panel-card" *ngIf="probationReport && probationReport.rows?.length">
-          <h4 class="panel-card-title">Probation Detail</h4>
-          <div class="table-wrap">
-            <table class="list-table">
-              <thead>
-                <tr>
-                  <th>Employee</th>
-                  <th>Department</th>
-                  <th>Level</th>
-                  <th>End Date</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let row of probationRows()">
-                  <td style="font-weight:600;color:#1f2937">{{ row.name }}</td>
-                  <td style="font-size:12px">{{ row.department }}</td>
-                  <td style="font-size:12px">{{ row.level }}</td>
-                  <td style="font-size:12px">{{ row.endDate }}</td>
-                  <td><span class="badge" [ngClass]="row.statusClass">{{ row.status }}</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ── Compensation Equity ──────────────────────────────────── -->
-        <div class="panel-card" *ngIf="equityReport">
-          <div class="panel-card-header">
-            <h4 class="panel-card-title"><i class="fas fa-balance-scale" style="color:#7c3aed;margin-right:6px"></i>Compensation Equity</h4>
-            <div class="panel-card-meta">
-              <span>Overall avg net pay: <strong>{{ fmt(equityReport.overallAverageNetPayable) }}</strong></span>
-              <span style="color:#9ca3af">·</span>
-              <span>{{ equityReport.totalPayrollRecords }} payroll records</span>
-            </div>
-          </div>
-          <div class="table-wrap">
-            <table class="list-table">
-              <thead>
-                <tr>
-                  <th>Level</th>
-                  <th>Department</th>
-                  <th>Gender</th>
-                  <th>Count</th>
-                  <th>Avg Net Pay</th>
-                  <th>Median Net Pay</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let row of equityRows()">
-                  <td style="font-weight:600">{{ row.level }}</td>
-                  <td style="font-size:12px">{{ row.department }}</td>
-                  <td style="font-size:12px">{{ row.gender }}</td>
-                  <td style="font-size:12px">{{ row.count }}</td>
-                  <td style="font-size:12px;color:#2563eb">{{ row.avgNet }}</td>
-                  <td style="font-size:12px;color:#7c3aed">{{ row.medianNet }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ── Bonus Report + Overtime Cost (side by side) ─────────── -->
-        <div class="rep-row-2">
-          <div class="panel-card" *ngIf="bonusReport">
-            <h4 class="panel-card-title"><i class="fas fa-gift" style="color:#16a34a;margin-right:6px"></i>Bonus Report</h4>
-            <div class="rep-stat-list" style="margin-bottom:12px">
-              <div class="rep-stat-row">
-                <span class="rep-stat-lbl">Total Bonuses Issued</span>
-                <span class="rep-stat-val" style="color:#16a34a">{{ bonusReport.totalBonuses }}</span>
-              </div>
-              <div class="rep-stat-row">
-                <span class="rep-stat-lbl">Total Bonus Amount</span>
-                <span class="rep-stat-val" style="color:#16a34a">{{ fmt(bonusReport.totalBonusAmount) }}</span>
-              </div>
-            </div>
-            <div class="table-wrap" *ngIf="bonusReport.rows?.length">
-              <table class="list-table">
-                <thead><tr><th>Level</th><th>Type</th><th>Count</th><th>Total</th></tr></thead>
-                <tbody>
-                  <tr *ngFor="let row of bonusRows()">
-                    <td style="font-size:12px;font-weight:600">{{ row.level }}</td>
-                    <td style="font-size:12px">{{ row.type }}</td>
-                    <td style="font-size:12px">{{ row.count }}</td>
-                    <td style="font-size:12px;color:#16a34a">{{ row.total }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="panel-card" *ngIf="overtimeReport">
-            <h4 class="panel-card-title"><i class="fas fa-clock" style="color:#d97706;margin-right:6px"></i>Overtime Cost</h4>
-            <div class="rep-stat-list" style="margin-bottom:12px">
-              <div class="rep-stat-row">
-                <span class="rep-stat-lbl">Total Configurations</span>
-                <span class="rep-stat-val">{{ overtimeReport.totalConfigurations }}</span>
-              </div>
-              <div class="rep-stat-row">
-                <span class="rep-stat-lbl">Total Configured Cost</span>
-                <span class="rep-stat-val" style="color:#d97706">{{ fmt(overtimeReport.totalConfiguredCost) }}</span>
-              </div>
-            </div>
-            <div class="table-wrap" *ngIf="overtimeReport.rows?.length">
-              <table class="list-table">
-                <thead><tr><th>Level</th><th>Type</th><th>Max Hrs</th><th>Rate</th><th>Cost</th></tr></thead>
-                <tbody>
-                  <tr *ngFor="let row of overtimeRows()">
-                    <td style="font-size:12px;font-weight:600">{{ row.level }}</td>
-                    <td style="font-size:12px">{{ row.type }}</td>
-                    <td style="font-size:12px">{{ row.maxHours }}</td>
-                    <td style="font-size:12px">{{ row.rate }}</td>
-                    <td style="font-size:12px;color:#d97706">{{ row.cost }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Statutory Remittance ────────────────────────────────── -->
-        <div class="panel-card" *ngIf="statutoryReport">
-          <h4 class="panel-card-title"><i class="fas fa-landmark" style="color:#2563eb;margin-right:6px"></i>Statutory Remittance</h4>
-          <div class="rep-stat-list" style="margin-bottom:12px">
-            <div class="rep-stat-row">
-              <span class="rep-stat-lbl">Total Records</span>
-              <span class="rep-stat-val">{{ statutoryReport.totalRecords }}</span>
-            </div>
-            <div class="rep-stat-row">
-              <span class="rep-stat-lbl">Total NSITF Rate</span>
-              <span class="rep-stat-val" style="color:#2563eb">{{ statutoryReport.totalNsitfRate | number:'1.2-2' }}%</span>
-            </div>
-            <div class="rep-stat-row">
-              <span class="rep-stat-lbl">Total ITF Rate</span>
-              <span class="rep-stat-val" style="color:#7c3aed">{{ statutoryReport.totalItfRate | number:'1.2-2' }}%</span>
-            </div>
-          </div>
-          <div class="table-wrap" *ngIf="statutoryReport.rows?.length">
-            <table class="list-table">
-              <thead><tr><th>#</th><th>NSITF Rate (%)</th><th>ITF Rate (%)</th><th>Created</th><th>Updated</th></tr></thead>
-              <tbody>
-                <tr *ngFor="let row of statutoryReport.rows">
-                  <td style="font-size:12px">{{ row.id }}</td>
-                  <td style="font-size:12px;color:#2563eb">{{ row.nsitfRate | number:'1.2-2' }}</td>
-                  <td style="font-size:12px;color:#7c3aed">{{ row.itfRate | number:'1.2-2' }}</td>
-                  <td style="font-size:12px">{{ formatDate(row.createdAt) }}</td>
-                  <td style="font-size:12px">{{ formatDate(row.updatedAt) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ── Vacancy Aging ───────────────────────────────────────── -->
-        <div class="panel-card" *ngIf="vacancyReport">
-          <div class="panel-card-header">
-            <h4 class="panel-card-title"><i class="fas fa-briefcase" style="color:#374151;margin-right:6px"></i>Vacancy Aging</h4>
-            <div class="panel-card-meta">
-              <span>{{ vacancyReport.totalVacancies }} open</span>
-              <span style="color:#9ca3af">·</span>
-              <span style="color:#dc2626">{{ vacancyReport.expiredVacancies }} expired</span>
-              <span style="color:#9ca3af">·</span>
-              <span>Avg {{ vacancyReport.averageDaysOpen | number:'1.0-0' }} days open</span>
-            </div>
-          </div>
-          <div class="table-wrap" *ngIf="vacancyReport.rows?.length">
-            <table class="list-table">
-              <thead><tr><th>Job Title</th><th>Location</th><th>Type</th><th>Days Open</th><th>Status</th></tr></thead>
-              <tbody>
-                <tr *ngFor="let row of vacancyRows()">
-                  <td style="font-weight:600;color:#1f2937">{{ row.title }}</td>
-                  <td style="font-size:12px">{{ row.location }}</td>
-                  <td style="font-size:12px">{{ row.type }}</td>
-                  <td style="font-size:12px" [style.color]="row.daysOpen > 60 ? '#dc2626' : row.daysOpen > 30 ? '#d97706' : '#374151'">{{ row.daysOpen }} days</td>
-                  <td><span class="badge" [class.b-red]="row.expired" [class.b-green]="!row.expired">{{ row.expired ? 'Expired' : 'Active' }}</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ── Task Activity Log ──────────────────────────────────── -->
+        <!-- ── 1. Task Completion by Status ───────────────────────── -->
         <div class="panel-card">
-          <h4 class="panel-card-title">Task Activity Log</h4>
+          <div class="panel-card-header">
+            <h4 class="panel-card-title"><i class="fas fa-chart-bar" style="color:#2563eb;margin-right:6px"></i>Completion by Status</h4>
+            <span class="panel-card-meta-txt">{{ chartFilteredTasks.length }} tasks</span>
+          </div>
+          <div class="chart-bar-list">
+            <ng-container *ngFor="let s of taskCompletionStats">
+              <div class="chart-bar-row">
+                <span class="chart-bar-lbl">{{ s.status }}</span>
+                <div class="chart-bar-track">
+                  <div class="chart-bar-fill" [style.width.%]="s.pct" [style.background]="s.color"></div>
+                </div>
+                <span class="chart-bar-count">{{ s.count }}</span>
+                <span class="chart-bar-pct">{{ s.pct | number:'1.0-0' }}%</span>
+              </div>
+            </ng-container>
+            <div class="chart-empty" *ngIf="!chartFilteredTasks.length">No tasks match the current filter.</div>
+          </div>
+        </div>
+
+        <!-- ── 2. Feedback & Engagement per Task ───────────────────── -->
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <h4 class="panel-card-title"><i class="fas fa-comments" style="color:#7c3aed;margin-right:6px"></i>Feedback &amp; Engagement per Task</h4>
+            <span class="panel-card-meta-txt">Click a row to open the task</span>
+          </div>
           <div class="table-wrap">
             <table class="list-table">
               <thead>
@@ -867,138 +615,92 @@
                   <th>Assignee</th>
                   <th>Status</th>
                   <th>Priority</th>
-                  <th>Start</th>
-                  <th>Due</th>
-                  <th>Progress</th>
-                  <th>Sub-tasks</th>
-                  <th>Follow-ups</th>
+                  <th class="eng-th-sort" style="text-align:center" (click)="sortEngagement('followUps')">
+                    Updates <span class="eng-sort-icon">{{ engagementSortCol==='followUps' ? (engagementSortDir==='desc'?'▼':'▲') : '⇅' }}</span>
+                  </th>
+                  <th class="eng-th-sort" style="text-align:center" (click)="sortEngagement('replies')">
+                    Replies <span class="eng-sort-icon">{{ engagementSortCol==='replies' ? (engagementSortDir==='desc'?'▼':'▲') : '⇅' }}</span>
+                  </th>
+                  <th class="eng-th-sort" style="text-align:center" (click)="sortEngagement('reactions')">
+                    Reactions <span class="eng-sort-icon">{{ engagementSortCol==='reactions' ? (engagementSortDir==='desc'?'▼':'▲') : '⇅' }}</span>
+                  </th>
+                  <th class="eng-th-sort" (click)="sortEngagement('lastActivity')">
+                    Last Activity <span class="eng-sort-icon">{{ engagementSortCol==='lastActivity' ? (engagementSortDir==='desc'?'▼':'▲') : '⇅' }}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let task of boardTasks">
-                  <td class="td-title" style="font-weight:600;color:#1f2937">{{ task.title }}</td>
-                  <td>{{ task.assignee }}</td>
-                  <td><span class="badge" [ngClass]="task.status === 'Done' ? 'b-green' : isTaskOverdue(task) ? 'b-red' : task.status === 'In Review' ? 'b-purple' : task.status === 'In Progress' ? 'b-blue' : 'b-gray'">{{ task.status }}</span></td>
-                  <td><span class="badge" [ngClass]="taskPriorityBadge(task.priority)">{{ task.priority }}</span></td>
-                  <td style="font-size:12px">{{ formatDate(task.startDate) }}</td>
-                  <td style="font-size:12px" [style.color]="isTaskOverdue(task) ? '#dc2626' : '#374151'">{{ formatDate(task.dueDate) }}</td>
+                <tr *ngFor="let row of taskEngagementRows; trackBy: trackEngagementRow" class="tr-drill" (click)="drillToTask(row.task)">
+                  <td style="font-weight:600;color:#1f2937;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ row.task.title }}</td>
+                  <td style="font-size:12px">{{ row.task.assignee }}</td>
                   <td>
-                    <div style="display:flex;align-items:center;gap:6px">
-                      <div class="prog-wrap" style="width:60px;display:inline-block">
-                        <div class="prog-bar" [class.g]="task.progress===100" [class.r]="isTaskOverdue(task)" [style.width.%]="taskProgressDisplay(task)"></div>
-                      </div>
-                      <span style="font-size:11px;color:#9ca3af">{{ taskProgressDisplay(task) }}%</span>
-                    </div>
+                    <span class="badge" [ngClass]="row.task.status==='Done'?'b-green':isTaskOverdue(row.task)?'b-red':row.task.status==='In Review'?'b-purple':row.task.status==='In Progress'?'b-blue':'b-gray'">
+                      {{ row.task.status }}
+                    </span>
                   </td>
-                  <td style="font-size:12px">{{ completedSubtasks(task) }}/{{ task.subtasks.length }}</td>
-                  <td style="font-size:12px">{{ task.followUps?.length || 0 }}</td>
+                  <td><span class="badge" [ngClass]="taskPriorityBadge(row.task.priority)">{{ row.task.priority }}</span></td>
+                  <td style="text-align:center;font-weight:600;color:#7c3aed">{{ row.followUps }}</td>
+                  <td style="text-align:center;color:#2563eb">{{ row.replies }}</td>
+                  <td style="text-align:center;color:#16a34a">{{ row.reactions }}</td>
+                  <td style="font-size:11px;color:#9ca3af">{{ row.lastActivity }}</td>
+                </tr>
+                <tr *ngIf="!taskEngagementRows.length">
+                  <td colspan="8" style="text-align:center;color:#9ca3af;padding:24px">No tasks match the current filter.</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- ── Workforce breakdown table ──────────────────────────── -->
-        <div class="panel-card" *ngIf="workforceReport && workforceReport.rows?.length">
-          <h4 class="panel-card-title">Workforce Breakdown by Department</h4>
-          <div class="table-wrap">
-            <table class="list-table">
-              <thead>
-                <tr>
-                  <th>Department</th>
-                  <th>Level</th>
-                  <th>Status</th>
-                  <th>Gender</th>
-                  <th>Headcount</th>
-                  <th>Joins</th>
-                  <th>Exits</th>
-                  <th>Vacancies</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let row of workforceReport.rows">
-                  <td style="font-weight:600;color:#1f2937">{{ row.department }}</td>
-                  <td style="font-size:12px">{{ row.level }}</td>
-                  <td style="font-size:12px">{{ row.status }}</td>
-                  <td style="font-size:12px">{{ row.gender }}</td>
-                  <td style="font-size:12px;font-weight:600">{{ row.headcount }}</td>
-                  <td style="font-size:12px;color:#16a34a">{{ row.joins }}</td>
-                  <td style="font-size:12px;color:#dc2626">{{ row.exits }}</td>
-                  <td style="font-size:12px;color:#d97706">{{ row.vacancyCount }}</td>
-                </tr>
-              </tbody>
-            </table>
+        <!-- ── 3. Supervisor Feedback Breakdown ────────────────────── -->
+        <div class="panel-card">
+          <h4 class="panel-card-title"><i class="fas fa-user-check" style="color:#16a34a;margin-right:6px"></i>Supervisor Feedback Breakdown</h4>
+          <div class="chart-bar-list" *ngIf="supervisorFeedbackRows.length">
+            <ng-container *ngFor="let row of supervisorFeedbackRows">
+              <div class="sup-fb-row">
+                <span class="sup-fb-name">{{ row.supervisor }}</span>
+                <div class="sup-fb-pills">
+                  <span class="badge b-green" *ngIf="row.approved">
+                    <i class="fas fa-check" style="margin-right:3px"></i>{{ row.approved }} Approved
+                  </span>
+                  <span class="badge b-yellow" *ngIf="row.changes">
+                    <i class="fas fa-pen" style="margin-right:3px"></i>{{ row.changes }} Changes
+                  </span>
+                  <span class="badge b-red" *ngIf="row.rejected">
+                    <i class="fas fa-times" style="margin-right:3px"></i>{{ row.rejected }} Rejected
+                  </span>
+                  <span class="badge b-gray" *ngIf="row.other">
+                    {{ row.other }} Other
+                  </span>
+                </div>
+                <div class="sup-fb-bar-track">
+                  <div class="sup-fb-bar-seg" style="background:#16a34a" [style.width.%]="row.approvedPct"></div>
+                  <div class="sup-fb-bar-seg" style="background:#d97706" [style.width.%]="row.changesPct"></div>
+                  <div class="sup-fb-bar-seg" style="background:#dc2626" [style.width.%]="row.rejectedPct"></div>
+                  <div class="sup-fb-bar-seg" style="background:#9ca3af" [style.width.%]="row.otherPct"></div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+          <div class="chart-empty" *ngIf="!supervisorFeedbackRows.length">
+            No supervisor feedback recorded yet. Supervisors can leave feedback in the follow-up section of any task.
           </div>
         </div>
 
-        <!-- ── Payroll breakdown table ────────────────────────────── -->
-        <div class="panel-card" *ngIf="payrollReport && payrollReport.rows?.length">
-          <h4 class="panel-card-title">Payroll Breakdown by Department</h4>
-          <div class="table-wrap">
-            <table class="list-table">
-              <thead>
-                <tr>
-                  <th>Department</th>
-                  <th>Employees</th>
-                  <th>Gross Pay</th>
-                  <th>Net Payable</th>
-                  <th>Deductions</th>
-                  <th>Employer Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let row of payrollReport.rows">
-                  <td style="font-weight:600;color:#1f2937">{{ row.department }}</td>
-                  <td style="font-size:12px">{{ row.employeeCount }}</td>
-                  <td style="font-size:12px;color:#2563eb">{{ fmt(row.grossPay) }}</td>
-                  <td style="font-size:12px;color:#16a34a">{{ fmt(row.netPayable) }}</td>
-                  <td style="font-size:12px;color:#dc2626">{{ fmt(row.totalDeductions) }}</td>
-                  <td style="font-size:12px;color:#d97706">{{ fmt(row.employerCost) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ── Leave breakdown table ──────────────────────────────── -->
-        <div class="panel-card" *ngIf="leaveReport && leaveReport.rows?.length">
-          <h4 class="panel-card-title">Leave Breakdown by Type</h4>
-          <div class="table-wrap">
-            <table class="list-table">
-              <thead>
-                <tr><th>Leave Type</th><th>Status</th><th>Requests</th><th>Total Days</th></tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let row of leaveReport.rows">
-                  <td style="font-weight:600">{{ row.leaveType }}</td>
-                  <td style="font-size:12px">
-                    <span class="badge" [class.b-green]="row.status==='APPROVED'" [class.b-yellow]="row.status==='PENDING'" [class.b-red]="row.status==='REJECTED'" [class.b-gray]="row.status!=='APPROVED'&&row.status!=='PENDING'&&row.status!=='REJECTED'">{{ row.status }}</span>
-                  </td>
-                  <td style="font-size:12px">{{ row.requestCount }}</td>
-                  <td style="font-size:12px">{{ row.totalDays }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ── Employee Turnover breakdown ────────────────────────── -->
-        <div class="panel-card" *ngIf="turnoverReport && turnoverReport.rows?.length">
-          <h4 class="panel-card-title">Turnover by Department</h4>
-          <div class="table-wrap">
-            <table class="list-table">
-              <thead>
-                <tr><th>Department</th><th>Joins</th><th>Exits</th><th>Turnover Rate</th></tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let row of turnoverReport.rows">
-                  <td style="font-weight:600;color:#1f2937">{{ row.department }}</td>
-                  <td style="font-size:12px;color:#16a34a">{{ row.joins }}</td>
-                  <td style="font-size:12px;color:#dc2626">{{ row.exits }}</td>
-                  <td style="font-size:12px" [style.color]="row.turnoverRate > 10 ? '#dc2626' : '#d97706'">{{ row.turnoverRate | number:'1.1-1' }}%</td>
-                </tr>
-              </tbody>
-            </table>
+        <!-- ── 4. Due Date Intensity ────────────────────────────────── -->
+        <div class="panel-card">
+          <h4 class="panel-card-title"><i class="fas fa-calendar-week" style="color:#d97706;margin-right:6px"></i>Due Date Intensity</h4>
+          <div class="chart-bar-list">
+            <ng-container *ngFor="let bucket of dueDateBuckets">
+              <div class="chart-bar-row">
+                <span class="chart-bar-lbl" [style.color]="bucket.color">{{ bucket.label }}</span>
+                <div class="chart-bar-track">
+                  <div class="chart-bar-fill" [style.width.%]="bucket.pct" [style.background]="bucket.color"></div>
+                </div>
+                <span class="chart-bar-count" [style.color]="bucket.color">{{ bucket.count }}</span>
+              </div>
+            </ng-container>
+            <div class="chart-empty" *ngIf="!chartFilteredTasks.length">No tasks match the current filter.</div>
           </div>
         </div>
 
@@ -1447,36 +1149,39 @@
       <div class="dp-tabs">
         <div class="dp-tab" [class.on]="detailTab === 'overview'" (click)="detailTab = 'overview'">Overview</div>
         <div class="dp-tab" [class.on]="detailTab === 'subtasks'" (click)="detailTab = 'subtasks'">
-          Sub-tasks ({{ selectedTask.subtasks.length }})
+          Sub-tasks ({{ selectedTask.subtasks?.length || 0 }})
         </div>
         <div class="dp-tab" [class.on]="detailTab === 'activity'" (click)="detailTab = 'activity'">
-          Follow-ups ({{ (selectedTask.followUps?.length || 0) + selectedTask.activity.length }})
+          Follow-ups ({{ (selectedTask.followUps?.length || 0) + (selectedTask.activity?.length || 0) }})
+        </div>
+        <div class="dp-tab" [class.on]="detailTab === 'analytics'" (click)="detailTab = 'analytics'">
+          <i class="fas fa-chart-line" style="font-size:11px;margin-right:3px"></i> Analytics
         </div>
       </div>
 
       <!-- OVERVIEW TAB -->
       <div class="dp-body" *ngIf="detailTab === 'overview'">
         <div class="detail-fields">
-          <div class="df"><label>Type</label><span>{{ selectedTask.tags[0] || 'Task' }}</span></div>
+          <div class="df"><label>Type</label><span>{{ selectedTask.tags?.[0] || 'Task' }}</span></div>
           <div class="df"><label>Priority</label><span [style.color]="selectedTask.priority === 'Critical' || selectedTask.priority === 'High' ? '#dc2626' : '#374151'">{{ selectedTask.priority }}</span></div>
           <div class="df"><label>Start</label><span>{{ formatDate(selectedTask.startDate) }}</span></div>
           <div class="df"><label>Due</label>
             <span [style.color]="isTaskOverdue(selectedTask) ? '#dc2626' : '#374151'">{{ formatDate(selectedTask.dueDate) }}{{ isTaskOverdue(selectedTask) ? ' ⚠️' : '' }}</span>
-            <button *ngIf="isTaskOverdue(selectedTask)" class="btn-ghost dl-extend-btn" (click)="extendingDeadline = !extendingDeadline; newDeadlineDate = ''">
+            <button *ngIf="isTaskOverdue(selectedTask) && isAdminOrSupervisor" class="btn-ghost dl-extend-btn" (click)="extendingDeadline = !extendingDeadline; newDeadlineDate = ''">
               <i class="fas fa-calendar-plus"></i> Extend
             </button>
           </div>
-          <div *ngIf="extendingDeadline && isTaskOverdue(selectedTask)" class="dl-extend-row">
+          <div *ngIf="extendingDeadline && isTaskOverdue(selectedTask) && isAdminOrSupervisor" class="dl-extend-row">
             <input type="date" class="prl-input" [(ngModel)]="newDeadlineDate" [min]="selectedTask.dueDate">
             <button class="btn btn-p btn-sm" (click)="extendDeadline(selectedTask)" [disabled]="!newDeadlineDate">Apply</button>
             <button class="btn btn-o btn-sm" (click)="extendingDeadline = false">Cancel</button>
           </div>
           <div class="df"><label>Assignee</label>
             <span *ngIf="!reassignMode">{{ selectedTask.assignee }}</span>
-            <span *ngIf="!reassignMode" class="btn-ghost" style="margin-left:8px;cursor:pointer;font-size:11px;color:#6366f1" (click)="reassignMode = true; reassignEmployeeName = selectedTask.assignee">
+            <span *ngIf="!reassignMode && isAdminOrSupervisor" class="btn-ghost" style="margin-left:8px;cursor:pointer;font-size:11px;color:#6366f1" (click)="reassignMode = true; reassignEmployeeName = selectedTask.assignee">
               <i class="fas fa-user-edit"></i> Reassign
             </span>
-            <div *ngIf="reassignMode" class="dl-extend-row">
+            <div *ngIf="reassignMode && isAdminOrSupervisor" class="dl-extend-row">
               <input type="text" class="prl-input" [(ngModel)]="reassignEmployeeName" placeholder="Employee name" list="reassign-emp-list">
               <datalist id="reassign-emp-list">
                 <option *ngFor="let e of allEmployees" [value]="e.fullName"></option>
@@ -1504,7 +1209,7 @@
           <div class="prog-wrap" style="height:8px">
             <div class="prog-bar" [class.g]="selectedTask.progress===100" [class.r]="isTaskOverdue(selectedTask)" [style.width.%]="selectedTask.progress"></div>
           </div>
-          <div style="font-size:11px;color:#9ca3af;margin-top:3px">{{ selectedTask.progress }}% · {{ completedSubtasks(selectedTask) }}/{{ selectedTask.subtasks.length }} sub-tasks done</div>
+          <div style="font-size:11px;color:#9ca3af;margin-top:3px">{{ selectedTask.progress }}% · {{ completedSubtasks(selectedTask) }}/{{ selectedTask.subtasks?.length || 0 }} sub-tasks done</div>
         </div>
         <div class="sep-ln"></div>
         <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:#374151">Description</div>
@@ -1523,7 +1228,7 @@
       <div class="dp-body" *ngIf="detailTab === 'subtasks'">
         <div class="subtask-list-dp">
           <!-- wrap each row + its follow-up area in ng-container so `sub` stays in scope -->
-          <ng-container *ngFor="let sub of selectedTask.subtasks">
+          <ng-container *ngFor="let sub of (selectedTask.subtasks || [])">
             <div class="st-row">
               <div class="st-dot" [ngClass]="subDotClass(sub)"
                    (click)="cycleSubtaskStatus(selectedTask, sub)"
@@ -1594,7 +1299,7 @@
               </div>
             </div>
           </ng-container>
-          <div class="subtask-empty" *ngIf="selectedTask.subtasks.length === 0">No sub-tasks yet.</div>
+          <div class="subtask-empty" *ngIf="!selectedTask.subtasks?.length">No sub-tasks yet.</div>
         </div>
         <div class="sep-ln"></div>
         <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:#374151">+ Add Sub-task</div>
@@ -1758,14 +1463,14 @@
             </div>
           </div>
           <!-- Activity entries -->
-          <div class="tl-entry" *ngFor="let a of selectedTask.activity">
+          <div class="tl-entry" *ngFor="let a of (selectedTask.activity || [])">
             <div class="tl-dot update" style="background:#2563eb">{{ getInitials(a.author) }}</div>
             <div class="tl-content">
               <div class="tl-header"><strong>{{ a.author }}</strong><small>{{ formatTs(a.timestamp) }}</small></div>
               <div class="tl-note">{{ a.text }}</div>
             </div>
           </div>
-          <div class="subtask-empty" *ngIf="!selectedTask.followUps?.length && !selectedTask.activity.length">No updates yet. Post the first update above.</div>
+          <div class="subtask-empty" *ngIf="!selectedTask.followUps?.length && !selectedTask.activity?.length">No updates yet. Post the first update above.</div>
         </div>
 
         <!-- Supervisor reply form (fully wired) -->
@@ -1807,6 +1512,131 @@
           </div>
         </div>
 
+      </div>
+
+      <!-- ANALYTICS TAB -->
+      <div class="dp-body perf-body" *ngIf="detailTab === 'analytics'">
+        <ng-container *ngIf="selectedTask">
+          <ng-container *ngIf="getAssigneePerformance(selectedTask.assignee) as perf">
+
+            <!-- Score ring + grade -->
+            <div class="perf-hero">
+              <div class="perf-ring-wrap">
+                <svg viewBox="0 0 100 100" class="perf-ring">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" stroke-width="12"/>
+                  <circle cx="50" cy="50" r="40" fill="none"
+                    [attr.stroke]="perf.gradeColor" stroke-width="12"
+                    stroke-dasharray="251.2"
+                    [attr.stroke-dashoffset]="ringDashOffset(perf.score)"
+                    stroke-linecap="round" transform="rotate(-90 50 50)"/>
+                </svg>
+                <div class="perf-ring-label">
+                  <span class="perf-ring-score">{{ perf.score }}</span>
+                  <span class="perf-ring-max">/100</span>
+                </div>
+              </div>
+              <div class="perf-hero-info">
+                <div class="perf-grade-badge" [style.background]="perf.gradeColor + '1a'" [style.color]="perf.gradeColor" [style.border-color]="perf.gradeColor + '40'">
+                  <i class="fas" [ngClass]="perf.grade === 'Excellent' ? 'fa-star' : perf.grade === 'Good' ? 'fa-thumbs-up' : perf.grade === 'Fair' ? 'fa-minus-circle' : 'fa-exclamation-circle'"></i>
+                  {{ perf.grade }}
+                </div>
+                <div class="perf-assignee-name">{{ selectedTask.assignee }}</div>
+                <div class="perf-stat-row">
+                  <span class="perf-stat"><strong>{{ perf.totalTasks }}</strong> tasks</span>
+                  <span class="perf-stat" style="color:#16a34a"><strong>{{ perf.doneTasks }}</strong> done</span>
+                  <span class="perf-stat" [style.color]="perf.overdueTasks > 0 ? '#dc2626' : '#9ca3af'"><strong>{{ perf.overdueTasks }}</strong> overdue</span>
+                  <span class="perf-stat" style="color:#9ca3af"><strong>{{ perf.avgFollowUps }}</strong> avg updates</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Metric bars -->
+            <div class="perf-metrics">
+              <div class="perf-metric-row">
+                <div class="perf-metric-head">
+                  <span class="perf-metric-lbl">Completion Rate</span>
+                  <span class="perf-metric-pct" [style.color]="perf.completionRate >= 70 ? '#16a34a' : perf.completionRate >= 40 ? '#d97706' : '#dc2626'">{{ perf.completionRate }}%</span>
+                </div>
+                <div class="perf-bar-track">
+                  <div class="perf-bar-fill" [style.width.%]="perf.completionRate" [style.background]="perf.completionRate >= 70 ? '#16a34a' : perf.completionRate >= 40 ? '#d97706' : '#dc2626'"></div>
+                </div>
+                <div class="perf-metric-hint">Done + Closed tasks out of total</div>
+              </div>
+
+              <div class="perf-metric-row">
+                <div class="perf-metric-head">
+                  <span class="perf-metric-lbl">Timeliness</span>
+                  <span class="perf-metric-pct" [style.color]="perf.timelinessRate >= 70 ? '#16a34a' : perf.timelinessRate >= 40 ? '#d97706' : '#dc2626'">{{ perf.timelinessRate }}%</span>
+                </div>
+                <div class="perf-bar-track">
+                  <div class="perf-bar-fill" [style.width.%]="perf.timelinessRate" [style.background]="perf.timelinessRate >= 70 ? '#16a34a' : perf.timelinessRate >= 40 ? '#d97706' : '#dc2626'"></div>
+                </div>
+                <div class="perf-metric-hint">Tasks completed before their due date</div>
+              </div>
+
+              <div class="perf-metric-row">
+                <div class="perf-metric-head">
+                  <span class="perf-metric-lbl">Progress Momentum</span>
+                  <span class="perf-metric-pct" [style.color]="perf.progressMomentum >= 70 ? '#16a34a' : perf.progressMomentum >= 40 ? '#d97706' : '#dc2626'">{{ perf.progressMomentum }}%</span>
+                </div>
+                <div class="perf-bar-track">
+                  <div class="perf-bar-fill" [style.width.%]="perf.progressMomentum" style="background:#2563eb"></div>
+                </div>
+                <div class="perf-metric-hint">Average progress across all assigned tasks</div>
+              </div>
+
+              <div class="perf-metric-row">
+                <div class="perf-metric-head">
+                  <span class="perf-metric-lbl">Engagement</span>
+                  <span class="perf-metric-pct" style="color:#7c3aed">{{ perf.engagementRate }}%</span>
+                </div>
+                <div class="perf-bar-track">
+                  <div class="perf-bar-fill" [style.width.%]="perf.engagementRate" style="background:#7c3aed"></div>
+                </div>
+                <div class="perf-metric-hint">Average follow-up updates per task (4 = 100%)</div>
+              </div>
+            </div>
+
+            <!-- Grade scale legend -->
+            <div class="perf-legend">
+              <span class="perf-legend-item perf-legend--bad">Bad &lt;40</span>
+              <span class="perf-legend-item perf-legend--fair">Fair 40–59</span>
+              <span class="perf-legend-item perf-legend--good">Good 60–79</span>
+              <span class="perf-legend-item perf-legend--excellent">Excellent ≥80</span>
+            </div>
+
+          </ng-container>
+        </ng-container>
+
+        <!-- Team comparison table -->
+        <ng-container *ngIf="selectedTask?.team">
+          <div class="perf-section-head">
+            <i class="fas fa-users" style="color:#7c3aed;margin-right:6px"></i>
+            Team under <strong>{{ selectedTask.team }}</strong>
+          </div>
+          <div class="perf-team-table">
+            <ng-container *ngFor="let row of getTeamPerformance(selectedTask.team!)">
+              <div class="perf-team-row" [class.perf-team-row--self]="row.assignee === selectedTask.assignee">
+                <div class="perf-team-avatar" [style.background]="row.gradeColor">{{ row.assignee | slice:0:1 }}</div>
+                <div class="perf-team-name">
+                  {{ row.assignee }}
+                  <span *ngIf="row.assignee === selectedTask.assignee" class="perf-team-self-tag">you</span>
+                </div>
+                <div class="perf-team-bar-wrap">
+                  <div class="perf-bar-track">
+                    <div class="perf-bar-fill" [style.width.%]="row.score" [style.background]="row.gradeColor"></div>
+                  </div>
+                </div>
+                <span class="perf-team-score" [style.color]="row.gradeColor">{{ row.score }}</span>
+                <span class="perf-team-grade perf-team-grade--{{ row.grade.toLowerCase() }}">{{ row.grade }}</span>
+                <span class="perf-team-tasks" style="color:#9ca3af;font-size:11px">{{ row.totalTasks }} tasks</span>
+              </div>
+            </ng-container>
+            <div *ngIf="!getTeamPerformance(selectedTask.team!).length" class="perf-empty">
+              No other team members found under this supervisor.
+            </div>
+          </div>
+        </ng-container>
       </div>
 
     </ng-container>

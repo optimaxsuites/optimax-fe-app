@@ -1,461 +1,917 @@
-<div class="meetings-shell">
-  <section class="meetings-hero">
+<div class="meets-shell">
+
+  <!-- ── Page header ─────────────────────────────────────────── -->
+  <header class="page-hdr">
     <div>
-      <p class="section-kicker">OptimaXSuites collaboration</p>
-      <h1>Meetings & Appointments</h1>
-      <p>
-        Coordinate appointments, recurring meetings, resources, minutes, attendance, approvals, and follow-up actions from one enterprise workspace.
-      </p>
-      <span class="sync-status">{{ backendStatus }}</span>
+      <p class="kicker">OptimaX Collaboration</p>
+      <h1 class="page-title">Meetings &amp; Appointments</h1>
     </div>
-
-    <div class="hero-actions">
-      <button type="button" class="action primary" (click)="openForm('Meeting')">
-        <i class="pi pi-calendar-plus"></i>Create meeting
+    <div class="hdr-actions">
+      <span class="sync-pill" [ngClass]="backendOnline ? 'sync-online' : 'sync-offline'">
+        <span class="sync-dot"></span>{{ backendStatus }}
+      </span>
+      <button class="btn btn-outline" (click)="openForm('Appointment')">
+        <i class="pi pi-clock"></i> New appointment
       </button>
-      <button type="button" class="action" (click)="openForm('Appointment')">
-        <i class="pi pi-clock"></i>New appointment
+      <button class="btn btn-primary" (click)="openForm('Meeting')">
+        <i class="pi pi-calendar-plus"></i> Create meeting
       </button>
     </div>
-  </section>
+  </header>
 
-  <section class="form-panel" *ngIf="activeForm">
-    <div class="panel-head">
-      <div>
-        <p class="section-kicker">{{ activeForm }} management</p>
-        <h2>{{ form.id ? 'Edit' : 'Create' }} {{ activeForm }}</h2>
-      </div>
-      <button type="button" class="icon-action" (click)="activeForm = null" aria-label="Close form">
-        <i class="pi pi-times"></i>
-      </button>
-    </div>
+  <!-- ── Banners ──────────────────────────────────────────────── -->
+  <div class="banner banner-warn" *ngIf="conflictWarning">
+    <i class="pi pi-exclamation-triangle"></i>
+    <span>{{ conflictWarning }}</span>
+    <button class="banner-close" (click)="conflictWarning=''"><i class="pi pi-times"></i></button>
+  </div>
+  <div class="banner banner-ok" *ngIf="syncMessage">
+    <i class="pi pi-check-circle"></i>
+    <span>{{ syncMessage }}</span>
+    <button class="banner-close" (click)="syncMessage=''"><i class="pi pi-times"></i></button>
+  </div>
 
-    <div class="form-grid">
-      <label>
-        Title
-        <input type="text" [(ngModel)]="form.title" placeholder="Meeting title" />
-      </label>
-      <label>
-        Date
-        <input type="date" [(ngModel)]="form.date" />
-      </label>
-      <label>
-        Time
-        <input type="time" [(ngModel)]="form.time" />
-      </label>
-      <label>
-        Duration
-        <input type="number" min="5" step="5" [(ngModel)]="form.duration" />
-      </label>
-      <label>
-        Mode
-        <select [(ngModel)]="form.meetingMode">
-          <option>Physical</option>
-          <option>Virtual</option>
-          <option>Hybrid</option>
-        </select>
-      </label>
-      <label>
-        Priority
-        <select [(ngModel)]="form.priority">
-          <option>Low</option>
-          <option>Medium</option>
-          <option>High</option>
-          <option>Executive</option>
-        </select>
-      </label>
-      <label>
-        Status
-        <select [(ngModel)]="form.status">
-          <option *ngFor="let status of statuses">{{ status }}</option>
-        </select>
-      </label>
-      <label>
-        Recurrence
-        <select [(ngModel)]="form.recurring">
-          <option>None</option>
-          <option>Daily</option>
-          <option>Weekly</option>
-          <option>Monthly</option>
-        </select>
-      </label>
-      <label>
-        Location
-        <input type="text" [(ngModel)]="form.location" placeholder="Board room, branch, or physical venue" />
-      </label>
-      <label>
-        Online link
-        <input type="url" [(ngModel)]="form.onlineLink" placeholder="https://..." />
-      </label>
-      <label>
-        Category
-        <input type="text" [(ngModel)]="form.category" placeholder="Internal, Personal, Board, Client" />
-      </label>
-      <label>
-        Color
-        <input type="color" [(ngModel)]="form.color" />
-      </label>
-      <label class="wide">
-        Participants
-        <input type="text" [(ngModel)]="form.attendeesText" placeholder="Comma-separated users, departments, teams, branches" />
-      </label>
-      <label class="wide">
-        Reminders
-        <input type="text" [(ngModel)]="form.remindersText" placeholder="15 minutes before, 1 day before" />
-      </label>
-      <label class="wide">
-        Description
-        <textarea rows="3" [(ngModel)]="form.description" placeholder="Purpose, agenda context, or appointment notes"></textarea>
-      </label>
-      <label class="check-row">
-        <input type="checkbox" [(ngModel)]="form.confidential" />
-        Private / confidential
-      </label>
-    </div>
-
-    <div class="form-actions">
-      <button type="button" class="action primary" [disabled]="!form.title || !form.date || !form.time" (click)="saveEvent()">
-        <i class="pi pi-save"></i>Save {{ activeForm }}
-      </button>
-      <button type="button" class="action" (click)="activeForm = null">Cancel</button>
-    </div>
-  </section>
-
-  <section class="metric-grid">
-    <article class="metric-card" *ngFor="let metric of metrics" [ngClass]="metric.tone">
-      <span>{{ metric.label }}</span>
-      <strong>{{ metric.value }}</strong>
-      <p>{{ metric.detail }}</p>
+  <!-- ── Metric row ───────────────────────────────────────────── -->
+  <section class="metric-row">
+    <article class="metric-card" *ngFor="let m of metrics" [ngClass]="'mc-'+m.tone">
+      <span class="mc-label">{{ m.label }}</span>
+      <strong class="mc-value">{{ m.value }}</strong>
+      <p class="mc-detail">{{ m.detail }}</p>
     </article>
   </section>
 
-  <section class="workspace-grid">
-    <div class="main-column">
-      <section class="panel calendar-panel">
-        <div class="panel-head">
-          <div>
-            <p class="section-kicker">Calendar views</p>
-            <h2>{{ calendarView }} schedule</h2>
-          </div>
-          <div class="segmented">
-            <button
-              type="button"
-              *ngFor="let view of calendarViews"
-              [class.active]="calendarView === view"
-              (click)="calendarView = view"
-            >
-              {{ view }}
-            </button>
-          </div>
+  <!-- ── Main tabs ────────────────────────────────────────────── -->
+  <nav class="main-tabs">
+    <button [class.active]="activeMainTab==='calendar'" (click)="activeMainTab='calendar'">
+      <i class="pi pi-calendar"></i> Calendar
+    </button>
+    <button [class.active]="activeMainTab==='analytics'" (click)="activeMainTab='analytics'">
+      <i class="pi pi-chart-bar"></i> Analytics
+    </button>
+  </nav>
+
+  <!-- ══════════════ CALENDAR TAB ══════════════════════════════ -->
+  <ng-container *ngIf="activeMainTab==='calendar'">
+
+    <!-- Form drawer -->
+    <section class="form-drawer" #formDrawerEl *ngIf="activeForm">
+      <div class="drawer-head">
+        <div>
+          <p class="kicker">{{ activeForm }} management</p>
+          <h2>{{ form.id ? 'Edit' : 'New' }} {{ activeForm }}</h2>
         </div>
+        <button class="btn-icon" (click)="activeForm=null" title="Close"><i class="pi pi-times"></i></button>
+      </div>
+      <div class="form-grid">
+        <label class="f-full">Title
+          <input type="text" [(ngModel)]="form.title" placeholder="{{ activeForm }} title" />
+        </label>
+        <label>Date
+          <input type="date" [(ngModel)]="form.date" />
+        </label>
+        <label>Time
+          <input type="time" [(ngModel)]="form.time" />
+        </label>
+        <label>Duration (mins)
+          <input type="number" min="5" step="5" [(ngModel)]="form.duration" />
+        </label>
+        <label>Mode
+          <select [(ngModel)]="form.meetingMode">
+            <option>Physical</option><option>Virtual</option><option>Hybrid</option>
+          </select>
+        </label>
+        <label>Priority
+          <select [(ngModel)]="form.priority">
+            <option>Low</option><option>Medium</option><option>High</option><option>Executive</option>
+          </select>
+        </label>
+        <label>Status
+          <select [(ngModel)]="form.status">
+            <option *ngFor="let s of statuses">{{ s }}</option>
+          </select>
+        </label>
+        <label>Recurrence
+          <select [(ngModel)]="form.recurring">
+            <option>None</option><option>Daily</option><option>Weekly</option><option>Monthly</option>
+          </select>
+        </label>
+        <label>Location
+          <input type="text" [(ngModel)]="form.location" placeholder="Physical venue or branch" />
+        </label>
+        <label>Online link
+          <input type="url" [(ngModel)]="form.onlineLink" placeholder="https://..." />
+        </label>
+        <label>Category
+          <input type="text" [(ngModel)]="form.category" placeholder="Internal, Client, Board..." />
+        </label>
+        <label>Color <input type="color" [(ngModel)]="form.color" /></label>
+        <label class="f-wide">Attendees (comma-separated)
+          <input type="text" [(ngModel)]="form.attendeesText" placeholder="Names, teams, departments" />
+        </label>
+        <label class="f-wide">Reminders
+          <input type="text" [(ngModel)]="form.remindersText" placeholder="15 minutes before, 1 day before" />
+        </label>
+        <label class="f-full">Description
+          <textarea rows="3" [(ngModel)]="form.description" placeholder="Purpose, context, or notes"></textarea>
+        </label>
+        <label class="check-row">
+          <input type="checkbox" [(ngModel)]="form.confidential" /> Confidential / Private
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" [disabled]="!form.title || !form.date || !form.time" (click)="saveEvent()">
+          <i class="pi pi-save"></i> Save {{ activeForm }}
+        </button>
+        <button class="btn btn-outline" (click)="activeForm=null">Cancel</button>
+      </div>
+    </section>
 
-        <div class="event-list">
-          <article
-            class="event-card"
-            *ngFor="let event of visibleEvents"
-            [style.border-left-color]="event.color"
-            [class.active]="selectedEvent?.id === event.id"
-            (click)="selectEvent(event)"
-          >
-            <time>{{ event.time }}</time>
-            <div>
-              <strong>{{ event.title }}</strong>
-              <span>{{ event.kind }} · {{ event.meetingMode }} · {{ event.location || event.onlineLink || 'No location' }}</span>
-            </div>
-            <em>{{ event.status }}</em>
-          </article>
-          <div class="empty-state" *ngIf="visibleEvents.length === 0">No events in this view.</div>
-        </div>
-      </section>
+    <!-- Calendar workspace -->
+    <div class="cal-workspace" [style.--sidebar-w]="sidebarWidth + 'px'">
 
-      <ng-container *ngIf="selectedEvent as event">
-        <section class="panel detail-panel">
-          <div class="panel-head">
-            <div>
-              <p class="section-kicker">{{ event.kind }} details</p>
-              <h2>{{ event.title }}</h2>
-            </div>
-            <div class="button-row">
-              <button type="button" class="action" (click)="startCall()"><i class="pi pi-phone"></i>Call</button>
-              <button type="button" class="action" (click)="startVideo()"><i class="pi pi-video"></i>Video</button>
-              <button type="button" class="action" (click)="editEvent(event)"><i class="pi pi-pencil"></i>Edit</button>
-              <button type="button" class="action" (click)="exportIcal()"><i class="pi pi-download"></i>iCal</button>
-            </div>
+      <!-- ── Left: calendar main ─────────────────────────────── -->
+      <div class="cal-main">
+
+        <!-- Toolbar -->
+        <div class="cal-toolbar">
+          <div class="cal-nav-group">
+            <button class="btn-icon" (click)="navigateCalendar(-1)" title="Previous"><i class="pi pi-chevron-left"></i></button>
+            <button class="btn btn-outline btn-sm" (click)="goToToday()">Today</button>
+            <button class="btn-icon" (click)="navigateCalendar(1)" title="Next"><i class="pi pi-chevron-right"></i></button>
+            <span class="cal-period">{{ calendarTitle }}</span>
           </div>
-
-          <div class="detail-grid">
-            <span><strong>Date</strong>{{ event.date }} · {{ event.time }}</span>
-            <span><strong>Duration</strong>{{ event.duration }} minutes</span>
-            <span><strong>Priority</strong>{{ event.priority }}</span>
-            <span><strong>Recurrence</strong>{{ event.recurring }}</span>
-            <span><strong>Organizer</strong>{{ event.organizer }}</span>
-            <span><strong>Privacy</strong>{{ event.confidential ? 'Confidential' : 'Public' }}</span>
-          </div>
-
-          <div class="status-row">
-            <button type="button" *ngFor="let status of statuses" [class.active]="event.status === status" (click)="updateStatus(event, status)">
-              {{ status }}
-            </button>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <p class="section-kicker">Attendee management</p>
-              <h2>Invitations and attendance</h2>
-            </div>
-            <div class="inline-add">
-              <input type="text" [(ngModel)]="participantInput" placeholder="Add user, team, branch" />
-              <button type="button" class="action" (click)="addParticipant()">Add</button>
-            </div>
-          </div>
-
-          <div class="attendee-grid">
-            <article class="attendee-card" *ngFor="let participant of event.attendees">
-              <strong>{{ participant }}</strong>
-              <div class="mini-buttons">
-                <button
-                  type="button"
-                  *ngFor="let response of responseOptions"
-                  [class.active]="event.attendeeResponses[participant] === response"
-                  (click)="setParticipantResponse(event, participant, response)"
-                >
-                  {{ response }}
-                </button>
-              </div>
-              <div class="mini-buttons">
-                <button
-                  type="button"
-                  *ngFor="let attendance of attendanceOptions"
-                  [class.active]="event.attendance[participant] === attendance"
-                  (click)="setAttendance(event, participant, attendance)"
-                >
-                  {{ attendance }}
-                </button>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <p class="section-kicker">Agenda and minutes</p>
-              <h2>Preparation and MoM workflow</h2>
-            </div>
-            <div class="button-row">
-              <button type="button" class="action" [disabled]="aiLoading" (click)="runAi('AGENDA')">AI agenda</button>
-              <button type="button" class="action" [disabled]="aiLoading" (click)="runAi('MINUTES')">AI minutes</button>
-            </div>
-          </div>
-
-          <div class="inline-form">
-            <input type="text" [(ngModel)]="agendaForm.topic" placeholder="Agenda topic" />
-            <input type="text" [(ngModel)]="agendaForm.presenter" placeholder="Presenter" />
-            <input type="number" [(ngModel)]="agendaForm.duration" min="5" step="5" />
-            <button type="button" class="action" (click)="addAgendaItem()">Add agenda</button>
-          </div>
-
-          <div class="agenda-grid">
-            <article class="agenda-card" *ngFor="let item of event.agenda">
-              <span>{{ item.duration }} min</span>
-              <strong>{{ item.topic }}</strong>
-              <p>{{ item.presenter }}</p>
-              <select [(ngModel)]="item.state" (change)="updateAgendaState(item, item.state)">
-                <option>Draft</option>
-                <option>Shared</option>
-                <option>Ready</option>
-                <option>Done</option>
-              </select>
-            </article>
-          </div>
-
-          <div class="minutes-box">
-            <textarea rows="4" [(ngModel)]="notesInput" placeholder="Paste live discussion notes, transcript, or decisions for AI minutes/action extraction."></textarea>
-            <div class="button-row">
-              <button type="button" class="action" [disabled]="aiLoading" (click)="runAi('ACTIONS')">Extract actions</button>
-              <button type="button" class="action" [disabled]="aiLoading" (click)="runAi('FOLLOW_UP')">Follow-up recommendations</button>
-              <button type="button" class="action" [disabled]="aiLoading" (click)="runAi('SENTIMENT')">Sentiment</button>
-              <button type="button" class="action primary" (click)="publishMinutes()">Publish minutes</button>
-            </div>
-            <article class="ai-output" *ngIf="aiOutput">
-              <strong>AI assistant output</strong>
-              <p *ngIf="aiOutput.summary">{{ aiOutput.summary }}</p>
-              <p *ngIf="aiOutput.sentiment">{{ aiOutput.sentiment }}</p>
-              <span *ngFor="let item of aiOutput.followUpRecommendations">{{ item }}</span>
-              <span *ngFor="let item of aiOutput.actionItems">{{ item }}</span>
-            </article>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <p class="section-kicker">Action items</p>
-              <h2>Follow-up tracking</h2>
-            </div>
-          </div>
-
-          <div class="inline-form">
-            <input type="text" [(ngModel)]="actionForm.owner" placeholder="Owner" />
-            <input type="text" [(ngModel)]="actionForm.item" placeholder="Action item" />
-            <input type="date" [(ngModel)]="actionForm.due" />
-            <select [(ngModel)]="actionForm.priority">
-              <option>Low</option>
-              <option>Medium</option>
-              <option>High</option>
+          <div class="cal-toolbar-right">
+            <input class="search-field" type="text" [(ngModel)]="eventSearch" placeholder="Search events…" />
+            <select class="filter-sel" [(ngModel)]="filterKind">
+              <option value="">All types</option>
+              <option>Meeting</option>
+              <option>Appointment</option>
             </select>
-            <button type="button" class="action" (click)="addActionItem()">Add action</button>
+            <select class="filter-sel" [(ngModel)]="filterStatus">
+              <option value="">All statuses</option>
+              <option *ngFor="let s of statuses">{{ s }}</option>
+            </select>
+            <div class="view-pills">
+              <button *ngFor="let v of calendarViews" [class.active]="calendarView===v" (click)="calendarView=v">{{ v }}</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── DAY VIEW ── -->
+        <div class="day-outer" *ngIf="calendarView==='Day'">
+          <div class="day-grid">
+            <div class="dt-col">
+              <div class="dt-slot" *ngFor="let h of hours">
+                {{ h < 12 ? h+':00am' : (h===12 ? '12:00pm' : (h-12)+':00pm') }}
+              </div>
+            </div>
+            <div class="day-body"
+                 (click)="dayBodyClick(calendarDate.toISOString().slice(0,10), $event)"
+                 title="Click empty slot to create event">
+              <div class="dhr-line" *ngFor="let h of hours"></div>
+              <div class="cal-event-chip"
+                   *ngFor="let ev of visibleEvents"
+                   [style.top.px]="getEventTop(ev)"
+                   [style.height.px]="getEventHeight(ev)"
+                   [style.background-color]="ev.color || '#2E6276'"
+                   [class.selected]="selectedEvent?.id===ev.id || ev.id.startsWith((selectedEvent?.id||'') + '-r')"
+                   (click)="selectEvent(ev); $event.stopPropagation()">
+                <span class="chip-time">{{ ev.time }}</span>
+                <span class="chip-title">{{ ev.title }}</span>
+                <span class="chip-kind">{{ ev.kind }}</span>
+              </div>
+              <div class="cal-empty" *ngIf="visibleEvents.length===0">
+                <i class="pi pi-calendar"></i> No events today
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── WEEK VIEW ── -->
+        <div class="week-scroller" *ngIf="calendarView==='Week'">
+          <div class="week-head-row">
+            <div class="wh-spacer"></div>
+            <div class="wh-day" *ngFor="let day of weekDays"
+                 [class.today]="day.isToday"
+                 [class.day-selected]="isDayInSelection(day.iso)"
+                 (click)="onWeekHeaderClick(day.iso, $event)"
+                 title="Click to switch to Day view · Ctrl+click to multi-select">
+              {{ day.shortLabel }}
+            </div>
+          </div>
+          <div class="week-body">
+            <div class="wt-col">
+              <div class="wt-slot" *ngFor="let h of hours">
+                {{ h < 12 ? h+':00' : (h===12 ? '12pm' : (h-12)+':00') }}
+              </div>
+            </div>
+            <div class="wd-col" *ngFor="let day of weekDays"
+                 [class.today]="day.isToday"
+                 (click)="dayBodyClick(day.iso, $event)"
+                 title="Click empty slot to create event">
+              <div class="whr-line" *ngFor="let h of hours"></div>
+              <div class="cal-event-chip"
+                   *ngFor="let ev of eventsForDay(day.iso)"
+                   [style.top.px]="getEventTop(ev)"
+                   [style.height.px]="getEventHeight(ev)"
+                   [style.background-color]="ev.color || '#2E6276'"
+                   [class.selected]="selectedEvent?.id===ev.id || ev.id.startsWith((selectedEvent?.id||'') + '-r')"
+                   (mousedown)="$event.stopPropagation()"
+                   (click)="selectEvent(ev); $event.stopPropagation()">
+                <span class="chip-time">{{ ev.time }}</span>
+                <span class="chip-title">{{ ev.title }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── MONTH VIEW ── -->
+        <div class="month-view" *ngIf="calendarView==='Month'">
+          <div class="month-dow-row">
+            <div *ngFor="let d of ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']">{{ d }}</div>
+          </div>
+          <div class="month-grid">
+            <div class="month-cell" *ngFor="let cell of monthGrid"
+                 [class.other-month]="!cell.inMonth"
+                 [class.today-cell]="cell.isToday"
+                 [class.day-selected]="isDayInSelection(cell.iso)"
+                 (mousedown)="onMonthCellMousedown(cell.iso, $event)"
+                 (mouseenter)="onMonthCellMouseenter(cell.iso)"
+                 (mouseup)="endDragSelect(cell.iso)"
+                 title="Click to create · Drag to select range · Ctrl+click to multi-select">
+              <span class="cell-day"
+                    (mousedown)="$event.stopPropagation()"
+                    (click)="selectDay(cell.iso); $event.stopPropagation()"
+                    title="Switch to Day view">{{ cell.day }}</span>
+              <div class="cell-events">
+                <div class="month-chip"
+                     *ngFor="let ev of eventsForDay(cell.iso).slice(0,3)"
+                     [style.background-color]="ev.color || '#2E6276'"
+                     [class.selected]="selectedEvent?.id===ev.id || ev.id.startsWith((selectedEvent?.id||'') + '-r')"
+                     (mousedown)="$event.stopPropagation()"
+                     (click)="selectEvent(ev); $event.stopPropagation()">
+                  {{ ev.title }}
+                </div>
+                <span class="more-link" *ngIf="eventsForDay(cell.iso).length > 3">
+                  +{{ eventsForDay(cell.iso).length - 3 }} more
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── AGENDA VIEW ── -->
+        <div class="agenda-view" *ngIf="calendarView==='Agenda'">
+          <div class="agenda-empty" *ngIf="visibleEvents.length===0">
+            <i class="pi pi-calendar"></i>
+            <p>No events match current filters.</p>
+          </div>
+          <div class="agenda-item"
+               *ngFor="let ev of visibleEvents"
+               [class.selected]="selectedEvent?.id===ev.id || ev.id.startsWith((selectedEvent?.id||'') + '-r')"
+               (click)="selectEvent(ev)">
+            <div class="agenda-date-col">
+              <span class="adate">{{ ev.date }}</span>
+              <span class="atime">{{ ev.time }}</span>
+            </div>
+            <div class="agenda-bar" [style.background-color]="ev.color || '#2E6276'"></div>
+            <div class="agenda-body">
+              <strong>{{ ev.title }}</strong>
+              <span>{{ ev.kind }} · {{ ev.meetingMode }} · {{ ev.location || ev.onlineLink || 'No location' }}</span>
+              <div class="badge-row">
+                <span class="badge" [ngClass]="statusClass(ev.status)">{{ ev.status }}</span>
+                <span class="badge" [ngClass]="priorityClass(ev.priority)">{{ ev.priority }}</span>
+                <span class="badge b-recur" *ngIf="ev.recurring!=='None'">{{ ev.recurring }}</span>
+              </div>
+            </div>
+            <div class="agenda-item-actions">
+              <button class="btn-icon-sm" (click)="editEvent(ev); $event.stopPropagation()" title="Edit">
+                <i class="pi pi-pencil"></i>
+              </button>
+              <button class="btn-icon-sm red" (click)="deleteEvent(ev); $event.stopPropagation()" title="Delete">
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /cal-main -->
+
+      <!-- ── Resize handle ──────────────────────────────────── -->
+      <div class="cal-resize-handle"
+           (mousedown)="startResize($event)"
+           title="Drag to resize"></div>
+
+      <!-- ── Right: detail sidebar ──────────────────────────── -->
+      <div class="detail-sidebar">
+        <div class="no-event-state" *ngIf="!selectedEvent">
+          <i class="pi pi-calendar-times"></i>
+          <p>Select an event from the calendar to view details</p>
+          <button class="btn btn-primary" (click)="openForm('Meeting')">Create first meeting</button>
+        </div>
+
+        <ng-container *ngIf="selectedEvent as event">
+          <div class="detail-hdr">
+            <div class="detail-color-strip" [style.background]="event.color"></div>
+            <div class="detail-title-block">
+              <span class="badge" [ngClass]="statusClass(event.status)">{{ event.status }}</span>
+              <h2>{{ event.title }}</h2>
+              <p>{{ event.kind }} · {{ event.date }} · {{ event.time }} · {{ event.duration }}min</p>
+            </div>
+            <div class="detail-hdr-btns">
+              <button class="btn-icon-sm" title="Audio call" (click)="startCall()"><i class="pi pi-phone"></i></button>
+              <button class="btn-icon-sm" title="Video call" (click)="startVideo()"><i class="pi pi-video"></i></button>
+              <button class="btn-icon-sm" title="Edit event" (click)="editEvent(event)"><i class="pi pi-pencil"></i></button>
+              <button class="btn-icon-sm red" title="Delete event" (click)="deleteEvent(event)"><i class="pi pi-trash"></i></button>
+            </div>
           </div>
 
-          <div class="actions-table">
-            <div class="table-row table-head">
-              <span>Owner</span>
-              <span>Action item</span>
-              <span>Due</span>
-              <span>Status</span>
+          <nav class="detail-tabs">
+            <button [class.active]="activeDetailTab==='overview'"      (click)="activeDetailTab='overview'">Overview</button>
+            <button [class.active]="activeDetailTab==='attendees'"     (click)="activeDetailTab='attendees'">Attendees</button>
+            <button [class.active]="activeDetailTab==='agenda'"        (click)="activeDetailTab='agenda'">Agenda</button>
+            <button [class.active]="activeDetailTab==='actions'"       (click)="activeDetailTab='actions'">Actions</button>
+            <button [class.active]="activeDetailTab==='resources'"     (click)="activeDetailTab='resources'">Resources</button>
+            <button [class.active]="activeDetailTab==='virtual'"       (click)="activeDetailTab='virtual'">Virtual</button>
+            <button [class.active]="activeDetailTab==='transcription'" (click)="activeDetailTab='transcription'">Transcript</button>
+          </nav>
+
+          <!-- ─ Overview tab ─ -->
+          <div class="tab-body" *ngIf="activeDetailTab==='overview'">
+            <div class="info-grid">
+              <div class="info-cell"><span>Date</span><strong>{{ event.date }}</strong></div>
+              <div class="info-cell"><span>Time</span><strong>{{ event.time }}</strong></div>
+              <div class="info-cell"><span>Duration</span><strong>{{ event.duration }}min</strong></div>
+              <div class="info-cell"><span>Priority</span>
+                <strong [ngClass]="priorityClass(event.priority)">{{ event.priority }}</strong>
+              </div>
+              <div class="info-cell"><span>Mode</span><strong>{{ event.meetingMode }}</strong></div>
+              <div class="info-cell"><span>Recurrence</span><strong>{{ event.recurring }}</strong></div>
+              <div class="info-cell f-wide"><span>Location</span><strong>{{ event.location || '—' }}</strong></div>
+              <div class="info-cell f-wide"><span>Organizer</span><strong>{{ event.organizer }}</strong></div>
+              <div class="info-cell f-full" *ngIf="event.description">
+                <span>Description</span><p class="desc-text">{{ event.description }}</p>
+              </div>
             </div>
-            <div class="table-row" *ngFor="let action of event.actions">
-              <span>{{ action.owner }}</span>
-              <strong>{{ action.item }}</strong>
-              <span>{{ action.due }}</span>
-              <select [(ngModel)]="action.status" (change)="updateAction(action, action.status)">
-                <option>Open</option>
-                <option>In progress</option>
-                <option>Completed</option>
-                <option>Overdue</option>
-                <option>Escalated</option>
+
+            <div class="sec-label">Update status</div>
+            <div class="status-pills">
+              <button *ngFor="let s of statuses"
+                      [class.active]="event.status===s"
+                      [ngClass]="statusClass(s)"
+                      (click)="updateStatus(event, s)">{{ s }}</button>
+            </div>
+
+            <div class="sec-label">Calendar &amp; export</div>
+            <div class="btn-row">
+              <button class="btn btn-outline btn-sm" (click)="exportIcal()">
+                <i class="pi pi-download"></i> iCal
+              </button>
+              <button class="btn btn-outline btn-sm" *ngFor="let intg of integrations" (click)="syncCalendar(intg)">
+                {{ intg }}
+              </button>
+            </div>
+
+            <ng-container *ngIf="event.attachments.length">
+              <div class="sec-label">Attachments</div>
+              <div class="attach-pills">
+                <span class="attach-pill" *ngFor="let a of event.attachments">
+                  <i class="pi pi-paperclip"></i> {{ a }}
+                </span>
+              </div>
+            </ng-container>
+
+            <div class="sec-label">Add attachment</div>
+            <div class="attach-add">
+              <input type="text" [(ngModel)]="attachmentInput" placeholder="Paste link or URL" />
+              <button class="btn btn-outline btn-sm" (click)="addAttachment()">Add</button>
+              <button class="btn btn-outline btn-sm" (click)="attachFileInput.click()">
+                <i class="pi pi-upload"></i> File
+              </button>
+              <input #attachFileInput type="file" class="hidden-input" (change)="onAttachFileSelected($event)" />
+            </div>
+          </div>
+
+          <!-- ─ Attendees tab ─ -->
+          <div class="tab-body" *ngIf="activeDetailTab==='attendees'">
+            <div class="emp-search-wrap">
+              <label class="sec-label">Search registered users</label>
+              <div class="emp-typeahead">
+                <input type="text" [(ngModel)]="employeeSearch"
+                       (focus)="showEmpSuggestions=true"
+                       (blur)="showEmpSuggestions=false"
+                       placeholder="Type name, email or username…" />
+                <div class="emp-suggestions" *ngIf="showEmpSuggestions && filteredEmployees.length"
+                     (mousedown)="$event.preventDefault()">
+                  <button *ngFor="let emp of filteredEmployees"
+                          (mousedown)="addAttendeeFromEmployee(emp)">
+                    <span class="emp-name">{{ emp.fullname || emp.fullName || emp.name || emp.username }}</span>
+                    <span class="emp-email" *ngIf="emp.email">{{ emp.email }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="sec-label">Or type and add manually</div>
+            <div class="inline-add">
+              <input type="text" [(ngModel)]="participantInput" placeholder="Name, team, or department" />
+              <button class="btn btn-primary btn-sm" (click)="addParticipant()">Add</button>
+            </div>
+
+            <div class="attendee-list">
+              <div class="attendee-row" *ngFor="let p of event.attendees">
+                <div class="att-avatar" [ngClass]="attendanceClass(event.attendance[p])">{{ initials(p) }}</div>
+                <div class="att-info">
+                  <strong class="att-name">{{ p }}</strong>
+                  <div class="att-pills">
+                    <button *ngFor="let r of responseOptions"
+                            [class.active]="event.attendeeResponses[p]===r"
+                            [ngClass]="rsvpClass(r)"
+                            (click)="setParticipantResponse(event, p, r)">{{ r }}</button>
+                  </div>
+                  <div class="att-pills">
+                    <button *ngFor="let a of attendanceOptions"
+                            [class.active]="event.attendance[p]===a"
+                            [ngClass]="attendanceClass(a)"
+                            (click)="setAttendance(event, p, a)">{{ a }}</button>
+                  </div>
+                </div>
+                <button class="btn-icon-sm red" (click)="removeParticipant(event, p)" title="Remove">
+                  <i class="pi pi-times"></i>
+                </button>
+              </div>
+              <div class="empty-state" *ngIf="!event.attendees.length">No attendees yet. Add from above.</div>
+            </div>
+          </div>
+
+          <!-- ─ Agenda & Minutes tab ─ -->
+          <div class="tab-body" *ngIf="activeDetailTab==='agenda'">
+            <div class="tab-section-head">
+              <span class="sec-label">Agenda items</span>
+              <div class="btn-row">
+                <button class="btn btn-outline btn-sm" [disabled]="aiLoading" (click)="runAi('AGENDA')">
+                  <i class="pi pi-sparkles"></i> AI agenda
+                </button>
+                <button class="btn btn-outline btn-sm" [disabled]="aiLoading" (click)="runAi('MINUTES')">
+                  <i class="pi pi-sparkles"></i> AI minutes
+                </button>
+              </div>
+            </div>
+
+            <div class="agenda-list">
+              <div class="agenda-row" *ngFor="let item of event.agenda">
+                <div class="agenda-row-head">
+                  <strong>{{ item.topic }}</strong>
+                  <em>{{ item.presenter }} · {{ item.duration }}min</em>
+                  <button class="btn-icon-sm red" (click)="removeAgendaItem(event, item)">
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+                <div class="mini-states">
+                  <button *ngFor="let s of ['Draft','Shared','Ready','Done']"
+                          [class.active]="item.state===s"
+                          (click)="updateAgendaState(item, s)">{{ s }}</button>
+                </div>
+                <p class="agenda-notes" *ngIf="item.notes">{{ item.notes }}</p>
+              </div>
+              <div class="empty-state" *ngIf="!event.agenda.length">No agenda items yet.</div>
+            </div>
+
+            <div class="agenda-add-form">
+              <input type="text" [(ngModel)]="agendaForm.topic" placeholder="Agenda topic *" />
+              <input type="text" [(ngModel)]="agendaForm.presenter" placeholder="Presenter" />
+              <input type="number" [(ngModel)]="agendaForm.duration" placeholder="Mins" min="1" />
+              <textarea [(ngModel)]="agendaForm.notes" rows="2" placeholder="Notes (optional)"></textarea>
+              <button class="btn btn-primary btn-sm" [disabled]="!agendaForm.topic" (click)="addAgendaItem()">
+                Add agenda item
+              </button>
+            </div>
+
+            <div class="sec-label" style="margin-top:1rem">Minutes of meeting</div>
+            <div class="minutes-block">
+              <label>Summary
+                <textarea rows="3" [(ngModel)]="event.minutes.summary" placeholder="Meeting summary…"></textarea>
+              </label>
+              <label>Key discussions (one per line)
+                <textarea rows="3"
+                          [ngModel]="event.minutes.keyDiscussions.join('\n')"
+                          (ngModelChange)="event.minutes.keyDiscussions=$event.split('\n')"></textarea>
+              </label>
+              <label>Decisions
+                <textarea rows="2"
+                          [ngModel]="event.minutes.decisions.join('\n')"
+                          (ngModelChange)="event.minutes.decisions=$event.split('\n')"></textarea>
+              </label>
+              <label>Risks
+                <textarea rows="2"
+                          [ngModel]="event.minutes.risks.join('\n')"
+                          (ngModelChange)="event.minutes.risks=$event.split('\n')"></textarea>
+              </label>
+              <div class="sec-label">Approval state</div>
+              <div class="minutes-states">
+                <button [class.active]="event.minutes.approvalState==='Draft'"    (click)="event.minutes.approvalState='Draft'">Draft</button>
+                <button [class.active]="event.minutes.approvalState==='Review'"   (click)="event.minutes.approvalState='Review'">Review</button>
+                <button [class.active]="event.minutes.approvalState==='Approved'" (click)="event.minutes.approvalState='Approved'">Approved</button>
+                <button [class.active]="event.minutes.approvalState==='Published'" (click)="publishMinutes()">Publish</button>
+              </div>
+            </div>
+
+            <div class="ai-block" *ngIf="aiOutput">
+              <div class="sec-label">AI output <span *ngIf="aiLoading" class="loading-dot">…</span></div>
+              <div class="ai-text" *ngIf="aiOutput.summary"><strong>Summary</strong><p>{{ aiOutput.summary }}</p></div>
+              <div class="ai-list" *ngIf="aiOutput.agenda?.length">
+                <strong>Suggested agenda</strong>
+                <span *ngFor="let a of aiOutput.agenda">· {{ a }}</span>
+              </div>
+              <div class="ai-list" *ngIf="aiOutput.decisions?.length">
+                <strong>Decisions</strong>
+                <span *ngFor="let d of aiOutput.decisions">· {{ d }}</span>
+              </div>
+              <div class="ai-list" *ngIf="aiOutput.risks?.length">
+                <strong>Risks</strong>
+                <span *ngFor="let r of aiOutput.risks">· {{ r }}</span>
+              </div>
+            </div>
+
+            <div class="sec-label">Notes for AI processing</div>
+            <textarea rows="3" [(ngModel)]="notesInput" placeholder="Paste raw notes for AI processing…"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-outline btn-sm" [disabled]="aiLoading" (click)="runAi('ACTIONS')">Extract actions</button>
+              <button class="btn btn-outline btn-sm" [disabled]="aiLoading" (click)="runAi('FOLLOW_UP')">Follow-up rec.</button>
+              <button class="btn btn-outline btn-sm" [disabled]="aiLoading" (click)="runAi('SENTIMENT')">Sentiment</button>
+            </div>
+          </div>
+
+          <!-- ─ Actions tab ─ -->
+          <div class="tab-body" *ngIf="activeDetailTab==='actions'">
+            <div class="action-table">
+              <div class="action-head action-row">
+                <span>Owner</span><span>Item</span><span>Due</span><span>Priority</span><span>Status</span><span></span>
+              </div>
+              <div class="action-row" *ngFor="let a of event.actions">
+                <span>{{ a.owner }}</span>
+                <span>{{ a.item }}</span>
+                <span>{{ a.due }}</span>
+                <span [ngClass]="priorityClass(a.priority)">{{ a.priority }}</span>
+                <select [(ngModel)]="a.status" (ngModelChange)="updateAction(a, $event)">
+                  <option *ngFor="let s of ['Open','In progress','Completed','Overdue','Escalated']">{{ s }}</option>
+                </select>
+                <button class="btn-icon-sm red" (click)="removeAction(event, a)" title="Remove">
+                  <i class="pi pi-times"></i>
+                </button>
+              </div>
+              <div class="empty-state" *ngIf="!event.actions.length">No action items yet.</div>
+            </div>
+
+            <div class="sec-label" style="margin-top:1rem">Add action item</div>
+            <div class="action-add-form">
+              <input type="text" [(ngModel)]="actionForm.owner" placeholder="Owner" />
+              <input type="text" [(ngModel)]="actionForm.item" placeholder="Action item *" />
+              <input type="date" [(ngModel)]="actionForm.due" />
+              <select [(ngModel)]="actionForm.priority">
+                <option>Low</option><option>Medium</option><option>High</option>
               </select>
+              <button class="btn btn-primary btn-sm" [disabled]="!actionForm.item" (click)="addActionItem()">
+                Add action
+              </button>
             </div>
           </div>
-        </section>
-      </ng-container>
-    </div>
 
-    <aside class="side-column" *ngIf="selectedEvent as event">
-      <section class="panel">
-        <p class="section-kicker">Workflow</p>
-        <h2>Approval states</h2>
-        <div class="state-list">
-          <span *ngFor="let state of workflowStates">{{ state }}</span>
-        </div>
-        <div class="minutes-state">Minutes: {{ event.minutes.approvalState }}</div>
-      </section>
-
-      <section class="panel">
-        <p class="section-kicker">Rooms and resources</p>
-        <h2>Availability</h2>
-        <article class="resource-card" *ngFor="let resource of resources">
-          <strong>{{ resource.name }}</strong>
-          <span>{{ resource.type }} · {{ resource.details }}</span>
-          <em>{{ resource.status }}</em>
-          <button type="button" class="action" (click)="bookResource(resource)">Book</button>
-        </article>
-      </section>
-
-      <section class="panel">
-        <p class="section-kicker">Virtual meeting</p>
-        <h2>Meeting room</h2>
-        <label class="compact-field">
-          Jitsi base URL
-          <input type="text" [(ngModel)]="jitsiBaseUrl" placeholder="https://meet.jit.si" />
-        </label>
-        <div class="button-row room-actions">
-          <button type="button" class="action" (click)="startCall()"><i class="pi pi-phone"></i>Audio call</button>
-          <button type="button" class="action primary" (click)="startVideo()"><i class="pi pi-video"></i>Video room</button>
-          <button type="button" class="action" (click)="openMeetingInTab()"><i class="pi pi-external-link"></i>Open tab</button>
-        </div>
-        <div class="meeting-room-card" *ngIf="meetingRoomOpen">
-          <div class="meeting-room-head">
-            <div>
-              <strong>{{ activeMeetingMode === 'CALL' ? 'Audio call' : 'Video meeting' }}</strong>
-              <span>{{ meetingRoomName }}</span>
+          <!-- ─ Resources tab ─ -->
+          <div class="tab-body" *ngIf="activeDetailTab==='resources'">
+            <div class="sec-label">Available resources</div>
+            <div class="resource-list">
+              <div class="resource-row" *ngFor="let r of resources">
+                <div class="res-info">
+                  <strong>{{ r.name }}</strong>
+                  <span>{{ r.type }} · {{ r.details }}</span>
+                </div>
+                <span class="badge" [ngClass]="resourceStatusClass(r.status)">{{ r.status }}</span>
+                <button class="btn btn-outline btn-sm"
+                        (click)="bookResource(r)"
+                        [disabled]="r.status==='Conflict detected'">
+                  Book
+                </button>
+              </div>
             </div>
-            <button type="button" class="icon-action" (click)="closeMeetingRoom()" aria-label="Close meeting room">
-              <i class="pi pi-times"></i>
+
+            <ng-container *ngIf="event.resources.length">
+              <div class="sec-label">Booked for this event</div>
+              <div class="booked-tags">
+                <span *ngFor="let r of event.resources"><i class="pi pi-check-circle"></i> {{ r }}</span>
+              </div>
+            </ng-container>
+          </div>
+
+          <!-- ─ Virtual tab ─ -->
+          <div class="tab-body" *ngIf="activeDetailTab==='virtual'">
+            <div class="sec-label">Generate room</div>
+            <div class="platform-grid">
+              <button class="platform-btn" *ngFor="let p of virtualPlatforms" (click)="generateVirtualRoom(p)">
+                {{ p }}
+              </button>
+            </div>
+
+            <div class="sec-label">Custom Jitsi base URL</div>
+            <input type="url" [(ngModel)]="jitsiBaseUrl" placeholder="https://meet.jit.si" />
+
+            <div class="btn-row" style="margin-top:0.75rem">
+              <button class="btn btn-primary" (click)="startVideo()">
+                <i class="pi pi-video"></i> Start video
+              </button>
+              <button class="btn btn-outline" (click)="startCall()">
+                <i class="pi pi-phone"></i> Audio call
+              </button>
+              <button class="btn btn-outline" *ngIf="meetingRoomUrl" (click)="openMeetingInTab()">
+                <i class="pi pi-external-link"></i> Open in tab
+              </button>
+            </div>
+
+            <div class="meeting-room-embed" *ngIf="meetingRoomOpen && trustedMeetingRoomUrl">
+              <div class="room-embed-head">
+                <strong>{{ event.title }}</strong>
+                <button class="btn-icon-sm" (click)="closeMeetingRoom()"><i class="pi pi-times"></i></button>
+              </div>
+              <iframe [src]="trustedMeetingRoomUrl"
+                      allow="camera;microphone;fullscreen;display-capture"
+                      allowfullscreen></iframe>
+            </div>
+
+            <ng-container *ngIf="event.onlineLink">
+              <div class="sec-label">Meeting link</div>
+              <a [href]="event.onlineLink" target="_blank" class="meeting-link-btn">
+                <i class="pi pi-link"></i> {{ event.onlineLink }}
+              </a>
+            </ng-container>
+          </div>
+
+          <!-- ─ Transcription tab ─ -->
+          <div class="tab-body" *ngIf="activeDetailTab==='transcription'">
+            <div class="trans-config">
+              <label>Session title
+                <input type="text" [(ngModel)]="transcriptionTitle" placeholder="Recording title" />
+              </label>
+              <label>Meeting type
+                <input type="text" [(ngModel)]="transcriptionMeetingType" />
+              </label>
+              <label>Language code
+                <input type="text" [(ngModel)]="transcriptionLanguage" placeholder="en" />
+              </label>
+              <label>Speaker hints
+                <input type="text" [(ngModel)]="transcriptionSpeakerHints" placeholder="Names for speaker separation" />
+              </label>
+              <label class="check-row">
+                <input type="checkbox" [(ngModel)]="transcriptionFormatAsMinutes" />
+                Format output as meeting minutes
+              </label>
+            </div>
+
+            <div class="btn-row" style="margin-top:0.75rem">
+              <button class="btn btn-primary" (click)="transFileInput.click()">
+                <i class="pi pi-upload"></i> Upload recording
+              </button>
+              <input #transFileInput type="file" class="hidden-input"
+                     accept="audio/*,video/*"
+                     (change)="onTranscriptionFileSelected($event)" />
+              <button class="btn btn-outline" (click)="loadTranscriptionJobs()">Load jobs</button>
+            </div>
+
+            <div class="trans-status">{{ transcriptionStatus }}</div>
+            <div class="trans-output">{{ transcriptionOutput }}</div>
+          </div>
+
+        </ng-container><!-- /selectedEvent -->
+      </div><!-- /detail-sidebar -->
+
+    </div><!-- /cal-workspace -->
+  </ng-container><!-- /calendar tab -->
+
+  <!-- ══════════════ ANALYTICS TAB ══════════════════════════════ -->
+  <ng-container *ngIf="activeMainTab==='analytics'">
+    <div class="analytics-workspace">
+
+      <!-- Stat row -->
+      <div class="astat-row">
+        <div class="astat">
+          <span>This month</span><strong>{{ analyticsData.monthMeetings }}</strong><p>Meetings</p>
+        </div>
+        <div class="astat">
+          <span>This month</span><strong>{{ analyticsData.monthAppointments }}</strong><p>Appointments</p>
+        </div>
+        <div class="astat">
+          <span>Total meeting time</span><strong>{{ analyticsData.totalHours }}h</strong><p>Hours logged</p>
+        </div>
+        <div class="astat a-green">
+          <span>Attendance</span><strong>{{ analyticsData.attendanceRate }}%</strong><p>Present rate</p>
+        </div>
+        <div class="astat a-amber">
+          <span>Actions ({{ analyticsData.completedActions }}/{{ analyticsData.totalActions }})</span>
+          <strong>{{ analyticsData.completionRate }}%</strong><p>Completion rate</p>
+        </div>
+        <div class="astat a-red">
+          <span>Overdue</span><strong>{{ analyticsData.overdueActions }}</strong><p>Action items</p>
+        </div>
+      </div>
+
+      <!-- Charts grid -->
+      <div class="analytics-grid">
+
+        <!-- By category -->
+        <div class="a-panel">
+          <div class="a-panel-head"><h3>Events by category</h3></div>
+          <div class="bar-chart" *ngIf="analyticsData.byCategory.length; else noData">
+            <div class="bar-row" *ngFor="let c of analyticsData.byCategory">
+              <span class="bar-label">{{ c.label }}</span>
+              <div class="bar-track"><div class="bar-fill bf-teal" [style.width.%]="c.pct"></div></div>
+              <span class="bar-val">{{ c.value }}</span>
+            </div>
+          </div>
+          <ng-template #noData><p class="a-empty">No events recorded yet.</p></ng-template>
+        </div>
+
+        <!-- By priority -->
+        <div class="a-panel">
+          <div class="a-panel-head"><h3>Events by priority</h3></div>
+          <div class="bar-chart" *ngIf="analyticsData.byPriority.length">
+            <div class="bar-row" *ngFor="let pr of analyticsData.byPriority">
+              <span class="bar-label">{{ pr.label }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" [ngClass]="'bf-'+pr.label.toLowerCase()" [style.width.%]="pr.pct"></div>
+              </div>
+              <span class="bar-val">{{ pr.value }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- By status -->
+        <div class="a-panel">
+          <div class="a-panel-head"><h3>Events by status</h3></div>
+          <div class="status-breakdown">
+            <div class="sb-row" *ngFor="let s of analyticsData.byStatus">
+              <span class="badge" [ngClass]="statusClass(s[0])">{{ s[0] }}</span>
+              <span class="sb-count">{{ s[1] }}</span>
+            </div>
+          </div>
+          <p class="a-empty" *ngIf="!analyticsData.byStatus.length">No events yet.</p>
+        </div>
+
+        <!-- Top participants -->
+        <div class="a-panel">
+          <div class="a-panel-head"><h3>Top participants</h3></div>
+          <div class="participant-list">
+            <div class="p-row" *ngFor="let p of analyticsData.topParticipants">
+              <div class="p-avatar">{{ initials(p.name) }}</div>
+              <div class="p-info">
+                <strong>{{ p.name }}</strong>
+                <div class="p-bar-track"><div class="p-bar-fill" [style.width.%]="p.pct"></div></div>
+              </div>
+              <span class="p-count">{{ p.count }}</span>
+            </div>
+            <p class="a-empty" *ngIf="!analyticsData.topParticipants.length">No attendees recorded yet.</p>
+          </div>
+        </div>
+
+        <!-- Upcoming (next 7 days) – wide -->
+        <div class="a-panel a-wide">
+          <div class="a-panel-head">
+            <h3>Upcoming (next 7 days)</h3>
+            <button class="btn btn-primary btn-sm" (click)="openForm('Meeting')">
+              <i class="pi pi-plus"></i> New
             </button>
           </div>
-          <iframe *ngIf="trustedMeetingRoomUrl" [src]="trustedMeetingRoomUrl" title="Meeting room"></iframe>
+          <div class="upcoming-list">
+            <div class="upcoming-row" *ngFor="let ev of analyticsData.upcoming">
+              <div class="upc-dot" [style.background-color]="ev.color || '#2E6276'"></div>
+              <div class="upc-info">
+                <strong>{{ ev.title }}</strong>
+                <span>{{ ev.date }} · {{ ev.time }} · {{ ev.location || ev.onlineLink || 'No location' }}</span>
+              </div>
+              <div class="badge-row">
+                <span class="badge" [ngClass]="statusClass(ev.status)">{{ ev.status }}</span>
+                <span class="badge" [ngClass]="priorityClass(ev.priority)">{{ ev.priority }}</span>
+              </div>
+            </div>
+            <p class="a-empty" *ngIf="!analyticsData.upcoming.length">No upcoming events in the next 7 days.</p>
+          </div>
         </div>
-        <div class="state-list">
-          <button type="button" *ngFor="let platform of virtualPlatforms" (click)="generateVirtualRoom(platform)">
-            {{ platform }}
+
+        <!-- Overdue actions – wide -->
+        <div class="a-panel a-wide">
+          <div class="a-panel-head"><h3>Overdue action items</h3></div>
+          <div class="overdue-list">
+            <div class="overdue-row" *ngFor="let a of analyticsData.overdueActionList">
+              <span class="overdue-owner">{{ a.owner }}</span>
+              <span class="overdue-item">{{ a.item }}</span>
+              <span class="overdue-event">{{ a.eventTitle }}</span>
+              <span class="overdue-due">Due {{ a.due }}</span>
+              <span class="badge as-overdue">{{ a.status }}</span>
+            </div>
+            <p class="a-empty" *ngIf="!analyticsData.overdueActionList.length">No overdue actions. Great work!</p>
+          </div>
+        </div>
+
+      </div><!-- /analytics-grid -->
+    </div><!-- /analytics-workspace -->
+  </ng-container><!-- /analytics tab -->
+
+  <!-- ── Quick-create dialog (multi-day drag / Ctrl+click) ───── -->
+  <div class="qc-overlay" *ngIf="quickCreate.visible" (click)="closeQuickCreate()">
+    <div class="qc-dialog" (click)="$event.stopPropagation()">
+
+      <div class="qc-header">
+        <div class="qc-header-icon"><i class="pi pi-calendar-plus"></i></div>
+        <div class="qc-header-text">
+          <h3>New event</h3>
+          <p class="qc-date-range">
+            {{ quickCreate.startDate }}
+            <span *ngIf="quickCreate.endDate !== quickCreate.startDate"> → {{ quickCreate.endDate }}</span>
+          </p>
+        </div>
+        <button class="qc-close" (click)="closeQuickCreate()" title="Close">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="qc-body">
+        <!-- Event type pills -->
+        <div class="qc-type-row">
+          <button class="qc-type-btn" [class.active]="quickCreate.kind==='Meeting'"
+                  (click)="quickCreate.kind='Meeting'">
+            <i class="pi pi-users"></i> Meeting
+          </button>
+          <button class="qc-type-btn" [class.active]="quickCreate.kind==='Appointment'"
+                  (click)="quickCreate.kind='Appointment'">
+            <i class="pi pi-clock"></i> Appointment
           </button>
         </div>
-        <a class="meeting-link" *ngIf="event.onlineLink" [href]="event.onlineLink" target="_blank" rel="noreferrer">
-          Join meeting
-        </a>
-      </section>
 
-      <section class="panel">
-        <p class="section-kicker">Meeting transcription</p>
-        <h2>Upload recording</h2>
-        <label class="compact-field">
-          Recording title
-          <input type="text" [(ngModel)]="transcriptionTitle" placeholder="Recording title" />
+        <!-- Title -->
+        <label class="qc-label">
+          Event title <span class="qc-required">*</span>
+          <input type="text" class="qc-input" [(ngModel)]="quickCreate.title"
+                 placeholder="What's this about?" autofocus
+                 (keydown.enter)="confirmQuickCreate()"
+                 (keydown.escape)="closeQuickCreate()" />
         </label>
-        <div class="two-field-row">
-          <label class="compact-field">
-            Meeting type
-            <input type="text" [(ngModel)]="transcriptionMeetingType" placeholder="Collaboration Meeting" />
+
+        <!-- Time row -->
+        <div class="qc-row-2">
+          <label class="qc-label">
+            Start time
+            <input type="time" class="qc-input" [(ngModel)]="quickCreate.startTime" />
           </label>
-          <label class="compact-field">
-            Language
-            <input type="text" [(ngModel)]="transcriptionLanguage" placeholder="en" />
+          <label class="qc-label">
+            End time
+            <input type="time" class="qc-input" [(ngModel)]="quickCreate.endTime" />
           </label>
         </div>
-        <label class="compact-field">
-          Speaker hints
-          <textarea rows="3" [(ngModel)]="transcriptionSpeakerHints" placeholder="CEO, HR Lead, Finance Lead"></textarea>
+
+        <!-- Priority -->
+        <div class="qc-priority-row">
+          <span class="qc-label-inline">Priority</span>
+          <button *ngFor="let p of ['Low','Medium','High','Executive']"
+                  class="qc-pri-btn"
+                  [class.active]="quickCreate.priority===p"
+                  (click)="quickCreate.priority = p">{{ p }}</button>
+        </div>
+
+        <!-- Description -->
+        <label class="qc-label">
+          Description <span class="qc-optional">(optional)</span>
+          <textarea class="qc-input qc-textarea" rows="2"
+                    [(ngModel)]="quickCreate.description"
+                    placeholder="Add notes or context…"></textarea>
         </label>
-        <label class="check-row small-check">
-          <input type="checkbox" [(ngModel)]="transcriptionFormatAsMinutes" />
-          Format as minutes
-        </label>
-        <input type="file" accept="audio/*,video/*" (change)="onTranscriptionFileSelected($event)" />
-        <div class="button-row room-actions">
-          <button type="button" class="action" (click)="loadTranscriptionJobs()">Load jobs</button>
-          <button type="button" class="action" [disabled]="aiLoading" (click)="runAi('MINUTES')">Use notes for MoM</button>
-        </div>
-        <pre class="tool-out">{{ transcriptionStatus }}</pre>
-        <pre class="tool-out">{{ transcriptionOutput }}</pre>
-      </section>
+      </div>
 
-      <section class="panel">
-        <p class="section-kicker">Calendar sync</p>
-        <h2>Integrations</h2>
-        <div class="state-list">
-          <button type="button" *ngFor="let integration of integrations" (click)="syncCalendar(integration)">
-            {{ integration }}
-          </button>
-        </div>
-        <div class="sync-note" *ngIf="syncMessage">{{ syncMessage }}</div>
-      </section>
+      <div class="qc-footer">
+        <button class="btn btn-primary" [disabled]="!quickCreate.title.trim()" (click)="confirmQuickCreate()">
+          <i class="pi pi-check"></i> Create {{ quickCreate.kind }}
+        </button>
+        <button class="btn btn-outline" (click)="closeQuickCreate()">Cancel</button>
+        <span class="qc-hint"><i class="pi pi-info-circle"></i> You can add attendees and details after creation</span>
+      </div>
 
-      <section class="panel">
-        <p class="section-kicker">Attachments</p>
-        <h2>Documents</h2>
-        <div class="inline-add full">
-          <input type="text" [(ngModel)]="attachmentInput" placeholder="Attachment name or link" />
-          <button type="button" class="action" (click)="addAttachment()">Add</button>
-        </div>
-        <span class="attachment-pill" *ngFor="let attachment of event.attachments">{{ attachment }}</span>
-      </section>
+    </div>
+  </div>
 
-      <section class="panel compact-grid">
-        <div>
-          <p class="section-kicker">Attendance</p>
-          <span *ngFor="let method of attendanceMethods">{{ method }}</span>
-        </div>
-        <div>
-          <p class="section-kicker">AI premium</p>
-          <span>Agenda generation</span>
-          <span>Minutes summary</span>
-          <span>Action extraction</span>
-          <span>Sentiment analysis</span>
-        </div>
-      </section>
-    </aside>
-  </section>
-</div>
+  <!-- ── Toast stack ─────────────────────────────────────────── -->
+  <div class="toast-stack" aria-live="polite" aria-atomic="false">
+    <div
+      class="toast-item"
+      *ngFor="let t of toasts"
+      [ngClass]="'toast-'+t.type"
+      (click)="dismissToast(t.id)"
+      role="alert"
+    >
+      <i class="pi"
+         [ngClass]="{ 'pi-check-circle': t.type==='ok', 'pi-exclamation-triangle': t.type==='warn', 'pi-times-circle': t.type==='err' }">
+      </i>
+      <span class="toast-msg">{{ t.message }}</span>
+      <button class="toast-close" (click)="dismissToast(t.id); $event.stopPropagation()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+  </div>
+
+</div><!-- /meets-shell -->

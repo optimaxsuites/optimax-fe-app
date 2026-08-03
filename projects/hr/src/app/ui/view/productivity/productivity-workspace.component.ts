@@ -260,28 +260,26 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   setPmSection(s: PMSection): void {
     this.pmSection = s;
-    if (s === 'reports' && !this.execReport && !this.reportsLoading) {
-      this.loadReports();
-    }
   }
 
   loadReports(): void {
     this.reportsLoading = true;
     this.reportsError = false;
+    const safe = <T>(obs: import('rxjs').Observable<T>) => obs.pipe(catchError(() => of(null as T | null)));
     this.subscription.add(
       forkJoin({
-        exec:      this.reportingService.getExecutiveReport(),
-        workforce: this.reportingService.getWorkforceOverview(),
-        payroll:   this.reportingService.getPayrollSummary(),
-        leave:     this.reportingService.getLeaveAttendance(),
-        turnover:  this.reportingService.getEmployeeTurnover(),
-        risk:      this.reportingService.getHrRisk(),
-        probation: this.reportingService.getProbationTracking(),
-        equity:    this.reportingService.getCompensationEquity(),
-        bonus:     this.reportingService.getBonusReport(),
-        statutory: this.reportingService.getStatutoryRemittance(),
-        overtime:  this.reportingService.getOvertimeCost(),
-        vacancy:   this.reportingService.getVacancyAging(),
+        exec:      safe(this.reportingService.getExecutiveReport()),
+        workforce: safe(this.reportingService.getWorkforceOverview()),
+        payroll:   safe(this.reportingService.getPayrollSummary()),
+        leave:     safe(this.reportingService.getLeaveAttendance()),
+        turnover:  safe(this.reportingService.getEmployeeTurnover()),
+        risk:      safe(this.reportingService.getHrRisk()),
+        probation: safe(this.reportingService.getProbationTracking()),
+        equity:    safe(this.reportingService.getCompensationEquity()),
+        bonus:     safe(this.reportingService.getBonusReport()),
+        statutory: safe(this.reportingService.getStatutoryRemittance()),
+        overtime:  safe(this.reportingService.getOvertimeCost()),
+        vacancy:   safe(this.reportingService.getVacancyAging()),
       }).subscribe({
         next: (data) => {
           this.execReport      = data.exec;
@@ -297,6 +295,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           this.overtimeReport  = data.overtime;
           this.vacancyReport   = data.vacancy;
           this.reportsLoading  = false;
+          // Only surface the error banner when every single report failed
+          this.reportsError = Object.values(data).every(v => v === null);
         },
         error: () => {
           this.reportsError   = true;
@@ -314,7 +314,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   searchText = '';
   selectedTask: BoardTask | null = null;
   detailPanelVisible = false;
-  detailTab: 'overview' | 'subtasks' | 'activity' = 'overview';
+  detailTab: 'overview' | 'subtasks' | 'activity' | 'analytics' = 'overview';
   newActivityText = '';
   subtaskInput = '';
   showAddTask = false;
@@ -379,7 +379,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     const q = this.archiveSearchText.trim().toLowerCase();
     if (!q) return this.archivedTasks;
     return this.archivedTasks.filter(t =>
-      t.title.toLowerCase().includes(q) ||
+      (t.title || '').toLowerCase().includes(q) ||
       (t.assignee || '').toLowerCase().includes(q) ||
       (t.team || '').toLowerCase().includes(q) ||
       (t.status || '').toLowerCase().includes(q) ||
@@ -390,11 +390,31 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   /** Statuses that appear only in forms (not board columns) */
   readonly extraStatuses: TaskStatus[] = ['Closed'];
 
+  private sanitizeTask(t: any): BoardTask {
+    // Array fields — accessed with .length and *ngFor throughout the template
+    t.subtasks  = Array.isArray(t.subtasks)  ? t.subtasks  : [];
+    t.activity  = Array.isArray(t.activity)  ? t.activity  : [];
+    t.tags      = Array.isArray(t.tags)      ? t.tags      : [];
+    t.followUps = Array.isArray(t.followUps) ? t.followUps : [];
+    // String fields — accessed with .toLowerCase() in filteredBoard getter
+    t.title     = t.title    ?? '';
+    t.assignee  = t.assignee ?? '';
+    t.team      = t.team     ?? '';
+    t.status    = t.status   ?? 'To Do';
+    t.priority  = t.priority ?? 'Medium';
+    t.id        = t.id       ?? String(Date.now());
+    return t as BoardTask;
+  }
+
+  private parseTasks(raw: string | null): BoardTask[] {
+    try { return raw ? (JSON.parse(raw) as any[]).map(t => this.sanitizeTask(t)) : []; }
+    catch { return []; }
+  }
+
   private loadArchivedTasks(): void {
-    try {
-      const raw = localStorage.getItem(ProductivityWorkspaceComponent.ARCHIVE_STORAGE_KEY);
-      this.archivedTasks = raw ? JSON.parse(raw) : [];
-    } catch { this.archivedTasks = []; }
+    this.archivedTasks = this.parseTasks(
+      localStorage.getItem(ProductivityWorkspaceComponent.ARCHIVE_STORAGE_KEY)
+    );
   }
 
   private saveArchivedTasks(): void {
@@ -550,7 +570,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   get boardMetrics(): { label: string; value: string | number; sub: string; color: string }[] {
     const active = this.boardTasks.filter(t => t.status !== 'Done').length;
-    const subs = this.boardTasks.reduce((s, t) => s + t.subtasks.length, 0);
+    const subs = this.boardTasks.reduce((s, t) => s + (t.subtasks?.length ?? 0), 0);
     const done = this.boardTasks.filter(t => t.status === 'Done').length;
     const pct = this.boardTasks.length ? Math.round((done / this.boardTasks.length) * 100) : 0;
     const review = this.boardTasks.filter(t => t.status === 'In Review').length;
@@ -560,6 +580,249 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       { label: 'Completion Rate', value: `${pct}%`, sub: 'tasks marked done', color: '#16a34a' },
       { label: 'Supervisor Queue', value: review, sub: 'awaiting review', color: '#7c3aed' },
     ];
+  }
+
+  // ── Performance chart filters ───────────────────────────────────────────────
+  chartFilterAssignee = '';
+  chartFilterSupervisor = '';
+  chartFilterPriority = '';
+  chartFilterTag = '';
+  engagementSortCol: 'lastActivity' | 'followUps' | 'replies' | 'reactions' = 'lastActivity';
+  engagementSortDir: 'asc' | 'desc' = 'desc';
+
+  resetChartFilters(): void {
+    this.chartFilterAssignee = '';
+    this.chartFilterSupervisor = '';
+    this.chartFilterPriority = '';
+    this.chartFilterTag = '';
+  }
+
+  private get allTasksForCharts(): BoardTask[] {
+    return [...this.boardTasks, ...this.archivedTasks];
+  }
+
+  get chartFilteredTasks(): BoardTask[] {
+    return this.allTasksForCharts.filter(t => {
+      if (this.chartFilterAssignee && t.assignee !== this.chartFilterAssignee) return false;
+      if (this.chartFilterSupervisor && t.team !== this.chartFilterSupervisor) return false;
+      if (this.chartFilterPriority && t.priority !== this.chartFilterPriority) return false;
+      if (this.chartFilterTag && !(t.tags ?? []).includes(this.chartFilterTag)) return false;
+      return true;
+    });
+  }
+
+  get chartAllAssignees(): string[] {
+    return [...new Set(this.allTasksForCharts.map(t => t.assignee).filter(Boolean))].sort();
+  }
+
+  get chartAllSupervisors(): string[] {
+    return [...new Set(this.allTasksForCharts.map(t => t.team).filter(Boolean))].sort();
+  }
+
+  get chartAllTags(): string[] {
+    const tags = new Set<string>();
+    this.allTasksForCharts.forEach(t => (t.tags ?? []).forEach(tag => tags.add(tag)));
+    return [...tags].sort();
+  }
+
+  get taskCompletionStats(): Array<{ status: string; count: number; pct: number; color: string }> {
+    const tasks = this.chartFilteredTasks;
+    const total = tasks.length;
+    if (!total) return [];
+    const statusColors: Record<string, string> = {
+      'Done': '#16a34a', 'In Progress': '#2563eb', 'In Review': '#7c3aed',
+      'To Do': '#6b7280', 'Closed': '#374151', 'Archived': '#9ca3af',
+    };
+    const counts = new Map<string, number>();
+    tasks.forEach(t => {
+      const s = t.closed ? 'Closed' : (t.status || 'To Do');
+      counts.set(s, (counts.get(s) ?? 0) + 1);
+    });
+    // Add overdue as separate virtual bucket
+    const overdue = tasks.filter(t => this.isTaskOverdue(t) && t.status !== 'Done' && !t.closed).length;
+    const result = [...counts.entries()]
+      .map(([status, count]) => ({
+        status, count,
+        pct: Math.round((count / total) * 100),
+        color: statusColors[status] ?? '#9ca3af',
+      }))
+      .sort((a, b) => b.count - a.count);
+    if (overdue > 0) {
+      result.push({ status: 'Overdue', count: overdue, pct: Math.round((overdue / total) * 100), color: '#dc2626' });
+    }
+    return result;
+  }
+
+  get taskEngagementRows(): Array<{
+    task: BoardTask; followUps: number; replies: number; reactions: number;
+    lastActivity: string; lastActivityRaw: string;
+  }> {
+    const rows = this.chartFilteredTasks.map(task => {
+      const fus = task.followUps ?? [];
+      const replies = fus.reduce((n, f) => n + (f.replies?.length ?? 0), 0);
+      const reactions = fus.reduce((n, f) => {
+        return n + Object.values(f.reactions ?? {}).reduce((s, arr) => s + arr.length, 0);
+      }, 0);
+      const lastFu = fus.filter(f => f.timestamp).sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0];
+      const lastActivityRaw = lastFu?.timestamp ?? '';
+      const lastActivity = lastFu ? this.formatTs(lastActivityRaw) : '—';
+      return { task, followUps: fus.length, replies, reactions, lastActivity, lastActivityRaw };
+    });
+    const dir = this.engagementSortDir === 'asc' ? 1 : -1;
+    return rows.sort((a, b) => {
+      if (this.engagementSortCol === 'lastActivity') return dir * a.lastActivityRaw.localeCompare(b.lastActivityRaw);
+      if (this.engagementSortCol === 'followUps')    return dir * (a.followUps - b.followUps);
+      if (this.engagementSortCol === 'replies')      return dir * (a.replies - b.replies);
+      if (this.engagementSortCol === 'reactions')    return dir * (a.reactions - b.reactions);
+      return 0;
+    });
+  }
+
+  sortEngagement(col: 'lastActivity' | 'followUps' | 'replies' | 'reactions'): void {
+    if (this.engagementSortCol === col) {
+      this.engagementSortDir = this.engagementSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.engagementSortCol = col;
+      this.engagementSortDir = 'desc';
+    }
+  }
+
+  get supervisorFeedbackRows(): Array<{
+    supervisor: string;
+    approved: number; changes: number; rejected: number; other: number;
+    approvedPct: number; changesPct: number; rejectedPct: number; otherPct: number;
+  }> {
+    const map = new Map<string, { approved: number; changes: number; rejected: number; other: number }>();
+    this.chartFilteredTasks.forEach(task => {
+      const sup = task.team || 'Unassigned';
+      if (!map.has(sup)) map.set(sup, { approved: 0, changes: 0, rejected: 0, other: 0 });
+      const entry = map.get(sup)!;
+      (task.followUps ?? []).forEach(fu => {
+        if (!fu.decision) return;
+        const d = (fu.decision || '').toLowerCase();
+        if (d === 'approved' || d === 'approve') entry.approved++;
+        else if (d.includes('change') || d.includes('revision')) entry.changes++;
+        else if (d === 'rejected' || d === 'reject') entry.rejected++;
+        else entry.other++;
+      });
+    });
+    return [...map.entries()]
+      .map(([supervisor, counts]) => {
+        const total = counts.approved + counts.changes + counts.rejected + counts.other;
+        if (total === 0) return null;
+        const pct = (n: number) => total ? Math.round((n / total) * 100) : 0;
+        return {
+          supervisor,
+          ...counts,
+          approvedPct: pct(counts.approved),
+          changesPct: pct(counts.changes),
+          rejectedPct: pct(counts.rejected),
+          otherPct: pct(counts.other),
+        };
+      })
+      .filter(Boolean) as any[];
+  }
+
+  get dueDateBuckets(): Array<{ label: string; count: number; pct: number; color: string }> {
+    const tasks = this.chartFilteredTasks.filter(t => t.dueDate && t.status !== 'Done' && !t.closed);
+    const total = tasks.length || 1;
+    const now = Date.now();
+    const day = 86400000;
+    const buckets = [
+      { label: 'Overdue', color: '#dc2626', test: (d: number) => d < now },
+      { label: 'Due Today', color: '#f97316', test: (d: number) => d >= now && d < now + day },
+      { label: 'Due This Week', color: '#d97706', test: (d: number) => d >= now + day && d < now + 7 * day },
+      { label: 'Due Next Week', color: '#2563eb', test: (d: number) => d >= now + 7 * day && d < now + 14 * day },
+      { label: 'Due Later', color: '#6b7280', test: (d: number) => d >= now + 14 * day },
+    ];
+    return buckets.map(b => {
+      const count = tasks.filter(t => b.test(new Date(t.dueDate).getTime())).length;
+      return { label: b.label, count, pct: Math.round((count / total) * 100), color: b.color };
+    }).filter(b => b.count > 0);
+  }
+
+  drillToTask(task: BoardTask): void {
+    this.openDetail(task);
+  }
+
+  // ── Assignee performance analytics ────────────────────────────────────────
+  getAssigneePerformance(assigneeName: string): {
+    grade: 'Excellent' | 'Good' | 'Fair' | 'Bad';
+    gradeColor: string;
+    score: number;
+    completionRate: number;
+    timelinessRate: number;
+    progressMomentum: number;
+    engagementRate: number;
+    totalTasks: number;
+    doneTasks: number;
+    overdueTasks: number;
+    closedTasks: number;
+    avgFollowUps: number;
+  } {
+    const all = [...this.boardTasks, ...this.archivedTasks].filter(t => t.assignee === assigneeName);
+    const total = all.length;
+    const EMPTY = { grade: 'Fair' as const, gradeColor: '#d97706', score: 0, completionRate: 0, timelinessRate: 0, progressMomentum: 0, engagementRate: 0, totalTasks: 0, doneTasks: 0, overdueTasks: 0, closedTasks: 0, avgFollowUps: 0 };
+    if (!total) return EMPTY;
+
+    const done = all.filter(t => t.status === 'Done').length;
+    const closed = all.filter(t => t.closed || t.status === 'CLOSED' as any).length;
+    const overdue = all.filter(t => this.isTaskOverdue(t) && t.status !== 'Done' && !t.closed).length;
+
+    const completionRate = Math.round(((done + closed) / total) * 100);
+
+    // Timeliness: done tasks that are NOT overdue (i.e. due date hasn't passed) ≈ submitted on time
+    const doneOnTime = all.filter(t => t.status === 'Done' && !this.isTaskOverdueFn(t, t.dueDate)).length;
+    const timelinessRate = done > 0 ? Math.round((doneOnTime / done) * 100) : completionRate;
+
+    const avgProgress = Math.round(all.reduce((s, t) => s + (t.progress || 0), 0) / total);
+    const progressMomentum = avgProgress;
+
+    const totalFu = all.reduce((s, t) => s + (t.followUps?.length || 0), 0);
+    const avgFuNum = totalFu / total;
+    const engagementRate = Math.min(100, Math.round((avgFuNum / 4) * 100));
+
+    const overdueRate = Math.round((overdue / total) * 100);
+
+    const score = Math.min(100, Math.round(
+      completionRate * 0.35 +
+      timelinessRate * 0.30 +
+      progressMomentum * 0.15 +
+      Math.max(0, 100 - overdueRate * 2) * 0.20
+    ));
+
+    const grade = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : score >= 40 ? 'Fair' : 'Bad';
+    const gradeColor = score >= 80 ? '#16a34a' : score >= 60 ? '#2563eb' : score >= 40 ? '#d97706' : '#dc2626';
+
+    return { grade, gradeColor, score, completionRate, timelinessRate, progressMomentum, engagementRate, totalTasks: total, doneTasks: done, overdueTasks: overdue, closedTasks: closed, avgFollowUps: parseFloat(avgFuNum.toFixed(1)) };
+  }
+
+  private isTaskOverdueFn(task: BoardTask, dueDateStr: string): boolean {
+    if (!dueDateStr) return false;
+    return new Date(dueDateStr).getTime() < Date.now();
+  }
+
+  getTeamPerformance(supervisorName: string): Array<{
+    assignee: string;
+    score: number;
+    grade: 'Excellent' | 'Good' | 'Fair' | 'Bad';
+    gradeColor: string;
+    completionRate: number;
+    totalTasks: number;
+  }> {
+    const all = [...this.boardTasks, ...this.archivedTasks].filter(t => t.team === supervisorName);
+    const assignees = [...new Set(all.map(t => t.assignee).filter(Boolean))];
+    return assignees
+      .map(a => {
+        const p = this.getAssigneePerformance(a);
+        return { assignee: a, score: p.score, grade: p.grade, gradeColor: p.gradeColor, completionRate: p.completionRate, totalTasks: p.totalTasks };
+      })
+      .sort((a, b) => b.score - a.score);
+  }
+
+  ringDashOffset(score: number): number {
+    // SVG circle r=40, circumference ≈ 251.2
+    return Math.round((100 - score) * 2.512);
   }
 
   // ── Assessment ─────────────────────────────────────────────────────────────
@@ -810,8 +1073,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   get myTeamTasks(): BoardTask[] {
     const name = this.supervisorFilter.trim().toLowerCase();
     return this.boardTasks.filter(t =>
-      !name || t.team.toLowerCase().includes(name) ||
-      (t.assignees || [t.assignee]).some(a => a.toLowerCase().includes(name))
+      !name || (t.team || '').toLowerCase().includes(name) ||
+      (t.assignees || [t.assignee]).some(a => (a || '').toLowerCase().includes(name))
     );
   }
 
@@ -1319,10 +1582,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           const apiIds = new Set(mapped.map(t => t.id));
           if (isSupervisor || wantsAll) {
             // Full board: merge API results with any locally-created tasks
-            const localRaw = localStorage.getItem(this.boardKey);
-            const localOnly: BoardTask[] = localRaw
-              ? (JSON.parse(localRaw) as BoardTask[]).filter(t => !apiIds.has(t.id))
-              : [];
+            const localOnly = this.parseTasks(localStorage.getItem(this.boardKey))
+              .filter(t => !apiIds.has(t.id));
             this.boardTasks = mapped.length ? [...mapped, ...localOnly] : (localOnly.length ? localOnly : [...HR_SEED]);
           } else {
             // Regular user own-tasks view: API tasks + user's own locally-saved tasks
@@ -1354,8 +1615,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         error: () => {
           this.apiEnabled = false;
           if (isSupervisor) {
-            const raw = localStorage.getItem(this.boardKey);
-            this.boardTasks = raw ? JSON.parse(raw) : [...HR_SEED];
+            const parsed = this.parseTasks(localStorage.getItem(this.boardKey));
+            this.boardTasks = parsed.length ? parsed : [...HR_SEED];
           } else {
             const empty = new Set<string>();
             this.boardTasks = [...this.getMyLocalBoardTasks(empty), ...this.getLocalImportTasks()];
@@ -1374,10 +1635,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   private getLocalImportTasks(): BoardTask[] {
-    try {
-      const raw = localStorage.getItem('hr_pm_imports_v1');
-      return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    return this.parseTasks(localStorage.getItem('hr_pm_imports_v1'));
   }
 
   // Read cached board tasks that belong to the current user (by employee ID, creator ID, or name).
@@ -1385,9 +1643,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // leaking other users' cached tasks from the shared HR_BOARD_KEY.
   private getMyLocalBoardTasks(excludeIds: Set<string>): BoardTask[] {
     try {
-      const raw = localStorage.getItem(this.boardKey);
-      if (!raw) return [];
-      const all: BoardTask[] = JSON.parse(raw);
+      const all = this.parseTasks(localStorage.getItem(this.boardKey));
+      if (!all.length) return [];
       const empId = this.resolvedEmployeeId;
       const userId = this.currentUserId;
       const me = this.currentUserFullName;
@@ -1417,7 +1674,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     try {
       const raw = localStorage.getItem('hr_pm_imports_v1');
       if (!raw) return;
-      const imported: BoardTask[] = JSON.parse(raw);
+      const imported = this.parseTasks(raw);
       if (!imported.length) return;
       const existingIds = new Set(this.boardTasks.map(t => t.id));
       const newOnes = imported.filter(t => !existingIds.has(t.id));
@@ -1437,7 +1694,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     try {
       const raw = localStorage.getItem('hr_pm_imports_v1');
       if (!raw) return;
-      const remaining = (JSON.parse(raw) as BoardTask[]).filter(t => t.id !== taskId);
+      const remaining = this.parseTasks(raw).filter(t => t.id !== taskId);
       localStorage.setItem('hr_pm_imports_v1', JSON.stringify(remaining));
     } catch {}
     this.save();
@@ -1863,8 +2120,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       // ── Toolbar filters ───────────────────────────────────────────────────
       if (this.filterStatus && t.status !== this.filterStatus) return false;
       if (this.filterPriority && t.priority !== this.filterPriority) return false;
-      if (this.filterAssignee && !t.assignee.toLowerCase().includes(this.filterAssignee.toLowerCase())) return false;
-      if (this.searchText && !t.title.toLowerCase().includes(this.searchText.toLowerCase())) return false;
+      if (this.filterAssignee && !(t.assignee || '').toLowerCase().includes(this.filterAssignee.toLowerCase())) return false;
+      if (this.searchText && !(t.title || '').toLowerCase().includes(this.searchText.toLowerCase())) return false;
       return true;
     });
   }
@@ -1897,7 +2154,12 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.save();
   }
 
-  openDetail(task: BoardTask): void { this.selectedTask = task; this.detailPanelVisible = true; this.detailTab = 'overview'; this.newActivityText = ''; }
+  openDetail(task: BoardTask): void {
+    this.selectedTask = task;
+    this.detailPanelVisible = true;
+    this.detailTab = 'overview';
+    this.newActivityText = '';
+  }
   openDetailFromList(task: BoardTask, e: Event): void { e.stopPropagation(); this.openDetail(task); }
   closeDetail(): void { this.selectedTask = null; this.detailPanelVisible = false; this.save(); }
 
@@ -2174,7 +2436,9 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleRow(task: BoardTask): void { task.expanded = !task.expanded; }
+  toggleRow(task: BoardTask): void {
+    task.expanded = !task.expanded;
+  }
 
   ganttColumn(startDate: string, dueDate: string): string {
     const start = new Date(startDate || new Date());
@@ -2212,6 +2476,22 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   trackGanttRow(_: number, row: { task: BoardTask; sub?: SubTask; isChild: boolean }): string {
     return row.isChild ? `${row.task.id}-${row.sub?.id}` : row.task.id;
+  }
+
+  trackGroup(_: number, group: { key: string; tasks: BoardTask[] }): string {
+    return group.key;
+  }
+
+  trackTask(_: number, task: BoardTask): string {
+    return task.id;
+  }
+
+  trackSubtask(_: number, sub: SubTask): string {
+    return sub.id;
+  }
+
+  trackEngagementRow(_: number, row: { task: BoardTask }): string {
+    return row.task.id;
   }
 
   taskProgressDisplay(task: BoardTask): number {
@@ -2348,9 +2628,9 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   todayColumn(): number { return Math.floor((new Date().getTime() - this.ganttStart.getTime()) / 86400000) + 1; }
-  completedSubtasks(task: BoardTask): number { return task.subtasks.filter(s => s.done).length; }
+  completedSubtasks(task: BoardTask): number { return (task.subtasks ?? []).filter(s => s.done).length; }
   priorityClass(p: string): string { return `priority-${p.toLowerCase()}`; }
-  statusClass(s: string): string { return `status-${s.toLowerCase().replace(/\s+/g, '-')}`; }
+  statusClass(s: string): string { return `status-${(s || '').toLowerCase().replace(/\s+/g, '-')}`; }
   formatDate(d: string): string {
     if (!d) return '—';
     try { return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(d)); }
@@ -2403,13 +2683,13 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   getInitials(name: string): string {
-    return name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
+    return (name || '').split(' ').map(p => p[0] || '').join('').toUpperCase().slice(0, 2) || '?';
   }
 
   avatarColor(name: string): string {
     const palette = ['#2563eb','#7c3aed','#0891b2','#16a34a','#d97706','#dc2626','#9333ea','#0d9488'];
     let hash = 0;
-    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    for (let i = 0; i < (name || '').length; i++) hash = (name || '').charCodeAt(i) + ((hash << 5) - hash);
     return palette[Math.abs(hash) % palette.length];
   }
 
