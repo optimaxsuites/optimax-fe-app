@@ -600,3 +600,112 @@ body.tour-active *:not(.tour-highlight):not(app-tour-guide) {
     padding: 0 !important;
   }
 }
+
+// ── Meetings & Appointments — global colour hardening ──────────────
+// These rules live here (not in the component) so they load last
+// in the cascade and are guaranteed to win over PrimeNG / Material.
+.meets-shell {
+  // All text defaults
+  color: #0f172a;
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #0f172a !important;
+    font-size: revert !important; // let browser defaults kick in; we size via component
+  }
+
+  // Custom button resets — prevent PrimeNG / Tailwind from stripping colours
+  button:not([class*="p-"]),
+  a.btn {
+    color: #334155 !important;
+    font-size: 14px !important;
+    line-height: 1.25;
+  }
+
+  .btn-primary,
+  button.btn-primary {
+    color: #ffffff !important;
+    background-color: #0f766e !important;
+    border-color: #0f766e !important;
+  }
+
+  .btn-outline,
+  button.btn-outline {
+    color: #334155 !important;
+    background-color: #ffffff !important;
+    border-color: #dbe4ea !important;
+  }
+
+  .btn-sm,
+  button.btn-sm { font-size: 13px !important; }
+
+  .btn-icon,
+  button.btn-icon { color: #334155 !important; font-size: 14px !important; }
+
+  .btn-icon-sm,
+  button.btn-icon-sm { color: #475569 !important; font-size: 12px !important; }
+
+  // View pills (Day / Week / Month / Agenda)
+  .view-pills button {
+    color: #475569 !important;
+    font-size: 13px !important;
+    &.active { color: #ffffff !important; background-color: #0f766e !important; }
+  }
+
+  // Main tabs (Calendar / Analytics)
+  .main-tabs button {
+    color: #475569 !important;
+    font-size: 14px !important;
+    &.active { color: #0f766e !important; }
+  }
+
+  // Analytics panels — headings and content
+  .a-panel-head h3 { color: #0f172a !important; font-size: 15px !important; }
+  .astat span      { color: #64748b !important; font-size: 11px !important; }
+  .astat strong    { color: #0f172a !important; font-size: 22px !important; }
+  .astat p         { color: #64748b !important; font-size: 12px !important; }
+  .bar-label       { color: #334155 !important; font-size: 12px !important; }
+  .bar-val         { color: #334155 !important; font-size: 12px !important; }
+  .sb-count        { color: #0f172a !important; font-size: 14px !important; }
+  .overdue-owner   { color: #334155 !important; }
+  .overdue-item    { color: #0f172a !important; }
+  .overdue-event   { color: #64748b !important; }
+  .overdue-due     { color: #dc2626 !important; }
+
+  // Badge colours (status / priority / resource / action)
+  .badge { font-size: 12px !important; }
+  .s-draft       { background-color: #f1f5f9 !important; color: #475569 !important; }
+  .s-scheduled   { background-color: #dbeafe !important; color: #1d4ed8 !important; }
+  .s-confirmed   { background-color: #dcfce7 !important; color: #15803d !important; }
+  .s-inprogress  { background-color: #ede9fe !important; color: #6d28d9 !important; }
+  .s-completed   { background-color: #dcfce7 !important; color: #15803d !important; }
+  .s-cancelled   { background-color: #fee2e2 !important; color: #b91c1c !important; }
+  .s-rescheduled { background-color: #fef3c7 !important; color: #92400e !important; }
+  .s-noshow      { background-color: #fee2e2 !important; color: #b91c1c !important; }
+  .s-archived    { background-color: #f1f5f9 !important; color: #64748b !important; }
+  .p-low         { background-color: #dcfce7 !important; color: #15803d !important; }
+  .p-medium      { background-color: #fef3c7 !important; color: #92400e !important; }
+  .p-high        { background-color: #fee2e2 !important; color: #b91c1c !important; }
+  .p-exec        { background-color: #ede9fe !important; color: #5b21b6 !important; }
+  .as-open       { background-color: #f1f5f9 !important; color: #475569 !important; }
+  .as-inprogress { background-color: #ede9fe !important; color: #6d28d9 !important; }
+  .as-done       { background-color: #dcfce7 !important; color: #15803d !important; }
+  .as-overdue    { background-color: #fee2e2 !important; color: #b91c1c !important; }
+  .as-escalated  { background-color: #fdf2f8 !important; color: #9d174d !important; }
+  .res-ok        { background-color: #dcfce7 !important; color: #15803d !important; }
+  .res-booked    { background-color: #dbeafe !important; color: #1d4ed8 !important; }
+  .res-pending   { background-color: #fef3c7 !important; color: #92400e !important; }
+  .res-conflict  { background-color: #fee2e2 !important; color: #b91c1c !important; }
+
+  // Calendar chips
+  .cal-event-chip {
+    color: #ffffff !important;
+    font-size: 12px !important;
+    .chip-time  { font-size: 11px !important; color: rgba(255,255,255,0.85) !important; }
+    .chip-title { font-size: 12px !important; color: #ffffff !important; font-weight: 700 !important; }
+    .chip-kind  { font-size: 10px !important; color: rgba(255,255,255,0.7) !important; }
+  }
+
+  // Calendar slot-click cursor on containers
+  .day-body, .wd-col { cursor: cell; }
+  .cal-event-chip    { cursor: pointer; }
+}
