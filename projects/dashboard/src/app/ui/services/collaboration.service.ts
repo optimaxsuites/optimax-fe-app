@@ -1615,4 +1615,37 @@ export class CollaborationService {
       { headers: this.headers },
     );
   }
+
+  deleteMeetingsAppointmentRecord(id: string | number): Observable<any> {
+    return this.http.delete<any>(
+      `${this.baseUrl}/x/api/v2/ai/meetings-appointments/events/${id}`,
+      { headers: this.headers },
+    );
+  }
+
+  getHrEmployees(size = 300): Observable<any> {
+    return this.http.get<any>(
+      `${this.baseUrl}/x/api/v2/hr/employees?size=${size}`,
+      { headers: this.headers },
+    );
+  }
+
+  sendMeetingInvites(eventId: string, attendees: string[]): Observable<any> {
+    return this.http.post<any>(
+      `${this.baseUrl}/x/api/v2/ai/meetings-appointments/events/${eventId}/invite`,
+      { attendees },
+      { headers: this.headers },
+    );
+  }
+
+  uploadMeetingAttachment(file: File, eventId: string): Observable<any> {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('eventId', eventId);
+    return this.http.post<any>(
+      `${this.baseUrl}/x/api/v2/ai/meetings-appointments/attachments`,
+      fd,
+      { headers: this.multipartHeaders },
+    );
+  }
 }
