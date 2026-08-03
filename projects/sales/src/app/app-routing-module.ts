@@ -40,7 +40,7 @@ import { VendorOnboardingComponent } from './ui/view/vendor-management/vendor-on
 import { VendorEditComponent } from './ui/view/vendor-management/vendor-edit-form/vendor-edit-form.component';
 
 export const routes: Routes = [
-  // Default redirect
+  // Default redirect 
   {
     path: "",
     redirectTo: 'commerce/manage-vendors',
