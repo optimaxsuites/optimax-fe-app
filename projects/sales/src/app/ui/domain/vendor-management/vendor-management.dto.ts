@@ -494,3 +494,395 @@ export function getDocumentStatusColor(status: DocumentStatus): string {
     };
     return map[status] || '#6B7280';
 }
+
+// ============================================================
+// VENDOR INTELLIGENCE (AI INSIGHT & AUTOMATION CENTER) MODELS
+// ============================================================
+
+export enum InsightType {
+    PERFORMANCE_DECLINE = 'PERFORMANCE_DECLINE',
+    FRAUD_ANOMALY = 'FRAUD_ANOMALY',
+    TIER_UPGRADE = 'TIER_UPGRADE',
+    DOCUMENT_EXPIRY = 'DOCUMENT_EXPIRY',
+    RISK_ESCALATION = 'RISK_ESCALATION',
+    OPPORTUNITY = 'OPPORTUNITY'
+}
+
+export enum InsightSeverity {
+    CRITICAL = 'CRITICAL',
+    HIGH = 'HIGH',
+    MEDIUM = 'MEDIUM',
+    LOW = 'LOW'
+}
+
+export enum InsightActionStatus {
+    OPEN = 'OPEN',
+    REVIEWED = 'REVIEWED',
+    ACTIONED = 'ACTIONED',
+    DISMISSED = 'DISMISSED'
+}
+
+export interface SentinelInsightAction {
+    label: string;
+    action: 'review' | 'message' | 'dismiss' | 'investigate' | 'approve' | 'escalate';
+    style: 'primary' | 'secondary' | 'danger';
+}
+
+export interface SentinelInsight {
+    id: string;
+    type: InsightType;
+    severity: InsightSeverity;
+    vendorId: string;
+    vendorName: string;
+    finding: string;
+    reason: string;
+    evidence: string[];
+    suggestedActions: SentinelInsightAction[];
+    status: InsightActionStatus;
+    detectedAt: Date;
+    confidence: number; // 0-100
+}
+
+export type RiskTrajectoryDirection = 'IMPROVING' | 'STABLE' | 'RISING';
+
+export interface RiskTrajectoryPoint {
+    horizonDays: 30 | 60 | 90;
+    projectedRiskScore: number; // 0-100, higher = riskier
+    confidence: number; // 0-100
+}
+
+export interface VendorRiskTrajectory {
+    vendorId: string;
+    vendorName: string;
+    currentRiskLevel: RiskLevel;
+    direction: RiskTrajectoryDirection;
+    confidence: number; // 0-100
+    reason: string;
+    drivers: { label: string; impact: 'positive' | 'negative'; weight: number }[];
+    projections: RiskTrajectoryPoint[];
+    lastUpdated: Date;
+}
+
+export type FraudFlagType = 'BANK_DETAIL_CHANGE' | 'DUPLICATE_INVOICE' | 'SUSPICIOUSLY_LOW_BID' | 'DOCUMENT_METADATA_MISMATCH' | 'INCONSISTENT_INVOICE';
+
+export interface FraudEvidenceItem {
+    label: string;
+    value: string;
+}
+
+export interface FraudFlag {
+    id: string;
+    vendorId: string;
+    vendorName: string;
+    type: FraudFlagType;
+    title: string;
+    description: string;
+    severity: 'LOW' | 'MEDIUM' | 'HIGH';
+    evidence: FraudEvidenceItem[];
+    detectedAt: Date;
+    status: 'PENDING_REVIEW' | 'INVESTIGATING' | 'APPROVED' | 'ESCALATED' | 'CLEARED';
+}
+
+export interface ExtractedField {
+    fieldName: string;
+    extractedValue: string;
+    confidence: number; // 0-100
+    sourceDocument: string;
+    confirmed: boolean;
+    corrected?: boolean;
+}
+
+export interface OnboardingCopilotSession {
+    id: string;
+    vendorId: string;
+    vendorName: string;
+    extractedFields: ExtractedField[];
+    proposedRiskClassification: RiskLevel;
+    riskReasoning: string[];
+    overallExtractionConfidence: number;
+    status: 'IN_PROGRESS' | 'AWAITING_CONFIRMATION' | 'CONFIRMED';
+}
+
+export interface SmartVendorShortlistItem {
+    vendorId: string;
+    vendorName: string;
+    tier: VendorTier;
+    categoryMatchScore: number; // 0-100
+    capacityScore: number; // 0-100
+    costCompetitivenessScore: number; // 0-100
+    overallFitScore: number; // 0-100
+    reason: string;
+}
+
+export interface SentinelQueryResult {
+    query: string;
+    answer: string;
+    matchedVendors: { vendorId: string; vendorName: string; detail: string }[];
+    generatedAt: Date;
+}
+
+export type SentinelAutonomyLevel = 'AUTONOMOUS' | 'STAFF_APPROVAL_REQUIRED';
+
+export interface SentinelGovernanceRule {
+    id: string;
+    actionLabel: string;
+    description: string;
+    autonomyLevel: SentinelAutonomyLevel;
+    editable: boolean;
+}
+
+export interface SentinelActionLogEntry {
+    id: string;
+    timestamp: Date;
+    actionLabel: string;
+    vendorName: string;
+    performedBy: 'Sentinel AI' | string;
+    executionType: 'AUTO' | 'STAFF_APPROVED';
+    dataSummary: string;
+}
+
+export interface SentinelSummaryStats {
+    activeInsights: number;
+    criticalInsights: number;
+    fraudFlagsPending: number;
+    actionsAutoThisWeek: number;
+    actionsStaffApprovedThisWeek: number;
+    averagePredictionConfidence: number;
+}
+
+export function getInsightSeverityColor(severity: InsightSeverity): string {
+    const map: Record<InsightSeverity, string> = {
+        [InsightSeverity.CRITICAL]: '#DC2626',
+        [InsightSeverity.HIGH]: '#F97316',
+        [InsightSeverity.MEDIUM]: '#F59E0B',
+        [InsightSeverity.LOW]: '#2E6276'
+    };
+    return map[severity] || '#6B7280';
+}
+
+export function getRiskTrajectoryColor(direction: RiskTrajectoryDirection): string {
+    const map: Record<RiskTrajectoryDirection, string> = {
+        IMPROVING: '#2EB270',
+        STABLE: '#F59E0B',
+        RISING: '#DC2626'
+    };
+    return map[direction] || '#6B7280';
+}
+
+export function getRiskTrajectoryIcon(direction: RiskTrajectoryDirection): string {
+    const map: Record<RiskTrajectoryDirection, string> = {
+        IMPROVING: 'fa-arrow-trend-down',
+        STABLE: 'fa-arrows-left-right',
+        RISING: 'fa-arrow-trend-up'
+    };
+    return map[direction] || 'fa-minus';
+}
+
+// ============================================================
+// VENDOR RESOLUTION CENTER (SECURE MESSAGING & DISPUTE RESOLUTION)
+// ============================================================
+
+export type LinkedRecordType = 'RFQ' | 'PO' | 'INVOICE' | 'CONTRACT' | 'DOCUMENT' | 'NONE';
+
+export interface LinkedRecord {
+    type: LinkedRecordType;
+    id: string;
+    label: string;
+}
+
+export type ThreadStatus = 'OPEN' | 'AWAITING_VENDOR' | 'AWAITING_STAFF' | 'RESOLVED' | 'ARCHIVED';
+
+export type MessageSender = 'COMPANY' | 'VENDOR';
+
+export interface MessageAttachmentVersion {
+    version: number;
+    fileName: string;
+    uploadedAt: Date;
+    uploadedBy: string;
+}
+
+export interface MessageAttachment {
+    id: string;
+    fileName: string;
+    versions: MessageAttachmentVersion[];
+}
+
+export interface ThreadMessage {
+    id: string;
+    sender: MessageSender;
+    authorName: string;
+    content: string;
+    timestamp: Date;
+    attachments: MessageAttachment[];
+}
+
+export interface InternalNote {
+    id: string;
+    authorName: string;
+    content: string;
+    timestamp: Date;
+}
+
+export interface MessageThread {
+    id: string;
+    vendorId: string;
+    vendorName: string;
+    subject: string;
+    linkedRecord: LinkedRecord;
+    status: ThreadStatus;
+    lastMessageAt: Date;
+    lastMessagePreview: string;
+    unreadCount: number;
+    firstResponseTimeMinutes: number | null;
+    resolutionTimeMinutes: number | null;
+    messages: ThreadMessage[];
+    internalNotes: InternalNote[];
+    hasLinkedDispute: boolean;
+    disputeCaseId?: string;
+}
+
+export type CannedTemplateCategory = 'DOCUMENT_EXPIRY' | 'ONBOARDING_WELCOME' | 'PERFORMANCE_REVIEW' | 'SUSPENSION_NOTICE';
+
+export interface CannedTemplate {
+    id: string;
+    name: string;
+    category: CannedTemplateCategory;
+    content: string;
+}
+
+export type DisputeCategory = 'PAYMENT' | 'QUALITY' | 'DELIVERY_DELAY' | 'CONTRACT_BREACH' | 'FRAUD_SUSPICION' | 'OTHER';
+
+export type DisputeStage = 'OPENED' | 'VENDOR_NOTIFIED' | 'UNDER_REVIEW' | 'MEDIATION' | 'RESOLVED_ESCALATED' | 'CLOSED';
+
+export type DisputeOutcome = 'REFUND_ISSUED' | 'PENALTY_APPLIED' | 'VENDOR_WARNING' | 'NO_FAULT_FOUND' | 'CONTRACT_TERMINATED';
+
+export interface DisputeTimelineEvent {
+    id: string;
+    timestamp: Date;
+    actor: string;
+    action: string;
+    note?: string;
+}
+
+export interface DisputeEvidenceItem {
+    id: string;
+    fileName: string;
+    uploadedBy: string;
+    uploadedAt: Date;
+}
+
+export interface DisputeCase {
+    id: string;
+    caseNumber: string;
+    vendorId: string;
+    vendorName: string;
+    category: DisputeCategory;
+    subject: string;
+    linkedRecord: LinkedRecord;
+    stage: DisputeStage;
+    openedAt: Date;
+    slaDeadline: Date;
+    ownerName: string;
+    evidence: DisputeEvidenceItem[];
+    timeline: DisputeTimelineEvent[];
+    threadId?: string;
+    outcome?: DisputeOutcome;
+    closedAt?: Date;
+}
+
+export interface ResolutionSummaryStats {
+    openConversations: number;
+    openDisputes: number;
+    overdueDisputes: number;
+    avgFirstResponseMinutes: number;
+    avgResolutionMinutes: number;
+}
+
+export interface ResolutionAuditLogEntry {
+    id: string;
+    timestamp: Date;
+    actor: string;
+    action: string;
+    targetType: 'THREAD' | 'DISPUTE' | 'MESSAGE' | 'NOTE';
+    targetLabel: string;
+    details: string;
+}
+
+export function getThreadStatusColor(status: ThreadStatus): string {
+    const map: Record<ThreadStatus, string> = {
+        OPEN: '#2E6276',
+        AWAITING_VENDOR: '#F59E0B',
+        AWAITING_STAFF: '#F97316',
+        RESOLVED: '#2EB270',
+        ARCHIVED: '#8a9aaa'
+    };
+    return map[status] || '#6B7280';
+}
+
+export function getDisputeStageColor(stage: DisputeStage): string {
+    const map: Record<DisputeStage, string> = {
+        OPENED: '#F59E0B',
+        VENDOR_NOTIFIED: '#F97316',
+        UNDER_REVIEW: '#2E6276',
+        MEDIATION: '#8B5CF6',
+        RESOLVED_ESCALATED: '#2EB270',
+        CLOSED: '#8a9aaa'
+    };
+    return map[stage] || '#6B7280';
+}
+
+export function getDisputeStageLabel(stage: DisputeStage): string {
+    const map: Record<DisputeStage, string> = {
+        OPENED: 'Opened',
+        VENDOR_NOTIFIED: 'Vendor Notified',
+        UNDER_REVIEW: 'Under Review',
+        MEDIATION: 'Mediation',
+        RESOLVED_ESCALATED: 'Resolved / Escalated',
+        CLOSED: 'Closed'
+    };
+    return map[stage] || stage;
+}
+
+export function getDisputeCategoryIcon(category: DisputeCategory): string {
+    const map: Record<DisputeCategory, string> = {
+        PAYMENT: 'fa-money-bill-wave',
+        QUALITY: 'fa-magnifying-glass',
+        DELIVERY_DELAY: 'fa-truck-fast',
+        CONTRACT_BREACH: 'fa-file-contract',
+        FRAUD_SUSPICION: 'fa-triangle-exclamation',
+        OTHER: 'fa-circle-question'
+    };
+    return map[category] || 'fa-circle-question';
+}
+
+export function getDisputeOutcomeLabel(outcome: DisputeOutcome): string {
+    const map: Record<DisputeOutcome, string> = {
+        REFUND_ISSUED: 'Refund Issued',
+        PENALTY_APPLIED: 'Penalty Applied',
+        VENDOR_WARNING: 'Vendor Warning',
+        NO_FAULT_FOUND: 'No Fault Found',
+        CONTRACT_TERMINATED: 'Contract Terminated'
+    };
+    return map[outcome] || outcome;
+}
+
+export function getSlaStatus(slaDeadline: Date, stage: DisputeStage): 'on-track' | 'at-risk' | 'overdue' {
+    if (stage === 'CLOSED') return 'on-track';
+    const now = Date.now();
+    const deadline = new Date(slaDeadline).getTime();
+    const hoursRemaining = (deadline - now) / (1000 * 60 * 60);
+    if (hoursRemaining < 0) return 'overdue';
+    if (hoursRemaining < 24) return 'at-risk';
+    return 'on-track';
+}
+
+export function formatDurationMinutes(minutes: number | null): string {
+    if (minutes === null || minutes === undefined) return '—';
+    if (minutes < 60) return `${Math.round(minutes)}m`;
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    if (hours < 24) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    const days = Math.floor(hours / 24);
+    const remHours = hours % 24;
+    return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+}

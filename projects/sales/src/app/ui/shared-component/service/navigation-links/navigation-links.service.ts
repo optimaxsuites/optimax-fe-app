@@ -48,7 +48,7 @@ export class NavigationLinksService {
 		this.links["VMLink"] = "/manage-vendors/" + uuidV4();
 		this.links["deliveriesLink"] = "/admin/sales/deliveries/" + uuidV4();
 		this.links["paymentsLink"] = "/admin/sales/payments/" + uuidV4();
-		
+
 		//  resources ================================================================================================================
 		this.links["posLink"] = "/admin/pos/" + uuidV4();
 		this.links["crmLink"] = "/admin/crm/" + uuidV4();

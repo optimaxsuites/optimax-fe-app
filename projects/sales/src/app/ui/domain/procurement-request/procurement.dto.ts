@@ -244,6 +244,8 @@ export interface ProcurementRequest {
   // LPO & Invoice references
   lpoId?: string;                  // Reference to the ProcurementLpo issued for this request
   invoiceId?: string;              // Reference to the ProcurementInvoice received for this request
+  deliveryDeadline?: Date;         // Delivery deadline
+  deliveryLocation?: string;       // Delivery location
 }
 
 export interface RequestFilters {

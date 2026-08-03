@@ -128,6 +128,8 @@ import { VendorManagementListComponent } from './ui/view/vendor-management/vendo
 import { VendorManagementDetailComponent } from './ui/view/vendor-management/vendor-management-detail/vendor-management-detail.component';
 import { VendorOnboardingComponent } from './ui/view/vendor-management/vendor-onboarding/vendor-onboarding.component';
 import { VendorEditComponent } from './ui/view/vendor-management/vendor-edit-form/vendor-edit-form.component';
+import { VendorAiIntelligenceComponent } from './ui/view/vendor-management/vendor-ai-intelligence/vendor-ai-intelligence.component';
+import { VendorResolutionCenterComponent } from './ui/view/vendor-management/vendor-resolution-center/vendor-resolution-center.component';
 
 @NgModule({
   declarations: [
@@ -176,6 +178,8 @@ import { VendorEditComponent } from './ui/view/vendor-management/vendor-edit-for
     VendorManagementDetailComponent,
     VendorOnboardingComponent,        // <- ADD THIS
     VendorEditComponent,
+    VendorAiIntelligenceComponent,
+    VendorResolutionCenterComponent,
   ],
   imports: [
     // BrowserModule,

@@ -41,40 +41,40 @@ import { VendorEditComponent } from './ui/view/vendor-management/vendor-edit-for
 
 export const routes: Routes = [
   // Default redirect
-  // {
-  //   path: "",
-  //   redirectTo: 'manage-vendors',
-  //   pathMatch: 'full'
-  // },
   {
     path: "",
-    redirectTo: 'sales-hub',
+    redirectTo: 'commerce/manage-vendors',
     pathMatch: 'full'
   },
+  // {
+  //   path: "",
+  //   redirectTo: 'sales-hub',
+  //   pathMatch: 'full'
+  // },
 
   // --- Vendor Management ---
   {
-    path: 'manage-vendors',
+    path: 'commerce/manage-vendors',
     component: VendorManagementComponent
   },
   {
-    path: 'manage-vendors/:uuid',
+    path: 'commerce/manage-vendors/onboarding',
+    component: VendorOnboardingComponent
+  },
+  {
+    path: 'commerce/manage-vendors/onboarding/:uuid',
+    component: VendorOnboardingComponent
+  },
+  {
+    path: 'commerce/manage-vendors/:uuid',
     component: VendorManagementComponent
   },
   {
-    path: 'manage-vendors/onboarding',
-    component: VendorOnboardingComponent
-  },
-  {
-    path: 'manage-vendors/onboarding/:uuid',
-    component: VendorOnboardingComponent
-  },
-  {
-    path: 'manage-vendors/:id/profile',
+    path: 'commerce/manage-vendors/:id/profile',
     component: VendorManagementDetailComponent
   },
   {
-    path: 'manage-vendors/:id/edit',
+    path: 'commerce/manage-vendors/:id/edit',
     component: VendorEditComponent
   },
 
