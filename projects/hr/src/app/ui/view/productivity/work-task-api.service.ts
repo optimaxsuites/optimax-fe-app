@@ -73,6 +73,7 @@ export interface WorkTaskFull {
   progress: number;
   tags?: string;
   createdByUserId?: number;
+  sprint?: string;
   closedReason?: string;
   createdAt: string;
   updatedAt: string;
@@ -93,6 +94,7 @@ export interface WorkTaskDTO {
   weight?: number;
   progress?: number;
   tags?: string;
+  sprint?: string;
   createdByUserId?: number;
   closedReason?: string;
 }

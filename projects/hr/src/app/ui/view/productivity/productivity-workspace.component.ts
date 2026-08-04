@@ -95,6 +95,7 @@ export interface BoardTask {
   // Closed flag — task set to "Closed" gets archived automatically
   closed?: boolean;
   closedReason?: string;
+  sprint?: string;
   // API-sync fields
   apiId?: number;
   assigneeEmployeeId?: number;
@@ -318,6 +319,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   newActivityText = '';
   subtaskInput = '';
   showAddTask = false;
+  taskSubmitAttempted = false;
   newTask: Partial<BoardTask> = {};
   newTaskSubtasks: Array<{
     title: string;
@@ -2040,6 +2042,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       weight: task.weight,
       progress: task.progress,
       tags: task.tags?.join(','),
+      sprint: task.sprint || undefined,
       createdByUserId: task.createdByUserId || (userId || undefined),
     };
     if (task.apiId) {
@@ -2052,7 +2055,30 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     } else {
       this.subscription.add(
         this.workTaskApi.createTask(dto).subscribe({
-          next: (created) => { task.apiId = created.id; this.save(); this.sendTaskCreatedEmails(created, task); },
+          next: (created) => {
+            task.apiId = created.id;
+            this.save();
+            this.sendTaskCreatedEmails(created, task);
+            (task.subtasks || []).filter(s => !s.subtaskId).forEach(sub => {
+              const assigneeEmp = this.allEmployees.find(e => e.fullName === sub.assignee);
+              const subDto: SubtaskDTO = {
+                workTaskId: created.id,
+                title: sub.title,
+                done: sub.done,
+                assigneeEmployeeId: assigneeEmp ? Number(assigneeEmp.id) : undefined,
+                status: sub.status === 'ip' ? 'IN_PROGRESS' : sub.status === 'blocked' ? 'BLOCKED' : 'OPEN',
+                startDate: sub.startDate,
+                dueDate: sub.dueDate,
+                dependency: sub.dependency,
+              };
+              this.subscription.add(
+                this.workTaskApi.createSubtask(subDto).subscribe({
+                  next: (createdSub) => { sub.subtaskId = createdSub.id; this.save(); },
+                  error: () => {},
+                })
+              );
+            });
+          },
           error: () => this.save(),
         })
       );
@@ -2074,8 +2100,9 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       id: `hr${Date.now()}`, title: '', description: '', assignee: '', assignees: [], team: '',
       status: 'To Do', priority: 'Medium', startDate: new Date().toISOString().slice(0, 10),
       dueDate: '', weight: 10, progress: 0, tags: [], subtasks: [], activity: [],
-      cost: undefined, costCurrency: 'NGN',
+      cost: undefined, costCurrency: 'NGN', sprint: '',
     };
+    this.taskSubmitAttempted = false;
     this.newTaskSubtasks = [];
   }
 
@@ -2343,8 +2370,11 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   addTask(): void {
+    this.taskSubmitAttempted = true;
     const t = this.newTask as BoardTask;
-    if (!t.title?.trim()) return;
+    const descText = (t.description || '').replace(/<[^>]*>/g, '').trim();
+    if (!t.title?.trim() || !descText || !t.assignees?.length || !t.team?.trim()
+        || !t.startDate || !t.dueDate || t.weight == null || !t.sprint?.trim()) return;
     t.id = `hr${Date.now()}`;
     t.followUps = t.followUps ?? [];
     // Primary assignee is first in the multi-select list

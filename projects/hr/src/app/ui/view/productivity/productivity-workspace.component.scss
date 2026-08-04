@@ -2531,6 +2531,10 @@
     outline: none;
   }
 
+  &.ng-select-error ::ng-deep .ng-select-container {
+    border-color: #dc2626;
+  }
+
   ::ng-deep .ng-dropdown-panel {
     border: 1.5px solid var(--border);
     border-radius: 7px;

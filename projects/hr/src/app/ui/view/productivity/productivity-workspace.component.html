@@ -1955,13 +1955,16 @@
     <div class="modal-body">
       <div class="form-row">
         <label>Title *</label>
-        <input type="text" [(ngModel)]="newTask.title" placeholder="Task title">
+        <input type="text" [(ngModel)]="newTask.title" placeholder="Task title"
+          [style.border-color]="taskSubmitAttempted && !newTask.title?.trim() ? '#dc2626' : ''">
       </div>
 
       <!-- Rich text description editor (Quill via PrimeNG EditorModule) -->
       <div class="form-row">
-        <label>Description</label>
-        <div class="task-editor-wrap">
+        <label>Description *</label>
+        <div class="task-editor-wrap"
+          [style.outline]="taskSubmitAttempted && !(newTask.description || '').replace(/<[^>]*>/g,'').trim() ? '1.5px solid #dc2626' : 'none'"
+          [style.border-radius]="'4px'">
           <p-editor [(ngModel)]="newTask.description"
                     [modules]="editorModules"
                     placeholder="Describe the task — use formatting, bullet lists, links and tables…"
@@ -1972,12 +1975,13 @@
 
       <!-- Multi-assignee + supervisor row -->
       <div class="form-row">
-        <label>Assignees
+        <label>Assignees *
           <span style="font-size:11px;color:#9ca3af;font-weight:400"> — select one or more</span>
           <span *ngIf="employeesLoading" class="field-loading-hint">Loading…</span>
         </label>
         <ng-select
           class="task-ng-select"
+          [class.ng-select-error]="taskSubmitAttempted && !newTask.assignees?.length"
           [items]="allEmployees"
           bindLabel="fullName"
           bindValue="fullName"
@@ -1994,9 +1998,10 @@
         </ng-select>
       </div>
       <div class="form-row">
-        <label>Supervisor / Team</label>
+        <label>Supervisor / Team *</label>
         <ng-select
           class="task-ng-select"
+          [class.ng-select-error]="taskSubmitAttempted && !newTask.team?.trim()"
           [items]="allEmployees"
           bindLabel="fullName"
           bindValue="fullName"
@@ -2013,13 +2018,13 @@
       </div>
       <div class="form-2col">
         <div class="form-row">
-          <label>Status</label>
+          <label>Status *</label>
           <select [(ngModel)]="newTask.status">
             <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
           </select>
         </div>
         <div class="form-row">
-          <label>Priority</label>
+          <label>Priority *</label>
           <select [(ngModel)]="newTask.priority">
             <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
           </select>
@@ -2027,28 +2032,36 @@
       </div>
       <div class="form-2col">
         <div class="form-row">
-          <label>Start Date</label>
-          <input type="date" [(ngModel)]="newTask.startDate">
+          <label>Start Date *</label>
+          <input type="date" [(ngModel)]="newTask.startDate"
+            [style.border-color]="taskSubmitAttempted && !newTask.startDate ? '#dc2626' : ''">
         </div>
         <div class="form-row">
-          <label>Due Date</label>
-          <input type="date" [(ngModel)]="newTask.dueDate">
+          <label>Due Date *</label>
+          <input type="date" [(ngModel)]="newTask.dueDate"
+            [style.border-color]="taskSubmitAttempted && !newTask.dueDate ? '#dc2626' : ''">
         </div>
       </div>
       <div class="form-2col">
         <div class="form-row">
-          <label>Weight (%)</label>
-          <input type="number" [(ngModel)]="newTask.weight" min="0" max="100">
+          <label>Weight (%) *</label>
+          <input type="number" [(ngModel)]="newTask.weight" min="0" max="100"
+            [style.border-color]="taskSubmitAttempted && newTask.weight == null ? '#dc2626' : ''">
         </div>
         <div class="form-row">
-          <label>Est. Cost <span style="font-size:10px;color:#9ca3af">(optional)</span></label>
-          <div style="display:flex;gap:4px">
-            <select style="width:72px" [(ngModel)]="newTask.costCurrency">
-              <option value="NGN">NGN</option><option value="USD">USD</option>
-              <option value="GBP">GBP</option><option value="EUR">EUR</option>
-            </select>
-            <input type="number" min="0" step="any" [(ngModel)]="newTask.cost" placeholder="0.00" style="flex:1">
-          </div>
+          <label>Sprint *</label>
+          <input type="text" [(ngModel)]="newTask.sprint" placeholder="e.g. Sprint 1, Q3-W2…"
+            [style.border-color]="taskSubmitAttempted && !newTask.sprint?.trim() ? '#dc2626' : ''">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Est. Cost <span style="font-size:10px;color:#9ca3af">(optional)</span></label>
+        <div style="display:flex;gap:4px">
+          <select style="width:72px" [(ngModel)]="newTask.costCurrency">
+            <option value="NGN">NGN</option><option value="USD">USD</option>
+            <option value="GBP">GBP</option><option value="EUR">EUR</option>
+          </select>
+          <input type="number" min="0" step="any" [(ngModel)]="newTask.cost" placeholder="0.00" style="flex:1">
         </div>
       </div>
       <!-- Subtasks -->
@@ -2108,7 +2121,8 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-ghost" (click)="showAddTask = false">Cancel</button>
+      <span *ngIf="taskSubmitAttempted" style="font-size:12px;color:#dc2626;flex:1">Please fill in all required fields.</span>
+      <button class="btn-ghost" (click)="showAddTask = false; initNewTask()">Cancel</button>
       <button class="btn-primary" (click)="addTask()"><i class="fas fa-plus"></i> Create Task</button>
     </div>
   </div>
