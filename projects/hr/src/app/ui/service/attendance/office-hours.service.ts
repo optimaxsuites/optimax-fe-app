@@ -18,14 +18,42 @@ const DEFAULT_OFFICE_HOURS: OfficeHours = {
 @Injectable({ providedIn: 'root' })
 export class OfficeHoursService {
   private officeHoursSubject = new BehaviorSubject<OfficeHours>(
-    this.loadOfficeHours()
+    DEFAULT_OFFICE_HOURS
   );
 
   officeHours$ = this.officeHoursSubject.asObservable();
 
   public officeHoursId: number | null = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    this.initializeOfficeHours();
+  }
+
+  private initializeOfficeHours(): void {
+    this.fetchCurrentOfficeHours().subscribe({
+      next: (hours) => {
+        const normalized = this.normalizeOfficeHours(hours);
+        this.officeHoursSubject.next(normalized);
+        localStorage.setItem('officeHours', JSON.stringify(normalized));
+      },
+      error: () => {
+        const saved = localStorage.getItem('officeHours');
+        if (saved) {
+          const normalized = this.normalizeOfficeHours(JSON.parse(saved));
+          this.officeHoursSubject.next(normalized);
+        }
+      }
+    });
+  }
+
+  private normalizeOfficeHours(data: any): OfficeHours {
+    return {
+      openingTime: data?.openingTime ?? data?.opening_time ?? DEFAULT_OFFICE_HOURS.openingTime,
+      closingTime: data?.closingTime ?? data?.closing_time ?? DEFAULT_OFFICE_HOURS.closingTime,
+      absentTime: data?.absentTime ?? data?.absent_time ?? DEFAULT_OFFICE_HOURS.absentTime,
+      latenessGracePeriod: data?.latenessGracePeriod ?? data?.lateness_grace_period ?? DEFAULT_OFFICE_HOURS.latenessGracePeriod
+    };
+  }
 
   getOfficeHours(): OfficeHours {
     return this.officeHoursSubject.value;
@@ -61,7 +89,7 @@ export class OfficeHoursService {
 
         this.officeHoursSubject.next(hours);
       },
-      error: (err) => { console.error('Error updating office hours:', err); }
+      error: (err) => { /* Error updating office hours */ }
     });
 
   }
@@ -77,7 +105,7 @@ export class OfficeHoursService {
 
         this.officeHoursSubject.next(hours);
       },
-      error: (err) => { console.error('Error updating office hours:', err); }
+      error: (err) => { /* Error updating office hours */ }
     });
 
   }
@@ -99,7 +127,9 @@ export class OfficeHoursService {
   }
 
   isWithinOfficeHours(current: Date): boolean {
-  const { openingTime, closingTime } = this.getOfficeHours();
+  const hours = this.getOfficeHours();
+  const openingTime = hours?.openingTime ?? DEFAULT_OFFICE_HOURS.openingTime;
+  const closingTime = hours?.closingTime ?? DEFAULT_OFFICE_HOURS.closingTime;
 
   const [openHour, openMin] = openingTime.split(':').map(Number);
   const [closeHour, closeMin] = closingTime.split(':').map(Number);
@@ -114,7 +144,8 @@ export class OfficeHoursService {
 }
  
  isAfterOpeningTime(current: Date): boolean {
-  const { openingTime } = this.getOfficeHours();
+  const hours = this.getOfficeHours();
+  const openingTime = hours?.openingTime ?? DEFAULT_OFFICE_HOURS.openingTime;
 
   const [openHour, openMin] = openingTime.split(':').map(Number);
 

@@ -130,6 +130,11 @@ import { VendorOnboardingComponent } from './ui/view/vendor-management/vendor-on
 import { VendorEditComponent } from './ui/view/vendor-management/vendor-edit-form/vendor-edit-form.component';
 import { VendorAiIntelligenceComponent } from './ui/view/vendor-management/vendor-ai-intelligence/vendor-ai-intelligence.component';
 import { VendorResolutionCenterComponent } from './ui/view/vendor-management/vendor-resolution-center/vendor-resolution-center.component';
+import { OverviewComponent } from './ui/view/vendor-management/vendor-management-detail/overview/overview.component';
+import { VendorPerformanceComponent } from './ui/view/vendor-management/vendor-management-detail/performance/performance.component';
+import { RiskComponent } from './ui/view/vendor-management/vendor-management-detail/risk/risk.component';
+import { VendorDocumentsComponent } from './ui/view/vendor-management/vendor-management-detail/documents/documents.component';
+import { ActivityComponent } from './ui/view/vendor-management/vendor-management-detail/activity/activity.component';
 
 @NgModule({
   declarations: [
@@ -176,10 +181,15 @@ import { VendorResolutionCenterComponent } from './ui/view/vendor-management/ven
     VendorManagementDashboardComponent,
     VendorManagementListComponent,
     VendorManagementDetailComponent,
-    VendorOnboardingComponent,        // <- ADD THIS
+    VendorOnboardingComponent,        
     VendorEditComponent,
     VendorAiIntelligenceComponent,
     VendorResolutionCenterComponent,
+    OverviewComponent,
+    VendorPerformanceComponent,
+    RiskComponent,
+    VendorDocumentsComponent,
+    ActivityComponent,
   ],
   imports: [
     // BrowserModule,

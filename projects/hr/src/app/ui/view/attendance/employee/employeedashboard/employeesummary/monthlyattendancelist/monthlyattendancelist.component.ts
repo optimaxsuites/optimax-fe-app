@@ -2,6 +2,7 @@ import { Component, OnInit, EventEmitter, Output } from '@angular/core';
 import { AttendancetableService } from '../../../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../../../domain/attendance/attendancetable.dto';
 import { UserSessionService } from '../../../../../../service/attendance/user-session.service';
+import { EmployeeService } from '../../../../../../service/employee.service';
 
 @Component({
   selector: 'app-monthlyattendancelist',
@@ -17,8 +18,10 @@ export class MonthlyattendancelistComponent implements OnInit {
 
   @Output() filteredDataChange = new EventEmitter<AttendanceTableRecord[]>();
 
-  constructor(private attendancetableService: AttendancetableService,
-    private userSession: UserSessionService
+  constructor(
+    private attendancetableService: AttendancetableService,
+    private userSession: UserSessionService,
+    private employeeService: EmployeeService
   ) {}
 
   ngOnInit(): void {
@@ -34,50 +37,21 @@ export class MonthlyattendancelistComponent implements OnInit {
   loadAttendance() {
     this.isLoading = true;
 
-    const currentUser = this.userSession.getCurrentUser();
+    // Use EmployeeService which has better fallback mechanisms
+    this.employeeService.getEmployeeIdForCurrentUser().subscribe({
+      next: (hrEmployeeId) => {
+        console.log('HR employee ID resolved:', hrEmployeeId);
 
-    console.log('getCurrentUser resolved:', currentUser);
+        this.attendancetableService.fetchByEmployee(Number(hrEmployeeId));
 
-    if (!currentUser?.userId) {
-      console.error('No logged in user');
-      this.isLoading = false;
-      return;
-    }
+        this.attendancetableService.attendance$.subscribe(data => {
+          this.attendanceData = data.filter(
+            r => Number(r.employeeId) === Number(hrEmployeeId)
+          );
 
-    this.attendancetableService
-      .resolveHrEmployeeId(Number(currentUser.userId))
-
-    /*const username = sessionStorage.getItem('userid');
-
-    if (!username) return;
-
-    this.attendanceService
-      .resolveHrEmployeeId(username)*/
-      .subscribe({
-        next: (result) => {
-
-        if (!result) {
-          console.error('HR employee not found');
+          this.applyMonthFilter();
           this.isLoading = false;
-          return;
-        }
-
-        const hrEmployeeId = result.id;
-
-        this.attendancetableService.fetchByEmployee(
-          Number(hrEmployeeId)
-        );
-
-        this.attendancetableService.attendance$
-          .subscribe(data => {
-
-            this.attendanceData = data.filter(
-              r => Number(r.employeeId) === Number(hrEmployeeId)
-            );
-
-            this.applyMonthFilter();
-            this.isLoading = false;
-          });
+        });
         },
         error: (err) => {
           console.error('Failed to resolve employee', err);

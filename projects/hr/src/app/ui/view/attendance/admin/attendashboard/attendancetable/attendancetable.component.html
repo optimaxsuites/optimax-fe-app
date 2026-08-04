@@ -3,193 +3,245 @@
     <div class="attendance-card">
       <!--<app-attendancesummary [data]="filteredAttendance"></app-attendancesummary>-->
       <app-attendancefilter (filtersChange)="onFiltersChange($event)"></app-attendancefilter>
-        <table class="attendance-table">
-  <thead> 
-    
-    <tr>
-      <th (click)="sortTable('id')">ID <span *ngIf="sortColumn === 'id'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
-<th (click)="sortTable('employee')">Employee <span *ngIf="sortColumn === 'employee'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
-<th (click)="sortTable('department')">Department <span *ngIf="sortColumn === 'department'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
-<th (click)="sortTable('date')">Date <span *ngIf="sortColumn === 'date'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
-<th (click)="sortTable('checkIn')">In <span *ngIf="sortColumn === 'checkIn'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
-<th (click)="sortTable('checkOut')">Out <span *ngIf="sortColumn === 'checkOut'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
-<th>In Location</th>
-<th>Out Location</th>
-<th (click)="sortTable('status')">Status <span *ngIf="sortColumn === 'status'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
-<th (click)="sortTable('hours')">Hours <span *ngIf="sortColumn === 'hours'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
-<th>Actions</th>
-<th (click)="sortTable('overriddenBy')">Modified By <span *ngIf="sortColumn === 'overriddenBy'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
-    </tr>
-  </thead>
- 
-  <tbody>
-  <tr *ngFor="let record of filteredAttendance">
-    <td>{{ record.id }}</td>
-    <td>{{ record.employee }}</td>
-    <td>{{ record.department }}</td>
-    <td>{{ record.date || '-'}}</td>
-    <td>{{ record.checkIn || '-' }}</td>
-    <!--<td>{{ record.checkIn || '-' }}</td>-->
-    <td>{{ record.checkOut || '-' }}</td>
-    <!--<td>{{ record.checkOut || '-' }}</td>-->
 
-    <td>
-  <span
-    *ngIf="record.checkInLocation; else noLocation"
-    class="location-link"
-    [class.active]="selectedLocation?.recordId === record.id && selectedLocation?.type === 'in'"
-    (click)="openLocationMap(record, 'in')">
-    <i class="fa-solid fa-location-dot"></i>
-    {{ record.checkInLocation.address | slice:0:30 }}...
-  </span>
-  <ng-template #noLocation>-</ng-template>
-</td>
-
-    <td>
-  <span
-    *ngIf="record.checkOutLocation; else noOutLocation"
-    class="location-link"
-    [class.active]="selectedLocation?.recordId === record.id && selectedLocation?.type === 'out'"
-    (click)="openLocationMap(record, 'out')">
-    <i class="fa-solid fa-location-dot"></i>
-    {{ record.checkOutLocation.address | slice:0:30 }}...
-  </span>
-  <ng-template #noOutLocation>-</ng-template>
-</td>
-
-    <td>
-      <span class="status"
-            [ngClass]="{
-              'present': record.status === 'PRESENT',
-              'late': record.status === 'LATE',
-              'absent': record.status === 'ABSENT'
-            }">
-        {{ record.status }}
-      </span>
-    </td>
-
-    <td>{{ record.hours }}</td>
-
-    <td class="actions">
-    <!--<button class="view-btn">View</button> (click)=""-->
-    <button
-      *ngIf="
-      isToday(record.date) && 
-      record.status === 'ABSENT' &&
-      !record.overrideOpen &&
-      !isOfficeClosed() 
-      "
-      (click)="openAttendance(record)">
-      Open
-    </button>
-    <span
-      *ngIf="isToday(record.date) &&
-        record.status === 'ABSENT' &&
-        record.overrideOpen"
-      class="opened-label">
-      Opened
-    </span>
-<button class="modify-btn" (click)="openModifyForm(record)">
-  Modify
-</button>
-    </td>
-    <td>
-      {{ record.overriddenBy?.adminName || '-'}} <span><br></span>
-      <span *ngIf="record.overrideReason">Reason for modification: </span>{{ record.overrideReason || '-' }}
-    </td>
-  </tr>
-
-  <tr *ngIf="filteredAttendance.length === 0">
-    <td colspan="12" class="empty-state">
-      <div class="empty-content">
-        <p class="empty-title">
-          <i class="fa-solid fa-clipboard-list"></i>
-          No attendance records found</p>
-        <p class="empty-subtitle">Try adjusting your filters or selecting a different date range</p>
+      <!-- Loading State -->
+      <div class="loading-skeleton" *ngIf="isLoading">
+        <div class="skeleton-header"></div>
+        <div class="skeleton-rows">
+          <div class="skeleton-row" *ngFor="let i of [1, 2, 3, 4, 5]"></div>
+        </div>
       </div>
-    </td>
-  </tr>
-  </tbody>
-</table>
 
-<!-- Backdrop -->
-<div class="modal-backdrop" *ngIf="editingRecord"></div>
+      <!-- Record Count (shown only when not loading) -->
+      <div class="record-count" *ngIf="!isLoading">
+        <h3>Attendance Records</h3>
+        <span class="count-badge">Showing {{ filteredAttendance.length }} of {{ attendance.length }}</span>
+      </div>
 
-<!-- Modal -->
-<div class="modal-card" *ngIf="editingRecord">
+      <!-- Using Shared App Table Component -->
+      <app-table
+        [rows]="filteredAttendance"
+        [columns]="tableColumns"
+        [actions]="tableActions"
+        emptyMessage="📭 No attendance records found"
+        striped
+        (actionClick)="onTableActionClick($event)">
+      </app-table>
+      <div *ngIf="!isLoading && filteredAttendance.length === 0" style="padding: 2rem; text-align: center; color: #999; background: white; border-radius: 8px;">
+        📭 No attendance records found
+      </div>
 
-  <div class="modal-header">
-    <h3>Modify Attendance</h3>
-    <button class="close-btn" (click)="cancelEdit()">×</button>
-  </div>
-    <div *ngIf="editingRecord as record" class="employee-info">
-      {{ record.employee }} — {{ record.date }}
-    </div>
 
+      <!-- Location Map Modal -->
+      <div class="modal-backdrop" *ngIf="mapModalOpen"></div>
+      <div class="map-modal-card" *ngIf="mapModalOpen">
+        <div class="modal-header">
+          <h3>{{ mapAddress }}</h3>
+          <button class="close-btn" (click)="closeMap()">×</button>
+        </div>
+        <div id="leaflet-map" class="leaflet-map"></div>
+        <div class="modal-footer" *ngIf="mapDistance">
+          <p><strong>Distance from office:</strong> {{ mapDistance }} km</p>
+        </div>
+      </div>
 
-  <div class="form-group">
-    <label>Status</label>
-    <select [(ngModel)]="editStatus">
-      <option value="PRESENT">Present</option>
-      <option value="LATE">Late</option>
-      <option value="ABSENT">Absent</option>
-      <option value="ON_LEAVE">On Leave</option>
-    </select>
-  </div>
+      <!-- Modify Modal -->
+      <div class="modal-backdrop" *ngIf="editingRecord" (click)="cancelEdit()"></div>
+      <div class="modal-card" *ngIf="editingRecord">
+        <div class="modal-header">
+          <h3>Modify Attendance</h3>
+          <button class="close-btn" (click)="cancelEdit()" title="Press Escape to close">×</button>
+        </div>
+        <div *ngIf="editingRecord as record" class="employee-info">
+          {{ record.employee }} — {{ record.date }}
+        </div>
 
-  <div class="form-group">
-    <label>Check-In Time</label>
-    <input type="time" [(ngModel)]="editCheckIn">
-  </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select [(ngModel)]="editStatus">
+            <option value="PRESENT">Present</option>
+            <option value="LATE">Late</option>
+            <option value="ABSENT">Absent</option>
+            <option value="ON_LEAVE">On Leave</option>
+          </select>
+        </div>
 
-  <div class="form-group">
-    <label>Reason for Modification</label>
-    <textarea
-      rows="3"
-      [(ngModel)]="editReason"
-      required
-      #reasonField="ngModel">
-    </textarea>
+        <div class="form-group">
+          <label>Clock In Time</label>
+          <input type="time" [(ngModel)]="editCheckIn">
+        </div>
 
-    <span class="error"
-      *ngIf="reasonField.invalid && reasonField.touched">
-      Reason for modification is required.
-    </span>
-  </div>
+        <div class="form-group">
+          <label>Clock Out Time</label>
+          <input type="time" [(ngModel)]="editCheckOut">
+        </div>
 
-  <div class="actions">
-    <button class="cancel-btn" (click)="cancelEdit()">Cancel</button>
+        <div class="form-group">
+          <label>Reason for Modification</label>
+          <textarea
+            rows="3"
+            [(ngModel)]="editReason"
+            required
+            placeholder="Explain why this record needs to be modified"></textarea>
+        </div>
 
-    <button
-      class="submit-btn"
-      (click)="saveModification()"
-      [disabled]="!editReason.trim()">
-      Save Changes
-    </button>
-  </div>
+        <div class="form-actions">
+          <button class="btn-cancel" (click)="cancelEdit()">Cancel</button>
+          <button class="btn-save" (click)="saveModification()">Save Changes</button>
+        </div>
+      </div>
 
-</div>
+      <!-- Details Drawer -->
+      <div class="modal-backdrop" *ngIf="detailsRecord" (click)="closeDetails()"></div>
+      <div class="details-drawer" *ngIf="detailsRecord">
+        <div class="drawer-header">
+          <h3>Attendance Details</h3>
+          <button class="close-btn" (click)="closeDetails()">×</button>
+        </div>
+        <div class="drawer-content" *ngIf="detailsRecord as record">
+          <div class="detail-section">
+            <h4>Employee Information</h4>
+            <div class="detail-row">
+              <span class="label">ID:</span>
+              <span class="value">{{ record.id }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Employee:</span>
+              <span class="value">{{ record.employee }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Department:</span>
+              <span class="value">{{ record.department }}</span>
+            </div>
+          </div>
 
-<!-- Map Backdrop -->
-<div class="modal-backdrop" *ngIf="mapModalOpen" (click)="closeMap()"></div>
+          <div class="detail-section">
+            <h4>Clock Times</h4>
+            <div class="detail-row">
+              <span class="label">Clock In:</span>
+              <span class="value">{{ record.checkIn | timeFormat }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Clock Out:</span>
+              <span class="value">{{ record.checkOut | timeFormat }}</span>
+            </div>
+          </div>
 
-<!-- Map Modal -->
-<div class="modal-card map-modal-card" *ngIf="mapModalOpen">
-  <div class="modal-header">
-    <h3>
-      <i class="fa-solid fa-location-dot"></i>
-      Location</h3>
-    <button class="close-btn" (click)="closeMap()">×</button>
-  </div>
+          <div class="detail-section">
+            <h4>Locations</h4>
+            <div class="detail-row">
+              <span class="label">Check-in:</span>
+              <span class="value">
+                <span *ngIf="record.checkInLocation; else noCheckInLoc">
+                  <i class="fa-solid fa-location-dot"></i> {{ record.checkInLocation.address }}
+                </span>
+                <ng-template #noCheckInLoc>-</ng-template>
+              </span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Check-out:</span>
+              <span class="value">
+                <span *ngIf="record.checkOutLocation; else noCheckOutLoc">
+                  <i class="fa-solid fa-location-dot"></i> {{ record.checkOutLocation.address }}
+                </span>
+                <ng-template #noCheckOutLoc>-</ng-template>
+              </span>
+            </div>
+          </div>
 
-  <p class="map-address">{{ mapAddress }}</p>
-  <p class="map-distance" *ngIf="mapDistance != null">
-    <i class="fa-solid fa-building"></i>
-    {{ mapDistance }} km from company
-  </p>
+          <div class="detail-section">
+            <h4>Status</h4>
+            <div class="detail-row">
+              <span class="label">Status:</span>
+              <span class="value">
+                <span class="status" [ngClass]="'status-' + record.status.toLowerCase()">
+                  {{ record.status }}
+                </span>
+              </span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Hours:</span>
+              <span class="value">{{ record.hours }}h</span>
+            </div>
+          </div>
 
-  <div id="leaflet-map" class="leaflet-map"></div>
-</div>
+          <div class="detail-section" *ngIf="record.overriddenBy || record.overrideReason">
+            <h4>Modifications</h4>
+            <div class="detail-row">
+              <span class="label">Modified By:</span>
+              <span class="value">{{ record.overriddenBy?.adminName || '-' }}</span>
+            </div>
+            <div class="detail-row" *ngIf="record.overrideReason">
+              <span class="label">Reason:</span>
+              <span class="value">{{ record.overrideReason }}</span>
+            </div>
+          </div>
 
+          <div class="detail-section" *ngIf="getFlagIndicator(record.id)">
+            <h4>Flags</h4>
+            <div class="detail-row">
+              <span class="label">Flag:</span>
+              <span class="value">
+                <span class="flag-badge" [style.background-color]="(getFlagIndicator(record.id))?.color">
+                  {{ getFlagIndicator(record.id)?.icon }} {{ getFlagIndicator(record.id)?.label }}
+                </span>
+              </span>
+            </div>
+            <div class="detail-row" *ngIf="hasPendingApproval(record.id)">
+              <span class="label">Status:</span>
+              <span class="value">Pending Approval</span>
+            </div>
+            <div class="detail-row" *ngIf="!hasPendingApproval(record.id)">
+              <span class="label">Status:</span>
+              <span class="value">{{ modificationFlags.get(record.id)?.approvalStatus | uppercase }}</span>
+            </div>
+          </div>
+
+          <!-- Correction Request Section -->
+          <div class="detail-section" *ngIf="record.correctionRequest">
+            <h4>📋 Correction Request</h4>
+            <div class="detail-row">
+              <span class="label">Type:</span>
+              <span class="value">{{ record.correctionRequest.type | titlecase }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Reason:</span>
+              <span class="value">{{ record.correctionRequest.reason }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Requested:</span>
+              <span class="value">{{ record.correctionRequest.requestedAt | date:'short' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Status:</span>
+              <span class="value">
+                <span class="flag-badge"
+                      [style.background-color]="record.correctionRequest.status === 'PENDING' ? '#FFA500' :
+                                               record.correctionRequest.status === 'APPROVED' ? '#10B981' : '#EF4444'">
+                  {{ record.correctionRequest.status }}
+                </span>
+              </span>
+            </div>
+
+            <!-- Approval Buttons -->
+            <div class="approval-actions" *ngIf="record.correctionRequest.status === 'PENDING'">
+              <button class="approve-btn" (click)="approveCorrectionRequest(record.id)">
+                <i class="fa-solid fa-check"></i> Approve
+              </button>
+              <button class="reject-btn" (click)="rejectCorrectionRequest(record.id, 'Rejected by admin')">
+                <i class="fa-solid fa-times"></i> Reject
+              </button>
+            </div>
+
+            <div class="approval-info" *ngIf="record.correctionRequest.status === 'APPROVED'">
+              <p><strong>✅ Approved by:</strong> {{ record.correctionRequest.approvedBy }}</p>
+            </div>
+
+            <div class="rejection-info" *ngIf="record.correctionRequest.status === 'REJECTED'">
+              <p><strong>❌ Reason:</strong> {{ record.correctionRequest.rejectionReason }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 </div>

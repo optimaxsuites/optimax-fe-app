@@ -1,7 +1,12 @@
+// vendor-management.service.ts
+// ============================================================
+// IMPORTS
+// ============================================================
+
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
-import { map, tap, catchError, shareReplay } from 'rxjs/operators';
+import { map, tap, catchError } from 'rxjs/operators';
 import {
   Vendor,
   VendorDashboardStats,
@@ -22,6 +27,7 @@ import {
   VendorMessage,
   Dispute,
   VendorLifecycleHistory,
+  VendorLifecycleEvent,
   VendorRecentActivity,
   VendorStatus,
   VendorTier,
@@ -55,7 +61,8 @@ import {
   DisputeEvidenceItem,
   ResolutionSummaryStats,
   ResolutionAuditLogEntry,
-  LinkedRecord
+  LinkedRecord,
+  AlertSeverity
 } from '../../domain/vendor-management/vendor-management.dto';
 import { environment } from '../../shared-component/service/environments/environment';
 
@@ -639,7 +646,9 @@ const MOCK_RESOLUTION_AUDIT_LOG: ResolutionAuditLogEntry[] = [
   { id: 'raudit-5', timestamp: new Date(Date.now() - 32 * 24 * 60 * 60 * 1000), actor: 'D. Balogun (Compliance)', action: 'Closed dispute case', targetType: 'DISPUTE', targetLabel: 'DSP-2026-0076 · Sterling Print & Packaging', details: 'Outcome: No Fault Found.' }
 ];
 
-
+// ============================================================
+// VENDOR SERVICE
+// ============================================================
 
 @Injectable({
   providedIn: 'root'
@@ -677,219 +686,185 @@ export class VendorService {
   error$ = this.errorSubject.asObservable();
 
   // ============================================================
-  // CONSTRUCTOR
+  // MOCK DATA INSIDE THE CLASS
   // ============================================================
 
-  constructor(private http: HttpClient) { }
-
-  // ============================================================
-  // DASHBOARD
-  // ============================================================
-
-private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
-  totalVendors: 145,
-  activeVendors: 120,
-  pendingOnboarding: 15,
-  pendingReview: 10,
-  highRiskVendors: 5,
-  expiringDocuments: 12,
-  averagePerformanceScore: 92.5,
-  vendorsByTier: {
-    preferred: 40,
-    approved: 70,
-    conditional: 35
-  },
-  recentActivity: [
-    {
-      id: 'activity-1',
-      vendorId: 'v-101',
-      vendorName: 'TechCorp Solutions',
-      event: 'Onboarding completed',
-      description: 'Vendor profile was approved and moved to active status.',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      type: 'ONBOARDING',
-      icon: 'fa-user-check',
-      color: '#2EB270'
+  private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
+    totalVendors: 145,
+    activeVendors: 120,
+    pendingOnboarding: 15,
+    pendingReview: 10,
+    highRiskVendors: 5,
+    expiringDocuments: 12,
+    averagePerformanceScore: 92.5,
+    vendorsByTier: {
+      preferred: 40,
+      approved: 70,
+      conditional: 35
     },
-    {
-      id: 'activity-2',
-      vendorId: 'v-204',
-      vendorName: 'Vanguard Security Services',
-      event: 'Risk alert raised',
-      description: 'A performance decline alert was triggered for this vendor.',
-      timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000),
-      type: 'RISK',
-      icon: 'fa-exclamation-triangle',
-      color: '#F59E0B'
-    }
-  ],
-  expiringDocumentsList: [
-    {
-      id: 'doc-1',
-      category: DocumentCategory.REGISTRATION,
-      name: 'Business Registration',
-      fileName: 'registration.pdf',
-      fileUrl: '#',
-      fileSize: 2048,
-      fileType: 'pdf',
-      issueDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
-      expiryDate: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000),
-      status: DocumentStatus.EXPIRING_SOON,
-      isRequired: true,
-      daysUntilExpiry: 12,
-      uploadedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-      uploadedBy: 'Ops Team',
-      vendorId: 'v-102',
-      vendorName: 'Global Logistics Ltd'
-    } as VendorDocument,
-    {
-      id: 'doc-2',
-      category: DocumentCategory.INSURANCE,
-      name: 'Insurance Certificate',
-      fileName: 'insurance.pdf',
-      fileUrl: '#',
-      fileSize: 1536,
-      fileType: 'pdf',
-      issueDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000),
-      expiryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-      status: DocumentStatus.EXPIRING_SOON,
-      isRequired: false,
-      daysUntilExpiry: 5,
-      uploadedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-      uploadedBy: 'Compliance',
-      vendorId: 'v-101',
-      vendorName: 'TechCorp Solutions'
-    } as VendorDocument
-  ],
-  topPerformers: [
-    {
-      id: 'v-101',
-      companyName: 'TechCorp Solutions',
-      registrationNumber: 'RC1029384',
-      taxId: 'TIN-483920',
-      email: 'contact@techcorp.com',
-      phone: '+2348012345678',
-      status: VendorStatus.ACTIVE,
-      tier: VendorTier.PREFERRED,
-      riskLevel: RiskLevel.LOW,
-      performanceScore: 95.4,
-      totalProjects: 42,
-      winRate: 65,
-      averageRating: 4.8,
-      categories: ['IT Services', 'Hardware'],
-      address: { street: '12 Tech Ave', city: 'Lagos', state: 'Lagos', country: 'Nigeria', postalCode: '100001' },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      contacts: [],
-      documents: [],
-      complianceStatus: {
-        isCompliant: true,
-        documentsVerified: 5,
-        totalRequiredDocuments: 5,
-        expiredDocuments: 0,
-        expiringDocuments: 0,
-        lastComplianceCheck: new Date(),
-        sanctionsClear: true
+    recentActivity: [
+      {
+        id: 'activity-1',
+        vendorId: 'v-101',
+        vendorName: 'TechCorp Solutions',
+        event: 'Onboarding completed',
+        description: 'Vendor profile was approved and moved to active status.',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        type: 'ONBOARDING',
+        icon: 'fa-user-check',
+        color: '#2EB270'
       },
-      performanceMetrics: {
-        overallScore: 95.4,
-        onTimeDeliveryRate: 98,
-        qualityScore: 94,
-        costCompetitiveness: 90,
-        complianceScore: 97,
-        ratingScore: 95,
+      {
+        id: 'activity-2',
+        vendorId: 'v-204',
+        vendorName: 'Vanguard Security Services',
+        event: 'Risk alert raised',
+        description: 'A performance decline alert was triggered for this vendor.',
+        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000),
+        type: 'RISK',
+        icon: 'fa-exclamation-triangle',
+        color: '#F59E0B'
+      }
+    ],
+    expiringDocumentsList: [
+      {
+        id: 'doc-1',
+        category: DocumentCategory.REGISTRATION,
+        name: 'Business Registration',
+        fileName: 'registration.pdf',
+        fileUrl: '#',
+        fileSize: 2048,
+        fileType: 'pdf',
+        issueDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+        expiryDate: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000),
+        status: DocumentStatus.EXPIRING_SOON,
+        isRequired: true,
+        daysUntilExpiry: 12,
+        uploadedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        uploadedBy: 'Ops Team',
+        vendorId: 'v-102',
+        vendorName: 'Global Logistics Ltd'
+      } as VendorDocument,
+      {
+        id: 'doc-2',
+        category: DocumentCategory.INSURANCE,
+        name: 'Insurance Certificate',
+        fileName: 'insurance.pdf',
+        fileUrl: '#',
+        fileSize: 1536,
+        fileType: 'pdf',
+        issueDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000),
+        expiryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+        status: DocumentStatus.EXPIRING_SOON,
+        isRequired: false,
+        daysUntilExpiry: 5,
+        uploadedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+        uploadedBy: 'Compliance',
+        vendorId: 'v-101',
+        vendorName: 'TechCorp Solutions'
+      } as VendorDocument
+    ],
+    topPerformers: [
+      {
+        id: 'v-101',
+        companyName: 'TechCorp Solutions',
+        registrationNumber: 'RC1029384',
+        taxId: 'TIN-483920',
+        email: 'contact@techcorp.com',
+        phone: '+2348012345678',
+        status: VendorStatus.ACTIVE,
+        tier: VendorTier.PREFERRED,
+        riskLevel: RiskLevel.LOW,
+        performanceScore: 95.4,
+        totalProjects: 42,
         winRate: 65,
-        totalProjects: 42
-      },
-      lifecycleHistory: [],
-      riskAlerts: [],
-      joinedDate: new Date(),
-      lastActivityDate: new Date()
-    } as unknown as Vendor,
-    {
-      id: 'v-203',
-      companyName: 'Apex Industrial Supplies Ltd',
-      registrationNumber: 'RC7765421',
-      taxId: 'TIN-332198',
-      email: 'sales@apex.com',
-      phone: '+2348123456789',
-      status: VendorStatus.ACTIVE,
-      tier: VendorTier.APPROVED,
-      riskLevel: RiskLevel.LOW,
-      performanceScore: 92.8,
-      totalProjects: 28,
-      winRate: 61,
-      averageRating: 4.6,
-      categories: ['Manufacturing'],
-      address: { street: '88 Factory Rd', city: 'Abuja', state: 'FCT', country: 'Nigeria', postalCode: '900001' },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      contacts: [],
-      documents: [],
-      complianceStatus: {
-        isCompliant: true,
-        documentsVerified: 5,
-        totalRequiredDocuments: 5,
-        expiredDocuments: 0,
-        expiringDocuments: 0,
-        lastComplianceCheck: new Date(),
-        sanctionsClear: true
-      },
-      performanceMetrics: {
-        overallScore: 92.8,
-        onTimeDeliveryRate: 95,
-        qualityScore: 91,
-        costCompetitiveness: 89,
-        complianceScore: 94,
-        ratingScore: 93,
+        averageRating: 4.8,
+        categories: ['IT Services', 'Hardware'],
+        address: { street: '12 Tech Ave', city: 'Lagos', state: 'Lagos', country: 'Nigeria', postalCode: '100001' },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        contacts: [],
+        documents: [],
+        complianceStatus: {
+          isCompliant: true,
+          documentsVerified: 5,
+          totalRequiredDocuments: 5,
+          expiredDocuments: 0,
+          expiringDocuments: 0,
+          lastComplianceCheck: new Date(),
+          sanctionsClear: true
+        },
+        performanceMetrics: {
+          overallScore: 95.4,
+          onTimeDeliveryRate: 98,
+          qualityScore: 94,
+          costCompetitiveness: 90,
+          complianceScore: 97,
+          ratingScore: 95,
+          winRate: 65,
+          totalProjects: 42,
+          totalRevenue: 12500000,
+          averageOrderValue: 297619,
+          lastUpdated: new Date(),
+          trendData: []
+        },
+        lifecycleHistory: [],
+        riskAlerts: [],
+        joinedDate: new Date(),
+        lastActivityDate: new Date()
+      } as unknown as Vendor,
+      {
+        id: 'v-203',
+        companyName: 'Apex Industrial Supplies Ltd',
+        registrationNumber: 'RC7765421',
+        taxId: 'TIN-332198',
+        email: 'sales@apex.com',
+        phone: '+2348123456789',
+        status: VendorStatus.ACTIVE,
+        tier: VendorTier.APPROVED,
+        riskLevel: RiskLevel.LOW,
+        performanceScore: 92.8,
+        totalProjects: 28,
         winRate: 61,
-        totalProjects: 28
-      },
-      lifecycleHistory: [],
-      riskAlerts: [],
-      joinedDate: new Date(),
-      lastActivityDate: new Date()
-    } as unknown as Vendor
-  ],
-  riskAlertsCount: 8,
-  monthOverMonthGrowth: 4.5
-};
-
-  /**
-   * Get vendor dashboard statistics
-   * GET /vendor-dashboard/stats?tenantId=
-   */
-  getDashboardStats(): Observable<VendorDashboardStats> {
-    this.loadingSubject.next(true);
-    this.errorSubject.next(null);
-
-    const params = new HttpParams().set('tenantId', this.tenantId);
-
-    return this.http.get<VendorDashboardStats>(`${this.baseUrl}/vendor-dashboard/stats`, { params })
-      .pipe(
-        tap(stats => {
-          this.dashboardStatsSubject.next(stats);
-          this.loadingSubject.next(false);
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.dashboardStatsSubject.next(this.MOCK_DASHBOARD_STATS);
-          return of(this.MOCK_DASHBOARD_STATS);
-        })
-      );
-  }
-
-  /**
-   * Get recent vendor activity feed
-   * No direct backend equivalent — returns empty stub
-   */
-  getRecentActivity(limit: number = 10): Observable<any[]> {
-    return of([] as any[]);
-  }
-
-  // ============================================================
-  // VENDOR CRUD OPERATIONS
-  // ============================================================
+        averageRating: 4.6,
+        categories: ['Manufacturing'],
+        address: { street: '88 Factory Rd', city: 'Abuja', state: 'FCT', country: 'Nigeria', postalCode: '900001' },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        contacts: [],
+        documents: [],
+        complianceStatus: {
+          isCompliant: true,
+          documentsVerified: 5,
+          totalRequiredDocuments: 5,
+          expiredDocuments: 0,
+          expiringDocuments: 0,
+          lastComplianceCheck: new Date(),
+          sanctionsClear: true
+        },
+        performanceMetrics: {
+          overallScore: 92.8,
+          onTimeDeliveryRate: 95,
+          qualityScore: 91,
+          costCompetitiveness: 89,
+          complianceScore: 94,
+          ratingScore: 93,
+          winRate: 61,
+          totalProjects: 28,
+          totalRevenue: 8500000,
+          averageOrderValue: 303571,
+          lastUpdated: new Date(),
+          trendData: []
+        },
+        lifecycleHistory: [],
+        riskAlerts: [],
+        joinedDate: new Date(),
+        lastActivityDate: new Date()
+      } as unknown as Vendor
+    ],
+    riskAlertsCount: 8,
+    monthOverMonthGrowth: 4.5
+  };
 
   private readonly MOCK_VENDORS: Vendor[] = [
     {
@@ -932,10 +907,319 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
     } as unknown as Vendor
   ];
 
-  /**
-   * Get all vendors with pagination and filtering
-   * GET /vendors?tenantId=&page=&size=&status=&search=
-   */
+  // ADD THIS - Mock performance metrics inside the class
+ private readonly MOCK_PERFORMANCE_METRICS: VendorPerformanceMetrics = {
+  overallScore: 87.5,
+  onTimeDeliveryRate: 92,
+  qualityScore: 85,
+  costCompetitiveness: 78,
+  complianceScore: 94,
+  ratingScore: 4.5,
+  winRate: 68,
+  totalProjects: 42,
+  totalRevenue: 12500000,
+  averageOrderValue: 297619,
+  lastUpdated: new Date(),
+  trendData: [
+    { period: 'Aug 2025', score: 78, onTimeDelivery: 82, quality: 75 },
+    { period: 'Sep 2025', score: 80, onTimeDelivery: 85, quality: 78 },
+    { period: 'Oct 2025', score: 83, onTimeDelivery: 88, quality: 80 },
+    { period: 'Nov 2025', score: 85, onTimeDelivery: 90, quality: 82 },
+    { period: 'Dec 2025', score: 86, onTimeDelivery: 91, quality: 84 },
+    { period: 'Jan 2026', score: 88, onTimeDelivery: 93, quality: 86 },
+    { period: 'Feb 2026', score: 87, onTimeDelivery: 92, quality: 85 },
+    { period: 'Mar 2026', score: 90, onTimeDelivery: 94, quality: 88 },
+    { period: 'Apr 2026', score: 92, onTimeDelivery: 95, quality: 90 },
+    { period: 'May 2026', score: 91, onTimeDelivery: 94, quality: 89 },
+    { period: 'Jun 2026', score: 93, onTimeDelivery: 96, quality: 91 },
+    { period: 'Jul 2026', score: 95, onTimeDelivery: 97, quality: 93 }
+  ]
+};
+
+
+
+private readonly MOCK_RISK_ALERTS: RiskAlert[] = [
+  {
+    id: 'alert-1',
+    vendorId: 'v-101',
+    severity: AlertSeverity.CRITICAL,
+    type: 'COMPLIANCE',
+    title: 'Expired Insurance Certificate',
+    description: 'The vendor\'s insurance certificate has expired. Immediate action required.',
+    detectedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+    status: 'OPEN',
+    actionRequired: true,
+    assignedTo: 'Compliance Team'
+  },
+  {
+    id: 'alert-2',
+    vendorId: 'v-101',
+    severity: AlertSeverity.WARNING,
+    type: 'PERFORMANCE',
+    title: 'Performance Decline Detected',
+    description: 'On-time delivery rate dropped below 90% in the last 30 days.',
+    detectedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
+    status: 'IN_PROGRESS',
+    actionRequired: true
+  },
+  {
+    id: 'alert-3',
+    vendorId: 'v-101',
+    severity: AlertSeverity.INFO,
+    type: 'DOCUMENT',
+    title: 'Document Renewal Reminder',
+    description: 'Business registration certificate expires in 30 days.',
+    detectedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    status: 'OPEN',
+    actionRequired: false
+  },
+  // Add alerts for other vendors
+  {
+    id: 'alert-4',
+    vendorId: 'v-102',
+    severity: AlertSeverity.WARNING,
+    type: 'COMPLIANCE',
+    title: 'Missing Tax Certificate',
+    description: 'Tax certificate has not been uploaded for this vendor.',
+    detectedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+    status: 'OPEN',
+    actionRequired: true,
+    assignedTo: 'Compliance Team'
+  },
+  {
+    id: 'alert-5',
+    vendorId: 'v-203',
+    severity: AlertSeverity.INFO,
+    type: 'DOCUMENT',
+    title: 'Document Review Required',
+    description: 'Operating license needs to be reviewed for renewal.',
+    detectedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    status: 'OPEN',
+    actionRequired: false
+  }
+];
+
+// vendor-management.service.ts - Add this inside the VendorService class
+
+private readonly MOCK_DOCUMENTS: VendorDocument[] = [
+  {
+    id: 'doc-1',
+    vendorId: 'v-101',
+    category: DocumentCategory.REGISTRATION,
+    name: 'Business Registration Certificate',
+    fileName: 'business_registration_v101.pdf',
+    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    fileSize: 2457600,
+    fileType: 'application/pdf',
+    issueDate: new Date('2024-01-15'),
+    expiryDate: new Date('2027-01-14'),
+    status: DocumentStatus.ACTIVE,
+    isRequired: true,
+    daysUntilExpiry: 162,
+    uploadedAt: new Date('2024-01-20'),
+    uploadedBy: 'Vendor User'
+  },
+  {
+    id: 'doc-2',
+    vendorId: 'v-101',
+    category: DocumentCategory.TAX,
+    name: 'Tax Certificate (TIN)',
+    fileName: 'tax_certificate_v101.pdf',
+    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    fileSize: 1843200,
+    fileType: 'application/pdf',
+    issueDate: new Date('2024-02-01'),
+    expiryDate: new Date('2027-01-31'),
+    status: DocumentStatus.ACTIVE,
+    isRequired: true,
+    daysUntilExpiry: 159,
+    uploadedAt: new Date('2024-02-05'),
+    uploadedBy: 'Vendor User'
+  },
+  {
+    id: 'doc-3',
+    vendorId: 'v-101',
+    category: DocumentCategory.LICENCE,
+    name: 'Business Operating Licence',
+    fileName: 'operating_licence_v101.pdf',
+    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    fileSize: 3072000,
+    fileType: 'application/pdf',
+    issueDate: new Date('2023-06-01'),
+    expiryDate: new Date('2024-11-30'),
+    status: DocumentStatus.EXPIRING_SOON,
+    isRequired: true,
+    daysUntilExpiry: 28,
+    uploadedAt: new Date('2023-06-10'),
+    uploadedBy: 'Vendor User'
+  },
+  {
+    id: 'doc-4',
+    vendorId: 'v-101',
+    category: DocumentCategory.INSURANCE,
+    name: 'Public Liability Insurance',
+    fileName: 'insurance_policy_v101.pdf',
+    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    fileSize: 1560000,
+    fileType: 'application/pdf',
+    issueDate: new Date('2023-08-15'),
+    expiryDate: new Date('2024-08-14'),
+    status: DocumentStatus.EXPIRED,
+    isRequired: false,
+    daysUntilExpiry: -5,
+    uploadedAt: new Date('2023-08-20'),
+    uploadedBy: 'Vendor User'
+  },
+  {
+    id: 'doc-5',
+    vendorId: 'v-101',
+    category: DocumentCategory.CERTIFICATION,
+    name: 'ISO 9001 Certification',
+    fileName: 'iso_certification_v101.pdf',
+    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    fileSize: 2048000,
+    fileType: 'application/pdf',
+    issueDate: new Date('2024-03-01'),
+    expiryDate: new Date('2025-03-01'),
+    status: DocumentStatus.PENDING_VERIFICATION,
+    isRequired: false,
+    daysUntilExpiry: 210,
+    uploadedAt: new Date('2024-03-05'),
+    uploadedBy: 'Vendor User'
+  },
+  {
+    id: 'doc-6',
+    vendorId: 'v-102',
+    category: DocumentCategory.REGISTRATION,
+    name: 'Business Registration Certificate',
+    fileName: 'business_registration_v102.pdf',
+    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    fileSize: 2355200,
+    fileType: 'application/pdf',
+    issueDate: new Date('2024-02-10'),
+    expiryDate: new Date('2027-02-09'),
+    status: DocumentStatus.ACTIVE,
+    isRequired: true,
+    daysUntilExpiry: 175,
+    uploadedAt: new Date('2024-02-15'),
+    uploadedBy: 'Vendor User'
+  }
+];
+
+private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
+  {
+    id: 'life-1',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.APPLIED,
+    description: 'Vendor application submitted via the Vendor Portal',
+    performedBy: 'Vendor User',
+    timestamp: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    metadata: { source: 'portal', applicationId: 'APP-2026-001' }
+  },
+  {
+    id: 'life-2',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.DOCUMENTS_SUBMITTED,
+    description: 'Business registration, tax certificate, and operating licence uploaded',
+    performedBy: 'Vendor User',
+    timestamp: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000),
+    metadata: { documents: ['registration.pdf', 'tax.pdf', 'licence.pdf'] }
+  },
+  {
+    id: 'life-3',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.UNDER_REVIEW,
+    description: 'Application moved to under review by procurement team',
+    performedBy: 'A. Okoro (Procurement Lead)',
+    timestamp: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+    metadata: { assignedTo: 'A. Okoro' }
+  },
+  {
+    id: 'life-4',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.APPROVED,
+    description: 'Vendor application approved after document verification',
+    performedBy: 'A. Okoro (Procurement Lead)',
+    timestamp: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000),
+    metadata: { approvedBy: 'A. Okoro', notes: 'All documents verified successfully' }
+  },
+  {
+    id: 'life-5',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.ACTIVATED,
+    description: 'Vendor account activated in the marketplace',
+    performedBy: 'System',
+    timestamp: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+    metadata: { status: 'ACTIVE' }
+  },
+  {
+    id: 'life-6',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.PERFORMANCE_UPDATE,
+    description: 'Performance score updated to 95.4% - Vendor upgraded to Preferred Tier',
+    performedBy: 'Sentinel AI',
+    timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+    metadata: { oldScore: 88, newScore: 95.4, oldTier: 'APPROVED', newTier: 'PREFERRED' }
+  },
+  {
+    id: 'life-7',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.DOCUMENT_VERIFIED,
+    description: 'Insurance certificate verified and approved',
+    performedBy: 'D. Balogun (Compliance)',
+    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    metadata: { documentId: 'doc-insurance-101', status: 'VERIFIED' }
+  },
+  {
+    id: 'life-8',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.RISK_ALERT,
+    description: 'Performance decline alert triggered - On-time delivery rate dropped below 90%',
+    performedBy: 'Sentinel AI',
+    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    metadata: { alertId: 'alert-101', type: 'PERFORMANCE_DECLINE', severity: 'WARNING' }
+  }
+];
+
+
+  // ============================================================
+  // CONSTRUCTOR
+  // ============================================================
+
+  constructor(private http: HttpClient) { }
+
+  // ============================================================
+  // DASHBOARD
+  // ============================================================
+
+  getDashboardStats(): Observable<VendorDashboardStats> {
+    this.loadingSubject.next(true);
+    this.errorSubject.next(null);
+
+    const params = new HttpParams().set('tenantId', this.tenantId);
+
+    return this.http.get<VendorDashboardStats>(`${this.baseUrl}/vendor-dashboard/stats`, { params })
+      .pipe(
+        tap(stats => {
+          this.dashboardStatsSubject.next(stats);
+          this.loadingSubject.next(false);
+        }),
+        catchError(err => {
+          this.loadingSubject.next(false);
+          this.dashboardStatsSubject.next(this.MOCK_DASHBOARD_STATS);
+          return of(this.MOCK_DASHBOARD_STATS);
+        })
+      );
+  }
+
+  getRecentActivity(limit: number = 10): Observable<any[]> {
+    return of([] as any[]);
+  }
+
+  // ============================================================
+  // VENDOR CRUD OPERATIONS
+  // ============================================================
+
   getVendors(
     page: number = 1,
     limit: number = 20,
@@ -979,10 +1263,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Get a single vendor by ID
-   * GET /vendors/{id}
-   */
   getVendorById(id: string): Observable<Vendor> {
     this.loadingSubject.next(true);
 
@@ -1032,7 +1312,11 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
                 complianceScore: 91,
                 ratingScore: 90,
                 winRate: 60,
-                totalProjects: 10
+                totalProjects: 10,
+                totalRevenue: 5000000,
+                averageOrderValue: 250000,
+                lastUpdated: new Date(),
+                trendData: []
               },
               lifecycleHistory: fallbackVendor.lifecycleHistory || [],
               riskAlerts: fallbackVendor.riskAlerts || [],
@@ -1065,10 +1349,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
     );
   }
 
-  /**
-   * Create / Onboard a new vendor
-   * POST /vendors — maps onboarding data to VendorBusinessIdentityDTO (step 1)
-   */
   onboardVendor(data: OnboardingData): Observable<OnboardingResult> {
     this.loadingSubject.next(true);
 
@@ -1101,10 +1381,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Update vendor details
-   * PUT /vendors/{id}/step1 — best approximation using VendorBusinessIdentityDTO
-   */
   updateVendor(id: string, data: Partial<Vendor>): Observable<Vendor> {
     this.loadingSubject.next(true);
 
@@ -1123,10 +1399,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Offboard a vendor
-   * PATCH /vendors/{id}/review with status=SUSPENDED or similar; falls back gracefully
-   */
   offboardVendor(id: string, data: OffboardingData): Observable<any> {
     this.loadingSubject.next(true);
 
@@ -1149,10 +1421,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Update vendor status
-   * PATCH /vendors/{id}/review — body: { status, rejectionReason? }
-   */
   updateVendorStatus(id: string, status: VendorStatus): Observable<Vendor> {
     return this.http.patch<Vendor>(`${this.baseUrl}/vendors/${id}/review`, { status })
       .pipe(
@@ -1171,38 +1439,125 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
   // PERFORMANCE
   // ============================================================
 
-  /**
-   * Get vendor performance metrics
-   * GET /vendor-dashboard/performance?vendorId=
-   */
   getVendorPerformance(vendorId: string): Observable<VendorPerformanceResponse> {
-    const params = new HttpParams().set('vendorId', vendorId);
-    return this.http.get<VendorPerformanceResponse>(`${this.baseUrl}/vendor-dashboard/performance`, { params })
-      .pipe(
-        catchError(err => {
-          this.errorSubject.next('Failed to load performance data');
-          return throwError(() => err);
-        })
-      );
-  }
+  this.loadingSubject.next(true);
+  
+  const params = new HttpParams()
+    .set('tenantId', this.tenantId)
+    .set('vendorId', vendorId);
 
-  /**
-   * Get vendor KPIs — no backend equivalent; returns empty stub
-   */
+  return this.http.get<VendorPerformanceResponse>(`${this.baseUrl}/vendor-dashboard/performance`, { params })
+    .pipe(
+      tap(() => this.loadingSubject.next(false)),
+      catchError((err) => {
+        console.warn('Performance API failed, using mock data for vendor:', vendorId);
+        this.loadingSubject.next(false);
+        
+        // Create a copy of the mock metrics with the vendor ID
+        const metrics = { ...this.MOCK_PERFORMANCE_METRICS };
+        
+        const mockResponse: VendorPerformanceResponse = {
+          metrics: metrics,
+          kpis: [
+            {
+              label: 'Overall Score',
+              value: metrics.overallScore,
+              unit: '%',
+              color: '#2EB270',
+              icon: 'fa-chart-line',
+              trend: 'up',
+              percentChange: 3.2
+            },
+            {
+              label: 'On-Time Delivery',
+              value: metrics.onTimeDeliveryRate,
+              unit: '%',
+              color: '#2EB270',
+              icon: 'fa-clock',
+              trend: 'up',
+              percentChange: 1.5
+            },
+            {
+              label: 'Quality Score',
+              value: metrics.qualityScore,
+              unit: '%',
+              color: '#F5A623',
+              icon: 'fa-star',
+              trend: 'up',
+              percentChange: 2.1
+            },
+            {
+              label: 'Cost Competitiveness',
+              value: metrics.costCompetitiveness,
+              unit: '%',
+              color: '#F97316',
+              icon: 'fa-tags',
+              trend: 'stable',
+              percentChange: 0.5
+            },
+            {
+              label: 'Compliance Score',
+              value: metrics.complianceScore,
+              unit: '%',
+              color: '#2EB270',
+              icon: 'fa-shield-alt',
+              trend: 'up',
+              percentChange: 4.8
+            },
+            {
+              label: 'Rating Score',
+              value: metrics.ratingScore,
+              unit: '/5',
+              color: '#8B5CF6',
+              icon: 'fa-star-half-alt',
+              trend: 'up',
+              percentChange: 2.3
+            },
+            {
+              label: 'Win Rate',
+              value: metrics.winRate,
+              unit: '%',
+              color: '#2E6276',
+              icon: 'fa-trophy',
+              trend: 'up',
+              percentChange: 5.0
+            },
+            {
+              label: 'Total Projects',
+              value: metrics.totalProjects,
+              unit: '',
+              color: '#6B7280',
+              icon: 'fa-project-diagram',
+              trend: 'up',
+              percentChange: 12.0
+            }
+          ],
+          ranking: {
+            vendorId: vendorId,
+            rank: 5,
+            score: 87.5,
+            factors: {
+              price: 85,
+              delivery: 92,
+              performance: 87,
+              compliance: 94
+            },
+            recommendation: 'STRONG'
+          }
+        };
+        return of(mockResponse);
+      })
+    );
+}
+
   getVendorKPIs(vendorId: string): Observable<VendorKPI[]> {
     return of([] as any);
   }
 
-  /**
-   * Get performance trend data — no backend equivalent; returns empty stub
-   */
   getPerformanceTrend(vendorId: string, period: 'monthly' | 'quarterly' = 'monthly'): Observable<any> {
     return of({} as any);
   }
 
-  /**
-   * Refresh AI-driven performance evaluation — no backend equivalent; returns empty stub
-   */
   refreshAIPerformance(vendorId: string): Observable<any> {
     return of({} as any);
   }
@@ -1211,56 +1566,134 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
   // RISK & COMPLIANCE
   // ============================================================
 
-  /**
-   * Get vendor risk profile — no backend equivalent; returns empty stub
-   */
   getVendorRisk(vendorId: string): Observable<VendorRiskResponse> {
-    return of({} as any);
-  }
+  return of({} as any);
+}
 
-  /**
-   * Get risk alerts — no backend equivalent; returns empty stub
-   */
   getRiskAlerts(vendorId?: string): Observable<RiskAlert[]> {
-    return of([] as any);
+  console.log('getRiskAlerts called with vendorId:', vendorId);
+  
+  // If vendorId is provided, filter alerts for that vendor
+  if (vendorId) {
+    const filtered = this.MOCK_RISK_ALERTS.filter(a => a.vendorId === vendorId);
+    console.log('Filtered alerts count:', filtered.length);
+    // If no alerts found for this vendor, return some default ones
+    if (filtered.length === 0) {
+      console.log('No alerts found for vendor, returning default info alert');
+      return of([
+        {
+          id: 'default-1',
+          vendorId: vendorId,
+          severity: AlertSeverity.INFO,
+          type: 'GENERAL',
+          title: 'No specific alerts for this vendor',
+          description: 'All compliance checks are up to date.',
+          detectedAt: new Date(),
+          status: 'RESOLVED',
+          actionRequired: false
+        }
+      ]);
+    }
+    return of(filtered);
   }
+  
+  console.log('Returning all alerts:', this.MOCK_RISK_ALERTS.length);
+  return of(this.MOCK_RISK_ALERTS);
+}
 
-  /**
-   * Acknowledge / resolve a risk alert — no backend equivalent; returns empty stub
-   */
+
   resolveRiskAlert(alertId: string, resolution: string): Observable<any> {
-    return of({} as any);
-  }
+  return of({} as any);
+}
 
-  /**
-   * Initiate sanctions check — no backend equivalent; returns empty stub
-   */
   initiateSanctionsCheck(vendorId: string): Observable<any> {
-    return of({} as any);
-  }
+  return of({} as any);
+}
+
 
   // ============================================================
   // DOCUMENTS
   // ============================================================
 
-  /**
-   * Get vendor documents
-   * GET /vendors/{vendorId}/documents
-   */
-  getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
-    return this.http.get<VendorDocument[]>(`${this.baseUrl}/vendors/${vendorId}/documents`)
-      .pipe(
-        catchError(err => {
-          this.errorSubject.next('Failed to load documents');
-          return throwError(() => err);
-        })
-      );
-  }
+getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
+  this.loadingSubject.next(true);
+  
+  const params = new HttpParams().set('tenantId', this.tenantId);
+  
+  return this.http.get<VendorDocument[]>(`${this.baseUrl}/vendors/${vendorId}/documents`, { params })
+    .pipe(
+      tap(() => this.loadingSubject.next(false)),
+      catchError(err => {
+        this.loadingSubject.next(false);
+        console.warn('Documents API failed, using mock data for vendor:', vendorId);
+        
+        // Filter mock documents for this vendor
+        const mockDocs = this.MOCK_DOCUMENTS.filter(doc => doc.vendorId === vendorId);
+        
+        // If no specific documents for this vendor, return some default ones
+        if (mockDocs.length === 0) {
+          // Create vendor-specific mock documents
+          const vendorSpecificDocs: VendorDocument[] = [
+            {
+              id: `doc-${vendorId}-1`,
+              vendorId: vendorId,
+              category: DocumentCategory.REGISTRATION,
+              name: 'Business Registration Certificate',
+              fileName: `registration_${vendorId}.pdf`,
+              fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+              fileSize: 2457600,
+              fileType: 'application/pdf',
+              issueDate: new Date('2024-01-15'),
+              expiryDate: new Date('2027-01-14'),
+              status: DocumentStatus.ACTIVE,
+              isRequired: true,
+              daysUntilExpiry: 162,
+              uploadedAt: new Date('2024-01-20'),
+              uploadedBy: 'Vendor User'
+            },
+            {
+              id: `doc-${vendorId}-2`,
+              vendorId: vendorId,
+              category: DocumentCategory.TAX,
+              name: 'Tax Certificate',
+              fileName: `tax_${vendorId}.pdf`,
+              fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+              fileSize: 1843200,
+              fileType: 'application/pdf',
+              issueDate: new Date('2024-02-01'),
+              expiryDate: new Date('2027-01-31'),
+              status: DocumentStatus.PENDING_VERIFICATION,
+              isRequired: true,
+              daysUntilExpiry: 159,
+              uploadedAt: new Date('2024-02-05'),
+              uploadedBy: 'Vendor User'
+            },
+            {
+              id: `doc-${vendorId}-3`,
+              vendorId: vendorId,
+              category: DocumentCategory.LICENCE,
+              name: 'Operating Licence',
+              fileName: `licence_${vendorId}.pdf`,
+              fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+              fileSize: 3072000,
+              fileType: 'application/pdf',
+              issueDate: new Date('2023-06-01'),
+              expiryDate: new Date('2024-11-30'),
+              status: DocumentStatus.EXPIRING_SOON,
+              isRequired: true,
+              daysUntilExpiry: 28,
+              uploadedAt: new Date('2023-06-10'),
+              uploadedBy: 'Vendor User'
+            }
+          ];
+          return of(vendorSpecificDocs);
+        }
+        
+        return of(mockDocs);
+      })
+    );
+}
 
-  /**
-   * Upload vendor document
-   * POST /vendors/{vendorId}/documents
-   */
   uploadDocument(
     vendorId: string,
     file: File,
@@ -1286,10 +1719,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Verify vendor document
-   * PATCH /vendors/documents/{docId}/status — body: { status, notes? }
-   */
   verifyDocument(documentId: string, verified: boolean, notes?: string): Observable<any> {
     const payload: any = {
       status: verified ? DocumentStatus.ACTIVE : DocumentStatus.REJECTED
@@ -1305,10 +1734,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Delete vendor document
-   * DELETE /vendors/documents/{docId}
-   */
   deleteDocument(documentId: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/vendors/documents/${documentId}`)
       .pipe(
@@ -1320,88 +1745,126 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
   }
 
   // ============================================================
-  // AI & PREDICTIVE (no backend equivalent — stubs)
+  // AI & PREDICTIVE (stubs)
   // ============================================================
 
-  /** Get vendor ranking/score — no backend equivalent; returns empty stub */
   getVendorRanking(vendorId: string): Observable<VendorRankingData> {
     return of({} as any);
   }
 
-  /** Get AI predictions for vendor — no backend equivalent; returns empty stub */
   getVendorPredictions(vendorId: string): Observable<VendorPrediction[]> {
     return of([] as any);
   }
 
-  /** Get anomaly detections — no backend equivalent; returns empty stub */
   getAnomalies(vendorId?: string): Observable<AnomalyDetection[]> {
     return of([] as any);
   }
 
-  /** Acknowledge anomaly detection — no backend equivalent; returns empty stub */
   acknowledgeAnomaly(anomalyId: string): Observable<any> {
     return of({} as any);
   }
 
   // ============================================================
-  // LIFECYCLE (no backend equivalent — stub)
+  // LIFECYCLE
   // ============================================================
 
-  /** Get vendor lifecycle history — no backend equivalent; returns empty stub */
   getLifecycleHistory(vendorId: string): Observable<VendorLifecycleHistory[]> {
-    return of([] as any);
-  }
+  this.loadingSubject.next(true);
+  
+  const params = new HttpParams().set('tenantId', this.tenantId);
+  
+  return this.http.get<VendorLifecycleHistory[]>(`${this.baseUrl}/vendors/${vendorId}/lifecycle`, { params })
+    .pipe(
+      tap(() => this.loadingSubject.next(false)),
+      catchError(err => {
+        this.loadingSubject.next(false);
+        console.warn('Lifecycle API failed, using mock data for vendor:', vendorId);
+        
+        // Filter mock data for this vendor or return all if no specific data
+        const mockData = this.MOCK_LIFECYCLE_HISTORY.filter(h => h.vendorId === vendorId);
+        if (mockData.length === 0) {
+          // Return generic mock data for this vendor
+          const genericData: VendorLifecycleHistory[] = [
+            {
+              id: `life-${vendorId}-1`,
+              vendorId: vendorId,
+              event: VendorLifecycleEvent.APPLIED,
+              description: 'Vendor application submitted',
+              performedBy: 'Vendor User',
+              timestamp: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+            },
+            {
+              id: `life-${vendorId}-2`,
+              vendorId: vendorId,
+              event: VendorLifecycleEvent.DOCUMENTS_SUBMITTED,
+              description: 'Required documents uploaded',
+              performedBy: 'Vendor User',
+              timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000)
+            },
+            {
+              id: `life-${vendorId}-3`,
+              vendorId: vendorId,
+              event: VendorLifecycleEvent.UNDER_REVIEW,
+              description: 'Application under review',
+              performedBy: 'Procurement Team',
+              timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+            },
+            {
+              id: `life-${vendorId}-4`,
+              vendorId: vendorId,
+              event: VendorLifecycleEvent.ACTIVATED,
+              description: 'Vendor activated in the marketplace',
+              performedBy: 'System',
+              timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+            }
+          ];
+          return of(genericData);
+        }
+        return of(mockData);
+      })
+    );
+}
 
   // ============================================================
-  // CONTRACTS (no backend equivalent — stubs)
+  // CONTRACTS
   // ============================================================
 
-  /** Get vendor contracts — no backend equivalent; returns empty stub */
   getVendorContracts(vendorId: string): Observable<VendorContract[]> {
     return of([] as any);
   }
 
-  /** Create contract for vendor — no backend equivalent; returns empty stub */
   createContract(vendorId: string, contract: Partial<VendorContract>): Observable<VendorContract> {
     return of({} as any);
   }
 
   // ============================================================
-  // MESSAGING (no backend equivalent — stubs)
+  // MESSAGING
   // ============================================================
 
-  /** Get vendor messages — no backend equivalent; returns empty stub */
   getVendorMessages(vendorId: string): Observable<VendorMessage[]> {
     return of([] as any);
   }
 
-  /** Send message to vendor — no backend equivalent; returns empty stub */
   sendMessage(vendorId: string, message: Partial<VendorMessage>): Observable<VendorMessage> {
     return of({} as any);
   }
 
-  /**
-   * Mark message as read — no backend equivalent; returns empty stub
-   */
   markMessageRead(messageId: string): Observable<any> {
     return of({} as any);
   }
 
   // ============================================================
-  // DISPUTES (no backend equivalent — stubs)
+  // DISPUTES
   // ============================================================
 
-  /** Get disputes for vendor — no backend equivalent; returns empty stub */
   getDisputes(vendorId?: string): Observable<Dispute[]> {
     return of([] as any);
   }
 
-  /** Create dispute — no backend equivalent; returns empty stub */
   createDispute(vendorId: string, dispute: Partial<Dispute>): Observable<Dispute> {
     return of({} as any);
   }
 
-  /** Resolve dispute — no backend equivalent; returns empty stub */
   resolveDispute(disputeId: string, resolution: string): Observable<any> {
     return of({} as any);
   }
@@ -1410,9 +1873,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
   // EXPORT / REPORT
   // ============================================================
 
-  /**
-   * Export vendor list to CSV/Excel
-   */
   exportVendors(filters?: any): Observable<Blob> {
     let params = new HttpParams().set('tenantId', this.tenantId);
 
@@ -1457,9 +1917,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
   private governanceRulesSubject = new BehaviorSubject<SentinelGovernanceRule[]>(MOCK_GOVERNANCE_RULES);
   governanceRules$ = this.governanceRulesSubject.asObservable();
 
-  /**
-   * Get the live, priority-sorted Sentinel insight feed
-   */
   getSentinelInsights(): Observable<SentinelInsight[]> {
     return this.http.get<SentinelInsight[]>(`${API_BASE}/ai/sentinel/insights`)
       .pipe(
@@ -1471,9 +1928,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Act on an insight card (review / message / dismiss / investigate / approve / escalate)
-   */
   actOnInsight(insightId: string, action: string): Observable<SentinelInsight[]> {
     const current = this.sentinelInsightsSubject.value.length
       ? this.sentinelInsightsSubject.value
@@ -1499,9 +1953,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Get predictive risk trajectories (30/60/90 day projections) for all monitored vendors
-   */
   getRiskTrajectories(): Observable<VendorRiskTrajectory[]> {
     return this.http.get<VendorRiskTrajectory[]>(`${API_BASE}/ai/sentinel/risk-trajectories`)
       .pipe(
@@ -1509,9 +1960,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Get the fraud & anomaly review queue
-   */
   getFraudFlags(): Observable<FraudFlag[]> {
     return this.http.get<FraudFlag[]>(`${API_BASE}/ai/sentinel/fraud-flags`)
       .pipe(
@@ -1523,10 +1971,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Update the status of a fraud flag (investigate / approve / escalate) — never auto-executes
-   * anything irreversible; suspension/termination always requires staff sign-off elsewhere.
-   */
   updateFraudFlagStatus(flagId: string, status: FraudFlag['status']): Observable<FraudFlag[]> {
     const current = this.fraudFlagsSubject.value.length ? this.fraudFlagsSubject.value : MOCK_FRAUD_FLAGS;
     const updated = current.map(f => f.id === flagId ? { ...f, status } : f);
@@ -1541,9 +1985,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Get the onboarding copilot's extracted fields + proposed risk classification for a vendor application
-   */
   getOnboardingCopilotSession(vendorId?: string): Observable<OnboardingCopilotSession> {
     const url = vendorId
       ? `${API_BASE}/ai/sentinel/onboarding-copilot/${vendorId}`
@@ -1555,9 +1996,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Confirm or correct a single extracted onboarding field — human always owns the final value
-   */
   confirmExtractedField(sessionId: string, fieldName: string, correctedValue?: string): Observable<ExtractedField> {
     const field = MOCK_ONBOARDING_COPILOT.extractedFields.find(f => f.fieldName === fieldName);
     const result: ExtractedField = field
@@ -1570,9 +2008,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Get a ranked shortlist of best-fit vendors for building an RFQ (Smart Vendor Selection)
-   */
   getSmartVendorShortlist(category?: string): Observable<SmartVendorShortlistItem[]> {
     return this.http.get<SmartVendorShortlistItem[]>(`${API_BASE}/ai/sentinel/smart-shortlist`, {
       params: category ? new HttpParams().set('category', category) : undefined
@@ -1581,9 +2016,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
     );
   }
 
-  /**
-   * Ask Sentinel a natural-language question about the vendor base
-   */
   querySentinel(query: string): Observable<SentinelQueryResult> {
     return this.http.post<SentinelQueryResult>(`${API_BASE}/ai/sentinel/ask`, { query })
       .pipe(
@@ -1637,9 +2069,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
     };
   }
 
-  /**
-   * Get the summary strip stats (active insights, fraud flags pending, actions this week, prediction confidence)
-   */
   getSentinelSummaryStats(): Observable<SentinelSummaryStats> {
     return this.http.get<SentinelSummaryStats>(`${API_BASE}/ai/sentinel/summary`)
       .pipe(
@@ -1656,9 +2085,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Get the auditable "Actions Taken by Sentinel" log
-   */
   getSentinelActionLog(): Observable<SentinelActionLogEntry[]> {
     return this.http.get<SentinelActionLogEntry[]>(`${API_BASE}/ai/sentinel/action-log`)
       .pipe(
@@ -1667,9 +2093,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Get the governance panel rules (what Sentinel may do autonomously vs. what always needs sign-off)
-   */
   getGovernanceRules(): Observable<SentinelGovernanceRule[]> {
     return this.http.get<SentinelGovernanceRule[]>(`${API_BASE}/ai/sentinel/governance-rules`)
       .pipe(
@@ -1677,10 +2100,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Toggle a governance rule's autonomy level. Non-editable rules (e.g. suspend/terminate/change tier)
-   * are enforced client-side to always require staff sign-off.
-   */
   updateGovernanceRule(ruleId: string, autonomyLevel: SentinelGovernanceRule['autonomyLevel']): Observable<SentinelGovernanceRule[]> {
     const current = this.governanceRulesSubject.value;
     const updated = current.map(r => (r.id === ruleId && r.editable) ? { ...r, autonomyLevel } : r);
@@ -1696,7 +2115,7 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
   }
 
   // ============================================================
-  // VENDOR RESOLUTION CENTER (MESSAGING & DISPUTE RESOLUTION)
+  // VENDOR RESOLUTION CENTER
   // ============================================================
 
   private messageThreadsSubject = new BehaviorSubject<MessageThread[]>([]);
@@ -1708,10 +2127,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
   private resolutionAuditLogSubject = new BehaviorSubject<ResolutionAuditLogEntry[]>(MOCK_RESOLUTION_AUDIT_LOG);
   resolutionAuditLog$ = this.resolutionAuditLogSubject.asObservable();
 
-  /**
-   * Get all message threads (optionally filtered by vendor — used by the vendor profile's
-   * Communication tab so history never needs to be hunted for separately)
-   */
   getMessageThreads(vendorId?: string): Observable<MessageThread[]> {
     return this.http.get<MessageThread[]>(`${API_BASE}/resolution/threads`, {
       params: vendorId ? new HttpParams().set('vendorId', vendorId) : undefined
@@ -1725,10 +2140,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
     );
   }
 
-  /**
-   * Send a message on a thread (company-side). Pre-fills context is handled client-side by
-   * passing a linkedRecord when opening a new thread from a Directory row or RFQ.
-   */
   sendThreadMessage(threadId: string, content: string, authorName: string = 'You'): Observable<ThreadMessage> {
     const newMessage: ThreadMessage = {
       id: 'm-' + Math.random().toString(36).slice(2, 9),
@@ -1754,9 +2165,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Add a private internal note to a thread — never visible to the vendor
-   */
   addInternalNote(threadId: string, content: string, authorName: string = 'You'): Observable<InternalNote> {
     const newNote: InternalNote = {
       id: 'note-' + Math.random().toString(36).slice(2, 9),
@@ -1780,9 +2188,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Update a thread's status (e.g. mark Resolved / Archived)
-   */
   updateThreadStatus(threadId: string, status: ThreadStatus): Observable<MessageThread[]> {
     const current = this.messageThreadsSubject.value.length ? this.messageThreadsSubject.value : MOCK_MESSAGE_THREADS;
     const updated = current.map(t => t.id === threadId ? { ...t, status } : t);
@@ -1797,9 +2202,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Get canned templates for repetitive company-side notices
-   */
   getCannedTemplates(): Observable<CannedTemplate[]> {
     return this.http.get<CannedTemplate[]>(`${API_BASE}/resolution/templates`)
       .pipe(
@@ -1807,9 +2209,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Get all dispute cases
-   */
   getDisputeCases(vendorId?: string): Observable<DisputeCase[]> {
     return this.http.get<DisputeCase[]>(`${API_BASE}/resolution/disputes`, {
       params: vendorId ? new HttpParams().set('vendorId', vendorId) : undefined
@@ -1823,9 +2222,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
     );
   }
 
-  /**
-   * Open a new dispute case, either from an escalated thread or directly against a record
-   */
   openDisputeCase(payload: {
     vendorId: string;
     vendorName: string;
@@ -1867,9 +2263,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Advance a dispute case to the next pipeline stage, with a timeline entry
-   */
   advanceDisputeStage(caseId: string, stage: DisputeStage, actor: string = 'You', note?: string): Observable<DisputeCase[]> {
     const current = this.disputeCasesSubject.value.length ? this.disputeCasesSubject.value : MOCK_DISPUTE_CASES;
     const updated = current.map(c => {
@@ -1894,10 +2287,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Close a dispute case with a required structured outcome — this is what feeds the outcome
-   * back into the vendor's risk/performance profile (e.g. 3 Vendor Warnings in 90 days).
-   */
   closeDisputeCase(caseId: string, outcome: DisputeOutcome, actor: string = 'You', note?: string): Observable<DisputeCase[]> {
     const current = this.disputeCasesSubject.value.length ? this.disputeCasesSubject.value : MOCK_DISPUTE_CASES;
     const updated = current.map(c => {
@@ -1922,9 +2311,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Get the resolution center summary strip stats
-   */
   getResolutionSummaryStats(): Observable<ResolutionSummaryStats> {
     return this.http.get<ResolutionSummaryStats>(`${API_BASE}/resolution/summary`)
       .pipe(
@@ -1948,9 +2334,6 @@ private readonly MOCK_DASHBOARD_STATS: VendorDashboardStats = {
       );
   }
 
-  /**
-   * Get the immutable audit log for the resolution center (audit-ready compliance trail)
-   */
   getResolutionAuditLog(): Observable<ResolutionAuditLogEntry[]> {
     return this.http.get<ResolutionAuditLogEntry[]>(`${API_BASE}/resolution/audit-log`)
       .pipe(

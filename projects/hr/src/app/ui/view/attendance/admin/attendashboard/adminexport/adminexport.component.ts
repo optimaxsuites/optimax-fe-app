@@ -90,6 +90,7 @@ exportExcel() {
 }
 
 importModalOpen = false;
+exportDropdownOpen = false;
 //selectedFile: File | null = null;
 
 openImportModal() {
@@ -99,6 +100,14 @@ openImportModal() {
 closeImportModal() {
   this.importModalOpen = false;
   //this.selectedFile = null;
+}
+
+toggleExportDropdown() {
+  this.exportDropdownOpen = !this.exportDropdownOpen;
+}
+
+closeExportDropdown() {
+  this.exportDropdownOpen = false;
 }
 
 downloadTemplate() {

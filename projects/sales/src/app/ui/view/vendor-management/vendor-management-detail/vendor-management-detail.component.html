@@ -1,18 +1,18 @@
-<!-- vendor-detail.component.html -->
+<!-- vendor-management-detail.component.html -->
 <div class="vendor-detail">
     <div class="detail-wrapper">
 
         <!-- ============================================================
-    LOADING STATE
-    ============================================================ -->
+        LOADING STATE
+        ============================================================ -->
         <div *ngIf="isLoading" class="loading-state">
             <div class="spinner-glow"></div>
             <p>Loading vendor details...</p>
         </div>
 
         <!-- ============================================================
-    ERROR STATE
-    ============================================================ -->
+        ERROR STATE
+        ============================================================ -->
         <div *ngIf="error && !isLoading" class="error-state">
             <i class="fas fa-exclamation-triangle"></i>
             <h3>Failed to Load Vendor</h3>
@@ -23,13 +23,13 @@
         </div>
 
         <!-- ============================================================
-    CONTENT
-    ============================================================ -->
+        CONTENT
+        ============================================================ -->
         <ng-container *ngIf="!isLoading && vendor && !error">
 
             <!-- ==========================================================
-      HEADER - Dark Blue Premium Card
-      ========================================================== -->
+            HEADER - Dark Blue Premium Card
+            ========================================================== -->
             <div class="detail-header">
                 <div class="header-top">
                     <div class="header-left">
@@ -118,8 +118,8 @@
             </div>
 
             <!-- ==========================================================
-      TABS
-      ========================================================== -->
+            TABS
+            ========================================================== -->
             <div class="tabs-container" #tabsContainer>
                 <div class="tabs-scroll">
                     <button *ngFor="let tab of ['overview','performance','risk','documents','contracts','activity']"
@@ -142,439 +142,79 @@
             </div>
 
             <!-- ==========================================================
-      TAB CONTENT
-      ========================================================== -->
+            TAB CONTENT
+            ========================================================== -->
             <div class="tab-content">
 
                 <!-- ========================================================
-        OVERVIEW TAB
-        ======================================================== -->
+                OVERVIEW TAB - Using the component
+                ======================================================== -->
                 <div *ngIf="activeTab === 'overview'" class="tab-panel">
-
-                    <!-- Stats Cards -->
-                    <div class="stats-grid">
-                        <div class="stat-card-mini">
-                            <span class="stat-value">{{ vendor.performanceScore.toFixed(0) }}%</span>
-                            <span class="stat-label">Performance Score</span>
-                            <div class="stat-bar">
-                                <div class="stat-fill" [style.width.%]="vendor.performanceScore"
-                                    [style.background]="getPerformanceColor(vendor.performanceScore)"></div>
-                            </div>
-                        </div>
-                        <div class="stat-card-mini">
-                            <span class="stat-value">{{ vendor.totalProjects || vendor.performanceMetrics?.totalProjects
-                                || 0 }}</span>
-                            <span class="stat-label">Total Projects</span>
-                            <span class="stat-sub">{{ (vendor.winRate || 0).toFixed(0) }}% win rate</span>
-                        </div>
-                        <div class="stat-card-mini">
-                            <span class="stat-value">{{ formatCurrency(vendor.performanceMetrics?.totalRevenue || 0)
-                                }}</span>
-                            <span class="stat-label">Total Revenue</span>
-                            <span class="stat-sub">Lifetime value</span>
-                        </div>
-                        <div class="stat-card-mini">
-                            <span class="stat-value">{{ vendor.averageRating?.toFixed(1) || '—' }}</span>
-                            <span class="stat-label">Rating</span>
-                            <span class="stat-sub">
-                                <i *ngFor="let star of [1,2,3,4,5]" class="fas fa-star"
-                                    [class.filled]="star <= (vendor.averageRating || 0)"></i>
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Main Content -->
-                    <div class="overview-grid">
-                        <!-- Left Column -->
-                        <div class="overview-left">
-                            <!-- Company Info -->
-                            <div class="info-card">
-                                <h3><i class="fas fa-building"></i> Company Information</h3>
-                                <div class="info-grid">
-                                    <div class="info-item">
-                                        <span class="info-label">Company Name</span>
-                                        <span class="info-value">{{ vendor.companyName }}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Registration Number</span>
-                                        <span class="info-value">{{ vendor.registrationNumber }}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Tax ID</span>
-                                        <span class="info-value">{{ vendor.taxId }}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Website</span>
-                                        <span class="info-value">{{ vendor.website || '—' }}</span>
-                                    </div>
-                                    <div class="info-item full-width">
-                                        <span class="info-label">Description</span>
-                                        <span class="info-value">{{ vendor.description || 'No description provided'
-                                            }}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Address -->
-                            <div class="info-card">
-                                <h3><i class="fas fa-map-marker-alt"></i> Address</h3>
-                                <div class="info-grid">
-                                    <div class="info-item full-width">
-                                        <span class="info-label">Street</span>
-                                        <span class="info-value">{{ vendor.address.street }}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">City</span>
-                                        <span class="info-value">{{ vendor.address.city }}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">State</span>
-                                        <span class="info-value">{{ vendor.address.state }}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Country</span>
-                                        <span class="info-value">{{ vendor.address.country }}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Postal Code</span>
-                                        <span class="info-value">{{ vendor.address.postalCode }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right Column -->
-                        <div class="overview-right">
-                            <!-- Contacts -->
-                            <div class="info-card">
-                                <h3><i class="fas fa-address-book"></i> Contacts</h3>
-                                <div class="contacts-list">
-                                    <div *ngFor="let contact of vendor.contacts" class="contact-item">
-                                        <div class="contact-avatar">{{ contact.name.charAt(0) }}</div>
-                                        <div class="contact-info">
-                                            <span class="contact-name">
-                                                {{ contact.name }}
-                                                <span class="contact-primary" *ngIf="contact.isPrimary">Primary</span>
-                                            </span>
-                                            <span class="contact-role">{{ contact.role }}</span>
-                                            <span class="contact-details">
-                                                <i class="fas fa-envelope"></i> {{ contact.email }}
-                                                <i class="fas fa-phone"></i> {{ contact.phone }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div *ngIf="!vendor.contacts || vendor.contacts.length === 0" class="no-contacts">
-                                        No contacts available
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Bank Details -->
-                            <div class="info-card">
-                                <h3><i class="fas fa-university"></i> Bank Details</h3>
-                                <div class="info-grid" *ngIf="vendor.bankDetails">
-                                    <div class="info-item full-width">
-                                        <span class="info-label">Bank Name</span>
-                                        <span class="info-value">{{ vendor.bankDetails.bankName || '—' }}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Account Number</span>
-                                        <span class="info-value">{{ vendor.bankDetails.accountNumber || '—' }}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Account Name</span>
-                                        <span class="info-value">{{ vendor.bankDetails.accountName || '—' }}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">SWIFT Code</span>
-                                        <span class="info-value">{{ vendor.bankDetails.swiftCode || '—' }}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Verified</span>
-                                        <span class="info-value">
-                                            <span class="badge-verified" [class.verified]="vendor.bankDetails.verified">
-                                                {{ vendor.bankDetails.verified ? '✓ Verified' : 'Pending' }}
-                                            </span>
-                                        </span>
-                                    </div>
-                                </div>
-                                <div *ngIf="!vendor.bankDetails" class="no-bank">
-                                    No bank details available
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <app-overview
+                        [vendor]="vendor"
+                        (navigateToPerformance)="setActiveTab('performance')"
+                        (navigateToRisk)="setActiveTab('risk')"
+                        (navigateToDocuments)="setActiveTab('documents')"
+                        (navigateToEdit)="navigateToEdit()">
+                    </app-overview>
                 </div>
 
                 <!-- ========================================================
-        PERFORMANCE TAB
-        ======================================================== -->
+                PERFORMANCE TAB - Using the component
+                ======================================================== -->
                 <div *ngIf="activeTab === 'performance'" class="tab-panel">
-                    <div class="performance-container" *ngIf="performance">
-
-                        <!-- KPIs -->
-                        <div class="kpi-grid">
-                            <div class="kpi-card" *ngFor="let kpi of [
-                { label: 'Overall Score', value: performance.overallScore.toFixed(0) + '%', color: getPerformanceColor(performance.overallScore) },
-                { label: 'On-Time Delivery', value: performance.onTimeDeliveryRate.toFixed(0) + '%', color: performance.onTimeDeliveryRate >= 80 ? '#2EB270' : '#F5A623' },
-                { label: 'Quality Score', value: performance.qualityScore.toFixed(0) + '%', color: performance.qualityScore >= 80 ? '#2EB270' : '#F5A623' },
-                { label: 'Cost Competitiveness', value: performance.costCompetitiveness.toFixed(0) + '%', color: performance.costCompetitiveness >= 80 ? '#2EB270' : '#F5A623' },
-                { label: 'Compliance Score', value: performance.complianceScore.toFixed(0) + '%', color: performance.complianceScore >= 80 ? '#2EB270' : '#F5A623' },
-                { label: 'Rating Score', value: performance.ratingScore.toFixed(0) + '%', color: performance.ratingScore >= 80 ? '#2EB270' : '#F5A623' },
-                { label: 'Win Rate', value: performance.winRate.toFixed(0) + '%', color: performance.winRate >= 60 ? '#2EB270' : '#F5A623' },
-                { label: 'Total Projects', value: performance.totalProjects, color: '#2E6276' }
-              ]">
-                                <div class="kpi-value" [style.color]="kpi.color">{{ kpi.value }}</div>
-                                <div class="kpi-label">{{ kpi.label }}</div>
-                                <div class="kpi-bar" *ngIf="kpi.label !== 'Total Projects'">
-                                    <div class="kpi-fill" [style.width.%]="parseKpiValue(kpi.value)"
-                                        [style.background]="kpi.color"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Trend Chart -->
-                        <div class="chart-card" *ngIf="performance.trendData && performance.trendData.length > 0">
-                            <div class="chart-header">
-                                <h3><i class="fas fa-chart-area"></i> Performance Trend</h3>
-                                <span class="chart-subtitle">Last 6 months</span>
-                            </div>
-                            <div class="line-chart">
-                                <svg viewBox="0 0 500 280" preserveAspectRatio="xMidYMid meet">
-                                    <defs>
-                                        <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                            <stop offset="0%" style="stop-color:#2E6276;stop-opacity:0.3" />
-                                            <stop offset="100%" style="stop-color:#2E6276;stop-opacity:0.0" />
-                                        </linearGradient>
-                                    </defs>
-
-                                    <!-- Grid lines -->
-                                    <line *ngFor="let i of [0, 50, 100, 150, 200, 250]" x1="20" [attr.y1]="20 + i"
-                                        x2="480" [attr.y2]="20 + i" class="chart-grid" />
-
-                                    <!-- Area under line -->
-                                    <polygon
-                                        [attr.points]="getPerformanceChartAreaPath(getPerformanceScores(), getMaxPerformance())"
-                                        class="chart-area" />
-
-                                    <!-- Main line -->
-                                    <polyline
-                                        [attr.points]="getPerformanceChartPath(getPerformanceScores(), getMaxPerformance())"
-                                        class="chart-line" />
-
-                                    <!-- Data points -->
-                                    <circle *ngFor="let d of performance.trendData; let idx = index"
-                                        [attr.cx]="getPointX(idx, performance.trendData.length)"
-                                        [attr.cy]="getPointY(d.score, getMaxPerformance())" r="5" class="chart-dot">
-                                        <title>{{ d.period }}: {{ d.score.toFixed(0) }}%</title>
-                                    </circle>
-
-                                    <!-- X-axis labels -->
-                                    <text *ngFor="let d of performance.trendData; let idx = index"
-                                        [attr.x]="getPointX(idx, performance.trendData.length)" y="270"
-                                        class="chart-label">
-                                        {{ d.period }}
-                                    </text>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div *ngIf="!performance" class="empty-state-small">
-                        <i class="fas fa-chart-line"></i>
-                        <p>No performance data available</p>
-                    </div>
+                    <app-vendor-performance [performance]="performance">
+                    </app-vendor-performance>
                 </div>
 
                 <!-- ========================================================
-        RISK TAB
-        ======================================================== -->
+                RISK TAB - Using the component
+                ======================================================== -->
                 <div *ngIf="activeTab === 'risk'" class="tab-panel">
-                    <div class="risk-container">
-
-                        <!-- Risk Score -->
-                        <div class="risk-overview" *ngIf="vendor">
-                            <div class="risk-score-card" [class.low]="vendor.riskLevel === RiskLevel.LOW"
-                                [class.medium]="vendor.riskLevel === RiskLevel.MEDIUM"
-                                [class.high]="vendor.riskLevel === RiskLevel.HIGH">
-                                <div class="risk-score-circle">
-                                    <span class="risk-score">{{ vendor.riskLevel }}</span>
-                                    <span class="risk-label">Risk Level</span>
-                                </div>
-                                <div class="risk-details">
-                                    <div class="risk-detail-item">
-                                        <span class="label">Compliance Status</span>
-                                        <span class="value" [class.compliant]="vendor.complianceStatus?.isCompliant">
-                                            {{ vendor.complianceStatus?.isCompliant ? '✓ Compliant' : '⚠️ Review Needed'
-                                            }}
-                                        </span>
-                                    </div>
-                                    <div class="risk-detail-item">
-                                        <span class="label">Documents Verified</span>
-                                        <span class="value">{{ vendor.complianceStatus?.documentsVerified || 0 }}/{{
-                                            vendor.complianceStatus?.totalRequiredDocuments || 0 }}</span>
-                                    </div>
-                                    <div class="risk-detail-item">
-                                        <span class="label">Sanctions Clear</span>
-                                        <span class="value" [class.compliant]="vendor.complianceStatus?.sanctionsClear">
-                                            {{ vendor.complianceStatus?.sanctionsClear ? '✓ Clear' : '⚠️ Pending' }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Risk Alerts -->
-                        <div class="alerts-section">
-                            <h3><i class="fas fa-bell"></i> Risk Alerts</h3>
-                            <div class="alerts-list">
-                                <div *ngFor="let alert of riskAlerts" class="alert-item"
-                                    [class]="getAlertSeverityClass(alert.severity)">
-                                    <div class="alert-icon">
-                                        <i class="fas" [class]="getRiskSeverityIcon(alert.severity)"></i>
-                                    </div>
-                                    <div class="alert-content">
-                                        <span class="alert-title">{{ alert.title }}</span>
-                                        <span class="alert-description">{{ alert.description }}</span>
-                                        <span class="alert-date">{{ formatDateTime(alert.detectedAt) }}</span>
-                                    </div>
-                                    <span class="alert-status" [class.resolved]="alert.status === 'RESOLVED'">
-                                        {{ alert.status }}
-                                    </span>
-                                </div>
-                                <div *ngIf="riskAlerts.length === 0" class="no-alerts">
-                                    <i class="fas fa-check-circle"></i>
-                                    <p>No risk alerts found</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <app-vendor-risk
+                        [vendor]="vendor"
+                        [riskAlerts]="riskAlerts">
+                    </app-vendor-risk>
                 </div>
 
-                <!-- ========================================================
-        DOCUMENTS TAB
-        ======================================================== -->
+               <!-- ========================================================
+                DOCUMENTS TAB - Using the component
+                ======================================================== -->
                 <div *ngIf="activeTab === 'documents'" class="tab-panel">
-                    <div class="documents-container">
-                        <div class="documents-header">
-                            <h3><i class="fas fa-file-alt"></i> Vendor Documents</h3>
-                            <button class="btn-upload" (click)="navigateToDocuments()">
-                                <i class="fas fa-upload"></i> Upload Document
-                            </button>
-                        </div>
-
-                        <div class="documents-grid">
-                            <div *ngFor="let doc of documents" class="document-card"
-                                [class.expiring]="doc.status === DocumentStatus.EXPIRING_SOON"
-                                [class.expired]="doc.status === DocumentStatus.EXPIRED">
-                                <div class="doc-icon" [style.color]="getDocumentStatusColor(doc.status)">
-                                    <i class="fas fa-file-{{ doc.category | lowercase }}"></i>
-                                </div>
-                                <div class="doc-info">
-                                    <span class="doc-name">{{ doc.name }}</span>
-                                    <span class="doc-category">{{ doc.category }}</span>
-                                    <span class="doc-expiry"
-                                        [class.expiring]="doc.status === DocumentStatus.EXPIRING_SOON"
-                                        [class.expired]="doc.status === DocumentStatus.EXPIRED">
-                                        <i class="fas fa-clock"></i>
-                                        {{ doc.status === DocumentStatus.EXPIRED ? 'Expired' :
-                                        getDaysUntilExpiry(doc.expiryDate) + ' days remaining' }}
-                                    </span>
-                                </div>
-                                <div class="doc-status" [style.color]="getDocumentStatusColor(doc.status)">
-                                    {{ getDocumentStatusLabel(doc.status) }}
-                                </div>
-                            </div>
-                            <div *ngIf="documents.length === 0" class="no-documents">
-                                <i class="fas fa-file-alt"></i>
-                                <p>No documents uploaded</p>
-                            </div>
-                        </div>
-                    </div>
+                    <app-vendor-documents
+                        [documents]="documents"
+                        [vendorId]="vendorId"
+                        [isLoading]="isLoading"
+                        (uploadDocument)="handleDocumentUpload($event)"
+                        (deleteDocument)="handleDocumentDelete($event)"
+                        (verifyDocument)="handleDocumentVerify($event)"
+                        (refresh)="loadRelatedData()">
+                    </app-vendor-documents>
                 </div>
 
                 <!-- ========================================================
-        CONTRACTS TAB
-        ======================================================== -->
+                CONTRACTS TAB
+                ======================================================== -->
                 <div *ngIf="activeTab === 'contracts'" class="tab-panel">
-                    <div class="contracts-container">
-                        <div class="contracts-header">
-                            <h3><i class="fas fa-file-contract"></i> Contracts</h3>
-                            <button class="btn-primary-sm" (click)="navigateToEdit()">
-                                <i class="fas fa-plus"></i> New Contract
-                            </button>
-                        </div>
-
-                        <div class="contracts-list">
-                            <div *ngFor="let contract of contracts" class="contract-item"
-                                [class]="getContractStatusClass(contract.status)">
-                                <div class="contract-left">
-                                    <span class="contract-title">{{ contract.title }}</span>
-                                    <span class="contract-number">{{ contract.contractNumber }}</span>
-                                </div>
-                                <div class="contract-middle">
-                                    <span class="contract-value">{{ formatCurrency(contract.value) }}</span>
-                                    <span class="contract-dates">
-                                        {{ formatDate(contract.startDate) }} → {{ formatDate(contract.endDate) }}
-                                    </span>
-                                </div>
-                                <div class="contract-right">
-                                    <span class="contract-status" [class]="contract.status.toLowerCase()">
-                                        {{ contract.status }}
-                                    </span>
-                                    <span class="contract-renewal" *ngIf="contract.autoRenew">
-                                        🔄 Auto-renew
-                                    </span>
-                                </div>
-                            </div>
-                            <div *ngIf="contracts.length === 0" class="no-contracts">
-                                <i class="fas fa-file-contract"></i>
-                                <p>No contracts available</p>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Contracts content goes here -->
                 </div>
 
                 <!-- ========================================================
-        ACTIVITY TAB
-        ======================================================== -->
-                <div *ngIf="activeTab === 'activity'" class="tab-panel">
-                    <div class="activity-container">
-                        <h3><i class="fas fa-history"></i> Lifecycle History</h3>
-
-                        <div class="timeline">
-                            <div *ngFor="let event of lifecycleHistory; let last = last" class="timeline-item">
-                                <div class="timeline-dot" [style.background]="getLifecycleEventColor(event.event)">
-                                    <i class="fas" [class]="getLifecycleEventIcon(event.event)"></i>
-                                </div>
-                                <div class="timeline-line" *ngIf="!last"></div>
-                                <div class="timeline-content">
-                                    <span class="timeline-event">{{ event.event | titlecase }}</span>
-                                    <span class="timeline-description">{{ event.description }}</span>
-                                    <span class="timeline-meta">
-                                        <span class="timeline-user">
-                                            <i class="fas fa-user"></i> {{ event.performedBy }}
-                                        </span>
-                                        <span class="timeline-date">
-                                            <i class="fas fa-clock"></i> {{ formatDateTime(event.timestamp) }}
-                                        </span>
-                                    </span>
-                                </div>
-                            </div>
-                            <div *ngIf="lifecycleHistory.length === 0" class="no-activity">
-                                <i class="fas fa-history"></i>
-                                <p>No activity recorded yet</p>
-                            </div>
-                        </div>
-                    </div>
+                ACTIVITY TAB
+                ======================================================== -->
+               <div *ngIf="activeTab === 'activity'" class="tab-panel">
+                    <app-vendor-activity
+                        [vendorId]="vendorId"
+                        [lifecycleHistory]="lifecycleHistory">
+                    </app-vendor-activity>
                 </div>
 
             </div>
         </ng-container>
 
         <!-- ============================================================
-    CONFIRM DIALOG
-    ============================================================ -->
+        CONFIRM DIALOG
+        ============================================================ -->
         <div class="confirm-overlay" *ngIf="showConfirmDialog">
             <div class="confirm-dialog">
                 <div class="confirm-header">

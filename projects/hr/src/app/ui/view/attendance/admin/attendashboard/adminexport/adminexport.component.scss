@@ -1,92 +1,126 @@
 @import '../../../styles/brand-colors';
 
 .export-card {
-  //background: #ffffff;
-  //padding: 16px 20px;
-  border-radius: 12px;
-  //box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin-top: 0px;
+  margin-top: 0;
   margin-bottom: 10px;
   display: flex;
-  gap: 7px;
+  gap: 0.6rem;
   flex-wrap: wrap;
-  justify-content: right;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .action-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  font-size: 14px;
-  border: 1px solid $border-light;
+  padding: 0.55rem 1rem;
+  font-size: 1.3rem;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: $bg-white;
   color: $text-secondary;
   cursor: pointer;
   transition: $transition-fast;
+  white-space: nowrap;
 
   i {
-    font-size: 13px;
-    opacity: 0.8;
+    font-size: 1.2rem;
+    opacity: 0.85;
+  }
+
+  &:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
   }
 }
 
-.action-btn:hover {
-  background: $bg-light;
-  border-color: $text-muted;
+.import-btn {
+  background: $bg-white;
+  border: 1px solid #e5e7eb;
+
+  &:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+  }
+}
+
+.export-dropdown {
+  position: relative;
+}
+
+.export-btn {
+  position: relative;
+  padding: 0.55rem 1rem;
+  font-size: 1.3rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: $bg-white;
+  color: $text-secondary;
+  cursor: pointer;
+  transition: $transition-fast;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+
+  i {
+    font-size: 1.2rem;
+    opacity: 0.85;
+  }
+
+  &:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+  }
+}
+
+.export-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.4rem;
+  background: $bg-white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 100;
+  min-width: 180px;
+  overflow: hidden;
+
+  .export-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    border: none;
+    background: transparent;
+    color: $text-secondary;
+    font-size: 1.3rem;
+    cursor: pointer;
+    text-align: left;
+    transition: $transition-fast;
+
+    i {
+      font-size: 1.2rem;
+    }
+
+    &:hover {
+      background: #f3f4f6;
+      color: $text-dark;
+    }
+
+    &:first-child {
+      border-bottom: 1px solid #f3f4f6;
+    }
+  }
 }
 
 .file-name {
   font-size: 20px;
   color: $text-secondary;
   margin-top: 6px;
-}
-/*.export-card {
-  //background: #ffffff;
-  //padding: 16px 20px;
-  border-radius: 12px;
-  //box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin-top: 20px;
-  margin-bottom: 20px;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}*/
-
-.export-btn {
-  display: flex;
-  align-items: center;
-  height: 4.5rem;
-  gap: 6px;
-  padding: 8px 14px;
-  font-size: 1.7rem;
-  font-weight: 500;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: $transition-fast;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-/* CSV */
-.export-btn.csv {
-  background-color: $bg-white;
-  color: $info;
-
-  &:hover {
-    background-color: rgba(182, 214, 226, 0.3);
-  }
-}
-
-/* Excel */
-.export-btn.excel {
-  background-color: $bg-white;
-  color: $status-approved;
-
-  &:hover {
-    background-color: rgba(46, 178, 112, 0.1);
-  }
 }
 
 .import-backdrop {
@@ -197,7 +231,7 @@
   background: $bg-light;
 }
 
-.import-btn {
+.actions .import-btn {
   padding: 8px 16px;
   border-radius: 6px;
   border: none;
@@ -210,20 +244,25 @@
   cursor: pointer;
 }
 
-.import-btn:hover {
+.actions .import-btn:hover {
   background: $btn-success-hover;
 }
 
 @media (max-width: 768px) {
   .export-card {
-    justify-content: stretch;
+    justify-content: flex-start;
+    gap: 0.5rem;
 
     .action-btn {
-      flex: 1;
-      justify-content: center;
-      font-size: 12px;
-      padding: 8px 10px;
+      font-size: 1.2rem;
+      padding: 0.5rem 0.9rem;
     }
+  }
+
+  .export-menu {
+    position: fixed;
+    left: auto;
+    right: 1rem;
   }
 
   .import-modal {
@@ -234,10 +273,17 @@
 
 @media (max-width: 480px) {
   .export-card {
-    flex-direction: column;
+    width: 100%;
+    justify-content: center;
+    gap: 0.4rem;
 
     .action-btn {
-      width: 100%;
+      font-size: 1.1rem;
+      padding: 0.45rem 0.8rem;
     }
+  }
+
+  .export-menu {
+    min-width: 150px;
   }
 }

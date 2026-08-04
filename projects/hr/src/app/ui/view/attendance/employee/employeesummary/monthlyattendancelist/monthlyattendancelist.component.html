@@ -30,8 +30,12 @@
       <span>{{ record.hours || 0 }}h</span>
     </div>
 
-    <div class="empty" *ngIf="filteredData.length === 0">
-      No attendance records for this month.
+    <div class="empty-state" *ngIf="filteredData.length === 0">
+      <div class="empty-icon">
+        <i class="pi pi-calendar-times" aria-hidden="true"></i>
+      </div>
+      <h3>No Records Yet</h3>
+      <p>No attendance records for this month. Start clocking in to see your attendance history here.</p>
     </div>
 
   </div>

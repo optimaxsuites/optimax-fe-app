@@ -1,0 +1,232 @@
+// vendor-performance.component.scss
+// ============================================================
+// VARIABLES
+// ============================================================
+
+$primary-dark: #0a1628;
+$primary-mid: #1a2d4a;
+$primary-light: #2a4a6a;
+$primary-accent: #2E6276;
+$primary-surface: #e8edf4;
+
+$text-primary: #0a1628;
+$text-secondary: #4a5a6e;
+$text-muted: #8a9aaa;
+
+$border-light: #eef2f7;
+$border-color: #dce3ec;
+
+$shadow-sm: 0 2px 8px rgba(10, 22, 40, 0.06), 0 1px 3px rgba(10, 22, 40, 0.04);
+$shadow-md: 0 4px 20px rgba(10, 22, 40, 0.08), 0 2px 6px rgba(10, 22, 40, 0.04);
+
+$radius-sm: 10px;
+$radius-md: 14px;
+
+// ============================================================
+// PERFORMANCE CONTAINER
+// ============================================================
+
+.performance-container {
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+
+        @media (max-width: 992px) {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        @media (max-width: 480px) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .kpi-card {
+        background: #f8fafc;
+        border: 1px solid $border-light;
+        border-radius: $radius-sm;
+        padding: 1rem 1.25rem;
+        transition: all 0.2s ease;
+
+        &:hover {
+            box-shadow: $shadow-sm;
+            border-color: $primary-accent;
+        }
+
+        .kpi-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .kpi-label {
+            font-size: 0.75rem;
+            color: $text-muted;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .kpi-bar {
+            height: 4px;
+            background: $border-light;
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+
+            .kpi-fill {
+                height: 100%;
+                border-radius: 2px;
+                transition: width 0.8s ease;
+            }
+        }
+    }
+}
+
+// ============================================================
+// CHART CARD
+// ============================================================
+
+.chart-card {
+    background: white;
+    border: 1px solid $border-light;
+    border-radius: $radius-sm;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+
+        h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: $text-primary;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            i {
+                color: $primary-accent;
+            }
+        }
+
+        .chart-subtitle {
+            font-size: 0.8rem;
+            color: $text-muted;
+        }
+    }
+
+    .line-chart {
+        height: 260px;
+        position: relative;
+
+        svg {
+            width: 100%;
+            height: 100%;
+
+            .chart-grid {
+                stroke: rgba(46, 98, 118, 0.12);
+                stroke-width: 1.5;
+            }
+
+            .chart-area {
+                fill: url(#areaGradient);
+                opacity: 0.6;
+            }
+
+            .chart-line {
+                fill: none;
+                stroke: #2E6276;
+                stroke-width: 3;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            .chart-dot {
+                fill: white;
+                stroke: #2E6276;
+                stroke-width: 3;
+                cursor: pointer;
+                transition: all 0.3s ease;
+
+                &:hover {
+                    r: 8;
+                    stroke-width: 4;
+                    fill: #2E6276;
+                }
+            }
+
+            .chart-label {
+                font-size: 0.6rem;
+                fill: #8a9aaa;
+                font-weight: 500;
+                text-anchor: middle;
+            }
+        }
+    }
+}
+
+// ============================================================
+// SUMMARY STATS
+// ============================================================
+
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: #f8fafc;
+    border: 1px solid $border-light;
+    border-radius: $radius-sm;
+
+    @media (max-width: 768px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: 480px) {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-item {
+        .summary-label {
+            display: block;
+            font-size: 0.7rem;
+            color: $text-muted;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .summary-value {
+            display: block;
+            font-size: 1rem;
+            font-weight: 700;
+            color: $text-primary;
+            margin-top: 0.1rem;
+        }
+    }
+}
+
+// ============================================================
+// EMPTY STATE
+// ============================================================
+
+.empty-state-small {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: $text-muted;
+
+    i {
+        font-size: 2.5rem;
+        color: $border-color;
+        margin-bottom: 0.5rem;
+    }
+
+    p {
+        margin: 0;
+    }
+}

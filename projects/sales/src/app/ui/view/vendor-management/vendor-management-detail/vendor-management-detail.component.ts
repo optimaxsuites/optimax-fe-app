@@ -1,4 +1,4 @@
-// vendor-detail.component.ts
+// vendor-management-detail.component.ts
 // ============================================================
 // IMPORTS
 // ============================================================
@@ -7,7 +7,7 @@ import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, Inp
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Subject, takeUntil, switchMap, combineLatest } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 import {
   VendorService
 } from '../../../service/vendor-management/vendor-management.service';
@@ -21,6 +21,7 @@ import {
   VendorLifecycleHistory,
   VendorContract,
   RiskAlert,
+  DocumentCategory,  // <-- ADD THIS
   getVendorStatusColor,
   getVendorTierLabel,
   getRiskLevelColor,
@@ -251,7 +252,6 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
           this.vendor = vendor;
           this.updateEditForm(vendor);
           this.isLoading = false;
-
           // Load related data
           this.loadRelatedData();
         },
@@ -279,6 +279,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
+          console.log('Performance data received:', response);
           this.performance = response.metrics;
           this.preparePerformanceChart();
         },
@@ -305,11 +306,12 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
         error: (err) => console.error('Failed to load contracts:', err)
       });
 
-    // Load risk alerts
+    // Load risk alerts - FIXED: Pass vendorId
     this.vendorService.getRiskAlerts(this.vendorId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (alerts) => {
+          console.log('Risk alerts received:', alerts);
           this.riskAlerts = alerts;
         },
         error: (err) => console.error('Failed to load risk alerts:', err)
@@ -395,13 +397,11 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
           this.vendor = updated;
           this.isEditing = false;
           this.isSaving = false;
-          // Show success toast
           console.log('Vendor updated successfully');
         },
         error: (err) => {
           console.error('Failed to update vendor:', err);
           this.isSaving = false;
-          // Show error toast
         }
       });
   }
@@ -491,12 +491,10 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   // ============================================================
 
   deleteVendor(): void {
-    // In real implementation, this would call a delete endpoint
-    // For now, we'll just navigate away
     console.log('Deleting vendor...');
     this.showConfirmDialog = false;
     this.confirmAction = null;
-    this.router.navigate(['/commerce/manage-vendors']);
+    this.router.navigate(['/manage-vendors']);
   }
 
   // ============================================================
@@ -529,7 +527,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   // ============================================================
 
   navigateToEdit(): void {
-    this.router.navigate(['/commerce/manage-vendors', this.vendorId, 'edit']);
+    this.router.navigate(['/manage-vendors', this.vendorId, 'edit']);
   }
 
   navigateToPerformance(): void {
@@ -785,6 +783,57 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     const firstX = this.getPointX(0, data.length);
     const baseY = this.getPointY(0, max);
     return path + ` L${lastX},${baseY} L${firstX},${baseY} Z`;
+  }
+
+  // ============================================================
+  // DOCUMENT HANDLERS
+  // ============================================================
+
+  handleDocumentUpload(event: { file: File; category: DocumentCategory; issueDate: Date; expiryDate: Date }): void {
+    this.vendorService.uploadDocument(
+      this.vendorId,
+      event.file,
+      event.category,
+      event.issueDate,
+      event.expiryDate
+    ).pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (doc) => {
+        console.log('Document uploaded:', doc);
+        this.loadRelatedData();
+      },
+      error: (err) => {
+        console.error('Failed to upload document:', err);
+      }
+    });
+  }
+
+  handleDocumentDelete(documentId: string): void {
+    this.vendorService.deleteDocument(documentId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          console.log('Document deleted');
+          this.loadRelatedData();
+        },
+        error: (err) => {
+          console.error('Failed to delete document:', err);
+        }
+      });
+  }
+
+  handleDocumentVerify(event: { documentId: string; verified: boolean; notes?: string }): void {
+    this.vendorService.verifyDocument(event.documentId, event.verified, event.notes)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          console.log('Document verified:', event.verified);
+          this.loadRelatedData();
+        },
+        error: (err) => {
+          console.error('Failed to verify document:', err);
+        }
+      });
   }
 
   // ============================================================

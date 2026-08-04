@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
+import { combineLatest } from 'rxjs';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
+import { CorrectionRequestService } from '../../../../service/attendance/correction-request.service';
 import { AttendanceTableRecord } from '../../../../domain/attendance/attendancetable.dto';
 import { MOCK_ATTENDANCE } from '../../../../domain/attendance/attendancetable.mock';
 import { AttendancefilterComponent } from './attendancefilter/attendancefilter.component';
@@ -14,15 +16,89 @@ import { AttendancefilterComponent } from './attendancefilter/attendancefilter.c
 })
 export class AttendancetableComponent implements OnInit{
 
-  private attendancetableService = inject(AttendancetableService)
+  private attendancetableService = inject(AttendancetableService);
+  private correctionRequestService = inject(CorrectionRequestService);
+  private preservedCorrectionRequests: Map<number, any> = new Map();
 
   attendance: AttendanceTableRecord[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
- 
+
 
   ngOnInit(): void {
+    console.log('🚀 AttendanceTable component initialized!');
+    console.log('🚀 CorrectionRequestService injected:', !!this.correctionRequestService);
+
+    // Load MOCK_ATTENDANCE initially
     this.attendance = MOCK_ATTENDANCE;
     this.filteredAttendance = [...this.attendance];
+    console.log('🎯 Initial MOCK_ATTENDANCE loaded:', this.attendance.map(r => ({ id: r.id, employee: r.employee })));
+
+    // Subscribe to correction requests - preserve them always
+    this.correctionRequestService.correctionRequests$.subscribe((correctionRequests) => {
+      console.log('📥 Correction requests received:', correctionRequests.length);
+      console.log('📋 Correction request records:', correctionRequests.map(r => ({
+        id: r.id,
+        employee: r.employee,
+        hasCorrection: !!r.correctionRequest,
+        correctionStatus: r.correctionRequest?.status
+      })));
+
+      if (correctionRequests && correctionRequests.length > 0) {
+        // Store correction requests by record id
+        correctionRequests.forEach(record => {
+          if (record.correctionRequest) {
+            this.preservedCorrectionRequests.set(record.id, record.correctionRequest);
+            console.log('💾 Stored correction request for record id:', record.id, 'employee:', record.employee);
+          }
+        });
+      }
+
+      console.log('🗂️ Preserved corrections map size:', this.preservedCorrectionRequests.size);
+      console.log('🗂️ Preserved map contents:', Array.from(this.preservedCorrectionRequests.entries()));
+
+      // Re-apply preserved corrections to current attendance
+      this.applyPreservedCorrections();
+    });
+
+    // Subscribe to attendance updates
+    this.attendancetableService.attendance$.subscribe((attendanceData) => {
+      if (attendanceData && attendanceData.length > 0) {
+        console.log('📥 Attendance data received:', attendanceData.length);
+        this.attendance = [...attendanceData];
+      }
+
+      // Always re-apply preserved corrections after any update
+      this.applyPreservedCorrections();
+    });
+  }
+
+  private applyPreservedCorrections(): void {
+    console.log('🔄 Applying preserved corrections. Map size:', this.preservedCorrectionRequests.size);
+    console.log('🔄 Attendance records to process:', this.attendance.map(r => ({ id: r.id, employee: r.employee })));
+
+    // Apply stored correction requests to current attendance records
+    this.attendance.forEach(record => {
+      const preservedCorrection = this.preservedCorrectionRequests.get(record.id);
+      if (preservedCorrection) {
+        record.correctionRequest = preservedCorrection;
+        console.log('✅ Applied correction to record id:', record.id, 'employee:', record.employee);
+      }
+    });
+
+    // Also check if there are preserved corrections for records NOT in attendance
+    this.preservedCorrectionRequests.forEach((correction, recordId) => {
+      const found = this.attendance.find(r => r.id === recordId);
+      if (!found) {
+        console.warn('⚠️ Correction request for record id', recordId, 'but record not in attendance array!');
+      }
+    });
+
+    this.filteredAttendance = [...this.attendance];
+    console.log('📊 Final attendance with corrections:', this.filteredAttendance.map(r => ({
+      id: r.id,
+      employee: r.employee,
+      hasCorrection: !!r.correctionRequest
+    })));
   }
 
 /*manualCorrection(record: any) {

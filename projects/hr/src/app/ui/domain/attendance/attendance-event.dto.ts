@@ -7,6 +7,8 @@ export type EventSource = 'BIOMETRIC' | 'REMOTE' | 'MANUAL';
 export type EventType = 'IN' | 'OUT';
 export type RecordStatus = 'DRAFT' | 'SUBMITTED' | 'IN_APPROVAL' | 'APPROVED' | 'REJECTED' | 'LOCKED';
 export type FraudFlagCode = 'SUSPICIOUS_LOCATION' | 'VPN_DETECTED' | 'RAPID_LOCATION_CHANGE' | 'NEW_DEVICE' | 'DEVICE_CLONING' | 'LOCATION_SPOOFING';
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type FlagType = 'CORRECTION' | 'CROSS_BRANCH_BIOMETRIC';
 
 export interface AttendanceEventDTO {
   // System-generated fields
@@ -85,8 +87,16 @@ export interface AttendanceRecordDTO {
   approvedBy?: number; // ID of approver
   approvedAt?: string; // ISO timestamp - Approval timestamp
 
-  // Correction tracking
-  correctionReason?: string; // Reason if record was corrected
+  // Modification tracking
+  modifiedAt?: string; // ISO timestamp - When record was last modified
+  modifiedBy?: number; // User ID who modified the record
+  modificationReason?: string; // Reason for modification (correction)
+
+  // Approval for modifications and cross-branch
+  requiresApproval: boolean; // Whether record needs approval (correction or cross-branch)
+  approvalStatus?: ApprovalStatus; // Approval status (PENDING|APPROVED|REJECTED)
+  flagType?: FlagType; // Type of flag (CORRECTION|CROSS_BRANCH_BIOMETRIC)
+  approverNotes?: string; // HR/Manager notes during approval
 
   // Fraud detection
   fraudFlags?: FraudFlagCode[]; // Detected fraud indicators

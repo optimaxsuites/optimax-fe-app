@@ -32,7 +32,7 @@ interface OdooImportState {
 
 const NOTIF_STORE_KEY = 'hr_notif_prefs_v1';
 
-const PROJECT_DEFAULTS: Omit<ProjectNotifPrefs, 'projectKey' | 'projectLabel'>  = {
+const PROJECT_DEFAULTS: Omit<ProjectNotifPrefs, 'projectKey' | 'projectLabel'> = {
   channels: { email: true, in_app: true, push: false, sms: false },
   events: {
     taskAssigned: true, statusChange: true, followUp: true,
@@ -118,9 +118,9 @@ export class HrSettingsComponent implements OnInit {
     private route: ActivatedRoute,
     private payrollService: PayrollService,
   ) {
-    this.preOnboardingLink      = this.navLinks.getLink('preOnboardingForm');
+    this.preOnboardingLink = this.navLinks.getLink('preOnboardingForm');
     this.employeeUpdateFormLink = this.navLinks.getLink('employeeUpdateForm');
-    this.offboardingFormLink    = this.navLinks.getLink('offboardingForm');
+    this.offboardingFormLink = this.navLinks.getLink('offboardingForm');
   }
 
   openForm(route: string): void {
@@ -128,31 +128,31 @@ export class HrSettingsComponent implements OnInit {
   }
 
   // ── Navigation ─────────────────────────────────────────────────────────────
-  activeSection: 'notifications' | 'odoo' | 'general' | 'forms' | 'payroll' = 'notifications';
+  activeSection: 'notifications' | 'odoo' | 'general' | 'forms' | 'office-hours' = 'notifications';
 
   // ── Notification prefs ─────────────────────────────────────────────────────
   readonly notifChannels: Array<{ key: NotifChannel; label: string; icon: string; desc: string }> = [
-    { key: 'email',  label: 'Email',     icon: 'fa-envelope',      desc: 'Receive notifications to your registered email address' },
-    { key: 'in_app', label: 'In-App',    icon: 'fa-bell',          desc: 'Alerts appear inside the OptimaX platform sidebar' },
-    { key: 'push',   label: 'Push',      icon: 'fa-mobile-alt',    desc: 'Browser or mobile push notifications (requires browser permission)' },
-    { key: 'sms',    label: 'SMS',       icon: 'fa-comment-dots',  desc: 'Text messages to your registered phone number' },
+    { key: 'email', label: 'Email', icon: 'fa-envelope', desc: 'Receive notifications to your registered email address' },
+    { key: 'in_app', label: 'In-App', icon: 'fa-bell', desc: 'Alerts appear inside the OptimaX platform sidebar' },
+    { key: 'push', label: 'Push', icon: 'fa-mobile-alt', desc: 'Browser or mobile push notifications (requires browser permission)' },
+    { key: 'sms', label: 'SMS', icon: 'fa-comment-dots', desc: 'Text messages to your registered phone number' },
   ];
 
   readonly eventLabels: Record<string, string> = {
-    taskAssigned:      'Task assigned to me',
-    statusChange:      'Task status changed',
-    followUp:          'New follow-up / update posted',
-    supervisorReview:  'Supervisor review submitted',
-    dueReminder:       'Task due-date reminder (24 h before)',
+    taskAssigned: 'Task assigned to me',
+    statusChange: 'Task status changed',
+    followUp: 'New follow-up / update posted',
+    supervisorReview: 'Supervisor review submitted',
+    dueReminder: 'Task due-date reminder (24 h before)',
     appraisalDeadline: 'Appraisal cycle deadline reminder',
   };
 
   projects: ProjectNotifPrefs[] = [
-    { projectKey: 'task_board',  projectLabel: 'Task Board',         ...this.clone(PROJECT_DEFAULTS) },
-    { projectKey: 'appraisal',   projectLabel: 'Performance Appraisal', ...this.clone(PROJECT_DEFAULTS) },
-    { projectKey: 'recruitment', projectLabel: 'Recruitment',         ...this.clone({ ...PROJECT_DEFAULTS, channels: { email: true, in_app: true, push: false, sms: false } }) },
-    { projectKey: 'payroll',     projectLabel: 'Payroll',             ...this.clone({ ...PROJECT_DEFAULTS, channels: { email: true, in_app: false, push: false, sms: false } }) },
-    { projectKey: 'leave',       projectLabel: 'Leave & Attendance',  ...this.clone(PROJECT_DEFAULTS) },
+    { projectKey: 'task_board', projectLabel: 'Task Board', ...this.clone(PROJECT_DEFAULTS) },
+    { projectKey: 'appraisal', projectLabel: 'Performance Appraisal', ...this.clone(PROJECT_DEFAULTS) },
+    { projectKey: 'recruitment', projectLabel: 'Recruitment', ...this.clone({ ...PROJECT_DEFAULTS, channels: { email: true, in_app: true, push: false, sms: false } }) },
+    { projectKey: 'payroll', projectLabel: 'Payroll', ...this.clone({ ...PROJECT_DEFAULTS, channels: { email: true, in_app: false, push: false, sms: false } }) },
+    { projectKey: 'leave', projectLabel: 'Leave & Attendance', ...this.clone(PROJECT_DEFAULTS) },
   ];
 
   expandedProject: string | null = 'task_board';
@@ -173,7 +173,7 @@ export class HrSettingsComponent implements OnInit {
     this.loadPrefs();
     this.route.queryParams.subscribe(params => {
       const panel = params['panel'];
-      if (panel && ['notifications', 'odoo', 'general', 'forms', 'payroll'].includes(panel)) {
+      if (panel && ['notifications', 'odoo', 'general', 'forms', 'office-hours'].includes(panel)) {
         this.activeSection = panel as typeof this.activeSection;
       }
     });
@@ -232,7 +232,7 @@ export class HrSettingsComponent implements OnInit {
           if (match) { match.channels = s.channels; match.events = s.events; }
         });
       }
-    } catch {}
+    } catch { }
   }
 
   savePrefs(): void {

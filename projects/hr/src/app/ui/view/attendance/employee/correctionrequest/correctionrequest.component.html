@@ -23,11 +23,20 @@
             <p class="description">{{ req.description }}</p>
           </div>
         </div>
-        <div class="status-badge" [ngClass]="req.status.toLowerCase().replace('_', '-')">
-          {{ getStatusLabel(req.status) }}
-          <span class="locked-badge" *ngIf="req.locked">
-            <i class="fas fa-lock"></i> Locked
-          </span>
+        <div class="card-actions">
+          <div class="status-badge" [ngClass]="req.status.toLowerCase().replace('_', '-')">
+            {{ getStatusLabel(req.status) }}
+            <span class="locked-badge" *ngIf="req.locked">
+              <i class="fas fa-lock"></i> Locked
+            </span>
+          </div>
+          <button type="button"
+                  class="btn-delete"
+                  title="Delete this correction request"
+                  (click)="deleteRequest(req)"
+                  *ngIf="!req.locked">
+            <i class="fas fa-trash"></i>
+          </button>
         </div>
       </div>
 

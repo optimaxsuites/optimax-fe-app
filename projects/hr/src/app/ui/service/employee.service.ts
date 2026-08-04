@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse, HttpContext } from '@angular/common/http
 import { BehaviorSubject, catchError, finalize, from, map, Observable, of, shareReplay, tap, throwError, switchMap } from 'rxjs';
 
 import { SUPPRESS_ERROR_TOAST } from '../shared-component/service/error-message/error-toast.interceptor';
+import { environment } from '../shared-component/environments/environment.prod';
 
 @Injectable({
   providedIn: 'root'
@@ -226,9 +227,12 @@ export class EmployeeService {
         let fallbackEmployeeId: number | null = null;
         
         // Known mappings from your loan data:
+        // - User ID 1 (dev) -> Employee ID 1
         // - User ID 48 (developer) -> Employee ID 16
         // - User ID 41 (admin) -> Employee ID 5
-        if (userIdNum === 48) {
+        if (userIdNum === 1) {
+          fallbackEmployeeId = 1; // Development mode fallback
+        } else if (userIdNum === 48) {
           fallbackEmployeeId = 16;
         } else if (userIdNum === 41) {
           fallbackEmployeeId = 5;

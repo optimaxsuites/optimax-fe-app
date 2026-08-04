@@ -1,508 +1,921 @@
-@import '../styles/brand-colors';
 
-.attendance-container {
-  padding: 20px;
-  width: 75.67%;
-  margin-left: auto;
-}
-
-.attendance-boxes {
+:host {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.attendance-wrapper {
-  display: flex;
-  height: 100vh; /* Ensure the wrapper takes the full height of the viewport */
-  align-items: stretch;
-}
-
-.attendance-box {
-  border: 1px solid $border-light;
-  border-radius: 8px;
-  padding: 10px;
-  text-align: left;
-  transition: background-color $transition-default;
-}
-
-.attendance-box:hover {
-  background-color: $bg-light;
-}
-
-.present {
-  background-color: rgba(46, 178, 112, 0.1);
-}
-
-.absent {
-  background-color: rgba(46, 98, 118, 0.05);
-}
-
-.day {
-  font-weight: bold;
-}
-
-.status {
-  margin: 10px 0;
-}
-
-/* Notification styles */
-.notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 10px 20px;
-  border-radius: 5px;
-  font-size: 14px;
-  display: none; /* Initially hidden */
-  z-index: 1000;
-}
-
-.notification.info {
-  background-color: $info;
-  color: $bg-white;
-}
-
-.notification.success {
-  background-color: $success;
-  color: $bg-white;
-}
-
-.notification.error {
-  background-color: $danger;
-  color: $bg-white;
-}
-
-/* Modal styling */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1001;
-}
-
-.modal-content {
-  background-color: $bg-white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 80%;
-  max-width: 600px;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h3 {
-  margin: 0;
-}
-
-.modal-close {
-  cursor: pointer;
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.modal-body {
-  padding: 10px 0;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 10px;
-}
-
-.modal-footer button {
-  padding: 5px 10px;
-  background-color: $primary-blue-green;
-  color: $bg-white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-/* Action buttons styling */
-.action-buttons {
-  display: flex;
-  justify-content: space-around;
-  margin-top: 10px;
-}
-
-.action-buttons button {
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.action-buttons .todo {
-  background-color: $warning;
-  color: $bg-white;
-}
-
-.action-buttons .review {
-  background-color: $info;
-  color: $bg-white;
-}
-
-.action-buttons .add-event {
-  background-color: $success;
-  color: $bg-white;
-}
-
-.action-buttons .click-event {
-  background-color: #e91e63;
-  color: $bg-white;
-}
-
-/* Left container styles */
-.left-container {
-  width: 35%; /* Takes up 1/3 of the page */
-  padding: 10px;
-  background-color: $bg-light;
-}
-
-.employee-info {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.profile-picture {
-  border-radius: 70%;
-  width: 100px;
-  height: 100px;
-  margin-right: 15px;
-  -webkit-border-radius: 70%;
-  -moz-border-radius: 70%;
-  -ms-border-radius: 70%;
-  -o-border-radius: 70%;
-}
-
-.employee-details h3 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.employee-details p {
-  margin: 0;
-  color: $primary-blue-green;
-  font-size: 14px;
-}
-
-/* Time information section */
-.time-info {
-  margin-bottom: 30px;
-}
-
-.time-today {
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-
-.status p {
-  font-weight: bold;
-  margin: 0;
-}
-
-.status .not-submitted {
-  color: red;
-}
-
-.period {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
-}
-
-/* Weekly time section */
-.weekly-time {
-  margin-top: 20px;
-}
-
-.weekly-time h4 {
-  margin-bottom: 10px;
-}
-
-.chart {
-  display: flex;
-  justify-content: space-around;
-  align-items: flex-end;
-  height: 100px;
-  background-color: $border-light;
-  padding: 10px;
-}
-
-.chart-bar {
-  width: 20px;
-  background-color: $primary-blue-green;
-  text-align: center;
-}
-
-.chart-bar div {
-  background-color: $primary-blue-green;
   width: 100%;
-  transition: height $transition-default;
+  box-sizing: border-box;
 }
 
-.chart-bar span {
-  display: block;
-  margin-top: 5px;
-  font-size: 12px;
-}
+$color-text-primary: #1f2937;
+$color-text-secondary: #6b7280;
+$color-text-tertiary: #9ca3af;
+$color-border: #e5e7eb;
+$color-bg-page: #f6f8fa;
+$color-bg-card: #ffffff;
+$color-bg-hover: #f9fafb;
 
-.total-week-time {
-  margin-top: 10px;
-  font-size: 18px;
-  font-weight: bold;
-}
+$color-teal-primary: #0f766e;
+$color-teal-light: #14b8a6;
+$color-teal-accent: #ecfdf5;
+$color-teal-pale: #f0fdf4;
 
-/* Popup styling */
-.popup {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: $bg-white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  z-index: 1001;
-}
+$color-success: #15803d;
+$color-success-light: #dcfce7;
+$color-warning: #d97706;
+$color-warning-light: #fef3c7;
+$color-error: #dc2626;
+$color-error-light: #fee2e2;
+$color-info: #2563eb;
+$color-info-light: #dbeafe;
 
-.popup-header {
+$space-xs: 4px;
+$space-sm: 8px;
+$space-md: 12px;
+$space-lg: 12px;
+$space-xl: 24px;
+$space-2xl: 24px;
+$space-3xl: 48px;
+
+$font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-size-xs: 12px;
+$font-size-sm: 13px;
+$font-size-base: 14px;
+$font-size-md: 16px;
+$font-size-lg: 18px;
+$font-size-xl: 24px;
+$font-size-2xl: 28px;
+
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+$line-height-tight: 1.25;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.75;
+
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+$radius-sm: 4px;
+$radius-md: 12px;
+$radius-lg: 12px;
+
+$transition-fast: 150ms ease-in-out;
+$transition-base: 200ms ease-in-out;
+$transition-slow: 300ms ease-in-out;
+
+$breakpoint-xs: 320px;
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+
+
+.attendance-dashboard {
+  background-color: $color-bg-page;
+  color: $color-text-primary;
+  font-family: $font-family;
+  font-size: $font-size-base;
+  line-height: $line-height-normal;
+  min-height: 100vh;
+  width: 100%;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.popup-header h3 {
+.dashboard-section {
+  margin: 0 0 1.5rem 0;
+  width: 100%;
+  box-sizing: border-box;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+
+.top-row-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+  width: 100%;
+  min-height: 550px;
+
+  @media (max-width: $breakpoint-lg) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  @media (max-width: $breakpoint-md) {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    min-height: auto;
+  }
+}
+
+.top-row-grid > * {
+  height: 100%;
+}
+
+
+
+
+.attendance-card {
+  background-color: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: 1rem;
+  box-shadow: $shadow-sm;
+  padding: 2rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 500px;
+
+  @media (max-width: $breakpoint-md) {
+    padding: 1.5rem;
+    height: auto;
+    min-height: auto;
+  }
+}
+
+.attendance-card__header {
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+
+.attendance-card__title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: $color-text-secondary;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.attendance-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  justify-content: center;
+
+  @media (max-width: $breakpoint-md) {
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+    text-align: center;
+  }
+}
+
+.attendance-card__clock {
+  flex-shrink: 0;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+
+  @media (max-width: $breakpoint-md) {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 0.5rem;
+  }
+
+  .clock-svg {
+    color: $color-teal-primary;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.attendance-card__details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.attendance-card__time-group {
+  margin-bottom: 1.5rem;
+}
+
+.attendance-card__time {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: $color-text-primary;
+  line-height: 1.1;
+  margin: 0;
+  letter-spacing: -0.02em;
+
+  @media (max-width: $breakpoint-md) {
+    font-size: 2rem;
+  }
+}
+
+.attendance-card__date {
+  font-size: 0.875rem;
+  color: $color-text-secondary;
+  margin-top: 0.25rem;
+  font-weight: 400;
+}
+
+.attendance-card__status-group {
+  margin-bottom: 1.25rem;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+
+  &--in {
+    background-color: $color-success-light;
+    color: $color-success;
+  }
+
+  &--out {
+    background-color: $color-warning-light;
+    color: #92400e;
+  }
+}
+
+.attendance-card__action {
+  width: 100%;
+  margin-bottom: 0.75rem;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 10;
+
+  @media (max-width: $breakpoint-md) {
+    width: 100%;
+  }
+}
+
+.attendance-card__note {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+
+  i {
+    flex-shrink: 0;
+    font-size: $font-size-sm;
+  }
+}
+
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  font-family: $font-family;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer !important;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  user-select: none;
+  min-height: 44px;
+  padding: 0.625rem 1rem;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10;
+
+  // Focus state for accessibility
+  &:focus-visible {
+    outline: 2px solid $color-teal-primary;
+    outline-offset: 2px;
+  }
+
+  // Disabled state
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background-color: $color-teal-primary;
+    color: white;
+    box-shadow: 0 1px 2px rgba($color-teal-primary, 0.15);
+
+    &:hover:not(:disabled) {
+      background-color: #0d5e59;
+      box-shadow: 0 2px 4px rgba($color-teal-primary, 0.2);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      background-color: #0a4a44;
+      transform: translateY(0);
+    }
+  }
+
+  &--large {
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+    min-height: 48px;
+  }
+}
+
+
+.metrics-grid {
+  display: grid;
+  gap: 1.25rem;
+  width: 100%;
+
+  &--4 {
+    grid-template-columns: repeat(2, 1fr);
+
+    @media (max-width: $breakpoint-lg) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+
+.metric-card {
+  background-color: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: 1rem;
+  box-shadow: $shadow-sm;
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: darken($color-border, 5%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
+}
+
+.metric-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.metric-card__icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  // Color variants per card type
+  .metric-card--hours-worked & {
+    color: $color-teal-primary;
+  }
+
+  .metric-card--expected-hours & {
+    color: $color-info;
+  }
+
+  .metric-card--late-minutes & {
+    color: $color-warning;
+  }
+
+  .metric-card--overtime & {
+    color: $color-success;
+  }
+}
+
+.metric-card__label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: $color-text-secondary;
+  margin: 0;
+  flex: 1;
+  text-align: left;
+}
+
+.metric-card__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: $color-text-primary;
+  margin-bottom: 0.25rem;
+  line-height: 1.2;
+}
+
+.metric-card__subtext {
+  font-size: 0.75rem;
+  color: $color-text-tertiary;
+}
+
+.metric-card__accent {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: $color-border;
+
+  .metric-card--hours-worked & {
+    background-color: $color-teal-primary;
+  }
+
+  .metric-card--expected-hours & {
+    background-color: $color-info;
+  }
+
+  .metric-card--late-minutes & {
+    background-color: $color-warning;
+  }
+
+  .metric-card--overtime & {
+    background-color: $color-success;
+  }
+}
+
+
+.correction-section {
+  margin-bottom: 0;
+}
+
+.correction-card {
+  background-color: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: 1rem;
+  box-shadow: $shadow-sm;
+  padding: 1.5rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  @media (max-width: $breakpoint-md) {
+    padding: 1.5rem;
+    height: auto;
+  }
+}
+
+.correction-card__content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+
+  @media (max-width: $breakpoint-md) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+}
+
+.correction-card__body {
+  flex: 1;
+}
+
+.correction-card__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: $color-text-primary;
+  margin: 0 0 0.25rem 0;
+}
+
+.correction-card__description {
+  font-size: 0.875rem;
+  color: $color-text-secondary;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.correction-card__action {
+  flex-shrink: 0;
+
+  @media (max-width: $breakpoint-md) {
+    width: 100%;
+  }
+}
+
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: $color-text-primary;
+  margin: 0 0 1rem 0;
+  position: relative;
+  padding-left: 0;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 1.25rem;
+    background-color: $color-teal-primary;
+    border-radius: 2px;
+    margin-right: 0.75rem;
+  }
+}
+
+
+.performance-section {
+  // margin handled by dashboard-section
+}
+
+.performance-card {
+  background-color: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: 1rem;
+  box-shadow: $shadow-sm;
+  padding: 1.5rem;
+  min-height: 155px;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: darken($color-border, 5%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
+}
+
+.performance-card__icon-container {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background-color: #f0fdf4;
+
+  .performance-card--attendance-rate & {
+    background-color: #f0fdf4;
+  }
+
+  .performance-card--punctuality & {
+    background-color: #eff6ff;
+  }
+
+  .performance-card--overtime & {
+    background-color: #f0fdfa;
+  }
+
+  .performance-card--absences & {
+    background-color: #fef2f2;
+  }
+}
+
+.performance-card__icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .performance-card--attendance-rate & {
+    color: $color-teal-primary;
+  }
+
+  .performance-card--punctuality & {
+    color: $color-info;
+  }
+
+  .performance-card--overtime & {
+    color: $color-teal-primary;
+  }
+
+  .performance-card--absences & {
+    color: $color-error;
+  }
+}
+
+.performance-card__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.performance-card__label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: $color-text-secondary;
+  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.performance-card__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: $color-text-primary;
+  margin-bottom: 0.25rem;
+  line-height: 1.2;
+}
+
+.performance-card__subtext {
+  font-size: 0.75rem;
+  color: $color-text-tertiary;
+  margin: 0 0 0.5rem 0;
+}
+
+.performance-card__progress-bar {
+  height: 3px;
+  background-color: $color-teal-primary;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  margin-top: 0.25rem;
+
+  .performance-card--punctuality & {
+    background-color: $color-info;
+  }
+}
+
+
+
+
+.attendance-table-card {
+  background-color: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: 1rem;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+}
+
+.attendance-table-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid $color-border;
+
+  @media (max-width: $breakpoint-md) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.25rem 1.5rem;
+  }
+}
+
+.month-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  background-color: #f9fafb;
+  border: 1px solid $color-border;
+  border-radius: 0.5rem;
+
+  @media (max-width: $breakpoint-md) {
+    width: 100%;
+  }
+}
+
+.month-selector__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: $color-text-secondary;
+  white-space: nowrap;
   margin: 0;
 }
 
-.popup-close {
-  cursor: pointer;
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.popup-body {
-  margin-top: 20px;
-}
-
-.popup-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 10px;
-}
-
-.popup-footer button {
-  padding: 5px 10px;
-  background-color: $primary-blue-green;
-  color: $bg-white;
+.month-selector__input {
+  padding: 0.375rem 0.5rem;
   border: none;
-  border-radius: 5px;
+  border-radius: 0.375rem;
+  font-family: $font-family;
+  font-size: 0.875rem;
+  color: $color-text-primary;
+  background-color: transparent;
   cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+
+  &:focus {
+    outline: none;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 1px $color-teal-primary;
+  }
+
+  @media (max-width: $breakpoint-md) {
+    flex: 1;
+  }
 }
 
-  .my-attendance-container {
-    background-color: $bg-white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 100%;
-  }
-
-  .w-full {
-    width: 100%;
-  }
-
-  button {
-    padding: 10px 20px;
-    font-size: 16px;
-    background-color: $primary-blue-green;
-    color: $bg-white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  h1, h2 {
-    color: $text-dark;
-  }
-
-  ul {
-    list-style-type: none;
-    padding: 0;
-  }
-
-  li {
-    margin: 5px 0;
-    font-size: 14px;
-  }
-
-
-.attendance-container {
-  padding: 20px;
-  width: 75.67%;
-  margin-left: auto;
+.table-wrapper {
+  overflow-x: auto;
 }
 
-
-
-
-.attendance-boxes {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.attendance-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: $font-size-base;
 }
 
-.attendance-wrapper {
-  display: flex;
-  height: 100vh; /* Ensure the wrapper takes the full height of the viewport */
-  align-items: stretch;
+.attendance-table__head {
+  background-color: #f3f4f6;
+  border-bottom: 1px solid $color-border;
 }
 
-.attendance-box {
-  border: 1px solid $border-light;
-  border-radius: 8px;
-  padding: 10px;
+.attendance-table__head th {
+  padding: 1rem 1.5rem;
   text-align: left;
-  transition: background-color $transition-default;
-}
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $color-text-secondary;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 
-.attendance-box:hover {
-  background-color: $bg-light;
-}
-
-.present {
-  background-color: rgba(46, 178, 112, 0.1);
-}
-
-.absent {
-  background-color: rgba(46, 98, 118, 0.05);
-}
-
-.day {
-  font-weight: bold;
-}
-
-.status {
-  margin: 10px 0;
-}
-
-
-.left-container {
-  width: 35%; /* Takes up 1/3 of the page */
-  padding: 10px;
-  background-color: #f9fafb;
-}
-
-.employee-info {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.profile-picture {
-  border-radius: 70%;
-  width: 100px;
-  height: 100px;
-  margin-right: 15px;
-  -webkit-border-radius: 70%;
-  -moz-border-radius: 70%;
-  -ms-border-radius: 70%;
-  -o-border-radius: 70%;
-}
-
-.employee-details {
-  h3 {
-    margin: 0;
-    font-size: 18px;
-  }
-  p {
-    margin: 0;
-    color: #2f6276;
-    font-size: 14px;
+  @media (max-width: $breakpoint-md) {
+    padding: 0.875rem;
+    font-size: 0.7rem;
   }
 }
 
-.time-info {
-  margin-bottom: 30px;
+.attendance-table__body tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.15s ease;
 
-  .time-today {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 10px;
+  &:last-child {
+    border-bottom: none;
   }
 
-  .status {
-    p {
-      font-weight: bold;
-      margin: 0;
-    }
-    .not-submitted {
-      color: red;
-    }
-  }
-
-  .period {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 10px;
+  &:hover {
+    background-color: #fafbfc;
   }
 }
 
-.weekly-time {
-  margin-top: 20px;
+.attendance-table__row {
+  &:hover {
+    background-color: #fafbfc;
+  }
+}
 
-  h4 {
-    margin-bottom: 10px;
+.attendance-table__cell {
+  padding: 1rem 1.5rem;
+  color: $color-text-primary;
+  font-size: 0.9375rem;
+
+  @media (max-width: $breakpoint-md) {
+    padding: 0.875rem;
+    font-size: 0.875rem;
+  }
+}
+
+.status-tag {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &--on\ time {
+    background-color: $color-success-light;
+    color: $color-success;
   }
 
-  .chart {
-    display: flex;
-    justify-content: space-around;
-    align-items: flex-end;
-    height: 100px;
-    background-color: #eee;
-    padding: 10px;
-
-    .chart-bar {
-      width: 20px;
-      background-color: #2f6276;
-      text-align: center;
-
-      div {
-        background-color: #2f6276;
-        width: 100%;
-        transition: height 0.3s ease;
-      }
-
-      span {
-        display: block;
-        margin-top: 5px;
-        font-size: 12px;
-      }
-    }
+  &--late {
+    background-color: $color-warning-light;
+    color: #92400e;
   }
 
-  .total-week-time {
-    margin-top: 10px;
-    font-size: 18px;
-    font-weight: bold;
+  &--absent {
+    background-color: $color-error-light;
+    color: $color-error;
+  }
+
+  &--present {
+    background-color: $color-success-light;
+    color: $color-success;
+  }
+}
+
+
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  color: $color-text-secondary;
+}
+
+.empty-state__icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 1rem;
+  color: #d1d5db;
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.empty-state__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: $color-text-primary;
+  margin: 0 0 0.25rem 0;
+}
+
+.empty-state__description {
+  font-size: 0.875rem;
+  color: $color-text-secondary;
+  margin: 0;
+}
+
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid $color-teal-primary;
+  outline-offset: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .attendance-dashboard {
+    background-color: #1f2937;
+  }
+
+  .attendance-card,
+  .metric-card,
+  .correction-card,
+  .performance-card,
+  .attendance-table-card,
+  .month-selector__input {
+    background-color: #2d3748;
+    color: #f3f4f6;
+    border-color: #4b5563;
+  }
+
+  .attendance-card__date,
+  .metric-card__label,
+  .metric-card__subtext,
+  .section-title,
+  .performance-card__label,
+  .performance-card__subtext,
+  .month-selector__label {
+    color: #d1d5db;
+  }
+
+  .attendance-table__head {
+    background-color: #1f2937;
+  }
+
+  .empty-state {
+    color: #d1d5db;
+  }
+}
+
+
+@media print {
+  .attendance-dashboard {
+    background-color: white;
+  }
+
+  .attendance-card,
+  .metric-card,
+  .correction-card,
+  .performance-card,
+  .attendance-table-card {
+    page-break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid $color-border;
+  }
+
+  .attendance-card__action,
+  .correction-card__action {
+    display: none;
+  }
+
+  .btn {
+    display: none;
   }
 }

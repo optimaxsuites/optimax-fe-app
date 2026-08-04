@@ -26,7 +26,24 @@ export class AppHrComponent {
 
   ngOnInit(): void {
     this.checkScreenWidth();
-    if (this.authenticationService.isAuthenticated()) {
+
+    // Development mode: set hardcoded authentication and navigate
+    if (environment.env === 'development') {
+      console.log('🔧 [Development Mode] Setting hardcoded authentication for eseose');
+      const devToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlc2Vvc2UiLCJ1c2VybmFtZSI6ImVzZW9zZSIsImVtYWlsIjoiZXNlb3NlQG9wdGltYXguY29tIiwibmFtZSI6IkVzZW9zZSIsInJvbGVzIjpbIkFETUluIl0sInRlbmFudCI6Im9wdGltYXgiLCJleHAiOjk5OTk5OTk5OTksImlhdCI6MTcwMDAwMDAwMH0.eseose_dev_token';
+      const devUUID = '1';
+      sessionStorage.setItem('Token', devToken);
+      localStorage.setItem('Token', devToken);
+      sessionStorage.setItem('userid', '1');
+      sessionStorage.setItem('uuid', devUUID);
+      sessionStorage.setItem('username', 'eseose');
+      sessionStorage.setItem('fullname', 'Eseose Developer');
+      sessionStorage.setItem('email', 'eseose@optimax.com');
+      sessionStorage.setItem('role', 'ADMIN');
+      // Navigate to attendance in dev mode
+      this.router.navigate([`attendance/${devUUID}`]);
+      this.metadataService.fetchMetaData(true);
+    } else if (this.authenticationService.isAuthenticated()) {
       this.metadataService.fetchMetaData(true);
     } else {
       this.userLoginAction();

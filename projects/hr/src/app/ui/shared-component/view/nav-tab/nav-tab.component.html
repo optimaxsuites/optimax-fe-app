@@ -1,28 +1,41 @@
 <div class="sales">
-    <div class="link-wrapper" >
+    <!-- Mobile Hamburger Menu -->
+    <div class="mobile-menu-toggle">
+      <button class="hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle menu">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+
+    <!-- Tabs Container -->
+    <div class="link-wrapper" [class.mobile-open]="isMobileMenuOpen">
       <!-- Loop through tabsConfig to render tabs -->
       <div *ngFor="let tab of tabsConfig" class="relative">
         <div  *ngIf="!tab.role || tab.role === user_role">
-        <button 
-          class="tab-btn" 
-          [ngClass]="{'active': selectedTab === tab.name}" 
+        <button
+          class="tab-btn"
+          [ngClass]="{'active': selectedTab === tab.name}"
           (click)="selectTab(tab)">
           <i *ngIf="tab.icon" class="tab-icon" [class]="tab.icon + ' tab-icon'" aria-hidden="true"></i>
           <span class="tab-label">{{ tab.name }}</span>
           <span *ngIf="tab.hasDropdown" class="tab-caret">▼</span>
         </button>
 
-        <div 
-          class="absolute bg-white p-3 gap-3 shadow-sm text-left" 
+        <div
+          class="absolute bg-white text-left rounded-md shadow-lg border border-gray-200"
+          style="top: 100%; left: 0; margin-top: 8px; min-width: 180px; z-index: 1000;"
           *ngIf="tab.hasDropdown &&  selectedDropdownTab == tab.name && isDropdownOpen">
-          <button *ngFor="let option of tab.dropdownOptions" class="pb-3" (click)="selectDropdownOption(tab.name, option)">
+          <button
+            *ngFor="let option of tab.dropdownOptions"
+            class="w-full text-left px-4 py-2 hover:bg-gray-100 transition text-gray-700"
+            style="border: none; background: transparent; font-size: 0.9rem;"
+            (click)="selectDropdownOption(tab.name, option)">
             {{ option.label }}
           </button>
         </div>
+        </div>
       </div>
     </div>
-    </div>
-  
+
     <div class="tab-content">
       <!-- Loop through tabsConfig to render tab content -->
       <div *ngFor="let tab of tabsConfig">
