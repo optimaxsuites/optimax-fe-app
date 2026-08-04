@@ -202,8 +202,11 @@
                 <!-- ========================================================
                 ACTIVITY TAB
                 ======================================================== -->
-                <div *ngIf="activeTab === 'activity'" class="tab-panel">
-                    <!-- Activity content goes here -->
+               <div *ngIf="activeTab === 'activity'" class="tab-panel">
+                    <app-vendor-activity
+                        [vendorId]="vendorId"
+                        [lifecycleHistory]="lifecycleHistory">
+                    </app-vendor-activity>
                 </div>
 
             </div>

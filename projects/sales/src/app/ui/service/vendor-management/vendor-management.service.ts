@@ -27,6 +27,7 @@ import {
   VendorMessage,
   Dispute,
   VendorLifecycleHistory,
+  VendorLifecycleEvent,
   VendorRecentActivity,
   VendorStatus,
   VendorTier,
@@ -1105,6 +1106,82 @@ private readonly MOCK_DOCUMENTS: VendorDocument[] = [
   }
 ];
 
+private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
+  {
+    id: 'life-1',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.APPLIED,
+    description: 'Vendor application submitted via the Vendor Portal',
+    performedBy: 'Vendor User',
+    timestamp: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    metadata: { source: 'portal', applicationId: 'APP-2026-001' }
+  },
+  {
+    id: 'life-2',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.DOCUMENTS_SUBMITTED,
+    description: 'Business registration, tax certificate, and operating licence uploaded',
+    performedBy: 'Vendor User',
+    timestamp: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000),
+    metadata: { documents: ['registration.pdf', 'tax.pdf', 'licence.pdf'] }
+  },
+  {
+    id: 'life-3',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.UNDER_REVIEW,
+    description: 'Application moved to under review by procurement team',
+    performedBy: 'A. Okoro (Procurement Lead)',
+    timestamp: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+    metadata: { assignedTo: 'A. Okoro' }
+  },
+  {
+    id: 'life-4',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.APPROVED,
+    description: 'Vendor application approved after document verification',
+    performedBy: 'A. Okoro (Procurement Lead)',
+    timestamp: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000),
+    metadata: { approvedBy: 'A. Okoro', notes: 'All documents verified successfully' }
+  },
+  {
+    id: 'life-5',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.ACTIVATED,
+    description: 'Vendor account activated in the marketplace',
+    performedBy: 'System',
+    timestamp: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+    metadata: { status: 'ACTIVE' }
+  },
+  {
+    id: 'life-6',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.PERFORMANCE_UPDATE,
+    description: 'Performance score updated to 95.4% - Vendor upgraded to Preferred Tier',
+    performedBy: 'Sentinel AI',
+    timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+    metadata: { oldScore: 88, newScore: 95.4, oldTier: 'APPROVED', newTier: 'PREFERRED' }
+  },
+  {
+    id: 'life-7',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.DOCUMENT_VERIFIED,
+    description: 'Insurance certificate verified and approved',
+    performedBy: 'D. Balogun (Compliance)',
+    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    metadata: { documentId: 'doc-insurance-101', status: 'VERIFIED' }
+  },
+  {
+    id: 'life-8',
+    vendorId: 'v-101',
+    event: VendorLifecycleEvent.RISK_ALERT,
+    description: 'Performance decline alert triggered - On-time delivery rate dropped below 90%',
+    performedBy: 'Sentinel AI',
+    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    metadata: { alertId: 'alert-101', type: 'PERFORMANCE_DECLINE', severity: 'WARNING' }
+  }
+];
+
+
   // ============================================================
   // CONSTRUCTOR
   // ============================================================
@@ -1692,8 +1769,61 @@ getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
   // ============================================================
 
   getLifecycleHistory(vendorId: string): Observable<VendorLifecycleHistory[]> {
-    return of([] as any);
-  }
+  this.loadingSubject.next(true);
+  
+  const params = new HttpParams().set('tenantId', this.tenantId);
+  
+  return this.http.get<VendorLifecycleHistory[]>(`${this.baseUrl}/vendors/${vendorId}/lifecycle`, { params })
+    .pipe(
+      tap(() => this.loadingSubject.next(false)),
+      catchError(err => {
+        this.loadingSubject.next(false);
+        console.warn('Lifecycle API failed, using mock data for vendor:', vendorId);
+        
+        // Filter mock data for this vendor or return all if no specific data
+        const mockData = this.MOCK_LIFECYCLE_HISTORY.filter(h => h.vendorId === vendorId);
+        if (mockData.length === 0) {
+          // Return generic mock data for this vendor
+          const genericData: VendorLifecycleHistory[] = [
+            {
+              id: `life-${vendorId}-1`,
+              vendorId: vendorId,
+              event: VendorLifecycleEvent.APPLIED,
+              description: 'Vendor application submitted',
+              performedBy: 'Vendor User',
+              timestamp: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+            },
+            {
+              id: `life-${vendorId}-2`,
+              vendorId: vendorId,
+              event: VendorLifecycleEvent.DOCUMENTS_SUBMITTED,
+              description: 'Required documents uploaded',
+              performedBy: 'Vendor User',
+              timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000)
+            },
+            {
+              id: `life-${vendorId}-3`,
+              vendorId: vendorId,
+              event: VendorLifecycleEvent.UNDER_REVIEW,
+              description: 'Application under review',
+              performedBy: 'Procurement Team',
+              timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+            },
+            {
+              id: `life-${vendorId}-4`,
+              vendorId: vendorId,
+              event: VendorLifecycleEvent.ACTIVATED,
+              description: 'Vendor activated in the marketplace',
+              performedBy: 'System',
+              timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+            }
+          ];
+          return of(genericData);
+        }
+        return of(mockData);
+      })
+    );
+}
 
   // ============================================================
   // CONTRACTS
