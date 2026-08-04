@@ -143,6 +143,45 @@ userLimit = 0;
 
 resetPasswordModal = { visible: false, user: null as any, newPassword: '', confirmPassword: '', loading: false };
 
+editEmailModal = { visible: false, user: null as any, newEmail: '', loading: false };
+
+openEditEmailModal(user: any, event: Event): void {
+  event.stopPropagation();
+  this.editEmailModal = { visible: true, user, newEmail: user.email || '', loading: false };
+}
+
+closeEditEmailModal(): void {
+  this.editEmailModal = { visible: false, user: null, newEmail: '', loading: false };
+}
+
+submitEditEmail(): void {
+  const { user, newEmail } = this.editEmailModal;
+  const emailTrimmed = (newEmail || '').trim().toLowerCase();
+  if (!emailTrimmed || !emailTrimmed.includes('@')) {
+    this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Enter a valid email address.', key: 'tl', life: 3000 });
+    return;
+  }
+  const domain = emailTrimmed.split('@')[1] || '';
+  const personalDomains = ['gmail.com','yahoo.com','hotmail.com','outlook.com','icloud.com','live.com','aol.com','mail.com','protonmail.com','me.com'];
+  if (personalDomains.includes(domain)) {
+    this.messageService.add({ severity: 'warn', summary: 'Company email required', detail: `Personal addresses (@${domain}) are not allowed. Use the company-assigned email.`, key: 'tl', life: 5000 });
+    return;
+  }
+  this.editEmailModal.loading = true;
+  this.userService.adminUpdateEmail(user.id, emailTrimmed).subscribe({
+    next: () => {
+      user.email = emailTrimmed;
+      this.messageService.add({ severity: 'success', summary: 'Email updated', detail: `Email for ${user.username || user.name} updated to ${emailTrimmed}.`, key: 'tl', life: 4000 });
+      this.closeEditEmailModal();
+    },
+    error: (err: any) => {
+      this.editEmailModal.loading = false;
+      const msg = err?.error?.message || err?.toString() || 'Failed to update email.';
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: msg, key: 'tl', life: 4000 });
+    }
+  });
+}
+
 openResetPasswordModal(user: any, event: Event): void {
   event.stopPropagation();
   this.resetPasswordModal = { visible: true, user, newPassword: '', confirmPassword: '', loading: false };
