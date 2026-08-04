@@ -133,6 +133,8 @@ import { VendorResolutionCenterComponent } from './ui/view/vendor-management/ven
 import { OverviewComponent } from './ui/view/vendor-management/vendor-management-detail/overview/overview.component';
 import { VendorPerformanceComponent } from './ui/view/vendor-management/vendor-management-detail/performance/performance.component';
 import { RiskComponent } from './ui/view/vendor-management/vendor-management-detail/risk/risk.component';
+import { VendorDocumentsComponent } from './ui/view/vendor-management/vendor-management-detail/documents/documents.component';
+import { ActivityComponent } from './ui/view/vendor-management/vendor-management-detail/activity/activity.component';
 
 @NgModule({
   declarations: [
@@ -186,6 +188,8 @@ import { RiskComponent } from './ui/view/vendor-management/vendor-management-det
     OverviewComponent,
     VendorPerformanceComponent,
     RiskComponent,
+    VendorDocumentsComponent,
+    ActivityComponent,
   ],
   imports: [
     // BrowserModule,

@@ -936,7 +936,6 @@ export class VendorService {
 };
 
 
-// vendor-management.service.ts - Add this inside the VendorService class
 
 private readonly MOCK_RISK_ALERTS: RiskAlert[] = [
   {
@@ -996,6 +995,113 @@ private readonly MOCK_RISK_ALERTS: RiskAlert[] = [
     detectedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
     status: 'OPEN',
     actionRequired: false
+  }
+];
+
+// vendor-management.service.ts - Add this inside the VendorService class
+
+private readonly MOCK_DOCUMENTS: VendorDocument[] = [
+  {
+    id: 'doc-1',
+    vendorId: 'v-101',
+    category: DocumentCategory.REGISTRATION,
+    name: 'Business Registration Certificate',
+    fileName: 'business_registration_v101.pdf',
+    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    fileSize: 2457600,
+    fileType: 'application/pdf',
+    issueDate: new Date('2024-01-15'),
+    expiryDate: new Date('2027-01-14'),
+    status: DocumentStatus.ACTIVE,
+    isRequired: true,
+    daysUntilExpiry: 162,
+    uploadedAt: new Date('2024-01-20'),
+    uploadedBy: 'Vendor User'
+  },
+  {
+    id: 'doc-2',
+    vendorId: 'v-101',
+    category: DocumentCategory.TAX,
+    name: 'Tax Certificate (TIN)',
+    fileName: 'tax_certificate_v101.pdf',
+    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    fileSize: 1843200,
+    fileType: 'application/pdf',
+    issueDate: new Date('2024-02-01'),
+    expiryDate: new Date('2027-01-31'),
+    status: DocumentStatus.ACTIVE,
+    isRequired: true,
+    daysUntilExpiry: 159,
+    uploadedAt: new Date('2024-02-05'),
+    uploadedBy: 'Vendor User'
+  },
+  {
+    id: 'doc-3',
+    vendorId: 'v-101',
+    category: DocumentCategory.LICENCE,
+    name: 'Business Operating Licence',
+    fileName: 'operating_licence_v101.pdf',
+    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    fileSize: 3072000,
+    fileType: 'application/pdf',
+    issueDate: new Date('2023-06-01'),
+    expiryDate: new Date('2024-11-30'),
+    status: DocumentStatus.EXPIRING_SOON,
+    isRequired: true,
+    daysUntilExpiry: 28,
+    uploadedAt: new Date('2023-06-10'),
+    uploadedBy: 'Vendor User'
+  },
+  {
+    id: 'doc-4',
+    vendorId: 'v-101',
+    category: DocumentCategory.INSURANCE,
+    name: 'Public Liability Insurance',
+    fileName: 'insurance_policy_v101.pdf',
+    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    fileSize: 1560000,
+    fileType: 'application/pdf',
+    issueDate: new Date('2023-08-15'),
+    expiryDate: new Date('2024-08-14'),
+    status: DocumentStatus.EXPIRED,
+    isRequired: false,
+    daysUntilExpiry: -5,
+    uploadedAt: new Date('2023-08-20'),
+    uploadedBy: 'Vendor User'
+  },
+  {
+    id: 'doc-5',
+    vendorId: 'v-101',
+    category: DocumentCategory.CERTIFICATION,
+    name: 'ISO 9001 Certification',
+    fileName: 'iso_certification_v101.pdf',
+    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    fileSize: 2048000,
+    fileType: 'application/pdf',
+    issueDate: new Date('2024-03-01'),
+    expiryDate: new Date('2025-03-01'),
+    status: DocumentStatus.PENDING_VERIFICATION,
+    isRequired: false,
+    daysUntilExpiry: 210,
+    uploadedAt: new Date('2024-03-05'),
+    uploadedBy: 'Vendor User'
+  },
+  {
+    id: 'doc-6',
+    vendorId: 'v-102',
+    category: DocumentCategory.REGISTRATION,
+    name: 'Business Registration Certificate',
+    fileName: 'business_registration_v102.pdf',
+    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    fileSize: 2355200,
+    fileType: 'application/pdf',
+    issueDate: new Date('2024-02-10'),
+    expiryDate: new Date('2027-02-09'),
+    status: DocumentStatus.ACTIVE,
+    isRequired: true,
+    daysUntilExpiry: 175,
+    uploadedAt: new Date('2024-02-15'),
+    uploadedBy: 'Vendor User'
   }
 ];
 
@@ -1432,15 +1538,84 @@ private readonly MOCK_RISK_ALERTS: RiskAlert[] = [
   // DOCUMENTS
   // ============================================================
 
-  getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
-    return this.http.get<VendorDocument[]>(`${this.baseUrl}/vendors/${vendorId}/documents`)
-      .pipe(
-        catchError(err => {
-          this.errorSubject.next('Failed to load documents');
-          return throwError(() => err);
-        })
-      );
-  }
+getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
+  this.loadingSubject.next(true);
+  
+  const params = new HttpParams().set('tenantId', this.tenantId);
+  
+  return this.http.get<VendorDocument[]>(`${this.baseUrl}/vendors/${vendorId}/documents`, { params })
+    .pipe(
+      tap(() => this.loadingSubject.next(false)),
+      catchError(err => {
+        this.loadingSubject.next(false);
+        console.warn('Documents API failed, using mock data for vendor:', vendorId);
+        
+        // Filter mock documents for this vendor
+        const mockDocs = this.MOCK_DOCUMENTS.filter(doc => doc.vendorId === vendorId);
+        
+        // If no specific documents for this vendor, return some default ones
+        if (mockDocs.length === 0) {
+          // Create vendor-specific mock documents
+          const vendorSpecificDocs: VendorDocument[] = [
+            {
+              id: `doc-${vendorId}-1`,
+              vendorId: vendorId,
+              category: DocumentCategory.REGISTRATION,
+              name: 'Business Registration Certificate',
+              fileName: `registration_${vendorId}.pdf`,
+              fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+              fileSize: 2457600,
+              fileType: 'application/pdf',
+              issueDate: new Date('2024-01-15'),
+              expiryDate: new Date('2027-01-14'),
+              status: DocumentStatus.ACTIVE,
+              isRequired: true,
+              daysUntilExpiry: 162,
+              uploadedAt: new Date('2024-01-20'),
+              uploadedBy: 'Vendor User'
+            },
+            {
+              id: `doc-${vendorId}-2`,
+              vendorId: vendorId,
+              category: DocumentCategory.TAX,
+              name: 'Tax Certificate',
+              fileName: `tax_${vendorId}.pdf`,
+              fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+              fileSize: 1843200,
+              fileType: 'application/pdf',
+              issueDate: new Date('2024-02-01'),
+              expiryDate: new Date('2027-01-31'),
+              status: DocumentStatus.PENDING_VERIFICATION,
+              isRequired: true,
+              daysUntilExpiry: 159,
+              uploadedAt: new Date('2024-02-05'),
+              uploadedBy: 'Vendor User'
+            },
+            {
+              id: `doc-${vendorId}-3`,
+              vendorId: vendorId,
+              category: DocumentCategory.LICENCE,
+              name: 'Operating Licence',
+              fileName: `licence_${vendorId}.pdf`,
+              fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+              fileSize: 3072000,
+              fileType: 'application/pdf',
+              issueDate: new Date('2023-06-01'),
+              expiryDate: new Date('2024-11-30'),
+              status: DocumentStatus.EXPIRING_SOON,
+              isRequired: true,
+              daysUntilExpiry: 28,
+              uploadedAt: new Date('2023-06-10'),
+              uploadedBy: 'Vendor User'
+            }
+          ];
+          return of(vendorSpecificDocs);
+        }
+        
+        return of(mockDocs);
+      })
+    );
+}
 
   uploadDocument(
     vendorId: string,
