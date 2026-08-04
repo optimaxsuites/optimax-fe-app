@@ -779,10 +779,10 @@ calculateOvertime(hours: number, standardHours: number = 8): number {
 populateCalculatedFields(): void {
   this.filteredAttendance = this.filteredAttendance.map(record => ({
     ...record,
-    hours: this.calculateHours(record.checkIn, record.checkOut),
-    lateMinutes: this.calculateLateMinutes(record.checkIn),
+    hours: this.calculateHours(record.checkIn ?? null, record.checkOut ?? null),
+    lateMinutes: this.calculateLateMinutes(record.checkIn ?? null),
     overtime: this.calculateOvertime(
-      this.calculateHours(record.checkIn, record.checkOut)
+      this.calculateHours(record.checkIn ?? null, record.checkOut ?? null)
     )
   }));
 }
