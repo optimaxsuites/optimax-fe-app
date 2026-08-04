@@ -1,0 +1,17 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CODEOWNERS — merge-request approval rules
+# Each module directory is owned by the team responsible for that satellite repo.
+# Owners must approve any MR that touches their path before it can be merged
+# into the monorepo (mod branch).
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Fallback — monorepo maintainers approve everything not listed below
+*                          @j2yemi
+
+# ── Module satellites ──────────────────────────────────────────────────────
+projects/dashboard/        @queensheba
+# projects/sales/          @<sales-team-handle>
+# projects/accounting/     @<finance-team-handle>
+# projects/hr/             @<hr-team-handle>
+# projects/inventory/      @<inventory-team-handle>
+# projects/crm/            @<crm-team-handle>

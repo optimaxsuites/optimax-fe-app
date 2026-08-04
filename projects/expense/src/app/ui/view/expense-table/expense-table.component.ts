@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 import { TableModule } from 'primeng/table';
@@ -810,6 +810,31 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
             const index = this.expenses.findIndex(e => e.id === request.id);
             if (index !== -1) { this.expenses[index] = { ...this.expenses[index], ...updated, status: ExpenseStatus.APPROVED }; this.applyFilters(); }
 
+            // Post to finance disbursement tray
+            const txPayload = {
+              transactionReference: `EXP-${request.id}-${Date.now()}`,
+              sourceModule: 'EXPENSE',
+              amount: this.calculateTotalWithTax(request),
+              currency: request.currency || 'NGN',
+              status: 'APPROVED',
+              description: `Expense: ${request.name}`,
+              externalReference: String(request.id),
+              metadata: {
+                expenseId: request.id,
+                bankName: (request as any).bankName || null,
+                accountName: (request as any).accountName || null,
+                accountNumber: (request as any).accountNumber || null,
+              }
+            };
+            this.http.post(
+              'https://be.optimaxsuites.com/x/api/v2/accounting/transactions',
+              txPayload,
+              { headers: new HttpHeaders({ 'X-Tenant-ID': 'optimax' }) }
+            ).subscribe({
+              next: () => this.messageService.add({ severity: 'info', summary: 'Finance', detail: 'Expense queued for payment in finance tray.' }),
+              error: (e) => console.error('[approve] finance transaction failed:', e)
+            });
+
             const submitterEmail = (request as any).expenseBy?.email   || (updated as any).expenseBy?.email   || '';
             const submitterName  = (request as any).expenseBy?.fullname || (updated as any).expenseBy?.fullname || 'Team Member';
             const admin = this.resolveCurrentUserDetails();
@@ -946,7 +971,10 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
         status: this.selectedExpense.status, paidBy: fv.paidBy, receiptReference: fv.receiptReference || '',
         merchantId: Number(fv.merchantId), categoryId: Number(fv.categoryId),
         taxId: fv.taxId ?? null, scheduledPaymentId: fv.scheduledPaymentId || null,
-        lineItems: this.normalizedLineItems(this.selectedExpense)
+        lineItems: this.normalizedLineItems(this.selectedExpense),
+        bankName: (this.selectedExpense as any).bankName || null,
+        accountName: (this.selectedExpense as any).accountName || null,
+        accountNumber: (this.selectedExpense as any).accountNumber || null,
       };
       this.expenseService.updateExpense(this.selectedExpense.id, payload).subscribe({
         next: () => { this.messageService.add({ severity: 'success', summary: 'Updated', detail: 'Expense updated.' }); this.closeModal(); },
