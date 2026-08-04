@@ -42,15 +42,20 @@ export enum DocumentCategory {
 }
 
 export enum VendorLifecycleEvent {
-    APPLIED = 'APPLIED',
-    DOCUMENTS_SUBMITTED = 'DOCUMENTS_SUBMITTED',
-    UNDER_REVIEW = 'UNDER_REVIEW',
-    APPROVED = 'APPROVED',
-    REJECTED = 'REJECTED',
-    ACTIVATED = 'ACTIVATED',
-    SUSPENDED = 'SUSPENDED',
-    OFFBOARDED = 'OFFBOARDED'
+  APPLIED = 'APPLIED',
+  DOCUMENTS_SUBMITTED = 'DOCUMENTS_SUBMITTED',
+  UNDER_REVIEW = 'UNDER_REVIEW',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  ACTIVATED = 'ACTIVATED',
+  SUSPENDED = 'SUSPENDED',
+  OFFBOARDED = 'OFFBOARDED',
+  PERFORMANCE_UPDATE = 'PERFORMANCE_UPDATE',  
+  RISK_ALERT = 'RISK_ALERT',                 
+  DOCUMENT_VERIFIED = 'DOCUMENT_VERIFIED',    
+  TIER_CHANGED = 'TIER_CHANGED'               
 }
+
 
 export enum AlertSeverity {
     INFO = 'INFO',
@@ -241,6 +246,7 @@ export interface SanctionsCheckResult {
 
 export interface VendorLifecycleHistory {
     id: string;
+    vendorId?: string;
     event: VendorLifecycleEvent;
     description: string;
     performedBy: string;
