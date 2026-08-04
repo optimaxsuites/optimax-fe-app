@@ -13,7 +13,8 @@
 
     <!-- Left nav -->
     <div class="settings-nav">
-      <button class="snav-item" [class.active]="activeSection === 'notifications'" (click)="activeSection = 'notifications'">
+      <button class="snav-item" [class.active]="activeSection === 'notifications'"
+        (click)="activeSection = 'notifications'">
         <i class="fas fa-bell"></i> Notifications
       </button>
       <button class="snav-item" [class.active]="activeSection === 'odoo'" (click)="activeSection = 'odoo'">
@@ -25,9 +26,15 @@
       <button class="snav-item" [class.active]="activeSection === 'forms'" (click)="activeSection = 'forms'">
         <i class="fas fa-file-alt"></i> Forms &amp; Templates
       </button>
-      <button class="snav-item" [class.active]="activeSection === 'payroll'" (click)="activeSection = 'payroll'">
+      <<<<<<< HEAD <button class="snav-item" [class.active]="activeSection === 'payroll'"
+        (click)="activeSection = 'payroll'">
         <i class="fas fa-money-check-alt"></i> Payroll Config
-      </button>
+        =======
+        <button class="snav-item" [class.active]="activeSection === 'office-hours'"
+          (click)="activeSection = 'office-hours'">
+          <i class="fas fa-clock"></i> Office Hours
+          >>>>>>> c01f67d89804c30eecd9024d229dbe1223fc2c0d
+        </button>
     </div>
 
     <!-- Right panel -->
@@ -51,15 +58,13 @@
                 <strong>{{ proj.projectLabel }}</strong>
               </div>
               <div class="proj-head-chips">
-                <span *ngFor="let ch of notifChannels" class="ch-chip"
-                      [class.on]="proj.channels[ch.key]"
-                      [title]="ch.label">
+                <span *ngFor="let ch of notifChannels" class="ch-chip" [class.on]="proj.channels[ch.key]"
+                  [title]="ch.label">
                   <i [class]="'fas ' + ch.icon"></i>
                 </span>
               </div>
               <i class="fas" [class.fa-chevron-down]="expandedProject !== proj.projectKey"
-                             [class.fa-chevron-up]="expandedProject === proj.projectKey"
-                             style="color:#9ca3af;margin-left:8px"></i>
+                [class.fa-chevron-up]="expandedProject === proj.projectKey" style="color:#9ca3af;margin-left:8px"></i>
             </div>
 
             <!-- Accordion body -->
@@ -75,9 +80,8 @@
                   </div>
                 </div>
                 <div class="channel-grid">
-                  <div class="channel-tile" *ngFor="let ch of notifChannels"
-                       [class.enabled]="proj.channels[ch.key]"
-                       (click)="proj.channels[ch.key] = !proj.channels[ch.key]">
+                  <div class="channel-tile" *ngFor="let ch of notifChannels" [class.enabled]="proj.channels[ch.key]"
+                    (click)="proj.channels[ch.key] = !proj.channels[ch.key]">
                     <div class="ch-icon-wrap">
                       <i [class]="'fas ' + ch.icon"></i>
                     </div>
@@ -164,7 +168,8 @@
             <div class="col-chips">
               <span class="col-chip" *ngFor="let col of odooExportColumns">{{ col }}</span>
             </div>
-            <p style="margin-top:8px;color:#374151">Then use the <strong>Batch Import</strong> tab on the Task Board to paste the exported data.</p>
+            <p style="margin-top:8px;color:#374151">Then use the <strong>Batch Import</strong> tab on the Task Board to
+              paste the exported data.</p>
           </div>
 
           <button class="btn-primary" (click)="startOdooConnect()">
@@ -215,7 +220,8 @@
         <!-- Preview state -->
         <div class="odoo-form-card" *ngIf="odoo.step === 'preview'">
           <h4 class="form-card-title">Preview — {{ odoo.previewRows.length }} tasks found</h4>
-          <p class="form-card-sub">Review tasks before importing. All tasks will be added to the Task Board as "To Do".</p>
+          <p class="form-card-sub">Review tasks before importing. All tasks will be added to the Task Board as "To Do".
+          </p>
           <div class="table-wrap">
             <table class="list-table">
               <thead>
@@ -335,7 +341,8 @@
             <div class="form-card-icon"><i class="fas fa-user-plus"></i></div>
             <div class="form-card-body">
               <div class="form-card-title">Pre-Onboarding Form</div>
-              <div class="form-card-desc">Printed data-capture form given to new intakes before their first day. Collects personal, employment, bank, next-of-kin, and guarantor details for HR entry.</div>
+              <div class="form-card-desc">Printed data-capture form given to new intakes before their first day.
+                Collects personal, employment, bank, next-of-kin, and guarantor details for HR entry.</div>
             </div>
             <button (click)="openForm(preOnboardingLink)" class="form-card-btn">
               <i class="fas fa-print"></i> Open &amp; Print
@@ -346,7 +353,8 @@
             <div class="form-card-icon" style="background:#ecfdf5;color:#059669"><i class="fas fa-user-edit"></i></div>
             <div class="form-card-body">
               <div class="form-card-title">Employee Record Update Form</div>
-              <div class="form-card-desc">Used by staff to request updates to their HR record — personal details, contact info, banking, next of kin, and the company assets currently in their possession.</div>
+              <div class="form-card-desc">Used by staff to request updates to their HR record — personal details,
+                contact info, banking, next of kin, and the company assets currently in their possession.</div>
             </div>
             <button (click)="openForm(employeeUpdateFormLink)" class="form-card-btn">
               <i class="fas fa-print"></i> Open &amp; Print
@@ -357,7 +365,8 @@
             <div class="form-card-icon" style="background:#fff7ed;color:#ea580c"><i class="fas fa-door-open"></i></div>
             <div class="form-card-body">
               <div class="form-card-title">Employee Exit / Offboarding Form</div>
-              <div class="form-card-desc">Comprehensive exit document covering reason for leaving, exit interview, asset return checklist, system access revocation, work handover, and outstanding obligations.</div>
+              <div class="form-card-desc">Comprehensive exit document covering reason for leaving, exit interview, asset
+                return checklist, system access revocation, work handover, and outstanding obligations.</div>
             </div>
             <button (click)="openForm(offboardingFormLink)" class="form-card-btn">
               <i class="fas fa-print"></i> Open &amp; Print
@@ -366,77 +375,9 @@
         </div>
       </ng-container>
 
-
-      <!-- ══ PAYROLL CONFIG ══ -->
-      <ng-container *ngIf="activeSection === 'payroll'">
-        <div class="section-head">
-          <h3>Payroll Configuration</h3>
-          <p>Set pay schedules, deduction rules, and default allowances for payroll generation.</p>
-        </div>
-
-        <div *ngIf="payrollSettingsLoading" class="prl-loading">
-          <i class="fas fa-spinner fa-spin"></i> Loading payroll settings…
-        </div>
-
-        <ng-container *ngIf="!payrollSettingsLoading">
-          <!-- Pay Schedule -->
-          <div class="prl-card">
-            <h4 class="prl-card__title"><i class="fas fa-calendar-alt"></i> Pay Schedule</h4>
-            <div class="prl-grid">
-              <div class="prl-field">
-                <label>Pay Day <span class="prl-hint">(day of month salaries are paid)</span></label>
-                <input type="number" min="1" max="31" [(ngModel)]="payrollConfig.payDay" class="prl-input" />
-              </div>
-              <div class="prl-field">
-                <label>Lock Day <span class="prl-hint">(day payroll is locked for editing)</span></label>
-                <input type="number" min="1" max="31" [(ngModel)]="payrollConfig.lockDay" class="prl-input" />
-              </div>
-              <div class="prl-field">
-                <label>Working Days / Month</label>
-                <input type="number" min="1" max="31" [(ngModel)]="payrollConfig.workingDaysPerMonth" class="prl-input" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Statutory Deductions -->
-          <div class="prl-card">
-            <h4 class="prl-card__title"><i class="fas fa-minus-circle"></i> Statutory Deductions</h4>
-            <p class="prl-sub">Toggle which deductions are automatically applied during payroll generation.</p>
-            <div class="prl-toggle-list">
-              <div class="prl-toggle-row" *ngFor="let key of deductionKeys">
-                <div class="prl-toggle-info">
-                  <span class="prl-toggle-label">{{ deductionLabel(key) }}</span>
-                  <span class="prl-toggle-desc">{{ deductionDesc(key) }}</span>
-                </div>
-                <label class="prl-switch">
-                  <input type="checkbox" [(ngModel)]="deductionToggles[key]" />
-                  <span class="prl-slider"></span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Default Allowances -->
-          <div class="prl-card">
-            <h4 class="prl-card__title"><i class="fas fa-plus-circle"></i> Default Allowances (₦ / month)</h4>
-            <p class="prl-sub">Monthly allowance amounts added to gross pay per pay period. Set 0 to exclude.</p>
-            <div class="prl-grid">
-              <div class="prl-field" *ngFor="let key of allowanceKeys">
-                <label>{{ allowanceLabel(key) }}</label>
-                <input type="number" min="0" [(ngModel)]="allowanceDefaults[key]" class="prl-input" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Save -->
-          <div class="prl-actions">
-            <button class="prl-save-btn" (click)="savePayrollSettings()" [disabled]="payrollSettingsSaving">
-              <i class="fas" [class.fa-save]="!payrollSettingsSaving" [class.fa-spinner]="payrollSettingsSaving" [class.fa-spin]="payrollSettingsSaving"></i>
-              {{ payrollSettingsSaving ? 'Saving…' : 'Save Payroll Settings' }}
-            </button>
-            <span class="prl-saved" *ngIf="payrollSaveSuccess"><i class="fas fa-check-circle"></i> Saved</span>
-          </div>
-        </ng-container>
+      <!-- ══ OFFICE HOURS ══ -->
+      <ng-container *ngIf="activeSection === 'office-hours'">
+        <app-office-hours></app-office-hours>
       </ng-container>
 
     </div>

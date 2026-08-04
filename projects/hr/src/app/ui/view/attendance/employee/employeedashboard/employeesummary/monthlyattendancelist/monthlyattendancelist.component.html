@@ -27,17 +27,15 @@
     </div>
 
     <ng-container *ngFor="let record of filteredData">
-    <div 
+    <div
       class="table-row"
       [ngClass]="record.status.toLowerCase()"
     >
-      <span>{{ record.date | date:'MMM d, yyyy' }}</span>
+      <span>{{ record.date }}</span>
       <span class="status">{{ record.status }}</span>
-      <span>{{ record.checkIn | date:'HH:mm:ss' }}</span>
-      <!--<span>{{ record.checkIn || '--' }}</span>-->
-      <span>{{ record.checkOut | date:'HH:mm:ss' }}</span>
-      <!--<span>{{ record.checkOut || '--' }}</span>-->
-      <span>{{ record.hours || 0 }}h</span>
+      <span>{{ record.checkIn || '—' }}</span>
+      <span>{{ record.checkOut || '—' }}</span>
+      <span>{{ record.hours || '—' }}</span>
     </div>
 
     <!-- Override info -->
@@ -51,8 +49,12 @@
 
 </ng-container>
 
-    <div class="empty" *ngIf="filteredData.length === 0">
-      No attendance records for this month.
+    <div class="empty-state" *ngIf="filteredData.length === 0">
+      <div class="empty-icon">
+        <i class="pi pi-calendar-times" aria-hidden="true"></i>
+      </div>
+      <h3>No Records Yet</h3>
+      <p>No attendance records for this month. Start clocking in to see your attendance history here.</p>
     </div>
 
   </div>

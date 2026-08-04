@@ -90,9 +90,42 @@
   }
 }
 
-.empty {
+.empty-state {
   text-align: center;
-  font-size: 1.2rem;
-  color: $text-muted;
-  padding: 1rem 0;
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  animation: fadeIn 0.4s ease-out;
+
+  .empty-icon {
+    font-size: 3.5rem;
+    color: #d1d5db;
+    display: block;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0;
+  }
+
+  p {
+    font-size: 0.95rem;
+    color: #6b7280;
+    margin: 0;
+    max-width: 300px;
+    line-height: 1.6;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

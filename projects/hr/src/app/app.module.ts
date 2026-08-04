@@ -86,7 +86,6 @@ import { ButtonComponent } from './ui/shared-component/view/button/button.compon
 import { CareerJobPostingComponent } from './ui/shared-component/view/career-job-posting/career-job-posting.component';
 import { DashboardFooterComponent } from './ui/shared-component/view/dashboard-footer/dashboard-footer.component';
 import { TableComponent } from './ui/shared-component/view/table/table.component';
-import { TableBodyDirective } from './ui/shared-component/view/table/table-body.directive';
 import { CooperativeLoanReportsComponent } from './ui/view/loan-management/cooperative-loan-reports/cooperative-loan-reports.component';
 import { InterviewInviteComponent } from './ui/view/recruitment/interview-invite/interview-invite.component';
 import { InterviewResponseComponent } from './ui/view/recruitment/candidate/interview-response.component';
@@ -259,6 +258,8 @@ import { EmployeeChangeRequestsSummaryComponent } from './ui/view/employee-dashb
 import { GuarantorChangeRequestComponent } from './ui/view/profile-change-requests/guarantor-change-request/guarantor-change-request.component';
 // import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
 import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-letters.component';
+import { TimeFormatPipe } from './ui/shared-component/pipes/time-format.pipe';
+import { ToastComponent } from './ui/shared-component/view/toast/toast.component';
 import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction/payroll-correction.component';
 
 
@@ -317,8 +318,6 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     CareerJobPostingComponent,
     DashboardFooterComponent,
     ButtonComponent,
-    TableComponent,
-    TableBodyDirective,
     NavTabComponent,
     Navbar2Component,
     NavbarComponent,
@@ -404,7 +403,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     ShiftListComponent,
     ShiftFormComponent,
     ShiftAssignmentComponent,
-    ShiftCalendarComponent, 
+    ShiftCalendarComponent,
     CooperativeMembershipApplicationsComponent,
     LoanPurposeManagementComponent,
     AdHocComponent,
@@ -453,6 +452,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     ReactiveFormsModule,
     HttpClientModule,
     TableModule,
+    TableComponent,
     // RouterModule.forChild([], {
     //   bindToComponentInputs: true,
     //   enableTracing: false,
@@ -507,6 +507,8 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     AutoCompleteModule,
     CooperativeGracePeriodRequestFormModule,
     EmployeeRelativesWidgetComponent,
+    TimeFormatPipe,
+    ToastComponent,
   ],
   schemas: [NO_ERRORS_SCHEMA],
   providers: [
@@ -530,4 +532,4 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
   ],
   bootstrap: [AppHrComponent],
 })
-export class AppHrModule {}
+export class AppHrModule { }

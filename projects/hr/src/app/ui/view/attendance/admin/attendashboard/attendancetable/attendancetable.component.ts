@@ -1,21 +1,17 @@
-import { Component, inject, OnInit, Output, EventEmitter } from '@angular/core';
+import { Component, inject, OnInit, Output, EventEmitter, HostListener } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 import { Observable, switchMap } from 'rxjs';
 import { MOCK_ATTENDANCE } from '../../../../../domain/attendance/attendancetable.mock';
-//import { AttendancefilterComponent } from './attendancefilter/attendancefilter.component';
 import * as L from 'leaflet';
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
 import { UserSessionService } from '../../../../../service/attendance/user-session.service';
-
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'assets/leaflet/marker-icon-2x.png',
-  iconUrl: 'assets/leaflet/marker-icon.png',
-  shadowUrl: 'assets/leaflet/marker-shadow.png'
-});
+import { ApprovalStatus, FlagType } from '../../../../../domain/attendance/attendance-event.dto';
+import { TableColumn, TableAction } from '../../../../../shared-component/view/table/table.component';
+import { ToastService } from '../../../../../shared-component/service/toast/toast.service';
+import { CorrectionRequestService } from '../../../../../service/attendance/correction-request.service';
+import { environment } from '../../../../../shared-component/environments/environment.prod';
 
 @Component({
   selector: 'app-attendancetable',
@@ -26,18 +22,62 @@ export class AttendancetableComponent implements OnInit{
 
   private attendancetableService = inject(AttendancetableService);
   private userSession = inject(UserSessionService);
+  private toastService = inject(ToastService);
+  private correctionRequestService = inject(CorrectionRequestService);
 
   attendance: AttendanceTableRecord[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
+  isLoading = true;
+  private preservedCorrections: Map<number, any> = new Map();
 
   editingRecord: AttendanceTableRecord | null = null;
+  detailsRecord: AttendanceTableRecord | null = null;
 
 editStatus: AttendanceTableRecord['status'] = 'PRESENT';
 editCheckIn: string | null = null;
+editCheckOut: string | null = null;
 editReason = '';
+originalCheckIn: string | null = null;
+originalCheckOut: string | null = null;
 
-sortColumn: keyof AttendanceTableRecord | '' = '';
-sortDirection: 'asc' | 'desc' = 'asc';
+// Modification & Approval tracking
+modificationFlags: Map<number, { flagType: FlagType; approvalStatus: ApprovalStatus }> = new Map();
+approverNotes: Map<number, string> = new Map();
+
+// Shared Table Configuration (headers only - content defined in custom body template)
+tableColumns: TableColumn<AttendanceTableRecord>[] = [
+  { header: 'Employee', field: 'employee', sortable: true },
+  { header: 'Department', field: 'department', sortable: true },
+  { header: 'Clock In', field: 'checkIn', sortable: true },
+  { header: 'Clock Out', field: 'checkOut', sortable: true },
+  { header: 'Status', field: 'status', sortable: true },
+  { header: 'Hours', field: 'hours', sortable: true }
+];
+
+tableActions: TableAction<AttendanceTableRecord>[] = [
+  {
+    id: 'details',
+    label: 'View',
+    icon: 'fa-solid fa-eye',
+    ariaLabel: 'View attendance details',
+    visible: () => true
+  },
+  {
+    id: 'modify',
+    label: 'Edit',
+    icon: 'fa-solid fa-pen',
+    ariaLabel: 'Edit attendance record',
+    visible: (row) => !this.isOfficeClosed()
+  },
+  {
+    id: 'open',
+    label: 'Open',
+    icon: 'fa-solid fa-lock-open',
+    ariaLabel: 'Mark attendance as open',
+    visible: (row) => this.isToday(row.date) && row.status === 'ABSENT' && !row.overrideOpen
+  }
+];
+
 
 mapModalOpen = false;
 mapAddress = '';
@@ -48,49 +88,91 @@ private mapInstance: L.Map | null = null;
  private closingTimer: any;
 
 selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } | null = null;
-  //heatmapData: any[] = [];
-  //lateArrivalsData: any[] = [];
-  //statsData: any[] = [];
 
   @Output() dataChange = new EventEmitter<{ data: AttendanceTableRecord[], filters: any }>();
  
   ngOnInit(): void {
       this.startClosingWatcher();
 
-      //to load data fromAPI on init
-      this.attendancetableService.fetchAllRecords();
+      this.isLoading = true;
 
+      // Development mode: directly use mock data
+      if (environment.env === 'development') {
+        console.log('🔧 [Development Mode] Loading mock attendance data');
+        this.attendance = MOCK_ATTENDANCE;
+        this.filteredAttendance = MOCK_ATTENDANCE;
+        this.isLoading = false;
+        this.dataChange.emit({
+          data: this.filteredAttendance,
+          filters: this.filters
+        });
+        return;
+      }
+
+      // Subscribe to attendance records
       this.attendancetableService.attendance$.subscribe(data => {
-      //console.log('ATTENDANCE RECEIVED:', data);
-      console.log('FIRST RECORD:', data[0]);
-      console.log('FIRST RECORD DATE:', data[0]?.date);
-      console.log('TODAY:', new Date().toISOString().split('T')[0]);
-      this.attendance = data;
+        console.log('📥 Attendance$ emitted, records:', data.length);
+        this.attendance = data;
 
-      // Reapply filters instead of resetting table
-      const hasFilters =
-        this.filters?.dateFrom ||
-        this.filters?.dateTo ||
-        this.filters?.id ||
-        this.filters?.employee ||
-        this.filters?.department ||
-        this.filters?.status;
+        // Re-apply preserved corrections after attendance data updates
+        this.mergePreservedCorrections();
 
-    if (hasFilters) {
-      this.applyFilters();
-    } else {
-      this.resetToToday();
+        const hasFilters =
+          this.filters?.dateFrom ||
+          this.filters?.dateTo ||
+          this.filters?.id ||
+          this.filters?.employee ||
+          this.filters?.department ||
+          this.filters?.status;
+
+        if (hasFilters) {
+          this.applyFilters();
+        } else {
+          this.resetToToday();
+        }
+        this.isLoading = false;
+      });
+
+      // Subscribe to correction requests and store them
+      this.correctionRequestService.correctionRequests$.subscribe(corrections => {
+        console.log('📥 Correction requests received:', corrections.length);
+
+        if (corrections.length > 0) {
+          corrections.forEach(corrRecord => {
+            console.log('💾 Storing correction for record id:', corrRecord.id, 'employee:', corrRecord.employee);
+            this.preservedCorrections.set(corrRecord.id, corrRecord.correctionRequest);
+          });
+        }
+
+        // Merge stored corrections into current attendance
+        this.mergePreservedCorrections();
+      });
+  }
+
+  private mergePreservedCorrections(): void {
+    if (this.preservedCorrections.size === 0) {
+      console.log('🗂️ No corrections to merge');
+      return;
     }
-    console.log('FILTERED TODAY:', this.filteredAttendance);
-  });
-  /*this.attendancetableService.attendance$.subscribe(data => {
-    const today = new Date().toISOString().split('T')[0];
 
-    this.attendance = data;
 
-    // Default = today only
-    this.filteredAttendance = data.filter(record => record.date === today);
-  });*/
+
+    let merged = false;
+    this.preservedCorrections.forEach((correction, recordId) => {
+      const index = this.attendance.findIndex(a => a.id === recordId);
+      if (index > -1) {
+        this.attendance[index].correctionRequest = correction;
+        console.log('✅ Applied correction to record id:', recordId, 'employee:', this.attendance[index].employee);
+        merged = true;
+      } else {
+
+      }
+    });
+
+    if (merged) {
+      this.applyFilters();
+      console.log('📊 Final attendance:', this.attendance.map(r => ({ id: r.id, employee: r.employee, hasCorrection: !!r.correctionRequest })));
+    }
 }
 
 isToday(date: string | null): boolean {
@@ -131,14 +213,18 @@ openAttendance(record: AttendanceTableRecord) {
   //parseInt(sessionStorage.getItem('userid') ?? '0'), //userid from session
 'Attendance opened by admin' //reason
 );
+  this.toastService.success(`✅ Attendance opened for ${record.employee}`);
 }
 
 openLocationMap(record: AttendanceTableRecord, type: 'in' | 'out') {
   const location = type === 'in'
-  ? record.checkInLocation 
+  ? record.checkInLocation
   : record.checkOutLocation;
 
-  if (!location) return;
+  if (!location) {
+
+    return;
+  }
 
   //guard since lat and long of location arent gotten from API
   // Records loaded from API have lat: 0, lng: 0 — can't map those
@@ -147,11 +233,16 @@ openLocationMap(record: AttendanceTableRecord, type: 'in' | 'out') {
     return;
   }
 
+
   this.selectedLocation = { recordId: record.id, type };
   this.mapAddress = location.address;
   this.mapModalOpen = true;
 
-  setTimeout(() => this.initMap(location.lat, location.lng), 100);
+  // Increased timeout to ensure modal is rendered before initializing map
+  setTimeout(() => {
+
+    this.initMap(location.lat, location.lng);
+  }, 300);
 }
 
 // helper method
@@ -234,11 +325,20 @@ closeMap() {
     this.mapInstance = null;
   }
 }
-  
-filters: any = {};
+
+filters: any = {
+    dateFrom: '',
+    dateTo: '',
+    id: '',
+    employee: '',
+    department: '',
+    status: '',
+    branch: '',
+    correctionStatus: ''
+  };
 
 onFiltersChange(filters: any) {
-  this.filters = filters;
+  this.filters = { ...this.filters, ...filters };
 
   const hasDateRange = filters.dateFrom && filters.dateTo;
   const hasOtherFilters = filters.id || filters.employee || filters.department || filters.status;
@@ -276,18 +376,14 @@ onFiltersChange(filters: any) {
 resetToToday() {
   const today = new Date().toISOString().split('T')[0];
 
-  console.log('TODAY =', today);
+  const todayRecords = this.attendance.filter(record => record.date === today);
 
-  this.attendance.slice(0, 5).forEach(r => {
-    console.log('RECORD DATE =', r.date);
-  });
+  // If no records for today, show all records
+  this.filteredAttendance = todayRecords.length > 0 ? todayRecords : this.attendance;
+
+  this.populateCalculatedFields();
 
 
-  this.filteredAttendance = this.attendance.filter(
-    record => record.date === today
-  );
-
-  console.log('FILTERED TODAY:', this.filteredAttendance);
 
   this.dataChange.emit({
     data: this.filteredAttendance,
@@ -322,23 +418,54 @@ applyFilters() {
       return false;
     }
 
+    // Branch
+    if (this.filters.branch) {
+      const branchId = parseInt(this.filters.branch);
+      if (record.checkedInBranchId !== branchId) {
+        return false;
+      }
+    }
+
     // Status
     if (this.filters.status &&
         record.status !== this.filters.status) {
       return false;
     }
 
+    // Correction Request Filter
+    if (this.filters.correctionStatus) {
+      switch (this.filters.correctionStatus) {
+        case 'HAS_PENDING':
+          if (!record.correctionRequest || record.correctionRequest.status !== 'PENDING') {
+            return false;
+          }
+          break;
+        case 'HAS_APPROVED':
+          if (!record.correctionRequest || record.correctionRequest.status !== 'APPROVED') {
+            return false;
+          }
+          break;
+        case 'HAS_REJECTED':
+          if (!record.correctionRequest || record.correctionRequest.status !== 'REJECTED') {
+            return false;
+          }
+          break;
+        case 'NO_REQUEST':
+          if (record.correctionRequest) {
+            return false;
+          }
+          break;
+      }
+    }
+
     return true;
   });
+
+  this.populateCalculatedFields();
 
   this.dataChange.emit({
     data: this.filteredAttendance,
   filters: this.filters});
-
-/* //if you want it so your sort doesn't reset even after filtering
-  if (this.sortColumn) {
-  this.sortTable(this.sortColumn);
-} */
 }
 
 openModifyForm(record: AttendanceTableRecord) {
@@ -352,6 +479,20 @@ openModifyForm(record: AttendanceTableRecord) {
 
 cancelEdit() {
   this.editingRecord = null;
+  this.toastService.info('Changes cancelled');
+}
+
+@HostListener('document:keydown.escape')
+onEscapeKey() {
+  if (this.editingRecord) {
+    this.cancelEdit();
+  }
+  if (this.detailsRecord) {
+    this.closeDetails();
+  }
+  if (this.mapModalOpen) {
+    this.closeMap();
+  }
 }
 
 saveModification() {
@@ -400,6 +541,7 @@ const admin = {
   );
 
   this.editingRecord = null;
+  this.toastService.success('Attendance record updated successfully');
 
   if (this.editReason.trim().length < 5) {
   alert('Reason must be at least 5 characters.');
@@ -407,42 +549,242 @@ const admin = {
 }
 }
 
-sortTable(column: keyof AttendanceTableRecord) {
+// Handle shared table action clicks (Modify, Open, View Details)
+onTableActionClick(event: { actionId: string; row: AttendanceTableRecord }): void {
+  if (event.actionId === 'details') {
+    this.openDetails(event.row);
+  } else if (event.actionId === 'modify') {
+    this.openModifyForm(event.row);
+  } else if (event.actionId === 'open') {
+    this.openAttendance(event.row);
+  }
+}
 
-  // Toggle direction if same column
-  if (this.sortColumn === column) {
-    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-  } else {
-    this.sortColumn = column;
-    this.sortDirection = 'asc';
+openDetails(record: AttendanceTableRecord): void {
+  this.detailsRecord = record;
+}
+
+closeDetails(): void {
+  this.detailsRecord = null;
+}
+
+// ── STEP 2: Inline Modification Tracking ────────────────────────────────
+markAsModification(record: AttendanceTableRecord): void {
+  if (!this.editingRecord) return;
+
+  // Store original values for tracking
+  this.originalCheckIn = record.checkIn ?? null;
+  this.originalCheckOut = record.checkOut ?? null;
+
+  // Check if values actually changed
+  const hasChanges =
+    this.editCheckIn !== this.originalCheckIn ||
+    this.editCheckOut !== this.originalCheckOut ||
+    this.editStatus !== record.status;
+
+  if (!hasChanges) {
+    alert('No changes detected. Please modify at least one field.');
+    return;
   }
 
-  this.filteredAttendance = [...this.filteredAttendance].sort((a, b) => {
-
-    /*let valueA = a[column];
-    let valueB = b[column];*/
-
-    let valueA = column === 'overriddenBy'
-  ? a.overriddenBy?.adminName
-  : a[column];
-
-let valueB = column === 'overriddenBy'
-  ? b.overriddenBy?.adminName
-  : b[column];
-
-    // Handle null/undefined
-    if (valueA == null) return 1;
-    if (valueB == null) return -1;
-
-    // Convert to string for comparison (safe fallback)
-    valueA = valueA.toString().toLowerCase();
-    valueB = valueB.toString().toLowerCase();
-
-    if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
-    if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
-
-    return 0;
+  // Flag record as requiring approval for correction
+  this.modificationFlags.set(record.id, {
+    flagType: 'CORRECTION',
+    approvalStatus: 'PENDING'
   });
+
+
+}
+
+// ── STEP 3: Auto-detect Cross-Branch Biometric Check-ins ────────────────
+checkCrossBranchBiometric(record: AttendanceTableRecord, deviceBranchCode: string, employeeHomeBranchCode: string): boolean {
+  if (deviceBranchCode !== employeeHomeBranchCode) {
+    // Auto-flag for cross-branch
+    this.modificationFlags.set(record.id, {
+      flagType: 'CROSS_BRANCH_BIOMETRIC',
+      approvalStatus: 'PENDING'
+    });
+
+
+    return true;
+  }
+  return false;
+}
+
+// ── STEP 4: Approval Workflow ────────────────────────────────────────────
+approveFlag(recordId: number, notes: string = ''): void {
+  const flag = this.modificationFlags.get(recordId);
+  if (flag) {
+    flag.approvalStatus = 'APPROVED';
+    this.approverNotes.set(recordId, notes);
+    this.toastService.success(`Record ${recordId} approved`);
+
+  }
+}
+
+rejectFlag(recordId: number, reason: string = ''): void {
+  const flag = this.modificationFlags.get(recordId);
+  if (flag) {
+    flag.approvalStatus = 'REJECTED';
+    this.approverNotes.set(recordId, reason);
+    this.toastService.warning(`Record ${recordId} rejected`);
+
+  }
+}
+
+// ── STEP 5: Correction Request Approval Workflow ─────────────────────────
+approveCorrectionRequest(recordId: number): void {
+  const adminName = sessionStorage.getItem('fullname') || 'Admin';
+
+  // Find record in both arrays to ensure updates everywhere
+  const attendanceRecord = this.attendance.find(r => r.id === recordId);
+  const filteredRecord = this.filteredAttendance.find(r => r.id === recordId);
+
+  if (attendanceRecord && attendanceRecord.correctionRequest) {
+    // Change status to PRESENT when approved
+    attendanceRecord.status = 'PRESENT';
+    attendanceRecord.correctionRequest.status = 'APPROVED';
+    attendanceRecord.correctionRequest.approvedBy = adminName;
+  }
+
+  if (filteredRecord && filteredRecord.correctionRequest) {
+    // Update filtered record too
+    filteredRecord.status = 'PRESENT';
+    filteredRecord.correctionRequest.status = 'APPROVED';
+    filteredRecord.correctionRequest.approvedBy = adminName;
+  }
+
+  // Update in service
+  this.correctionRequestService.approveCorrectionRequest(recordId, adminName);
+
+  // Close drawer to prevent stale data
+  this.detailsRecord = null;
+
+  // Trigger re-render
+  this.applyFilters();
+
+  this.toastService.success(`✅ Approved! ${attendanceRecord?.employee} status changed to PRESENT`);
+}
+
+rejectCorrectionRequest(recordId: number, reason: string = ''): void {
+  const rejectionReason = reason || 'Rejected by admin';
+
+  // Find record in both arrays
+  const attendanceRecord = this.attendance.find(r => r.id === recordId);
+  const filteredRecord = this.filteredAttendance.find(r => r.id === recordId);
+
+  if (attendanceRecord && attendanceRecord.correctionRequest) {
+    // Status stays the same - only mark as rejected
+    attendanceRecord.correctionRequest.status = 'REJECTED';
+    attendanceRecord.correctionRequest.rejectionReason = rejectionReason;
+  }
+
+  if (filteredRecord && filteredRecord.correctionRequest) {
+    // Update filtered record too
+    filteredRecord.correctionRequest.status = 'REJECTED';
+    filteredRecord.correctionRequest.rejectionReason = rejectionReason;
+  }
+
+  // Update in service
+  this.correctionRequestService.rejectCorrectionRequest(recordId, rejectionReason);
+
+  // Close drawer to prevent stale data
+  this.detailsRecord = null;
+
+  // Trigger re-render
+  this.applyFilters();
+
+  this.toastService.warning(`❌ Rejected! ${attendanceRecord?.employee} status remains ${attendanceRecord?.status}`);
+}
+
+// Helper: Get flag indicator for table
+getFlagIndicator(recordId: number): { icon: string; label: string; color: string } | null {
+  const flag = this.modificationFlags.get(recordId);
+  if (!flag) return null;
+
+  const icons: Record<FlagType, string> = {
+    'CORRECTION': '🔧',
+    'CROSS_BRANCH_BIOMETRIC': '🌍'
+  };
+
+  const labels: Record<FlagType, string> = {
+    'CORRECTION': 'Modified',
+    'CROSS_BRANCH_BIOMETRIC': 'Cross-Branch'
+  };
+
+  const colors: Record<ApprovalStatus, string> = {
+    'PENDING': '#FFA500',     // Orange
+    'APPROVED': '#10B981',    // Green
+    'REJECTED': '#EF4444'     // Red
+  };
+
+  return {
+    icon: icons[flag.flagType],
+    label: labels[flag.flagType],
+    color: colors[flag.approvalStatus]
+  };
+}
+
+// Helper: Check if record has pending approval
+hasPendingApproval(recordId: number): boolean {
+  const flag = this.modificationFlags.get(recordId);
+  return flag?.approvalStatus === 'PENDING';
+}
+
+// Helper: Get CSS class for status badge
+getStatusClass(status: string): string {
+  const statusMap: Record<string, string> = {
+    'PRESENT': 'status-present',
+    'LATE': 'status-late',
+    'ABSENT': 'status-absent',
+    'ON_LEAVE': 'status-leave',
+    'OVERTIME': 'status-overtime'
+  };
+  return statusMap[status] || '';
+}
+
+// Calculate hours worked from check-in and check-out times
+calculateHours(checkIn: string | null, checkOut: string | null): number {
+  if (!checkIn || !checkOut) return 0;
+  try {
+    const inTime = new Date(`1970-01-01T${checkIn}`);
+    const outTime = new Date(`1970-01-01T${checkOut}`);
+    const diffMs = outTime.getTime() - inTime.getTime();
+    return Math.round((diffMs / (1000 * 60 * 60)) * 100) / 100;
+  } catch {
+    return 0;
+  }
+}
+
+// Calculate late minutes (time after expected start time 09:00)
+calculateLateMinutes(checkIn: string | null, expectedStart: string = '09:00'): number {
+  if (!checkIn) return 0;
+  try {
+    const inTime = new Date(`1970-01-01T${checkIn}`);
+    const expectedTime = new Date(`1970-01-01T${expectedStart}`);
+    const diffMs = inTime.getTime() - expectedTime.getTime();
+    const diffMinutes = Math.round(diffMs / (1000 * 60));
+    return diffMinutes > 0 ? diffMinutes : 0;
+  } catch {
+    return 0;
+  }
+}
+
+// Calculate overtime (hours beyond standard 8-hour workday)
+calculateOvertime(hours: number, standardHours: number = 8): number {
+  return hours > standardHours ? Math.round((hours - standardHours) * 100) / 100 : 0;
+}
+
+// Populate calculated fields for all records
+populateCalculatedFields(): void {
+  this.filteredAttendance = this.filteredAttendance.map(record => ({
+    ...record,
+    hours: this.calculateHours(record.checkIn, record.checkOut),
+    lateMinutes: this.calculateLateMinutes(record.checkIn),
+    overtime: this.calculateOvertime(
+      this.calculateHours(record.checkIn, record.checkOut)
+    )
+  }));
 }
 
 }

@@ -1,4 +1,4 @@
-import { Component, Input, Type, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Type, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { DropdownOption, TabConfig } from '../../service/interface/data';
 import { CommonModule } from '@angular/common';
 
@@ -10,10 +10,11 @@ import { CommonModule } from '@angular/common';
   // standalone: true,
   // imports: [CommonModule],
 })
-export class NavTabComponent {
+export class NavTabComponent implements OnInit {
   @Input() tabsConfig: TabConfig[] = [];
 
   isDropdownOpen = false;
+  isMobileMenuOpen = false;
   selectedTab: string = '';
   selectedSetting: string | null = null;
   selectedDropdownTab: string = '';
@@ -21,7 +22,6 @@ export class NavTabComponent {
   #sessionStorageCacheKey = '';
 
   ngOnInit(): void {
-    console.log('[NavTabComponent] ngOnInit', this.tabsConfig);
     this.user_role = sessionStorage.getItem('role');
     this.#sessionStorageCacheKey = this.tabsConfig
       .map((tab) => tab.name)
@@ -52,7 +52,12 @@ export class NavTabComponent {
     this.isDropdownOpen = !this.isDropdownOpen;
   }
 
+  toggleMobileMenu() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
   selectTab(tab: any) {
+    this.isMobileMenuOpen = false;
     if (tab.hasDropdown) {
       this.toggleDropdown(tab.name);
       this.selectedDropdownTab = tab.name;

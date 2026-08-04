@@ -22,6 +22,8 @@ export interface AttendanceTableRecord {
   } | null;
   status: 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE' | 'OVERTIME';
   hours?: number;
+  lateMinutes?: number;
+  overtime?: number;
   overrideOpen?: boolean;
   overrideReason?: string;
   overriddenBy?: {
@@ -55,4 +57,17 @@ export interface AttendanceTableRecord {
   homeBranchId?: number;
   crossBranchRequestId?: string;
   crossBranchApprovalStatus?: 'APPROVED' | 'PENDING' | 'REJECTED';
+
+  // --- CORRECTION REQUESTS FROM EMPLOYEES ---
+  correctionRequest?: {
+    id?: number;
+    type: 'TIME_CORRECTION' | 'STATUS_CORRECTION' | 'LOCATION_CORRECTION';
+    reason: string;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    requestedAt: string;
+    requestedBy?: string;
+    approvedBy?: string;
+    approvalNotes?: string;
+    rejectionReason?: string;
+  };
 }

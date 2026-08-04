@@ -3,6 +3,7 @@ import { AttendancetableService } from '../../../../../service/attendance/attend
 import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
 import { UserSessionService } from '../../../../../service/attendance/user-session.service';
+import { EmployeeService } from '../../../../../service/employee.service';
 
 @Component({
   selector: 'app-today-summary',
@@ -14,6 +15,7 @@ export class TodaySummaryComponent implements OnInit {
   private attendanceService = inject(AttendancetableService);
   private officehoursService = inject(OfficeHoursService);
   private userSession = inject(UserSessionService);
+  private employeeService = inject(EmployeeService);
   summary = {
     hoursWorked: 0,
     expectedHours: 8,
@@ -29,37 +31,37 @@ export class TodaySummaryComponent implements OnInit {
   ngOnInit() {
     this.currentUser = this.userSession.getCurrentUser();
 
-    if(!this.currentUser?.userId) {
-      console.error('No logged in user');
+    if(!this.currentUser) {
       return;
     }
 
-    this.attendanceService.resolveHrEmployeeId(this.currentUser.userId).subscribe(result => {
-      if (!result) {
-        console.error('HR employee not found');
-        return;
+    // Use EmployeeService which has better fallback mechanisms
+    this.employeeService.getEmployeeIdForCurrentUser().subscribe({
+      next: (employeeId) => {
+        this.hrEmployeeId = employeeId;
+
+        this.attendanceService.attendance$.subscribe(data => {
+          this.calculateTodaySummary(data);
+        });
+      },
+      error: (err) => {
+        // Failed to resolve employee ID
       }
-      this.hrEmployeeId = Number(result.id);  
-
-      this.attendanceService.attendance$.subscribe(data => {
-      this.calculateTodaySummary(data);
     });
-    });
-
   }
 
   private calculateTodaySummary(data: AttendanceTableRecord[]) {
   const today = new Date().toISOString().split('T')[0];
 
-  /*const record = data.find(
-    r => r.employee === this.employeeName && r.date === today);*/
-    if (!this.hrEmployeeId) return;
+  if (!this.hrEmployeeId) {
+    return;
+  }
 
-    const record = data.find(
-      r =>
-        Number(r.employeeId) === this.hrEmployeeId &&
-        r.date === today
-    );
+  const record = data.find(
+    r =>
+      Number(r.employeeId) === this.hrEmployeeId &&
+      r.date === today
+  );
 
   const officeHours = this.officehoursService.getOfficeHours();
 
@@ -127,45 +129,4 @@ private calculateExpectedHours(openingTime: string, closingTime: string): number
 }
 
 
-  /*private calculateTodaySummary(data: AttendanceTableRecord[]) {
-    const today = new Date().toISOString().split('T')[0];
-
-    const record = data.find(r => r.employee === this.employeeName && r.date === today);
-
-    if (!record) {
-      this.summary = {
-        hoursWorked: 0,
-        expectedHours: 8,
-        lateMinutes: 0,
-        overtime: 0
-      };
-      return;
-    }
-
-    const hoursWorked = record.hours ?? 0;
-
-    const lateMinutes = this.calculateLateMinutes(record.checkIn);
-
-    const overtime = Math.max(0, hoursWorked - this.summary.expectedHours);
-
-    this.summary = {
-      hoursWorked: +hoursWorked.toFixed(2),
-      expectedHours: 8,
-      lateMinutes,
-      overtime: +overtime.toFixed(2)
-    };
-  }
-
-  private calculateLateMinutes(checkIn: string | null): number {
-    if (!checkIn) return 0;
-
-    const officeStart = new Date();
-    officeStart.setHours(9, 0, 0, 0); // default office opening time
-
-    const checkInTime = new Date(`1970-01-01T${checkIn}`);
-
-    const diff = checkInTime.getTime() - officeStart.getTime();
-
-    return diff > 0 ? Math.floor(diff / 60000) : 0;
-  }*/
 }

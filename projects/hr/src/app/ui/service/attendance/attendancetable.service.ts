@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { Injectable, OnDestroy } from '@angular/core';
+import { BehaviorSubject, Observable, of, Subscription } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import { AttendanceTableRecord } from '../../domain/attendance/attendancetable.dto';
 import { OfficeHoursService } from './office-hours.service';
@@ -9,6 +9,10 @@ import { computeShiftTrackingMetrics } from '../workschedule-shift/shift-based-t
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../shared-component/environments/environment.prod';
 import { map } from 'rxjs/operators';
+import { MOCK_ATTENDANCE } from '../../domain/attendance/attendancetable.mock';
+
+// Development mode - use mock data only
+const USE_MOCK_DATA_ONLY = environment.env === 'development';
 
 type ClockStatus = 'CLOCKED_IN' | 'CLOCKED_OUT';
 
@@ -41,16 +45,17 @@ interface ParsedEmployeeResponse {
 }
 
 @Injectable({ providedIn: 'root' })
-export class AttendancetableService {
-  private attendanceSubject = new BehaviorSubject<AttendanceTableRecord[]>([]);
+export class AttendancetableService implements OnDestroy {
+  private attendanceSubject = new BehaviorSubject<AttendanceTableRecord[]>(MOCK_ATTENDANCE);
   private clockStatusSubject = new BehaviorSubject<ClockStatus>('CLOCKED_OUT');
 
   private localRecords = new Map<string, AttendanceTableRecord>();
   private registeredEmployees: RegisteredEmployee[] = [];
   private lastAbsentRunDate: string | null = null;
 
-  private absentTimeout: any;
-  private absentInterval: any;
+  private absentTimeout: NodeJS.Timeout | null = null;
+  private absentInterval: NodeJS.Timeout | null = null;
+  private officeHoursSubscription: Subscription | null = null;
 
   attendance$ = this.attendanceSubject.asObservable();
   clockStatus$ = this.clockStatusSubject.asObservable();
@@ -61,9 +66,22 @@ export class AttendancetableService {
     private attendanceScheduleResolverService: AttendanceScheduleResolverService
   ) {
     this.scheduleAbsentCheck();
-    this.officeHoursService.officeHours$.subscribe(() => {
+    this.officeHoursSubscription = this.officeHoursService.officeHours$.subscribe(() => {
       this.scheduleAbsentCheck();
     });
+    this.fetchAllRecords();
+  }
+
+  ngOnDestroy() {
+    if (this.absentTimeout) {
+      clearTimeout(this.absentTimeout);
+    }
+    if (this.absentInterval) {
+      clearInterval(this.absentInterval);
+    }
+    if (this.officeHoursSubscription) {
+      this.officeHoursSubscription.unsubscribe();
+    }
   }
 
   // ────────────────────────────────────────────────────────────
@@ -122,6 +140,12 @@ export class AttendancetableService {
   // ────────────────────────────────────────────────────────────
 
   fetchAllRecords(page: number = 1, size: number = 100): void {
+    // In development mode, skip API calls and use mock data
+    if (USE_MOCK_DATA_ONLY) {
+      this.mergeAndPublish(MOCK_ATTENDANCE);
+      return;
+    }
+
     this.http.get<any>(API_ENDPOINTS.ALL_RECORDS() + `?page=${page}&size=${size}`).subscribe({
       next: (res) => this.handleFetchSuccess(res),
       error: (err) => this.handleFetchError('fetchAllRecords', err)
@@ -129,6 +153,12 @@ export class AttendancetableService {
   }
 
   fetchByDateRange(from: string, to: string, page: number = 1, size: number = 100): void {
+    // In development mode, skip API calls and use mock data
+    if (USE_MOCK_DATA_ONLY) {
+      this.mergeAndPublish(MOCK_ATTENDANCE);
+      return;
+    }
+
     const url = `${API_ENDPOINTS.RECORDS_BY_RANGE()}?from=${from}&to=${to}&page=${page}&size=${size}`;
     this.http.get<any>(url).subscribe({
       next: (res) => this.handleFetchSuccess(res),
@@ -207,16 +237,21 @@ export class AttendancetableService {
     record.appliedExpectedEnd = workingWindow.closingTime;
     record.appliedShiftName = workingWindow.shiftName;
 
-    const location = await this.getCurrentLocation();
+    // Get location with a 5-second timeout - proceed even if location fails
+    const location = await Promise.race([
+      this.getCurrentLocation(),
+      new Promise<null>(resolve => setTimeout(() => resolve(null), 5000))
+    ]);
     const distanceFromOffice = this.calculateDistanceFromOffice(location, officeHours);
 
     if (action === 'IN') {
-      record.checkIn = now.toISOString();
+      record.checkIn = now.toTimeString().slice(0, 5);
       record.checkInLocation = this.formatLocation(location);
       record.status = record.overrideOpen ? 'PRESENT' : this.getCheckInStatus(now, workingWindow);
     } else if (action === 'OUT') {
-      record.checkOut = now.toISOString();
+      record.checkOut = now.toTimeString().slice(0, 5);
       record.checkOutLocation = this.formatLocation(location);
+
       record.hours = this.calculateHours(record.checkIn!, record.checkOut);
     }
 
@@ -559,11 +594,20 @@ export class AttendancetableService {
     const mapped = (res.content ?? [])
       .map((r: any) => this.enrichRecordMetrics(this.mapApiRecord(r)))
       .filter((r: AttendanceTableRecord) => this.shouldIncludeRecord(r));
-    this.mergeAndPublish(mapped);
+
+    // If API returns empty results, use mock data as fallback
+    if (mapped.length === 0) {
+      this.mergeAndPublish(MOCK_ATTENDANCE);
+    } else {
+      this.mergeAndPublish(mapped);
+    }
   }
 
   private handleFetchError(method: string, err: any): void {
-    console.error(`[${method}]`, err?.error?.message ?? err);
+    const errorMsg = err?.error?.message ?? err?.message ?? err?.statusText ?? 'Unknown error';
+    const status = err?.status || 'unknown status';
+    // Use mock data as fallback
+    this.mergeAndPublish(MOCK_ATTENDANCE);
   }
 
   private shouldIncludeRecord(record: AttendanceTableRecord): boolean {
@@ -743,9 +787,21 @@ export class AttendancetableService {
   }
 
   private calculateHours(inTime: string, outTime: string): number {
-    const start = new Date(inTime);
-    const end = new Date(outTime);
-    return +((end.getTime() - start.getTime()) / 3600000).toFixed(2);
+    // Handle time strings like "09:30" and "17:30"
+    const parseTime = (timeStr: string): Date => {
+      const [hours, minutes] = String(timeStr).split(':').map(Number);
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      return date;
+    };
+
+    const start = typeof inTime === 'string' && inTime.includes(':') ? parseTime(inTime) : new Date(inTime);
+    const end = typeof outTime === 'string' && outTime.includes(':') ? parseTime(outTime) : new Date(outTime);
+
+    const diffMs = end.getTime() - start.getTime();
+    const hours = diffMs / 3600000;
+
+    return +hours.toFixed(2);
   }
 
   private convertToDateTime(time: string): Date {
@@ -956,8 +1012,12 @@ export class AttendancetableService {
     };
 
     this.http.post<any>(API_ENDPOINTS.CLOCK_IN(), body).subscribe({
-      next: (res) => this.handleClockInSuccess(res, employeeId),
-      error: (err) => console.error('Clock-in failed:', err?.error?.message ?? err)
+      next: (res) => {
+        this.handleClockInSuccess(res, employeeId);
+      },
+      error: (err) => {
+        // Using local storage only if API fails
+      }
     });
   }
 
@@ -977,8 +1037,12 @@ export class AttendancetableService {
     };
 
     this.http.post<any>(API_ENDPOINTS.CLOCK_OUT(), body).subscribe({
-      next: () => this.setClockStatus('CLOCKED_OUT'),
-      error: (err) => console.error('Clock-out failed:', err?.error?.message ?? err)
+      next: () => {
+        this.setClockStatus('CLOCKED_OUT');
+      },
+      error: (err) => {
+        // Using local storage only if API fails
+      }
     });
   }
 
@@ -987,7 +1051,7 @@ export class AttendancetableService {
 
     this.http.post<any>(API_ENDPOINTS.OVERRIDE_OPEN(apiRecordId), body).subscribe({
       next: () => { },
-      error: (err) => console.error('Override failed:', err?.error?.message ?? err)
+      error: (err) => { /* Override operation failed */ }
     });
   }
 

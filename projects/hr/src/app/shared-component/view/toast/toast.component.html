@@ -1,0 +1,10 @@
+<div class="toast-container">
+  <div *ngFor="let toast of toasts"
+       class="toast"
+       [ngClass]="'toast-' + toast.type"
+       [@slideIn]>
+    <i [class]="getIcon(toast.type)"></i>
+    <span class="message">{{ toast.message }}</span>
+    <button class="close-btn" (click)="removeToast(toast.id)">×</button>
+  </div>
+</div>

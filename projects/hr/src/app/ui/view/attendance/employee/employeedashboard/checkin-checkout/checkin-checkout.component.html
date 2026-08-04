@@ -1,16 +1,19 @@
 <div class="clock-card">
-
-  <div class="time">
-    <h2>{{ currentTime | date:'HH:mm:ss' }}</h2>
-    <p>{{ currentTime | date:'fullDate' }}</p>
-  </div>
-
-  <div class="status">
-    <span 
-      [class.in]="status === 'CLOCKED_IN'"
-      [class.out]="status === 'CLOCKED_OUT'">
-      {{ status.replace('_', ' ') }}
-    </span>
+  <div class="attendance-main-content">
+    <div class="clock-icon-container">
+      <i class="pi pi-clock" aria-hidden="true"></i>
+    </div>
+    <div class="time-info">
+      <div class="time">{{ currentTime | date:'HH:mm:ss' }}</div>
+      <div class="date">{{ currentTime | date:'fullDate' }}</div>
+      <div class="status">
+        <span
+          [class.in]="status === 'CLOCKED_IN'"
+          [class.out]="status === 'CLOCKED_OUT'">
+          {{ status.replace('_', ' ') }}
+        </span>
+      </div>
+    </div>
   </div>
 
   <!--<div class="actions">
@@ -45,33 +48,26 @@
 
   <!-- CLOCK IN (only during office hours) -->
   <button
-    *ngIf="status === 'CLOCKED_OUT' 
-           && isWithinOfficeHours 
+    *ngIf="status === 'CLOCKED_OUT'
+           && isWithinOfficeHours
            && !isAbsentToday
            && !hasCompletedToday"
     class="main-btn"
     [disabled]="isGettingLocation"
     (click)="toggleClock()">
-    <span *ngIf="!isGettingLocation">Clock In</span>
-      <span *ngIf="isGettingLocation" class="location-loading">
-        <span class="spinner"></span> Getting location...
-      </span>
+    Clock In
   </button>
 
   <!-- CLOCK OUT (allowed anytime after opening) -->
   <button
-    *ngIf="status === 'CLOCKED_IN' 
+    *ngIf="status === 'CLOCKED_IN'
            && isAfterOpening
            && !hasCompletedToday"
     class="main-btn"
-    [disabled]="isGettingLocation || !hrEmployeeId"
+    [disabled]="isGettingLocation"
     (click)="toggleClock()">
-    <span *ngIf="!isGettingLocation">Clock Out</span>
-    <span *ngIf="isGettingLocation" class="location-loading">
-      <span class="spinner">Getting location...</span> 
-    </span>
+    Clock Out
   </button>
 
 </div>
-
 </div>
