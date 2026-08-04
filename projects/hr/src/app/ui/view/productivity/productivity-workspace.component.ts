@@ -320,6 +320,10 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   subtaskInput = '';
   showAddTask = false;
   taskSubmitAttempted = false;
+
+  get newTaskDescriptionEmpty(): boolean {
+    return !(this.newTask.description || '').replace(/<[^>]*>/g, '').trim();
+  }
   newTask: Partial<BoardTask> = {};
   newTaskSubtasks: Array<{
     title: string;

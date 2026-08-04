@@ -1963,7 +1963,7 @@
       <div class="form-row">
         <label>Description *</label>
         <div class="task-editor-wrap"
-          [style.outline]="taskSubmitAttempted && !(newTask.description || '').replace(/<[^>]*>/g,'').trim() ? '1.5px solid #dc2626' : 'none'"
+          [style.outline]="taskSubmitAttempted && newTaskDescriptionEmpty ? '1.5px solid #dc2626' : 'none'"
           [style.border-radius]="'4px'">
           <p-editor [(ngModel)]="newTask.description"
                     [modules]="editorModules"
