@@ -177,11 +177,19 @@
                     </app-vendor-risk>
                 </div>
 
-                <!-- ========================================================
-                DOCUMENTS TAB
+               <!-- ========================================================
+                DOCUMENTS TAB - Using the component
                 ======================================================== -->
                 <div *ngIf="activeTab === 'documents'" class="tab-panel">
-                    <!-- Documents content goes here -->
+                    <app-vendor-documents
+                        [documents]="documents"
+                        [vendorId]="vendorId"
+                        [isLoading]="isLoading"
+                        (uploadDocument)="handleDocumentUpload($event)"
+                        (deleteDocument)="handleDocumentDelete($event)"
+                        (verifyDocument)="handleDocumentVerify($event)"
+                        (refresh)="loadRelatedData()">
+                    </app-vendor-documents>
                 </div>
 
                 <!-- ========================================================

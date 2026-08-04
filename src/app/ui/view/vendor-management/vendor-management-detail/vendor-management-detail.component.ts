@@ -21,6 +21,7 @@ import {
   VendorLifecycleHistory,
   VendorContract,
   RiskAlert,
+  DocumentCategory,  // <-- ADD THIS
   getVendorStatusColor,
   getVendorTierLabel,
   getRiskLevelColor,
@@ -782,6 +783,57 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     const firstX = this.getPointX(0, data.length);
     const baseY = this.getPointY(0, max);
     return path + ` L${lastX},${baseY} L${firstX},${baseY} Z`;
+  }
+
+  // ============================================================
+  // DOCUMENT HANDLERS
+  // ============================================================
+
+  handleDocumentUpload(event: { file: File; category: DocumentCategory; issueDate: Date; expiryDate: Date }): void {
+    this.vendorService.uploadDocument(
+      this.vendorId,
+      event.file,
+      event.category,
+      event.issueDate,
+      event.expiryDate
+    ).pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (doc) => {
+        console.log('Document uploaded:', doc);
+        this.loadRelatedData();
+      },
+      error: (err) => {
+        console.error('Failed to upload document:', err);
+      }
+    });
+  }
+
+  handleDocumentDelete(documentId: string): void {
+    this.vendorService.deleteDocument(documentId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          console.log('Document deleted');
+          this.loadRelatedData();
+        },
+        error: (err) => {
+          console.error('Failed to delete document:', err);
+        }
+      });
+  }
+
+  handleDocumentVerify(event: { documentId: string; verified: boolean; notes?: string }): void {
+    this.vendorService.verifyDocument(event.documentId, event.verified, event.notes)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          console.log('Document verified:', event.verified);
+          this.loadRelatedData();
+        },
+        error: (err) => {
+          console.error('Failed to verify document:', err);
+        }
+      });
   }
 
   // ============================================================
