@@ -25,6 +25,9 @@
       <button class="snav-item" [class.active]="activeSection === 'forms'" (click)="activeSection = 'forms'">
         <i class="fas fa-file-alt"></i> Forms &amp; Templates
       </button>
+      <button class="snav-item" [class.active]="activeSection === 'office-hours'" (click)="activeSection = 'office-hours'">
+        <i class="fas fa-clock"></i> Office Hours
+      </button>
     </div>
 
     <!-- Right panel -->
@@ -361,6 +364,11 @@
             </button>
           </div>
         </div>
+      </ng-container>
+
+      <!-- ══ OFFICE HOURS ══ -->
+      <ng-container *ngIf="activeSection === 'office-hours'">
+        <app-office-hours></app-office-hours>
       </ng-container>
 
     </div>

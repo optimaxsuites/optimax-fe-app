@@ -20,10 +20,17 @@ export class AttendanceService {
 
   private records: AttendanceRecord[] = this.loadHistory();
   private currentRecord = new BehaviorSubject<AttendanceRecord | null>(this.loadCurrent());
+  private employeeId: number | null = null;
+  private employeeName: string = '';
 
   currentRecord$ = this.currentRecord.asObservable();
 
   constructor(private http: HttpClient) {}
+
+  setEmployeeInfo(employeeId: number, employeeName: string): void {
+    this.employeeId = employeeId;
+    this.employeeName = employeeName;
+  }
 
   // ── Self-service clock-in/out (localStorage) ────────────────────────────────
 

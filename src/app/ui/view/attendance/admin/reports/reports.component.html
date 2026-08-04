@@ -1,0 +1,236 @@
+<div class="reports-container">
+  <!-- Edit Modal Backdrop -->
+  <div *ngIf="isEditMode && selectedRecord" class="modal-backdrop" (click)="cancelEdit()"></div>
+
+  <!-- Edit Modal -->
+  <div *ngIf="isEditMode && selectedRecord" class="modal-card">
+    <div class="modal-header">
+      <h3>
+        <i class="fa-solid fa-edit"></i>
+        Edit Attendance Record
+      </h3>
+      <button class="close-btn" (click)="cancelEdit()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="modal-content">
+      <div class="form-group">
+        <label>Employee Name</label>
+        <input type="text" [(ngModel)]="selectedRecord.employee" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Department</label>
+        <input type="text" [(ngModel)]="selectedRecord.department" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Clock In</label>
+        <input type="time" [(ngModel)]="selectedRecord.checkIn">
+      </div>
+
+      <div class="form-group">
+        <label>Clock Out</label>
+        <input type="time" [(ngModel)]="selectedRecord.checkOut">
+      </div>
+
+      <div class="form-group">
+        <label>Status</label>
+        <select [(ngModel)]="selectedRecord.status">
+          <option value="PRESENT">Present</option>
+          <option value="LATE">Late</option>
+          <option value="ABSENT">Absent</option>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-cancel" (click)="cancelEdit()">Cancel</button>
+        <button class="btn-save" (click)="saveRecord()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Details Drawer Backdrop -->
+  <div *ngIf="selectedRecord && !isEditMode" class="details-backdrop" (click)="closeDrawer()"></div>
+
+  <!-- Details Drawer -->
+  <div *ngIf="selectedRecord && !isEditMode" class="details-drawer">
+    <div class="drawer-header">
+      <h3>
+        <i class="fa-solid fa-user-circle"></i>
+        {{ selectedRecord.employee }}
+      </h3>
+      <button class="close-btn" (click)="closeDrawer()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="drawer-content">
+      <div class="detail-section">
+        <h4>Attendance Information</h4>
+        <div class="detail-row">
+          <span class="label">Employee ID</span>
+          <span class="value">{{ selectedRecord.id }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Department</span>
+          <span class="value">{{ selectedRecord.department }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Branch</span>
+          <span class="value">{{ getBranchName(selectedRecord.checkedInBranchId) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Date</span>
+          <span class="value">{{ selectedRecord.date || '—' }}</span>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4>Clock Times</h4>
+        <div class="detail-row">
+          <span class="label">Clock In</span>
+          <span class="value">{{ selectedRecord.checkIn || '—' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Clock Out</span>
+          <span class="value">{{ selectedRecord.checkOut || '—' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Hours Worked</span>
+          <span class="value">{{ selectedRecord.hours || 0 }} hours</span>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4>Status</h4>
+        <div class="detail-row">
+          <span class="label">Attendance Status</span>
+          <span class="value">
+            <span class="status" [ngClass]="'status-' + selectedRecord.status.toLowerCase()">
+              {{ selectedRecord.status }}
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-title">
+      <h1>Attendance Reports</h1>
+      <p>View and analyze employee attendance data</p>
+    </div>
+    <div class="header-controls">
+      <div class="date-input">
+        <label>FROM</label>
+        <input type="date" [(ngModel)]="startDate">
+      </div>
+      <div class="date-input">
+        <label>TO</label>
+        <input type="date" [(ngModel)]="endDate">
+      </div>
+      <button class="btn-primary" (click)="loadAttendance()">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+      <div class="export-dropdown">
+        <button class="btn-export">
+          <i class="fa-solid fa-download"></i>
+        </button>
+        <div class="dropdown-menu">
+          <a (click)="exportExcel()">Export Excel</a>
+          <a (click)="exportCsv()">Export CSV</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <div class="summary-card present">
+      <div class="card-label">
+        <i class="fa-solid fa-check-circle"></i>
+        <span>Present</span>
+      </div>
+      <div class="card-value">{{ summary.present }}</div>
+      <div class="card-detail">{{ getPercentage(summary.present) }}% of total</div>
+    </div>
+
+    <div class="summary-card late">
+      <div class="card-label">
+        <i class="fa-solid fa-clock"></i>
+        <span>Late</span>
+      </div>
+      <div class="card-value">{{ summary.late }}</div>
+      <div class="card-detail">{{ getPercentage(summary.late) }}% of total</div>
+    </div>
+
+    <div class="summary-card absent">
+      <div class="card-label">
+        <i class="fa-solid fa-user-slash"></i>
+        <span>Absent</span>
+      </div>
+      <div class="card-value">{{ summary.absent }}</div>
+      <div class="card-detail">{{ getPercentage(summary.absent) }}% of total</div>
+    </div>
+
+    <div class="summary-card pending">
+      <div class="card-label">
+        <i class="fa-solid fa-hourglass-end"></i>
+        <span>Pending Review</span>
+      </div>
+      <div class="card-value">{{ summary.pendingReview }}</div>
+      <div class="card-detail">{{ getPercentage(summary.pendingReview) }}% of total</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <h3>FILTERS</h3>
+    <div class="filters-controls">
+      <input
+        type="text"
+        placeholder="Search employee or ID..."
+        [(ngModel)]="filters.employee"
+        class="search-input">
+
+      <select [(ngModel)]="filters.department">
+        <option value="">All Departments</option>
+        <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
+      </select>
+
+      <select [(ngModel)]="filters.status">
+        <option value="">All Status</option>
+        <option value="PRESENT">Present</option>
+        <option value="LATE">Late</option>
+        <option value="ABSENT">Absent</option>
+      </select>
+
+      <select [(ngModel)]="filters.branch">
+        <option value="">All Branches</option>
+        <option *ngFor="let branch of branches" [value]="branch.id">{{ branch.name }}</option>
+      </select>
+
+      <button class="btn-apply" (click)="applyFilters()">Apply</button>
+      <button class="btn-reset" (click)="resetFilters()">Reset</button>
+    </div>
+  </div>
+
+  <!-- Using Shared Admin Table Component -->
+  <div class="attendance-card">
+    <div class="record-count">
+      <h3>Attendance Records</h3>
+      <span class="count-badge">Showing {{ filteredAttendance.length }} of {{ attendance.length }}</span>
+    </div>
+
+    <app-table
+      [rows]="filteredAttendance"
+      [columns]="tableColumns"
+      [actions]="tableActions"
+      emptyMessage="📭 No attendance records found"
+      striped
+      (actionClick)="onTableActionClick($event)">
+    </app-table>
+  </div>
+</div>

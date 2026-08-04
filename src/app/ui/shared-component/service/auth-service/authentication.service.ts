@@ -1,10 +1,13 @@
 import { Injectable, isDevMode } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, Observable, throwError, of } from 'rxjs';
 import { Router } from '@angular/router';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { NavigationLinksService } from '../navigation-links/navigation-links.service';
 import { environment } from '../environments/environment.prod';
+
+// Development mock token (expires in 2030)
+const MOCK_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibmFtZSI6IkVzZW9zZSIsImlhdCI6MTcyMjYwMDAwMCwiZXhwIjoxODg4MzcwMzEwfQ.mock_token_for_development';
 
 
 
@@ -27,6 +30,12 @@ export class AuthenticationService {
 
     if (!token) {
       return false;
+    }
+
+    // In development mode, skip JWT validation
+    if (environment.env === 'development') {
+      console.log('🔧 [Development Mode] Skipping JWT validation');
+      return true;
     }
 
     try {
@@ -76,8 +85,27 @@ export class AuthenticationService {
 
 
   userLogin(data: any): Observable<any> {
-    // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/sigin"+"---"+JSON.stringify(data)))
+    // Development mode: return mock login response
+    if (environment.env === 'development') {
+      console.log('🔧 [Development Mode] Using mock login');
+      // Store token in storage
+      sessionStorage.setItem('Token', MOCK_TOKEN);
+      localStorage.setItem('Token', MOCK_TOKEN);
 
+      const mockResponse = {
+        id: 1,
+        userId: 1,
+        username: data.username || 'Eseose',
+        email: 'eseose@optimax.com',
+        fullName: 'Eseose Developer',
+        roles: 'ADMIN',
+        token: MOCK_TOKEN
+      };
+
+      return of(mockResponse);
+    }
+
+    // Production: call real API
     return this.http
         .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signin", data)
         .pipe(catchError(this.handleError));

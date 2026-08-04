@@ -1,7 +1,10 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { AttendashboardService } from '../../../../service/attendance/attendashboard.service';
 import { AttendanceTableRecord } from '../../../../domain/attendance/attendancetable.dto';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
+import { CorrectionRequestService } from '../../../../service/attendance/correction-request.service';
+import { interval, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-attendashboard',
@@ -9,10 +12,12 @@ import { AttendancetableService } from '../../../../service/attendance/attendanc
   styleUrl: './attendashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AttendashboardComponent implements OnInit{
+export class AttendashboardComponent implements OnInit, OnDestroy{
 
   private attendashboardService = inject(AttendashboardService);
   private attendanceService = inject(AttendancetableService);
+  private correctionRequestService = inject(CorrectionRequestService);
+  private destroy$ = new Subject<void>();
 
   stats$ = this.attendashboardService.getTodayStats();
   heatmap$ = this.attendashboardService.getDepartmentHeatmap();
@@ -22,6 +27,13 @@ export class AttendashboardComponent implements OnInit{
   lateArrivalsData: any[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
   currentFilters: any = {};
+
+  // Summary cards data
+  presentCount = 0;
+  lateCount = 0;
+  absentCount = 0;
+  pendingCorrectionsCount = 0;
+  pendingCorrectionRequests: AttendanceTableRecord[] = [];
 
   onDataChange(event: { data: AttendanceTableRecord[], filters:any }) {
   this.filteredAttendance = event.data;
@@ -36,6 +48,17 @@ export class AttendashboardComponent implements OnInit{
   const absent = data.filter(r => r.status === 'ABSENT').length;
   const late = data.filter(r => r.status === 'LATE').length;
   const onLeave = data.filter(r => r.status === 'ON_LEAVE').length;
+
+  // Summary cards
+  this.presentCount = present;
+  this.lateCount = late;
+  this.absentCount = absent;
+
+  // Count pending items: modifications + correction requests
+  const pendingModifications = data.filter(r => r.overriddenBy).length;
+  const pendingCorrections = data.filter(r => r.correctionRequest?.status === 'PENDING').length;
+  this.pendingCorrectionsCount = pendingModifications + pendingCorrections;
+  this.pendingCorrectionRequests = data.filter(r => r.correctionRequest?.status === 'PENDING');
 
   //stats
   this.statsData = {
@@ -90,16 +113,51 @@ export class AttendashboardComponent implements OnInit{
 }
 
   ngOnInit(): void {
-    this.attendanceService.attendance$.subscribe(data => {
-    const today = new Date().toISOString().split('T')[0];
+    // Initial load
+    this.attendanceService.fetchAllRecords();
 
-    const todaysData = data.filter(r => r.date === today);
+    // Subscribe to attendance data updates
+    this.attendanceService.attendance$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(data => {
+        const today = new Date().toISOString().split('T')[0];
+        const todaysData = data.filter(r => r.date === today);
+        this.filteredAttendance = todaysData;
+        this.calculateDashboardData();
+        console.log('✅ Admin dashboard updated:', todaysData.length, 'records for today');
+      });
 
-    this.filteredAttendance = todaysData;
+    // Subscribe to correction requests and update pending count
+    this.correctionRequestService.correctionRequests$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(corrections => {
+        if (corrections.length > 0) {
+          this.pendingCorrectionRequests = corrections.filter(r => r.correctionRequest?.status === 'PENDING');
+          const pendingModifications = this.filteredAttendance.filter(r => r.overriddenBy).length;
+          const pendingCorrections = this.pendingCorrectionRequests.length;
+          this.pendingCorrectionsCount = pendingModifications + pendingCorrections;
+          console.log('📋 Pending corrections updated:', this.pendingCorrectionsCount);
+        }
+      });
 
-    this.calculateDashboardData();
-  });
-    
+    // Auto-refresh every 30 seconds to catch employee clock-ins
+    interval(30000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        console.log('🔄 Auto-refreshing attendance data...');
+        this.attendanceService.fetchAllRecords();
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // Allow manual refresh
+  refreshData(): void {
+    console.log('🔄 Manual refresh triggered');
+    this.attendanceService.fetchAllRecords();
   }
 
 }

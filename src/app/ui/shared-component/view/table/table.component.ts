@@ -1,4 +1,6 @@
 import { Component, ContentChild, EventEmitter, Input, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { TableModule } from 'primeng/table';
 import { TableBodyDirective } from './table-body.directive';
 
 export interface TableColumn<T = any> {
@@ -24,6 +26,8 @@ export interface TableAction<T = any> {
 
 @Component({
   selector: 'app-table',
+  standalone: true,
+  imports: [CommonModule, TableModule],
   templateUrl: './table.component.html',
   styleUrl: './table.component.scss'
 })

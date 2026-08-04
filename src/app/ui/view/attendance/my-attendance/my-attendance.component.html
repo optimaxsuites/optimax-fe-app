@@ -1,233 +1,258 @@
-<!-- <div class="my-attendance-container table-item">
-  <p>{{ displayMessage }}</p>
+<div class="attendance-dashboard">
+  <section class="dashboard-section top-row-section">
+    <div class="top-row-grid">
+      <div class="attendance-card">
+        <div class="attendance-card__header">
+          <h2 class="attendance-card__title">TODAY'S ATTENDANCE</h2>
+        </div>
 
-  <div class="flex gap-28 mb-5 items-center">
-    <div class="flex gap-2 justify-center items-center">
+        <div class="attendance-card__content">
+          <div class="attendance-card__clock">
+            <svg class="clock-svg" viewBox="0 0 100 100" aria-hidden="true">
+              <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="2"/>
+              <circle cx="50" cy="50" r="3" fill="currentColor"/>
+              <line x1="50" y1="50" x2="50" y2="25" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="50" y1="50" x2="70" y2="50" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <text x="50" y="15" text-anchor="middle" font-size="8" fill="currentColor">12</text>
+              <text x="80" y="52" text-anchor="middle" font-size="8" fill="currentColor">3</text>
+              <text x="50" y="85" text-anchor="middle" font-size="8" fill="currentColor">6</text>
+              <text x="20" y="52" text-anchor="middle" font-size="8" fill="currentColor">9</text>
+            </svg>
+          </div>
 
-      <div class="flex gap-2 justify-center flex-col text-center">
-        <img
-          src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg"
-          alt="User Avatar"
-          class="w-72 h-72 rounded-full"
-        />
-        <p class="font-bold text-gray-700 text-[18px] capitalize">{{ userRegData.fullname }}</p>
+          <div class="attendance-card__details">
+            <div class="attendance-card__time-group">
+              <div class="attendance-card__time" aria-live="polite">
+                {{ currentRecord ? currentRecord.clockIn : currentTime }}
+              </div>
+              <div class="attendance-card__date">
+                {{ currentRecord?.date || 'Today' }}
+              </div>
+            </div>
+
+            <div class="attendance-card__status-group">
+              <span class="status-badge" [class]="'status-badge--' + (currentRecord ? 'in' : 'out')" aria-label="Current attendance status">
+                {{ currentRecord ? 'CLOCKED IN' : 'CLOCKED OUT' }}
+              </span>
+            </div>
+
+            <button
+              *ngIf="!currentRecord"
+              (click)="clockIn()"
+              class="btn btn--primary btn--large attendance-card__action"
+              aria-label="Clock in button"
+              type="button">
+              CLOCK IN
+            </button>
+
+            <button
+              *ngIf="currentRecord"
+              (click)="clockOut()"
+              class="btn btn--primary btn--large attendance-card__action"
+              aria-label="Clock out button"
+              type="button">
+              CLOCK OUT
+            </button>
+
+            <p class="attendance-card__note">
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+              <span>Your check-in will be recorded automatically.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="metrics-grid metrics-grid--4">
+      <div class="metric-card metric-card--hours-worked">
+        <div class="metric-card__header">
+          <div class="metric-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11 2c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm3.5 9c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5.67-1.5 1.5-1.5 1.5.67 1.5 1.5z"/>
+            </svg>
+          </div>
+          <h3 class="metric-card__label">Hours Worked</h3>
+        </div>
+        <div class="metric-card__value">{{ hoursWorkedToday }}</div>
+        <div class="metric-card__subtext">Today</div>
+        <div class="metric-card__accent" aria-hidden="true"></div>
+      </div>
+
+      <div class="metric-card metric-card--expected-hours">
+        <div class="metric-card__header">
+          <div class="metric-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
+            </svg>
+          </div>
+          <h3 class="metric-card__label">Expected Hours</h3>
+        </div>
+        <div class="metric-card__value">8h</div>
+        <div class="metric-card__subtext">Scheduled</div>
+        <div class="metric-card__accent" aria-hidden="true"></div>
+      </div>
+
+      <div class="metric-card metric-card--late-minutes">
+        <div class="metric-card__header">
+          <div class="metric-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+            </svg>
+          </div>
+          <h3 class="metric-card__label">Late Minutes</h3>
+        </div>
+        <div class="metric-card__value">{{ lateMinutesValue }}</div>
+        <div class="metric-card__subtext">{{ lateMinutesLabel }}</div>
+        <div class="metric-card__accent" aria-hidden="true"></div>
+      </div>
+
+      <div class="metric-card metric-card--overtime">
+        <div class="metric-card__header">
+          <div class="metric-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+          </div>
+          <h3 class="metric-card__label">Overtime</h3>
+        </div>
+        <div class="metric-card__value">{{ overtimeValue }}</div>
+        <div class="metric-card__subtext">{{ overtimeLabel }}</div>
+        <div class="metric-card__accent" aria-hidden="true"></div>
       </div>
     </div>
 
- 
-    <div class="flex gap-12 items-center">
-      <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white">
-        <p>Total Days</p>
-        <p class="text-[24px] pt-4 font-semibold">{{ totalAttendance }} Day(s)</p>
-      </div>
-
-      <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white">
-        <p>Regular Time</p>
-        <p class="text-[24px] pt-4 font-semibold">8.00 Hr(s)</p>
-      </div>
-
-      <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white">
-        <p>Over Time</p>
-        <p class="text-[24px] pt-4 font-semibold">21.00 Hr(s)</p>
+      <!-- CORRECTION REQUEST: Part of top row -->
+      <div class="correction-card">
+        <div class="correction-card__content">
+          <div class="correction-card__body">
+            <h3 class="correction-card__title">Need to fix your attendance record?</h3>
+            <p class="correction-card__description">
+              Submit a correction request for a missed check-in, incorrect time, or attendance issue.
+            </p>
+          </div>
+          <button
+            class="btn btn--primary correction-card__action"
+            aria-label="Submit correction request"
+            type="button">
+            <span>SUBMIT CORRECTION</span>
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <hr />
+  <!-- MONTHLY PERFORMANCE SECTION -->
+  <section class="dashboard-section performance-section">
+    <h2 class="section-title">Monthly Performance</h2>
 
-  <div class="my-5 justify-between gap-6 flex w-full">
- 
-    <div class="w-full flex flex-col gap-4">
-      <div class="label-value flex items-center mb-2">
-        <label for="note" class="mr-2">Note:</label>
-        <input id="note" type="text" [(ngModel)]="note" class="border border-gray-300 rounded-md px-2" />
+    <div class="metrics-grid metrics-grid--4">
+      <div class="performance-card performance-card--attendance-rate">
+        <div class="performance-card__icon-container" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="performance-card__icon">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+          </svg>
+        </div>
+        <div class="performance-card__content">
+          <h3 class="performance-card__label">Attendance Rate</h3>
+          <div class="performance-card__value">{{ attendanceRate }}</div>
+          <p class="performance-card__subtext">{{ attendanceRate === '—' ? 'No records yet' : 'This month' }}</p>
+          <div *ngIf="attendanceRate !== '—'" class="performance-card__progress-bar" [style.width]="attendanceRate" aria-hidden="true"></div>
+        </div>
       </div>
 
-      <button (click)="toggleClockInOut()" class="bg-blue-600 text-white rounded-md px-4 py-2">
-        {{ isClockedIn ? 'Clock Out' : 'Clock In' }}
-      </button>
-
-      <full-calendar [options]="calendarOptions"></full-calendar>
-
- 
-      <div *ngIf="actionsVisible" class="flex gap-2 mt-4">
-        <button (click)="performAction('Add Event')" class="bg-blue-500 text-white rounded-md px-4 py-2">
-          Event
-        </button>
-        <button (click)="performAction('Review')" class="bg-blue-500 text-white rounded-md px-4 py-2">
-          Review
-        </button>
-        <button (click)="performAction('To Do')" class="bg-blue-500 text-white rounded-md px-4 py-2">
-          To Do
-        </button>
+      <div class="performance-card performance-card--punctuality">
+        <div class="performance-card__icon-container" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="performance-card__icon">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+        </div>
+        <div class="performance-card__content">
+          <h3 class="performance-card__label">Punctuality Score</h3>
+          <div class="performance-card__value">{{ punctualityScore }}</div>
+          <p class="performance-card__subtext">{{ punctualityScore === '—' ? 'No clock-in records' : '9:00 AM start time' }}</p>
+          <div *ngIf="punctualityScore !== '—'" class="performance-card__progress-bar" [style.width]="punctualityScore" aria-hidden="true"></div>
+        </div>
       </div>
 
+      <div class="performance-card performance-card--overtime">
+        <div class="performance-card__icon-container" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="performance-card__icon">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+          </svg>
+        </div>
+        <div class="performance-card__content">
+          <h3 class="performance-card__label">Total Overtime</h3>
+          <div class="performance-card__value">{{ totalOvertimeMonth }}</div>
+          <p class="performance-card__subtext">{{ totalOvertimeMonth === '0h' ? 'No overtime recorded' : 'This month' }}</p>
+        </div>
+      </div>
 
-<app-side-modal *ngIf="isModalOpen" (close)="closeModal()" class="action-buttons mt-4">
-  <div class="modal-content bg-white rounded-lg shadow-lg p-6 w-[80%] mx-auto">
-    <button class="close-btn font-semibold text-xs bg-red-500 text-white rounded px-1 py-0.5" (click)="closeModal()">Close</button>
-    <h2 class="text-xl font-bold mb-4">{{ modalTitle }}</h2>
-
-    <ng-container *ngIf="modalType === 'todo'">
-      <table class="w-full table-auto border-collapse border border-gray-800">
-        <thead>
-          <tr>
-            <th class="border border-gray-300 px-4 py-2">Task</th>
-            <th class="border border-gray-300 px-4 py-2">Due Date</th>
-            <th class="border border-gray-300 px-4 py-2">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let task of todoTasks">
-            <td class="border border-gray-300 px-4 py-2">{{ task.name }}</td>
-            <td class="border border-gray-300 px-4 py-2">{{ task.dueDate }}</td>
-            <td class="border border-gray-300 px-4 py-2">{{ task.status }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </ng-container>
-
-    <ng-container *ngIf="modalType === 'review'">
-      <table class="w-full table-auto border-collapse border border-gray-800 mt-4">
-        <thead>
-          <tr>
-            <th class="border border-gray-300 px-4 py-2">Review Title</th>
-            <th class="border border-gray-300 px-4 py-2">Employee</th>
-            <th class="border border-gray-300 px-4 py-2">Date</th>
-            <th class="border border-gray-300 px-4 py-2">Comments</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let review of reviewData">
-            <td class="border border-gray-300 px-4 py-2">{{ review.title }}</td>
-            <td class="border border-gray-300 px-4 py-2">{{ review.employee }}</td>
-            <td class="border border-gray-300 px-4 py-2">{{ review.date }}</td>
-            <td class="border border-gray-300 px-4 py-2">{{ review.comments }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </ng-container>
-
-    <ng-container *ngIf="modalType === 'addEvent'">
-      <table class="w-full table-auto border-collapse border border-gray-800 mt-4">
-        <thead>
-          <tr>
-            <th class="border border-gray-300 px-4 py-2">Event Name</th>
-            <th class="border border-gray-300 px-4 py-2">Date</th>
-            <th class="border border-gray-300 px-4 py-2">Location</th>
-            <th class="border border-gray-300 px-4 py-2">Notes</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let event of events">
-            <td class="border border-gray-300 px-4 py-2">{{ event.name }}</td>
-            <td class="border border-gray-300 px-4 py-2">{{ event.date }}</td>
-            <td class="border border-gray-300 px-4 py-2">{{ event.location }}</td>
-            <td class="border border-gray-300 px-4 py-2">{{ event.notes }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </ng-container>
-  </div>
-</app-side-modal>
-
+      <div class="performance-card performance-card--absences">
+        <div class="performance-card__icon-container" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="performance-card__icon">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+        </div>
+        <div class="performance-card__content">
+          <h3 class="performance-card__label">Absences</h3>
+          <div class="performance-card__value">{{ absencesCount }}</div>
+          <p class="performance-card__subtext">{{ absencesCount === 0 ? 'No absences' : absencesCount === 1 ? '1 absence' : absencesCount + ' absences' }}</p>
+        </div>
+      </div>
     </div>
+  </section>
 
+  <!-- MONTHLY ATTENDANCE SECTION -->
+  <section class="dashboard-section attendance-table-section">
+    <div class="attendance-table-card">
+      <div class="attendance-table-card__header">
+        <h2 class="section-title">Monthly Attendance</h2>
+        <div class="month-selector" aria-label="Select attendance month">
+          <label for="month-select" class="month-selector__label">Month:</label>
+          <select id="month-select" class="month-selector__input" aria-label="Attendance month selector">
+            <option>August 2026</option>
+          </select>
+        </div>
+      </div>
 
-<div class="flex flex-col gap-4 w-1/4">
-  <h3 class="font-bold text-lg">Upcoming Events</h3>
-  <table class="w-full table-auto border-collapse border border-gray-300" style="border-collapse: collapse; width: 100%;">
-    <thead>
-      <tr style="background-color: #3b82f6; color: white;">
-        <th class="border border-gray-300 px-4 py-2" style="padding: 8px; text-align: left;">Event Name</th>
-        <th class="border border-gray-300 px-4 py-2" style="padding: 8px; text-align: left;">Date</th>
-        <th class="border border-gray-300 px-4 py-2" style="padding: 8px; text-align: left;">Location</th>
-        <th class="border border-gray-300 px-4 py-2" style="padding: 8px; text-align: left;">Notes</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let event of events" style="border-bottom: 1px solid #e2e8f0;">
-        <td class="border border-gray-300 px-4 py-2" style="padding: 8px;">{{ event.name }}</td>
-        <td class="border border-gray-300 px-4 py-2" style="padding: 8px;">{{ event.date }}</td>
-        <td class="border border-gray-300 px-4 py-2" style="padding: 8px;">{{ event.location }}</td>
-        <td class="border border-gray-300 px-4 py-2" style="padding: 8px;">{{ event.notes }}</td>
-      </tr>
-    </tbody>
-  </table>
+      <div class="table-wrapper">
+        <table class="attendance-table" *ngIf="history.length > 0">
+          <thead class="attendance-table__head">
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Clock In</th>
+              <th scope="col">Clock Out</th>
+              <th scope="col">Hours</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody class="attendance-table__body">
+            <tr *ngFor="let rec of history" class="attendance-table__row">
+              <td class="attendance-table__cell">{{ rec.date }}</td>
+              <td class="attendance-table__cell">{{ rec.clockIn || '—' }}</td>
+              <td class="attendance-table__cell">{{ rec.clockOut || '—' }}</td>
+              <td class="attendance-table__cell">{{ rec.duration || '—' }}</td>
+              <td class="attendance-table__cell">
+                <span class="status-tag" [class]="'status-tag--' + (rec.status | lowercase)">
+                  {{ rec.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div *ngIf="history.length === 0" class="empty-state">
+          <div class="empty-state__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
+            </svg>
+          </div>
+          <h3 class="empty-state__title">No attendance records for August 2026</h3>
+          <p class="empty-state__description">Your attendance activity for this month will appear here.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
 
-  </div>
-</div> -->
-
-
-
-
-
-
-<div class="p-6 space-y-8  mx-auto">
-  <!-- Header -->
-  <!-- <div class="flex flex-col items-center space-y-2">
-    <h2 class="text-2xl font-semibold">My Attendance</h2>
-    <p class="text-gray-500">Today is {{ currentTime | date:'fullDate' }}</p>
-  </div> -->
-
-  <!-- Clock In Section -->
-  <div class="bg-white rounded-2xl shadow p-6 text-center space-y-4">
-    <div class="text-5xl font-mono text-gray-800">{{ currentTime }}</div>
-    <div class="text-gray-500">
-      Status:
-      <span class="font-semibold"
-        [class.text-green-600]="currentRecord"
-        [class.text-gray-400]="!currentRecord">
-        {{ currentRecord ? 'Clocked In' : 'Clocked Out' }}
-      </span>
-    </div>
-
-    <button
-      class="px-6 py-3 rounded-lg font-medium text-white transition"
-      [class.bg-green-600]="!currentRecord"
-      [class.bg-red-600]="currentRecord"
-      (click)="currentRecord ? clockOut() : clockIn()">
-      {{ currentRecord ? 'Clock Out' : 'Clock In' }}
-    </button>
-  </div>
-
-  <!-- History Table -->
-  <div class="bg-white rounded-2xl shadow p-6">
-    <h3 class="text-lg font-semibold mb-4">Clock-In History</h3>
-    <table class="min-w-full border-collapse">
-      <thead>
-        <tr class="text-left border-b text-sm text-gray-600">
-          <th class="py-2">Date</th>
-          <th class="py-2">Clock In</th>
-          <th class="py-2">Clock Out</th>
-          <th class="py-2">Duration</th>
-          <th class="py-2">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let rec of history" class="border-b text-sm">
-          <td class="py-2">{{ rec.date }}</td>
-          <td class="py-2">{{ rec.clockIn || '-' }}</td>
-          <td class="py-2">{{ rec.clockOut || '-' }}</td>
-          <td class="py-2">{{ rec.duration || '-' }}</td>
-          <td class="py-2">
-            <span
-              class="px-2 py-1 rounded-full text-xs font-medium"
-              [ngClass]="{
-                'bg-green-100 text-green-700': rec.status === 'On Time',
-                'bg-yellow-100 text-yellow-700': rec.status === 'Late',
-                'bg-gray-100 text-gray-500': rec.status === 'Absent',
-                'bg-blue-100 text-blue-700': rec.status === 'Present'
-              }">
-              {{ rec.status }}
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-
-<!-- p-confirmDialog removed -->
+<p-confirmDialog></p-confirmDialog>
+<p-toast key="tl" position="top-left"></p-toast>

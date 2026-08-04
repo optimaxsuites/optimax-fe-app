@@ -1,17 +1,25 @@
-<!--<div class="export-card">
-  <button class="export-btn csv" (click)="exportCSV()">Export CSV</button>
-  <button class="export-btn excel" (click)="exportExcel()">Export Excel</button>
-</div>-->
 <div class="export-card">
-  <button class="action-btn" (click)="openImportModal()">
+  <button class="action-btn import-btn" (click)="openImportModal()">
     <i class="fa-solid fa-file-import"></i>
-    Import Excel</button>
-  <button class="action-btn" (click)="exportExcel()">
-    <i class="fa-solid fa-file-excel"></i>
-    Export Excel</button>  
-  <button class="action-btn" (click)="exportCSV()">
-    <i class="fa-solid fa-file-csv"></i>
-    Export CSV</button>
+    Import
+  </button>
+
+  <div class="export-dropdown">
+    <button class="action-btn export-btn" (click)="toggleExportDropdown()">
+      <i class="fa-solid fa-file-export"></i>
+      Export ▾
+    </button>
+    <div class="export-menu" *ngIf="exportDropdownOpen">
+      <button class="export-option" (click)="exportExcel(); closeExportDropdown()">
+        <i class="fa-solid fa-file-excel"></i>
+        Export Excel
+      </button>
+      <button class="export-option" (click)="exportCSV(); closeExportDropdown()">
+        <i class="fa-solid fa-file-csv"></i>
+        Export CSV
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- BACKDROP -->

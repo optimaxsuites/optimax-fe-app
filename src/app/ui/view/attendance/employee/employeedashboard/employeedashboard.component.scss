@@ -1,47 +1,330 @@
+// Shared Design System
+$color-card-bg: #ffffff;
+$color-border: #e5e7eb;
+$color-text-primary: #1f2937;
+$color-text-secondary: #6b7280;
+$color-teal: #0f766e;
+$color-teal-dark: #0d5e59;
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$radius: 1rem;
+$padding-card: 1.5rem;
+$gap-card: 1.5rem;
+
 .employee-dashboard {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: $gap-card;
+  width: 100%;
+  box-sizing: border-box;
 
-  .mid-row {
+  .top-row {
     width: 100%;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $gap-card;
+    align-items: stretch;
+    box-sizing: border-box;
   }
 
-  /*.bottom-row {
+  app-checkin-checkout,
+  app-today-summary,
+  .correction-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
     width: 100%;
-  }*/
+    box-sizing: border-box;
+  }
 
-
-  /*@media (max-width: 768px) {
+  // Correction Request Card - Consistent with other cards
+  .correction-card {
+    background: $color-card-bg;
+    border: 1px solid $color-border;
+    border-radius: $radius;
+    padding: $padding-card;
+    box-shadow: $shadow-sm;
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
-    padding: 0 0.2rem;
+    transition: all 0.2s ease;
 
-    .mid-row {
-      grid-template-columns: 1fr; // clock and today summary stack
-      gap: 1rem;
+    &:hover {
+      border-color: darken($color-border, 5%);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
     }
-  }*/
+
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: $color-teal;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      margin: 0 auto;
+    }
+
+    .card-content {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      text-align: center;
+
+      h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: $color-text-primary;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.875rem;
+        color: $color-text-secondary;
+        line-height: 1.5;
+      }
+    }
+
+    .card-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      border: none;
+      border-radius: 6px;
+      background-color: $color-teal;
+      color: white;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      min-height: 40px;
+      padding: 0.5rem 1rem;
+      margin-top: auto;
+      pointer-events: auto;
+      z-index: 10;
+
+      i {
+        font-size: 14px;
+      }
+
+      &:hover:not(:disabled) {
+        background-color: $color-teal-dark;
+        box-shadow: 0 2px 4px rgba($color-teal, 0.2);
+        transform: translateY(-1px);
+      }
+
+      &:active:not(:disabled) {
+        transform: translateY(0);
+      }
+
+      &:focus-visible {
+        outline: 2px solid $color-teal;
+        outline-offset: 2px;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+// Modal styles
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+}
+
+.correction-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  max-height: 90vh;
+  overflow-y: auto;
+  width: 90%;
+  max-width: 600px;
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px;
+    border-bottom: 1px solid $color-border;
+
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: $color-text-primary;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 28px;
+      color: #999;
+      cursor: pointer;
+      padding: 0;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: #333;
+      }
+    }
+  }
+
+  .modal-content {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .employee-dashboard {
+    gap: $gap-card;
+    width: 100%;
+  }
+
+  .top-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: $gap-card;
+    width: 100%;
+  }
+
+  app-checkin-checkout,
+  app-today-summary,
+  .correction-card {
+    height: 100%;
+  }
 }
 
 @media (max-width: 768px) {
-  .summary-container {
-    gap: 1.2rem;
-    padding: 0.2rem 0;
+  .employee-dashboard {
+    gap: 1rem;
   }
 
-  .summary-card {
-    padding: 1rem 1.1rem;
-    border-radius: 16px;
+  .top-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 
-    h2 {
-      font-size: 1.8rem;
-      margin-bottom: 1rem;
+  app-checkin-checkout,
+  app-today-summary,
+  .correction-card {
+    height: auto;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+  }
 
-      &::before {
-        height: 32px; // shrink the green accent bar
+  .correction-card {
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+    }
+
+    .card-content {
+      h3 {
+        font-size: 0.95rem;
       }
+
+      p {
+        font-size: 0.8125rem;
+      }
+    }
+
+    .card-btn {
+      min-height: 40px;
+      padding: 0.5rem 1rem;
+      font-size: 0.8125rem;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .employee-dashboard {
+    gap: 1rem;
+  }
+
+  .top-row {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  app-checkin-checkout,
+  app-today-summary,
+  .correction-card {
+    height: auto !important;
+    border-radius: 0.5rem;
+    border: 1px solid $color-border;
+    padding: 1.25rem;
+    box-shadow: $shadow-sm;
+  }
+}
+
+@media (max-width: 480px) {
+  .employee-dashboard {
+    gap: 0.75rem;
+  }
+
+  .top-row {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  app-checkin-checkout,
+  app-today-summary,
+  .correction-card {
+    height: auto !important;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid $color-border;
+    padding: 1rem;
+    box-shadow: none;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .correction-card {
+    .card-icon {
+      width: 32px;
+      height: 32px;
+      font-size: 16px;
+    }
+
+    .card-content {
+      h3 {
+        font-size: 0.9rem;
+      }
+
+      p {
+        font-size: 0.75rem;
+      }
+    }
+
+    .card-btn {
+      min-height: 40px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
     }
   }
 }

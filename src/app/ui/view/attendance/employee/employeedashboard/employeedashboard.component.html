@@ -1,17 +1,42 @@
 <div class="employee-dashboard">
 
-  <div class="mid-row">
+  <div class="top-row">
+    <!-- Check-in Checkout -->
     <app-checkin-checkout></app-checkin-checkout>
+
+    <!-- Today Summary -->
     <app-today-summary></app-today-summary>
+
+    <!-- Correction Request Card -->
+    <div class="correction-card">
+      <div class="card-icon">
+        <i class="fa-solid fa-pen-to-square"></i>
+      </div>
+      <div class="card-content">
+        <h3>Request Correction</h3>
+        <p>Need to fix your attendance record? Submit a correction request here.</p>
+        <button class="card-btn" (click)="openCorrectionForm()">
+          <i class="fa-solid fa-arrow-right"></i>
+          Submit Request
+        </button>
+      </div>
+    </div>
   </div>
 
-  <!-- Bottom Row
-  <div class="bottom-row">
-  </div>-->
-  
-  
   <div>
     <app-employeesummary></app-employeesummary>
+  </div>
+
+  <!-- Correction Form Modal -->
+  <div class="modal-backdrop" *ngIf="showCorrectionModal"></div>
+  <div class="correction-modal" *ngIf="showCorrectionModal">
+    <div class="modal-header">
+      <h2>Request Attendance Correction</h2>
+      <button class="close-btn" (click)="closeCorrectionForm()">×</button>
+    </div>
+    <div class="modal-content">
+      <app-correctionrequest></app-correctionrequest>
+    </div>
   </div>
 
 </div>

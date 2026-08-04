@@ -141,6 +141,12 @@ export class CorrectionrequestService {
     this.persistRequests();
   }
 
+  deleteRequest(id: string) {
+    const filtered = this.requests.filter(req => req.id !== id);
+    this.requestsSubject.next(filtered);
+    this.persistRequests();
+  }
+
   canStartReview(request: CorrectionRequest): boolean {
     return !request.locked && request.status === 'PENDING';
   }

@@ -6,5 +6,13 @@ import { Component } from '@angular/core';
   styleUrl: 'employeedashboard.component.scss'
 })
 export class EmployeedashboardComponent {
+  showCorrectionModal = false;
 
+  openCorrectionForm() {
+    this.showCorrectionModal = true;
+  }
+
+  closeCorrectionForm() {
+    this.showCorrectionModal = false;
+  }
 }

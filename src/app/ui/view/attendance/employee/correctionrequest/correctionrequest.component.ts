@@ -1,6 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { take } from 'rxjs/operators';
 import { CorrectionRequest } from '../../../../domain/attendance/correctionrequest.dto';
 import { CorrectionrequestService } from '../../../../service/attendance/correctionrequest.service';
+import { CorrectionRequestService } from '../../../../service/attendance/correction-request.service';
+import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
+import { ToastService } from '../../../../shared-component/service/toast/toast.service';
 
 @Component({
   selector: 'app-correctionrequest',
@@ -70,7 +74,10 @@ export class CorrectionrequestComponent  implements OnInit{
   resubmissionEvidence: { [id: string]: string } = {};
   showForm = false;
 
-  constructor(private correctionService: CorrectionrequestService) {}
+  private correctionService = inject(CorrectionrequestService);
+  private adminCorrectionRequestService = inject(CorrectionRequestService);
+  private attendanceService = inject(AttendancetableService);
+  private toastService = inject(ToastService);
 
   ngOnInit() {
     this.correctionService.initialize();
@@ -88,7 +95,48 @@ export class CorrectionrequestComponent  implements OnInit{
   }
 
   addRequest(request: CorrectionRequest) {
+    // Add to employee's own list
     this.correctionService.addRequest(request);
+
+    // Also submit to admin dashboard in real-time
+    const employeeName = sessionStorage.getItem('fullname') || 'Employee';
+
+    // Find the attendance record for today by employee name
+    const today = new Date().toISOString().split('T')[0];
+
+    // Use take(1) to automatically unsubscribe after first emission
+    this.attendanceService.attendance$.pipe(
+      take(1)
+    ).subscribe(records => {
+      if (!records || records.length === 0) {
+        this.toastService.error(`❌ No attendance record found for today`);
+        return;
+      }
+
+      const todayRecord = records.find(r =>
+        r.employee?.toLowerCase().includes(employeeName.toLowerCase()) &&
+        r.date === today
+      );
+
+      if (todayRecord) {
+        this.adminCorrectionRequestService.submitCorrectionRequest(
+          {
+            employeeId: todayRecord.employeeId,
+            employeeName: todayRecord.employee || employeeName,
+            recordId: todayRecord.id,
+            type: request.issueType === 'MISSED_CLOCK' ? 'STATUS_CORRECTION' : 'TIME_CORRECTION',
+            reason: request.description,
+            currentStatus: todayRecord.status,
+            requestedAt: new Date().toISOString()
+          },
+          todayRecord
+        );
+        this.toastService.success(`✅ Correction request submitted to admin`);
+      } else {
+        this.toastService.error(`❌ Could not find your attendance record`);
+      }
+    });
+
     this.closeForm();
   }
 
@@ -128,5 +176,29 @@ export class CorrectionrequestComponent  implements OnInit{
 
   isRejected(request: CorrectionRequest): boolean {
     return request.status === 'REJECTED';
+  }
+
+  deleteRequest(request: CorrectionRequest): void {
+    if (!confirm(`Are you sure you want to delete this correction request?\n\nReason: ${request.description}`)) {
+      return;
+    }
+
+    // Delete from employee's own list
+    this.correctionService.deleteRequest(request.id);
+
+    // Also delete from admin dashboard
+    // Find the record by employee name and date
+    const employeeName = sessionStorage.getItem('fullname') || 'Employee';
+    this.attendanceService.attendance$.pipe(take(1)).subscribe(records => {
+      const record = records.find(r =>
+        r.employee?.toLowerCase().includes(employeeName.toLowerCase()) &&
+        r.date === request.date
+      );
+      if (record && record.correctionRequest) {
+        this.adminCorrectionRequestService.deleteCorrectionRequest(record.id);
+      }
+    });
+
+    this.toastService.success(`🗑️ Correction request deleted`);
   }
 }
