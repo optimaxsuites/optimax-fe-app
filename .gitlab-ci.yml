@@ -2,11 +2,13 @@
 # OptimaX Frontend — GitLab CI/CD
 # test branch → build + publish dist + docker build/push + deploy to test server (Docker, manual)
 # prod branch → build + publish dist + docker build/push + deploy to prod     (Kubernetes, manual)
+# mod branch  → satellite-sync jobs push changed module subtrees to their repos
 # ─────────────────────────────────────────────────────────────────────────────
 
 stages:
   - build
   - publish
+  - sync
   - deploy
 
 default:
@@ -109,3 +111,37 @@ deploy-prod:
   rules:
     - if: '$CI_COMMIT_BRANCH == "prod"'
       when: manual
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Satellite sync — fires on mod when a module subdirectory changes.
+# Each job pushes its subtree prefix to the corresponding satellite repo.
+# Runs automatically (no manual gate) so satellites always stay current.
+# Requires CI variable: SAT_DEPLOY_KEY (SSH private key with write access to
+# all satellite repos, added under Settings → CI/CD → Variables).
+# ─────────────────────────────────────────────────────────────────────────────
+
+.satellite-sync-base: &satellite_sync_base
+  stage: sync
+  image: alpine:3.19
+  before_script:
+    - apk add --no-cache git openssh-client bash
+    - eval $(ssh-agent -s)
+    - echo "$SAT_DEPLOY_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - ssh-keyscan gitlab.com >> ~/.ssh/known_hosts 2>/dev/null
+    - git config --global user.email "ci@optimaxsuites.com"
+    - git config --global user.name "OptimaX CI"
+    - git fetch --unshallow 2>/dev/null || true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "mod"'
+      changes:
+        - projects/dashboard/**/*
+
+sync-dashboard-satellite:
+  <<: *satellite_sync_base
+  script:
+    - bash scripts/satellite-push.sh dashboard git@gitlab.com:queensheba/erp-dashboard.git mod
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "mod"'
+      changes:
+        - projects/dashboard/**/*

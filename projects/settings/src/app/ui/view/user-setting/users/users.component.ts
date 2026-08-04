@@ -139,7 +139,41 @@ roles: any[] = []
 branches: any[] = []
 selectedBranch: any = null;
 
-userLimit = 0
+userLimit = 0;
+
+resetPasswordModal = { visible: false, user: null as any, newPassword: '', confirmPassword: '', loading: false };
+
+openResetPasswordModal(user: any, event: Event): void {
+  event.stopPropagation();
+  this.resetPasswordModal = { visible: true, user, newPassword: '', confirmPassword: '', loading: false };
+}
+
+closeResetPasswordModal(): void {
+  this.resetPasswordModal = { visible: false, user: null, newPassword: '', confirmPassword: '', loading: false };
+}
+
+submitResetPassword(): void {
+  const { user, newPassword, confirmPassword } = this.resetPasswordModal;
+  if (!newPassword || newPassword.length < 6) {
+    this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Password must be at least 6 characters.', key: 'tl', life: 3000 });
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Passwords do not match.', key: 'tl', life: 3000 });
+    return;
+  }
+  this.resetPasswordModal.loading = true;
+  this.userService.adminResetPassword(user.id, newPassword).subscribe({
+    next: () => {
+      this.messageService.add({ severity: 'success', summary: 'Done', detail: `Password reset for ${user.username || user.name}.`, key: 'tl', life: 4000 });
+      this.closeResetPasswordModal();
+    },
+    error: () => {
+      this.resetPasswordModal.loading = false;
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to reset password. Try again.', key: 'tl', life: 4000 });
+    }
+  });
+}
 
 constructor(private confirmationService: ConfirmationService, private messageService: MessageService, private authenticationService: AuthenticationService,     private router: Router,
   private navigationLink: NavigationLinksService, private moduleService: ModulesService, private userService: UserService,  private dataService: DataService){
@@ -305,7 +339,8 @@ submitUser() {
               this.authenticationService.codeActivation(data.ecode, true).subscribe({
                 next: () => {
                   this.isLoading = false;
-
+                  this.openAddForm = false;
+                  this.fetchUsers();
                   this.messageService.add({
                     severity: 'success',
                     summary: 'Success',
@@ -327,6 +362,8 @@ submitUser() {
               });
             } else {
               this.isLoading = false;
+              this.openAddForm = false;
+              this.fetchUsers();
               this.messageService.add({
                 severity: 'success',
                 summary: 'Success',
@@ -363,37 +400,36 @@ submitUser() {
       });
     },
     error: (error) => {
-      if (error.toString() == '400') {
+      // Damilola: error now comes as "status:backendMessage" — parse the status code
+      this.isLoading = false;
+      const errStr = error?.toString() || '';
+      const statusCode = errStr.split(':')[0];
+      const backendMsg = errStr.split(':').slice(1).join(':').trim();
+
+      if (statusCode === '400') {
+        // Damilola: 400 previously showed "not verified" but the real cause is an
+        // invalid/missing API key (backend code 1001). Show the actual backend message.
+        const detail = backendMsg
+          ? `Registration error: ${backendMsg}`
+          : 'Invalid request. Please check all required fields and try again.';
+        this.messageService.add({ severity: 'error', summary: 'Registration Failed', detail, key: 'tl', life: 5000 });
+      } else if (statusCode === '409') {
         this.messageService.add({
-          severity: 'error',
-          summary: 'Registration Failed',
-          detail: 'Your account has not been verified. Check your mail to verify!',
-            key: 'tl',
-                    life: 3000,
+          severity: 'error', summary: 'Registration Failed',
+          detail: 'This email is already registered. Use a different email or ask the user to log in.',
+          key: 'tl', life: 4000,
         });
-      } else if (error.toString() == '409') {
+      } else if (statusCode === '0') {
         this.messageService.add({
-          severity: 'error',
-          summary: 'Registration Failed',
-          detail: 'Email address is already registered. Please use a different email or login.',
-            key: 'tl',
-                    life: 3000,
-        });
-      } else if (error.toString() == '0') {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Registration Failed',
-          detail: 'Unable to connect to the server. Please check your internet connection.',
-            key: 'tl',
-                    life: 3000,
+          severity: 'error', summary: 'Connection Error',
+          detail: 'Unable to reach the server. Check your internet connection and try again.',
+          key: 'tl', life: 4000,
         });
       } else {
         this.messageService.add({
-          severity: 'error',
-          summary: 'Registration Failed',
-          detail: 'An unexpected error occurred. Please try again later.',
-            key: 'tl',
-                    life: 3000,
+          severity: 'error', summary: 'Registration Failed',
+          detail: backendMsg || 'An unexpected error occurred. Please try again.',
+          key: 'tl', life: 4000,
         });
       }
     }

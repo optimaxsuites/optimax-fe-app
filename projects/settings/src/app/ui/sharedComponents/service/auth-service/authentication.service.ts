@@ -1,5 +1,5 @@
 import { Injectable, isDevMode } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { JwtHelperService } from '@auth0/angular-jwt';
@@ -94,10 +94,13 @@ export class AuthenticationService {
 
   
   userRegistration(data: any): Observable<any> {
-    // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/signup"+"---"+JSON.stringify(data)))
+    // Damilola: send apiKey as x-api-key header — backend code 1001 means the header is missing,
+    // sending it only in the body is not read by the API gateway
+    const apiKey = (environment as any).apiKey || '';
+    const headers = new HttpHeaders({ 'x-api-key': apiKey });
 
     return this.http
-      .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/signup/by/admin", data)
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/signup/by/admin", data, { headers })
       .pipe(catchError(this.handleError));
   }
 
@@ -163,14 +166,15 @@ export class AuthenticationService {
   
   private handleError(error: HttpErrorResponse) {
     if (error.error instanceof ErrorEvent) {
-        console.error("An error occurred:", error.error.message);
+      console.error("An error occurred:", error.error.message);
     } else {
-        console.error(
-            `Backend returned code ${error.status}, ` +
-                `body was: ${JSON.stringify(error.error)}`
-        );
+      console.error(
+        `Backend returned code ${error.status}, ` +
+          `body was: ${JSON.stringify(error.error)}`
+      );
     }
-    return throwError(`${error.status}`);
-    // 'Something bad happened; please try again later.');
+    // Damilola: pass status:message so callers can show specific backend errors
+    const backendMsg = error.error?.message || error.error?.error || '';
+    return throwError(`${error.status}:${backendMsg}`);
   }
 }
