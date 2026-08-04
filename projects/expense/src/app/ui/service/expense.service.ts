@@ -121,6 +121,9 @@ export interface Expense {
   status: ExpenseStatus;
   paidBy: PaidByBackend | PaidBy;
   receiptReference?: string;
+  bankName?: string | null;
+  accountName?: string | null;
+  accountNumber?: string | null;
   expenseById?: number;
   approvedById?: number;
   approvedAt?: string;
