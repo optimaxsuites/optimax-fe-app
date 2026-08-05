@@ -1,0 +1,188 @@
+<div class="bon-page">
+  <!-- Toast -->
+  <div class="bon-toast" *ngIf="showToast" [class.bon-toast--success]="toastType==='success'" [class.bon-toast--error]="toastType==='error'">
+    <i class="fas" [class.fa-check-circle]="toastType==='success'" [class.fa-exclamation-circle]="toastType==='error'" [class.fa-info-circle]="toastType==='info'"></i>
+    {{ toastMsg }}
+  </div>
+
+  <!-- Approval panel -->
+  <div class="bon-overlay" *ngIf="showApprovalPanel">
+    <div class="bon-modal">
+      <h3 class="bon-modal-title">
+        <i class="fas" [class.fa-check-circle]="approvalAction==='approve'" [class.fa-times-circle]="approvalAction==='reject'"></i>
+        {{ approvalAction === 'approve' ? 'Approve Bonus' : 'Reject Bonus' }}
+      </h3>
+      <textarea class="bon-modal-note" [(ngModel)]="approvalComment" rows="3"
+        [placeholder]="approvalAction === 'approve' ? 'Optional approval note…' : 'Reason for rejection (required)…'"></textarea>
+      <div class="bon-modal-actions">
+        <button class="bon-btn bon-btn--ghost" (click)="showApprovalPanel=false" [disabled]="submitting">Cancel</button>
+        <button class="bon-btn" [class.bon-btn--red]="approvalAction==='reject'" (click)="confirmApproval()" [disabled]="submitting">
+          <i class="fas" [class.fa-check]="!submitting && approvalAction==='approve'" [class.fa-times]="!submitting && approvalAction==='reject'" [class.fa-spinner]="submitting" [class.fa-spin]="submitting"></i>
+          {{ submitting ? 'Processing…' : (approvalAction === 'approve' ? 'Approve' : 'Reject') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bon-header">
+    <h2 class="bon-title">Bonus &amp; Commission Disbursement</h2>
+    <p class="bon-sub">Create, approve, and track bonus and commission payments with a full approval chain.</p>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="bon-stats" *ngIf="!loading">
+    <div class="bon-stat">
+      <span class="bon-stat__count">{{ pending.length }}</span>
+      <span class="bon-stat__label">Pending Approval</span>
+    </div>
+    <div class="bon-stat bon-stat--green">
+      <span class="bon-stat__count">{{ approved.length }}</span>
+      <span class="bon-stat__label">Approved</span>
+    </div>
+    <div class="bon-stat bon-stat--red">
+      <span class="bon-stat__count">{{ rejected.length }}</span>
+      <span class="bon-stat__label">Rejected</span>
+    </div>
+    <div class="bon-stat bon-stat--blue">
+      <span class="bon-stat__count">{{ fmt(totalApproved()) }}</span>
+      <span class="bon-stat__label">Total Approved Value</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="bon-tabs">
+    <button class="bon-tab" [class.active]="activeTab==='pending'" (click)="activeTab='pending'">
+      Pending <span class="bon-badge" *ngIf="pending.length">{{ pending.length }}</span>
+    </button>
+    <button class="bon-tab" [class.active]="activeTab==='approved'" (click)="activeTab='approved'">
+      Approved
+    </button>
+    <button class="bon-tab" [class.active]="activeTab==='rejected'" (click)="activeTab='rejected'">
+      Rejected
+    </button>
+    <button class="bon-tab bon-tab--new" [class.active]="activeTab==='new'" (click)="activeTab='new'">
+      <i class="fas fa-plus"></i> New Entry
+    </button>
+  </div>
+
+  <div class="bon-body">
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="bon-loading"><i class="fas fa-spinner fa-spin"></i> Loading bonuses…</div>
+
+    <!-- PENDING -->
+    <ng-container *ngIf="activeTab==='pending' && !loading">
+      <div class="bon-empty" *ngIf="!pending.length">
+        <i class="fas fa-inbox"></i><p>No bonus entries pending approval.</p>
+      </div>
+      <div class="bon-list" *ngIf="pending.length">
+        <div class="bon-card" *ngFor="let b of pending">
+          <div class="bon-card-main">
+            <div class="bon-avatar">{{ b.employeeName.charAt(0).toUpperCase() }}</div>
+            <div class="bon-card-info">
+              <div class="bon-card-name">{{ b.employeeName }}</div>
+              <div class="bon-card-meta">
+                <span class="bon-source bon-source--{{ b.sourceType.toLowerCase() }}">{{ b.sourceType }}</span>
+                <span>{{ b.reason }}</span>
+              </div>
+            </div>
+            <div class="bon-card-amount">{{ fmt(b.amount) }}</div>
+          </div>
+          <div class="bon-card-actions">
+            <button class="bon-btn bon-btn--sm" (click)="openApproval(b, 'approve')">
+              <i class="fas fa-check"></i> Approve
+            </button>
+            <button class="bon-btn bon-btn--sm bon-btn--red" (click)="openApproval(b, 'reject')">
+              <i class="fas fa-times"></i> Reject
+            </button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- APPROVED -->
+    <ng-container *ngIf="activeTab==='approved' && !loading">
+      <div class="bon-empty" *ngIf="!approved.length"><i class="fas fa-check-circle"></i><p>No approved bonuses yet.</p></div>
+      <div class="bon-list" *ngIf="approved.length">
+        <div class="bon-card bon-card--approved" *ngFor="let b of approved">
+          <div class="bon-card-main">
+            <div class="bon-avatar bon-avatar--green">{{ b.employeeName.charAt(0).toUpperCase() }}</div>
+            <div class="bon-card-info">
+              <div class="bon-card-name">{{ b.employeeName }}</div>
+              <div class="bon-card-meta">
+                <span class="bon-source bon-source--{{ b.sourceType.toLowerCase() }}">{{ b.sourceType }}</span>
+                <span>{{ b.reason }}</span>
+              </div>
+              <div class="bon-verdict" *ngIf="b.verdict">Note: {{ b.verdict }}</div>
+            </div>
+            <div class="bon-card-amount bon-card-amount--green">{{ fmt(b.amount) }}</div>
+          </div>
+          <div class="bon-card-status">
+            <span class="bon-tag bon-tag--green"><i class="fas fa-check-circle"></i> Approved</span>
+            <span class="bon-tag" *ngIf="b.applied"><i class="fas fa-money-bill-wave"></i> Applied to Payroll</span>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- REJECTED -->
+    <ng-container *ngIf="activeTab==='rejected' && !loading">
+      <div class="bon-empty" *ngIf="!rejected.length"><i class="fas fa-times-circle"></i><p>No rejected entries.</p></div>
+      <div class="bon-list" *ngIf="rejected.length">
+        <div class="bon-card bon-card--rejected" *ngFor="let b of rejected">
+          <div class="bon-card-main">
+            <div class="bon-avatar bon-avatar--red">{{ b.employeeName.charAt(0).toUpperCase() }}</div>
+            <div class="bon-card-info">
+              <div class="bon-card-name">{{ b.employeeName }}</div>
+              <div class="bon-card-meta">
+                <span class="bon-source bon-source--{{ b.sourceType.toLowerCase() }}">{{ b.sourceType }}</span>
+                <span>{{ b.reason }}</span>
+              </div>
+              <div class="bon-verdict bon-verdict--red" *ngIf="b.verdict">Reason: {{ b.verdict }}</div>
+            </div>
+            <div class="bon-card-amount bon-card-amount--red">{{ fmt(b.amount) }}</div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- NEW -->
+    <ng-container *ngIf="activeTab==='new'">
+      <div class="bon-form-card">
+        <h3 class="bon-form-title">Create Bonus / Commission Entry</h3>
+        <div class="bon-form-grid">
+          <div class="bon-field">
+            <label>Employee</label>
+            <select class="bon-select" [(ngModel)]="form.employeeId">
+              <option [ngValue]="null" disabled>— select employee —</option>
+              <option *ngFor="let e of employees" [ngValue]="e.id">
+                {{ (e.firstName ?? '') + ' ' + (e.lastName ?? '') }}
+              </option>
+            </select>
+          </div>
+          <div class="bon-field">
+            <label>Type</label>
+            <select class="bon-select" [(ngModel)]="form.sourceType">
+              <option *ngFor="let t of sourceTypes" [value]="t">{{ t }}</option>
+            </select>
+          </div>
+          <div class="bon-field">
+            <label>Amount (₦)</label>
+            <input type="number" class="bon-input" [(ngModel)]="form.amount" min="0" placeholder="0.00" />
+          </div>
+          <div class="bon-field bon-field--full">
+            <label>Reason / Description</label>
+            <input type="text" class="bon-input" [(ngModel)]="form.reason" placeholder="e.g. Q2 performance bonus, client commission…" />
+          </div>
+        </div>
+        <div class="bon-form-actions">
+          <button class="bon-btn" (click)="submitNew()" [disabled]="submitting || !form.employeeId || !form.amount || !form.reason">
+            <i class="fas" [class.fa-paper-plane]="!submitting" [class.fa-spinner]="submitting" [class.fa-spin]="submitting"></i>
+            {{ submitting ? 'Submitting…' : 'Submit for Approval' }}
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+  </div>
+</div>

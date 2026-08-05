@@ -85,6 +85,49 @@
           </svg>
           {{ generatingPdf ? 'Generating…' : 'Download PDF' }}
         </button>
+
+        <button
+          type="button"
+          class="hl-btn hl-btn--send"
+          [disabled]="sendingLetter"
+          (click)="sendToRecipient()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="hl-btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          {{ sendingLetter ? 'Sending…' : 'Send to Recipient' }}
+        </button>
+
+        <button
+          type="button"
+          class="hl-btn hl-btn--sign"
+          (click)="toggleSignaturePad()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="hl-btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+          </svg>
+          {{ signatureDataUrl ? 'Edit Signature' : 'Add Signature' }}
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Letter options row -->
+    <div class="hl-options-row">
+      <label class="hl-option-toggle" (click)="includeSalaryBreakdown = !includeSalaryBreakdown">
+        <span class="hl-option-toggle__track" [class.hl-option-toggle__track--on]="includeSalaryBreakdown">
+          <span class="hl-option-toggle__thumb"></span>
+        </span>
+        <span class="hl-option-toggle__label">Include Salary Breakdown</span>
+        <span *ngIf="!salaryDetails" class="hl-option-toggle__note">(no salary data)</span>
+      </label>
+    </div>
+
+    <!-- Signature pad panel -->
+    <div *ngIf="showSignaturePad" class="hl-sig-pad-panel">
+      <p class="hl-sig-pad-hint">Draw your signature below using your mouse or finger, then click <strong>Apply</strong>.</p>
+      <canvas id="signature-canvas" class="hl-sig-canvas" width="600" height="150"></canvas>
+      <div class="hl-sig-pad-actions">
+        <button type="button" class="hl-btn hl-btn--ghost" (click)="clearSignature()">Clear</button>
+        <button type="button" class="hl-btn hl-btn--save" (click)="applySignature()">Apply Signature</button>
       </div>
     </div>
 
@@ -128,10 +171,81 @@
         <!-- Body (filled with real data) -->
         <div class="hl-letter-body" [innerHTML]="getFilledBody()"></div>
 
+        <!-- Salary breakdown (optional) -->
+        <ng-container *ngIf="includeSalaryBreakdown && salaryDetails">
+          <div class="hl-salary-breakdown">
+            <h4 class="hl-salary-breakdown__title">Monthly Salary Breakdown</h4>
+            <table class="hl-salary-table">
+              <tbody>
+
+                <!-- Base salary -->
+                <tr class="hl-salary-row hl-salary-row--base">
+                  <td class="hl-salary-label">Base Salary <span class="hl-salary-period">/month</span></td>
+                  <td class="hl-salary-amount">{{ formatCurrency(salaryBreakdown.baseSalary) }}</td>
+                </tr>
+
+                <!-- Allowances -->
+                <ng-container *ngIf="salaryBreakdown.allowances.length > 0">
+                  <tr class="hl-salary-row hl-salary-row--section-head">
+                    <td colspan="2">Allowances</td>
+                  </tr>
+                  <tr *ngFor="let a of salaryBreakdown.allowances" class="hl-salary-row hl-salary-row--item">
+                    <td class="hl-salary-label hl-salary-label--indent">{{ a.name }}</td>
+                    <td class="hl-salary-amount">+ {{ formatCurrency(a.amount) }}</td>
+                  </tr>
+                </ng-container>
+
+                <!-- Bonuses -->
+                <ng-container *ngIf="salaryBreakdown.bonuses.length > 0">
+                  <tr class="hl-salary-row hl-salary-row--section-head">
+                    <td colspan="2">Bonuses</td>
+                  </tr>
+                  <tr *ngFor="let b of salaryBreakdown.bonuses" class="hl-salary-row hl-salary-row--item">
+                    <td class="hl-salary-label hl-salary-label--indent">{{ b.name }}</td>
+                    <td class="hl-salary-amount">+ {{ formatCurrency(b.amount) }}</td>
+                  </tr>
+                </ng-container>
+
+                <!-- Gross total -->
+                <tr class="hl-salary-row hl-salary-row--subtotal">
+                  <td class="hl-salary-label">Gross Pay</td>
+                  <td class="hl-salary-amount">{{ formatCurrency(salaryBreakdown.grossTotal) }}</td>
+                </tr>
+
+                <!-- Deductions -->
+                <ng-container *ngIf="salaryBreakdown.deductions.length > 0">
+                  <tr class="hl-salary-row hl-salary-row--section-head">
+                    <td colspan="2">Deductions</td>
+                  </tr>
+                  <tr *ngFor="let x of salaryBreakdown.deductions" class="hl-salary-row hl-salary-row--item hl-salary-row--deduct">
+                    <td class="hl-salary-label hl-salary-label--indent">{{ x.name }}<span *ngIf="x.isTax" class="hl-salary-tax-badge">Tax</span></td>
+                    <td class="hl-salary-amount hl-salary-amount--neg">− {{ formatCurrency(x.amount) }}</td>
+                  </tr>
+                </ng-container>
+
+                <!-- PAYE (computed when no tax deduction in config) -->
+                <tr *ngIf="!salaryBreakdown.hasConfiguredTax && salaryBreakdown.payeMonthly > 0" class="hl-salary-row hl-salary-row--item hl-salary-row--deduct">
+                  <td class="hl-salary-label hl-salary-label--indent">PAYE Tax <span class="hl-salary-tax-badge">Tax</span></td>
+                  <td class="hl-salary-amount hl-salary-amount--neg">− {{ formatCurrency(salaryBreakdown.payeMonthly) }}</td>
+                </tr>
+
+                <!-- Net salary -->
+                <tr class="hl-salary-row hl-salary-row--net">
+                  <td class="hl-salary-label">Net Pay <span class="hl-salary-period">/month</span></td>
+                  <td class="hl-salary-amount">{{ formatCurrency(salaryBreakdown.netSalary) }}</td>
+                </tr>
+
+              </tbody>
+            </table>
+            <p class="hl-salary-note">All amounts are monthly figures in Nigerian Naira (NGN).</p>
+          </div>
+        </ng-container>
+
         <!-- Signature block -->
         <div class="hl-sig-section">
           <div class="hl-sig-block">
-            <div class="hl-sig-line"></div>
+            <img *ngIf="signatureDataUrl" [src]="signatureDataUrl" class="hl-sig-image" alt="Signature"/>
+            <div *ngIf="!signatureDataUrl" class="hl-sig-line"></div>
             <p class="hl-sig-name">HR Manager / Director</p>
             <p class="hl-sig-company">{{ companyName }}</p>
           </div>

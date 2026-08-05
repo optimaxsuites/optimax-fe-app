@@ -1,4 +1,4 @@
-import { Component, Input, Type, ChangeDetectionStrategy, OnInit } from '@angular/core';
+import { Component, Input, Type, ChangeDetectionStrategy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { DropdownOption, TabConfig } from '../../service/interface/data';
 import { CommonModule } from '@angular/common';
 
@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   selector: 'app-nav-tab',
   templateUrl: './nav-tab.component.html',
   styleUrl: './nav-tab.component.scss',
-  changeDetection: ChangeDetectionStrategy.Default,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   // standalone: true,
   // imports: [CommonModule],
 })
@@ -20,6 +20,8 @@ export class NavTabComponent implements OnInit {
   selectedDropdownTab: string = '';
   user_role: any = '';
   #sessionStorageCacheKey = '';
+
+  constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.user_role = sessionStorage.getItem('role');
@@ -65,6 +67,7 @@ export class NavTabComponent implements OnInit {
       this.selectedTab = tab.name;
       this.#cacheSelectedTab(tab.name);
       this.isDropdownOpen = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -73,6 +76,7 @@ export class NavTabComponent implements OnInit {
     this.#cacheSelectedTab(tabName);
     this.selectedSetting = option.action;
     this.isDropdownOpen = false;
+    this.cdr.markForCheck();
   }
   getComponentForOption(action: string): Type<any> | null {
     const tab = this.tabsConfig.find((t) =>
@@ -82,6 +86,10 @@ export class NavTabComponent implements OnInit {
       tab?.dropdownOptions?.find((opt) => opt.action === action)?.component ||
       null
     );
+  }
+
+  getSelectedTab() {
+    return this.tabsConfig.find((tab) => tab.name === this.selectedTab);
   }
 
   #cacheSelectedTab(tabName: string) {

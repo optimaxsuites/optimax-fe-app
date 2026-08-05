@@ -8,7 +8,10 @@ import { AttendanceComponent } from './ui/view/attendance/attendance.component';
 import { EmployeeManagementComponent } from './ui/view/employee-management/employee-management.component';
 import { PerformanceComponent } from './ui/view/performance/performance.component';
 import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/employee-payroll.component';
+import { PayrollDashboardComponent } from './ui/view/payroll/payroll-dashboard/payroll-dashboard.component';
 import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip-list/employee-payslip-list.component';
+import { PayrollDisbursementComponent } from './ui/view/payroll/payroll-disbursement/payroll-disbursement.component';
+import { BonusDisbursementComponent } from './ui/view/payroll/bonus-disbursement/bonus-disbursement.component';
 import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
 import { AddEmployeeFormComponent } from './ui/view/employee-management/add-employee-form/add-employee-form.component';
 import { GuarantorConfirmationComponent } from './ui/view/employee-management/guarantor-confirmation/guarantor-confirmation.component';
@@ -57,6 +60,7 @@ import { LoanGracePeriodRequestsManagementComponent } from './ui/view/loan-manag
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
 import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
+import { UserProfileComponent } from './ui/view/user-profile/user-profile.component';
 import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-dashboard.component';
 import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
 import { OrgChartComponent } from './ui/view/org-chart/org-chart.component';
@@ -65,6 +69,7 @@ import { PreOnboardingFormComponent } from './ui/view/employee-management/pre-on
 import { OffboardingFormComponent } from './ui/view/employee-management/offboarding-form/offboarding-form.component';
 import { EmployeeUpdateFormComponent } from './ui/view/employee-management/employee-update-form/employee-update-form.component';
 import { EmployeeOnboardingFormComponent } from './ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
+import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction/payroll-correction.component';
 
 const DEFAULT_LOAN_ROUTE = 'loan/uu';
 
@@ -406,12 +411,40 @@ const routes: Routes = [
     component: EmployeeManagementComponent,
   },
   {
+    path: 'payroll-dashboard/:uuid',
+    component: PayrollDashboardComponent,
+  },
+  {
     path: 'payroll/:uuid',
     component: EmployeePayrollComponent,
   },
   {
     path: 'payroll-operations/:uuid',
     component: PayrolExtrasComponent,
+  },
+  {
+    path: 'bonus-disbursement/:uuid',
+    component: BonusDisbursementComponent,
+  },
+  {
+    path: 'admin/hr/bonus-disbursement/:uuid',
+    component: BonusDisbursementComponent,
+  },
+  {
+    path: 'payroll-correction/:uuid',
+    component: PayrollCorrectionComponent,
+  },
+  {
+    path: 'admin/hr/payroll-correction/:uuid',
+    component: PayrollCorrectionComponent,
+  },
+  {
+    path: 'payroll-disbursement/:uuid',
+    component: PayrollDisbursementComponent,
+  },
+  {
+    path: 'admin/hr/payroll-disbursement/:uuid',
+    component: PayrollDisbursementComponent,
   },
   {
     path: 'admin/employee-payslip/:uuid',
@@ -442,6 +475,10 @@ const routes: Routes = [
   {
     path: 'HR-settings/:uuid',
     component: HrSettingsComponent,
+  },
+  {
+    path: 'user-profile/:uuid',
+    component: UserProfileComponent,
   },
   {
     path: 'analytics/:uuid',
@@ -477,7 +514,7 @@ const routes: Routes = [
   },
 ];
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule],
 })
 export class AppHrRoutingModule {}

@@ -260,11 +260,63 @@
   }
 }
 
+.profile-initials {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1b3358 0%, #2563eb 100%);
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.panel-user-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 4px;
+}
+
+.panel-avatar {
+  flex-shrink: 0;
+  .panel-avatar-img {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e2e8f0;
+  }
+  .panel-avatar-initials {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1b3358 0%, #2563eb 100%);
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.panel-account-id {
+  font-size: 11px;
+  color: #64748b;
+  margin: 2px 0 0;
+  font-weight: 400;
+}
+
 .name-2{
-    font-size: 2.3em;
+    font-size: 1em;
     font-family: "Roboto Slab", serif;
     text-transform: capitalize;
     font-weight: bold;
+    margin: 0;
 }
 .status-2{
     // font-size: 1em;
@@ -277,28 +329,46 @@ h1, h2, h3, h4, h5, h6 {
     margin: 0;
 }
 
-.logout{
-    font-family: "Roboto Slab", serif;
-    margin-top: 1rem;
-    cursor: pointer;
-    align-items: center;
+.panel-container {
+  width: 250px;
 }
 
-.panel-container{
-    width: 250px;
+.panel-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 
-    .settings{
-        font-family: "Roboto Slab", serif;
-        margin-top: 1rem;
-        cursor: pointer;
-        align-items: center;
-    }
+.settings {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: "Roboto Slab", serif;
+  font-size: 14px;
+  color: #1e293b;
+  text-decoration: none;
+  transition: background 0.15s;
 
-    .pi-sign-out, .pi-cog{
-        font-size: .9em;
-        font-weight: bold;
-        margin-right: 1rem !important;
-    }
+  &:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+
+  &--logout {
+    color: #dc2626;
+    margin-top: 4px;
+    &:hover { background: #fef2f2; }
+  }
+
+  .pi {
+    font-size: 15px;
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+  }
 }
 
 

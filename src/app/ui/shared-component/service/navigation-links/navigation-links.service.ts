@@ -46,7 +46,7 @@ export class NavigationLinksService {
     this.links['interviewLink'] = '/admin/hr/interview/' +uuidV4();
     this.links['employeeManagementLink'] = '/admin/hr/employee-management/' +uuidV4();
     this.links['employeeDashboardLink'] = '/admin/hr/employee-dashboard/' +uuidV4();
-    this.links['payroll'] = '/admin/hr/payroll/' +uuidV4();
+    this.links['payroll'] = '/admin/hr/payroll-dashboard/' + uuidV4();
     this.links['allPayslip'] = 'employee-payslip'
     this.links['performanceLink'] = '/admin/hr/performance/' +uuidV4();
 
@@ -85,6 +85,7 @@ export class NavigationLinksService {
 this.links['settingsLink'] = '/admin/settings/general-settings/' +uuidV4();
 this.links['generalSettings'] = 'general-settings/' +uuidV4();
 this.links['HRSettings'] = '/admin/hr/HR-settings/' +uuidV4();
+this.links['userProfile'] = '/admin/hr/user-profile/' +uuidV4();
     this.links['hrAnalytics'] = '/admin/hr/analytics/' +uuidV4();
     this.links['hrOvertime'] = '/admin/hr/overtime/' +uuidV4();
     this.links['hrOrgChart'] = '/admin/hr/org-chart/' +uuidV4();

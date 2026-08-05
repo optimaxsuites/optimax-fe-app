@@ -54,6 +54,7 @@ export class EmployeeRelativesWidgetComponent implements OnInit {
   @Input() nextOfKinList: NextOfKin[] = [];
   @Input() guarantorList: Guarantor[] = [];
   @Input() employeeName: string = 'Employee';
+  @Input() canManage = false;
   @Output() openNokChangeRequest = new EventEmitter<NokEventPayload>();
   @Output() openGuarantorChangeRequest = new EventEmitter<GuarantorEventPayload>();
 
@@ -97,5 +98,13 @@ export class EmployeeRelativesWidgetComponent implements OnInit {
 
   deleteGuarantor(guarantor: Guarantor, index: number): void {
     this.openGuarantorChangeRequest.emit({ type: 'delete', contact: guarantor });
+  }
+
+  addRecord(): void {
+    if (this.selectedTab === 'nok') {
+      this.openNokChangeRequest.emit({ type: 'add', contact: { fullName: '' } });
+    } else {
+      this.openGuarantorChangeRequest.emit({ type: 'add', contact: { fullName: '' } });
+    }
   }
 }

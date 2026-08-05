@@ -114,7 +114,9 @@ export class AdminCreationFormComponent implements OnChanges {
 
     this.metadataService.ensureMetaLoaded();
     this.metadataService.departments$.subscribe(data => (this.departments = data));
-    this.metadataService.levels$.subscribe(data => (this.levels = data))
+    this.metadataService.levels$.subscribe(data =>
+      this.levels = (data || []).map((l: any) => ({ ...l, displayLabel: l.position?.trim() || l.name }))
+    )
     this.metadataService.leaves$.subscribe(data => (this.leaves = data));
    this.metadataService.employment$.subscribe(data => this.employments = data);
     this.metadataService.gender$.subscribe(data => (this.gender = data));
@@ -210,6 +212,7 @@ export class AdminCreationFormComponent implements OnChanges {
       firstName: d.firstName ?? '',
       lastName: d.lastName ?? '',
       email: d.email ?? '',
+      workemail: d.email ?? '',
       gender: genderId,
       title: d.jobTitle ?? '',
     });
@@ -495,16 +498,10 @@ private setProbationValidators(): void {
   }
 
   addNewEmployee(shouldRedirect: boolean){
-  const currentDate = new Date();  
-  const currentYear = currentDate.getFullYear();  
-  const formattedDate = currentDate.toISOString().split('T')[0];
-  const employeesFromStorage = localStorage.getItem("employeesList");
-  const employeesList = employeesFromStorage ? JSON.parse(employeesFromStorage) : [];
-    const newEmployee: any = {
- 
+  const newEmployee: any = {
     firstName: this.basicForm.get('firstName')?.value,
     lastName: this.basicForm.get('lastName')?.value,
-    email: this.basicForm.get('email')?.value,
+    email: this.basicForm.get('workemail')?.value || this.basicForm.get('email')?.value,
     workEmail: this.basicForm.get('workemail')?.value,
     genderId: this.basicForm.get('gender')?.value,
     jobTitle: this.basicForm.get('title')?.value,
@@ -512,8 +509,6 @@ private setProbationValidators(): void {
     levelId: this.basicForm.get('level')?.value,
     jobTypeId: this.basicForm.get('jobType')?.value,
     supervisor: this.basicForm.get('supervisor')?.value,
-
-    // Employment Information
     employeeStatus: this.employeeForm.get('status')?.value.toUpperCase(),
     employementStartDate: this.toLocalDateTime(this.employeeForm.get('startDate')?.value),
     employmentEndDate: this.toLocalDateTime(this.employeeForm.get('endDate')?.value),
@@ -521,90 +516,73 @@ private setProbationValidators(): void {
     probationStartDate: this.toLocalDateTime(this.employeeForm.get('probationStartDate')?.value),
     probationEndDate: this.toLocalDateTime(this.employeeForm.get('probationEndDate')?.value),
     appraisalDueDate: this.toLocalDateTime(this.employeeForm.get('appraisalDueDate')?.value),
+  };
 
-    // Leave Information
-    // leaveDays: this.leaveForm.get('leaveDays')?.value,
-
-    // Access Information
-    // optimaxAccess: this.guarantorForm.get('optimaxAccess')?.value,
-    // roleId: this.guarantorForm.get('roleId')?.value,
-   
-  }
   const hasOptiMaxAccess = this.guarantorForm.get('optimaxAccess')?.value;
   const firstName = this.basicForm.get('firstName')?.value ?? '';
   const lastName = this.basicForm.get('lastName')?.value ?? '';
   const workEmail = this.basicForm.get('workemail')?.value ?? '';
   const email = this.basicForm.get('email')?.value ?? '';
-  const username = workEmail || email;
+  const resolvedEmail = workEmail || email;
+  const username = resolvedEmail.split('@')[0] || resolvedEmail;
   const password = this.generateRandomPassword();
-  const signupDetails = this.buildSignupDetails(username, password, email, firstName, lastName);
 
-  this.authenticationService.userRegistrationByAdmin(signupDetails).subscribe({
-    next: (userData) => {
-      newEmployee.userId = userData?.id;
-      const formData = new FormData();
-      formData.append('employee', JSON.stringify(newEmployee));
-
-      this.employeeService.addEmployee(formData).subscribe({
-        next: (data: any) => {
-          if (hasOptiMaxAccess) {
-            const roleRequest = {
-              userId: userData.id,
-              appRoleId: this.guarantorForm.get('roleId')?.value
-            };
-
-            this.authenticationService.userApplicationRole(roleRequest).subscribe({
-              next: () => {
-                this.finalizeEmployeeCreation(data, shouldRedirect, {
-                  username,
-                  password,
-                  message: 'Employee added and user access created successfully!'
-                });
-              },
-              error: (err) => {
-                console.log(err);
-                this.finalizeEmployeeCreation(data, shouldRedirect, {
-                  username,
-                  password,
-                  severity: 'warn',
-                  message: 'Employee created, but role assignment failed. Please assign role in settings.'
-                });
-              }
-            });
-          } else {
-            this.finalizeEmployeeCreation(data, shouldRedirect, {
-              message: 'Employee added successfully!'
-            });
-          }
+  this.authenticationService.getRegDataByUsername(username).subscribe({
+    next: (existingUser) => {
+      const existingId = existingUser?.id ?? existingUser?.userId;
+      this.persistEmployeeWithUser(newEmployee, existingId ?? null, hasOptiMaxAccess, shouldRedirect, username, password);
+    },
+    error: () => {
+      const signupDetails = this.buildSignupDetails(username, password, resolvedEmail, firstName, lastName);
+      this.authenticationService.userRegistrationByAdmin(signupDetails).subscribe({
+        next: (userData) => {
+          this.persistEmployeeWithUser(newEmployee, userData?.id ?? null, hasOptiMaxAccess, shouldRedirect, username, password);
         },
-        error: (err) => {
+        error: (error) => {
           this.resetSubmitLoading();
-          const detail = this.errorMessageService.getUserMessage(
-            err,
-            'Failed to create employee. Please try again.'
-          );
+          const detail = this.errorMessageService.getUserMessage(error, 'Failed to create user account. Please try again.');
           this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
-          console.log(err);
         }
       });
-    },
-    error: (error) => {
-      this.resetSubmitLoading();
-      const detail = this.errorMessageService.getUserMessage(
-        error,
-        'Failed to create user account. Please try again.'
-      );
-      this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
-      console.log(error);
     }
   });
-  // employeesList.push(newEmployee);
-  // localStorage.setItem("employeesList", JSON.stringify(employeesList));
-  if (shouldRedirect) {
-  // this.router.navigate([`/user/onboarding/${newEmployee.id}/wer23456fghi367ghj`]);
-  }
- 
 }
+
+  private persistEmployeeWithUser(
+    newEmployee: any,
+    userId: number | null,
+    hasOptiMaxAccess: boolean,
+    shouldRedirect: boolean,
+    username: string,
+    password: string
+  ): void {
+    if (userId) newEmployee.userId = userId;
+    const formData = new FormData();
+    formData.append('employee', JSON.stringify(newEmployee));
+    this.employeeService.addEmployee(formData).subscribe({
+      next: (data: any) => {
+        if (hasOptiMaxAccess && userId) {
+          const roleRequest = { userId, appRoleId: this.guarantorForm.get('roleId')?.value };
+          this.authenticationService.userApplicationRole(roleRequest).subscribe({
+            next: () => this.finalizeEmployeeCreation(data, shouldRedirect, {
+              username, password, message: 'Employee added and user access created successfully!'
+            }),
+            error: () => this.finalizeEmployeeCreation(data, shouldRedirect, {
+              username, password, severity: 'warn',
+              message: 'Employee created, but role assignment failed. Please assign role in settings.'
+            })
+          });
+        } else {
+          this.finalizeEmployeeCreation(data, shouldRedirect, { message: 'Employee added successfully!' });
+        }
+      },
+      error: (err) => {
+        this.resetSubmitLoading();
+        const detail = this.errorMessageService.getUserMessage(err, 'Failed to create employee. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+      }
+    });
+  }
 
   private finalizeEmployeeCreation(
     data: any,

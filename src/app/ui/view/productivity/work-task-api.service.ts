@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 
 // ── Enums ────────────────────────────────────────────────────────────────────
-export type WorkTaskStatus = 'TO_DO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
+export type WorkTaskStatus = 'TO_DO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'ARCHIVED' | 'CLOSED';
 export type WorkTaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type SubtaskStatus = 'OPEN' | 'IN_PROGRESS' | 'BLOCKED';
 export type GoalStatus = 'DRAFT' | 'SUBMITTED' | 'REVIEWED';
@@ -33,6 +33,14 @@ export interface WorkTaskSubtask {
   dependency?: string;
 }
 
+export interface WorkTaskFollowUpReply {
+  id: number;
+  followUpId: number;
+  authorEmployee?: EmployeeRef;
+  text: string;
+  createdAt: string;
+}
+
 export interface WorkTaskFollowUp {
   id: number;
   workTaskId: number;
@@ -42,6 +50,13 @@ export interface WorkTaskFollowUp {
   progress: number;
   photoUrls?: string;
   createdAt: string;
+  replies?: WorkTaskFollowUpReply[];
+}
+
+export interface FollowUpReplyDTO {
+  followUpId: number;
+  authorEmployeeId?: number;
+  text: string;
 }
 
 export interface WorkTaskFull {
@@ -58,6 +73,7 @@ export interface WorkTaskFull {
   progress: number;
   tags?: string;
   createdByUserId?: number;
+  closedReason?: string;
   createdAt: string;
   updatedAt: string;
   subtasks: WorkTaskSubtask[];
@@ -78,6 +94,7 @@ export interface WorkTaskDTO {
   progress?: number;
   tags?: string;
   createdByUserId?: number;
+  closedReason?: string;
 }
 
 export interface SubtaskDTO {
@@ -209,6 +226,21 @@ export class WorkTaskApiService {
       .pipe(catchError(this.handleError));
   }
 
+  getArchivedTasks(): Observable<WorkTaskFull[]> {
+    return this.http.get<WorkTaskFull[]>(`${this.base}/workTasks/archived?size=200`)
+      .pipe(catchError(this.handleError));
+  }
+
+  getArchivedByAssignee(employeeId: number): Observable<WorkTaskFull[]> {
+    return this.http.get<WorkTaskFull[]>(`${this.base}/workTasks/archived/byAssignee/${employeeId}?size=200`)
+      .pipe(catchError(this.handleError));
+  }
+
+  getArchivedBySupervisor(employeeId: number): Observable<WorkTaskFull[]> {
+    return this.http.get<WorkTaskFull[]>(`${this.base}/workTasks/archived/bySupervisor/${employeeId}?size=200`)
+      .pipe(catchError(this.handleError));
+  }
+
   getTask(id: number): Observable<WorkTaskFull> {
     return this.http.get<WorkTaskFull>(`${this.base}/workTasks/${id}`)
       .pipe(catchError(this.handleError));
@@ -224,8 +256,9 @@ export class WorkTaskApiService {
       .pipe(catchError(this.handleError));
   }
 
-  updateTaskStatus(id: number, status: WorkTaskStatus): Observable<WorkTaskFull> {
-    return this.http.patch<WorkTaskFull>(`${this.base}/workTasks/${id}/status?status=${status}`, {})
+  updateTaskStatus(id: number, status: WorkTaskStatus, closedReason?: string): Observable<WorkTaskFull> {
+    const reason = closedReason ? `&closedReason=${encodeURIComponent(closedReason)}` : '';
+    return this.http.patch<WorkTaskFull>(`${this.base}/workTasks/${id}/status?status=${status}${reason}`, {})
       .pipe(catchError(this.handleError));
   }
 
@@ -283,6 +316,22 @@ export class WorkTaskApiService {
 
   deleteFollowUp(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/taskFollowUps/${id}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  // ── Follow-up Replies ──────────────────────────────────────────────────────
+  getReplies(followUpId: number): Observable<WorkTaskFollowUpReply[]> {
+    return this.http.get<WorkTaskFollowUpReply[]>(`${this.base}/taskFollowUpReplies/byFollowUp/${followUpId}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  createReply(dto: FollowUpReplyDTO): Observable<WorkTaskFollowUpReply> {
+    return this.http.post<WorkTaskFollowUpReply>(`${this.base}/taskFollowUpReplies`, dto)
+      .pipe(catchError(this.handleError));
+  }
+
+  deleteReply(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/taskFollowUpReplies/${id}`)
       .pipe(catchError(this.handleError));
   }
 
@@ -429,6 +478,46 @@ export class WorkTaskApiService {
     return this.http.post<any>(
       'https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/message',
       { channelId, senderUserId: userId, content, messageType: 'TEXT' },
+      { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  getOrCreateDmChannel(senderUserId: number, recipientUserId: number): Observable<any> {
+    const uid1 = Math.min(senderUserId, recipientUserId);
+    const uid2 = Math.max(senderUserId, recipientUserId);
+    const dmName = `dm-${uid1}-${uid2}`;
+    const token = sessionStorage.getItem('Token') || sessionStorage.getItem('token') || sessionStorage.getItem('accessToken') || '';
+    const tenantId = sessionStorage.getItem('tenantId') || 'default';
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'X-Tenant-ID': tenantId, 'Content-Type': 'application/json' });
+    return this.http.get<any[]>('https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/channel', { headers }).pipe(
+      switchMap(channels => {
+        const existing = (channels || []).find((c: any) => c.name === dmName);
+        if (existing) return of(existing);
+        return this.http.post<any>(
+          'https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/channel',
+          { name: dmName, channelType: 'PRIVATE', createdBy: senderUserId, description: `DM between ${uid1} and ${uid2}` },
+          { headers }
+        ).pipe(
+          switchMap(channel => {
+            const channelId = channel.id ?? channel.channelId;
+            return this.http.post<any>(
+              'https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/channel-member',
+              { channelId, userId: recipientUserId, role: 'MEMBER' },
+              { headers }
+            ).pipe(catchError(() => of(null)), map(() => channel));
+          })
+        );
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  getChannelMembers(channelId: number): Observable<any[]> {
+    const token = sessionStorage.getItem('Token') || sessionStorage.getItem('token') || sessionStorage.getItem('accessToken') || '';
+    const tenantId = sessionStorage.getItem('tenantId') || 'default';
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'X-Tenant-ID': tenantId, 'Content-Type': 'application/json' });
+    return this.http.get<any[]>(
+      `https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/channel-member/channel/${channelId}`,
       { headers })
       .pipe(catchError(this.handleError));
   }

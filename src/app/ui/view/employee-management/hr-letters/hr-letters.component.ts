@@ -22,13 +22,24 @@ export class HrLettersComponent implements OnInit {
   employee: any = {};
   companyProfile: any = {};
   salaryDetails: any = null;
+  allowanceTypes: any[] = [];
+  bonusTypes: any[] = [];
+  deductionTypes: any[] = [];
   generatingPdf = false;
+  sendingLetter = false;
+  includeSalaryBreakdown = false;
   today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
 
   selectedLetterKey = 'employment';
   selectedTone: LetterTone = 'formal';
   editableBody = '';
   isEditing = false;
+
+  showSignaturePad = false;
+  signatureDataUrl = '';
+  private signatureCanvas: HTMLCanvasElement | null = null;
+  private signatureCtx: CanvasRenderingContext2D | null = null;
+  private isDrawing = false;
 
   readonly tones: { key: LetterTone; label: string }[] = [
     { key: 'formal',       label: 'Formal' },
@@ -189,7 +200,104 @@ export class HrLettersComponent implements OnInit {
   get employeeName(): string { return `${this.employee?.firstName ?? ''} ${this.employee?.lastName ?? ''}`.trim(); }
   get jobTitle(): string { return this.employee?.jobTitle || this.employee?.position || ''; }
   get department(): string { return this.employee?.department?.name || this.employee?.department || ''; }
-  get startDate(): string { return this.employee?.hireDate || this.employee?.employementStartDate || ''; }
+  get startDate(): string {
+    const raw: any = this.employee?.hireDate ?? this.employee?.employementStartDate ?? this.employee?.employmentStartDate ?? '';
+    return this.formatDateValue(raw);
+  }
+
+  get salaryBreakdown(): {
+    baseSalary: number;
+    allowances: { name: string; amount: number }[];
+    bonuses: { name: string; amount: number }[];
+    grossTotal: number;
+    deductions: { name: string; amount: number; isTax: boolean }[];
+    payeMonthly: number;
+    hasConfiguredTax: boolean;
+    deductionsTotal: number;
+    netSalary: number;
+  } {
+    const d = this.salaryDetails;
+    const base = this.toNum(d?.baseSalary);
+
+    const allowances = (d?.allowance ?? []).map((a: any) => ({
+      name: this.allowanceTypes.find(t => t.id === (a.allowanceTypeId ?? a.typeId))?.name ?? 'Allowance',
+      amount: this.toNum(a.amount ?? a.value),
+    }));
+
+    const bonuses = (d?.bonus ?? []).map((b: any) => ({
+      name: this.bonusTypes.find(t => t.id === (b.bonusTypeId ?? b.typeId))?.name ?? 'Bonus',
+      amount: this.toNum(b.amount ?? b.value),
+    }));
+
+    const grossTotal = base
+      + allowances.reduce((s: number, a: any) => s + a.amount, 0)
+      + bonuses.reduce((s: number, b: any) => s + b.amount, 0);
+
+    const deductions = (d?.deductions ?? []).map((x: any) => {
+      const type = this.deductionTypes.find(t => t.id === (x.deductionsTypeId ?? x.typeId));
+      return {
+        name: type?.name ?? 'Deduction',
+        amount: this.toNum(x.amount ?? x.value),
+        isTax: type?.isTax === true,
+      };
+    });
+
+    const hasConfiguredTax = deductions.some((x: any) => x.isTax);
+    const payeMonthly = hasConfiguredTax ? 0 : this.computeMonthlyPAYE(grossTotal);
+
+    const deductionsTotal = deductions.reduce((s: number, x: any) => s + x.amount, 0) + payeMonthly;
+    const netSalary = grossTotal - deductionsTotal;
+
+    return { baseSalary: base, allowances, bonuses, grossTotal, deductions, payeMonthly, hasConfiguredTax, deductionsTotal, netSalary };
+  }
+
+  private toNum(v: any): number {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private computeMonthlyPAYE(monthlyGross: number): number {
+    if (!monthlyGross) return 0;
+    const annual = monthlyGross * 12;
+    const cra = Math.max(200000, annual * 0.01) + annual * 0.20;
+    const taxable = Math.max(0, annual - cra);
+
+    const bands = [
+      { limit: 300000, rate: 0.07 },
+      { limit: 300000, rate: 0.11 },
+      { limit: 500000, rate: 0.15 },
+      { limit: 500000, rate: 0.19 },
+      { limit: 1600000, rate: 0.21 },
+      { limit: Infinity, rate: 0.24 },
+    ];
+
+    let remaining = taxable;
+    let paye = 0;
+    for (const band of bands) {
+      if (remaining <= 0) break;
+      const chunk = Math.min(remaining, band.limit);
+      paye += chunk * band.rate;
+      remaining -= chunk;
+    }
+    return paye / 12;
+  }
+
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 2 }).format(amount);
+  }
+
+  private formatDateValue(value: any): string {
+    if (!value) return '';
+    let d: Date;
+    if (Array.isArray(value)) {
+      // Java LocalDate/LocalDateTime: [year, month, day] — month is 1-indexed
+      d = new Date(value[0], (value[1] ?? 1) - 1, value[2] ?? 1);
+    } else {
+      d = new Date(value);
+    }
+    if (isNaN(d.getTime())) return String(value);
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  }
 
   private get storageKey(): string { return `hrLetterTemplate_${this.selectedLetterKey}_${this.selectedTone}`; }
   private get toneStorageKey(): string { return 'hrLetterDefaultTone'; }
@@ -200,6 +308,11 @@ export class HrLettersComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    try {
+      const biz = JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}');
+      this.companyProfile = { companyName: biz?.companyName || biz?.company?.name || '', logoUrl: biz?.logoUrl || biz?.logo || '' };
+    } catch {}
+
     const stored = localStorage.getItem('employeeInView');
     if (stored) {
       try { this.employee = JSON.parse(stored); } catch { this.employee = {}; }
@@ -216,6 +329,10 @@ export class HrLettersComponent implements OnInit {
 
     const savedTone = localStorage.getItem(this.toneStorageKey) as LetterTone | null;
     if (savedTone && this.tones.find(t => t.key === savedTone)) this.selectedTone = savedTone;
+
+    this.employeeService.getAllAllowanceTypes().subscribe({ next: (d: any) => this.allowanceTypes = Array.isArray(d) ? d : (d?.content ?? []), error: () => {} });
+    this.employeeService.getAllBonusTypes().subscribe({ next: (d: any) => this.bonusTypes = Array.isArray(d) ? d : (d?.content ?? []), error: () => {} });
+    this.employeeService.getAllDeductionTypes().subscribe({ next: (d: any) => this.deductionTypes = Array.isArray(d) ? d : (d?.content ?? []), error: () => {} });
 
     this.loadTemplate();
   }
@@ -277,5 +394,103 @@ export class HrLettersComponent implements OnInit {
 
   hasCustomTemplate(): boolean {
     return !!localStorage.getItem(this.storageKey);
+  }
+
+  async sendToRecipient(): Promise<void> {
+    const email = this.employee?.email || this.employee?.workEmail;
+    if (!email) { alert('No recipient email address found for this employee.'); return; }
+    this.sendingLetter = true;
+    try {
+      const target = document.getElementById('hr-letter-content');
+      if (!target) return;
+      const subject = `${this.selectedLetter.label} — ${this.employeeName}`;
+      const htmlBody = target.innerHTML;
+      this.employeeService.sendNotificationEmail(email, subject, htmlBody).subscribe({
+        next: () => { alert(`Letter sent to ${email} successfully.`); },
+        error: () => { alert('Failed to send letter. Please try again.'); },
+      });
+    } finally {
+      this.sendingLetter = false;
+    }
+  }
+
+  toggleSignaturePad(): void {
+    this.showSignaturePad = !this.showSignaturePad;
+    if (this.showSignaturePad) {
+      setTimeout(() => this.initSignatureCanvas(), 50);
+    }
+  }
+
+  private initSignatureCanvas(): void {
+    this.signatureCanvas = document.getElementById('signature-canvas') as HTMLCanvasElement;
+    if (!this.signatureCanvas) return;
+    this.signatureCtx = this.signatureCanvas.getContext('2d');
+    if (this.signatureCtx) {
+      this.signatureCtx.strokeStyle = '#1a1a2e';
+      this.signatureCtx.lineWidth = 2;
+      this.signatureCtx.lineCap = 'round';
+      this.signatureCtx.lineJoin = 'round';
+    }
+    this.signatureCanvas.addEventListener('mousedown', this.startDraw.bind(this));
+    this.signatureCanvas.addEventListener('mousemove', this.draw.bind(this));
+    this.signatureCanvas.addEventListener('mouseup', this.stopDraw.bind(this));
+    this.signatureCanvas.addEventListener('mouseleave', this.stopDraw.bind(this));
+    this.signatureCanvas.addEventListener('touchstart', this.touchStart.bind(this), { passive: false });
+    this.signatureCanvas.addEventListener('touchmove', this.touchMove.bind(this), { passive: false });
+    this.signatureCanvas.addEventListener('touchend', this.stopDraw.bind(this));
+  }
+
+  private startDraw(e: MouseEvent): void {
+    if (!this.signatureCtx || !this.signatureCanvas) return;
+    this.isDrawing = true;
+    const rect = this.signatureCanvas.getBoundingClientRect();
+    this.signatureCtx.beginPath();
+    this.signatureCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  }
+
+  private draw(e: MouseEvent): void {
+    if (!this.isDrawing || !this.signatureCtx || !this.signatureCanvas) return;
+    const rect = this.signatureCanvas.getBoundingClientRect();
+    this.signatureCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    this.signatureCtx.stroke();
+  }
+
+  private touchStart(e: TouchEvent): void {
+    e.preventDefault();
+    if (!this.signatureCtx || !this.signatureCanvas) return;
+    const touch = e.touches[0];
+    const rect = this.signatureCanvas.getBoundingClientRect();
+    this.isDrawing = true;
+    this.signatureCtx.beginPath();
+    this.signatureCtx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+  }
+
+  private touchMove(e: TouchEvent): void {
+    e.preventDefault();
+    if (!this.isDrawing || !this.signatureCtx || !this.signatureCanvas) return;
+    const touch = e.touches[0];
+    const rect = this.signatureCanvas.getBoundingClientRect();
+    this.signatureCtx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+    this.signatureCtx.stroke();
+  }
+
+  private stopDraw(): void {
+    if (this.isDrawing && this.signatureCanvas) {
+      this.signatureDataUrl = this.signatureCanvas.toDataURL('image/png');
+    }
+    this.isDrawing = false;
+  }
+
+  clearSignature(): void {
+    if (!this.signatureCanvas || !this.signatureCtx) return;
+    this.signatureCtx.clearRect(0, 0, this.signatureCanvas.width, this.signatureCanvas.height);
+    this.signatureDataUrl = '';
+  }
+
+  applySignature(): void {
+    if (this.signatureCanvas) {
+      this.signatureDataUrl = this.signatureCanvas.toDataURL('image/png');
+    }
+    this.showSignaturePad = false;
   }
 }

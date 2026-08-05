@@ -4,6 +4,7 @@ import { MessageService } from 'primeng/api';
 import { ProfileChangeRequestService } from '../../../service/profile-change-request.service';
 import { ProfileChangeRequestDTO } from '../../../model/profile-change-request.model';
 import { MailNotificationService } from '../../../service/mailNotification.service';
+import { EmployeeService } from '../../../service/employee.service';
 
 export interface Guarantor {
   id?: number;
@@ -27,7 +28,8 @@ export class GuarantorChangeRequestComponent implements OnInit, OnChanges {
   @Input() employee: any | null = null;
   @Input() guarantorRecord: Guarantor | null = null;
   @Input() changeType: GuarantorChangeType = 'add';
-  @Output() requestSubmitted = new EventEmitter<ProfileChangeRequestDTO>();
+  @Input() adminDirectMode = false;
+  @Output() requestSubmitted = new EventEmitter<any>();
 
   guarantorForm!: FormGroup;
   isSubmitting = false;
@@ -37,7 +39,8 @@ export class GuarantorChangeRequestComponent implements OnInit, OnChanges {
     private fb: FormBuilder,
     private profileChangeRequestService: ProfileChangeRequestService,
     private messageService: MessageService,
-    private mailNotificationService: MailNotificationService
+    private mailNotificationService: MailNotificationService,
+    private employeeService: EmployeeService
   ) {}
 
   ngOnInit(): void {
@@ -102,8 +105,33 @@ export class GuarantorChangeRequestComponent implements OnInit, OnChanges {
 
   private submitAddRequest(): void {
     this.isSubmitting = true;
-
     const formValue = this.guarantorForm.value;
+
+    if (this.adminDirectMode) {
+      const dto = {
+        fullName: formValue.fullName,
+        email: formValue.email || null,
+        phone: formValue.phone || null,
+        address: formValue.address || null,
+        relationship: formValue.relationship || null,
+        yearsKnown: formValue.yearsKnown || null,
+        employeeId: this.employee.id,
+      };
+      const fd = new FormData();
+      fd.append('guarantor', new Blob([JSON.stringify(dto)], { type: 'application/json' }));
+      this.employeeService.addGuarantor(fd).subscribe({
+        next: () => {
+          this.isSubmitting = false;
+          this.requestSubmitted.emit(dto);
+        },
+        error: () => {
+          this.isSubmitting = false;
+          this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Could not save guarantor.' });
+        }
+      });
+      return;
+    }
+
     const request: ProfileChangeRequestDTO = {
       employeeId: this.employee.id,
       employeeName: `${this.employee.firstName} ${this.employee.lastName}`,
@@ -126,38 +154,47 @@ export class GuarantorChangeRequestComponent implements OnInit, OnChanges {
     this.profileChangeRequestService.submitProfileChangeRequest(request).subscribe({
       next: () => {
         this.isSubmitting = false;
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Request submitted',
-          detail: 'Your guarantor addition request has been submitted for HR review.',
-          key: 'global'
-        });
         this.requestSubmitted.emit(request);
       },
-      error: (error) => {
+      error: () => {
         this.isSubmitting = false;
-        console.error('Error submitting guarantor add request:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Submission Error',
-          detail: 'Failed to submit your request. Please try again.'
-        });
+        this.messageService.add({ severity: 'error', summary: 'Submission Error', detail: 'Failed to submit your request. Please try again.' });
       }
     });
   }
 
   private submitEditRequest(): void {
     if (!this.guarantorRecord?.id) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Record ID not found.'
-      });
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Record ID not found.' });
       return;
     }
 
     this.isSubmitting = true;
     const formValue = this.guarantorForm.value;
+
+    if (this.adminDirectMode) {
+      const payload = {
+        fullName: formValue.fullName,
+        email: formValue.email || null,
+        phone: formValue.phone || null,
+        address: formValue.address || null,
+        relationship: formValue.relationship || null,
+        yearsKnown: formValue.yearsKnown || null,
+        employeeId: this.employee.id,
+      };
+      this.employeeService.updateGuarantor(this.guarantorRecord.id!, payload).subscribe({
+        next: () => {
+          this.isSubmitting = false;
+          this.requestSubmitted.emit(payload);
+        },
+        error: () => {
+          this.isSubmitting = false;
+          this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Could not update guarantor.' });
+        }
+      });
+      return;
+    }
+
     const request: ProfileChangeRequestDTO = {
       employeeId: this.employee.id,
       employeeName: `${this.employee.firstName} ${this.employee.lastName}`,
@@ -180,37 +217,37 @@ export class GuarantorChangeRequestComponent implements OnInit, OnChanges {
     this.profileChangeRequestService.submitProfileChangeRequest(request).subscribe({
       next: () => {
         this.isSubmitting = false;
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Request submitted',
-          detail: 'Your guarantor update request has been submitted for HR review.',
-          key: 'global'
-        });
         this.requestSubmitted.emit(request);
       },
-      error: (error) => {
+      error: () => {
         this.isSubmitting = false;
-        console.error('Error submitting guarantor edit request:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Submission Error',
-          detail: 'Failed to submit your request. Please try again.'
-        });
+        this.messageService.add({ severity: 'error', summary: 'Submission Error', detail: 'Failed to submit your request. Please try again.' });
       }
     });
   }
 
   private submitDeleteRequest(): void {
     if (!this.guarantorRecord?.id) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Record ID not found.'
-      });
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Record ID not found.' });
       return;
     }
 
     this.isSubmitting = true;
+
+    if (this.adminDirectMode) {
+      this.employeeService.deleteGuarantor(this.guarantorRecord.id!).subscribe({
+        next: () => {
+          this.isSubmitting = false;
+          this.requestSubmitted.emit({ deleted: true, id: this.guarantorRecord!.id });
+        },
+        error: () => {
+          this.isSubmitting = false;
+          this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Could not delete guarantor.' });
+        }
+      });
+      return;
+    }
+
     const request: ProfileChangeRequestDTO = {
       employeeId: this.employee.id,
       employeeName: `${this.employee.firstName} ${this.employee.lastName}`,

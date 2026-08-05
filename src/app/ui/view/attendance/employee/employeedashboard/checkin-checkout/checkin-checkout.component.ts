@@ -90,19 +90,29 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
 
     this.attendancetableService.attendance$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(data => {
-        if (!this.hrEmployeeId) return;
-        const employeeId = Number(this.hrEmployeeId);
+      .subscribe({
+        next: (data) => {
+          if (!this.hrEmployeeId) return;
+          const employeeId = Number(this.hrEmployeeId);
 
-        this.hasCompletedToday = this.attendancetableService.hasCompletedToday(employeeId);
-        this.isAbsentToday = this.attendancetableService.isEmployeeBlockedToday(employeeId);
-        this.restoreClockStatus();
+          this.hasCompletedToday = this.attendancetableService.hasCompletedToday(employeeId);
+          this.isAbsentToday = this.attendancetableService.isEmployeeBlockedToday(employeeId);
+          this.restoreClockStatus();
+        },
+        error: (err) => {
+          console.error('Error loading attendance data:', err);
+        }
       });
 
     this.checkOfficeHours();
     this.officeHoursService.officeHours$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.checkOfficeHours());
+      .subscribe({
+        next: () => this.checkOfficeHours(),
+        error: (err) => {
+          console.error('Error loading office hours:', err);
+        }
+      });
   }
 
   ngOnDestroy() {
@@ -130,14 +140,8 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
 
   async toggleClock() {
     if (this.isAbsentToday) return;
-
-    if (this.isLoadingEmployeeData) {
-      return;
-    }
-
-    if (!this.hrEmployeeId) {
-      return;
-    }
+    if (this.isLoadingEmployeeData) return;
+    if (!this.hrEmployeeId) return;
 
     this.isGettingLocation = true;
     try {
@@ -160,6 +164,9 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
         this.status = 'CLOCKED_OUT';
         this.attendancetableService.setClockStatus('CLOCKED_OUT');
       }
+    } catch (err) {
+      console.error('Clock action failed:', err);
+      alert('Failed to update attendance. Please try again.');
     } finally {
       this.isGettingLocation = false;
     }

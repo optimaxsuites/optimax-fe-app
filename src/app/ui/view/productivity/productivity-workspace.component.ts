@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
-import { timeout, catchError } from 'rxjs/operators';
+import { timeout, catchError, switchMap } from 'rxjs/operators';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import * as XLSX from 'xlsx';
@@ -41,6 +42,7 @@ import {
   WorkTaskPriority as ApiTaskPriority,
   SubtaskDTO,
   FollowUpDTO,
+  FollowUpReplyDTO,
   PerformanceGoalFull,
   PerformanceGoalDTO,
   KpiDTO,
@@ -63,11 +65,18 @@ interface SubTask {
   followUps?: FollowUp[];
 }
 interface ActivityEntry { id: string; author: string; text: string; timestamp: string; }
+interface FollowUpReply {
+  id: string; author: string; initials: string; color: string; timestamp: string; text: string;
+  authorEmployeeId?: number;
+}
+
 interface FollowUp {
   id: string; author: string; initials: string; color: string;
   timestamp: string; text: string; photos: string[];
   decision?: string; progress?: number;
   followUpId?: number;
+  replies?: FollowUpReply[];
+  reactions?: Record<string, string[]>; // emoji → array of author names
 }
 
 export interface BoardTask {
@@ -80,6 +89,12 @@ export interface BoardTask {
   inlineText?: string;
   expanded?: boolean;
   supervisorGrade?: number;   // 1-5 rating set by supervisor
+  // Cost tracking (optional)
+  cost?: number;
+  costCurrency?: string;
+  // Closed flag — task set to "Closed" gets archived automatically
+  closed?: boolean;
+  closedReason?: string;
   // API-sync fields
   apiId?: number;
   assigneeEmployeeId?: number;
@@ -245,28 +260,26 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   setPmSection(s: PMSection): void {
     this.pmSection = s;
-    if (s === 'reports' && !this.execReport && !this.reportsLoading) {
-      this.loadReports();
-    }
   }
 
   loadReports(): void {
     this.reportsLoading = true;
     this.reportsError = false;
+    const safe = <T>(obs: import('rxjs').Observable<T>) => obs.pipe(catchError(() => of(null as T | null)));
     this.subscription.add(
       forkJoin({
-        exec:      this.reportingService.getExecutiveReport(),
-        workforce: this.reportingService.getWorkforceOverview(),
-        payroll:   this.reportingService.getPayrollSummary(),
-        leave:     this.reportingService.getLeaveAttendance(),
-        turnover:  this.reportingService.getEmployeeTurnover(),
-        risk:      this.reportingService.getHrRisk(),
-        probation: this.reportingService.getProbationTracking(),
-        equity:    this.reportingService.getCompensationEquity(),
-        bonus:     this.reportingService.getBonusReport(),
-        statutory: this.reportingService.getStatutoryRemittance(),
-        overtime:  this.reportingService.getOvertimeCost(),
-        vacancy:   this.reportingService.getVacancyAging(),
+        exec:      safe(this.reportingService.getExecutiveReport()),
+        workforce: safe(this.reportingService.getWorkforceOverview()),
+        payroll:   safe(this.reportingService.getPayrollSummary()),
+        leave:     safe(this.reportingService.getLeaveAttendance()),
+        turnover:  safe(this.reportingService.getEmployeeTurnover()),
+        risk:      safe(this.reportingService.getHrRisk()),
+        probation: safe(this.reportingService.getProbationTracking()),
+        equity:    safe(this.reportingService.getCompensationEquity()),
+        bonus:     safe(this.reportingService.getBonusReport()),
+        statutory: safe(this.reportingService.getStatutoryRemittance()),
+        overtime:  safe(this.reportingService.getOvertimeCost()),
+        vacancy:   safe(this.reportingService.getVacancyAging()),
       }).subscribe({
         next: (data) => {
           this.execReport      = data.exec;
@@ -282,6 +295,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           this.overtimeReport  = data.overtime;
           this.vacancyReport   = data.vacancy;
           this.reportsLoading  = false;
+          // Only surface the error banner when every single report failed
+          this.reportsError = Object.values(data).every(v => v === null);
         },
         error: () => {
           this.reportsError   = true;
@@ -299,7 +314,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   searchText = '';
   selectedTask: BoardTask | null = null;
   detailPanelVisible = false;
-  detailTab: 'overview' | 'subtasks' | 'activity' = 'overview';
+  detailTab: 'overview' | 'subtasks' | 'activity' | 'analytics' = 'overview';
   newActivityText = '';
   subtaskInput = '';
   showAddTask = false;
@@ -334,7 +349,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     ],
   };
 
-  private static readonly STAGE_STORAGE_KEY = 'hr_pm_stages_v1';
+  private static readonly STAGE_STORAGE_KEY   = 'hr_pm_stages_v1';
+  private static readonly ARCHIVE_STORAGE_KEY  = 'hr_pm_archived_v1';
   private static readonly DEFAULT_STAGES: Array<{ key: string; label: string }> = [
     { key: 'To Do',       label: 'To Do' },
     { key: 'In Progress', label: 'In Progress' },
@@ -349,6 +365,148 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // ── Stage management ──────────────────────────────────────────────────────
   showAddStage = false;
   newStageName = '';
+
+  get customStages(): Array<{ key: TaskStatus; label: string }> {
+    return this.columns.filter(c => !this.isDefaultStage(c.key));
+  }
+
+  // ── Right rail (Archive & Stages) ─────────────────────────────────────────
+  rightRailOpen = false;
+  archivedTasks: BoardTask[] = [];
+  archiveSearchText = '';
+
+  get filteredArchivedTasks(): BoardTask[] {
+    const q = this.archiveSearchText.trim().toLowerCase();
+    if (!q) return this.archivedTasks;
+    return this.archivedTasks.filter(t =>
+      (t.title || '').toLowerCase().includes(q) ||
+      (t.assignee || '').toLowerCase().includes(q) ||
+      (t.team || '').toLowerCase().includes(q) ||
+      (t.status || '').toLowerCase().includes(q) ||
+      (t.tags || []).some(tag => tag.toLowerCase().includes(q))
+    );
+  }
+
+  /** Statuses that appear only in forms (not board columns) */
+  readonly extraStatuses: TaskStatus[] = ['Closed'];
+
+  private sanitizeTask(t: any): BoardTask {
+    // Array fields — accessed with .length and *ngFor throughout the template
+    t.subtasks  = Array.isArray(t.subtasks)  ? t.subtasks  : [];
+    t.activity  = Array.isArray(t.activity)  ? t.activity  : [];
+    t.tags      = Array.isArray(t.tags)      ? t.tags      : [];
+    t.followUps = Array.isArray(t.followUps) ? t.followUps : [];
+    // String fields — accessed with .toLowerCase() in filteredBoard getter
+    t.title     = t.title    ?? '';
+    t.assignee  = t.assignee ?? '';
+    t.team      = t.team     ?? '';
+    t.status    = t.status   ?? 'To Do';
+    t.priority  = t.priority ?? 'Medium';
+    t.id        = t.id       ?? String(Date.now());
+    return t as BoardTask;
+  }
+
+  private parseTasks(raw: string | null): BoardTask[] {
+    try { return raw ? (JSON.parse(raw) as any[]).map(t => this.sanitizeTask(t)) : []; }
+    catch { return []; }
+  }
+
+  private loadArchivedTasks(): void {
+    this.archivedTasks = this.parseTasks(
+      localStorage.getItem(ProductivityWorkspaceComponent.ARCHIVE_STORAGE_KEY)
+    );
+  }
+
+  private saveArchivedTasks(): void {
+    localStorage.setItem(ProductivityWorkspaceComponent.ARCHIVE_STORAGE_KEY, JSON.stringify(this.archivedTasks));
+  }
+
+  // ── Close-task modal state ────────────────────────────────────────────────
+  showCloseTaskModal = false;
+  closeTaskRef: BoardTask | null = null;
+  closeTaskReason = '';
+
+  closeTask(task: BoardTask, e: Event): void {
+    e.stopPropagation();
+    this.closeTaskRef = task;
+    this.closeTaskReason = '';
+    this.showCloseTaskModal = true;
+  }
+
+  confirmCloseTask(): void {
+    const task = this.closeTaskRef;
+    if (!task) return;
+    task.closed = true;
+    task.status = 'Closed' as any;
+    task.closedReason = this.closeTaskReason.trim() || undefined;
+    this.showCloseTaskModal = false;
+    this.closeTaskRef = null;
+    this.archiveTask(task);
+    this.showToast('Task closed and moved to archive', 'info');
+  }
+
+  cancelCloseTask(): void {
+    this.showCloseTaskModal = false;
+    this.closeTaskRef = null;
+  }
+
+  archiveTask(task: BoardTask, event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.boardTasks = this.boardTasks.filter(t => t.id !== task.id);
+    this.archivedTasks = [{ ...task }, ...this.archivedTasks];
+    this.saveArchivedTasks();
+    this.save();
+    if (this.selectedTask?.id === task.id) this.closeDetail();
+
+    if (!this.apiEnabled) return;
+
+    const persist = (apiId: number) => {
+      const status = task.closed ? 'CLOSED' : 'ARCHIVED';
+      this.workTaskApi.updateTaskStatus(apiId, status as any, task.closedReason).subscribe({ error: () => {} });
+    };
+
+    if (task.apiId) {
+      persist(task.apiId);
+    } else {
+      // Task never synced — create it first so it gets a DB record, then mark it archived/closed
+      const userId = this.currentUserId;
+      const dto: WorkTaskDTO = {
+        title: task.title,
+        description: task.description,
+        assigneeEmployeeId: task.assigneeEmployeeId,
+        supervisorEmployeeId: task.supervisorEmployeeId,
+        status: task.closed ? 'CLOSED' : 'ARCHIVED',
+        priority: this.toApiPriority(task.priority),
+        startDate: task.startDate || undefined,
+        dueDate: task.dueDate || undefined,
+        weight: task.weight,
+        progress: task.progress,
+        tags: task.tags?.join(','),
+        createdByUserId: task.createdByUserId || (userId || undefined),
+        closedReason: task.closedReason,
+      };
+      this.subscription.add(
+        this.workTaskApi.createTask(dto).subscribe({
+          next: (created) => {
+            task.apiId = created.id;
+            this.saveArchivedTasks();
+          },
+          error: () => {},
+        })
+      );
+    }
+  }
+
+  unarchiveTask(task: BoardTask): void {
+    this.archivedTasks = this.archivedTasks.filter(t => t.id !== task.id);
+    const restored = { ...task, closed: false };
+    this.boardTasks = [restored, ...this.boardTasks];
+    this.saveArchivedTasks();
+    this.save();
+    if (this.apiEnabled && task.apiId) {
+      this.workTaskApi.updateTaskStatus(task.apiId, 'TO_DO').subscribe({ error: () => {} });
+    }
+  }
 
   private loadStages(): Array<{ key: string; label: string }> {
     try {
@@ -397,8 +555,12 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return role.includes('ADMIN') || role.includes('SUPERVISOR') || role.includes('MANAGER');
   }
 
+  get currentUserDisplayName(): string {
+    return sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || '';
+  }
+
   get currentUserFullName(): string {
-    return (sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || '').toLowerCase();
+    return this.currentUserDisplayName.toLowerCase();
   }
 
   // ── Subtask inline edit ───────────────────────────────────────────────────
@@ -408,7 +570,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   get boardMetrics(): { label: string; value: string | number; sub: string; color: string }[] {
     const active = this.boardTasks.filter(t => t.status !== 'Done').length;
-    const subs = this.boardTasks.reduce((s, t) => s + t.subtasks.length, 0);
+    const subs = this.boardTasks.reduce((s, t) => s + (t.subtasks?.length ?? 0), 0);
     const done = this.boardTasks.filter(t => t.status === 'Done').length;
     const pct = this.boardTasks.length ? Math.round((done / this.boardTasks.length) * 100) : 0;
     const review = this.boardTasks.filter(t => t.status === 'In Review').length;
@@ -418,6 +580,249 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       { label: 'Completion Rate', value: `${pct}%`, sub: 'tasks marked done', color: '#16a34a' },
       { label: 'Supervisor Queue', value: review, sub: 'awaiting review', color: '#7c3aed' },
     ];
+  }
+
+  // ── Performance chart filters ───────────────────────────────────────────────
+  chartFilterAssignee = '';
+  chartFilterSupervisor = '';
+  chartFilterPriority = '';
+  chartFilterTag = '';
+  engagementSortCol: 'lastActivity' | 'followUps' | 'replies' | 'reactions' = 'lastActivity';
+  engagementSortDir: 'asc' | 'desc' = 'desc';
+
+  resetChartFilters(): void {
+    this.chartFilterAssignee = '';
+    this.chartFilterSupervisor = '';
+    this.chartFilterPriority = '';
+    this.chartFilterTag = '';
+  }
+
+  private get allTasksForCharts(): BoardTask[] {
+    return [...this.boardTasks, ...this.archivedTasks];
+  }
+
+  get chartFilteredTasks(): BoardTask[] {
+    return this.allTasksForCharts.filter(t => {
+      if (this.chartFilterAssignee && t.assignee !== this.chartFilterAssignee) return false;
+      if (this.chartFilterSupervisor && t.team !== this.chartFilterSupervisor) return false;
+      if (this.chartFilterPriority && t.priority !== this.chartFilterPriority) return false;
+      if (this.chartFilterTag && !(t.tags ?? []).includes(this.chartFilterTag)) return false;
+      return true;
+    });
+  }
+
+  get chartAllAssignees(): string[] {
+    return [...new Set(this.allTasksForCharts.map(t => t.assignee).filter(Boolean))].sort();
+  }
+
+  get chartAllSupervisors(): string[] {
+    return [...new Set(this.allTasksForCharts.map(t => t.team).filter(Boolean))].sort();
+  }
+
+  get chartAllTags(): string[] {
+    const tags = new Set<string>();
+    this.allTasksForCharts.forEach(t => (t.tags ?? []).forEach(tag => tags.add(tag)));
+    return [...tags].sort();
+  }
+
+  get taskCompletionStats(): Array<{ status: string; count: number; pct: number; color: string }> {
+    const tasks = this.chartFilteredTasks;
+    const total = tasks.length;
+    if (!total) return [];
+    const statusColors: Record<string, string> = {
+      'Done': '#16a34a', 'In Progress': '#2563eb', 'In Review': '#7c3aed',
+      'To Do': '#6b7280', 'Closed': '#374151', 'Archived': '#9ca3af',
+    };
+    const counts = new Map<string, number>();
+    tasks.forEach(t => {
+      const s = t.closed ? 'Closed' : (t.status || 'To Do');
+      counts.set(s, (counts.get(s) ?? 0) + 1);
+    });
+    // Add overdue as separate virtual bucket
+    const overdue = tasks.filter(t => this.isTaskOverdue(t) && t.status !== 'Done' && !t.closed).length;
+    const result = [...counts.entries()]
+      .map(([status, count]) => ({
+        status, count,
+        pct: Math.round((count / total) * 100),
+        color: statusColors[status] ?? '#9ca3af',
+      }))
+      .sort((a, b) => b.count - a.count);
+    if (overdue > 0) {
+      result.push({ status: 'Overdue', count: overdue, pct: Math.round((overdue / total) * 100), color: '#dc2626' });
+    }
+    return result;
+  }
+
+  get taskEngagementRows(): Array<{
+    task: BoardTask; followUps: number; replies: number; reactions: number;
+    lastActivity: string; lastActivityRaw: string;
+  }> {
+    const rows = this.chartFilteredTasks.map(task => {
+      const fus = task.followUps ?? [];
+      const replies = fus.reduce((n, f) => n + (f.replies?.length ?? 0), 0);
+      const reactions = fus.reduce((n, f) => {
+        return n + Object.values(f.reactions ?? {}).reduce((s, arr) => s + arr.length, 0);
+      }, 0);
+      const lastFu = fus.filter(f => f.timestamp).sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0];
+      const lastActivityRaw = lastFu?.timestamp ?? '';
+      const lastActivity = lastFu ? this.formatTs(lastActivityRaw) : '—';
+      return { task, followUps: fus.length, replies, reactions, lastActivity, lastActivityRaw };
+    });
+    const dir = this.engagementSortDir === 'asc' ? 1 : -1;
+    return rows.sort((a, b) => {
+      if (this.engagementSortCol === 'lastActivity') return dir * a.lastActivityRaw.localeCompare(b.lastActivityRaw);
+      if (this.engagementSortCol === 'followUps')    return dir * (a.followUps - b.followUps);
+      if (this.engagementSortCol === 'replies')      return dir * (a.replies - b.replies);
+      if (this.engagementSortCol === 'reactions')    return dir * (a.reactions - b.reactions);
+      return 0;
+    });
+  }
+
+  sortEngagement(col: 'lastActivity' | 'followUps' | 'replies' | 'reactions'): void {
+    if (this.engagementSortCol === col) {
+      this.engagementSortDir = this.engagementSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.engagementSortCol = col;
+      this.engagementSortDir = 'desc';
+    }
+  }
+
+  get supervisorFeedbackRows(): Array<{
+    supervisor: string;
+    approved: number; changes: number; rejected: number; other: number;
+    approvedPct: number; changesPct: number; rejectedPct: number; otherPct: number;
+  }> {
+    const map = new Map<string, { approved: number; changes: number; rejected: number; other: number }>();
+    this.chartFilteredTasks.forEach(task => {
+      const sup = task.team || 'Unassigned';
+      if (!map.has(sup)) map.set(sup, { approved: 0, changes: 0, rejected: 0, other: 0 });
+      const entry = map.get(sup)!;
+      (task.followUps ?? []).forEach(fu => {
+        if (!fu.decision) return;
+        const d = (fu.decision || '').toLowerCase();
+        if (d === 'approved' || d === 'approve') entry.approved++;
+        else if (d.includes('change') || d.includes('revision')) entry.changes++;
+        else if (d === 'rejected' || d === 'reject') entry.rejected++;
+        else entry.other++;
+      });
+    });
+    return [...map.entries()]
+      .map(([supervisor, counts]) => {
+        const total = counts.approved + counts.changes + counts.rejected + counts.other;
+        if (total === 0) return null;
+        const pct = (n: number) => total ? Math.round((n / total) * 100) : 0;
+        return {
+          supervisor,
+          ...counts,
+          approvedPct: pct(counts.approved),
+          changesPct: pct(counts.changes),
+          rejectedPct: pct(counts.rejected),
+          otherPct: pct(counts.other),
+        };
+      })
+      .filter(Boolean) as any[];
+  }
+
+  get dueDateBuckets(): Array<{ label: string; count: number; pct: number; color: string }> {
+    const tasks = this.chartFilteredTasks.filter(t => t.dueDate && t.status !== 'Done' && !t.closed);
+    const total = tasks.length || 1;
+    const now = Date.now();
+    const day = 86400000;
+    const buckets = [
+      { label: 'Overdue', color: '#dc2626', test: (d: number) => d < now },
+      { label: 'Due Today', color: '#f97316', test: (d: number) => d >= now && d < now + day },
+      { label: 'Due This Week', color: '#d97706', test: (d: number) => d >= now + day && d < now + 7 * day },
+      { label: 'Due Next Week', color: '#2563eb', test: (d: number) => d >= now + 7 * day && d < now + 14 * day },
+      { label: 'Due Later', color: '#6b7280', test: (d: number) => d >= now + 14 * day },
+    ];
+    return buckets.map(b => {
+      const count = tasks.filter(t => b.test(new Date(t.dueDate).getTime())).length;
+      return { label: b.label, count, pct: Math.round((count / total) * 100), color: b.color };
+    }).filter(b => b.count > 0);
+  }
+
+  drillToTask(task: BoardTask): void {
+    this.openDetail(task);
+  }
+
+  // ── Assignee performance analytics ────────────────────────────────────────
+  getAssigneePerformance(assigneeName: string): {
+    grade: 'Excellent' | 'Good' | 'Fair' | 'Bad';
+    gradeColor: string;
+    score: number;
+    completionRate: number;
+    timelinessRate: number;
+    progressMomentum: number;
+    engagementRate: number;
+    totalTasks: number;
+    doneTasks: number;
+    overdueTasks: number;
+    closedTasks: number;
+    avgFollowUps: number;
+  } {
+    const all = [...this.boardTasks, ...this.archivedTasks].filter(t => t.assignee === assigneeName);
+    const total = all.length;
+    const EMPTY = { grade: 'Fair' as const, gradeColor: '#d97706', score: 0, completionRate: 0, timelinessRate: 0, progressMomentum: 0, engagementRate: 0, totalTasks: 0, doneTasks: 0, overdueTasks: 0, closedTasks: 0, avgFollowUps: 0 };
+    if (!total) return EMPTY;
+
+    const done = all.filter(t => t.status === 'Done').length;
+    const closed = all.filter(t => t.closed || t.status === 'CLOSED' as any).length;
+    const overdue = all.filter(t => this.isTaskOverdue(t) && t.status !== 'Done' && !t.closed).length;
+
+    const completionRate = Math.round(((done + closed) / total) * 100);
+
+    // Timeliness: done tasks that are NOT overdue (i.e. due date hasn't passed) ≈ submitted on time
+    const doneOnTime = all.filter(t => t.status === 'Done' && !this.isTaskOverdueFn(t, t.dueDate)).length;
+    const timelinessRate = done > 0 ? Math.round((doneOnTime / done) * 100) : completionRate;
+
+    const avgProgress = Math.round(all.reduce((s, t) => s + (t.progress || 0), 0) / total);
+    const progressMomentum = avgProgress;
+
+    const totalFu = all.reduce((s, t) => s + (t.followUps?.length || 0), 0);
+    const avgFuNum = totalFu / total;
+    const engagementRate = Math.min(100, Math.round((avgFuNum / 4) * 100));
+
+    const overdueRate = Math.round((overdue / total) * 100);
+
+    const score = Math.min(100, Math.round(
+      completionRate * 0.35 +
+      timelinessRate * 0.30 +
+      progressMomentum * 0.15 +
+      Math.max(0, 100 - overdueRate * 2) * 0.20
+    ));
+
+    const grade = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : score >= 40 ? 'Fair' : 'Bad';
+    const gradeColor = score >= 80 ? '#16a34a' : score >= 60 ? '#2563eb' : score >= 40 ? '#d97706' : '#dc2626';
+
+    return { grade, gradeColor, score, completionRate, timelinessRate, progressMomentum, engagementRate, totalTasks: total, doneTasks: done, overdueTasks: overdue, closedTasks: closed, avgFollowUps: parseFloat(avgFuNum.toFixed(1)) };
+  }
+
+  private isTaskOverdueFn(task: BoardTask, dueDateStr: string): boolean {
+    if (!dueDateStr) return false;
+    return new Date(dueDateStr).getTime() < Date.now();
+  }
+
+  getTeamPerformance(supervisorName: string): Array<{
+    assignee: string;
+    score: number;
+    grade: 'Excellent' | 'Good' | 'Fair' | 'Bad';
+    gradeColor: string;
+    completionRate: number;
+    totalTasks: number;
+  }> {
+    const all = [...this.boardTasks, ...this.archivedTasks].filter(t => t.team === supervisorName);
+    const assignees = [...new Set(all.map(t => t.assignee).filter(Boolean))];
+    return assignees
+      .map(a => {
+        const p = this.getAssigneePerformance(a);
+        return { assignee: a, score: p.score, grade: p.grade, gradeColor: p.gradeColor, completionRate: p.completionRate, totalTasks: p.totalTasks };
+      })
+      .sort((a, b) => b.score - a.score);
+  }
+
+  ringDashOffset(score: number): number {
+    // SVG circle r=40, circumference ≈ 251.2
+    return Math.round((100 - score) * 2.512);
   }
 
   // ── Assessment ─────────────────────────────────────────────────────────────
@@ -537,6 +942,101 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   taskViewMode: 'mine' | 'all' | 'team' = 'mine';
   viewDropOpen = false;
 
+  // ── Group-by ──────────────────────────────────────────────────────────────
+  groupBy: 'none' | 'assignee' | 'team' | 'status' | 'priority' = 'none';
+
+  get groupedBoard(): Array<{ key: string; tasks: BoardTask[] }> {
+    if (this.groupBy === 'none') return [{ key: '', tasks: this.filteredBoard }];
+    const map = new Map<string, BoardTask[]>();
+    for (const t of this.filteredBoard) {
+      let key = '';
+      if (this.groupBy === 'assignee') key = t.assignee || 'Unassigned';
+      else if (this.groupBy === 'team') key = t.team || 'No Team';
+      else if (this.groupBy === 'status') key = t.status;
+      else if (this.groupBy === 'priority') key = t.priority;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    }
+    return Array.from(map.entries()).map(([k, v]) => ({ key: k, tasks: v }));
+  }
+
+  // ── Deadline extension ────────────────────────────────────────────────────
+  extendingDeadline = false;
+  newDeadlineDate = '';
+
+  extendDeadline(task: BoardTask): void {
+    if (!this.newDeadlineDate) return;
+    task.dueDate = this.newDeadlineDate;
+    this.extendingDeadline = false;
+    this.newDeadlineDate = '';
+    this.save();
+    this.showToast('Deadline extended', 'success');
+    if (this.apiEnabled && task.apiId) {
+      const aEmp = this.allEmployees.find(e => e.fullName === task.assignee);
+      const sEmp = this.allEmployees.find(e => e.fullName === task.team);
+      this.subscription.add(
+        this.workTaskApi.updateTask(task.apiId, {
+          title: task.title,
+          dueDate: this.newDeadlineDate,
+          assigneeEmployeeId: aEmp ? Number(aEmp.id) : task.assigneeEmployeeId,
+          supervisorEmployeeId: sEmp ? Number(sEmp.id) : task.supervisorEmployeeId,
+        }).subscribe({ error: () => {} })
+      );
+    }
+  }
+
+  // ── Quick reassign ────────────────────────────────────────────────────────
+  reassignMode = false;
+  reassignEmployeeName = '';
+
+  quickReassign(task: BoardTask): void {
+    const name = this.reassignEmployeeName.trim();
+    if (!name) return;
+    task.assignee = name;
+    task.assignees = [name];
+    const emp = this.allEmployees.find(e => e.fullName === name);
+    if (emp) task.assigneeEmployeeId = Number(emp.id);
+    this.reassignMode = false;
+    this.reassignEmployeeName = '';
+    this.save();
+    this.showToast('Task reassigned', 'success');
+    if (this.apiEnabled && task.apiId) {
+      this.subscription.add(
+        this.workTaskApi.updateTask(task.apiId, {
+          title: task.title,
+          assigneeEmployeeId: emp ? Number(emp.id) : task.assigneeEmployeeId,
+        }).subscribe({ error: () => {} })
+      );
+    }
+  }
+
+  // ── Notification sound (Web Audio API) ────────────────────────────────────
+  private playNotifSound(type: 'post' | 'reply' = 'post'): void {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      if (type === 'reply') {
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1100, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.18);
+      } else {
+        osc.frequency.setValueAtTime(660, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.25);
+      }
+    } catch { /* AudioContext not available */ }
+  }
+
   // ── Report period ─────────────────────────────────────────────────────────
   reportPeriod: 'weekly' | 'monthly' | 'quarterly' = 'weekly';
   reportDropOpen = false;
@@ -544,12 +1044,15 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // ── Subtask follow-up expand state ────────────────────────────────────────
   expandedSubtaskIds = new Set<string>();
   subtaskFollowUpText: Record<string, string> = {};
+  replyingToFuId: string | null = null;
+  fuReplyText: Record<string, string> = {};
 
   @HostListener('document:click', ['$event'])
   onDocClick(e: MouseEvent): void {
     const el = e.target as HTMLElement;
     if (!el.closest('.task-view-dropdown')) this.viewDropOpen = false;
     if (!el.closest('.report-period-dropdown')) this.reportDropOpen = false;
+    if (this.rightRailOpen && !el.closest('.right-rail')) this.rightRailOpen = false;
   }
 
   setTaskViewMode(mode: 'mine' | 'all' | 'team'): void {
@@ -570,8 +1073,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   get myTeamTasks(): BoardTask[] {
     const name = this.supervisorFilter.trim().toLowerCase();
     return this.boardTasks.filter(t =>
-      !name || t.team.toLowerCase().includes(name) ||
-      (t.assignees || [t.assignee]).some(a => a.toLowerCase().includes(name))
+      !name || (t.team || '').toLowerCase().includes(name) ||
+      (t.assignees || [t.assignee]).some(a => (a || '').toLowerCase().includes(name))
     );
   }
 
@@ -777,7 +1280,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   insights: ProductivityInsight[] = [];
 
   // ── Employee dropdowns (loaded from HR microservice) ──────────────────────
-  allEmployees: Array<{ id: string; fullName: string; department: string; role: string; supervisor: string }> = [];
+  allEmployees: Array<{ id: string; userId: string; fullName: string; department: string; role: string; supervisor: string }> = [];
   employeesLoading = false;
 
   get employeeNames(): string[] {
@@ -860,7 +1363,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // ── Supervisor review form state ───────────────────────────────────────────
   supReviewDecision = 'Approved';
   supReviewNote = '';
-  supReviewFiles: Array<{ name: string; url: string; isImage: boolean }> = [];
+  supReviewFiles: Array<{ name: string; url: string; isImage: boolean; uploading?: boolean }> = [];
+  get supReviewUploading(): boolean { return this.supReviewFiles.some(f => f.uploading); }
 
   // ── Share modal state ──────────────────────────────────────────────────────
   showShareModal = false;
@@ -872,6 +1376,11 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   availableChannels: Array<{ id: number; name: string; channelCode: string; channelType: string; status: string }> = [];
   channelsLoading = false;
   channelUnreadCounts: Record<number, number> = {};
+  dmUserList: Array<{ id: number; fullName: string; email: string }> = [];
+  private employeeEmailMap: Record<number, string> = {};
+
+  // ── Kanban overdue filter ──────────────────────────────────────────────────
+  hideOverdue = true;
 
   private loadChannelUnread(): void {
     try { this.channelUnreadCounts = JSON.parse(localStorage.getItem('hr_ch_unread') || '{}'); } catch {}
@@ -909,9 +1418,17 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     private readonly sanitizer: DomSanitizer,
     private readonly notifService: HrTaskNotificationService,
     private readonly authService: AuthenticationService,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
+    this.subscription.add(
+      this.route.queryParamMap.subscribe(params => {
+        const taskId = params.get('taskId');
+        if (taskId && this.boardTasks.length) this.tryOpenTaskById(taskId);
+      })
+    );
+    this.loadArchivedTasks();
     this.loadChannelUnread();
     this.productivityDataService.init();
     this.productivityReviewService.init();
@@ -929,12 +1446,15 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
     // Always resolve the current user's employee ID so "My Tasks" filter works for everyone.
     // The board-loading logic (getAllTasks vs getTasksByAssignee) stays role-dependent inside loadBoardFromApi().
+    // When a taskId is in the URL (shared link), load ALL tasks so the linked task is always findable.
+    const hasLinkedTask = !!this.route.snapshot.queryParamMap.get('taskId');
+    const defaultViewMode: 'mine' | 'all' = hasLinkedTask ? 'all' : 'mine';
     const cachedEmpId = Number(sessionStorage.getItem('employeeId') || localStorage.getItem('employeeId') || 0);
     const cachedEmpUserId = sessionStorage.getItem('employeeUserId') || '';
     const currentUserId2 = sessionStorage.getItem('userid') || '';
     if (cachedEmpId && cachedEmpUserId === currentUserId2) {
       this.resolvedEmployeeId = cachedEmpId;
-      this.taskViewMode = 'mine';
+      this.taskViewMode = defaultViewMode;
       this.loadBoardFromApi();
     } else {
       this.subscription.add(
@@ -942,7 +1462,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           .pipe(timeout(6000), catchError(() => of(0)))
           .subscribe(empId => {
             this.resolvedEmployeeId = empId;
-            this.taskViewMode = 'mine';
+            this.taskViewMode = defaultViewMode;
             this.loadBoardFromApi();
           })
       );
@@ -950,9 +1470,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
     // Load employees for dropdowns
     this.employeesLoading = true;
-    this.employeeService.ensureEmployeesLoaded();
-    this.subscription.add(
-      this.employeeService.employees$.subscribe(emps => {
+    this.employeeService.refreshEmployees().subscribe({
+      next: (emps) => {
         this.allEmployees = (emps || [])
           .map((e: any) => {
             const fn = String(e?.firstName || e?.firstname || '').trim();
@@ -960,6 +1479,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
             const full = (`${fn} ${ln}`).trim() || String(e?.fullName || e?.name || '').trim();
             return {
               id: String(e?.id || ''),
+              userId: String(e?.userId || e?.user?.id || ''),
               fullName: full,
               department: String(e?.department?.name || e?.department || ''),
               role: String(e?.jobTitle || e?.designation || ''),
@@ -967,11 +1487,17 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
             };
           })
           .filter(e => !!e.fullName);
+        this.employeeEmailMap = {};
+        (emps || []).forEach((e: any) => {
+          const id = Number(e?.id || 0);
+          const email = String(e?.workEmail || e?.email || '').trim();
+          if (id && email) this.employeeEmailMap[id] = email;
+        });
         this.employeesLoading = false;
-        // If employees loaded, patch supervisor review submissions with real names
         this.patchSubmissionsFromUsers(this.allEmployees);
-      })
-    );
+      },
+      error: () => { this.employeesLoading = false; }
+    });
 
     // Load users from the users API to populate supervisor review with DM users
     this.subscription.add(
@@ -986,6 +1512,13 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
               supervisor: '',
             })).filter(u => !!u.fullName);
             this.patchSubmissionsFromUsers(mapped);
+            this.dmUserList = users
+              .map((u: any) => ({
+                id: Number(u?.id || 0),
+                fullName: (`${u?.firstName || u?.firstname || ''} ${u?.lastName || u?.lastname || ''}`).trim() || String(u?.username || u?.name || '').trim(),
+                email: String(u?.email || ''),
+              }))
+              .filter(u => u.id > 0 && !!u.fullName);
           }
         },
         error: () => {},
@@ -1016,19 +1549,41 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       : employeeId
         ? this.workTaskApi.getTasksByAssignee(employeeId)
         : this.workTaskApi.getAllTasks();
+    // Cache follow-up replies and reactions before overwriting so they survive the remap
+    const prevFuData = new Map<string, { replies?: FollowUpReply[]; reactions?: Record<string, string[]> }>();
+    this.boardTasks.forEach(bt => {
+      (bt.followUps ?? []).forEach(fu => {
+        if ((fu.replies?.length || 0) > 0 || Object.keys(fu.reactions ?? {}).length > 0) {
+          prevFuData.set(String(fu.followUpId ?? fu.id), { replies: fu.replies, reactions: fu.reactions });
+        }
+      });
+    });
+
+    const archivedRequest = (isSupervisor || wantsAll)
+      ? this.workTaskApi.getArchivedTasks()
+      : employeeId
+        ? this.workTaskApi.getArchivedByAssignee(employeeId)
+        : this.workTaskApi.getArchivedTasks();
+
     this.subscription.add(
       tasksRequest.pipe(timeout(8000)).subscribe({
         next: (apiTasks) => {
           const mapped = (apiTasks && apiTasks.length > 0)
             ? apiTasks.map(t => this.mapApiTaskToBoard(t))
             : [];
+          // Restore locally-saved replies and reactions onto their follow-ups after remapping
+          mapped.forEach(bt => {
+            (bt.followUps ?? []).forEach(fu => {
+              const key = String(fu.followUpId ?? fu.id);
+              const prev = prevFuData.get(key);
+              if (prev) { fu.replies = prev.replies; fu.reactions = prev.reactions; }
+            });
+          });
           const apiIds = new Set(mapped.map(t => t.id));
           if (isSupervisor || wantsAll) {
             // Full board: merge API results with any locally-created tasks
-            const localRaw = localStorage.getItem(this.boardKey);
-            const localOnly: BoardTask[] = localRaw
-              ? (JSON.parse(localRaw) as BoardTask[]).filter(t => !apiIds.has(t.id))
-              : [];
+            const localOnly = this.parseTasks(localStorage.getItem(this.boardKey))
+              .filter(t => !apiIds.has(t.id));
             this.boardTasks = mapped.length ? [...mapped, ...localOnly] : (localOnly.length ? localOnly : [...HR_SEED]);
           } else {
             // Regular user own-tasks view: API tasks + user's own locally-saved tasks
@@ -1039,12 +1594,29 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           this.mergeLocalImports(true);
           this.boardLoading = false;
           this.autoOpenFromUrl();
+          // Load archived tasks from API
+          archivedRequest.pipe(timeout(8000)).subscribe({
+            next: (archivedApiTasks) => {
+              if (archivedApiTasks && archivedApiTasks.length > 0) {
+                const mappedArchived = archivedApiTasks.map(t => ({
+                  ...this.mapApiTaskToBoard(t),
+                  closed: t.status === 'CLOSED',
+                  closedReason: (t as any).closedReason ?? undefined
+                }));
+                const existingApiIds = new Set(mappedArchived.map(t => t.apiId));
+                const localArchived = this.archivedTasks.filter(t => !t.apiId || !existingApiIds.has(t.apiId));
+                this.archivedTasks = [...mappedArchived, ...localArchived];
+                this.saveArchivedTasks();
+              }
+            },
+            error: () => {}
+          });
         },
         error: () => {
           this.apiEnabled = false;
           if (isSupervisor) {
-            const raw = localStorage.getItem(this.boardKey);
-            this.boardTasks = raw ? JSON.parse(raw) : [...HR_SEED];
+            const parsed = this.parseTasks(localStorage.getItem(this.boardKey));
+            this.boardTasks = parsed.length ? parsed : [...HR_SEED];
           } else {
             const empty = new Set<string>();
             this.boardTasks = [...this.getMyLocalBoardTasks(empty), ...this.getLocalImportTasks()];
@@ -1058,21 +1630,12 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   private autoOpenFromUrl(): void {
-    const params = new URLSearchParams(window.location.search);
-    const taskId = params.get('taskId');
-    if (!taskId) return;
-    const found = this.boardTasks.find(t => t.id === taskId || String(t.apiId) === taskId);
-    if (found) {
-      this.pmSection = 'board';
-      this.openDetail(found);
-    }
+    const taskId = this.route.snapshot.queryParamMap.get('taskId');
+    if (taskId) this.tryOpenTaskById(taskId);
   }
 
   private getLocalImportTasks(): BoardTask[] {
-    try {
-      const raw = localStorage.getItem('hr_pm_imports_v1');
-      return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    return this.parseTasks(localStorage.getItem('hr_pm_imports_v1'));
   }
 
   // Read cached board tasks that belong to the current user (by employee ID, creator ID, or name).
@@ -1080,9 +1643,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // leaking other users' cached tasks from the shared HR_BOARD_KEY.
   private getMyLocalBoardTasks(excludeIds: Set<string>): BoardTask[] {
     try {
-      const raw = localStorage.getItem(this.boardKey);
-      if (!raw) return [];
-      const all: BoardTask[] = JSON.parse(raw);
+      const all = this.parseTasks(localStorage.getItem(this.boardKey));
+      if (!all.length) return [];
       const empId = this.resolvedEmployeeId;
       const userId = this.currentUserId;
       const me = this.currentUserFullName;
@@ -1112,7 +1674,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     try {
       const raw = localStorage.getItem('hr_pm_imports_v1');
       if (!raw) return;
-      const imported: BoardTask[] = JSON.parse(raw);
+      const imported = this.parseTasks(raw);
       if (!imported.length) return;
       const existingIds = new Set(this.boardTasks.map(t => t.id));
       const newOnes = imported.filter(t => !existingIds.has(t.id));
@@ -1132,7 +1694,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     try {
       const raw = localStorage.getItem('hr_pm_imports_v1');
       if (!raw) return;
-      const remaining = (JSON.parse(raw) as BoardTask[]).filter(t => t.id !== taskId);
+      const remaining = this.parseTasks(raw).filter(t => t.id !== taskId);
       localStorage.setItem('hr_pm_imports_v1', JSON.stringify(remaining));
     } catch {}
     this.save();
@@ -1203,18 +1765,52 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         subtaskId: s.id,
       })),
       activity: [],
-      followUps: (t.followUps ?? []).map(f => ({
-        id: String(f.id),
-        followUpId: f.id,
-        author: f.authorEmployee ? `${f.authorEmployee.firstName} ${f.authorEmployee.lastName}`.trim() : 'Unknown',
-        initials: this.getInitials(f.authorEmployee ? `${f.authorEmployee.firstName} ${f.authorEmployee.lastName}`.trim() : 'U'),
-        color: '#2563eb',
-        timestamp: this.formatTs(this.normDateTime((f as any).createdAt)),
-        text: f.text,
-        photos: f.photoUrls ? f.photoUrls.split(',').filter(u => u.trim()) : [],
-        decision: f.decision,
-        progress: f.progress ?? 0,
-      })),
+      followUps: (t.followUps ?? []).map(f => {
+        const fuEmpId: number = (f as any).authorEmployeeId ?? 0;
+        const authorName = f.authorEmployee
+          ? `${f.authorEmployee.firstName} ${f.authorEmployee.lastName}`.trim()
+          : fuEmpId === this.resolvedEmployeeId && this.resolvedEmployeeId
+            ? this.currentUserDisplayName
+            : (() => {
+                if (!fuEmpId) return '';
+                const found = this.allEmployees.find(e => String(e.id) === String(fuEmpId));
+                return found?.fullName || '';
+              })();
+        const apiReplies: FollowUpReply[] = (f.replies ?? []).map(r => {
+          const empId: number = (r as any).authorEmployeeId ?? 0;
+          const rAuthor = r.authorEmployee
+            ? `${r.authorEmployee.firstName} ${r.authorEmployee.lastName}`.trim()
+            : empId === this.resolvedEmployeeId && this.resolvedEmployeeId
+              ? this.currentUserDisplayName
+              : (() => {
+                  if (!empId) return '';
+                  const found = this.allEmployees.find(e => String(e.id) === String(empId));
+                  return found?.fullName || '';
+                })();
+          return {
+            id: `api${r.id}`,
+            author: rAuthor || 'Team Member',
+            initials: this.getInitials(rAuthor || 'TM'),
+            color: '#6366f1',
+            timestamp: this.formatTs(this.normDateTime((r as any).createdAt)),
+            text: r.text,
+            authorEmployeeId: empId || undefined,
+          };
+        });
+        return {
+          id: String(f.id),
+          followUpId: f.id,
+          author: authorName || 'Team Member',
+          initials: this.getInitials(authorName || 'TM'),
+          color: '#2563eb',
+          timestamp: this.formatTs(this.normDateTime((f as any).createdAt)),
+          text: f.text,
+          photos: f.photoUrls ? (f.photoUrls.includes('||') ? f.photoUrls.split('||') : f.photoUrls.split(',')).filter((u: string) => u.trim()) : [],
+          decision: f.decision,
+          progress: f.progress ?? 0,
+          replies: apiReplies,
+        };
+      }),
       apiId: t.id,
       createdByUserId: t.createdByUserId,
     } as any;
@@ -1277,6 +1873,157 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return uid ? `${HR_BOARD_KEY}_u${uid}` : HR_BOARD_KEY;
   }
 
+  private resolveEmail(employeeRef: any, fallbackEmpId?: number): string | null {
+    // 1. Direct map lookup by HR employee ID
+    const id = employeeRef?.id ?? fallbackEmpId;
+    if (id && this.employeeEmailMap[id]) return this.employeeEmailMap[id];
+    // 2. Name-match against dmUserList (which has emails from auth/users API)
+    if (employeeRef?.firstName || employeeRef?.lastName) {
+      const full = `${employeeRef.firstName || ''} ${employeeRef.lastName || ''}`.trim().toLowerCase();
+      const match = this.dmUserList.find(u => {
+        const ul = u.fullName.toLowerCase();
+        return ul === full || ul.includes(full) || full.includes(ul);
+      });
+      if (match?.email) return match.email;
+    }
+    // 3. Lookup by emp ID → name → dmUserList
+    if (id) {
+      const emp = this.allEmployees.find(e => String(e.id) === String(id));
+      if (emp) {
+        const full = emp.fullName.toLowerCase();
+        const match = this.dmUserList.find(u => {
+          const ul = u.fullName.toLowerCase();
+          return ul === full || ul.includes(full) || full.includes(ul);
+        });
+        if (match?.email) return match.email;
+      }
+    }
+    return null;
+  }
+
+  private taskEmailRow(label: string, value: string, shade: boolean): string {
+    const bg = shade ? ' style="background:#f9fafb;"' : '';
+    return `<tr${bg}><td style="padding:8px 12px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">${label}</td><td style="padding:8px 12px;border:1px solid #e5e7eb;">${value}</td></tr>`;
+  }
+
+  private sendTaskCreatedEmails(task: WorkTaskFull, origin?: BoardTask): void {
+    const assigneeId = task.assigneeEmployee?.id ?? origin?.assigneeEmployeeId;
+    const supervisorId = task.supervisorEmployee?.id ?? origin?.supervisorEmployeeId;
+    const assigneeName = task.assigneeEmployee
+      ? `${task.assigneeEmployee.firstName} ${task.assigneeEmployee.lastName}`.trim()
+      : origin?.assignee || 'Team Member';
+    const supervisorName = task.supervisorEmployee
+      ? `${task.supervisorEmployee.firstName} ${task.supervisorEmployee.lastName}`.trim()
+      : origin?.team || '';
+    const rows = [
+      this.taskEmailRow('Task', task.title, false),
+      this.taskEmailRow('Priority', task.priority, true),
+      this.taskEmailRow('Status', task.status, false),
+      this.taskEmailRow('Due Date', task.dueDate || 'Not set', true),
+      this.taskEmailRow('Description', task.description || '—', false),
+    ].join('');
+    const wrap = (headerColor: string, heading: string, greeting: string, body: string) =>
+      `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:${headerColor};padding:20px 24px;border-radius:8px 8px 0 0;">
+          <h2 style="color:#fff;margin:0;font-size:20px;">${heading}</h2>
+        </div>
+        <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+          <p style="color:#374151;">Hello <strong>${greeting}</strong>,</p>
+          <p style="color:#374151;">${body}</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;">${rows}</table>
+          <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view and manage this task.</p>
+        </div>
+      </div>`;
+    const assigneeEmail = this.resolveEmail(task.assigneeEmployee, assigneeId);
+    const supervisorEmail = this.resolveEmail(task.supervisorEmployee, supervisorId);
+    if (assigneeEmail) {
+      this.employeeService.sendNotificationEmail(
+        assigneeEmail,
+        `New Task Assigned: ${task.title}`,
+        wrap('#1a73e8', 'New Task Assigned to You', assigneeName, 'A new task has been assigned to you on OptimaX Work Productivity:')
+      ).subscribe({ error: () => {} });
+    }
+    if (supervisorEmail && supervisorEmail !== assigneeEmail) {
+      this.employeeService.sendNotificationEmail(
+        supervisorEmail,
+        `Task Created: ${task.title}`,
+        wrap('#0f766e', 'Task Created Under Your Supervision', supervisorName,
+          `A task has been created and assigned to <strong>${assigneeName}</strong> under your supervision:`)
+      ).subscribe({ error: () => {} });
+    }
+  }
+
+  private sendTaskUpdatedEmails(task: WorkTaskFull, origin?: BoardTask): void {
+    const assigneeId = task.assigneeEmployee?.id ?? origin?.assigneeEmployeeId;
+    const supervisorId = task.supervisorEmployee?.id ?? origin?.supervisorEmployeeId;
+    const assigneeName = task.assigneeEmployee
+      ? `${task.assigneeEmployee.firstName} ${task.assigneeEmployee.lastName}`.trim()
+      : origin?.assignee || 'Team Member';
+    const supervisorName = task.supervisorEmployee
+      ? `${task.supervisorEmployee.firstName} ${task.supervisorEmployee.lastName}`.trim()
+      : origin?.team || '';
+    const rows = [
+      this.taskEmailRow('Task', task.title, false),
+      this.taskEmailRow('Status', task.status, true),
+      this.taskEmailRow('Priority', task.priority, false),
+      this.taskEmailRow('Progress', `${task.progress}%`, true),
+      this.taskEmailRow('Due Date', task.dueDate || 'Not set', false),
+    ].join('');
+    const html = (name: string) =>
+      `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#7c3aed;padding:20px 24px;border-radius:8px 8px 0 0;">
+          <h2 style="color:#fff;margin:0;font-size:20px;">Task Updated</h2>
+        </div>
+        <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+          <p style="color:#374151;">Hello <strong>${name}</strong>,</p>
+          <p style="color:#374151;">A task you are involved in has been updated on OptimaX:</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;">${rows}</table>
+          <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view the latest changes.</p>
+        </div>
+      </div>`;
+    const assigneeEmail = this.resolveEmail(task.assigneeEmployee, assigneeId);
+    const supervisorEmail = this.resolveEmail(task.supervisorEmployee, supervisorId);
+    if (assigneeEmail) {
+      this.employeeService.sendNotificationEmail(
+        assigneeEmail, `Task Updated: ${task.title}`, html(assigneeName)
+      ).subscribe({ error: () => {} });
+    }
+    if (supervisorEmail && supervisorEmail !== assigneeEmail) {
+      this.employeeService.sendNotificationEmail(
+        supervisorEmail, `Task Updated: ${task.title}`, html(supervisorName)
+      ).subscribe({ error: () => {} });
+    }
+  }
+
+  private sendChannelUpdateEmails(channelId: number, channelName: string, noteText: string, taskTitle: string): void {
+    this.workTaskApi.getChannelMembers(channelId).pipe(
+      catchError(() => of([]))
+    ).subscribe((members: any[]) => {
+      members.forEach((member: any) => {
+        const userId = Number(member.userId || 0);
+        if (!userId) return;
+        const user = this.dmUserList.find(u => u.id === userId);
+        if (!user?.email) return;
+        const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+          <div style="background:#0369a1;padding:20px 24px;border-radius:8px 8px 0 0;">
+            <h2 style="color:#fff;margin:0;font-size:20px;">Update Posted to #${channelName}</h2>
+          </div>
+          <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+            <p style="color:#374151;">Hello <strong>${user.fullName}</strong>,</p>
+            <p style="color:#374151;">A new update has been posted to <strong>#${channelName}</strong>${taskTitle ? ` regarding &ldquo;<strong>${taskTitle}</strong>&rdquo;` : ''}:</p>
+            <div style="background:#f0f9ff;border-left:4px solid #0369a1;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+              <p style="margin:0;color:#374151;">${noteText}</p>
+            </div>
+            <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view and respond to this update.</p>
+          </div>
+        </div>`;
+        this.employeeService.sendNotificationEmail(
+          user.email, `Channel Update: #${channelName}`, html
+        ).subscribe({ error: () => {} });
+      });
+    });
+  }
+
   private syncTaskToApi(task: BoardTask): void {
     if (!this.apiEnabled) return;
     const userId = this.currentUserId;
@@ -1298,14 +2045,14 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     if (task.apiId) {
       this.subscription.add(
         this.workTaskApi.updateTask(task.apiId, dto).subscribe({
-          next: (updated) => { task.apiId = updated.id; this.save(); },
+          next: (updated) => { task.apiId = updated.id; this.save(); this.sendTaskUpdatedEmails(updated, task); },
           error: () => this.save(),
         })
       );
     } else {
       this.subscription.add(
         this.workTaskApi.createTask(dto).subscribe({
-          next: (created) => { task.apiId = created.id; this.save(); },
+          next: (created) => { task.apiId = created.id; this.save(); this.sendTaskCreatedEmails(created, task); },
           error: () => this.save(),
         })
       );
@@ -1327,6 +2074,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       id: `hr${Date.now()}`, title: '', description: '', assignee: '', assignees: [], team: '',
       status: 'To Do', priority: 'Medium', startDate: new Date().toISOString().slice(0, 10),
       dueDate: '', weight: 10, progress: 0, tags: [], subtasks: [], activity: [],
+      cost: undefined, costCurrency: 'NGN',
     };
     this.newTaskSubtasks = [];
   }
@@ -1363,23 +2111,28 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         // My Tasks: only tasks where the logged-in user is an assignee
         if (!isAssignedToMe(t)) return false;
       } else if (this.taskViewMode === 'team') {
-        // My Team: tasks where current user is an assignee (same ownership rule)
-        if (!isAssignedToMe(t)) return false;
+        // Team Tasks: tasks where current user is supervisor/team-lead
+        if (!iAmSupervisor(t)) return false;
       } else if (this.taskViewMode === 'all') {
-        // All Tasks (supervisor/admin): tasks I supervise OR tasks I'm assigned to
-        if (!iAmSupervisor(t) && !isAssignedToMe(t)) return false;
+        // All Tasks: show every task, no user-involvement filter
       }
 
       // ── Toolbar filters ───────────────────────────────────────────────────
       if (this.filterStatus && t.status !== this.filterStatus) return false;
       if (this.filterPriority && t.priority !== this.filterPriority) return false;
-      if (this.filterAssignee && !t.assignee.toLowerCase().includes(this.filterAssignee.toLowerCase())) return false;
-      if (this.searchText && !t.title.toLowerCase().includes(this.searchText.toLowerCase())) return false;
+      if (this.filterAssignee && !(t.assignee || '').toLowerCase().includes(this.filterAssignee.toLowerCase())) return false;
+      if (this.searchText && !(t.title || '').toLowerCase().includes(this.searchText.toLowerCase())) return false;
       return true;
     });
   }
 
-  columnTasks(status: TaskStatus): BoardTask[] { return this.filteredBoard.filter(t => t.status === status); }
+  columnTasks(status: TaskStatus): BoardTask[] {
+    return this.filteredBoard.filter(t => t.status === status && (!this.hideOverdue || !this.isTaskOverdue(t)));
+  }
+
+  get overdueTasks(): BoardTask[] {
+    return this.filteredBoard.filter(t => this.isTaskOverdue(t));
+  }
   colId(status: TaskStatus): string { return `hr-col-${status.replace(/\s/g, '-')}`; }
   connectedTo(status: TaskStatus): string[] { return this.statuses.filter(s => s !== status).map(s => this.colId(s)); }
 
@@ -1401,8 +2154,97 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.save();
   }
 
-  openDetail(task: BoardTask): void { this.selectedTask = task; this.detailPanelVisible = true; this.detailTab = 'overview'; this.newActivityText = ''; }
+  openDetail(task: BoardTask): void {
+    this.selectedTask = task;
+    this.detailPanelVisible = true;
+    this.detailTab = 'overview';
+    this.newActivityText = '';
+  }
+  openDetailFromList(task: BoardTask, e: Event): void { e.stopPropagation(); this.openDetail(task); }
   closeDetail(): void { this.selectedTask = null; this.detailPanelVisible = false; this.save(); }
+
+  private tryOpenTaskById(taskId: string): void {
+    const found = this.boardTasks.find(t => t.id === taskId || String(t.apiId) === taskId);
+    if (found) { this.pmSection = 'board'; this.openDetail(found); return; }
+    // Task not in current view — switch to all-tasks mode and reload so linked task is found
+    if (this.taskViewMode !== 'all') {
+      this.taskViewMode = 'all';
+      this.loadBoardFromApi();
+    }
+  }
+
+  toggleReplyBox(fuId: string): void {
+    this.replyingToFuId = this.replyingToFuId === fuId ? null : fuId;
+    if (!this.fuReplyText[fuId]) this.fuReplyText[fuId] = '';
+  }
+
+  onFuReplyEnter(event: KeyboardEvent, fu: FollowUp): void {
+    if (event.shiftKey) return;
+    event.preventDefault();
+    this.submitFollowUpReply(fu);
+  }
+
+  submitFollowUpReply(fu: FollowUp): void {
+    if (!this.selectedTask) return;
+    const text = (this.fuReplyText[fu.id] || '').trim();
+    if (!text) return;
+    const displayName = this.currentUserDisplayName || 'You';
+    const reply: FollowUpReply = {
+      id: `rep${Date.now()}`,
+      author: displayName,
+      initials: this.getInitials(displayName),
+      color: '#6366f1',
+      timestamp: new Date().toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }),
+      text,
+    };
+    if (!fu.replies) fu.replies = [];
+    fu.replies.push(reply);
+    this.fuReplyText[fu.id] = '';
+    this.replyingToFuId = null;
+    this.save();
+    this.playNotifSound('reply');
+
+    if (this.apiEnabled && fu.followUpId) {
+      const dto: FollowUpReplyDTO = {
+        followUpId: fu.followUpId,
+        authorEmployeeId: this.resolvedEmployeeId || undefined,
+        text,
+      };
+      this.subscription.add(
+        this.workTaskApi.createReply(dto).subscribe({
+          next: (created) => { reply.id = `api${created.id}`; this.save(); },
+          error: () => {},
+        })
+      );
+    }
+    this.sendFollowUpEmails(
+      this.selectedTask,
+      text,
+      `Reply on Task Update: ${this.selectedTask.title}`,
+      '#6366f1',
+      `Reply from ${displayName}`
+    );
+  }
+
+  toggleReaction(fu: FollowUp, emoji: string): void {
+    if (!fu.reactions) fu.reactions = {};
+    const me = this.currentUserFullName || 'You';
+    if (!fu.reactions[emoji]) fu.reactions[emoji] = [];
+    const idx = fu.reactions[emoji].indexOf(me);
+    if (idx > -1) { fu.reactions[emoji].splice(idx, 1); }
+    else { fu.reactions[emoji].push(me); }
+    if (fu.reactions[emoji].length === 0) delete fu.reactions[emoji];
+    this.save();
+  }
+
+  reactionCount(fu: FollowUp, emoji: string): number {
+    return fu.reactions?.[emoji]?.length ?? 0;
+  }
+
+  iReacted(fu: FollowUp, emoji: string): boolean {
+    const me = this.currentUserFullName || 'You';
+    return (fu.reactions?.[emoji] ?? []).includes(me);
+  }
 
   toggleSubtask(task: BoardTask, sub: SubTask): void {
     sub.done = !sub.done;
@@ -1561,15 +2403,23 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     t.startDate   = d.startDate || '';
     t.dueDate     = d.dueDate   || '';
     t.weight      = d.weight    ?? t.weight;
+    t.cost        = d.cost;
+    t.costCurrency = d.costCurrency || 'NGN';
     const aEmp = this.allEmployees.find(e => e.fullName === t.assignee);
     const sEmp = this.allEmployees.find(e => e.fullName === t.team);
     if (aEmp) t.assigneeEmployeeId   = Number(aEmp.id);
     if (sEmp) t.supervisorEmployeeId = Number(sEmp.id);
-    this.save();
     this.showEditTask = false;
     this.editingTask  = null;
-    this.showToast('Task updated', 'success');
-    if (this.apiEnabled) this.syncTaskToApi(t);
+    if (t.status === 'Closed') {
+      t.closed = true;
+      this.archiveTask(t);
+      this.showToast('Task closed and moved to archive', 'info');
+    } else {
+      this.save();
+      this.showToast('Task updated', 'success');
+      if (this.apiEnabled) this.syncTaskToApi(t);
+    }
   }
 
   cancelEditTask(): void { this.showEditTask = false; this.editingTask = null; }
@@ -1586,7 +2436,9 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleRow(task: BoardTask): void { task.expanded = !task.expanded; }
+  toggleRow(task: BoardTask): void {
+    task.expanded = !task.expanded;
+  }
 
   ganttColumn(startDate: string, dueDate: string): string {
     const start = new Date(startDate || new Date());
@@ -1624,6 +2476,22 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   trackGanttRow(_: number, row: { task: BoardTask; sub?: SubTask; isChild: boolean }): string {
     return row.isChild ? `${row.task.id}-${row.sub?.id}` : row.task.id;
+  }
+
+  trackGroup(_: number, group: { key: string; tasks: BoardTask[] }): string {
+    return group.key;
+  }
+
+  trackTask(_: number, task: BoardTask): string {
+    return task.id;
+  }
+
+  trackSubtask(_: number, sub: SubTask): string {
+    return sub.id;
+  }
+
+  trackEngagementRow(_: number, row: { task: BoardTask }): string {
+    return row.task.id;
   }
 
   taskProgressDisplay(task: BoardTask): number {
@@ -1760,9 +2628,9 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   todayColumn(): number { return Math.floor((new Date().getTime() - this.ganttStart.getTime()) / 86400000) + 1; }
-  completedSubtasks(task: BoardTask): number { return task.subtasks.filter(s => s.done).length; }
+  completedSubtasks(task: BoardTask): number { return (task.subtasks ?? []).filter(s => s.done).length; }
   priorityClass(p: string): string { return `priority-${p.toLowerCase()}`; }
-  statusClass(s: string): string { return `status-${s.toLowerCase().replace(/\s+/g, '-')}`; }
+  statusClass(s: string): string { return `status-${(s || '').toLowerCase().replace(/\s+/g, '-')}`; }
   formatDate(d: string): string {
     if (!d) return '—';
     try { return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(d)); }
@@ -1815,13 +2683,13 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   getInitials(name: string): string {
-    return name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
+    return (name || '').split(' ').map(p => p[0] || '').join('').toUpperCase().slice(0, 2) || '?';
   }
 
   avatarColor(name: string): string {
     const palette = ['#2563eb','#7c3aed','#0891b2','#16a34a','#d97706','#dc2626','#9333ea','#0d9488'];
     let hash = 0;
-    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    for (let i = 0; i < (name || '').length; i++) hash = (name || '').charCodeAt(i) + ((hash << 5) - hash);
     return palette[Math.abs(hash) % palette.length];
   }
 
@@ -1856,6 +2724,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     task.inlineText = '';
     this.inlinePhotos[task.id] = [];
     this.save();
+    this.playNotifSound('post');
     this.showToast('Update posted successfully', 'success');
     const recipients = task.assignees?.length ? task.assignees : [task.assignee];
     recipients.forEach(r => r && this.notifService.add(
@@ -1990,7 +2859,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         text: newFu.text,
         progress: newFu.progress,
         authorEmployeeId: this.selectedTask.assigneeEmployeeId,
-        photoUrls: photos.join(','),
+        photoUrls: photos.filter(p => p && !p.startsWith('data:')).join('||'),
       };
       this.subscription.add(
         this.workTaskApi.createFollowUp(dto).subscribe({
@@ -1999,15 +2868,26 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         })
       );
     }
+    this.sendFollowUpEmails(
+      this.selectedTask,
+      this.newActivityText,
+      `Task Update: ${this.selectedTask.title}`,
+      '#2563eb',
+      'Task Progress Update'
+    );
   }
 
   // ── Post supervisor review ─────────────────────────────────────────────────
   postSupervisorReview(): void {
     if (!this.selectedTask) return;
     if (!this.supReviewNote.trim()) { this.showToast('Please enter review feedback before submitting.', 'warn'); return; }
+    if (this.supReviewUploading) {
+      this.showToast('Please wait for file uploads to complete before submitting.', 'warn');
+      return;
+    }
 
     const decisionLabel = this.supReviewDecision;
-    const photos = this.supReviewFiles.map(f => f.url);
+    const photos = this.supReviewFiles.map(f => f.url).filter(Boolean);
     const fu: FollowUp = {
       id: `sv${Date.now()}`,
       author: this.selectedTask.team || 'Supervisor',
@@ -2027,19 +2907,29 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       this.selectedTask.progress = 100;
     }
 
+    const reviewNote = this.supReviewNote.trim();
     this.supReviewNote = '';
     this.supReviewDecision = 'Approved';
     this.supReviewFiles = [];
     this.save();
     this.showToast('Supervisor review posted', 'success');
 
+    this.sendFollowUpEmails(
+      this.selectedTask,
+      reviewNote,
+      `Supervisor Review: ${this.selectedTask.title}`,
+      '#7c3aed',
+      `Supervisor Review — ${decisionLabel}`
+    );
+
     if (this.apiEnabled && this.selectedTask.apiId) {
       const dto: FollowUpDTO = {
         workTaskId: this.selectedTask.apiId,
+        authorEmployeeId: this.selectedTask.supervisorEmployeeId,
         text: fu.text,
         decision: fu.decision,
         progress: fu.progress,
-        photoUrls: photos.join(','),
+        photoUrls: photos.filter(p => !p.startsWith('data:')).join('||'),
       };
       this.subscription.add(
         this.workTaskApi.createFollowUp(dto).subscribe({ error: () => {} })
@@ -2057,18 +2947,23 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
     // Build rich pre-filled message with task context
     const assigneeList = (task.assignees?.length ? task.assignees : [task.assignee]).filter(Boolean).join(', ') || '—';
-    const taskUrl = `${window.location.origin}/admin/hr/performance/${encodeURIComponent(window.location.pathname.split('/').pop() || 'uu')}`;
+    const taskUrl = `${window.location.origin}${window.location.pathname}`;
+    const latestFollowUp = (task.followUps ?? []).filter(f => f.text?.trim()).slice(-1)[0] ?? null;
+    const latestComment = latestFollowUp
+      ? `💬 Latest comment (${latestFollowUp.author}): ${latestFollowUp.text.replace(/<[^>]*>/g, '').trim().slice(0, 250)}`
+      : '';
     this.shareNote = [
       `📋 *Task: ${task.title}*`,
       `🚦 Status: ${task.status}  |  ⚡ Priority: ${task.priority}`,
       `👥 Assignee(s): ${assigneeList}`,
       `📅 Due: ${task.dueDate ? this.formatDate(task.dueDate) : '—'}  |  📊 Progress: ${task.progress}%`,
       task.tags?.length ? `🏷️ Tags: ${task.tags.join(', ')}` : '',
+      latestComment,
       ``,
       `🔗 View task: ${taskUrl}?taskId=${task.id}`,
       ``,
       `Note: `,
-    ].filter(l => l !== undefined).join('\n');
+    ].filter(l => l !== undefined && l !== '').join('\n');
 
     if (target === 'channel') {
       // Always reload channels to avoid stale/duplicate list
@@ -2101,6 +2996,139 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.shareChannelId = null;
   }
 
+  isImageUrl(url: string): boolean {
+    if (!url) return false;
+    if (url.startsWith('data:image/')) return true;
+    const u = url.toLowerCase().split('?')[0];
+    return !!u.match(/\.(jpe?g|png|gif|webp|svg|bmp)$/);
+  }
+
+  fuImages(photos: string[]): string[] {
+    return (photos || []).filter(p => this.isImageUrl(p));
+  }
+
+  fuDocs(photos: string[]): string[] {
+    return (photos || []).filter(p => p && !this.isImageUrl(p));
+  }
+
+  private resolveEmailByName(name: string): string | null {
+    if (!name) return null;
+    const emp = this.allEmployees.find(e => e.fullName.toLowerCase() === name.toLowerCase());
+    if (emp) {
+      const empId = Number(emp.id);
+      if (empId && this.employeeEmailMap[empId]) return this.employeeEmailMap[empId];
+      if (emp.userId) {
+        const u = this.dmUserList.find(u => String(u.id) === emp.userId);
+        if (u?.email) return u.email;
+      }
+    }
+    const u = this.dmUserList.find(u =>
+      u.fullName.toLowerCase() === name.toLowerCase() ||
+      u.fullName.toLowerCase().includes(name.toLowerCase()) ||
+      name.toLowerCase().includes(u.fullName.toLowerCase())
+    );
+    return u?.email || null;
+  }
+
+  private sendFollowUpEmails(task: BoardTask, noteText: string, subject: string, headingColor: string, heading: string): void {
+    const assigneeName = (task.assignees?.length ? task.assignees[0] : task.assignee) || 'Team Member';
+    const supervisorName = task.team || '';
+    const plain = noteText.replace(/<[^>]*>/g, '').trim().slice(0, 300);
+    const rows = [
+      this.taskEmailRow('Task', task.title, false),
+      this.taskEmailRow('Status', task.status, true),
+      this.taskEmailRow('Progress', `${task.progress}%`, false),
+      this.taskEmailRow('Update', plain, true),
+    ].join('');
+    const makeHtml = (name: string) =>
+      `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:${headingColor};padding:20px 24px;border-radius:8px 8px 0 0;">
+          <h2 style="color:#fff;margin:0;font-size:20px;">${heading}</h2>
+        </div>
+        <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+          <p style="color:#374151;">Hello <strong>${name}</strong>,</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;">${rows}</table>
+          <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view and respond.</p>
+        </div>
+      </div>`;
+    const assigneeEmail = this.employeeEmailMap[Number(task.assigneeEmployeeId)] || this.resolveEmailByName(assigneeName);
+    const supervisorEmail = this.employeeEmailMap[Number(task.supervisorEmployeeId)] || this.resolveEmailByName(supervisorName);
+    if (assigneeEmail) {
+      this.employeeService.sendNotificationEmail(assigneeEmail, subject, makeHtml(assigneeName)).subscribe({ error: () => {} });
+    }
+    if (supervisorEmail && supervisorEmail !== assigneeEmail) {
+      this.employeeService.sendNotificationEmail(supervisorEmail, subject, makeHtml(supervisorName)).subscribe({ error: () => {} });
+    }
+  }
+
+  private sendShareDm(recipientName: string, task: BoardTask | null, note: string, label: string): void {
+    const myUserId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || 0);
+    if (!myUserId) { this.showToast('Unable to resolve your user account. Please re-login.', 'error'); return; }
+
+    // Resolve recipient auth user ID — prefer userId from HR employee record over name matching
+    const emp = this.allEmployees.find(e =>
+      e.fullName.toLowerCase() === recipientName.toLowerCase() ||
+      e.fullName.toLowerCase().includes(recipientName.toLowerCase()) ||
+      recipientName.toLowerCase().includes(e.fullName.toLowerCase())
+    );
+    let recipientUserId: number | null = null;
+    if (emp?.userId) {
+      recipientUserId = Number(emp.userId) || null;
+    }
+    if (!recipientUserId) {
+      const match = this.dmUserList.find(u =>
+        u.fullName.toLowerCase() === recipientName.toLowerCase() ||
+        u.fullName.toLowerCase().includes(recipientName.toLowerCase()) ||
+        recipientName.toLowerCase().includes(u.fullName.toLowerCase())
+      );
+      recipientUserId = match?.id ?? null;
+    }
+    if (!recipientUserId) {
+      this.showToast(`User "${recipientName}" not found in system. Ensure they have a login account.`, 'warn');
+      return;
+    }
+
+    const capturedRecipientId = recipientUserId;
+    this.subscription.add(
+      this.workTaskApi.getOrCreateDmChannel(myUserId, capturedRecipientId).pipe(
+        switchMap(channel => {
+          const channelId = channel.id ?? channel.channelId;
+          return this.workTaskApi.sendChannelMessage(channelId, note);
+        })
+      ).subscribe({
+        next: () => {
+          this.showToast(`${label} sent to ${recipientName}`, 'success');
+          if (task) {
+            this.notifService.add(`Task shared with ${recipientName}`, `"${task.title}" sent to ${recipientName}`, recipientName, task.id);
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('optimax-notification', {
+                detail: { title: `Task shared: ${task.title}`, body: `Update delivered to ${recipientName} via DM`, category: 'module' }
+              }));
+            }
+          }
+          // Also send email notification to the recipient
+          const recipientEmail = this.resolveEmailByName(recipientName);
+          if (recipientEmail && task) {
+            const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+              <div style="background:#0369a1;padding:20px 24px;border-radius:8px 8px 0 0;">
+                <h2 style="color:#fff;margin:0;font-size:20px;">Task Update — ${task.title}</h2>
+              </div>
+              <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+                <p style="color:#374151;">Hello <strong>${recipientName}</strong>,</p>
+                <div style="background:#f0f9ff;border-left:4px solid #0369a1;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+                  <p style="margin:0;white-space:pre-wrap;color:#374151;">${note}</p>
+                </div>
+                <p style="color:#6b7280;font-size:12px;margin-top:24px;">Log in to OptimaX to view this task.</p>
+              </div>
+            </div>`;
+            this.employeeService.sendNotificationEmail(recipientEmail, `Task Update: ${task.title}`, html).subscribe({ error: () => {} });
+          }
+        },
+        error: () => this.showToast(`Failed to deliver message to ${recipientName}. Check connection.`, 'error'),
+      })
+    );
+  }
+
   submitShare(): void {
     if (!this.shareNote.trim()) { this.showToast('Please enter a message to share.', 'warn'); return; }
 
@@ -2108,25 +3136,39 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     if (this.shareTarget === 'channel') {
       if (!this.shareChannelId) { this.showToast('Please select a channel.', 'warn'); return; }
       const ch = this.availableChannels.find(c => c.id === this.shareChannelId);
+      const capturedChannelId = this.shareChannelId;
+      const capturedChannelName = ch?.name || 'channel';
+      const capturedNote = this.shareNote;
+      const capturedTaskTitle = task?.title || '';
       this.showShareModal = false;
       this.subscription.add(
-        this.workTaskApi.sendChannelMessage(this.shareChannelId, this.shareNote).subscribe({
+        this.workTaskApi.sendChannelMessage(capturedChannelId, capturedNote).subscribe({
           next: () => {
-            this.showToast(`Task update posted to #${ch?.name || 'channel'}`, 'success');
-            if (task) this.notifService.add(`Shared to #${ch?.name || 'channel'}`, `"${task.title}" was shared`, ch?.name || 'channel', task.id);
-            this.incrementChannelUnread(this.shareChannelId!);
+            this.showToast(`Task update posted to #${capturedChannelName}`, 'success');
+            if (task) {
+              this.notifService.add(`Shared to #${capturedChannelName}`, `"${task.title}" was shared`, capturedChannelName, task.id);
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('optimax-notification', {
+                  detail: { title: `Shared to #${capturedChannelName}`, body: `"${task.title}" was posted`, category: 'module' }
+                }));
+              }
+            }
+            this.incrementChannelUnread(capturedChannelId);
+            this.sendChannelUpdateEmails(capturedChannelId, capturedChannelName, capturedNote, capturedTaskTitle);
           },
           error: () => this.showToast('Failed to post to channel. Check connection.', 'error'),
         })
       );
     } else if (this.shareTarget === 'supervisor') {
+      const supervisorName = this.shareChannelOrUser || (task?.team || '');
+      if (!supervisorName) { this.showToast('Supervisor name is required.', 'warn'); return; }
       this.showShareModal = false;
-      this.showToast(`Update sent to ${this.shareChannelOrUser || 'supervisor'}`, 'success');
-      if (task && this.shareChannelOrUser) this.notifService.add(`Task shared with supervisor`, `"${task.title}" shared to ${this.shareChannelOrUser}`, this.shareChannelOrUser, task.id);
+      this.sendShareDm(supervisorName, task, this.shareNote, 'Supervisor update');
     } else {
+      const recipientName = this.shareChannelOrUser;
+      if (!recipientName) { this.showToast('Please select a recipient.', 'warn'); return; }
       this.showShareModal = false;
-      this.showToast(`Message sent to ${this.shareChannelOrUser || 'user'}`, 'success');
-      if (task && this.shareChannelOrUser) this.notifService.add(`Task shared`, `"${task.title}" sent to ${this.shareChannelOrUser}`, this.shareChannelOrUser, task.id);
+      this.sendShareDm(recipientName, task, this.shareNote, 'Task update');
     }
     this.shareNote = '';
     this.shareChannelId = null;

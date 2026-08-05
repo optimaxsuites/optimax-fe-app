@@ -48,8 +48,9 @@ export class EmployeeService {
   uploadEmployeePhoto(employee: any, file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file, file.name);
+    const context = new HttpContext().set(SUPPRESS_ERROR_TOAST, true);
     return this.http
-      .put<any>(this.baseurl + `/x/api/v2/hr/employees/${employee.id}/photo`, formData)
+      .put<any>(this.baseurl + `/x/api/v2/hr/employees/${employee.id}/photo`, formData, { context })
       .pipe(catchError(this.handleError));
   }
 
@@ -86,6 +87,15 @@ export class EmployeeService {
       return res.json().catch(() => ({}));
     });
     return from(promise);
+  }
+
+  getActiveEmployees(): Observable<any[]> {
+    return this.http
+      .get<any[]>(this.baseurl + '/x/api/v2/hr/employees/active')
+      .pipe(
+        map((data: any) => Array.isArray(data) ? data : (data?.content ?? data?.data ?? [])),
+        catchError(() => of([]))
+      );
   }
 
   getAllEmployee(force = false): Observable<any[]> {
@@ -299,6 +309,24 @@ export class EmployeeService {
         .pipe(catchError(this.handleError));
   }
 
+  getAllAllowanceTypes(): Observable<any[]> {
+    return this.http
+      .get<any>(this.baseurl + '/x/api/v2/hr/allowanceTypes?page=1&size=100')
+      .pipe(catchError(this.handleError));
+  }
+
+  getAllBonusTypes(): Observable<any[]> {
+    return this.http
+      .get<any>(this.baseurl + '/x/api/v2/hr/bonusTypes')
+      .pipe(catchError(this.handleError));
+  }
+
+  getAllDeductionTypes(): Observable<any[]> {
+    return this.http
+      .get<any>(this.baseurl + '/x/api/v2/hr/deductionsTypes')
+      .pipe(catchError(this.handleError));
+  }
+
   getAllowanceTypeById(id: number){
     return this.http
     .get<any>(
@@ -355,6 +383,17 @@ export class EmployeeService {
     .pipe(catchError(this.handleError));
   }
 
+  updateNOK(id: number, data: any) {
+    return this.http
+    .put<any>(this.baseurl + `/x/api/v2/hr/nextOfKins/${id}`, data)
+    .pipe(catchError(this.handleError));
+  }
+
+  deleteNOK(id: number) {
+    return this.http
+    .delete<any>(this.baseurl + `/x/api/v2/hr/nextOfKins/${id}`)
+    .pipe(catchError(this.handleError));
+  }
 
   addGuarantor(data: any) {
     return this.http
@@ -371,6 +410,19 @@ export class EmployeeService {
             `/x/api/v2/hr/guarantors/getGuarantorByEmployeeId/${id}`)
     .pipe(catchError(this.handleError));
   }
+
+  updateGuarantor(id: number, data: any) {
+    return this.http
+    .put<any>(this.baseurl + `/x/api/v2/hr/guarantors/${id}`, data)
+    .pipe(catchError(this.handleError));
+  }
+
+  deleteGuarantor(id: number) {
+    return this.http
+    .delete<any>(this.baseurl + `/x/api/v2/hr/guarantors/${id}`)
+    .pipe(catchError(this.handleError));
+  }
+
   sendOnboardingVetting(payload: any, data: any): Observable<any> {
     const context = new HttpContext().set(SUPPRESS_ERROR_TOAST, true);
     return this.http

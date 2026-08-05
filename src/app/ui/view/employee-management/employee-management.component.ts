@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 // // import { CompanyProfileService }
 import { NavigationLinksService } from '../../shared-component/service/navigation-links/navigation-links.service';
@@ -35,7 +35,7 @@ import jsPDF from 'jspdf';
   providers: [MessageService, ConfirmationService]
 
 })
-export class EmployeeManagementComponent {
+export class EmployeeManagementComponent implements OnDestroy {
   private readonly minimumLoaderDurationMs = 900;
   
   tabsConfig: TabConfig[] = [
@@ -260,6 +260,8 @@ salaryStructure: any[] = [];
 employees: any = []
 filteredEmployees: any[] = [];
 loading = false;
+onlineUserIds = new Set<number>();
+private presenceInterval: any;
 selectedEmployeeType: any;
 calendarOptions: CalendarOptions = {}
 currentPage = 1;
@@ -304,14 +306,99 @@ handleDateClick(arg: DateClickArg) {
     this.openImportDialog = false;
     this.openAddForm = true;
   }
+  private readonly presenceUrl = 'https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/presence';
+  private readonly PRESENCE_STALE_MS = 2 * 60 * 1000; // 2 minutes
+
   ngOnInit() {
     this.fetchEmployees();
+    this.startPresencePolling();
     window.addEventListener('employee-record-changed', () => {
       this.fetchEmployees();
       this.viewEmployee = false;
       this.employeeInView = {};
       localStorage.removeItem('employeeInView');
     });
+
+    // Narrower event: only update the changed employee in-place (no full refresh)
+    window.addEventListener('employee-status-changed', (e: any) => {
+      const { id, employeeStatus } = e.detail || {};
+      if (!id) return;
+      const target = this.employees.find((emp: any) => emp.id === id);
+      if (target) {
+        target.employeeStatus = employeeStatus;
+        this.applyFilters();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    clearInterval(this.presenceInterval);
+  }
+
+  private getAuthToken(): string | null {
+    for (const key of ['Token', 'token', 'accessToken', 'Token2', 'accessToken2']) {
+      const v = sessionStorage.getItem(key) || localStorage.getItem(key);
+      if (v && v !== 'undefined' && v !== 'null') return v.trim();
+    }
+    return null;
+  }
+
+  private startPresencePolling(): void {
+    this.pollPresence();
+    this.presenceInterval = setInterval(() => this.pollPresence(), 30_000);
+  }
+
+  private pollPresence(): void {
+    const token = this.getAuthToken();
+    if (!token) return;
+    const now = Date.now();
+    this.http.get<any[]>(this.presenceUrl, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).subscribe({
+      next: (records) => {
+        const onlineIds = new Set<number>();
+        (records || []).forEach(r => {
+          if (r.presenceStatus === 'ONLINE' && r.userId) {
+            const updatedMs = r.updatedAt ? new Date(r.updatedAt).getTime() : 0;
+            if (now - updatedMs <= this.PRESENCE_STALE_MS) {
+              onlineIds.add(Number(r.userId));
+            }
+          }
+        });
+        this.onlineUserIds = onlineIds;
+      },
+      error: () => { /* silently ignore if AI service is down */ }
+    });
+  }
+
+  isOnline(employee: any): boolean {
+    return employee?.userId != null && this.onlineUserIds.has(Number(employee.userId));
+  }
+
+  fmtDate(value: any): string {
+    if (!value) return '—';
+    if (Array.isArray(value)) {
+      const [year, month, day] = value;
+      if (!year) return '—';
+      return new Date(+year, +month - 1, +day).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  empStatusClass(employee: any): string {
+    switch (employee?.employeeStatus) {
+      case 'ACTIVE':           return 'emp-status--active';
+      case 'JOINING':          return 'emp-status--joining';
+      case 'SUSPENDED':        return 'emp-status--suspended';
+      case 'ON_LEAVE':         return 'emp-status--onleave';
+      case 'TERMINATED':
+      case 'RESIGNED':
+      case 'FIRED':
+      case 'INTERNSHIP_ENDED': return 'emp-status--terminated';
+      case 'CONTRACT':         return 'emp-status--contract';
+      default:                 return 'emp-status--active';
+    }
   }
 
   async getProfileImage(fileName: string){
@@ -629,9 +716,11 @@ handleDateClick(arg: DateClickArg) {
   }
 
   private dispatchWelcomeToActiveNotifications(employee: any, name: string) {
-    const companyName = 'The Company';
-    const logoUrl = '';
-    const hrEmail = '';
+    let business: any = {};
+    try { business = JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}'); } catch {}
+    const companyName = business?.companyName || 'The Company';
+    const logoUrl = business?.logoUrl || '';
+    const hrEmail = business?.contactEmail || business?.email || '';
     const subject = `Welcome to ${companyName}! 🎉`;
     const htmlBody = this.buildWelcomeActiveEmailHtml({ name, companyName, logoUrl, hrEmail, jobTitle: employee?.jobTitle || '', department: employee?.department?.name || employee?.department || '' });
 
@@ -746,7 +835,7 @@ handleDateClick(arg: DateClickArg) {
   private executeResendOnboarding(employee: any) {
     const resolvedUserId = employee?.userId ?? employee?.user?.id ?? employee?.user?.userId;
     const email = employee?.workEmail || employee?.email || '';
-    const username = email;
+    const username = email.split('@')[0] || email;
     const name = `${employee?.firstName ?? ''} ${employee?.lastName ?? ''}`.trim();
     const idKey = +employee.id;
     const newPassword = this.generateRandomPassword();
@@ -756,53 +845,42 @@ handleDateClick(arg: DateClickArg) {
         this.messageService.add({ severity: 'warn', summary: 'Cannot Resend', detail: 'No email address found on this employee record.', key: 'tl', life: 5000 });
         return;
       }
-      // No userId cached — try creating account; if username taken, look up existing user
+      // Check if username exists first before attempting to create
       this.resendingOnboardingIds[idKey] = true;
-      const signupPayload = this.buildOnboardingSignupPayload(username, newPassword, email, employee.firstName, employee.lastName);
-      this.authenticationService.userRegistrationByAdmin(signupPayload).subscribe({
-        next: (userData) => {
-          this.linkUserIdToEmployee(employee, userData?.id);
-          this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword);
+      this.authenticationService.getRegDataByUsername(username).subscribe({
+        next: (userData: any) => {
+          const existingUserId = userData?.id ?? userData?.userId;
+          if (existingUserId) this.linkUserIdToEmployee(employee, existingUserId);
+          this.authenticationService.resetPasswordByAdmin(email, newPassword).subscribe({
+            next: () => this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword, email),
+            error: (e) => {
+              delete this.resendingOnboardingIds[idKey];
+              this.messageService.add({ severity: 'error', summary: 'Error', detail: e?.error?.message || 'Failed to reset password.', key: 'tl', life: 4000 });
+            }
+          });
         },
-        error: (err) => {
-          const code = err?.error?.code;
-          if (code === '1001' || err?.status === 400) {
-            // Account already exists — look it up by username then reset password
-            this.authenticationService.getRegDataByUsername(username).subscribe({
-              next: (userData: any) => {
-                const existingUserId = userData?.id ?? userData?.userId;
-                if (!existingUserId) {
-                  delete this.resendingOnboardingIds[idKey];
-                  this.messageService.add({ severity: 'error', summary: 'Lookup Failed', detail: 'Account exists but could not retrieve user ID. Contact support.', key: 'tl', life: 6000 });
-                  return;
-                }
-                this.linkUserIdToEmployee(employee, existingUserId);
-                this.authenticationService.resetPasswordByAdmin(username, newPassword).subscribe({
-                  next: () => this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword),
-                  error: (e) => {
-                    delete this.resendingOnboardingIds[idKey];
-                    this.messageService.add({ severity: 'error', summary: 'Error', detail: e?.error?.message || 'Failed to reset password.', key: 'tl', life: 4000 });
-                  }
-                });
-              },
-              error: () => {
-                delete this.resendingOnboardingIds[idKey];
-                this.messageService.add({ severity: 'error', summary: 'Account Creation Failed', detail: err?.error?.message || 'Failed to create user account.', key: 'tl', life: 6000 });
-              }
-            });
-          } else {
-            delete this.resendingOnboardingIds[idKey];
-            this.messageService.add({ severity: 'error', summary: 'Account Creation Failed', detail: err?.error?.message || 'Failed to create user account.', key: 'tl', life: 6000 });
-          }
+        error: () => {
+          // Username not found — create the account
+          const signupPayload = this.buildOnboardingSignupPayload(username, newPassword, email, employee.firstName, employee.lastName);
+          this.authenticationService.userRegistrationByAdmin(signupPayload).subscribe({
+            next: (newUserData) => {
+              this.linkUserIdToEmployee(employee, newUserData?.id);
+              this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword, email);
+            },
+            error: (err) => {
+              delete this.resendingOnboardingIds[idKey];
+              this.messageService.add({ severity: 'error', summary: 'Account Creation Failed', detail: err?.error?.message || 'Failed to create user account.', key: 'tl', life: 6000 });
+            }
+          });
         }
       });
       return;
     }
 
-    // User account exists — just reset password and resend
+    // User account exists — reset password and resend
     this.resendingOnboardingIds[idKey] = true;
-    this.authenticationService.resetPasswordByAdmin(username, newPassword).subscribe({
-      next: () => this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword),
+    this.authenticationService.resetPasswordByAdmin(email, newPassword).subscribe({
+      next: () => this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword, email),
       error: (err) => {
         delete this.resendingOnboardingIds[idKey];
         const msg = err?.error?.message || err?.message || 'Failed to reset password.';
@@ -825,14 +903,17 @@ handleDateClick(arg: DateClickArg) {
     this.employeeService.updateEmployee(payload, employee.id).subscribe();
   }
 
-  private dispatchOnboardingEmail(employee: any, idKey: number, name: string, username: string, password: string) {
-    const companyName = 'The Company';
-    const hrEmail = '';
+  private dispatchOnboardingEmail(employee: any, idKey: number, name: string, username: string, password: string, resolvedEmail?: string) {
+    let business: any = {};
+    try { business = JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}'); } catch {}
+    const companyName = business?.companyName || 'The Company';
+    const hrEmail = business?.contactEmail || business?.email || '';
+    const toEmail = resolvedEmail || employee?.workEmail || employee?.email || '';
     const url = `${window.location.origin}/onboarding/${employee.id}/wer23456fghi367ghj?onboarding=1`;
 
     const subject = `${companyName} — Your Onboarding Credentials`;
     const htmlBody = this.buildOnboardingEmailHtml({ name, username, password, url, companyName, hrEmail });
-    this.employeeService.sendNotificationEmail(employee.email, subject, htmlBody).subscribe({
+    this.employeeService.sendNotificationEmail(toEmail, subject, htmlBody).subscribe({
       next: () => {
         delete this.resendingOnboardingIds[idKey];
         this.resendCredentials = null;

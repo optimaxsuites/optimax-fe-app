@@ -208,9 +208,22 @@
             {{ employee?.department?.name || employee?.department || 'Department' }}
           </span>
           <div class="flex items-center gap-2">
-            <span class="employee-state-pill">
-              <span class="status-dot" [ngClass]="{ 'bg-customGreen animate-pulse': i % 2 === 0, 'bg-yellow-500': i % 2 !== 0 }"></span>
-              <span>{{ i % 2 === 0 ? 'Active' : 'Away' }}</span>
+            <!-- Presence pill (real-time online/offline) -->
+            <span class="employee-state-pill"
+              [ngClass]="isOnline(employee) ? 'emp-pill--active' : 'emp-pill--joining'">
+              <span class="status-dot"></span>
+              <span>{{ isOnline(employee) ? 'Online' : 'Away' }}</span>
+            </span>
+            <!-- Employment status badge -->
+            <span class="emp-status-badge" [ngClass]="{
+                'emp-status--active':     employee?.employeeStatus === 'ACTIVE',
+                'emp-status--joining':    employee?.employeeStatus === 'JOINING',
+                'emp-status--suspended':  employee?.employeeStatus === 'SUSPENDED',
+                'emp-status--onleave':    employee?.employeeStatus === 'ON_LEAVE',
+                'emp-status--terminated': employee?.employeeStatus === 'TERMINATED' || employee?.employeeStatus === 'RESIGNED' || employee?.employeeStatus === 'INTERNSHIP_ENDED',
+                'emp-status--contract':   employee?.employeeStatus === 'CONTRACT'
+              }">
+              {{ (employee?.employeeStatus || 'ACTIVE') | titlecase }}
             </span>
             <button *ngIf="employee?.employeeStatus === 'JOINING'"
               type="button"
@@ -280,7 +293,7 @@
         <div class="employee-extra-grid">
           <div class="employee-extra-item">
             <span class="employee-extra-label">Joined</span>
-            <strong class="employee-extra-value">{{ employee?.hireDate || employee?.employmentStartDate || '-' }}</strong>
+            <strong class="employee-extra-value">{{ fmtDate(employee?.hireDate || employee?.employementStartDate || employee?.employmentStartDate) }}</strong>
           </div>
           <div class="employee-extra-item">
             <span class="employee-extra-label">Employee ID</span>
@@ -316,6 +329,7 @@
         <span class="dir-list-col dir-list-col--role">Role</span>
         <span class="dir-list-col dir-list-col--level">Level</span>
         <span class="dir-list-col dir-list-col--type">Type</span>
+        <span class="dir-list-col dir-list-col--status">Status</span>
         <span class="dir-list-col dir-list-col--joined">Joined</span>
         <span class="dir-list-col dir-list-col--actions"></span>
       </div>
@@ -341,7 +355,12 @@
         <div class="dir-list-col dir-list-col--type">
           <span class="dir-list-type-chip">{{ employee?.employmentType?.name || employee?.jobType?.name || '—' }}</span>
         </div>
-        <div class="dir-list-col dir-list-col--joined">{{ employee?.hireDate || employee?.employmentStartDate || '—' }}</div>
+        <div class="dir-list-col dir-list-col--status">
+          <span class="emp-status-badge" [ngClass]="empStatusClass(employee)">
+            {{ (employee?.employeeStatus || 'ACTIVE') | titlecase }}
+          </span>
+        </div>
+        <div class="dir-list-col dir-list-col--joined">{{ fmtDate(employee?.hireDate || employee?.employementStartDate || employee?.employmentStartDate) }}</div>
         <div class="dir-list-col dir-list-col--actions">
           <button
             type="button"
@@ -465,7 +484,8 @@
   </div>
 </div>
 
-<!-- p-confirmDialog removed -->
+<p-toast position="top-right" key="tl"></p-toast>
+<p-confirmDialog></p-confirmDialog>
 
 <app-large-side-modal *ngIf="viewEmployee" (close)="closeViewEmployee()">
   <app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab>

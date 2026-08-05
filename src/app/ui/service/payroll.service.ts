@@ -18,7 +18,8 @@ export interface BankExportColumn {
 export type PayrollExportField =
   | 'employeeName'
   | 'accountNumber'
-  | 'bankCode'
+  | 'bankCode'      // 3-digit CBN bank code, e.g. "058"
+  | 'bankSortCode'  // 9-digit NIBSS sort code, e.g. "058152052"
   | 'bankName'
   | 'amount'
   | 'narration'
@@ -56,7 +57,12 @@ export class PayrollService {
 
   // --- General Settings ---
   getGeneralSettings(page = 1, size = 10): Observable<any> {
-    return this.http.get(`${this.baseUrl}/x/api/v2/hr/generalSettingss`, { params: { page, size } })
+    return this.http.get(`${this.baseUrl}/x/api/v2/hr/generalSettings`, { params: { page, size } })
+      .pipe(catchError(this.handleError));
+  }
+
+  getGeneralSettingsById(id = 1): Observable<any> {
+    return this.http.get(`${this.baseUrl}/x/api/v2/hr/generalSettings/${id}`)
       .pipe(catchError(this.handleError));
   }
 
@@ -141,7 +147,7 @@ export class PayrollService {
 
   // ---------------- POST Endpoints ----------------
   postGeneralSettings(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/x/api/v2/hr/generalSettingss`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/generalSettings`, payload)
       .pipe(catchError(this.handleError));
   }
 
@@ -257,10 +263,12 @@ private resolveField(emp: EmployeePayroll, col: BankExportColumn): string | numb
       return `${emp.employee.firstName} ${emp.employee.lastName}`;
     case 'accountNumber': 
       return emp.employee.accountNumber;
-    case 'bankName': 
+    case 'bankName':
       return emp.employee.bankName;
-    case 'bankCode': 
-      return emp.employee.bvn ?? '';
+    case 'bankCode':
+      return this.resolveBankCode((emp.employee as any).bankCode || emp.employee.bankName || '', false);
+    case 'bankSortCode':
+      return this.resolveBankCode((emp.employee as any).bankSortCode || emp.employee.bankName || '', true);
     case 'amount': 
       return emp.netPayable;
     case 'narration': 
@@ -277,15 +285,48 @@ private resolveField(emp: EmployeePayroll, col: BankExportColumn): string | numb
         ? this.datePipe.transform(date, col.dateFormat) || '' 
         : date.toISOString().split('T')[0];
     }
-    case 'reference': 
+    case 'reference':
       return `PAY${emp.id}`;
     default:
       return '';
   }
 }
 
+private readonly BANK_CODES: Record<string, [string, string]> = {
+  'access':          ['044', '044150149'],
+  'citibank':        ['023', '023150005'],
+  'ecobank':         ['050', '050150010'],
+  'fidelity':        ['070', '070150003'],
+  'first bank':      ['011', '011151003'],
+  'fcmb':            ['214', '214150018'],
+  'gtbank':          ['058', '058152052'],
+  'guaranty trust':  ['058', '058152052'],
+  'heritage':        ['030', '030159992'],
+  'jaiz':            ['301', '301080020'],
+  'keystone':        ['082', '082150017'],
+  'polaris':         ['076', '076151006'],
+  'skye':            ['076', '076151006'],
+  'providus':        ['101', '101004008'],
+  'stanbic ibtc':    ['221', '221159522'],
+  'standard chart':  ['068', '068150015'],
+  'sterling':        ['232', '232150016'],
+  'uba':             ['033', '033153807'],
+  'united bank':     ['033', '033153807'],
+  'union bank':      ['032', '032080474'],
+  'unity bank':      ['215', '215154097'],
+  'wema':            ['035', '035150103'],
+  'zenith':          ['057', '057150013'],
+};
 
-
+private resolveBankCode(nameOrCode: string, returnSortCode: boolean): string {
+  // If it looks like it's already a code (numeric, 3 or 9 digits), return as-is
+  if (/^\d{3,9}$/.test(nameOrCode.trim())) return nameOrCode.trim();
+  const lower = nameOrCode.toLowerCase();
+  for (const [key, codes] of Object.entries(this.BANK_CODES)) {
+    if (lower.includes(key)) return returnSortCode ? codes[1] : codes[0];
+  }
+  return '';
+}
 
    getTemplate(): any{
     const data = localStorage.getItem("bankTemplate");

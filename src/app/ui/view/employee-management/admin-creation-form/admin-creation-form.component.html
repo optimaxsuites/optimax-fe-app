@@ -192,9 +192,9 @@
         <div class="form-field">
           <label for="level" class="form-label">Level <span class="required">*</span></label>
           <div class="select-with-action">
-            <ng-select 
-              [items]="levels" 
-              bindLabel="name"
+            <ng-select
+              [items]="levels"
+              bindLabel="displayLabel"
               bindValue="id"
               placeholder="Select Level"
               formControlName="level"
@@ -558,4 +558,4 @@
 </div>
 
 
-<!-- p-toast removed -->
+<p-toast position="top-right" key="tl"></p-toast>

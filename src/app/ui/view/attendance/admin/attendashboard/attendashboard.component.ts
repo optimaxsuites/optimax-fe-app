@@ -113,39 +113,47 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
 }
 
   ngOnInit(): void {
-    // Initial load
     this.attendanceService.fetchAllRecords();
 
-    // Subscribe to attendance data updates
     this.attendanceService.attendance$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(data => {
-        const today = new Date().toISOString().split('T')[0];
-        const todaysData = data.filter(r => r.date === today);
-        this.filteredAttendance = todaysData;
-        this.calculateDashboardData();
-        console.log('✅ Admin dashboard updated:', todaysData.length, 'records for today');
-      });
-
-    // Subscribe to correction requests and update pending count
-    this.correctionRequestService.correctionRequests$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(corrections => {
-        if (corrections.length > 0) {
-          this.pendingCorrectionRequests = corrections.filter(r => r.correctionRequest?.status === 'PENDING');
-          const pendingModifications = this.filteredAttendance.filter(r => r.overriddenBy).length;
-          const pendingCorrections = this.pendingCorrectionRequests.length;
-          this.pendingCorrectionsCount = pendingModifications + pendingCorrections;
-          console.log('📋 Pending corrections updated:', this.pendingCorrectionsCount);
+      .subscribe({
+        next: (data) => {
+          const today = new Date().toISOString().split('T')[0];
+          const todaysData = data.filter(r => r.date === today);
+          this.filteredAttendance = todaysData;
+          this.calculateDashboardData();
+        },
+        error: (err) => {
+          console.error('Error loading attendance data:', err);
         }
       });
 
-    // Auto-refresh every 30 seconds to catch employee clock-ins
+    this.correctionRequestService.correctionRequests$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (corrections) => {
+          if (corrections.length > 0) {
+            this.pendingCorrectionRequests = corrections.filter(r => r.correctionRequest?.status === 'PENDING');
+            const pendingModifications = this.filteredAttendance.filter(r => r.overriddenBy).length;
+            const pendingCorrections = this.pendingCorrectionRequests.length;
+            this.pendingCorrectionsCount = pendingModifications + pendingCorrections;
+          }
+        },
+        error: (err) => {
+          console.error('Error loading correction requests:', err);
+        }
+      });
+
     interval(30000)
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        console.log('🔄 Auto-refreshing attendance data...');
-        this.attendanceService.fetchAllRecords();
+      .subscribe({
+        next: () => {
+          this.attendanceService.fetchAllRecords();
+        },
+        error: (err) => {
+          console.error('Error in auto-refresh interval:', err);
+        }
       });
   }
 
@@ -154,9 +162,7 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
     this.destroy$.complete();
   }
 
-  // Allow manual refresh
   refreshData(): void {
-    console.log('🔄 Manual refresh triggered');
     this.attendanceService.fetchAllRecords();
   }
 

@@ -1,0 +1,169 @@
+<div class="pd-content">
+
+  <!-- Info Banner -->
+  <div class="info-banner" [class.info-banner-warn]="pendingApprovals > 0">
+    <span class="info-banner-icon">{{ pendingApprovals > 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stat-grid">
+    <div class="stat-card stat-blue">
+      <div class="stat-label">Gross Payroll — {{ currentMonthLabel }}</div>
+      <div class="stat-value value-blue">{{ loading ? '…' : fmt(totalGrossThisMonth) }}</div>
+      <div class="stat-trend neutral">{{ loading ? '' : employeeCountThisMonth + ' employees' }}</div>
+      <div class="stat-ghost">💼</div>
+    </div>
+    <div class="stat-card stat-green">
+      <div class="stat-label">Net Disbursement</div>
+      <div class="stat-value value-green">{{ loading ? '…' : fmt(totalNetThisMonth) }}</div>
+      <div class="stat-trend neutral">After all deductions</div>
+      <div class="stat-ghost">💸</div>
+    </div>
+    <div class="stat-card stat-red">
+      <div class="stat-label">Total Deductions</div>
+      <div class="stat-value value-red">{{ loading ? '…' : fmt(totalDeductionsThisMonth) }}</div>
+      <div class="stat-trend neutral">Tax, pension, NHF, health</div>
+      <div class="stat-ghost">📉</div>
+    </div>
+    <div class="stat-card stat-amber">
+      <div class="stat-label">Pending Approvals</div>
+      <div class="stat-value value-amber">{{ loading ? '…' : pendingApprovals }}</div>
+      <div class="stat-trend" [class.up]="pendingApprovals === 0" [class.down]="pendingApprovals > 0">
+        {{ pendingApprovals === 0 ? 'All approved' : 'Requires action' }}
+      </div>
+      <div class="stat-ghost">⏳</div>
+    </div>
+  </div>
+
+  <!-- Mid Row: Trend Chart + Quick Actions -->
+  <div class="pd-two-col">
+
+    <!-- 6-Month Payroll Trend -->
+    <div class="pd-card">
+      <div class="pd-card-header">
+        <span class="pd-card-title">Gross vs Net — Last 6 Months</span>
+        <button class="pd-btn pd-btn-outline pd-btn-sm" (click)="load()">↺ Refresh</button>
+      </div>
+      <div *ngIf="loading" class="loading-row"><span>Loading chart…</span></div>
+      <ng-container *ngIf="!loading">
+        <div class="chart-bar-track">
+          <div class="chart-bar-group" *ngFor="let bar of monthlyBars">
+            <div class="chart-bar-wrap">
+              <div class="chart-bar bar-gross" [style.height.%]="bar.grossPct || 3"
+                   [title]="'Gross: ' + fmt(bar.grossRaw)"></div>
+              <div class="chart-bar bar-net"   [style.height.%]="bar.netPct || 3"
+                   [title]="'Net: ' + fmt(bar.netRaw)"></div>
+            </div>
+            <div class="chart-bar-label">{{ bar.label }}</div>
+          </div>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-dot gross-dot"></span> Gross</div>
+          <div class="legend-item"><span class="legend-dot net-dot"></span> Net</div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Quick Actions + Deduction Breakdown -->
+    <div class="pd-card">
+      <div class="pd-card-header">
+        <span class="pd-card-title">Quick Actions</span>
+      </div>
+      <div class="quick-grid">
+        <button class="pd-btn pd-btn-primary"  (click)="navigate('payroll')">
+          <i class="fas fa-cogs"></i> Generate / View Payroll
+        </button>
+        <button class="pd-btn pd-btn-outline"  (click)="navigate('operations')">
+          <i class="fas fa-question-circle"></i> Payroll Queries
+        </button>
+        <button class="pd-btn pd-btn-outline"  (click)="navigate('disbursement')">
+          <i class="fas fa-money-bill-wave"></i> Disburse Payroll
+        </button>
+        <button class="pd-btn pd-btn-outline"  (click)="navigate('correction')">
+          <i class="fas fa-edit"></i> Payroll Correction
+        </button>
+        <button class="pd-btn pd-btn-outline"  (click)="navigate('bonus')">
+          <i class="fas fa-gift"></i> Bonus &amp; Commission
+        </button>
+        <button class="pd-btn pd-btn-outline"  (click)="navigate('employees')">
+          <i class="fas fa-users"></i> Employee Management
+        </button>
+        <button class="pd-btn pd-btn-outline"  (click)="navigate('attendance')">
+          <i class="fas fa-calendar-check"></i> Attendance
+        </button>
+        <button class="pd-btn pd-btn-outline"  (click)="navigate('analytics')">
+          <i class="fas fa-chart-bar"></i> HR Analytics
+        </button>
+        <button class="pd-btn pd-btn-accent"   (click)="navigate('settings')">
+          <i class="fas fa-sliders-h"></i> HR Settings
+        </button>
+      </div>
+
+      <!-- Deduction breakdown bar -->
+      <div class="aging-section" *ngIf="totalDeductionsThisMonth > 0">
+        <div class="aging-title">This Month's Deduction Composition</div>
+        <div class="aging-label">Total Deductions vs Gross</div>
+        <div class="aging-bar-wrap">
+          <div class="aging-seg seg-net"
+               [style.width.%]="totalGrossThisMonth > 0 ? (totalNetThisMonth / totalGrossThisMonth * 100) : 70"
+               title="Net Pay"></div>
+          <div class="aging-seg seg-ded"
+               [style.width.%]="totalGrossThisMonth > 0 ? (totalDeductionsThisMonth / totalGrossThisMonth * 100) : 30"
+               title="Deductions"></div>
+        </div>
+        <div class="aging-legend">
+          <span class="al-dot al-net"></span> Net Pay &nbsp;
+          <span class="al-dot al-ded"></span> Deductions
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent Payroll Runs -->
+  <div class="pd-card">
+    <div class="pd-card-header">
+      <span class="pd-card-title">Recent Payroll Runs</span>
+      <button class="pd-btn pd-btn-primary pd-btn-sm" (click)="navigate('payroll')">
+        <i class="fas fa-external-link-alt"></i> Open Full Payroll
+      </button>
+    </div>
+    <div *ngIf="loading" class="loading-row"><span>Loading…</span></div>
+    <div class="pd-table-wrap" *ngIf="!loading">
+      <table class="pd-table">
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Employees</th>
+            <th>Gross Pay</th>
+            <th>Deductions</th>
+            <th>Net Pay</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let run of recentRuns">
+            <td class="ref-cell">{{ runPeriod(run) }}</td>
+            <td>{{ runEmployeeCount(run) }}</td>
+            <td class="amount-cell">{{ fmt(runGross(run)) }}</td>
+            <td>{{ fmt(runGross(run) - runNet(run)) }}</td>
+            <td class="amount-cell">{{ fmt(runNet(run)) }}</td>
+            <td>
+              <span class="pd-badge"
+                [class.badge-green]="runStatus(run) === 'APPROVED' || runStatus(run) === 'COMPLETED'"
+                [class.badge-amber]="runStatus(run) === 'PENDING' || runStatus(run) === 'IN_REVIEW' || runStatus(run) === 'DRAFT'"
+                [class.badge-red]="runStatus(run) === 'REJECTED'">
+                {{ runStatus(run) }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="recentRuns.length === 0">
+            <td colspan="6" class="empty-row">No payroll runs found. Click "Generate Payroll" to create the first run.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

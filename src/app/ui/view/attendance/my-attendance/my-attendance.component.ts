@@ -1,9 +1,4 @@
-import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
-import { CalendarOptions } from '@fullcalendar/core';
-import dayGridPlugin from '@fullcalendar/daygrid'; // Import the dayGrid plugin
-import { HttpClient } from '@angular/common/http'; // For API integration
-import { NotificationComponent } from '../notification/notification.component';
-import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AttendanceRecord, AttendanceService } from '../../../service/attendance.service';
 import { Subscription, interval } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';

@@ -1,4 +1,5 @@
 import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
+import { UserProfileComponent } from './ui/view/user-profile/user-profile.component';
 import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-dashboard.component';
 import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
 import { OrgChartComponent } from './ui/view/org-chart/org-chart.component';
@@ -10,6 +11,7 @@ import { EmployeeUpdateFormComponent } from './ui/view/employee-management/emplo
 import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-modal.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
+import { BonusDisbursementComponent } from './ui/view/payroll/bonus-disbursement/bonus-disbursement.component';
 import { EmployeeRelativesWidgetComponent } from './ui/shared-component/employee-relatives-widget/employee-relatives-widget.component';
 import { NgModule, NO_ERRORS_SCHEMA } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -64,10 +66,10 @@ import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { AppHrRoutingModule } from './app-routing.module';
-import { AppHrComponent } from './app.component';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { AppHrRoutingModule } from './app-routing.module';
+import { AppHrComponent } from './app.component';
 import { CommonModule } from '@angular/common';
 import { RecruitmentComponent } from './ui/view/recruitment/recruitment.component';
 import { LeaveComponent } from './ui/view/leave/leave.component';
@@ -114,8 +116,10 @@ import { TimeSheetComponent } from './ui/view/attendance/time-sheet/time-sheet.c
 import { TimesheetApprovalsComponent } from './ui/view/workschedule-shifts/timesheet-approvals/timesheet-approvals.component';
 import { MyAttendanceComponent } from './ui/view/attendance/my-attendance/my-attendance.component';
 import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/employee-payroll.component';
+import { PayrollDashboardComponent } from './ui/view/payroll/payroll-dashboard/payroll-dashboard.component';
 import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip-list/employee-payslip-list.component';
 import { PayslipViewComponent } from './ui/view/payroll/payslip-view/payslip-view.component';
+import { PayrollDisbursementComponent } from './ui/view/payroll/payroll-disbursement/payroll-disbursement.component';
 import { GoalComponent } from './ui/view/performance/goal/goal.component';
 import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
 import { EmployeeGuarantorComponent } from './ui/view/employee-management/employee-guarantor/employee-guarantor.component';
@@ -258,6 +262,7 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
 import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-letters.component';
 import { TimeFormatPipe } from './ui/shared-component/pipes/time-format.pipe';
 import { ToastComponent } from './ui/shared-component/view/toast/toast.component';
+import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction/payroll-correction.component';
 
 
 @NgModule({
@@ -273,6 +278,15 @@ import { ToastComponent } from './ui/shared-component/view/toast/toast.component
     InterviewInviteComponent,
     AppointmentLetterComponent,
     InterviewScoreSheetComponent,
+    AddEmployeeFormComponent,
+    EmployeeManagementComponent,
+    AdminCreationFormComponent,
+    EmployeeProfileDashboardComponent,
+    // EmployeeOnboardingFormComponent,
+    PreOnboardingFormComponent,
+    PreOnboardingImportComponent,
+    OffboardingFormComponent,
+    EmployeeUpdateFormComponent,
     LeaveUsageComponent,
     LeaveRequestComponent,
     LeavePlanComponent,
@@ -285,7 +299,10 @@ import { ToastComponent } from './ui/shared-component/view/toast/toast.component
     TimesheetApprovalsComponent,
     MyAttendanceComponent,
     EmployeePayrollComponent,
+    PayrollDashboardComponent,
+    PayrollDisbursementComponent,
     EmployeePayslipListComponent,
+    PayslipViewComponent,
     GuarantorConfirmationComponent,
     ViewEmployeeComponent,
     EmployeeNokComponent,
@@ -388,7 +405,7 @@ import { ToastComponent } from './ui/shared-component/view/toast/toast.component
     ShiftListComponent,
     ShiftFormComponent,
     ShiftAssignmentComponent,
-    ShiftCalendarComponent, 
+    ShiftCalendarComponent,
     CooperativeMembershipApplicationsComponent,
     LoanPurposeManagementComponent,
     AdHocComponent,
@@ -423,19 +440,21 @@ import { ToastComponent } from './ui/shared-component/view/toast/toast.component
     OvertimeManagementComponent,
     OrgChartComponent,
     HrReportsComponent,
-    // LargeSideModalComponent,
+    HrLettersComponent,
+    UserProfileComponent,
+    PayrollCorrectionComponent,
+    BonusDisbursementComponent,
     // FooterComponent,
   ],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
-    AppHrRoutingModule,
     CommonModule,
+    AppHrRoutingModule,
     FormsModule,
     ReactiveFormsModule,
     HttpClientModule,
     TableModule,
-    TableComponent,
     // RouterModule.forChild([], {
     //   bindToComponentInputs: true,
     //   enableTracing: false,
@@ -515,4 +534,4 @@ import { ToastComponent } from './ui/shared-component/view/toast/toast.component
   ],
   bootstrap: [AppHrComponent],
 })
-export class AppHrModule {}
+export class AppHrModule { }

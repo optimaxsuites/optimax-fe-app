@@ -21,10 +21,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private notifListSub?: Subscription;
 
   readonly hrSettingsRoute: string;
+  readonly userProfileRoute: string;
 
   notifCount = 0;
   showNotifPanel = false;
   notifications: HrNotification[] = [];
+  avatarUrl = '';
 
   constructor(
     private router: Router,
@@ -33,6 +35,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
     private notifService: HrTaskNotificationService,
   ){
     this.hrSettingsRoute = this.navLinks.getLink('HRSettings');
+    this.userProfileRoute = this.navLinks.getLink('userProfile');
+    this.avatarUrl = localStorage.getItem('userProfileAvatar') || '';
   }
 
   onToggleSidebar() {
@@ -96,6 +100,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
 
 
+  navigate(route: string): void {
+    this.router.navigate([route]);
+  }
+
   logout(): void {
     this.authenticationService.logout();
 
@@ -131,6 +139,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.userRegData = this.userInfoRegData && Array.isArray(this.userInfoRegData) && this.userInfoRegData.length > 0
       ? this.userInfoRegData[0]
       : this.userInfoRegData;
+    this.avatarUrl = localStorage.getItem('userProfileAvatar') || '';
   }
 
 
