@@ -523,7 +523,7 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   }
 
   private calculateStats(): void {
-    const totalValue = this.products.reduce((sum, p) => sum + (p.unitPrice * p.stockQuantity), 0);
+    const totalValue = this.products.reduce((sum, p) => sum + ((p.unitPrice || p.sellingPrice || 0) * p.stockQuantity), 0);
     
     this.stats = {
       total: this.products.length,

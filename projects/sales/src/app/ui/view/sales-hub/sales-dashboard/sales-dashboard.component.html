@@ -405,7 +405,7 @@
               <tbody>
                 <tr *ngFor="let quote of recentQuotes">
                   <td class="quote-id">#{{ quote.quoteNumber || quote.id }}</td>
-                  <td>{{ quote.customerName }}</td>
+                  <td>{{ $any(quote).customerName?.name || quote.customerName }}</td>
                   <td class="amount">{{ formatCurrency(quote.totalAmount || quote.total) }}</td>
                   <td>
                     <span class="status-badge" [class]="'status-' + getStatusClass(quote.status)">
@@ -453,7 +453,7 @@
               <tbody>
                 <tr *ngFor="let invoice of recentInvoices">
                   <td class="invoice-id">#{{ invoice.invoiceNumber || invoice.id }}</td>
-                  <td>{{ invoice.customerName }}</td>
+                  <td>{{ $any(invoice).customerName?.name || invoice.customerName }}</td>
                   <td class="amount">{{ formatCurrency(invoice.totalAmount || invoice.total) }}</td>
                   <td>
                     <span class="status-badge" [class]="'status-' + getStatusClass(invoice.status)">

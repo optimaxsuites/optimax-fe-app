@@ -392,7 +392,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       itemForm.patchValue({
         productName: product.name,
         description: product.description,
-        unitPrice: product.unitPrice,
+        unitPrice: product.unitPrice || product.sellingPrice,
         taxRate: product.taxRate || 0
       });
       this.calculateItemTotal(itemForm);
@@ -417,7 +417,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       productId: product.productId || String(product.id),
       productName: product.name,
       description: product.description,
-      unitPrice: product.unitPrice,
+      unitPrice: product.unitPrice || product.sellingPrice,
       taxRate: product.taxRate || 0
     });
     this.calculateItemTotal(itemForm);

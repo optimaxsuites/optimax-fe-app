@@ -1,169 +1,221 @@
+<!-- Same 2-col grid / white doc-paper preview design used in Request Management's RFQ template selector -->
 <div class="template-container">
-  <!-- Header -->
-  <div class="template-header">
-    <div class="header-content">
-      <button class="btn-back" (click)="goBack()">
-        <i class="fas fa-arrow-left"></i> Back
-      </button>
-      <h2>Choose Quote Template</h2>
-      <p class="subtitle">Select a template that matches your client's preferences</p>
-    </div>
-  </div>
 
-  <!-- Template Grid -->
-  <div class="template-grid" *ngIf="!showActionSelection">
-    <div 
-      class="template-card" 
-      *ngFor="let template of templates"
-      [class.selected]="selectedTemplateId === template.id"
-      (click)="selectTemplate(template.id)"
-      [style.border-color]="selectedTemplateId === template.id ? getTemplateColor(template.id) : '#e2e8f0'"
-    >
-      <div class="template-header-preview" [style.background]="getTemplateColor(template.id)">
-        <div class="template-icon">
-          <i [class]="'fas ' + getTemplateIcon(template.id)"></i>
-        </div>
-        <div class="template-badge" *ngIf="selectedTemplateId === template.id">
-          <i class="fas fa-check-circle"></i> Selected
-        </div>
-      </div>
-      
-      <div class="template-body">
-        <h3>{{ template.name }}</h3>
-        <p class="template-description">{{ template.description }}</p>
-        
-        <!-- Sections Visibility Preview -->
-        <div class="sections-preview">
-          <span class="section-tag" *ngIf="template.sections.showCustomerDetails">
-            <i class="fas fa-user"></i> Client
-          </span>
-          <span class="section-tag" *ngIf="template.sections.showCompanyLogo">
-            <i class="fas fa-building"></i> Logo
-          </span>
-          <span class="section-tag" *ngIf="template.sections.showTaxBreakdown">
-            <i class="fas fa-calculator"></i> Tax
-          </span>
-          <span class="section-tag" *ngIf="template.sections.showPaymentTerms">
-            <i class="fas fa-credit-card"></i> Payment
-          </span>
-          <span class="section-tag" *ngIf="template.sections.showNotes">
-            <i class="fas fa-sticky-note"></i> Notes
-          </span>
-          <span class="section-tag" *ngIf="template.sections.showTermsConditions">
-            <i class="fas fa-gavel"></i> Terms
-          </span>
-          <span class="section-tag" *ngIf="template.sections.showSignature">
-            <i class="fas fa-signature"></i> Signature
-          </span>
-          <span class="section-tag" *ngIf="template.sections.showItemImages">
-            <i class="fas fa-image"></i> Images
-          </span>
-          <span class="section-tag" *ngIf="template.sections.showSKU">
-            <i class="fas fa-barcode"></i> SKU
-          </span>
-        </div>
-        
-        <div class="template-meta">
-          <span class="meta-badge" [class]="'layout-' + template.layout">
-            <i class="fas fa-arrows-alt"></i> {{ template.layout | titlecase }}
-          </span>
-          <span class="meta-badge">
-            <i class="fas fa-font"></i> {{ template.fontSize | titlecase }}
-          </span>
-          <span class="meta-badge">
-            <i class="fas fa-palette"></i> {{ template.colorTheme | titlecase }}
-          </span>
-        </div>
-      </div>
-      
-      <div class="template-footer">
-        <button 
-          class="btn-preview" 
-          (click)="$event.stopPropagation(); selectTemplate(template.id)"
-        >
-          <i class="fas fa-eye"></i> Preview
-        </button>
-        <button 
-          class="btn-select" 
-          [class.selected]="selectedTemplateId === template.id"
-          (click)="$event.stopPropagation(); selectTemplate(template.id)"
-          [style.background]="selectedTemplateId === template.id ? getTemplateColor(template.id) : '#e2e8f0'"
-          [style.color]="selectedTemplateId === template.id ? 'white' : '#4a5a6e'"
-        >
-          {{ selectedTemplateId === template.id ? 'Selected' : 'Select' }}
-        </button>
-      </div>
-    </div>
-  </div>
+  <div class="selector-body">
 
-  <!-- Action Selection -->
-  <div class="action-selection" *ngIf="showActionSelection">
-    <div class="action-card">
-      <h3>How would you like to deliver this quote?</h3>
-      <p class="action-subtitle">Choose how you want to send the quote to {{ quoteData?.customerName || 'your customer' }}</p>
-      
-      <div class="action-options">
-        <div 
-          class="action-option" 
-          [class.selected]="selectedAction === 'pdf'"
-          (click)="selectedAction = 'pdf'"
-        >
-          <div class="action-icon"><i class="fas fa-file-pdf"></i></div>
-          <div class="action-info">
-            <h4>Download PDF</h4>
-            <p>Save as PDF file to send manually</p>
-          </div>
-          <div class="action-check" *ngIf="selectedAction === 'pdf'">
-            <i class="fas fa-check-circle"></i>
-          </div>
-        </div>
-        
-        <div 
-          class="action-option" 
-          [class.selected]="selectedAction === 'email'"
-          (click)="selectedAction = 'email'"
-        >
-          <div class="action-icon"><i class="fas fa-envelope"></i></div>
-          <div class="action-info">
-            <h4>Send via Email</h4>
-            <p>Email directly to {{ quoteData?.customerEmail || 'customer' }}</p>
-          </div>
-          <div class="action-check" *ngIf="selectedAction === 'email'">
-            <i class="fas fa-check-circle"></i>
-          </div>
-        </div>
-        
-        <div 
-          class="action-option" 
-          [class.selected]="selectedAction === 'both'"
-          (click)="selectedAction = 'both'"
-        >
-          <div class="action-icon"><i class="fas fa-share-alt"></i></div>
-          <div class="action-info">
-            <h4>Both (PDF + Email)</h4>
-            <p>Download PDF and send email</p>
-          </div>
-          <div class="action-check" *ngIf="selectedAction === 'both'">
-            <i class="fas fa-check-circle"></i>
-          </div>
-        </div>
-      </div>
-      
-      <div class="action-buttons">
-        <button class="btn-cancel" (click)="goBack()">
-          <i class="fas fa-times"></i> Cancel
-        </button>
-        <button class="btn-create" (click)="confirmCreate(selectedAction)">
-          <i class="fas fa-check"></i> Create Quote
-        </button>
-      </div>
-    </div>
-  </div>
+    <!-- 2-column template card grid -->
+    <div class="template-grid">
 
-  <!-- Preview Modal (optional) -->
-  <div class="preview-overlay" *ngIf="false">
-    <div class="preview-modal">
-      <!-- Preview content would go here -->
-    </div>
+      <div *ngFor="let template of templates"
+           class="tpl-card"
+           [class.tpl-card--selected]="selectedTemplateId === template.id"
+           (click)="selectTemplate(template.id)">
+
+        <!-- ── TOP: document preview area ── -->
+        <div class="tpl-preview" [ngClass]="'tpl-preview--' + getLayoutKey(template.layout)">
+
+          <!-- selected checkmark badge -->
+          <div class="tpl-check" *ngIf="selectedTemplateId === template.id">
+            <i class="fas fa-check"></i>
+          </div>
+
+          <!-- white paper document -->
+          <div class="doc-paper">
+
+            <!-- STANDARD -->
+            <ng-container *ngIf="getLayoutKey(template.layout) === 'standard'">
+              <div class="dp-header">
+                <div class="dp-logo"></div>
+                <div class="dp-org">
+                  <div class="dp-org-name">Company Name</div>
+                  <div class="dp-org-sub">Quotation Document</div>
+                </div>
+              </div>
+              <div class="dp-rule orange"></div>
+              <div class="dp-meta">
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">DOC NO.</div>
+                  <div class="dp-mc-val">QT-2026-001</div>
+                </div>
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">DATE</div>
+                  <div class="dp-mc-val">31 Jul 2026</div>
+                </div>
+                <div class="dp-meta-cell dark accent">
+                  <div class="dp-mc-lbl">TOTAL</div>
+                  <div class="dp-mc-val">₦ —</div>
+                </div>
+              </div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span class="sn">S/N</span><span>Description</span><span class="num">Qty</span><span class="num">Rate</span>
+                </div>
+                <div class="dp-trow">
+                  <span class="sn">1</span><span>Item description here</span><span class="num">1</span><span class="num">—</span>
+                </div>
+                <div class="dp-trow alt">
+                  <span class="sn">2</span><span>Another product item</span><span class="num">2</span><span class="num">—</span>
+                </div>
+                <div class="dp-trow">
+                  <span class="sn">3</span><span>Third line item</span><span class="num">5</span><span class="num">—</span>
+                </div>
+              </div>
+              <div class="dp-total">
+                <span>TOTAL</span><span class="amt">₦ 0.00</span>
+              </div>
+            </ng-container>
+
+            <!-- CORPORATE / BRANDED -->
+            <ng-container *ngIf="getLayoutKey(template.layout) === 'centrifuge'">
+              <div class="dp-corp-top">
+                <div class="dp-corp-word">Quotation</div>
+                <div class="dp-corp-brand"><strong>YOUR</strong><br>COMPANY</div>
+              </div>
+              <div class="dp-rule orange"></div>
+              <div class="dp-meta">
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">DOCUMENT NO.</div>
+                  <div class="dp-mc-val">495314</div>
+                </div>
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">DATE</div>
+                  <div class="dp-mc-val">31 Jul 2026</div>
+                </div>
+                <div class="dp-meta-cell dark accent">
+                  <div class="dp-mc-lbl">TOTAL</div>
+                  <div class="dp-mc-val">₦8.2M</div>
+                </div>
+              </div>
+              <div class="dp-two-col">
+                <div class="dp-col-box">
+                  <div class="dp-col-lbl">PREPARED FOR</div>
+                  <div class="dp-col-val">Client Ltd</div>
+                </div>
+                <div class="dp-col-box">
+                  <div class="dp-col-lbl">PREPARED BY</div>
+                  <div class="dp-col-val">Your Company</div>
+                </div>
+              </div>
+              <div class="dp-banner">Goods &amp; Services Supply</div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span class="sn">S/N</span><span>Description</span><span class="num">Qty</span><span class="num">Amount</span>
+                </div>
+                <div class="dp-trow">
+                  <span class="sn">1</span><span>HP ProBook 440 G9</span><span class="num">1</span><span class="num">₦1.4M</span>
+                </div>
+                <div class="dp-trow alt">
+                  <span class="sn">2</span><span>Air Conditioner 1.5HP</span><span class="num">2</span><span class="num">₦1.2M</span>
+                </div>
+              </div>
+              <div class="dp-words">
+                <div class="dp-words-lbl">AMOUNT IN WORDS</div>
+                <div class="dp-words-val">Eight million, two hundred and nine thousand…</div>
+              </div>
+            </ng-container>
+
+            <!-- MINIMAL -->
+            <ng-container *ngIf="getLayoutKey(template.layout) === 'minimal'">
+              <div class="dp-min-head">Quotation</div>
+              <div class="dp-thin-rule"></div>
+              <div class="dp-field"><span class="dp-field-lbl">To:</span><span class="dp-field-val">Customer Name</span></div>
+              <div class="dp-field"><span class="dp-field-lbl">Date:</span><span class="dp-field-val">31 July 2026</span></div>
+              <div class="dp-field"><span class="dp-field-lbl">Valid Until:</span><span class="dp-field-val">30 Aug 2026</span></div>
+              <div class="dp-thin-rule"></div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span>Item</span><span class="num">Qty</span><span>Notes</span>
+                </div>
+                <div class="dp-trow">
+                  <span>Item One — Product A</span><span class="num">1</span><span>—</span>
+                </div>
+                <div class="dp-trow alt">
+                  <span>Item Two — Product B</span><span class="num">3</span><span>—</span>
+                </div>
+                <div class="dp-trow">
+                  <span>Item Three — Product C</span><span class="num">2</span><span>—</span>
+                </div>
+              </div>
+              <div class="dp-footnote">Thank you for your business.</div>
+            </ng-container>
+
+            <!-- DETAILED -->
+            <ng-container *ngIf="getLayoutKey(template.layout) === 'detailed'">
+              <div class="dp-header">
+                <div class="dp-logo"></div>
+                <div class="dp-org">
+                  <div class="dp-org-name">Company Name</div>
+                  <div class="dp-org-sub">Detailed Quotation</div>
+                </div>
+              </div>
+              <div class="dp-rule orange"></div>
+              <div class="dp-meta">
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">DOC NO.</div>
+                  <div class="dp-mc-val">QT-2026-001</div>
+                </div>
+                <div class="dp-meta-cell dark accent">
+                  <div class="dp-mc-lbl">TOTAL</div>
+                  <div class="dp-mc-val">₦ —</div>
+                </div>
+              </div>
+              <div class="dp-two-col">
+                <div class="dp-col-box">
+                  <div class="dp-col-lbl">CUSTOMER</div>
+                  <div class="dp-col-val">Customer Name</div>
+                </div>
+                <div class="dp-col-box">
+                  <div class="dp-col-lbl">CATEGORY</div>
+                  <div class="dp-col-val">IT &amp; Electronics</div>
+                </div>
+              </div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span class="sn">S/N</span><span>Description</span><span>Specs</span><span class="num">Qty</span>
+                </div>
+                <div class="dp-trow">
+                  <span class="sn">1</span><span>Item with specifications</span><span>Brand/Model</span><span class="num">1</span>
+                </div>
+              </div>
+              <div class="dp-qual">
+                <div class="dp-qual-lbl">PAYMENT TERMS</div>
+                <div class="dp-qual-val">• Net 30 &nbsp;&nbsp;• Bank Transfer &nbsp;&nbsp;• Signature Required</div>
+              </div>
+            </ng-container>
+
+          </div><!-- /doc-paper -->
+
+          <div class="preview-fade"></div>
+
+        </div><!-- /tpl-preview -->
+
+        <!-- ── BOTTOM: template info section ── -->
+        <div class="tpl-info">
+          <div class="tpl-info-main">
+            <div class="tpl-name-row">
+              <h3 class="tpl-name">{{ template.name }}</h3>
+              <span class="tpl-default" *ngIf="isTemplateDefault(template)">
+                <i class="fas fa-star"></i> Default
+              </span>
+            </div>
+            <p class="tpl-desc">{{ template.description }}</p>
+            <div class="tpl-tags" *ngIf="getTemplateTags(template).length > 0">
+              <span class="tpl-tag" *ngFor="let tag of getTemplateTags(template)">
+                {{ tag }}
+              </span>
+            </div>
+          </div>
+          <div class="tpl-select-row">
+            <div class="tpl-select-btn" [class.active]="selectedTemplateId === template.id">
+              <i class="fas fa-check" *ngIf="selectedTemplateId === template.id"></i>
+              <i class="fas fa-arrow-right" *ngIf="selectedTemplateId !== template.id"></i>
+              {{ selectedTemplateId === template.id ? 'Selected' : 'Use this template' }}
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /tpl-card -->
+    </div><!-- /template-grid -->
+
   </div>
 </div>

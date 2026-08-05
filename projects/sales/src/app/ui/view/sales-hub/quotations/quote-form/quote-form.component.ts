@@ -476,7 +476,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       itemForm.patchValue({
         productName: product.name,
         description: product.description,
-        unitPrice: product.unitPrice,
+        unitPrice: product.unitPrice || product.sellingPrice,
         taxRate: product.taxRate || 0
       });
       this.calculateItemTotal(itemForm);
@@ -501,7 +501,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       productId: product.id,
       productName: product.name,
       description: product.description,
-      unitPrice: product.unitPrice,
+      unitPrice: product.unitPrice || product.sellingPrice,
       taxRate: product.taxRate || 0
     });
     this.calculateItemTotal(itemForm);
@@ -588,7 +588,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
           productName: product.name,
           description: product.description || '',
           quantity: 1,
-          unitPrice: product.unitPrice,
+          unitPrice: product.unitPrice || product.sellingPrice,
           taxRate: product.taxRate || 0
         });
         
