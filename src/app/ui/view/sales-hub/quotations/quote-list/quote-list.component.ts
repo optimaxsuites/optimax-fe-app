@@ -95,6 +95,13 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     this.selectedQuoteId = undefined;
   }
 
+  duplicateQuote(quoteId: string | number): void {
+    const quoteIdStr = String(quoteId);
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
+    this.router.navigate(path, { queryParams: { duplicateId: quoteIdStr } });
+  }
+
   onInvoiceSaved(): void {
     this.closeInvoiceModal();
     this.loadQuotes();

@@ -71,6 +71,12 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     this.selectedInvoiceId = undefined;
   }
 
+  duplicateInvoice(invoiceId: string): void {
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
+    this.router.navigate(path, { queryParams: { duplicateId: invoiceId } });
+  }
+
   closeInvoiceDetail(): void {
     this.showInvoiceDetail = false;
     this.selectedInvoiceId = undefined;

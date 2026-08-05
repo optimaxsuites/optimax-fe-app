@@ -20,6 +20,7 @@ import html2canvas from 'html2canvas';
 export class InvoiceFormComponent implements OnInit, OnDestroy {
   @Input() editId?: string;
   @Input() fromQuoteId?: string;
+  @Input() duplicateId?: string;
   @Output() saved = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
 
@@ -227,6 +228,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     this.invoiceId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.quoteId = this.fromQuoteId || this.route.snapshot.queryParamMap.get('quoteId') || '';
     this.isEditMode = !!this.invoiceId;
+    if (!this.duplicateId) {
+      this.duplicateId = this.route.snapshot.queryParamMap.get('duplicateId') || '';
+    }
 
     this.loadCustomers();
     this.loadProducts();
@@ -237,6 +241,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     } else if (this.quoteId) {
       this.loadQuoteForInvoice();
       this.currentStep = 3;
+    } else if (this.duplicateId) {
+      this.loadInvoiceForDuplicate();
     } else {
       this.addLineItem();
     }
@@ -493,6 +499,37 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       },
       error: (error: any) => {
         console.error('Error loading invoice:', error);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // Copy an existing invoice's details into this (still-new) form so the user can
+  // review/edit before it is saved and sent as a brand-new invoice.
+  private loadInvoiceForDuplicate(): void {
+    this.isLoading = true;
+    this.salesService.getInvoiceById(this.duplicateId!).subscribe({
+      next: (invoice: Invoice | null) => {
+        if (invoice) {
+          this.populateForm(invoice);
+
+          // Don't inherit the source invoice's link back to a quote - this is a
+          // fresh, independent invoice, so it shouldn't affect that quote's status.
+          this.quoteId = '';
+
+          // Refresh the dates rather than carrying over the original invoice's.
+          const today = new Date();
+          const defaultDueDate = new Date();
+          defaultDueDate.setDate(defaultDueDate.getDate() + 30);
+          this.invoiceForm.patchValue({
+            issueDate: this.formatDateForInput(today),
+            dueDate: this.formatDateForInput(defaultDueDate)
+          });
+        }
+        this.isLoading = false;
+      },
+      error: (error: any) => {
+        console.error('Error loading invoice to duplicate:', error);
         this.isLoading = false;
       }
     });
