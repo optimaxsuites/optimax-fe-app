@@ -2197,6 +2197,17 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   private tryOpenTaskById(taskId: string): void {
     const found = this.boardTasks.find(t => t.id === taskId || String(t.apiId) === taskId);
     if (found) { this.pmSection = 'board'; this.openDetail(found); return; }
+
+    // hr-prefixed local ID: resolve to numeric apiId via localStorage, then retry
+    if (taskId.startsWith('hr')) {
+      const localTasks = this.parseTasks(localStorage.getItem(this.boardKey));
+      const local = localTasks.find(t => t.id === taskId);
+      if (local?.apiId) {
+        const byApiId = this.boardTasks.find(t => t.id === String(local.apiId) || t.apiId === local.apiId);
+        if (byApiId) { this.pmSection = 'board'; this.openDetail(byApiId); return; }
+      }
+    }
+
     // Task not in current view — switch to all-tasks mode and reload so linked task is found
     if (this.taskViewMode !== 'all') {
       this.taskViewMode = 'all';
@@ -2994,7 +3005,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       task.tags?.length ? `🏷️ Tags: ${task.tags.join(', ')}` : '',
       latestComment,
       ``,
-      `🔗 View task: ${taskUrl}?taskId=${task.id}`,
+      `🔗 View task: ${taskUrl}?taskId=${task.apiId ?? task.id}`,
       ``,
       `Note: `,
     ].filter(l => l !== undefined && l !== '').join('\n');
