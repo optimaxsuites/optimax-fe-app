@@ -317,7 +317,10 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    return new Date(date).toLocaleDateString('en-NG', {
+    if (!date) return 'N/A';
+    const parsed = new Date(date);
+    if (isNaN(parsed.getTime())) return 'N/A';
+    return parsed.toLocaleDateString('en-NG', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'

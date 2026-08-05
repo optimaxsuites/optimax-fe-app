@@ -75,7 +75,7 @@
           </div>
           <div class="stat-content">
             <span class="stat-label">Unit Price</span>
-            <span class="stat-value">{{ formatCurrency(product.unitPrice) }}</span>
+            <span class="stat-value">{{ formatCurrency(getUnitPrice()) }}</span>
           </div>
         </div>
 
@@ -235,7 +235,7 @@
               <div class="pricing-grid">
                 <div class="pricing-item">
                   <span class="pricing-label">Unit Price</span>
-                  <span class="pricing-value">{{ formatCurrency(product.unitPrice) }}</span>
+                  <span class="pricing-value">{{ formatCurrency(getUnitPrice()) }}</span>
                 </div>
                 <div class="pricing-item">
                   <span class="pricing-label">Cost Price</span>

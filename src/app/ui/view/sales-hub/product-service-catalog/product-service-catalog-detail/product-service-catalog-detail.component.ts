@@ -169,14 +169,21 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Some products only ever received a value under the legacy `sellingPrice`
+  // field, so fall back to it whenever `unitPrice` wasn't populated.
+  getUnitPrice(): number {
+    return this.product ? (this.product.unitPrice || this.product.sellingPrice || 0) : 0;
+  }
+
   getProfitMargin(): number {
-    if (!this.product || this.product.costPrice === 0) return 0;
-    return ((this.product.unitPrice - this.product.costPrice) / this.product.unitPrice) * 100;
+    const unitPrice = this.getUnitPrice();
+    if (!this.product || !unitPrice || this.product.costPrice === 0) return 0;
+    return ((unitPrice - this.product.costPrice) / unitPrice) * 100;
   }
 
   getTotalStockValue(): number {
     if (!this.product) return 0;
-    return this.product.unitPrice * this.product.stockQuantity;
+    return this.getUnitPrice() * this.product.stockQuantity;
   }
 
   getOrderStatusBadgeClass(status: string): string {

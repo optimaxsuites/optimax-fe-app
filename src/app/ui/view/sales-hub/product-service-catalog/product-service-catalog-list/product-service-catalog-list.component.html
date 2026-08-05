@@ -209,7 +209,7 @@
                 <td>
                   <span class="category-badge">{{ product.category?.name || product.category }}</span>
                 </td>
-                <td class="amount">{{ formatCurrency(product.unitPrice) }}</td>
+                <td class="amount">{{ formatCurrency(product.unitPrice || product.sellingPrice) }}</td>
                 <td>
                   <div class="stock-info">
                     <span class="stock-badge" [class]="'stock-' + getStockStatusClass(product.stockQuantity)">
@@ -303,7 +303,7 @@
 
           <!-- Product Card Footer -->
           <div class="card-footer-row">
-            <div class="card-price">{{ formatCurrency(product.unitPrice) }}</div>
+            <div class="card-price">{{ formatCurrency(product.unitPrice || product.sellingPrice) }}</div>
             <div class="card-stock">
               <span class="stock-badge" [class]="'stock-' + getStockStatusClass(product.stockQuantity)">
                 {{ product.stockQuantity }}
