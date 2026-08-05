@@ -29,6 +29,7 @@ import { MessageService } from 'primeng/api';
 export class QuoteFormComponent implements OnInit, OnDestroy {
   @Input() editId?: string;
   @Input() customerId?: string;
+  @Input() duplicateId?: string;
 
   // Custom modal variables
   showDiscountModal = false;
@@ -207,18 +208,23 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.quoteId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.isEditMode = !!this.quoteId;
-    
+
     if (!this.customerId) {
       this.customerId = this.route.snapshot.queryParamMap.get('customerId') || '';
     }
     this.productId = this.route.snapshot.queryParamMap.get('productId') || '';
-    
+    if (!this.duplicateId) {
+      this.duplicateId = this.route.snapshot.queryParamMap.get('duplicateId') || '';
+    }
+
     this.loadCustomers();
     this.loadProducts();
     this.setupFormListeners();
-    
+
     if (this.isEditMode) {
       this.loadQuote();
+    } else if (this.duplicateId) {
+      this.loadQuoteForDuplicate();
     } else if (!this.productId) {
       this.addLineItem();
     }
@@ -655,6 +661,33 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       },
       error: (error: any) => {
         console.error('Error loading quote:', error);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // Copy an existing quote's details into this (still-new) form so the user can
+  // review/edit before it is saved and sent as a brand-new quote.
+  private loadQuoteForDuplicate(): void {
+    this.isLoading = true;
+    this.salesService.getQuoteById(this.duplicateId!).subscribe({
+      next: (quote: Quote | null) => {
+        if (quote) {
+          this.populateForm(quote);
+
+          // Refresh the dates rather than carrying over the original quote's -
+          // this is a new quote being drafted today, not an edit of the old one.
+          const defaultValidUntil = new Date();
+          defaultValidUntil.setDate(defaultValidUntil.getDate() + 30);
+          this.quoteForm.patchValue({
+            quoteDate: this.formatDateForInput(new Date()),
+            validUntil: this.formatDateForInput(defaultValidUntil)
+          });
+        }
+        this.isLoading = false;
+      },
+      error: (error: any) => {
+        console.error('Error loading quote to duplicate:', error);
         this.isLoading = false;
       }
     });

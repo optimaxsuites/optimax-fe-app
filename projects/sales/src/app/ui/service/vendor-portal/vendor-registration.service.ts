@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { map, tap, catchError } from 'rxjs/operators';
+import { map, tap, catchError, switchMap } from 'rxjs/operators';
 import {
   VendorRegistration, RegistrationStatus,
   BusinessIdentity, LegalCompliance, ContactLocation,
@@ -9,6 +9,10 @@ import {
   UploadedDocument, DocumentUploadType,
 } from '../../domain/vendor-portal/vendor-registration.dto';
 import { environment } from '../../shared-component/service/environments/environment';
+import {
+  PendingVendorStore
+} from '../vendor-management/vendor-management.service';
+import { Vendor, VendorStatus, VendorTier, RiskLevel } from '../../domain/vendor-management/vendor-management.dto';
 
 @Injectable({ providedIn: 'root' })
 export class VendorRegistrationService {
@@ -123,62 +127,165 @@ export class VendorRegistrationService {
   submit(reg: VendorRegistration): Observable<{ applicationNumber: string }> {
     const vendorId = reg.id;
 
-    // If no server record exists yet, create one first then submit
+    // Helper: map registration form data to the Vendor DTO used by the
+    // management side, then write it into PendingVendorStore.
+    const mapAndStore = (id: string): string => {
+      const s1 = reg.step1 ?? {} as any;
+      const s2 = reg.step2 ?? {} as any;
+      const s3 = reg.step3 ?? {} as any;
+      const s4 = reg.step4 ?? {} as any;
+      const s5 = reg.step5 ?? {} as any;
+      const s6 = reg.step6 ?? {} as any;
+
+      const appNum = id || `APP-${Date.now()}`;
+      const categories: string[] = (s5.supplyCategories ?? []).map((c: string) =>
+        c.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+      );
+
+      const vendor: Vendor = {
+        id:                 appNum,
+        companyName:        s1.businessName  || '',
+        registrationNumber: s2.cacRegistrationNumber || '',
+        taxId:              s2.tinNumber     || '',
+        email:              s3.primaryContactEmail || '',
+        phone:              s3.primaryContactPhone || '',
+        website:            s1.websiteUrl    || undefined,
+        address: {
+          street:  s3.registeredAddressLine1 || '',
+          city:    s3.registeredCity         || '',
+          state:   s3.registeredState        || '',
+          country: s3.registeredCountry      || 'Nigeria',
+          postalCode: s3.registeredPostalCode || ''
+        },
+        status:             VendorStatus.PENDING_ONBOARDING,
+        tier:               VendorTier.APPROVED,
+        riskLevel:          RiskLevel.LOW,
+        performanceScore:   0,
+        totalProjects:      s5.completedProjectsCount ?? 0,
+        winRate:            0,
+        averageRating:      0,
+        categories,
+        description:        s1.businessDescription || '',
+        paymentTerms:       s4.preferredPaymentTerms || 'Net 30',
+        bankDetails: {
+          bankName:      s4.primaryBankName       || '',
+          accountNumber: s4.primaryAccountNumber  || '',
+          accountName:   s4.primaryAccountName    || '',
+          accountType:   s4.primaryAccountType    || 'current',
+          sortCode:      s4.primarySortCode       || '',
+          swiftCode:     s4.primarySwiftCode      || '',
+          currency:      s4.primaryCurrency       || 'NGN',
+          bankBranch:    s4.primaryBankBranch     || '',
+          isPrimary:     true
+        },
+        contacts: s3.primaryContactName ? [{
+          id:        `c-${appNum}`,
+          name:      s3.primaryContactName  || '',
+          title:     s3.primaryContactTitle || '',
+          email:     s3.primaryContactEmail || '',
+          phone:     s3.primaryContactPhone || '',
+          isPrimary: true
+        }] : [],
+        documents: (s6.uploadedDocuments ?? []).map((d: any) => ({
+          id:           d.id,
+          name:         d.label || d.fileName,
+          type:         d.type,
+          category:     'compliance' as any,
+          status:       'PENDING_VERIFICATION' as any,
+          uploadedDate: d.uploadedDate ? new Date(d.uploadedDate) : new Date(),
+          expiryDate:   undefined,
+          fileUrl:      d.fileUrl,
+          fileSize:     d.fileSize,
+          vendorId:     appNum,
+          isRequired:   d.isRequired ?? false
+        })),
+        complianceStatus: {
+          isCompliant:              false,
+          documentsVerified:        0,
+          totalRequiredDocuments:   3,
+          expiredDocuments:         0,
+          expiringDocuments:        0,
+          lastComplianceCheck:      new Date(),
+          sanctionsClear:           !(s2.hasBeenBlacklisted ?? false)
+        },
+        performanceMetrics: {
+          overallScore: 0, onTimeDeliveryRate: 0, qualityScore: 0,
+          costCompetitiveness: 0, complianceScore: 0, ratingScore: 0,
+          winRate: 0, totalProjects: s5.completedProjectsCount ?? 0,
+          totalRevenue: 0, averageOrderValue: 0,
+          lastUpdated: new Date(), trendData: []
+        },
+        lifecycleHistory: [{
+          id:          `lh-${appNum}`,
+          event:       'Registration Submitted',
+          fromStatus:  null as any,
+          toStatus:    VendorStatus.PENDING_ONBOARDING,
+          performedBy: s6.declarantName || 'Vendor',
+          timestamp:   new Date(),
+          notes:       'Submitted via Vendor Portal'
+        }],
+        riskAlerts:       [],
+        joinedDate:       new Date(),
+        lastActivityDate: new Date(),
+        createdAt:        new Date(),
+        updatedAt:        new Date(),
+        applicationNumber: appNum
+      } as any as Vendor;
+
+      PendingVendorStore.add(vendor);
+      return appNum;
+    };
+
+    // ── Real API path ────────────────────────────────────────────────────────
     if (!vendorId) {
       return this.http.post<{ id: string }>(`${this.baseUrl}/vendors`, reg).pipe(
-        tap(({ id }) => {
+        switchMap(({ id }) => {
           this.registration$$.next({ ...reg, id } as VendorRegistration);
+          mapAndStore(id);
+          return this.http.patch<{ applicationNumber: string }>(
+            `${this.baseUrl}/vendors/${id}/submit`, {}
+          ).pipe(
+            tap(res => {
+              const current = this.registration$$.getValue();
+              if (current) {
+                this.registration$$.next({
+                  ...current, status: 'submitted',
+                  submittedDate: new Date(), applicationNumber: res.applicationNumber,
+                } as VendorRegistration);
+              }
+            }),
+            map(res => ({ applicationNumber: res.applicationNumber })),
+            catchError(() => {
+              const appNum = mapAndStore(id);
+              return of({ applicationNumber: appNum });
+            })
+          );
         }),
-        map(({ id }) => id),
-        catchError((err) => {
-          console.error('[VendorRegistrationService] submit (POST) failed:', err);
-          return of('');
-        }),
-        // Chain the submit PATCH after the POST resolves
-        // We use a manual flatMap-style here without importing switchMap to keep imports minimal —
-        // but since we already imported map we simply chain via a second Observable.
-        // The actual PATCH is fired in subscribe for simplicity.
-        tap((id) => {
-          if (id) {
-            this.http.patch<{ applicationNumber: string }>(`${this.baseUrl}/vendors/${id}/submit`, {}).pipe(
-              tap((res) => {
-                const current = this.registration$$.getValue();
-                if (current) {
-                  this.registration$$.next({
-                    ...current,
-                    status: 'submitted',
-                    submittedDate: new Date(),
-                    applicationNumber: res.applicationNumber,
-                  } as VendorRegistration);
-                }
-              }),
-              catchError((err) => { console.error('[VendorRegistrationService] submit (PATCH) failed:', err); return of(null); }),
-            ).subscribe();
-          }
-        }),
-        // Return an observable of the applicationNumber by reading the subject once the PATCH resolves
-        // For the immediate caller we return a resolved observable — components subscribe to the subject for final status
-        map(() => ({ applicationNumber: this.registration$$.getValue()?.applicationNumber ?? '' })),
+        catchError(() => {
+          // Full API unavailable — generate a local application number and store locally
+          const appNum = mapAndStore(`APP-${Date.now()}`);
+          this.registration$$.next({ ...reg, id: appNum, status: 'submitted', submittedDate: new Date(), applicationNumber: appNum } as VendorRegistration);
+          return of({ applicationNumber: appNum });
+        })
       );
     }
 
     return this.http.patch<{ applicationNumber: string }>(`${this.baseUrl}/vendors/${vendorId}/submit`, {}).pipe(
-      tap((res) => {
+      tap(res => {
         const current = this.registration$$.getValue();
         if (current) {
           this.registration$$.next({
-            ...current,
-            status: 'submitted',
-            submittedDate: new Date(),
-            applicationNumber: res.applicationNumber,
+            ...current, status: 'submitted',
+            submittedDate: new Date(), applicationNumber: res.applicationNumber,
           } as VendorRegistration);
         }
+        mapAndStore(vendorId);
       }),
-      map((res) => ({ applicationNumber: res.applicationNumber })),
-      catchError((err) => {
-        console.error('[VendorRegistrationService] submit failed:', err);
-        return of({ applicationNumber: '' });
-      }),
+      map(res => ({ applicationNumber: res.applicationNumber })),
+      catchError(() => {
+        const appNum = mapAndStore(vendorId);
+        return of({ applicationNumber: appNum });
+      })
     );
   }
 

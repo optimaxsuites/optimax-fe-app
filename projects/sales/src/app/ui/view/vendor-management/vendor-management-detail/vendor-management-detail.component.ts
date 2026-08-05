@@ -156,7 +156,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     if (this.close.observed) {
       this.close.emit();
     } else {
-      this.location.back();
+      this.router.navigate(['/commerce/manage-vendors']);
     }
   }
 
@@ -420,7 +420,8 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
       [VendorStatus.UNDER_REVIEW]: 'Set to Under Review',
       [VendorStatus.SUSPENDED]: 'Suspend',
       [VendorStatus.OFFBOARDED]: 'Offboard',
-      [VendorStatus.CONDITIONAL]: 'Set to Conditional'
+      [VendorStatus.CONDITIONAL]: 'Set to Conditional',
+      [VendorStatus.REJECTED]: 'Reject'
     };
 
     if (status === VendorStatus.SUSPENDED) {
@@ -494,7 +495,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     console.log('Deleting vendor...');
     this.showConfirmDialog = false;
     this.confirmAction = null;
-    this.router.navigate(['/manage-vendors']);
+    this.router.navigate(['/commerce/manage-vendors']);
   }
 
   // ============================================================
@@ -527,7 +528,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   // ============================================================
 
   navigateToEdit(): void {
-    this.router.navigate(['/manage-vendors', this.vendorId, 'edit']);
+    this.router.navigate(['/commerce/manage-vendors', this.vendorId, 'edit']);
   }
 
   navigateToPerformance(): void {
@@ -581,7 +582,8 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
       [VendorStatus.UNDER_REVIEW]: 'Under Review',
       [VendorStatus.SUSPENDED]: 'Suspended',
       [VendorStatus.OFFBOARDED]: 'Offboarded',
-      [VendorStatus.CONDITIONAL]: 'Conditional'
+      [VendorStatus.CONDITIONAL]: 'Conditional',
+      [VendorStatus.REJECTED]: 'Rejected'
     };
     return map[status] || status;
   }

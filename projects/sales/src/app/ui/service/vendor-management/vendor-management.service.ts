@@ -647,6 +647,72 @@ const MOCK_RESOLUTION_AUDIT_LOG: ResolutionAuditLogEntry[] = [
 ];
 
 // ============================================================
+// ============================================================
+// PENDING VENDOR STORE — shared in-memory bridge between the
+// Vendor Portal and the Vendor Management side so that portal
+// submissions appear in the Approval Queue even when the backend
+// API is unavailable (dev / mock mode).  The store also persists
+// to localStorage so entries survive a page refresh.
+// ============================================================
+
+export class PendingVendorStore {
+  private static readonly STORAGE_KEY = 'erp_pending_vendors';
+  private static store: Map<string, Vendor> = PendingVendorStore.rehydrate();
+
+  private static rehydrate(): Map<string, Vendor> {
+    try {
+      const raw = localStorage.getItem(PendingVendorStore.STORAGE_KEY);
+      if (!raw) return new Map();
+      const arr: Vendor[] = JSON.parse(raw);
+      return new Map(arr.map(v => [v.id, v]));
+    } catch {
+      return new Map();
+    }
+  }
+
+  private static persist(): void {
+    try {
+      localStorage.setItem(
+        PendingVendorStore.STORAGE_KEY,
+        JSON.stringify(Array.from(PendingVendorStore.store.values()))
+      );
+    } catch { /* ignore quota errors */ }
+  }
+
+  static add(vendor: Vendor): void {
+    PendingVendorStore.store.set(vendor.id, vendor);
+    PendingVendorStore.persist();
+  }
+
+  static getAll(): Vendor[] {
+    return Array.from(PendingVendorStore.store.values());
+  }
+
+  static getById(id: string): Vendor | undefined {
+    return PendingVendorStore.store.get(id);
+  }
+
+  static updateStatus(id: string, status: VendorStatus): Vendor | null {
+    const vendor = PendingVendorStore.store.get(id);
+    if (!vendor) return null;
+    const updated: Vendor = { ...vendor, status, updatedAt: new Date() };
+    PendingVendorStore.store.set(id, updated);
+    PendingVendorStore.persist();
+    return updated;
+  }
+
+  static remove(id: string): void {
+    PendingVendorStore.store.delete(id);
+    PendingVendorStore.persist();
+  }
+
+  static clear(): void {
+    PendingVendorStore.store.clear();
+    localStorage.removeItem(PendingVendorStore.STORAGE_KEY);
+  }
+}
+
+// ============================================================
 // VENDOR SERVICE
 // ============================================================
 
@@ -660,6 +726,8 @@ export class VendorService {
   // ============================================================
   // TENANT ID HELPER
   // ============================================================
+
+  private readonly useMockData: boolean = !environment.production;
 
   private get tenantId(): string {
     const h = window.location.hostname;
@@ -874,18 +942,24 @@ export class VendorService {
       taxId: 'TIN-483920',
       email: 'contact@techcorp.com',
       phone: '+2348012345678',
-      status: 'ACTIVE',
-      tier: 'PREFERRED',
-      riskLevel: 'LOW',
+      status: VendorStatus.ACTIVE,
+      tier: VendorTier.PREFERRED,
+      riskLevel: RiskLevel.LOW,
       performanceScore: 95.4,
       totalProjects: 42,
       winRate: 65,
       averageRating: 4.8,
       categories: ['IT Services', 'Hardware'],
       address: { street: '12 Tech Ave', city: 'Lagos', state: 'Lagos', country: 'Nigeria', postalCode: '100001' },
-      createdAt: new Date(),
+      contacts: [], documents: [],
+      complianceStatus: { isCompliant: true, documentsVerified: 5, totalRequiredDocuments: 5, expiredDocuments: 0, expiringDocuments: 0, lastComplianceCheck: new Date(), sanctionsClear: true },
+      performanceMetrics: { overallScore: 95.4, onTimeDeliveryRate: 98, qualityScore: 94, costCompetitiveness: 90, complianceScore: 97, ratingScore: 95, winRate: 65, totalProjects: 42, totalRevenue: 12500000, averageOrderValue: 297619, lastUpdated: new Date(), trendData: [] },
+      lifecycleHistory: [], riskAlerts: [],
+      joinedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+      lastActivityDate: new Date(),
+      createdAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
       updatedAt: new Date()
-    } as unknown as Vendor,
+    } as Vendor,
     {
       id: 'v-102',
       companyName: 'Global Logistics Ltd',
@@ -893,18 +967,99 @@ export class VendorService {
       taxId: 'TIN-994823',
       email: 'info@globallogistics.com',
       phone: '+2348099887766',
-      status: 'ONBOARDING',
-      tier: 'CONDITIONAL',
-      riskLevel: 'MEDIUM',
+      status: VendorStatus.PENDING_ONBOARDING,
+      tier: VendorTier.CONDITIONAL,
+      riskLevel: RiskLevel.MEDIUM,
       performanceScore: 0,
       totalProjects: 0,
       winRate: 0,
       averageRating: 0,
       categories: ['Logistics', 'Supply Chain'],
       address: { street: '45 Trade Rd', city: 'Abuja', state: 'FCT', country: 'Nigeria', postalCode: '900001' },
-      createdAt: new Date(),
+      contacts: [], documents: [],
+      complianceStatus: { isCompliant: false, documentsVerified: 2, totalRequiredDocuments: 5, expiredDocuments: 0, expiringDocuments: 0, lastComplianceCheck: new Date(), sanctionsClear: true },
+      performanceMetrics: { overallScore: 0, onTimeDeliveryRate: 0, qualityScore: 0, costCompetitiveness: 0, complianceScore: 0, ratingScore: 0, winRate: 0, totalProjects: 0, totalRevenue: 0, averageOrderValue: 0, lastUpdated: new Date(), trendData: [] },
+      lifecycleHistory: [], riskAlerts: [],
+      joinedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      lastActivityDate: new Date(),
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       updatedAt: new Date()
-    } as unknown as Vendor
+    } as Vendor,
+    {
+      id: 'v-103',
+      companyName: 'Meridian Cold Storage Ltd',
+      registrationNumber: 'RC8876543',
+      taxId: 'TIN-112233',
+      email: 'admin@meridiancs.com',
+      phone: '+2348077665544',
+      status: VendorStatus.UNDER_REVIEW,
+      tier: VendorTier.APPROVED,
+      riskLevel: RiskLevel.MEDIUM,
+      performanceScore: 0,
+      totalProjects: 0,
+      winRate: 0,
+      averageRating: 0,
+      categories: ['Cold Chain', 'Logistics'],
+      address: { street: '22 Freight Lane', city: 'Lagos', state: 'Lagos', country: 'Nigeria', postalCode: '100003' },
+      contacts: [], documents: [],
+      complianceStatus: { isCompliant: false, documentsVerified: 4, totalRequiredDocuments: 5, expiredDocuments: 0, expiringDocuments: 0, lastComplianceCheck: new Date(), sanctionsClear: true },
+      performanceMetrics: { overallScore: 0, onTimeDeliveryRate: 0, qualityScore: 0, costCompetitiveness: 0, complianceScore: 0, ratingScore: 0, winRate: 0, totalProjects: 0, totalRevenue: 0, averageOrderValue: 0, lastUpdated: new Date(), trendData: [] },
+      lifecycleHistory: [], riskAlerts: [],
+      joinedDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      lastActivityDate: new Date(),
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date()
+    } as Vendor,
+    {
+      id: 'v-204',
+      companyName: 'Vanguard Security Services',
+      registrationNumber: 'RC2034567',
+      taxId: 'TIN-567890',
+      email: 'ops@vanguardsecurity.com',
+      phone: '+2348056789012',
+      status: VendorStatus.ACTIVE,
+      tier: VendorTier.APPROVED,
+      riskLevel: RiskLevel.MEDIUM,
+      performanceScore: 79.0,
+      totalProjects: 18,
+      winRate: 55,
+      averageRating: 4.1,
+      categories: ['Security', 'Facility Management'],
+      address: { street: '34 Guard Lane', city: 'Lagos', state: 'Lagos', country: 'Nigeria', postalCode: '100002' },
+      contacts: [], documents: [],
+      complianceStatus: { isCompliant: true, documentsVerified: 5, totalRequiredDocuments: 5, expiredDocuments: 0, expiringDocuments: 0, lastComplianceCheck: new Date(), sanctionsClear: true },
+      performanceMetrics: { overallScore: 79.0, onTimeDeliveryRate: 79, qualityScore: 80, costCompetitiveness: 75, complianceScore: 82, ratingScore: 80, winRate: 55, totalProjects: 18, totalRevenue: 5400000, averageOrderValue: 300000, lastUpdated: new Date(), trendData: [] },
+      lifecycleHistory: [], riskAlerts: [],
+      joinedDate: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000),
+      lastActivityDate: new Date(),
+      createdAt: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date()
+    } as Vendor,
+    {
+      id: 'v-233',
+      companyName: 'Northbridge Cold Chain Logistics',
+      registrationNumber: 'RC3344556',
+      taxId: 'TIN-778899',
+      email: 'logistics@northbridge.com',
+      phone: '+2348034567890',
+      status: VendorStatus.ACTIVE,
+      tier: VendorTier.APPROVED,
+      riskLevel: RiskLevel.LOW,
+      performanceScore: 88.5,
+      totalProjects: 31,
+      winRate: 60,
+      averageRating: 4.4,
+      categories: ['Logistics', 'Cold Chain', 'Warehousing'],
+      address: { street: '7 Cold Storage Ave', city: 'Port Harcourt', state: 'Rivers', country: 'Nigeria', postalCode: '500001' },
+      contacts: [], documents: [],
+      complianceStatus: { isCompliant: true, documentsVerified: 5, totalRequiredDocuments: 5, expiredDocuments: 0, expiringDocuments: 1, lastComplianceCheck: new Date(), sanctionsClear: true },
+      performanceMetrics: { overallScore: 88.5, onTimeDeliveryRate: 90, qualityScore: 87, costCompetitiveness: 84, complianceScore: 88, ratingScore: 89, winRate: 60, totalProjects: 31, totalRevenue: 9300000, averageOrderValue: 300000, lastUpdated: new Date(), trendData: [] },
+      lifecycleHistory: [], riskAlerts: [],
+      joinedDate: new Date(Date.now() - 280 * 24 * 60 * 60 * 1000),
+      lastActivityDate: new Date(),
+      createdAt: new Date(Date.now() - 280 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date()
+    } as Vendor
   ];
 
   // ADD THIS - Mock performance metrics inside the class
@@ -1217,6 +1372,56 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
   }
 
   // ============================================================
+  // FIELD MAPPING — normalises raw API response to Vendor interface
+  // ============================================================
+
+  private mapVendor(raw: any): Vendor {
+    const performanceScore = raw.performanceScore ?? raw.performance_score ?? raw.score ?? 0;
+    const totalProjects = raw.totalProjects ?? raw.total_projects ?? raw.projectCount ?? 0;
+    return {
+      id: raw.id || raw._id || raw.vendorId || '',
+      companyName: raw.companyName || raw.company_name || raw.name || raw.company || '',
+      registrationNumber: raw.registrationNumber || raw.registration_number || raw.regNumber || raw.rc_number || '',
+      taxId: raw.taxId || raw.tax_id || raw.tin || raw.taxNumber || '',
+      email: raw.email || raw.emailAddress || raw.email_address || '',
+      phone: raw.phone || raw.phoneNumber || raw.phone_number || raw.mobile || '',
+      website: raw.website || raw.websiteUrl || raw.web_site || undefined,
+      address: raw.address || { street: '', city: '', state: '', country: 'Nigeria', postalCode: '' },
+      status: (raw.status || raw.vendorStatus || VendorStatus.PENDING_ONBOARDING) as VendorStatus,
+      tier: (raw.tier || raw.vendorTier || VendorTier.APPROVED) as VendorTier,
+      riskLevel: (raw.riskLevel || raw.risk_level || raw.risk || RiskLevel.LOW) as RiskLevel,
+      performanceScore,
+      totalProjects,
+      winRate: raw.winRate ?? raw.win_rate ?? 0,
+      averageRating: raw.averageRating ?? raw.average_rating ?? raw.rating ?? 0,
+      joinedDate: raw.joinedDate ? new Date(raw.joinedDate) : (raw.createdAt ? new Date(raw.createdAt) : new Date()),
+      lastActivityDate: raw.lastActivityDate ? new Date(raw.lastActivityDate) : (raw.updatedAt ? new Date(raw.updatedAt) : new Date()),
+      categories: Array.isArray(raw.categories) ? raw.categories : [],
+      logo: raw.logo || raw.logoUrl || undefined,
+      description: raw.description || '',
+      paymentTerms: raw.paymentTerms || raw.payment_terms || 'Net 30',
+      bankDetails: raw.bankDetails || raw.bank_details || undefined,
+      contacts: Array.isArray(raw.contacts) ? raw.contacts : [],
+      documents: Array.isArray(raw.documents) ? raw.documents : [],
+      complianceStatus: raw.complianceStatus || raw.compliance_status || {
+        isCompliant: true, documentsVerified: 0, totalRequiredDocuments: 0,
+        expiredDocuments: 0, expiringDocuments: 0, lastComplianceCheck: new Date(), sanctionsClear: true
+      },
+      performanceMetrics: raw.performanceMetrics || raw.performance_metrics || {
+        overallScore: performanceScore, onTimeDeliveryRate: 0, qualityScore: 0,
+        costCompetitiveness: 0, complianceScore: 0, ratingScore: 0,
+        winRate: raw.winRate ?? 0, totalProjects,
+        totalRevenue: raw.totalRevenue ?? raw.total_revenue ?? 0,
+        averageOrderValue: 0, lastUpdated: new Date(), trendData: []
+      },
+      lifecycleHistory: Array.isArray(raw.lifecycleHistory) ? raw.lifecycleHistory : [],
+      riskAlerts: Array.isArray(raw.riskAlerts) ? raw.riskAlerts : [],
+      createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
+      updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : new Date(),
+    } as Vendor;
+  }
+
+  // ============================================================
   // VENDOR CRUD OPERATIONS
   // ============================================================
 
@@ -1225,10 +1430,13 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
     limit: number = 20,
     filters?: {
       status?: VendorStatus;
+      statuses?: VendorStatus[];
       tier?: VendorTier;
       riskLevel?: RiskLevel;
       search?: string;
       category?: string;
+      dateFrom?: string;
+      dateTo?: string;
     }
   ): Observable<VendorListResponse> {
     this.loadingSubject.next(true);
@@ -1239,15 +1447,69 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
       .set('size', limit.toString());
 
     if (filters) {
-      if (filters.status) params = params.set('status', filters.status);
+      if (filters.statuses) {
+        const statuses = Array.isArray(filters.statuses) ? filters.statuses : [filters.statuses];
+        params = params.set('statuses', statuses.join(','));
+      } else if (filters.status) {
+        params = params.set('status', filters.status);
+      }
       if (filters.search) params = params.set('search', filters.search);
+      if (filters.tier) params = params.set('tier', filters.tier);
+      if (filters.riskLevel) params = params.set('riskLevel', filters.riskLevel);
+      if (filters.category) params = params.set('category', filters.category);
+      if (filters.dateFrom) params = params.set('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params = params.set('dateTo', filters.dateTo);
+    }
+
+    if (this.useMockData) {
+      const allMock = [
+        ...this.MOCK_VENDORS,
+        ...PendingVendorStore.getAll()
+      ];
+      // Deduplicate — store entries take precedence (they have live status)
+      const seen = new Set<string>();
+      let mockVendors = allMock.filter(v => {
+        if (seen.has(v.id)) return false;
+        seen.add(v.id);
+        return true;
+      });
+
+      if (filters?.statuses && Array.isArray(filters.statuses)) {
+        mockVendors = mockVendors.filter(v => filters.statuses!.includes(v.status));
+      } else if (filters?.status) {
+        mockVendors = mockVendors.filter(v => v.status === filters.status);
+      }
+
+      const listResponse: VendorListResponse = {
+        vendors: mockVendors,
+        total: mockVendors.length,
+        page,
+        limit,
+        totalPages: 1
+      };
+      this.vendorsSubject.next(mockVendors);
+      this.loadingSubject.next(false);
+      return of(listResponse);
     }
 
     return this.http.get<any>(`${this.baseUrl}/vendors`, { params })
       .pipe(
         map(res => {
-          const vendors: Vendor[] = Array.isArray(res) ? res : (res?.vendors ?? res?.data ?? []);
-          const listResponse: VendorListResponse = { vendors, total: vendors.length, page, limit, totalPages: 1 };
+          const rawVendors: any[] = Array.isArray(res)
+            ? res
+            : (res?.vendors ?? res?.data ?? res?.content ?? []);
+          const vendors: Vendor[] = rawVendors.map(v => this.mapVendor(v));
+
+          const resultVendors = vendors.length ? vendors : this.filterMockVendors(filters);
+          const totalCount = res?.total ?? res?.totalCount ?? res?.totalElements ?? resultVendors.length;
+          const totalPages = res?.totalPages ?? res?.pages ?? Math.max(Math.ceil(totalCount / limit), 1);
+          const listResponse: VendorListResponse = {
+            vendors: resultVendors,
+            total: totalCount,
+            page,
+            limit,
+            totalPages
+          };
           return listResponse;
         }),
         tap(response => {
@@ -1256,8 +1518,9 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
         }),
         catchError(err => {
           this.loadingSubject.next(false);
-          const listResponse: VendorListResponse = { vendors: this.MOCK_VENDORS, total: this.MOCK_VENDORS.length, page, limit, totalPages: 1 };
-          this.vendorsSubject.next(this.MOCK_VENDORS);
+          const fallbackVendors = this.filterMockVendors(filters);
+          const listResponse: VendorListResponse = { vendors: fallbackVendors, total: fallbackVendors.length, page, limit, totalPages: 1 };
+          this.vendorsSubject.next(fallbackVendors);
           return of(listResponse);
         })
       );
@@ -1265,6 +1528,15 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
 
   getVendorById(id: string): Observable<Vendor> {
     this.loadingSubject.next(true);
+
+    // Check the live cache first, then the shared portal store
+    const cachedVendor = this.vendorsSubject.value.find(v => v.id === id)
+      ?? PendingVendorStore.getById(id);
+    if (cachedVendor) {
+      this.selectedVendorSubject.next(cachedVendor);
+      this.loadingSubject.next(false);
+      return of(cachedVendor);
+    }
 
     return this.http.get<Vendor>(`${this.baseUrl}/vendors/${id}`)
       .pipe(
@@ -1274,7 +1546,9 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
         }),
         catchError(err => {
           this.loadingSubject.next(false);
-          const fallbackVendor = this.MOCK_VENDORS.find(v => v.id === id) || this.MOCK_VENDORS[0];
+          // Check the portal store first, then fall back to static mocks
+          const storeVendor = PendingVendorStore.getById(id);
+          const fallbackVendor = storeVendor || this.MOCK_VENDORS.find(v => v.id === id) || this.MOCK_VENDORS[0];
           if (fallbackVendor) {
             const vendorWithDefaults: Vendor = {
               ...fallbackVendor,
@@ -1424,13 +1698,31 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
   updateVendorStatus(id: string, status: VendorStatus): Observable<Vendor> {
     return this.http.patch<Vendor>(`${this.baseUrl}/vendors/${id}/review`, { status })
       .pipe(
+        map(raw => this.mapVendor(raw)),
         tap(vendor => {
           this.selectedVendorSubject.next(vendor);
           this.updateVendorInList(vendor);
+          // Sync the status change into the shared store so both sides stay consistent
+          PendingVendorStore.updateStatus(id, status);
         }),
-        catchError(err => {
+        catchError(() => {
+          // Mock fallback — update the shared store and emit the changed vendor
+          const updated = PendingVendorStore.updateStatus(id, status);
+          if (updated) {
+            this.updateVendorInList(updated);
+            this.selectedVendorSubject.next(updated);
+            return of(updated);
+          }
+          // Vendor might only be in MOCK_VENDORS — patch it inline
+          const mockIdx = (this.MOCK_VENDORS as Vendor[]).findIndex(v => v.id === id);
+          if (mockIdx !== -1) {
+            const patched: Vendor = { ...(this.MOCK_VENDORS as Vendor[])[mockIdx], status, updatedAt: new Date() };
+            (this.MOCK_VENDORS as Vendor[])[mockIdx] = patched;
+            this.updateVendorInList(patched);
+            return of(patched);
+          }
           this.errorSubject.next('Failed to update vendor status');
-          return throwError(() => err);
+          return throwError(() => new Error('Vendor not found in local store'));
         })
       );
   }
@@ -2334,6 +2626,51 @@ getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
       );
   }
 
+  private filterMockVendors(filters?: any): Vendor[] {
+    // Merge static mock vendors with any vendors submitted via the portal
+    let vendors = [...this.MOCK_VENDORS, ...PendingVendorStore.getAll()];
+    // Deduplicate by id (store entries take precedence — they have live status)
+    const seen = new Set<string>();
+    vendors = vendors.filter(v => {
+      if (seen.has(v.id)) return false;
+      seen.add(v.id);
+      return true;
+    });
+
+    if (!filters) return vendors;
+
+    if (filters.statuses) {
+      const statuses = Array.isArray(filters.statuses) ? filters.statuses : [filters.statuses];
+      vendors = vendors.filter(v => statuses.includes(v.status));
+    } else if (filters.status) {
+      vendors = vendors.filter(v => v.status === filters.status);
+    }
+
+    if (filters.tier) {
+      vendors = vendors.filter(v => v.tier === filters.tier);
+    }
+
+    if (filters.riskLevel) {
+      vendors = vendors.filter(v => v.riskLevel === filters.riskLevel);
+    }
+
+    if (filters.category) {
+      const category = String(filters.category).toLowerCase();
+      vendors = vendors.filter(v => (v.categories || []).some((cat: string) => cat.toLowerCase().includes(category)));
+    }
+
+    if (filters.search) {
+      const search = String(filters.search).toLowerCase();
+      vendors = vendors.filter(v =>
+        (v.companyName || '').toLowerCase().includes(search) ||
+        (v.email || '').toLowerCase().includes(search) ||
+        (v.registrationNumber || '').toLowerCase().includes(search)
+      );
+    }
+
+    return vendors;
+  }
+
   getResolutionAuditLog(): Observable<ResolutionAuditLogEntry[]> {
     return this.http.get<ResolutionAuditLogEntry[]>(`${API_BASE}/resolution/audit-log`)
       .pipe(
@@ -2341,6 +2678,76 @@ getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
         catchError(() => of(MOCK_RESOLUTION_AUDIT_LOG))
       );
   }
+
+  getPendingVendors(page: number = 1, limit: number = 20, filters?: any): Observable<VendorListResponse> {
+  this.loadingSubject.next(true);
+  
+  let params = new HttpParams()
+    .set('page', page.toString())
+    .set('limit', limit.toString())
+    .set('statuses', `${VendorStatus.PENDING_ONBOARDING},${VendorStatus.UNDER_REVIEW}`);
+
+  if (filters) {
+    if (filters.search) params = params.set('search', filters.search);
+    if (filters.status) params = params.set('status', filters.status);
+    if (filters.tier) params = params.set('tier', filters.tier);
+    if (filters.riskLevel) params = params.set('riskLevel', filters.riskLevel);
+    if (filters.category) params = params.set('category', filters.category);
+    if (filters.dateFrom) params = params.set('dateFrom', filters.dateFrom);
+    if (filters.dateTo) params = params.set('dateTo', filters.dateTo);
+  }
+
+  return this.http.get<VendorListResponse>(`${API_BASE}/vendors/pending`, { params })
+    .pipe(
+      tap(response => {
+        this.loadingSubject.next(false);
+      }),
+      catchError(err => {
+        this.loadingSubject.next(false);
+        this.errorSubject.next('Failed to load pending vendors');
+        return throwError(() => err);
+      })
+    );
+}
+
+/**
+ * Approve a vendor (admin action)
+ */
+approveVendor(id: string, notes?: string): Observable<Vendor> {
+  this.loadingSubject.next(true);
+  
+  return this.http.patch<Vendor>(`${API_BASE}/vendors/${id}/approve`, { notes })
+    .pipe(
+      tap(vendor => {
+        this.loadingSubject.next(false);
+      }),
+      catchError(err => {
+        this.loadingSubject.next(false);
+        this.errorSubject.next('Failed to approve vendor');
+        return throwError(() => err);
+      })
+    );
+}
+
+/**
+ * Reject a vendor (admin action)
+ */
+rejectVendor(id: string, reason: string): Observable<Vendor> {
+  this.loadingSubject.next(true);
+  
+  return this.http.patch<Vendor>(`${API_BASE}/vendors/${id}/reject`, { reason })
+    .pipe(
+      tap(vendor => {
+        this.loadingSubject.next(false);
+      }),
+      catchError(err => {
+        this.loadingSubject.next(false);
+        this.errorSubject.next('Failed to reject vendor');
+        return throwError(() => err);
+      })
+    );
+}
+
 
   // ============================================================
   // CLEAR STATE
