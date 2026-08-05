@@ -292,6 +292,18 @@ $muted:  #94a3b8;
     color: #b91c1c;
     &:hover { background: #fecaca; }
   }
+
+  &--purple {
+    background: #ede9fe;
+    color: #7c3aed;
+    &:hover { background: #ddd6fe; }
+  }
+
+  &--teal {
+    background: #ccfbf1;
+    color: #0d9488;
+    &:hover { background: #99f6e4; }
+  }
 }
 
 // ── Detail cells ──────────────────────────────────────────────────────────────
@@ -601,4 +613,72 @@ $muted:  #94a3b8;
   padding: 16px 24px;
   border-top: 1px solid $border;
   background: #fafbfc;
+}
+
+// ── Reset password modal ───────────────────────────────────────────────────────
+.um-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.um-modal-card {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+  overflow: hidden;
+}
+
+.um-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid $border;
+}
+
+.um-modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: $text;
+  margin: 0;
+}
+
+.um-modal-body {
+  padding: 20px 22px;
+}
+
+.um-modal-user {
+  font-size: 13px;
+  color: $slate;
+  margin: 0 0 4px;
+}
+
+.um-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px;
+  border-top: 1px solid $border;
+  background: #fafbfc;
+}
+
+.um-field-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid $border;
+  border-radius: 7px;
+  font-size: 13px;
+  color: $text;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color .15s;
+
+  &:focus { border-color: #7c3aed; }
 }

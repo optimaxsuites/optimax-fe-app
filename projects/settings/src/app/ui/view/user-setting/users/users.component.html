@@ -61,6 +61,12 @@
           <button class="um-icon-btn um-icon-btn--blue" (click)="editCompensation(user, $event)" title="{{ user.isEditing ? 'Save Changes' : 'Edit' }}">
             <i class="fas" [class.fa-pen]="!user.isEditing" [class.fa-save]="user.isEditing"></i>
           </button>
+          <button class="um-icon-btn um-icon-btn--teal" (click)="openEditEmailModal(user, $event)" *ngIf="!user.isEditing" title="Edit company email">
+            <i class="fas fa-envelope"></i>
+          </button>
+          <button class="um-icon-btn um-icon-btn--purple" (click)="openResetPasswordModal(user, $event)" *ngIf="!user.isEditing" title="Reset password">
+            <i class="fas fa-key"></i>
+          </button>
           <button class="um-icon-btn um-icon-btn--red" (click)="confirmDeleteUser(user, $event)" *ngIf="!user.isEditing" title="Delete user">
             <i class="fas fa-trash"></i>
           </button>
@@ -212,4 +218,63 @@
 
   }
 
+</div>
+
+<!-- Edit Email Modal -->
+<div class="um-modal-overlay" *ngIf="editEmailModal.visible" (click)="closeEditEmailModal()">
+  <div class="um-modal-card" (click)="$event.stopPropagation()">
+    <div class="um-modal-header">
+      <h3 class="um-modal-title"><i class="fas fa-envelope" style="margin-right:8px;color:#0d9488"></i>Edit Company Email</h3>
+      <button class="um-icon-btn" (click)="closeEditEmailModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="um-modal-body">
+      <p class="um-modal-user">User: <strong>{{ editEmailModal.user?.username || editEmailModal.user?.name }}</strong></p>
+      <div class="um-info-box um-info-box--blue" style="margin-bottom:14px">
+        <i class="fas fa-info-circle"></i>
+        <p>Enter the company-assigned email for this employee. Personal email providers (Gmail, Yahoo, Hotmail, etc.) are not allowed.</p>
+      </div>
+      <div class="um-field" style="margin-top:4px">
+        <label class="um-field-label">Company Email</label>
+        <input type="email" class="um-field-input" [(ngModel)]="editEmailModal.newEmail"
+               placeholder="employee@company.com" autocomplete="off" />
+      </div>
+    </div>
+    <div class="um-modal-footer">
+      <button class="um-btn um-btn--ghost" (click)="closeEditEmailModal()">Cancel</button>
+      <button class="um-btn um-btn--primary" (click)="submitEditEmail()" [disabled]="editEmailModal.loading">
+        <i class="fas" [class.fa-envelope]="!editEmailModal.loading" [class.fa-spinner]="editEmailModal.loading" [class.fa-spin]="editEmailModal.loading"></i>
+        {{ editEmailModal.loading ? 'Saving…' : 'Save Email' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="um-modal-overlay" *ngIf="resetPasswordModal.visible" (click)="closeResetPasswordModal()">
+  <div class="um-modal-card" (click)="$event.stopPropagation()">
+    <div class="um-modal-header">
+      <h3 class="um-modal-title"><i class="fas fa-key" style="margin-right:8px;color:#7c3aed"></i>Reset Password</h3>
+      <button class="um-icon-btn" (click)="closeResetPasswordModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="um-modal-body">
+      <p class="um-modal-user">User: <strong>{{ resetPasswordModal.user?.username || resetPasswordModal.user?.name }}</strong></p>
+      <div class="um-field" style="margin-top:12px">
+        <label class="um-field-label">New Password</label>
+        <input type="password" class="um-field-input" [(ngModel)]="resetPasswordModal.newPassword"
+               placeholder="Min. 6 characters" autocomplete="new-password" />
+      </div>
+      <div class="um-field" style="margin-top:10px">
+        <label class="um-field-label">Confirm Password</label>
+        <input type="password" class="um-field-input" [(ngModel)]="resetPasswordModal.confirmPassword"
+               placeholder="Re-enter new password" autocomplete="new-password" />
+      </div>
+    </div>
+    <div class="um-modal-footer">
+      <button class="um-btn um-btn--ghost" (click)="closeResetPasswordModal()">Cancel</button>
+      <button class="um-btn um-btn--primary" (click)="submitResetPassword()" [disabled]="resetPasswordModal.loading">
+        <i class="fas" [class.fa-key]="!resetPasswordModal.loading" [class.fa-spinner]="resetPasswordModal.loading" [class.fa-spin]="resetPasswordModal.loading"></i>
+        {{ resetPasswordModal.loading ? 'Resetting…' : 'Reset Password' }}
+      </button>
+    </div>
+  </div>
 </div>

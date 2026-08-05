@@ -121,11 +121,11 @@ export class CorrectionrequestComponent  implements OnInit{
       if (todayRecord) {
         this.adminCorrectionRequestService.submitCorrectionRequest(
           {
-            employeeId: todayRecord.employeeId,
+            employeeId: todayRecord.employeeId!,
             employeeName: todayRecord.employee || employeeName,
             recordId: todayRecord.id,
             type: request.issueType === 'MISSED_CLOCK' ? 'STATUS_CORRECTION' : 'TIME_CORRECTION',
-            reason: request.description,
+            reason: request.description ?? '',
             currentStatus: todayRecord.status,
             requestedAt: new Date().toISOString()
           },

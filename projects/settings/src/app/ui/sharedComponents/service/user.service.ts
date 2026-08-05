@@ -25,6 +25,18 @@ export class UserService {
          .pipe(catchError(this.handleError))
      }
 
+    adminResetPassword(userId: number, newPassword: string): Observable<any> {
+      return this.http
+        .post<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/admin/reset-password/${userId}`, { password: newPassword })
+        .pipe(catchError(this.handleError));
+    }
+
+    adminUpdateEmail(userId: number, newEmail: string): Observable<any> {
+      return this.http
+        .patch<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/admin/update-email/${userId}`, { email: newEmail })
+        .pipe(catchError(this.handleError));
+    }
+
       private getBaseApiUrl(): string {
          return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
        }
