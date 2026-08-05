@@ -128,7 +128,7 @@ export class HrSettingsComponent implements OnInit {
   }
 
   // ── Navigation ─────────────────────────────────────────────────────────────
-  activeSection: 'notifications' | 'odoo' | 'general' | 'forms' | 'office-hours' = 'notifications';
+  activeSection: 'notifications' | 'odoo' | 'general' | 'forms' | 'payroll' | 'office-hours' = 'notifications';
 
   // ── Notification prefs ─────────────────────────────────────────────────────
   readonly notifChannels: Array<{ key: NotifChannel; label: string; icon: string; desc: string }> = [
@@ -173,7 +173,7 @@ export class HrSettingsComponent implements OnInit {
     this.loadPrefs();
     this.route.queryParams.subscribe(params => {
       const panel = params['panel'];
-      if (panel && ['notifications', 'odoo', 'general', 'forms', 'office-hours'].includes(panel)) {
+      if (panel && ['notifications', 'odoo', 'general', 'forms', 'payroll', 'office-hours'].includes(panel)) {
         this.activeSection = panel as typeof this.activeSection;
       }
     });
