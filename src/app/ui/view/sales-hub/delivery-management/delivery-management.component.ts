@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../shared-component/service/environments/environment';
+import { formatApiDate, parseApiDate } from '../../../service/sales/date.util';
 
 export interface DeliveryLineItem {
   name: string;
@@ -252,16 +253,16 @@ export class DeliveryManagementComponent implements OnInit {
   }
 
   getDaysOverdue(expected: string): number {
-    if (!expected) return 0;
-    const today = new Date();
-    const due = new Date(expected);
-    const diff = today.getTime() - due.getTime();
+    const due = parseApiDate(expected);
+    if (!due) return 0;
+    const diff = Date.now() - due.getTime();
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }
 
   isOverdue(expected: string, status: string): boolean {
-    if (!expected || status === 'DELIVERED') return false;
-    return new Date(expected) < new Date();
+    if (status === 'DELIVERED') return false;
+    const due = parseApiDate(expected);
+    return !!due && due < new Date();
   }
 
   getDeliveredCount(delivery: DeliveryItem): number {
@@ -279,12 +280,7 @@ export class DeliveryManagementComponent implements OnInit {
   }
 
   formatDate(date: string | null): string {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date);
   }
 
   trackById(_: number, item: DeliveryItem): string {

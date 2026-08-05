@@ -2,6 +2,7 @@ import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote, Invoice, SalesandTransactions, AdditionalQuoteOptions } from '../../../../domain/sales/sales.dto';
+import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { CommonModule } from '@angular/common';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
@@ -64,12 +65,7 @@ export class QuoteDetailComponent implements OnInit {
   }
 
   formatDate(date: any): string {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-NG', '');
   }
 
   getStatusBadgeClass(status: string): string {
@@ -109,10 +105,9 @@ export class QuoteDetailComponent implements OnInit {
   }
 
   isExpiringSoon(validUntil: Date | string): boolean {
-    if (!validUntil) return false;
-    const validDate = new Date(validUntil);
-    const today = new Date();
-    const diffTime = validDate.getTime() - today.getTime();
+    const validDate = parseApiDate(validUntil);
+    if (!validDate) return false;
+    const diffTime = validDate.getTime() - Date.now();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 3 && diffDays >= 0;
   }

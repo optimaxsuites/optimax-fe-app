@@ -8,6 +8,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer } from '../../../../domain/sales/sales.dto';
+import { formatApiDate } from '../../../../service/sales/date.util';
 
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { CustomerFormComponent } from '../customer-form/customer-form.component';
@@ -255,12 +256,7 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date);
   }
 
   deleteCustomer(customer: Customer): void {

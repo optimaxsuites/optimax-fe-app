@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Invoice, InvoiceStatus } from '../../../../domain/sales/sales.dto';
+import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
@@ -244,22 +245,20 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date);
   }
 
   isOverdue(dueDate: Date): boolean {
-    return new Date(dueDate) < new Date() && new Date(dueDate).toDateString() !== new Date().toDateString();
+    const due = parseApiDate(dueDate);
+    if (!due) return false;
+    const now = new Date();
+    return due < now && due.toDateString() !== now.toDateString();
   }
 
   getDaysOverdue(dueDate: Date): number {
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = today.getTime() - due.getTime();
+    const due = parseApiDate(dueDate);
+    if (!due) return 0;
+    const diffTime = Date.now() - due.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
 

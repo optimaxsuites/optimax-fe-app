@@ -50,7 +50,7 @@
         <div class="step-item" [class.completed]="isStepCompleted(1)">
           <div class="step-icon"><i class="fas fa-paper-plane"></i></div>
           <div class="step-label">Quote Sent</div>
-          <div class="step-date">{{ (transaction.quoteSentDate || transaction.orderDate) | date:'mediumDate' }}</div>
+          <div class="step-date">{{ toDate(transaction.quoteSentDate || transaction.orderDate) | date:'mediumDate' }}</div>
         </div>
         <div class="step-line" [class.active]="isStepCompleted(2)"></div>
 
@@ -58,7 +58,7 @@
         <div class="step-item" [class.completed]="isStepCompleted(2)">
           <div class="step-icon"><i class="fas fa-check-circle"></i></div>
           <div class="step-label">Quote Converted</div>
-          <div class="step-date">{{ (transaction.quoteConvertedDate || transaction.quoteAcceptedOrRejectedDate) | date:'mediumDate' }}</div>
+          <div class="step-date">{{ toDate(transaction.quoteConvertedDate || transaction.quoteAcceptedOrRejectedDate) | date:'mediumDate' }}</div>
         </div>
         <div class="step-line" [class.active]="isStepCompleted(3)"></div>
 
@@ -67,7 +67,7 @@
           <div class="step-icon"><i class="fas fa-file-invoice-dollar"></i></div>
           <div class="step-label">Invoice Issued</div>
           <div class="step-date">
-            <ng-container *ngIf="transaction.invoiceSentDate">{{ transaction.invoiceSentDate | date:'mediumDate' }}</ng-container>
+            <ng-container *ngIf="transaction.invoiceSentDate">{{ toDate(transaction.invoiceSentDate) | date:'mediumDate' }}</ng-container>
             <ng-container *ngIf="!transaction.invoiceSentDate">INV: {{ getInvoiceNumber() }}</ng-container>
           </div>
         </div>
@@ -86,12 +86,12 @@
           <div class="step-icon"><i class="fas fa-truck"></i></div>
           <div class="step-label">Fulfillment</div>
           <div class="step-date">
-            <ng-container *ngIf="transaction.deliveredAt && transaction.deliveredAt.getTime() > 0">
-              {{ transaction.deliveredAt | date:'mediumDate' }}
+            <ng-container *ngIf="getDeliveredAtDate() as deliveredAt; else notDelivered">
+              {{ deliveredAt | date:'mediumDate' }}
             </ng-container>
-            <ng-container *ngIf="!transaction.deliveredAt || transaction.deliveredAt.getTime() === 0">
+            <ng-template #notDelivered>
               {{ transaction.status === 'DELIVERED' ? 'Delivered' : 'In Progress' }}
-            </ng-container>
+            </ng-template>
           </div>
         </div>
 
