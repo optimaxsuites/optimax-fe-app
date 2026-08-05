@@ -32,7 +32,7 @@ import {
   TaskRoutineSummary,
 } from '../ui/services/collaboration.service';
 import { catchError, firstValueFrom, forkJoin, of } from 'rxjs';
-import { HeaderStateService } from '../../../../../src/app/ui/shared/service/header-state.service';
+import { HeaderStateService } from '../shared/service/header-state.service';
 import {
   ComposerLinkPreview,
   ComposerMentionOption,
