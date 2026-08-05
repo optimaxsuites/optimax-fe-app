@@ -62,6 +62,10 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   products: Product[] = [];
   filteredProducts: Product[] = [];
   
+  // Categories
+  categories: string[] = [];
+  selectedCategoryForIndex: { [key: number]: string } = {};
+  
   // UI State
   showNewCustomerModal = false;
   showProductModal = false;
@@ -219,6 +223,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
     this.loadCustomers();
     this.loadProducts();
+    this.loadCategories();
     this.setupFormListeners();
 
     if (this.isEditMode) {
@@ -428,6 +433,15 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   removeLineItem(index: number): void {
     this.items.removeAt(index);
+    // Shift category index maps to keep them aligned
+    const newSelectedCategoryForIndex: { [key: number]: string } = {};
+    for (let i = 0; i < this.items.length; i++) {
+      const oldIndex = i >= index ? i + 1 : i;
+      if (this.selectedCategoryForIndex[oldIndex]) {
+        newSelectedCategoryForIndex[i] = this.selectedCategoryForIndex[oldIndex];
+      }
+    }
+    this.selectedCategoryForIndex = newSelectedCategoryForIndex;
     this.calculateTotals();
   }
 
@@ -561,12 +575,90 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         this.products = response.data;
         this.filteredProducts = this.products;
         this.checkAndAddProductFromParam();
+        this.initializeCategoriesForExistingItems();
       },
       error: (error: any) => {
         console.error('Error loading products:', error);
         this.checkAndAddProductFromParam();
       }
     });
+  }
+
+  private loadCategories(): void {
+    this.salesService.getCategories().subscribe({
+      next: (cats: any[]) => {
+        this.categories = (cats || []).map(c => c.name).filter(Boolean);
+      },
+      error: (err) => {
+        console.error('Error loading categories:', err);
+      }
+    });
+  }
+
+  getProductsForIndex(index: number): Product[] {
+    const selectedCategory = this.selectedCategoryForIndex[index];
+    const itemForm = this.items.at(index);
+    const selectedProductId = itemForm?.get('productId')?.value;
+
+    let list = this.products;
+    if (selectedCategory) {
+      list = this.products.filter(p => {
+        const catName = typeof p.category === 'object' ? p.category?.name : p.category;
+        return catName?.toLowerCase() === selectedCategory.toLowerCase();
+      });
+    }
+
+    if (selectedProductId) {
+      const selectedProduct = this.products.find(p => String(p.id) === String(selectedProductId));
+      if (selectedProduct && !list.some(p => String(p.id) === String(selectedProductId))) {
+        list = [...list, selectedProduct];
+      }
+    }
+
+    return list;
+  }
+
+  onCategoryChange(index: number, category: string): void {
+    this.selectedCategoryForIndex[index] = category;
+    
+    // Clear product selection for this row if the current product is not in the new category
+    const itemForm = this.items.at(index);
+    const currentProductId = itemForm.get('productId')?.value;
+    if (currentProductId) {
+      const product = this.products.find(p => String(p.id) === String(currentProductId));
+      if (product) {
+        const catName = typeof product.category === 'object' ? product.category?.name : product.category;
+        if (catName?.toLowerCase() !== category.toLowerCase() && category !== '') {
+          itemForm.patchValue({
+            productId: '',
+            productName: '',
+            description: '',
+            unitPrice: 0,
+            total: 0,
+            taxAmount: 0
+          });
+          this.calculateItemTotal(itemForm);
+        }
+      }
+    }
+  }
+
+  initializeCategoriesForExistingItems(): void {
+    if (this.items && this.items.length > 0) {
+      for (let i = 0; i < this.items.length; i++) {
+        const itemForm = this.items.at(i);
+        const productId = itemForm.get('productId')?.value;
+        if (productId) {
+          const product = this.products.find(p => String(p.id) === String(productId));
+          if (product) {
+            const catName = typeof product.category === 'object' ? product.category?.name : product.category;
+            if (catName) {
+              this.selectedCategoryForIndex[i] = catName;
+            }
+          }
+        }
+      }
+    }
   }
 
   private checkAndAddProductFromParam(): void {
