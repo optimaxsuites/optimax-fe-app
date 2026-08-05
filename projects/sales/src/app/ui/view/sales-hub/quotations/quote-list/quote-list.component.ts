@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote, QuoteStatus } from '../../../../domain/sales/sales.dto';
+import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { QuoteFormComponent } from '../quote-form/quote-form.component';
@@ -254,24 +255,20 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date);
   }
 
   isExpiringSoon(expiryDate: Date): boolean {
-    const today = new Date();
-    const expiry = new Date(expiryDate);
-    const daysRemaining = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const expiry = parseApiDate(expiryDate);
+    if (!expiry) return false;
+    const daysRemaining = Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     return daysRemaining <= 3 && daysRemaining > 0;
   }
 
   getDaysRemaining(expiryDate: Date): number {
-    const today = new Date();
-    const expiry = new Date(expiryDate);
-    return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const expiry = parseApiDate(expiryDate);
+    if (!expiry) return 0;
+    return Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   }
 
   getPageNumbers(): number[] {

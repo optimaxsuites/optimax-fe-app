@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Product } from '../../../../domain/sales/sales.dto';
+import { formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 
 @Component({
@@ -152,21 +153,11 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+    return formatApiDate(date, { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   formatDateShort(date: Date): string {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date, { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
   // Some products only ever received a value under the legacy `sellingPrice`

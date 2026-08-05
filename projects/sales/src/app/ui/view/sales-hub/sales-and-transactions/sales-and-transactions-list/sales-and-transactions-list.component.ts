@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { SalesandTransactions, SaleLifecycleStatus, PaymentMethod } from '../../../../domain/sales/sales.dto';
+import { parseApiDate } from '../../../../service/sales/date.util';
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { PaymentReceiptComponent } from '../../payment-receipt/payment-receipt.component';
 
@@ -87,6 +88,13 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  // Normalizes a raw API date value before handing it to the `date` pipe —
+  // the pipe treats a raw number as milliseconds, which breaks on backend
+  // records whose timestamps are epoch seconds.
+  toDate(value: unknown): Date | null {
+    return parseApiDate(value);
   }
 
   loadTransactions(): void {

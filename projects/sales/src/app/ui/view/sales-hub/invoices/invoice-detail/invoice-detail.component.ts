@@ -4,6 +4,7 @@ import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Invoice, InvoiceStatus, PaymentMethod, SaleLifecycleStatus, SalesandTransactions } from '../../../../domain/sales/sales.dto';
+import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -172,12 +173,7 @@ export class InvoiceDetailComponent implements OnInit {
   }
 
   formatDate(date: any): string {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-NG', '');
   }
 
   getStatusBadgeClass(status: string): string {
@@ -217,10 +213,9 @@ export class InvoiceDetailComponent implements OnInit {
   }
 
   isOverdue(dueDate: Date | string): boolean {
-    if (!dueDate) return false;
-    const due = new Date(dueDate);
-    const today = new Date();
-    return due < today;
+    const due = parseApiDate(dueDate);
+    if (!due) return false;
+    return due < new Date();
   }
 
   getTotalQuantity(): number {

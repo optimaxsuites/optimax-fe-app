@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { environment } from '../../../shared-component/service/environments/environment';
+import { formatApiDate, parseApiDate } from '../../../service/sales/date.util';
 
 interface PaymentRecord {
   id: string;
@@ -109,14 +110,14 @@ export class PaymentProcessingComponent implements OnInit, OnDestroy {
       vendorId: item.vendorId ?? item.customerId ?? '',
       requestTitle: item.requestTitle ?? item.title ?? item.description ?? item.subject ?? '',
       lpoNumber: item.lpoNumber ?? item.lpo ?? item.purchaseOrderNumber ?? '',
-      invoiceDate: new Date(item.invoiceDate ?? item.createdAt ?? Date.now()),
-      dueDate: new Date(item.dueDate ?? item.paymentDueDate ?? Date.now()),
+      invoiceDate: parseApiDate(item.invoiceDate) ?? parseApiDate(item.createdAt) ?? new Date(),
+      dueDate: parseApiDate(item.dueDate) ?? parseApiDate(item.paymentDueDate) ?? new Date(),
       amount,
       amountPaid,
       currency: item.currency ?? 'NGN',
       status,
       paymentMethod: item.paymentMethod,
-      paymentDate: item.paymentDate ? new Date(item.paymentDate) : undefined,
+      paymentDate: parseApiDate(item.paymentDate) ?? undefined,
       notes: item.notes ?? ''
     };
   }
@@ -238,9 +239,9 @@ export class PaymentProcessingComponent implements OnInit, OnDestroy {
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   getDaysOverdue(dueDate: Date): number {
-    const now = new Date();
-    const due = new Date(dueDate);
-    const diff = Math.floor((now.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+    const due = parseApiDate(dueDate);
+    if (!due) return 0;
+    const diff = Math.floor((Date.now() - due.getTime()) / (1000 * 60 * 60 * 24));
     return diff > 0 ? diff : 0;
   }
 
@@ -252,11 +253,7 @@ export class PaymentProcessingComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date);
   }
 
   getProgressPercent(payment: PaymentRecord): number {

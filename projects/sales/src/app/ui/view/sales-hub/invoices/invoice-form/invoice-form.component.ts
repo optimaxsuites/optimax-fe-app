@@ -5,6 +5,7 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails } from '../../../../domain/sales/sales.dto';
+import { toDateInputValue } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
 import { jsPDF } from 'jspdf';
@@ -842,8 +843,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   // Helper methods
   private formatDateForInput(date: Date): string {
-    const d = new Date(date);
-    return d.toISOString().split('T')[0];
+    return toDateInputValue(date);
   }
 
   get today(): string {

@@ -5,6 +5,7 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer } from '../../../../domain/sales/sales.dto';
+import { formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { MessageService } from 'primeng/api';
 
@@ -208,8 +209,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date?: Date | string): string {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString('en-NG', { year: 'numeric', month: 'short', day: 'numeric' });
+    return formatApiDate(date, { year: 'numeric', month: 'short', day: 'numeric' }, 'en-NG', '');
   }
 
   isFieldInvalid(fieldName: string): boolean {

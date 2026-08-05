@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { SalesandTransactions, SaleLifecycleStatus } from '../../../../domain/sales/sales.dto';
+import { parseApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 
 @Component({
@@ -46,6 +47,20 @@ export class SalesAndTransactionsDetailComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  // Normalizes a raw API date value before handing it to the `date` pipe —
+  // the pipe treats a raw number as milliseconds, which breaks on backend
+  // records whose timestamps are epoch seconds.
+  toDate(value: unknown): Date | null {
+    return parseApiDate(value);
+  }
+
+  // deliveredAt comes back as epoch (getTime() === 0) as a "not delivered yet"
+  // sentinel rather than being omitted, so treat that the same as no date.
+  getDeliveredAtDate(): Date | null {
+    const d = parseApiDate(this.transaction?.deliveredAt);
+    return d && d.getTime() > 0 ? d : null;
   }
 
   getCustomerName(): string {

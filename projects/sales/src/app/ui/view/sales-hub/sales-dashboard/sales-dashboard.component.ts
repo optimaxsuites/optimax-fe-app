@@ -11,6 +11,7 @@ import { InvoiceFormComponent } from '../invoices/invoice-form/invoice-form.comp
 import { CustomerFormComponent } from '../customer-management/customer-form/customer-form.component';
 import { QuoteDetailComponent } from '../quotations/quote-detail/quote-detail.component';
 import { InvoiceDetailComponent } from '../invoices/invoice-detail/invoice-detail.component';
+import { formatApiDate } from '../../../service/sales/date.util';
 
 @Component({
   selector: 'app-sales-dashboard',
@@ -317,14 +318,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    if (!date) return 'N/A';
-    const parsed = new Date(date);
-    if (isNaN(parsed.getTime())) return 'N/A';
-    return parsed.toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date);
   }
 
   getStatusClass(status: string): string {

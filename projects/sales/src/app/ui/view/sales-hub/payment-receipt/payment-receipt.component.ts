@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SalesService } from '../../../service/sales/sales.service';
 import { PaymentReceipt, SalesandTransactions } from '../../../domain/sales/sales.dto';
+import { formatApiDate, formatApiDateTime } from '../../../service/sales/date.util';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -58,23 +59,11 @@ export class PaymentReceiptComponent implements OnInit {
   }
 
   formatDate(date: any): string {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-NG', '');
   }
 
   formatDateTime(date: any): string {
-    if (!date) return '';
-    return new Date(date).toLocaleString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatApiDateTime(date, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }, 'en-NG', '');
   }
 
   downloadPDF(): void {

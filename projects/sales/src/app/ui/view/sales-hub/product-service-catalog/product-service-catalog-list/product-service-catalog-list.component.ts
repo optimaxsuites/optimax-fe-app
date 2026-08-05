@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Product, Category, MeasurementUnit, Supplier } from '../../../../domain/sales/sales.dto';
+import { formatApiDate } from '../../../../service/sales/date.util';
 
 @Component({
   selector: 'app-product-list',
@@ -610,12 +611,7 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date);
   }
 
   getStockStatusClass(stockQuantity: number): string {
