@@ -305,7 +305,33 @@ export class ProcurementRequestService {
   }
 
   getProcurementCategories(): Observable<ProcurementCategory[]> {
-    const categories: ProcurementCategory[] = [
+    const params = new HttpParams().set('tenantId', this.tenantId);
+    return this.http.get<any>(`${this.baseUrl}/categories`, { params }).pipe(
+      map((res: any) => {
+        const arr = res.data ?? res ?? [];
+        const defaults = this.getDefaultCategories();
+        if (Array.isArray(arr) && arr.length > 0) {
+          const custom = arr.map((cat: any) => ({
+            id: cat.id,
+            categoryId: cat.categoryId || cat.name || String(cat.id),
+            name: cat.name,
+            description: cat.description || ''
+          }));
+          const filteredDefaults = defaults.filter(d => 
+            !custom.some(c => c.name.toLowerCase() === d.name.toLowerCase())
+          );
+          return [...custom, ...filteredDefaults];
+        }
+        return defaults;
+      }),
+      catchError(() => {
+        return of(this.getDefaultCategories());
+      })
+    );
+  }
+
+  private getDefaultCategories(): ProcurementCategory[] {
+    return [
       { id: 1, categoryId: 'CAT-001', name: 'IT & Electronics', description: 'Computers, hardware, peripherals, and office gadgets' },
       { id: 2, categoryId: 'CAT-002', name: 'Office Furniture & Fixtures', description: 'Chairs, desks, conference tables, and storage' },
       { id: 3, categoryId: 'CAT-003', name: 'Stationery & Office Supplies', description: 'Paper, pens, toner, and general office consumables' },
@@ -314,6 +340,5 @@ export class ProcurementRequestService {
       { id: 6, categoryId: 'CAT-006', name: 'Logistics, Freight & Transport', description: 'Freight, courier, fleet management, and shipping' },
       { id: 7, categoryId: 'CAT-007', name: 'Facility Operations & Utilities', description: 'HVAC, security systems, cleaning, and maintenance' }
     ];
-    return of(categories);
   }
 }
