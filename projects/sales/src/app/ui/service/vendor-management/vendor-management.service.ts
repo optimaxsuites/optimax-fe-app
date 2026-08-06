@@ -1418,6 +1418,16 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
       riskAlerts: Array.isArray(raw.riskAlerts) ? raw.riskAlerts : [],
       createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
       updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : new Date(),
+      applicationNumber: raw.applicationNumber || raw.application_number || undefined,
+      // The backend was originally POSTed the full 6-step registration payload
+      // (see VendorRegistrationService.submit) — preserve it here too if the
+      // GET response still carries it, under either shape.
+      registration: raw.registration || (raw.step1 ? {
+        id: raw.id, applicationNumber: raw.applicationNumber, status: raw.registrationStatus || raw.status,
+        submittedDate: raw.submittedDate, lastModified: raw.updatedAt,
+        step1: raw.step1, step2: raw.step2, step3: raw.step3,
+        step4: raw.step4, step5: raw.step5, step6: raw.step6,
+      } : undefined),
     } as Vendor;
   }
 
@@ -1907,9 +1917,28 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
   // DOCUMENTS
   // ============================================================
 
+/** The vendor's own documents — from the live cache or the portal store — take
+ *  priority over anything else, since these are what the vendor actually
+ *  uploaded during registration (as opposed to generic placeholder mocks). */
+private getOwnVendorDocuments(vendorId: string): VendorDocument[] | null {
+  const vendor = this.vendorsSubject.value.find(v => v.id === vendorId)
+    ?? this.selectedVendorSubject.value
+    ?? PendingVendorStore.getById(vendorId);
+  if (vendor?.id === vendorId && vendor.documents?.length) {
+    return vendor.documents;
+  }
+  return null;
+}
+
 getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
   this.loadingSubject.next(true);
-  
+
+  const ownDocs = this.getOwnVendorDocuments(vendorId);
+  if (this.useMockData) {
+    this.loadingSubject.next(false);
+    return of(ownDocs ?? []);
+  }
+
   const params = new HttpParams().set('tenantId', this.tenantId);
   
   return this.http.get<VendorDocument[]>(`${this.baseUrl}/vendors/${vendorId}/documents`, { params })
@@ -1917,8 +1946,14 @@ getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
       tap(() => this.loadingSubject.next(false)),
       catchError(err => {
         this.loadingSubject.next(false);
-        console.warn('Documents API failed, using mock data for vendor:', vendorId);
-        
+        console.warn('Documents API failed for vendor:', vendorId);
+
+        // Prefer the vendor's own uploaded documents over any generic mock —
+        // these are what was actually submitted during registration.
+        if (ownDocs) {
+          return of(ownDocs);
+        }
+
         // Filter mock documents for this vendor
         const mockDocs = this.MOCK_DOCUMENTS.filter(doc => doc.vendorId === vendorId);
         

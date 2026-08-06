@@ -229,7 +229,10 @@ export class VendorRegistrationService {
         lastActivityDate: new Date(),
         createdAt:        new Date(),
         updatedAt:        new Date(),
-        applicationNumber: appNum
+        applicationNumber: appNum,
+        // Keep the full submission so the approval queue / vendor directory can
+        // display everything the vendor entered, not just the summary fields above.
+        registration:     { ...reg, id: appNum, applicationNumber: appNum }
       } as any as Vendor;
 
       PendingVendorStore.add(vendor);

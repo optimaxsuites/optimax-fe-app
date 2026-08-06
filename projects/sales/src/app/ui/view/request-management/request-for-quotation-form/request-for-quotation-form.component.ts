@@ -27,6 +27,14 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
   requestId: string | null = null;
   isLookingUp: { [key: number]: boolean } = {};
 
+  // Custom Category and Unit Modal States
+  showAddCategoryModal = false;
+  showAddUnitModal = false;
+  newCategoryName = '';
+  newCategoryDesc = '';
+  newUnitName = '';
+  activeItemIndexForModal = 0;
+
   constructor(
     private fb: FormBuilder,
     private router: Router,
@@ -46,11 +54,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
   }
 
   ngOnInit(): void {
-    this.procurementRequestService.getProcurementCategories().subscribe({
-      next: (cats) => {
-        this.procurementCategories = cats;
-      }
-    });
+    this.loadCategoriesAndUnits();
 
     this.route.paramMap.subscribe(params => {
       const uuid = params.get('uuid');
@@ -61,6 +65,48 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       }
     });
   }
+
+  loadCategoriesAndUnits(): void {
+    // Load category arrays from both sources and merge them
+    this.procurementRequestService.getProcurementCategories().subscribe({
+      next: (cats) => {
+        this.salesService.getCategories().subscribe({
+          next: (salesCats) => {
+            const merged = [...cats];
+            salesCats.forEach(sc => {
+              const exists = merged.some(mc => mc.categoryId === sc.categoryId || mc.name.toLowerCase() === sc.name.toLowerCase());
+              if (!exists) {
+                merged.push({
+                  id: sc.id,
+                  categoryId: sc.categoryId || `CAT-${sc.id}`,
+                  name: sc.name,
+                  description: sc.description || ''
+                });
+              }
+            });
+            this.procurementCategories = merged;
+          },
+          error: () => {
+            this.procurementCategories = cats;
+          }
+        });
+      }
+    });
+
+    // Load units from salesService and merge with default list
+    this.salesService.getMeasurementUnits().subscribe({
+      next: (salesUnits) => {
+        const currentUnits = [...this.units];
+        salesUnits.forEach(su => {
+          if (su.name && !currentUnits.some(u => u.toLowerCase() === su.name.toLowerCase())) {
+            currentUnits.push(su.name);
+          }
+        });
+        this.units = currentUnits;
+      }
+    });
+  }
+
 
   loadRequest(uuid: string): void {
     this.procurementRequestService.getRequest(Number(uuid)).subscribe({
@@ -471,6 +517,124 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
         this.isLookingUp[index] = false;
         console.error('Error looking up product by part number:', err);
         alert('Could not retrieve product details. Please fill in the fields manually.');
+      }
+    });
+  }
+
+  openAddCategoryModal(index: number): void {
+    this.activeItemIndexForModal = index;
+    this.newCategoryName = '';
+    this.newCategoryDesc = '';
+    this.showAddCategoryModal = true;
+  }
+
+  closeAddCategoryModal(): void {
+    this.showAddCategoryModal = false;
+  }
+
+  saveCustomCategory(): void {
+    if (!this.newCategoryName.trim()) return;
+
+    const catName = this.newCategoryName.trim();
+    const catDesc = this.newCategoryDesc.trim();
+
+    this.salesService.createCategory({
+      name: catName,
+      description: catDesc
+    }).subscribe({
+      next: () => {
+        // Reload all categories
+        this.loadCategoriesAndUnits();
+        
+        const tempId = `CAT-CUSTOM-${Date.now()}`;
+        const newCat = {
+          id: Date.now(),
+          categoryId: tempId,
+          name: catName,
+          description: catDesc
+        };
+        
+        // Select it for the active form item
+        const item = this.items.at(this.activeItemIndexForModal);
+        if (item) {
+          const exists = this.procurementCategories.some(c => c.name.toLowerCase() === catName.toLowerCase());
+          if (!exists) {
+            this.procurementCategories.push(newCat);
+          }
+          const matched = this.procurementCategories.find(c => c.name.toLowerCase() === catName.toLowerCase()) || newCat;
+          item.get('categoryId')?.setValue(matched.categoryId);
+        }
+
+        this.closeAddCategoryModal();
+        alert('Custom category saved and selected successfully.');
+      },
+      error: (err) => {
+        console.error('Error creating custom category:', err);
+        // Fallback local addition if api fails or is offline
+        const tempId = `CAT-CUSTOM-${Date.now()}`;
+        const newCat = {
+          id: Date.now(),
+          categoryId: tempId,
+          name: catName,
+          description: catDesc
+        };
+        this.procurementCategories.push(newCat);
+        const item = this.items.at(this.activeItemIndexForModal);
+        if (item) {
+          item.get('categoryId')?.setValue(tempId);
+        }
+        this.closeAddCategoryModal();
+        alert('Custom category added locally.');
+      }
+    });
+  }
+
+  openAddUnitModal(index: number): void {
+    this.activeItemIndexForModal = index;
+    this.newUnitName = '';
+    this.showAddUnitModal = true;
+  }
+
+  closeAddUnitModal(): void {
+    this.showAddUnitModal = false;
+  }
+
+  saveCustomUnit(): void {
+    if (!this.newUnitName.trim()) return;
+
+    const unitName = this.newUnitName.trim();
+
+    this.salesService.createMeasurementUnit({
+      name: unitName,
+      code: unitName.substring(0, 3).toLowerCase()
+    }).subscribe({
+      next: () => {
+        this.loadCategoriesAndUnits();
+        
+        if (!this.units.includes(unitName)) {
+          this.units.push(unitName);
+        }
+        
+        const item = this.items.at(this.activeItemIndexForModal);
+        if (item) {
+          item.get('unit')?.setValue(unitName);
+        }
+        
+        this.closeAddUnitModal();
+        alert('Custom unit saved and selected successfully.');
+      },
+      error: (err) => {
+        console.error('Error creating custom unit:', err);
+        // Fallback local addition if api fails or is offline
+        if (!this.units.includes(unitName)) {
+          this.units.push(unitName);
+        }
+        const item = this.items.at(this.activeItemIndexForModal);
+        if (item) {
+          item.get('unit')?.setValue(unitName);
+        }
+        this.closeAddUnitModal();
+        alert('Custom unit added locally.');
       }
     });
   }

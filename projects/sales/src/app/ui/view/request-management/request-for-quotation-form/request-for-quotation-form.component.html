@@ -109,20 +109,7 @@
 
             <div class="item-body">
 
-              <!-- Part Lookup -->
-              <div class="lookup-strip">
-                <label class="strip-label"><i class="fas fa-barcode"></i> Part / Serial Number Lookup</label>
-                <div class="strip-row">
-                  <input type="text" formControlName="partNumber"
-                    placeholder="e.g., SN-9830219-X or type 'dell', 'chair'" class="field-input flex-1">
-                  <button type="button" class="btn-lookup" (click)="lookupProductByPartNumber(i)"
-                    [disabled]="isLookingUp[i]">
-                    <i class="fas" [class.fa-spinner]="isLookingUp[i]" [class.fa-spin]="isLookingUp[i]"
-                      [class.fa-search]="!isLookingUp[i]"></i>
-                    {{ isLookingUp[i] ? 'Searching…' : 'Lookup' }}
-                  </button>
-                </div>
-              </div>
+
 
               <!-- Core Fields -->
               <div class="field-row cols-2">
@@ -138,11 +125,16 @@
 
                 <div class="field-group">
                   <label>Category <span class="req">*</span></label>
-                  <select formControlName="categoryId" class="field-input"
-                    [class.is-error]="item.get('categoryId')?.invalid && item.get('categoryId')?.touched">
-                    <option value="" disabled>Select Category</option>
-                    <option *ngFor="let cat of procurementCategories" [value]="cat.categoryId">{{ cat.name }}</option>
-                  </select>
+                  <div class="input-with-btn">
+                    <select formControlName="categoryId" class="field-input"
+                      [class.is-error]="item.get('categoryId')?.invalid && item.get('categoryId')?.touched">
+                      <option value="" disabled>Select Category</option>
+                      <option *ngFor="let cat of procurementCategories" [value]="cat.categoryId">{{ cat.name }}</option>
+                    </select>
+                    <button type="button" class="btn-action-add" (click)="openAddCategoryModal(i)" title="Add Custom Category">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
                   <span class="err-msg" *ngIf="item.get('categoryId')?.invalid && item.get('categoryId')?.touched">
                     {{ getItemErrorMessage(i, 'categoryId') }}
                   </span>
@@ -159,9 +151,14 @@
 
                 <div class="field-group">
                   <label>Unit <span class="req">*</span></label>
-                  <select formControlName="unit" class="field-input">
-                    <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
-                  </select>
+                  <div class="input-with-btn">
+                    <select formControlName="unit" class="field-input">
+                      <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
+                    </select>
+                    <button type="button" class="btn-action-add" (click)="openAddUnitModal(i)" title="Add Custom Unit">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -374,3 +371,63 @@
     </form>
   </div>
 </div>
+
+<!-- Add Category Modal -->
+<div class="dialog-mask" *ngIf="showAddCategoryModal">
+  <div class="dialog-card glass">
+    <div class="dialog-header">
+      <h3>Add Custom Category</h3>
+      <button type="button" class="btn-close" (click)="closeAddCategoryModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="dialog-body">
+      <div class="field-group">
+        <label for="newCatName">Category Name <span class="req">*</span></label>
+        <input 
+          id="newCatName" 
+          type="text" 
+          [(ngModel)]="newCategoryName" 
+          placeholder="e.g., Office Miscellaneous" 
+          class="field-input">
+      </div>
+      <div class="field-group" style="margin-top: 1rem;">
+        <label for="newCatDesc">Description</label>
+        <textarea 
+          id="newCatDesc" 
+          rows="3" 
+          [(ngModel)]="newCategoryDesc" 
+          placeholder="Enter category description..." 
+          class="field-input"></textarea>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn-ghost" (click)="closeAddCategoryModal()">Cancel</button>
+      <button type="button" class="btn-primary" [disabled]="!newCategoryName.trim()" (click)="saveCustomCategory()">Save Category</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Unit Modal -->
+<div class="dialog-mask" *ngIf="showAddUnitModal">
+  <div class="dialog-card glass">
+    <div class="dialog-header">
+      <h3>Add Custom Unit</h3>
+      <button type="button" class="btn-close" (click)="closeAddUnitModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="dialog-body">
+      <div class="field-group">
+        <label for="newUnitName">Unit Name <span class="req">*</span></label>
+        <input 
+          id="newUnitName" 
+          type="text" 
+          [(ngModel)]="newUnitName" 
+          placeholder="e.g., Litres, Roll, Yard" 
+          class="field-input">
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn-ghost" (click)="closeAddUnitModal()">Cancel</button>
+      <button type="button" class="btn-primary" [disabled]="!newUnitName.trim()" (click)="saveCustomUnit()">Save Unit</button>
+    </div>
+  </div>
+</div>
+

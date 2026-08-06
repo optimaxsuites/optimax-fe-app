@@ -1183,6 +1183,27 @@ $radius-lg: 20px;
                         font-size: 0.7rem;
                     }
                 }
+
+                .btn-view-full {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.4rem;
+                    margin-top: 0.5rem;
+                    padding: 0.35rem 0.75rem;
+                    background: transparent;
+                    border: 1.5px solid $border-color;
+                    border-radius: $radius-sm;
+                    color: $primary-mid;
+                    font-size: 0.78rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+
+                    &:hover {
+                        background: rgba(26, 45, 74, 0.06);
+                        border-color: $primary-mid;
+                    }
+                }
             }
         }
 
