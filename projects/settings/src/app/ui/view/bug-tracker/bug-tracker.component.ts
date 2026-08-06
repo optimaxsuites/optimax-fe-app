@@ -804,10 +804,32 @@ export class BugTrackerComponent implements OnInit {
     return tags.split(',').map(t => t.trim()).filter(Boolean);
   }
 
+  zoomVisible = false;
+  zoomedAttachment: string | null = null;
+
+  @HostListener('document:keydown.escape')
+  onEscKey(): void { this.closeZoom(); }
+
+  openZoom(dataUrl: string, event?: MouseEvent): void {
+    if (event) event.stopPropagation();
+    this.zoomedAttachment = dataUrl;
+    this.zoomVisible = true;
+  }
+
+  closeZoom(): void {
+    this.zoomVisible = false;
+    this.zoomedAttachment = null;
+  }
+
+  safeDisplayName(name?: string): string {
+    return (!name || name === 'undefined' || name === 'null') ? '' : name;
+  }
+
   private blankForm(): Partial<Issue> {
     const meId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || 0) || undefined;
     const meEmail = sessionStorage.getItem('email') || sessionStorage.getItem('userEmail') || '';
-    const meName  = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || '';
+    const rawName = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || '';
+    const meName = (rawName === 'undefined' || rawName === 'null') ? '' : rawName;
     return { title: '', module: '', priority: 'MEDIUM', status: 'OPEN',
       tags: '',
       reporterUserId: meId,

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, catchError, of } from 'rxjs';
 import { environment } from '../sharedComponent/service/environments/environment';
 
 // damilola worked on this: collaboration and analytics API wiring for the new workspace UI.
@@ -1646,6 +1646,38 @@ export class CollaborationService {
       `${this.baseUrl}/x/api/v2/ai/meetings-appointments/attachments`,
       fd,
       { headers: this.multipartHeaders },
+    );
+  }
+
+  getAllMeetingEvents(): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.baseUrl}/x/api/v2/ai/meetings-appointments/events`,
+      { headers: this.headers },
+    ).pipe(catchError(() => of([])));
+  }
+
+  getOpenIssues(): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.baseUrl}/x/api/v2/manager/issues?page=1&size=500`,
+      { headers: this.headers },
+    ).pipe(catchError(() => of([])));
+  }
+
+  getOpenWorkTasks(): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.baseUrl}/x/api/v2/hr/workTasks?page=1&size=500`,
+      { headers: this.headers },
+    ).pipe(catchError(() => of([])));
+  }
+
+  /** Request a signed Jitsi JWT from the backend.
+   *  The backend signs with JWT_APP_SECRET and sets context.user.moderator=true.
+   *  Returns { token: string }.  Callers should fall back gracefully on error. */
+  getJitsiToken(roomName: string): Observable<{ token: string }> {
+    return this.http.post<{ token: string }>(
+      `${this.baseUrl}/x/api/v2/ai/meetings/jitsi-token`,
+      { roomName },
+      { headers: this.headers },
     );
   }
 }

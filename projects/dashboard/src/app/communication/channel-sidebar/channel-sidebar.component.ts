@@ -5,6 +5,7 @@ import {
   EventEmitter,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
+  HostListener,
 } from '@angular/core';
 import { Channel, DmContact } from '../communication.component';
 
@@ -52,14 +53,15 @@ export class ChannelSidebarComponent {
   @Input() employeesLoading = false;
   @Input() employeesError: string | null = null;
   @Input() soundEnabled = true;
-  @Input() selectedRingtone = 'whatsapp';
+  @Input() selectedRingtone = 'classic';
   @Input() ringtoneOptions: Array<{ value: string; label: string }> = [];
-  @Input() workspaceName = '';
   @Input() canCreateChannels = false;
   @Input() canDeactivateDmUsers = false;
   @Input() searchQuery = '';
   @Input() showSearch = false;
   @Input() searchResults: { msg: any; channelId: string; channelName: string }[] = [];
+  @Input() totalDmUnread = 0;
+  @Input() workspaceName = 'OptimaX';
 
   // ── Outputs ─────────────────────────────────────────
   @Output() channelSelected = new EventEmitter<string>();
@@ -76,80 +78,30 @@ export class ChannelSidebarComponent {
   @Output() searchExecuted = new EventEmitter<void>();
   @Output() searchClosed = new EventEmitter<void>();
   @Output() jumpTo = new EventEmitter<{ msg: any; channelId: string; channelName: string }>();
+  @Output() workspaceOpened = new EventEmitter<DmContact>();
+  @Output() channelAttachmentsRequested = new EventEmitter<Channel>();
   @Output() viewProfile = new EventEmitter<DmContact>();
 
-  // ── Draggable channel/DM divider ────────────────────
-  channelSectionHeight = 220;
-  private _dividerDragging = false;
-  private _dividerStartY = 0;
-  private _dividerStartH = 0;
-  private readonly _dividerMin = 80;
-  private readonly _dividerMax = 480;
+  // ── Draggable divider ────────────────────────────────
+  topPanelHeight = 220;
+  private dragStartY = 0;
+  private dragStartHeight = 0;
 
   startDividerDrag(event: MouseEvent): void {
     event.preventDefault();
-    this._dividerDragging = true;
-    this._dividerStartY = event.clientY;
-    this._dividerStartH = this.channelSectionHeight;
+    this.dragStartY = event.clientY;
+    this.dragStartHeight = this.topPanelHeight;
     const onMove = (e: MouseEvent) => {
-      if (!this._dividerDragging) return;
-      const delta = e.clientY - this._dividerStartY;
-      this.channelSectionHeight = Math.min(
-        this._dividerMax,
-        Math.max(this._dividerMin, this._dividerStartH + delta),
-      );
+      const delta = e.clientY - this.dragStartY;
+      this.topPanelHeight = Math.max(80, Math.min(this.dragStartHeight + delta, 520));
       this.cdr.markForCheck();
     };
     const onUp = () => {
-      this._dividerDragging = false;
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
     };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-  }
-
-  // ── DM hover card state ──────────────────────────────
-  hoveredDm: DmContact | null = null;
-  dmCardPos: { top: number; left: number } | null = null;
-  private _dmCardShowTimer: ReturnType<typeof setTimeout> | null = null;
-  private _dmCardHideTimer: ReturnType<typeof setTimeout> | null = null;
-
-  showDmCard(event: MouseEvent, dm: DmContact): void {
-    if (this._dmCardHideTimer) { clearTimeout(this._dmCardHideTimer); this._dmCardHideTimer = null; }
-    if (this._dmCardShowTimer) { clearTimeout(this._dmCardShowTimer); this._dmCardShowTimer = null; }
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    this._dmCardShowTimer = setTimeout(() => {
-      this._dmCardShowTimer = null;
-      this.hoveredDm = dm;
-      this.dmCardPos = {
-        top: Math.min(rect.top, window.innerHeight - 260),
-        left: rect.right + 6,
-      };
-      this.cdr.markForCheck();
-    }, 2000);
-  }
-
-  keepDmCard(): void {
-    if (this._dmCardShowTimer) { clearTimeout(this._dmCardShowTimer); this._dmCardShowTimer = null; }
-    if (this._dmCardHideTimer) { clearTimeout(this._dmCardHideTimer); this._dmCardHideTimer = null; }
-  }
-
-  hideDmCard(): void {
-    if (this._dmCardShowTimer) { clearTimeout(this._dmCardShowTimer); this._dmCardShowTimer = null; }
-    this._dmCardHideTimer = setTimeout(() => {
-      this.hoveredDm = null;
-      this.dmCardPos = null;
-      this.cdr.markForCheck();
-    }, 600);
-  }
-
-  closeDmCard(): void {
-    if (this._dmCardShowTimer) { clearTimeout(this._dmCardShowTimer); this._dmCardShowTimer = null; }
-    if (this._dmCardHideTimer) { clearTimeout(this._dmCardHideTimer); this._dmCardHideTimer = null; }
-    this.hoveredDm = null;
-    this.dmCardPos = null;
-    this.cdr.markForCheck();
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   }
 
   // ── Birthday panel state ──────────────────────────────
@@ -204,10 +156,86 @@ export class ChannelSidebarComponent {
     return b.id;
   }
 
+  // ── DM hover card ────────────────────────────────────
+  hoveredDm: DmContact | null = null;
+  dmCardPos: { top: number; left: number } = { top: 0, left: 0 };
+  private dmHideTimer: any = null;
+
+  showDmCard(event: MouseEvent, dm: DmContact): void {
+    clearTimeout(this.dmHideTimer);
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.dmCardPos = { top: rect.top, left: rect.right + 6 };
+    this.hoveredDm = dm;
+    this.cdr.markForCheck();
+  }
+
+  keepDmCard(): void {
+    clearTimeout(this.dmHideTimer);
+  }
+
+  hideDmCard(): void {
+    this.dmHideTimer = setTimeout(() => {
+      this.hoveredDm = null;
+      this.cdr.markForCheck();
+    }, 180);
+  }
+
+  closeDmCard(): void {
+    clearTimeout(this.dmHideTimer);
+    this.hoveredDm = null;
+    this.cdr.markForCheck();
+  }
+
+  openAnalytics(dm: DmContact): void {
+    this.closeDmCard();
+    this.workspaceOpened.emit(dm);
+  }
+
+  // ── Channel hover card ───────────────────────────────
+  hoveredChannel: Channel | null = null;
+  channelCardPos: { top: number; left: number } = { top: 0, left: 0 };
+  private chHideTimer: any = null;
+
+  showChannelCard(event: MouseEvent, ch: Channel): void {
+    clearTimeout(this.chHideTimer);
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.channelCardPos = { top: rect.top, left: rect.right + 6 };
+    this.hoveredChannel = ch;
+    this.cdr.markForCheck();
+  }
+
+  keepChannelCard(): void {
+    clearTimeout(this.chHideTimer);
+  }
+
+  hideChannelCard(): void {
+    this.chHideTimer = setTimeout(() => {
+      this.hoveredChannel = null;
+      this.cdr.markForCheck();
+    }, 180);
+  }
+
+  closeChannelCard(): void {
+    clearTimeout(this.chHideTimer);
+    this.hoveredChannel = null;
+    this.cdr.markForCheck();
+  }
+
+  openChannelAttachments(ch: Channel): void {
+    this.closeChannelCard();
+    this.channelAttachmentsRequested.emit(ch);
+  }
+
+  // ── Close hover cards on Escape ─────────────────────
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeDmCard();
+    this.closeChannelCard();
+  }
+
   // ── Template helpers ─────────────────────────────────
 
   isUserTyping(_userId: number): boolean {
-    // Typing state is managed by parent; expose via input if needed
     return false;
   }
 
@@ -280,7 +308,16 @@ export class ChannelSidebarComponent {
   }
 
   get visibleDmContacts(): DmContact[] {
-    return (this.dmContacts || []).filter((contact) => !this.isOwnContact(contact));
+    return (this.dmContacts || [])
+      .filter((contact) => !this.isOwnContact(contact))
+      .sort((a, b) => {
+        const ta = a.lastMessageTimestamp ?? 0;
+        const tb = b.lastMessageTimestamp ?? 0;
+        if (tb !== ta) return tb - ta;
+        const ua = (a.unreadCount ?? 0) > 0 ? 1 : 0;
+        const ub = (b.unreadCount ?? 0) > 0 ? 1 : 0;
+        return ub - ua;
+      });
   }
 
   requestDmDeactivation(event: Event, contact: DmContact): void {
@@ -302,9 +339,6 @@ export class ChannelSidebarComponent {
     );
   }
 
-  /**
-   * Returns an SVG path string for a channel icon based on the channel name.
-   */
   getChannelIconPath(name: string): string {
     const n = (name || '').toLowerCase();
     if (/document|directory|library|folder|file|archive|repository|erp/.test(n))

@@ -1360,32 +1360,142 @@ textarea { resize: vertical; }
   &:hover { border-color: $primary; color: $primary; }
 }
 
+// ── Jitsi launch row ──────────────────────────────────────────────
+.jitsi-launch-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.jitsi-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// ── Embedded Jitsi room ───────────────────────────────────────────
 .meeting-room-embed {
   border: 1px solid #1e3a5f;
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
   background: #0d1722;
-  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .room-embed-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.6rem 0.8rem;
-  background: #101c29;
+  padding: 0.6rem 0.9rem;
+  background: linear-gradient(90deg, #0f2133 0%, #101c29 100%);
   color: #e2e8f0;
   font-size: 0.84rem;
   font-weight: 700;
+  gap: 0.5rem;
+}
+
+.room-head-left {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+
+  i { color: #38bdf8; }
+  strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 .meeting-room-embed iframe {
   display: block;
   width: 100%;
-  height: 300px;
+  height: 420px;
   border: 0;
 }
 
+// ── Guest invite block ────────────────────────────────────────────
+.guest-invite-block {
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  padding: 0.85rem;
+  background: #0a1624;
+  margin-bottom: 0.75rem;
+
+  .sec-label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+    i { color: #38bdf8; }
+  }
+}
+
+.guest-link-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.guest-link-input {
+  flex: 1;
+  min-width: 0;
+  background: #0d1722;
+  border: 1px solid #1e3a5f;
+  border-radius: 6px;
+  color: #94a3b8;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.78rem;
+  font-family: monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guest-hint {
+  font-size: 0.76rem;
+  color: #64748b;
+  margin: 0.5rem 0 0;
+  line-height: 1.5;
+}
+
+// ── Jitsi server config (collapsed by default) ────────────────────
+.jitsi-config-details {
+  border: 1px solid $border;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+
+  summary {
+    padding: 0.55rem 0.75rem;
+    font-size: 0.8rem;
+    color: $text-2;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 600;
+
+    &:hover { color: $primary; }
+  }
+}
+
+.jitsi-config-inner {
+  padding: 0.65rem 0.75rem;
+  border-top: 1px solid $border;
+
+  input[type=url] {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+// Legacy meeting link (kept for backwards compat)
 .meeting-link-btn {
   display: flex;
   align-items: center;

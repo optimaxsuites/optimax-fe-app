@@ -64,7 +64,7 @@
 </div>
 
   <!-- SUMMARY CARDS — clickable, filter the table by status -->
-  <div class="grid grid-cols-4 gap-6 mb-10 w-full max-xl:grid-cols-2 max-md:grid-cols-1 max-md:gap-4">
+  <div class="grid grid-cols-5 gap-5 mb-10 w-full max-xl:grid-cols-3 max-lg:grid-cols-2 max-md:grid-cols-1 max-md:gap-4">
 
     <!-- Total -->
     <div (click)="filterByStatus('ALL')"
@@ -130,9 +130,39 @@
       </div>
     </div>
 
+    <!-- Posted to Accounting -->
+    <div (click)="getPostedCount() > 0 && togglePostedFilter()"
+      class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 select-none"
+      [ngClass]="filterPosted
+        ? 'bg-teal-100 border-teal-400 shadow-md ring-2 ring-teal-300 cursor-pointer'
+        : getPostedCount() > 0
+          ? 'bg-teal-50 border-teal-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer'
+          : 'bg-gray-50 border-gray-200 cursor-default opacity-60'">
+      <div>
+        <p class="text-base font-semibold mb-2 opacity-90" [class]="filterPosted || getPostedCount() > 0 ? 'text-teal-800' : 'text-gray-500'">Posted</p>
+        <h3 class="text-3xl font-bold mb-1 leading-tight" [class]="filterPosted || getPostedCount() > 0 ? 'text-teal-900' : 'text-gray-400'">{{ getPostedCount() }}</h3>
+        <p class="text-sm m-0" [class]="filterPosted || getPostedCount() > 0 ? 'text-teal-600' : 'text-gray-400'">
+          {{ getPostedCount() > 0 ? (getPostedAmount() | currency:'NGN':'symbol':'1.2-2') : 'None posted yet' }}
+        </p>
+      </div>
+      <div class="w-14 h-14 rounded-full flex items-center justify-center"
+        [ngClass]="filterPosted ? 'bg-teal-200 text-teal-700' : getPostedCount() > 0 ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-400'">
+        <i class="pi pi-send text-2xl"></i>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Active filter indicator -->
+  <!-- Active filter indicators -->
+  <div class="flex flex-wrap items-center gap-3 mb-4" *ngIf="filterPosted">
+    <div class="flex items-center gap-2 text-sm text-teal-700 bg-teal-50 border border-teal-200 rounded-lg px-3 py-1.5">
+      <i class="pi pi-send text-teal-600 text-xs"></i>
+      <span class="font-medium">Showing posted to accounting only</span>
+      <button (click)="togglePostedFilter()" class="text-xs text-teal-600 hover:text-teal-800 underline font-medium ml-1">Clear</button>
+    </div>
+  </div>
+
+  <!-- Active filter indicator (status) -->
   <div *ngIf="selectedStatus && selectedStatus !== 'ALL'" class="flex items-center gap-2 mb-4 text-sm text-gray-500">
     <i class="pi pi-filter-fill text-teal-600"></i>
     <span>Filtered by status: <strong class="text-gray-800">{{ selectedStatus | titlecase }}</strong></span>
@@ -194,20 +224,19 @@
   </div>
 
   <!-- EXPENSE TABLE -->
-  <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden w-full">
+  <div class="card shadow-sm">
 
     <!-- Loading skeleton -->
-    <div *ngIf="isLoading" class="p-6">
-      <div *ngFor="let i of [1,2,3,4,5]" class="flex gap-4 mb-4">
-        <p-skeleton width="2rem" height="2rem" borderRadius="4px"></p-skeleton>
-        <p-skeleton width="8rem" height="1.5rem"></p-skeleton>
-        <p-skeleton width="10rem" height="1.5rem"></p-skeleton>
-        <p-skeleton width="8rem" height="1.5rem"></p-skeleton>
-        <p-skeleton width="8rem" height="1.5rem"></p-skeleton>
-        <p-skeleton width="6rem" height="1.5rem"></p-skeleton>
-        <p-skeleton width="7rem" height="1.5rem"></p-skeleton>
-        <p-skeleton width="6rem" height="1.5rem"></p-skeleton>
-        <p-skeleton width="6rem" height="1.5rem"></p-skeleton>
+    <div *ngIf="isLoading" class="card-body">
+      <div *ngFor="let i of [1,2,3,4,5]" class="d-flex gap-3 mb-3 align-items-center">
+        <p-skeleton width="2rem" height="1.5rem" borderRadius="4px"></p-skeleton>
+        <p-skeleton width="8rem" height="1rem"></p-skeleton>
+        <p-skeleton width="12rem" height="1rem"></p-skeleton>
+        <p-skeleton width="7rem" height="1rem"></p-skeleton>
+        <p-skeleton width="7rem" height="1rem"></p-skeleton>
+        <p-skeleton width="6rem" height="1rem"></p-skeleton>
+        <p-skeleton width="6rem" height="1rem"></p-skeleton>
+        <p-skeleton class="ms-auto" width="10rem" height="2rem" borderRadius="6px"></p-skeleton>
       </div>
     </div>
 
@@ -222,155 +251,151 @@
       styleClass="w-full"
     >
       <ng-template pTemplate="header">
-        <tr class="bg-gray-50">
-          <th style="width:3.5rem" class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">
-            <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
-          </th>
-          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Date</th>
-          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Expense Name</th>
-          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Created By</th>
-          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Approved By</th>
-          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Merchant</th>
-          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Category</th>
-          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-right">Amount</th>
-          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Status</th>
-          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-center" style="min-width:160px">Actions</th>
+        <tr class="table-light">
+          <th style="width:3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+          <th>Date</th>
+          <th>Expense Name</th>
+          <th>Created By</th>
+          <th>Approved By</th>
+          <th>Merchant</th>
+          <th>Category</th>
+          <th class="text-end">Amount</th>
+          <th>Status</th>
+          <th style="min-width:220px">Actions</th>
         </tr>
       </ng-template>
 
       <ng-template pTemplate="body" let-expense>
-        <tr class="transition-colors duration-200 hover:bg-gray-50 border-b border-gray-100">
+        <tr>
+          <td><p-tableCheckbox [value]="expense"></p-tableCheckbox></td>
 
-          <td class="py-4 px-4">
-            <p-tableCheckbox [value]="expense"></p-tableCheckbox>
-          </td>
-
-          <td class="py-4 px-4 text-gray-600 text-sm whitespace-nowrap">
+          <td class="text-secondary small text-nowrap">
             {{ formatEventDate(expense.eventDate) | date:'dd MMM yyyy' }}
           </td>
 
-          <!-- FIX (Bug #14): Removed font-semibold from body cells -->
-          <td class="py-4 px-4 text-gray-800 max-w-[180px]">
-            <span class="block truncate" [title]="expense.name">{{ expense.name }}</span>
+          <td style="max-width:180px">
+            <span class="d-block text-truncate fw-medium" [title]="expense.name">{{ expense.name }}</span>
           </td>
 
-          <td class="py-4 px-4 text-sm text-gray-600">
-            {{ getExpenseCreatorName(expense) }}
-          </td>
+          <td class="small text-secondary">{{ getExpenseCreatorName(expense) }}</td>
+          <td class="small text-secondary">{{ getApprovedByName(expense) }}</td>
+          <td class="small text-secondary">{{ expense.merchant?.name || '—' }}</td>
 
-          <td class="py-4 px-4 text-sm text-gray-600">
-            {{ getApprovedByName(expense) }}
-          </td>
-
-          <td class="py-4 px-4 text-sm text-gray-600">{{ expense.merchant?.name || '—' }}</td>
-
-          <td class="py-4 px-4">
-            <span class="inline-block py-1 px-3 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700">
+          <td>
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis fw-medium">
               {{ expense.category?.name || '—' }}
             </span>
           </td>
 
-          <!-- FIX (Bug #14): Removed font-semibold from amount cell -->
-          <td class="py-4 px-4 text-gray-800 text-right text-sm whitespace-nowrap">
+          <td class="text-end fw-semibold text-nowrap small">
             {{ calculateDisplayAmount(expense) | currency:'NGN':'symbol':'1.2-2' }}
           </td>
 
-          <!-- FIX (Bug #13): Status badge bumped from text-xs to text-sm -->
-          <td class="py-4 px-4">
-            <span class="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-sm font-medium border"
-                  [ngClass]="{
-                    'bg-green-50 text-green-700 border-green-200': expense.status === 'APPROVED',
-                    'bg-amber-50 text-amber-700 border-amber-200': expense.status === 'PENDING',
-                    'bg-red-50 text-red-700 border-red-200':       expense.status === 'REJECTED'
-                  }">
-              <span class="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    [ngClass]="{
-                      'bg-green-600': expense.status === 'APPROVED',
-                      'bg-amber-500': expense.status === 'PENDING',
-                      'bg-red-600':   expense.status === 'REJECTED'
-                    }"></span>
-              {{ expense.status | titlecase }}
-            </span>
+          <!-- Status -->
+          <td>
+            <ng-container *ngIf="isPosted(expense); else normalStatusBadge">
+              <span class="badge rounded-pill" style="background-color:#0d9488;color:#fff">
+                <i class="pi pi-check-circle me-1" style="font-size:0.7rem"></i>Posted
+              </span>
+            </ng-container>
+            <ng-template #normalStatusBadge>
+              <span class="badge rounded-pill"
+                [ngClass]="{
+                  'bg-success':              expense.status === 'APPROVED',
+                  'bg-warning text-dark':    expense.status === 'PENDING',
+                  'bg-danger':               expense.status === 'REJECTED'
+                }">
+                {{ expense.status | titlecase }}
+              </span>
+            </ng-template>
           </td>
 
-          <td class="py-4 px-4">
-            <div class="flex items-center justify-center gap-1">
+          <!-- Actions -->
+          <td style="min-width:220px">
+            <div class="d-flex flex-wrap gap-1 align-items-center">
 
               <!-- View -->
-              <button pTooltip="View Details" tooltipPosition="top"
-                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
+              <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                pTooltip="View Details" tooltipPosition="top"
                 (click)="viewExpenseApproval(expense)">
-                <i class="pi pi-eye text-gray-500 text-sm"></i>
+                <i class="pi pi-eye" style="font-size:0.75rem"></i> View
               </button>
 
-              <!-- Edit (only while pending) -->
+              <!-- Edit -->
               <button *ngIf="canApproveOrReject(expense)"
+                class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
                 pTooltip="Edit Expense" tooltipPosition="top"
-                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
                 (click)="openEditModal(expense)">
-                <i class="pi pi-pencil text-gray-500 text-sm"></i>
+                <i class="pi pi-pencil" style="font-size:0.75rem"></i> Edit
               </button>
-
-              <!-- Lock icon when approved / rejected -->
-              <span *ngIf="isLocked(expense)"
-                pTooltip="Locked — already {{ expense.status | titlecase }}" tooltipPosition="top"
-                class="w-8 h-8 flex items-center justify-center cursor-default">
-                <i class="pi pi-lock text-gray-400 text-sm"></i>
-              </span>
 
               <!-- Approve -->
               <button *ngIf="canApproveOrReject(expense)"
-                pTooltip="{{ approvingIds.has(expense.id) ? 'Approving…' : 'Approve' }}" tooltipPosition="top"
+                class="btn btn-sm btn-success d-flex align-items-center gap-1"
                 [disabled]="approvingIds.has(expense.id)"
-                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 transition-colors border border-transparent hover:border-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 (click)="approve(expense)">
-                <i class="text-sm"
-                   [ngClass]="approvingIds.has(expense.id)
-                     ? 'pi pi-spin pi-spinner text-green-400'
-                     : 'pi pi-check text-green-600'"></i>
+                <i [ngClass]="approvingIds.has(expense.id) ? 'pi pi-spin pi-spinner' : 'pi pi-check'" style="font-size:0.75rem"></i>
+                {{ approvingIds.has(expense.id) ? 'Approving…' : 'Approve' }}
               </button>
 
               <!-- Reject -->
               <button *ngIf="canApproveOrReject(expense)"
-                pTooltip="{{ rejectingIds.has(expense.id) ? 'Rejecting…' : 'Reject' }}" tooltipPosition="top"
+                class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1"
                 [disabled]="rejectingIds.has(expense.id)"
-                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors border border-transparent hover:border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 (click)="openRejectionDialog(expense)">
-                <i class="text-sm"
-                   [ngClass]="rejectingIds.has(expense.id)
-                     ? 'pi pi-spin pi-spinner text-red-300'
-                     : 'pi pi-times text-red-500'"></i>
+                <i [ngClass]="rejectingIds.has(expense.id) ? 'pi pi-spin pi-spinner' : 'pi pi-times'" style="font-size:0.75rem"></i>
+                {{ rejectingIds.has(expense.id) ? 'Rejecting…' : 'Reject' }}
               </button>
 
+              <!-- Post to Accounting -->
+              <ng-container *ngIf="isApproved(expense)">
+                <button *ngIf="!postingIds.has(expense.id) && !isPosted(expense) && !postFailedIds.has(expense.id)"
+                  class="btn btn-sm d-flex align-items-center gap-1"
+                  style="background-color:#0d9488;color:#fff;border-color:#0d9488"
+                  pTooltip="Send to accounting payment runs" tooltipPosition="top"
+                  (click)="postToAccounting(expense)">
+                  <i class="pi pi-send" style="font-size:0.75rem"></i> Post
+                </button>
+                <span *ngIf="postingIds.has(expense.id)"
+                  class="btn btn-sm disabled d-flex align-items-center gap-1"
+                  style="background-color:#ccfbf1;color:#0f766e;border-color:#99f6e4">
+                  <i class="pi pi-spin pi-spinner" style="font-size:0.75rem"></i> Posting…
+                </span>
+                <button *ngIf="postFailedIds.has(expense.id)"
+                  class="btn btn-sm btn-warning d-flex align-items-center gap-1"
+                  pTooltip="Retry — accounting was unavailable" tooltipPosition="top"
+                  (click)="postToAccounting(expense)">
+                  <i class="pi pi-refresh" style="font-size:0.75rem"></i> Retry
+                </button>
+                <span *ngIf="isPosted(expense)"
+                  class="btn btn-sm disabled d-flex align-items-center gap-1"
+                  style="background-color:#ccfbf1;color:#0f766e;border-color:#99f6e4">
+                  <i class="pi pi-check-circle" style="font-size:0.75rem"></i> Posted
+                </span>
+              </ng-container>
+
               <!-- Delete -->
-              <button pTooltip="{{ deletingIds.has(expense.id) ? 'Deleting…' : 'Delete' }}" tooltipPosition="top"
+              <button *ngIf="!isApproved(expense)"
+                class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1"
                 [disabled]="deletingIds.has(expense.id)"
-                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors border border-transparent hover:border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 (click)="confirmDelete(expense)">
-                <i class="text-sm"
-                   [ngClass]="deletingIds.has(expense.id)
-                     ? 'pi pi-spin pi-spinner text-red-300'
-                     : 'pi pi-trash text-red-400'"></i>
+                <i [ngClass]="deletingIds.has(expense.id) ? 'pi pi-spin pi-spinner' : 'pi pi-trash'" style="font-size:0.75rem"></i>
+                {{ deletingIds.has(expense.id) ? 'Deleting…' : 'Delete' }}
               </button>
 
             </div>
           </td>
-
         </tr>
       </ng-template>
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="9" class="py-20 text-center">
-            <div class="flex flex-col items-center justify-center gap-4">
-              <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
-                <i class="pi pi-inbox text-5xl text-gray-300"></i>
-              </div>
-              <h3 class="text-xl font-semibold text-gray-800">No expenses found</h3>
-              <p class="text-gray-500 m-0">
-                <ng-container *ngIf="selectedStatus !== 'ALL'">No <strong>{{ selectedStatus | titlecase }}</strong> expenses. </ng-container>
-                Adjust your filters or add a new expense.
-              </p>
+          <td colspan="10" class="py-5 text-center text-secondary">
+            <i class="pi pi-inbox fs-1 d-block mb-2 opacity-25"></i>
+            <strong>No expenses found</strong>
+            <div class="small mt-1">
+              <ng-container *ngIf="selectedStatus !== 'ALL'">No {{ selectedStatus | titlecase }} expenses. </ng-container>
+              Adjust your filters or add a new expense.
             </div>
           </td>
         </tr>
@@ -687,8 +712,8 @@
           <p class="p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm leading-relaxed text-gray-700 m-0">{{ selectedExpense?.description }}</p>
         </div>
 
-        <!-- Merchant bank payment details -->
-        <div *ngIf="selectedExpense?.bankName || selectedExpense?.accountNumber">
+        <!-- Merchant bank payment details — always visible -->
+        <div>
           <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Merchant Bank Details</label>
           <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 grid grid-cols-3 gap-4">
             <div>

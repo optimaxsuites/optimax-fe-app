@@ -605,44 +605,83 @@
 
           <!-- ─ Virtual tab ─ -->
           <div class="tab-body" *ngIf="activeDetailTab==='virtual'">
-            <div class="sec-label">Generate room</div>
-            <div class="platform-grid">
-              <button class="platform-btn" *ngFor="let p of virtualPlatforms" (click)="generateVirtualRoom(p)">
-                {{ p }}
+
+            <!-- Call/Video launch -->
+            <div class="jitsi-launch-row">
+              <button class="btn btn-primary jitsi-btn" (click)="startVideo()" [disabled]="jitsiJoining">
+                <i class="pi pi-video"></i>
+                <span>{{ jitsiJoining ? 'Connecting…' : 'Start video' }}</span>
+              </button>
+              <button class="btn btn-outline jitsi-btn" (click)="startCall()" [disabled]="jitsiJoining">
+                <i class="pi pi-phone"></i>
+                <span>{{ jitsiJoining ? 'Connecting…' : 'Audio only' }}</span>
+              </button>
+              <button class="btn btn-outline" *ngIf="meetingGuestUrl" (click)="openMeetingInTab()" title="Open in new tab">
+                <i class="pi pi-external-link"></i>
               </button>
             </div>
 
-            <div class="sec-label">Custom Jitsi base URL</div>
-            <input type="url" [(ngModel)]="jitsiBaseUrl" placeholder="https://meet.jit.si" />
-
-            <div class="btn-row" style="margin-top:0.75rem">
-              <button class="btn btn-primary" (click)="startVideo()">
-                <i class="pi pi-video"></i> Start video
-              </button>
-              <button class="btn btn-outline" (click)="startCall()">
-                <i class="pi pi-phone"></i> Audio call
-              </button>
-              <button class="btn btn-outline" *ngIf="meetingRoomUrl" (click)="openMeetingInTab()">
-                <i class="pi pi-external-link"></i> Open in tab
-              </button>
-            </div>
-
+            <!-- Embedded Jitsi room -->
             <div class="meeting-room-embed" *ngIf="meetingRoomOpen && trustedMeetingRoomUrl">
               <div class="room-embed-head">
-                <strong>{{ event.title }}</strong>
-                <button class="btn-icon-sm" (click)="closeMeetingRoom()"><i class="pi pi-times"></i></button>
+                <div class="room-head-left">
+                  <i class="pi pi-video"></i>
+                  <strong>{{ selectedEvent?.title }}</strong>
+                </div>
+                <button class="btn-icon-sm" (click)="closeMeetingRoom()" title="Close">
+                  <i class="pi pi-times"></i>
+                </button>
               </div>
               <iframe [src]="trustedMeetingRoomUrl"
-                      allow="camera;microphone;fullscreen;display-capture"
+                      allow="camera;microphone;fullscreen;display-capture;clipboard-write"
                       allowfullscreen></iframe>
             </div>
 
-            <ng-container *ngIf="event.onlineLink">
-              <div class="sec-label">Meeting link</div>
-              <a [href]="event.onlineLink" target="_blank" class="meeting-link-btn">
-                <i class="pi pi-link"></i> {{ event.onlineLink }}
-              </a>
+            <!-- Guest invite link -->
+            <div class="guest-invite-block" *ngIf="meetingGuestUrl">
+              <div class="sec-label">
+                <i class="pi pi-users"></i> Invite external attendees
+              </div>
+              <div class="guest-link-row">
+                <input type="text" class="guest-link-input" [value]="meetingGuestUrl" readonly />
+                <button class="btn btn-outline btn-sm" (click)="copyGuestLink()" title="Copy link">
+                  <i class="pi pi-copy"></i> Copy
+                </button>
+                <a class="btn btn-outline btn-sm" [href]="meetingGuestUrl" target="_blank" rel="noopener" title="Open">
+                  <i class="pi pi-external-link"></i>
+                </a>
+              </div>
+              <p class="guest-hint">
+                Share this link with external guests — no account required.
+                Internal users join automatically as moderators.
+              </p>
+            </div>
+
+            <!-- Stored meeting link (for events that already have one) -->
+            <ng-container *ngIf="selectedEvent?.onlineLink && !meetingGuestUrl">
+              <div class="sec-label">Stored meeting link</div>
+              <div class="guest-link-row">
+                <input type="text" class="guest-link-input" [value]="selectedEvent?.onlineLink" readonly />
+                <a class="btn btn-outline btn-sm" [href]="selectedEvent?.onlineLink" target="_blank" rel="noopener">
+                  <i class="pi pi-external-link"></i> Join
+                </a>
+              </div>
             </ng-container>
+
+            <!-- Jitsi server config -->
+            <details class="jitsi-config-details">
+              <summary>Jitsi server settings</summary>
+              <div class="jitsi-config-inner">
+                <label class="sec-label">Server base URL</label>
+                <input type="url" [(ngModel)]="jitsiBaseUrl" placeholder="https://meet.optimaxsuites.com" />
+                <div class="platform-grid" style="margin-top:0.5rem">
+                  <button class="platform-btn" *ngFor="let p of virtualPlatforms" (click)="generateVirtualRoom(p)">
+                    {{ p }}
+                  </button>
+                </div>
+              </div>
+            </details>
+
           </div>
 
           <!-- ─ Transcription tab ─ -->
