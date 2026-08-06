@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
@@ -12,6 +12,19 @@ import { lastValueFrom } from 'rxjs';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { MessageService } from 'primeng/api';
+
+export function futureDateValidator(): ValidatorFn {
+  return (control: AbstractControl): { [key: string]: any } | null => {
+    if (!control.value) {
+      return null;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const controlDate = new Date(control.value);
+    controlDate.setHours(0, 0, 0, 0);
+    return controlDate < today ? { 'pastDate': true } : null;
+  };
+}
 
 @Component({
   selector: 'app-quote-form',
@@ -171,6 +184,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private salesService: SalesService,
@@ -187,7 +201,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       customerName: [''],
       quoteNumber: [{ value: 'Auto-generated', disabled: true }],
       quoteDate: [this.formatDateForInput(new Date()), Validators.required],
-      validUntil: [this.formatDateForInput(defaultValidUntil), Validators.required],
+      validUntil: [this.formatDateForInput(defaultValidUntil), [Validators.required, futureDateValidator()]],
       currency: ['NGN', Validators.required],
       notes: [''],
       terms: [''],
@@ -312,24 +326,32 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
     // Validate customer selection
     if (!this.quoteForm.get('customerId')?.value) {
-      alert('Please select a customer');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please select a customer' });
       return false;
     }
     
     // Validate date fields
     if (!this.quoteForm.get('quoteDate')?.value) {
-      alert('Please select a quote date');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please select a quote date' });
       return false;
     }
     
     if (!this.quoteForm.get('validUntil')?.value) {
-      alert('Please select a valid until date');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please select a valid until date' });
       return false;
+    }
+
+    if (this.quoteForm.get('validUntil')?.invalid) {
+      const errors = this.quoteForm.get('validUntil')?.errors;
+      if (errors?.['pastDate']) {
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Valid until date cannot be in the past' });
+        return false;
+      }
     }
 
     // Validate at least one item
     if (this.items.length === 0) {
-      alert('Please add at least one item to the quote');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please add at least one item to the quote' });
       return false;
     }
     
@@ -347,19 +369,19 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       }
       
       if (!item.get('productId')?.value) {
-        alert(`Item ${i + 1}: Please select a product`);
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Item ${i + 1}: Please select a product` });
         return false;
       }
       
       const qty = item.get('quantity')?.value;
       if (qty === null || qty === undefined || qty < 1) {
-        alert(`Item ${i + 1}: Please enter a valid quantity (min 1)`);
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Item ${i + 1}: Please enter a valid quantity (min 1)` });
         return false;
       }
       
       const price = item.get('unitPrice')?.value;
       if (price === null || price === undefined || price < 0) {
-        alert(`Item ${i + 1}: Please enter a valid price (min 0)`);
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Item ${i + 1}: Please enter a valid price (min 0)` });
         return false;
       }
     }
@@ -854,7 +876,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     }
 
     if (this.items.length === 0) {
-      alert('Please add at least one item to the quote');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please add at least one item to the quote' });
       return;
     }
 
@@ -962,7 +984,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error saving quote:', error);
         this.isSubmitting = false;
-        alert('Failed to save quote. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save quote. Please try again.' });
       }
     });
   }
@@ -999,7 +1021,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       }
     } catch (error) {
       console.error('Error in delivery action:', error);
-      alert('There was an issue with the delivery. Please try again.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'There was an issue with the delivery. Please try again.' });
     }
   }
 
@@ -1193,11 +1215,11 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   addChargeItemToModal(): void {
     if (!this.newChargeLabel.trim()) {
-      alert('Please enter a label for the additional charge (e.g. Shipping, Handling).');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a label for the additional charge (e.g. Shipping, Handling).' });
       return;
     }
     if (this.newChargeAmount === null || this.newChargeAmount === undefined || this.newChargeAmount < 0) {
-      alert('Please enter a valid charge amount.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a valid charge amount.' });
       return;
     }
     this.modalChargesList.push({
@@ -1230,7 +1252,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   saveBilledBy(): void {
     if (!this.billedByDraft.name || this.billedByDraft.name.trim().length === 0) {
-      alert('Name is required for the sender.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Name is required for the sender.' });
       return;
     }
     this.billedBy = { ...this.billedByDraft };
@@ -1266,7 +1288,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     fileInput.onchange = (e: any) => {
       const file = e.target.files?.[0];
       if (file) {
-        alert(`Image "${file.name}" uploaded successfully for item.`);
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Image "${file.name}" uploaded successfully for item.` });
       }
     };
     fileInput.click();
@@ -1275,7 +1297,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   addUnit(index: number): void {
     const newUnit = prompt('Enter measurement unit (e.g. Kg, Box, Pack):', 'Each');
     if (newUnit) {
-      alert(`Measurement unit set to: ${newUnit}`);
+      this.messageService.add({ severity: 'info', summary: 'Notice', detail: `Measurement unit set to: ${newUnit}` });
     }
   }
 
@@ -1328,7 +1350,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   onQuickCustomerSubmit(): void {
     if (this.quickCustomerForm.invalid) {
       this.quickCustomerForm.markAllAsTouched();
-      alert('Please fill in all required fields in the quick-add client form');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please fill in all required fields in the quick-add client form' });
       return;
     }
 
@@ -1362,7 +1384,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error saving client permanently:', err);
-          alert('Failed to save client permanently. Please try again.');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save client permanently. Please try again.' });
         }
       });
     } else {

@@ -8,6 +8,7 @@ import { CommonModule } from '@angular/common';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-quote-detail',
@@ -26,6 +27,7 @@ export class QuoteDetailComponent implements OnInit {
   isDownloading = false;
 
   constructor(
+    private messageService: MessageService,
     private route: ActivatedRoute,
     private router: Router,
     private salesService: SalesService
@@ -386,12 +388,12 @@ export class QuoteDetailComponent implements OnInit {
           element.classList.remove('pdf-printing-active');
           console.error('Error generating PDF:', err);
           this.isDownloading = false;
-          alert('Failed to generate PDF. Printing window instead.');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate PDF. Printing window instead.' });
           window.print();
         });
       }, 50);
     } else {
-      alert('Could not find element to export. Printing window instead.');
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find element to export. Printing window instead.' });
       window.print();
     }
   }

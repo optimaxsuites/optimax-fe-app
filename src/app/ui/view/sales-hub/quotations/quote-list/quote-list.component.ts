@@ -11,6 +11,7 @@ import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { QuoteFormComponent } from '../quote-form/quote-form.component';
 import { QuoteDetailComponent } from '../quote-detail/quote-detail.component';
 import { InvoiceFormComponent } from '../../invoices/invoice-form/invoice-form.component';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-quote-list',
@@ -150,6 +151,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private salesService: SalesService,
     private route: ActivatedRoute,
     private router: Router
@@ -332,7 +334,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
       },
       error: (error: any) => {
         console.error('Error sending quote:', error);
-        alert('Failed to send quote. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to send quote. Please try again.' });
       }
     });
   }
@@ -341,12 +343,12 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     if (confirm(`Delete quote ${quote.quoteNumber}? This action cannot be undone.`)) {
       this.salesService.updateQuote(String(quote.id), { status: 'EXPIRED' }).subscribe({
         next: () => {
-          alert(`Quote ${quote.quoteNumber} deleted successfully`);
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: `Quote ${quote.quoteNumber} deleted successfully` });
           this.loadQuotes();
         },
         error: (error: any) => {
           console.error('Error deleting quote:', error);
-          alert('Failed to delete quote. Please try again.');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete quote. Please try again.' });
         }
       });
     }

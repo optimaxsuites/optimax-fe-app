@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
@@ -10,6 +10,39 @@ import { BackButtonComponent } from '../../../../shared-component/view/back-butt
 import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { MessageService } from 'primeng/api';
+
+export function futureDateValidator(): ValidatorFn {
+  return (control: AbstractControl): { [key: string]: any } | null => {
+    if (!control.value) {
+      return null;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const controlDate = new Date(control.value);
+    controlDate.setHours(0, 0, 0, 0);
+    return controlDate < today ? { 'pastDate': true } : null;
+  };
+}
+
+export function dateAfterValidator(otherControlName: string): ValidatorFn {
+  return (control: AbstractControl): { [key: string]: any } | null => {
+    if (!control.value) {
+      return null;
+    }
+    const parent = control.parent;
+    if (!parent) return null;
+    const otherControl = parent.get(otherControlName);
+    if (!otherControl || !otherControl.value) return null;
+    
+    const d1 = new Date(otherControl.value);
+    const d2 = new Date(control.value);
+    d1.setHours(0,0,0,0);
+    d2.setHours(0,0,0,0);
+    
+    return d2 < d1 ? { 'dateBefore': true } : null;
+  };
+}
 
 @Component({
   selector: 'app-invoice-form',
@@ -25,6 +58,13 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   @Output() saved = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
 
+
+  get todayDateString(): string {
+    return new Date().toISOString().substring(0, 10);
+  }
+  get today(): string {
+    return this.todayDateString;
+  }
 
   invoiceForm: FormGroup;
   isSubmitting = false;
@@ -187,6 +227,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private salesService: SalesService,
@@ -198,7 +239,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       customerName: [''],
       invoiceNumber: [{ value: 'Auto-generated', disabled: true }],
       issueDate: [this.formatDateForInput(new Date()), Validators.required],
-      dueDate: ['', Validators.required],
+      dueDate: ['', [Validators.required, futureDateValidator(), dateAfterValidator('issueDate')]],
       currency: ['NGN', Validators.required],
       notes: [''],
       terms: [''],
@@ -710,13 +751,24 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     if (this.invoiceForm.invalid) {
       this.invoiceForm.markAllAsTouched();
       this.logInvalidControls(this.invoiceForm);
-      alert('Please fill in all required fields. Check console for details.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please fill in all required fields. Check console for details.' });
       return;
     }
 
     if (this.items.length === 0) {
-      alert('Please add at least one item to the invoice');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please add at least one item to the invoice' });
       return;
+    }
+
+    if (this.shippingDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const inputDate = new Date(this.shippingDate);
+      inputDate.setHours(0, 0, 0, 0);
+      if (inputDate < today) {
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Shipping date cannot be in the past.' });
+        return;
+      }
     }
 
     this.isSubmitting = true;
@@ -826,7 +878,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
           });
         }
 
-        alert(this.isEditMode ? 'Invoice updated successfully!' : 'Invoice created successfully!');
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: this.isEditMode ? 'Invoice updated successfully!' : 'Invoice created successfully!' });
         const uuid = this.route.snapshot.paramMap.get('uuid');
         if (uuid) {
           this.router.navigate(['/admin/sales/invoices', response.id, uuid]);
@@ -837,7 +889,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error saving invoice:', error);
         this.isSubmitting = false;
-        alert('Failed to save invoice. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save invoice. Please try again.' });
       }
     });
   }
@@ -858,10 +910,6 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   // Helper methods
   private formatDateForInput(date: Date): string {
     return toDateInputValue(date);
-  }
-
-  get today(): string {
-    return new Date().toISOString().split('T')[0];
   }
 
   formatCurrency(amount: number, customCurrency?: string): string {
@@ -970,11 +1018,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   addChargeItemToModal(): void {
     if (!this.newChargeLabel.trim()) {
-      alert('Please enter a label for the additional charge (e.g. Shipping, Handling).');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a label for the additional charge (e.g. Shipping, Handling).' });
       return;
     }
     if (this.newChargeAmount === null || this.newChargeAmount === undefined || this.newChargeAmount < 0) {
-      alert('Please enter a valid charge amount.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a valid charge amount.' });
       return;
     }
     this.modalChargesList.push({
@@ -1007,7 +1055,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   saveBilledBy(): void {
     if (!this.billedByDraft.name || this.billedByDraft.name.trim().length === 0) {
-      alert('Name is required for the sender.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Name is required for the sender.' });
       return;
     }
     this.billedBy = { ...this.billedByDraft };
@@ -1043,7 +1091,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     fileInput.onchange = (e: any) => {
       const file = e.target.files?.[0];
       if (file) {
-        alert(`Image "${file.name}" uploaded successfully for item.`);
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Image "${file.name}" uploaded successfully for item.` });
       }
     };
     fileInput.click();
@@ -1052,7 +1100,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   addUnit(index: number): void {
     const newUnit = prompt('Enter measurement unit (e.g. Kg, Box, Pack):', 'Each');
     if (newUnit) {
-      alert(`Measurement unit set to: ${newUnit}`);
+      this.messageService.add({ severity: 'info', summary: 'Notice', detail: `Measurement unit set to: ${newUnit}` });
     }
   }
 
@@ -1188,22 +1236,34 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     console.log('Validating Step 1 (Invoice Details & Line Items)...');
 
     if (!this.invoiceForm.get('customerId')?.value) {
-      alert('Please select a customer');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please select a customer' });
       return false;
     }
 
     if (!this.invoiceForm.get('issueDate')?.value) {
-      alert('Please select an invoice date');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please select an invoice date' });
       return false;
     }
 
     if (!this.invoiceForm.get('dueDate')?.value) {
-      alert('Please select a due date');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please select a due date' });
       return false;
     }
 
+    if (this.invoiceForm.get('dueDate')?.invalid) {
+      const errors = this.invoiceForm.get('dueDate')?.errors;
+      if (errors?.['pastDate']) {
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Due date cannot be in the past' });
+        return false;
+      }
+      if (errors?.['dateBefore']) {
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Due date cannot be before issue date' });
+        return false;
+      }
+    }
+
     if (this.items.length === 0) {
-      alert('Please add at least one item to the invoice');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please add at least one item to the invoice' });
       return false;
     }
 
@@ -1212,13 +1272,13 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
       const qty = item.get('quantity')?.value;
       if (qty === null || qty === undefined || qty < 1) {
-        alert(`Item ${i + 1}: Please enter a valid quantity (min 1)`);
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Item ${i + 1}: Please enter a valid quantity (min 1)` });
         return false;
       }
 
       const price = item.get('unitPrice')?.value;
       if (price === null || price === undefined || price < 0) {
-        alert(`Item ${i + 1}: Please enter a valid price (min 0)`);
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Item ${i + 1}: Please enter a valid price (min 0)` });
         return false;
       }
     }
@@ -1228,7 +1288,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   private validateStep2(): boolean {
     if (this.paymentMode === 'MONTHLY' && (!this.numberOfInstallments || this.numberOfInstallments < 1)) {
-      alert('Please enter a valid number of installments (min 1)');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a valid number of installments (min 1)' });
       return false;
     }
     return true;
@@ -1293,11 +1353,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
       if (action === 'email' || action === 'both') {
         await this.sendInvoiceEmail(invoice);
-        alert(`Invoice ${invoice.invoiceNumber} sent to ${invoice.customerName}`);
+        this.messageService.add({ severity: 'info', summary: 'Notice', detail: `Invoice ${invoice.invoiceNumber} sent to ${invoice.customerName}` });
       }
     } catch (error) {
       console.error('Error in delivery action:', error);
-      alert('There was an issue with the delivery. Please try again.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'There was an issue with the delivery. Please try again.' });
     }
   }
 
@@ -1388,7 +1448,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   onQuickCustomerSubmit(): void {
     if (this.quickCustomerForm.invalid) {
       this.quickCustomerForm.markAllAsTouched();
-      alert('Please fill in all required fields in the quick-add client form');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please fill in all required fields in the quick-add client form' });
       return;
     }
 
@@ -1422,7 +1482,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error saving client permanently:', err);
-          alert('Failed to save client permanently. Please try again.');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save client permanently. Please try again.' });
         }
       });
     } else {

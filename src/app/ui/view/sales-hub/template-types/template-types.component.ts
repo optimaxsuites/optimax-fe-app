@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 
 export interface QuoteTemplate {
   id: string;
@@ -286,6 +287,8 @@ export class TemplateTypesComponent implements OnInit {
     'CUST-005': 'standard' // Obinna uses standard
   };
 
+  constructor(private messageService: MessageService) {}
+
   ngOnInit(): void {
     // Auto-select template based on customer preference if available
     if (this.quoteData?.customerId) {
@@ -333,7 +336,7 @@ export class TemplateTypesComponent implements OnInit {
 
   proceedToAction(): void {
     if (!this.selectedTemplate) {
-      alert('Please select a template first');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please select a template first' });
       return;
     }
     this.showActionSelection = true;

@@ -1,13 +1,27 @@
 // procurement-product-form/procurement-product-form.component.ts
 
 import { Component, EventEmitter, Output, Input, OnChanges, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, FormArray, Validators, AbstractControl } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, Validators, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { RequestItem, RFQAttachment, ProcurementCategory } from '../../../domain/procurement-request/procurement.dto';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 import { SalesService } from '../../../service/sales/sales.service';
 import { parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 import { v4 as uuidV4 } from 'uuid';
+import { MessageService } from 'primeng/api';
+
+export function futureDateValidator(): ValidatorFn {
+  return (control: AbstractControl): { [key: string]: any } | null => {
+    if (!control.value) {
+      return null;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const controlDate = new Date(control.value);
+    controlDate.setHours(0, 0, 0, 0);
+    return controlDate < today ? { 'pastDate': true } : null;
+  };
+}
 
 @Component({
   selector: 'app-request-for-quotation-form',
@@ -35,7 +49,12 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
   newUnitName = '';
   activeItemIndexForModal = 0;
 
+  get todayDateString(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
   constructor(
+    private messageService: MessageService,
     private fb: FormBuilder,
     private router: Router,
     private route: ActivatedRoute,
@@ -226,7 +245,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       unitPrice: [null, [Validators.min(0.01)]],
       currency: ['NGN', Validators.required],
       deliveryMode: ['STANDARD', Validators.required],
-      deliveryDeadline: ['', Validators.required],
+      deliveryDeadline: ['', [Validators.required, futureDateValidator()]],
       deliveryLocation: ['', Validators.required],
       specifications: this.fb.group({
         brand: [''],
@@ -448,6 +467,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       if (control.errors['required']) return 'This field is required';
       if (control.errors['minlength']) return `Minimum ${control.errors['minlength'].requiredLength} characters required`;
       if (control.errors['min']) return 'Value must be greater than 0';
+      if (control.errors['pastDate']) return 'Date cannot be in the past';
     }
     return '';
   }
@@ -481,7 +501,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     const item = this.items.at(index);
     const partNumber = item.get('partNumber')?.value;
     if (!partNumber || !partNumber.trim()) {
-      alert('Please enter a part or serial number to look up.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a part or serial number to look up.' });
       return;
     }
 
@@ -492,7 +512,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
         this.isLookingUp[index] = false;
         const product = result.data && result.data[0];
         if (!product) {
-          alert(`No product found for part number: "${partNumber}"`);
+          this.messageService.add({ severity: 'info', summary: 'Notice', detail: `No product found for part number: "${partNumber}"` });
           return;
         }
         const specs = (product as any).specifications || {};
@@ -511,12 +531,12 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
             warranty: specs.warranty || ''
           }
         });
-        alert(`Product details successfully retrieved for: "${partNumber}"`);
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product details successfully retrieved for: "${partNumber}"` });
       },
       error: (err) => {
         this.isLookingUp[index] = false;
         console.error('Error looking up product by part number:', err);
-        alert('Could not retrieve product details. Please fill in the fields manually.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not retrieve product details. Please fill in the fields manually.' });
       }
     });
   }
@@ -566,7 +586,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
         }
 
         this.closeAddCategoryModal();
-        alert('Custom category saved and selected successfully.');
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Custom category saved and selected successfully.' });
       },
       error: (err) => {
         console.error('Error creating custom category:', err);
@@ -584,7 +604,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
           item.get('categoryId')?.setValue(tempId);
         }
         this.closeAddCategoryModal();
-        alert('Custom category added locally.');
+        this.messageService.add({ severity: 'info', summary: 'Notice', detail: 'Custom category added locally.' });
       }
     });
   }
@@ -621,7 +641,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
         }
         
         this.closeAddUnitModal();
-        alert('Custom unit saved and selected successfully.');
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Custom unit saved and selected successfully.' });
       },
       error: (err) => {
         console.error('Error creating custom unit:', err);
@@ -634,7 +654,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
           item.get('unit')?.setValue(unitName);
         }
         this.closeAddUnitModal();
-        alert('Custom unit added locally.');
+        this.messageService.add({ severity: 'info', summary: 'Notice', detail: 'Custom unit added locally.' });
       }
     });
   }

@@ -4,6 +4,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { QuotationManagementService } from '../../../service/procurement/quotation-management.service';
 import { VendorQuotation, VendorQuotationStatus } from '../../../domain/procurement-request/procurement.dto';
 import { ExtendedProcurementRequest } from '../../../service/procurement/rfq-quotation-bridge.util';
+import { MessageService } from 'primeng/api';
 
 export interface LocalRFQWithQuotations {
   rfq: ExtendedProcurementRequest;
@@ -29,6 +30,7 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private route: ActivatedRoute,
     public router: Router,
     private quotationService: QuotationManagementService
@@ -97,12 +99,12 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
           this.isProcessing = false;
           this.closeQuotationDetail();
           this.loadRFQDetails(); // Refresh data
-          alert(response.message || 'Quotation accepted. You can now generate the LPO from the LPO preview screen.');
+          this.messageService.add({ severity: 'info', summary: 'Notice', detail: response.message || 'Quotation accepted. You can now generate the LPO from the LPO preview screen.' });
         },
         error: (err) => {
           this.isProcessing = false;
           console.error('Error accepting quotation:', err);
-          alert('Failed to accept quotation. Please try again.');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to accept quotation. Please try again.' });
         }
       });
     }
@@ -117,12 +119,12 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
           this.isProcessing = false;
           this.closeQuotationDetail();
           this.loadRFQDetails(); // Refresh data
-          alert('Quotation has been rejected.');
+          this.messageService.add({ severity: 'info', summary: 'Notice', detail: 'Quotation has been rejected.' });
         },
         error: (err) => {
           this.isProcessing = false;
           console.error('Error rejecting quotation:', err);
-          alert('Failed to reject quotation. Please try again.');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to reject quotation. Please try again.' });
         }
       });
     }
@@ -135,12 +137,12 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
         next: () => {
           this.isProcessing = false;
           this.loadRFQDetails(); // Refresh data
-          alert(`RFQ to ${vendorName} has been cancelled.`);
+          this.messageService.add({ severity: 'info', summary: 'Notice', detail: `RFQ to ${vendorName} has been cancelled.` });
         },
         error: (err) => {
           this.isProcessing = false;
           console.error('Error cancelling vendor:', err);
-          alert('Failed to cancel. Please try again.');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to cancel. Please try again.' });
         }
       });
     }

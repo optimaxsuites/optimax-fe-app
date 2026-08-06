@@ -5,6 +5,7 @@ import { QuotationManagementService } from '../../../service/procurement/quotati
 import { VendorQuotation, MAX_QUOTATION_REVISIONS } from '../../../domain/procurement-request/procurement.dto';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-quotation-detail',
@@ -41,6 +42,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
   }
 
   constructor(
+    private messageService: MessageService,
     private route: ActivatedRoute,
     private router: Router,
     private quotationService: QuotationManagementService
@@ -117,7 +119,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
     if (!this.quotation) return;
 
     if (!this.requestChangesNotes.trim()) {
-      alert('Please provide detailed request notes.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please provide detailed request notes.' });
       return;
     }
 
@@ -126,13 +128,13 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       next: () => {
         this.isProcessing = false;
         this.closeRequestChangesModal();
-        alert('Changes requested. Status updated to "Review Requested".');
+        this.messageService.add({ severity: 'info', summary: 'Notice', detail: 'Changes requested. Status updated to "Review Requested".' });
         this.loadQuotationDetail(); // Refresh
       },
       error: (err) => {
         this.isProcessing = false;
         console.error('Error requesting changes:', err);
-        alert(err?.message || 'Failed to request changes. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.message || 'Failed to request changes. Please try again.' });
       }
     });
   }
@@ -141,7 +143,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
     if (!this.quotation) return;
 
     if (!this.simulationNewTotal || this.simulationNewTotal <= 0) {
-      alert('Please enter a valid amount.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a valid amount.' });
       return;
     }
 
@@ -153,13 +155,13 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: () => {
         this.isProcessing = false;
-        alert('Vendor resubmission simulated successfully. Quotation has been updated.');
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Vendor resubmission simulated successfully. Quotation has been updated.' });
         this.loadQuotationDetail(); // Refresh
       },
       error: (err) => {
         this.isProcessing = false;
         console.error('Error simulating resubmit:', err);
-        alert('Failed to simulate resubmission.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to simulate resubmission.' });
       }
     });
   }
@@ -185,7 +187,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
           });
         }
         
-        alert(response.message || 'Quotation successfully accepted. Generate the LPO from the LPO preview screen.');
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: response.message || 'Quotation successfully accepted. Generate the LPO from the LPO preview screen.' });
         this.loadQuotationDetail(); // Refresh
       },
       error: (err) => {
@@ -204,7 +206,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
           });
         }
         
-        alert(`Quotation successfully accepted. LPO has been generated.`);
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Quotation successfully accepted. LPO has been generated.` });
       }
     });
   }
@@ -213,7 +215,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
     if (!this.quotation) return;
 
     if (!this.rejectReason.trim()) {
-      alert('Please provide a reason for rejection.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please provide a reason for rejection.' });
       return;
     }
 
@@ -222,13 +224,13 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       next: () => {
         this.isProcessing = false;
         this.closeRejectModal();
-        alert(`Quotation from ${this.quotation?.vendorName} has been rejected.`);
+        this.messageService.add({ severity: 'info', summary: 'Notice', detail: `Quotation from ${this.quotation?.vendorName} has been rejected.` });
         this.loadQuotationDetail(); // Refresh
       },
       error: (err) => {
         this.isProcessing = false;
         console.error('Error rejecting quotation:', err);
-        alert('Failed to reject quotation. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to reject quotation. Please try again.' });
       }
     });
   }
@@ -284,11 +286,11 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       }).catch(err => {
         console.error('Error generating PDF:', err);
         this.isDownloading = false;
-        alert('Failed to generate PDF. Printing window instead.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate PDF. Printing window instead.' });
         window.print();
       });
     } else {
-      alert('Could not find element to export. Printing window instead.');
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find element to export. Printing window instead.' });
       window.print();
     }
   }

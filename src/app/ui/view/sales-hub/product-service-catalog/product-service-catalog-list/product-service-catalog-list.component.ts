@@ -6,6 +6,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Product, Category, MeasurementUnit, Supplier } from '../../../../domain/sales/sales.dto';
 import { formatApiDate } from '../../../../service/sales/date.util';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-product-list',
@@ -92,6 +93,7 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private salesService: SalesService,
     private router: Router,
     private route: ActivatedRoute
@@ -154,7 +156,7 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   submitCategory(): void {
     const trimmedName = this.newCategoryName.trim();
     if (!trimmedName) {
-      alert('Please enter a category name');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a category name' });
       return;
     }
 
@@ -164,7 +166,7 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
         c => c.id !== this.editingCategory?.id && c.name.toLowerCase() === trimmedName.toLowerCase()
       );
       if (isDuplicate) {
-        alert('Another category already has this name');
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Another category already has this name' });
         return;
       }
 
@@ -176,17 +178,17 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
           this.rawCategories = updatedCats;
           this.categories = ['ALL', ...updatedCats.map(c => c.name)];
           this.cancelEditCategory();
-          alert('Category updated successfully!');
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Category updated successfully!' });
         },
         error: (err) => {
           console.error('Error updating category:', err);
-          alert('Failed to update category');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update category' });
         }
       });
     } else {
       // Create Mode
       if (this.rawCategories.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())) {
-        alert('Category already exists');
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Category already exists' });
         return;
       }
 
@@ -199,11 +201,11 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
           this.categories = ['ALL', ...updatedCats.map(c => c.name)];
           this.newCategoryName = '';
           this.newCategoryDesc = '';
-          alert('Category added successfully!');
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Category added successfully!' });
         },
         error: (err) => {
           console.error('Error adding category:', err);
-          alert('Failed to add category');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add category' });
         }
       });
     }
@@ -221,11 +223,11 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
           if (this.viewingCategoryDetails && String(this.viewingCategoryDetails.id) === String(id)) {
             this.viewingCategoryDetails = null;
           }
-          alert('Category deleted successfully!');
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Category deleted successfully!' });
         },
         error: (err) => {
           console.error('Error deleting category:', err);
-          alert('Failed to delete category');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete category' });
         }
       });
     }
@@ -284,7 +286,7 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   submitUnit(): void {
     const trimmedName = this.newUnitName.trim();
     if (!trimmedName) {
-      alert('Please enter a unit name');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a unit name' });
       return;
     }
 
@@ -294,7 +296,7 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
         u => u.id !== this.editingUnit?.id && u.name.toLowerCase() === trimmedName.toLowerCase()
       );
       if (isDuplicate) {
-        alert('Another unit already has this name');
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Another unit already has this name' });
         return;
       }
 
@@ -306,17 +308,17 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
         next: (updatedUnits) => {
           this.rawUnits = updatedUnits;
           this.cancelEditUnit();
-          alert('Measurement Unit updated successfully!');
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Measurement Unit updated successfully!' });
         },
         error: (err) => {
           console.error('Error updating unit:', err);
-          alert('Failed to update unit');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update unit' });
         }
       });
     } else {
       // Create Mode
       if (this.rawUnits.some(u => u.name.toLowerCase() === trimmedName.toLowerCase())) {
-        alert('Measurement Unit already exists');
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Measurement Unit already exists' });
         return;
       }
 
@@ -330,11 +332,11 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
           this.newUnitName = '';
           this.newUnitCode = '';
           this.newUnitDesc = '';
-          alert('Measurement Unit added successfully!');
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Measurement Unit added successfully!' });
         },
         error: (err) => {
           console.error('Error adding unit:', err);
-          alert('Failed to add unit');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add unit' });
         }
       });
     }
@@ -352,11 +354,11 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
           if (this.viewingUnitDetails && String(this.viewingUnitDetails.id) === String(id)) {
             this.viewingUnitDetails = null;
           }
-          alert('Measurement Unit deleted successfully!');
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Measurement Unit deleted successfully!' });
         },
         error: (err) => {
           console.error('Error deleting unit:', err);
-          alert('Failed to delete unit');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete unit' });
         }
       });
     }
@@ -423,7 +425,7 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   submitSupplier(): void {
     const trimmedName = this.newSupplierName.trim();
     if (!trimmedName) {
-      alert('Please enter a supplier name');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a supplier name' });
       return;
     }
 
@@ -441,7 +443,7 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
         s => s.id !== this.editingSupplier?.id && s.name.toLowerCase() === trimmedName.toLowerCase()
       );
       if (isDuplicate) {
-        alert('Another supplier already has this name');
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Another supplier already has this name' });
         return;
       }
 
@@ -449,17 +451,17 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
         next: (updatedSups) => {
           this.rawSuppliers = updatedSups;
           this.cancelEditSupplier();
-          alert('Supplier updated successfully!');
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Supplier updated successfully!' });
         },
         error: (err) => {
           console.error('Error updating supplier:', err);
-          alert('Failed to update supplier');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update supplier' });
         }
       });
     } else {
       // Create Mode
       if (this.rawSuppliers.some(s => s.name.toLowerCase() === trimmedName.toLowerCase())) {
-        alert('Supplier already exists');
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Supplier already exists' });
         return;
       }
 
@@ -467,11 +469,11 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
         next: (updatedSups) => {
           this.rawSuppliers = updatedSups;
           this.closeSupplierModal();
-          alert('Supplier added successfully!');
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Supplier added successfully!' });
         },
         error: (err) => {
           console.error('Error adding supplier:', err);
-          alert('Failed to add supplier');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add supplier' });
         }
       });
     }
@@ -489,11 +491,11 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
           if (this.viewingSupplierDetails && String(this.viewingSupplierDetails.id) === String(id)) {
             this.viewingSupplierDetails = null;
           }
-          alert('Supplier deleted successfully!');
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Supplier deleted successfully!' });
         },
         error: (err) => {
           console.error('Error deleting supplier:', err);
-          alert('Failed to delete supplier');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete supplier' });
         }
       });
     }
@@ -668,11 +670,11 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
       this.salesService.deleteProduct(product.id).subscribe({
         next: () => {
           this.loadProducts();
-          alert(`Product ${product.name} deleted successfully`);
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product ${product.name} deleted successfully` });
         },
         error: (error: any) => {
           console.error('Error deleting product:', error);
-          alert('Failed to delete product. Please try again.');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete product. Please try again.' });
         }
       });
     }

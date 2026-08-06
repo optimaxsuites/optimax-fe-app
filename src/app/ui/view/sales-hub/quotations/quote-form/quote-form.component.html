@@ -93,7 +93,7 @@
                   </div>
                   <div class="form-group flex-1">
                     <label class="form-label required">Quote Date</label>
-                    <input type="date" formControlName="quoteDate" class="form-control">
+                    <input type="date" formControlName="quoteDate" class="form-control" [max]="today">
                   </div>
                   <div class="form-group flex-1">
                     <label class="form-label">Valid Till Date</label>
