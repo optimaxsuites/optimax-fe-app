@@ -1,13 +1,38 @@
-.expense-actions-btn i {
-  color: #4b5563 !important;
+::ng-deep .p-datatable table {
+  width: 100%;
+  margin-bottom: 0;
+  border-collapse: collapse;
 }
 
-.expense-actions-btn,
-.expense-actions-lock {
-  opacity: 1 !important;
-  display: inline-flex !important;
+::ng-deep .p-datatable .p-datatable-thead > tr > th {
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  vertical-align: middle;
+  border-bottom: 2px solid #dee2e6;
+  border-top: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  color: #495057;
 }
 
-.expense-actions-btn:hover i {
-  color: #1f2937 !important;
+::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+  padding: 0.65rem 0.75rem;
+  vertical-align: middle;
+  font-size: 0.875rem;
+  border-top: 1px solid #dee2e6;
+}
+
+::ng-deep .p-datatable .p-datatable-tbody > tr:hover > td {
+  background-color: #f8f9fa;
+}
+
+::ng-deep .p-paginator {
+  background: #fff;
+  border-top: 1px solid #dee2e6;
+  padding: 0.6rem 1rem;
+  font-size: 0.8125rem;
+}
+
+::ng-deep .p-checkbox .p-checkbox-box {
+  border-radius: 3px;
 }

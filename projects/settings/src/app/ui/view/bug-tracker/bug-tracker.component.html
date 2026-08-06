@@ -98,8 +98,8 @@
             <div class="bt-bug-meta">
               <span class="bt-module-tag">{{ issue.module }}</span>
               <span *ngFor="let tag of parseTags(issue.tags)" class="bt-tag bt-tag-inline">{{ tag }}</span>
-              <span *ngIf="issue.assigneeEmail" class="bt-meta-item">
-                <i class="fas fa-user"></i> {{ issue.assigneeName || issue.assigneeEmail }}
+              <span *ngIf="safeDisplayName(issue.assigneeName)" class="bt-meta-item">
+                <i class="fas fa-user"></i> {{ safeDisplayName(issue.assigneeName) }}
               </span>
               <span class="bt-meta-item">
                 <i class="fas fa-clock"></i> {{ issue.createdAt | date:'dd MMM yyyy' }}
@@ -152,9 +152,10 @@
           <div class="bt-wl-header" style="margin-bottom:8px;">Attachments</div>
           <div class="bt-attach-preview">
             <div class="bt-attach-thumb" *ngFor="let att of attachmentsFromDesc(issue.description)">
-              <a [href]="att.dataUrl" [download]="att.name" target="_blank">
-                <img *ngIf="att.type.startsWith('image/')" [src]="att.dataUrl" [alt]="att.name" />
-                <div *ngIf="!att.type.startsWith('image/')" class="bt-attach-file-icon">
+              <img *ngIf="att.type.startsWith('image/')" [src]="att.dataUrl" [alt]="att.name"
+                   style="cursor:zoom-in;display:block;" (click)="openZoom(att.dataUrl, $event)" />
+              <a *ngIf="!att.type.startsWith('image/')" [href]="att.dataUrl" [download]="att.name" target="_blank">
+                <div class="bt-attach-file-icon">
                   <i class="fas fa-file-alt"></i>
                   <span>{{ att.name.split('.').pop() }}</span>
                 </div>
@@ -164,8 +165,8 @@
           </div>
         </div>
         <div class="bt-detail-meta">
-          <span *ngIf="issue.reporterEmail">Reported by: <b>{{ issue.reporterName || issue.reporterEmail }}</b></span>
-          <span *ngIf="issue.supervisorEmail"> &nbsp;·&nbsp; Supervisor: <b>{{ issue.supervisorName || issue.supervisorEmail }}</b></span>
+          <span *ngIf="safeDisplayName(issue.reporterName)">Reported by: <b>{{ safeDisplayName(issue.reporterName) }}</b></span>
+          <span *ngIf="safeDisplayName(issue.supervisorName)"> &nbsp;·&nbsp; Supervisor: <b>{{ safeDisplayName(issue.supervisorName) }}</b></span>
         </div>
 
         <div class="bt-worklog">
@@ -519,3 +520,23 @@
     </button>
   </ng-template>
 </p-dialog>
+
+<!-- Attachment image zoom -->
+<p-dialog [(visible)]="zoomVisible"
+          [modal]="true"
+          [showHeader]="false"
+          [draggable]="false"
+          [resizable]="false"
+          [style]="{width:'auto','max-width':'95vw','background':'transparent','box-shadow':'none','border':'none'}"
+          [contentStyle]="{'padding':'0','background':'rgba(0,0,0,0.93)','border-radius':'12px','overflow':'hidden'}"
+          (onHide)="closeZoom()">
+  <div style="position:relative;display:flex;align-items:center;justify-content:center;min-width:320px;padding:12px;">
+    <button (click)="closeZoom()"
+            style="position:absolute;top:10px;right:10px;z-index:2;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:18px;border-radius:50%;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">
+      <i class="fas fa-times"></i>
+    </button>
+    <img *ngIf="zoomedAttachment" [src]="zoomedAttachment" alt="Attachment"
+         style="display:block;max-width:90vw;max-height:86vh;width:auto;height:auto;object-fit:contain;border-radius:6px;" />
+  </div>
+</p-dialog>
+

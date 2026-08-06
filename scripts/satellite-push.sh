@@ -40,9 +40,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Split subtree into a throwaway branch
+# Split subtree into a throwaway branch.
+# --rejoin writes a merge commit back so the next split starts from here,
+# not from the beginning of history — makes subsequent pushes much faster.
 echo "  Splitting subtree…"
-git subtree split --prefix="${PREFIX}" "${MONO_BRANCH}" -b "${SPLIT_BRANCH}"
+git subtree split --prefix="${PREFIX}" --rejoin "${MONO_BRANCH}" -b "${SPLIT_BRANCH}"
 
 # Force-push to satellite master
 echo "  Pushing to satellite master…"

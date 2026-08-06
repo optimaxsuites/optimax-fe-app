@@ -28,7 +28,7 @@
         <p
           class="text-[15px] font-bold text-gray-900 leading-none tracking-tight"
         >
-          {{ workspaceName || 'OptimaX' }}
+          OptimaX
         </p>
         <div class="flex items-center gap-1.5 mt-1">
           <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
@@ -97,9 +97,10 @@
     </div>
   </div>
 
-  <nav class="flex-1 flex flex-col overflow-hidden py-2">
+  <!-- ── Top panel: Threads + Channels ── -->
+  <div class="overflow-y-auto sidebar-scroll py-2 flex-shrink-0" [style.height.px]="topPanelHeight">
     <!-- Threads -->
-    <div class="px-2 mb-1 flex-shrink-0">
+    <div class="px-2 mb-1">
       <button
         (click)="viewSet.emit('threads')"
         class="sidebar-item flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-colors text-left"
@@ -126,62 +127,143 @@
     <div class="mx-3 my-2 h-px bg-gray-100"></div>
 
     <!-- Channels -->
-    <div class="px-2 flex-shrink-0">
+    <div class="px-2 mb-1">
       <div class="flex items-center justify-between pl-2 pr-1 mb-1 mt-1">
         <div class="flex items-center gap-2">
-          <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Channels</span>
-          <span *ngIf="channelsLoading" class="inline-flex items-center gap-1 text-[10px] font-semibold text-[#2e6276] uppercase tracking-wider">
+          <span
+            class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest"
+            >Channels</span
+          >
+          <span
+            *ngIf="channelsLoading"
+            class="inline-flex items-center gap-1 text-[10px] font-semibold text-[#2e6276] uppercase tracking-wider"
+          >
             <i class="pi pi-spin pi-spinner text-[11px]"></i>
             <span>{{ channels.length ? 'Refreshing' : 'Loading' }}</span>
           </span>
         </div>
-        <button *ngIf="canCreateChannels" (click)="createChannel.emit()" class="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-[#2e6276] hover:bg-gray-100 transition-colors" title="New channel">
-          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+        <button
+          *ngIf="canCreateChannels"
+          (click)="createChannel.emit()"
+          class="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-[#2e6276] hover:bg-gray-100 transition-colors"
+          title="New channel"
+        >
+          <svg
+            width="12"
+            height="12"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M12 4v16m8-8H4"
+            />
           </svg>
         </button>
-        <button *ngIf="channelsError && !channelsLoading" type="button" (click)="channelsRetried.emit()" class="ml-1 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-[#2e6276] hover:bg-[#2e6276]/8" title="Retry loading channels">
+        <button
+          *ngIf="channelsError && !channelsLoading"
+          type="button"
+          (click)="channelsRetried.emit()"
+          class="ml-1 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-[#2e6276] hover:bg-[#2e6276]/8"
+          title="Retry loading channels"
+        >
           <i class="pi pi-refresh text-[10px]"></i>
           <span>Retry</span>
         </button>
       </div>
-    </div>
-    <!-- Channel list — scrollable, height adjustable via drag handle -->
-    <div class="px-2 overflow-y-auto sidebar-scroll flex-shrink-0" [style.max-height.px]="channelSectionHeight">
+
       <div *ngIf="channelsLoading && !channels.length" class="mt-1 flex flex-col gap-1.5 px-1">
         <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-4/5"></div>
         <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-3/5"></div>
       </div>
-      <div *ngIf="channelsError && !channelsLoading" class="mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+      <div
+        *ngIf="channelsError && !channelsLoading"
+        class="mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg"
+      >
         <div class="flex items-center justify-between gap-3">
           <span class="text-[13px] text-red-600">{{ channelsError }}</span>
-          <button type="button" (click)="channelsRetried.emit()" class="flex-shrink-0 text-[12px] font-semibold text-red-600 hover:text-red-700">Retry</button>
+          <button
+            type="button"
+            (click)="channelsRetried.emit()"
+            class="flex-shrink-0 text-[12px] font-semibold text-red-600 hover:text-red-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
+
       <ng-container *ngIf="!channelsLoading || channels.length">
-        <div *ngIf="!channels.length && !channelsError" class="px-2 py-3 text-[13px] text-gray-400 text-center">No channels yet</div>
+        <div
+          *ngIf="!channels.length && !channelsError"
+          class="px-2 py-3 text-[13px] text-gray-400 text-center"
+        >
+          No channels yet
+        </div>
         <button
           *ngFor="let ch of channels"
           (click)="channelSelected.emit(ch.id)"
-          class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors text-left group"
-          [ngClass]="{ active: activeChannelId === ch.id && activeView === 'channel', unread: ch.hasUnread }"
+          (mouseenter)="showChannelCard($event, ch)"
+          (mouseleave)="hideChannelCard()"
+        class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors text-left group"
+        [ngClass]="{
+          active: activeChannelId === ch.id && activeView === 'channel',
+          unread: ch.hasUnread,
+        }"
         >
-          <svg class="flex-shrink-0 text-gray-400" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" [attr.d]="getChannelIconPath(ch.name)" />
+          <svg
+            class="flex-shrink-0 text-gray-400"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.8"
+              [attr.d]="getChannelIconPath(ch.name)"
+            />
           </svg>
           <span class="flex-1 truncate text-[14px]">{{ ch.name }}</span>
-          <span *ngIf="isDocumentLibraryChannel(ch)" class="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[9px] font-bold uppercase tracking-[0.14em]" title="Document library channel">Docs</span>
-          <span *ngIf="ch.channelType === 'PRIVATE'" class="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-gray-400 opacity-60" title="Private channel"></span>
-          <span *ngIf="ch.unreadCount" class="flex-shrink-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[#2e6276] text-white text-[10px] font-bold leading-none">
+          <span
+            *ngIf="isDocumentLibraryChannel(ch)"
+            class="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[9px] font-bold uppercase tracking-[0.14em]"
+            title="Document library channel"
+          >Docs</span>
+          <span
+            *ngIf="ch.channelType === 'PRIVATE'"
+            class="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-gray-400 opacity-60"
+            title="Private channel"
+          ></span>
+          <span
+          *ngIf="ch.unreadCount"
+          class="flex-shrink-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[#2e6276] text-white text-[10px] font-bold leading-none"
+        >
             {{ ch.unreadCount! > 99 ? "99+" : ch.unreadCount }}
           </span>
         </button>
       </ng-container>
     </div>
-    <div class="mx-3 my-2 h-px bg-gray-100 flex-shrink-0"></div>
+  </div><!-- /top panel -->
+
+  <!-- ── Draggable divider ── -->
+  <div
+    class="sidebar-resize-handle"
+    (mousedown)="startDividerDrag($event)"
+    title="Drag to resize"
+  >
+    <span class="sidebar-resize-grip"></span>
+  </div>
+
+  <!-- ── Bottom panel: Birthdays + DMs ── -->
+  <div class="flex-1 min-h-0 overflow-y-auto sidebar-scroll py-2">
 
     <!-- Birthday section -->
-    <div class="px-2 flex-shrink-0" *ngIf="upcomingBirthdays.length && birthdaysPanelOpen">
+    <div class="px-2" *ngIf="upcomingBirthdays.length && birthdaysPanelOpen">
       <!-- Section header with close button -->
       <div class="pl-2 pr-1 mb-1 mt-1 flex items-center justify-between gap-2">
         <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -274,22 +356,17 @@
         </ng-container>
       </ng-template>
 
-      <div class="mx-1 my-2 h-px bg-gray-100"></div>
     </div>
 
-    <!-- Draggable divider between channels and DMs -->
-    <div
-      class="sidebar-section-divider"
-      (mousedown)="startDividerDrag($event)"
-      title="Drag to resize"
-    >
-      <span class="sidebar-divider-grip"></span>
-    </div>
+    <div class="mx-3 my-2 h-px bg-gray-100"></div>
 
-    <!-- Direct Messages — flex-1 so it always takes remaining space and scrolls independently -->
-    <div class="px-2 flex-1 overflow-y-auto sidebar-scroll min-h-0">
-      <div class="pl-2 pr-1 mb-1 mt-1 flex items-center justify-between gap-2 sticky top-0 bg-white z-10 py-1">
-        <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Direct Messages</span>
+    <!-- Direct Messages -->
+    <div class="px-2">
+      <div class="pl-2 pr-1 mb-1 mt-1 flex items-center justify-between gap-2">
+        <span
+          class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest"
+          >Direct Messages</span
+        >
         <button
           *ngIf="canDeactivateDmUsers"
           type="button"
@@ -305,7 +382,10 @@
         <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-4/5"></div>
         <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-full"></div>
       </div>
-      <div *ngIf="employeesError && !employeesLoading" class="px-2 py-2 text-[12px] text-red-500">
+      <div
+        *ngIf="employeesError && !employeesLoading"
+        class="px-2 py-2 text-[12px] text-red-500"
+      >
         {{ employeesError }}
       </div>
       <button
@@ -313,92 +393,102 @@
         (click)="dmSelected.emit(dm.id)"
         (mouseenter)="showDmCard($event, dm)"
         (mouseleave)="hideDmCard()"
-        class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl transition-colors text-left"
-        [ngClass]="{ active: activeDmId === dm.id && activeView === 'dm', unread: dm.hasUnread }"
+        class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl transition-colors text-left group"
+        [ngClass]="{
+          active: activeDmId === dm.id && activeView === 'dm',
+          unread: dm.hasUnread,
+        }"
       >
         <div class="relative flex-shrink-0">
-          <img *ngIf="dm.avatarUrl" [src]="dm.avatarUrl" alt="" class="w-8 h-8 rounded-full object-cover" />
-          <div *ngIf="!dm.avatarUrl" class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold" [style.background]="dm.avatarColor">
+          <img
+            *ngIf="dm.avatarUrl"
+            [src]="dm.avatarUrl"
+            alt=""
+            class="w-8 h-8 rounded-full object-cover"
+          />
+          <div
+            *ngIf="!dm.avatarUrl"
+            class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
+            [style.background]="dm.avatarColor"
+          >
             {{ dm.initials }}
           </div>
-          <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white" [ngClass]="{ 'bg-emerald-400': dm.online, 'bg-gray-300': !dm.online }"></span>
+          <span
+            class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white"
+            [ngClass]="{
+              'bg-emerald-400': dm.online,
+              'bg-gray-300': !dm.online,
+            }"
+          ></span>
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between gap-2">
-            <span class="truncate text-[14px] font-medium text-gray-800 block leading-tight">{{ dm.shortName }}</span>
+            <span class="truncate text-[14px] font-medium text-gray-800 block leading-tight">{{
+              dm.shortName
+            }}</span>
             <div class="flex items-center gap-1.5 flex-shrink-0">
-              <span *ngIf="dm.birthdayCountdownLabel" class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold whitespace-nowrap"
-                [title]="dm.birthdayIsToday ? 'Birthday is today' : 'Birthday in ' + dm.birthdayCountdownLabel.toLowerCase()">
+              <span
+                *ngIf="dm.birthdayCountdownLabel"
+                class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold whitespace-nowrap"
+                [title]="dm.birthdayIsToday ? 'Birthday is today' : 'Birthday in ' + dm.birthdayCountdownLabel.toLowerCase()"
+              >
                 {{ dm.birthdayIsToday ? 'Today' : dm.birthdayCountdownLabel }}
               </span>
-              <span class="text-[11px] text-gray-400 whitespace-nowrap" *ngIf="dm.lastMessageTime">{{ dm.lastMessageTime }}</span>
+              <span class="text-[11px] text-gray-400 whitespace-nowrap" *ngIf="dm.lastMessageTime">{{
+                dm.lastMessageTime
+              }}</span>
             </div>
           </div>
-          <span class="truncate text-[12px] text-gray-500 block leading-tight mt-0.5">
-            {{ dm.lastMessagePreview || (dm.birthdayMonthDayLabel ? 'Birthday ' + dm.birthdayMonthDayLabel : dm.jobTitle || dm.department || 'Start a direct conversation') }}
-          </span>
+          <div class="flex items-center gap-1 mt-0.5">
+            <span class="truncate text-[12px] text-gray-500 leading-tight flex-1">
+              {{
+                dm.lastMessagePreview ||
+                  (dm.birthdayMonthDayLabel
+                    ? 'Birthday ' + dm.birthdayMonthDayLabel
+                    : dm.jobTitle || dm.department || 'Start a direct conversation')
+              }}
+            </span>
+            <span
+              *ngIf="dm.openIssueCount"
+              class="flex-shrink-0 flex items-center gap-0.5 px-1 py-0.5 rounded bg-red-50 text-red-600 text-[9px] font-bold cursor-pointer hover:bg-red-100"
+              [title]="dm.openIssueCount + ' open issue(s) — click to view'"
+              (click)="$event.stopPropagation(); workspaceOpened.emit(dm)"
+            ><i class="pi pi-exclamation-circle text-[8px]"></i>{{ dm.openIssueCount }}</span>
+            <span
+              *ngIf="dm.openTaskCount"
+              class="flex-shrink-0 flex items-center gap-0.5 px-1 py-0.5 rounded bg-violet-50 text-violet-600 text-[9px] font-bold cursor-pointer hover:bg-violet-100"
+              [title]="dm.openTaskCount + ' open task(s) — click to view'"
+              (click)="$event.stopPropagation(); workspaceOpened.emit(dm)"
+            ><i class="pi pi-check-square text-[8px]"></i>{{ dm.openTaskCount }}</span>
+            <span
+              *ngIf="dm.openEventCount"
+              class="flex-shrink-0 flex items-center gap-0.5 px-1 py-0.5 rounded bg-sky-50 text-sky-600 text-[9px] font-bold cursor-pointer hover:bg-sky-100"
+              [title]="dm.openEventCount + ' event(s) — click to view'"
+              (click)="$event.stopPropagation(); workspaceOpened.emit(dm)"
+            ><i class="pi pi-calendar text-[8px]"></i>{{ dm.openEventCount }}</span>
+          </div>
         </div>
-        <span *ngIf="dm.unreadCount" class="flex-shrink-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[#2e6276] text-white text-[10px] font-bold leading-none">
+        <span
+          *ngIf="dm.unreadCount"
+          class="flex-shrink-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[#2e6276] text-white text-[10px] font-bold leading-none"
+        >
           {{ dm.unreadCount! > 99 ? "99+" : dm.unreadCount }}
         </span>
-        <span *ngIf="canDeactivateDmUsers" role="button" tabindex="0" title="Deactivate direct message user"
+        <span
+          *ngIf="canDeactivateDmUsers"
+          role="button"
+          tabindex="0"
+          title="Deactivate direct message user"
           class="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50"
           (click)="requestDmDeactivation($event, dm)"
           (keydown.enter)="requestDmDeactivation($event, dm)"
-          (keydown.space)="requestDmDeactivation($event, dm)">
+          (keydown.space)="requestDmDeactivation($event, dm)"
+        >
           <i class="pi pi-ban text-[12px]"></i>
         </span>
       </button>
     </div>
-  </nav>
-
-  <!-- DM user profile hover card (fixed position, outside sidebar scroll) -->
-  <div
-    *ngIf="hoveredDm && dmCardPos"
-    class="dm-profile-card"
-    [style.top.px]="dmCardPos.top"
-    [style.left.px]="dmCardPos.left"
-    (mouseenter)="keepDmCard()"
-    (mouseleave)="hideDmCard()"
-  >
-    <div class="dm-card-header">
-      <div class="dm-card-avatar-wrap">
-        <img *ngIf="hoveredDm.avatarUrl" [src]="hoveredDm.avatarUrl" alt="" class="dm-card-avatar-img" />
-        <div *ngIf="!hoveredDm.avatarUrl" class="dm-card-avatar-initials" [style.background]="hoveredDm.avatarColor">{{ hoveredDm.initials }}</div>
-        <span class="dm-card-status-dot" [class.online]="hoveredDm.online"></span>
-      </div>
-      <div class="dm-card-identity">
-        <p class="dm-card-name">{{ hoveredDm.fullName }}</p>
-        <p class="dm-card-status-label">{{ hoveredDm.online ? 'Active now' : 'Offline' }}</p>
-      </div>
-    </div>
-    <div class="dm-card-body">
-      <div *ngIf="hoveredDm.jobTitle" class="dm-card-row">
-        <i class="pi pi-briefcase dm-card-row-icon"></i>
-        <span>{{ hoveredDm.jobTitle }}</span>
-      </div>
-      <div *ngIf="hoveredDm.department" class="dm-card-row">
-        <i class="pi pi-building dm-card-row-icon"></i>
-        <span>{{ hoveredDm.department }}</span>
-      </div>
-      <div *ngIf="hoveredDm.phone" class="dm-card-row">
-        <i class="pi pi-phone dm-card-row-icon"></i>
-        <span>{{ hoveredDm.phone }}</span>
-      </div>
-      <div *ngIf="hoveredDm.email" class="dm-card-row">
-        <i class="pi pi-envelope dm-card-row-icon"></i>
-        <span class="truncate">{{ hoveredDm.email }}</span>
-      </div>
-    </div>
-    <div class="dm-card-footer">
-      <button class="dm-card-msg-btn" (click)="dmSelected.emit(hoveredDm.id); closeDmCard()">
-        <i class="pi pi-comments"></i> Message
-      </button>
-      <button class="dm-card-profile-btn" (click)="viewProfile.emit(hoveredDm); closeDmCard()">
-        <i class="pi pi-user"></i> View Profile
-      </button>
-    </div>
-  </div>
+  </div><!-- /bottom panel -->
 
   <!-- User bar -->
   <div
@@ -500,6 +590,76 @@
     </select>
   </div>
 </aside>
+
+<!-- ── DM hover card ─────────────────────────────────────────────────────── -->
+<div
+  *ngIf="hoveredDm"
+  class="dm-profile-card"
+  [style.top.px]="dmCardPos.top"
+  [style.left.px]="dmCardPos.left"
+  (mouseenter)="keepDmCard()"
+  (mouseleave)="hideDmCard()"
+>
+  <div class="card-header">
+    <div class="card-avatar" [style.background]="hoveredDm.avatarColor">
+      <img *ngIf="hoveredDm.avatarUrl" [src]="hoveredDm.avatarUrl" alt="" />
+      <span *ngIf="!hoveredDm.avatarUrl">{{ hoveredDm.initials }}</span>
+    </div>
+    <div>
+      <p class="card-name">{{ hoveredDm.fullName }}</p>
+      <p class="card-sub">{{ hoveredDm.jobTitle || hoveredDm.department || 'Team member' }}</p>
+    </div>
+  </div>
+  <div class="card-stats">
+    <div class="card-stat">
+      <span class="stat-num" [class.zero]="!(hoveredDm.openIssueCount)">{{ hoveredDm.openIssueCount || 0 }}</span>
+      <span class="stat-label">Issues</span>
+    </div>
+    <div class="card-stat">
+      <span class="stat-num" [class.zero]="!(hoveredDm.openTaskCount)">{{ hoveredDm.openTaskCount || 0 }}</span>
+      <span class="stat-label">Tasks</span>
+    </div>
+    <div class="card-stat">
+      <span class="stat-num" [class.zero]="!(hoveredDm.openEventCount)">{{ hoveredDm.openEventCount || 0 }}</span>
+      <span class="stat-label">Events</span>
+    </div>
+    <div class="card-stat">
+      <span class="stat-num" [class.zero]="!(hoveredDm.unreadCount)">{{ hoveredDm.unreadCount || 0 }}</span>
+      <span class="stat-label">Unread</span>
+    </div>
+  </div>
+  <div class="card-footer">
+    <button class="card-btn primary" (click)="dmSelected.emit(hoveredDm!.id); closeDmCard()">
+      <i class="pi pi-comment"></i> Chat
+    </button>
+    <button class="card-btn" (click)="openAnalytics(hoveredDm!)">
+      <i class="pi pi-chart-bar"></i> View
+    </button>
+  </div>
+</div>
+
+<!-- ── Channel hover card ─────────────────────────────────────────────────── -->
+<div
+  *ngIf="hoveredChannel"
+  class="ch-hover-card"
+  [style.top.px]="channelCardPos.top"
+  [style.left.px]="channelCardPos.left"
+  (mouseenter)="keepChannelCard()"
+  (mouseleave)="hideChannelCard()"
+>
+  <div class="ch-card-header">
+    <p class="ch-card-name"># {{ hoveredChannel.name }}</p>
+    <p class="ch-card-type">{{ hoveredChannel.channelType || 'Public' }} · {{ hoveredChannel.workspaceMode || 'Chat' }}</p>
+  </div>
+  <div class="ch-card-actions">
+    <button class="ch-card-btn primary" (click)="channelSelected.emit(hoveredChannel!.id); closeChannelCard()">
+      <i class="pi pi-arrow-right"></i> Open
+    </button>
+    <button class="ch-card-btn" (click)="openChannelAttachments(hoveredChannel!)">
+      <i class="pi pi-folder-open"></i> Resources
+    </button>
+  </div>
+</div>
 
 <style>
   .sidebar-item {
