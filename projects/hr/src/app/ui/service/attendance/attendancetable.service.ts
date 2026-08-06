@@ -219,9 +219,22 @@ export class AttendancetableService implements OnDestroy {
     const today = now.toISOString().split('T')[0];
     const data = [...this.attendanceSubject.value];
     const officeHours = this.officeHoursService.getOfficeHours();
-    const workingWindow = await firstValueFrom(
-      this.attendanceScheduleResolverService.resolve(String(employeeId), now)
-    );
+
+    // In development mode, use fast defaults
+    let workingWindow: any;
+    if (USE_MOCK_DATA_ONLY) {
+      workingWindow = {
+        scheduleType: 'office-hours',
+        sourceId: '1',
+        openingTime: '09:00',
+        closingTime: '17:00',
+        shiftName: ''
+      };
+    } else {
+      workingWindow = await firstValueFrom(
+        this.attendanceScheduleResolverService.resolve(String(employeeId), now)
+      );
+    }
 
     let record = data.find(r => r.employeeId === employeeId && r.date === today);
     this.ensureRegistered(employeeId, employeeName, department);
@@ -237,8 +250,8 @@ export class AttendancetableService implements OnDestroy {
     record.appliedExpectedEnd = workingWindow.closingTime;
     record.appliedShiftName = workingWindow.shiftName;
 
-    // Get location with a 5-second timeout - proceed even if location fails
-    const location = await Promise.race([
+    // Skip location in development mode for speed
+    const location = USE_MOCK_DATA_ONLY ? null : await Promise.race([
       this.getCurrentLocation(),
       new Promise<null>(resolve => setTimeout(() => resolve(null), 5000))
     ]);
