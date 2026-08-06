@@ -1,9 +1,22 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { environment } from '../../../shared-component/service/environments/environment';
 import { formatApiDate, parseApiDate } from '../../../service/sales/date.util';
+
+export function pastDateValidator(): ValidatorFn {
+  return (control: AbstractControl): { [key: string]: any } | null => {
+    if (!control.value) {
+      return null;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const controlDate = new Date(control.value);
+    controlDate.setHours(0, 0, 0, 0);
+    return controlDate > today ? { 'futureDate': true } : null;
+  };
+}
 
 interface PaymentRecord {
   id: string;
@@ -58,6 +71,10 @@ export class PaymentProcessingComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  get todayDateString(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
   private get tenantId(): string {
     const h = window.location.hostname;
     return (h.includes('localhost') || h.includes('127.0.0.1')) ? 'optimax' : h.split('.')[0] || 'optimax';
@@ -67,7 +84,7 @@ export class PaymentProcessingComponent implements OnInit, OnDestroy {
     this.paymentForm = this.fb.group({
       amount: [0, [Validators.required, Validators.min(0.01)]],
       paymentMethod: ['BANK_TRANSFER', Validators.required],
-      paymentDate: [new Date().toISOString().split('T')[0], Validators.required],
+      paymentDate: [new Date().toISOString().split('T')[0], [Validators.required, pastDateValidator()]],
       notes: ['']
     });
   }

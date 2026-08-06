@@ -1,11 +1,38 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Product, ProductVariant, MeasurementUnit, Supplier } from '../../../../domain/sales/sales.dto';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
+import { MessageService } from 'primeng/api';
+
+export function futureDateValidator(): ValidatorFn {
+  return (control: AbstractControl): { [key: string]: any } | null => {
+    if (!control.value) {
+      return null;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const controlDate = new Date(control.value);
+    controlDate.setHours(0, 0, 0, 0);
+    return controlDate < today ? { 'pastDate': true } : null;
+  };
+}
+
+export function pastDateValidator(): ValidatorFn {
+  return (control: AbstractControl): { [key: string]: any } | null => {
+    if (!control.value) {
+      return null;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const controlDate = new Date(control.value);
+    controlDate.setHours(0, 0, 0, 0);
+    return controlDate > today ? { 'futureDate': true } : null;
+  };
+}
 
 @Component({
   selector: 'app-product-service-catalog-form',
@@ -23,6 +50,9 @@ import { BackButtonComponent } from '../../../../shared-component/view/back-butt
 export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
   
   productForm: FormGroup;
+  get todayDateString(): string {
+    return new Date().toISOString().split('T')[0];
+  }
   isEditMode = false;
   productId: string = '';
   isLoading = false;
@@ -62,6 +92,7 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
@@ -143,13 +174,13 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
       costPrice: [null, [Validators.required, Validators.min(0.01)]],
       sellingPrice: [null, [Validators.required, Validators.min(0.01)]],
       quantity: [null, [Validators.required, Validators.min(0)]],
-      expiryDate: [''],
+      expiryDate: ['', [futureDateValidator()]],
       discount: ['No Discount'],
       taxes: ['VAT 7.5%'],
       supplier: [''],
       
       // Stock Movement
-      movementDate: [new Date().toISOString().split('T')[0]],
+      movementDate: [new Date().toISOString().split('T')[0], [pastDateValidator()]],
       movementQuantity: [1, [Validators.min(1)]],
       movementPurchasePrice: [0],
       movementTax: [''],
@@ -224,7 +255,7 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error loading product:', error);
         this.isLoading = false;
-        alert('Failed to load product. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load product. Please try again.' });
         this.goBack();
       }
     });
@@ -291,7 +322,7 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
     action.subscribe({
       next: (result) => {
         this.isSubmitting = false;
-        alert(`Product ${this.isEditMode ? 'updated' : 'created'} successfully!`);
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product ${this.isEditMode ? 'updated' : 'created'} successfully!` });
         const uuid = this.route.snapshot.paramMap.get('uuid');
         if (uuid) {
           this.router.navigate(['/admin/sales/sales-hub', uuid]);
@@ -302,7 +333,7 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error saving product:', error);
         this.isSubmitting = false;
-        alert('Failed to save product. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save product. Please try again.' });
       }
     });
   }
@@ -441,6 +472,8 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
     if (control.errors['minlength']) return `Minimum ${control.errors['minlength'].requiredLength} characters required`;
     if (control.errors['min']) return `Value must be at least ${control.errors['min'].min}`;
     if (control.errors['max']) return `Value cannot exceed ${control.errors['max'].max}`;
+    if (control.errors['pastDate']) return 'Date cannot be in the past';
+    if (control.errors['futureDate']) return 'Date cannot be in the future';
     
     return 'Invalid value';
   }
@@ -467,7 +500,7 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
           measurementUnit: 'Each'
         });
         this.isLoading = false;
-        alert('Product information auto-filled from code!');
+        this.messageService.add({ severity: 'info', summary: 'Notice', detail: 'Product information auto-filled from code!' });
       }, 1000);
     }
   }
@@ -477,7 +510,7 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
     if (newSupplier && newSupplier.trim()) {
       const trimmed = newSupplier.trim();
       if (this.suppliers.some(s => s.name.toLowerCase() === trimmed.toLowerCase())) {
-        alert(`Supplier "${trimmed}" already exists.`);
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Supplier "${trimmed}" already exists.` });
         return;
       }
       this.salesService.createSupplier({ name: trimmed }).subscribe({
@@ -487,11 +520,11 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
             supplier: trimmed,
             selectedSupplier: trimmed
           });
-          alert(`Supplier "${trimmed}" added successfully.`);
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: `Supplier "${trimmed}" added successfully.` });
         },
         error: (err) => {
           console.error('Error adding supplier:', err);
-          alert('Failed to add supplier');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add supplier' });
         }
       });
     }

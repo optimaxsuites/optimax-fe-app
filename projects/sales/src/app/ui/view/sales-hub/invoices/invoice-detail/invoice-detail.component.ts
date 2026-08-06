@@ -13,6 +13,7 @@ import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { PaymentReceiptComponent } from '../../payment-receipt/payment-receipt.component';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-invoice-detail',
@@ -62,6 +63,7 @@ export class InvoiceDetailComponent implements OnInit {
   ];
 
   constructor(
+    private messageService: MessageService,
     private route: ActivatedRoute,
     private router: Router,
     private salesService: SalesService
@@ -124,7 +126,7 @@ export class InvoiceDetailComponent implements OnInit {
 
   savePayment(): void {
     if (!this.invoice || this.paymentAmount <= 0) {
-      alert('Please enter a valid payment amount');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a valid payment amount' });
       return;
     }
     
@@ -162,7 +164,7 @@ export class InvoiceDetailComponent implements OnInit {
       error: (err) => {
         this.isSavingPayment = false;
         console.error('Error recording payment:', err);
-        alert('Failed to record payment. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to record payment. Please try again.' });
       }
     });
   }
@@ -406,12 +408,12 @@ export class InvoiceDetailComponent implements OnInit {
           element.classList.remove('pdf-printing-active');
           console.error('Error generating PDF:', err);
           this.isDownloading = false;
-          alert('Failed to generate PDF. Printing window instead.');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate PDF. Printing window instead.' });
           window.print();
         });
       }, 50);
     } else {
-      alert('Could not find element to export. Printing window instead.');
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find element to export. Printing window instead.' });
       window.print();
     }
   }

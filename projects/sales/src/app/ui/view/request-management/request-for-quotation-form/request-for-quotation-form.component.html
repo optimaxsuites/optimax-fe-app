@@ -226,9 +226,10 @@
                 <div class="field-group">
                   <label>Delivery Deadline <span class="req">*</span></label>
                   <input type="date" formControlName="deliveryDeadline" class="field-input"
+                    [min]="todayDateString"
                     [class.is-error]="item.get('deliveryDeadline')?.invalid && item.get('deliveryDeadline')?.touched">
                   <span class="err-msg" *ngIf="item.get('deliveryDeadline')?.invalid && item.get('deliveryDeadline')?.touched">
-                    Delivery deadline is required
+                    {{ getItemErrorMessage(i, 'deliveryDeadline') }}
                   </span>
                 </div>
 

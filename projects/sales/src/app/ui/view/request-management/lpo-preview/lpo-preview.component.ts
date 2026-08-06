@@ -7,6 +7,7 @@ import { VendorQuotation } from '../../../domain/procurement-request/procurement
 import { parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-lpo-preview',
@@ -27,6 +28,7 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private route: ActivatedRoute,
     private router: Router,
     private quotationService: QuotationManagementService,
@@ -166,7 +168,7 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
       }).catch(err => {
         console.error('Error generating LPO PDF:', err);
         this.isDownloading = false;
-        alert('Failed to generate PDF. Printing window instead.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate PDF. Printing window instead.' });
         window.print();
       });
     }
@@ -181,13 +183,13 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
         this.isProcessing = false;
         this.updateStatus('LPO_SENT');
         this.successMessage = 'LPO has been successfully sent to the vendor.';
-        alert(response.message || `LPO successfully sent to ${this.quotation?.vendorName}.`);
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: response.message || `LPO successfully sent to ${this.quotation?.vendorName}.` });
       },
       error: () => {
         this.isProcessing = false;
         this.updateStatus('LPO_SENT');
         this.successMessage = 'LPO has been successfully sent to the vendor.';
-        alert(`LPO successfully sent to ${this.quotation?.vendorName}.`);
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `LPO successfully sent to ${this.quotation?.vendorName}.` });
       }
     });
   }

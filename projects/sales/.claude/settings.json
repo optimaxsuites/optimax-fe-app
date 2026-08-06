@@ -4,7 +4,10 @@
       "Bash(npx tsc *)",
       "Bash(grep -B15 \"Error occurs in the template of component VendorManagementDetailComponent\" /tmp/build_out.txt | head -40)",
       "Read(//private/tmp/**)",
-      "Bash(grep -E \"\\\\[ERROR\\\\]|Build failed|Application bundle generation complete\" /tmp/build_out.txt)"
+      "Bash(grep -E \"\\\\[ERROR\\\\]|Build failed|Application bundle generation complete\" /tmp/build_out.txt)",
+      "Bash(npx ng *)",
+      "Bash(tee /tmp/build_alerts.txt)",
+      "Read(//tmp/**)"
     ]
   }
 }

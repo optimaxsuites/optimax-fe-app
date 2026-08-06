@@ -222,6 +222,7 @@
                 <div class="form-group">
                   <label>Service Start Date <span class="required">*</span></label>
                   <input type="date" formControlName="serviceStartDate" class="form-control"
+                    [min]="todayDateString"
                     [class.error]="item.get('serviceStartDate')?.invalid && item.get('serviceStartDate')?.touched">
                   <small class="error-message"
                     *ngIf="item.get('serviceStartDate')?.invalid && item.get('serviceStartDate')?.touched">
@@ -232,6 +233,7 @@
                 <div class="form-group">
                   <label>Service End Date <span class="required">*</span></label>
                   <input type="date" formControlName="serviceEndDate" class="form-control"
+                    [min]="item.get('serviceStartDate')?.value || todayDateString"
                     [class.error]="item.get('serviceEndDate')?.invalid && item.get('serviceEndDate')?.touched">
                   <small class="error-message"
                     *ngIf="item.get('serviceEndDate')?.invalid && item.get('serviceEndDate')?.touched">
@@ -277,10 +279,11 @@
                 <div class="form-group">
                   <label>Project Deadline <span class="required">*</span></label>
                   <input type="date" formControlName="deliveryDeadline" class="form-control"
+                    [min]="todayDateString"
                     [class.error]="item.get('deliveryDeadline')?.invalid && item.get('deliveryDeadline')?.touched">
                   <small class="error-message"
                     *ngIf="item.get('deliveryDeadline')?.invalid && item.get('deliveryDeadline')?.touched">
-                    Deadline is required
+                    {{ getItemErrorMessage(i, 'deliveryDeadline') }}
                   </small>
                 </div>
               </div>

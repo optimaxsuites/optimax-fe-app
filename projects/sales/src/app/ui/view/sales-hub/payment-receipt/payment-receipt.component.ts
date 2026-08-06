@@ -6,6 +6,7 @@ import { PaymentReceipt, SalesandTransactions } from '../../../domain/sales/sale
 import { formatApiDate, formatApiDateTime } from '../../../service/sales/date.util';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-payment-receipt',
@@ -25,7 +26,8 @@ export class PaymentReceiptComponent implements OnInit {
   isSendingEmail = false;
   emailSentSuccess = false;
 
-  constructor(private salesService: SalesService) {}
+  constructor(
+    private messageService: MessageService,private salesService: SalesService) {}
 
   ngOnInit(): void {
     const targetId = this.paymentId || this.paymentObj?.id || this.paymentObj?.paymentNumber;
@@ -69,7 +71,7 @@ export class PaymentReceiptComponent implements OnInit {
   downloadPDF(): void {
     const element = document.getElementById('receipt-sheet');
     if (!element) {
-      alert('Unable to find receipt element to generate PDF.');
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Unable to find receipt element to generate PDF.' });
       return;
     }
 
@@ -95,7 +97,7 @@ export class PaymentReceiptComponent implements OnInit {
         element.classList.remove('pdf-render-mode');
         console.error('Error generating PDF:', err);
         this.isDownloading = false;
-        alert('Failed to build PDF document. Printing browser view instead.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to build PDF document. Printing browser view instead.' });
         this.printReceipt();
       });
     }, 100);
