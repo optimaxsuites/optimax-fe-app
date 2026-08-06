@@ -377,7 +377,7 @@
 <div class="dialog-mask" *ngIf="showAddCategoryModal">
   <div class="dialog-card glass">
     <div class="dialog-header">
-      <h3>Add Custom Category</h3>
+      <h3><i class="fas fa-tags" style="color: #10b981;"></i> Add Custom Category</h3>
       <button type="button" class="btn-close" (click)="closeAddCategoryModal()"><i class="fas fa-times"></i></button>
     </div>
     <div class="dialog-body">
@@ -390,7 +390,7 @@
           placeholder="e.g., Office Miscellaneous" 
           class="field-input">
       </div>
-      <div class="field-group" style="margin-top: 1rem;">
+      <div class="field-group" style="margin-top: 1.25rem;">
         <label for="newCatDesc">Description</label>
         <textarea 
           id="newCatDesc" 
@@ -401,8 +401,12 @@
       </div>
     </div>
     <div class="dialog-footer">
-      <button type="button" class="btn-ghost" (click)="closeAddCategoryModal()">Cancel</button>
-      <button type="button" class="btn-primary" [disabled]="!newCategoryName.trim()" (click)="saveCustomCategory()">Save Category</button>
+      <button type="button" class="btn-ghost" (click)="closeAddCategoryModal()">
+        <i class="fas fa-ban"></i> Cancel
+      </button>
+      <button type="button" class="btn-primary" [disabled]="!newCategoryName.trim()" (click)="saveCustomCategory()">
+        <i class="fas fa-save"></i> Save Category
+      </button>
     </div>
   </div>
 </div>
@@ -411,7 +415,7 @@
 <div class="dialog-mask" *ngIf="showAddUnitModal">
   <div class="dialog-card glass">
     <div class="dialog-header">
-      <h3>Add Custom Unit</h3>
+      <h3><i class="fas fa-balance-scale" style="color: #10b981;"></i> Add Custom Unit</h3>
       <button type="button" class="btn-close" (click)="closeAddUnitModal()"><i class="fas fa-times"></i></button>
     </div>
     <div class="dialog-body">
@@ -426,8 +430,12 @@
       </div>
     </div>
     <div class="dialog-footer">
-      <button type="button" class="btn-ghost" (click)="closeAddUnitModal()">Cancel</button>
-      <button type="button" class="btn-primary" [disabled]="!newUnitName.trim()" (click)="saveCustomUnit()">Save Unit</button>
+      <button type="button" class="btn-ghost" (click)="closeAddUnitModal()">
+        <i class="fas fa-ban"></i> Cancel
+      </button>
+      <button type="button" class="btn-primary" [disabled]="!newUnitName.trim()" (click)="saveCustomUnit()">
+        <i class="fas fa-save"></i> Save Unit
+      </button>
     </div>
   </div>
 </div>

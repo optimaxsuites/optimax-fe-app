@@ -562,26 +562,26 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       name: catName,
       description: catDesc
     }).subscribe({
-      next: () => {
-        // Reload all categories
-        this.loadCategoriesAndUnits();
-        
-        const tempId = `CAT-CUSTOM-${Date.now()}`;
-        const newCat = {
-          id: Date.now(),
-          categoryId: tempId,
-          name: catName,
-          description: catDesc
-        };
-        
-        // Select it for the active form item
-        const item = this.items.at(this.activeItemIndexForModal);
-        if (item) {
-          const exists = this.procurementCategories.some(c => c.name.toLowerCase() === catName.toLowerCase());
+      next: (salesCats) => {
+        // Merge with existing procurementCategories
+        const merged = [...this.procurementCategories];
+        salesCats.forEach(sc => {
+          const exists = merged.some(mc => mc.categoryId === sc.categoryId || mc.name.toLowerCase() === sc.name.toLowerCase());
           if (!exists) {
-            this.procurementCategories.push(newCat);
+            merged.push({
+              id: sc.id,
+              categoryId: sc.categoryId || `CAT-${sc.id}`,
+              name: sc.name,
+              description: sc.description || ''
+            });
           }
-          const matched = this.procurementCategories.find(c => c.name.toLowerCase() === catName.toLowerCase()) || newCat;
+        });
+        this.procurementCategories = merged;
+        
+        // Find matched category in this merged list
+        const matched = this.procurementCategories.find(c => c.name.toLowerCase() === catName.toLowerCase());
+        const item = this.items.at(this.activeItemIndexForModal);
+        if (item && matched) {
           item.get('categoryId')?.setValue(matched.categoryId);
         }
 
@@ -598,10 +598,14 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
           name: catName,
           description: catDesc
         };
-        this.procurementCategories.push(newCat);
+        const exists = this.procurementCategories.some(c => c.name.toLowerCase() === catName.toLowerCase());
+        if (!exists) {
+          this.procurementCategories.push(newCat);
+        }
+        const matched = this.procurementCategories.find(c => c.name.toLowerCase() === catName.toLowerCase()) || newCat;
         const item = this.items.at(this.activeItemIndexForModal);
         if (item) {
-          item.get('categoryId')?.setValue(tempId);
+          item.get('categoryId')?.setValue(matched.categoryId);
         }
         this.closeAddCategoryModal();
         this.messageService.add({ severity: 'info', summary: 'Notice', detail: 'Custom category added locally.' });
@@ -628,16 +632,19 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       name: unitName,
       code: unitName.substring(0, 3).toLowerCase()
     }).subscribe({
-      next: () => {
-        this.loadCategoriesAndUnits();
+      next: (salesUnits) => {
+        // Merge the units array
+        salesUnits.forEach(su => {
+          if (su.name && !this.units.some(u => u.toLowerCase() === su.name.toLowerCase())) {
+            this.units.push(su.name);
+          }
+        });
         
-        if (!this.units.includes(unitName)) {
-          this.units.push(unitName);
-        }
-        
+        // Find matched unit
+        const matched = this.units.find(u => u.toLowerCase() === unitName.toLowerCase()) || unitName;
         const item = this.items.at(this.activeItemIndexForModal);
         if (item) {
-          item.get('unit')?.setValue(unitName);
+          item.get('unit')?.setValue(matched);
         }
         
         this.closeAddUnitModal();
@@ -646,12 +653,13 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       error: (err) => {
         console.error('Error creating custom unit:', err);
         // Fallback local addition if api fails or is offline
-        if (!this.units.includes(unitName)) {
+        if (!this.units.some(u => u.toLowerCase() === unitName.toLowerCase())) {
           this.units.push(unitName);
         }
+        const matched = this.units.find(u => u.toLowerCase() === unitName.toLowerCase()) || unitName;
         const item = this.items.at(this.activeItemIndexForModal);
         if (item) {
-          item.get('unit')?.setValue(unitName);
+          item.get('unit')?.setValue(matched);
         }
         this.closeAddUnitModal();
         this.messageService.add({ severity: 'info', summary: 'Notice', detail: 'Custom unit added locally.' });
