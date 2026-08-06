@@ -26,6 +26,10 @@ export class ProcurementTypeSelectorComponent {
   }
 
   selectType(type: ProcurementType): void {
+    if (type === 'SERVICE') {
+      alert('This feature is coming soon!');
+      return;
+    }
     this.typeForm.patchValue({ procurementType: type });
   }
 

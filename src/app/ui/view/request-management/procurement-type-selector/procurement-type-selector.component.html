@@ -12,6 +12,7 @@
       *ngFor="let type of procurementTypes"
       class="type-card"
       [class.selected]="typeForm.get('procurementType')?.value === type.value"
+      [class.locked]="type.value === 'SERVICE'"
       (click)="selectType(type.value)">
       <div class="type-card-inner">
         <div class="type-icon-wrapper">
@@ -20,6 +21,7 @@
         <div class="type-content">
           <h3>{{ type.label }}</h3>
           <p>{{ type.description }}</p>
+          <span class="coming-soon-badge" *ngIf="type.value === 'SERVICE'">Coming Soon</span>
         </div>
         <div class="type-check" *ngIf="typeForm.get('procurementType')?.value === type.value">
           <i class="fas fa-check-circle"></i>

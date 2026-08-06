@@ -96,11 +96,13 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     this.selectedQuoteId = undefined;
   }
 
-  duplicateQuote(quoteId: string | number): void {
-    const quoteIdStr = String(quoteId);
+  duplicateQuote(quote: Quote): void {
+    const quoteIdStr = String(quote.id);
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
-    this.router.navigate(path, { queryParams: { duplicateId: quoteIdStr } });
+    // Hand the already-loaded quote straight to the form via navigation state so it
+    // doesn't have to make a fresh round-trip to re-fetch data we already have.
+    this.router.navigate(path, { queryParams: { duplicateId: quoteIdStr }, state: { duplicateSource: quote } });
   }
 
   onInvoiceSaved(): void {

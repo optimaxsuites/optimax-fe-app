@@ -670,20 +670,21 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   // Copy an existing quote's details into this (still-new) form so the user can
   // review/edit before it is saved and sent as a brand-new quote.
   private loadQuoteForDuplicate(): void {
+    // The list screen already has the full quote in memory and hands it over via
+    // router state, so the common "duplicate from the list" path is instant and
+    // needs no round-trip. Only hit the network as a fallback — e.g. a deep link,
+    // a page refresh, or the state having been lost some other way.
+    const passedQuote = (history.state as any)?.duplicateSource as Quote | undefined;
+    if (passedQuote && String(passedQuote.id) === this.duplicateId) {
+      this.applyDuplicateSource(passedQuote);
+      return;
+    }
+
     this.isLoading = true;
     this.salesService.getQuoteById(this.duplicateId!).subscribe({
       next: (quote: Quote | null) => {
         if (quote) {
-          this.populateForm(quote);
-
-          // Refresh the dates rather than carrying over the original quote's -
-          // this is a new quote being drafted today, not an edit of the old one.
-          const defaultValidUntil = new Date();
-          defaultValidUntil.setDate(defaultValidUntil.getDate() + 30);
-          this.quoteForm.patchValue({
-            quoteDate: this.formatDateForInput(new Date()),
-            validUntil: this.formatDateForInput(defaultValidUntil)
-          });
+          this.applyDuplicateSource(quote);
         }
         this.isLoading = false;
       },
@@ -691,6 +692,19 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         console.error('Error loading quote to duplicate:', error);
         this.isLoading = false;
       }
+    });
+  }
+
+  private applyDuplicateSource(quote: Quote): void {
+    this.populateForm(quote);
+
+    // Refresh the dates rather than carrying over the original quote's -
+    // this is a new quote being drafted today, not an edit of the old one.
+    const defaultValidUntil = new Date();
+    defaultValidUntil.setDate(defaultValidUntil.getDate() + 30);
+    this.quoteForm.patchValue({
+      quoteDate: this.formatDateForInput(new Date()),
+      validUntil: this.formatDateForInput(defaultValidUntil)
     });
   }
 

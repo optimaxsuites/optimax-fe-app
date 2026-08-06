@@ -508,24 +508,21 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   // Copy an existing invoice's details into this (still-new) form so the user can
   // review/edit before it is saved and sent as a brand-new invoice.
   private loadInvoiceForDuplicate(): void {
+    // The list screen already has the full invoice in memory and hands it over via
+    // router state, so the common "duplicate from the list" path is instant and
+    // needs no round-trip. Only hit the network as a fallback — e.g. a deep link,
+    // a page refresh, or the state having been lost some other way.
+    const passedInvoice = (history.state as any)?.duplicateSource as Invoice | undefined;
+    if (passedInvoice && String(passedInvoice.id) === this.duplicateId) {
+      this.applyDuplicateSource(passedInvoice);
+      return;
+    }
+
     this.isLoading = true;
     this.salesService.getInvoiceById(this.duplicateId!).subscribe({
       next: (invoice: Invoice | null) => {
         if (invoice) {
-          this.populateForm(invoice);
-
-          // Don't inherit the source invoice's link back to a quote - this is a
-          // fresh, independent invoice, so it shouldn't affect that quote's status.
-          this.quoteId = '';
-
-          // Refresh the dates rather than carrying over the original invoice's.
-          const today = new Date();
-          const defaultDueDate = new Date();
-          defaultDueDate.setDate(defaultDueDate.getDate() + 30);
-          this.invoiceForm.patchValue({
-            issueDate: this.formatDateForInput(today),
-            dueDate: this.formatDateForInput(defaultDueDate)
-          });
+          this.applyDuplicateSource(invoice);
         }
         this.isLoading = false;
       },
@@ -533,6 +530,23 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         console.error('Error loading invoice to duplicate:', error);
         this.isLoading = false;
       }
+    });
+  }
+
+  private applyDuplicateSource(invoice: Invoice): void {
+    this.populateForm(invoice);
+
+    // Don't inherit the source invoice's link back to a quote - this is a
+    // fresh, independent invoice, so it shouldn't affect that quote's status.
+    this.quoteId = '';
+
+    // Refresh the dates rather than carrying over the original invoice's.
+    const today = new Date();
+    const defaultDueDate = new Date();
+    defaultDueDate.setDate(defaultDueDate.getDate() + 30);
+    this.invoiceForm.patchValue({
+      issueDate: this.formatDateForInput(today),
+      dueDate: this.formatDateForInput(defaultDueDate)
     });
   }
 

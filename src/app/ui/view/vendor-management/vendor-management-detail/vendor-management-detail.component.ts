@@ -28,6 +28,12 @@ import {
   getDocumentStatusColor,
   DocumentStatus
 } from '../../../domain/vendor-management/vendor-management.dto';
+import {
+  BUSINESS_TYPE_LABELS,
+  BUSINESS_SIZE_LABELS,
+  OWNERSHIP_TYPE_LABELS,
+  SUPPLY_CATEGORY_LABELS
+} from '../../../domain/vendor-portal/vendor-registration.dto';
 
 // ============================================================
 // COMPONENT
@@ -61,9 +67,10 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   error: string | null = null;
 
   // Tabs
-  activeTab: 'overview' | 'performance' | 'risk' | 'documents' | 'contracts' | 'activity' = 'overview';
+  activeTab: 'overview' | 'registration' | 'performance' | 'risk' | 'documents' | 'contracts' | 'activity' = 'overview';
   tabLabels = {
     overview: 'Overview',
+    registration: 'Registration',
     performance: 'Performance',
     risk: 'Risk & Compliance',
     documents: 'Documents',
@@ -250,6 +257,10 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
       .subscribe({
         next: (vendor) => {
           this.vendor = vendor;
+          // Seed immediately from the vendor's own record — loadRelatedData()'s
+          // dedicated documents call may fail/fall back before it resolves, and
+          // this is the vendor's real registration data either way.
+          this.documents = vendor.documents || [];
           this.updateEditForm(vendor);
           this.isLoading = false;
           // Load related data
@@ -506,6 +517,42 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     return this.tabLabels[tab as keyof typeof this.tabLabels] || tab;
   }
 
+  // ============================================================
+  // REGISTRATION TAB HELPERS
+  // ============================================================
+
+  get registration() {
+    return this.vendor?.registration ?? null;
+  }
+
+  getBusinessTypeLabel(type?: string): string {
+    return (type && BUSINESS_TYPE_LABELS[type as keyof typeof BUSINESS_TYPE_LABELS]) || type || '—';
+  }
+
+  getBusinessSizeLabel(size?: string): string {
+    return (size && BUSINESS_SIZE_LABELS[size as keyof typeof BUSINESS_SIZE_LABELS]) || size || '—';
+  }
+
+  getOwnershipTypeLabel(type?: string): string {
+    return (type && OWNERSHIP_TYPE_LABELS[type as keyof typeof OWNERSHIP_TYPE_LABELS]) || type || '—';
+  }
+
+  getSupplyCategoryLabel(cat?: string): string {
+    return (cat && SUPPLY_CATEGORY_LABELS[cat as keyof typeof SUPPLY_CATEGORY_LABELS]) || cat || '—';
+  }
+
+  getSupplyCategoryLabels(cats?: string[]): string {
+    return (cats || []).map(c => this.getSupplyCategoryLabel(c)).join(', ') || '—';
+  }
+
+  getDeliveryRegionLabels(regions?: string[]): string {
+    return (regions || []).map(r => r.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ') || '—';
+  }
+
+  yesNo(val?: boolean): string {
+    return val ? 'Yes' : 'No';
+  }
+
   get openRiskAlertsCount(): number {
     return this.riskAlerts ? this.riskAlerts.filter(a => a.status === 'OPEN').length : 0;
   }
@@ -597,7 +644,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     return map[tier] || tier;
   }
 
-  formatDate(date: Date): string {
+  formatDate(date: any): string {
     if (!date) return '—';
     return new Date(date).toLocaleDateString('en-GB', {
       day: '2-digit',
@@ -606,7 +653,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     });
   }
 
-  formatDateTime(date: Date): string {
+  formatDateTime(date: any): string {
     if (!date) return '—';
     return new Date(date).toLocaleString('en-GB', {
       day: '2-digit',

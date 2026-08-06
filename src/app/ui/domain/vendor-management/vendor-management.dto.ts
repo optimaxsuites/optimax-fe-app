@@ -1,4 +1,6 @@
 // vendor-management.dto.ts
+import { VendorRegistration } from '../vendor-portal/vendor-registration.dto';
+
 // ============================================================
 // ENUMS
 // ============================================================
@@ -99,6 +101,12 @@ export interface Vendor {
     riskAlerts: RiskAlert[];
     createdAt: Date;
     updatedAt: Date;
+    applicationNumber?: string;
+    // The full 6-step vendor portal submission this vendor originated from, if any.
+    // The slim fields above are a mapped summary of this — kept alongside it so
+    // approval-queue/vendor-directory views can display everything the vendor
+    // actually entered (not just what was carried over into the summary shape).
+    registration?: VendorRegistration;
 }
 
 export interface VendorAddress {

@@ -395,9 +395,8 @@ export class VendorDocumentsComponent {
 
   /** Download document - FIXED to accept null */
   downloadDocument(document: VendorDocument | null): void {
-    if (!document) return;
-    console.log('Downloading document:', document.fileName);
-    // window.open(document.fileUrl, '_blank');
+    if (!document?.fileUrl) return;
+    window.open(document.fileUrl, '_blank');
   }
 
   // ============================================================

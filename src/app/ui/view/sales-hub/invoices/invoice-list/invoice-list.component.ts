@@ -72,10 +72,12 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     this.selectedInvoiceId = undefined;
   }
 
-  duplicateInvoice(invoiceId: string): void {
+  duplicateInvoice(invoice: Invoice): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
-    this.router.navigate(path, { queryParams: { duplicateId: invoiceId } });
+    // Hand the already-loaded invoice straight to the form via navigation state so it
+    // doesn't have to make a fresh round-trip to re-fetch data we already have.
+    this.router.navigate(path, { queryParams: { duplicateId: String(invoice.id) }, state: { duplicateSource: invoice } });
   }
 
   closeInvoiceDetail(): void {
