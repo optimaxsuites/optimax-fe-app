@@ -299,9 +299,11 @@
           type="date"
           class="form-input"
           formControlName="paymentDate"
+          [max]="todayDateString"
         />
         <span class="field-error" *ngIf="paymentForm.get('paymentDate')?.invalid && paymentForm.get('paymentDate')?.touched">
-          Please select a payment date.
+          <ng-container *ngIf="paymentForm.get('paymentDate')?.errors?.['required']">Please select a payment date.</ng-container>
+          <ng-container *ngIf="paymentForm.get('paymentDate')?.errors?.['futureDate']">Payment date cannot be in the future.</ng-container>
         </span>
       </div>
 

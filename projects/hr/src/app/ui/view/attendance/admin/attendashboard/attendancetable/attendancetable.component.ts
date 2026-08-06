@@ -98,7 +98,6 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
 
       // Development mode: directly use mock data
       if (environment.env === 'development') {
-        console.log('🔧 [Development Mode] Loading mock attendance data');
         this.attendance = MOCK_ATTENDANCE;
         this.filteredAttendance = MOCK_ATTENDANCE;
         this.isLoading = false;
@@ -110,70 +109,66 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
       }
 
       // Subscribe to attendance records
-      this.attendancetableService.attendance$.subscribe(data => {
-        console.log('📥 Attendance$ emitted, records:', data.length);
-        this.attendance = data;
+      this.attendancetableService.attendance$.subscribe({
+        next: (data) => {
+          this.attendance = data;
+          this.mergePreservedCorrections();
 
-        // Re-apply preserved corrections after attendance data updates
-        this.mergePreservedCorrections();
+          const hasFilters =
+            this.filters?.dateFrom ||
+            this.filters?.dateTo ||
+            this.filters?.id ||
+            this.filters?.employee ||
+            this.filters?.department ||
+            this.filters?.status;
 
-        const hasFilters =
-          this.filters?.dateFrom ||
-          this.filters?.dateTo ||
-          this.filters?.id ||
-          this.filters?.employee ||
-          this.filters?.department ||
-          this.filters?.status;
-
-        if (hasFilters) {
-          this.applyFilters();
-        } else {
-          this.resetToToday();
+          if (hasFilters) {
+            this.applyFilters();
+          } else {
+            this.resetToToday();
+          }
+          this.isLoading = false;
+        },
+        error: (err) => {
+          this.toastService.error('Failed to load attendance records');
+          this.isLoading = false;
         }
-        this.isLoading = false;
       });
 
       // Subscribe to correction requests and store them
-      this.correctionRequestService.correctionRequests$.subscribe(corrections => {
-        console.log('📥 Correction requests received:', corrections.length);
-
-        if (corrections.length > 0) {
-          corrections.forEach(corrRecord => {
-            console.log('💾 Storing correction for record id:', corrRecord.id, 'employee:', corrRecord.employee);
-            this.preservedCorrections.set(corrRecord.id, corrRecord.correctionRequest);
-          });
+      this.correctionRequestService.correctionRequests$.subscribe({
+        next: (corrections) => {
+          if (corrections.length > 0) {
+            corrections.forEach(corrRecord => {
+              this.preservedCorrections.set(corrRecord.id, corrRecord.correctionRequest);
+            });
+          }
+          this.mergePreservedCorrections();
+        },
+        error: (err) => {
+          this.toastService.error('Failed to load correction requests');
         }
-
-        // Merge stored corrections into current attendance
-        this.mergePreservedCorrections();
       });
   }
 
   private mergePreservedCorrections(): void {
     if (this.preservedCorrections.size === 0) {
-      console.log('🗂️ No corrections to merge');
       return;
     }
-
-
 
     let merged = false;
     this.preservedCorrections.forEach((correction, recordId) => {
       const index = this.attendance.findIndex(a => a.id === recordId);
       if (index > -1) {
         this.attendance[index].correctionRequest = correction;
-        console.log('✅ Applied correction to record id:', recordId, 'employee:', this.attendance[index].employee);
         merged = true;
-      } else {
-
       }
     });
 
     if (merged) {
       this.applyFilters();
-      console.log('📊 Final attendance:', this.attendance.map(r => ({ id: r.id, employee: r.employee, hasCorrection: !!r.correctionRequest })));
     }
-}
+  }
 
 isToday(date: string | null): boolean {
   if (!date) return false;
@@ -496,40 +491,28 @@ onEscapeKey() {
 }
 
 saveModification() {
-
   if (!this.editingRecord) return;
 
-    if (!this.editReason || !this.editReason.trim()) {
+  if (!this.editReason || !this.editReason.trim()) {
     alert('Reason for modification is required.');
     return;
   }
 
-  /*const admin = {
-    adminId: 'ADMIN001',
-    adminName: 'HR Admin'
-  };*/
-
-  const currentUser = this.userSession.getCurrentUser();
-
-  console.log('getCurrentUser resolved:', currentUser);
-
-  if (!currentUser) {
-    console.error('No logged in user');
+  if (this.editReason.trim().length < 5) {
+    alert('Reason must be at least 5 characters.');
     return;
   }
 
-  this.attendancetableService
-    .resolveHrEmployeeId(currentUser.userId)
+  const currentUser = this.userSession.getCurrentUser();
+  if (!currentUser) {
+    this.toastService.error('No logged in user found');
+    return;
+  }
 
-if (!currentUser) {
-  alert('No logged in user found');
-  return;
-}
-
-const admin = {
-  adminId: Number(currentUser.userId),
-  adminName: currentUser.name
-};
+  const admin = {
+    adminId: Number(currentUser.userId),
+    adminName: currentUser.name
+  };
 
   this.attendancetableService.overrideAttendance(
     this.editingRecord.id,
@@ -542,11 +525,6 @@ const admin = {
 
   this.editingRecord = null;
   this.toastService.success('Attendance record updated successfully');
-
-  if (this.editReason.trim().length < 5) {
-  alert('Reason must be at least 5 characters.');
-  return;
-}
 }
 
 // Handle shared table action clicks (Modify, Open, View Details)

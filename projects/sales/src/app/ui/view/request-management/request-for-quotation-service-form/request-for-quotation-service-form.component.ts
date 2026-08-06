@@ -1,12 +1,44 @@
 // request-for-quotation-service-form.component.ts
 
 import { Component, EventEmitter, Output, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
-import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, Validators, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 import { ProcurementCategory } from '../../../domain/procurement-request/procurement.dto';
 import { parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 import { v4 as uuidV4 } from 'uuid';
+
+export function futureDateValidator(): ValidatorFn {
+  return (control: AbstractControl): { [key: string]: any } | null => {
+    if (!control.value) {
+      return null;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const controlDate = new Date(control.value);
+    controlDate.setHours(0, 0, 0, 0);
+    return controlDate < today ? { 'pastDate': true } : null;
+  };
+}
+
+export function dateAfterValidator(otherControlName: string): ValidatorFn {
+  return (control: AbstractControl): { [key: string]: any } | null => {
+    if (!control.value) {
+      return null;
+    }
+    const parent = control.parent;
+    if (!parent) return null;
+    const otherControl = parent.get(otherControlName);
+    if (!otherControl || !otherControl.value) return null;
+    
+    const d1 = new Date(otherControl.value);
+    const d2 = new Date(control.value);
+    d1.setHours(0,0,0,0);
+    d2.setHours(0,0,0,0);
+    
+    return d2 < d1 ? { 'dateBefore': true } : null;
+  };
+}
 
 @Component({
   selector: 'app-request-for-quotation-service-form',
@@ -40,6 +72,10 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
   requestId: string | null = null;
   isLoading = false;
   isNewRequest = true;
+
+  get todayDateString(): string {
+    return new Date().toISOString().split('T')[0];
+  }
 
   constructor(
     private fb: FormBuilder,
@@ -198,12 +234,12 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       estimatedBudget: [null, [Validators.required, Validators.min(0.01)]],
       currency: ['NGN', Validators.required],
       deliveryMode: ['STANDARD', Validators.required],
-      deliveryDeadline: ['', Validators.required],
+      deliveryDeadline: ['', [Validators.required, futureDateValidator()]],
       deliveryLocation: ['', Validators.required],
       experienceLevel: ['', Validators.required],
       serviceDuration: ['', Validators.required],
-      serviceStartDate: ['', Validators.required],
-      serviceEndDate: ['', Validators.required],
+      serviceStartDate: ['', [Validators.required, futureDateValidator()]],
+      serviceEndDate: ['', [Validators.required, futureDateValidator(), dateAfterValidator('serviceStartDate')]],
       requiredQualifications: this.fb.array([]),
       attachments: this.fb.array([])
     });
@@ -439,6 +475,8 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       if (control.errors['required']) return 'This field is required';
       if (control.errors['minlength']) return `Minimum ${control.errors['minlength'].requiredLength} characters required`;
       if (control.errors['min']) return 'Value must be greater than 0';
+      if (control.errors['pastDate']) return 'Date cannot be in the past';
+      if (control.errors['dateBefore']) return 'End date must be on or after start date';
     }
     return '';
   }

@@ -1,4 +1,6 @@
 // vendor-management.dto.ts
+import { VendorRegistration } from '../vendor-portal/vendor-registration.dto';
+
 // ============================================================
 // ENUMS
 // ============================================================
@@ -10,7 +12,8 @@ export enum VendorStatus {
     UNDER_REVIEW = 'UNDER_REVIEW',
     SUSPENDED = 'SUSPENDED',
     OFFBOARDED = 'OFFBOARDED',
-    CONDITIONAL = 'CONDITIONAL'
+    CONDITIONAL = 'CONDITIONAL',
+    REJECTED = 'REJECTED'
 }
 
 export enum VendorTier {
@@ -98,6 +101,12 @@ export interface Vendor {
     riskAlerts: RiskAlert[];
     createdAt: Date;
     updatedAt: Date;
+    applicationNumber?: string;
+    // The full 6-step vendor portal submission this vendor originated from, if any.
+    // The slim fields above are a mapped summary of this — kept alongside it so
+    // approval-queue/vendor-directory views can display everything the vendor
+    // actually entered (not just what was carried over into the summary shape).
+    registration?: VendorRegistration;
 }
 
 export interface VendorAddress {
@@ -467,7 +476,8 @@ export function getVendorStatusColor(status: VendorStatus): string {
         [VendorStatus.UNDER_REVIEW]: '#F97316',
         [VendorStatus.SUSPENDED]: '#DC2626',
         [VendorStatus.OFFBOARDED]: '#6B7280',
-        [VendorStatus.CONDITIONAL]: '#8B5CF6'
+        [VendorStatus.CONDITIONAL]: '#8B5CF6',
+        [VendorStatus.REJECTED]: '#DC2626'
     };
     return map[status] || '#6B7280';
 }
@@ -891,4 +901,17 @@ export function formatDurationMinutes(minutes: number | null): string {
     const days = Math.floor(hours / 24);
     const remHours = hours % 24;
     return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+}
+
+// Add approval response type
+export interface ApprovalResult {
+  vendorId: string;
+  status: VendorStatus;
+  message: string;
+  notes?: string;
+  reason?: string;
+  approvedAt?: Date;
+  rejectedAt?: Date;
+  approvedBy?: string;
+  rejectedBy?: string;
 }

@@ -5,7 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer } from '../../../../domain/sales/sales.dto';
+import { formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-customer-detail',
@@ -30,6 +32,7 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private route: ActivatedRoute,
     private router: Router,
     private salesService: SalesService
@@ -58,7 +61,7 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error loading customer:', error);
         this.isLoading = false;
-        alert('Failed to load customer. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load customer. Please try again.' });
         this.goBack();
       }
     });
@@ -197,21 +200,11 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+    return formatApiDate(date, { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   formatDateShort(date: Date): string {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date, { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
   getInitials(name: string): string {

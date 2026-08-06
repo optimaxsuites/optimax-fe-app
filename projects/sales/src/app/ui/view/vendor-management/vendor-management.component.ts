@@ -4,6 +4,7 @@ import { VendorManagementDashboardComponent } from './vendor-management-dashboar
 import { VendorManagementListComponent } from './vendor-management-list/vendor-management-list.component';
 import { VendorAiIntelligenceComponent } from './vendor-ai-intelligence/vendor-ai-intelligence.component';
 import { VendorResolutionCenterComponent } from './vendor-resolution-center/vendor-resolution-center.component';
+import { VendorApprovalQueueComponent } from './vendor-approval-queue/vendor-approval-queue.component';
 
 @Component({
   selector: 'app-vendor-management',
@@ -16,6 +17,11 @@ export class VendorManagementComponent {
       name: 'Dashboard',
       component: VendorManagementDashboardComponent,
       icon: 'fa-sharp fa-solid fa-chart-line',
+    },
+    {
+      name: 'Vendor Approval Queue',
+      component: VendorApprovalQueueComponent,
+      icon: 'fa-sharp fa-solid fa-user-check',
     },
     {
       name: 'Vendor Directory',

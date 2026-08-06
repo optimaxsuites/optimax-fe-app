@@ -8,6 +8,7 @@ import { saveAs } from 'file-saver';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 import { ProcurementRequest, RequestFilters, RequestStatus, PaginatedResponse } from '../../../domain/procurement-request/procurement.dto';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
+import { MessageService } from 'primeng/api';
 
 
 // Extended interface to handle _rowType property
@@ -152,7 +153,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
 
     const trimmedReason = reason.trim();
     if (!trimmedReason) {
-      window.alert('Cancellation reason is required.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Cancellation reason is required.' });
       return;
     }
 
@@ -208,6 +209,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private procurementRequestService: ProcurementRequestService,
     private fb: FormBuilder,
     private router: Router

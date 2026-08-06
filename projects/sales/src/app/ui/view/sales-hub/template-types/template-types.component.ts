@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 
 export interface QuoteTemplate {
   id: string;
@@ -286,6 +287,8 @@ export class TemplateTypesComponent implements OnInit {
     'CUST-005': 'standard' // Obinna uses standard
   };
 
+  constructor(private messageService: MessageService) {}
+
   ngOnInit(): void {
     // Auto-select template based on customer preference if available
     if (this.quoteData?.customerId) {
@@ -333,7 +336,7 @@ export class TemplateTypesComponent implements OnInit {
 
   proceedToAction(): void {
     if (!this.selectedTemplate) {
-      alert('Please select a template first');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please select a template first' });
       return;
     }
     this.showActionSelection = true;
@@ -377,5 +380,42 @@ export class TemplateTypesComponent implements OnInit {
       'thcomms': '#1B365D'
     };
     return colors[templateId] || '#1a2d4a';
+  }
+
+  // Maps every quote layout onto one of the four mini document-preview mockups
+  // (same mapping approach as the RFQ template selector's getLayoutKey()).
+  getLayoutKey(layout: string): string {
+    const map: Record<string, string> = {
+      standard: 'standard',
+      compact: 'minimal',
+      minimal: 'minimal',
+      detailed: 'detailed',
+      emirates: 'centrifuge',
+      'emirates-custbank': 'centrifuge',
+      thcomms: 'standard'
+    };
+    return map[layout] ?? 'standard';
+  }
+
+  isTemplateDefault(template: QuoteTemplate): boolean {
+    return template.id === 'standard';
+  }
+
+  // Derives a short list of feature tags from the template's visible sections,
+  // matching the tag-pill style used by the RFQ template selector.
+  getTemplateTags(template: QuoteTemplate): string[] {
+    const sections = template.sections;
+    const labels: [keyof QuoteTemplate['sections'], string][] = [
+      ['showCustomerDetails', 'Customer Details'],
+      ['showCompanyLogo', 'Logo'],
+      ['showTaxBreakdown', 'Tax Breakdown'],
+      ['showPaymentTerms', 'Payment Terms'],
+      ['showNotes', 'Notes'],
+      ['showTermsConditions', 'Terms'],
+      ['showSignature', 'Signature'],
+      ['showItemImages', 'Item Images'],
+      ['showSKU', 'SKU']
+    ];
+    return labels.filter(([key]) => sections[key]).map(([, label]) => label).slice(0, 4);
   }
 }

@@ -37,18 +37,15 @@
     </div>
 
     <div class="tab-content">
-      <!-- Loop through tabsConfig to render tab content -->
-      <div *ngFor="let tab of tabsConfig">
-        <!-- Render content for the selected tab -->
-        <div *ngIf="selectedTab === tab.name">
-          <ng-container *ngComponentOutlet="tab.component"></ng-container>
-  
-          <!-- Render dropdown content if the tab has dropdown options -->
-          <div *ngIf="tab.hasDropdown">
-            <div *ngFor="let option of tab.dropdownOptions">
-              <div *ngIf="selectedSetting === option.action">
-                <ng-container *ngComponentOutlet="getComponentForOption(option.action)"></ng-container>
-              </div>
+      <!-- Render only the selected tab content -->
+      <div *ngIf="getSelectedTab() as selectedTabObj">
+        <ng-container *ngComponentOutlet="selectedTabObj.component"></ng-container>
+
+        <!-- Render dropdown content if the tab has dropdown options -->
+        <div *ngIf="selectedTabObj.hasDropdown">
+          <div *ngFor="let option of selectedTabObj.dropdownOptions">
+            <div *ngIf="selectedSetting === option.action">
+              <ng-container *ngComponentOutlet="getComponentForOption(option.action)"></ng-container>
             </div>
           </div>
         </div>

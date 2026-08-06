@@ -177,6 +177,9 @@
                     (click)="sendReminder(invoice)" title="Send Reminder">
                     <i class="fas fa-paper-plane"></i>
                   </button>
+                  <button class="action-btn duplicate-btn" (click)="duplicateInvoice(invoice)" title="Duplicate Invoice">
+                    <i class="fas fa-copy"></i>
+                  </button>
                   <button class="action-btn delete-btn" [disabled]="invoice.status === 'CANCELLED'"
                     (click)="deleteInvoice(invoice)" title="Delete">
                     <i class="fas fa-trash-alt"></i>

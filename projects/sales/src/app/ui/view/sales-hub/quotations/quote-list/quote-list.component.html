@@ -207,6 +207,9 @@
                     (click)="openInvoiceModal(quote.id)" title="Generate Invoice">
                     <i class="fas fa-file-invoice-dollar"></i>
                   </button>
+                  <button class="action-btn duplicate-btn" (click)="duplicateQuote(quote)" title="Duplicate Quote">
+                    <i class="fas fa-copy"></i>
+                  </button>
                   <button class="action-btn delete-btn" [disabled]="quote.status === 'CONVERTED' || quote.status === 'EXPIRED'"
                     (click)="deleteQuote(quote)" title="Delete">
                     <i class="fas fa-trash-alt"></i>

@@ -11,6 +11,8 @@ import { InvoiceFormComponent } from '../invoices/invoice-form/invoice-form.comp
 import { CustomerFormComponent } from '../customer-management/customer-form/customer-form.component';
 import { QuoteDetailComponent } from '../quotations/quote-detail/quote-detail.component';
 import { InvoiceDetailComponent } from '../invoices/invoice-detail/invoice-detail.component';
+import { formatApiDate } from '../../../service/sales/date.util';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-sales-dashboard',
@@ -92,6 +94,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private salesService: SalesService,
     private route: ActivatedRoute,
     private router: Router
@@ -278,14 +281,14 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
 
   saveProduct(): void {
     if (!this.productForm.name || !this.productForm.sku) {
-      alert('Product Name and SKU are required');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Product Name and SKU are required' });
       return;
     }
     this.isSavingProduct = true;
     this.salesService.createProduct(this.productForm as any).subscribe({
       next: () => {
         this.isSavingProduct = false;
-        alert('Product created successfully!');
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Product created successfully!' });
         this.showProductModal = false;
         this.productForm = {
           name: '',
@@ -303,7 +306,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error(err);
         this.isSavingProduct = false;
-        alert('Failed to create product.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create product.' });
       }
     });
   }
@@ -317,11 +320,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date);
   }
 
   getStatusClass(status: string): string {

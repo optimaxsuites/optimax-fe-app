@@ -55,19 +55,14 @@ export class App {
 
 
   async userLoginAction(): Promise<void> {
-    console.log("logginging in...");
+    console.log("Signing in user with hardcoded credentials for testing...");
     const loginDetails = {
-      username: 'developer',
-      password: '123456',
+      username: 'Eseose',
+      password: 'soyBTY86b*rC',
       project: 'ERP',
       clientId: 'optimax-erp-web',
       appVersion: '2026.05.30',
     };
-
-    // if (!loginDetails.username || !loginDetails.password) {
-    //   this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
-    //   return;
-    // }
 
     try {
       const data = await this.authenticationService
@@ -81,11 +76,6 @@ export class App {
         this.authenticationService.getUserPrimaryInfoById(data.id).subscribe(
           (data: { industry: number; }) => {
             console.log(data);
-
-            // for some reason, it defaults to "information technology" as of 03-03-2025. FIXED. It depends on the user's login
-            //FIXME - Instead of "Pharmacy", the number 3 is returned >~<
-            // this.industryDataService.businessType =
-            //   data.industry == 3 ? 'Pharmacy' : data.industry;
           },
           (error: any) => {
             console.error('Error fetching user info:', error);
@@ -100,50 +90,48 @@ export class App {
   loadInitParam(data: any) {
     sessionStorage.setItem('role', data.roles);
     sessionStorage.setItem('username', data.username);
-    sessionStorage.setItem('fullname', data.fullname);
+    sessionStorage.setItem('fullname', data.fullname || data.fullName || data.name || data.username);
     sessionStorage.setItem('email', data.email);
     sessionStorage.setItem('userid', data.id);
-    const raw: string = data.accessToken || '';
-    const token = raw.includes('=') && raw.includes(';')
-      ? raw.substring(raw.indexOf('=') + 1, raw.indexOf(';'))
-      : raw;
+    
+    const token = this.extractToken(data.accessToken);
+
+    if (!token) {
+      throw new Error('Unable to extract access token from login response');
+    }
+
     sessionStorage.setItem('Token', token);
+    sessionStorage.setItem('token', token);
+    localStorage.setItem('Token', token);
+    localStorage.setItem('token', token);
     localStorage.setItem('Token2', token);
-    sessionStorage.setItem('accessToken', raw);
-    localStorage.setItem('accessToken2', raw);
-    sessionStorage['userRegData'] = JSON.stringify(data);
+    sessionStorage.setItem('accessToken', data.accessToken);
+    localStorage.setItem('accessToken2', data.accessToken);
+    sessionStorage.setItem('userRegData', JSON.stringify(data));
 
     this.getUserBranchInfo(data);
-
-
-//  this.authenticationService.getUserApplicationRole(data.id).subscribe({
-//   next: (response) => {
-//     console.log("User application role:", response);
-//     // sessionStorage.setItem("userApplicationRole", JSON.stringify(response));
-//     if (Array.isArray(data.roles) && data.roles.includes("ROLE_ADMIN")) {
-//     console.log("Super user detected");
-//     sessionStorage.setItem(
-//       "userApplicationRole",
-//       JSON.stringify(response)
-//     );
-//   } else {
-//     sessionStorage.setItem(
-//       "userApplicationRole",
-//       JSON.stringify(response)
-//     );
-//   }
-
-//   },
-//   error: (error) => {
-//     console.error("Error fetching user application role:", error);
-//      const storedRole = sessionStorage.getItem("userApplicationRole");
-//       if (storedRole) {
-//         console.log("Removing invalid userApplicationRole from sessionStorage");
-//         sessionStorage.removeItem("userApplicationRole");
-//       }
-//   }
-// })
   }
+
+  private extractToken(accessToken: unknown): string {
+    const rawToken = String(accessToken || '').trim();
+
+    if (!rawToken) {
+      return '';
+    }
+
+    const cookieMatch = rawToken.match(/=(.*?)(;|$)/);
+    if (cookieMatch?.[1]) {
+      return cookieMatch[1].trim();
+    }
+
+    const bearerMatch = rawToken.match(/^Bearer\s+(.+)$/i);
+    if (bearerMatch?.[1]) {
+      return bearerMatch[1].trim();
+    }
+
+    return rawToken;
+  }
+
 
   getUserBranchInfo(data: any) {
     const userId = sessionStorage.getItem('userid');

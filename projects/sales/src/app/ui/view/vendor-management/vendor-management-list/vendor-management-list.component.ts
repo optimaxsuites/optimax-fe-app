@@ -594,15 +594,13 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   // ============================================================
 
   navigateToVendor(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
+    this.router.navigate(['/commerce/manage-vendors', id, 'profile']);
   }
 
-  navigateToOnboarding(): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors/onboarding']);
-  }
+
 
   navigateToVendorDetail(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
+    this.router.navigate(['/commerce/manage-vendors', id, 'profile']);
   }
 
   // ============================================================
@@ -613,15 +611,10 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
    * View vendor details - navigates to profile page
    */
   viewVendor(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
+    this.router.navigate(['/commerce/manage-vendors', id, 'profile']);
   }
 
   /**
-   * Edit vendor - navigates to edit page
-   */
-  editVendor(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'edit']);
-  }
 
   /**
    * Delete vendor with confirmation
@@ -641,21 +634,21 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
    * View performance - navigates to profile with performance tab
    */
   viewPerformance(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], { queryParams: { tab: 'performance' } });
+    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], { queryParams: { tab: 'performance' } });
   }
 
   /**
    * View risk - navigates to profile with risk tab
    */
   viewRisk(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], { queryParams: { tab: 'risk' } });
+    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], { queryParams: { tab: 'risk' } });
   }
 
   /**
    * View documents - navigates to profile with documents tab
    */
   viewDocuments(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], { queryParams: { tab: 'documents' } });
+    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], { queryParams: { tab: 'documents' } });
   }
 
   // ============================================================

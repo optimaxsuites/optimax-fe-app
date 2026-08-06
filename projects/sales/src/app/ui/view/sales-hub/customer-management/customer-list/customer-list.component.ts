@@ -8,10 +8,12 @@ import { Subject, takeUntil } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer } from '../../../../domain/sales/sales.dto';
+import { formatApiDate } from '../../../../service/sales/date.util';
 
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { CustomerFormComponent } from '../customer-form/customer-form.component';
 import { QuoteFormComponent } from '../../quotations/quote-form/quote-form.component';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-customer-list',
@@ -131,6 +133,7 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private salesService: SalesService,
     private router: Router,
     private route: ActivatedRoute
@@ -255,24 +258,19 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date);
   }
 
   deleteCustomer(customer: Customer): void {
     if (confirm(`Delete customer ${customer.name}? This action cannot be undone.`)) {
       this.salesService.deleteCustomer(customer.id).subscribe({
         next: () => {
-          alert(`Customer ${customer.name} deleted successfully`);
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: `Customer ${customer.name} deleted successfully` });
           this.loadCustomers();
         },
         error: (error: any) => {
           console.error('Error deleting customer:', error);
-          alert('Failed to delete customer. Please try again.');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete customer. Please try again.' });
         }
       });
     }

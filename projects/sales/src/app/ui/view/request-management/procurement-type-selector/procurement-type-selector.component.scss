@@ -54,6 +54,25 @@
       box-shadow: 0 0 0 4px rgba(24, 68, 64, 0.12);
     }
 
+    &.locked {
+      opacity: 0.65;
+      cursor: not-allowed;
+      border-style: dashed;
+
+      &:hover {
+        transform: none;
+        box-shadow: none;
+      }
+
+      .type-icon-wrapper {
+        background: #f1f5f9;
+        i {
+          color: #94a3b8;
+        }
+      }
+    }
+
+
     .type-card-inner {
       padding: 2rem;
       display: flex;
@@ -149,5 +168,19 @@
         cursor: not-allowed;
       }
     }
+  }
+
+  .coming-soon-badge {
+    display: inline-block;
+    margin-top: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    background: #f1f5f9;
+    color: #475569;
+    border-radius: 9999px;
+    font-size: 0.725rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid #e2e8f0;
   }
 }

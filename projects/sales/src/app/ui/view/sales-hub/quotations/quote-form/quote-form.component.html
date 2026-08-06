@@ -93,7 +93,7 @@
                   </div>
                   <div class="form-group flex-1">
                     <label class="form-label required">Quote Date</label>
-                    <input type="date" formControlName="quoteDate" class="form-control">
+                    <input type="date" formControlName="quoteDate" class="form-control" [max]="today">
                   </div>
                   <div class="form-group flex-1">
                     <label class="form-label">Valid Till Date</label>
@@ -139,23 +139,30 @@
                   <table class="data-table">
                     <thead>
                       <tr>
+                        <th style="width: 18%;">Category</th>
                         <th style="width: 22%;">Item</th>
-                        <th style="width: 10%;">TAX Rate</th>
-                        <th style="width: 8%;">Qty</th>
-                        <th style="width: 12%;">Rate</th>
-                        <th style="width: 12%;">Amount</th>
-                        <th style="width: 12%;">TAX</th>
-                        <th style="width: 12%;">Total</th>
+                        <th style="width: 8%;">TAX Rate</th>
+                        <th style="width: 6%;">Qty</th>
+                        <th style="width: 11%;">Rate</th>
+                        <th style="width: 11%;">Amount</th>
+                        <th style="width: 10%;">TAX</th>
+                        <th style="width: 10%;">Total</th>
                         <th style="width: 4%;"></th>
                       </tr>
                     </thead>
                     <tbody formArrayName="items">
                       <tr *ngFor="let item of items.controls; let i = index" [formGroupName]="i" class="item-row">
                         <td>
+                          <select [ngModel]="selectedCategoryForIndex[i]" [ngModelOptions]="{standalone: true}" (ngModelChange)="onCategoryChange(i, $event)" class="form-control-sm" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff;">
+                            <option value="">All Categories</option>
+                            <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+                          </select>
+                        </td>
+                        <td>
                           <div class="product-cell">
                             <select formControlName="productId" class="form-control-sm" (change)="onProductSelect(i, $event)">
                               <option value="">Select item...</option>
-                              <option *ngFor="let product of products" [value]="product.id">
+                              <option *ngFor="let product of getProductsForIndex(i)" [value]="product.id">
                                 {{ product.name }}
                               </option>
                             </select>

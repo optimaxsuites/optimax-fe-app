@@ -5,8 +5,10 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { SalesandTransactions, SaleLifecycleStatus, PaymentMethod } from '../../../../domain/sales/sales.dto';
+import { parseApiDate } from '../../../../service/sales/date.util';
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { PaymentReceiptComponent } from '../../payment-receipt/payment-receipt.component';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-sales-and-transactions-list',
@@ -74,10 +76,15 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
+  get todayDateString(): string {
+    return new Date().toISOString().substring(0, 10);
+  }
+
   constructor(
     private salesService: SalesService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
@@ -87,6 +94,13 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  // Normalizes a raw API date value before handing it to the `date` pipe —
+  // the pipe treats a raw number as milliseconds, which breaks on backend
+  // records whose timestamps are epoch seconds.
+  toDate(value: unknown): Date | null {
+    return parseApiDate(value);
   }
 
   loadTransactions(): void {
@@ -272,8 +286,19 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
 
   savePayment(): void {
     if (!this.selectedTxForPayment || this.paymentAmount <= 0) {
-      alert('Please enter a valid payment amount');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a valid payment amount' });
       return;
+    }
+
+    if (this.paymentDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const inputDate = new Date(this.paymentDate);
+      inputDate.setHours(0, 0, 0, 0);
+      if (inputDate > today) {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Payment date cannot be in the future.' });
+        return;
+      }
     }
 
     const tx = this.selectedTxForPayment;
@@ -311,7 +336,7 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.isSavingPayment = false;
         console.error('Error saving transaction payment:', err);
-        alert('Failed to record payment. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to record payment. Please try again.' });
       }
     });
   }

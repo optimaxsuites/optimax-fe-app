@@ -434,9 +434,11 @@ const MOCK_MESSAGE_THREADS: MessageThread[] = [
     messages: [
       { id: 'm-1', sender: 'COMPANY', authorName: 'A. Okoro', content: 'Hi team, following up on RFQ-2026-089 — can you confirm delivery within 10 business days of PO issuance?', timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000), attachments: [] },
       { id: 'm-2', sender: 'VENDOR', authorName: 'Vanguard Security Services', content: 'Thanks for reaching out. 10 days is tight given current stock levels, but achievable if the site access window is confirmed in advance.', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), attachments: [] },
-      { id: 'm-3', sender: 'VENDOR', authorName: 'Vanguard Security Services', content: 'We can revise the delivery schedule if the site access window is confirmed by Friday.', timestamp: new Date(Date.now() - 40 * 60 * 1000), attachments: [
-        { id: 'att-1', fileName: 'revised_delivery_schedule.pdf', versions: [{ version: 1, fileName: 'revised_delivery_schedule.pdf', uploadedAt: new Date(Date.now() - 40 * 60 * 1000), uploadedBy: 'Vanguard Security Services' }] }
-      ] }
+      {
+        id: 'm-3', sender: 'VENDOR', authorName: 'Vanguard Security Services', content: 'We can revise the delivery schedule if the site access window is confirmed by Friday.', timestamp: new Date(Date.now() - 40 * 60 * 1000), attachments: [
+          { id: 'att-1', fileName: 'revised_delivery_schedule.pdf', versions: [{ version: 1, fileName: 'revised_delivery_schedule.pdf', uploadedAt: new Date(Date.now() - 40 * 60 * 1000), uploadedBy: 'Vanguard Security Services' }] }
+        ]
+      }
     ]
   },
   {
@@ -647,6 +649,72 @@ const MOCK_RESOLUTION_AUDIT_LOG: ResolutionAuditLogEntry[] = [
 ];
 
 // ============================================================
+// ============================================================
+// PENDING VENDOR STORE — shared in-memory bridge between the
+// Vendor Portal and the Vendor Management side so that portal
+// submissions appear in the Approval Queue even when the backend
+// API is unavailable (dev / mock mode).  The store also persists
+// to localStorage so entries survive a page refresh.
+// ============================================================
+
+export class PendingVendorStore {
+  private static readonly STORAGE_KEY = 'erp_pending_vendors';
+  private static store: Map<string, Vendor> = PendingVendorStore.rehydrate();
+
+  private static rehydrate(): Map<string, Vendor> {
+    try {
+      const raw = localStorage.getItem(PendingVendorStore.STORAGE_KEY);
+      if (!raw) return new Map();
+      const arr: Vendor[] = JSON.parse(raw);
+      return new Map(arr.map(v => [v.id, v]));
+    } catch {
+      return new Map();
+    }
+  }
+
+  private static persist(): void {
+    try {
+      localStorage.setItem(
+        PendingVendorStore.STORAGE_KEY,
+        JSON.stringify(Array.from(PendingVendorStore.store.values()))
+      );
+    } catch { /* ignore quota errors */ }
+  }
+
+  static add(vendor: Vendor): void {
+    PendingVendorStore.store.set(vendor.id, vendor);
+    PendingVendorStore.persist();
+  }
+
+  static getAll(): Vendor[] {
+    return Array.from(PendingVendorStore.store.values());
+  }
+
+  static getById(id: string): Vendor | undefined {
+    return PendingVendorStore.store.get(id);
+  }
+
+  static updateStatus(id: string, status: VendorStatus): Vendor | null {
+    const vendor = PendingVendorStore.store.get(id);
+    if (!vendor) return null;
+    const updated: Vendor = { ...vendor, status, updatedAt: new Date() };
+    PendingVendorStore.store.set(id, updated);
+    PendingVendorStore.persist();
+    return updated;
+  }
+
+  static remove(id: string): void {
+    PendingVendorStore.store.delete(id);
+    PendingVendorStore.persist();
+  }
+
+  static clear(): void {
+    PendingVendorStore.store.clear();
+    localStorage.removeItem(PendingVendorStore.STORAGE_KEY);
+  }
+}
+
+// ============================================================
 // VENDOR SERVICE
 // ============================================================
 
@@ -660,6 +728,8 @@ export class VendorService {
   // ============================================================
   // TENANT ID HELPER
   // ============================================================
+
+  private readonly useMockData: boolean = !environment.production;
 
   private get tenantId(): string {
     const h = window.location.hostname;
@@ -874,18 +944,24 @@ export class VendorService {
       taxId: 'TIN-483920',
       email: 'contact@techcorp.com',
       phone: '+2348012345678',
-      status: 'ACTIVE',
-      tier: 'PREFERRED',
-      riskLevel: 'LOW',
+      status: VendorStatus.ACTIVE,
+      tier: VendorTier.PREFERRED,
+      riskLevel: RiskLevel.LOW,
       performanceScore: 95.4,
       totalProjects: 42,
       winRate: 65,
       averageRating: 4.8,
       categories: ['IT Services', 'Hardware'],
       address: { street: '12 Tech Ave', city: 'Lagos', state: 'Lagos', country: 'Nigeria', postalCode: '100001' },
-      createdAt: new Date(),
+      contacts: [], documents: [],
+      complianceStatus: { isCompliant: true, documentsVerified: 5, totalRequiredDocuments: 5, expiredDocuments: 0, expiringDocuments: 0, lastComplianceCheck: new Date(), sanctionsClear: true },
+      performanceMetrics: { overallScore: 95.4, onTimeDeliveryRate: 98, qualityScore: 94, costCompetitiveness: 90, complianceScore: 97, ratingScore: 95, winRate: 65, totalProjects: 42, totalRevenue: 12500000, averageOrderValue: 297619, lastUpdated: new Date(), trendData: [] },
+      lifecycleHistory: [], riskAlerts: [],
+      joinedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+      lastActivityDate: new Date(),
+      createdAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
       updatedAt: new Date()
-    } as unknown as Vendor,
+    } as Vendor,
     {
       id: 'v-102',
       companyName: 'Global Logistics Ltd',
@@ -893,293 +969,374 @@ export class VendorService {
       taxId: 'TIN-994823',
       email: 'info@globallogistics.com',
       phone: '+2348099887766',
-      status: 'ONBOARDING',
-      tier: 'CONDITIONAL',
-      riskLevel: 'MEDIUM',
+      status: VendorStatus.PENDING_ONBOARDING,
+      tier: VendorTier.CONDITIONAL,
+      riskLevel: RiskLevel.MEDIUM,
       performanceScore: 0,
       totalProjects: 0,
       winRate: 0,
       averageRating: 0,
       categories: ['Logistics', 'Supply Chain'],
       address: { street: '45 Trade Rd', city: 'Abuja', state: 'FCT', country: 'Nigeria', postalCode: '900001' },
-      createdAt: new Date(),
+      contacts: [], documents: [],
+      complianceStatus: { isCompliant: false, documentsVerified: 2, totalRequiredDocuments: 5, expiredDocuments: 0, expiringDocuments: 0, lastComplianceCheck: new Date(), sanctionsClear: true },
+      performanceMetrics: { overallScore: 0, onTimeDeliveryRate: 0, qualityScore: 0, costCompetitiveness: 0, complianceScore: 0, ratingScore: 0, winRate: 0, totalProjects: 0, totalRevenue: 0, averageOrderValue: 0, lastUpdated: new Date(), trendData: [] },
+      lifecycleHistory: [], riskAlerts: [],
+      joinedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      lastActivityDate: new Date(),
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       updatedAt: new Date()
-    } as unknown as Vendor
+    } as Vendor,
+    {
+      id: 'v-103',
+      companyName: 'Meridian Cold Storage Ltd',
+      registrationNumber: 'RC8876543',
+      taxId: 'TIN-112233',
+      email: 'admin@meridiancs.com',
+      phone: '+2348077665544',
+      status: VendorStatus.UNDER_REVIEW,
+      tier: VendorTier.APPROVED,
+      riskLevel: RiskLevel.MEDIUM,
+      performanceScore: 0,
+      totalProjects: 0,
+      winRate: 0,
+      averageRating: 0,
+      categories: ['Cold Chain', 'Logistics'],
+      address: { street: '22 Freight Lane', city: 'Lagos', state: 'Lagos', country: 'Nigeria', postalCode: '100003' },
+      contacts: [], documents: [],
+      complianceStatus: { isCompliant: false, documentsVerified: 4, totalRequiredDocuments: 5, expiredDocuments: 0, expiringDocuments: 0, lastComplianceCheck: new Date(), sanctionsClear: true },
+      performanceMetrics: { overallScore: 0, onTimeDeliveryRate: 0, qualityScore: 0, costCompetitiveness: 0, complianceScore: 0, ratingScore: 0, winRate: 0, totalProjects: 0, totalRevenue: 0, averageOrderValue: 0, lastUpdated: new Date(), trendData: [] },
+      lifecycleHistory: [], riskAlerts: [],
+      joinedDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      lastActivityDate: new Date(),
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date()
+    } as Vendor,
+    {
+      id: 'v-204',
+      companyName: 'Vanguard Security Services',
+      registrationNumber: 'RC2034567',
+      taxId: 'TIN-567890',
+      email: 'ops@vanguardsecurity.com',
+      phone: '+2348056789012',
+      status: VendorStatus.ACTIVE,
+      tier: VendorTier.APPROVED,
+      riskLevel: RiskLevel.MEDIUM,
+      performanceScore: 79.0,
+      totalProjects: 18,
+      winRate: 55,
+      averageRating: 4.1,
+      categories: ['Security', 'Facility Management'],
+      address: { street: '34 Guard Lane', city: 'Lagos', state: 'Lagos', country: 'Nigeria', postalCode: '100002' },
+      contacts: [], documents: [],
+      complianceStatus: { isCompliant: true, documentsVerified: 5, totalRequiredDocuments: 5, expiredDocuments: 0, expiringDocuments: 0, lastComplianceCheck: new Date(), sanctionsClear: true },
+      performanceMetrics: { overallScore: 79.0, onTimeDeliveryRate: 79, qualityScore: 80, costCompetitiveness: 75, complianceScore: 82, ratingScore: 80, winRate: 55, totalProjects: 18, totalRevenue: 5400000, averageOrderValue: 300000, lastUpdated: new Date(), trendData: [] },
+      lifecycleHistory: [], riskAlerts: [],
+      joinedDate: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000),
+      lastActivityDate: new Date(),
+      createdAt: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date()
+    } as Vendor,
+    {
+      id: 'v-233',
+      companyName: 'Northbridge Cold Chain Logistics',
+      registrationNumber: 'RC3344556',
+      taxId: 'TIN-778899',
+      email: 'logistics@northbridge.com',
+      phone: '+2348034567890',
+      status: VendorStatus.ACTIVE,
+      tier: VendorTier.APPROVED,
+      riskLevel: RiskLevel.LOW,
+      performanceScore: 88.5,
+      totalProjects: 31,
+      winRate: 60,
+      averageRating: 4.4,
+      categories: ['Logistics', 'Cold Chain', 'Warehousing'],
+      address: { street: '7 Cold Storage Ave', city: 'Port Harcourt', state: 'Rivers', country: 'Nigeria', postalCode: '500001' },
+      contacts: [], documents: [],
+      complianceStatus: { isCompliant: true, documentsVerified: 5, totalRequiredDocuments: 5, expiredDocuments: 0, expiringDocuments: 1, lastComplianceCheck: new Date(), sanctionsClear: true },
+      performanceMetrics: { overallScore: 88.5, onTimeDeliveryRate: 90, qualityScore: 87, costCompetitiveness: 84, complianceScore: 88, ratingScore: 89, winRate: 60, totalProjects: 31, totalRevenue: 9300000, averageOrderValue: 300000, lastUpdated: new Date(), trendData: [] },
+      lifecycleHistory: [], riskAlerts: [],
+      joinedDate: new Date(Date.now() - 280 * 24 * 60 * 60 * 1000),
+      lastActivityDate: new Date(),
+      createdAt: new Date(Date.now() - 280 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date()
+    } as Vendor
   ];
 
   // ADD THIS - Mock performance metrics inside the class
- private readonly MOCK_PERFORMANCE_METRICS: VendorPerformanceMetrics = {
-  overallScore: 87.5,
-  onTimeDeliveryRate: 92,
-  qualityScore: 85,
-  costCompetitiveness: 78,
-  complianceScore: 94,
-  ratingScore: 4.5,
-  winRate: 68,
-  totalProjects: 42,
-  totalRevenue: 12500000,
-  averageOrderValue: 297619,
-  lastUpdated: new Date(),
-  trendData: [
-    { period: 'Aug 2025', score: 78, onTimeDelivery: 82, quality: 75 },
-    { period: 'Sep 2025', score: 80, onTimeDelivery: 85, quality: 78 },
-    { period: 'Oct 2025', score: 83, onTimeDelivery: 88, quality: 80 },
-    { period: 'Nov 2025', score: 85, onTimeDelivery: 90, quality: 82 },
-    { period: 'Dec 2025', score: 86, onTimeDelivery: 91, quality: 84 },
-    { period: 'Jan 2026', score: 88, onTimeDelivery: 93, quality: 86 },
-    { period: 'Feb 2026', score: 87, onTimeDelivery: 92, quality: 85 },
-    { period: 'Mar 2026', score: 90, onTimeDelivery: 94, quality: 88 },
-    { period: 'Apr 2026', score: 92, onTimeDelivery: 95, quality: 90 },
-    { period: 'May 2026', score: 91, onTimeDelivery: 94, quality: 89 },
-    { period: 'Jun 2026', score: 93, onTimeDelivery: 96, quality: 91 },
-    { period: 'Jul 2026', score: 95, onTimeDelivery: 97, quality: 93 }
-  ]
-};
+  private readonly MOCK_PERFORMANCE_METRICS: VendorPerformanceMetrics = {
+    overallScore: 87.5,
+    onTimeDeliveryRate: 92,
+    qualityScore: 85,
+    costCompetitiveness: 78,
+    complianceScore: 94,
+    ratingScore: 4.5,
+    winRate: 68,
+    totalProjects: 42,
+    totalRevenue: 12500000,
+    averageOrderValue: 297619,
+    lastUpdated: new Date(),
+    trendData: [
+      { period: 'Aug 2025', score: 78, onTimeDelivery: 82, quality: 75 },
+      { period: 'Sep 2025', score: 80, onTimeDelivery: 85, quality: 78 },
+      { period: 'Oct 2025', score: 83, onTimeDelivery: 88, quality: 80 },
+      { period: 'Nov 2025', score: 85, onTimeDelivery: 90, quality: 82 },
+      { period: 'Dec 2025', score: 86, onTimeDelivery: 91, quality: 84 },
+      { period: 'Jan 2026', score: 88, onTimeDelivery: 93, quality: 86 },
+      { period: 'Feb 2026', score: 87, onTimeDelivery: 92, quality: 85 },
+      { period: 'Mar 2026', score: 90, onTimeDelivery: 94, quality: 88 },
+      { period: 'Apr 2026', score: 92, onTimeDelivery: 95, quality: 90 },
+      { period: 'May 2026', score: 91, onTimeDelivery: 94, quality: 89 },
+      { period: 'Jun 2026', score: 93, onTimeDelivery: 96, quality: 91 },
+      { period: 'Jul 2026', score: 95, onTimeDelivery: 97, quality: 93 }
+    ]
+  };
 
 
 
-private readonly MOCK_RISK_ALERTS: RiskAlert[] = [
-  {
-    id: 'alert-1',
-    vendorId: 'v-101',
-    severity: AlertSeverity.CRITICAL,
-    type: 'COMPLIANCE',
-    title: 'Expired Insurance Certificate',
-    description: 'The vendor\'s insurance certificate has expired. Immediate action required.',
-    detectedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    status: 'OPEN',
-    actionRequired: true,
-    assignedTo: 'Compliance Team'
-  },
-  {
-    id: 'alert-2',
-    vendorId: 'v-101',
-    severity: AlertSeverity.WARNING,
-    type: 'PERFORMANCE',
-    title: 'Performance Decline Detected',
-    description: 'On-time delivery rate dropped below 90% in the last 30 days.',
-    detectedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    status: 'IN_PROGRESS',
-    actionRequired: true
-  },
-  {
-    id: 'alert-3',
-    vendorId: 'v-101',
-    severity: AlertSeverity.INFO,
-    type: 'DOCUMENT',
-    title: 'Document Renewal Reminder',
-    description: 'Business registration certificate expires in 30 days.',
-    detectedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    status: 'OPEN',
-    actionRequired: false
-  },
-  // Add alerts for other vendors
-  {
-    id: 'alert-4',
-    vendorId: 'v-102',
-    severity: AlertSeverity.WARNING,
-    type: 'COMPLIANCE',
-    title: 'Missing Tax Certificate',
-    description: 'Tax certificate has not been uploaded for this vendor.',
-    detectedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    status: 'OPEN',
-    actionRequired: true,
-    assignedTo: 'Compliance Team'
-  },
-  {
-    id: 'alert-5',
-    vendorId: 'v-203',
-    severity: AlertSeverity.INFO,
-    type: 'DOCUMENT',
-    title: 'Document Review Required',
-    description: 'Operating license needs to be reviewed for renewal.',
-    detectedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    status: 'OPEN',
-    actionRequired: false
-  }
-];
+  private readonly MOCK_RISK_ALERTS: RiskAlert[] = [
+    {
+      id: 'alert-1',
+      vendorId: 'v-101',
+      severity: AlertSeverity.CRITICAL,
+      type: 'COMPLIANCE',
+      title: 'Expired Insurance Certificate',
+      description: 'The vendor\'s insurance certificate has expired. Immediate action required.',
+      detectedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      status: 'OPEN',
+      actionRequired: true,
+      assignedTo: 'Compliance Team'
+    },
+    {
+      id: 'alert-2',
+      vendorId: 'v-101',
+      severity: AlertSeverity.WARNING,
+      type: 'PERFORMANCE',
+      title: 'Performance Decline Detected',
+      description: 'On-time delivery rate dropped below 90% in the last 30 days.',
+      detectedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
+      status: 'IN_PROGRESS',
+      actionRequired: true
+    },
+    {
+      id: 'alert-3',
+      vendorId: 'v-101',
+      severity: AlertSeverity.INFO,
+      type: 'DOCUMENT',
+      title: 'Document Renewal Reminder',
+      description: 'Business registration certificate expires in 30 days.',
+      detectedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      status: 'OPEN',
+      actionRequired: false
+    },
+    // Add alerts for other vendors
+    {
+      id: 'alert-4',
+      vendorId: 'v-102',
+      severity: AlertSeverity.WARNING,
+      type: 'COMPLIANCE',
+      title: 'Missing Tax Certificate',
+      description: 'Tax certificate has not been uploaded for this vendor.',
+      detectedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      status: 'OPEN',
+      actionRequired: true,
+      assignedTo: 'Compliance Team'
+    },
+    {
+      id: 'alert-5',
+      vendorId: 'v-203',
+      severity: AlertSeverity.INFO,
+      type: 'DOCUMENT',
+      title: 'Document Review Required',
+      description: 'Operating license needs to be reviewed for renewal.',
+      detectedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      status: 'OPEN',
+      actionRequired: false
+    }
+  ];
 
-// vendor-management.service.ts - Add this inside the VendorService class
+  // vendor-management.service.ts - Add this inside the VendorService class
 
-private readonly MOCK_DOCUMENTS: VendorDocument[] = [
-  {
-    id: 'doc-1',
-    vendorId: 'v-101',
-    category: DocumentCategory.REGISTRATION,
-    name: 'Business Registration Certificate',
-    fileName: 'business_registration_v101.pdf',
-    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    fileSize: 2457600,
-    fileType: 'application/pdf',
-    issueDate: new Date('2024-01-15'),
-    expiryDate: new Date('2027-01-14'),
-    status: DocumentStatus.ACTIVE,
-    isRequired: true,
-    daysUntilExpiry: 162,
-    uploadedAt: new Date('2024-01-20'),
-    uploadedBy: 'Vendor User'
-  },
-  {
-    id: 'doc-2',
-    vendorId: 'v-101',
-    category: DocumentCategory.TAX,
-    name: 'Tax Certificate (TIN)',
-    fileName: 'tax_certificate_v101.pdf',
-    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    fileSize: 1843200,
-    fileType: 'application/pdf',
-    issueDate: new Date('2024-02-01'),
-    expiryDate: new Date('2027-01-31'),
-    status: DocumentStatus.ACTIVE,
-    isRequired: true,
-    daysUntilExpiry: 159,
-    uploadedAt: new Date('2024-02-05'),
-    uploadedBy: 'Vendor User'
-  },
-  {
-    id: 'doc-3',
-    vendorId: 'v-101',
-    category: DocumentCategory.LICENCE,
-    name: 'Business Operating Licence',
-    fileName: 'operating_licence_v101.pdf',
-    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    fileSize: 3072000,
-    fileType: 'application/pdf',
-    issueDate: new Date('2023-06-01'),
-    expiryDate: new Date('2024-11-30'),
-    status: DocumentStatus.EXPIRING_SOON,
-    isRequired: true,
-    daysUntilExpiry: 28,
-    uploadedAt: new Date('2023-06-10'),
-    uploadedBy: 'Vendor User'
-  },
-  {
-    id: 'doc-4',
-    vendorId: 'v-101',
-    category: DocumentCategory.INSURANCE,
-    name: 'Public Liability Insurance',
-    fileName: 'insurance_policy_v101.pdf',
-    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    fileSize: 1560000,
-    fileType: 'application/pdf',
-    issueDate: new Date('2023-08-15'),
-    expiryDate: new Date('2024-08-14'),
-    status: DocumentStatus.EXPIRED,
-    isRequired: false,
-    daysUntilExpiry: -5,
-    uploadedAt: new Date('2023-08-20'),
-    uploadedBy: 'Vendor User'
-  },
-  {
-    id: 'doc-5',
-    vendorId: 'v-101',
-    category: DocumentCategory.CERTIFICATION,
-    name: 'ISO 9001 Certification',
-    fileName: 'iso_certification_v101.pdf',
-    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    fileSize: 2048000,
-    fileType: 'application/pdf',
-    issueDate: new Date('2024-03-01'),
-    expiryDate: new Date('2025-03-01'),
-    status: DocumentStatus.PENDING_VERIFICATION,
-    isRequired: false,
-    daysUntilExpiry: 210,
-    uploadedAt: new Date('2024-03-05'),
-    uploadedBy: 'Vendor User'
-  },
-  {
-    id: 'doc-6',
-    vendorId: 'v-102',
-    category: DocumentCategory.REGISTRATION,
-    name: 'Business Registration Certificate',
-    fileName: 'business_registration_v102.pdf',
-    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    fileSize: 2355200,
-    fileType: 'application/pdf',
-    issueDate: new Date('2024-02-10'),
-    expiryDate: new Date('2027-02-09'),
-    status: DocumentStatus.ACTIVE,
-    isRequired: true,
-    daysUntilExpiry: 175,
-    uploadedAt: new Date('2024-02-15'),
-    uploadedBy: 'Vendor User'
-  }
-];
+  private readonly MOCK_DOCUMENTS: VendorDocument[] = [
+    {
+      id: 'doc-1',
+      vendorId: 'v-101',
+      category: DocumentCategory.REGISTRATION,
+      name: 'Business Registration Certificate',
+      fileName: 'business_registration_v101.pdf',
+      fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      fileSize: 2457600,
+      fileType: 'application/pdf',
+      issueDate: new Date('2024-01-15'),
+      expiryDate: new Date('2027-01-14'),
+      status: DocumentStatus.ACTIVE,
+      isRequired: true,
+      daysUntilExpiry: 162,
+      uploadedAt: new Date('2024-01-20'),
+      uploadedBy: 'Vendor User'
+    },
+    {
+      id: 'doc-2',
+      vendorId: 'v-101',
+      category: DocumentCategory.TAX,
+      name: 'Tax Certificate (TIN)',
+      fileName: 'tax_certificate_v101.pdf',
+      fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      fileSize: 1843200,
+      fileType: 'application/pdf',
+      issueDate: new Date('2024-02-01'),
+      expiryDate: new Date('2027-01-31'),
+      status: DocumentStatus.ACTIVE,
+      isRequired: true,
+      daysUntilExpiry: 159,
+      uploadedAt: new Date('2024-02-05'),
+      uploadedBy: 'Vendor User'
+    },
+    {
+      id: 'doc-3',
+      vendorId: 'v-101',
+      category: DocumentCategory.LICENCE,
+      name: 'Business Operating Licence',
+      fileName: 'operating_licence_v101.pdf',
+      fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      fileSize: 3072000,
+      fileType: 'application/pdf',
+      issueDate: new Date('2023-06-01'),
+      expiryDate: new Date('2024-11-30'),
+      status: DocumentStatus.EXPIRING_SOON,
+      isRequired: true,
+      daysUntilExpiry: 28,
+      uploadedAt: new Date('2023-06-10'),
+      uploadedBy: 'Vendor User'
+    },
+    {
+      id: 'doc-4',
+      vendorId: 'v-101',
+      category: DocumentCategory.INSURANCE,
+      name: 'Public Liability Insurance',
+      fileName: 'insurance_policy_v101.pdf',
+      fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      fileSize: 1560000,
+      fileType: 'application/pdf',
+      issueDate: new Date('2023-08-15'),
+      expiryDate: new Date('2024-08-14'),
+      status: DocumentStatus.EXPIRED,
+      isRequired: false,
+      daysUntilExpiry: -5,
+      uploadedAt: new Date('2023-08-20'),
+      uploadedBy: 'Vendor User'
+    },
+    {
+      id: 'doc-5',
+      vendorId: 'v-101',
+      category: DocumentCategory.CERTIFICATION,
+      name: 'ISO 9001 Certification',
+      fileName: 'iso_certification_v101.pdf',
+      fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      fileSize: 2048000,
+      fileType: 'application/pdf',
+      issueDate: new Date('2024-03-01'),
+      expiryDate: new Date('2025-03-01'),
+      status: DocumentStatus.PENDING_VERIFICATION,
+      isRequired: false,
+      daysUntilExpiry: 210,
+      uploadedAt: new Date('2024-03-05'),
+      uploadedBy: 'Vendor User'
+    },
+    {
+      id: 'doc-6',
+      vendorId: 'v-102',
+      category: DocumentCategory.REGISTRATION,
+      name: 'Business Registration Certificate',
+      fileName: 'business_registration_v102.pdf',
+      fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      fileSize: 2355200,
+      fileType: 'application/pdf',
+      issueDate: new Date('2024-02-10'),
+      expiryDate: new Date('2027-02-09'),
+      status: DocumentStatus.ACTIVE,
+      isRequired: true,
+      daysUntilExpiry: 175,
+      uploadedAt: new Date('2024-02-15'),
+      uploadedBy: 'Vendor User'
+    }
+  ];
 
-private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
-  {
-    id: 'life-1',
-    vendorId: 'v-101',
-    event: VendorLifecycleEvent.APPLIED,
-    description: 'Vendor application submitted via the Vendor Portal',
-    performedBy: 'Vendor User',
-    timestamp: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    metadata: { source: 'portal', applicationId: 'APP-2026-001' }
-  },
-  {
-    id: 'life-2',
-    vendorId: 'v-101',
-    event: VendorLifecycleEvent.DOCUMENTS_SUBMITTED,
-    description: 'Business registration, tax certificate, and operating licence uploaded',
-    performedBy: 'Vendor User',
-    timestamp: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000),
-    metadata: { documents: ['registration.pdf', 'tax.pdf', 'licence.pdf'] }
-  },
-  {
-    id: 'life-3',
-    vendorId: 'v-101',
-    event: VendorLifecycleEvent.UNDER_REVIEW,
-    description: 'Application moved to under review by procurement team',
-    performedBy: 'A. Okoro (Procurement Lead)',
-    timestamp: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
-    metadata: { assignedTo: 'A. Okoro' }
-  },
-  {
-    id: 'life-4',
-    vendorId: 'v-101',
-    event: VendorLifecycleEvent.APPROVED,
-    description: 'Vendor application approved after document verification',
-    performedBy: 'A. Okoro (Procurement Lead)',
-    timestamp: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000),
-    metadata: { approvedBy: 'A. Okoro', notes: 'All documents verified successfully' }
-  },
-  {
-    id: 'life-5',
-    vendorId: 'v-101',
-    event: VendorLifecycleEvent.ACTIVATED,
-    description: 'Vendor account activated in the marketplace',
-    performedBy: 'System',
-    timestamp: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-    metadata: { status: 'ACTIVE' }
-  },
-  {
-    id: 'life-6',
-    vendorId: 'v-101',
-    event: VendorLifecycleEvent.PERFORMANCE_UPDATE,
-    description: 'Performance score updated to 95.4% - Vendor upgraded to Preferred Tier',
-    performedBy: 'Sentinel AI',
-    timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    metadata: { oldScore: 88, newScore: 95.4, oldTier: 'APPROVED', newTier: 'PREFERRED' }
-  },
-  {
-    id: 'life-7',
-    vendorId: 'v-101',
-    event: VendorLifecycleEvent.DOCUMENT_VERIFIED,
-    description: 'Insurance certificate verified and approved',
-    performedBy: 'D. Balogun (Compliance)',
-    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    metadata: { documentId: 'doc-insurance-101', status: 'VERIFIED' }
-  },
-  {
-    id: 'life-8',
-    vendorId: 'v-101',
-    event: VendorLifecycleEvent.RISK_ALERT,
-    description: 'Performance decline alert triggered - On-time delivery rate dropped below 90%',
-    performedBy: 'Sentinel AI',
-    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    metadata: { alertId: 'alert-101', type: 'PERFORMANCE_DECLINE', severity: 'WARNING' }
-  }
-];
+  private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
+    {
+      id: 'life-1',
+      vendorId: 'v-101',
+      event: VendorLifecycleEvent.APPLIED,
+      description: 'Vendor application submitted via the Vendor Portal',
+      performedBy: 'Vendor User',
+      timestamp: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      metadata: { source: 'portal', applicationId: 'APP-2026-001' }
+    },
+    {
+      id: 'life-2',
+      vendorId: 'v-101',
+      event: VendorLifecycleEvent.DOCUMENTS_SUBMITTED,
+      description: 'Business registration, tax certificate, and operating licence uploaded',
+      performedBy: 'Vendor User',
+      timestamp: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000),
+      metadata: { documents: ['registration.pdf', 'tax.pdf', 'licence.pdf'] }
+    },
+    {
+      id: 'life-3',
+      vendorId: 'v-101',
+      event: VendorLifecycleEvent.UNDER_REVIEW,
+      description: 'Application moved to under review by procurement team',
+      performedBy: 'A. Okoro (Procurement Lead)',
+      timestamp: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+      metadata: { assignedTo: 'A. Okoro' }
+    },
+    {
+      id: 'life-4',
+      vendorId: 'v-101',
+      event: VendorLifecycleEvent.APPROVED,
+      description: 'Vendor application approved after document verification',
+      performedBy: 'A. Okoro (Procurement Lead)',
+      timestamp: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000),
+      metadata: { approvedBy: 'A. Okoro', notes: 'All documents verified successfully' }
+    },
+    {
+      id: 'life-5',
+      vendorId: 'v-101',
+      event: VendorLifecycleEvent.ACTIVATED,
+      description: 'Vendor account activated in the marketplace',
+      performedBy: 'System',
+      timestamp: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+      metadata: { status: 'ACTIVE' }
+    },
+    {
+      id: 'life-6',
+      vendorId: 'v-101',
+      event: VendorLifecycleEvent.PERFORMANCE_UPDATE,
+      description: 'Performance score updated to 95.4% - Vendor upgraded to Preferred Tier',
+      performedBy: 'Sentinel AI',
+      timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      metadata: { oldScore: 88, newScore: 95.4, oldTier: 'APPROVED', newTier: 'PREFERRED' }
+    },
+    {
+      id: 'life-7',
+      vendorId: 'v-101',
+      event: VendorLifecycleEvent.DOCUMENT_VERIFIED,
+      description: 'Insurance certificate verified and approved',
+      performedBy: 'D. Balogun (Compliance)',
+      timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      metadata: { documentId: 'doc-insurance-101', status: 'VERIFIED' }
+    },
+    {
+      id: 'life-8',
+      vendorId: 'v-101',
+      event: VendorLifecycleEvent.RISK_ALERT,
+      description: 'Performance decline alert triggered - On-time delivery rate dropped below 90%',
+      performedBy: 'Sentinel AI',
+      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      metadata: { alertId: 'alert-101', type: 'PERFORMANCE_DECLINE', severity: 'WARNING' }
+    }
+  ];
 
 
   // ============================================================
@@ -1217,6 +1374,66 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
   }
 
   // ============================================================
+  // FIELD MAPPING — normalises raw API response to Vendor interface
+  // ============================================================
+
+  private mapVendor(raw: any): Vendor {
+    const performanceScore = raw.performanceScore ?? raw.performance_score ?? raw.score ?? 0;
+    const totalProjects = raw.totalProjects ?? raw.total_projects ?? raw.projectCount ?? 0;
+    return {
+      id: raw.id || raw._id || raw.vendorId || '',
+      companyName: raw.companyName || raw.company_name || raw.name || raw.company || '',
+      registrationNumber: raw.registrationNumber || raw.registration_number || raw.regNumber || raw.rc_number || '',
+      taxId: raw.taxId || raw.tax_id || raw.tin || raw.taxNumber || '',
+      email: raw.email || raw.emailAddress || raw.email_address || '',
+      phone: raw.phone || raw.phoneNumber || raw.phone_number || raw.mobile || '',
+      website: raw.website || raw.websiteUrl || raw.web_site || undefined,
+      address: raw.address || { street: '', city: '', state: '', country: 'Nigeria', postalCode: '' },
+      status: (raw.status || raw.vendorStatus || VendorStatus.PENDING_ONBOARDING) as VendorStatus,
+      tier: (raw.tier || raw.vendorTier || VendorTier.APPROVED) as VendorTier,
+      riskLevel: (raw.riskLevel || raw.risk_level || raw.risk || RiskLevel.LOW) as RiskLevel,
+      performanceScore,
+      totalProjects,
+      winRate: raw.winRate ?? raw.win_rate ?? 0,
+      averageRating: raw.averageRating ?? raw.average_rating ?? raw.rating ?? 0,
+      joinedDate: raw.joinedDate ? new Date(raw.joinedDate) : (raw.createdAt ? new Date(raw.createdAt) : new Date()),
+      lastActivityDate: raw.lastActivityDate ? new Date(raw.lastActivityDate) : (raw.updatedAt ? new Date(raw.updatedAt) : new Date()),
+      categories: Array.isArray(raw.categories) ? raw.categories : [],
+      logo: raw.logo || raw.logoUrl || undefined,
+      description: raw.description || '',
+      paymentTerms: raw.paymentTerms || raw.payment_terms || 'Net 30',
+      bankDetails: raw.bankDetails || raw.bank_details || undefined,
+      contacts: Array.isArray(raw.contacts) ? raw.contacts : [],
+      documents: Array.isArray(raw.documents) ? raw.documents : [],
+      complianceStatus: raw.complianceStatus || raw.compliance_status || {
+        isCompliant: true, documentsVerified: 0, totalRequiredDocuments: 0,
+        expiredDocuments: 0, expiringDocuments: 0, lastComplianceCheck: new Date(), sanctionsClear: true
+      },
+      performanceMetrics: raw.performanceMetrics || raw.performance_metrics || {
+        overallScore: performanceScore, onTimeDeliveryRate: 0, qualityScore: 0,
+        costCompetitiveness: 0, complianceScore: 0, ratingScore: 0,
+        winRate: raw.winRate ?? 0, totalProjects,
+        totalRevenue: raw.totalRevenue ?? raw.total_revenue ?? 0,
+        averageOrderValue: 0, lastUpdated: new Date(), trendData: []
+      },
+      lifecycleHistory: Array.isArray(raw.lifecycleHistory) ? raw.lifecycleHistory : [],
+      riskAlerts: Array.isArray(raw.riskAlerts) ? raw.riskAlerts : [],
+      createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
+      updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : new Date(),
+      applicationNumber: raw.applicationNumber || raw.application_number || undefined,
+      // The backend was originally POSTed the full 6-step registration payload
+      // (see VendorRegistrationService.submit) — preserve it here too if the
+      // GET response still carries it, under either shape.
+      registration: raw.registration || (raw.step1 ? {
+        id: raw.id, applicationNumber: raw.applicationNumber, status: raw.registrationStatus || raw.status,
+        submittedDate: raw.submittedDate, lastModified: raw.updatedAt,
+        step1: raw.step1, step2: raw.step2, step3: raw.step3,
+        step4: raw.step4, step5: raw.step5, step6: raw.step6,
+      } : undefined),
+    } as Vendor;
+  }
+
+  // ============================================================
   // VENDOR CRUD OPERATIONS
   // ============================================================
 
@@ -1225,10 +1442,13 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
     limit: number = 20,
     filters?: {
       status?: VendorStatus;
+      statuses?: VendorStatus[];
       tier?: VendorTier;
       riskLevel?: RiskLevel;
       search?: string;
       category?: string;
+      dateFrom?: string;
+      dateTo?: string;
     }
   ): Observable<VendorListResponse> {
     this.loadingSubject.next(true);
@@ -1239,15 +1459,69 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
       .set('size', limit.toString());
 
     if (filters) {
-      if (filters.status) params = params.set('status', filters.status);
+      if (filters.statuses) {
+        const statuses = Array.isArray(filters.statuses) ? filters.statuses : [filters.statuses];
+        params = params.set('statuses', statuses.join(','));
+      } else if (filters.status) {
+        params = params.set('status', filters.status);
+      }
       if (filters.search) params = params.set('search', filters.search);
+      if (filters.tier) params = params.set('tier', filters.tier);
+      if (filters.riskLevel) params = params.set('riskLevel', filters.riskLevel);
+      if (filters.category) params = params.set('category', filters.category);
+      if (filters.dateFrom) params = params.set('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params = params.set('dateTo', filters.dateTo);
+    }
+
+    if (this.useMockData) {
+      const allMock = [
+        ...this.MOCK_VENDORS,
+        ...PendingVendorStore.getAll()
+      ];
+      // Deduplicate — store entries take precedence (they have live status)
+      const seen = new Set<string>();
+      let mockVendors = allMock.filter(v => {
+        if (seen.has(v.id)) return false;
+        seen.add(v.id);
+        return true;
+      });
+
+      if (filters?.statuses && Array.isArray(filters.statuses)) {
+        mockVendors = mockVendors.filter(v => filters.statuses!.includes(v.status));
+      } else if (filters?.status) {
+        mockVendors = mockVendors.filter(v => v.status === filters.status);
+      }
+
+      const listResponse: VendorListResponse = {
+        vendors: mockVendors,
+        total: mockVendors.length,
+        page,
+        limit,
+        totalPages: 1
+      };
+      this.vendorsSubject.next(mockVendors);
+      this.loadingSubject.next(false);
+      return of(listResponse);
     }
 
     return this.http.get<any>(`${this.baseUrl}/vendors`, { params })
       .pipe(
         map(res => {
-          const vendors: Vendor[] = Array.isArray(res) ? res : (res?.vendors ?? res?.data ?? []);
-          const listResponse: VendorListResponse = { vendors, total: vendors.length, page, limit, totalPages: 1 };
+          const rawVendors: any[] = Array.isArray(res)
+            ? res
+            : (res?.vendors ?? res?.data ?? res?.content ?? []);
+          const vendors: Vendor[] = rawVendors.map(v => this.mapVendor(v));
+
+          const resultVendors = vendors.length ? vendors : this.filterMockVendors(filters);
+          const totalCount = res?.total ?? res?.totalCount ?? res?.totalElements ?? resultVendors.length;
+          const totalPages = res?.totalPages ?? res?.pages ?? Math.max(Math.ceil(totalCount / limit), 1);
+          const listResponse: VendorListResponse = {
+            vendors: resultVendors,
+            total: totalCount,
+            page,
+            limit,
+            totalPages
+          };
           return listResponse;
         }),
         tap(response => {
@@ -1256,8 +1530,9 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
         }),
         catchError(err => {
           this.loadingSubject.next(false);
-          const listResponse: VendorListResponse = { vendors: this.MOCK_VENDORS, total: this.MOCK_VENDORS.length, page, limit, totalPages: 1 };
-          this.vendorsSubject.next(this.MOCK_VENDORS);
+          const fallbackVendors = this.filterMockVendors(filters);
+          const listResponse: VendorListResponse = { vendors: fallbackVendors, total: fallbackVendors.length, page, limit, totalPages: 1 };
+          this.vendorsSubject.next(fallbackVendors);
           return of(listResponse);
         })
       );
@@ -1265,6 +1540,15 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
 
   getVendorById(id: string): Observable<Vendor> {
     this.loadingSubject.next(true);
+
+    // Check the live cache first, then the shared portal store
+    const cachedVendor = this.vendorsSubject.value.find(v => v.id === id)
+      ?? PendingVendorStore.getById(id);
+    if (cachedVendor) {
+      this.selectedVendorSubject.next(cachedVendor);
+      this.loadingSubject.next(false);
+      return of(cachedVendor);
+    }
 
     return this.http.get<Vendor>(`${this.baseUrl}/vendors/${id}`)
       .pipe(
@@ -1274,7 +1558,9 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
         }),
         catchError(err => {
           this.loadingSubject.next(false);
-          const fallbackVendor = this.MOCK_VENDORS.find(v => v.id === id) || this.MOCK_VENDORS[0];
+          // Check the portal store first, then fall back to static mocks
+          const storeVendor = PendingVendorStore.getById(id);
+          const fallbackVendor = storeVendor || this.MOCK_VENDORS.find(v => v.id === id) || this.MOCK_VENDORS[0];
           if (fallbackVendor) {
             const vendorWithDefaults: Vendor = {
               ...fallbackVendor,
@@ -1424,13 +1710,31 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
   updateVendorStatus(id: string, status: VendorStatus): Observable<Vendor> {
     return this.http.patch<Vendor>(`${this.baseUrl}/vendors/${id}/review`, { status })
       .pipe(
+        map(raw => this.mapVendor(raw)),
         tap(vendor => {
           this.selectedVendorSubject.next(vendor);
           this.updateVendorInList(vendor);
+          // Sync the status change into the shared store so both sides stay consistent
+          PendingVendorStore.updateStatus(id, status);
         }),
-        catchError(err => {
+        catchError(() => {
+          // Mock fallback — update the shared store and emit the changed vendor
+          const updated = PendingVendorStore.updateStatus(id, status);
+          if (updated) {
+            this.updateVendorInList(updated);
+            this.selectedVendorSubject.next(updated);
+            return of(updated);
+          }
+          // Vendor might only be in MOCK_VENDORS — patch it inline
+          const mockIdx = (this.MOCK_VENDORS as Vendor[]).findIndex(v => v.id === id);
+          if (mockIdx !== -1) {
+            const patched: Vendor = { ...(this.MOCK_VENDORS as Vendor[])[mockIdx], status, updatedAt: new Date() };
+            (this.MOCK_VENDORS as Vendor[])[mockIdx] = patched;
+            this.updateVendorInList(patched);
+            return of(patched);
+          }
           this.errorSubject.next('Failed to update vendor status');
-          return throwError(() => err);
+          return throwError(() => new Error('Vendor not found in local store'));
         })
       );
   }
@@ -1440,115 +1744,115 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
   // ============================================================
 
   getVendorPerformance(vendorId: string): Observable<VendorPerformanceResponse> {
-  this.loadingSubject.next(true);
-  
-  const params = new HttpParams()
-    .set('tenantId', this.tenantId)
-    .set('vendorId', vendorId);
+    this.loadingSubject.next(true);
 
-  return this.http.get<VendorPerformanceResponse>(`${this.baseUrl}/vendor-dashboard/performance`, { params })
-    .pipe(
-      tap(() => this.loadingSubject.next(false)),
-      catchError((err) => {
-        console.warn('Performance API failed, using mock data for vendor:', vendorId);
-        this.loadingSubject.next(false);
-        
-        // Create a copy of the mock metrics with the vendor ID
-        const metrics = { ...this.MOCK_PERFORMANCE_METRICS };
-        
-        const mockResponse: VendorPerformanceResponse = {
-          metrics: metrics,
-          kpis: [
-            {
-              label: 'Overall Score',
-              value: metrics.overallScore,
-              unit: '%',
-              color: '#2EB270',
-              icon: 'fa-chart-line',
-              trend: 'up',
-              percentChange: 3.2
-            },
-            {
-              label: 'On-Time Delivery',
-              value: metrics.onTimeDeliveryRate,
-              unit: '%',
-              color: '#2EB270',
-              icon: 'fa-clock',
-              trend: 'up',
-              percentChange: 1.5
-            },
-            {
-              label: 'Quality Score',
-              value: metrics.qualityScore,
-              unit: '%',
-              color: '#F5A623',
-              icon: 'fa-star',
-              trend: 'up',
-              percentChange: 2.1
-            },
-            {
-              label: 'Cost Competitiveness',
-              value: metrics.costCompetitiveness,
-              unit: '%',
-              color: '#F97316',
-              icon: 'fa-tags',
-              trend: 'stable',
-              percentChange: 0.5
-            },
-            {
-              label: 'Compliance Score',
-              value: metrics.complianceScore,
-              unit: '%',
-              color: '#2EB270',
-              icon: 'fa-shield-alt',
-              trend: 'up',
-              percentChange: 4.8
-            },
-            {
-              label: 'Rating Score',
-              value: metrics.ratingScore,
-              unit: '/5',
-              color: '#8B5CF6',
-              icon: 'fa-star-half-alt',
-              trend: 'up',
-              percentChange: 2.3
-            },
-            {
-              label: 'Win Rate',
-              value: metrics.winRate,
-              unit: '%',
-              color: '#2E6276',
-              icon: 'fa-trophy',
-              trend: 'up',
-              percentChange: 5.0
-            },
-            {
-              label: 'Total Projects',
-              value: metrics.totalProjects,
-              unit: '',
-              color: '#6B7280',
-              icon: 'fa-project-diagram',
-              trend: 'up',
-              percentChange: 12.0
+    const params = new HttpParams()
+      .set('tenantId', this.tenantId)
+      .set('vendorId', vendorId);
+
+    return this.http.get<VendorPerformanceResponse>(`${this.baseUrl}/vendor-dashboard/performance`, { params })
+      .pipe(
+        tap(() => this.loadingSubject.next(false)),
+        catchError((err) => {
+          console.warn('Performance API failed, using mock data for vendor:', vendorId);
+          this.loadingSubject.next(false);
+
+          // Create a copy of the mock metrics with the vendor ID
+          const metrics = { ...this.MOCK_PERFORMANCE_METRICS };
+
+          const mockResponse: VendorPerformanceResponse = {
+            metrics: metrics,
+            kpis: [
+              {
+                label: 'Overall Score',
+                value: metrics.overallScore,
+                unit: '%',
+                color: '#2EB270',
+                icon: 'fa-chart-line',
+                trend: 'up',
+                percentChange: 3.2
+              },
+              {
+                label: 'On-Time Delivery',
+                value: metrics.onTimeDeliveryRate,
+                unit: '%',
+                color: '#2EB270',
+                icon: 'fa-clock',
+                trend: 'up',
+                percentChange: 1.5
+              },
+              {
+                label: 'Quality Score',
+                value: metrics.qualityScore,
+                unit: '%',
+                color: '#F5A623',
+                icon: 'fa-star',
+                trend: 'up',
+                percentChange: 2.1
+              },
+              {
+                label: 'Cost Competitiveness',
+                value: metrics.costCompetitiveness,
+                unit: '%',
+                color: '#F97316',
+                icon: 'fa-tags',
+                trend: 'stable',
+                percentChange: 0.5
+              },
+              {
+                label: 'Compliance Score',
+                value: metrics.complianceScore,
+                unit: '%',
+                color: '#2EB270',
+                icon: 'fa-shield-alt',
+                trend: 'up',
+                percentChange: 4.8
+              },
+              {
+                label: 'Rating Score',
+                value: metrics.ratingScore,
+                unit: '/5',
+                color: '#8B5CF6',
+                icon: 'fa-star-half-alt',
+                trend: 'up',
+                percentChange: 2.3
+              },
+              {
+                label: 'Win Rate',
+                value: metrics.winRate,
+                unit: '%',
+                color: '#2E6276',
+                icon: 'fa-trophy',
+                trend: 'up',
+                percentChange: 5.0
+              },
+              {
+                label: 'Total Projects',
+                value: metrics.totalProjects,
+                unit: '',
+                color: '#6B7280',
+                icon: 'fa-project-diagram',
+                trend: 'up',
+                percentChange: 12.0
+              }
+            ],
+            ranking: {
+              vendorId: vendorId,
+              rank: 5,
+              score: 87.5,
+              factors: {
+                price: 85,
+                delivery: 92,
+                performance: 87,
+                compliance: 94
+              },
+              recommendation: 'STRONG'
             }
-          ],
-          ranking: {
-            vendorId: vendorId,
-            rank: 5,
-            score: 87.5,
-            factors: {
-              price: 85,
-              delivery: 92,
-              performance: 87,
-              compliance: 94
-            },
-            recommendation: 'STRONG'
-          }
-        };
-        return of(mockResponse);
-      })
-    );
-}
+          };
+          return of(mockResponse);
+        })
+      );
+  }
 
   getVendorKPIs(vendorId: string): Observable<VendorKPI[]> {
     return of([] as any);
@@ -1567,132 +1871,157 @@ private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
   // ============================================================
 
   getVendorRisk(vendorId: string): Observable<VendorRiskResponse> {
-  return of({} as any);
-}
+    return of({} as any);
+  }
 
   getRiskAlerts(vendorId?: string): Observable<RiskAlert[]> {
-  console.log('getRiskAlerts called with vendorId:', vendorId);
-  
-  // If vendorId is provided, filter alerts for that vendor
-  if (vendorId) {
-    const filtered = this.MOCK_RISK_ALERTS.filter(a => a.vendorId === vendorId);
-    console.log('Filtered alerts count:', filtered.length);
-    // If no alerts found for this vendor, return some default ones
-    if (filtered.length === 0) {
-      console.log('No alerts found for vendor, returning default info alert');
-      return of([
-        {
-          id: 'default-1',
-          vendorId: vendorId,
-          severity: AlertSeverity.INFO,
-          type: 'GENERAL',
-          title: 'No specific alerts for this vendor',
-          description: 'All compliance checks are up to date.',
-          detectedAt: new Date(),
-          status: 'RESOLVED',
-          actionRequired: false
-        }
-      ]);
+    console.log('getRiskAlerts called with vendorId:', vendorId);
+
+    // If vendorId is provided, filter alerts for that vendor
+    if (vendorId) {
+      const filtered = this.MOCK_RISK_ALERTS.filter(a => a.vendorId === vendorId);
+      console.log('Filtered alerts count:', filtered.length);
+      // If no alerts found for this vendor, return some default ones
+      if (filtered.length === 0) {
+        console.log('No alerts found for vendor, returning default info alert');
+        return of([
+          {
+            id: 'default-1',
+            vendorId: vendorId,
+            severity: AlertSeverity.INFO,
+            type: 'GENERAL',
+            title: 'No specific alerts for this vendor',
+            description: 'All compliance checks are up to date.',
+            detectedAt: new Date(),
+            status: 'RESOLVED',
+            actionRequired: false
+          }
+        ]);
+      }
+      return of(filtered);
     }
-    return of(filtered);
+
+    console.log('Returning all alerts:', this.MOCK_RISK_ALERTS.length);
+    return of(this.MOCK_RISK_ALERTS);
   }
-  
-  console.log('Returning all alerts:', this.MOCK_RISK_ALERTS.length);
-  return of(this.MOCK_RISK_ALERTS);
-}
 
 
   resolveRiskAlert(alertId: string, resolution: string): Observable<any> {
-  return of({} as any);
-}
+    return of({} as any);
+  }
 
   initiateSanctionsCheck(vendorId: string): Observable<any> {
-  return of({} as any);
-}
+    return of({} as any);
+  }
 
 
   // ============================================================
   // DOCUMENTS
   // ============================================================
 
-getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
-  this.loadingSubject.next(true);
-  
-  const params = new HttpParams().set('tenantId', this.tenantId);
-  
-  return this.http.get<VendorDocument[]>(`${this.baseUrl}/vendors/${vendorId}/documents`, { params })
-    .pipe(
-      tap(() => this.loadingSubject.next(false)),
-      catchError(err => {
-        this.loadingSubject.next(false);
-        console.warn('Documents API failed, using mock data for vendor:', vendorId);
-        
-        // Filter mock documents for this vendor
-        const mockDocs = this.MOCK_DOCUMENTS.filter(doc => doc.vendorId === vendorId);
-        
-        // If no specific documents for this vendor, return some default ones
-        if (mockDocs.length === 0) {
-          // Create vendor-specific mock documents
-          const vendorSpecificDocs: VendorDocument[] = [
-            {
-              id: `doc-${vendorId}-1`,
-              vendorId: vendorId,
-              category: DocumentCategory.REGISTRATION,
-              name: 'Business Registration Certificate',
-              fileName: `registration_${vendorId}.pdf`,
-              fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-              fileSize: 2457600,
-              fileType: 'application/pdf',
-              issueDate: new Date('2024-01-15'),
-              expiryDate: new Date('2027-01-14'),
-              status: DocumentStatus.ACTIVE,
-              isRequired: true,
-              daysUntilExpiry: 162,
-              uploadedAt: new Date('2024-01-20'),
-              uploadedBy: 'Vendor User'
-            },
-            {
-              id: `doc-${vendorId}-2`,
-              vendorId: vendorId,
-              category: DocumentCategory.TAX,
-              name: 'Tax Certificate',
-              fileName: `tax_${vendorId}.pdf`,
-              fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-              fileSize: 1843200,
-              fileType: 'application/pdf',
-              issueDate: new Date('2024-02-01'),
-              expiryDate: new Date('2027-01-31'),
-              status: DocumentStatus.PENDING_VERIFICATION,
-              isRequired: true,
-              daysUntilExpiry: 159,
-              uploadedAt: new Date('2024-02-05'),
-              uploadedBy: 'Vendor User'
-            },
-            {
-              id: `doc-${vendorId}-3`,
-              vendorId: vendorId,
-              category: DocumentCategory.LICENCE,
-              name: 'Operating Licence',
-              fileName: `licence_${vendorId}.pdf`,
-              fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-              fileSize: 3072000,
-              fileType: 'application/pdf',
-              issueDate: new Date('2023-06-01'),
-              expiryDate: new Date('2024-11-30'),
-              status: DocumentStatus.EXPIRING_SOON,
-              isRequired: true,
-              daysUntilExpiry: 28,
-              uploadedAt: new Date('2023-06-10'),
-              uploadedBy: 'Vendor User'
-            }
-          ];
-          return of(vendorSpecificDocs);
-        }
-        
-        return of(mockDocs);
-      })
-    );
-}
+  /** The vendor's own documents — from the live cache or the portal store — take
+   *  priority over anything else, since these are what the vendor actually
+   *  uploaded during registration (as opposed to generic placeholder mocks). */
+  private getOwnVendorDocuments(vendorId: string): VendorDocument[] | null {
+    const vendor = this.vendorsSubject.value.find(v => v.id === vendorId)
+      ?? this.selectedVendorSubject.value
+      ?? PendingVendorStore.getById(vendorId);
+    if (vendor?.id === vendorId && vendor.documents?.length) {
+      return vendor.documents;
+    }
+    return null;
+  }
+
+  getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
+    this.loadingSubject.next(true);
+
+    const ownDocs = this.getOwnVendorDocuments(vendorId);
+    if (this.useMockData) {
+      this.loadingSubject.next(false);
+      return of(ownDocs ?? []);
+    }
+
+    const params = new HttpParams().set('tenantId', this.tenantId);
+
+    return this.http.get<VendorDocument[]>(`${this.baseUrl}/vendors/${vendorId}/documents`, { params })
+      .pipe(
+        tap(() => this.loadingSubject.next(false)),
+        catchError(err => {
+          this.loadingSubject.next(false);
+          console.warn('Documents API failed for vendor:', vendorId);
+
+          // Prefer the vendor's own uploaded documents over any generic mock —
+          // these are what was actually submitted during registration.
+          if (ownDocs) {
+            return of(ownDocs);
+          }
+
+          // Filter mock documents for this vendor
+          const mockDocs = this.MOCK_DOCUMENTS.filter(doc => doc.vendorId === vendorId);
+
+          // If no specific documents for this vendor, return some default ones
+          if (mockDocs.length === 0) {
+            // Create vendor-specific mock documents
+            const vendorSpecificDocs: VendorDocument[] = [
+              {
+                id: `doc-${vendorId}-1`,
+                vendorId: vendorId,
+                category: DocumentCategory.REGISTRATION,
+                name: 'Business Registration Certificate',
+                fileName: `registration_${vendorId}.pdf`,
+                fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                fileSize: 2457600,
+                fileType: 'application/pdf',
+                issueDate: new Date('2024-01-15'),
+                expiryDate: new Date('2027-01-14'),
+                status: DocumentStatus.ACTIVE,
+                isRequired: true,
+                daysUntilExpiry: 162,
+                uploadedAt: new Date('2024-01-20'),
+                uploadedBy: 'Vendor User'
+              },
+              {
+                id: `doc-${vendorId}-2`,
+                vendorId: vendorId,
+                category: DocumentCategory.TAX,
+                name: 'Tax Certificate',
+                fileName: `tax_${vendorId}.pdf`,
+                fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                fileSize: 1843200,
+                fileType: 'application/pdf',
+                issueDate: new Date('2024-02-01'),
+                expiryDate: new Date('2027-01-31'),
+                status: DocumentStatus.PENDING_VERIFICATION,
+                isRequired: true,
+                daysUntilExpiry: 159,
+                uploadedAt: new Date('2024-02-05'),
+                uploadedBy: 'Vendor User'
+              },
+              {
+                id: `doc-${vendorId}-3`,
+                vendorId: vendorId,
+                category: DocumentCategory.LICENCE,
+                name: 'Operating Licence',
+                fileName: `licence_${vendorId}.pdf`,
+                fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                fileSize: 3072000,
+                fileType: 'application/pdf',
+                issueDate: new Date('2023-06-01'),
+                expiryDate: new Date('2024-11-30'),
+                status: DocumentStatus.EXPIRING_SOON,
+                isRequired: true,
+                daysUntilExpiry: 28,
+                uploadedAt: new Date('2023-06-10'),
+                uploadedBy: 'Vendor User'
+              }
+            ];
+            return of(vendorSpecificDocs);
+          }
+
+          return of(mockDocs);
+        })
+      );
+  }
 
   uploadDocument(
     vendorId: string,
@@ -1769,61 +2098,61 @@ getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
   // ============================================================
 
   getLifecycleHistory(vendorId: string): Observable<VendorLifecycleHistory[]> {
-  this.loadingSubject.next(true);
-  
-  const params = new HttpParams().set('tenantId', this.tenantId);
-  
-  return this.http.get<VendorLifecycleHistory[]>(`${this.baseUrl}/vendors/${vendorId}/lifecycle`, { params })
-    .pipe(
-      tap(() => this.loadingSubject.next(false)),
-      catchError(err => {
-        this.loadingSubject.next(false);
-        console.warn('Lifecycle API failed, using mock data for vendor:', vendorId);
-        
-        // Filter mock data for this vendor or return all if no specific data
-        const mockData = this.MOCK_LIFECYCLE_HISTORY.filter(h => h.vendorId === vendorId);
-        if (mockData.length === 0) {
-          // Return generic mock data for this vendor
-          const genericData: VendorLifecycleHistory[] = [
-            {
-              id: `life-${vendorId}-1`,
-              vendorId: vendorId,
-              event: VendorLifecycleEvent.APPLIED,
-              description: 'Vendor application submitted',
-              performedBy: 'Vendor User',
-              timestamp: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
-            },
-            {
-              id: `life-${vendorId}-2`,
-              vendorId: vendorId,
-              event: VendorLifecycleEvent.DOCUMENTS_SUBMITTED,
-              description: 'Required documents uploaded',
-              performedBy: 'Vendor User',
-              timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000)
-            },
-            {
-              id: `life-${vendorId}-3`,
-              vendorId: vendorId,
-              event: VendorLifecycleEvent.UNDER_REVIEW,
-              description: 'Application under review',
-              performedBy: 'Procurement Team',
-              timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
-            },
-            {
-              id: `life-${vendorId}-4`,
-              vendorId: vendorId,
-              event: VendorLifecycleEvent.ACTIVATED,
-              description: 'Vendor activated in the marketplace',
-              performedBy: 'System',
-              timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
-            }
-          ];
-          return of(genericData);
-        }
-        return of(mockData);
-      })
-    );
-}
+    this.loadingSubject.next(true);
+
+    const params = new HttpParams().set('tenantId', this.tenantId);
+
+    return this.http.get<VendorLifecycleHistory[]>(`${this.baseUrl}/vendors/${vendorId}/lifecycle`, { params })
+      .pipe(
+        tap(() => this.loadingSubject.next(false)),
+        catchError(err => {
+          this.loadingSubject.next(false);
+          console.warn('Lifecycle API failed, using mock data for vendor:', vendorId);
+
+          // Filter mock data for this vendor or return all if no specific data
+          const mockData = this.MOCK_LIFECYCLE_HISTORY.filter(h => h.vendorId === vendorId);
+          if (mockData.length === 0) {
+            // Return generic mock data for this vendor
+            const genericData: VendorLifecycleHistory[] = [
+              {
+                id: `life-${vendorId}-1`,
+                vendorId: vendorId,
+                event: VendorLifecycleEvent.APPLIED,
+                description: 'Vendor application submitted',
+                performedBy: 'Vendor User',
+                timestamp: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+              },
+              {
+                id: `life-${vendorId}-2`,
+                vendorId: vendorId,
+                event: VendorLifecycleEvent.DOCUMENTS_SUBMITTED,
+                description: 'Required documents uploaded',
+                performedBy: 'Vendor User',
+                timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000)
+              },
+              {
+                id: `life-${vendorId}-3`,
+                vendorId: vendorId,
+                event: VendorLifecycleEvent.UNDER_REVIEW,
+                description: 'Application under review',
+                performedBy: 'Procurement Team',
+                timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+              },
+              {
+                id: `life-${vendorId}-4`,
+                vendorId: vendorId,
+                event: VendorLifecycleEvent.ACTIVATED,
+                description: 'Vendor activated in the marketplace',
+                performedBy: 'System',
+                timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+              }
+            ];
+            return of(genericData);
+          }
+          return of(mockData);
+        })
+      );
+  }
 
   // ============================================================
   // CONTRACTS
@@ -2334,6 +2663,51 @@ getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
       );
   }
 
+  private filterMockVendors(filters?: any): Vendor[] {
+    // Merge static mock vendors with any vendors submitted via the portal
+    let vendors = [...this.MOCK_VENDORS, ...PendingVendorStore.getAll()];
+    // Deduplicate by id (store entries take precedence — they have live status)
+    const seen = new Set<string>();
+    vendors = vendors.filter(v => {
+      if (seen.has(v.id)) return false;
+      seen.add(v.id);
+      return true;
+    });
+
+    if (!filters) return vendors;
+
+    if (filters.statuses) {
+      const statuses = Array.isArray(filters.statuses) ? filters.statuses : [filters.statuses];
+      vendors = vendors.filter(v => statuses.includes(v.status));
+    } else if (filters.status) {
+      vendors = vendors.filter(v => v.status === filters.status);
+    }
+
+    if (filters.tier) {
+      vendors = vendors.filter(v => v.tier === filters.tier);
+    }
+
+    if (filters.riskLevel) {
+      vendors = vendors.filter(v => v.riskLevel === filters.riskLevel);
+    }
+
+    if (filters.category) {
+      const category = String(filters.category).toLowerCase();
+      vendors = vendors.filter(v => (v.categories || []).some((cat: string) => cat.toLowerCase().includes(category)));
+    }
+
+    if (filters.search) {
+      const search = String(filters.search).toLowerCase();
+      vendors = vendors.filter(v =>
+        (v.companyName || '').toLowerCase().includes(search) ||
+        (v.email || '').toLowerCase().includes(search) ||
+        (v.registrationNumber || '').toLowerCase().includes(search)
+      );
+    }
+
+    return vendors;
+  }
+
   getResolutionAuditLog(): Observable<ResolutionAuditLogEntry[]> {
     return this.http.get<ResolutionAuditLogEntry[]>(`${API_BASE}/resolution/audit-log`)
       .pipe(
@@ -2341,6 +2715,76 @@ getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
         catchError(() => of(MOCK_RESOLUTION_AUDIT_LOG))
       );
   }
+
+  getPendingVendors(page: number = 1, limit: number = 20, filters?: any): Observable<VendorListResponse> {
+    this.loadingSubject.next(true);
+
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString())
+      .set('statuses', `${VendorStatus.PENDING_ONBOARDING},${VendorStatus.UNDER_REVIEW}`);
+
+    if (filters) {
+      if (filters.search) params = params.set('search', filters.search);
+      if (filters.status) params = params.set('status', filters.status);
+      if (filters.tier) params = params.set('tier', filters.tier);
+      if (filters.riskLevel) params = params.set('riskLevel', filters.riskLevel);
+      if (filters.category) params = params.set('category', filters.category);
+      if (filters.dateFrom) params = params.set('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params = params.set('dateTo', filters.dateTo);
+    }
+
+    return this.http.get<VendorListResponse>(`${API_BASE}/vendors/pending`, { params })
+      .pipe(
+        tap(response => {
+          this.loadingSubject.next(false);
+        }),
+        catchError(err => {
+          this.loadingSubject.next(false);
+          this.errorSubject.next('Failed to load pending vendors');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
+   * Approve a vendor (admin action)
+   */
+  approveVendor(id: string, notes?: string): Observable<Vendor> {
+    this.loadingSubject.next(true);
+
+    return this.http.patch<Vendor>(`${API_BASE}/vendors/${id}/approve`, { notes })
+      .pipe(
+        tap(vendor => {
+          this.loadingSubject.next(false);
+        }),
+        catchError(err => {
+          this.loadingSubject.next(false);
+          this.errorSubject.next('Failed to approve vendor');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
+   * Reject a vendor (admin action)
+   */
+  rejectVendor(id: string, reason: string): Observable<Vendor> {
+    this.loadingSubject.next(true);
+
+    return this.http.patch<Vendor>(`${API_BASE}/vendors/${id}/reject`, { reason })
+      .pipe(
+        tap(vendor => {
+          this.loadingSubject.next(false);
+        }),
+        catchError(err => {
+          this.loadingSubject.next(false);
+          this.errorSubject.next('Failed to reject vendor');
+          return throwError(() => err);
+        })
+      );
+  }
+
 
   // ============================================================
   // CLEAR STATE

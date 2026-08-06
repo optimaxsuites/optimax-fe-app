@@ -145,19 +145,13 @@ export class PreOnboardingImportComponent {
   private async pdfFirstPageToBlob(file: File): Promise<Blob> {
     const arrayBuffer = await file.arrayBuffer();
 
-    let pdfjs: any = (window as any).pdfjsLib;
-    if (!pdfjs) {
-      try {
-        // @ts-ignore
-        pdfjs = await import('pdfjs-dist');
-      } catch { /* ignore */ }
-    }
-    if (!pdfjs) throw new Error('PDF library not available.');
+    const pdfjs: any = (window as any).pdfjsLib;
+    if (!pdfjs) throw new Error('PDF library not available. Please ensure pdf.js is loaded.');
 
     if (!pdfjs.GlobalWorkerOptions.workerSrc) {
       const v: string = pdfjs.version || '4.8.69';
       pdfjs.GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${v}/pdf.worker.min.mjs`;
+        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${v}/pdf.worker.min.js`;
     }
 
     const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;

@@ -5,11 +5,13 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote, QuoteStatus } from '../../../../domain/sales/sales.dto';
+import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { QuoteFormComponent } from '../quote-form/quote-form.component';
 import { QuoteDetailComponent } from '../quote-detail/quote-detail.component';
 import { InvoiceFormComponent } from '../../invoices/invoice-form/invoice-form.component';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-quote-list',
@@ -95,6 +97,15 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     this.selectedQuoteId = undefined;
   }
 
+  duplicateQuote(quote: Quote): void {
+    const quoteIdStr = String(quote.id);
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
+    // Hand the already-loaded quote straight to the form via navigation state so it
+    // doesn't have to make a fresh round-trip to re-fetch data we already have.
+    this.router.navigate(path, { queryParams: { duplicateId: quoteIdStr }, state: { duplicateSource: quote } });
+  }
+
   onInvoiceSaved(): void {
     this.closeInvoiceModal();
     this.loadQuotes();
@@ -140,6 +151,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private salesService: SalesService,
     private route: ActivatedRoute,
     private router: Router
@@ -247,24 +259,20 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date);
   }
 
   isExpiringSoon(expiryDate: Date): boolean {
-    const today = new Date();
-    const expiry = new Date(expiryDate);
-    const daysRemaining = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const expiry = parseApiDate(expiryDate);
+    if (!expiry) return false;
+    const daysRemaining = Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     return daysRemaining <= 3 && daysRemaining > 0;
   }
 
   getDaysRemaining(expiryDate: Date): number {
-    const today = new Date();
-    const expiry = new Date(expiryDate);
-    return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const expiry = parseApiDate(expiryDate);
+    if (!expiry) return 0;
+    return Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   }
 
   getPageNumbers(): number[] {
@@ -326,7 +334,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
       },
       error: (error: any) => {
         console.error('Error sending quote:', error);
-        alert('Failed to send quote. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to send quote. Please try again.' });
       }
     });
   }
@@ -335,12 +343,12 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     if (confirm(`Delete quote ${quote.quoteNumber}? This action cannot be undone.`)) {
       this.salesService.updateQuote(String(quote.id), { status: 'EXPIRED' }).subscribe({
         next: () => {
-          alert(`Quote ${quote.quoteNumber} deleted successfully`);
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: `Quote ${quote.quoteNumber} deleted successfully` });
           this.loadQuotes();
         },
         error: (error: any) => {
           console.error('Error deleting quote:', error);
-          alert('Failed to delete quote. Please try again.');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete quote. Please try again.' });
         }
       });
     }

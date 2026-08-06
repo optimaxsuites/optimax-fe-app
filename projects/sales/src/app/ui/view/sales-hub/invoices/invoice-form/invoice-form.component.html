@@ -103,11 +103,11 @@
                 </div>
                 <div class="form-group flex-1">
                   <label class="form-label required">Invoice Date</label>
-                  <input type="date" formControlName="issueDate" class="form-control">
+                  <input type="date" formControlName="issueDate" class="form-control" [max]="todayDateString">
                 </div>
                 <div class="form-group flex-1">
                   <label class="form-label">Due Date</label>
-                  <input type="date" formControlName="dueDate" class="form-control">
+                  <input type="date" formControlName="dueDate" class="form-control" [min]="invoiceForm.get('issueDate')?.value || todayDateString">
                 </div>
               </div>
               <div class="form-row">
@@ -336,7 +336,7 @@
                   </div>
                   <div class="form-group flex-1">
                     <label class="form-label">Est. Date</label>
-                    <input type="date" [(ngModel)]="shippingDate" [ngModelOptions]="{standalone: true}" class="form-control">
+                    <input type="date" [(ngModel)]="shippingDate" [ngModelOptions]="{standalone: true}" class="form-control" [min]="todayDateString">
                   </div>
                 </div>
               </div>

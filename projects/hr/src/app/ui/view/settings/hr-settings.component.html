@@ -26,8 +26,7 @@
       <button class="snav-item" [class.active]="activeSection === 'forms'" (click)="activeSection = 'forms'">
         <i class="fas fa-file-alt"></i> Forms &amp; Templates
       </button>
-      <button class="snav-item" [class.active]="activeSection === 'payroll'"
-        (click)="activeSection = 'payroll'">
+      <button class="snav-item" [class.active]="activeSection === 'payroll'" (click)="activeSection = 'payroll'">
         <i class="fas fa-money-check-alt"></i> Payroll Config
       </button>
       <button class="snav-item" [class.active]="activeSection === 'office-hours'"
@@ -395,16 +394,14 @@
                 <span class="settings-row__label">Pay Day</span>
                 <span class="settings-row__desc">Day of the month salaries are disbursed (1–31)</span>
               </div>
-              <input type="number" min="1" max="31" [(ngModel)]="payrollConfig.payDay"
-                class="settings-num-input" />
+              <input type="number" min="1" max="31" [(ngModel)]="payrollConfig.payDay" class="settings-num-input" />
             </div>
             <div class="settings-row">
               <div class="settings-row__info">
                 <span class="settings-row__label">Payroll Lock Day</span>
                 <span class="settings-row__desc">Day payroll is locked for processing — no changes after this</span>
               </div>
-              <input type="number" min="1" max="31" [(ngModel)]="payrollConfig.lockDay"
-                class="settings-num-input" />
+              <input type="number" min="1" max="31" [(ngModel)]="payrollConfig.lockDay" class="settings-num-input" />
             </div>
             <div class="settings-row">
               <div class="settings-row__info">
@@ -438,15 +435,16 @@
               <div class="settings-row__info">
                 <span class="settings-row__label">{{ allowanceLabel(key) }}</span>
               </div>
-              <input type="number" min="0" [(ngModel)]="allowanceDefaults[key]"
-                class="settings-num-input" placeholder="0" />
+              <input type="number" min="0" [(ngModel)]="allowanceDefaults[key]" class="settings-num-input"
+                placeholder="0" />
             </div>
           </div>
 
           <!-- Save -->
           <div style="display:flex;align-items:center;gap:12px;padding:16px 0">
             <button class="btn-primary" (click)="savePayrollSettings()" [disabled]="payrollSettingsSaving">
-              <i class="fas" [class.fa-save]="!payrollSettingsSaving" [class.fa-spinner]="payrollSettingsSaving" [class.fa-spin]="payrollSettingsSaving"></i>
+              <i class="fas" [class.fa-save]="!payrollSettingsSaving" [class.fa-spinner]="payrollSettingsSaving"
+                [class.fa-spin]="payrollSettingsSaving"></i>
               {{ payrollSettingsSaving ? 'Saving…' : 'Save Payroll Settings' }}
             </button>
             <span *ngIf="payrollSaveSuccess" style="color:#10b981;font-size:13px;font-weight:600">

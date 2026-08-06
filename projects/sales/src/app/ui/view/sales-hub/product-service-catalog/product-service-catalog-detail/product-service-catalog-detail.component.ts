@@ -5,7 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Product } from '../../../../domain/sales/sales.dto';
+import { formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-product-detail',
@@ -30,6 +32,7 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private route: ActivatedRoute,
     private router: Router,
     private salesService: SalesService
@@ -58,7 +61,7 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error loading product:', error);
         this.isLoading = false;
-        alert('Failed to load product. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load product. Please try again.' });
         this.goBack();
       }
     });
@@ -92,7 +95,7 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
     if (this.product) {
       this.salesService.deleteProduct(this.product.id).subscribe({
         next: () => {
-          alert(`Product ${this.product?.name} has been deleted`);
+          this.messageService.add({ severity: 'info', summary: 'Notice', detail: `Product ${this.product?.name} has been deleted` });
           const uuid = this.route.snapshot.paramMap.get('uuid');
           if (uuid) {
             this.router.navigate(['/admin/sales/sales-hub', uuid]);
@@ -102,7 +105,7 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
         },
         error: (error: any) => {
           console.error('Error deleting product:', error);
-          alert('Failed to delete product. Please try again.');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete product. Please try again.' });
         }
       });
     }
@@ -152,31 +155,28 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+    return formatApiDate(date, { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   formatDateShort(date: Date): string {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatApiDate(date, { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  // Some products only ever received a value under the legacy `sellingPrice`
+  // field, so fall back to it whenever `unitPrice` wasn't populated.
+  getUnitPrice(): number {
+    return this.product ? (this.product.unitPrice || this.product.sellingPrice || 0) : 0;
   }
 
   getProfitMargin(): number {
-    if (!this.product || this.product.costPrice === 0) return 0;
-    return ((this.product.unitPrice - this.product.costPrice) / this.product.unitPrice) * 100;
+    const unitPrice = this.getUnitPrice();
+    if (!this.product || !unitPrice || this.product.costPrice === 0) return 0;
+    return ((unitPrice - this.product.costPrice) / unitPrice) * 100;
   }
 
   getTotalStockValue(): number {
     if (!this.product) return 0;
-    return this.product.unitPrice * this.product.stockQuantity;
+    return this.getUnitPrice() * this.product.stockQuantity;
   }
 
   getOrderStatusBadgeClass(status: string): string {

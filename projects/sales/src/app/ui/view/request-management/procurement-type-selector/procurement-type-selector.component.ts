@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProcurementType } from '../../../domain/procurement-request/procurement.dto';
 import { v4 as uuidV4 } from 'uuid';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-procurement-type-selector',
@@ -19,13 +20,18 @@ export class ProcurementTypeSelectorComponent {
     { value: 'SERVICE' as ProcurementType, label: 'Services', icon: 'fas fa-handshake', description: 'Procure professional services and expertise' }
   ];
 
-  constructor(private fb: FormBuilder, private router: Router) {
+  constructor(
+    private messageService: MessageService,private fb: FormBuilder, private router: Router) {
     this.typeForm = this.fb.group({
       procurementType: ['', Validators.required]
     });
   }
 
   selectType(type: ProcurementType): void {
+    if (type === 'SERVICE') {
+      this.messageService.add({ severity: 'info', summary: 'Notice', detail: 'This feature is coming soon!' });
+      return;
+    }
     this.typeForm.patchValue({ procurementType: type });
   }
 

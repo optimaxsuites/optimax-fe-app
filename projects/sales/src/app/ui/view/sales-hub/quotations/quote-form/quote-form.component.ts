@@ -1,16 +1,30 @@
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, Product, Quote, QuoteStatus, QuoteItem, CustomerBankDetails } from '../../../../domain/sales/sales.dto';
+import { toDateInputValue } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
 import { lastValueFrom } from 'rxjs';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { MessageService } from 'primeng/api';
+
+export function futureDateValidator(): ValidatorFn {
+  return (control: AbstractControl): { [key: string]: any } | null => {
+    if (!control.value) {
+      return null;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const controlDate = new Date(control.value);
+    controlDate.setHours(0, 0, 0, 0);
+    return controlDate < today ? { 'pastDate': true } : null;
+  };
+}
 
 @Component({
   selector: 'app-quote-form',
@@ -29,6 +43,7 @@ import { MessageService } from 'primeng/api';
 export class QuoteFormComponent implements OnInit, OnDestroy {
   @Input() editId?: string;
   @Input() customerId?: string;
+  @Input() duplicateId?: string;
 
   // Custom modal variables
   showDiscountModal = false;
@@ -60,6 +75,10 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   customers: Customer[] = [];
   products: Product[] = [];
   filteredProducts: Product[] = [];
+  
+  // Categories
+  categories: string[] = [];
+  selectedCategoryForIndex: { [key: number]: string } = {};
   
   // UI State
   showNewCustomerModal = false;
@@ -169,6 +188,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private salesService: SalesService,
@@ -185,7 +205,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       customerName: [''],
       quoteNumber: [{ value: 'Auto-generated', disabled: true }],
       quoteDate: [this.formatDateForInput(new Date()), Validators.required],
-      validUntil: [this.formatDateForInput(defaultValidUntil), Validators.required],
+      validUntil: [this.formatDateForInput(defaultValidUntil), [Validators.required, futureDateValidator()]],
       currency: ['NGN', Validators.required],
       notes: [''],
       terms: [''],
@@ -207,18 +227,24 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.quoteId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.isEditMode = !!this.quoteId;
-    
+
     if (!this.customerId) {
       this.customerId = this.route.snapshot.queryParamMap.get('customerId') || '';
     }
     this.productId = this.route.snapshot.queryParamMap.get('productId') || '';
-    
+    if (!this.duplicateId) {
+      this.duplicateId = this.route.snapshot.queryParamMap.get('duplicateId') || '';
+    }
+
     this.loadCustomers();
     this.loadProducts();
+    this.loadCategories();
     this.setupFormListeners();
-    
+
     if (this.isEditMode) {
       this.loadQuote();
+    } else if (this.duplicateId) {
+      this.loadQuoteForDuplicate();
     } else if (!this.productId) {
       this.addLineItem();
     }
@@ -305,24 +331,32 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
     // Validate customer selection
     if (!this.quoteForm.get('customerId')?.value) {
-      alert('Please select a customer');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please select a customer' });
       return false;
     }
     
     // Validate date fields
     if (!this.quoteForm.get('quoteDate')?.value) {
-      alert('Please select a quote date');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please select a quote date' });
       return false;
     }
     
     if (!this.quoteForm.get('validUntil')?.value) {
-      alert('Please select a valid until date');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please select a valid until date' });
       return false;
+    }
+
+    if (this.quoteForm.get('validUntil')?.invalid) {
+      const errors = this.quoteForm.get('validUntil')?.errors;
+      if (errors?.['pastDate']) {
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Valid until date cannot be in the past' });
+        return false;
+      }
     }
 
     // Validate at least one item
     if (this.items.length === 0) {
-      alert('Please add at least one item to the quote');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please add at least one item to the quote' });
       return false;
     }
     
@@ -340,19 +374,19 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       }
       
       if (!item.get('productId')?.value) {
-        alert(`Item ${i + 1}: Please select a product`);
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Item ${i + 1}: Please select a product` });
         return false;
       }
       
       const qty = item.get('quantity')?.value;
       if (qty === null || qty === undefined || qty < 1) {
-        alert(`Item ${i + 1}: Please enter a valid quantity (min 1)`);
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Item ${i + 1}: Please enter a valid quantity (min 1)` });
         return false;
       }
       
       const price = item.get('unitPrice')?.value;
       if (price === null || price === undefined || price < 0) {
-        alert(`Item ${i + 1}: Please enter a valid price (min 0)`);
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Item ${i + 1}: Please enter a valid price (min 0)` });
         return false;
       }
     }
@@ -422,6 +456,15 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   removeLineItem(index: number): void {
     this.items.removeAt(index);
+    // Shift category index maps to keep them aligned
+    const newSelectedCategoryForIndex: { [key: number]: string } = {};
+    for (let i = 0; i < this.items.length; i++) {
+      const oldIndex = i >= index ? i + 1 : i;
+      if (this.selectedCategoryForIndex[oldIndex]) {
+        newSelectedCategoryForIndex[i] = this.selectedCategoryForIndex[oldIndex];
+      }
+    }
+    this.selectedCategoryForIndex = newSelectedCategoryForIndex;
     this.calculateTotals();
   }
 
@@ -470,7 +513,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       itemForm.patchValue({
         productName: product.name,
         description: product.description,
-        unitPrice: product.unitPrice,
+        unitPrice: product.unitPrice || product.sellingPrice,
         taxRate: product.taxRate || 0
       });
       this.calculateItemTotal(itemForm);
@@ -495,7 +538,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       productId: product.id,
       productName: product.name,
       description: product.description,
-      unitPrice: product.unitPrice,
+      unitPrice: product.unitPrice || product.sellingPrice,
       taxRate: product.taxRate || 0
     });
     this.calculateItemTotal(itemForm);
@@ -555,12 +598,90 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         this.products = response.data;
         this.filteredProducts = this.products;
         this.checkAndAddProductFromParam();
+        this.initializeCategoriesForExistingItems();
       },
       error: (error: any) => {
         console.error('Error loading products:', error);
         this.checkAndAddProductFromParam();
       }
     });
+  }
+
+  private loadCategories(): void {
+    this.salesService.getCategories().subscribe({
+      next: (cats: any[]) => {
+        this.categories = (cats || []).map(c => c.name).filter(Boolean);
+      },
+      error: (err) => {
+        console.error('Error loading categories:', err);
+      }
+    });
+  }
+
+  getProductsForIndex(index: number): Product[] {
+    const selectedCategory = this.selectedCategoryForIndex[index];
+    const itemForm = this.items.at(index);
+    const selectedProductId = itemForm?.get('productId')?.value;
+
+    let list = this.products;
+    if (selectedCategory) {
+      list = this.products.filter(p => {
+        const catName = typeof p.category === 'object' ? p.category?.name : p.category;
+        return catName?.toLowerCase() === selectedCategory.toLowerCase();
+      });
+    }
+
+    if (selectedProductId) {
+      const selectedProduct = this.products.find(p => String(p.id) === String(selectedProductId));
+      if (selectedProduct && !list.some(p => String(p.id) === String(selectedProductId))) {
+        list = [...list, selectedProduct];
+      }
+    }
+
+    return list;
+  }
+
+  onCategoryChange(index: number, category: string): void {
+    this.selectedCategoryForIndex[index] = category;
+    
+    // Clear product selection for this row if the current product is not in the new category
+    const itemForm = this.items.at(index);
+    const currentProductId = itemForm.get('productId')?.value;
+    if (currentProductId) {
+      const product = this.products.find(p => String(p.id) === String(currentProductId));
+      if (product) {
+        const catName = typeof product.category === 'object' ? product.category?.name : product.category;
+        if (catName?.toLowerCase() !== category.toLowerCase() && category !== '') {
+          itemForm.patchValue({
+            productId: '',
+            productName: '',
+            description: '',
+            unitPrice: 0,
+            total: 0,
+            taxAmount: 0
+          });
+          this.calculateItemTotal(itemForm);
+        }
+      }
+    }
+  }
+
+  initializeCategoriesForExistingItems(): void {
+    if (this.items && this.items.length > 0) {
+      for (let i = 0; i < this.items.length; i++) {
+        const itemForm = this.items.at(i);
+        const productId = itemForm.get('productId')?.value;
+        if (productId) {
+          const product = this.products.find(p => String(p.id) === String(productId));
+          if (product) {
+            const catName = typeof product.category === 'object' ? product.category?.name : product.category;
+            if (catName) {
+              this.selectedCategoryForIndex[i] = catName;
+            }
+          }
+        }
+      }
+    }
   }
 
   private checkAndAddProductFromParam(): void {
@@ -582,7 +703,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
           productName: product.name,
           description: product.description || '',
           quantity: 1,
-          unitPrice: product.unitPrice,
+          unitPrice: product.unitPrice || product.sellingPrice,
           taxRate: product.taxRate || 0
         });
         
@@ -657,6 +778,47 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         console.error('Error loading quote:', error);
         this.isLoading = false;
       }
+    });
+  }
+
+  // Copy an existing quote's details into this (still-new) form so the user can
+  // review/edit before it is saved and sent as a brand-new quote.
+  private loadQuoteForDuplicate(): void {
+    // The list screen already has the full quote in memory and hands it over via
+    // router state, so the common "duplicate from the list" path is instant and
+    // needs no round-trip. Only hit the network as a fallback — e.g. a deep link,
+    // a page refresh, or the state having been lost some other way.
+    const passedQuote = (history.state as any)?.duplicateSource as Quote | undefined;
+    if (passedQuote && String(passedQuote.id) === this.duplicateId) {
+      this.applyDuplicateSource(passedQuote);
+      return;
+    }
+
+    this.isLoading = true;
+    this.salesService.getQuoteById(this.duplicateId!).subscribe({
+      next: (quote: Quote | null) => {
+        if (quote) {
+          this.applyDuplicateSource(quote);
+        }
+        this.isLoading = false;
+      },
+      error: (error: any) => {
+        console.error('Error loading quote to duplicate:', error);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private applyDuplicateSource(quote: Quote): void {
+    this.populateForm(quote);
+
+    // Refresh the dates rather than carrying over the original quote's -
+    // this is a new quote being drafted today, not an edit of the old one.
+    const defaultValidUntil = new Date();
+    defaultValidUntil.setDate(defaultValidUntil.getDate() + 30);
+    this.quoteForm.patchValue({
+      quoteDate: this.formatDateForInput(new Date()),
+      validUntil: this.formatDateForInput(defaultValidUntil)
     });
   }
 
@@ -806,7 +968,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     }
 
     if (this.items.length === 0) {
-      alert('Please add at least one item to the quote');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please add at least one item to the quote' });
       return;
     }
 
@@ -914,7 +1076,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error saving quote:', error);
         this.isSubmitting = false;
-        alert('Failed to save quote. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save quote. Please try again.' });
       }
     });
   }
@@ -951,7 +1113,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       }
     } catch (error) {
       console.error('Error in delivery action:', error);
-      alert('There was an issue with the delivery. Please try again.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'There was an issue with the delivery. Please try again.' });
     }
   }
 
@@ -1036,8 +1198,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   // Helper methods
   private formatDateForInput(date: Date): string {
-    const d = new Date(date);
-    return d.toISOString().split('T')[0];
+    return toDateInputValue(date);
   }
 
   get today(): string {
@@ -1146,11 +1307,11 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   addChargeItemToModal(): void {
     if (!this.newChargeLabel.trim()) {
-      alert('Please enter a label for the additional charge (e.g. Shipping, Handling).');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a label for the additional charge (e.g. Shipping, Handling).' });
       return;
     }
     if (this.newChargeAmount === null || this.newChargeAmount === undefined || this.newChargeAmount < 0) {
-      alert('Please enter a valid charge amount.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a valid charge amount.' });
       return;
     }
     this.modalChargesList.push({
@@ -1183,7 +1344,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   saveBilledBy(): void {
     if (!this.billedByDraft.name || this.billedByDraft.name.trim().length === 0) {
-      alert('Name is required for the sender.');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Name is required for the sender.' });
       return;
     }
     this.billedBy = { ...this.billedByDraft };
@@ -1219,7 +1380,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     fileInput.onchange = (e: any) => {
       const file = e.target.files?.[0];
       if (file) {
-        alert(`Image "${file.name}" uploaded successfully for item.`);
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Image "${file.name}" uploaded successfully for item.` });
       }
     };
     fileInput.click();
@@ -1228,7 +1389,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   addUnit(index: number): void {
     const newUnit = prompt('Enter measurement unit (e.g. Kg, Box, Pack):', 'Each');
     if (newUnit) {
-      alert(`Measurement unit set to: ${newUnit}`);
+      this.messageService.add({ severity: 'info', summary: 'Notice', detail: `Measurement unit set to: ${newUnit}` });
     }
   }
 
@@ -1281,7 +1442,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   onQuickCustomerSubmit(): void {
     if (this.quickCustomerForm.invalid) {
       this.quickCustomerForm.markAllAsTouched();
-      alert('Please fill in all required fields in the quick-add client form');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please fill in all required fields in the quick-add client form' });
       return;
     }
 
@@ -1315,7 +1476,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error saving client permanently:', err);
-          alert('Failed to save client permanently. Please try again.');
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save client permanently. Please try again.' });
         }
       });
     } else {

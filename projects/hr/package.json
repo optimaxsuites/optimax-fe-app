@@ -67,6 +67,7 @@
     "ng-apexcharts": "^1.10.0",
     "ngx-file-drop": "^16.0.0",
     "ngx-toastr": "^19.0.0",
+    "pdfjs-dist": "^6.2.108",
     "primeicons": "^7.0.0",
     "primeng": "^17.18.11",
     "qrcode": "^1.5.4",

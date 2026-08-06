@@ -1016,7 +1016,7 @@ export class AttendancetableService implements OnDestroy {
         this.handleClockInSuccess(res, employeeId);
       },
       error: (err) => {
-        // Using local storage only if API fails
+        console.error('Clock-in API failed:', err);
       }
     });
   }
@@ -1041,7 +1041,7 @@ export class AttendancetableService implements OnDestroy {
         this.setClockStatus('CLOCKED_OUT');
       },
       error: (err) => {
-        // Using local storage only if API fails
+        console.error('Clock-out API failed:', err);
       }
     });
   }
@@ -1051,7 +1051,9 @@ export class AttendancetableService implements OnDestroy {
 
     this.http.post<any>(API_ENDPOINTS.OVERRIDE_OPEN(apiRecordId), body).subscribe({
       next: () => { },
-      error: (err) => { /* Override operation failed */ }
+      error: (err) => {
+        console.error('Override open API failed:', err);
+      }
     });
   }
 
