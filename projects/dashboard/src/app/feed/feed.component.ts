@@ -7,7 +7,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import { HeaderStateService } from '../../../../../src/app/ui/shared/service/header-state.service';
+import { HeaderStateService } from '../shared/service/header-state.service';
 import { environment } from '../ui/sharedComponent/service/environments/environment';
 import {
   CollaborationService,

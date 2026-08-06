@@ -8,6 +8,7 @@ import {
   OnDestroy,
   HostListener,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { Client } from '@stomp/stompjs';
 import {
   CollabChannel,
@@ -56,7 +57,6 @@ export interface Message {
   liked: boolean;
   likeCount: number;
   likeReactionId?: number;
-  reactionCounts?: Record<string, number>;
   pinned: boolean;
   pinnedAt?: number;
   createdAt: Date;
@@ -170,7 +170,6 @@ export interface DmContact {
   avatarColor: string;
   avatarUrl?: string;
   email?: string;
-  phone?: string;
   accountVerified?: boolean | string;
   accountState?: string;
   jobTitle?: string;
@@ -182,6 +181,11 @@ export interface DmContact {
   dmChannelIds?: number[];
   lastMessagePreview?: string;
   lastMessageTime?: string;
+  lastMessageTimestamp?: number;
+  openIssueCount?: number;
+  openTaskCount?: number;
+  openEventCount?: number;
+  phone?: string;
   dob?: string;
   birthdayMonthDayLabel?: string;
   birthdayCountdownLabel?: string;
@@ -260,7 +264,6 @@ interface MentionProfileCard {
   userId: number;
   name: string;
   email?: string;
-  phone?: string;
   jobTitle?: string;
   department?: string;
   avatarUrl?: string;
@@ -558,7 +561,6 @@ export class CommunicationComponent
   expandedFolderIds: Set<number> = new Set();
   copiedFileId: number | null = null;
   birthdayCardDismissed = true;
-  activeStaffProfile: MentionProfileCard | null = null;
   pendingShareDocTarget: { channelBackendId: number; folderId: number | null } | null = null;
   pendingShareFolderId: number | null = null;
   channelWorkspacePane: 'chat' | 'files' = 'chat';
@@ -642,6 +644,31 @@ export class CommunicationComponent
   channels: Channel[] = [];
   dmContacts: DmContact[] = [];
   allEmployees: EmployeeProfile[] = [];
+  private allIssues: any[] = [];
+  private allTasks: any[] = [];
+  private allEvents: any[] = [];
+
+  analyticsPanel: {
+    open: boolean;
+    contact: DmContact | null;
+    issues: any[];
+    tasks: any[];
+    events: any[];
+  } = { open: false, contact: null, issues: [], tasks: [], events: [] };
+
+  channelAttachmentsPanel: {
+    open: boolean;
+    channel: Channel | null;
+    attachments: any[];
+    loading: boolean;
+    activeTab: 'documents' | 'media' | 'links';
+    searchQuery: string;
+    links: string[];
+  } = { open: false, channel: null, attachments: [], loading: false, activeTab: 'documents', searchQuery: '', links: [] };
+
+  get totalDmUnread(): number {
+    return (this.dmContacts || []).reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  }
   channelMessages: Record<string, Message[]> = {};
   dmMessages: Record<string, Message[]> = {};
   channelMembers: CollabMember[] = [];
@@ -682,15 +709,13 @@ export class CommunicationComponent
   messagesLoading = false;
   conversationAccessMessage = '';
   soundEnabled = true;
-  selectedRingtone = 'whatsapp';
-  workspaceName = '';
+  selectedRingtone = 'classic';
   readonly ringtoneOptions = [
-    { value: 'whatsapp', label: 'WhatsApp' },
-    { value: 'tritone', label: 'iPhone Tri-tone' },
-    { value: 'chime', label: 'iPhone Chime' },
-    { value: 'note', label: 'iPhone Note' },
-    { value: 'marimba', label: 'iPhone Marimba' },
-    { value: 'ping', label: 'iPhone Ping' },
+    { value: 'classic', label: 'Classic ping' },
+    { value: 'soft', label: 'Soft chime' },
+    { value: 'crystal', label: 'Crystal bell' },
+    { value: 'pulse', label: 'Pulse' },
+    { value: 'doorbell', label: 'Doorbell' },
   ];
   readonly chatReactionOptions: ChatReactionOption[] = [
     { code: 'LIKE', emoji: '👍', label: 'Like' },
@@ -711,8 +736,6 @@ export class CommunicationComponent
   private userEmailCache: Record<number, string> = {};
   private imageCache: Record<string, string> = {};
   private userAvatarCache: Record<number, string> = {};
-  private feedAuthorCache: Record<number, string> = {};
-  private feedAuthorFetchPending = new Set<number>();
   private readStateMap: Record<number, number[]> = {};
   private lastMessageBackendId: number | null = null;
   private attachmentPreviewCache: Record<string, string> = {};
@@ -770,19 +793,11 @@ export class CommunicationComponent
     private cdr: ChangeDetectorRef,
     private collabService: CollaborationService,
     private headerStateService: HeaderStateService,
+    private router: Router,
   ) {}
 
   ngOnInit() {
-    const savedTone = localStorage.getItem('optimax_message_ringtone') || 'whatsapp';
-    const validTones = this.ringtoneOptions.map(r => r.value);
-    this.selectedRingtone = validTones.includes(savedTone) ? savedTone : 'whatsapp';
-    try {
-      const raw = sessionStorage.getItem('userPrimaryInfoRegData') || localStorage.getItem('userPrimaryInfoRegData');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        this.workspaceName = parsed?.companyName || parsed?.businessName || parsed?.orgName || '';
-      }
-    } catch { /* ignore */ }
+    this.selectedRingtone = localStorage.getItem('optimax_message_ringtone') || 'classic';
     this.restoreSeenFeedNotificationIds();
     this.workspaceMode =
       sessionStorage.getItem('optimax_workspace_mode') === 'chat'
@@ -1035,25 +1050,6 @@ export class CommunicationComponent
       ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(query)),
-    );
-  }
-
-  get threadSearchChannelMatches(): Channel[] {
-    const q = this.threadInboxQuery.trim().toLowerCase();
-    if (!q) return [];
-    return this.channels.filter((ch) =>
-      ch.name?.toLowerCase().includes(q) || ch.description?.toLowerCase().includes(q)
-    );
-  }
-
-  get threadSearchDmMatches(): DmContact[] {
-    const q = this.threadInboxQuery.trim().toLowerCase();
-    if (!q) return [];
-    return this.dmContacts.filter((dm) =>
-      dm.fullName?.toLowerCase().includes(q) ||
-      dm.shortName?.toLowerCase().includes(q) ||
-      dm.jobTitle?.toLowerCase().includes(q) ||
-      dm.department?.toLowerCase().includes(q)
     );
   }
 
@@ -1645,23 +1641,19 @@ export class CommunicationComponent
   }
 
   shareFeedPost(post: CollabFeedPost, platform: 'facebook' | 'linkedin' | 'twitter' | 'instagram'): void {
-    const title = (post.title || 'Enterprise update').slice(0, 200);
-    const summary = this.extractTextFromHtml(post.summary || post.body || '').slice(0, 300).trim();
-    // Public OG share page on the backend — LinkedIn/Facebook crawl this URL for og:title, og:description, og:image
-    const sharePageUrl = `${this.collabService.apiBaseUrl}/share/post/${post.id}`;
-    const eu = encodeURIComponent;
+    const shareUrl = this.shareableFeedPostUrl(post);
+    const rawText = `${post.title || 'Enterprise update'} ${this.extractTextFromHtml(post.summary || post.body || '').slice(0, 120)}`.trim();
+    const shareText = encodeURIComponent(rawText);
     let targetUrl = '';
     if (platform === 'facebook') {
-      targetUrl = `https://www.facebook.com/sharer/sharer.php?u=${eu(sharePageUrl)}`;
+      targetUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${shareText}`;
     } else if (platform === 'linkedin') {
-      targetUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${eu(sharePageUrl)}`;
+      targetUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
     } else if (platform === 'twitter') {
-      const tweet = `${title} — ${summary}`.slice(0, 240);
-      targetUrl = `https://twitter.com/intent/tweet?text=${eu(tweet)}&url=${eu(sharePageUrl)}`;
+      targetUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${shareText}`;
     } else {
-      // Instagram has no web share URL — copy text to clipboard
       if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(`${title}\n\n${summary}`).catch(() => {});
+        navigator.clipboard.writeText(`${rawText}\n${shareUrl}`).catch(() => {});
       }
       targetUrl = `https://www.instagram.com/`;
     }
@@ -2127,18 +2119,11 @@ export class CommunicationComponent
     this.cdr.detectChanges();
   }
 
-  openDmUserProfile(contact: DmContact): void {
-    const userId = contact.userId || contact.employeeId;
-    if (!userId) return;
-    this.openStaffProfile(userId);
-  }
-
   applyChatMention(employee: ComposerMentionOption): void {
     this.draft = this.replaceMentionToken(this.draft, employee as EmployeeProfile);
     this.chatMentionResults = [];
     this.chatShowMentionMenu = false;
     this.cdr.detectChanges();
-    setTimeout(() => this.messageComposer?.focusComposer(), 0);
   }
 
   applyThreadMention(employee: ComposerMentionOption): void {
@@ -2149,7 +2134,6 @@ export class CommunicationComponent
     this.threadMentionResults = [];
     this.threadShowMentionMenu = false;
     this.cdr.detectChanges();
-    setTimeout(() => this.messageComposer?.focusComposer(), 0);
   }
 
   private chatMentionPool(): EmployeeProfile[] {
@@ -2346,7 +2330,7 @@ export class CommunicationComponent
     const source = [...featuredPosts, ...posts].slice(0, 3);
     return source.map((post, index) => ({
       id: post.id || index + 1,
-      author: this.feedAuthorName(post.author, post.authorUserId),
+      author: this.feedAuthorName(post.author),
       role: (post.moduleCodes || []).slice(0, 2).join(' • ') || (post.postType || 'UPDATE'),
       timeAgo: this.feedPublishedLabel(post.publishedAt || post.createdAt),
       content: this.extractTextFromHtml(post.summary || post.body || '').slice(0, 140) || 'New collaboration highlight available.',
@@ -2358,7 +2342,7 @@ export class CommunicationComponent
     return posts.slice(0, 3).map((post, index) => ({
       id: post.id || index + 1,
       title: post.title || `${post.postType || 'Update'} follow-up`,
-      owner: this.feedAuthorName(post.author, post.authorUserId),
+      owner: this.feedAuthorName(post.author),
       due: this.feedPublishedLabel(post.publishedAt || post.createdAt),
       status: index === 0 ? 'Pending' : index === 1 ? 'In Progress' : 'Review',
     }));
@@ -2411,7 +2395,7 @@ export class CommunicationComponent
       if (!raw) return;
       const ids = JSON.parse(raw);
       if (Array.isArray(ids)) {
-        this.seenFeedNotificationIds = new Set(ids.map((value) => Number(value)).filter(id => !isNaN(id)));
+        this.seenFeedNotificationIds = new Set(ids.map((value) => Number(value)).filter(Boolean));
       }
     } catch (_) {}
   }
@@ -2505,20 +2489,6 @@ export class CommunicationComponent
     this.viewedFeedPostIds.add(postId);
     this.persistViewedFeedPostIds();
     this.bumpFeedViewCount([postId]);
-    this.collabService.recordFeedPostView(postId).subscribe({
-      next: (updated) => {
-        if (updated?.viewCount != null) {
-          const vc = Number(updated.viewCount);
-          const patch = (p: CollabFeedPost) => Number(p.id) === postId ? { ...p, viewCount: vc } : p;
-          this.feedPosts = this.feedPosts.map(patch);
-          this.featuredFeedPosts = this.featuredFeedPosts.map(patch);
-          this.renderedRecentFeedPosts = this.renderedRecentFeedPosts.map(patch);
-          this.renderedFeaturedFeedPosts = this.renderedFeaturedFeedPosts.map(patch);
-          this.cdr.detectChanges();
-        }
-      },
-      error: () => {},
-    });
   }
 
   private bumpFeedViewCount(postIds: number[]): void {
@@ -2556,32 +2526,10 @@ export class CommunicationComponent
     this.cdr.detectChanges();
   }
 
-  feedAuthorName(user?: any, authorUserId?: number | null): string {
-    if (!user) {
-      if (!authorUserId) return 'Unknown author';
-      const cached = this.feedAuthorCache[authorUserId];
-      if (cached) return cached;
-      this.resolveFeedAuthorName(authorUserId);
-      return '';
-    }
+  feedAuthorName(user?: any): string {
+    if (!user) return 'Unknown author';
     const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
     return fullName || user.fullname || user.username || `User ${user.userId || user.id || ''}`.trim();
-  }
-
-  private resolveFeedAuthorName(userId: number): void {
-    if (this.feedAuthorFetchPending.has(userId)) return;
-    this.feedAuthorFetchPending.add(userId);
-    this.collabService.getUserPrimaryInfoByUserId(userId).subscribe({
-      next: (info) => {
-        const name = info?.fullname || info?.username || '';
-        if (name) {
-          this.feedAuthorCache[userId] = name;
-          this.cdr.detectChanges();
-        }
-        this.feedAuthorFetchPending.delete(userId);
-      },
-      error: () => { this.feedAuthorFetchPending.delete(userId); },
-    });
   }
 
   feedAuthorInitials(user?: any): string {
@@ -2606,7 +2554,7 @@ export class CommunicationComponent
   }
 
   isOwnFeedPost(post: CollabFeedPost): boolean {
-    const authorUserId = Number(post.authorUserId || post.author?.userId || post.author?.id || 0);
+    const authorUserId = Number(post.author?.userId || post.author?.id || 0);
     return !!authorUserId && authorUserId === Number(this.me.userId || 0);
   }
 
@@ -4186,7 +4134,6 @@ export class CommunicationComponent
               accountState: e.accountState || e.user?.accountState || '',
               jobTitle: e.jobTitle,
               department: e.department?.name,
-              phone: e.phoneNumber || e.phone || '',
               online: false,
               dob: e.dob,
             };
@@ -4196,7 +4143,17 @@ export class CommunicationComponent
               contact.unreadCount = existing.unreadCount;
               contact.hasUnread = existing.hasUnread;
               contact.avatarUrl = existing.avatarUrl || contact.avatarUrl;
+              contact.lastMessageTimestamp = existing.lastMessageTimestamp;
+              contact.openIssueCount = existing.openIssueCount;
+              contact.openTaskCount = existing.openTaskCount;
+              contact.openEventCount = existing.openEventCount;
             }
+            try {
+              const stored = localStorage.getItem(`dm_ts_${employeeUserId}`);
+              if (stored && !contact.lastMessageTimestamp) {
+                contact.lastMessageTimestamp = Number(stored);
+              }
+            } catch (_) {}
             this.applyBirthdayReminderToContact(contact);
             if (contact.email) {
               this.userEmailCache[contact.userId] = contact.email;
@@ -4230,6 +4187,7 @@ export class CommunicationComponent
         this.applyPendingMentionConversation();
         this.replayQueuedNotificationTarget();
         this.cdr.detectChanges();
+        setTimeout(() => this.loadWorkEffectivenessData(), 2000);
       },
       error: () => {
         this.employeesError = 'Could not load contacts.';
@@ -6540,11 +6498,6 @@ export class CommunicationComponent
         (s, c) => s + (reactionCount.get(`${m.id}|${c}`) ?? 0),
         0,
       );
-      const perReaction: Record<string, number> = {};
-      for (const code of LIKE_CODES) {
-        const cnt = reactionCount.get(`${m.id}|${code}`) ?? 0;
-        if (cnt > 0) perReaction[code] = cnt;
-      }
       const author =
         this.userDirectory[m.senderUserId] || `User ${m.senderUserId}`;
       const attList = attMap.get(m.id) || [];
@@ -6561,7 +6514,6 @@ export class CommunicationComponent
         replies: (children.get(m.id) ?? []).map((c) => toLocal(c)),
         liked: likedByMe.has(m.id),
         likeCount: totalLikes,
-        reactionCounts: perReaction,
         likeReactionId: likeRxId.get(m.id),
         pinned: false,
         createdAt: new Date(),
@@ -6993,149 +6945,94 @@ export class CommunicationComponent
       const ctx = this.ensureNotificationAudioContext();
       if (!ctx) return;
       if (typeof ctx.resume === 'function' && ctx.state === 'suspended') {
-        void ctx.resume().then(() => this._playTone(ctx, urgent)).catch(() => {});
+        void ctx.resume().catch(() => {});
+      }
+
+      if (this.selectedRingtone === 'doorbell' && !urgent) {
+        this.playDoorbellSound(ctx);
+        this.triggerMobileHaptics(urgent);
         return;
       }
-      this._playTone(ctx, urgent);
+
+      const peakGain = urgent ? 0.42 : 0.24;
+      const tones =
+        urgent
+          ? [
+              { type: 'triangle' as OscillatorType, frequency: 880, start: 0, stop: 0.16 },
+              { type: 'sine' as OscillatorType, frequency: 1174, start: 0.2, stop: 0.38 },
+              { type: 'triangle' as OscillatorType, frequency: 988, start: 0.46, stop: 0.78 },
+            ]
+          : this.selectedRingtone === 'crystal'
+          ? [
+              { type: 'sine' as OscillatorType, frequency: 1046, start: 0, stop: 0.18 },
+              { type: 'triangle' as OscillatorType, frequency: 1318, start: 0.05, stop: 0.32 },
+            ]
+          : this.selectedRingtone === 'pulse'
+            ? [
+                { type: 'square' as OscillatorType, frequency: 620, start: 0, stop: 0.12 },
+                { type: 'square' as OscillatorType, frequency: 620, start: 0.16, stop: 0.28 },
+                { type: 'triangle' as OscillatorType, frequency: 880, start: 0.31, stop: 0.46 },
+              ]
+            : this.selectedRingtone === 'soft'
+              ? [
+                  { type: 'sine' as OscillatorType, frequency: 660, start: 0, stop: 0.22 },
+                  { type: 'sine' as OscillatorType, frequency: 784, start: 0.08, stop: 0.3 },
+                ]
+              : [
+                  { type: 'triangle' as OscillatorType, frequency: 740, start: 0, stop: 0.28 },
+                  { type: 'sine' as OscillatorType, frequency: 988, start: 0.03, stop: 0.22 },
+                ];
+
+      // Find the natural duration of one ring (max stop time of all tones)
+      const oneDuration = tones.reduce((max, t) => Math.max(max, t.stop), 0);
+      const ringGap = 0.12;
+      const ringOffsets = urgent ? [0] : [0, oneDuration + ringGap, (oneDuration + ringGap) * 2];
+
+      ringOffsets.forEach((ringOffset) => {
+        const master = ctx.createGain();
+        master.gain.setValueAtTime(0.0001, ctx.currentTime + ringOffset);
+        master.gain.exponentialRampToValueAtTime(peakGain, ctx.currentTime + ringOffset + 0.02);
+        master.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + ringOffset + oneDuration);
+        master.connect(ctx.destination);
+        tones.forEach((tone) => {
+          const oscillator = ctx.createOscillator();
+          oscillator.type = tone.type;
+          oscillator.frequency.setValueAtTime(tone.frequency, ctx.currentTime + ringOffset + tone.start);
+          oscillator.connect(master);
+          oscillator.start(ctx.currentTime + ringOffset + tone.start);
+          oscillator.stop(ctx.currentTime + ringOffset + tone.stop);
+        });
+      });
+      this.triggerMobileHaptics(urgent);
     } catch (_) {}
   }
 
-  private _makeMasterChain(ctx: AudioContext, peakGain: number, attackAt: number, decayEnd: number): GainNode {
-    const compressor = ctx.createDynamicsCompressor();
-    compressor.threshold.setValueAtTime(-6, ctx.currentTime);
-    compressor.knee.setValueAtTime(3, ctx.currentTime);
-    compressor.ratio.setValueAtTime(4, ctx.currentTime);
-    compressor.attack.setValueAtTime(0.003, ctx.currentTime);
-    compressor.release.setValueAtTime(0.1, ctx.currentTime);
-    compressor.connect(ctx.destination);
+  private playDoorbellSound(ctx: AudioContext): void {
+    const ringOffsets = [0, 0.85, 1.70];
+    ringOffsets.forEach((offset) => {
+      const dingGain = ctx.createGain();
+      dingGain.gain.setValueAtTime(0.0001, ctx.currentTime + offset);
+      dingGain.gain.exponentialRampToValueAtTime(0.28, ctx.currentTime + offset + 0.02);
+      dingGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.5);
+      dingGain.connect(ctx.destination);
+      const ding = ctx.createOscillator();
+      ding.type = 'sine';
+      ding.frequency.setValueAtTime(880, ctx.currentTime + offset);
+      ding.connect(dingGain);
+      ding.start(ctx.currentTime + offset);
+      ding.stop(ctx.currentTime + offset + 0.5);
 
-    const master = ctx.createGain();
-    master.gain.setValueAtTime(0.0001, attackAt);
-    master.gain.exponentialRampToValueAtTime(peakGain, attackAt + 0.015);
-    master.gain.exponentialRampToValueAtTime(0.0001, decayEnd);
-    master.connect(compressor);
-    return master;
-  }
-
-  private _addOsc(ctx: AudioContext, dest: AudioNode, type: OscillatorType, freq: number, start: number, stop: number): void {
-    const osc = ctx.createOscillator();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, start);
-    osc.connect(dest);
-    osc.start(start);
-    osc.stop(stop);
-  }
-
-  private _playTone(ctx: AudioContext, urgent: boolean): void {
-    const tone = urgent ? 'urgent' : this.selectedRingtone;
-    switch (tone) {
-      case 'whatsapp':   this.playWhatsapp(ctx); break;
-      case 'tritone':    this.playIphoneTritone(ctx); break;
-      case 'chime':      this.playIphoneChime(ctx); break;
-      case 'note':       this.playIphoneNote(ctx); break;
-      case 'marimba':    this.playIphoneMarimba(ctx); break;
-      case 'ping':       this.playIphonePing(ctx); break;
-      default:           this.playIphoneTritone(ctx); break;
-    }
-    this.triggerMobileHaptics(urgent);
-  }
-
-  // ── WhatsApp: two quick descending pops (played twice) ────────────────────
-  private playWhatsapp(ctx: AudioContext): void {
-    [0, 0.52].forEach(offset => {
-      const t = ctx.currentTime + offset;
-      const m1 = this._makeMasterChain(ctx, 0.82, t, t + 0.18);
-      this._addOsc(ctx, m1, 'sine', 862, t, t + 0.18);
-      const m2 = this._makeMasterChain(ctx, 0.72, t + 0.2, t + 0.38);
-      this._addOsc(ctx, m2, 'sine', 756, t + 0.2, t + 0.38);
-    });
-  }
-
-  // ── iPhone Tri-tone: 3-note ascending arpeggio (played twice) ─────────────
-  private playIphoneTritone(ctx: AudioContext): void {
-    [0, 0.72].forEach(offset => {
-      const t = ctx.currentTime + offset;
-      const notes = [
-        { freq: 659, s: 0,    e: 0.18 },
-        { freq: 784, s: 0.2,  e: 0.38 },
-        { freq: 880, s: 0.4,  e: 0.60 },
-      ];
-      notes.forEach(n => {
-        const m = this._makeMasterChain(ctx, 0.80, t + n.s, t + n.e);
-        this._addOsc(ctx, m, 'sine', n.freq, t + n.s, t + n.e);
-        // Add slight harmonic for warmth
-        const mh = this._makeMasterChain(ctx, 0.20, t + n.s, t + n.e);
-        this._addOsc(ctx, mh, 'sine', n.freq * 2, t + n.s, t + n.e);
-      });
-    });
-  }
-
-  // ── iPhone Chime: 4-note descending bell cascade ───────────────────────────
-  private playIphoneChime(ctx: AudioContext): void {
-    const notes = [
-      { freq: 1047, s: 0,    e: 0.32 },
-      { freq: 784,  s: 0.28, e: 0.58 },
-      { freq: 659,  s: 0.54, e: 0.84 },
-      { freq: 523,  s: 0.80, e: 1.10 },
-    ];
-    const t = ctx.currentTime;
-    notes.forEach(n => {
-      const m = this._makeMasterChain(ctx, 0.78, t + n.s, t + n.e);
-      this._addOsc(ctx, m, 'sine', n.freq, t + n.s, t + n.e);
-      const mh = this._makeMasterChain(ctx, 0.18, t + n.s, t + n.e);
-      this._addOsc(ctx, mh, 'triangle', n.freq * 2, t + n.s, t + n.e);
-    });
-  }
-
-  // ── iPhone Note: warm single piano-like note with harmonic decay ───────────
-  private playIphoneNote(ctx: AudioContext): void {
-    const t = ctx.currentTime;
-    // Fundamental
-    const m = this._makeMasterChain(ctx, 0.85, t, t + 0.55);
-    this._addOsc(ctx, m, 'sine', 880, t, t + 0.55);
-    // 2nd harmonic (octave)
-    const m2 = this._makeMasterChain(ctx, 0.35, t, t + 0.40);
-    this._addOsc(ctx, m2, 'sine', 1760, t, t + 0.40);
-    // 3rd harmonic
-    const m3 = this._makeMasterChain(ctx, 0.15, t, t + 0.28);
-    this._addOsc(ctx, m3, 'triangle', 2640, t, t + 0.28);
-    // Play twice
-    const t2 = ctx.currentTime + 0.65;
-    const m4 = this._makeMasterChain(ctx, 0.75, t2, t2 + 0.45);
-    this._addOsc(ctx, m4, 'sine', 880, t2, t2 + 0.45);
-    const m5 = this._makeMasterChain(ctx, 0.28, t2, t2 + 0.32);
-    this._addOsc(ctx, m5, 'sine', 1760, t2, t2 + 0.32);
-  }
-
-  // ── iPhone Marimba: 4-note xylophone-style pattern ────────────────────────
-  private playIphoneMarimba(ctx: AudioContext): void {
-    const pattern = [
-      { freq: 784,  s: 0,    e: 0.14 },
-      { freq: 659,  s: 0.16, e: 0.30 },
-      { freq: 880,  s: 0.32, e: 0.46 },
-      { freq: 987,  s: 0.48, e: 0.64 },
-      { freq: 784,  s: 0.76, e: 0.90 },
-      { freq: 659,  s: 0.92, e: 1.06 },
-    ];
-    const t = ctx.currentTime;
-    pattern.forEach(n => {
-      const m = this._makeMasterChain(ctx, 0.80, t + n.s, t + n.e);
-      this._addOsc(ctx, m, 'triangle', n.freq, t + n.s, t + n.e);
-      // Marimba characteristic: add a softer fundamental
-      const m2 = this._makeMasterChain(ctx, 0.25, t + n.s, t + n.e);
-      this._addOsc(ctx, m2, 'sine', n.freq, t + n.s, t + n.e);
-    });
-  }
-
-  // ── iPhone Ping: crisp high single tone (played 3×) ───────────────────────
-  private playIphonePing(ctx: AudioContext): void {
-    [0, 0.35, 0.70].forEach(offset => {
-      const t = ctx.currentTime + offset;
-      const m = this._makeMasterChain(ctx, 0.82, t, t + 0.22);
-      this._addOsc(ctx, m, 'sine', 2093, t, t + 0.22);
-      // Sub harmonic for body
-      const m2 = this._makeMasterChain(ctx, 0.30, t, t + 0.18);
-      this._addOsc(ctx, m2, 'sine', 1046, t, t + 0.18);
+      const dongGain = ctx.createGain();
+      dongGain.gain.setValueAtTime(0.0001, ctx.currentTime + offset + 0.28);
+      dongGain.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + offset + 0.30);
+      dongGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.78);
+      dongGain.connect(ctx.destination);
+      const dong = ctx.createOscillator();
+      dong.type = 'sine';
+      dong.frequency.setValueAtTime(698, ctx.currentTime + offset + 0.28);
+      dong.connect(dongGain);
+      dong.start(ctx.currentTime + offset + 0.28);
+      dong.stop(ctx.currentTime + offset + 0.78);
     });
   }
 
@@ -7740,17 +7637,6 @@ export class CommunicationComponent
     this.clearThreadPendingAttachments();
   }
 
-  openStaffProfile(userId: number): void {
-    const profile = this.resolveMentionProfileCard({ userId });
-    this.activeStaffProfile = profile;
-    this.cdr.detectChanges();
-  }
-
-  closeStaffProfile(): void {
-    this.activeStaffProfile = null;
-    this.cdr.detectChanges();
-  }
-
   private getThreadSourceRoot(threadId: string): Message | null {
     for (const ch of this.channels) {
       const found = this.findMsgInTree(
@@ -8248,6 +8134,246 @@ export class CommunicationComponent
         locked: true,
       }))
       .filter((r) => r.email);
+  }
+
+  openAnalyticsPanel(contact: DmContact): void {
+    const uid = contact.userId;
+    const email = (contact.email || '').toLowerCase();
+    const name = (contact.fullName || '').toLowerCase();
+    const issues = this.allIssues.filter((issue) => {
+      if (issue.status === 'DONE' || issue.status === 'WONT_FIX') return false;
+      if (issue.assigneeUserId && Number(issue.assigneeUserId) === uid) return true;
+      if (email && issue.assigneeEmail && String(issue.assigneeEmail).toLowerCase() === email) return true;
+      return false;
+    });
+    const empId = contact.employeeId;
+    const TASK_DONE_SET = new Set(['DONE', 'ARCHIVED', 'CLOSED', 'COMPLETED']);
+    const tasks = this.allTasks.filter((task) => {
+      if (TASK_DONE_SET.has(task.status)) return false;
+      const assigneeEmpId = Number(task.assigneeEmployee?.id ?? task.assigneeEmployeeId ?? 0);
+      if (assigneeEmpId && (assigneeEmpId === empId || assigneeEmpId === uid)) return true;
+      if (Number(task.assigneeUserId || task.userId || 0) === uid) return true;
+      return false;
+    });
+    const events = this.allEvents.filter((event) => {
+      const attendees: string[] = Array.isArray(event.attendees) ? event.attendees : [];
+      const all = [...attendees, event.organizer || ''];
+      return all.some((a) => {
+        const s = String(a).toLowerCase();
+        return (email && s.includes(email)) || (name && s.includes(name));
+      });
+    });
+    this.analyticsPanel = { open: true, contact, issues, tasks, events };
+    this.cdr.markForCheck();
+  }
+
+  closeAnalyticsPanel(): void {
+    this.analyticsPanel = { ...this.analyticsPanel, open: false };
+    this.cdr.markForCheck();
+  }
+
+  getLinkDomain(url: string): string {
+    try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
+  }
+
+  get channelAttachmentDocuments(): any[] {
+    const q = this.channelAttachmentsPanel.searchQuery.toLowerCase();
+    return this.channelAttachmentsPanel.attachments.filter((a) => {
+      const isDoc = !this.isMediaAttachment(a);
+      return isDoc && (!q || (a.fileName || '').toLowerCase().includes(q));
+    });
+  }
+
+  get channelAttachmentMedia(): any[] {
+    const q = this.channelAttachmentsPanel.searchQuery.toLowerCase();
+    return this.channelAttachmentsPanel.attachments.filter((a) => {
+      const isMedia = this.isMediaAttachment(a);
+      return isMedia && (!q || (a.fileName || '').toLowerCase().includes(q));
+    });
+  }
+
+  private isMediaAttachment(att: any): boolean {
+    const ct: string = (att.contentType || '').toLowerCase();
+    return ct.startsWith('image/') || ct.startsWith('video/');
+  }
+
+  getProtectedImageUrl(url: string): string {
+    return this.resolveProtectedMediaUrl(url);
+  }
+
+  openChannelMediaViewer(clickedAtt: any, event: Event): void {
+    event.stopPropagation();
+    const allMedia = this.channelAttachmentMedia;
+    const startIndex = allMedia.findIndex((a) => a.downloadUrl === clickedAtt.downloadUrl);
+    const items = allMedia.map((a) => ({
+      url: this.resolveProtectedMediaUrl(a.downloadUrl),
+      label: a.fileName || '',
+      mediaType: (a.contentType || '').startsWith('video/') ? 'VIDEO' : 'IMAGE',
+    }));
+    this.expandedFeedMediaItems = items;
+    this.expandedFeedMediaIndex = Math.max(0, startIndex);
+    this.expandedFeedMediaUrl = items[this.expandedFeedMediaIndex]?.url || '';
+    this.expandedFeedMediaLabel = items[this.expandedFeedMediaIndex]?.label || '';
+    this.feedMediaViewerOpen = true;
+  }
+
+  downloadChannelAttachment(att: any, event: Event): void {
+    event.stopPropagation();
+    this.downloadAttachment({ name: att.fileName, downloadUrl: att.downloadUrl }, event);
+  }
+
+  private extractLinksFromMessages(messages: Message[]): string[] {
+    const found = new Set<string>();
+    const urlRe = /((https?:\/\/|www\.)[^\s<"']+)/gi;
+    const walk = (msgs: Message[]) => {
+      for (const m of msgs || []) {
+        const text = m.content || '';
+        let match: RegExpExecArray | null;
+        urlRe.lastIndex = 0;
+        while ((match = urlRe.exec(text)) !== null) {
+          let u = match[1];
+          if (u.startsWith('www.')) u = 'https://' + u;
+          found.add(u.replace(/[.,;!?)]+$/, ''));
+        }
+        if (m.replies?.length) walk(m.replies);
+      }
+    };
+    walk(messages);
+    return Array.from(found).reverse();
+  }
+
+  openChannelAttachmentsPanel(channel: Channel): void {
+    const msgs = this.channelMessages[channel.id] || [];
+    const links = this.extractLinksFromMessages(msgs);
+    this.channelAttachmentsPanel = { open: true, channel, attachments: [], loading: true, activeTab: 'documents', searchQuery: '', links };
+    this.cdr.markForCheck();
+    this.collabService.getAttachmentsByChannel(channel.backendId).subscribe({
+      next: (atts) => {
+        this.channelAttachmentsPanel = { ...this.channelAttachmentsPanel, attachments: atts, loading: false };
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.channelAttachmentsPanel = { ...this.channelAttachmentsPanel, loading: false };
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  closeChannelAttachmentsPanel(): void {
+    this.channelAttachmentsPanel = { ...this.channelAttachmentsPanel, open: false, searchQuery: '', links: [] };
+    this.cdr.markForCheck();
+  }
+
+  navigateToBugTracker(issueId?: number): void {
+    const uuid = crypto.randomUUID();
+    const extras = issueId ? { queryParams: { issue: issueId } } : {};
+    this.router.navigate(['/admin/settings/bug-tracker', uuid], extras);
+  }
+
+  navigateToTaskWorkspace(taskId?: number | string): void {
+    const uuid = crypto.randomUUID();
+    const extras = taskId ? { queryParams: { taskId: String(taskId) } } : {};
+    this.router.navigate(['/admin/hr/productivity', uuid], extras);
+  }
+
+  navigateToMeetings(): void {
+    const uuid = crypto.randomUUID();
+    this.router.navigate(['/admin/dashboard/meetings-appointments', uuid]);
+  }
+
+  getFileIcon(contentType: string): string {
+    if (!contentType) return 'pi pi-file';
+    if (contentType.startsWith('image/')) return 'pi pi-image';
+    if (contentType.startsWith('video/')) return 'pi pi-video';
+    if (contentType.includes('pdf')) return 'pi pi-file-pdf';
+    if (contentType.includes('word') || contentType.includes('document')) return 'pi pi-file-word';
+    if (contentType.includes('sheet') || contentType.includes('excel')) return 'pi pi-file-excel';
+    if (contentType.includes('zip') || contentType.includes('compressed')) return 'pi pi-file-arrow-down';
+    return 'pi pi-file';
+  }
+
+  private loadWorkEffectivenessData(): void {
+    forkJoin({
+      issues: this.collabService.getOpenIssues().pipe(catchError(() => of([]))),
+      tasks: this.collabService.getOpenWorkTasks().pipe(catchError(() => of([]))),
+      events: this.collabService.getAllMeetingEvents().pipe(catchError(() => of([]))),
+    }).subscribe({
+      next: ({ issues, tasks, events }) => {
+        const issueArr: any[] = Array.isArray(issues) ? issues : (issues as any)?.content ?? [];
+        const taskArr: any[] = Array.isArray(tasks) ? tasks : (tasks as any)?.content ?? [];
+        this.allIssues = issueArr;
+        this.allTasks = taskArr;
+        this.allEvents = Array.isArray(events) ? events : [];
+
+        const emailToUserId = new Map<string, number>();
+        for (const contact of this.dmContacts) {
+          if (contact.email) emailToUserId.set(contact.email.toLowerCase(), contact.userId);
+        }
+
+        const issueCount = new Map<number, number>();
+        for (const issue of issueArr) {
+          if (issue.status === 'DONE' || issue.status === 'WONT_FIX') continue;
+          let uid = Number(issue.assigneeUserId || 0);
+          if (!uid && issue.assigneeEmail) {
+            uid = emailToUserId.get((issue.assigneeEmail as string).toLowerCase()) || 0;
+          }
+          if (uid) issueCount.set(uid, (issueCount.get(uid) ?? 0) + 1);
+        }
+
+        // Tasks: backend uses assigneeEmployee.id (employeeId) not userId
+        const taskCountByEmpId = new Map<number, number>();
+        const TASK_DONE = new Set(['DONE', 'ARCHIVED', 'CLOSED', 'COMPLETED']);
+        for (const task of taskArr) {
+          if (TASK_DONE.has(task.status)) continue;
+          const empId = Number(
+            task.assigneeEmployee?.id ??
+            task.assigneeEmployeeId ??
+            task.assigneeUserId ??
+            task.userId ?? 0,
+          );
+          if (empId) taskCountByEmpId.set(empId, (taskCountByEmpId.get(empId) ?? 0) + 1);
+        }
+
+        // Events: attendees are email/name strings; also check organizer
+        const eventCountByContactId = new Map<number, number>();
+        const contactByEmail = new Map<string, number>(); // email → userId
+        const contactByName  = new Map<string, number>(); // normalised fullName → userId
+        for (const c of this.dmContacts) {
+          if (c.email)    contactByEmail.set(c.email.toLowerCase(), c.userId);
+          if (c.fullName) contactByName.set(c.fullName.toLowerCase().trim(), c.userId);
+        }
+        const resolveAttendee = (raw: string): number => {
+          const s = String(raw || '').toLowerCase().trim();
+          if (!s) return 0;
+          // exact email match
+          if (contactByEmail.has(s)) return contactByEmail.get(s)!;
+          // exact name match
+          if (contactByName.has(s)) return contactByName.get(s)!;
+          // email contains part of the string (e.g. "John Doe <john@co.com>")
+          for (const [email, uid] of contactByEmail) if (s.includes(email)) return uid;
+          // string contains the full name
+          for (const [name, uid] of contactByName) if (s.includes(name) || name.includes(s)) return uid;
+          return 0;
+        };
+        for (const ev of this.allEvents) {
+          const attendees: string[] = Array.isArray(ev.attendees) ? ev.attendees : [];
+          const all = [...attendees];
+          if (ev.organizer) all.push(ev.organizer);
+          for (const a of all) {
+            const uid = resolveAttendee(a);
+            if (uid) eventCountByContactId.set(uid, (eventCountByContactId.get(uid) ?? 0) + 1);
+          }
+        }
+
+        this.dmContacts = this.dmContacts.map((c) => ({
+          ...c,
+          openIssueCount: issueCount.get(c.userId) ?? 0,
+          openTaskCount: taskCountByEmpId.get(c.employeeId) ?? taskCountByEmpId.get(c.userId) ?? 0,
+          openEventCount: eventCountByContactId.get(c.userId) ?? 0,
+        }));
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   openEmailModal(nameOrEmail?: string): void {
@@ -9239,15 +9365,7 @@ export class CommunicationComponent
     },
   ): Message {
     const replies = this.flattenThreadReplies(message);
-    // Find the reply with the highest sentAt timestamp (depth-first order is not
-    // guaranteed to be chronological when branches exist).
-    const latestReply = replies.length
-      ? replies.reduce((best, r) => {
-          const bt = parseServerDate(best.sentAtRaw)?.getTime() ?? 0;
-          const rt = parseServerDate(r.sentAtRaw)?.getTime() ?? 0;
-          return rt > bt ? r : best;
-        })
-      : null;
+    const latestReply = replies[replies.length - 1];
     const summary = replies
       .slice(0, 2)
       .map((reply) => `${reply.author}: ${reply.content}`)
@@ -9302,6 +9420,11 @@ export class CommunicationComponent
       ? `Attachment: ${latest.attachment.name}`
       : latest.content;
     contact.lastMessageTime = latest.time;
+    const ts = this.messageTimestamp(latest);
+    if (ts) {
+      contact.lastMessageTimestamp = ts;
+      try { localStorage.setItem(`dm_ts_${contact.userId}`, String(ts)); } catch (_) {}
+    }
   }
 
   private findLatestMessage(messages: Message[]): Message | null {
@@ -9483,7 +9606,6 @@ export class CommunicationComponent
       userId,
       name,
       email: employee?.user?.email || employee?.email || this.userEmailCache[userId] || '',
-      phone: employee?.phoneNumber || employee?.phone || '',
       jobTitle: employee?.jobTitle || '',
       department: employee?.department?.name || '',
       avatarUrl: (employee ? this.getEmpImageUrl(employee) : undefined) || this.userAvatarCache[userId],

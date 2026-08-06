@@ -155,9 +155,15 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   importResult:  ImportResult | null = null;
 
   // ─── Per-row loading sets ─────────────────────────────────────────────────
-  approvingIds = new Set<number>();
-  rejectingIds = new Set<number>();
-  deletingIds  = new Set<number>();
+  approvingIds  = new Set<number>();
+  rejectingIds  = new Set<number>();
+  deletingIds   = new Set<number>();
+
+  // ─── Accounting post tracking (session-scoped, new Set refs for Angular CD) ─
+  postingIds    = new Set<number>();
+  postedIds     = new Set<number>();
+  postFailedIds = new Set<number>();
+  filterPosted  = false;
 
   // ─── Tax map ──────────────────────────────────────────────────────────────
   taxMap: Record<number, TaxDTO> = {};
@@ -493,6 +499,13 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     this.expenses      = filtered.sort((a, b) => b.id - a.id);
     this.totalElements = this.expenses.length;
     this.totalPages    = Math.ceil(this.expenses.length / this.pageSize);
+
+    // Seed postedIds from accountingTransactionId so "Posted" status survives page refresh
+    const serverPosted = new Set<number>(
+      filtered.filter(e => !!e.accountingTransactionId).map(e => e.id)
+    );
+    this.postedIds = new Set([...this.postedIds, ...serverPosted]);
+
     this.applyFilters();
     this.cdr.detectChanges();
   }
@@ -810,30 +823,6 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
             const index = this.expenses.findIndex(e => e.id === request.id);
             if (index !== -1) { this.expenses[index] = { ...this.expenses[index], ...updated, status: ExpenseStatus.APPROVED }; this.applyFilters(); }
 
-            // Post to finance disbursement tray
-            const txPayload = {
-              transactionReference: `EXP-${request.id}-${Date.now()}`,
-              sourceModule: 'EXPENSE',
-              amount: this.calculateTotalWithTax(request),
-              currency: request.currency || 'NGN',
-              status: 'APPROVED',
-              description: `Expense: ${request.name}`,
-              externalReference: String(request.id),
-              metadata: {
-                expenseId: request.id,
-                bankName: (request as any).bankName || null,
-                accountName: (request as any).accountName || null,
-                accountNumber: (request as any).accountNumber || null,
-              }
-            };
-            this.http.post(
-              'https://be.optimaxsuites.com/x/api/v2/accounting/transactions',
-              txPayload,
-              { headers: new HttpHeaders({ 'X-Tenant-ID': 'optimax' }) }
-            ).subscribe({
-              next: () => this.messageService.add({ severity: 'info', summary: 'Finance', detail: 'Expense queued for payment in finance tray.' }),
-              error: (e) => console.error('[approve] finance transaction failed:', e)
-            });
 
             const submitterEmail = (request as any).expenseBy?.email   || (updated as any).expenseBy?.email   || '';
             const submitterName  = (request as any).expenseBy?.fullname || (updated as any).expenseBy?.fullname || 'Team Member';
@@ -923,6 +912,52 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
   cancelRejection(): void { this.showRejectionDialog = false; this.pendingRejectRequest = null; this.rejectionReason = ''; }
   reject(request: Expense): void { this.openRejectionDialog(request); }
+
+  postToAccounting(expense: Expense): void {
+    if (this.postingIds.has(expense.id)) return;
+    this.postingIds    = new Set([...this.postingIds, expense.id]);
+    this.postFailedIds = new Set([...this.postFailedIds].filter(id => id !== expense.id));
+
+    const txPayload = {
+      transactionReference: `EXP-${expense.id}-${Date.now()}`,
+      sourceModule: 'EXPENSE',
+      amount: this.calculateTotalWithTax(expense),
+      currency: expense.currency || 'NGN',
+      status: 'APPROVED',
+      description: `Expense: ${expense.name}`,
+      externalReference: String(expense.id),
+      metadata: {
+        expenseId: expense.id,
+        bankName:      expense.bankName      || null,
+        accountName:   expense.accountName   || null,
+        accountNumber: expense.accountNumber || null,
+      }
+    };
+
+    this.http.post(
+      'https://be.optimaxsuites.com/x/api/v2/accounting/transactions',
+      txPayload,
+      { headers: new HttpHeaders({ 'X-Tenant-ID': 'optimax' }) }
+    ).subscribe({
+      next: (res: any) => {
+        this.postingIds = new Set([...this.postingIds].filter(id => id !== expense.id));
+        this.postedIds  = new Set([...this.postedIds, expense.id]);
+        // Stamp accountingTransactionId locally so the Posted state survives filter rebuilds
+        const idx = this.expenses.findIndex(e => e.id === expense.id);
+        if (idx !== -1) {
+          this.expenses[idx] = { ...this.expenses[idx], accountingTransactionId: res?.id ?? -1 };
+        }
+        this.messageService.add({ severity: 'success', summary: 'Posted to Accounting', detail: `${expense.name} is now in the payment runs.` });
+        this.applyFilters();
+      },
+      error: () => {
+        this.postingIds    = new Set([...this.postingIds].filter(id => id !== expense.id));
+        this.postFailedIds = new Set([...this.postFailedIds, expense.id]);
+        this.messageService.add({ severity: 'error', summary: 'Post Failed', detail: 'Accounting service unavailable. Use Retry once it is back up.', life: 6000 });
+        this.cdr.markForCheck();
+      }
+    });
+  }
 
   openEditModal(expense: Expense): void {
     if (this.isApproved(expense)) { this.messageService.add({ severity: 'warn', summary: 'Locked', detail: 'Approved expenses cannot be edited.' }); return; }
@@ -1073,6 +1108,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
       }
       if (this.selectedCategory && category !== this.selectedCategory) return false;
       if (this.selectedStatus && this.selectedStatus !== 'ALL' && e.status !== this.selectedStatus) return false;
+      if (this.filterPosted && !this.isPosted(e)) return false;
       if (this.dateFrom && this.dateTo) {
         const d = new Date(e.eventDate);
         if (d < new Date(this.dateFrom) || d > new Date(this.dateTo + 'T23:59:59')) return false;
@@ -1080,6 +1116,13 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
       return true;
     });
   }
+
+  togglePostedFilter(): void {
+    this.filterPosted = !this.filterPosted;
+    this.applyFilters();
+  }
+
+  getPostedCount(): number  { return this.expenses.filter(e => this.isPosted(e)).length; }
 
   applyDateRange(): void {
     if (!this.dateRangeType) { this.applyFilters(); return; }
@@ -1181,6 +1224,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   isRejected(e: Expense): boolean         { return this.normalizeStatus(e?.status) === ExpenseStatus.REJECTED; }
   isLocked(e: Expense): boolean           { return this.isApproved(e) || this.isRejected(e); }
   canApproveOrReject(e: Expense): boolean { return this.normalizeStatus(e?.status) === ExpenseStatus.PENDING; }
+  isPosted(e: Expense): boolean           { return this.postedIds.has(e.id) || !!e.accountingTransactionId; }
 
   // ─── Pagination ───────────────────────────────────────────────────────────
   onPageChange(p: number): void { this.currentPage = p; }
@@ -1219,6 +1263,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   getPendingAmount(): number  { return this.expenses.filter(e => e.status === ExpenseStatus.PENDING).reduce((s, e) => s + this.calculateTotalWithTax(e), 0); }
   getRejectedCount(): number  { return this.expenses.filter(e => e.status === ExpenseStatus.REJECTED).length; }
   getRejectedAmount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.REJECTED).reduce((s, e) => s + this.calculateTotalWithTax(e), 0); }
+  getPostedAmount(): number   { return this.expenses.filter(e => this.postedIds.has(e.id)).reduce((s, e) => s + this.calculateTotalWithTax(e), 0); }
 
   getTaxRateDisplayValue(tax: TaxDTO | number | undefined): number | undefined {
     if (tax === undefined || tax === null) return undefined;

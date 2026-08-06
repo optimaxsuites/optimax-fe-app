@@ -57,12 +57,12 @@
       [soundEnabled]="soundEnabled"
       [selectedRingtone]="selectedRingtone"
       [ringtoneOptions]="ringtoneOptions"
-      [workspaceName]="workspaceName"
       [canCreateChannels]="canManageChannels"
       [canDeactivateDmUsers]="canManageChannels"
       [searchQuery]="searchQuery"
       [showSearch]="showSearch"
       [searchResults]="searchResults"
+      [totalDmUnread]="totalDmUnread"
       (channelSelected)="onSidebarChannelSelected($event)"
       (dmSelected)="onSidebarDmSelected($event)"
       (viewSet)="onSidebarViewSet($event)"
@@ -77,7 +77,8 @@
       (searchExecuted)="onSearch()"
       (searchClosed)="closeSearch()"
       (jumpTo)="onSidebarJumpTo($event)"
-      (viewProfile)="openDmUserProfile($event)"
+      (workspaceOpened)="openAnalyticsPanel($event)"
+      (channelAttachmentsRequested)="openChannelAttachmentsPanel($event)"
     ></app-channel-sidebar>
     <div
       class="absolute right-0 top-0 bottom-0 w-[2px] cursor-col-resize hover:bg-gray-200 transition-colors z-10"
@@ -441,12 +442,12 @@
                 <div class="feed-post-author">
                   <div
                     class="feed-post-avatar"
-                    [style.background]="feedAuthorColor(post.author?.userId || post.author?.id || post.authorUserId || post.id)"
+                    [style.background]="feedAuthorColor(post.author?.userId || post.author?.id || post.id)"
                   >
                     {{ feedAuthorInitials(post.author) }}
                   </div>
                   <div>
-                    <strong>{{ feedAuthorName(post.author, post.authorUserId) }}</strong>
+                    <strong>{{ feedAuthorName(post.author) }}</strong>
                     <p>
                       {{ post.postType || 'UPDATE' }} ·
                       {{ feedPublishedLabel(post.publishedAt || post.createdAt) }}
@@ -672,7 +673,7 @@
 
                 <div class="thread-search-results" *ngIf="feedThreads[post.id].searchResults.length">
                   <article *ngFor="let comment of feedThreads[post.id].searchResults">
-                    <strong>{{ feedAuthorName(comment.author, comment.authorUserId) }}</strong>
+                    <strong>{{ feedAuthorName(comment.author) }}</strong>
                     <p>{{ comment.content }}</p>
                   </article>
                 </div>
@@ -693,7 +694,7 @@
                     </div>
                     <div class="feed-comment-body">
                       <div class="feed-comment-meta">
-                        <strong>{{ feedAuthorName(comment.author, comment.authorUserId) }}</strong>
+                        <strong>{{ feedAuthorName(comment.author) }}</strong>
                         <span>{{ feedPublishedLabel(comment.createdAt) }}</span>
                       </div>
                       <div class="feed-comment-text" [innerHTML]="feedDisplayCommentContent(comment.content)"></div>
@@ -815,7 +816,7 @@
                           </div>
                           <div class="feed-comment-body">
                             <div class="feed-comment-meta">
-                              <strong>{{ feedAuthorName(reply.author, reply.authorUserId) }}</strong>
+                              <strong>{{ feedAuthorName(reply.author) }}</strong>
                               <span>{{ feedPublishedLabel(reply.createdAt) }}</span>
                             </div>
                             <div class="feed-comment-text" [innerHTML]="feedDisplayCommentContent(reply.content)"></div>
@@ -931,7 +932,7 @@
                                 </div>
                                 <div class="feed-comment-body">
                                   <div class="feed-comment-meta">
-                                    <strong>{{ feedAuthorName(replyLevel3.author, replyLevel3.authorUserId) }}</strong>
+                                    <strong>{{ feedAuthorName(replyLevel3.author) }}</strong>
                                     <span>{{ feedPublishedLabel(replyLevel3.createdAt) }}</span>
                                   </div>
                                   <div class="feed-comment-text" [innerHTML]="feedDisplayCommentContent(replyLevel3.content)"></div>
@@ -1249,7 +1250,6 @@
             (deleteDismissed)="dismissDelete()"
             (attachmentDownload)="downloadAttachment($event.attachment, $event.event)"
             (mentionActivated)="openMentionConversation($event)"
-            (authorClicked)="openStaffProfile($event)"
           ></app-message-feed>
         </div>
 
@@ -1496,36 +1496,6 @@
         <div *ngIf="activeView === 'threads'" class="threads-inline-note">
           Pick any thread card to open the full conversation and reply from the thread panel.
         </div>
-
-        <!-- Thread search quick-jump: channels and DM contacts matching the query -->
-        <div
-          *ngIf="activeView === 'threads' && threadInboxQuery && (threadSearchChannelMatches.length || threadSearchDmMatches.length)"
-          class="thread-search-jump px-4 pb-3"
-        >
-          <p class="thread-search-jump-label">Jump to</p>
-          <div class="thread-search-jump-list">
-            <button
-              *ngFor="let ch of threadSearchChannelMatches"
-              type="button"
-              class="thread-search-jump-item"
-              (click)="onSidebarChannelSelected(ch.id)"
-            >
-              <span class="thread-search-jump-icon"><i class="pi pi-hashtag"></i></span>
-              <span class="thread-search-jump-name">{{ ch.name }}</span>
-              <span class="thread-search-jump-sub">Channel</span>
-            </button>
-            <button
-              *ngFor="let dm of threadSearchDmMatches"
-              type="button"
-              class="thread-search-jump-item"
-              (click)="onSidebarDmSelected(dm.id)"
-            >
-              <span class="thread-search-jump-icon"><i class="pi pi-user"></i></span>
-              <span class="thread-search-jump-name">{{ dm.fullName || dm.shortName }}</span>
-              <span class="thread-search-jump-sub">{{ dm.jobTitle || 'Direct message' }}</span>
-            </button>
-          </div>
-        </div>
       </div>
 
       <aside class="chat-thread-shell" *ngIf="rightPanelOpen || birthdayPanelOpen">
@@ -1638,48 +1608,6 @@
           (deleteChannel)="deleteActiveChannel()"
           (mentionActivated)="openMentionConversation($event)"
         ></app-thread-panel>
-
-        <!-- Staff profile panel -->
-        <div *ngIf="activeStaffProfile" class="staff-profile-overlay" (click)="closeStaffProfile()">
-          <div class="staff-profile-panel" (click)="$event.stopPropagation()">
-            <!-- Close -->
-            <button class="staff-profile-close" (click)="closeStaffProfile()">
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-
-            <!-- Avatar -->
-            <div class="staff-profile-avatar" [style.background]="activeStaffProfile.avatarUrl ? 'transparent' : '#334155'">
-              <img *ngIf="activeStaffProfile.avatarUrl" [src]="activeStaffProfile.avatarUrl" alt="" />
-              <span *ngIf="!activeStaffProfile.avatarUrl">{{ activeStaffProfile.initials }}</span>
-              <span class="staff-profile-status" [class.online]="activeStaffProfile.online"></span>
-            </div>
-
-            <!-- Name & meta -->
-            <div class="staff-profile-name">{{ activeStaffProfile.name }}</div>
-            <div *ngIf="activeStaffProfile.jobTitle" class="staff-profile-title">{{ activeStaffProfile.jobTitle }}</div>
-            <div *ngIf="activeStaffProfile.department" class="staff-profile-dept">{{ activeStaffProfile.department }}</div>
-            <div class="staff-profile-presence" [class.online]="activeStaffProfile.online">
-              <span class="staff-profile-presence-dot"></span>
-              {{ activeStaffProfile.online ? 'Online now' : activeStaffProfile.lastSeenLabel }}
-            </div>
-
-            <!-- Contact actions -->
-            <div class="staff-profile-contacts">
-              <a *ngIf="activeStaffProfile.phone" [href]="'tel:' + activeStaffProfile.phone" class="staff-profile-contact-btn" title="Call">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                <span>{{ activeStaffProfile.phone }}</span>
-              </a>
-              <a *ngIf="activeStaffProfile.email" [href]="'mailto:' + activeStaffProfile.email" class="staff-profile-contact-btn" title="Email">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                <span>{{ activeStaffProfile.email }}</span>
-              </a>
-              <button class="staff-profile-contact-btn staff-profile-msg-btn" (click)="openMentionConversation(activeStaffProfile.userId); closeStaffProfile()" title="Message">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                <span>Send message</span>
-              </button>
-            </div>
-          </div>
-        </div>
       </aside>
 
       <aside class="feed-rail chat-side-rail" *ngIf="showChatRail && !rightPanelOpen">
@@ -2109,3 +2037,234 @@
     </button>
   </div>
 </p-dialog>
+
+<!-- ── Analytics / Workspace panel ──────────────────────────────────────── -->
+<div *ngIf="analyticsPanel.open" class="wa-backdrop" (click)="closeAnalyticsPanel()"></div>
+<aside *ngIf="analyticsPanel.open" class="wa-panel" [class.wa-panel-open]="analyticsPanel.open">
+  <div class="wa-header">
+    <div class="wa-header-avatar" [style.background]="analyticsPanel.contact?.avatarColor">
+      <img *ngIf="analyticsPanel.contact?.avatarUrl" [src]="analyticsPanel.contact!.avatarUrl" alt="" />
+      <span *ngIf="!analyticsPanel.contact?.avatarUrl">{{ analyticsPanel.contact?.initials }}</span>
+    </div>
+    <div class="wa-header-info">
+      <p class="wa-header-name">{{ analyticsPanel.contact?.fullName }}</p>
+      <p class="wa-header-sub">{{ analyticsPanel.contact?.jobTitle || analyticsPanel.contact?.department || 'Team member' }}</p>
+    </div>
+    <button class="wa-close" (click)="closeAnalyticsPanel()"><i class="pi pi-times"></i></button>
+  </div>
+
+  <div class="wa-stats-row">
+    <div class="wa-stat">
+      <span class="wa-stat-num" [class.wa-stat-zero]="!analyticsPanel.issues.length">{{ analyticsPanel.issues.length }}</span>
+      <span class="wa-stat-label">Issues</span>
+    </div>
+    <div class="wa-stat">
+      <span class="wa-stat-num" [class.wa-stat-zero]="!analyticsPanel.tasks.length">{{ analyticsPanel.tasks.length }}</span>
+      <span class="wa-stat-label">Tasks</span>
+    </div>
+    <div class="wa-stat">
+      <span class="wa-stat-num" [class.wa-stat-zero]="!analyticsPanel.events.length">{{ analyticsPanel.events.length }}</span>
+      <span class="wa-stat-label">Events</span>
+    </div>
+    <div class="wa-stat">
+      <span class="wa-stat-num" [class.wa-stat-zero]="!(analyticsPanel.contact?.unreadCount)">{{ analyticsPanel.contact?.unreadCount || 0 }}</span>
+      <span class="wa-stat-label">Unread</span>
+    </div>
+  </div>
+
+  <div class="wa-body">
+    <!-- Issues -->
+    <div class="wa-section" *ngIf="analyticsPanel.issues.length">
+      <p class="wa-section-title"><i class="pi pi-exclamation-circle"></i> Open Issues</p>
+      <div class="wa-item" *ngFor="let issue of analyticsPanel.issues" (click)="navigateToBugTracker(issue.id)" title="Open in Bug Tracker">
+        <span class="wa-item-badge priority-{{ (issue.priority || 'medium').toLowerCase() }}">{{ issue.priority || 'Medium' }}</span>
+        <span class="wa-item-text">{{ issue.title || issue.name || 'Issue #' + issue.id }}</span>
+        <span class="wa-item-badge status-{{ (issue.status || '').toLowerCase() }}">{{ issue.status }}</span>
+        <i class="pi pi-external-link wa-item-link-icon"></i>
+      </div>
+    </div>
+    <div class="wa-empty" *ngIf="!analyticsPanel.issues.length">
+      <i class="pi pi-check-circle"></i><span>No open issues</span>
+    </div>
+
+    <!-- Tasks -->
+    <div class="wa-section" *ngIf="analyticsPanel.tasks.length">
+      <p class="wa-section-title"><i class="pi pi-list-check"></i> Open Tasks</p>
+      <div class="wa-item" *ngFor="let task of analyticsPanel.tasks" (click)="navigateToTaskWorkspace(task.id)" title="Open in Productivity Workspace">
+        <span class="wa-item-text">{{ task.title || task.taskName || task.name || 'Task #' + task.id }}</span>
+        <span class="wa-item-due" *ngIf="task.dueDate">Due {{ task.dueDate }}</span>
+        <i class="pi pi-external-link wa-item-link-icon"></i>
+      </div>
+    </div>
+    <div class="wa-empty" *ngIf="!analyticsPanel.tasks.length">
+      <i class="pi pi-check"></i><span>No open tasks</span>
+    </div>
+
+    <!-- Meetings & Appointments -->
+    <div class="wa-section" *ngIf="analyticsPanel.events.length">
+      <p class="wa-section-title"><i class="pi pi-calendar"></i> Meetings &amp; Appointments</p>
+      <div class="wa-item" *ngFor="let ev of analyticsPanel.events" (click)="navigateToMeetings()" title="Open in Meetings &amp; Appointments">
+        <span class="wa-item-text">{{ ev.title || ev.name || 'Event' }}</span>
+        <span class="wa-item-due" *ngIf="ev.startTime || ev.startDate || ev.date">{{ ev.startTime || ev.startDate || ev.date }}</span>
+        <i class="pi pi-external-link wa-item-link-icon"></i>
+      </div>
+    </div>
+    <div class="wa-empty" *ngIf="!analyticsPanel.events.length">
+      <i class="pi pi-calendar-times"></i><span>No upcoming meetings</span>
+    </div>
+  </div>
+
+  <div class="wa-footer">
+    <button class="wa-footer-btn primary" (click)="onSidebarDmSelected(analyticsPanel.contact!.id); closeAnalyticsPanel()">
+      <i class="pi pi-comment"></i> Send Message
+    </button>
+    <button class="wa-footer-btn" (click)="closeAnalyticsPanel()">
+      <i class="pi pi-times-circle"></i> Close
+    </button>
+  </div>
+</aside>
+
+<!-- ── Channel resources panel ─────────────────────────────────────────── -->
+<div *ngIf="channelAttachmentsPanel.open" class="wa-backdrop" (click)="closeChannelAttachmentsPanel()"></div>
+<aside *ngIf="channelAttachmentsPanel.open" class="wa-panel" [class.wa-panel-open]="channelAttachmentsPanel.open">
+  <div class="wa-header">
+    <div class="wa-header-avatar" style="background:#2e6276">
+      <i class="pi pi-folder-open" style="color:white;font-size:18px"></i>
+    </div>
+    <div class="wa-header-info">
+      <p class="wa-header-name"># {{ channelAttachmentsPanel.channel?.name }}</p>
+      <p class="wa-header-sub">Channel Resources</p>
+    </div>
+    <button class="wa-close" (click)="closeChannelAttachmentsPanel()"><i class="pi pi-times"></i></button>
+  </div>
+
+  <!-- Search field -->
+  <div class="wa-search-bar">
+    <i class="pi pi-search wa-search-icon"></i>
+    <input
+      type="text"
+      placeholder="Search files…"
+      class="wa-search-input"
+      [ngModel]="channelAttachmentsPanel.searchQuery"
+      (ngModelChange)="channelAttachmentsPanel.searchQuery = $event"
+    />
+  </div>
+
+  <!-- Tabs -->
+  <div class="wa-tabs">
+    <button
+      class="wa-tab"
+      [class.active]="channelAttachmentsPanel.activeTab === 'documents'"
+      (click)="channelAttachmentsPanel.activeTab = 'documents'"
+    >
+      <i class="pi pi-file"></i> Documents
+      <span class="wa-tab-count" *ngIf="!channelAttachmentsPanel.loading">{{ channelAttachmentDocuments.length }}</span>
+    </button>
+    <button
+      class="wa-tab"
+      [class.active]="channelAttachmentsPanel.activeTab === 'media'"
+      (click)="channelAttachmentsPanel.activeTab = 'media'"
+    >
+      <i class="pi pi-image"></i> Photos &amp; Videos
+      <span class="wa-tab-count" *ngIf="!channelAttachmentsPanel.loading">{{ channelAttachmentMedia.length }}</span>
+    </button>
+    <button
+      class="wa-tab"
+      [class.active]="channelAttachmentsPanel.activeTab === 'links'"
+      (click)="channelAttachmentsPanel.activeTab = 'links'"
+    >
+      <i class="pi pi-link"></i> Links
+      <span class="wa-tab-count" *ngIf="!channelAttachmentsPanel.loading">{{ channelAttachmentsPanel.links.length }}</span>
+    </button>
+  </div>
+
+  <div class="wa-body">
+    <!-- Loading -->
+    <div *ngIf="channelAttachmentsPanel.loading" class="wa-empty">
+      <i class="pi pi-spin pi-spinner"></i><span>Loading resources…</span>
+    </div>
+
+    <!-- Documents tab -->
+    <ng-container *ngIf="!channelAttachmentsPanel.loading && channelAttachmentsPanel.activeTab === 'documents'">
+      <div *ngIf="!channelAttachmentDocuments.length" class="wa-empty">
+        <i class="pi pi-file"></i><span>No documents yet</span>
+      </div>
+      <div class="wa-item" *ngFor="let att of channelAttachmentDocuments" (click)="downloadChannelAttachment(att, $event)">
+        <i class="wa-file-icon" [ngClass]="getFileIcon(att.contentType)"></i>
+        <div class="wa-item-info">
+          <span class="wa-item-text">{{ att.fileName }}</span>
+          <span class="wa-item-meta" *ngIf="att.fileSize">{{ att.fileSize | number }} B</span>
+        </div>
+        <button class="wa-dl-btn" title="Download" (click)="downloadChannelAttachment(att, $event)">
+          <i class="pi pi-download"></i>
+        </button>
+      </div>
+    </ng-container>
+
+    <!-- Photos & Videos tab -->
+    <ng-container *ngIf="!channelAttachmentsPanel.loading && channelAttachmentsPanel.activeTab === 'media'">
+      <div *ngIf="!channelAttachmentMedia.length" class="wa-empty">
+        <i class="pi pi-image"></i><span>No photos or videos yet</span>
+      </div>
+      <div class="wa-media-grid" *ngIf="channelAttachmentMedia.length">
+        <div
+          class="wa-media-thumb"
+          *ngFor="let att of channelAttachmentMedia"
+          [title]="att.fileName"
+          (click)="openChannelMediaViewer(att, $event)"
+        >
+          <ng-container *ngIf="att.contentType?.startsWith('image/')">
+            <img
+              *ngIf="getProtectedImageUrl(att.downloadUrl) as imgUrl"
+              [src]="imgUrl"
+              alt=""
+              loading="lazy"
+            />
+            <div *ngIf="!getProtectedImageUrl(att.downloadUrl)" class="wa-media-loading">
+              <i class="pi pi-spin pi-spinner"></i>
+            </div>
+          </ng-container>
+          <div *ngIf="att.contentType?.startsWith('video/')" class="wa-media-video-placeholder">
+            <i class="pi pi-play-circle"></i>
+          </div>
+          <div class="wa-media-overlay">
+            <i class="pi pi-search-plus"></i>
+          </div>
+          <button class="wa-media-dl" title="Download" (click)="downloadChannelAttachment(att, $event)">
+            <i class="pi pi-download"></i>
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Links tab -->
+    <ng-container *ngIf="!channelAttachmentsPanel.loading && channelAttachmentsPanel.activeTab === 'links'">
+      <div *ngIf="!channelAttachmentsPanel.links.length" class="wa-empty">
+        <i class="pi pi-link"></i><span>No links shared in this channel yet</span>
+      </div>
+      <a
+        *ngFor="let link of channelAttachmentsPanel.links"
+        [href]="link"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="wa-link-item"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="wa-link-favicon">
+          <img [src]="'https://www.google.com/s2/favicons?sz=32&domain=' + getLinkDomain(link)" alt="" loading="lazy" />
+        </div>
+        <div class="wa-item-info">
+          <span class="wa-item-text">{{ getLinkDomain(link) }}</span>
+          <span class="wa-item-meta wa-link-url">{{ link }}</span>
+        </div>
+        <i class="pi pi-external-link wa-link-ext"></i>
+      </a>
+    </ng-container>
+  </div>
+
+  <div class="wa-footer">
+    <button class="wa-footer-btn" (click)="closeChannelAttachmentsPanel()">
+      <i class="pi pi-times-circle"></i> Close
+    </button>
+  </div>
+</aside>

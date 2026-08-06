@@ -149,12 +149,14 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   notesInput = 'Reviewed revenue variance, procurement blocker, room availability, and the need to publish minutes before Friday.';
 
   // ── Virtual meeting ──────────────────────────────────────
-  jitsiBaseUrl = 'https://meet.jit.si';
+  jitsiBaseUrl = 'https://meet.optimaxsuites.com';
   activeMeetingMode: 'CALL' | 'VIDEO' | null = null;
   meetingRoomName = '';
   meetingRoomUrl = '';
+  meetingGuestUrl = '';          // shareable plain URL for external attendees
   trustedMeetingRoomUrl: SafeResourceUrl | null = null;
   meetingRoomOpen = false;
+  jitsiJoining = false;          // shows spinner while requesting JWT
 
   // ── Transcription ─────────────────────────────────────────
   transcriptionTitle = '';
@@ -724,12 +726,31 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
     this.meetingRoomName = this.buildMeetingRoomName(event);
     const base = this.normalizeMeetingBaseUrl(this.jitsiBaseUrl);
     this.jitsiBaseUrl = base;
-    this.meetingRoomUrl = `${base}/${this.meetingRoomName}#config.prejoinPageEnabled=false&config.startWithVideoMuted=${mode === 'CALL'}`;
-    this.trustedMeetingRoomUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.meetingRoomUrl);
-    this.meetingRoomOpen = true;
-    this.activeDetailTab = 'virtual';
-    event.meetingMode = mode === 'CALL' ? 'Virtual' : event.meetingMode === 'Physical' ? 'Hybrid' : event.meetingMode;
-    event.onlineLink  = this.meetingRoomUrl;
+    const guestUrl  = `${base}/${this.meetingRoomName}`;
+    const fragment  = `#config.prejoinPageEnabled=false&config.startWithVideoMuted=${mode === 'CALL'}`;
+    this.jitsiJoining = true;
+
+    this.collaborationService.getJitsiToken(this.meetingRoomName).subscribe({
+      next: ({ token }) => {
+        this.jitsiJoining = false;
+        this.applyMeetingRoom(event, `${guestUrl}?jwt=${token}${fragment}`, guestUrl);
+      },
+      error: () => {
+        // JWT endpoint not yet wired on backend — join without moderator token
+        this.jitsiJoining = false;
+        this.applyMeetingRoom(event, `${guestUrl}${fragment}`, guestUrl);
+      },
+    });
+  }
+
+  private applyMeetingRoom(event: MeetingEvent, authedUrl: string, guestUrl: string): void {
+    this.meetingRoomUrl   = authedUrl;
+    this.meetingGuestUrl  = guestUrl;
+    this.trustedMeetingRoomUrl = this.sanitizer.bypassSecurityTrustResourceUrl(authedUrl);
+    this.meetingRoomOpen  = true;
+    this.activeDetailTab  = 'virtual';
+    event.meetingMode = this.activeMeetingMode === 'CALL' ? 'Virtual' : event.meetingMode === 'Physical' ? 'Hybrid' : event.meetingMode;
+    event.onlineLink  = guestUrl;
     this.transcriptionTitle = this.transcriptionTitle || `${event.title} recording`;
     this.persistAndSync(event);
   }
@@ -737,8 +758,17 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   closeMeetingRoom(): void { this.meetingRoomOpen = false; this.trustedMeetingRoomUrl = null; }
 
   openMeetingInTab(): void {
-    if (!this.meetingRoomUrl) this.openMeetingRoom('VIDEO');
-    if (this.meetingRoomUrl)  window.open(this.meetingRoomUrl, '_blank', 'noopener');
+    if (!this.meetingGuestUrl && !this.meetingRoomUrl) this.openMeetingRoom('VIDEO');
+    window.open(this.meetingRoomUrl || this.meetingGuestUrl, '_blank', 'noopener');
+  }
+
+  copyGuestLink(): void {
+    const url = this.meetingGuestUrl;
+    if (!url) { this.addToast('Start a meeting first to get a shareable link', 'warn'); return; }
+    navigator.clipboard.writeText(url).then(
+      () => this.addToast('Guest link copied — share with external attendees', 'ok'),
+      () => this.addToast('Copy failed — select and copy the link manually', 'warn'),
+    );
   }
 
   // ── Transcription ─────────────────────────────────────────

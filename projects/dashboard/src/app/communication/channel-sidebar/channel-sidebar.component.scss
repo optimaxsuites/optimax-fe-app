@@ -1,165 +1,4 @@
-.dm-profile-card {
-  position: fixed;
-  z-index: 9999;
-  width: 240px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.13);
-  overflow: hidden;
-  pointer-events: all;
-
-  .dm-card-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 14px 10px;
-    background: linear-gradient(135deg, #f0f9ff 0%, #e8f4f8 100%);
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .dm-card-avatar-wrap {
-    position: relative;
-    flex-shrink: 0;
-  }
-
-  .dm-card-avatar-img,
-  .dm-card-avatar-initials {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    object-fit: cover;
-  }
-
-  .dm-card-avatar-initials {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 15px;
-    font-weight: 700;
-  }
-
-  .dm-card-status-dot {
-    position: absolute;
-    bottom: 1px;
-    right: 1px;
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-    border: 2px solid #fff;
-    background: #d1d5db;
-
-    &.online {
-      background: #34d399;
-    }
-  }
-
-  .dm-card-identity {
-    min-width: 0;
-    flex: 1;
-  }
-
-  .dm-card-name {
-    font-size: 14px;
-    font-weight: 700;
-    color: #111827;
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .dm-card-status-label {
-    font-size: 11px;
-    color: #6b7280;
-    margin: 2px 0 0;
-  }
-
-  .dm-card-body {
-    padding: 10px 14px 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .dm-card-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: #374151;
-    min-width: 0;
-
-    span {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  }
-
-  .dm-card-row-icon {
-    font-size: 12px;
-    color: #9ca3af;
-    flex-shrink: 0;
-  }
-
-  .dm-card-footer {
-    padding: 8px 14px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .dm-card-msg-btn {
-    width: 100%;
-    padding: 7px 12px;
-    border-radius: 8px;
-    border: none;
-    background: #2e6276;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: background 0.15s;
-
-    &:hover {
-      background: #245060;
-    }
-
-    i { font-size: 13px; }
-  }
-
-  .dm-card-profile-btn {
-    width: 100%;
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1.5px solid #e2e8f0;
-    background: #fff;
-    color: #475569;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: all 0.15s;
-
-    &:hover {
-      background: #f0f9ff;
-      border-color: #7dd3fc;
-      color: #0369a1;
-    }
-
-    i { font-size: 13px; }
-  }
-}
-
+// ── Birthday mini-calendar ─────────────────────────────
 .birthday-cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -176,28 +15,254 @@
   border-radius: 50%;
 }
 
-.sidebar-section-divider {
+// ── Draggable channel/DM divider ──────────────────────
+.sidebar-resize-handle {
+  flex-shrink: 0;
+  height: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 10px;
-  cursor: ns-resize;
-  user-select: none;
-  flex-shrink: 0;
-  position: relative;
+  cursor: row-resize;
+  background: transparent;
+  transition: background 0.15s;
 
-  &:hover .sidebar-divider-grip,
-  &:active .sidebar-divider-grip {
-    background: #94a3b8;
-    width: 36px;
+  &:hover {
+    background: rgba(46, 98, 118, 0.06);
+  }
+
+  &:hover .sidebar-resize-grip {
+    background: #2e6276;
+    opacity: 0.5;
   }
 }
 
-.sidebar-divider-grip {
-  display: block;
-  width: 28px;
+.sidebar-resize-grip {
+  width: 32px;
   height: 3px;
-  border-radius: 3px;
+  border-radius: 2px;
   background: #d1d5db;
-  transition: all 0.15s;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+// ── DM hover card ─────────────────────────────────────
+@keyframes dmCardPop {
+  from {
+    opacity: 0;
+    transform: translateX(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.dm-profile-card {
+  position: fixed;
+  z-index: 2000;
+  width: 230px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  animation: dmCardPop 0.15s ease-out both;
+  pointer-events: auto;
+
+  .card-header {
+    background: linear-gradient(135deg, #2e6276 0%, #1d4a5c 100%);
+    padding: 14px 14px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .card-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      overflow: hidden;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .card-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.2;
+      margin: 0;
+    }
+
+    .card-sub {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      margin: 2px 0 0;
+    }
+  }
+
+  .card-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1px solid #f0f0f0;
+
+    .card-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 4px;
+      border-right: 1px solid #f0f0f0;
+
+      &:last-child {
+        border-right: none;
+      }
+
+      .stat-num {
+        font-size: 16px;
+        font-weight: 800;
+        color: #2e6276;
+        line-height: 1;
+
+        &.zero {
+          color: #d1d5db;
+        }
+      }
+
+      .stat-label {
+        font-size: 9px;
+        color: #9ca3af;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-top: 2px;
+      }
+    }
+  }
+
+  .card-footer {
+    display: flex;
+    gap: 6px;
+    padding: 8px 10px;
+
+    .card-btn {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: 7px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: background 0.15s;
+
+      &:hover {
+        background: #f3f4f6;
+      }
+
+      &.primary {
+        background: #2e6276;
+        color: #fff;
+        border-color: #2e6276;
+
+        &:hover {
+          background: #255264;
+        }
+      }
+    }
+  }
+}
+
+// ── Channel hover card ─────────────────────────────────
+@keyframes chCardPop {
+  from {
+    opacity: 0;
+    transform: translateX(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.ch-hover-card {
+  position: fixed;
+  z-index: 2000;
+  width: 210px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+  animation: chCardPop 0.14s ease-out both;
+  pointer-events: auto;
+
+  .ch-card-header {
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+    padding: 12px 12px 8px;
+
+    .ch-card-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      margin: 0;
+    }
+
+    .ch-card-type {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.6);
+      margin: 2px 0 0;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+  }
+
+  .ch-card-actions {
+    display: flex;
+    gap: 6px;
+    padding: 8px 10px;
+
+    .ch-card-btn {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: 7px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: background 0.15s;
+
+      &:hover {
+        background: #f3f4f6;
+      }
+
+      &.primary {
+        background: #2e6276;
+        color: #fff;
+        border-color: #2e6276;
+
+        &:hover {
+          background: #255264;
+        }
+      }
+    }
+  }
 }
