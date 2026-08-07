@@ -18,17 +18,37 @@
         <span class="count-badge">Showing {{ filteredAttendance.length }} of {{ attendance.length }}</span>
       </div>
 
-      <!-- Using Shared App Table Component -->
-      <app-table
-        [rows]="filteredAttendance"
-        [columns]="tableColumns"
-        [actions]="tableActions"
-        emptyMessage="📭 No attendance records found"
-        striped
-        (actionClick)="onTableActionClick($event)">
-      </app-table>
-      <div *ngIf="!isLoading && filteredAttendance.length === 0" style="padding: 2rem; text-align: center; color: #999; background: white; border-radius: 8px;">
-        📭 No attendance records found
+      <!-- Simple Working Table -->
+      <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+              <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;" *ngFor="let col of tableColumns">
+                {{ col.header }}
+              </th>
+              <th *ngIf="tableActions.length" style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let record of filteredAttendance" style="border-bottom: 1px solid #e5e7eb; hover: background-color: #f9fafb;">
+              <td style="padding: 1rem;" *ngFor="let col of tableColumns">
+                {{ record[col.field] }}
+              </td>
+              <td style="padding: 1rem;" *ngIf="tableActions.length">
+                <button *ngFor="let action of tableActions"
+                  (click)="onTableActionClick({actionId: action.id, row: record})"
+                  style="padding: 0.5rem 1rem; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 4px; cursor: pointer; margin-right: 0.5rem;">
+                  {{ action.label }}
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="!isLoading && filteredAttendance.length === 0">
+              <td [attr.colspan]="tableColumns.length + (tableActions.length ? 1 : 0)" style="padding: 2rem; text-align: center; color: #999;">
+                📭 No attendance records found
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
 

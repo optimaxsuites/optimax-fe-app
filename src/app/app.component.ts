@@ -36,10 +36,19 @@ export class AppHrComponent {
       localStorage.setItem('Token', devToken);
       sessionStorage.setItem('userid', '1');
       sessionStorage.setItem('uuid', devUUID);
+      sessionStorage.setItem('userid', '1');
       sessionStorage.setItem('username', 'eseose');
       sessionStorage.setItem('fullname', 'Eseose Developer');
       sessionStorage.setItem('email', 'eseose@optimax.com');
       sessionStorage.setItem('role', 'ADMIN');
+      sessionStorage.setItem('userRegData', JSON.stringify({
+        id: 1,
+        userId: 1,
+        username: 'eseose',
+        fullname: 'Eseose Developer',
+        email: 'eseose@optimax.com',
+        role: 'ADMIN'
+      }));
       // Navigate to attendance in dev mode
       this.router.navigate([`attendance/${devUUID}`]);
       this.metadataService.fetchMetaData(true);

@@ -1,5 +1,5 @@
-import { Component, inject, OnInit, Output, EventEmitter, HostListener } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Component, inject, OnInit, Output, EventEmitter, HostListener, ChangeDetectorRef } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 import { Observable, switchMap } from 'rxjs';
@@ -24,6 +24,8 @@ export class AttendancetableComponent implements OnInit{
   private userSession = inject(UserSessionService);
   private toastService = inject(ToastService);
   private correctionRequestService = inject(CorrectionRequestService);
+  private cdr = inject(ChangeDetectorRef);
+  private router = inject(Router);
 
   attendance: AttendanceTableRecord[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
@@ -93,61 +95,72 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
  
   ngOnInit(): void {
       this.startClosingWatcher();
-
       this.isLoading = true;
 
-      // Development mode: directly use mock data
-      if (environment.env === 'development') {
-        this.attendance = MOCK_ATTENDANCE;
-        this.filteredAttendance = MOCK_ATTENDANCE;
-        this.isLoading = false;
+      // Load from localStorage or use MOCK_ATTENDANCE
+      const stored = this.loadFromStorage();
+      this.attendance = stored.length > 0 ? stored : [...MOCK_ATTENDANCE];
+      this.filteredAttendance = [...this.attendance];
+
+      this.isLoading = false;
+      this.cdr.detectChanges();
+
+      // Emit data for parent component
+      this.dataChange.emit({
+        data: this.filteredAttendance,
+        filters: this.filters
+      });
+
+      // Subscribe to real-time updates from service
+      this.attendancetableService.attendance$.subscribe(data => {
+        this.attendance = data;
+        this.filteredAttendance = [...this.attendance];
+        this.saveToStorage();
         this.dataChange.emit({
           data: this.filteredAttendance,
           filters: this.filters
         });
-        return;
-      }
-
-      // Subscribe to attendance records
-      this.attendancetableService.attendance$.subscribe({
-        next: (data) => {
-          this.attendance = data;
-          this.mergePreservedCorrections();
-
-          const hasFilters =
-            this.filters?.dateFrom ||
-            this.filters?.dateTo ||
-            this.filters?.id ||
-            this.filters?.employee ||
-            this.filters?.department ||
-            this.filters?.status;
-
-          if (hasFilters) {
-            this.applyFilters();
-          } else {
-            this.resetToToday();
-          }
-          this.isLoading = false;
-        },
-        error: (err) => {
-          this.toastService.error('Failed to load attendance records');
-          this.isLoading = false;
-        }
+        this.cdr.detectChanges();
       });
 
-      // Subscribe to correction requests and store them
-      this.correctionRequestService.correctionRequests$.subscribe({
-        next: (corrections) => {
-          if (corrections.length > 0) {
-            corrections.forEach(corrRecord => {
-              this.preservedCorrections.set(corrRecord.id, corrRecord.correctionRequest);
-            });
+      // Initialize and subscribe to correction requests
+      // Load any saved corrections from localStorage
+      const savedCorrections = JSON.parse(localStorage.getItem('correctionRequests') || '[]') as AttendanceTableRecord[];
+      if (savedCorrections.length > 0) {
+        savedCorrections.forEach(corrRecord => {
+          const index = this.attendance.findIndex(a => a.id === corrRecord.id);
+          if (index > -1) {
+            this.attendance[index] = {
+              ...this.attendance[index],
+              correctionRequest: corrRecord.correctionRequest
+            };
           }
-          this.mergePreservedCorrections();
-        },
-        error: (err) => {
-          this.toastService.error('Failed to load correction requests');
-        }
+        });
+        this.filteredAttendance = [...this.attendance];
+        this.cdr.detectChanges();
+      }
+
+      // Subscribe to correction requests and merge with attendance
+      this.correctionRequestService.correctionRequests$.subscribe(correctionRecords => {
+        // Merge correction records with existing attendance
+        correctionRecords.forEach(corrRecord => {
+          const index = this.attendance.findIndex(a => a.id === corrRecord.id);
+          if (index > -1) {
+            // Update the existing record with correction info
+            this.attendance[index] = {
+              ...this.attendance[index],
+              correctionRequest: corrRecord.correctionRequest
+            };
+          }
+        });
+
+        this.filteredAttendance = [...this.attendance];
+        this.saveToStorage();
+        this.dataChange.emit({
+          data: this.filteredAttendance,
+          filters: this.filters
+        });
+        this.cdr.detectChanges();
       });
   }
 
@@ -523,6 +536,20 @@ saveModification() {
     admin
   );
 
+  // Update local data and save to storage
+  const index = this.attendance.findIndex(r => r.id === this.editingRecord!.id);
+  if (index !== -1) {
+    this.attendance[index] = {
+      ...this.attendance[index],
+      status: this.editStatus,
+      checkIn: this.editCheckIn || this.attendance[index].checkIn,
+      overriddenBy: admin,
+      overrideReason: this.editReason
+    };
+    this.saveToStorage();
+    this.applyFilters();
+  }
+
   this.editingRecord = null;
   this.toastService.success('Attendance record updated successfully');
 }
@@ -763,6 +790,23 @@ populateCalculatedFields(): void {
       this.calculateHours(record.checkIn, record.checkOut)
     )
   }));
+}
+
+private loadFromStorage(): AttendanceTableRecord[] {
+  try {
+    const stored = localStorage.getItem('attendanceTestData');
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+private saveToStorage(): void {
+  try {
+    localStorage.setItem('attendanceTestData', JSON.stringify(this.attendance));
+  } catch {
+    // Storage error, continue
+  }
 }
 
 }

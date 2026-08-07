@@ -76,7 +76,14 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
               }
             });
 
-          this.attendancetableService.fetchByEmployee(Number(employeeId));
+          // Load from localStorage (mock data)
+          const stored = JSON.parse(localStorage.getItem('attendanceTestData') || '[]');
+          if (stored.length > 0) {
+            this.attendancetableService.refreshFromLocalStorage(stored);
+          } else {
+            // Only fetch from API if no mock data
+            this.attendancetableService.fetchByEmployee(Number(employeeId));
+          }
         },
         error: () => {
           this.hrDepartment = 'Default Department';
@@ -139,9 +146,11 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
   }
 
   async toggleClock() {
-    if (this.isAbsentToday) return;
     if (this.isLoadingEmployeeData) return;
     if (!this.hrEmployeeId) return;
+
+    // Block only if truly absent (not overridden by admin)
+    if (this.isAbsentToday) return;
 
     this.isGettingLocation = true;
     try {
