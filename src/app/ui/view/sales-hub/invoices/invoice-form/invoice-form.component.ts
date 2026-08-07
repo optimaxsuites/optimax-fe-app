@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angu
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails } from '../../../../domain/sales/sales.dto';
 import { toDateInputValue } from '../../../../service/sales/date.util';
@@ -266,7 +266,6 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
 
   ngOnInit(): void {
-
     this.invoiceId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.quoteId = this.fromQuoteId || this.route.snapshot.queryParamMap.get('quoteId') || '';
     this.isEditMode = !!this.invoiceId;
@@ -274,20 +273,41 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       this.duplicateId = this.route.snapshot.queryParamMap.get('duplicateId') || '';
     }
 
-    this.loadCustomers();
-    this.loadProducts();
     this.setupFormListeners();
 
-    if (this.isEditMode) {
-      this.loadInvoice();
-    } else if (this.quoteId) {
-      this.loadQuoteForInvoice();
-      this.currentStep = 3;
-    } else if (this.duplicateId) {
-      this.loadInvoiceForDuplicate();
-    } else {
-      this.addLineItem();
-    }
+    this.isLoading = true;
+    forkJoin({
+      customers: this.salesService.getCustomers({ page: 0, size: 100 }),
+      products: this.salesService.getProducts({ page: 0, size: 100 })
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        this.customers = res.customers?.data || [];
+        this.products = res.products?.data || [];
+        this.filteredProducts = this.products;
+        this.isLoading = false;
+
+        if (this.isEditMode) {
+          this.loadInvoice();
+        } else if (this.quoteId) {
+          this.loadQuoteForInvoice();
+          this.currentStep = 3;
+        } else if (this.duplicateId) {
+          this.loadInvoiceForDuplicate();
+        } else {
+          const customerId = this.route.snapshot.queryParamMap.get('customerId');
+          if (customerId) {
+            this.invoiceForm.patchValue({ customerId: customerId });
+            this.onCustomerSelect(customerId);
+          }
+          this.addLineItem();
+        }
+      },
+      error: (error: any) => {
+        console.error('Error loading lookup values:', error);
+        this.isLoading = false;
+        this.addLineItem();
+      }
+    });
   }
 
   ngOnDestroy(): void {
