@@ -1,0 +1,128 @@
+<div class="employee-history-container">
+  <!-- Header -->
+  <div class="history-header">
+    <button class="back-btn" (click)="goBack()" title="Go back">
+      <i class="fa-solid fa-arrow-left"></i> Back
+    </button>
+    <div class="header-content">
+      <h1>{{ employeeName }}'s Attendance History</h1>
+      <p>Complete attendance records and statistics</p>
+    </div>
+    <button class="export-btn" (click)="exportHistory()" title="Export this employee's history">
+      <i class="fa-solid fa-download"></i> Export CSV
+    </button>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <div class="summary-card">
+      <div class="card-icon">
+        <i class="fa-solid fa-calendar-days"></i>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Total Records</span>
+        <span class="card-value">{{ summary.total }}</span>
+      </div>
+    </div>
+
+    <div class="summary-card present">
+      <div class="card-icon">
+        <i class="fa-solid fa-check-circle"></i>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Present</span>
+        <span class="card-value">{{ summary.present }}</span>
+      </div>
+    </div>
+
+    <div class="summary-card late">
+      <div class="card-icon">
+        <i class="fa-solid fa-clock"></i>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Late</span>
+        <span class="card-value">{{ summary.late }}</span>
+      </div>
+    </div>
+
+    <div class="summary-card absent">
+      <div class="card-icon">
+        <i class="fa-solid fa-user-slash"></i>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Absent</span>
+        <span class="card-value">{{ summary.absent }}</span>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-icon">
+        <i class="fa-solid fa-hourglass-end"></i>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Avg Hours/Day</span>
+        <span class="card-value">{{ summary.avgHours }}h</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Date Range Filter -->
+  <div class="filter-section">
+    <div class="date-inputs">
+      <div class="date-input">
+        <label>FROM</label>
+        <input type="date" [(ngModel)]="startDate" (change)="applyFilters()">
+      </div>
+      <div class="date-input">
+        <label>TO</label>
+        <input type="date" [(ngModel)]="endDate" (change)="applyFilters()">
+      </div>
+    </div>
+    <p class="record-count">Showing {{ filteredRecords.length }} records</p>
+  </div>
+
+  <!-- Records Table -->
+  <div class="records-table-container" *ngIf="!isLoading">
+    <table class="records-table" *ngIf="filteredRecords.length > 0; else noRecords">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Clock In</th>
+          <th>Clock Out</th>
+          <th>Status</th>
+          <th>Hours Worked</th>
+          <th>Department</th>
+          <th>Branch</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let record of filteredRecords" [class.row-late]="record.status === 'LATE'" [class.row-absent]="record.status === 'ABSENT'">
+          <td>{{ record.date }}</td>
+          <td>{{ record.checkIn || '-' }}</td>
+          <td>{{ record.checkOut || '-' }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="'status-' + record.status.toLowerCase()">
+              {{ record.status }}
+            </span>
+          </td>
+          <td>{{ record.hours || 0 }}h</td>
+          <td>{{ record.department }}</td>
+          <td>{{ getBranchName(record.checkedInBranchId) }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <ng-template #noRecords>
+      <div class="no-records">
+        <i class="fa-solid fa-inbox"></i>
+        <p>No attendance records found for this period</p>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Loading attendance history...</p>
+  </div>
+</div>

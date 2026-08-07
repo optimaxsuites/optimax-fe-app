@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { VendorSuggestion } from '../../../domain/procurement-request/procurement.dto';
 import { ExtendedProcurementRequest, parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-vendor-selection',
@@ -33,7 +34,8 @@ export class VendorSelectionComponent implements OnInit {
     private fb: FormBuilder,
     private procurementService: ProcurementRequestService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
@@ -132,17 +134,25 @@ export class VendorSelectionComponent implements OnInit {
   }
 
   onNext(): void {
-    if (this.selectedVendors.size > 0) {
-      const uuid = this.route.snapshot.paramMap.get('uuid') || this.requestId;
-      if (uuid) {
-        this.procurementService.updateRequest(parseIdToNumber(uuid), {
-          selectedVendors: Array.from(this.selectedVendors)
-        } as any).subscribe(() => {
-          const typePath = this.router.url.includes('/service') ? 'service' : 'product';
-          this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid, 'preview']);
-        });
-      }
+    if (this.selectedVendors.size === 0) {
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please select at least one vendor to continue.' });
+      return;
     }
+    const uuid = this.route.snapshot.paramMap.get('uuid') || this.requestId;
+    if (!uuid) return;
+
+    this.procurementService.updateRequest(parseIdToNumber(uuid), {
+      selectedVendors: Array.from(this.selectedVendors)
+    } as any).subscribe({
+      next: () => {
+        const typePath = this.router.url.includes('/service') ? 'service' : 'product';
+        this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid, 'preview']);
+      },
+      error: (err) => {
+        console.error('Failed to save selected vendors', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save your vendor selection. Please try again.' });
+      }
+    });
   }
 
   onBack(): void {

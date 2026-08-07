@@ -44,9 +44,13 @@ interface ParsedEmployeeResponse {
   department: string;
 }
 
+const ATTENDANCE_STORAGE_KEY = 'attendanceData';
+
 @Injectable({ providedIn: 'root' })
 export class AttendancetableService implements OnDestroy {
-  private attendanceSubject = new BehaviorSubject<AttendanceTableRecord[]>(MOCK_ATTENDANCE);
+  private attendanceSubject = new BehaviorSubject<AttendanceTableRecord[]>(
+    this.loadInitialData()
+  );
   private clockStatusSubject = new BehaviorSubject<ClockStatus>('CLOCKED_OUT');
 
   private localRecords = new Map<string, AttendanceTableRecord>();
@@ -70,6 +74,18 @@ export class AttendancetableService implements OnDestroy {
       this.scheduleAbsentCheck();
     });
     this.fetchAllRecords();
+  }
+
+  private loadInitialData(): AttendanceTableRecord[] {
+    const stored = localStorage.getItem('attendanceTestData');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        console.error('Failed to parse stored attendance data:', e);
+      }
+    }
+    return MOCK_ATTENDANCE;
   }
 
   ngOnDestroy() {
@@ -140,9 +156,11 @@ export class AttendancetableService implements OnDestroy {
   // ────────────────────────────────────────────────────────────
 
   fetchAllRecords(page: number = 1, size: number = 100): void {
-    // In development mode, skip API calls and use mock data
+    // In development mode, use mock data from localStorage or MOCK_ATTENDANCE
     if (USE_MOCK_DATA_ONLY) {
-      this.mergeAndPublish(MOCK_ATTENDANCE);
+      const stored = localStorage.getItem('attendanceTestData');
+      const data = stored ? JSON.parse(stored) : MOCK_ATTENDANCE;
+      this.mergeAndPublish(data);
       return;
     }
 
@@ -167,6 +185,14 @@ export class AttendancetableService implements OnDestroy {
   }
 
   fetchByEmployee(employeeId: number, page: number = 1, size: number = 100): void {
+    // In development mode, skip API calls and use mock data from localStorage
+    if (USE_MOCK_DATA_ONLY) {
+      const stored = localStorage.getItem('attendanceTestData');
+      const data = stored ? JSON.parse(stored) : MOCK_ATTENDANCE;
+      this.mergeAndPublish(data);
+      return;
+    }
+
     this.http.get<any>(API_ENDPOINTS.RECORD_BY_EMPLOYEE(employeeId) + `?page=${page}&size=${size}`).subscribe({
       next: (res) => this.handleFetchSuccess(res),
       error: (err) => this.handleFetchError('fetchByEmployee', err)
@@ -219,9 +245,22 @@ export class AttendancetableService implements OnDestroy {
     const today = now.toISOString().split('T')[0];
     const data = [...this.attendanceSubject.value];
     const officeHours = this.officeHoursService.getOfficeHours();
-    const workingWindow = await firstValueFrom(
-      this.attendanceScheduleResolverService.resolve(String(employeeId), now)
-    );
+
+    // In development mode, use fast defaults
+    let workingWindow: any;
+    if (USE_MOCK_DATA_ONLY) {
+      workingWindow = {
+        scheduleType: 'office-hours',
+        sourceId: '1',
+        openingTime: '09:00',
+        closingTime: '17:00',
+        shiftName: ''
+      };
+    } else {
+      workingWindow = await firstValueFrom(
+        this.attendanceScheduleResolverService.resolve(String(employeeId), now)
+      );
+    }
 
     let record = data.find(r => r.employeeId === employeeId && r.date === today);
     this.ensureRegistered(employeeId, employeeName, department);
@@ -237,8 +276,8 @@ export class AttendancetableService implements OnDestroy {
     record.appliedExpectedEnd = workingWindow.closingTime;
     record.appliedShiftName = workingWindow.shiftName;
 
-    // Get location with a 5-second timeout - proceed even if location fails
-    const location = await Promise.race([
+    // Skip location in development mode for speed
+    const location = USE_MOCK_DATA_ONLY ? null : await Promise.race([
       this.getCurrentLocation(),
       new Promise<null>(resolve => setTimeout(() => resolve(null), 5000))
     ]);
@@ -347,10 +386,15 @@ export class AttendancetableService implements OnDestroy {
 
     record.overrideOpen = true;
     this.attendanceSubject.next(records);
+    localStorage.setItem('attendanceTestData', JSON.stringify(records));
 
     if (record.apiRecordId) {
       this.overrideOpenApi(record.apiRecordId, actorUserId, reason);
     }
+  }
+
+  refreshFromLocalStorage(records: AttendanceTableRecord[]): void {
+    this.attendanceSubject.next(records);
   }
 
   overrideAttendance(
@@ -715,7 +759,18 @@ export class AttendancetableService implements OnDestroy {
       }
     });
 
+    // Apply office hours logic to calculate status
+    merged.forEach(record => {
+      record.status = this.calculateAttendanceStatus(record);
+    });
+
     this.attendanceSubject.next(merged);
+    // Save to localStorage for admin dashboard
+    try {
+      localStorage.setItem('attendanceTestData', JSON.stringify(merged));
+    } catch {
+      // Storage error, continue
+    }
   }
 
   private updateLocalAndPublish(employeeId: number, date: string, record: AttendanceTableRecord): void {
@@ -1003,6 +1058,11 @@ export class AttendancetableService implements OnDestroy {
     checkInLocation: string,
     checkInDistance: number
   ): void {
+    // Skip API calls in development mode
+    if (USE_MOCK_DATA_ONLY) {
+      return;
+    }
+
     const body = {
       employeeId,
       attendanceDate: new Date().toISOString().split('T')[0],
@@ -1028,6 +1088,12 @@ export class AttendancetableService implements OnDestroy {
     checkOutLocation: string,
     checkOutDistance: number
   ): void {
+    // Skip API calls in development mode
+    if (USE_MOCK_DATA_ONLY) {
+      this.setClockStatus('CLOCKED_OUT');
+      return;
+    }
+
     const body = {
       id: apiRecordId,
       employeeId,
@@ -1047,6 +1113,11 @@ export class AttendancetableService implements OnDestroy {
   }
 
   private overrideOpenApi(apiRecordId: number, actorUserId: number, reason: string): void {
+    // Skip API calls in development mode
+    if (USE_MOCK_DATA_ONLY) {
+      return;
+    }
+
     const body = { actorUserId, reason };
 
     this.http.post<any>(API_ENDPOINTS.OVERRIDE_OPEN(apiRecordId), body).subscribe({
@@ -1097,5 +1168,46 @@ export class AttendancetableService implements OnDestroy {
     if (records.length === 0) return 0;
     const absent = records.filter(r => r.status === 'ABSENT').length;
     return +(absent / records.length * 100).toFixed(2);
+  }
+
+  calculateAttendanceStatus(record: AttendanceTableRecord): AttendanceTableRecord['status'] {
+    const officeHours = this.officeHoursService.getOfficeHours();
+
+    // No check-in = ABSENT
+    if (!record.checkIn) {
+      return 'ABSENT';
+    }
+
+    const checkInTime = record.checkIn;
+    const openingTime = officeHours.openingTime;
+    const gracePeriod = officeHours.latenessGracePeriod;
+
+    // Check if late: after grace period
+    if (checkInTime > gracePeriod) {
+      return 'LATE';
+    }
+
+    // Within grace period or before = PRESENT
+    return 'PRESENT';
+  }
+
+  private loadFromStorage(): AttendanceTableRecord[] {
+    try {
+      const stored = localStorage.getItem(ATTENDANCE_STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {
+      // Storage error, fall back to mock
+    }
+    return MOCK_ATTENDANCE;
+  }
+
+  private saveToStorage(records: AttendanceTableRecord[]): void {
+    try {
+      localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(records));
+    } catch {
+      // Storage error, continue anyway
+    }
   }
 }

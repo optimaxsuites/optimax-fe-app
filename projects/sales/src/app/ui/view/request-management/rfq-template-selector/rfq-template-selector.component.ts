@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { RFQTemplate } from '../../../domain/procurement-request/procurement.dto';
 import { ExtendedProcurementRequest, parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
+import { MessageService } from 'primeng/api';
 
 import { RFQTemplateSection } from '../../../domain/procurement-request/procurement.dto';
 
@@ -91,7 +92,8 @@ export class RfqTemplateSelectorComponent implements OnInit {
     private fb: FormBuilder,
     private procurementService: ProcurementRequestService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private messageService: MessageService
   ) {
     this.templateForm = this.fb.group({
       templateId: ['', Validators.required],
@@ -171,7 +173,13 @@ export class RfqTemplateSelectorComponent implements OnInit {
       this.procurementService.updateRequest(parseIdToNumber(uuid), {
         rfqTemplateId: this.selectedTemplateId,
         rfqTitle: this.templateForm.get('customMessage')?.value || ''
-      } as any).subscribe({ next: navigate, error: navigate });
+      } as any).subscribe({
+        next: navigate,
+        error: (err) => {
+          console.error('Failed to save template selection', err);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save your template selection. Please try again.' });
+        }
+      });
     } else {
       navigate();
     }

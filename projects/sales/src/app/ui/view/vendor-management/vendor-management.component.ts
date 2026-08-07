@@ -19,24 +19,24 @@ export class VendorManagementComponent {
       icon: 'fa-sharp fa-solid fa-chart-line',
     },
     {
-      name: 'Vendor Approval Queue',
+      name: 'Vendor Global Registry',
       component: VendorApprovalQueueComponent,
-      icon: 'fa-sharp fa-solid fa-user-check',
+      icon: 'fa-sharp fa-solid fa-user-group',
     },
     {
       name: 'Vendor Directory',
       component: VendorManagementListComponent,
       icon: 'fa-sharp fa-solid fa-store',
     },
-    {
-      name: 'AI Vendor Intelligence',
-      component: VendorAiIntelligenceComponent,
-      icon: 'fa-sharp fa-solid fa-wand-magic-sparkles',
-    },
-    {
-      name: 'Resolution Center',
-      component: VendorResolutionCenterComponent,
-      icon: 'fa-sharp fa-solid fa-scale-balanced',
-    },
+    // {
+    //   name: 'AI Vendor Intelligence',
+    //   component: VendorAiIntelligenceComponent,
+    //   icon: 'fa-sharp fa-solid fa-wand-magic-sparkles',
+    // },
+    // {
+    //   name: 'Resolution Center',
+    //   component: VendorResolutionCenterComponent,
+    //   icon: 'fa-sharp fa-solid fa-scale-balanced',
+    // },
   ];
 }

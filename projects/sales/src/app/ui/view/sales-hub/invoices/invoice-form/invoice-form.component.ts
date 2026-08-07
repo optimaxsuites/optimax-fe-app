@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angu
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails } from '../../../../domain/sales/sales.dto';
 import { toDateInputValue } from '../../../../service/sales/date.util';
@@ -266,7 +266,6 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
 
   ngOnInit(): void {
-
     this.invoiceId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.quoteId = this.fromQuoteId || this.route.snapshot.queryParamMap.get('quoteId') || '';
     this.isEditMode = !!this.invoiceId;
@@ -274,20 +273,41 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       this.duplicateId = this.route.snapshot.queryParamMap.get('duplicateId') || '';
     }
 
-    this.loadCustomers();
-    this.loadProducts();
     this.setupFormListeners();
 
-    if (this.isEditMode) {
-      this.loadInvoice();
-    } else if (this.quoteId) {
-      this.loadQuoteForInvoice();
-      this.currentStep = 3;
-    } else if (this.duplicateId) {
-      this.loadInvoiceForDuplicate();
-    } else {
-      this.addLineItem();
-    }
+    this.isLoading = true;
+    forkJoin({
+      customers: this.salesService.getCustomers({ page: 0, size: 100 }),
+      products: this.salesService.getProducts({ page: 0, size: 100 })
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        this.customers = res.customers?.data || [];
+        this.products = res.products?.data || [];
+        this.filteredProducts = this.products;
+        this.isLoading = false;
+
+        if (this.isEditMode) {
+          this.loadInvoice();
+        } else if (this.quoteId) {
+          this.loadQuoteForInvoice();
+          this.currentStep = 3;
+        } else if (this.duplicateId) {
+          this.loadInvoiceForDuplicate();
+        } else {
+          const customerId = this.route.snapshot.queryParamMap.get('customerId');
+          if (customerId) {
+            this.invoiceForm.patchValue({ customerId: customerId });
+            this.onCustomerSelect(customerId);
+          }
+          this.addLineItem();
+        }
+      },
+      error: (error: any) => {
+        console.error('Error loading lookup values:', error);
+        this.isLoading = false;
+        this.addLineItem();
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -612,8 +632,25 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     const defaultDueDate = new Date();
     defaultDueDate.setDate(defaultDueDate.getDate() + 30);
 
-    const custId = quote.customerId.customerId || String(quote.customerId.id);
-    const custName = quote.customerName.name || String(quote.customerName);
+    let custId = '';
+    if (quote.customerId) {
+      if (typeof quote.customerId === 'object') {
+        custId = quote.customerId.customerId || String(quote.customerId.id || '');
+      } else {
+        custId = String(quote.customerId);
+      }
+    }
+    
+    let custName = '';
+    if (quote.customerName) {
+      if (typeof quote.customerName === 'object') {
+        custName = quote.customerName.name || String(quote.customerName);
+      } else {
+        custName = String(quote.customerName);
+      }
+    } else if (typeof quote.customerId === 'object' && quote.customerId) {
+      custName = quote.customerId.name || '';
+    }
 
     const addOpts = Array.isArray(quote.additionalOptions) ? quote.additionalOptions[0] : (quote.additionalOptions as any);
 
@@ -665,8 +702,25 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     this.quoteId = invoice.quoteId || '';
     this.loadedInvoiceSelectedCustomerBank = invoice.selectedCustomerBank || null;
     
-    const custId = invoice.customerId.customerId || String(invoice.customerId.id);
-    const custName = invoice.customerName.name || String(invoice.customerName);
+    let custId = '';
+    if (invoice.customerId) {
+      if (typeof invoice.customerId === 'object') {
+        custId = invoice.customerId.customerId || String(invoice.customerId.id || '');
+      } else {
+        custId = String(invoice.customerId);
+      }
+    }
+    
+    let custName = '';
+    if (invoice.customerName) {
+      if (typeof invoice.customerName === 'object') {
+        custName = invoice.customerName.name || String(invoice.customerName);
+      } else {
+        custName = String(invoice.customerName);
+      }
+    } else if (typeof invoice.customerId === 'object' && invoice.customerId) {
+      custName = invoice.customerId.name || '';
+    }
 
     this.invoiceForm.patchValue({
       customerId: custId,
@@ -815,9 +869,14 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       status: 'ACTIVE'
     };
 
+    // Note: the backend's Invoice entity stores customerId as a plain numeric
+    // foreign key (java.lang.Long) and customerName as a string — it expands
+    // them back into full nested objects on read (see populateForm() above),
+    // but rejects a nested object on write with a 500 JSON-parse error. So this
+    // outgoing payload intentionally diverges from the Invoice read-shape here.
     const invoiceData: any = {
-      customerId: customerObj,
-      customerName: customerObj,
+      customerId: customerObj.id,
+      customerName: customerObj.name,
       currency: formValue.currency,
       issueDate: new Date(formValue.issueDate),
       dueDate: new Date(formValue.dueDate),
@@ -825,8 +884,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       shippingAddress: this.showShippingDetails ? this.shippingAddress : undefined,
       paymentTerms: [{
         id: 1,
-        customerId: customerObj,
-        customerName: customerObj,
+        customerId: customerObj.id,
+        customerName: customerObj.name,
         paymentPeriod: this.paymentPeriodDays || 30,
         paymentMethod: this.paymentMethod,
         paymentMode: this.paymentMode,

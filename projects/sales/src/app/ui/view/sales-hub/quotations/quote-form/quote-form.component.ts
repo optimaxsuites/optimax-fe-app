@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angu
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, Product, Quote, QuoteStatus, QuoteItem, CustomerBankDetails } from '../../../../domain/sales/sales.dto';
 import { toDateInputValue } from '../../../../service/sales/date.util';
@@ -236,18 +236,43 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       this.duplicateId = this.route.snapshot.queryParamMap.get('duplicateId') || '';
     }
 
-    this.loadCustomers();
-    this.loadProducts();
-    this.loadCategories();
     this.setupFormListeners();
 
-    if (this.isEditMode) {
-      this.loadQuote();
-    } else if (this.duplicateId) {
-      this.loadQuoteForDuplicate();
-    } else if (!this.productId) {
-      this.addLineItem();
-    }
+    this.isLoading = true;
+    forkJoin({
+      customers: this.salesService.getCustomers({ page: 0, size: 100 }),
+      products: this.salesService.getProducts({ page: 0, size: 100 }),
+      categories: this.salesService.getCategories()
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        this.customers = res.customers?.data || [];
+        this.products = res.products?.data || [];
+        this.filteredProducts = this.products;
+        this.categories = res.categories || [];
+        this.isLoading = false;
+
+        if (this.isEditMode) {
+          this.loadQuote();
+        } else if (this.duplicateId) {
+          this.loadQuoteForDuplicate();
+        } else {
+          if (this.customerId) {
+            this.quoteForm.patchValue({ customerId: this.customerId });
+            this.onCustomerSelect(this.customerId);
+          }
+          if (this.productId) {
+            this.checkAndAddProductFromParam();
+          } else {
+            this.addLineItem();
+          }
+        }
+      },
+      error: (error: any) => {
+        console.error('Error loading lookup values:', error);
+        this.isLoading = false;
+        this.addLineItem();
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -771,6 +796,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       next: (quote: Quote | null) => {
         if (quote) {
           this.populateForm(quote);
+          this.initializeCategoriesForExistingItems();
         }
         this.isLoading = false;
       },
@@ -811,6 +837,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   private applyDuplicateSource(quote: Quote): void {
     this.populateForm(quote);
+    this.initializeCategoriesForExistingItems();
 
     // Refresh the dates rather than carrying over the original quote's -
     // this is a new quote being drafted today, not an edit of the old one.
@@ -825,16 +852,37 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   private populateForm(quote: Quote): void {
     this.loadedQuoteSelectedCustomerBank = quote.selectedCustomerBank;
     const addOpts = Array.isArray(quote.additionalOptions) ? quote.additionalOptions[0] : (quote.additionalOptions as any);
+    
+    let custId = '';
+    if (quote.customerId) {
+      if (typeof quote.customerId === 'object') {
+        custId = quote.customerId.customerId || String(quote.customerId.id || '');
+      } else {
+        custId = String(quote.customerId);
+      }
+    }
+    
+    let custName = '';
+    if (quote.customerName) {
+      if (typeof quote.customerName === 'object') {
+        custName = quote.customerName.name || String(quote.customerName);
+      } else {
+        custName = String(quote.customerName);
+      }
+    } else if (typeof quote.customerId === 'object' && quote.customerId) {
+      custName = quote.customerId.name || '';
+    }
+
     this.quoteForm.patchValue({
-      customerId: quote.customerId.customerId || String(quote.customerId.id),
-      customerName: quote.customerName.name || String(quote.customerName),
+      customerId: custId,
+      customerName: custName,
       currency: quote.currency,
       quoteDate: this.formatDateForInput(quote.createdAt),
       validUntil: this.formatDateForInput(quote.validUntil),
       notes: addOpts?.notes || '',
       terms: addOpts?.terms || ''
     });
-    this.onCustomerSelect(quote.customerId.customerId || String(quote.customerId.id));
+    this.onCustomerSelect(custId);
     
     if (quote.merchantDetails) {
       this.billedBy = {
@@ -1015,9 +1063,14 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       status: 'ACTIVE'
     };
 
-    const quoteData: Partial<Quote> = {
-      customerId: customerObj,
-      customerName: customerObj,
+    // Note: the backend's Quote entity stores customerId as a plain numeric
+    // foreign key (java.lang.Long) and customerName as a string — it expands
+    // them back into full nested objects on read (see populateForm() above),
+    // but rejects a nested object on write with a 500 JSON-parse error. So this
+    // outgoing payload intentionally diverges from the Quote read-shape here.
+    const quoteData: any = {
+      customerId: customerObj.id,
+      customerName: customerObj.name,
       currency: formValue.currency,
       validUntil: new Date(formValue.validUntil),
       merchantDetails: {
