@@ -41,11 +41,6 @@
     It isn’t office hours yet.
   </p>
 
-  <!-- ABSENT -->
-  <p *ngIf="isAfterOpening && isAbsentToday" class="absent-warning">
-    You have been marked ABSENT for today.
-  </p>
-
   <!-- CLOCK IN (only during office hours) -->
   <button
     *ngIf="status === 'CLOCKED_OUT'
@@ -57,6 +52,11 @@
     (click)="toggleClock()">
     Clock In
   </button>
+
+  <!-- ABSENT (only show if they can't clock in) -->
+  <p *ngIf="isAfterOpening && isAbsentToday && status === 'CLOCKED_OUT'" class="absent-warning">
+    You have been marked ABSENT for today.
+  </p>
 
   <!-- CLOCK OUT (allowed anytime after opening) -->
   <button

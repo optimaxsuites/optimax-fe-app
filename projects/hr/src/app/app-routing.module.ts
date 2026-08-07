@@ -70,6 +70,7 @@ import { OffboardingFormComponent } from './ui/view/employee-management/offboard
 import { EmployeeUpdateFormComponent } from './ui/view/employee-management/employee-update-form/employee-update-form.component';
 import { EmployeeOnboardingFormComponent } from './ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
 import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction/payroll-correction.component';
+import { EmployeeHistoryComponent } from './ui/view/attendance/admin/employee-history/employee-history.component';
 
 const DEFAULT_LOAN_ROUTE = 'loan/uu';
 
@@ -384,6 +385,10 @@ const routes: Routes = [
   {
     path: 'leave/:uuid',
     component: LeaveComponent,
+  },
+  {
+    path: 'attendance/employee-history',
+    component: EmployeeHistoryComponent,
   },
   {
     path: 'attendance/:uuid',
