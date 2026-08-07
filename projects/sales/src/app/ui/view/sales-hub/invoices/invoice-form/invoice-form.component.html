@@ -1794,7 +1794,7 @@
 </div>
 
 <!-- Custom Discount Modal Overlay -->
-<div class="custom-modal-backdrop" *ngIf="showDiscountModal" (click)="showDiscountModal = false">
+<div class="custom-modal-backdrop" *ngIf="showDiscountModal" (click)="$event.target === $event.currentTarget && (showDiscountModal = false)">
   <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
     <div class="custom-modal-header">
       <div class="header-title-group">
@@ -1860,7 +1860,7 @@
 </div>
 
 <!-- Custom Additional Charges Modal Overlay -->
-<div class="custom-modal-backdrop" *ngIf="showChargesModal" (click)="showChargesModal = false">
+<div class="custom-modal-backdrop" *ngIf="showChargesModal" (click)="$event.target === $event.currentTarget && (showChargesModal = false)">
   <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 500px;">
     <div class="custom-modal-header">
       <div class="header-title-group">
@@ -1933,7 +1933,7 @@
   </div>
 
   <!-- Billed By Edit Modal -->
-  <div class="custom-modal-backdrop" *ngIf="showBilledByModal" (click)="cancelBilledByEdit()">
+  <div class="custom-modal-backdrop" *ngIf="showBilledByModal" (click)="$event.target === $event.currentTarget && cancelBilledByEdit()">
     <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 520px;">
       <div class="custom-modal-header">
         <div class="header-title-group">
@@ -1998,7 +1998,5 @@
         <button type="button" class="btn-modal-cancel" (click)="cancelBilledByEdit()">Cancel</button>
         <button type="button" class="btn-modal-save" (click)="saveBilledBy()">Save Changes</button>
       </div>
-    </div>
   </div>
-
 </div>

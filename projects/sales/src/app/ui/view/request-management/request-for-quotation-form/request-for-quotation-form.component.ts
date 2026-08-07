@@ -218,6 +218,10 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       error: (err) => {
         console.warn('Request not found in database, treating as new request draft.', err);
         this.isEditMode = false;
+        this.messageService.add({
+          severity: 'error', summary: 'Error',
+          detail: 'Could not load your saved request details — the earlier save may have failed. Please re-enter them.'
+        });
       }
     });
   }
@@ -326,15 +330,16 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       formValue.procurementType = 'PRODUCT';
 
       if (formValue.items && Array.isArray(formValue.items)) {
+        // Send categoryId only — the backend expects a plain FK reference here,
+        // not a nested category object (that shape crashes deserialization).
+        // The readable name is looked up locally via procurementCategories when
+        // it's needed for display (e.g. vendor-suggestion matching).
         formValue.items = formValue.items.map((it: any) => {
-          const matchedCategory = this.procurementCategories.find(c => c.categoryId === it.categoryId);
-          return {
-            ...it,
-            category: matchedCategory || { id: 0, categoryId: it.categoryId || 'GENERAL', name: it.categoryId || 'General' }
-          };
+          const { category, ...rest } = it;
+          return rest;
         });
       }
-      
+
       const firstItem = formValue.items && formValue.items[0];
       if (firstItem) {
         formValue.currency = firstItem.currency || 'NGN';
@@ -344,7 +349,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       }
 
       const requestId = this.requestId || uuidV4();
-      
+
       if (this.isEditMode && this.requestId) {
         this.procurementRequestService.updateRequest(parseIdToNumber(this.requestId), formValue).subscribe({
           next: (req) => {
@@ -352,7 +357,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
           },
           error: (err) => {
             console.error('Failed to update request', err);
-            this.router.navigate(['/admin/sales/commerce/requests/new/product', requestId, 'template']);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save request details. Please try again.' });
           }
         });
       } else {
@@ -365,7 +370,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
           },
           error: (err) => {
             console.error('Failed to create request', err);
-            this.router.navigate(['/admin/sales/commerce/requests/new/product', requestId, 'template']);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save request details. Please try again.' });
           }
         });
       }
@@ -381,12 +386,10 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     formValue.status = 'DRAFT';
 
     if (formValue.items && Array.isArray(formValue.items)) {
+      // See onNext() — the backend rejects a nested category object, categoryId alone is enough.
       formValue.items = formValue.items.map((it: any) => {
-        const matchedCategory = this.procurementCategories.find(c => c.categoryId === it.categoryId);
-        return {
-          ...it,
-          category: matchedCategory || { id: 0, categoryId: it.categoryId || 'GENERAL', name: it.categoryId || 'General' }
-        };
+        const { category, ...rest } = it;
+        return rest;
       });
     }
 
@@ -411,7 +414,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
         },
         error: (err) => {
           console.error('Failed to update request draft', err);
-          this.router.navigate(['/admin/sales/commerce/requests']);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save draft. Please try again.' });
         }
       });
     } else {
@@ -425,7 +428,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
         },
         error: (err) => {
           console.error('Failed to create request draft', err);
-          this.router.navigate(['/admin/sales/commerce/requests']);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save draft. Please try again.' });
         }
       });
     }

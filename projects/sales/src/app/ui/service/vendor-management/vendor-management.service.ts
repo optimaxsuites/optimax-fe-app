@@ -2734,6 +2734,15 @@ export class VendorService {
       return true;
     });
 
+    // Apply tenant-specific status override so filters (such as ACTIVE status) match correctly
+    vendors = vendors.map(v => {
+      const tenantStatus = TenantVendorApprovalStore.getStatus(this.tenantId, v.id);
+      if (tenantStatus) {
+        return { ...v, status: tenantStatus };
+      }
+      return v;
+    });
+
     if (!filters) return vendors;
 
     if (filters.statuses) {

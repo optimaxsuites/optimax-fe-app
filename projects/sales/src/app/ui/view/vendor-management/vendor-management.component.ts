@@ -28,15 +28,15 @@ export class VendorManagementComponent {
       component: VendorManagementListComponent,
       icon: 'fa-sharp fa-solid fa-store',
     },
-    {
-      name: 'AI Vendor Intelligence',
-      component: VendorAiIntelligenceComponent,
-      icon: 'fa-sharp fa-solid fa-wand-magic-sparkles',
-    },
-    {
-      name: 'Resolution Center',
-      component: VendorResolutionCenterComponent,
-      icon: 'fa-sharp fa-solid fa-scale-balanced',
-    },
+    // {
+    //   name: 'AI Vendor Intelligence',
+    //   component: VendorAiIntelligenceComponent,
+    //   icon: 'fa-sharp fa-solid fa-wand-magic-sparkles',
+    // },
+    // {
+    //   name: 'Resolution Center',
+    //   component: VendorResolutionCenterComponent,
+    //   icon: 'fa-sharp fa-solid fa-scale-balanced',
+    // },
   ];
 }

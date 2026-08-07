@@ -213,10 +213,20 @@ export class ProcurementRequestService {
     return this.getRequest(requestId).pipe(
       switchMap(request => {
         const categoryNames = this.getRequestCategoryNames(request);
+        console.info('[getVendorSuggestions] RFQ', requestId, '→ category names found on request:', categoryNames, request);
         // Fetch every accepted vendor — rejection/pending vendors are never
         // eligible for suggestion, regardless of category.
         return this.vendorService.getVendors(1, 200, { status: VendorStatus.ACTIVE }).pipe(
-          map(response => this.buildVendorSuggestions(response.vendors, categoryNames))
+          map(response => {
+            console.info('[getVendorSuggestions] active vendors fetched:', response.vendors.map(v => ({
+              id: v.id, name: v.companyName, status: v.status,
+              categories: v.categories, supplyCategories: v.registration?.step5?.supplyCategories,
+              primaryCategory: v.registration?.step5?.primaryCategory
+            })));
+            const suggestions = this.buildVendorSuggestions(response.vendors, categoryNames);
+            console.info('[getVendorSuggestions] result:', suggestions.map(s => `${s.vendorName} (score ${s.matchScore}) — ${s.reason}`));
+            return suggestions;
+          })
         );
       }),
       catchError((err) => {
@@ -226,15 +236,27 @@ export class ProcurementRequestService {
     );
   }
 
-  /** Every distinct category name referenced by the request (top-level + line items). */
+  /** Every distinct category name/identifier referenced by the request (top-level + line items). */
   private getRequestCategoryNames(request: ProcurementRequest): string[] {
     const names = new Set<string>();
     if (request.serviceCategory) names.add(request.serviceCategory);
     (request.items || []).forEach(item => {
       if (item.category?.name) names.add(item.category.name);
+      // categoryId survives even if the backend doesn't round-trip the nested
+      // category object's readable name — fall back to it so matching still works.
+      if ((item as any).categoryId) names.add((item as any).categoryId);
       if (item.serviceCategory) names.add(item.serviceCategory);
     });
     return Array.from(names);
+  }
+
+  /** Lowercased, punctuation-stripped significant words (2+ letters) from a string. */
+  private significantWords(text: string): string[] {
+    const stopWords = new Set(['and', 'the', 'for', 'with', 'off', 'our', 'but', 'nor', 'yet', 'are', 'not', 'you', 'this', 'that']);
+    return text.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length >= 2 && !stopWords.has(w));
   }
 
   private vendorMatchesCategory(vendor: Vendor, categoryNames: string[]): boolean {
@@ -244,30 +266,42 @@ export class ProcurementRequestService {
       ...(vendor.registration?.step5?.supplyCategories || []),
       vendor.registration?.step5?.primaryCategory || ''
     ].join(' ').toLowerCase();
+    const vendorWords = new Set(this.significantWords(vendorCategoryText));
 
     return categoryNames.some(name => {
+      const lowerName = name.toLowerCase();
       // Direct match against the RFQ category's own name (handles vendors whose
       // category strings already line up, e.g. imported/legacy records).
-      if (vendorCategoryText.includes(name.toLowerCase())) return true;
+      if (vendorCategoryText.includes(lowerName)) return true;
       const keywords = PROCUREMENT_CATEGORY_KEYWORDS[name] || [];
-      return keywords.some(kw => vendorCategoryText.includes(kw));
+      if (keywords.some(kw => vendorCategoryText.includes(kw))) return true;
+      // Fuzzy fallback: any significant word shared between the RFQ category
+      // and the vendor's own category text — covers custom/free-text categories
+      // that aren't in the fixed keyword map above.
+      const reqWords = this.significantWords(lowerName);
+      return reqWords.some(rw => {
+        if (vendorWords.has(rw)) return true;
+        for (const vw of vendorWords) {
+          if (vw.includes(rw) || rw.includes(vw)) return true;
+        }
+        return false;
+      });
     });
   }
 
   private buildVendorSuggestions(vendors: Vendor[], categoryNames: string[]): VendorSuggestion[] {
     return vendors
-      .filter(v => this.vendorMatchesCategory(v, categoryNames))
       .map(v => {
-        const tierScore = v.tier === 'PREFERRED' ? 20 : v.tier === 'APPROVED' ? 10 : 0;
-        const performanceScore = Math.round((v.performanceScore || 0) * 0.3);
-        const ratingScore = Math.round((v.averageRating || 0) / 5 * 10);
-        const matchScore = Math.min(100, 40 + tierScore + performanceScore + ratingScore);
+        const matches = this.vendorMatchesCategory(v, categoryNames);
+        
+        // Base match score: if it matches category, start at 70, otherwise start at 40
+        const matchBase = matches ? 70 : 40;
+        const tierScore = v.tier === 'PREFERRED' ? 10 : v.tier === 'APPROVED' ? 5 : 0;
+        const performanceScore = Math.round((v.performanceScore || 0) * 0.15);
+        const ratingScore = Math.round((v.averageRating || 0) / 5 * 5);
+        const matchScore = Math.min(100, matchBase + tierScore + performanceScore + ratingScore);
 
-        const matchedCategory = categoryNames.find(name => {
-          const text = (v.categories || []).join(' ').toLowerCase();
-          return text.includes(name.toLowerCase()) ||
-            (PROCUREMENT_CATEGORY_KEYWORDS[name] || []).some(kw => text.includes(kw));
-        });
+        const matchedCategory = categoryNames.find(name => this.vendorMatchesCategory(v, [name]));
 
         return {
           id: Number(v.id.replace(/\D/g, '')) || 0,
@@ -281,14 +315,14 @@ export class ProcurementRequestService {
           completionRate: v.performanceMetrics?.onTimeDeliveryRate || 0,
           averageResponseTime: 0,
           matchScore,
-          isRecommended: matchScore >= 70,
-          reason: matchedCategory
-            ? `Accepted vendor matching your ${matchedCategory} category · ${this.tierLabel(v.tier)} tier · ${Math.round(v.performanceScore || 0)}% performance score`
-            : `Accepted ${this.tierLabel(v.tier)} tier vendor`
+          isRecommended: matches && matchScore >= 70,
+          reason: matches && matchedCategory
+            ? `Preferred match for ${matchedCategory} category · ${this.tierLabel(v.tier)} tier`
+            : `Approved ${this.tierLabel(v.tier)} tier vendor`
         } as VendorSuggestion;
       })
       .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, 10);
+      .slice(0, 100);
   }
 
   private tierLabel(tier: any): string {
