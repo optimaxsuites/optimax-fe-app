@@ -62,6 +62,7 @@ export class ChannelSidebarComponent {
   @Input() searchResults: { msg: any; channelId: string; channelName: string }[] = [];
   @Input() totalDmUnread = 0;
   @Input() workspaceName = 'OptimaX';
+  @Input() selfStats: { openIssueCount: number; openTaskCount: number; openEventCount: number } = { openIssueCount: 0, openTaskCount: 0, openEventCount: 0 };
 
   // ── Outputs ─────────────────────────────────────────
   @Output() channelSelected = new EventEmitter<string>();
@@ -81,6 +82,7 @@ export class ChannelSidebarComponent {
   @Output() workspaceOpened = new EventEmitter<DmContact>();
   @Output() channelAttachmentsRequested = new EventEmitter<Channel>();
   @Output() viewProfile = new EventEmitter<DmContact>();
+  @Output() selfWorkspaceOpened = new EventEmitter<void>();
 
   // ── Draggable divider ────────────────────────────────
   topPanelHeight = 220;

@@ -77,6 +77,8 @@ import { FeedComponent } from './feed/feed.component';
 import { EmployeeRelativesWidgetComponent } from './hr-dashboard/employee-relatives-widget/employee-relatives-widget.component';
 import { MeetingsAppointmentsComponent } from './meetings-appointments/meetings-appointments.component';
 import { DashUserProfileComponent } from './user-profile/user-profile.component';
+import { RouteReuseStrategy } from '@angular/router';
+import { CommunicationReuseStrategy } from './communication/communication-reuse.strategy';
 
 @NgModule({
   declarations: [
@@ -154,6 +156,10 @@ import { DashUserProfileComponent } from './user-profile/user-profile.component'
     },
     JwtHelperService,
     DashboardOverviewComponent,
+    {
+      provide: RouteReuseStrategy,
+      useClass: CommunicationReuseStrategy,
+    },
   ],
   bootstrap: [AppComponent],
 })

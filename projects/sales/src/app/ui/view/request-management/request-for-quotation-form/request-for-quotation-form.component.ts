@@ -336,7 +336,10 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
         // it's needed for display (e.g. vendor-suggestion matching).
         formValue.items = formValue.items.map((it: any) => {
           const { category, ...rest } = it;
-          return rest;
+          return {
+            ...rest,
+            deliveryDeadline: it.deliveryDeadline ? new Date(it.deliveryDeadline).toISOString() : null
+          };
         });
       }
 
@@ -389,7 +392,10 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       // See onNext() — the backend rejects a nested category object, categoryId alone is enough.
       formValue.items = formValue.items.map((it: any) => {
         const { category, ...rest } = it;
-        return rest;
+        return {
+          ...rest,
+          deliveryDeadline: it.deliveryDeadline ? new Date(it.deliveryDeadline).toISOString() : null
+        };
       });
     }
 

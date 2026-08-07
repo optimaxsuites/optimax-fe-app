@@ -7,11 +7,13 @@ import { SalesService } from '../../../../service/sales/sales.service';
 import { Product, Category, MeasurementUnit, Supplier } from '../../../../domain/sales/sales.dto';
 import { formatApiDate } from '../../../../service/sales/date.util';
 import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, ToastModule],
+  providers: [MessageService],
   templateUrl: './product-service-catalog-list.component.html',
   styleUrls: ['./product-service-catalog-list.component.scss']
 })

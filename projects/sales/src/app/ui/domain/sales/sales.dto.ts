@@ -139,6 +139,9 @@ export interface Product {
   discount: number;
   supplier: Supplier;
   category: Category;
+  categoryId?: number;
+  measurementUnitId?: number;
+  supplierId?: number;
   stockMovement: StockMovement;
   taxRate: number;
   images: string[];

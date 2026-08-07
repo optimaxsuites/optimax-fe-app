@@ -666,6 +666,9 @@ export class CommunicationComponent
     links: string[];
   } = { open: false, channel: null, attachments: [], loading: false, activeTab: 'documents', searchQuery: '', links: [] };
 
+  selfContact: DmContact | null = null;
+  selfStats = { openIssueCount: 0, openTaskCount: 0, openEventCount: 0 };
+
   get totalDmUnread(): number {
     return (this.dmContacts || []).reduce((sum, c) => sum + (c.unreadCount || 0), 0);
   }
@@ -4007,7 +4010,15 @@ export class CommunicationComponent
   }
 
   private stripSelfFromDmContacts(contacts: DmContact[]): DmContact[] {
-    return (contacts || []).filter((contact) => !this.isOwnDmContact(contact));
+    const result: DmContact[] = [];
+    for (const c of contacts || []) {
+      if (this.isOwnDmContact(c)) {
+        this.selfContact = c;
+      } else {
+        result.push(c);
+      }
+    }
+    return result;
   }
 
   private loadEmployees(_forceRefresh = false): void {
@@ -4100,6 +4111,52 @@ export class CommunicationComponent
         });
         const list: EmployeeProfile[] = Array.from(mergedProfiles.values())
           .filter((profile) => this.employeeUserId(profile) != null);
+
+        // Capture self BEFORE filter removes the logged-in user
+        const selfProfile = list.find(
+          (e) =>
+            this.isOwnUserId(this.employeeUserId(e)) ||
+            this.isOwnUserId(Number(e.id)),
+        );
+        if (selfProfile) {
+          const spFirst = selfProfile.firstName || '';
+          const spLast = selfProfile.lastName || '';
+          const spFullName =
+            `${spFirst} ${spLast}`.trim() ||
+            selfProfile.fullname ||
+            selfProfile.user?.fullname ||
+            this.me.name ||
+            'Me';
+          const spUserId = Number(
+            this.employeeUserId(selfProfile) || selfProfile.id,
+          );
+          this.selfContact = {
+            id: `self-${selfProfile.id}`,
+            employeeId: selfProfile.id,
+            userId: spUserId,
+            username:
+              selfProfile.user?.username || selfProfile.username || '',
+            shortName: spLast
+              ? `${spFirst} ${spLast[0]}.`
+              : spFirst || spFullName,
+            fullName: spFullName,
+            initials: initialsFrom(spFullName),
+            avatarColor: _colorFor(selfProfile.id),
+            email:
+              selfProfile.user?.email ||
+              selfProfile.email ||
+              sessionStorage.getItem('email') ||
+              localStorage.getItem('email') ||
+              '',
+            online: true,
+            hasUnread: false,
+            jobTitle: selfProfile.jobTitle,
+            department: selfProfile.department?.name,
+          };
+          const selfAvatar = this.getEmpImageUrl(selfProfile);
+          if (selfAvatar) this.selfContact.avatarUrl = selfAvatar;
+        }
+
         const existingContacts = new Map(
           this.dmContacts.map((contact) => [Number(contact.userId), contact]),
         );
@@ -8136,6 +8193,23 @@ export class CommunicationComponent
       .filter((r) => r.email);
   }
 
+  openSelfAnalyticsPanel(): void {
+    const self: DmContact = this.selfContact ?? {
+      id: String(this.me.userId),
+      userId: Number(this.me.userId),
+      employeeId: 0,
+      fullName: this.me.name,
+      shortName: this.me.shortName,
+      initials: this.me.initials,
+      avatarColor: this.me.avatarColor,
+      avatarUrl: this.me.avatarUrl || undefined,
+      online: true,
+      hasUnread: false,
+      email: sessionStorage.getItem('email') || localStorage.getItem('email') || undefined,
+    };
+    this.openAnalyticsPanel(self);
+  }
+
   openAnalyticsPanel(contact: DmContact): void {
     const uid = contact.userId;
     const email = (contact.email || '').toLowerCase();
@@ -8299,78 +8373,117 @@ export class CommunicationComponent
       events: this.collabService.getAllMeetingEvents().pipe(catchError(() => of([]))),
     }).subscribe({
       next: ({ issues, tasks, events }) => {
-        const issueArr: any[] = Array.isArray(issues) ? issues : (issues as any)?.content ?? [];
-        const taskArr: any[] = Array.isArray(tasks) ? tasks : (tasks as any)?.content ?? [];
-        this.allIssues = issueArr;
-        this.allTasks = taskArr;
-        this.allEvents = Array.isArray(events) ? events : [];
+        const toArr = (r: any): any[] =>
+          Array.isArray(r) ? r :
+          Array.isArray(r?.content) ? r.content :
+          Array.isArray(r?.data) ? r.data :
+          Array.isArray(r?.items) ? r.items :
+          Array.isArray(r?.results) ? r.results : [];
 
-        const emailToUserId = new Map<string, number>();
-        for (const contact of this.dmContacts) {
-          if (contact.email) emailToUserId.set(contact.email.toLowerCase(), contact.userId);
+        const issueArr = toArr(issues);
+        const taskArr  = toArr(tasks);
+        const eventArr = toArr(events);
+        this.allIssues = issueArr;
+        this.allTasks  = taskArr;
+        this.allEvents = eventArr;
+
+        // ── build all-person lookup tables (DM contacts + self) ──────────────
+        const selfUserId = Number(this.me.userId || 0);
+        const selfEmpId  = this.selfContact?.employeeId ?? 0;
+        const selfEmail  = (this.selfContact?.email || sessionStorage.getItem('email') || localStorage.getItem('email') || '').toLowerCase().trim();
+        const selfName   = (this.selfContact?.fullName || this.me.name || '').toLowerCase().trim();
+
+        // userId → DmContact (or self sentinel -1)
+        const contactByUserId  = new Map<number, number>(); // userId  → internal key (userId)
+        const contactByEmpId   = new Map<number, number>(); // empId   → userId
+        const contactByEmail   = new Map<string, number>(); // email   → userId
+        const contactByName    = new Map<string, number>(); // name    → userId
+        const contactByUname   = new Map<string, number>(); // username → userId
+
+        const registerContact = (uid: number, empId: number, email: string, name: string, username: string) => {
+          if (uid)      contactByUserId.set(uid, uid);
+          if (empId)    contactByEmpId.set(empId, uid);
+          if (email)    contactByEmail.set(email, uid);
+          if (name)     contactByName.set(name, uid);
+          if (username) contactByUname.set(username.toLowerCase(), uid);
+        };
+
+        for (const c of this.dmContacts) {
+          registerContact(
+            c.userId,
+            c.employeeId,
+            (c.email || '').toLowerCase().trim(),
+            (c.fullName || '').toLowerCase().trim(),
+            (c.username || '').toLowerCase().trim(),
+          );
+        }
+        if (selfUserId) {
+          registerContact(selfUserId, selfEmpId, selfEmail, selfName, '');
         }
 
+        // ── resolve any string (email/name/username) → userId ────────────────
+        const resolve = (raw: string): number => {
+          const s = raw.toLowerCase().trim();
+          if (!s) return 0;
+          if (contactByEmail.has(s))  return contactByEmail.get(s)!;
+          if (contactByName.has(s))   return contactByName.get(s)!;
+          if (contactByUname.has(s))  return contactByUname.get(s)!;
+          for (const [e, uid] of contactByEmail) if (s.includes(e) || e.includes(s)) return uid;
+          for (const [n, uid] of contactByName)  if (s.includes(n) || n.includes(s)) return uid;
+          return 0;
+        };
+
+        // ── issues ──────────────────────────────────────────────────────────
         const issueCount = new Map<number, number>();
+        const ISSUE_DONE = new Set(['DONE', 'WONT_FIX', 'CLOSED', 'RESOLVED', 'ARCHIVED']);
         for (const issue of issueArr) {
-          if (issue.status === 'DONE' || issue.status === 'WONT_FIX') continue;
+          if (ISSUE_DONE.has(String(issue.status || '').toUpperCase())) continue;
           let uid = Number(issue.assigneeUserId || 0);
-          if (!uid && issue.assigneeEmail) {
-            uid = emailToUserId.get((issue.assigneeEmail as string).toLowerCase()) || 0;
-          }
+          if (!uid) uid = resolve(issue.assigneeEmail || issue.assigneeName || '');
           if (uid) issueCount.set(uid, (issueCount.get(uid) ?? 0) + 1);
         }
 
-        // Tasks: backend uses assigneeEmployee.id (employeeId) not userId
-        const taskCountByEmpId = new Map<number, number>();
+        // ── tasks ────────────────────────────────────────────────────────────
+        const taskCount = new Map<number, number>(); // keyed by userId
         const TASK_DONE = new Set(['DONE', 'ARCHIVED', 'CLOSED', 'COMPLETED']);
         for (const task of taskArr) {
-          if (TASK_DONE.has(task.status)) continue;
-          const empId = Number(
-            task.assigneeEmployee?.id ??
-            task.assigneeEmployeeId ??
-            task.assigneeUserId ??
-            task.userId ?? 0,
-          );
-          if (empId) taskCountByEmpId.set(empId, (taskCountByEmpId.get(empId) ?? 0) + 1);
+          if (TASK_DONE.has(String(task.status || '').toUpperCase())) continue;
+          // try employee ID first (backend returns assigneeEmployee.id)
+          const empId = Number(task.assigneeEmployee?.id ?? task.assigneeEmployeeId ?? 0);
+          let uid = empId ? (contactByEmpId.get(empId) ?? 0) : 0;
+          // fallback: direct userId fields
+          if (!uid) uid = Number(task.assigneeUserId ?? task.userId ?? 0);
+          // fallback: name/email strings
+          if (!uid) uid = resolve(task.assigneeName || task.assigneeEmail || '');
+          if (uid) taskCount.set(uid, (taskCount.get(uid) ?? 0) + 1);
         }
 
-        // Events: attendees are email/name strings; also check organizer
-        const eventCountByContactId = new Map<number, number>();
-        const contactByEmail = new Map<string, number>(); // email → userId
-        const contactByName  = new Map<string, number>(); // normalised fullName → userId
-        for (const c of this.dmContacts) {
-          if (c.email)    contactByEmail.set(c.email.toLowerCase(), c.userId);
-          if (c.fullName) contactByName.set(c.fullName.toLowerCase().trim(), c.userId);
-        }
-        const resolveAttendee = (raw: string): number => {
-          const s = String(raw || '').toLowerCase().trim();
-          if (!s) return 0;
-          // exact email match
-          if (contactByEmail.has(s)) return contactByEmail.get(s)!;
-          // exact name match
-          if (contactByName.has(s)) return contactByName.get(s)!;
-          // email contains part of the string (e.g. "John Doe <john@co.com>")
-          for (const [email, uid] of contactByEmail) if (s.includes(email)) return uid;
-          // string contains the full name
-          for (const [name, uid] of contactByName) if (s.includes(name) || name.includes(s)) return uid;
-          return 0;
-        };
-        for (const ev of this.allEvents) {
+        // ── events ───────────────────────────────────────────────────────────
+        const eventCount = new Map<number, number>();
+        for (const ev of eventArr) {
           const attendees: string[] = Array.isArray(ev.attendees) ? ev.attendees : [];
-          const all = [...attendees];
-          if (ev.organizer) all.push(ev.organizer);
-          for (const a of all) {
-            const uid = resolveAttendee(a);
-            if (uid) eventCountByContactId.set(uid, (eventCountByContactId.get(uid) ?? 0) + 1);
+          const participants = ev.organizer ? [...attendees, ev.organizer] : [...attendees];
+          for (const a of participants) {
+            const uid = Number(ev.attendeeUserIds?.[a]) || resolve(String(a));
+            if (uid) eventCount.set(uid, (eventCount.get(uid) ?? 0) + 1);
           }
         }
 
+        // ── apply to DM contacts ────────────────────────────────────────────
         this.dmContacts = this.dmContacts.map((c) => ({
           ...c,
           openIssueCount: issueCount.get(c.userId) ?? 0,
-          openTaskCount: taskCountByEmpId.get(c.employeeId) ?? taskCountByEmpId.get(c.userId) ?? 0,
-          openEventCount: eventCountByContactId.get(c.userId) ?? 0,
+          openTaskCount:  taskCount.get(c.userId) ?? 0,
+          openEventCount: eventCount.get(c.userId) ?? 0,
         }));
+
+        // ── self stats ──────────────────────────────────────────────────────
+        this.selfStats = {
+          openIssueCount: selfUserId ? (issueCount.get(selfUserId) ?? 0) : 0,
+          openTaskCount:  selfUserId ? (taskCount.get(selfUserId) ?? 0) : 0,
+          openEventCount: selfUserId ? (eventCount.get(selfUserId) ?? 0) : 0,
+        };
+
         this.cdr.markForCheck();
       },
     });
