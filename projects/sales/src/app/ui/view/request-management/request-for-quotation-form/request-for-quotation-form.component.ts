@@ -330,11 +330,12 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
           const matchedCategory = this.procurementCategories.find(c => c.categoryId === it.categoryId);
           return {
             ...it,
-            category: matchedCategory || { id: 0, categoryId: it.categoryId || 'GENERAL', name: it.categoryId || 'General' }
+            category: matchedCategory || { id: 0, categoryId: it.categoryId || 'GENERAL', name: it.categoryId || 'General' },
+            deliveryDeadline: it.deliveryDeadline ? new Date(it.deliveryDeadline).toISOString() : null
           };
         });
       }
-      
+
       const firstItem = formValue.items && formValue.items[0];
       if (firstItem) {
         formValue.currency = firstItem.currency || 'NGN';
@@ -385,7 +386,8 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
         const matchedCategory = this.procurementCategories.find(c => c.categoryId === it.categoryId);
         return {
           ...it,
-          category: matchedCategory || { id: 0, categoryId: it.categoryId || 'GENERAL', name: it.categoryId || 'General' }
+          category: matchedCategory || { id: 0, categoryId: it.categoryId || 'GENERAL', name: it.categoryId || 'General' },
+          deliveryDeadline: it.deliveryDeadline ? new Date(it.deliveryDeadline).toISOString() : null
         };
       });
     }

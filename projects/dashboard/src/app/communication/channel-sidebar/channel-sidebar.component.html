@@ -363,10 +363,13 @@
     <!-- Direct Messages -->
     <div class="px-2">
       <div class="pl-2 pr-1 mb-1 mt-1 flex items-center justify-between gap-2">
-        <span
-          class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest"
-          >Direct Messages</span
-        >
+        <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+          Direct Messages
+          <span
+            *ngIf="totalDmUnread > 0"
+            class="min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full bg-[#2e6276] text-white text-[9px] font-bold leading-none"
+          >{{ totalDmUnread > 99 ? '99+' : totalDmUnread }}</span>
+        </span>
         <button
           *ngIf="canDeactivateDmUsers"
           type="button"
@@ -388,6 +391,47 @@
       >
         {{ employeesError }}
       </div>
+      <!-- ── Me (self) pinned row ── -->
+      <button
+        type="button"
+        class="sidebar-item-me flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl transition-colors text-left mb-0.5"
+        title="View my open tasks, issues & events"
+        (click)="selfWorkspaceOpened.emit()"
+      >
+        <div class="relative flex-shrink-0">
+          <img *ngIf="me.avatarUrl" [src]="me.avatarUrl" alt="" class="w-8 h-8 rounded-full object-cover" />
+          <div *ngIf="!me.avatarUrl"
+            class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold bg-[#2e6276]">
+            {{ me.initials }}
+          </div>
+          <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white bg-emerald-400"></span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1.5">
+            <span class="truncate text-[14px] font-semibold text-gray-800 leading-tight">{{ me.shortName }}</span>
+            <span class="px-1.5 py-0.5 rounded-md bg-[#2e6276]/10 text-[#2e6276] text-[9px] font-bold uppercase tracking-wide leading-none">You</span>
+          </div>
+          <div class="flex items-center gap-1 mt-0.5">
+            <span class="text-[11px] text-gray-400 leading-tight flex-1">My workspace stats</span>
+            <span *ngIf="selfStats.openIssueCount"
+              class="flex-shrink-0 flex items-center gap-0.5 px-1 py-0.5 rounded bg-red-50 text-red-600 text-[9px] font-bold"
+              title="My open issues">
+              <i class="pi pi-exclamation-circle text-[8px]"></i>{{ selfStats.openIssueCount }}
+            </span>
+            <span *ngIf="selfStats.openTaskCount"
+              class="flex-shrink-0 flex items-center gap-0.5 px-1 py-0.5 rounded bg-violet-50 text-violet-600 text-[9px] font-bold"
+              title="My open tasks">
+              <i class="pi pi-check-square text-[8px]"></i>{{ selfStats.openTaskCount }}
+            </span>
+            <span *ngIf="selfStats.openEventCount"
+              class="flex-shrink-0 flex items-center gap-0.5 px-1 py-0.5 rounded bg-sky-50 text-sky-600 text-[9px] font-bold"
+              title="My events">
+              <i class="pi pi-calendar text-[8px]"></i>{{ selfStats.openEventCount }}
+            </span>
+          </div>
+        </div>
+      </button>
+
       <button
         *ngFor="let dm of visibleDmContacts"
         (click)="dmSelected.emit(dm.id)"
@@ -662,6 +706,14 @@
 </div>
 
 <style>
+  .sidebar-item-me {
+    color: #374151;
+    background: rgba(46, 98, 118, 0.04);
+    border: 1px solid rgba(46, 98, 118, 0.1);
+  }
+  .sidebar-item-me:hover {
+    background: rgba(46, 98, 118, 0.09);
+  }
   .sidebar-item {
     color: #6b7280;
   }

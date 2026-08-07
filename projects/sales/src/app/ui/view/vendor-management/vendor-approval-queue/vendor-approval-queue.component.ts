@@ -660,7 +660,8 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
       [VendorStatus.UNDER_REVIEW]: 'Under Review',
       [VendorStatus.SUSPENDED]: 'Suspended',
       [VendorStatus.OFFBOARDED]: 'Offboarded',
-      [VendorStatus.CONDITIONAL]: 'Conditional'
+      [VendorStatus.CONDITIONAL]: 'Conditional',
+      [VendorStatus.REJECTED]: 'Rejected'
     };
     return map[status] || status;
   }
