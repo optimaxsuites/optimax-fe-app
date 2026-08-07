@@ -852,16 +852,37 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   private populateForm(quote: Quote): void {
     this.loadedQuoteSelectedCustomerBank = quote.selectedCustomerBank;
     const addOpts = Array.isArray(quote.additionalOptions) ? quote.additionalOptions[0] : (quote.additionalOptions as any);
+    
+    let custId = '';
+    if (quote.customerId) {
+      if (typeof quote.customerId === 'object') {
+        custId = quote.customerId.customerId || String(quote.customerId.id || '');
+      } else {
+        custId = String(quote.customerId);
+      }
+    }
+    
+    let custName = '';
+    if (quote.customerName) {
+      if (typeof quote.customerName === 'object') {
+        custName = quote.customerName.name || String(quote.customerName);
+      } else {
+        custName = String(quote.customerName);
+      }
+    } else if (typeof quote.customerId === 'object' && quote.customerId) {
+      custName = quote.customerId.name || '';
+    }
+
     this.quoteForm.patchValue({
-      customerId: quote.customerId.customerId || String(quote.customerId.id),
-      customerName: quote.customerName.name || String(quote.customerName),
+      customerId: custId,
+      customerName: custName,
       currency: quote.currency,
       quoteDate: this.formatDateForInput(quote.createdAt),
       validUntil: this.formatDateForInput(quote.validUntil),
       notes: addOpts?.notes || '',
       terms: addOpts?.terms || ''
     });
-    this.onCustomerSelect(quote.customerId.customerId || String(quote.customerId.id));
+    this.onCustomerSelect(custId);
     
     if (quote.merchantDetails) {
       this.billedBy = {
@@ -1042,9 +1063,14 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       status: 'ACTIVE'
     };
 
-    const quoteData: Partial<Quote> = {
-      customerId: customerObj,
-      customerName: customerObj,
+    // Note: the backend's Quote entity stores customerId as a plain numeric
+    // foreign key (java.lang.Long) and customerName as a string — it expands
+    // them back into full nested objects on read (see populateForm() above),
+    // but rejects a nested object on write with a 500 JSON-parse error. So this
+    // outgoing payload intentionally diverges from the Quote read-shape here.
+    const quoteData: any = {
+      customerId: customerObj.id,
+      customerName: customerObj.name,
       currency: formValue.currency,
       validUntil: new Date(formValue.validUntil),
       merchantDetails: {
