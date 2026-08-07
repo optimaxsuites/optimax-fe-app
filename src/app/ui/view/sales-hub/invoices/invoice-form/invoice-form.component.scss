@@ -1,21 +1,21 @@
 // Modern Design System - Full Page Form (Matching Quote Form)
-$primary-dark: #0f1a2e;
-$primary-mid: #1a2d4a;
-$primary-light: #2a4a6a;
-$primary-accent: #3a6a8a;
-$primary-surface: #e8edf4;
+$primary-dark: #0d2e2a;
+$primary-mid: #184440;
+$primary-light: #1a6b64;
+$primary-accent: #2e857b;
+$primary-surface: #edf4f3;
 
-$text-primary: #0f1a2e;
-$text-secondary: #4a5a6e;
-$text-muted: #7a8a9e;
+$text-primary: #111827;
+$text-secondary: #374151;
+$text-muted: #6b7280;
 
-$shadow-sm: 0 2px 4px rgba(15, 26, 46, 0.06), 0 1px 2px rgba(15, 26, 46, 0.04);
-$shadow-md: 0 4px 16px rgba(15, 26, 46, 0.10), 0 2px 4px rgba(15, 26, 46, 0.06);
-$shadow-lg: 0 8px 32px rgba(15, 26, 46, 0.14), 0 4px 8px rgba(15, 26, 46, 0.08);
-$shadow-xl: 0 16px 48px rgba(15, 26, 46, 0.18), 0 8px 16px rgba(15, 26, 46, 0.10);
+$shadow-sm: 0 2px 4px rgba(15, 26, 46, 0.04), 0 1px 2px rgba(15, 26, 46, 0.02);
+$shadow-md: 0 4px 16px rgba(15, 26, 46, 0.06), 0 2px 4px rgba(15, 26, 46, 0.04);
+$shadow-lg: 0 8px 32px rgba(15, 26, 46, 0.08), 0 4px 8px rgba(15, 26, 46, 0.05);
+$shadow-xl: 0 16px 48px rgba(15, 26, 46, 0.12), 0 8px 16px rgba(15, 26, 46, 0.07);
 
-$border-color: #dce3ec;
-$border-light: #eef2f7;
+$border-color: #e5e7eb;
+$border-light: #f3f4f6;
 
 $radius-sm: 10px;
 $radius-md: 14px;
@@ -26,7 +26,7 @@ $radius-xl: 24px;
 .invoice-form-container {
   min-height: 100vh;
   font-size: 1.1rem;
-  background: linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%);
+  background: #f5f7fa;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -1945,251 +1945,10 @@ $radius-xl: 24px;
     padding: 1.5rem;
   }
 
-  .doc-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding-bottom: 2rem;
-    border-bottom: 2px solid #e2e8f0;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-
-    .doc-company-info {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-
-      .company-logo-placeholder {
-        width: 60px;
-        height: 60px;
-        background: #f1f5f9;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        color: #475569;
-        border: 1px solid #e2e8f0;
-      }
-
-      .company-name {
-        margin: 0 0 0.25rem 0;
-        font-size: 1.4rem;
-        font-weight: 800;
-      }
-
-      .company-address, .company-email {
-        margin: 0;
-        font-size: 0.82rem;
-        color: #64748b;
-      }
-    }
-
-    .doc-meta-info {
-      text-align: right;
-
-      @media (max-width: 600px) {
-        text-align: left;
-      }
-
-      .doc-title {
-        font-size: 2rem;
-        font-weight: 900;
-        letter-spacing: -0.02em;
-        margin: 0 0 0.5rem 0;
-      }
-
-      p {
-        margin: 0.15rem 0;
-        font-size: 0.85rem;
-        color: #475569;
-      }
-    }
-  }
-
-  .doc-parties {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    margin-bottom: 2rem;
-
-    @media (max-width: 480px) {
-      grid-template-columns: 1fr;
-      gap: 1rem;
-    }
-
-    .parties-col {
-      .parties-label {
-        display: block;
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: #64748b;
-        margin-bottom: 0.5rem;
-      }
-
-      strong {
-        font-size: 1.1rem;
-        color: #0f1a2e;
-        display: block;
-        margin-bottom: 0.25rem;
-      }
-
-      p {
-        margin: 0.15rem 0;
-        font-size: 0.85rem;
-        color: #475569;
-        line-height: 1.4;
-      }
-    }
-  }
-
-  .doc-shipping {
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
-    margin-bottom: 2rem;
-    border: 1px dashed #cbd5e1;
-
-    .doc-section-title {
-      margin: 0 0 0.5rem 0;
-      font-size: 0.85rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: #475569;
-    }
-
-    .shipping-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      gap: 1rem;
-      font-size: 0.8rem;
-      color: #334155;
-    }
-  }
-
-  .doc-items-table-wrapper {
-    margin-bottom: 2rem;
-
-    .doc-table {
-      width: 100%;
-      border-collapse: collapse;
-
-      th {
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: #475569;
-        padding: 0.75rem 1rem;
-        border-bottom: 2px solid #e2e8f0;
-        background: #f8fafc;
-      }
-
-      td {
-        padding: 1rem;
-        border-bottom: 1px solid #f1f5f9;
-        font-size: 0.9rem;
-        vertical-align: top;
-        color: #334155;
-
-        strong {
-          color: #0f1a2e;
-        }
-
-        .doc-item-desc {
-          margin: 0.25rem 0 0 0;
-          font-size: 0.78rem;
-          color: #64748b;
-          line-height: 1.4;
-        }
-      }
-
-      .doc-item-row:hover td {
-        background: rgba(248, 250, 252, 0.5);
-      }
-
-      .doc-empty-table {
-        text-align: center;
-        color: #94a3b8;
-        padding: 3rem;
-      }
-    }
-  }
-
-  .doc-summary-notes-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 3rem;
-    margin-top: 2rem;
-
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-
-    .doc-notes-col {
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-
-      .doc-notes-item {
-        .doc-sub-label {
-          display: block;
-          font-size: 0.78rem;
-          font-weight: 700;
-          color: #475569;
-          margin-bottom: 0.25rem;
-        }
-
-        p {
-          margin: 0;
-          font-size: 0.8rem;
-          color: #64748b;
-          line-height: 1.45;
-          white-space: pre-wrap;
-        }
-
-        .doc-words {
-          font-style: italic;
-          color: #334155;
-          font-weight: 500;
-        }
-      }
-    }
-
-    .doc-totals-col {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-
-      .doc-total-row {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.88rem;
-        color: #475569;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid #f1f5f9;
-
-        .doc-discount {
-          color: #ef4444;
-          font-weight: 500;
-        }
-
-        &.grand-total {
-          border-bottom: none;
-          padding-top: 0.5rem;
-          font-size: 1.2rem;
-          font-weight: 800;
-          color: #0f1a2e;
-          border-top: 2px double #e2e8f0;
-        }
-      }
-    }
-  }
-
-  .doc-signature-block {
-    margin-top: 4rem;
+  // Shared "Authorized Signature" block reused by the Standard, Detailed and
+  // Client-Facing Premium bespoke layouts.
+  .qstd-signature, .qdet-signature, .qprem-signature {
+    margin-top: 3rem;
     width: 200px;
     margin-left: auto;
     text-align: center;
@@ -2220,135 +1979,326 @@ $radius-xl: 24px;
   }
 }
 
-/* live document template colors mapping */
+/* ============================================================
+   STANDARD PROFESSIONAL — navy header, orange accent total cell
+   ============================================================ */
 .paper-document-preview.standard {
   border-top: 6px solid #1a2d4a;
-  
-  .doc-header .doc-meta-info .doc-title,
-  .doc-header .doc-company-info .company-name {
-    color: #1a2d4a;
+
+  .qstd-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    .qstd-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 10px;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      color: #1a2d4a;
+      flex-shrink: 0;
+      img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    }
+
+    .qstd-org-name { font-size: 1.4rem; font-weight: 800; color: #1a2d4a; }
+    .qstd-org-sub { font-size: 0.85rem; color: #64748b; margin-top: 0.15rem; }
   }
 
-  .doc-items-table-wrapper .doc-table th {
-    background: #f1f5f9;
-    color: #1a2d4a;
-    border-bottom: 2px solid #1a2d4a;
+  .qstd-rule { height: 3px; background: #d97706; border-radius: 2px; margin-bottom: 1rem; }
+
+  .qstd-meta {
+    display: flex;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+
+    .qstd-meta-cell {
+      flex: 1;
+      background: #1a2d4a;
+      padding: 0.75rem 1rem;
+      &:not(:last-child) { border-right: 1px solid rgba(255,255,255,.12); }
+      &.accent { background: #14243c; }
+      .lbl { display: block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,.6); }
+      .val { display: block; font-size: 1rem; font-weight: 700; color: white; margin-top: 0.2rem; }
+      &.accent .val { color: #f5a623; }
+    }
   }
 
-  .doc-totals-col .doc-total-row.grand-total {
-    color: #1a2d4a;
-    border-top: 2px solid #1a2d4a;
-  }
-}
+  .qstd-parties {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 1rem;
+    @media (max-width: 480px) { grid-template-columns: 1fr; gap: 1rem; }
 
-.paper-document-preview.minimal {
-  border: 1px solid #e2e8f0;
-  border-radius: 0;
-  box-shadow: none;
-  
-  .doc-header {
-    border-bottom: 1px solid #000;
+    .qstd-party {
+      .qstd-party-lbl { display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 0.4rem; }
+      strong { font-size: 1.05rem; color: #0f1a2e; display: block; margin-bottom: 0.2rem; }
+      p { margin: 0.1rem 0; font-size: 0.85rem; color: #475569; }
+    }
   }
 
-  .doc-items-table-wrapper .doc-table {
+  .qstd-shipping {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    border: 1px dashed #cbd5e1;
+    .qstd-party-lbl { display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 0.3rem; }
+    p { margin: 0; font-size: 0.8rem; color: #334155; }
+  }
+
+  .qstd-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+
     th {
-      background: transparent;
-      color: #000;
-      border-bottom: 1px solid #000;
-      padding-left: 0;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #1a2d4a;
+      padding: 0.65rem 0.85rem;
+      background: #f1f5f9;
+      border-bottom: 2px solid #1a2d4a;
+      text-align: left;
+      &.num { text-align: right; }
     }
     td {
-      padding-left: 0;
-      border-bottom: 1px solid #e2e8f0;
+      padding: 0.85rem;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.88rem;
+      color: #334155;
+      vertical-align: top;
+      &.sn { color: #94a3b8; }
+      &.num { text-align: right; }
+      strong { color: #0f1a2e; }
     }
+    .qstd-item-desc { font-size: 0.76rem; color: #64748b; margin-top: 0.2rem; }
+    .qstd-empty { text-align: center; color: #94a3b8; padding: 2.5rem; }
   }
 
-  .doc-totals-col .doc-total-row.grand-total {
-    border-top: 1px solid #000;
-  }
-}
+  .qstd-summary {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 2.5rem;
+    @media (max-width: 768px) { grid-template-columns: 1fr; gap: 1.5rem; }
 
-.paper-document-preview.detailed {
-  border-top: 6px solid #2a4a6a;
-  
-  .doc-header .doc-meta-info .doc-title {
-    color: #2a4a6a;
-  }
-
-  .doc-items-table-wrapper .doc-table {
-    border: 1px solid #cbd5e1;
-    th {
-      background: #e2e8f0;
-      color: #2a4a6a;
-      border-bottom: 1px solid #cbd5e1;
+    .qstd-notes {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      .qstd-sub-lbl { display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 0.2rem; }
+      p { margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45; white-space: pre-wrap; }
+      .qstd-words { font-style: italic; color: #334155; }
     }
-    td {
-      border-bottom: 1px solid #cbd5e1;
-      border-right: 1px solid #cbd5e1;
-      &:last-child {
-        border-right: none;
+
+    .qstd-totals {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+
+      .qstd-total-row { display: flex; justify-content: space-between; font-size: 0.86rem; color: #475569; padding-bottom: 0.5rem; border-bottom: 1px solid #f1f5f9; }
+      .qstd-total-bar {
+        display: flex; justify-content: space-between; align-items: center;
+        background: #1a2d4a; color: white; padding: 0.7rem 1rem; border-radius: 6px; margin-top: 0.25rem;
+        font-weight: 700; font-size: 1rem;
+        .amt { color: #f5a623; font-size: 1.15rem; }
       }
     }
   }
-
-  .doc-totals-col .doc-total-row.grand-total {
-    background: #e8edf4;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
-  }
 }
 
-.paper-document-preview.compact {
-  padding: 1.5rem 2rem;
-  font-size: 0.85rem;
-  
-  .doc-header {
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
+/* ============================================================
+   MINIMAL CLEAN — plain black/white, no color, thin rules only
+   ============================================================ */
+.paper-document-preview.minimal {
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+  font-size: 0.92rem;
+
+  .qmin-head { font-size: 1.7rem; font-weight: 700; color: #0f1a2e; margin-bottom: 0.5rem; }
+  .qmin-thin-rule { height: 1px; background: #cbd5e1; margin: 1rem 0; }
+
+  .qmin-field {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.3rem;
+    .lbl { font-weight: 700; color: #334155; min-width: 100px; }
+    .val { color: #64748b; }
   }
 
-  .doc-parties {
-    margin-bottom: 1rem;
-    gap: 1rem;
+  .qmin-table {
+    width: 100%;
+    border-collapse: collapse;
+    th { text-align: left; padding: 0.5rem 0; border-bottom: 1px solid #0f1a2e; font-size: 0.78rem; text-transform: uppercase; color: #0f1a2e; &.num { text-align: right; } }
+    td { padding: 0.6rem 0; border-bottom: 1px solid #e2e8f0; color: #334155; font-size: 0.88rem; &.num { text-align: right; } }
+    .qmin-empty { text-align: center; color: #94a3b8; padding: 2rem 0; }
   }
 
-  .doc-items-table-wrapper {
-    margin-bottom: 1rem;
-    .doc-table td {
-      padding: 0.5rem 0.75rem;
+  .qmin-total-row {
+    display: flex; justify-content: space-between; font-weight: 700; font-size: 1.05rem; color: #0f1a2e; padding: 0.5rem 0;
+  }
+
+  .qmin-footnote { font-size: 0.8rem; color: #64748b; font-style: italic; margin-top: 1rem; }
+}
+
+/* ============================================================
+   DETAILED COMPREHENSIVE — dense, bordered, everything shown
+   ============================================================ */
+.paper-document-preview.detailed {
+  border-top: 6px solid #2a4a6a;
+
+  .qdet-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+  .qdet-logo { width: 56px; height: 56px; border-radius: 10px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #2a4a6a; flex-shrink: 0; img { max-width: 100%; max-height: 100%; object-fit: contain; } }
+  .qdet-org-name { font-size: 1.35rem; font-weight: 800; color: #2a4a6a; }
+  .qdet-org-sub { font-size: 0.82rem; color: #64748b; margin-top: 0.15rem; }
+
+  .qdet-rule { height: 3px; background: #d97706; border-radius: 2px; margin-bottom: 1rem; }
+
+  .qdet-meta {
+    display: flex; flex-wrap: wrap; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; margin-bottom: 1.25rem;
+    .qdet-meta-cell {
+      flex: 1; min-width: 120px; padding: 0.65rem 0.85rem; border-right: 1px solid #cbd5e1;
+      &:last-child { border-right: none; }
+      &.accent { background: #e8edf4; }
+      .lbl { display: block; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; color: #64748b; }
+      .val { display: block; font-size: 0.92rem; font-weight: 700; color: #0f1a2e; margin-top: 0.15rem; }
+      &.accent .val { color: #2a4a6a; }
     }
   }
 
-  .doc-summary-notes-grid {
-    margin-top: 1rem;
-    gap: 1.5rem;
+  .qdet-two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;
+    @media (max-width: 480px) { grid-template-columns: 1fr; }
+    .qdet-col-box {
+      border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.75rem 1rem; background: #f8fafc;
+      .qdet-col-lbl { display: block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: #d97706; margin-bottom: 0.3rem; }
+      strong { display: block; font-size: 1rem; color: #0f1a2e; margin-bottom: 0.15rem; }
+      p { margin: 0.1rem 0; font-size: 0.8rem; color: #475569; }
+    }
+  }
+
+  .qdet-table {
+    width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 1.25rem;
+    th { background: #e2e8f0; color: #2a4a6a; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; padding: 0.6rem 0.8rem; border: 1px solid #cbd5e1; text-align: left; &.num { text-align: right; } }
+    td { padding: 0.75rem 0.8rem; border: 1px solid #cbd5e1; font-size: 0.85rem; color: #334155; vertical-align: top; &.sn { color: #94a3b8; } &.num { text-align: right; } strong { color: #0f1a2e; } }
+    .qdet-item-desc { font-size: 0.74rem; color: #64748b; margin-top: 0.2rem; }
+    .qdet-empty { text-align: center; color: #94a3b8; padding: 2rem; }
+  }
+
+  .qdet-summary {
+    display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem;
+    @media (max-width: 768px) { grid-template-columns: 1fr; }
+
+    .qdet-notes { display: flex; flex-direction: column; gap: 0.85rem; }
+    .qdet-qual, .qdet-words {
+      border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.6rem 0.85rem; background: #fafcff;
+      .qdet-qual-lbl { display: block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: #2a4a6a; margin-bottom: 0.25rem; }
+      p { margin: 0; font-size: 0.78rem; color: #475569; line-height: 1.4; white-space: pre-wrap; }
+    }
+
+    .qdet-totals { display: flex; flex-direction: column; gap: 0.55rem; }
+    .qdet-total-row { display: flex; justify-content: space-between; font-size: 0.85rem; color: #475569; padding-bottom: 0.45rem; border-bottom: 1px solid #f1f5f9; }
+    .qdet-total-bar {
+      display: flex; justify-content: space-between; align-items: center; background: #e8edf4; border: 1px solid #cbd5e1; border-radius: 6px;
+      padding: 0.65rem 0.9rem; font-weight: 800; color: #2a4a6a; font-size: 1rem;
+      .amt { font-size: 1.1rem; }
+    }
   }
 }
 
+/* ============================================================
+   COMPACT ECONOMY — dense single-line header, tight rows, small font
+   ============================================================ */
+.paper-document-preview.compact {
+  padding: 1.75rem 2rem;
+  font-size: 0.82rem;
+
+  .qcpt-header { font-size: 0.85rem; color: #334155; margin-bottom: 0.5rem; .qcpt-org { font-weight: 800; color: #0f1a2e; } .qcpt-sep { margin: 0 0.4rem; color: #cbd5e1; } }
+  .qcpt-rule { height: 1px; background: #cbd5e1; margin-bottom: 0.75rem; }
+  .qcpt-party { font-size: 0.85rem; color: #334155; margin-bottom: 0.75rem; strong { color: #0f1a2e; } }
+
+  .qcpt-table {
+    width: 100%; border-collapse: collapse; margin-bottom: 0.75rem;
+    th { text-align: left; font-size: 0.68rem; text-transform: uppercase; color: #475569; padding: 0.4rem 0.5rem; border-bottom: 1px solid #cbd5e1; &.num { text-align: right; } }
+    td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #f1f5f9; color: #334155; &.num { text-align: right; } }
+    .qcpt-empty { text-align: center; color: #94a3b8; padding: 1.25rem; }
+  }
+
+  .qcpt-totals {
+    display: flex; flex-direction: column; gap: 0.25rem; max-width: 240px; margin-left: auto;
+    .qcpt-total-row { display: flex; justify-content: space-between; font-size: 0.82rem; color: #475569; &.bold { font-weight: 800; color: #0f1a2e; font-size: 0.95rem; border-top: 1px solid #0f1a2e; padding-top: 0.3rem; margin-top: 0.2rem; } }
+  }
+
+  .qcpt-terms { font-size: 0.72rem; color: #94a3b8; margin-top: 1rem; }
+}
+
+/* ============================================================
+   CLIENT-FACING PREMIUM — big serif wordmark, highlighted customer card
+   ============================================================ */
 .paper-document-preview.custom-client {
   border-top: 6px solid #2EB270;
-  
-  .doc-header .doc-meta-info .doc-title,
-  .doc-header .doc-company-info .company-name {
-    color: #2EB270;
-    font-family: 'Outfit', 'Georgia', serif;
+  font-size: 1rem;
+
+  .qprem-top {
+    display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.75rem;
+    .qprem-word { font-size: 2.2rem; font-weight: 300; letter-spacing: -0.02em; color: #14532d; font-family: 'Outfit', 'Georgia', serif; }
+    .qprem-brand { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; color: #14532d; font-weight: 700; img { max-height: 40px; max-width: 120px; object-fit: contain; } }
   }
 
-  .company-logo-placeholder {
-    background: rgba(46, 178, 112, 0.1) !important;
-    color: #2EB270 !important;
+  .qprem-rule { height: 3px; background: #2EB270; border-radius: 2px; margin-bottom: 1.25rem; }
+
+  .qprem-meta {
+    display: flex; border-radius: 8px; overflow: hidden; margin-bottom: 1.25rem;
+    .qprem-meta-cell {
+      flex: 1; background: #14532d; padding: 0.75rem 1rem;
+      &:not(:last-child) { border-right: 1px solid rgba(255,255,255,.12); }
+      &.accent { background: #0f3d21; }
+      .lbl { display: block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: rgba(255,255,255,.65); }
+      .val { display: block; font-size: 1rem; font-weight: 700; color: white; margin-top: 0.2rem; }
+      &.accent .val { color: #86efac; }
+    }
   }
 
-  .doc-items-table-wrapper .doc-table th {
-    background: rgba(46, 178, 112, 0.05);
-    color: #2EB270;
-    border-bottom: 2px solid #2EB270;
+  .qprem-customer-card {
+    background: rgba(46, 178, 112, 0.06);
+    border: 1px solid rgba(46, 178, 112, 0.25);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    .qprem-customer-lbl { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #2EB270; margin-bottom: 0.35rem; }
+    strong { display: block; font-size: 1.2rem; color: #0f1a2e; margin-bottom: 0.2rem; }
+    p { margin: 0.1rem 0; font-size: 0.85rem; color: #475569; }
   }
 
-  .doc-totals-col .doc-total-row.grand-total {
-    color: #2EB270;
-    border-top: 2px solid #2EB270;
+  .qprem-table {
+    width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;
+    th { text-align: left; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #14532d; padding: 0.65rem 0.85rem; background: rgba(46, 178, 112, 0.06); border-bottom: 2px solid #2EB270; &.num { text-align: right; } }
+    td { padding: 0.85rem; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; color: #334155; vertical-align: top; &.sn { color: #94a3b8; } &.num { text-align: right; } strong { color: #0f1a2e; } }
+    .qprem-item-desc { font-size: 0.76rem; color: #64748b; margin-top: 0.2rem; }
+    .qprem-empty { text-align: center; color: #94a3b8; padding: 2.5rem; }
+  }
+
+  .qprem-summary {
+    display: grid; grid-template-columns: 1.2fr 1fr; gap: 2.5rem; margin-bottom: 1.25rem;
+    @media (max-width: 768px) { grid-template-columns: 1fr; gap: 1.5rem; }
+    .qprem-notes { display: flex; flex-direction: column; gap: 1rem; .qprem-sub-lbl { display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 0.2rem; } p { margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45; white-space: pre-wrap; } }
+    .qprem-totals { display: flex; flex-direction: column; gap: 0.6rem;
+      .qprem-total-row { display: flex; justify-content: space-between; font-size: 0.86rem; color: #475569; padding-bottom: 0.5rem; border-bottom: 1px solid #f1f5f9; }
+      .qprem-total-bar { display: flex; justify-content: space-between; align-items: center; background: #14532d; color: white; padding: 0.7rem 1rem; border-radius: 6px; margin-top: 0.25rem; font-weight: 700; font-size: 1rem; .amt { color: #86efac; font-size: 1.15rem; } }
+    }
+  }
+
+  .qprem-words {
+    border-left: 3px solid #2EB270; background: rgba(46, 178, 112, 0.05); padding: 0.6rem 0.9rem; border-radius: 0 6px 6px 0; margin-bottom: 1rem;
+    .qprem-words-lbl { display: block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: #2EB270; margin-bottom: 0.2rem; }
+    p { margin: 0; font-size: 0.85rem; font-style: italic; color: #334155; }
   }
 }
 

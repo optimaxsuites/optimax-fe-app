@@ -347,23 +347,23 @@ select.form-control {
 }
 
 // Modern Design System - Full Page Form (Matching Quote/Invoice Forms)
-$primary-dark: #0f1a2e;
-$primary-mid: #1a2d4a;
-$primary-light: #2a4a6a;
-$primary-accent: #3a6a8a;
-$primary-surface: #e8edf4;
+$primary-dark: #0d2e2a;
+$primary-mid: #184440;
+$primary-light: #1a6b64;
+$primary-accent: #2e857b;
+$primary-surface: #edf4f3;
 
-$text-primary: #0f1a2e;
-$text-secondary: #4a5a6e;
-$text-muted: #7a8a9e;
+$text-primary: #111827;
+$text-secondary: #374151;
+$text-muted: #6b7280;
 
-$shadow-sm: 0 2px 4px rgba(15, 26, 46, 0.06), 0 1px 2px rgba(15, 26, 46, 0.04);
-$shadow-md: 0 4px 16px rgba(15, 26, 46, 0.10), 0 2px 4px rgba(15, 26, 46, 0.06);
-$shadow-lg: 0 8px 32px rgba(15, 26, 46, 0.14), 0 4px 8px rgba(15, 26, 46, 0.08);
-$shadow-xl: 0 16px 48px rgba(15, 26, 46, 0.18), 0 8px 16px rgba(15, 26, 46, 0.10);
+$shadow-sm: 0 2px 4px rgba(15, 26, 46, 0.04), 0 1px 2px rgba(15, 26, 46, 0.02);
+$shadow-md: 0 4px 16px rgba(15, 26, 46, 0.06), 0 2px 4px rgba(15, 26, 46, 0.04);
+$shadow-lg: 0 8px 32px rgba(15, 26, 46, 0.08), 0 4px 8px rgba(15, 26, 46, 0.05);
+$shadow-xl: 0 16px 48px rgba(15, 26, 46, 0.12), 0 8px 16px rgba(15, 26, 46, 0.07);
 
-$border-color: #dce3ec;
-$border-light: #eef2f7;
+$border-color: #e5e7eb;
+$border-light: #f3f4f6;
 
 $radius-sm: 10px;
 $radius-md: 14px;
@@ -374,7 +374,7 @@ $radius-xl: 24px;
 .customer-form-container {
   min-height: 100vh;
   font-size: 1.1rem;
-  background: linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%);
+  background: #f5f7fa;
   padding: 0;
   display: flex;
   flex-direction: column;

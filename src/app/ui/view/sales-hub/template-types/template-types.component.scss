@@ -57,10 +57,12 @@ $dark-doc:  #2d4a47;
   padding: 1.4rem 1.5rem 0;
   overflow: hidden;
 
-  &.tpl-preview--standard   { background: linear-gradient(155deg, #e8f2f1 0%, #d5e8e6 100%); }
-  &.tpl-preview--centrifuge { background: linear-gradient(155deg, #dff0ee 0%, #cce4e2 100%); }
-  &.tpl-preview--minimal    { background: linear-gradient(155deg, #eef0f4 0%, #e0e4ec 100%); }
-  &.tpl-preview--detailed   { background: linear-gradient(155deg, #e8f2f1 0%, #d5e8e6 100%); }
+  &.tpl-preview--standard      { background: linear-gradient(155deg, #e8f2f1 0%, #d5e8e6 100%); }
+  &.tpl-preview--centrifuge    { background: linear-gradient(155deg, #dff0ee 0%, #cce4e2 100%); }
+  &.tpl-preview--minimal       { background: linear-gradient(155deg, #eef0f4 0%, #e0e4ec 100%); }
+  &.tpl-preview--detailed      { background: linear-gradient(155deg, #e8f2f1 0%, #d5e8e6 100%); }
+  &.tpl-preview--compact       { background: linear-gradient(155deg, #eef0f4 0%, #e0e4ec 100%); }
+  &.tpl-preview--custom-client { background: linear-gradient(155deg, #e6f5ec 0%, #cdecd9 100%); }
 
   &::after {
     content: '';
@@ -85,10 +87,12 @@ $dark-doc:  #2d4a47;
     position: absolute; bottom: 0; left: 0; right: 0; height: 100px; z-index: 3;
     pointer-events: none;
   }
-  &.tpl-preview--standard   .preview-fade { background: linear-gradient(to bottom, transparent, #d5e8e6); }
-  &.tpl-preview--centrifuge .preview-fade { background: linear-gradient(to bottom, transparent, #cce4e2); }
-  &.tpl-preview--minimal    .preview-fade { background: linear-gradient(to bottom, transparent, #e0e4ec); }
-  &.tpl-preview--detailed   .preview-fade { background: linear-gradient(to bottom, transparent, #d5e8e6); }
+  &.tpl-preview--standard      .preview-fade { background: linear-gradient(to bottom, transparent, #d5e8e6); }
+  &.tpl-preview--centrifuge    .preview-fade { background: linear-gradient(to bottom, transparent, #cce4e2); }
+  &.tpl-preview--minimal       .preview-fade { background: linear-gradient(to bottom, transparent, #e0e4ec); }
+  &.tpl-preview--detailed      .preview-fade { background: linear-gradient(to bottom, transparent, #d5e8e6); }
+  &.tpl-preview--compact       .preview-fade { background: linear-gradient(to bottom, transparent, #e0e4ec); }
+  &.tpl-preview--custom-client .preview-fade { background: linear-gradient(to bottom, transparent, #cdecd9); }
 }
 
 // ── White document paper — elevated white card resembling a real doc ───────────
@@ -121,6 +125,7 @@ $dark-doc:  #2d4a47;
 .dp-rule {
   height: 2.5px; border-radius: 2px; margin: 6px 0;
   &.orange { background: $orange; }
+  &.green  { background: #2EB270; }
 }
 .dp-thin-rule { height: 1px; background: #d1d5db; margin: 7px 0; }
 
@@ -132,6 +137,8 @@ $dark-doc:  #2d4a47;
     flex: 1; padding: 5px 7px;
     &.dark  { background: $dark-doc; }
     &.accent { background: darken($dark-doc, 6%); }
+    &.green  { background: #14532d; }
+    &.green.accent { background: #0f3d21; }
     .dp-mc-lbl {
       font-size: 6.5px; font-weight: 700; text-transform: uppercase;
       color: rgba(255,255,255,.55); letter-spacing: .06em;
@@ -140,7 +147,32 @@ $dark-doc:  #2d4a47;
       font-size: 9.5px; font-weight: 700; color: white; margin-top: 2px;
     }
     &.accent .dp-mc-val { color: $orange; }
+    &.green.accent .dp-mc-val { color: #86efac; }
   }
+}
+
+// Compact mockup — dense single-line header, tight rows
+.dp-cpt-header {
+  font-size: 8px; color: #374151; margin-bottom: 5px;
+  .dp-cpt-org { font-weight: 700; color: #1a1a2e; }
+  .dp-cpt-sep { margin: 0 3px; color: #9ca3af; }
+}
+.dp-cpt-party { font-size: 8.5px; color: #374151; margin-bottom: 6px; }
+.dp-cpt-totals {
+  display: flex; justify-content: space-between; font-size: 9px; font-weight: 700; color: #1a1a2e;
+  padding-top: 4px; border-top: 1px solid #d1d5db;
+}
+
+// Client-facing premium mockup — serif wordmark + highlighted customer card
+.dp-prem-top {
+  display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6px;
+  .dp-prem-word { font-size: 15px; font-weight: 300; color: #14532d; letter-spacing: -.3px; }
+  .dp-prem-brand strong { font-size: 8.5px; color: #14532d; }
+}
+.dp-prem-customer-card {
+  background: rgba(46,178,112,.08); border: 1px solid rgba(46,178,112,.25); border-radius: 4px;
+  padding: 5px 7px; margin-bottom: 7px;
+  .dp-col-lbl { color: #2EB270; }
 }
 
 .dp-two-col {
