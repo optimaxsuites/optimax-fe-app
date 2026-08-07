@@ -19,9 +19,9 @@ export class VendorManagementComponent {
       icon: 'fa-sharp fa-solid fa-chart-line',
     },
     {
-      name: 'Vendor Approval Queue',
+      name: 'Vendor Global Registry',
       component: VendorApprovalQueueComponent,
-      icon: 'fa-sharp fa-solid fa-user-check',
+      icon: 'fa-sharp fa-solid fa-user-group',
     },
     {
       name: 'Vendor Directory',
