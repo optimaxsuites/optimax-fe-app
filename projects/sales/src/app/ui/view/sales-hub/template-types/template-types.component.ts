@@ -43,6 +43,11 @@ export interface QuoteTemplate {
 export class TemplateTypesComponent implements OnInit {
   @Input() quoteData: any; // Quote form data
   @Input() selectedTemplateId: string = '';
+  @Input() documentType: 'quote' | 'invoice' = 'quote';
+
+  get docLabel(): string {
+    return this.documentType === 'invoice' ? 'Invoice' : 'Quotation';
+  }
   @Output() templateSelected = new EventEmitter<QuoteTemplate>();
   @Output() createAction = new EventEmitter<{ action: 'pdf' | 'email' | 'both' }>();
   @Output() back = new EventEmitter<void>();
@@ -382,19 +387,21 @@ export class TemplateTypesComponent implements OnInit {
     return colors[templateId] || '#1a2d4a';
   }
 
-  // Maps every quote layout onto one of the four mini document-preview mockups
-  // (same mapping approach as the RFQ template selector's getLayoutKey()).
-  getLayoutKey(layout: string): string {
+  // Keyed by template.id (not template.layout) — 'detailed' and 'custom-client'
+  // share the same `layout` value but must render as two distinct mockups,
+  // matching their two distinct bespoke real preview layouts in the form.
+  getLayoutKey(templateId: string): string {
     const map: Record<string, string> = {
       standard: 'standard',
-      compact: 'minimal',
       minimal: 'minimal',
       detailed: 'detailed',
+      compact: 'compact',
+      'custom-client': 'custom-client',
       emirates: 'centrifuge',
       'emirates-custbank': 'centrifuge',
       thcomms: 'standard'
     };
-    return map[layout] ?? 'standard';
+    return map[templateId] ?? 'standard';
   }
 
   isTemplateDefault(template: QuoteTemplate): boolean {

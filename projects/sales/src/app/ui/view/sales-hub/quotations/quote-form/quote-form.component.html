@@ -470,6 +470,7 @@
 
         <div class="wizard-template-selector">
           <app-template-types
+            documentType="quote"
             [quoteData]="quoteDataForTemplate"
             [selectedTemplateId]="selectedTemplate?.id || 'standard'"
             (templateSelected)="onTemplateSelected($event)"
@@ -999,133 +1000,335 @@
                 </div>
               </ng-container>
 
-              <!-- EXISTING DEFAULT / STANDARD / COMPACT TEMPLATES -->
-              <ng-container *ngIf="selectedTemplate?.id !== 'emirates' && selectedTemplate?.id !== 'emirates-custbank' && selectedTemplate?.id !== 'thcomms'">
-                <div class="doc-header">
-                  <div class="doc-company-info">
-                    <div class="company-logo-placeholder" *ngIf="selectedTemplate?.sections?.showCompanyLogo !== false">
-                      <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;">
-                      <i class="fas fa-building" *ngIf="!logoUrl"></i>
-                    </div>
-                    <div>
-                      <h2 class="company-name">{{ billedBy.name }}</h2>
-                      <p class="company-address">{{ billedBy.address }}</p>
-                      <p class="company-email">
-                        <span *ngIf="billedBy.email">Email: {{ billedBy.email }}</span>
-                        <span *ngIf="billedBy.email && billedBy.phone"> | </span>
-                        <span *ngIf="billedBy.phone">Tel: {{ billedBy.phone }}</span>
-                      </p>
-                    </div>
+              <!-- STANDARD PROFESSIONAL -->
+              <ng-container *ngIf="selectedTemplate?.id === 'standard' || !selectedTemplate">
+                <div class="qstd-header">
+                  <div class="qstd-logo" *ngIf="selectedTemplate?.sections?.showCompanyLogo !== false">
+                    <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo">
+                    <i class="fas fa-building" *ngIf="!logoUrl"></i>
                   </div>
-                  <div class="doc-meta-info">
-                    <h1 class="doc-title">QUOTATION</h1>
-                    <p><strong>Quote #:</strong> {{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</p>
-                    <p><strong>Date:</strong> {{ quoteForm.get('quoteDate')?.value || today }}</p>
-                    <p><strong>Valid Till:</strong> {{ quoteForm.get('validUntil')?.value }}</p>
+                  <div class="qstd-org">
+                    <div class="qstd-org-name">{{ billedBy.name || 'Your Company' }}</div>
+                    <div class="qstd-org-sub">Quotation Document</div>
                   </div>
                 </div>
-
-                <!-- Parties Details -->
-                <div class="doc-parties">
-                  <div class="parties-col" *ngIf="selectedTemplate?.sections?.showVendorInfo !== false">
-                    <span class="parties-label">Quotation From:</span>
+                <div class="qstd-rule"></div>
+                <div class="qstd-meta">
+                  <div class="qstd-meta-cell">
+                    <span class="lbl">Quote No.</span>
+                    <span class="val">{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span>
+                  </div>
+                  <div class="qstd-meta-cell">
+                    <span class="lbl">Date</span>
+                    <span class="val">{{ quoteForm.get('quoteDate')?.value || today }}</span>
+                  </div>
+                  <div class="qstd-meta-cell accent">
+                    <span class="lbl">Total</span>
+                    <span class="val">{{ formatCurrency(grandTotal) }}</span>
+                  </div>
+                </div>
+                <div class="qstd-parties">
+                  <div class="qstd-party" *ngIf="selectedTemplate?.sections?.showVendorInfo !== false">
+                    <span class="qstd-party-lbl">Quotation From</span>
                     <strong>{{ billedBy.name }}</strong>
                     <p>{{ billedBy.address }}</p>
                   </div>
-                  <div class="parties-col">
-                    <span class="parties-label">Quotation For:</span>
+                  <div class="qstd-party">
+                    <span class="qstd-party-lbl">Quotation For</span>
                     <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
-                    <p *ngIf="selectedCustomer?.address && selectedTemplate?.sections?.showCustomerDetails !== false">
-                      {{ selectedCustomer?.address }}
-                    </p>
-                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.email">
-                      Email: {{ selectedCustomer?.email }}
-                    </p>
-                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.phone">
-                      Tel: {{ selectedCustomer?.phone }}
-                    </p>
+                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.address">{{ selectedCustomer?.address }}</p>
                   </div>
                 </div>
-
-                <!-- Items Table -->
-                <div class="doc-items-table-wrapper">
-                  <table class="doc-table">
-                    <thead>
-                      <tr>
-                        <th style="text-align: left;">Item</th>
-                        <th style="text-align: left;" *ngIf="selectedTemplate?.sections?.showSKU !== false">SKU</th>
-                        <th style="text-align: right; width: 10%;">Qty</th>
-                        <th style="text-align: right; width: 15%;">Rate</th>
-                        <th style="text-align: right; width: 15%;">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr *ngFor="let item of items.controls" class="doc-item-row">
-                        <td>
-                          <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
-                          <p class="doc-item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</p>
-                        </td>
-                        <td *ngIf="selectedTemplate?.sections?.showSKU !== false">
-                          {{ getProductSku(item.get('productId')?.value) }}
-                        </td>
-                        <td style="text-align: right;">{{ item.get('quantity')?.value }}</td>
-                        <td style="text-align: right;">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
-                        <td style="text-align: right;" class="doc-item-total">
-                          {{ formatCurrency(item.get('total')?.value || 0) }}
-                        </td>
-                      </tr>
-                      <tr *ngIf="items.length === 0">
-                        <td colspan="5" class="doc-empty-table">No line items added.</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <!-- Summary, Notes, Signature -->
-                <div class="doc-summary-notes-grid">
-                  <!-- Notes and Terms -->
-                  <div class="doc-notes-col">
-                    <div class="doc-notes-item" *ngIf="quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false">
-                      <span class="doc-sub-label">Notes:</span>
+                <table class="qstd-table">
+                  <thead>
+                    <tr>
+                      <th class="sn">S/N</th>
+                      <th>Description</th>
+                      <th *ngIf="selectedTemplate?.sections?.showSKU !== false">SKU</th>
+                      <th class="num">Qty</th>
+                      <th class="num">Rate</th>
+                      <th class="num">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let item of items.controls; let i = index">
+                      <td class="sn">{{ i + 1 }}</td>
+                      <td>
+                        <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
+                        <div class="qstd-item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</div>
+                      </td>
+                      <td *ngIf="selectedTemplate?.sections?.showSKU !== false">{{ getProductSku(item.get('productId')?.value) }}</td>
+                      <td class="num">{{ item.get('quantity')?.value }}</td>
+                      <td class="num">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
+                      <td class="num">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
+                    </tr>
+                    <tr *ngIf="items.length === 0">
+                      <td [attr.colspan]="selectedTemplate?.sections?.showSKU !== false ? 6 : 5" class="qstd-empty">No line items added.</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="qstd-summary">
+                  <div class="qstd-notes" *ngIf="(quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false) || (quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false) || selectedTemplate?.sections?.showTotalInWords !== false">
+                    <div *ngIf="quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false">
+                      <span class="qstd-sub-lbl">Notes</span>
                       <p>{{ quoteForm.get('notes')?.value }}</p>
                     </div>
-                    <div class="doc-notes-item" *ngIf="quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false">
-                      <span class="doc-sub-label">Terms &amp; Conditions:</span>
+                    <div *ngIf="quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false">
+                      <span class="qstd-sub-lbl">Terms &amp; Conditions</span>
                       <p>{{ quoteForm.get('terms')?.value }}</p>
                     </div>
-                    <div class="doc-notes-item" *ngIf="selectedTemplate?.sections?.showTotalInWords !== false">
-                      <span class="doc-sub-label">Total in Words:</span>
-                      <p class="doc-words">{{ getTotalInWords(grandTotal) }}</p>
+                    <div *ngIf="selectedTemplate?.sections?.showTotalInWords !== false">
+                      <span class="qstd-sub-lbl">Total in Words</span>
+                      <p class="qstd-words">{{ getTotalInWords(grandTotal) }}</p>
                     </div>
                   </div>
-
-                  <!-- Calculations -->
-                  <div class="doc-totals-col">
-                    <div class="doc-total-row">
-                      <span>Subtotal</span>
-                      <span>{{ formatCurrency(subtotal) }}</span>
-                    </div>
-                    <div class="doc-total-row" *ngIf="discountAmount > 0">
-                      <span>Discount</span>
-                      <span class="doc-discount">-{{ formatCurrency(discountAmount) }}</span>
-                    </div>
-                    <div class="doc-total-row" *ngIf="additionalCharges > 0">
-                      <span>Additional Charges</span>
-                      <span>+{{ formatCurrency(additionalCharges) }}</span>
-                    </div>
-                    <div class="doc-total-row" *ngIf="totalTax > 0 && selectedTemplate?.sections?.showTaxBreakdown !== false">
-                      <span>Tax (7.5%)</span>
-                      <span>{{ formatCurrency(totalTax) }}</span>
-                    </div>
-                    <div class="doc-total-row grand-total">
-                      <span>Grand Total</span>
-                      <span>{{ formatCurrency(grandTotal) }}</span>
-                    </div>
+                  <div class="qstd-totals">
+                    <div class="qstd-total-row"><span>Subtotal</span><span>{{ formatCurrency(subtotal) }}</span></div>
+                    <div class="qstd-total-row" *ngIf="discountAmount > 0"><span>Discount</span><span>-{{ formatCurrency(discountAmount) }}</span></div>
+                    <div class="qstd-total-row" *ngIf="additionalCharges > 0"><span>Additional Charges</span><span>+{{ formatCurrency(additionalCharges) }}</span></div>
+                    <div class="qstd-total-row" *ngIf="totalTax > 0 && selectedTemplate?.sections?.showTaxBreakdown !== false"><span>Tax</span><span>{{ formatCurrency(totalTax) }}</span></div>
+                    <div class="qstd-total-bar"><span>Total</span><span class="amt">{{ formatCurrency(grandTotal) }}</span></div>
                   </div>
                 </div>
+                <div class="qstd-signature" *ngIf="showSignature && selectedTemplate?.sections?.showSignature !== false">
+                  <div class="signature-line"></div>
+                  <p class="signature-title">Authorized Signature</p>
+                  <p class="signature-name" *ngIf="signatureText">{{ signatureText }}</p>
+                </div>
+              </ng-container>
 
-                <!-- Signature Area -->
-                <div class="doc-signature-block" *ngIf="showSignature && selectedTemplate?.sections?.showSignature !== false">
+              <!-- MINIMAL CLEAN -->
+              <ng-container *ngIf="selectedTemplate?.id === 'minimal'">
+                <div class="qmin-head">Quotation</div>
+                <div class="qmin-thin-rule"></div>
+                <div class="qmin-field"><span class="lbl">To:</span><span class="val">{{ selectedCustomer?.name || 'Client Name' }}</span></div>
+                <div class="qmin-field"><span class="lbl">Quote #:</span><span class="val">{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span></div>
+                <div class="qmin-field"><span class="lbl">Date:</span><span class="val">{{ quoteForm.get('quoteDate')?.value || today }}</span></div>
+                <div class="qmin-field"><span class="lbl">Valid Until:</span><span class="val">{{ quoteForm.get('validUntil')?.value }}</span></div>
+                <div class="qmin-thin-rule"></div>
+                <table class="qmin-table">
+                  <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Total</th></tr></thead>
+                  <tbody>
+                    <tr *ngFor="let item of items.controls">
+                      <td>{{ item.get('productName')?.value || 'Unnamed Product' }}</td>
+                      <td class="num">{{ item.get('quantity')?.value }}</td>
+                      <td class="num">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
+                      <td class="num">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
+                    </tr>
+                    <tr *ngIf="items.length === 0"><td colspan="4" class="qmin-empty">No line items added.</td></tr>
+                  </tbody>
+                </table>
+                <div class="qmin-thin-rule"></div>
+                <div class="qmin-total-row"><span>Total</span><span>{{ formatCurrency(grandTotal) }}</span></div>
+                <p class="qmin-footnote" *ngIf="quoteForm.get('terms')?.value">{{ quoteForm.get('terms')?.value }}</p>
+                <p class="qmin-footnote" *ngIf="!quoteForm.get('terms')?.value">Thank you for your business.</p>
+              </ng-container>
+
+              <!-- DETAILED COMPREHENSIVE -->
+              <ng-container *ngIf="selectedTemplate?.id === 'detailed'">
+                <div class="qdet-header">
+                  <div class="qdet-logo" *ngIf="selectedTemplate?.sections?.showCompanyLogo !== false">
+                    <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo">
+                    <i class="fas fa-building" *ngIf="!logoUrl"></i>
+                  </div>
+                  <div class="qdet-org">
+                    <div class="qdet-org-name">{{ billedBy.name || 'Your Company' }}</div>
+                    <div class="qdet-org-sub">Detailed Quotation</div>
+                  </div>
+                </div>
+                <div class="qdet-rule"></div>
+                <div class="qdet-meta">
+                  <div class="qdet-meta-cell"><span class="lbl">Quote No.</span><span class="val">{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span></div>
+                  <div class="qdet-meta-cell"><span class="lbl">Date</span><span class="val">{{ quoteForm.get('quoteDate')?.value || today }}</span></div>
+                  <div class="qdet-meta-cell"><span class="lbl">Valid Until</span><span class="val">{{ quoteForm.get('validUntil')?.value }}</span></div>
+                  <div class="qdet-meta-cell accent"><span class="lbl">Total</span><span class="val">{{ formatCurrency(grandTotal) }}</span></div>
+                </div>
+                <div class="qdet-two-col">
+                  <div class="qdet-col-box" *ngIf="selectedTemplate?.sections?.showVendorInfo !== false">
+                    <span class="qdet-col-lbl">Quotation From</span>
+                    <strong>{{ billedBy.name }}</strong>
+                    <p>{{ billedBy.address }}</p>
+                    <p *ngIf="billedBy.email">{{ billedBy.email }}</p>
+                  </div>
+                  <div class="qdet-col-box">
+                    <span class="qdet-col-lbl">Quotation For</span>
+                    <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
+                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.address">{{ selectedCustomer?.address }}</p>
+                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.email">{{ selectedCustomer?.email }}</p>
+                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.phone">{{ selectedCustomer?.phone }}</p>
+                  </div>
+                </div>
+                <table class="qdet-table">
+                  <thead>
+                    <tr>
+                      <th class="sn">S/N</th>
+                      <th>Description</th>
+                      <th *ngIf="selectedTemplate?.sections?.showSKU !== false">SKU</th>
+                      <th class="num">Qty</th>
+                      <th class="num">Rate</th>
+                      <th class="num" *ngIf="selectedTemplate?.sections?.showTaxBreakdown !== false">Tax</th>
+                      <th class="num">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let item of items.controls; let i = index">
+                      <td class="sn">{{ i + 1 }}</td>
+                      <td>
+                        <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
+                        <div class="qdet-item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</div>
+                      </td>
+                      <td *ngIf="selectedTemplate?.sections?.showSKU !== false">{{ getProductSku(item.get('productId')?.value) }}</td>
+                      <td class="num">{{ item.get('quantity')?.value }}</td>
+                      <td class="num">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
+                      <td class="num" *ngIf="selectedTemplate?.sections?.showTaxBreakdown !== false">{{ formatCurrency(item.get('taxAmount')?.value || 0) }}</td>
+                      <td class="num">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
+                    </tr>
+                    <tr *ngIf="items.length === 0"><td colspan="7" class="qdet-empty">No line items added.</td></tr>
+                  </tbody>
+                </table>
+                <div class="qdet-summary">
+                  <div class="qdet-notes">
+                    <div class="qdet-qual" *ngIf="quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false">
+                      <span class="qdet-qual-lbl">Terms &amp; Conditions</span>
+                      <p>{{ quoteForm.get('terms')?.value }}</p>
+                    </div>
+                    <div class="qdet-qual" *ngIf="quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false">
+                      <span class="qdet-qual-lbl">Notes</span>
+                      <p>{{ quoteForm.get('notes')?.value }}</p>
+                    </div>
+                    <div class="qdet-words" *ngIf="selectedTemplate?.sections?.showTotalInWords !== false">
+                      <span class="qdet-qual-lbl">Total in Words</span>
+                      <p>{{ getTotalInWords(grandTotal) }}</p>
+                    </div>
+                  </div>
+                  <div class="qdet-totals">
+                    <div class="qdet-total-row"><span>Subtotal</span><span>{{ formatCurrency(subtotal) }}</span></div>
+                    <div class="qdet-total-row" *ngIf="discountAmount > 0"><span>Discount</span><span>-{{ formatCurrency(discountAmount) }}</span></div>
+                    <div class="qdet-total-row" *ngIf="additionalCharges > 0"><span>Additional Charges</span><span>+{{ formatCurrency(additionalCharges) }}</span></div>
+                    <div class="qdet-total-row" *ngIf="totalTax > 0 && selectedTemplate?.sections?.showTaxBreakdown !== false"><span>Tax</span><span>{{ formatCurrency(totalTax) }}</span></div>
+                    <div class="qdet-total-bar"><span>Grand Total</span><span class="amt">{{ formatCurrency(grandTotal) }}</span></div>
+                  </div>
+                </div>
+                <div class="qdet-signature" *ngIf="showSignature && selectedTemplate?.sections?.showSignature !== false">
+                  <div class="signature-line"></div>
+                  <p class="signature-title">Authorized Signature</p>
+                  <p class="signature-name" *ngIf="signatureText">{{ signatureText }}</p>
+                </div>
+              </ng-container>
+
+              <!-- COMPACT ECONOMY -->
+              <ng-container *ngIf="selectedTemplate?.id === 'compact'">
+                <div class="qcpt-header">
+                  <span class="qcpt-org">{{ billedBy.name || 'Your Company' }}</span>
+                  <span class="qcpt-sep">·</span>
+                  <span>Quote {{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span>
+                  <span class="qcpt-sep">·</span>
+                  <span>{{ quoteForm.get('quoteDate')?.value || today }}</span>
+                </div>
+                <div class="qcpt-rule"></div>
+                <div class="qcpt-party" *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false">
+                  <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
+                  <span *ngIf="selectedCustomer?.address"> — {{ selectedCustomer?.address }}</span>
+                </div>
+                <table class="qcpt-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th *ngIf="selectedTemplate?.sections?.showSKU !== false">SKU</th>
+                      <th class="num">Qty</th>
+                      <th class="num">Rate</th>
+                      <th class="num">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let item of items.controls">
+                      <td>{{ item.get('productName')?.value || 'Unnamed Product' }}</td>
+                      <td *ngIf="selectedTemplate?.sections?.showSKU !== false">{{ getProductSku(item.get('productId')?.value) }}</td>
+                      <td class="num">{{ item.get('quantity')?.value }}</td>
+                      <td class="num">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
+                      <td class="num">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
+                    </tr>
+                    <tr *ngIf="items.length === 0"><td colspan="5" class="qcpt-empty">No line items added.</td></tr>
+                  </tbody>
+                </table>
+                <div class="qcpt-totals">
+                  <div class="qcpt-total-row"><span>Subtotal</span><span>{{ formatCurrency(subtotal) }}</span></div>
+                  <div class="qcpt-total-row" *ngIf="totalTax > 0 && selectedTemplate?.sections?.showTaxBreakdown !== false"><span>Tax</span><span>{{ formatCurrency(totalTax) }}</span></div>
+                  <div class="qcpt-total-row bold"><span>Total</span><span>{{ formatCurrency(grandTotal) }}</span></div>
+                </div>
+                <p class="qcpt-terms" *ngIf="quoteForm.get('terms')?.value && selectedTemplate?.sections?.showPaymentTerms !== false">{{ quoteForm.get('terms')?.value }}</p>
+              </ng-container>
+
+              <!-- CLIENT-FACING PREMIUM -->
+              <ng-container *ngIf="selectedTemplate?.id === 'custom-client'">
+                <div class="qprem-top">
+                  <div class="qprem-word">Quotation</div>
+                  <div class="qprem-brand">
+                    <img [src]="logoUrl" *ngIf="logoUrl && selectedTemplate?.sections?.showCompanyLogo !== false" alt="Company Logo">
+                    <strong>{{ billedBy.name || 'Your Company' }}</strong>
+                  </div>
+                </div>
+                <div class="qprem-rule"></div>
+                <div class="qprem-meta">
+                  <div class="qprem-meta-cell"><span class="lbl">Quote No.</span><span class="val">{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span></div>
+                  <div class="qprem-meta-cell"><span class="lbl">Date</span><span class="val">{{ quoteForm.get('quoteDate')?.value || today }}</span></div>
+                  <div class="qprem-meta-cell accent"><span class="lbl">Total</span><span class="val">{{ formatCurrency(grandTotal) }}</span></div>
+                </div>
+                <div class="qprem-customer-card">
+                  <span class="qprem-customer-lbl">Prepared For</span>
+                  <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
+                  <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.address">{{ selectedCustomer?.address }}</p>
+                  <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.email">{{ selectedCustomer?.email }} <span *ngIf="selectedCustomer?.phone">· {{ selectedCustomer?.phone }}</span></p>
+                </div>
+                <table class="qprem-table">
+                  <thead>
+                    <tr>
+                      <th class="sn">S/N</th>
+                      <th>Description</th>
+                      <th *ngIf="selectedTemplate?.sections?.showSKU !== false">SKU</th>
+                      <th class="num">Qty</th>
+                      <th class="num">Rate</th>
+                      <th class="num">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let item of items.controls; let i = index">
+                      <td class="sn">{{ i + 1 }}</td>
+                      <td>
+                        <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
+                        <div class="qprem-item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</div>
+                      </td>
+                      <td *ngIf="selectedTemplate?.sections?.showSKU !== false">{{ getProductSku(item.get('productId')?.value) }}</td>
+                      <td class="num">{{ item.get('quantity')?.value }}</td>
+                      <td class="num">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
+                      <td class="num">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
+                    </tr>
+                    <tr *ngIf="items.length === 0"><td colspan="6" class="qprem-empty">No line items added.</td></tr>
+                  </tbody>
+                </table>
+                <div class="qprem-summary">
+                  <div class="qprem-notes" *ngIf="(quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false) || (quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false)">
+                    <div *ngIf="quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false">
+                      <span class="qprem-sub-lbl">Notes</span>
+                      <p>{{ quoteForm.get('notes')?.value }}</p>
+                    </div>
+                    <div *ngIf="quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false">
+                      <span class="qprem-sub-lbl">Terms &amp; Conditions</span>
+                      <p>{{ quoteForm.get('terms')?.value }}</p>
+                    </div>
+                  </div>
+                  <div class="qprem-totals">
+                    <div class="qprem-total-row"><span>Subtotal</span><span>{{ formatCurrency(subtotal) }}</span></div>
+                    <div class="qprem-total-row" *ngIf="discountAmount > 0"><span>Discount</span><span>-{{ formatCurrency(discountAmount) }}</span></div>
+                    <div class="qprem-total-row" *ngIf="totalTax > 0 && selectedTemplate?.sections?.showTaxBreakdown !== false"><span>Tax</span><span>{{ formatCurrency(totalTax) }}</span></div>
+                    <div class="qprem-total-bar"><span>Total</span><span class="amt">{{ formatCurrency(grandTotal) }}</span></div>
+                  </div>
+                </div>
+                <div class="qprem-words" *ngIf="selectedTemplate?.sections?.showTotalInWords !== false">
+                  <span class="qprem-words-lbl">Amount in Words</span>
+                  <p>{{ getTotalInWords(grandTotal) }}</p>
+                </div>
+                <div class="qprem-signature" *ngIf="showSignature && selectedTemplate?.sections?.showSignature !== false">
                   <div class="signature-line"></div>
                   <p class="signature-title">Authorized Signature</p>
                   <p class="signature-name" *ngIf="signatureText">{{ signatureText }}</p>

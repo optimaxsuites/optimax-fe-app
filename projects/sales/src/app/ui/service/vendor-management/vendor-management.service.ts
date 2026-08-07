@@ -714,6 +714,54 @@ export class PendingVendorStore {
   }
 }
 
+export class TenantVendorApprovalStore {
+  private static readonly STORAGE_KEY = 'erp_tenant_vendor_approvals';
+  private static store: Map<string, Map<string, VendorStatus>> = TenantVendorApprovalStore.rehydrate();
+
+  private static rehydrate(): Map<string, Map<string, VendorStatus>> {
+    try {
+      const raw = localStorage.getItem(TenantVendorApprovalStore.STORAGE_KEY);
+      if (!raw) return new Map();
+      const parsed: Record<string, Record<string, VendorStatus>> = JSON.parse(raw);
+      const newStore = new Map<string, Map<string, VendorStatus>>();
+      for (const [tenantId, approvals] of Object.entries(parsed)) {
+        newStore.set(tenantId, new Map(Object.entries(approvals)));
+      }
+      return newStore;
+    } catch {
+      return new Map();
+    }
+  }
+
+  private static persist(): void {
+    try {
+      const obj: Record<string, Record<string, VendorStatus>> = {};
+      for (const [tenantId, innerMap] of TenantVendorApprovalStore.store.entries()) {
+        obj[tenantId] = Object.fromEntries(innerMap.entries());
+      }
+      localStorage.setItem(TenantVendorApprovalStore.STORAGE_KEY, JSON.stringify(obj));
+    } catch { /* ignore */ }
+  }
+
+  static getStatus(tenantId: string, vendorId: string): VendorStatus | null {
+    const tenantMap = TenantVendorApprovalStore.store.get(tenantId);
+    return tenantMap ? tenantMap.get(vendorId) || null : null;
+  }
+
+  static setStatus(tenantId: string, vendorId: string, status: VendorStatus): void {
+    if (!TenantVendorApprovalStore.store.has(tenantId)) {
+      TenantVendorApprovalStore.store.set(tenantId, new Map());
+    }
+    TenantVendorApprovalStore.store.get(tenantId)!.set(vendorId, status);
+    TenantVendorApprovalStore.persist();
+  }
+
+  static clear(): void {
+    TenantVendorApprovalStore.store.clear();
+    localStorage.removeItem(TenantVendorApprovalStore.STORAGE_KEY);
+  }
+}
+
 // ============================================================
 // VENDOR SERVICE
 // ============================================================
@@ -1486,6 +1534,15 @@ export class VendorService {
         return true;
       });
 
+      // Apply tenant-specific status override
+      mockVendors = mockVendors.map(v => {
+        const tenantStatus = TenantVendorApprovalStore.getStatus(this.tenantId, v.id);
+        if (tenantStatus) {
+          return { ...v, status: tenantStatus };
+        }
+        return v;
+      });
+
       if (filters?.statuses && Array.isArray(filters.statuses)) {
         mockVendors = mockVendors.filter(v => filters.statuses!.includes(v.status));
       } else if (filters?.status) {
@@ -1716,14 +1773,17 @@ export class VendorService {
           this.updateVendorInList(vendor);
           // Sync the status change into the shared store so both sides stay consistent
           PendingVendorStore.updateStatus(id, status);
+          TenantVendorApprovalStore.setStatus(this.tenantId, id, status);
         }),
         catchError(() => {
           // Mock fallback — update the shared store and emit the changed vendor
+          TenantVendorApprovalStore.setStatus(this.tenantId, id, status);
           const updated = PendingVendorStore.updateStatus(id, status);
           if (updated) {
-            this.updateVendorInList(updated);
-            this.selectedVendorSubject.next(updated);
-            return of(updated);
+            const tenantUpdated = { ...updated, status };
+            this.updateVendorInList(tenantUpdated);
+            this.selectedVendorSubject.next(tenantUpdated);
+            return of(tenantUpdated);
           }
           // Vendor might only be in MOCK_VENDORS — patch it inline
           const mockIdx = (this.MOCK_VENDORS as Vendor[]).findIndex(v => v.id === id);
