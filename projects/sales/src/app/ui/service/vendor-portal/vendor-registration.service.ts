@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, forkJoin } from 'rxjs';
 import { map, tap, catchError, switchMap } from 'rxjs/operators';
 import {
   VendorRegistration, RegistrationStatus,
@@ -24,6 +24,11 @@ export class VendorRegistrationService {
   readonly registration$ = this.registration$$.asObservable();
 
   constructor(private http: HttpClient) {}
+
+  private get tenantId(): string {
+    const h = window.location.hostname;
+    return (h.includes('localhost') || h.includes('127.0.0.1')) ? 'optimax' : h.split('.')[0] || 'optimax';
+  }
 
   // ── Draft persistence ─────────────────────────────────────────────────────
   /** Merges a partial update into the in-memory draft and fires the BehaviorSubject.
@@ -110,12 +115,17 @@ export class VendorRegistrationService {
   /** POST /vendors — call once (e.g. on step 1 completion) to get a server-assigned
    *  vendor id, then subsequent step saves use PUT /vendors/{id}/stepN. */
   createVendorRecord(initial: Partial<VendorRegistration>): Observable<string> {
-    return this.http.post<{ id: string }>(`${this.baseUrl}/vendors`, initial).pipe(
-      tap(({ id }) => {
+    const step1Payload = { ...(initial.step1 ?? {}), tenantId: this.tenantId };
+    return this.http.post<any>(`${this.baseUrl}/vendors`, step1Payload).pipe(
+      tap(res => {
+        const id = typeof res === 'object' ? (res?.id ?? String(res)) : String(res);
         const current = this.registration$$.getValue() ?? this.blankRegistration();
         this.registration$$.next({ ...current, ...initial, id } as VendorRegistration);
       }),
-      map(({ id }) => id),
+      map(res => {
+        const id = typeof res === 'object' ? (res?.id ?? String(res)) : String(res);
+        return id;
+      }),
       catchError((err) => {
         console.error('[VendorRegistrationService] createVendorRecord failed:', err);
         return of('');
@@ -240,32 +250,42 @@ export class VendorRegistrationService {
     };
 
     // ── Real API path ────────────────────────────────────────────────────────
+    const saveAllSteps = (id: string): Observable<any> => {
+      const saves: Observable<any>[] = [];
+      if (reg.step2) saves.push(this.http.put(`${this.baseUrl}/vendors/${id}/step2`, reg.step2).pipe(catchError(() => of(null))));
+      if (reg.step3) saves.push(this.http.put(`${this.baseUrl}/vendors/${id}/step3`, reg.step3).pipe(catchError(() => of(null))));
+      if (reg.step4) saves.push(this.http.put(`${this.baseUrl}/vendors/${id}/step4`, reg.step4).pipe(catchError(() => of(null))));
+      if (reg.step5) saves.push(this.http.put(`${this.baseUrl}/vendors/${id}/step5`, reg.step5).pipe(catchError(() => of(null))));
+      if (reg.step6) saves.push(this.http.put(`${this.baseUrl}/vendors/${id}/step6`, reg.step6).pipe(catchError(() => of(null))));
+      return saves.length > 0 ? forkJoin(saves) : of([]);
+    };
+
+    const patchSubmit = (id: string, appNum: string): Observable<{ applicationNumber: string }> => {
+      return this.http.patch<{ applicationNumber: string }>(`${this.baseUrl}/vendors/${id}/submit`, {}).pipe(
+        tap(res => {
+          const current = this.registration$$.getValue();
+          if (current) {
+            this.registration$$.next({
+              ...current, status: 'submitted',
+              submittedDate: new Date(), applicationNumber: res.applicationNumber,
+            } as VendorRegistration);
+          }
+        }),
+        map(res => ({ applicationNumber: res.applicationNumber })),
+        catchError(() => of({ applicationNumber: appNum }))
+      );
+    };
+
     if (!vendorId) {
-      return this.http.post<{ id: string }>(`${this.baseUrl}/vendors`, reg).pipe(
-        switchMap(({ id }) => {
+      const step1Payload = { ...(reg.step1 ?? {}), tenantId: this.tenantId };
+      return this.http.post<any>(`${this.baseUrl}/vendors`, step1Payload).pipe(
+        switchMap(res => {
+          const id = typeof res === 'object' ? (res?.id ?? String(res)) : String(res);
           this.registration$$.next({ ...reg, id } as VendorRegistration);
-          mapAndStore(id);
-          return this.http.patch<{ applicationNumber: string }>(
-            `${this.baseUrl}/vendors/${id}/submit`, {}
-          ).pipe(
-            tap(res => {
-              const current = this.registration$$.getValue();
-              if (current) {
-                this.registration$$.next({
-                  ...current, status: 'submitted',
-                  submittedDate: new Date(), applicationNumber: res.applicationNumber,
-                } as VendorRegistration);
-              }
-            }),
-            map(res => ({ applicationNumber: res.applicationNumber })),
-            catchError(() => {
-              const appNum = mapAndStore(id);
-              return of({ applicationNumber: appNum });
-            })
-          );
+          const appNum = mapAndStore(id);
+          return saveAllSteps(id).pipe(switchMap(() => patchSubmit(id, appNum)));
         }),
         catchError(() => {
-          // Full API unavailable — generate a local application number and store locally
           const appNum = mapAndStore(`APP-${Date.now()}`);
           this.registration$$.next({ ...reg, id: appNum, status: 'submitted', submittedDate: new Date(), applicationNumber: appNum } as VendorRegistration);
           return of({ applicationNumber: appNum });
@@ -273,18 +293,8 @@ export class VendorRegistrationService {
       );
     }
 
-    return this.http.patch<{ applicationNumber: string }>(`${this.baseUrl}/vendors/${vendorId}/submit`, {}).pipe(
-      tap(res => {
-        const current = this.registration$$.getValue();
-        if (current) {
-          this.registration$$.next({
-            ...current, status: 'submitted',
-            submittedDate: new Date(), applicationNumber: res.applicationNumber,
-          } as VendorRegistration);
-        }
-        mapAndStore(vendorId);
-      }),
-      map(res => ({ applicationNumber: res.applicationNumber })),
+    return saveAllSteps(vendorId).pipe(
+      switchMap(() => patchSubmit(vendorId, mapAndStore(vendorId))),
       catchError(() => {
         const appNum = mapAndStore(vendorId);
         return of({ applicationNumber: appNum });
@@ -294,22 +304,39 @@ export class VendorRegistrationService {
 
   // ── File upload ───────────────────────────────────────────────────────────
   uploadFile(file: File, type: DocumentUploadType): Observable<UploadedDocument> {
+    const objectUrl = URL.createObjectURL(file);
     const doc: UploadedDocument = {
       id:           `doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       type,
       label:        this.docTypeLabel(type),
       fileName:     file.name,
       fileSize:     this.formatSize(file.size),
-      fileUrl:      URL.createObjectURL(file),
+      fileUrl:      objectUrl,
       uploadedDate: new Date(),
       isRequired:   this.isRequiredDoc(type),
       status:       'pending',
       file,
     };
-    // Return the local document object immediately so the UI can display it;
-    // the actual file should be uploaded via a multipart/form-data endpoint
-    // in production (not yet wired — that endpoint spec was not provided).
     return of(doc);
+  }
+
+  /** After the vendor record exists, persist a document to the backend. */
+  persistDocument(vendorId: string, doc: UploadedDocument): Observable<any> {
+    const payload = {
+      vendorId: Number(vendorId),
+      type:         doc.type,
+      label:        doc.label,
+      fileName:     doc.fileName,
+      fileSize:     doc.file ? doc.file.size : null,
+      fileUrl:      doc.fileUrl,
+      uploadedDate: new Date().toISOString(),
+      isRequired:   doc.isRequired,
+      status:       'PENDING_VERIFICATION',
+      category:     'COMPLIANCE'
+    };
+    return this.http.post<any>(`${this.baseUrl}/vendors/${vendorId}/documents`, payload).pipe(
+      catchError(err => { console.error('[VendorRegistrationService] persistDocument failed:', err); return of(null); })
+    );
   }
 
   // ── Fetch existing registration ───────────────────────────────────────────

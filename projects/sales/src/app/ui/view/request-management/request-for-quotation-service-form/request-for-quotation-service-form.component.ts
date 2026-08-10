@@ -53,20 +53,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
   serviceForm: FormGroup;
   currencies = ['NGN', 'USD', 'EUR', 'GBP'];
   procurementCategories: ProcurementCategory[] = [];
-  serviceCategories = [
-    'Consulting',
-    'IT Services',
-    'Marketing',
-    'Legal',
-    'Accounting',
-    'Design',
-    'Training',
-    'Maintenance',
-    'Cleaning',
-    'Security',
-    'Logistics',
-    'Other'
-  ];
+  serviceCategories: string[] = [];
   experienceLevels = ['Entry', 'Intermediate', 'Expert', 'Senior'];
   isEditMode = false;
   requestId: string | null = null;
@@ -104,6 +91,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
     this.procurementRequestService.getProcurementCategories().subscribe({
       next: (cats) => {
         this.procurementCategories = cats;
+        this.serviceCategories = cats.map(c => c.name);
       }
     });
 
@@ -189,18 +177,18 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
           id: item.id || this.generateId(),
           name: item.name || '',
           description: item.description || '',
-          categoryId: item.category?.categoryId || item.categoryId || '',
+          categoryId: item.categoryId || item.category?.categoryId || '',
           serviceCategory: item.serviceCategory || '',
           quantity: item.quantity || 1,
           estimatedBudget: item.estimatedBudget || 0,
           currency: item.currency || req.currency || 'NGN',
           deliveryMode: item.deliveryMode || req.deliveryMode || 'STANDARD',
-          deliveryDeadline: item.deliveryDeadline ? new Date(item.deliveryDeadline).toISOString().substring(0, 10) : (req.deliveryDeadline ? new Date(req.deliveryDeadline).toISOString().substring(0, 10) : ''),
+          deliveryDeadline: this.parseDateSafe(item.deliveryDeadline) || this.parseDateSafe(req.deliveryDeadline),
           deliveryLocation: item.deliveryLocation || req.deliveryLocation || '',
           experienceLevel: item.experienceLevel || '',
           serviceDuration: item.serviceDuration || '',
-          serviceStartDate: item.serviceStartDate ? new Date(item.serviceStartDate).toISOString().substring(0, 10) : '',
-          serviceEndDate: item.serviceEndDate ? new Date(item.serviceEndDate).toISOString().substring(0, 10) : ''
+          serviceStartDate: this.parseDateSafe(item.serviceStartDate),
+          serviceEndDate: this.parseDateSafe(item.serviceEndDate)
         });
 
         this.items.push(itemGroup);
@@ -301,6 +289,13 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
     return Math.random().toString(36).substring(2, 11);
   }
 
+  private parseDateSafe(val: any): string {
+    if (!val) return '';
+    const d = new Date(val);
+    if (isNaN(d.getTime()) || d.getFullYear() < 2000) return '';
+    return d.toISOString().substring(0, 10);
+  }
+
   onNext(): void {
     if (this.serviceForm.valid) {
       const formValue = this.serviceForm.value;
@@ -309,10 +304,9 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
 
       if (formValue.items && Array.isArray(formValue.items)) {
         formValue.items = formValue.items.map((it: any) => {
-          const matchedCategory = this.procurementCategories.find(c => c.categoryId === it.categoryId);
+          const { category, ...rest } = it;
           return {
-            ...it,
-            category: matchedCategory || { id: 0, categoryId: it.categoryId || 'GENERAL', name: it.categoryId || 'General' },
+            ...rest,
             deliveryDeadline: it.deliveryDeadline ? new Date(it.deliveryDeadline).toISOString() : null
           };
         });
@@ -326,29 +320,27 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
         formValue.deliveryDeadline = firstItem.deliveryDeadline ? new Date(firstItem.deliveryDeadline) : new Date();
       }
 
-      const requestId = this.requestId || uuidV4();
-      
       if (this.isEditMode && this.requestId) {
         this.procurementRequestService.updateRequest(parseIdToNumber(this.requestId), formValue).subscribe({
-          next: (req) => {
-            this.router.navigate(['/admin/sales/commerce/requests/new/service', req?.id || requestId, 'template']);
+          next: (req: any) => {
+            const savedId = req?.id || this.requestId;
+            this.requestId = String(savedId);
+            this.router.navigate(['/admin/sales/commerce/requests/new/service', savedId, 'template']);
           },
           error: (err) => {
             console.error('Failed to update request', err);
-            this.router.navigate(['/admin/sales/commerce/requests/new/service', requestId, 'template']);
           }
         });
       } else {
-        this.procurementRequestService.createRequest({
-          ...formValue,
-          id: requestId
-        }).subscribe({
-          next: (req) => {
-            this.router.navigate(['/admin/sales/commerce/requests/new/service', req?.id || requestId, 'template']);
+        this.procurementRequestService.createRequest(formValue).subscribe({
+          next: (req: any) => {
+            const savedId = req?.id;
+            this.requestId = String(savedId);
+            this.isEditMode = true;
+            this.router.navigate(['/admin/sales/commerce/requests/new/service', savedId, 'template']);
           },
           error: (err) => {
             console.error('Failed to create request', err);
-            this.router.navigate(['/admin/sales/commerce/requests/new/service', requestId, 'template']);
           }
         });
       }
@@ -366,10 +358,9 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
 
     if (formValue.items && Array.isArray(formValue.items)) {
       formValue.items = formValue.items.map((it: any) => {
-        const matchedCategory = this.procurementCategories.find(c => c.categoryId === it.categoryId);
+        const { category, ...rest } = it;
         return {
-          ...it,
-          category: matchedCategory || { id: 0, categoryId: it.categoryId || 'GENERAL', name: it.categoryId || 'General' },
+          ...rest,
           deliveryDeadline: it.deliveryDeadline ? new Date(it.deliveryDeadline).toISOString() : null
         };
       });
@@ -387,25 +378,18 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       formValue.title = `Draft Service Request - ${new Date().toLocaleDateString()}`;
     }
 
-    const requestId = this.requestId || uuidV4();
-
     if (this.isEditMode && this.requestId) {
       this.procurementRequestService.updateRequest(parseIdToNumber(this.requestId), formValue).subscribe({
-        next: (req) => {
-          this.router.navigate(['/admin/sales/commerce/requests']);
-        },
+        next: () => { this.router.navigate(['/admin/sales/commerce/requests']); },
         error: (err) => {
           console.error('Failed to update request draft', err);
           this.router.navigate(['/admin/sales/commerce/requests']);
         }
       });
     } else {
-      this.procurementRequestService.createRequest({
-        ...formValue,
-        id: requestId,
-        status: 'DRAFT'
-      }).subscribe({
-        next: (req) => {
+      this.procurementRequestService.createRequest({ ...formValue, status: 'DRAFT' }).subscribe({
+        next: (req: any) => {
+          if (req?.id) { this.requestId = String(req.id); this.isEditMode = true; }
           this.router.navigate(['/admin/sales/commerce/requests']);
         },
         error: (err) => {

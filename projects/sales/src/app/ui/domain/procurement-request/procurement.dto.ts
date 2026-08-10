@@ -228,6 +228,7 @@ export interface ProcurementRequest {
   // RFQ Settings
   rfqTitle?: string;
   rfqExpiryDate?: Date;
+  vendorsToNotify?: string[];
   selectedVendorId: string;
   selectedVendorName: string;
   selectedQuotationId: string;
@@ -501,5 +502,198 @@ export interface ProcurementPaymentRecord {
   approvedBy?: string;             // Finance officer who authorized the payment
   notes?: string;
   attachments?: RFQAttachment[];      // Payment receipt / proof of transfer
+  createdAt: Date;
+}
+
+// ── Supply Chain / Delivery / GRN ──────────────────────────────────────────
+
+export type DeliveryStatus =
+  | 'SCHEDULED'          // Delivery scheduled, not yet started
+  | 'DISPATCHED'         // Vendor has shipped/dispatched the goods
+  | 'IN_TRANSIT'         // In transit to delivery address
+  | 'OUT_FOR_DELIVERY'   // Last-mile, arriving today
+  | 'DELIVERED'          // Physically arrived at site
+  | 'PARTIALLY_DELIVERED'// Some items delivered, others pending
+  | 'FAILED'             // Delivery attempted but failed
+  | 'RETURNED';          // Goods returned to vendor
+
+export type GrnStatus =
+  | 'DRAFT'              // GRN being filled in by receiver
+  | 'SUBMITTED'          // GRN submitted, awaiting finance sign-off
+  | 'APPROVED'           // Finance approved, triggers payment
+  | 'DISPUTED'           // Discrepancy raised
+  | 'CANCELLED';         // GRN cancelled
+
+export type GrnItemCondition =
+  | 'GOOD'               // Item received in perfect condition
+  | 'DAMAGED'            // Item received damaged
+  | 'WRONG_ITEM'         // Wrong item received
+  | 'SHORT_SUPPLY'       // Fewer units than ordered
+  | 'EXCESS_SUPPLY';     // More units than ordered
+
+export interface GrnLineItem {
+  id: string;
+  lpoItemId: string;
+  name: string;
+  description: string;
+  orderedQuantity: number;
+  receivedQuantity: number;
+  acceptedQuantity: number;
+  rejectedQuantity: number;
+  unit: string;
+  unitPrice: number;
+  condition: GrnItemCondition;
+  batchNumber?: string;
+  serialNumbers?: string[];
+  expiryDate?: Date;
+  storageLocation?: string;
+  notes?: string;
+  photosUrls?: string[];
+}
+
+export interface GoodsReceivedNote {
+  id: string;
+  grnNumber: string;             // e.g., GRN-2026-001
+  lpoId: string;
+  lpoNumber: string;
+  procurementRequestId: number;
+  vendorId: string;
+  vendorName: string;
+  deliveryNoteNumber?: string;   // Vendor's delivery note number
+  status: GrnStatus;
+  items: GrnLineItem[];
+  receivedBy: string;
+  receivedAt: Date;
+  deliveryLocation: string;
+  deliveryAddress: string;
+  vehicleDetails?: string;
+  driverName?: string;
+  driverPhone?: string;
+  overallCondition: 'ACCEPTABLE' | 'PARTIAL' | 'REJECTED';
+  discrepancyNotes?: string;
+  signatureUrl?: string;
+  photosUrls?: string[];
+  attachments?: RFQAttachment[];
+  submittedAt?: Date;
+  approvedAt?: Date;
+  approvedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  // Computed
+  totalOrderedValue: number;
+  totalReceivedValue: number;
+  varianceAmount: number;
+}
+
+export interface DeliveryEvent {
+  id: string;
+  timestamp: Date;
+  status: DeliveryStatus;
+  location?: string;
+  description: string;
+  actor: string;
+  metadata?: Record<string, any>;
+}
+
+export interface DeliveryTracking {
+  id: string;
+  trackingNumber?: string;
+  lpoId: string;
+  lpoNumber: string;
+  procurementRequestId: number;
+  vendorId: string;
+  vendorName: string;
+  currentStatus: DeliveryStatus;
+  estimatedDeliveryDate: Date;
+  actualDeliveryDate?: Date;
+  deliveryAddress: string;
+  contactPerson: string;
+  contactPhone: string;
+  carrierName?: string;
+  timeline: DeliveryEvent[];
+  grnId?: string;               // Set once GRN is created
+  grnNumber?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ── Payment Voucher / Finance Bridge ───────────────────────────────────────
+
+export type PaymentVoucherStatus =
+  | 'DRAFT'
+  | 'PENDING_APPROVAL'
+  | 'APPROVED'
+  | 'PROCESSING'
+  | 'PAID'
+  | 'FAILED'
+  | 'REVERSED';
+
+export interface PaymentVoucher {
+  id: string;
+  voucherNumber: string;         // e.g., PV-2026-0042
+  grnId: string;
+  grnNumber: string;
+  invoiceId: string;
+  invoiceNumber: string;
+  lpoId: string;
+  lpoNumber: string;
+  procurementRequestId: number;
+  vendorId: string;
+  vendorName: string;
+  vendorBankName: string;
+  vendorAccountNumber: string;
+  vendorAccountName: string;
+  amount: number;
+  currency: string;
+  paymentMethod: 'BANK_TRANSFER' | 'CHEQUE' | 'ONLINE';
+  narration: string;             // e.g., "Payment for LPO-2026-4821 — Office Furniture"
+  status: PaymentVoucherStatus;
+  requestedBy: string;
+  requestedAt: Date;
+  approvedBy?: string;
+  approvedAt?: Date;
+  processedAt?: Date;
+  referenceNumber?: string;      // Bank transaction reference
+  financeLedgerRef?: string;     // Reference in the accounting/finance module
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ── Email Notification ──────────────────────────────────────────────────────
+
+export type NotificationType =
+  | 'RFQ_SENT'
+  | 'QUOTATION_RECEIVED'
+  | 'QUOTATION_ACCEPTED'
+  | 'QUOTATION_REJECTED'
+  | 'REVISION_REQUESTED'
+  | 'LPO_ISSUED'
+  | 'DELIVERY_SCHEDULED'
+  | 'DELIVERY_UPDATE'
+  | 'GRN_SUBMITTED'
+  | 'PAYMENT_PROCESSED'
+  | 'PAYMENT_RECEIPT';
+
+export type NotificationChannel = 'EMAIL' | 'IN_APP' | 'SMS' | 'PUSH';
+
+export type NotificationStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
+
+export interface ProcurementNotification {
+  id: string;
+  type: NotificationType;
+  channel: NotificationChannel;
+  recipientId: string;
+  recipientEmail: string;
+  recipientName: string;
+  subject: string;
+  body: string;
+  status: NotificationStatus;
+  sentAt?: Date;
+  deliveredAt?: Date;
+  failureReason?: string;
+  retryCount: number;
+  relatedEntityId: string;       // RFQ ID, quotation ID, LPO ID, etc.
+  relatedEntityType: string;     // 'RFQ', 'QUOTATION', 'LPO', 'GRN', 'PAYMENT'
   createdAt: Date;
 }

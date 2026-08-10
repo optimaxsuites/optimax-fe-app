@@ -1,320 +1,296 @@
-<!-- src/app/ui/view/sales-module/quote-list/quote-list.component.html -->
+<p-toast position="top-right"></p-toast>
 
-<div class="quote-list-container">
-  <div class="list-wrapper">
+<div class="ql-layout">
 
-    <!-- Header Hero Card -->
-    <div class="hero-section">
-      <div class="hero-content">
-        <div class="hero-text">
-          <div class="dashboard-badge">
-            <i class="fas fa-file-invoice"></i>
-            <span>Sales Hub • Proposals</span>
-          </div>
-          <h1>Quotes Dashboard</h1>
-          <p class="hero-subtitle">Manage, create, and track all client quotations and sales proposals from a single command center.</p>
-        </div>
-        <div class="hero-actions">
-          <button (click)="openNewQuoteModal()" class="btn-primary-hero">
-            <i class="fas fa-plus"></i>
-            New Quote
-          </button>
-        </div>
+  <!-- ══ SIDEBAR FILTERS ═══════════════════════════════════════════════════ -->
+  <aside class="ql-sidebar">
+
+    <div class="ql-sidebar-title">
+      <span>Filters</span>
+      <button class="ql-reset-link" (click)="resetFilters()" type="button">Reset</button>
+    </div>
+
+    <!-- Quick search -->
+    <div class="ql-filter-section">
+      <div class="ql-search-wrap">
+        <i class="fas fa-search ql-search-icon"></i>
+        <input type="text" class="ql-search-input" placeholder="Search quotes…"
+               [(ngModel)]="filters.searchTerm" (input)="applyFilters()">
       </div>
     </div>
 
-    <!-- Stats Cards - Larger & More Vibrant -->
-    <div class="stats-grid">
-      <div class="stat-card total" (click)="filters.status = 'ALL'; applyFilters()">
-        <div class="stat-icon-wrapper">
-          <i class="fas fa-file-invoice"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.total }}</div>
-          <div class="stat-label">Total Quotes</div>
-        </div>
-        <div class="stat-trend">
-          <i class="fas fa-arrow-up"></i>
-          <span>12%</span>
-        </div>
+    <!-- Status filters -->
+    <div class="ql-filter-section">
+      <div class="ql-filter-heading">Status</div>
+      <button class="ql-status-btn" type="button"
+              [class.ql-status-btn--active]="filters.status === 'ALL'"
+              (click)="filters.status = 'ALL'; applyFilters()">
+        <i class="fas fa-layer-group"></i>
+        <span>All Quotes</span>
+        <span class="ql-count-pill">{{ stats.total }}</span>
+      </button>
+      <button class="ql-status-btn" type="button"
+              [class.ql-status-btn--active]="filters.status === 'DRAFT'"
+              (click)="filters.status = 'DRAFT'; applyFilters()">
+        <i class="fas fa-edit"></i>
+        <span>Draft</span>
+        <span class="ql-count-pill">{{ stats.draft }}</span>
+      </button>
+      <button class="ql-status-btn" type="button"
+              [class.ql-status-btn--active]="filters.status === 'SENT'"
+              (click)="filters.status = 'SENT'; applyFilters()">
+        <i class="fas fa-paper-plane"></i>
+        <span>Sent</span>
+        <span class="ql-count-pill ql-count-pill--blue">{{ stats.sent }}</span>
+      </button>
+      <button class="ql-status-btn" type="button"
+              [class.ql-status-btn--active]="filters.status === 'ACCEPTED'"
+              (click)="filters.status = 'ACCEPTED'; applyFilters()">
+        <i class="fas fa-check-circle"></i>
+        <span>Accepted</span>
+        <span class="ql-count-pill ql-count-pill--green">{{ stats.accepted }}</span>
+      </button>
+      <button class="ql-status-btn" type="button"
+              [class.ql-status-btn--active]="filters.status === 'DECLINED'"
+              (click)="filters.status = 'DECLINED'; applyFilters()">
+        <i class="fas fa-times-circle"></i>
+        <span>Declined</span>
+        <span class="ql-count-pill ql-count-pill--red">{{ stats.declined }}</span>
+      </button>
+      <button class="ql-status-btn" type="button"
+              [class.ql-status-btn--active]="filters.status === 'EXPIRED'"
+              (click)="filters.status = 'EXPIRED'; applyFilters()">
+        <i class="fas fa-clock"></i>
+        <span>Expired</span>
+        <span class="ql-count-pill ql-count-pill--orange">{{ stats.expired }}</span>
+      </button>
+      <button class="ql-status-btn" type="button"
+              [class.ql-status-btn--active]="filters.status === 'CONVERTED'"
+              (click)="filters.status = 'CONVERTED'; applyFilters()">
+        <i class="fas fa-exchange-alt"></i>
+        <span>Converted</span>
+        <span class="ql-count-pill ql-count-pill--purple">{{ stats.converted }}</span>
+      </button>
+    </div>
+
+    <!-- Date range -->
+    <div class="ql-filter-section">
+      <div class="ql-filter-heading">Date Range</div>
+      <div class="ql-field">
+        <label class="ql-flabel">From</label>
+        <input type="date" class="ql-date-input" [(ngModel)]="filters.dateFrom" (change)="applyFilters()">
       </div>
-      <div class="stat-card draft" (click)="filters.status = 'DRAFT'; applyFilters()">
-        <div class="stat-icon-wrapper">
-          <i class="fas fa-edit"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.draft }}</div>
-          <div class="stat-label">Draft</div>
-        </div>
-        <div class="stat-trend">
-          <i class="fas fa-minus"></i>
-          <span>3%</span>
-        </div>
-      </div>
-      <div class="stat-card sent" (click)="filters.status = 'SENT'; applyFilters()">
-        <div class="stat-icon-wrapper">
-          <i class="fas fa-paper-plane"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.sent }}</div>
-          <div class="stat-label">Sent</div>
-        </div>
-        <div class="stat-trend up">
-          <i class="fas fa-arrow-up"></i>
-          <span>8%</span>
-        </div>
-      </div>
-      <div class="stat-card accepted" (click)="filters.status = 'ACCEPTED'; applyFilters()">
-        <div class="stat-icon-wrapper">
-          <i class="fas fa-check-circle"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.accepted }}</div>
-          <div class="stat-label">Accepted</div>
-        </div>
-        <div class="stat-trend up">
-          <i class="fas fa-arrow-up"></i>
-          <span>15%</span>
-        </div>
-      </div>
-      <div class="stat-card declined" (click)="filters.status = 'DECLINED'; applyFilters()">
-        <div class="stat-icon-wrapper">
-          <i class="fas fa-times-circle"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.declined }}</div>
-          <div class="stat-label">Declined</div>
-        </div>
-        <div class="stat-trend down">
-          <i class="fas fa-arrow-down"></i>
-          <span>2%</span>
-        </div>
-      </div>
-      <div class="stat-card expired" (click)="filters.status = 'EXPIRED'; applyFilters()">
-        <div class="stat-icon-wrapper">
-          <i class="fas fa-hourglass-end"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.expired }}</div>
-          <div class="stat-label">Expired</div>
-        </div>
-        <div class="stat-trend down">
-          <i class="fas fa-arrow-down"></i>
-          <span>5%</span>
-        </div>
+      <div class="ql-field">
+        <label class="ql-flabel">To</label>
+        <input type="date" class="ql-date-input" [(ngModel)]="filters.dateTo" (change)="applyFilters()">
       </div>
     </div>
 
-    <!-- Filter Bar with Status Filters -->
-    <div class="filter-bar">
-      <div class="filter-row">
-        <div class="search-box">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-          </svg>
-          <input type="text" [(ngModel)]="filters.searchTerm" (input)="applyFilters()"
-            placeholder="Search by quote #, customer...">
-        </div>
+  </aside>
 
-        <div class="status-filters">
-          <span class="filter-label">Status:</span>
-          <select class="status-filter-select" [(ngModel)]="filters.status" (change)="applyFilters()">
-            <option value="ALL">All Statuses</option>
-            <option value="DRAFT">Draft</option>
-            <option value="SENT">Sent</option>
-            <option value="ACCEPTED">Accepted</option>
-            <option value="DECLINED">Declined</option>
-            <option value="EXPIRED">Expired</option>
+  <!-- ══ MAIN AREA ═════════════════════════════════════════════════════════ -->
+  <main class="ql-main">
+
+    <!-- Top bar -->
+    <div class="ql-top-bar">
+      <div class="ql-top-bar-left">
+        <h1 class="ql-title">Quotations</h1>
+        <span class="ql-total-badge">{{ totalElements }}</span>
+      </div>
+      <div class="ql-top-bar-right">
+        <div class="ql-page-size-wrap">
+          <label class="ql-flabel">Per page</label>
+          <select class="ql-page-size-select" [(ngModel)]="filters.size" (change)="onPageSizeChange(filters.size)">
+            <option [value]="10">10</option>
+            <option [value]="25">25</option>
+            <option [value]="50">50</option>
           </select>
         </div>
-
-        <div class="date-filters">
-          <input type="date" [(ngModel)]="filters.dateFrom" (change)="applyFilters()" placeholder="From">
-          <span>→</span>
-          <input type="date" [(ngModel)]="filters.dateTo" (change)="applyFilters()" placeholder="To">
-        </div>
-
-        <button class="btn-reset" (click)="resetFilters()">
-          <i class="fas fa-undo-alt"></i>
-          Reset
+        <button type="button" class="ql-btn ql-btn--primary" (click)="openNewQuoteModal()">
+          <i class="fas fa-plus"></i> New Quote
         </button>
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div *ngIf="isLoading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading quotes...</p>
+    <!-- AI Insight Banner -->
+    <div class="ql-ai-banner" *ngIf="!aiDismissed && (stats.expired > 0 || stats.sent > 2)">
+      <div class="ql-ai-icon"><i class="fas fa-robot"></i></div>
+      <div class="ql-ai-body">
+        <div class="ql-ai-title">AI Insight</div>
+        <div class="ql-ai-text">
+          <ng-container *ngIf="stats.expired > 0">
+            <strong>{{ stats.expired }}</strong> quote{{ stats.expired > 1 ? 's have' : ' has' }} expired without response — consider following up or adjusting pricing.
+          </ng-container>
+          <ng-container *ngIf="stats.sent > 2 && stats.expired === 0">
+            <strong>{{ stats.sent }}</strong> quotes are awaiting client response. Sending follow-up reminders typically increases acceptance rates by 34%.
+          </ng-container>
+        </div>
+      </div>
+      <button type="button" class="ql-ai-dismiss" (click)="aiDismissed = true" *ngIf="!aiDismissed"><i class="fas fa-times"></i></button>
     </div>
 
-    <!-- Quotes Table -->
-    <div *ngIf="!isLoading" class="table-container">
-      <div class="table-wrapper">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th class="checkbox-col">
-                <input type="checkbox" (change)="toggleSelectAll($event)" [checked]="isAllSelected()">
-              </th>
-              <th class="sn-col">#</th>
-              <th>Quote #</th>
-              <th>Customer</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th>Valid Until</th>
-              <th class="actions-heading">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let quote of quotes; let i = index"
-                [class.expiring-soon]="isExpiringSoon(quote.validUntil) && quote.status === 'SENT'">
-              <td class="checkbox-col">
-                <input type="checkbox" [value]="quote.id" (change)="toggleSelection(quote.id, $event)"
-                  [checked]="isSelected(quote.id)">
-              </td>
-              <td class="sn-col">{{ (currentPage * pageSize) + i + 1 }}</td>
-              <td class="quote-number">{{ quote.quoteNumber }}</td>
-              <td class="customer-name">{{ $any(quote).customerName?.name || quote.customerName }}</td>
-              <td class="amount">{{ formatCurrency(quote.totalAmount) }}</td>
-              <td>
-                <span class="status-badge" [class]="getStatusBadgeClass(quote.status)">
-                  {{ getStatusLabel(quote.status) | titlecase }}
-                </span>
-              </td>
-              <td>{{ formatDate(quote.createdAt) }}</td>
-              <td class="expiry-date" [class.expiring]="isExpiringSoon(quote.validUntil) && quote.status === 'SENT'">
-                {{ formatDate(quote.validUntil) }}
-                <span *ngIf="isExpiringSoon(quote.validUntil) && quote.status === 'SENT'" class="expiry-warning">
-                  ({{ getDaysRemaining(quote.validUntil) }} days left)
-                </span>
-              </td>
-              <td class="actions-col">
-                <div class="actions-wrapper">
-                  <button class="action-btn view-btn" (click)="openQuoteDetail(quote.id)" title="View Details">
-                    <i class="fas fa-eye"></i>
-                  </button>
-                  <button class="action-btn edit-btn" [disabled]="quote.status !== 'DRAFT'"
-                    (click)="openEditQuoteModal(quote.id)" title="Edit Quote">
-                    <i class="fas fa-pencil-alt"></i>
-                  </button>
-                  <button class="action-btn send-btn" [disabled]="quote.status !== 'DRAFT'"
-                    (click)="sendQuote(quote)" title="Send to Customer">
-                    <i class="fas fa-paper-plane"></i>
-                  </button>
-                  <button class="action-btn generate-invoice-btn" [disabled]="quote.status !== 'CONVERTED'"
-                    (click)="openInvoiceModal(quote.id)" title="Generate Invoice">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                  </button>
-                  <button class="action-btn duplicate-btn" (click)="duplicateQuote(quote)" title="Duplicate Quote">
-                    <i class="fas fa-copy"></i>
-                  </button>
-                  <button class="action-btn delete-btn" [disabled]="quote.status === 'CONVERTED' || quote.status === 'EXPIRED'"
-                    (click)="deleteQuote(quote)" title="Delete">
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr *ngIf="quotes.length === 0">
-              <td colspan="9" class="empty-state">
-                <div class="empty-state-content">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                    </path>
-                  </svg>
-                  <h3>No quotes found</h3>
-                  <p>Create your first quote to get started</p>
-                  <button (click)="openNewQuoteModal()" class="btn-primary-sm">Create Quote</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Bulk action bar -->
+    <div class="ql-bulk-bar" *ngIf="selectedQuoteIds.length > 0">
+      <i class="fas fa-check-square"></i>
+      <span><strong>{{ selectedQuoteIds.length }}</strong> quote{{ selectedQuoteIds.length > 1 ? 's' : '' }} selected</span>
+      <button type="button" class="ql-btn ql-btn--danger-sm">
+        <i class="fas fa-trash"></i> Delete Selected
+      </button>
+      <button type="button" class="ql-btn ql-btn--ghost-sm" (click)="selectedQuoteIds = []">
+        Clear
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="ql-table-wrap">
+      <table class="ql-table">
+        <thead>
+          <tr>
+            <th class="ql-th-chk"><input type="checkbox" (change)="toggleSelectAll($event)"></th>
+            <th>Quote #</th>
+            <th>Client</th>
+            <th>Amount</th>
+            <th>Date</th>
+            <th>Valid Until</th>
+            <th>Status</th>
+            <th class="ql-th-actions">Actions</th>
+          </tr>
+        </thead>
+
+        <!-- Loading skeleton -->
+        <tbody *ngIf="isLoading">
+          <tr class="ql-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
+            <td colspan="8"><div class="ql-skeleton-bar"></div></td>
+          </tr>
+        </tbody>
+
+        <!-- Empty state -->
+        <tbody *ngIf="!isLoading && quotes.length === 0">
+          <tr>
+            <td colspan="8">
+              <div class="ql-empty">
+                <i class="fas fa-file-invoice ql-empty-icon"></i>
+                <p class="ql-empty-title">No quotes found</p>
+                <p class="ql-empty-sub">Try adjusting your filters or create a new quote</p>
+                <button type="button" class="ql-btn ql-btn--primary" (click)="openNewQuoteModal()">
+                  <i class="fas fa-plus"></i> New Quote
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+
+        <!-- Data rows -->
+        <tbody *ngIf="!isLoading && quotes.length > 0">
+          <tr *ngFor="let q of quotes"
+              [class.ql-row--expiring]="isExpiringSoon(q.validUntil)"
+              [class.ql-row--converted]="q.status === 'CONVERTED'">
+            <td class="ql-td-chk"><input type="checkbox" [checked]="isSelected(q.id)" (change)="toggleSelection(q.id, $event)"></td>
+
+            <td class="ql-td-num">
+              <button type="button" class="ql-link" (click)="openQuoteDetail(q.id)">{{ q.quoteNumber || '#' + q.id }}</button>
+            </td>
+
+            <td class="ql-td-client">{{ getCustomerName(q.customerId) }}</td>
+
+            <td class="ql-td-amount">{{ formatCurrency(q.totalAmount) }}</td>
+
+            <td class="ql-td-date">{{ formatDate(q.quoteDate) }}</td>
+
+            <td class="ql-td-date">
+              <span>{{ formatDate(q.validUntil) }}</span>
+              <span class="ql-expiring-badge" *ngIf="isExpiringSoon(q.validUntil) && q.status !== 'CONVERTED'">
+                {{ getDaysRemaining(q.validUntil) }}d
+              </span>
+            </td>
+
+            <td>
+              <span class="ql-status-badge ql-status-badge--{{ q.status?.toLowerCase() }}">
+                {{ getStatusLabel(q.status) }}
+              </span>
+            </td>
+
+            <td class="ql-td-actions">
+              <div class="ql-row-actions">
+                <button type="button" class="ql-action-btn" (click)="openQuoteDetail(q.id)" title="View">
+                  <i class="fas fa-eye"></i> View
+                </button>
+                <button type="button" class="ql-action-btn" (click)="openEditQuoteModal(q.id)" title="Edit">
+                  <i class="fas fa-pencil-alt"></i> Edit
+                </button>
+                <button type="button" class="ql-action-btn" (click)="duplicateQuote(q)" title="Duplicate">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <button type="button" class="ql-action-btn ql-action-btn--send"
+                        (click)="sendQuote(q)" title="Send Quote"
+                        *ngIf="q.status === 'DRAFT'">
+                  <i class="fas fa-paper-plane"></i> Send
+                </button>
+                <button type="button" class="ql-action-btn ql-action-btn--convert"
+                        (click)="openInvoiceModal(q.id)" title="Convert to Invoice"
+                        *ngIf="q.status === 'ACCEPTED' || q.status === 'SENT'">
+                  <i class="fas fa-exchange-alt"></i> Invoice
+                </button>
+                <button type="button" class="ql-action-btn ql-action-btn--danger" (click)="deleteQuote(q)" title="Delete">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="ql-pagination" *ngIf="totalElements > 0">
+      <span class="ql-page-info">
+        Showing {{ filters.page * filters.size + 1 }}–{{ Math.min((filters.page + 1) * filters.size, totalElements) }} of {{ totalElements }}
+      </span>
+      <div class="ql-page-btns">
+        <button type="button" class="ql-page-btn" [disabled]="filters.page === 0" (click)="onPageChange(filters.page - 1)">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button type="button" class="ql-page-btn"
+                *ngFor="let p of getPageNumbers()"
+                [class.ql-page-btn--active]="p === filters.page"
+                (click)="onPageChange(p)">{{ p + 1 }}</button>
+        <button type="button" class="ql-page-btn" [disabled]="filters.page >= totalPages - 1" (click)="onPageChange(filters.page + 1)">
+          <i class="fas fa-chevron-right"></i>
+        </button>
       </div>
+    </div>
 
-      <!-- Pagination -->
-      <div class="pagination-section" *ngIf="totalPages > 0">
-        <div class="pagination-info">
-          Showing {{ currentPage * pageSize + 1 }} - {{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{
-          totalElements }} quotes
-        </div>
+  </main>
+</div>
 
-        <div class="pagination-controls">
-          <select class="page-size-select" [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)">
-            <option [value]="10">10 per page</option>
-            <option [value]="25">25 per page</option>
-            <option [value]="50">50 per page</option>
-          </select>
-
-          <div class="pagination-buttons">
-            <button class="page-btn" (click)="onPageChange(0)" [disabled]="currentPage === 0">
-              <i class="fas fa-angle-double-left"></i>
-            </button>
-            <button class="page-btn" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 0">
-              <i class="fas fa-angle-left"></i>
-            </button>
-            <button *ngFor="let page of getPageNumbers()" class="page-number" [class.active]="page === currentPage"
-              (click)="onPageChange(page)">
-              {{ page + 1 }}
-            </button>
-            <button class="page-btn" (click)="onPageChange(currentPage + 1)"
-              [disabled]="currentPage === totalPages - 1">
-              <i class="fas fa-angle-right"></i>
-            </button>
-            <button class="page-btn" (click)="onPageChange(totalPages - 1)" [disabled]="currentPage === totalPages - 1">
-              <i class="fas fa-angle-double-right"></i>
-            </button>
-          </div>
-        </div>
-      </div>
+<!-- ══ DELETE QUOTE CONFIRM ══════════════════════════════════════════════ -->
+<div class="ql-confirm-backdrop" *ngIf="showDeleteModal" (click)="$event.target === $event.currentTarget && (showDeleteModal = false)">
+  <div class="ql-confirm-modal">
+    <div class="ql-confirm-icon" style="color:#dc2626"><i class="fas fa-exclamation-triangle"></i></div>
+    <div class="ql-confirm-title">Delete Quote?</div>
+    <div class="ql-confirm-sub">
+      Permanently delete <strong>{{ pendingDeleteQuoteNumber }}</strong> for <strong>{{ pendingDeleteCustomerName }}</strong>?
+    </div>
+    <div class="ql-confirm-actions">
+      <button type="button" class="ql-btn ql-btn--ghost-sm" style="padding:8px 16px;font-size:13px" (click)="showDeleteModal = false">Keep</button>
+      <button type="button" class="ql-btn" style="background:#dc2626;color:#fff;padding:8px 16px;font-size:13px;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer" (click)="confirmDeleteQuote()">
+        <i class="fas fa-trash"></i> Delete
+      </button>
     </div>
   </div>
 </div>
 
-<!-- Modals -->
-<app-modal *ngIf="showQuoteModal" [header]="selectedQuoteId ? 'Edit Quote' : 'New Quote'" (close)="closeQuoteModal()">
-  <app-quote-form [editId]="selectedQuoteId" (saved)="onQuoteSaved()" (cancelled)="closeQuoteModal()"></app-quote-form>
-</app-modal>
-
-<app-side-modal *ngIf="showQuoteDetail" (close)="closeQuoteDetail()">
-  <app-quote-detail [detailId]="selectedQuoteId" (closed)="closeQuoteDetail()"
-    (edit)="closeQuoteDetail(); openEditQuoteModal($event)"></app-quote-detail>
-</app-side-modal>
-
-<app-modal *ngIf="showInvoiceModal" header="Create Invoice" (close)="closeInvoiceModal()">
-  <app-invoice-form [fromQuoteId]="selectedQuoteId" (saved)="onInvoiceSaved()"
-    (cancelled)="closeInvoiceModal()"></app-invoice-form>
-</app-modal>
-
-<!-- Custom Send Quote Confirmation Modal Overlay -->
-<div class="custom-modal-backdrop" *ngIf="showSendQuoteModal" (click)="showSendQuoteModal = false">
-  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
-    <div class="custom-modal-header">
-      <div class="header-title-group">
-        <div class="icon-badge" style="background: rgba(46, 178, 112, 0.12); color: #2EB270;">
-          <i class="fas fa-paper-plane"></i>
-        </div>
-        <h3>Send Quote</h3>
-      </div>
-      <button type="button" class="btn-close-modal" (click)="showSendQuoteModal = false">&times;</button>
+<!-- ══ SEND QUOTE CONFIRM ════════════════════════════════════════════════ -->
+<div class="ql-confirm-backdrop" *ngIf="showSendQuoteModal" (click)="$event.target === $event.currentTarget && (showSendQuoteModal = false)">
+  <div class="ql-confirm-modal">
+    <div class="ql-confirm-icon" style="color:#1d4ed8"><i class="fas fa-paper-plane"></i></div>
+    <div class="ql-confirm-title">Send Quote?</div>
+    <div class="ql-confirm-sub">
+      Send <strong>{{ pendingSendQuoteNumber }}</strong> to <strong>{{ pendingSendCustomerName }}</strong>? Status will change to Sent.
     </div>
-
-    <div class="custom-modal-body" style="padding: 1.5rem; text-align: center;">
-      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(46, 178, 112, 0.1); color: #2EB270; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem auto;">
-        <i class="fas fa-paper-plane"></i>
-      </div>
-      <h4 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; font-weight: 700; color: #0f172a;">Send Quotation?</h4>
-      <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
-        Send quote <strong>{{ pendingSendQuoteNumber }}</strong> to <strong>{{ pendingSendCustomerName }}</strong>?
-      </p>
-    </div>
-
-    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
-      <button type="button" class="btn-modal-cancel" (click)="showSendQuoteModal = false">Cancel</button>
-      <button type="button" class="btn-modal-save" (click)="confirmSendQuote()">
+    <div class="ql-confirm-actions">
+      <button type="button" class="ql-btn ql-btn--ghost-sm" style="padding:8px 16px;font-size:13px" (click)="showSendQuoteModal = false">Cancel</button>
+      <button type="button" class="ql-btn ql-btn--primary" (click)="confirmSendQuote()">
         <i class="fas fa-paper-plane"></i> Send Quote
       </button>
     </div>

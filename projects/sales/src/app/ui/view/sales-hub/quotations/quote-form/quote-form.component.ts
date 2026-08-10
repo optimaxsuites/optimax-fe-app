@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
@@ -12,6 +12,8 @@ import { lastValueFrom } from 'rxjs';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { CompanyProfileService } from '../../../../shared-component/service/company-profile/company-profile.service';
 
 export function futureDateValidator(): ValidatorFn {
   return (control: AbstractControl): { [key: string]: any } | null => {
@@ -30,13 +32,15 @@ export function futureDateValidator(): ValidatorFn {
   selector: 'app-quote-form',
   standalone: true,
   imports: [
-    CommonModule, 
-    ReactiveFormsModule, 
-    FormsModule, 
-    RouterModule, 
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    RouterModule,
     BackButtonComponent,
-    TemplateTypesComponent
+    TemplateTypesComponent,
+    ToastModule
   ],
+  providers: [MessageService],
   templateUrl: './quote-form.component.html',
   styleUrls: ['./quote-form.component.scss']
 })
@@ -85,6 +89,13 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   showProductModal = false;
   searchProductTerm = '';
   currentItemIndex = 0;
+
+  // Inline product creation
+  showNewProductModal = false;
+  newProductTargetIndex = 0;
+  isSavingProduct = false;
+  newProductError = '';
+  newProduct = { name: '', description: '', unitPrice: 0, taxRate: 0 };
 
   // Billed By (Quotation From) editable data
   showBilledByModal = false;
@@ -187,11 +198,15 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
 
+  companyName = '';
+
   constructor(
     private messageService: MessageService,
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private salesService: SalesService,
+    private companyProfileService: CompanyProfileService,
+    private cdr: ChangeDetectorRef,
     router: Router
   ) {
     this.router = router;
@@ -237,6 +252,44 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     }
 
     this.setupFormListeners();
+
+    // Load company profile for logo/name/bank embed in document
+    this.companyProfileService.companyProfile$.pipe(takeUntil(this.destroy$)).subscribe(profile => {
+      if (profile) {
+        if (profile.logoUrl && !this.isEditMode) {
+          this.logoUrl = profile.logoUrl;
+          this.logoFileName = 'Company Logo';
+        }
+        if (profile.companyName && !this.billedBy.name) {
+          this.billedBy.name = profile.companyName;
+          this.billedByDraft.name = profile.companyName;
+          this.companyName = profile.companyName;
+        }
+        if (!this.billedBy.address) {
+          const addr = [profile.city, profile.state, profile.country].filter(Boolean).join(', ') || profile.address || '';
+          if (addr) {
+            this.billedBy.address = addr;
+            this.billedByDraft.address = addr;
+          }
+        }
+        if (!this.billedBy.bankName && profile.bankName) {
+          this.billedBy.bankName = profile.bankName;
+          this.billedByDraft.bankName = profile.bankName;
+        }
+        if (!this.billedBy.accountName && profile.bankAccountName) {
+          this.billedBy.accountName = profile.bankAccountName;
+          this.billedByDraft.accountName = profile.bankAccountName;
+        }
+        if (!this.billedBy.accountNumber && profile.bankAccountNumber) {
+          this.billedBy.accountNumber = profile.bankAccountNumber;
+          this.billedByDraft.accountNumber = profile.bankAccountNumber;
+        }
+        if (!this.billedBy.email && profile.email) {
+          this.billedBy.email = profile.email;
+          this.billedByDraft.email = profile.email;
+        }
+      }
+    });
 
     this.isLoading = true;
     forkJoin({
@@ -398,8 +451,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         });
       }
       
-      if (!item.get('productId')?.value) {
-        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Item ${i + 1}: Please select a product` });
+      if (!item.get('productName')?.value) {
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Item ${i + 1}: Please enter an item name` });
         return false;
       }
       
@@ -461,7 +514,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   addLineItem(): void {
     const itemForm = this.fb.group({
-      productId: ['', Validators.required],
+      productId: [''],
       productName: ['', Validators.required],
       description: [''],
       quantity: [1, [Validators.required, Validators.min(1)]],
@@ -543,6 +596,50 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       });
       this.calculateItemTotal(itemForm);
     }
+  }
+
+  openNewProductModal(index: number): void {
+    this.newProductTargetIndex = index;
+    this.newProduct = { name: '', description: '', unitPrice: 0, taxRate: 0 };
+    this.newProductError = '';
+    this.showNewProductModal = true;
+  }
+
+  saveNewProduct(): void {
+    this.newProductError = '';
+    if (!this.newProduct.name.trim()) {
+      this.newProductError = 'Product name is required.';
+      return;
+    }
+    this.isSavingProduct = true;
+    this.salesService.createProduct({
+      name: this.newProduct.name.trim(),
+      description: this.newProduct.description || '',
+      unitPrice: this.newProduct.unitPrice || 0,
+      sellingPrice: this.newProduct.unitPrice || 0,
+      taxRate: this.newProduct.taxRate || 0
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (created: Product) => {
+        this.products = [...this.products, created];
+        this.filteredProducts = this.products;
+        const itemForm = this.items.at(this.newProductTargetIndex);
+        itemForm.patchValue({
+          productId: created.id,
+          productName: created.name,
+          description: created.description || '',
+          unitPrice: created.unitPrice || created.sellingPrice || 0,
+          taxRate: created.taxRate || 0
+        });
+        this.calculateItemTotal(itemForm);
+        this.isSavingProduct = false;
+        this.showNewProductModal = false;
+        this.messageService.add({ severity: 'success', summary: 'Product Created', detail: `"${created.name}" added to catalog.` });
+      },
+      error: () => {
+        this.newProductError = 'Failed to create product. Please try again.';
+        this.isSavingProduct = false;
+      }
+    });
   }
 
   filterProducts(): void {
@@ -879,8 +976,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       currency: quote.currency,
       quoteDate: this.formatDateForInput(quote.createdAt),
       validUntil: this.formatDateForInput(quote.validUntil),
-      notes: addOpts?.notes || '',
-      terms: addOpts?.terms || ''
+      notes: (quote as any).notes || addOpts?.notes || '',
+      terms: (quote as any).terms || addOpts?.terms || ''
     });
     this.onCustomerSelect(custId);
     
@@ -1022,94 +1119,53 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
     this.isSubmitting = true;
     const formValue = this.quoteForm.value;
-    
-    const items: QuoteItem[] = [];
-    for (let i = 0; i < this.items.length; i++) {
-      const item = this.items.at(i).getRawValue();
-      items.push({
-        id: Math.floor(Math.random() * 1000000),
-        productId: item.productId,
-        productName: item.productName,
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
+
+    // Build items matching QuoteItemDTO exactly:
+    // productId → Long|null, productName → String (@NotBlank), quantity → Integer, unitPrice → BigDecimal
+    const items = this.items.controls.map(ctrl => {
+      const raw = (ctrl as any).getRawValue();
+      const pid = raw.productId !== '' && raw.productId != null ? Number(raw.productId) : null;
+      return {
+        productId: pid && !isNaN(pid) ? pid : null,
+        productName: raw.productName || '',
+        description: raw.description || '',
+        quantity: Number(raw.quantity) || 1,
+        unitPrice: Number(raw.unitPrice) || 0,
         discount: 0,
-        taxRate: 0,
-        amount: item.total,
-        total: item.total
-      });
-    }
-    
+        total: Number(raw.total) || 0
+      };
+    });
+
+    const customerObj = this.customers.find(c =>
+      c.customerId === formValue.customerId || String(c.id) === String(formValue.customerId)
+    ) || { id: null, name: formValue.customerName || '' } as any;
+
+    // selectedCustomerBankId: send the bank's id if known
     const selectedBankIdx = formValue.selectedCustomerBankIndex;
-    let selectedCustomerBank: any = undefined;
-    if (selectedBankIdx !== undefined && selectedBankIdx !== null && selectedBankIdx >= 0 && selectedBankIdx < this.selectedCustomerBankAccounts.length) {
-      selectedCustomerBank = this.selectedCustomerBankAccounts[selectedBankIdx];
-    } else if (this.isEditMode && this.loadedQuoteSelectedCustomerBank) {
-      selectedCustomerBank = this.loadedQuoteSelectedCustomerBank;
+    let selectedCustomerBankId: number | null = null;
+    if (selectedBankIdx != null && selectedBankIdx >= 0 && selectedBankIdx < this.selectedCustomerBankAccounts.length) {
+      const bank = this.selectedCustomerBankAccounts[selectedBankIdx] as any;
+      selectedCustomerBankId = bank.id || null;
     }
 
-    const customerObj: Customer = this.customers.find(c => c.customerId === formValue.customerId || String(c.id) === formValue.customerId) || {
-      id: 1,
-      customerId: formValue.customerId,
-      name: formValue.customerName,
-      email: '',
-      phone: '',
-      address: [''],
-      deliverAddress: [''],
-      createdBy: 'System',
-      createdAt: new Date(),
-      totalSpent: 0,
-      totalOrders: 0,
-      status: 'ACTIVE'
-    };
-
-    // Note: the backend's Quote entity stores customerId as a plain numeric
-    // foreign key (java.lang.Long) and customerName as a string — it expands
-    // them back into full nested objects on read (see populateForm() above),
-    // but rejects a nested object on write with a 500 JSON-parse error. So this
-    // outgoing payload intentionally diverges from the Quote read-shape here.
+    // Payload matches QuoteDTO exactly — no extra fields
     const quoteData: any = {
-      customerId: customerObj.id,
-      customerName: customerObj.name,
-      currency: formValue.currency,
-      validUntil: new Date(formValue.validUntil),
-      merchantDetails: {
-        id: 1,
-        merchantId: 'MCH-001',
-        name: this.billedBy.name,
-        companyName: this.billedBy.name,
-        bankDetails: {
-          bankName: this.billedBy.bankName,
-          accountName: this.billedBy.accountName,
-          accountNumber: this.billedBy.accountNumber
-        },
-        address: [this.billedBy.address],
-        phone: this.billedBy.phone,
-        email: this.billedBy.email,
-        taxId: '',
-        website: this.billedBy.routingNumber
-      },
-      additionalOptions: [{
-        signatureText: this.signatureText,
-        attachments: [{ id: 1, fileName: this.attachmentFileName, fileUrl: '', uploadedAt: new Date(), size: 0, type: '' }],
-        email: this.contactEmail || customerObj.email || '',
-        address: this.contactAddress || (Array.isArray(customerObj.address) ? customerObj.address[0] : customerObj.address) || '',
-        phone: this.contactPhone || customerObj.phone || '',
-        notes: formValue.notes || '',
-        terms: formValue.terms || ''
-      }],
-      items: items,
+      customerId: customerObj.id ? Number(customerObj.id) : null,
+      currency: formValue.currency || 'NGN',
+      validUntil: formValue.validUntil ? new Date(formValue.validUntil).toISOString() : null,
+      expiresAt: formValue.validUntil ? new Date(formValue.validUntil).toISOString() : null,
+      notes: formValue.notes || '',
+      terms: formValue.terms || '',
+      logoUrl: this.logoUrl || null,
+      selectedCustomerBankId: selectedCustomerBankId,
+      status: 'DRAFT' as QuoteStatus,
       subtotal: this.subtotal,
       taxAmount: this.totalTax,
       discountAmount: this.discountAmount,
-      additionalCharges: this.additionalChargeItems.map(item => Number(item.amount) || 0),
-      additionalChargesLabel: this.additionalChargeItems.map(item => item.label || ''),
       totalAmount: this.grandTotal,
-      status: 'DRAFT' as QuoteStatus,
-      createdAt: new Date(formValue.quoteDate),
-      expiresAt: new Date(formValue.validUntil),
-      logoUrl: this.logoUrl ? [this.logoUrl] : [],
-      selectedCustomerBank: selectedCustomerBank
+      additionalCharges: this.additionalChargeItems.map(c => c.amount),
+      additionalChargesLabel: this.additionalChargeItems.map(c => c.label),
+      items: items
     };
     
     let request;
@@ -1130,6 +1186,76 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         console.error('Error saving quote:', error);
         this.isSubmitting = false;
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save quote. Please try again.' });
+      }
+    });
+  }
+
+  isSavingDraft = false;
+
+  saveDraft(): void {
+    if (this.isSavingDraft || this.isSubmitting) return;
+    this.isSavingDraft = true;
+    const formValue = this.quoteForm.getRawValue();
+
+    const items = this.items.controls.map(ctrl => {
+      const raw = (ctrl as any).getRawValue();
+      const pid = raw.productId !== '' && raw.productId != null ? Number(raw.productId) : null;
+      return {
+        productId: pid && !isNaN(pid) ? pid : null,
+        productName: raw.productName || 'Untitled Item',
+        description: raw.description || '',
+        quantity: Number(raw.quantity) || 1,
+        unitPrice: Number(raw.unitPrice) || 0,
+        discount: 0,
+        total: Number(raw.total) || 0
+      };
+    });
+
+    const customerObj = this.customers.find(c =>
+      c.customerId === formValue.customerId || String(c.id) === String(formValue.customerId)
+    ) || { id: null, name: formValue.customerName || '' } as any;
+
+    const selectedBankIdx = formValue.selectedCustomerBankIndex;
+    let selectedCustomerBankId: number | null = null;
+    if (selectedBankIdx != null && selectedBankIdx >= 0 && selectedBankIdx < this.selectedCustomerBankAccounts.length) {
+      selectedCustomerBankId = (this.selectedCustomerBankAccounts[selectedBankIdx] as any).id || null;
+    }
+
+    const draftData: any = {
+      customerId: customerObj.id ? Number(customerObj.id) : null,
+      currency: formValue.currency || 'NGN',
+      validUntil: formValue.validUntil ? new Date(formValue.validUntil).toISOString() : null,
+      expiresAt: formValue.validUntil ? new Date(formValue.validUntil).toISOString() : null,
+      notes: formValue.notes || '',
+      terms: formValue.terms || '',
+      logoUrl: this.logoUrl || null,
+      selectedCustomerBankId,
+      status: 'DRAFT' as QuoteStatus,
+      subtotal: this.subtotal,
+      taxAmount: this.totalTax,
+      discountAmount: this.discountAmount,
+      totalAmount: this.grandTotal,
+      additionalCharges: this.additionalChargeItems.map(c => c.amount),
+      additionalChargesLabel: this.additionalChargeItems.map(c => c.label),
+      items: items.length ? items : [{ productName: 'Draft', quantity: 1, unitPrice: 0, discount: 0, total: 0 }]
+    };
+
+    const req = this.isEditMode
+      ? this.salesService.updateQuote(this.quoteId, draftData)
+      : this.salesService.createQuote(draftData);
+
+    req.pipe(takeUntil(this.destroy$)).subscribe({
+      next: (saved: Quote) => {
+        this.isSavingDraft = false;
+        if (!this.isEditMode && (saved as any).id) {
+          this.quoteId = String((saved as any).id);
+          this.isEditMode = true;
+        }
+        this.messageService.add({ severity: 'success', summary: 'Draft Saved', detail: 'Quote saved as draft.' });
+      },
+      error: () => {
+        this.isSavingDraft = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save draft.' });
       }
     });
   }
@@ -1204,34 +1330,77 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   // Generate PDF from live preview mockup
   private async generateQuotePDF(quote: Quote): Promise<Blob> {
     this.generatedQuoteNumber = quote.quoteNumber;
-    
-    // Allow small delay for Angular to bind the new quote number to the DOM
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
+
+    // The preview element lives only on step 1 — switch there if needed
+    const prevStep = this.currentStep;
+    if (this.currentStep !== 1) {
+      this.currentStep = 1;
+      this.cdr.detectChanges();
+    }
+
+    // Allow Angular to render the preview with the new quote number
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     const element = document.getElementById('quote-preview-document');
     if (!element) {
+      this.currentStep = prevStep;
+      this.generatedQuoteNumber = '';
       throw new Error('Preview document element not found');
     }
-    
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff'
-    });
-    
+
+    // Clone the element into an unconstrained off-screen container so
+    // html2canvas captures the full scrollable content, not just the
+    // portion visible inside the overflow:auto preview column.
+    const clone = element.cloneNode(true) as HTMLElement;
+    clone.style.position = 'fixed';
+    clone.style.top = '-99999px';
+    clone.style.left = '0';
+    clone.style.width = element.offsetWidth + 'px';
+    clone.style.height = 'auto';
+    clone.style.overflow = 'visible';
+    clone.style.maxHeight = 'none';
+    document.body.appendChild(clone);
+
+    // Let the clone reflow
+    await new Promise(resolve => setTimeout(resolve, 80));
+
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0
+      });
+    } finally {
+      document.body.removeChild(clone);
+    }
+
+    // Restore step
+    this.currentStep = prevStep;
+    this.generatedQuoteNumber = '';
+    this.cdr.detectChanges();
+
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210; // A4 size width in mm
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const imgWidth = pageWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-    
-    const pdfBlob = pdf.output('blob');
-    
-    // Reset the generated quote number
-    this.generatedQuoteNumber = '';
-    
-    return pdfBlob;
+
+    // Tile across multiple pages if content is taller than one A4 page
+    let remaining = imgHeight;
+    let yOffset = 0;
+    while (remaining > 0) {
+      pdf.addImage(imgData, 'PNG', 0, -yOffset, imgWidth, imgHeight);
+      remaining -= pageHeight;
+      yOffset += pageHeight;
+      if (remaining > 0) pdf.addPage();
+    }
+
+    return pdf.output('blob');
   }
 
   // Send email (placeholder)
@@ -1402,6 +1571,17 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     }
     this.billedBy = { ...this.billedByDraft };
     this.showBilledByModal = false;
+    // Persist bank details and contact to company profile so they auto-load next time
+    this.companyProfileService.updateBankDetails({
+      bankName: this.billedBy.bankName,
+      bankAccountName: this.billedBy.accountName,
+      bankAccountNumber: this.billedBy.accountNumber
+    });
+    this.companyProfileService.updateContactDetails({
+      email: this.billedBy.email,
+      phone: this.billedBy.phone,
+      address: this.billedBy.address
+    });
   }
 
   cancelBilledByEdit(): void {

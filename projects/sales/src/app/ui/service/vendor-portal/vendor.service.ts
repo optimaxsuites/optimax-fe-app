@@ -256,7 +256,8 @@ export class VendorService {
       .set('vendorId', this.vendorId)
       .set('page', '1')
       .set('size', '100');
-    this.http.get<Rfq[]>(`${this.baseUrl}/vendor-rfqs`, { params }).pipe(
+    this.http.get<any>(`${this.baseUrl}/vendor-rfqs`, { params }).pipe(
+      map(res => Array.isArray(res) ? res : (res?.data ?? res ?? [])),
       catchError((err) => { console.error('[VendorService] loadRfqs failed:', err); return of([] as Rfq[]); }),
     ).subscribe((rfqs) => this.rfqs$$.next(rfqs));
   }
@@ -266,7 +267,8 @@ export class VendorService {
       .set('vendorId', this.vendorId)
       .set('page', '1')
       .set('size', '100');
-    this.http.get<Quotation[]>(`${this.baseUrl}/vendor-quotations`, { params }).pipe(
+    this.http.get<any>(`${this.baseUrl}/vendor-quotations/`, { params }).pipe(
+      map(res => Array.isArray(res) ? res : (res?.data ?? res ?? [])),
       catchError((err) => { console.error('[VendorService] loadQuotations failed:', err); return of([] as Quotation[]); }),
     ).subscribe((quotations) => this.quotations$$.next(quotations));
   }
@@ -327,7 +329,7 @@ export class VendorService {
     this.rfqs$$.next(
       this.rfqs$$.getValue().map((r) => (r.id === rfq.id ? { ...r, status: 'converted' } : r)),
     );
-    this.http.post<Quotation>(`${this.baseUrl}/vendor-quotations`, q).pipe(
+    this.http.post<Quotation>(`${this.baseUrl}/vendor-quotations/`, q).pipe(
       tap((saved) => {
         // Replace the optimistic entry with the server-assigned record
         this.quotations$$.next(
@@ -563,7 +565,8 @@ export class VendorService {
       .set('vendorId', this.vendorId)
       .set('page', '1')
       .set('size', '100');
-    this.http.get<Lpo[]>(`${this.baseUrl}/vendor-lpos`, { params }).pipe(
+    this.http.get<any>(`${this.baseUrl}/vendor-lpos`, { params }).pipe(
+      map(res => Array.isArray(res) ? res : (res?.data ?? res ?? [])),
       catchError((err) => { console.error('[VendorService] loadLpos failed:', err); return of([] as Lpo[]); }),
     ).subscribe((lpos) => this.lpos$$.next(lpos));
   }
@@ -659,7 +662,8 @@ export class VendorService {
       .set('vendorId', this.vendorId)
       .set('page', '1')
       .set('size', '100');
-    this.http.get<Invoice[]>(`${this.baseUrl}/vendor-invoices`, { params }).pipe(
+    this.http.get<any>(`${this.baseUrl}/vendor-invoices`, { params }).pipe(
+      map(res => Array.isArray(res) ? res : (res?.data ?? res ?? [])),
       catchError((err) => { console.error('[VendorService] getInvoices failed:', err); return of([] as Invoice[]); }),
     ).subscribe((invoices) => this.invoices$$.next(invoices));
 
@@ -901,15 +905,17 @@ export class VendorService {
   }
 
   getLposByVendorId(vendorId: string | number): Observable<any[]> {
-    const params = new HttpParams().set('vendorId', String(vendorId)).set('page', '0').set('size', '100');
-    return this.http.get<any[]>(`${this.baseUrl}/vendor-lpos`, { params }).pipe(
+    const params = new HttpParams().set('vendorId', String(vendorId)).set('page', '1').set('size', '100');
+    return this.http.get<any>(`${this.baseUrl}/vendor-lpos`, { params }).pipe(
+      map(res => Array.isArray(res) ? res : (res?.data ?? res ?? [])),
       catchError(() => of([])),
     );
   }
 
   getInvoicesByVendorId(vendorId: string | number): Observable<any[]> {
-    const params = new HttpParams().set('vendorId', String(vendorId)).set('page', '0').set('size', '100');
-    return this.http.get<any[]>(`${this.baseUrl}/vendor-invoices`, { params }).pipe(
+    const params = new HttpParams().set('vendorId', String(vendorId)).set('page', '1').set('size', '100');
+    return this.http.get<any>(`${this.baseUrl}/vendor-invoices`, { params }).pipe(
+      map(res => Array.isArray(res) ? res : (res?.data ?? res ?? [])),
       catchError(() => of([])),
     );
   }

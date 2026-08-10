@@ -36,7 +36,7 @@ export class QuotationManagementService {
       .set('page', '1')
       .set('size', '100')
       .set('rfqId', rfqId);
-    return this.http.get<any>(`${this.baseUrl}/vendor-quotations`, { params }).pipe(
+    return this.http.get<any>(`${this.baseUrl}/vendor-quotations/`, { params }).pipe(
       map(res => Array.isArray(res) ? res : (res?.data ?? res ?? []))
     );
   }
@@ -55,7 +55,7 @@ export class QuotationManagementService {
     if (filters?.vendorId) { params = params.set('vendorId', filters.vendorId); }
     if (filters?.status) { params = params.set('status', filters.status); }
 
-    return this.http.get<any>(`${this.baseUrl}/vendor-quotations`, { params }).pipe(
+    return this.http.get<any>(`${this.baseUrl}/vendor-quotations/`, { params }).pipe(
       map(res => Array.isArray(res) ? res : (res?.data ?? res ?? []))
     );
   }
@@ -198,7 +198,7 @@ export class QuotationManagementService {
 
   createQuotation(quotation: Partial<VendorQuotation>): Observable<VendorQuotation> {
     return this.http.post<VendorQuotation>(
-      `${this.baseUrl}/vendor-quotations`,
+      `${this.baseUrl}/vendor-quotations/`,
       quotation
     );
   }

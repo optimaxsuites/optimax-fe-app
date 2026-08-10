@@ -181,7 +181,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
                 id: item.id,
                 name: item.name,
                 description: item.description,
-                categoryId: item.category?.categoryId || (item as any).categoryId || '',
+                categoryId: (item as any).categoryId || item.category?.categoryId || '',
                 partNumber: (item as any).partNumber || '',
                 quantity: item.quantity,
                 unit: item.unit,
@@ -189,7 +189,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
                 unitPrice: item.unitPrice,
                 currency: item.currency || req.currency || 'NGN',
                 deliveryMode: item.deliveryMode || 'STANDARD',
-                deliveryDeadline: item.deliveryDeadline ? new Date(item.deliveryDeadline).toISOString().substring(0, 10) : '',
+                deliveryDeadline: this.parseDateSafe((item as any).deliveryDeadline),
                 deliveryLocation: item.deliveryLocation || '',
                 specifications: {
                   brand: specs?.brand || '',
@@ -323,6 +323,13 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     return Math.random().toString(36).substring(2, 11);
   }
 
+  private parseDateSafe(val: any): string {
+    if (!val) return '';
+    const d = new Date(val);
+    if (isNaN(d.getTime()) || d.getFullYear() < 2000) return '';
+    return d.toISOString().substring(0, 10);
+  }
+
   onNext(): void {
     if (this.productForm.valid) {
       const formValue = this.productForm.value;
@@ -351,12 +358,12 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
         formValue.deliveryDeadline = firstItem.deliveryDeadline ? new Date(firstItem.deliveryDeadline) : new Date();
       }
 
-      const requestId = this.requestId || uuidV4();
-
       if (this.isEditMode && this.requestId) {
         this.procurementRequestService.updateRequest(parseIdToNumber(this.requestId), formValue).subscribe({
-          next: (req) => {
-            this.router.navigate(['/admin/sales/commerce/requests/new/product', req?.id || requestId, 'template']);
+          next: (req: any) => {
+            const savedId = req?.id || this.requestId;
+            this.requestId = String(savedId);
+            this.router.navigate(['/admin/sales/commerce/requests/new/product', savedId, 'template']);
           },
           error: (err) => {
             console.error('Failed to update request', err);
@@ -364,12 +371,12 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
           }
         });
       } else {
-        this.procurementRequestService.createRequest({
-          ...formValue,
-          id: requestId
-        }).subscribe({
-          next: (req) => {
-            this.router.navigate(['/admin/sales/commerce/requests/new/product', req?.id || requestId, 'template']);
+        this.procurementRequestService.createRequest(formValue).subscribe({
+          next: (req: any) => {
+            const savedId = req?.id;
+            this.requestId = String(savedId);
+            this.isEditMode = true;
+            this.router.navigate(['/admin/sales/commerce/requests/new/product', savedId, 'template']);
           },
           error: (err) => {
             console.error('Failed to create request', err);
@@ -411,25 +418,18 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       formValue.title = `Draft Product Request - ${new Date().toLocaleDateString()}`;
     }
 
-    const requestId = this.requestId || uuidV4();
-
     if (this.isEditMode && this.requestId) {
       this.procurementRequestService.updateRequest(parseIdToNumber(this.requestId), formValue).subscribe({
-        next: (req) => {
-          this.router.navigate(['/admin/sales/commerce/requests']);
-        },
+        next: () => { this.router.navigate(['/admin/sales/commerce/requests']); },
         error: (err) => {
           console.error('Failed to update request draft', err);
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save draft. Please try again.' });
         }
       });
     } else {
-      this.procurementRequestService.createRequest({
-        ...formValue,
-        id: requestId,
-        status: 'DRAFT'
-      }).subscribe({
-        next: (req) => {
+      this.procurementRequestService.createRequest({ ...formValue, status: 'DRAFT' }).subscribe({
+        next: (req: any) => {
+          if (req?.id) { this.requestId = String(req.id); this.isEditMode = true; }
           this.router.navigate(['/admin/sales/commerce/requests']);
         },
         error: (err) => {
