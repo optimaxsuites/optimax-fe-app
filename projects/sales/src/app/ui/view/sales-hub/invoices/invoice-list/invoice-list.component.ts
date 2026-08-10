@@ -4,7 +4,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Invoice, InvoiceStatus } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
@@ -12,6 +12,8 @@ import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
 import { InvoiceDetailComponent } from '../invoice-detail/invoice-detail.component';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-invoice-list',
@@ -22,8 +24,10 @@ import { InvoiceDetailComponent } from '../invoice-detail/invoice-detail.compone
     FormsModule,
     SharedOverlayModule,
     InvoiceFormComponent,
-    InvoiceDetailComponent
+    InvoiceDetailComponent,
+    ToastModule
   ],
+  providers: [MessageService],
   templateUrl: './invoice-list.component.html',
   styleUrls: ['./invoice-list.component.scss']
 })
@@ -33,6 +37,7 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
   Math = Math;
   
   invoices: any[] = [];
+  customers: any[] = [];
   isLoading = true;
   selectedInvoiceIds: string[] = [];
 
@@ -106,6 +111,8 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
   totalElements = 0;
   totalPages = 0;
   
+  aiDismissed = false;
+
   // Stats
   stats = {
     total: 0,
@@ -127,6 +134,7 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private messageService: MessageService,
     private salesService: SalesService,
     private route: ActivatedRoute,
     private router: Router
@@ -143,21 +151,32 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
 
   loadInvoices(): void {
     this.isLoading = true;
-    
-    this.salesService.getInvoices(this.filters).subscribe({
-      next: (response: any) => {
-        this.invoices = response.data;
-        this.totalElements = response.total;
-        this.totalPages = Math.ceil(response.total / this.filters.size);
+    forkJoin({
+      invoices: this.salesService.getInvoices(this.filters),
+      customers: this.salesService.getCustomers({ page: 0, size: 200 })
+    }).subscribe({
+      next: ({ invoices, customers }: any) => {
+        this.customers = customers.data;
+        this.invoices = invoices.data;
+        this.totalElements = invoices.total;
+        this.totalPages = Math.ceil(invoices.total / this.filters.size);
         this.calculateStats();
         this.isLoading = false;
       },
       error: (error: any) => {
         console.error('Error loading invoices:', error);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load invoices. Please try again.' });
         this.calculateStats();
         this.isLoading = false;
       }
     });
+  }
+
+  getCustomerName(customerId: any): string {
+    if (!customerId) return '—';
+    const id = typeof customerId === 'object' ? (customerId?.id ?? customerId) : customerId;
+    const c = this.customers.find(c => c.id === id || String(c.id) === String(id));
+    return c?.name || `Customer #${id}`;
   }
 
   private calculateStats(): void {
@@ -271,7 +290,7 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
   pendingCustomerName = '';
 
   sendReminder(invoice: Invoice): void {
-    const custName = (invoice.customerName as any)?.name || invoice.customerName || 'Customer';
+    const custName = this.getCustomerName((invoice as any).customerId) || (invoice.customerName as any)?.name || invoice.customerName || 'Customer';
     this.pendingInvoice = invoice;
     this.pendingInvoiceNumber = invoice.invoiceNumber;
     this.pendingCustomerName = custName;
@@ -284,16 +303,18 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     this.showReminderModal = false;
     this.salesService.updateInvoice(targetInvoice.id, { status: 'SENT' }).subscribe({
       next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Reminder sent for invoice ${targetInvoice.invoiceNumber}` });
         this.loadInvoices();
       },
       error: (error: any) => {
         console.error('Error sending reminder:', error);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to send reminder. Please try again.' });
       }
     });
   }
 
   deleteInvoice(invoice: Invoice): void {
-    const custName = (invoice.customerName as any)?.name || invoice.customerName || 'Customer';
+    const custName = this.getCustomerName((invoice as any).customerId) || (invoice.customerName as any)?.name || invoice.customerName || 'Customer';
     this.pendingInvoice = invoice;
     this.pendingInvoiceNumber = invoice.invoiceNumber;
     this.pendingCustomerName = custName;
@@ -306,10 +327,12 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     this.showDeleteInvoiceModal = false;
     this.salesService.updateInvoice(targetInvoice.id, { status: 'CANCELLED' }).subscribe({
       next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Invoice ${targetInvoice.invoiceNumber} cancelled successfully` });
         this.loadInvoices();
       },
       error: (error: any) => {
-        console.error('Error deleting invoice:', error);
+        console.error('Error cancelling invoice:', error);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to cancel invoice. Please try again.' });
       }
     });
   }

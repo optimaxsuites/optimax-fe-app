@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote, QuoteStatus } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
@@ -12,6 +12,7 @@ import { QuoteFormComponent } from '../quote-form/quote-form.component';
 import { QuoteDetailComponent } from '../quote-detail/quote-detail.component';
 import { InvoiceFormComponent } from '../../invoices/invoice-form/invoice-form.component';
 import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-quote-list',
@@ -23,8 +24,10 @@ import { MessageService } from 'primeng/api';
     SharedOverlayModule,
     QuoteFormComponent,
     QuoteDetailComponent,
-    InvoiceFormComponent
+    InvoiceFormComponent,
+    ToastModule
   ],
+  providers: [MessageService],
   templateUrl: './quote-list.component.html',
   styleUrls: ['./quote-list.component.scss']
 })
@@ -32,6 +35,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   protected readonly Math = Math;
 
   quotes: Quote[] = [];
+  customers: any[] = [];
   isLoading = true;
   selectedQuoteIds: any[] = [];
 
@@ -168,21 +172,32 @@ export class QuoteListComponent implements OnInit, OnDestroy {
 
   loadQuotes(): void {
     this.isLoading = true;
-
-    this.salesService.getQuotes(this.filters).subscribe({
-      next: (response: any) => {
-        this.quotes = response.data;
-        this.totalElements = response.total;
-        this.totalPages = Math.ceil(response.total / this.filters.size);
+    forkJoin({
+      quotes: this.salesService.getQuotes(this.filters),
+      customers: this.salesService.getCustomers({ page: 0, size: 200 })
+    }).subscribe({
+      next: ({ quotes, customers }: any) => {
+        this.customers = customers.data;
+        this.quotes = quotes.data;
+        this.totalElements = quotes.total;
+        this.totalPages = Math.ceil(quotes.total / this.filters.size);
         this.calculateStats();
         this.isLoading = false;
       },
       error: (error: any) => {
         console.error('Error loading quotes:', error);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load quotes. Please try again.' });
         this.calculateStats();
         this.isLoading = false;
       }
     });
+  }
+
+  getCustomerName(customerId: any): string {
+    if (!customerId) return '—';
+    const id = typeof customerId === 'object' ? (customerId?.id ?? customerId) : customerId;
+    const c = this.customers.find(c => c.id === id || String(c.id) === String(id));
+    return c?.name || `Customer #${id}`;
   }
 
   private calculateStats(): void {
@@ -317,7 +332,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   pendingSendCustomerName = '';
 
   sendQuote(quote: Quote): void {
-    const custName = (quote.customerName as any)?.name || quote.customerName || 'Customer';
+    const custName = this.getCustomerName((quote as any).customerId) || (quote.customerName as any)?.name || quote.customerName || 'Customer';
     this.pendingSendQuote = quote;
     this.pendingSendQuoteNumber = quote.quoteNumber;
     this.pendingSendCustomerName = custName;
@@ -330,6 +345,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     this.showSendQuoteModal = false;
     this.salesService.updateQuote(String(targetQuote.id), { status: 'SENT' }).subscribe({
       next: (updated: Quote) => {
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Quote ${targetQuote.quoteNumber} sent successfully!` });
         this.loadQuotes();
       },
       error: (error: any) => {
@@ -339,19 +355,32 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     });
   }
 
+  showDeleteModal = false;
+  pendingDeleteQuote: Quote | null = null;
+  pendingDeleteQuoteNumber = '';
+  pendingDeleteCustomerName = '';
+  aiDismissed = false;
+
   deleteQuote(quote: Quote): void {
-    if (confirm(`Delete quote ${quote.quoteNumber}? This action cannot be undone.`)) {
-      this.salesService.updateQuote(String(quote.id), { status: 'EXPIRED' }).subscribe({
-        next: () => {
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: `Quote ${quote.quoteNumber} deleted successfully` });
-          this.loadQuotes();
-        },
-        error: (error: any) => {
-          console.error('Error deleting quote:', error);
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete quote. Please try again.' });
-        }
-      });
-    }
+    this.pendingDeleteQuote = quote;
+    this.pendingDeleteQuoteNumber = quote.quoteNumber;
+    this.pendingDeleteCustomerName = this.getCustomerName((quote as any).customerId) || (quote.customerName as any)?.name || quote.customerName || 'Customer';
+    this.showDeleteModal = true;
+  }
+
+  confirmDeleteQuote(): void {
+    if (!this.pendingDeleteQuote) return;
+    const target = this.pendingDeleteQuote;
+    this.showDeleteModal = false;
+    this.salesService.deleteQuote(String(target.id)).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Quote ${target.quoteNumber} deleted successfully` });
+        this.loadQuotes();
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete quote. Please try again.' });
+      }
+    });
   }
 
 }

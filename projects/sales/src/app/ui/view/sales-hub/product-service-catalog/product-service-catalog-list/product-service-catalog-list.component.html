@@ -208,7 +208,7 @@
                 </td>
                 <td class="sku">{{ product.sku }}</td>
                 <td>
-                  <span class="category-badge">{{ product.category?.name || product.category }}</span>
+                  <span class="category-badge">{{ getCategoryName(product) }}</span>
                 </td>
                 <td class="amount">{{ formatCurrency(product.unitPrice || product.sellingPrice) }}</td>
                 <td>
@@ -293,7 +293,7 @@
               <p class="card-desc">{{ product.description | slice:0:60 }}{{ product.description.length > 60 ? '...' : '' }}</p>
 
               <div class="card-meta">
-                <span class="category-badge">{{ product.category?.name || product.category }}</span>
+                <span class="category-badge">{{ getCategoryName(product) }}</span>
                 <span class="status-badge" [class]="'status-' + getStatusClass(product.status)">
                   <span class="status-dot"></span>
                   {{ getStatusLabel(product.status) | titlecase }}

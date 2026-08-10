@@ -10,6 +10,10 @@ $error: #dc2626;
 .procurement-product-form {
   background: $bg;
   min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   padding-bottom: 3rem;
 
   // ── Page Header ─────────────────────────────────────────────────────────────

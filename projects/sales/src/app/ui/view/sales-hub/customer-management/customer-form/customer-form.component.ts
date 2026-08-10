@@ -8,11 +8,13 @@ import { Customer } from '../../../../domain/sales/sales.dto';
 import { formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-customer-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent, ToastModule],
+  providers: [MessageService],
   templateUrl: './customer-form.component.html',
   styleUrls: ['./customer-form.component.scss']
 })

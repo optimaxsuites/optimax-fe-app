@@ -777,7 +777,7 @@ export class VendorService {
   // TENANT ID HELPER
   // ============================================================
 
-  private readonly useMockData: boolean = !environment.production;
+  private readonly useMockData: boolean = false;
 
   private get tenantId(): string {
     const h = window.location.hostname;
