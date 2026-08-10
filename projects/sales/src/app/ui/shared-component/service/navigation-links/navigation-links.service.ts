@@ -45,14 +45,14 @@ export class NavigationLinksService {
 		// this.links["VPLink"] = "/admin/commerce/vendor-portal/" + uuidV4();
 		this.links["VPLink"] = "/admin/sales/vendor-portal/" + uuidV4();
 		this.links["RALink"] = "/admin/sales/reports/" + uuidV4();
-		this.links["VMLink"] = "/manage-vendors/" + uuidV4();
+		this.links["VMLink"] = "/admin/sales/commerce/manage-vendors/" + uuidV4();
 		this.links["deliveriesLink"] = "/admin/sales/deliveries/" + uuidV4();
 		this.links["paymentsLink"] = "/admin/sales/payments/" + uuidV4();
-		this.links["supplyChainLink"] = "/admin/sales/commerce/supply-chain/" + uuidV4();
-		this.links["deliveryTrackingLink"] = "/admin/sales/commerce/deliveries/" + uuidV4();
+		this.links["supplyChainLink"] = "/admin/sales/commerce/requests/home/" + uuidV4();
+		this.links["deliveryTrackingLink"] = "/admin/sales/deliveries/" + uuidV4();
 		this.links["paymentVouchersLink"] = "/admin/sales/commerce/payment-vouchers/" + uuidV4();
-		this.links["receiptsLink"] = "/admin/sales/commerce/receipts/" + uuidV4();
-		this.links["smartVendorLink"] = "/admin/sales/commerce/smart-vendors/" + uuidV4();
+		this.links["receiptsLink"] = "/admin/sales/commerce/payment-vouchers/" + uuidV4();
+		this.links["smartVendorLink"] = "/admin/sales/commerce/manage-vendors/" + uuidV4();
 
 		//  resources ================================================================================================================
 		this.links["posLink"] = "/admin/pos/" + uuidV4();
