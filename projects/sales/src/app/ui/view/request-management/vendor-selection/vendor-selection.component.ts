@@ -271,7 +271,7 @@ export class VendorSelectionComponent implements OnInit {
     if (!uuid) return;
 
     this.procurementService.updateRequest(parseIdToNumber(uuid), {
-      selectedVendors: Array.from(this.selectedVendors)
+      vendorsToNotify: Array.from(this.selectedVendors)
     } as any).subscribe({
       next: () => {
         const typePath = this.router.url.includes('/service') ? 'service' : 'product';

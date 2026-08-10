@@ -46,8 +46,8 @@ export class RfqPreviewComponent implements OnInit {
         if (this.request?.rfqTemplateId) {
           this.loadTemplateDetails(this.request.rfqTemplateId);
         }
-        if (this.request.selectedVendors && this.request.selectedVendors.length > 0) {
-          this.loadVendorDetails(this.request.selectedVendors);
+        if (this.request.vendorsToNotify && this.request.vendorsToNotify.length > 0) {
+          this.loadVendorDetails(this.request.vendorsToNotify);
         }
       },
       error: (err) => {
@@ -79,8 +79,15 @@ export class RfqPreviewComponent implements OnInit {
     });
   }
 
-  loadVendorDetails(_vendorIds: string[]): void {
-    this.vendors = [];
+  loadVendorDetails(vendorIds: string[]): void {
+    if (!vendorIds || vendorIds.length === 0) { this.vendors = []; return; }
+    this.procurementService.getVendorSuggestions(parseIdToNumber(this.requestId!)).subscribe({
+      next: (suggestions) => {
+        const idSet = new Set(vendorIds);
+        this.vendors = suggestions.filter(v => idSet.has(v.vendorId));
+      },
+      error: () => { this.vendors = []; }
+    });
   }
 
   formatBudget(value: number, currency?: string): string {

@@ -228,6 +228,7 @@ export interface ProcurementRequest {
   // RFQ Settings
   rfqTitle?: string;
   rfqExpiryDate?: Date;
+  vendorsToNotify?: string[];
   selectedVendorId: string;
   selectedVendorName: string;
   selectedQuotationId: string;
