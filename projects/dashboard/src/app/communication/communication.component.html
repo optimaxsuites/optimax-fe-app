@@ -63,6 +63,7 @@
       [showSearch]="showSearch"
       [searchResults]="searchResults"
       [totalDmUnread]="totalDmUnread"
+      [selfStats]="selfStats"
       (channelSelected)="onSidebarChannelSelected($event)"
       (dmSelected)="onSidebarDmSelected($event)"
       (viewSet)="onSidebarViewSet($event)"
@@ -78,6 +79,7 @@
       (searchClosed)="closeSearch()"
       (jumpTo)="onSidebarJumpTo($event)"
       (workspaceOpened)="openAnalyticsPanel($event)"
+      (selfWorkspaceOpened)="openSelfAnalyticsPanel()"
       (channelAttachmentsRequested)="openChannelAttachmentsPanel($event)"
     ></app-channel-sidebar>
     <div
