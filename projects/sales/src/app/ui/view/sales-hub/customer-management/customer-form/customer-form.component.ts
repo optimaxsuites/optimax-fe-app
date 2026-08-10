@@ -7,7 +7,7 @@ import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer } from '../../../../domain/sales/sales.dto';
 import { formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
-import { MessageService } from 'primeng/api';
+import { MessageService, Message } from 'primeng/api';
 
 @Component({
   selector: 'app-customer-form',
@@ -31,6 +31,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
   // UI State
   showPasswordField = false;
   customerStats?: Customer;
+  messages: Message[] = [];
 
   // Make router available to template
   router: Router;
@@ -173,21 +174,13 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
     request.subscribe({
       next: (response: Customer) => {
         this.isSubmitting = false;
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: this.isEditMode ? 'Customer updated successfully!' : 'Customer created successfully!' });
-        let uuid = this.route.snapshot.paramMap.get('uuid');
-        if (uuid === 'edit') {
-          uuid = null;
-        }
-        if (uuid) {
-          this.router.navigate(['/admin/sales/customers', response.id, uuid]);
-        } else {
-          this.router.navigate(['/admin/sales/customers', response.id]);
-        }
+        this.messages = [{ severity: 'success', summary: 'Success', detail: this.isEditMode ? 'Customer updated successfully!' : 'Customer created successfully!' }];
+        this.router.navigate(['/admin/sales/customers']);
       },
       error: (error: any) => {
         console.error('Error saving customer:', error);
         this.isSubmitting = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save customer. Please try again.' });
+        this.messages = [{ severity: 'error', summary: 'Error', detail: 'Failed to save customer. Please try again.' }];
       }
     });
   }

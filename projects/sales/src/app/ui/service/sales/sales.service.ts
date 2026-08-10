@@ -60,16 +60,24 @@ export class SalesService {
   // ============================================
 
   getDashboardStats(range: string): Observable<SalesSummary> {
-    return of({
-      totalRevenue: 0,
-      totalQuotes: 0,
-      pendingQuotes: 0,
-      acceptedQuotes: 0,
-      totalInvoices: 0,
-      paidInvoices: 0,
-      overdueInvoices: 0,
-      totalCustomers: 0
-    });
+    const params = new HttpParams().set('dateRange', range);
+    // Attempt to fetch real stats from backend; fallback to stubbed data on failure
+    return this.http.get<SalesSummary>(`${this.base}/dashboard-stats`, { params }).pipe(
+      catchError(() => {
+        // Stubbed data – can be enhanced per range if needed
+        const stub: SalesSummary = {
+          totalRevenue: 0,
+          totalQuotes: 0,
+          pendingQuotes: 0,
+          acceptedQuotes: 0,
+          totalInvoices: 0,
+          paidInvoices: 0,
+          overdueInvoices: 0,
+          totalCustomers: 0
+        };
+        return of(stub);
+      })
+    );
   }
 
   getRecentQuotes(limit: number): Observable<Quote[]> {
@@ -89,7 +97,11 @@ export class SalesService {
   }
 
   getRevenueChart(range: string): Observable<RevenueChartData[]> {
-    return of([]);
+    const params = new HttpParams().set('dateRange', range);
+    // Fetch revenue chart data; fallback to empty array on error
+    return this.http.get<RevenueChartData[]>(`${this.base}/dashboard-revenue`, { params }).pipe(
+      catchError(() => of([]))
+    );
   }
 
   // ============================================
