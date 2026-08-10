@@ -1348,12 +1348,35 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       throw new Error('Preview document element not found');
     }
 
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff'
-    });
+    // Clone the element into an unconstrained off-screen container so
+    // html2canvas captures the full scrollable content, not just the
+    // portion visible inside the overflow:auto preview column.
+    const clone = element.cloneNode(true) as HTMLElement;
+    clone.style.position = 'fixed';
+    clone.style.top = '-99999px';
+    clone.style.left = '0';
+    clone.style.width = element.offsetWidth + 'px';
+    clone.style.height = 'auto';
+    clone.style.overflow = 'visible';
+    clone.style.maxHeight = 'none';
+    document.body.appendChild(clone);
+
+    // Let the clone reflow
+    await new Promise(resolve => setTimeout(resolve, 80));
+
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0
+      });
+    } finally {
+      document.body.removeChild(clone);
+    }
 
     // Restore step
     this.currentStep = prevStep;
@@ -1362,9 +1385,20 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210;
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const imgWidth = pageWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+    // Tile across multiple pages if content is taller than one A4 page
+    let remaining = imgHeight;
+    let yOffset = 0;
+    while (remaining > 0) {
+      pdf.addImage(imgData, 'PNG', 0, -yOffset, imgWidth, imgHeight);
+      remaining -= pageHeight;
+      yOffset += pageHeight;
+      if (remaining > 0) pdf.addPage();
+    }
 
     return pdf.output('blob');
   }

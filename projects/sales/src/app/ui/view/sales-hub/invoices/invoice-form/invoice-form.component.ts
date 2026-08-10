@@ -1557,34 +1557,62 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   private async generateInvoicePDF(invoice: Invoice): Promise<Blob> {
     this.generatedInvoiceNumber = invoice.invoiceNumber;
-    
+
     // Allow small delay for Angular to bind the new invoice number to the DOM
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     const element = document.getElementById('invoice-preview-document');
     if (!element) {
       throw new Error('Preview document element not found');
     }
-    
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff'
-    });
-    
+
+    // Clone into unconstrained off-screen container so html2canvas captures
+    // the full scrollable content, not just the overflow:auto visible slice.
+    const clone = element.cloneNode(true) as HTMLElement;
+    clone.style.position = 'fixed';
+    clone.style.top = '-99999px';
+    clone.style.left = '0';
+    clone.style.width = element.offsetWidth + 'px';
+    clone.style.height = 'auto';
+    clone.style.overflow = 'visible';
+    clone.style.maxHeight = 'none';
+    document.body.appendChild(clone);
+
+    await new Promise(resolve => setTimeout(resolve, 80));
+
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0
+      });
+    } finally {
+      document.body.removeChild(clone);
+    }
+
+    this.generatedInvoiceNumber = '';
+
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210; // A4 size width in mm
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const imgWidth = pageWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-    
-    const pdfBlob = pdf.output('blob');
-    
-    // Reset the generated invoice number
-    this.generatedInvoiceNumber = '';
-    
-    return pdfBlob;
+
+    let remaining = imgHeight;
+    let yOffset = 0;
+    while (remaining > 0) {
+      pdf.addImage(imgData, 'PNG', 0, -yOffset, imgWidth, imgHeight);
+      remaining -= pageHeight;
+      yOffset += pageHeight;
+      if (remaining > 0) pdf.addPage();
+    }
+
+    return pdf.output('blob');
   }
 
   private async sendInvoiceEmail(invoice: Invoice): Promise<void> {
