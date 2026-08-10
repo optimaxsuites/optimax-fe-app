@@ -98,7 +98,7 @@ export class ProcurementRequestService {
   updateRequest(id: number, request: Partial<ProcurementRequest>): Observable<ProcurementRequest> {
     return this.http.put<ProcurementRequest>(
       `${this.baseUrl}/procurement-requests/${id}`,
-      request
+      { ...request, tenantId: this.tenantId }
     );
   }
 

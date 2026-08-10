@@ -149,7 +149,7 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   notesInput = 'Reviewed revenue variance, procurement blocker, room availability, and the need to publish minutes before Friday.';
 
   // ── Virtual meeting ──────────────────────────────────────
-  jitsiBaseUrl = 'https://meet.optimaxsuites.com';
+  jitsiBaseUrl = 'https://test-meet.optimaxsuites.com';
   activeMeetingMode: 'CALL' | 'VIDEO' | null = null;
   meetingRoomName = '';
   meetingRoomUrl = '';
@@ -712,7 +712,7 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
 
   generateVirtualRoom(platform: string): void {
     const event = this.selectedEvent; if (!event) return;
-    event.onlineLink = `https://meet.optimaxsuites.com/${platform.toLowerCase().replace(/\s+/g, '-')}/${event.id}`;
+    event.onlineLink = `https://test-meet.optimaxsuites.com/${platform.toLowerCase().replace(/\s+/g, '-')}/${event.id}`;
     this.addToast(`${platform} room generated — link ready to share`, 'ok');
     this.persistAndSync(event);
   }
