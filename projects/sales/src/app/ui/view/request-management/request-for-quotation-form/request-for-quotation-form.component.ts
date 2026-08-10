@@ -356,7 +356,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       if (this.isEditMode && this.requestId) {
         this.procurementRequestService.updateRequest(parseIdToNumber(this.requestId), formValue).subscribe({
           next: (req) => {
-            this.router.navigate(['/admin/sales/commerce/requests/new/product', req.id, 'template']);
+            this.router.navigate(['/admin/sales/commerce/requests/new/product', req?.id || requestId, 'template']);
           },
           error: (err) => {
             console.error('Failed to update request', err);
@@ -369,7 +369,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
           id: requestId
         }).subscribe({
           next: (req) => {
-            this.router.navigate(['/admin/sales/commerce/requests/new/product', req.id, 'template']);
+            this.router.navigate(['/admin/sales/commerce/requests/new/product', req?.id || requestId, 'template']);
           },
           error: (err) => {
             console.error('Failed to create request', err);
