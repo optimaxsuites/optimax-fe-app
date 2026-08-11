@@ -194,6 +194,18 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
     });
   }
 
+  navigateToDelivery(): void {
+    if (this.lpoId) {
+      this.router.navigate(['/admin/sales/commerce/requests', this.lpoId, 'delivery']);
+    }
+  }
+
+  navigateToPaymentVoucher(): void {
+    if (this.lpoId) {
+      this.router.navigate(['/admin/sales/commerce/payment-vouchers', this.lpoId]);
+    }
+  }
+
   goBack(): void {
     this.router.navigate(['/admin/sales/commerce/quotations', this.quotationId]);
   }

@@ -11,6 +11,8 @@ import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/temp
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { CompanyProfileService } from '../../../../shared-component/service/company-profile/company-profile.service';
 
 export function futureDateValidator(): ValidatorFn {
   return (control: AbstractControl): { [key: string]: any } | null => {
@@ -47,7 +49,8 @@ export function dateAfterValidator(otherControlName: string): ValidatorFn {
 @Component({
   selector: 'app-invoice-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent, TemplateTypesComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent, TemplateTypesComponent, ToastModule],
+  providers: [MessageService],
   templateUrl: './invoice-form.component.html',
   styleUrls: ['./invoice-form.component.scss']
 })
@@ -188,6 +191,13 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   searchProductTerm = '';
   currentItemIndex = 0;
 
+  // Inline product creation
+  showNewProductModal = false;
+  newProductTargetIndex = 0;
+  isSavingProduct = false;
+  newProductError = '';
+  newProduct = { name: '', description: '', unitPrice: 0, taxRate: 0 };
+
   // Billed By (Invoice From) editable data
   showBilledByModal = false;
   billedBy = {
@@ -226,11 +236,14 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
+  companyName = '';
+
   constructor(
     private messageService: MessageService,
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private salesService: SalesService,
+    private companyProfileService: CompanyProfileService,
     router: Router
   ) {
     this.router = router;
@@ -274,6 +287,41 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     }
 
     this.setupFormListeners();
+
+    // Load company profile for logo/name/bank embed in document
+    this.companyProfileService.companyProfile$.pipe(takeUntil(this.destroy$)).subscribe(profile => {
+      if (profile) {
+        if (profile.logoUrl && !this.isEditMode) {
+          this.logoUrl = profile.logoUrl;
+          this.logoFileName = 'Company Logo';
+        }
+        if (profile.companyName && !this.billedBy.name) {
+          this.billedBy.name = profile.companyName;
+          this.billedByDraft.name = profile.companyName;
+          this.companyName = profile.companyName;
+        }
+        if (!this.billedBy.address) {
+          const addr = [profile.city, profile.state, profile.country].filter(Boolean).join(', ') || profile.address || '';
+          if (addr) { this.billedBy.address = addr; this.billedByDraft.address = addr; }
+        }
+        if (!this.billedBy.bankName && profile.bankName) {
+          this.billedBy.bankName = profile.bankName;
+          this.billedByDraft.bankName = profile.bankName;
+        }
+        if (!this.billedBy.accountName && profile.bankAccountName) {
+          this.billedBy.accountName = profile.bankAccountName;
+          this.billedByDraft.accountName = profile.bankAccountName;
+        }
+        if (!this.billedBy.accountNumber && profile.bankAccountNumber) {
+          this.billedBy.accountNumber = profile.bankAccountNumber;
+          this.billedByDraft.accountNumber = profile.bankAccountNumber;
+        }
+        if (!this.billedBy.email && profile.email) {
+          this.billedBy.email = profile.email;
+          this.billedByDraft.email = profile.email;
+        }
+      }
+    });
 
     this.isLoading = true;
     forkJoin({
@@ -459,6 +507,50 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       });
       this.calculateItemTotal(itemForm);
     }
+  }
+
+  openNewProductModal(index: number): void {
+    this.newProductTargetIndex = index;
+    this.newProduct = { name: '', description: '', unitPrice: 0, taxRate: 0 };
+    this.newProductError = '';
+    this.showNewProductModal = true;
+  }
+
+  saveNewProduct(): void {
+    this.newProductError = '';
+    if (!this.newProduct.name.trim()) {
+      this.newProductError = 'Product name is required.';
+      return;
+    }
+    this.isSavingProduct = true;
+    this.salesService.createProduct({
+      name: this.newProduct.name.trim(),
+      description: this.newProduct.description || '',
+      unitPrice: this.newProduct.unitPrice || 0,
+      sellingPrice: this.newProduct.unitPrice || 0,
+      taxRate: this.newProduct.taxRate || 0
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (created: Product) => {
+        this.products = [...this.products, created];
+        this.filteredProducts = this.products;
+        const itemForm = this.items.at(this.newProductTargetIndex);
+        itemForm.patchValue({
+          productId: created.productId || String(created.id),
+          productName: created.name,
+          description: created.description || '',
+          unitPrice: created.unitPrice || created.sellingPrice || 0,
+          taxRate: created.taxRate || 0
+        });
+        this.calculateItemTotal(itemForm);
+        this.isSavingProduct = false;
+        this.showNewProductModal = false;
+        this.messageService.add({ severity: 'success', summary: 'Product Created', detail: `"${created.name}" added to catalog.` });
+      },
+      error: () => {
+        this.newProductError = 'Failed to create product. Please try again.';
+        this.isSavingProduct = false;
+      }
+    });
   }
 
   filterProducts(): void {
@@ -728,7 +820,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       issueDate: this.formatDateForInput(invoice.issueDate),
       dueDate: this.formatDateForInput(invoice.dueDate),
       currency: invoice.currency,
-      notes: invoice.notes,
+      notes: invoice.notes || '',
+      terms: (invoice as any).terms || '',
       paymentTerms: (invoice.paymentTerms as any)?.label || 'Net 30'
     });
     this.onCustomerSelect(custId);
@@ -828,94 +921,55 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     this.isSubmitting = true;
 
     const formValue = this.invoiceForm.getRawValue();
-    const items: InvoiceItem[] = [];
 
-    for (let i = 0; i < this.items.length; i++) {
-      const item = this.items.at(i).getRawValue();
-      items.push({
-        id: Math.floor(Math.random() * 1000000),
-        productId: item.productId,
-        productName: item.productName,
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        discount: item.discount || 0,
-        taxRate: item.taxRate || 0,
-        amount: item.total,
-        total: item.total
-      } as any);
-    }
+    // Build items matching InvoiceItemDTO exactly
+    const items = this.items.controls.map(ctrl => {
+      const raw = (ctrl as any).getRawValue();
+      return {
+        productName: raw.productName || '',
+        description: raw.description || '',
+        quantity: Number(raw.quantity) || 1,
+        unitPrice: Number(raw.unitPrice) || 0,
+        total: Number(raw.total) || 0
+      };
+    });
+
+    const customerObj = this.customers.find(c =>
+      c.customerId === formValue.customerId || String(c.id) === String(formValue.customerId)
+    ) || { id: null, name: formValue.customerName || '' } as any;
 
     const selectedBankIdx = formValue.selectedCustomerBankIndex;
-    let selectedCustomerBank: any = undefined;
-    if (selectedBankIdx !== undefined && selectedBankIdx !== null && selectedBankIdx >= 0 && selectedBankIdx < this.selectedCustomerBankAccounts.length) {
-      selectedCustomerBank = this.selectedCustomerBankAccounts[selectedBankIdx];
+    let selectedCustomerBankId: number | null = null;
+    if (selectedBankIdx != null && selectedBankIdx >= 0 && selectedBankIdx < this.selectedCustomerBankAccounts.length) {
+      const bank = this.selectedCustomerBankAccounts[selectedBankIdx] as any;
+      selectedCustomerBankId = bank.id || null;
     } else if (this.isEditMode && this.loadedInvoiceSelectedCustomerBank) {
-      selectedCustomerBank = this.loadedInvoiceSelectedCustomerBank;
+      const bank = this.loadedInvoiceSelectedCustomerBank as any;
+      selectedCustomerBankId = bank.id || null;
     }
 
-    const customerObj: Customer = this.customers.find(c => c.customerId === formValue.customerId || String(c.id) === formValue.customerId) || {
-      id: 1,
-      customerId: formValue.customerId,
-      name: formValue.customerName,
-      email: '',
-      phone: '',
-      address: [''],
-      deliverAddress: [''],
-      createdBy: 'System',
-      createdAt: new Date(),
-      totalSpent: 0,
-      totalOrders: 0,
-      status: 'ACTIVE'
-    };
-
-    // Note: the backend's Invoice entity stores customerId as a plain numeric
-    // foreign key (java.lang.Long) and customerName as a string — it expands
-    // them back into full nested objects on read (see populateForm() above),
-    // but rejects a nested object on write with a 500 JSON-parse error. So this
-    // outgoing payload intentionally diverges from the Invoice read-shape here.
+    // Payload matches InvoiceDTO exactly — no extra fields
     const invoiceData: any = {
-      customerId: customerObj.id,
-      customerName: customerObj.name,
-      currency: formValue.currency,
-      issueDate: new Date(formValue.issueDate),
-      dueDate: new Date(formValue.dueDate),
-      notes: formValue.notes,
-      shippingAddress: this.showShippingDetails ? this.shippingAddress : undefined,
-      paymentTerms: [{
-        id: 1,
-        customerId: customerObj.id,
-        customerName: customerObj.name,
-        paymentPeriod: this.paymentPeriodDays || 30,
-        paymentMethod: this.paymentMethod,
-        paymentMode: this.paymentMode,
-        amount: this.grandTotal,
-        balanceDue: this.grandTotal,
-        installmentNumber: this.numberOfInstallments || 1,
-        completedInstallments: 0
-      }],
-      additionalOptions: [{
-        signatureText: '',
-        attachments: [],
-        email: customerObj.email,
-        address: Array.isArray(customerObj.address) ? customerObj.address[0] : customerObj.address,
-        phone: customerObj.phone,
-        notes: formValue.notes || '',
-        terms: this.customTermsText || formValue.terms || ''
-      }],
+      customerId: customerObj.id ? Number(customerObj.id) : null,
+      currency: formValue.currency || 'NGN',
+      issueDate: formValue.issueDate ? new Date(formValue.issueDate).toISOString() : new Date().toISOString(),
+      dueDate: formValue.dueDate ? new Date(formValue.dueDate).toISOString() : null,
+      notes: formValue.notes || '',
+      terms: formValue.terms || '',
+      paymentTerms: formValue.paymentTerms || 'Net 30',
+      logoUrl: this.logoUrl || null,
+      selectedCustomerBankId: selectedCustomerBankId,
       items: items,
       subtotal: this.subtotal,
       taxAmount: this.taxAmount,
       discountAmount: this.discountAmount,
-      additionalCharges: this.additionalChargeItems.map(item => Number(item.amount) || 0),
-      additionalChargesLabel: this.additionalChargeItems.map(item => item.label || ''),
       totalAmount: this.grandTotal,
+      additionalCharges: this.additionalChargeItems.map(c => c.amount),
+      additionalChargesLabel: this.additionalChargeItems.map(c => c.label),
       amountPaid: 0,
       balanceDue: this.grandTotal,
-      status: (this.currentStep === 4 ? 'SENT' : 'DRAFT') as InvoiceStatus,
-      quoteId: this.quoteId || undefined,
-      logoUrl: this.logoUrl,
-      selectedCustomerBank: selectedCustomerBank
+      status: 'DRAFT' as InvoiceStatus,
+      quoteId: this.quoteId ? Number(this.quoteId) : null
     };
 
     let request;
@@ -949,6 +1003,77 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         console.error('Error saving invoice:', error);
         this.isSubmitting = false;
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save invoice. Please try again.' });
+      }
+    });
+  }
+
+  isSavingDraft = false;
+
+  saveDraft(): void {
+    if (this.isSavingDraft || this.isSubmitting) return;
+    this.isSavingDraft = true;
+    const formValue = this.invoiceForm.getRawValue();
+
+    const items = this.items.controls.map(ctrl => {
+      const raw = (ctrl as any).getRawValue();
+      return {
+        productName: raw.productName || 'Draft Item',
+        description: raw.description || '',
+        quantity: Number(raw.quantity) || 1,
+        unitPrice: Number(raw.unitPrice) || 0,
+        total: Number(raw.total) || 0
+      };
+    });
+
+    const customerObj = this.customers.find(c =>
+      c.customerId === formValue.customerId || String(c.id) === String(formValue.customerId)
+    ) || { id: null, name: formValue.customerName || '' } as any;
+
+    const selectedBankIdx = formValue.selectedCustomerBankIndex;
+    let selectedCustomerBankId: number | null = null;
+    if (selectedBankIdx != null && selectedBankIdx >= 0 && selectedBankIdx < this.selectedCustomerBankAccounts.length) {
+      selectedCustomerBankId = (this.selectedCustomerBankAccounts[selectedBankIdx] as any).id || null;
+    }
+
+    const draftData: any = {
+      customerId: customerObj.id ? Number(customerObj.id) : null,
+      currency: formValue.currency || 'NGN',
+      issueDate: formValue.issueDate ? new Date(formValue.issueDate).toISOString() : new Date().toISOString(),
+      dueDate: formValue.dueDate ? new Date(formValue.dueDate).toISOString() : null,
+      notes: formValue.notes || '',
+      terms: formValue.terms || '',
+      paymentTerms: formValue.paymentTerms || 'Net 30',
+      logoUrl: this.logoUrl || null,
+      selectedCustomerBankId,
+      items: items.length ? items : [{ productName: 'Draft', quantity: 1, unitPrice: 0, total: 0 }],
+      subtotal: this.subtotal,
+      taxAmount: this.taxAmount,
+      discountAmount: this.discountAmount,
+      totalAmount: this.grandTotal,
+      additionalCharges: this.additionalChargeItems.map(c => c.amount),
+      additionalChargesLabel: this.additionalChargeItems.map(c => c.label),
+      amountPaid: 0,
+      balanceDue: this.grandTotal,
+      status: 'DRAFT' as InvoiceStatus,
+      quoteId: this.quoteId ? Number(this.quoteId) : null
+    };
+
+    const req = this.isEditMode
+      ? this.salesService.updateInvoice(this.invoiceId, draftData)
+      : this.salesService.createInvoice(draftData);
+
+    req.pipe(takeUntil(this.destroy$)).subscribe({
+      next: (saved: Invoice) => {
+        this.isSavingDraft = false;
+        if (!this.isEditMode && (saved as any).id) {
+          this.invoiceId = String((saved as any).id);
+          this.isEditMode = true;
+        }
+        this.messageService.add({ severity: 'success', summary: 'Draft Saved', detail: 'Invoice saved as draft.' });
+      },
+      error: () => {
+        this.isSavingDraft = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save draft.' });
       }
     });
   }
@@ -1119,6 +1244,16 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     }
     this.billedBy = { ...this.billedByDraft };
     this.showBilledByModal = false;
+    this.companyProfileService.updateBankDetails({
+      bankName: this.billedBy.bankName,
+      bankAccountName: this.billedBy.accountName,
+      bankAccountNumber: this.billedBy.accountNumber
+    });
+    this.companyProfileService.updateContactDetails({
+      email: this.billedBy.email,
+      phone: this.billedBy.phone,
+      address: this.billedBy.address
+    });
   }
 
   cancelBilledByEdit(): void {
@@ -1422,34 +1557,62 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   private async generateInvoicePDF(invoice: Invoice): Promise<Blob> {
     this.generatedInvoiceNumber = invoice.invoiceNumber;
-    
+
     // Allow small delay for Angular to bind the new invoice number to the DOM
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     const element = document.getElementById('invoice-preview-document');
     if (!element) {
       throw new Error('Preview document element not found');
     }
-    
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff'
-    });
-    
+
+    // Clone into unconstrained off-screen container so html2canvas captures
+    // the full scrollable content, not just the overflow:auto visible slice.
+    const clone = element.cloneNode(true) as HTMLElement;
+    clone.style.position = 'fixed';
+    clone.style.top = '-99999px';
+    clone.style.left = '0';
+    clone.style.width = element.offsetWidth + 'px';
+    clone.style.height = 'auto';
+    clone.style.overflow = 'visible';
+    clone.style.maxHeight = 'none';
+    document.body.appendChild(clone);
+
+    await new Promise(resolve => setTimeout(resolve, 80));
+
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0
+      });
+    } finally {
+      document.body.removeChild(clone);
+    }
+
+    this.generatedInvoiceNumber = '';
+
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210; // A4 size width in mm
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const imgWidth = pageWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-    
-    const pdfBlob = pdf.output('blob');
-    
-    // Reset the generated invoice number
-    this.generatedInvoiceNumber = '';
-    
-    return pdfBlob;
+
+    let remaining = imgHeight;
+    let yOffset = 0;
+    while (remaining > 0) {
+      pdf.addImage(imgData, 'PNG', 0, -yOffset, imgWidth, imgHeight);
+      remaining -= pageHeight;
+      yOffset += pageHeight;
+      if (remaining > 0) pdf.addPage();
+    }
+
+    return pdf.output('blob');
   }
 
   private async sendInvoiceEmail(invoice: Invoice): Promise<void> {

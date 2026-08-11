@@ -10,6 +10,10 @@ $error: #dc2626;
 .procurement-product-form {
   background: $bg;
   min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   padding-bottom: 3rem;
 
   // ── Page Header ─────────────────────────────────────────────────────────────
@@ -623,6 +627,7 @@ $error: #dc2626;
   .field-input {
     flex: 1;
     min-width: 0;
+    height: auto;
   }
 
   .btn-action-add {
@@ -630,20 +635,22 @@ $error: #dc2626;
     color: white;
     border: none;
     border-radius: 7px;
-    width: 42px;
-    height: 42px;
-    display: inline-flex;
+    width: 36px;
+    height: 100%;
+    min-height: 36px;
+    display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 1.1rem;
+    font-size: 1rem;
     transition: background-color 0.18s, transform 0.1s;
     flex-shrink: 0;
+    align-self: stretch;
 
     &:hover {
       background: #1a6b64;
     }
-    
+
     &:active {
       transform: scale(0.95);
     }

@@ -634,6 +634,15 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
     return status ? status.toLowerCase().replace(/_/g, '-') : '';
   }
 
+  getCategoryName(product: any): string {
+    if (product?.category?.name) return product.category.name;
+    if (product?.category && typeof product.category === 'string') return product.category;
+    const id = product?.categoryId;
+    if (!id) return '—';
+    const cat = this.rawCategories.find(c => c.id === id || String(c.id) === String(id));
+    return cat?.name || '—';
+  }
+
   navigateToNewProduct(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {

@@ -154,3 +154,12 @@ input[type="radio"]{
 .p-datatable .p-datatable-tbody > tr:hover > td {
   background: var(--table-row-hover);
 }
+
+/* ── Global: ensure native select option text is always readable ── */
+select option {
+  color: #1a2535 !important;
+  background-color: #ffffff !important;
+}
+select {
+  color: #1a2535;
+}

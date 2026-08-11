@@ -4,6 +4,8 @@ import { RequestForQuotationListComponent } from './request-for-quotation-list/r
 import { QuotationsDashboardComponent } from './quotations-dashboard/quotations-dashboard.component';
 import { DocumentationHistoryComponent } from './documentation-history/documentation-history.component';
 import { ApprovalInboxComponent } from './approval-inbox/approval-inbox.component';
+import { DeliveryTrackingComponent } from './delivery-tracking/delivery-tracking.component';
+import { PaymentVoucherComponent } from './payment-voucher/payment-voucher.component';
 
 @Component({
   selector: 'app-request-management',
@@ -17,7 +19,6 @@ export class RequestManagementComponent {
       name: 'Request for Quotations',
       component: RequestForQuotationListComponent,
       icon: 'fa-solid fa-bell',
-      // icon: 'fa-solid fa-bell', 
     },
     {
       name: 'Review Vendor Quotations',
@@ -28,6 +29,16 @@ export class RequestManagementComponent {
       name: 'Approval Inbox',
       component: ApprovalInboxComponent,
       icon: 'fa-solid fa-inbox',
+    },
+    {
+      name: 'Supply Chain & Delivery',
+      component: DeliveryTrackingComponent,
+      icon: 'fa-solid fa-truck',
+    },
+    {
+      name: 'Payment Vouchers',
+      component: PaymentVoucherComponent,
+      icon: 'fa-solid fa-money-check-dollar',
     },
     {
       name: 'Archives',

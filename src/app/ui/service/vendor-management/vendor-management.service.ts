@@ -68,7 +68,20 @@ import { environment } from '../../shared-component/service/environments/environ
 
 const API_BASE = environment.apiBaseUrl;
 
-// ============================================================
+function parseSafeDate(val: any): Date {
+  if (!val) return new Date();
+  if (typeof val === 'string') {
+    const num = Number(val);
+    if (!isNaN(num)) {
+      val = num;
+    }
+  }
+  if (typeof val === 'number') {
+    return new Date(val < 10000000000 ? val * 1000 : val);
+  }
+  const parsed = new Date(val);
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
+}
 // MOCK DATA — AI VENDOR INTELLIGENCE (SENTINEL)
 // ============================================================
 
@@ -777,11 +790,10 @@ export class VendorService {
   // TENANT ID HELPER
   // ============================================================
 
-  private readonly useMockData: boolean = !environment.production;
+  private readonly useMockData: boolean = false;
 
   private get tenantId(): string {
-    const h = window.location.hostname;
-    return (h.includes('localhost') || h.includes('127.0.0.1')) ? 'optimax' : h.split('.')[0] || 'optimax';
+    return 'optimax';
   }
 
   // ============================================================
@@ -1437,15 +1449,18 @@ export class VendorService {
       phone: raw.phone || raw.phoneNumber || raw.phone_number || raw.mobile || '',
       website: raw.website || raw.websiteUrl || raw.web_site || undefined,
       address: raw.address || { street: '', city: '', state: '', country: 'Nigeria', postalCode: '' },
-      status: (raw.status || raw.vendorStatus || VendorStatus.PENDING_ONBOARDING) as VendorStatus,
+      status: (() => {
+        const s = raw.status || raw.vendorStatus;
+        return (s === 'DRAFT' || !s) ? VendorStatus.PENDING_ONBOARDING : s as VendorStatus;
+      })(),
       tier: (raw.tier || raw.vendorTier || VendorTier.APPROVED) as VendorTier,
       riskLevel: (raw.riskLevel || raw.risk_level || raw.risk || RiskLevel.LOW) as RiskLevel,
       performanceScore,
       totalProjects,
       winRate: raw.winRate ?? raw.win_rate ?? 0,
       averageRating: raw.averageRating ?? raw.average_rating ?? raw.rating ?? 0,
-      joinedDate: raw.joinedDate ? new Date(raw.joinedDate) : (raw.createdAt ? new Date(raw.createdAt) : new Date()),
-      lastActivityDate: raw.lastActivityDate ? new Date(raw.lastActivityDate) : (raw.updatedAt ? new Date(raw.updatedAt) : new Date()),
+      joinedDate: parseSafeDate(raw.joinedDate || raw.createdAt),
+      lastActivityDate: parseSafeDate(raw.lastActivityDate || raw.updatedAt),
       categories: Array.isArray(raw.categories) ? raw.categories : [],
       logo: raw.logo || raw.logoUrl || undefined,
       description: raw.description || '',
@@ -1466,8 +1481,8 @@ export class VendorService {
       },
       lifecycleHistory: Array.isArray(raw.lifecycleHistory) ? raw.lifecycleHistory : [],
       riskAlerts: Array.isArray(raw.riskAlerts) ? raw.riskAlerts : [],
-      createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
-      updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : new Date(),
+      createdAt: parseSafeDate(raw.createdAt),
+      updatedAt: parseSafeDate(raw.updatedAt),
       applicationNumber: raw.applicationNumber || raw.application_number || undefined,
       // The backend was originally POSTed the full 6-step registration payload
       // (see VendorRegistrationService.submit) — preserve it here too if the
@@ -2069,8 +2084,8 @@ export class VendorService {
         map(res => {
           const rawDocs = Array.isArray(res) ? res : [];
           return rawDocs.map(raw => {
-            const expDate = raw.expiryDate ? new Date(raw.expiryDate) : new Date();
-            const uploadedAtDate = raw.uploadedDate ? new Date(raw.uploadedDate) : (raw.createdAt ? new Date(raw.createdAt) : new Date());
+            const expDate = parseSafeDate(raw.expiryDate);
+            const uploadedAtDate = parseSafeDate(raw.uploadedDate || raw.createdAt);
             const timeDiff = expDate.getTime() - new Date().getTime();
             const daysUntilExpiry = Math.max(0, Math.ceil(timeDiff / (1000 * 3600 * 24)));
 
@@ -2111,7 +2126,7 @@ export class VendorService {
               fileUrl: raw.fileUrl || '',
               fileSize: Number(raw.fileSize || 0),
               fileType: raw.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/png',
-              issueDate: raw.createdAt ? new Date(raw.createdAt) : uploadedAtDate,
+              issueDate: parseSafeDate(raw.createdAt || uploadedAtDate),
               expiryDate: expDate,
               status: docStatus,
               isRequired: !!raw.isRequired,

@@ -68,13 +68,15 @@ export class ProcurementRequestService {
       { params }
     ).pipe(
       map((res: any) => {
-        const arr: ProcurementRequest[] = Array.isArray(res) ? res : (res?.data ?? []);
+        const arr: ProcurementRequest[] = Array.isArray(res) ? res : (res?.data ?? res?.content ?? []);
+        const total = res?.totalSize ?? res?.total ?? res?.totalElements ?? arr.length;
+        const size = filters.size || 10;
         return {
           data: arr,
-          totalElements: arr.length,
-          totalPages: 1,
+          totalElements: total,
+          totalPages: Math.max(1, Math.ceil(total / size)),
           currentPage: filters.page || 0,
-          pageSize: filters.size || 10
+          pageSize: size
         } as PaginatedResponse<ProcurementRequest>;
       })
     );
@@ -96,7 +98,7 @@ export class ProcurementRequestService {
   updateRequest(id: number, request: Partial<ProcurementRequest>): Observable<ProcurementRequest> {
     return this.http.put<ProcurementRequest>(
       `${this.baseUrl}/procurement-requests/${id}`,
-      request
+      { ...request, tenantId: this.tenantId }
     );
   }
 

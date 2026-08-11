@@ -164,7 +164,7 @@
     <button type="button" class="btn-secondary" (click)="onBack()">
       <i class="fas fa-arrow-left"></i> Back
     </button>
-    <button type="button" class="btn-primary submission" [disabled]="vendors.length === 0 || isSubmitting"
+    <button type="button" class="btn-primary submission" [disabled]="!(request?.vendorsToNotify?.length) || isSubmitting"
       (click)="onSubmit()">
       <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-spin]="isSubmitting"
         [class.fa-paper-plane]="!isSubmitting"></i>

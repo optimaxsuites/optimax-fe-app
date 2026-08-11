@@ -14,6 +14,7 @@ import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { CustomerFormComponent } from '../customer-form/customer-form.component';
 import { QuoteFormComponent } from '../../quotations/quote-form/quote-form.component';
 import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-customer-list',
@@ -24,8 +25,10 @@ import { MessageService } from 'primeng/api';
     FormsModule,
     SharedOverlayModule,
     CustomerFormComponent,
-    QuoteFormComponent
+    QuoteFormComponent,
+    ToastModule
   ],
+  providers: [MessageService],
   templateUrl: './customer-list.component.html',
   styleUrls: ['./customer-list.component.scss']
 })
@@ -161,6 +164,7 @@ export class CustomerListComponent implements OnInit, OnDestroy {
       },
       error: (error: any) => {
         console.error('Error loading customers:', error);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load customers. Please try again.' });
         this.calculateStats();
         this.isLoading = false;
       }
