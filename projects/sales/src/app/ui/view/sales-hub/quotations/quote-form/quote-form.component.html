@@ -1,1743 +1,596 @@
-<div class="quote-form-container">
-  <div class="form-wrapper">
+<p-toast position="top-right"></p-toast>
 
-    <!-- Clean Form Header - Elegant but Subdued -->
-    <div class="form-header">
-      <div class="header-back-title-group">
-        <app-back-button (click)="cancel()"></app-back-button>
-        <div class="header-content">
-          <div class="header-badge">
-            <i class="fas fa-file-invoice"></i>
-            <span>{{ isEditMode ? 'Edit Quote' : 'New Quote' }}</span>
+<!-- ── Loading skeleton ──────────────────────────────────────────────── -->
+<div class="qf-loading" *ngIf="isLoading">
+  <div class="qf-loading-spinner"><i class="fas fa-circle-notch fa-spin"></i></div>
+  <span>Loading quote data…</span>
+</div>
+
+<!-- ── Main shell ─────────────────────────────────────────────────────── -->
+<div class="qf-shell" *ngIf="!isLoading" [formGroup]="quoteForm">
+
+  <!-- ══ TOP ACTION BAR ════════════════════════════════════════════════ -->
+  <div class="qf-topbar">
+    <div class="qf-topbar-left">
+      <app-back-button (click)="cancel()"></app-back-button>
+      <nav class="qf-breadcrumb">
+        <span>Sales</span><i class="fas fa-chevron-right"></i>
+        <span>Quotes</span><i class="fas fa-chevron-right"></i>
+        <span class="qf-breadcrumb-active">{{ isEditMode ? 'Edit #' + quoteId : 'New Quote' }}</span>
+      </nav>
+    </div>
+    <div class="qf-topbar-right">
+      <button type="button" class="qf-btn qf-btn--ghost" (click)="cancel()">
+        <i class="fas fa-times"></i> Discard
+      </button>
+      <button type="button" class="qf-btn qf-btn--draft" [disabled]="isSavingDraft || isSubmitting" (click)="saveDraft()" title="Save as draft">
+        <i class="fas fa-circle-notch fa-spin" *ngIf="isSavingDraft"></i>
+        <i class="fas fa-save" *ngIf="!isSavingDraft"></i>
+        {{ isSavingDraft ? 'Saving…' : 'Save Draft' }}
+      </button>
+      <button type="button" class="qf-btn qf-btn--outline" (click)="prevStep()" *ngIf="currentStep > 1">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+      <button type="button" class="qf-btn qf-btn--primary" [disabled]="isSubmitting" (click)="onHeaderActionClick()">
+        <i class="fas fa-circle-notch fa-spin" *ngIf="isSubmitting"></i>
+        <i class="fas fa-check" *ngIf="!isSubmitting && currentStep === 3"></i>
+        <i class="fas fa-arrow-right" *ngIf="!isSubmitting && currentStep < 3"></i>
+        <span>{{ isSubmitting ? 'Saving…' : (currentStep === 3 ? (isEditMode ? 'Update Quote' : 'Create Quote') : 'Continue') }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ STEP PILLS ════════════════════════════════════════════════════ -->
+  <div class="qf-steps">
+    <div class="qf-step" [class.qf-step--done]="currentStep > 1" [class.qf-step--active]="currentStep === 1" (click)="goToStep(1)">
+      <div class="qf-step-bubble">{{ currentStep > 1 ? '✓' : '1' }}</div>
+      <span>Quote Details</span>
+    </div>
+    <div class="qf-step-line" [class.qf-step-line--done]="currentStep > 1"></div>
+    <div class="qf-step" [class.qf-step--done]="currentStep > 2" [class.qf-step--active]="currentStep === 2" (click)="goToStep(2)">
+      <div class="qf-step-bubble">{{ currentStep > 2 ? '✓' : '2' }}</div>
+      <span>Template</span>
+    </div>
+    <div class="qf-step-line" [class.qf-step-line--done]="currentStep > 2"></div>
+    <div class="qf-step" [class.qf-step--active]="currentStep === 3" (click)="goToStep(3)">
+      <div class="qf-step-bubble">3</div>
+      <span>Preview & Send</span>
+    </div>
+  </div>
+
+  <!-- ══ STEP 1: TWO-COLUMN FORM ══════════════════════════════════════ -->
+  <div class="qf-body" *ngIf="currentStep === 1">
+
+    <!-- LEFT: form fields -->
+    <div class="qf-form-col">
+
+      <!-- Info card -->
+      <div class="qf-card">
+        <div class="qf-card-head"><i class="fas fa-file-invoice"></i><span>Quote Info</span></div>
+        <div class="qf-card-body qf-grid-2">
+          <div class="qf-field">
+            <label class="qf-label">Quote #</label>
+            <input class="qf-input qf-input--mono" formControlName="quoteNumber" readonly tabindex="-1">
           </div>
-          <h1 class="header-title">{{ isEditMode ? 'Edit Quotation' : 'Create New Quotation' }}</h1>
-          <p class="header-subtitle">{{ isEditMode ? 'Update and manage your existing quotation' : 'Generate a professional quote for your customer' }}</p>
-        </div>
-      </div>
-      <div class="header-actions">
-        <div class="quote-number" *ngIf="isEditMode">
-          <span class="quote-label">Quote #</span>
-          <strong>{{ quoteId }}</strong>
-        </div>
-        <button type="button" class="btn-save-header" [disabled]="isSubmitting" (click)="onHeaderActionClick()">
-          <i *ngIf="!isSubmitting" class="fas" [class.fa-arrow-right]="currentStep < 3" [class.fa-check]="currentStep === 3"></i>
-          <div *ngIf="isSubmitting" class="spinner-mini"></div>
-          <span>{{ isSubmitting ? 'Saving...' : (currentStep === 1 ? 'Continue to Template' : (currentStep === 2 ? 'Continue to Preview' : 'Create Quote')) }}</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Wizard Steps Indicator -->
-    <div class="wizard-steps-indicator" *ngIf="!isLoading">
-      <div class="wizard-step" [class.active]="currentStep === 1" [class.completed]="currentStep > 1" (click)="goToStep(1)">
-        <div class="step-icon">
-          <i class="fas fa-edit"></i>
-        </div>
-        <div class="step-info">
-          <span class="step-num">Step 1</span>
-          <span class="step-name">Quote Details</span>
-        </div>
-      </div>
-      <div class="step-connector" [class.completed]="currentStep > 1"></div>
-      <div class="wizard-step" [class.active]="currentStep === 2" [class.completed]="currentStep > 2" (click)="goToStep(2)">
-        <div class="step-icon">
-          <i class="fas fa-palette"></i>
-        </div>
-        <div class="step-info">
-          <span class="step-num">Step 2</span>
-          <span class="step-name">Template Design</span>
-        </div>
-      </div>
-      <div class="step-connector" [class.completed]="currentStep > 2"></div>
-      <div class="wizard-step" [class.active]="currentStep === 3" (click)="goToStep(3)">
-        <div class="step-icon">
-          <i class="fas fa-file-pdf"></i>
-        </div>
-        <div class="step-info">
-          <span class="step-num">Step 3</span>
-          <span class="step-name">Preview & Delivery</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div *ngIf="isLoading" class="loading-state">
-      <div class="spinner-glow"></div>
-      <p>Loading quote...</p>
-    </div>
-
-    <!-- Form -->
-    <form [formGroup]="quoteForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading" class="quote-form">
-      
-      <!-- STEP 1: Enter Quote Details -->
-      <div *ngIf="currentStep === 1">
-        <!-- Two-Column Form Layout -->
-        <div class="form-columns-wrapper">
-          
-          <!-- LEFT COLUMN: Quote Info & Line Items -->
-          <div class="form-column left-column">
-            
-            <!-- Section 1: Quote Information -->
-            <div class="form-card glass">
-              <div class="card-header">
-                <div class="card-header-icon">
-                  <i class="fas fa-info-circle"></i>
-                </div>
-                <h3>Quote Information</h3>
-              </div>
-              <div class="card-body">
-                <div class="form-row">
-                  <div class="form-group flex-1">
-                    <label class="form-label required">Quote No</label>
-                    <input type="text" formControlName="quoteNumber" class="form-control" readonly>
-                  </div>
-                  <div class="form-group flex-1">
-                    <label class="form-label required">Quote Date</label>
-                    <input type="date" formControlName="quoteDate" class="form-control" [max]="today">
-                  </div>
-                  <div class="form-group flex-1">
-                    <label class="form-label">Valid Till Date</label>
-                    <input type="date" formControlName="validUntil" class="form-control" [min]="minValidUntil">
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group flex-1">
-                    <label class="form-label">Currency</label>
-                    <select formControlName="currency" class="form-control">
-                      <option *ngFor="let curr of currencies" [value]="curr">{{ getCurrencyLabel(curr) }}</option>
-                    </select>
-                  </div>
-                  <div class="form-group flex-1" style="display: flex; align-items: flex-end; justify-content: flex-end;">
-                    <button type="button" class="btn-link" (click)="triggerLogoUpload()">
-                      <i class="fas fa-upload"></i> {{ logoFileName ? ('Logo: ' + logoFileName) : 'Upload Logo' }}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Section 4: Line Items -->
-            <div class="form-card glass">
-              <div class="card-header">
-                <div class="card-header-icon">
-                  <i class="fas fa-list"></i>
-                </div>
-                <h3>Line Items</h3>
-                <button type="button" class="btn-add-item" (click)="addLineItem()">
-                  <i class="fas fa-plus"></i> Add Item
-                </button>
-              </div>
-              <div class="card-body">
-                
-                <!-- Subtitle -->
-                <div class="form-group">
-                  <input type="text" class="form-control" placeholder="Add subtitle to this section...">
-                </div>
-
-                <!-- Items Table -->
-                <div class="items-table-wrapper">
-                  <table class="data-table">
-                    <thead>
-                      <tr>
-                        <th style="width: 18%;">Category</th>
-                        <th style="width: 22%;">Item</th>
-                        <th style="width: 8%;">TAX Rate</th>
-                        <th style="width: 6%;">Qty</th>
-                        <th style="width: 11%;">Rate</th>
-                        <th style="width: 11%;">Amount</th>
-                        <th style="width: 10%;">TAX</th>
-                        <th style="width: 10%;">Total</th>
-                        <th style="width: 4%;"></th>
-                      </tr>
-                    </thead>
-                    <tbody formArrayName="items">
-                      <tr *ngFor="let item of items.controls; let i = index" [formGroupName]="i" class="item-row">
-                        <td>
-                          <select [ngModel]="selectedCategoryForIndex[i]" [ngModelOptions]="{standalone: true}" (ngModelChange)="onCategoryChange(i, $event)" class="form-control-sm" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff;">
-                            <option value="">All Categories</option>
-                            <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
-                          </select>
-                        </td>
-                        <td>
-                          <div class="product-cell">
-                            <select formControlName="productId" class="form-control-sm" (change)="onProductSelect(i, $event)">
-                              <option value="">Select item...</option>
-                              <option *ngFor="let product of getProductsForIndex(i)" [value]="product.id">
-                                {{ product.name }}
-                              </option>
-                            </select>
-                            <div class="item-actions-cell">
-                              <button type="button" class="btn-icon-sm" title="Add Description" (click)="addDescription(i)">
-                                <i class="fas fa-edit"></i>
-                              </button>
-                              <button type="button" class="btn-icon-sm" title="Add Image" (click)="addImage(i)">
-                                <i class="fas fa-image"></i>
-                              </button>
-                              <button type="button" class="btn-icon-sm" title="Add Unit" (click)="addUnit(i)">
-                                <i class="fas fa-cube"></i>
-                              </button>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <input type="number" formControlName="taxRate" class="form-control-sm" placeholder="0">
-                        </td>
-                        <td>
-                          <input type="number" formControlName="quantity" class="form-control-sm" step="1" min="1" value="1">
-                        </td>
-                        <td>
-                          <input type="number" formControlName="unitPrice" class="form-control-sm" step="0.01" min="0" placeholder="0.00">
-                        </td>
-                        <td class="item-amount">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
-                        <td class="item-tax">{{ formatCurrency(item.get('taxAmount')?.value || 0) }}</td>
-                        <td class="item-total">{{ formatCurrency((item.get('total')?.value || 0) + (item.get('taxAmount')?.value || 0)) }}</td>
-                        <td class="item-remove">
-                          <button type="button" class="btn-remove" (click)="removeLineItem(i)">
-                            <i class="fas fa-trash-alt"></i>
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <!-- Line Actions -->
-                <div class="line-actions">
-                  <button type="button" class="btn-link" (click)="addLineItem()">
-                    <i class="fas fa-plus-circle"></i> Add New Line
-                  </button>
-                </div>
-              </div>
-            </div>
-
+          <div class="qf-field">
+            <label class="qf-label">Currency <span class="qf-req">*</span></label>
+            <select class="qf-select" formControlName="currency">
+              <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+            </select>
           </div>
+          <div class="qf-field">
+            <label class="qf-label">Quote Date <span class="qf-req">*</span></label>
+            <input class="qf-input" type="date" formControlName="quoteDate" [max]="today">
+          </div>
+          <div class="qf-field">
+            <label class="qf-label">Valid Until <span class="qf-req">*</span></label>
+            <input class="qf-input" type="date" formControlName="validUntil" [min]="today">
+            <span class="qf-field-err" *ngIf="quoteForm.get('validUntil')?.errors?.['pastDate'] && quoteForm.get('validUntil')?.touched">Must be a future date</span>
+          </div>
+        </div>
+      </div>
 
-          <!-- RIGHT COLUMN: Parties, Summary, Additional Options -->
-          <div class="form-column right-column">
-            
-            <!-- Section 2: Parties -->
-            <div class="form-card glass">
-              <div class="card-header">
-                <div class="card-header-icon">
-                  <i class="fas fa-users"></i>
-                </div>
-                <h3>Parties</h3>
-              </div>
-              <div class="card-body">
-                <!-- Quotation From -->
-                <div class="subsection">
-                  <label class="subsection-label">Quotation From</label>
-                  <div class="billed-details">
-                    <div class="billed-avatar">{{ getBilledByInitials() }}</div>
-                    <div class="billed-info">
-                      <strong>{{ billedBy.name }}</strong>
-                      <span>{{ billedBy.address || 'No address set' }}</span>
-                      <span *ngIf="billedBy.email" style="font-size: 0.8rem; color: #64748b;">{{ billedBy.email }}</span>
-                      <span *ngIf="billedBy.phone" style="font-size: 0.8rem; color: #64748b;">{{ billedBy.phone }}</span>
-                    </div>
-                    <button type="button" class="btn-edit" (click)="editBilledBy()">
-                      <i class="fas fa-pencil-alt"></i> Edit
-                    </button>
-                  </div>
-                </div>
+      <!-- Bill To card -->
+      <div class="qf-card">
+        <div class="qf-card-head">
+          <i class="fas fa-user-tie"></i><span>Bill To (Client)</span>
+          <button type="button" class="qf-card-action" (click)="openNewCustomerModal()">
+            <i class="fas fa-plus"></i> New Client
+          </button>
+        </div>
+        <div class="qf-card-body">
+          <div class="qf-field">
+            <label class="qf-label">Select Client <span class="qf-req">*</span></label>
+            <select class="qf-select" formControlName="customerId" (change)="onCustomerSelect($any($event.target).value)">
+              <option value="">— choose client —</option>
+              <option *ngFor="let c of customers" [value]="c.customerId || c.id">{{ c.name }}</option>
+            </select>
+            <span class="qf-field-err" *ngIf="quoteForm.get('customerId')?.invalid && quoteForm.get('customerId')?.touched">Client is required</span>
+          </div>
+          <div class="qf-field" *ngIf="quoteForm.get('customerName')?.value">
+            <label class="qf-label">Client Name</label>
+            <input class="qf-input" formControlName="customerName" readonly>
+          </div>
+          <div class="qf-field" *ngIf="selectedCustomerBankAccounts.length > 0">
+            <label class="qf-label">Payment Bank Account</label>
+            <select class="qf-select" formControlName="selectedCustomerBankIndex">
+              <option [value]="-1">— no bank account —</option>
+              <option *ngFor="let b of selectedCustomerBankAccounts; let bi = index" [value]="bi">
+                {{ b.bankName }} · {{ b.accountNumber }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
 
-                <!-- Quotation For -->
-                <div class="subsection" style="margin-top: 1rem;">
-                  <label class="subsection-label required">Quotation For</label>
-                  <div class="form-group">
-                    <div class="customer-select">
-                      <select formControlName="customerId" class="form-control" (change)="onCustomerSelect($any($event.target).value)">
-                        <option value="">Select a client...</option>
-                        <option *ngFor="let customer of customers" [value]="customer.id">
-                          {{ customer.name }}
-                        </option>
+      <!-- Line Items card -->
+      <div class="qf-card">
+        <div class="qf-card-head"><i class="fas fa-list"></i><span>Line Items</span>
+          <span class="qf-card-badge">{{ items.controls.length }} item{{ items.controls.length !== 1 ? 's' : '' }}</span>
+        </div>
+        <div class="qf-card-body qf-card-body--flush">
+          <div class="qf-items-wrap">
+            <table class="qf-items-table">
+              <thead>
+                <tr>
+                  <th class="qf-th-desc">Item / Description</th>
+                  <th class="qf-th-med">Product</th>
+                  <th class="qf-th-sm">Qty</th>
+                  <th class="qf-th-med">Unit Price</th>
+                  <th class="qf-th-sm">Tax %</th>
+                  <th class="qf-th-med qf-th-right">Amount</th>
+                  <th class="qf-th-del"></th>
+                </tr>
+              </thead>
+              <tbody formArrayName="items">
+                <tr *ngFor="let item of items.controls; let i = index" [formGroupName]="i" class="qf-item-row">
+                  <td>
+                    <input class="qf-cell-input qf-cell-input--wide" type="text" formControlName="productName" placeholder="Item name…">
+                  </td>
+                  <td>
+                    <div class="qf-product-cell">
+                      <select class="qf-cell-select" formControlName="productId"
+                              (change)="onProductSelect(i, $event)">
+                        <option value="">Select…</option>
+                        <option *ngFor="let p of products" [value]="p.id">{{ p.name }}</option>
                       </select>
-                      <button type="button" class="btn-add-customer" (click)="openNewCustomerModal()">
-                        <i class="fas fa-user-plus"></i> New Client
+                      <button type="button" class="qf-btn-new-product" (click)="openNewProductModal(i)" title="Create new product">
+                        <i class="fas fa-plus"></i>
                       </button>
                     </div>
-                    <div class="form-error" *ngIf="isFieldInvalid('customerId')">Please select a client</div>
-                  </div>
-                  <div class="form-group">
-                    <input type="text" formControlName="customerName" class="form-control" readonly placeholder="Client name will auto-fill">
-                  </div>
-                  <!-- Customer Bank Selector -->
-                  <div class="form-group" style="margin-top: 0.5rem;" *ngIf="selectedCustomerBankAccounts && selectedCustomerBankAccounts.length > 0">
-                    <label class="form-label" style="font-size: 0.75rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.25rem; display: block;">Select Customer Bank Account</label>
-                    <select formControlName="selectedCustomerBankIndex" class="form-control" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff;">
-                      <option [value]="-1">Do not display customer bank account</option>
-                      <option *ngFor="let account of selectedCustomerBankAccounts; let idx = index" [value]="idx">
-                        {{ account.bankName }} - {{ account.accountNumber }} ({{ account.accountName }})
-                      </option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Section 5: Summary -->
-            <div class="form-card summary-card glass">
-              <div class="card-header">
-                <div class="card-header-icon">
-                  <i class="fas fa-calculator"></i>
-                </div>
-                <h3>Summary</h3>
-              </div>
-              <div class="card-body">
-                <!-- Totals -->
-                <div class="summary-grid">
-                  <div class="summary-item">
-                    <span class="summary-label">Subtotal</span>
-                    <span class="summary-value">{{ formatCurrency(subtotal) }}</span>
-                  </div>
-                  <div class="summary-item" *ngIf="discountAmount > 0">
-                    <span class="summary-label">Discount <span *ngIf="discountValue > 0 && discountType === 'PERCENTAGE'">({{ discountValue }}%)</span></span>
-                    <span class="summary-value discount">-{{ formatCurrency(discountAmount) }}</span>
-                  </div>
-                  <ng-container *ngIf="additionalChargeItems.length > 0">
-                    <div class="summary-item" *ngFor="let charge of additionalChargeItems">
-                      <span class="summary-label">{{ charge.label }}</span>
-                      <span class="summary-value">+{{ formatCurrency(charge.amount) }}</span>
-                    </div>
-                  </ng-container>
-                  <div class="summary-item" *ngIf="additionalChargeItems.length === 0 && additionalCharges > 0">
-                    <span class="summary-label">Additional Charges</span>
-                    <span class="summary-value">+{{ formatCurrency(additionalCharges) }}</span>
-                  </div>
-                  <div class="summary-item">
-                    <span class="summary-label">Tax</span>
-                    <span class="summary-value">{{ formatCurrency(totalTax) }}</span>
-                  </div>
-                  <div class="summary-item total">
-                    <span class="summary-label">Grand Total</span>
-                    <span class="summary-value grand-total">{{ formatCurrency(grandTotal) }}</span>
-                  </div>
-                </div>
-
-                <!-- Actions -->
-                <div class="summary-actions">
-                  <button type="button" class="btn-link" (click)="addDiscounts()">
-                    <i class="fas fa-percent"></i> Add Discounts
-                  </button>
-                  <button type="button" class="btn-link" (click)="addAdditionalCharges()">
-                    <i class="fas fa-plus-circle"></i> Add Additional Charges
-                  </button>
-                </div>
-
-                <div class="summary-quantity">
-                  <span>Total Quantity</span>
-                  <span class="quantity-value">{{ getTotalQuantity() }}</span>
-                </div>
-
-                <!-- Total in Words -->
-                <div class="words-display">
-                  <span class="words-label">
-                    <i class="fas fa-font"></i> Total in words
-                  </span>
-                  <span>{{ getTotalInWords(grandTotal) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Section 6: Additional Options -->
-            <div class="form-card glass">
-              <div class="card-header">
-                <div class="card-header-icon">
-                  <i class="fas fa-cog"></i>
-                </div>
-                <h3>Additional Options</h3>
-              </div>
-              <div class="card-body">
-                <div class="options-grid">
-                  <button type="button" class="btn-option-link" [class.active]="showSignature" (click)="showSignature = !showSignature">
-                    <i class="fas fa-signature"></i> Add Signature
-                  </button>
-                  <button type="button" class="btn-option-link" [class.active]="showAttachments" (click)="showAttachments = !showAttachments">
-                    <i class="fas fa-paperclip"></i> Add Attachments
-                  </button>
-                  <button type="button" class="btn-option-link" [class.active]="showEmail" (click)="showEmail = !showEmail">
-                    <i class="fas fa-envelope"></i> Add Email
-                  </button>
-                  <button type="button" class="btn-option-link" [class.active]="showAddress" (click)="showAddress = !showAddress">
-                    <i class="fas fa-map-marker-alt"></i> Add Address
-                  </button>
-                  <button type="button" class="btn-option-link" [class.active]="showPhone" (click)="showPhone = !showPhone">
-                    <i class="fas fa-phone"></i> Add Phone
-                  </button>
-                  <button type="button" class="btn-option-link" [class.active]="showNotes" (click)="showNotes = !showNotes">
-                    <i class="fas fa-sticky-note"></i> Add Notes
-                  </button>
-                  <button type="button" class="btn-option-link" [class.active]="showTerms" (click)="showTerms = !showTerms">
-                    <i class="fas fa-gavel"></i> Add Terms
-                  </button>
-                </div>
-
-                <!-- Interactive Input Panels -->
-                <div class="options-panels-wrapper" *ngIf="showSignature || showAttachments || showEmail || showAddress || showPhone || showNotes || showTerms">
-                  
-                  <!-- Signature Panel -->
-                  <div class="option-panel-item" *ngIf="showSignature">
-                    <label class="form-label">Authorized Signature</label>
-                    <div class="form-group">
-                      <input type="text" [(ngModel)]="signatureText" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="Signee Name / Title">
-                      <div class="signature-draw-pad-placeholder">
-                        <i class="fas fa-pen-nib"></i> Signee signature placeholder (rendered on export)
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Attachments Panel -->
-                  <div class="option-panel-item" *ngIf="showAttachments">
-                    <label class="form-label">Attachments</label>
-                    <div class="file-upload-zone">
-                      <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                      <span class="upload-text" *ngIf="!attachmentFileName">Click to upload files or drop here</span>
-                      <span class="upload-text" *ngIf="attachmentFileName">Selected: <strong>{{ attachmentFileName }}</strong></span>
-                      <input type="file" (change)="onFileSelected($event)" class="file-input-overlay">
-                    </div>
-                  </div>
-
-                  <!-- Email Panel -->
-                  <div class="option-panel-item" *ngIf="showEmail">
-                    <label class="form-label">Email Address</label>
-                    <div class="form-group">
-                      <input type="email" [(ngModel)]="contactEmail" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="Enter email address...">
-                    </div>
-                  </div>
-
-                  <!-- Address Panel -->
-                  <div class="option-panel-item" *ngIf="showAddress">
-                    <label class="form-label">Address</label>
-                    <div class="form-group">
-                      <textarea [(ngModel)]="contactAddress" [ngModelOptions]="{standalone: true}" class="form-textarea" placeholder="Enter physical / billing address..."></textarea>
-                    </div>
-                  </div>
-
-                  <!-- Phone Panel -->
-                  <div class="option-panel-item" *ngIf="showPhone">
-                    <label class="form-label">Phone Number</label>
-                    <div class="form-group">
-                      <input type="tel" [(ngModel)]="contactPhone" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="Enter phone number...">
-                    </div>
-                  </div>
-
-                  <!-- Notes Panel -->
-                  <div class="option-panel-item" *ngIf="showNotes">
-                    <label class="form-label">Notes</label>
-                    <div class="form-group">
-                      <textarea formControlName="notes" class="form-textarea" placeholder="Enter notes for client..."></textarea>
-                    </div>
-                  </div>
-
-                  <!-- Terms Panel -->
-                  <div class="option-panel-item" *ngIf="showTerms">
-                    <label class="form-label">Terms &amp; Conditions</label>
-                    <div class="form-group">
-                      <textarea formControlName="terms" class="form-textarea" placeholder="Enter terms and conditions..."></textarea>
-                    </div>
-                  </div>
-
-                </div>
-
-
-              </div>
-            </div>
+                  </td>
+                  <td>
+                    <input class="qf-cell-input qf-cell-input--num" type="number" formControlName="quantity" min="1" step="1">
+                  </td>
+                  <td>
+                    <input class="qf-cell-input qf-cell-input--num" type="number" formControlName="unitPrice" min="0" step="0.01">
+                  </td>
+                  <td>
+                    <input class="qf-cell-input qf-cell-input--num" type="number" formControlName="taxRate" min="0" max="100">
+                  </td>
+                  <td class="qf-line-total">
+                    {{ formatCurrency(item.get('total')?.value || 0) }}
+                  </td>
+                  <td>
+                    <button type="button" class="qf-del-btn" (click)="removeLineItem(i)" [disabled]="items.controls.length === 1" title="Remove item">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </div>
-
-        <!-- Step 1 Footer Actions -->
-        <div class="wizard-actions-footer">
-          <button type="button" class="btn-cancel" (click)="cancel()">
-            <i class="fas fa-times"></i> Cancel
-          </button>
-          <button type="button" class="btn-continue" (click)="nextStep()">
-            Continue to Template Selection <i class="fas fa-arrow-right"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- STEP 2: Select Template Design -->
-      <div *ngIf="currentStep === 2" class="wizard-step-content select-template-container">
-        <div class="step-card-desc glass">
-          <div class="desc-icon-bg">
-            <i class="fas fa-magic"></i>
-          </div>
-          <div class="desc-text">
-            <h3>Select Quote Template Layout</h3>
-            <p>Select an elegant template style for your quotation document. All pricing, line items, and terms will adapt beautifully to your choice.</p>
-          </div>
-        </div>
-
-        <div class="wizard-template-selector">
-          <app-template-types
-            documentType="quote"
-            [quoteData]="quoteDataForTemplate"
-            [selectedTemplateId]="selectedTemplate?.id || 'standard'"
-            (templateSelected)="onTemplateSelected($event)"
-            (back)="prevStep()"
-          ></app-template-types>
-        </div>
-
-        <!-- Step 2 Footer Actions -->
-        <div class="wizard-actions-footer">
-          <button type="button" class="btn-cancel" (click)="prevStep()">
-            <i class="fas fa-arrow-left"></i> Back to Details
-          </button>
-          <button type="button" class="btn-continue" (click)="nextStep()">
-            Continue to Preview & Options <i class="fas fa-arrow-right"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- STEP 3: Preview & Delivery Options -->
-      <div *ngIf="currentStep === 3" class="wizard-step-content preview-delivery-container">
-        <div class="preview-delivery-grid">
-          <!-- Left Column: Live Document Preview -->
-          <div class="preview-document-column">
-            <div class="preview-header-bar">
-              <span class="preview-badge"><i class="fas fa-eye"></i> Live Document Preview</span>
-              <span class="template-name-badge">
-                Selected Style: <strong>{{ selectedTemplate?.name || 'Standard Professional' }}</strong>
-              </span>
-            </div>
-
-            <!-- Paper Mockup Document -->
-            <div id="quote-preview-document" class="paper-document-preview" [class]="selectedTemplate?.id || 'standard'">
-              
-              <!-- EMIRATES AIRLINES CUSTOM TEMPLATE WITH CUSTOMER BANK -->
-              <ng-container *ngIf="selectedTemplate?.id === 'emirates-custbank'">
-                <div class="emirates-template-wrapper">
-                  <!-- Centered Corporate Header -->
-                  <div class="emirates-header" style="text-align: center;">
-                    <div class="emirates-logo-container" style="display: flex; justify-content: center; margin-bottom: 0.75rem;">
-                      <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo" style="max-height: 55px; max-width: 160px; object-fit: contain;">
-                      <div class="company-logo-placeholder-circle" *ngIf="!logoUrl" style="width: 45px; height: 45px; border-radius: 50%; background: rgba(163, 38, 56, 0.08); color: #A32638; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 700;">C</div>
-                    </div>
-                     <h1 class="emirates-company-name">{{ billedBy.name | uppercase }}</h1>
-                     <p class="emirates-company-sub">{{ billedBy.address }}</p>
-                     <p class="emirates-company-contact">
-                       <span *ngIf="billedBy.email">Email: {{ billedBy.email }}</span>
-                       <span *ngIf="billedBy.email && billedBy.phone"> | </span>
-                       <span *ngIf="billedBy.phone">Tel: {{ billedBy.phone }}</span>
-                     </p>
-                   </div>
- 
-                   <div class="emirates-divider"></div>
- 
-                   <!-- Centered Document Title -->
-                   <div class="emirates-title-block">
-                     <h2 class="emirates-title">QUOTATION</h2>
-                   </div>
- 
-                   <!-- Metadata & Status Block -->
-                   <div class="emirates-meta-grid">
-                     <div class="meta-item">
-                       <strong>Quote No:</strong> <span>{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span>
-                     </div>
-                     <div class="meta-item">
-                       <strong>Quote Date:</strong> <span>{{ quoteForm.get('quoteDate')?.value || today }}</span>
-                     </div>
-                     <div class="meta-item">
-                       <strong>Valid Until:</strong> <span>{{ quoteForm.get('validUntil')?.value }}</span>
-                     </div>
-                     <div class="meta-item">
-                       <strong>Status:</strong> <span class="status-badge unpaid">PENDING</span>
-                     </div>
-                   </div>
- 
-                  <div class="emirates-divider"></div>
- 
-                   <!-- Parties Block -->
-                   <div class="emirates-parties-grid">
-                     <div class="parties-box">
-                       <h4 class="parties-heading">BILL TO</h4>
-                       <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
-                       <p *ngIf="selectedCustomer?.address">{{ selectedCustomer?.address }}</p>
-                       <p *ngIf="selectedCustomer?.email">{{ selectedCustomer?.email }}</p>
-                       <!-- Customer Bank Account Details -->
-                       <div class="client-bank-subbox" *ngIf="quoteDataForTemplate?.selectedCustomerBank" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed rgba(186, 153, 83, 0.3); font-size: 0.8rem;">
-                         <p style="margin: 0; color: #BA9953; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Customer Bank Details</p>
-                         <p style="margin: 0; color: #1a2d4a; font-weight: 600;">Bank: {{ quoteDataForTemplate.selectedCustomerBank.bankName }}</p>
-                         <p style="margin: 0; color: #4a5a6e;">Acc Name: {{ quoteDataForTemplate.selectedCustomerBank.accountName }}</p>
-                         <p style="margin: 0; color: #1a2d4a; font-weight: 600;">Acc No: {{ quoteDataForTemplate.selectedCustomerBank.accountNumber }}</p>
-                         <p style="margin: 0; color: #4a5a6e;" *ngIf="quoteDataForTemplate.selectedCustomerBank.routingNumber">Sort Code: {{ quoteDataForTemplate.selectedCustomerBank.routingNumber }}</p>
-                       </div>
-                     </div>
-                     <div class="parties-box">
-                       <h4 class="parties-heading">FROM</h4>
-                       <strong>{{ billedBy.name }}</strong>
-                       <p>{{ billedBy.address }}</p>
-                       <p *ngIf="billedBy.email">Email: {{ billedBy.email }}</p>
-                       <p *ngIf="billedBy.phone">Tel: {{ billedBy.phone }}</p>
-                     </div>
-                   </div>
-
-                  <!-- Project Metadata -->
-                  <div class="emirates-project-ref">
-                    <p><strong>Project:</strong> Network Infrastructure Supply &amp; Installation</p>
-                    <p><strong>Ref:</strong> EMR-2026-002 | <strong>PO Reference:</strong> TBD</p>
-                  </div>
-
-                  <!-- Line Items Table -->
-                  <div class="emirates-table-wrapper">
-                    <table class="emirates-table">
-                      <thead>
-                        <tr>
-                          <th style="width: 8%; text-align: center;">S/N</th>
-                          <th style="text-align: left;">DESCRIPTION</th>
-                          <th style="width: 10%; text-align: center;">QTY</th>
-                          <th style="width: 18%; text-align: right;">UNIT PRICE</th>
-                          <th style="width: 20%; text-align: right;">AMOUNT ({{ quoteForm.get('currency')?.value || 'NGN' }})</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let item of items.controls; let idx = index">
-                          <td style="text-align: center;">{{ idx + 1 }}</td>
-                          <td>
-                            <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
-                            <div class="item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</div>
-                          </td>
-                          <td style="text-align: center;">{{ item.get('quantity')?.value }}</td>
-                          <td style="text-align: right;">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
-                          <td style="text-align: right;">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
-                        </tr>
-                        <tr *ngIf="items.length === 0">
-                          <td colspan="5" class="empty-row">No line items added.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <!-- Calculations and Word Amount -->
-                  <div class="emirates-totals-section">
-                    <div class="totals-col">
-                      <div class="word-amount" *ngIf="grandTotal > 0">
-                        <strong>Amount in Words:</strong>
-                        <p>{{ getTotalInWords(grandTotal) }}</p>
-                      </div>
-                    </div>
-                    <div class="totals-col">
-                      <table class="totals-table">
-                        <tr>
-                          <td>SUBTOTAL</td>
-                          <td>{{ formatCurrency(subtotal) }}</td>
-                        </tr>
-                        <tr *ngIf="discountAmount > 0">
-                          <td>DISCOUNT</td>
-                          <td class="discount-neg">-{{ formatCurrency(discountAmount) }}</td>
-                        </tr>
-                        <tr *ngIf="additionalCharges > 0">
-                          <td>ADDITIONAL CHARGES</td>
-                          <td>+{{ formatCurrency(additionalCharges) }}</td>
-                        </tr>
-                        <tr *ngIf="totalTax > 0">
-                          <td>VAT (7.5%)</td>
-                          <td>{{ formatCurrency(totalTax) }}</td>
-                        </tr>
-                        <tr class="grand-total-row">
-                          <td>TOTAL</td>
-                          <td>{{ formatCurrency(grandTotal) }}</td>
-                        </tr>
-                      </table>
-                    </div>
-                  </div>
-
-                  <div class="emirates-divider"></div>
-
-                  <!-- Payment details & Bottom text -->
-                  <div class="emirates-payment-details">
-                    <h4 class="section-heading">PAYMENT TERMS &amp; DETAILS</h4>
-                    <p class="payment-terms-text">
-                      Payment terms: Net 25 days from invoice date (as per Purchase Order). All prices inclusive of VAT at 7.5% as per Nigerian tax regulations.
-                    </p>
-                    <div class="bank-details-box" *ngIf="billedBy.bankName || billedBy.accountName || billedBy.accountNumber">
-                      <strong>Bank Details:</strong>
-                      <p *ngIf="billedBy.bankName">Bank: {{ billedBy.bankName }}</p>
-                      <p *ngIf="billedBy.accountName">Account Name: {{ billedBy.accountName }}</p>
-                      <p *ngIf="billedBy.accountNumber">Account Number: {{ billedBy.accountNumber }}</p>
-                      <p *ngIf="billedBy.routingNumber">Sort Code / Routing Number: {{ billedBy.routingNumber }}</p>
-                    </div>
-                    <p class="enquiries-text" *ngIf="billedBy.email || billedBy.phone">
-                      For enquiries: <span *ngIf="billedBy.email">{{ billedBy.email }}</span>
-                      <span *ngIf="billedBy.email && billedBy.phone"> | </span>
-                      <span *ngIf="billedBy.phone">{{ billedBy.phone }}</span>
-                    </p>
-                  </div>
-
-                  <!-- Signatures Grid -->
-                  <div class="emirates-signatures-grid">
-                    <div class="sig-box">
-                      <p><strong>Authorised by:</strong></p>
-                      <p class="sig-name">{{ signatureText || billedBy.name }}</p>
-                      <p class="sig-title" *ngIf="!signatureText">Authorized Signatory</p>
-                      <div class="sig-line">Signature: ___________________</div>
-                      <p class="sig-date">Date: {{ quoteForm.get('quoteDate')?.value || today }}</p>
-                    </div>
-                    <div class="sig-box">
-                      <p><strong>Client Acknowledgement:</strong></p>
-                      <p class="acknowledgement-instructions">Please acknowledge receipt of service/installation in good condition.</p>
-                      <div class="sig-line-spaced">Name: ______________________</div>
-                      <div class="sig-line-spaced">Signature: ___________________</div>
-                      <div class="sig-line-spaced">Date: _______________________</div>
-                    </div>
-                  </div>
-
-                  <div class="emirates-footer">
-                    <p class="thank-you">Thank you for your business.</p>
-                  </div>
-                </div>
-              </ng-container>
-
-              <!-- EMIRATES AIRLINES CUSTOM TEMPLATE -->
-              <ng-container *ngIf="selectedTemplate?.id === 'emirates'">
-                <div class="emirates-template-wrapper">
-                  <!-- Centered Corporate Header -->
-                  <div class="emirates-header" style="text-align: center;">
-                    <div class="emirates-logo-container" style="display: flex; justify-content: center; margin-bottom: 0.75rem;">
-                      <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo" style="max-height: 55px; max-width: 160px; object-fit: contain;">
-                      <div class="company-logo-placeholder-circle" *ngIf="!logoUrl" style="width: 45px; height: 45px; border-radius: 50%; background: rgba(163, 38, 56, 0.08); color: #A32638; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 700;">C</div>
-                    </div>
-                    <h1 class="emirates-company-name">{{ billedBy.name | uppercase }}</h1>
-                    <p class="emirates-company-sub">{{ billedBy.address }}</p>
-                    <p class="emirates-company-contact">
-                      <span *ngIf="billedBy.email">Email: {{ billedBy.email }}</span>
-                      <span *ngIf="billedBy.email && billedBy.phone"> | </span>
-                      <span *ngIf="billedBy.phone">Tel: {{ billedBy.phone }}</span>
-                    </p>
-                  </div>
-
-                  <div class="emirates-divider"></div>
-
-                  <!-- Centered Document Title -->
-                  <div class="emirates-title-block">
-                    <h2 class="emirates-title">QUOTATION</h2>
-                  </div>
-
-                  <!-- Metadata & Status Block -->
-                  <div class="emirates-meta-grid">
-                    <div class="meta-item">
-                      <strong>Quote No:</strong> <span>{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span>
-                    </div>
-                    <div class="meta-item">
-                      <strong>Quote Date:</strong> <span>{{ quoteForm.get('quoteDate')?.value || today }}</span>
-                    </div>
-                    <div class="meta-item">
-                      <strong>Valid Until:</strong> <span>{{ quoteForm.get('validUntil')?.value }}</span>
-                    </div>
-                    <div class="meta-item">
-                      <strong>Status:</strong> <span class="status-badge unpaid">PENDING</span>
-                    </div>
-                  </div>
-
-                  <div class="emirates-divider"></div>
-
-                  <!-- Parties Block -->
-                  <div class="emirates-parties-grid">
-                    <div class="parties-box">
-                      <h4 class="parties-heading">BILL TO</h4>
-                      <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
-                      <p *ngIf="selectedCustomer?.address">{{ selectedCustomer?.address }}</p>
-                      <p *ngIf="selectedCustomer?.email">{{ selectedCustomer?.email }}</p>
-                    </div>
-                    <div class="parties-box">
-                      <h4 class="parties-heading">FROM</h4>
-                      <strong>{{ billedBy.name }}</strong>
-                      <p>{{ billedBy.address }}</p>
-                      <p *ngIf="billedBy.email">Email: {{ billedBy.email }}</p>
-                      <p *ngIf="billedBy.phone">Tel: {{ billedBy.phone }}</p>
-                    </div>
-                  </div>
-
-                  <!-- Project Metadata -->
-                  <div class="emirates-project-ref">
-                    <p><strong>Project:</strong> Network Infrastructure Supply &amp; Installation</p>
-                    <p><strong>Ref:</strong> EMR-2026-002 | <strong>PO Reference:</strong> TBD</p>
-                  </div>
-
-                  <!-- Line Items Table -->
-                  <div class="emirates-table-wrapper">
-                    <table class="emirates-table">
-                      <thead>
-                        <tr>
-                          <th style="width: 8%; text-align: center;">S/N</th>
-                          <th style="text-align: left;">DESCRIPTION</th>
-                          <th style="width: 10%; text-align: center;">QTY</th>
-                          <th style="width: 18%; text-align: right;">UNIT PRICE</th>
-                          <th style="width: 20%; text-align: right;">AMOUNT ({{ quoteForm.get('currency')?.value || 'NGN' }})</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let item of items.controls; let idx = index">
-                          <td style="text-align: center;">{{ idx + 1 }}</td>
-                          <td>
-                            <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
-                            <div class="item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</div>
-                          </td>
-                          <td style="text-align: center;">{{ item.get('quantity')?.value }}</td>
-                          <td style="text-align: right;">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
-                          <td style="text-align: right;">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
-                        </tr>
-                        <tr *ngIf="items.length === 0">
-                          <td colspan="5" class="empty-row">No line items added.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <!-- Calculations and Word Amount -->
-                  <div class="emirates-totals-section">
-                    <div class="totals-col">
-                      <div class="word-amount" *ngIf="grandTotal > 0">
-                        <strong>Amount in Words:</strong>
-                        <p>{{ getTotalInWords(grandTotal) }}</p>
-                      </div>
-                    </div>
-                    <div class="totals-col">
-                      <table class="totals-table">
-                        <tr>
-                          <td>SUBTOTAL</td>
-                          <td>{{ formatCurrency(subtotal) }}</td>
-                        </tr>
-                        <tr *ngIf="discountAmount > 0">
-                          <td>DISCOUNT</td>
-                          <td class="discount-neg">-{{ formatCurrency(discountAmount) }}</td>
-                        </tr>
-                        <tr *ngIf="additionalCharges > 0">
-                          <td>ADDITIONAL CHARGES</td>
-                          <td>+{{ formatCurrency(additionalCharges) }}</td>
-                        </tr>
-                        <tr *ngIf="totalTax > 0">
-                          <td>VAT (7.5%)</td>
-                          <td>{{ formatCurrency(totalTax) }}</td>
-                        </tr>
-                        <tr class="grand-total-row">
-                          <td>TOTAL</td>
-                          <td>{{ formatCurrency(grandTotal) }}</td>
-                        </tr>
-                      </table>
-                    </div>
-                  </div>
-
-                  <div class="emirates-divider"></div>
-
-                  <!-- Payment details & Bottom text -->
-                  <div class="emirates-payment-details">
-                    <h4 class="section-heading">PAYMENT TERMS &amp; DETAILS</h4>
-                    <p class="payment-terms-text">
-                      Payment terms: Net 25 days from invoice date (as per Purchase Order). All prices inclusive of VAT at 7.5% as per Nigerian tax regulations.
-                    </p>
-                    <div class="bank-details-box" *ngIf="billedBy.bankName || billedBy.accountName || billedBy.accountNumber">
-                      <strong>Bank Details:</strong>
-                      <p *ngIf="billedBy.bankName">Bank: {{ billedBy.bankName }}</p>
-                      <p *ngIf="billedBy.accountName">Account Name: {{ billedBy.accountName }}</p>
-                      <p *ngIf="billedBy.accountNumber">Account Number: {{ billedBy.accountNumber }}</p>
-                      <p *ngIf="billedBy.routingNumber">Sort Code / Routing Number: {{ billedBy.routingNumber }}</p>
-                    </div>
-                    <p class="enquiries-text" *ngIf="billedBy.email || billedBy.phone">
-                      For enquiries: <span *ngIf="billedBy.email">{{ billedBy.email }}</span>
-                      <span *ngIf="billedBy.email && billedBy.phone"> | </span>
-                      <span *ngIf="billedBy.phone">{{ billedBy.phone }}</span>
-                    </p>
-                  </div>
-
-                  <!-- Signatures Grid -->
-                  <div class="emirates-signatures-grid">
-                    <div class="sig-box">
-                      <p><strong>Authorised by:</strong></p>
-                      <p class="sig-name">{{ signatureText || billedBy.name }}</p>
-                      <p class="sig-title" *ngIf="!signatureText">Authorized Signatory</p>
-                      <div class="sig-line">Signature: ___________________</div>
-                      <p class="sig-date">Date: {{ quoteForm.get('quoteDate')?.value || today }}</p>
-                    </div>
-                    <div class="sig-box">
-                      <p><strong>Client Acknowledgement:</strong></p>
-                      <p class="acknowledgement-instructions">Please acknowledge receipt of service/installation in good condition.</p>
-                      <div class="sig-line-spaced">Name: ______________________</div>
-                      <div class="sig-line-spaced">Signature: ___________________</div>
-                      <div class="sig-line-spaced">Date: _______________________</div>
-                    </div>
-                  </div>
-
-                  <div class="emirates-footer">
-                    <p class="thank-you">Thank you for your business.</p>
-                  </div>
-                </div>
-              </ng-container>
-
-              <!-- 13TH COMMUNICATIONS CUSTOM TEMPLATE -->
-              <ng-container *ngIf="selectedTemplate?.id === 'thcomms'">
-                <div class="thcomms-template-wrapper">
-                  <!-- Title left, Company Info right -->
-                  <div class="thcomms-header">
-                    <div class="header-left">
-                      <h1 class="thcomms-title">QUOTATION</h1>
-                    </div>
-                    <div class="header-right" style="text-align: right;">
-                      <div class="thcomms-logo-container" style="display: inline-block; margin-bottom: 0.5rem;">
-                        <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo" style="max-height: 50px; max-width: 150px; object-fit: contain; display: block; margin-left: auto;">
-                        <div class="company-logo-placeholder-circle" *ngIf="!logoUrl" style="width: 40px; height: 40px; border-radius: 4px; background: rgba(27, 54, 93, 0.08); color: #1B365D; display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 700; margin-left: auto;">13</div>
-                      </div>
-                      <h2 class="thcomms-company-name">{{ billedBy.name }}</h2>
-                      <p>{{ billedBy.address }}</p>
-                      <p *ngIf="billedBy.phone">Tel: {{ billedBy.phone }}</p>
-                      <p *ngIf="billedBy.email">Email/Web: {{ billedBy.email }}</p>
-                    </div>
-                  </div>
-
-                  <!-- Metadata Box and Parties -->
-                  <div class="thcomms-meta-parties">
-                    <div class="parties-left">
-                      <h3 class="section-title">BILL TO</h3>
-                      <strong>{{ selectedCustomer?.name || 'Customer' }}</strong>
-                      <p *ngIf="selectedCustomer?.address">{{ selectedCustomer?.address }}</p>
-                      <p *ngIf="selectedCustomer?.email">{{ selectedCustomer?.email }}</p>
-                    </div>
-                    <div class="meta-right">
-                      <table class="meta-table">
-                        <tr>
-                          <td><strong>Quotation Number:</strong></td>
-                          <td>{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</td>
-                        </tr>
-                        <tr>
-                          <td><strong>Quotation Date:</strong></td>
-                          <td>{{ quoteForm.get('quoteDate')?.value || today }}</td>
-                        </tr>
-                        <tr>
-                          <td><strong>Valid Until:</strong></td>
-                          <td>{{ quoteForm.get('validUntil')?.value || today }}</td>
-                        </tr>
-                        <tr class="amount-due-row">
-                          <td><strong>Total Amount ({{ quoteForm.get('currency')?.value || 'NGN' }}):</strong></td>
-                          <td><strong>{{ formatCurrency(grandTotal) }}</strong></td>
-                        </tr>
-                      </table>
-                    </div>
-                  </div>
-
-                  <!-- Items Table -->
-                  <div class="thcomms-table-wrapper">
-                    <table class="thcomms-table">
-                      <thead>
-                        <tr>
-                          <th style="text-align: left;">Items</th>
-                          <th style="width: 10%; text-align: center;">Quantity</th>
-                          <th style="width: 20%; text-align: right;">Price</th>
-                          <th style="width: 20%; text-align: right;">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let item of items.controls">
-                          <td>
-                            <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
-                            <p class="item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</p>
-                          </td>
-                          <td style="text-align: center;">{{ item.get('quantity')?.value }}</td>
-                          <td style="text-align: right;">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
-                          <td style="text-align: right;">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
-                        </tr>
-                        <tr *ngIf="items.length === 0">
-                          <td colspan="4" class="empty-row">No line items added.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <!-- Totals Block -->
-                  <div class="thcomms-totals-wrapper">
-                    <div class="totals-col">
-                      <!-- Empty for alignment -->
-                    </div>
-                    <div class="totals-col">
-                      <table class="thcomms-totals-table">
-                        <tr>
-                          <td>Subtotal:</td>
-                          <td>{{ formatCurrency(subtotal) }}</td>
-                        </tr>
-                        <tr *ngIf="discountAmount > 0">
-                          <td>Discount:</td>
-                          <td>-{{ formatCurrency(discountAmount) }}</td>
-                        </tr>
-                        <tr *ngIf="additionalCharges > 0">
-                          <td>Additional Charges:</td>
-                          <td>+{{ formatCurrency(additionalCharges) }}</td>
-                        </tr>
-                        <tr *ngIf="totalTax > 0">
-                          <td>VAT 7.5% (20588779-0001):</td>
-                          <td>{{ formatCurrency(totalTax) }}</td>
-                        </tr>
-                        <tr class="total-row">
-                          <td>Total:</td>
-                          <td>{{ formatCurrency(grandTotal) }}</td>
-                        </tr>
-                        <tr class="amount-due-row">
-                          <td>Total Amount ({{ quoteForm.get('currency')?.value || 'NGN' }}):</td>
-                          <td>{{ formatCurrency(grandTotal) }}</td>
-                        </tr>
-                      </table>
-                    </div>
-                  </div>
-
-                  <!-- Bottom Notes and Bank Info -->
-                  <div class="thcomms-bottom">
-                    <div class="notes-item">
-                      <h4 class="section-title">Notes / Terms</h4>
-                      <p *ngIf="quoteForm.get('notes')?.value">{{ quoteForm.get('notes')?.value }}</p>
-                      <p *ngIf="!quoteForm.get('notes')?.value">1] All prices net of VAT, WHT and other applicable taxes</p>
-                    </div>
-
-                    <div class="payment-details-box" *ngIf="billedBy.bankName || billedBy.accountName || billedBy.accountNumber">
-                      <h4 class="section-title">Payment Details:</h4>
-                      <strong *ngIf="billedBy.accountName">{{ billedBy.accountName }}</strong>
-                      <p *ngIf="billedBy.accountNumber">Account Number: {{ billedBy.accountNumber }}</p>
-                      <p *ngIf="billedBy.bankName">Bank Name: {{ billedBy.bankName }}</p>
-                      <p *ngIf="billedBy.routingNumber">Sort Code / Routing Number: {{ billedBy.routingNumber }}</p>
-                    </div>
-                  </div>
-
-                  <div class="thcomms-footer">
-                    <p class="appreciate-msg">We appreciate your business with us.</p>
-                  </div>
-                </div>
-              </ng-container>
-
-              <!-- STANDARD PROFESSIONAL -->
-              <ng-container *ngIf="selectedTemplate?.id === 'standard' || !selectedTemplate">
-                <div class="qstd-header">
-                  <div class="qstd-logo" *ngIf="selectedTemplate?.sections?.showCompanyLogo !== false">
-                    <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo">
-                    <i class="fas fa-building" *ngIf="!logoUrl"></i>
-                  </div>
-                  <div class="qstd-org">
-                    <div class="qstd-org-name">{{ billedBy.name || 'Your Company' }}</div>
-                    <div class="qstd-org-sub">Quotation Document</div>
-                  </div>
-                </div>
-                <div class="qstd-rule"></div>
-                <div class="qstd-meta">
-                  <div class="qstd-meta-cell">
-                    <span class="lbl">Quote No.</span>
-                    <span class="val">{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span>
-                  </div>
-                  <div class="qstd-meta-cell">
-                    <span class="lbl">Date</span>
-                    <span class="val">{{ quoteForm.get('quoteDate')?.value || today }}</span>
-                  </div>
-                  <div class="qstd-meta-cell accent">
-                    <span class="lbl">Total</span>
-                    <span class="val">{{ formatCurrency(grandTotal) }}</span>
-                  </div>
-                </div>
-                <div class="qstd-parties">
-                  <div class="qstd-party" *ngIf="selectedTemplate?.sections?.showVendorInfo !== false">
-                    <span class="qstd-party-lbl">Quotation From</span>
-                    <strong>{{ billedBy.name }}</strong>
-                    <p>{{ billedBy.address }}</p>
-                  </div>
-                  <div class="qstd-party">
-                    <span class="qstd-party-lbl">Quotation For</span>
-                    <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
-                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.address">{{ selectedCustomer?.address }}</p>
-                  </div>
-                </div>
-                <table class="qstd-table">
-                  <thead>
-                    <tr>
-                      <th class="sn">S/N</th>
-                      <th>Description</th>
-                      <th *ngIf="selectedTemplate?.sections?.showSKU !== false">SKU</th>
-                      <th class="num">Qty</th>
-                      <th class="num">Rate</th>
-                      <th class="num">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let item of items.controls; let i = index">
-                      <td class="sn">{{ i + 1 }}</td>
-                      <td>
-                        <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
-                        <div class="qstd-item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</div>
-                      </td>
-                      <td *ngIf="selectedTemplate?.sections?.showSKU !== false">{{ getProductSku(item.get('productId')?.value) }}</td>
-                      <td class="num">{{ item.get('quantity')?.value }}</td>
-                      <td class="num">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
-                      <td class="num">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
-                    </tr>
-                    <tr *ngIf="items.length === 0">
-                      <td [attr.colspan]="selectedTemplate?.sections?.showSKU !== false ? 6 : 5" class="qstd-empty">No line items added.</td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div class="qstd-summary">
-                  <div class="qstd-notes" *ngIf="(quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false) || (quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false) || selectedTemplate?.sections?.showTotalInWords !== false">
-                    <div *ngIf="quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false">
-                      <span class="qstd-sub-lbl">Notes</span>
-                      <p>{{ quoteForm.get('notes')?.value }}</p>
-                    </div>
-                    <div *ngIf="quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false">
-                      <span class="qstd-sub-lbl">Terms &amp; Conditions</span>
-                      <p>{{ quoteForm.get('terms')?.value }}</p>
-                    </div>
-                    <div *ngIf="selectedTemplate?.sections?.showTotalInWords !== false">
-                      <span class="qstd-sub-lbl">Total in Words</span>
-                      <p class="qstd-words">{{ getTotalInWords(grandTotal) }}</p>
-                    </div>
-                  </div>
-                  <div class="qstd-totals">
-                    <div class="qstd-total-row"><span>Subtotal</span><span>{{ formatCurrency(subtotal) }}</span></div>
-                    <div class="qstd-total-row" *ngIf="discountAmount > 0"><span>Discount</span><span>-{{ formatCurrency(discountAmount) }}</span></div>
-                    <div class="qstd-total-row" *ngIf="additionalCharges > 0"><span>Additional Charges</span><span>+{{ formatCurrency(additionalCharges) }}</span></div>
-                    <div class="qstd-total-row" *ngIf="totalTax > 0 && selectedTemplate?.sections?.showTaxBreakdown !== false"><span>Tax</span><span>{{ formatCurrency(totalTax) }}</span></div>
-                    <div class="qstd-total-bar"><span>Total</span><span class="amt">{{ formatCurrency(grandTotal) }}</span></div>
-                  </div>
-                </div>
-                <div class="qstd-signature" *ngIf="showSignature && selectedTemplate?.sections?.showSignature !== false">
-                  <div class="signature-line"></div>
-                  <p class="signature-title">Authorized Signature</p>
-                  <p class="signature-name" *ngIf="signatureText">{{ signatureText }}</p>
-                </div>
-              </ng-container>
-
-              <!-- MINIMAL CLEAN -->
-              <ng-container *ngIf="selectedTemplate?.id === 'minimal'">
-                <div class="qmin-head">Quotation</div>
-                <div class="qmin-thin-rule"></div>
-                <div class="qmin-field"><span class="lbl">To:</span><span class="val">{{ selectedCustomer?.name || 'Client Name' }}</span></div>
-                <div class="qmin-field"><span class="lbl">Quote #:</span><span class="val">{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span></div>
-                <div class="qmin-field"><span class="lbl">Date:</span><span class="val">{{ quoteForm.get('quoteDate')?.value || today }}</span></div>
-                <div class="qmin-field"><span class="lbl">Valid Until:</span><span class="val">{{ quoteForm.get('validUntil')?.value }}</span></div>
-                <div class="qmin-thin-rule"></div>
-                <table class="qmin-table">
-                  <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Total</th></tr></thead>
-                  <tbody>
-                    <tr *ngFor="let item of items.controls">
-                      <td>{{ item.get('productName')?.value || 'Unnamed Product' }}</td>
-                      <td class="num">{{ item.get('quantity')?.value }}</td>
-                      <td class="num">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
-                      <td class="num">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
-                    </tr>
-                    <tr *ngIf="items.length === 0"><td colspan="4" class="qmin-empty">No line items added.</td></tr>
-                  </tbody>
-                </table>
-                <div class="qmin-thin-rule"></div>
-                <div class="qmin-total-row"><span>Total</span><span>{{ formatCurrency(grandTotal) }}</span></div>
-                <p class="qmin-footnote" *ngIf="quoteForm.get('terms')?.value">{{ quoteForm.get('terms')?.value }}</p>
-                <p class="qmin-footnote" *ngIf="!quoteForm.get('terms')?.value">Thank you for your business.</p>
-              </ng-container>
-
-              <!-- DETAILED COMPREHENSIVE -->
-              <ng-container *ngIf="selectedTemplate?.id === 'detailed'">
-                <div class="qdet-header">
-                  <div class="qdet-logo" *ngIf="selectedTemplate?.sections?.showCompanyLogo !== false">
-                    <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo">
-                    <i class="fas fa-building" *ngIf="!logoUrl"></i>
-                  </div>
-                  <div class="qdet-org">
-                    <div class="qdet-org-name">{{ billedBy.name || 'Your Company' }}</div>
-                    <div class="qdet-org-sub">Detailed Quotation</div>
-                  </div>
-                </div>
-                <div class="qdet-rule"></div>
-                <div class="qdet-meta">
-                  <div class="qdet-meta-cell"><span class="lbl">Quote No.</span><span class="val">{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span></div>
-                  <div class="qdet-meta-cell"><span class="lbl">Date</span><span class="val">{{ quoteForm.get('quoteDate')?.value || today }}</span></div>
-                  <div class="qdet-meta-cell"><span class="lbl">Valid Until</span><span class="val">{{ quoteForm.get('validUntil')?.value }}</span></div>
-                  <div class="qdet-meta-cell accent"><span class="lbl">Total</span><span class="val">{{ formatCurrency(grandTotal) }}</span></div>
-                </div>
-                <div class="qdet-two-col">
-                  <div class="qdet-col-box" *ngIf="selectedTemplate?.sections?.showVendorInfo !== false">
-                    <span class="qdet-col-lbl">Quotation From</span>
-                    <strong>{{ billedBy.name }}</strong>
-                    <p>{{ billedBy.address }}</p>
-                    <p *ngIf="billedBy.email">{{ billedBy.email }}</p>
-                  </div>
-                  <div class="qdet-col-box">
-                    <span class="qdet-col-lbl">Quotation For</span>
-                    <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
-                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.address">{{ selectedCustomer?.address }}</p>
-                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.email">{{ selectedCustomer?.email }}</p>
-                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.phone">{{ selectedCustomer?.phone }}</p>
-                  </div>
-                </div>
-                <table class="qdet-table">
-                  <thead>
-                    <tr>
-                      <th class="sn">S/N</th>
-                      <th>Description</th>
-                      <th *ngIf="selectedTemplate?.sections?.showSKU !== false">SKU</th>
-                      <th class="num">Qty</th>
-                      <th class="num">Rate</th>
-                      <th class="num" *ngIf="selectedTemplate?.sections?.showTaxBreakdown !== false">Tax</th>
-                      <th class="num">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let item of items.controls; let i = index">
-                      <td class="sn">{{ i + 1 }}</td>
-                      <td>
-                        <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
-                        <div class="qdet-item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</div>
-                      </td>
-                      <td *ngIf="selectedTemplate?.sections?.showSKU !== false">{{ getProductSku(item.get('productId')?.value) }}</td>
-                      <td class="num">{{ item.get('quantity')?.value }}</td>
-                      <td class="num">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
-                      <td class="num" *ngIf="selectedTemplate?.sections?.showTaxBreakdown !== false">{{ formatCurrency(item.get('taxAmount')?.value || 0) }}</td>
-                      <td class="num">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
-                    </tr>
-                    <tr *ngIf="items.length === 0"><td colspan="7" class="qdet-empty">No line items added.</td></tr>
-                  </tbody>
-                </table>
-                <div class="qdet-summary">
-                  <div class="qdet-notes">
-                    <div class="qdet-qual" *ngIf="quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false">
-                      <span class="qdet-qual-lbl">Terms &amp; Conditions</span>
-                      <p>{{ quoteForm.get('terms')?.value }}</p>
-                    </div>
-                    <div class="qdet-qual" *ngIf="quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false">
-                      <span class="qdet-qual-lbl">Notes</span>
-                      <p>{{ quoteForm.get('notes')?.value }}</p>
-                    </div>
-                    <div class="qdet-words" *ngIf="selectedTemplate?.sections?.showTotalInWords !== false">
-                      <span class="qdet-qual-lbl">Total in Words</span>
-                      <p>{{ getTotalInWords(grandTotal) }}</p>
-                    </div>
-                  </div>
-                  <div class="qdet-totals">
-                    <div class="qdet-total-row"><span>Subtotal</span><span>{{ formatCurrency(subtotal) }}</span></div>
-                    <div class="qdet-total-row" *ngIf="discountAmount > 0"><span>Discount</span><span>-{{ formatCurrency(discountAmount) }}</span></div>
-                    <div class="qdet-total-row" *ngIf="additionalCharges > 0"><span>Additional Charges</span><span>+{{ formatCurrency(additionalCharges) }}</span></div>
-                    <div class="qdet-total-row" *ngIf="totalTax > 0 && selectedTemplate?.sections?.showTaxBreakdown !== false"><span>Tax</span><span>{{ formatCurrency(totalTax) }}</span></div>
-                    <div class="qdet-total-bar"><span>Grand Total</span><span class="amt">{{ formatCurrency(grandTotal) }}</span></div>
-                  </div>
-                </div>
-                <div class="qdet-signature" *ngIf="showSignature && selectedTemplate?.sections?.showSignature !== false">
-                  <div class="signature-line"></div>
-                  <p class="signature-title">Authorized Signature</p>
-                  <p class="signature-name" *ngIf="signatureText">{{ signatureText }}</p>
-                </div>
-              </ng-container>
-
-              <!-- COMPACT ECONOMY -->
-              <ng-container *ngIf="selectedTemplate?.id === 'compact'">
-                <div class="qcpt-header">
-                  <span class="qcpt-org">{{ billedBy.name || 'Your Company' }}</span>
-                  <span class="qcpt-sep">·</span>
-                  <span>Quote {{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span>
-                  <span class="qcpt-sep">·</span>
-                  <span>{{ quoteForm.get('quoteDate')?.value || today }}</span>
-                </div>
-                <div class="qcpt-rule"></div>
-                <div class="qcpt-party" *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false">
-                  <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
-                  <span *ngIf="selectedCustomer?.address"> — {{ selectedCustomer?.address }}</span>
-                </div>
-                <table class="qcpt-table">
-                  <thead>
-                    <tr>
-                      <th>Item</th>
-                      <th *ngIf="selectedTemplate?.sections?.showSKU !== false">SKU</th>
-                      <th class="num">Qty</th>
-                      <th class="num">Rate</th>
-                      <th class="num">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let item of items.controls">
-                      <td>{{ item.get('productName')?.value || 'Unnamed Product' }}</td>
-                      <td *ngIf="selectedTemplate?.sections?.showSKU !== false">{{ getProductSku(item.get('productId')?.value) }}</td>
-                      <td class="num">{{ item.get('quantity')?.value }}</td>
-                      <td class="num">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
-                      <td class="num">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
-                    </tr>
-                    <tr *ngIf="items.length === 0"><td colspan="5" class="qcpt-empty">No line items added.</td></tr>
-                  </tbody>
-                </table>
-                <div class="qcpt-totals">
-                  <div class="qcpt-total-row"><span>Subtotal</span><span>{{ formatCurrency(subtotal) }}</span></div>
-                  <div class="qcpt-total-row" *ngIf="totalTax > 0 && selectedTemplate?.sections?.showTaxBreakdown !== false"><span>Tax</span><span>{{ formatCurrency(totalTax) }}</span></div>
-                  <div class="qcpt-total-row bold"><span>Total</span><span>{{ formatCurrency(grandTotal) }}</span></div>
-                </div>
-                <p class="qcpt-terms" *ngIf="quoteForm.get('terms')?.value && selectedTemplate?.sections?.showPaymentTerms !== false">{{ quoteForm.get('terms')?.value }}</p>
-              </ng-container>
-
-              <!-- CLIENT-FACING PREMIUM -->
-              <ng-container *ngIf="selectedTemplate?.id === 'custom-client'">
-                <div class="qprem-top">
-                  <div class="qprem-word">Quotation</div>
-                  <div class="qprem-brand">
-                    <img [src]="logoUrl" *ngIf="logoUrl && selectedTemplate?.sections?.showCompanyLogo !== false" alt="Company Logo">
-                    <strong>{{ billedBy.name || 'Your Company' }}</strong>
-                  </div>
-                </div>
-                <div class="qprem-rule"></div>
-                <div class="qprem-meta">
-                  <div class="qprem-meta-cell"><span class="lbl">Quote No.</span><span class="val">{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span></div>
-                  <div class="qprem-meta-cell"><span class="lbl">Date</span><span class="val">{{ quoteForm.get('quoteDate')?.value || today }}</span></div>
-                  <div class="qprem-meta-cell accent"><span class="lbl">Total</span><span class="val">{{ formatCurrency(grandTotal) }}</span></div>
-                </div>
-                <div class="qprem-customer-card">
-                  <span class="qprem-customer-lbl">Prepared For</span>
-                  <strong>{{ selectedCustomer?.name || 'Client Name' }}</strong>
-                  <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.address">{{ selectedCustomer?.address }}</p>
-                  <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && selectedCustomer?.email">{{ selectedCustomer?.email }} <span *ngIf="selectedCustomer?.phone">· {{ selectedCustomer?.phone }}</span></p>
-                </div>
-                <table class="qprem-table">
-                  <thead>
-                    <tr>
-                      <th class="sn">S/N</th>
-                      <th>Description</th>
-                      <th *ngIf="selectedTemplate?.sections?.showSKU !== false">SKU</th>
-                      <th class="num">Qty</th>
-                      <th class="num">Rate</th>
-                      <th class="num">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let item of items.controls; let i = index">
-                      <td class="sn">{{ i + 1 }}</td>
-                      <td>
-                        <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
-                        <div class="qprem-item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</div>
-                      </td>
-                      <td *ngIf="selectedTemplate?.sections?.showSKU !== false">{{ getProductSku(item.get('productId')?.value) }}</td>
-                      <td class="num">{{ item.get('quantity')?.value }}</td>
-                      <td class="num">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
-                      <td class="num">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
-                    </tr>
-                    <tr *ngIf="items.length === 0"><td colspan="6" class="qprem-empty">No line items added.</td></tr>
-                  </tbody>
-                </table>
-                <div class="qprem-summary">
-                  <div class="qprem-notes" *ngIf="(quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false) || (quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false)">
-                    <div *ngIf="quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false">
-                      <span class="qprem-sub-lbl">Notes</span>
-                      <p>{{ quoteForm.get('notes')?.value }}</p>
-                    </div>
-                    <div *ngIf="quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false">
-                      <span class="qprem-sub-lbl">Terms &amp; Conditions</span>
-                      <p>{{ quoteForm.get('terms')?.value }}</p>
-                    </div>
-                  </div>
-                  <div class="qprem-totals">
-                    <div class="qprem-total-row"><span>Subtotal</span><span>{{ formatCurrency(subtotal) }}</span></div>
-                    <div class="qprem-total-row" *ngIf="discountAmount > 0"><span>Discount</span><span>-{{ formatCurrency(discountAmount) }}</span></div>
-                    <div class="qprem-total-row" *ngIf="totalTax > 0 && selectedTemplate?.sections?.showTaxBreakdown !== false"><span>Tax</span><span>{{ formatCurrency(totalTax) }}</span></div>
-                    <div class="qprem-total-bar"><span>Total</span><span class="amt">{{ formatCurrency(grandTotal) }}</span></div>
-                  </div>
-                </div>
-                <div class="qprem-words" *ngIf="selectedTemplate?.sections?.showTotalInWords !== false">
-                  <span class="qprem-words-lbl">Amount in Words</span>
-                  <p>{{ getTotalInWords(grandTotal) }}</p>
-                </div>
-                <div class="qprem-signature" *ngIf="showSignature && selectedTemplate?.sections?.showSignature !== false">
-                  <div class="signature-line"></div>
-                  <p class="signature-title">Authorized Signature</p>
-                  <p class="signature-name" *ngIf="signatureText">{{ signatureText }}</p>
-                </div>
-              </ng-container>
-            </div>
-          </div>
-
-          <!-- Right Column: Delivery Choices -->
-          <div class="delivery-options-column">
-            <div class="delivery-card glass">
-              <div class="delivery-card-header">
-                <div class="delivery-icon-bg">
-                  <i class="fas fa-paper-plane"></i>
-                </div>
-                <h3>Delivery Options</h3>
-              </div>
-              
-              <p class="delivery-card-desc">Choose how you want to receive and share this quotation with your client.</p>
-
-              <div class="delivery-choices-list">
-                <div class="delivery-choice-item" [class.active]="selectedAction === 'pdf'" (click)="selectedAction = 'pdf'">
-                  <div class="choice-icon"><i class="fas fa-file-pdf"></i></div>
-                  <div class="choice-details">
-                    <h4>Download PDF</h4>
-                    <p>Save quote document as a PDF to your device</p>
-                  </div>
-                  <div class="choice-check">
-                    <i class="fas" [class.fa-check-circle]="selectedAction === 'pdf'" [class.fa-circle]="selectedAction !== 'pdf'"></i>
-                  </div>
-                </div>
-
-                <div class="delivery-choice-item" [class.active]="selectedAction === 'email'" (click)="selectedAction = 'email'">
-                  <div class="choice-icon"><i class="fas fa-envelope"></i></div>
-                  <div class="choice-details">
-                    <h4>Send via Email</h4>
-                    <p>Send an email directly to the client with the quote</p>
-                  </div>
-                  <div class="choice-check">
-                    <i class="fas" [class.fa-check-circle]="selectedAction === 'email'" [class.fa-circle]="selectedAction !== 'email'"></i>
-                  </div>
-                </div>
-
-                <div class="delivery-choice-item" [class.active]="selectedAction === 'both'" (click)="selectedAction = 'both'">
-                  <div class="choice-icon"><i class="fas fa-share-alt"></i></div>
-                  <div class="choice-details">
-                    <h4>Both (PDF + Email)</h4>
-                    <p>Download the PDF copy and send the email</p>
-                  </div>
-                  <div class="choice-check">
-                    <i class="fas" [class.fa-check-circle]="selectedAction === 'both'" [class.fa-circle]="selectedAction !== 'both'"></i>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Main Submission Buttons -->
-              <div class="delivery-submit-actions">
-                <button type="button" class="btn-delivery-submit" [disabled]="isSubmitting" (click)="onSubmit()">
-                  <i *ngIf="!isSubmitting" class="fas fa-paper-plane"></i>
-                  <div *ngIf="isSubmitting" class="spinner-mini"></div>
-                  <span>{{ isSubmitting ? 'Processing...' : 'Generate & Deliver Quote' }}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 3 Footer Actions -->
-        <div class="wizard-actions-footer">
-          <button type="button" class="btn-cancel" (click)="prevStep()">
-            <i class="fas fa-arrow-left"></i> Back to Templates
-          </button>
-          <button type="button" class="btn-continue" (click)="onSubmit()" [disabled]="isSubmitting">
-            <i class="fas fa-check"></i> Save & Deliver Quote
-          </button>
-        </div>
-      </div>
-    </form>
-  </div>
-
-  <!-- New Customer Modal -->
-  <div class="modal-overlay" *ngIf="showNewCustomerModal" (click)="closeNewCustomerModal()">
-    <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3><i class="fas fa-user-plus"></i> Add New Client</h3>
-        <button class="modal-close" (click)="closeNewCustomerModal()">×</button>
-      </div>
-      <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 1.5rem; color: #334155;">
-        <form [formGroup]="quickCustomerForm" (ngSubmit)="onQuickCustomerSubmit()">
-          <!-- Personal Information Section -->
-          <h4 style="color: #BA9953; margin: 0 0 1rem 0; font-size: 0.95rem; font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.25rem;">CLIENT INFORMATION</h4>
-          
-          <div class="form-group">
-            <label class="form-label required">Full Name</label>
-            <input type="text" formControlName="name" class="form-control" [class.is-invalid]="isQuickFieldInvalid('name')" placeholder="e.g. Emirates Airlines">
-            <div class="form-error" *ngIf="isQuickFieldInvalid('name')">Name is required (min 2 chars)</div>
-          </div>
-
-          <div class="form-row" style="margin-top: 0.75rem;">
-            <div class="form-group flex-1">
-              <label class="form-label required">Email Address</label>
-              <input type="email" formControlName="email" class="form-control" [class.is-invalid]="isQuickFieldInvalid('email')" placeholder="client@example.com">
-              <div class="form-error" *ngIf="isQuickFieldInvalid('email')">Valid email is required</div>
-            </div>
-            <div class="form-group flex-1">
-              <label class="form-label">Phone Number</label>
-              <input type="tel" formControlName="phone" class="form-control" [class.is-invalid]="isQuickFieldInvalid('phone')" placeholder="e.g. +234 800 000 0000 (Optional)">
-              <div class="form-error" *ngIf="isQuickFieldInvalid('phone')">Please enter a valid phone number</div>
-            </div>
-          </div>
-
-          <div class="form-group" style="margin-top: 0.75rem;">
-            <label class="form-label required">Street Address</label>
-            <input type="text" formControlName="address" class="form-control" [class.is-invalid]="isQuickFieldInvalid('address')" placeholder="Enter client's address">
-            <div class="form-error" *ngIf="isQuickFieldInvalid('address')">Address is required (min 5 chars)</div>
-          </div>
-
-          <div class="form-row" style="margin-top: 0.75rem;">
-            <div class="form-group flex-1">
-              <label class="form-label">Tax ID / VAT Number</label>
-              <input type="text" formControlName="taxId" class="form-control" placeholder="e.g. TAX-009 (Optional)">
-            </div>
-            <div class="form-group flex-1" style="display: flex; align-items: center; padding-top: 1.5rem;">
-              <label class="checkbox-container" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #475569;">
-                <input type="checkbox" formControlName="savePermanently" style="width: 16px; height: 16px; cursor: pointer;">
-                Save permanently to customer database
-              </label>
-            </div>
-          </div>
-
-          <!-- Bank Accounts Section -->
-          <div style="margin-top: 1.5rem; border-top: 1px solid #cbd5e1; padding-top: 1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-              <h4 style="color: #BA9953; margin: 0; font-size: 0.95rem; font-weight: 700;">BANK ACCOUNTS</h4>
-              <button type="button" class="btn-add-item" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: #1a2d4a; color: white;" (click)="addQuickCustomerBankAccount()">
-                <i class="fas fa-plus"></i> Add Bank Account
-              </button>
-            </div>
-
-            <div formArrayName="bankAccounts" class="bank-accounts-list">
-              <div *ngFor="let account of quickCustomerBankAccounts.controls; let idx = index" [formGroupName]="idx" class="bank-account-item-wrapper" style="border: 1px dashed #cbd5e1; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem; position: relative;">
-                <button type="button" class="btn-remove-item" style="position: absolute; top: 0.4rem; right: 0.4rem; background: transparent; border: none; color: #ff3b30; cursor: pointer; font-size: 0.8rem;" (click)="removeQuickCustomerBankAccount(idx)">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-                <h5 style="margin: 0 0 0.5rem 0; color: #1a2d4a; font-size: 0.8rem; font-weight: 700;">Account #{{ idx + 1 }}</h5>
-                <div class="form-row">
-                  <div class="form-group flex-1">
-                    <label class="form-label required">Bank Name</label>
-                    <input type="text" formControlName="bankName" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.85rem;" placeholder="e.g. Stanbic IBTC">
-                  </div>
-                  <div class="form-group flex-1">
-                    <label class="form-label required">Account Name</label>
-                    <input type="text" formControlName="accountName" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.85rem;" placeholder="e.g. Corporate Account">
-                  </div>
-                </div>
-                <div class="form-row" style="margin-top: 0.5rem;">
-                  <div class="form-group flex-1">
-                    <label class="form-label required">Account Number</label>
-                    <input type="text" formControlName="accountNumber" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.85rem;" placeholder="e.g. 0013604661">
-                  </div>
-                  <div class="form-group flex-1">
-                    <label class="form-label">Sort Code / Routing No</label>
-                    <input type="text" formControlName="routingNumber" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.85rem;" placeholder="Optional">
-                  </div>
-                </div>
-              </div>
-              <div *ngIf="quickCustomerBankAccounts.length === 0" style="text-align: center; color: #64748b; font-size: 0.8rem; font-style: italic; padding: 0.75rem 0;">
-                No bank accounts added for this customer yet.
-              </div>
-            </div>
-          </div>
-
-          <!-- Form Actions -->
-          <div style="display: flex; gap: 1rem; margin-top: 1.5rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
-            <button type="button" class="btn-secondary" style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: white; cursor: pointer; font-weight: 600;" (click)="closeNewCustomerModal()">
-              Cancel
-            </button>
-            <button type="submit" class="btn-primary" style="flex: 1; padding: 0.75rem; border-radius: 8px; border: none; background: #2EB270; color: white; cursor: pointer; font-weight: 600;">
-              Save Client &amp; Proceed
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Product Search Modal -->
-  <div class="modal-overlay" *ngIf="showProductModal" (click)="showProductModal = false">
-    <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3><i class="fas fa-search"></i> Select Product</h3>
-        <button class="modal-close" (click)="showProductModal = false">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="search-box">
-          <i class="fas fa-search"></i>
-          <input type="text" [(ngModel)]="searchProductTerm" (input)="filterProducts()" placeholder="Search products...">
-        </div>
-        <div class="product-list">
-          <div *ngFor="let product of filteredProducts" class="product-item" (click)="selectProductFromModal(product, currentItemIndex)">
-            <div class="product-name">{{ product.name }}</div>
-            <div class="product-sku">{{ product.sku }}</div>
-            <div class="product-price">{{ formatCurrency(product.unitPrice) }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Custom Discount Modal Overlay -->
-  <div class="custom-modal-backdrop" *ngIf="showDiscountModal" (click)="$event.target === $event.currentTarget && (showDiscountModal = false)">
-    <div class="custom-modal-card" (click)="$event.stopPropagation()">
-      <div class="custom-modal-header">
-        <div class="header-title-group">
-          <div class="icon-badge">
-            <i class="fas fa-percent"></i>
-          </div>
-          <h3>Apply Discount</h3>
-        </div>
-        <button type="button" class="btn-close-modal" (click)="showDiscountModal = false">&times;</button>
-      </div>
-      
-      <div class="custom-modal-body">
-        <div class="field-group">
-          <label>Discount Type</label>
-          <div class="segmented-control">
-            <button type="button" class="segment-btn" [class.active]="modalDiscountType === 'FIXED'" (click)="modalDiscountType = 'FIXED'">
-              <i class="fas fa-tag"></i> Fixed Amount
-            </button>
-            <button type="button" class="segment-btn" [class.active]="modalDiscountType === 'PERCENTAGE'" (click)="modalDiscountType = 'PERCENTAGE'">
-              <i class="fas fa-percent"></i> Percentage
+          <div class="qf-add-item-row">
+            <button type="button" class="qf-btn qf-btn--dashed" (click)="addLineItem()">
+              <i class="fas fa-plus"></i> Add Line Item
             </button>
           </div>
         </div>
+      </div>
 
-        <div class="field-group">
-          <label>{{ modalDiscountType === 'PERCENTAGE' ? 'Discount Percentage (%)' : 'Discount Amount' }}</label>
-          <div class="input-with-addon">
-            <span class="addon-tag">{{ modalDiscountType === 'PERCENTAGE' ? '%' : '₦' }}</span>
-            <input type="number" [(ngModel)]="modalDiscountAmount" min="0" [max]="modalDiscountType === 'PERCENTAGE' ? 100 : null" placeholder="0.00" />
-          </div>
+      <!-- Pricing card -->
+      <div class="qf-card">
+        <div class="qf-card-head"><i class="fas fa-calculator"></i><span>Pricing Summary</span>
+          <button type="button" class="qf-card-action" (click)="addAdditionalCharges()">
+            <i class="fas fa-plus"></i> Add Charge
+          </button>
         </div>
-      </div>
-
-      <div class="custom-modal-footer">
-        <button type="button" class="btn-modal-cancel" (click)="showDiscountModal = false">Cancel</button>
-        <button type="button" class="btn-modal-save" (click)="saveDiscountModal()">Apply Discount</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Custom Additional Charges Modal Overlay -->
-  <div class="custom-modal-backdrop" *ngIf="showChargesModal" (click)="$event.target === $event.currentTarget && (showChargesModal = false)">
-    <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 500px;">
-      <div class="custom-modal-header">
-        <div class="header-title-group">
-          <div class="icon-badge">
-            <i class="fas fa-plus-circle"></i>
-          </div>
-          <h3>Additional Charges</h3>
-        </div>
-        <button type="button" class="btn-close-modal" (click)="showChargesModal = false">&times;</button>
-      </div>
-
-      <div class="custom-modal-body">
-        <!-- New Charge Form Row -->
-        <div class="field-group">
-          <label>Add New Charge Item</label>
-          <div style="display: flex; gap: 0.5rem;">
-            <input type="text" [(ngModel)]="newChargeLabel" placeholder="Description (e.g. Shipping, Handling)" style="flex: 2; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" (keyup.enter)="addChargeItemToModal()" />
-            <div class="input-with-addon" style="flex: 1.2;">
-              <span class="addon-tag" style="left: 0.65rem;">₦</span>
-              <input type="number" [(ngModel)]="newChargeAmount" min="0" placeholder="0.00" style="padding-left: 1.8rem;" (keyup.enter)="addChargeItemToModal()" />
+        <div class="qf-card-body">
+          <div class="qf-pricing-rows">
+            <div class="qf-pricing-row">
+              <span class="qf-pricing-label">Subtotal</span>
+              <span class="qf-pricing-value">{{ formatCurrency(subtotal) }}</span>
             </div>
-            <button type="button" (click)="addChargeItemToModal()" style="padding: 0.65rem 1rem; border: none; border-radius: 10px; background: #2EB270; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap;">
-              <i class="fas fa-plus"></i> Add
-            </button>
-          </div>
-        </div>
-
-        <!-- List of Added Charges -->
-        <div class="field-group" style="margin-top: 0.5rem;">
-          <label>Charge Breakdown ({{ modalChargesList.length }})</label>
-          <div *ngIf="modalChargesList.length === 0" style="padding: 1.5rem; text-align: center; color: #94a3b8; border: 1.5px dashed #e2e8f0; border-radius: 12px; font-size: 0.875rem;">
-            No additional charges added yet. Enter a description and amount above to add one.
-          </div>
-          <div *ngIf="modalChargesList.length > 0" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto;">
-            <div *ngFor="let charge of modalChargesList; let i = index" style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0.85rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
-              <span style="font-weight: 600; color: #0f172a; font-size: 0.9rem;">{{ charge.label }}</span>
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <span style="font-weight: 700; color: #2EB270; font-size: 0.9rem;">+{{ formatCurrency(charge.amount) }}</span>
-                <button type="button" (click)="removeChargeItemFromModal(i)" style="border: none; background: transparent; color: #ef4444; cursor: pointer; font-size: 0.9rem; padding: 0.2rem 0.4rem; border-radius: 6px;" title="Remove charge">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
+            <div class="qf-pricing-row qf-pricing-row--discount">
+              <span class="qf-pricing-label">Discount</span>
+              <div class="qf-discount-ctrl">
+                <select class="qf-select qf-select--sm" [(ngModel)]="discountType" [ngModelOptions]="{standalone:true}" (ngModelChange)="calculateTotals()">
+                  <option value="PERCENTAGE">%</option>
+                  <option value="FIXED">Fixed</option>
+                </select>
+                <input class="qf-input qf-input--sm" type="number" [(ngModel)]="discountValue" [ngModelOptions]="{standalone:true}" (ngModelChange)="calculateTotals()" min="0" placeholder="0">
+                <span class="qf-pricing-value qf-pricing-value--neg">- {{ formatCurrency(discountAmount) }}</span>
               </div>
             </div>
+            <div class="qf-pricing-row" *ngFor="let charge of additionalChargeItems">
+              <span class="qf-pricing-label">{{ charge.label }}</span>
+              <span class="qf-pricing-value">+ {{ formatCurrency(charge.amount) }}</span>
+            </div>
+            <div class="qf-pricing-row">
+              <span class="qf-pricing-label">Tax</span>
+              <span class="qf-pricing-value">{{ formatCurrency(totalTax) }}</span>
+            </div>
+            <div class="qf-pricing-row qf-pricing-row--total">
+              <span class="qf-pricing-label">Grand Total</span>
+              <span class="qf-pricing-value qf-pricing-value--grand">{{ formatCurrency(grandTotal) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes & Terms -->
+      <div class="qf-card">
+        <div class="qf-card-head"><i class="fas fa-sticky-note"></i><span>Notes & Terms</span></div>
+        <div class="qf-card-body qf-grid-1">
+          <div class="qf-field">
+            <label class="qf-label">Client Notes</label>
+            <textarea class="qf-textarea" rows="3" formControlName="notes" placeholder="Notes visible to the client…"></textarea>
+          </div>
+          <div class="qf-field">
+            <label class="qf-label">Terms & Conditions</label>
+            <textarea class="qf-textarea" rows="3" formControlName="terms" placeholder="Payment terms, delivery conditions…"></textarea>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /qf-form-col -->
+
+    <!-- RIGHT: Live document preview -->
+    <div class="qf-preview-col">
+      <div class="qf-preview-toolbar">
+        <span class="qf-preview-label"><i class="fas fa-eye"></i> Live Preview</span>
+        <label class="qf-logo-btn">
+          <i class="fas fa-image"></i> {{ logoFileName || 'Upload Logo' }}
+          <input type="file" accept="image/*" style="display:none" (change)="onLogoSelected($event)">
+        </label>
+      </div>
+
+      <div class="qf-doc-card" id="quote-preview-document">
+        <!-- Doc header -->
+        <div class="qf-doc-header">
+          <div class="qf-doc-brand">
+            <img *ngIf="logoUrl" [src]="logoUrl" class="qf-doc-logo" alt="logo">
+            <span class="qf-doc-company-name">{{ billedBy.name || billedByDraft.name || 'Your Company' }}</span>
+            <span class="qf-doc-company-sub" *ngIf="billedBy.address || billedByDraft.address">{{ billedBy.address || billedByDraft.address }}</span>
+          </div>
+          <div class="qf-doc-badge-wrap">
+            <div class="qf-doc-badge">QUOTATION</div>
+            <div class="qf-doc-badge-num">#{{ generatedQuoteNumber || quoteId || 'AUTO' }}</div>
           </div>
         </div>
 
-        <!-- Total Charges Summary -->
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: rgba(46, 178, 112, 0.08); border-radius: 10px; border: 1px solid rgba(46, 178, 112, 0.2); margin-top: 0.25rem;">
-          <span style="font-weight: 700; color: #0f172a; font-size: 0.9rem;">Total Additional Charges</span>
-          <span style="font-weight: 800; color: #2EB270; font-size: 1.05rem;">+{{ formatCurrency(modalTotalCharges) }}</span>
+        <!-- Doc meta grid -->
+        <div class="qf-doc-meta">
+          <div><span class="qf-doc-meta-label">Date</span><span>{{ quoteForm.get('quoteDate')?.value | date:'dd MMM yyyy' }}</span></div>
+          <div><span class="qf-doc-meta-label">Valid Until</span><span>{{ quoteForm.get('validUntil')?.value | date:'dd MMM yyyy' }}</span></div>
+          <div><span class="qf-doc-meta-label">Currency</span><span>{{ quoteForm.get('currency')?.value }}</span></div>
         </div>
-      </div>
 
-      <div class="custom-modal-footer">
-        <button type="button" class="btn-modal-cancel" (click)="showChargesModal = false">Cancel</button>
-        <button type="button" class="btn-modal-save" (click)="saveChargesModal()">Save Charges</button>
+        <!-- Prepared For / Prepared By -->
+        <div class="qf-doc-parties">
+          <div class="qf-doc-party">
+            <div class="qf-doc-section-label">PREPARED FOR</div>
+            <div class="qf-doc-billto">
+              <strong>{{ quoteForm.get('customerName')?.value || '—' }}</strong>
+              <span *ngIf="selectedCustomer?.address?.length" class="qf-doc-party-addr">{{ selectedCustomer?.address?.join(', ') }}</span>
+            </div>
+          </div>
+          <div class="qf-doc-party">
+            <div class="qf-doc-section-label">PREPARED BY</div>
+            <div class="qf-doc-billto">
+              <strong>{{ billedBy.name || billedByDraft.name || 'Your Company' }}</strong>
+              <span *ngIf="billedBy.address || billedByDraft.address" class="qf-doc-party-addr">{{ billedBy.address || billedByDraft.address }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items preview table -->
+        <div class="qf-doc-section">
+          <div class="qf-doc-section-label">ITEMS</div>
+          <table class="qf-doc-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th class="qf-doc-th-r">Qty</th>
+                <th class="qf-doc-th-r">Price</th>
+                <th class="qf-doc-th-r">Tax</th>
+                <th class="qf-doc-th-r">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of items.getRawValue(); let i = index">
+                <td>{{ item.productName || ('Item ' + (i + 1)) }}</td>
+                <td class="qf-doc-td-r">{{ item.quantity }}</td>
+                <td class="qf-doc-td-r">{{ formatCurrency(item.unitPrice) }}</td>
+                <td class="qf-doc-td-r">{{ item.taxRate }}%</td>
+                <td class="qf-doc-td-r">{{ formatCurrency(item.total || 0) }}</td>
+              </tr>
+              <tr *ngIf="items.controls.length === 0">
+                <td colspan="5" class="qf-doc-empty">No items added yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Totals -->
+        <div class="qf-doc-totals">
+          <div class="qf-doc-totals-row"><span>Subtotal</span><span>{{ formatCurrency(subtotal) }}</span></div>
+          <div class="qf-doc-totals-row" *ngIf="discountAmount > 0"><span>Discount</span><span>- {{ formatCurrency(discountAmount) }}</span></div>
+          <div class="qf-doc-totals-row" *ngFor="let charge of additionalChargeItems">
+            <span>{{ charge.label }}</span>
+            <span>{{ formatCurrency(charge.amount) }}</span>
+          </div>
+          <div class="qf-doc-totals-row" *ngIf="totalTax > 0"><span>Tax</span><span>{{ formatCurrency(totalTax) }}</span></div>
+          <div class="qf-doc-totals-row qf-doc-totals-grand">
+            <span>TOTAL ({{ quoteForm.get('currency')?.value }})</span>
+            <span>{{ formatCurrency(grandTotal) }}</span>
+          </div>
+        </div>
+
+        <!-- Payment Details (company bank account) -->
+        <div class="qf-doc-section" *ngIf="billedBy.bankName || billedBy.accountNumber">
+          <div class="qf-doc-section-label">PAYMENT DETAILS</div>
+          <div class="qf-doc-bank">
+            <div class="qf-doc-bank-row" *ngIf="billedBy.bankName">
+              <span class="qf-doc-bank-key">Bank</span>
+              <span class="qf-doc-bank-val">{{ billedBy.bankName }}</span>
+            </div>
+            <div class="qf-doc-bank-row" *ngIf="billedBy.accountName">
+              <span class="qf-doc-bank-key">Account Name</span>
+              <span class="qf-doc-bank-val">{{ billedBy.accountName }}</span>
+            </div>
+            <div class="qf-doc-bank-row" *ngIf="billedBy.accountNumber">
+              <span class="qf-doc-bank-key">Account Number</span>
+              <span class="qf-doc-bank-val qf-doc-bank-num">{{ billedBy.accountNumber }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes preview -->
+        <div class="qf-doc-notes" *ngIf="quoteForm.get('notes')?.value">
+          <div class="qf-doc-section-label">NOTES</div>
+          <p style="white-space:pre-line">{{ quoteForm.get('notes')?.value }}</p>
+        </div>
+
+        <!-- Terms & Conditions preview -->
+        <div class="qf-doc-notes" *ngIf="quoteForm.get('terms')?.value">
+          <div class="qf-doc-section-label">TERMS &amp; CONDITIONS</div>
+          <p style="white-space:pre-line">{{ quoteForm.get('terms')?.value }}</p>
+        </div>
+
+        <!-- Footer -->
+        <div class="qf-doc-footer">
+          <span *ngIf="billedBy.address || billedByDraft.address">{{ billedBy.address || billedByDraft.address }}</span>
+          <span *ngIf="billedBy.email || billedBy.phone">{{ billedBy.email }}{{ billedBy.email && billedBy.phone ? ' · ' : '' }}{{ billedBy.phone }}</span>
+        </div>
+      </div><!-- /qf-doc-card -->
+    </div><!-- /qf-preview-col -->
+
+  </div><!-- /qf-body step 1 -->
+
+  <!-- ══ STEP 2: TEMPLATE ══════════════════════════════════════════════ -->
+  <div class="qf-body qf-body--centered" *ngIf="currentStep === 2">
+    <app-template-types
+      [quoteData]="quoteDataForTemplate"
+      (templateSelected)="selectedTemplate = $event">
+    </app-template-types>
+  </div>
+
+  <!-- ══ STEP 3: PREVIEW & DELIVERY ═══════════════════════════════════ -->
+  <div class="qf-body qf-body--centered" *ngIf="currentStep === 3">
+    <div class="qf-deliver-card">
+      <div class="qf-deliver-icon"><i class="fas fa-paper-plane"></i></div>
+      <h2 class="qf-deliver-title">{{ isEditMode ? 'Update' : 'Create' }} & Deliver</h2>
+      <p class="qf-deliver-sub">Choose how you'd like to deliver this quotation to your client.</p>
+      <div class="qf-deliver-options">
+        <label class="qf-deliver-opt" [class.active]="selectedAction === 'pdf'">
+          <input type="radio" name="deliverAction" value="pdf" [(ngModel)]="selectedAction" [ngModelOptions]="{standalone:true}">
+          <i class="fas fa-file-pdf"></i>
+          <span>Download PDF</span>
+        </label>
+        <label class="qf-deliver-opt" [class.active]="selectedAction === 'email'">
+          <input type="radio" name="deliverAction" value="email" [(ngModel)]="selectedAction" [ngModelOptions]="{standalone:true}">
+          <i class="fas fa-envelope"></i>
+          <span>Send by Email</span>
+        </label>
+        <label class="qf-deliver-opt" [class.active]="selectedAction === 'both'">
+          <input type="radio" name="deliverAction" value="both" [(ngModel)]="selectedAction" [ngModelOptions]="{standalone:true}">
+          <i class="fas fa-share-alt"></i>
+          <span>PDF + Email</span>
+        </label>
       </div>
+      <button type="button" class="qf-btn qf-btn--primary qf-btn--lg" [disabled]="isSubmitting" (click)="onSubmit()">
+        <i class="fas fa-circle-notch fa-spin" *ngIf="isSubmitting"></i>
+        <i class="fas fa-check" *ngIf="!isSubmitting"></i>
+        {{ isSubmitting ? 'Saving…' : (isEditMode ? 'Update Quote' : 'Create Quote') }}
+      </button>
     </div>
   </div>
 
-  <!-- Custom Send Quote Confirmation Modal Overlay -->
-  <div class="custom-modal-backdrop" *ngIf="showSendQuoteModal" (click)="$event.target === $event.currentTarget && (showSendQuoteModal = false)">
-    <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
-      <div class="custom-modal-header">
-        <div class="header-title-group">
-          <div class="icon-badge" style="background: rgba(46, 178, 112, 0.12); color: #2EB270;">
-            <i class="fas fa-paper-plane"></i>
+</div><!-- /qf-shell -->
+
+<!-- ══ QUICK CLIENT MODAL ════════════════════════════════════════════ -->
+<div class="qf-modal-backdrop" *ngIf="showNewCustomerModal" (click)="closeNewCustomerModal()">
+  <div class="qf-modal" (click)="$event.stopPropagation()" [formGroup]="quickCustomerForm">
+    <div class="qf-modal-head">
+      <span><i class="fas fa-user-plus"></i> Add New Client</span>
+      <button type="button" class="qf-modal-close" (click)="closeNewCustomerModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="qf-modal-body">
+      <div class="qf-grid-2">
+        <div class="qf-field">
+          <label class="qf-label">Full Name <span class="qf-req">*</span></label>
+          <input class="qf-input" [class.qf-input--err]="isQuickFieldInvalid('name')" formControlName="name" placeholder="Client full name">
+          <span class="qf-field-err" *ngIf="isQuickFieldInvalid('name')">Name is required</span>
+        </div>
+        <div class="qf-field">
+          <label class="qf-label">Email <span class="qf-req">*</span></label>
+          <input class="qf-input" [class.qf-input--err]="isQuickFieldInvalid('email')" formControlName="email" type="email" placeholder="client@email.com">
+        </div>
+        <div class="qf-field">
+          <label class="qf-label">Phone</label>
+          <input class="qf-input" formControlName="phone" type="tel" placeholder="+234 800 000 0000">
+        </div>
+        <div class="qf-field">
+          <label class="qf-label">Address <span class="qf-req">*</span></label>
+          <input class="qf-input" [class.qf-input--err]="isQuickFieldInvalid('address')" formControlName="address" placeholder="Client address">
+        </div>
+        <div class="qf-field">
+          <label class="qf-label">Tax / VAT ID</label>
+          <input class="qf-input" formControlName="taxId" placeholder="Tax or VAT number">
+        </div>
+      </div>
+
+      <!-- Bank accounts -->
+      <div class="qf-subhead">Bank Accounts</div>
+      <div formArrayName="bankAccounts">
+        <div *ngFor="let bank of quickCustomerBankAccounts.controls; let bi = index" [formGroupName]="bi" class="qf-bank-row">
+          <div class="qf-field qf-field--grow">
+            <label class="qf-label">Bank Name</label>
+            <input class="qf-input" formControlName="bankName" placeholder="Bank name">
           </div>
-          <h3>Send Quote</h3>
+          <div class="qf-field qf-field--grow">
+            <label class="qf-label">Account Name</label>
+            <input class="qf-input" formControlName="accountName" placeholder="Account name">
+          </div>
+          <div class="qf-field qf-field--grow">
+            <label class="qf-label">Account Number</label>
+            <input class="qf-input qf-input--mono" formControlName="accountNumber" placeholder="Account number">
+          </div>
+          <button type="button" class="qf-del-btn qf-del-btn--sm" (click)="removeQuickCustomerBankAccount(bi)"><i class="fas fa-trash-alt"></i></button>
         </div>
-        <button type="button" class="btn-close-modal" (click)="showSendQuoteModal = false">&times;</button>
       </div>
-
-      <div class="custom-modal-body" style="padding: 1.5rem; text-align: center;">
-        <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(46, 178, 112, 0.1); color: #2EB270; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem auto;">
-          <i class="fas fa-paper-plane"></i>
-        </div>
-        <h4 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; font-weight: 700; color: #0f172a;">Send Quotation?</h4>
-        <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
-          Send quote <strong>{{ pendingSendQuoteNumber }}</strong> to <strong>{{ pendingSendCustomerName }}</strong>?
-        </p>
-      </div>
-
-      <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
-        <button type="button" class="btn-modal-cancel" (click)="showSendQuoteModal = false">Cancel</button>
-        <button type="button" class="btn-modal-save" (click)="confirmSendQuote()">
-          <i class="fas fa-paper-plane"></i> Send Quote
-        </button>
-      </div>
+      <button type="button" class="qf-btn qf-btn--ghost qf-btn--sm" (click)="addQuickCustomerBankAccount()">
+        <i class="fas fa-plus"></i> Add Bank Account
+      </button>
+    </div>
+    <div class="qf-modal-foot">
+      <button type="button" class="qf-btn qf-btn--ghost" (click)="closeNewCustomerModal()">Cancel</button>
+      <button type="button" class="qf-btn qf-btn--primary" (click)="onQuickCustomerSubmit()">
+        <i class="fas fa-save"></i> Save Client
+      </button>
     </div>
   </div>
-  <!-- Billed By Edit Modal -->
-  <div class="custom-modal-backdrop" *ngIf="showBilledByModal" (click)="$event.target === $event.currentTarget && cancelBilledByEdit()">
-    <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 520px;">
-      <div class="custom-modal-header">
-        <div class="header-title-group">
-          <div class="icon-badge">
-            <i class="fas fa-building"></i>
-          </div>
-          <h3>Edit Quotation From</h3>
+</div>
+
+<!-- ══ ADDITIONAL CHARGES MODAL ══════════════════════════════════════════ -->
+<div class="qf-modal-backdrop" *ngIf="showChargesModal" (click)="showChargesModal = false">
+  <div class="qf-modal qf-modal--wide" (click)="$event.stopPropagation()">
+    <div class="qf-modal-head">
+      <span><i class="fas fa-plus-circle"></i> Additional Charges</span>
+      <button type="button" class="qf-modal-close" (click)="showChargesModal = false"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="qf-modal-body">
+      <p class="qf-modal-hint">Add line-level extra charges like service fees, shipping, installation, etc.</p>
+
+      <!-- Existing charges (editable) -->
+      <div *ngFor="let charge of modalChargesList; let ci = index" style="margin-bottom:10px">
+        <input class="qf-input" style="width:100%;margin-bottom:4px" [(ngModel)]="charge.label" [ngModelOptions]="{standalone:true}"
+               placeholder="Charge label">
+        <div class="qf-charge-add-row" style="margin:0">
+          <input class="qf-input qf-input--grow" type="number" [(ngModel)]="charge.amount" [ngModelOptions]="{standalone:true}" min="0">
+          <button type="button" class="qf-del-btn qf-del-btn--sm" (click)="removeChargeItemFromModal(ci)">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <button type="button" class="btn-close-modal" (click)="cancelBilledByEdit()">&times;</button>
       </div>
+      <p class="qf-empty-hint" *ngIf="modalChargesList.length === 0">No extra charges added yet.</p>
 
-      <div class="custom-modal-body" style="color: #334155;">
-        <h4 style="color: #BA9953; margin: 0 0 1rem 0; font-size: 0.95rem; font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.25rem;">SENDER INFORMATION</h4>
-        
-        <div class="field-group">
-          <label>Name / Company <span style="color: #ef4444;">*</span></label>
-          <input type="text" [(ngModel)]="billedByDraft.name" placeholder="Enter sender name or company..." style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
-        </div>
-
-        <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
-          <div class="field-group" style="flex: 1;">
-            <label>Email Address</label>
-            <input type="email" [(ngModel)]="billedByDraft.email" placeholder="e.g. billing@company.com" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
-          </div>
-          <div class="field-group" style="flex: 1;">
-            <label>Phone Number</label>
-            <input type="tel" [(ngModel)]="billedByDraft.phone" placeholder="e.g. +234 800 000 0000" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
-          </div>
-        </div>
-
-        <div class="field-group" style="margin-top: 0.75rem;">
-          <label>Address</label>
-          <textarea [(ngModel)]="billedByDraft.address" placeholder="Enter physical / billing address..." rows="2" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem; resize: vertical;"></textarea>
-        </div>
-
-        <h4 style="color: #BA9953; margin: 1.25rem 0 1rem 0; font-size: 0.95rem; font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.25rem;">BANK DETAILS</h4>
-
-        <div style="display: flex; gap: 0.75rem;">
-          <div class="field-group" style="flex: 1;">
-            <label>Bank Name</label>
-            <input type="text" [(ngModel)]="billedByDraft.bankName" placeholder="e.g. Stanbic IBTC" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
-          </div>
-          <div class="field-group" style="flex: 1;">
-            <label>Account Name</label>
-            <input type="text" [(ngModel)]="billedByDraft.accountName" placeholder="e.g. Corporate Account" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
-          <div class="field-group" style="flex: 1;">
-            <label>Account Number</label>
-            <input type="text" [(ngModel)]="billedByDraft.accountNumber" placeholder="e.g. 0013604661" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
-          </div>
-          <div class="field-group" style="flex: 1;">
-            <label>Sort Code / Routing No</label>
-            <input type="text" [(ngModel)]="billedByDraft.routingNumber" placeholder="Optional" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem;" />
-          </div>
+      <!-- Add new charge row -->
+      <div class="qf-charge-add-block">
+        <input class="qf-input" type="text" [(ngModel)]="newChargeLabel" [ngModelOptions]="{standalone:true}"
+               placeholder="Charge label (e.g. Service Charge, Shipping, Installation…)" style="width:100%;margin-bottom:6px">
+        <div class="qf-charge-add-row">
+          <input class="qf-input qf-input--grow" type="number" [(ngModel)]="newChargeAmount" [ngModelOptions]="{standalone:true}"
+                 placeholder="Amount" min="0" step="0.01">
+          <button type="button" class="qf-btn qf-btn--primary qf-btn--sm" (click)="addChargeItemToModal()">
+            <i class="fas fa-plus"></i> Add
+          </button>
         </div>
       </div>
 
-      <div class="custom-modal-footer">
-        <button type="button" class="btn-modal-cancel" (click)="cancelBilledByEdit()">Cancel</button>
-        <button type="button" class="btn-modal-save" (click)="saveBilledBy()">Save Changes</button>
+      <div class="qf-charge-total" *ngIf="modalChargesList.length > 0">
+        Total Extra Charges: <strong>{{ formatCurrency(modalTotalCharges) }}</strong>
       </div>
+    </div>
+    <div class="qf-modal-foot">
+      <button type="button" class="qf-btn qf-btn--ghost" (click)="showChargesModal = false">Cancel</button>
+      <button type="button" class="qf-btn qf-btn--primary" (click)="saveChargesModal()">
+        <i class="fas fa-check"></i> Apply Charges
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SEND QUOTE CONFIRM MODAL ══════════════════════════════════════════ -->
+<div class="qf-modal-backdrop" *ngIf="showSendQuoteModal" (click)="showSendQuoteModal = false">
+  <div class="qf-modal" (click)="$event.stopPropagation()">
+    <div class="qf-modal-head">
+      <span><i class="fas fa-paper-plane"></i> Send Quote by Email</span>
+      <button type="button" class="qf-modal-close" (click)="showSendQuoteModal = false"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="qf-modal-body">
+      <div class="qf-confirm-icon" style="color:#184440"><i class="fas fa-envelope-open-text"></i></div>
+      <p class="qf-modal-hint" style="text-align:center">
+        Send <strong>{{ pendingSendQuoteNumber }}</strong> to <strong>{{ pendingSendCustomerName }}</strong>?
+      </p>
+    </div>
+    <div class="qf-modal-foot">
+      <button type="button" class="qf-btn qf-btn--ghost" (click)="showSendQuoteModal = false">Cancel</button>
+      <button type="button" class="qf-btn qf-btn--primary" (click)="confirmSendQuote()">
+        <i class="fas fa-paper-plane"></i> Send
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CREATE PRODUCT MODAL ══════════════════════════════════════════════ -->
+<div class="qf-modal-backdrop" *ngIf="showNewProductModal" (click)="showNewProductModal = false">
+  <div class="qf-modal" (click)="$event.stopPropagation()" style="max-width:480px">
+    <div class="qf-modal-head">
+      <span><i class="fas fa-box-open"></i> Create New Product</span>
+      <button type="button" class="qf-modal-close" (click)="showNewProductModal = false"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="qf-modal-body">
+      <div class="qf-charge-list" style="gap:.75rem">
+        <div class="qf-field-row">
+          <label class="qf-field-label">Product Name <span style="color:#dc2626">*</span></label>
+          <input class="qf-input qf-input--grow" [(ngModel)]="newProduct.name" placeholder="e.g. Website Design Package" />
+        </div>
+        <div class="qf-field-row">
+          <label class="qf-field-label">Description</label>
+          <textarea class="qf-input qf-input--grow" rows="2" [(ngModel)]="newProduct.description" placeholder="Optional description…"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+          <div class="qf-field-row">
+            <label class="qf-field-label">Unit Price</label>
+            <input class="qf-input qf-input--grow" type="number" min="0" [(ngModel)]="newProduct.unitPrice" placeholder="0.00" />
+          </div>
+          <div class="qf-field-row">
+            <label class="qf-field-label">Tax Rate (%)</label>
+            <input class="qf-input qf-input--grow" type="number" min="0" max="100" [(ngModel)]="newProduct.taxRate" placeholder="0" />
+          </div>
+        </div>
+      </div>
+      <p *ngIf="newProductError" class="qf-empty-hint" style="color:#dc2626;margin-top:.5rem">{{ newProductError }}</p>
+    </div>
+    <div class="qf-modal-foot">
+      <button type="button" class="qf-btn qf-btn--ghost" (click)="showNewProductModal = false">Cancel</button>
+      <button type="button" class="qf-btn qf-btn--primary" [disabled]="isSavingProduct" (click)="saveNewProduct()">
+        <i class="fas fa-spinner fa-spin" *ngIf="isSavingProduct"></i>
+        <i class="fas fa-check" *ngIf="!isSavingProduct"></i>
+        {{ isSavingProduct ? 'Saving…' : 'Create & Select' }}
+      </button>
+    </div>
   </div>
 </div>

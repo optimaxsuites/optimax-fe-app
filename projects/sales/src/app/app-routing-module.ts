@@ -36,6 +36,9 @@ import { VendorManagementComponent } from './ui/view/vendor-management/vendor-ma
 import { VendorManagementDashboardComponent } from './ui/view/vendor-management/vendor-management-dashboard/vendor-management-dashboard.component';
 import { VendorManagementListComponent } from './ui/view/vendor-management/vendor-management-list/vendor-management-list.component';
 import { VendorManagementDetailComponent } from './ui/view/vendor-management/vendor-management-detail/vendor-management-detail.component';
+import { DeliveryTrackingComponent } from './ui/view/request-management/delivery-tracking/delivery-tracking.component';
+import { PaymentVoucherComponent } from './ui/view/request-management/payment-voucher/payment-voucher.component';
+import { ReceiptPreviewComponent } from './ui/view/request-management/receipt-preview/receipt-preview.component';
 
 
 export const routes: Routes = [
@@ -294,6 +297,40 @@ export const routes: Routes = [
   {
     path: 'commerce/requests/approvals/:id',
     component: ApprovalRfqDetailComponent
+  },
+
+  // --- Supply Chain: Delivery Tracking ---
+  {
+    path: 'commerce/requests/:id/delivery',
+    component: DeliveryTrackingComponent
+  },
+  {
+    path: 'commerce/requests/:id/delivery/:uuid',
+    component: DeliveryTrackingComponent
+  },
+
+  // --- Payment Vouchers ---
+  {
+    path: 'commerce/payment-vouchers',
+    component: PaymentVoucherComponent
+  },
+  {
+    path: 'commerce/payment-vouchers/:id',
+    component: PaymentVoucherComponent
+  },
+  {
+    path: 'commerce/payment-vouchers/:id/:uuid',
+    component: PaymentVoucherComponent
+  },
+
+  // --- Receipt / Document Preview ---
+  {
+    path: 'commerce/receipts/:type/:id',
+    component: ReceiptPreviewComponent
+  },
+  {
+    path: 'commerce/receipts/:type/:id/:uuid',
+    component: ReceiptPreviewComponent
   },
 
   // --- Vendor Portal ---

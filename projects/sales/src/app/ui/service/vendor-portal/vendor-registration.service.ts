@@ -23,7 +23,12 @@ export class VendorRegistrationService {
 
   readonly registration$ = this.registration$$.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
+
+  private get tenantId(): string {
+    const h = window.location.hostname;
+    return (h.includes('localhost') || h.includes('127.0.0.1')) ? 'optimax' : h.split('.')[0] || 'optimax';
+  }
 
   // ── Draft persistence ─────────────────────────────────────────────────────
   /** Merges a partial update into the in-memory draft and fires the BehaviorSubject.
@@ -110,12 +115,17 @@ export class VendorRegistrationService {
   /** POST /vendors — call once (e.g. on step 1 completion) to get a server-assigned
    *  vendor id, then subsequent step saves use PUT /vendors/{id}/stepN. */
   createVendorRecord(initial: Partial<VendorRegistration>): Observable<string> {
-    return this.http.post<{ id: string }>(`${this.baseUrl}/vendors`, initial).pipe(
-      tap(({ id }) => {
+    const step1Payload = { ...(initial.step1 ?? {}), tenantId: this.tenantId };
+    return this.http.post<any>(`${this.baseUrl}/vendors`, step1Payload).pipe(
+      tap(res => {
+        const id = typeof res === 'object' ? (res?.id ?? String(res)) : String(res);
         const current = this.registration$$.getValue() ?? this.blankRegistration();
         this.registration$$.next({ ...current, ...initial, id } as VendorRegistration);
       }),
-      map(({ id }) => id),
+      map(res => {
+        const id = typeof res === 'object' ? (res?.id ?? String(res)) : String(res);
+        return id;
+      }),
       catchError((err) => {
         console.error('[VendorRegistrationService] createVendorRecord failed:', err);
         return of('');
@@ -202,70 +212,70 @@ export class VendorRegistrationService {
       );
 
       const vendor: Vendor = {
-        id:                 appNum,
-        companyName:        s1.businessName  || '',
+        id: appNum,
+        companyName: s1.businessName || '',
         registrationNumber: s2.cacRegistrationNumber || '',
-        taxId:              s2.tinNumber     || '',
-        email:              s3.primaryContactEmail || '',
-        phone:              s3.primaryContactPhone || '',
-        website:            s1.websiteUrl    || undefined,
+        taxId: s2.tinNumber || '',
+        email: s3.primaryContactEmail || '',
+        phone: s3.primaryContactPhone || '',
+        website: s1.websiteUrl || undefined,
         address: {
-          street:  s3.registeredAddressLine1 || '',
-          city:    s3.registeredCity         || '',
-          state:   s3.registeredState        || '',
-          country: s3.registeredCountry      || 'Nigeria',
+          street: s3.registeredAddressLine1 || '',
+          city: s3.registeredCity || '',
+          state: s3.registeredState || '',
+          country: s3.registeredCountry || 'Nigeria',
           postalCode: s3.registeredPostalCode || ''
         },
-        status:             VendorStatus.PENDING_ONBOARDING,
-        tier:               VendorTier.APPROVED,
-        riskLevel:          RiskLevel.LOW,
-        performanceScore:   0,
-        totalProjects:      s5.completedProjectsCount ?? 0,
-        winRate:            0,
-        averageRating:      0,
+        status: VendorStatus.PENDING_ONBOARDING,
+        tier: VendorTier.APPROVED,
+        riskLevel: RiskLevel.LOW,
+        performanceScore: 0,
+        totalProjects: s5.completedProjectsCount ?? 0,
+        winRate: 0,
+        averageRating: 0,
         categories,
-        description:        s1.businessDescription || '',
-        paymentTerms:       s4.preferredPaymentTerms || 'Net 30',
+        description: s1.businessDescription || '',
+        paymentTerms: s4.preferredPaymentTerms || 'Net 30',
         bankDetails: {
-          bankName:      s4.primaryBankName       || '',
-          accountNumber: s4.primaryAccountNumber  || '',
-          accountName:   s4.primaryAccountName    || '',
-          accountType:   s4.primaryAccountType    || 'current',
-          sortCode:      s4.primarySortCode       || '',
-          swiftCode:     s4.primarySwiftCode      || '',
-          currency:      s4.primaryCurrency       || 'NGN',
-          bankBranch:    s4.primaryBankBranch     || '',
-          isPrimary:     true
+          bankName: s4.primaryBankName || '',
+          accountNumber: s4.primaryAccountNumber || '',
+          accountName: s4.primaryAccountName || '',
+          accountType: s4.primaryAccountType || 'current',
+          sortCode: s4.primarySortCode || '',
+          swiftCode: s4.primarySwiftCode || '',
+          currency: s4.primaryCurrency || 'NGN',
+          bankBranch: s4.primaryBankBranch || '',
+          isPrimary: true
         },
         contacts: s3.primaryContactName ? [{
-          id:        `c-${appNum}`,
-          name:      s3.primaryContactName  || '',
-          title:     s3.primaryContactTitle || '',
-          email:     s3.primaryContactEmail || '',
-          phone:     s3.primaryContactPhone || '',
+          id: `c-${appNum}`,
+          name: s3.primaryContactName || '',
+          title: s3.primaryContactTitle || '',
+          email: s3.primaryContactEmail || '',
+          phone: s3.primaryContactPhone || '',
           isPrimary: true
         }] : [],
         documents: (s6.uploadedDocuments ?? []).map((d: any) => ({
-          id:           d.id,
-          name:         d.label || d.fileName,
-          type:         d.type,
-          category:     'compliance' as any,
-          status:       'PENDING_VERIFICATION' as any,
+          id: d.id,
+          name: d.label || d.fileName,
+          type: d.type,
+          category: 'compliance' as any,
+          status: 'PENDING_VERIFICATION' as any,
           uploadedDate: d.uploadedDate ? new Date(d.uploadedDate) : new Date(),
-          expiryDate:   undefined,
-          fileUrl:      d.fileUrl,
-          fileSize:     d.fileSize,
-          vendorId:     appNum,
-          isRequired:   d.isRequired ?? false
+          expiryDate: undefined,
+          fileUrl: d.fileUrl,
+          fileSize: d.fileSize,
+          vendorId: appNum,
+          isRequired: d.isRequired ?? false
         })),
         complianceStatus: {
-          isCompliant:              false,
-          documentsVerified:        0,
-          totalRequiredDocuments:   3,
-          expiredDocuments:         0,
-          expiringDocuments:        0,
-          lastComplianceCheck:      new Date(),
-          sanctionsClear:           !(s2.hasBeenBlacklisted ?? false)
+          isCompliant: false,
+          documentsVerified: 0,
+          totalRequiredDocuments: 3,
+          expiredDocuments: 0,
+          expiringDocuments: 0,
+          lastComplianceCheck: new Date(),
+          sanctionsClear: !(s2.hasBeenBlacklisted ?? false)
         },
         performanceMetrics: {
           overallScore: 0, onTimeDeliveryRate: 0, qualityScore: 0,
@@ -275,23 +285,23 @@ export class VendorRegistrationService {
           lastUpdated: new Date(), trendData: []
         },
         lifecycleHistory: [{
-          id:          `lh-${appNum}`,
-          event:       'Registration Submitted',
-          fromStatus:  null as any,
-          toStatus:    VendorStatus.PENDING_ONBOARDING,
+          id: `lh-${appNum}`,
+          event: 'Registration Submitted',
+          fromStatus: null as any,
+          toStatus: VendorStatus.PENDING_ONBOARDING,
           performedBy: s6.declarantName || 'Vendor',
-          timestamp:   new Date(),
-          notes:       'Submitted via Vendor Portal'
+          timestamp: new Date(),
+          notes: 'Submitted via Vendor Portal'
         }],
-        riskAlerts:       [],
-        joinedDate:       new Date(),
+        riskAlerts: [],
+        joinedDate: new Date(),
         lastActivityDate: new Date(),
-        createdAt:        new Date(),
-        updatedAt:        new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         applicationNumber: appNum,
         // Keep the full submission so the approval queue / vendor directory can
         // display everything the vendor entered, not just the summary fields above.
-        registration:     { ...reg, id: appNum, applicationNumber: appNum }
+        registration: { ...reg, id: appNum, applicationNumber: appNum }
       } as any as Vendor;
 
       PendingVendorStore.add(vendor);
@@ -299,37 +309,42 @@ export class VendorRegistrationService {
     };
 
     // ── Real API path ────────────────────────────────────────────────────────
+    const saveAllSteps = (id: string): Observable<any> => {
+      const saves: Observable<any>[] = [];
+      if (reg.step2) saves.push(this.http.put(`${this.baseUrl}/vendors/${id}/step2`, reg.step2).pipe(catchError(() => of(null))));
+      if (reg.step3) saves.push(this.http.put(`${this.baseUrl}/vendors/${id}/step3`, reg.step3).pipe(catchError(() => of(null))));
+      if (reg.step4) saves.push(this.http.put(`${this.baseUrl}/vendors/${id}/step4`, reg.step4).pipe(catchError(() => of(null))));
+      if (reg.step5) saves.push(this.http.put(`${this.baseUrl}/vendors/${id}/step5`, reg.step5).pipe(catchError(() => of(null))));
+      if (reg.step6) saves.push(this.http.put(`${this.baseUrl}/vendors/${id}/step6`, reg.step6).pipe(catchError(() => of(null))));
+      return saves.length > 0 ? forkJoin(saves) : of([]);
+    };
+
+    const patchSubmit = (id: string, appNum: string): Observable<{ applicationNumber: string }> => {
+      return this.http.patch<{ applicationNumber: string }>(`${this.baseUrl}/vendors/${id}/submit`, {}).pipe(
+        tap(res => {
+          const current = this.registration$$.getValue();
+          if (current) {
+            this.registration$$.next({
+              ...current, status: 'submitted',
+              submittedDate: new Date(), applicationNumber: res.applicationNumber,
+            } as VendorRegistration);
+          }
+        }),
+        map(res => ({ applicationNumber: res.applicationNumber })),
+        catchError(() => of({ applicationNumber: appNum }))
+      );
+    };
+
     if (!vendorId) {
-      return this.http.post<{ id: string }>(`${this.baseUrl}/vendors`, reg).pipe(
-        switchMap(({ id }) => {
+      const step1Payload = { ...(reg.step1 ?? {}), tenantId: this.tenantId };
+      return this.http.post<any>(`${this.baseUrl}/vendors`, step1Payload).pipe(
+        switchMap(res => {
+          const id = typeof res === 'object' ? (res?.id ?? String(res)) : String(res);
           this.registration$$.next({ ...reg, id } as VendorRegistration);
-          mapAndStore(id);
-          // Post the documents to the created vendor ID first
-          return this.uploadRegistrationDocuments(id, docs).pipe(
-            switchMap(() => {
-              return this.http.patch<{ applicationNumber: string }>(
-                `${this.baseUrl}/vendors/${id}/submit`, {}
-              ).pipe(
-                tap(res => {
-                  const current = this.registration$$.getValue();
-                  if (current) {
-                    this.registration$$.next({
-                      ...current, status: 'submitted',
-                      submittedDate: new Date(), applicationNumber: res.applicationNumber,
-                    } as VendorRegistration);
-                  }
-                }),
-                map(res => ({ applicationNumber: res.applicationNumber }))
-              );
-            }),
-            catchError(() => {
-              const appNum = mapAndStore(id);
-              return of({ applicationNumber: appNum });
-            })
-          );
+          const appNum = mapAndStore(id);
+          return saveAllSteps(id).pipe(switchMap(() => patchSubmit(id, appNum)));
         }),
         catchError(() => {
-          // Full API unavailable — generate a local application number and store locally
           const appNum = mapAndStore(`APP-${Date.now()}`);
           this.registration$$.next({ ...reg, id: appNum, status: 'submitted', submittedDate: new Date(), applicationNumber: appNum } as VendorRegistration);
           return of({ applicationNumber: appNum });
@@ -337,22 +352,8 @@ export class VendorRegistrationService {
       );
     }
 
-    return this.uploadRegistrationDocuments(vendorId, docs).pipe(
-      switchMap(() => {
-        return this.http.patch<{ applicationNumber: string }>(`${this.baseUrl}/vendors/${vendorId}/submit`, {}).pipe(
-          tap(res => {
-            const current = this.registration$$.getValue();
-            if (current) {
-              this.registration$$.next({
-                ...current, status: 'submitted',
-                submittedDate: new Date(), applicationNumber: res.applicationNumber,
-              } as VendorRegistration);
-            }
-            mapAndStore(vendorId);
-          }),
-          map(res => ({ applicationNumber: res.applicationNumber }))
-        );
-      }),
+    return saveAllSteps(vendorId).pipe(
+      switchMap(() => patchSubmit(vendorId, mapAndStore(vendorId))),
       catchError(() => {
         const appNum = mapAndStore(vendorId);
         return of({ applicationNumber: appNum });
@@ -362,22 +363,39 @@ export class VendorRegistrationService {
 
   // ── File upload ───────────────────────────────────────────────────────────
   uploadFile(file: File, type: DocumentUploadType): Observable<UploadedDocument> {
+    const objectUrl = URL.createObjectURL(file);
     const doc: UploadedDocument = {
-      id:           `doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: `doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       type,
-      label:        this.docTypeLabel(type),
-      fileName:     file.name,
-      fileSize:     this.formatSize(file.size),
-      fileUrl:      URL.createObjectURL(file),
+      label: this.docTypeLabel(type),
+      fileName: file.name,
+      fileSize: this.formatSize(file.size),
+      fileUrl: objectUrl,
       uploadedDate: new Date(),
-      isRequired:   this.isRequiredDoc(type),
-      status:       'pending',
+      isRequired: this.isRequiredDoc(type),
+      status: 'pending',
       file,
     };
-    // Return the local document object immediately so the UI can display it;
-    // the actual file should be uploaded via a multipart/form-data endpoint
-    // in production (not yet wired — that endpoint spec was not provided).
     return of(doc);
+  }
+
+  /** After the vendor record exists, persist a document to the backend. */
+  persistDocument(vendorId: string, doc: UploadedDocument): Observable<any> {
+    const payload = {
+      vendorId: Number(vendorId),
+      type: doc.type,
+      label: doc.label,
+      fileName: doc.fileName,
+      fileSize: doc.file ? doc.file.size : null,
+      fileUrl: doc.fileUrl,
+      uploadedDate: new Date().toISOString(),
+      isRequired: doc.isRequired,
+      status: 'PENDING_VERIFICATION',
+      category: 'COMPLIANCE'
+    };
+    return this.http.post<any>(`${this.baseUrl}/vendors/${vendorId}/documents`, payload).pipe(
+      catchError(err => { console.error('[VendorRegistrationService] persistDocument failed:', err); return of(null); })
+    );
   }
 
   // ── Fetch existing registration ───────────────────────────────────────────
@@ -492,18 +510,18 @@ export class VendorRegistrationService {
 
   docTypeLabel(type: DocumentUploadType): string {
     const m: Record<DocumentUploadType, string> = {
-      cac_certificate:            'CAC Certificate of Incorporation',
-      tax_clearance:              'Tax Clearance Certificate',
-      vat_certificate:            'VAT Registration Certificate',
-      nafdac_cert:                'NAFDAC Registration Certificate',
-      son_cert:                   'SON Certification',
+      cac_certificate: 'CAC Certificate of Incorporation',
+      tax_clearance: 'Tax Clearance Certificate',
+      vat_certificate: 'VAT Registration Certificate',
+      nafdac_cert: 'NAFDAC Registration Certificate',
+      son_cert: 'SON Certification',
       public_liability_insurance: 'Public Liability Insurance Policy',
-      professional_indemnity:     'Professional Indemnity Insurance',
-      iso_certificate:            'ISO Certification',
-      annual_accounts:            'Audited Annual Accounts',
-      company_profile:            'Company Profile Document',
-      bank_reference_letter:      'Bank Reference Letter',
-      other:                      'Other Document',
+      professional_indemnity: 'Professional Indemnity Insurance',
+      iso_certificate: 'ISO Certification',
+      annual_accounts: 'Audited Annual Accounts',
+      company_profile: 'Company Profile Document',
+      bank_reference_letter: 'Bank Reference Letter',
+      other: 'Other Document',
     };
     return m[type] ?? 'Document';
   }

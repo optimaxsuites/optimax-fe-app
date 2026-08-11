@@ -28,7 +28,7 @@ export class ApprovalService {
   getApprovalRequests(filters: ApprovalFilters): Observable<{ data: ApprovalRequest[]; totalElements: number; totalPages: number }> {
     let params = new HttpParams()
       .set('tenantId', this.tenantId)
-      .set('page', String(filters.page || 0))
+      .set('page', String((filters.page || 0) + 1))
       .set('size', String(filters.size || 10));
 
     if (filters.status && filters.status !== 'ALL') {
@@ -44,12 +44,15 @@ export class ApprovalService {
       params = params.set('search', filters.searchTerm);
     }
 
-    return this.http.get<any>(`${this.baseUrl}/approvals`, { params }).pipe(
-      map(res => ({
-        data: res?.data ?? res ?? [],
-        totalElements: res?.totalElements ?? 0,
-        totalPages: res?.totalPages ?? 0
-      }))
+    return this.http.get<any>(`${this.baseUrl}/approvals/`, { params }).pipe(
+      map(res => {
+        const arr = Array.isArray(res) ? res : (res?.data ?? res?.content ?? []);
+        return {
+          data: arr,
+          totalElements: res?.totalSize ?? res?.totalElements ?? arr.length,
+          totalPages: res?.totalPages ?? 1
+        };
+      })
     );
   }
 
@@ -58,11 +61,12 @@ export class ApprovalService {
   }
 
   getApprovalStats(): Observable<ApprovalStats> {
-    return this.http.get<ApprovalStats>(`${this.baseUrl}/approvals/stats`);
+    const params = new HttpParams().set('tenantId', this.tenantId);
+    return this.http.get<ApprovalStats>(`${this.baseUrl}/approvals/stats`, { params });
   }
 
   createApprovalRequest(data: any): Observable<ApprovalRequest> {
-    return this.http.post<ApprovalRequest>(`${this.baseUrl}/approvals`, data);
+    return this.http.post<ApprovalRequest>(`${this.baseUrl}/approvals/`, { ...data, tenantId: this.tenantId });
   }
 
   approveRequest(id: string, level: number, comments: string): Observable<ApprovalRequest> {

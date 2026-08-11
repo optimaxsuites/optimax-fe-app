@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { SalesandTransactions, SaleLifecycleStatus, PaymentMethod } from '../../../../domain/sales/sales.dto';
 import { parseApiDate } from '../../../../service/sales/date.util';
@@ -28,6 +28,7 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
 
   transactions: SalesandTransactions[] = [];
   filteredTransactions: SalesandTransactions[] = [];
+  customers: any[] = [];
   isLoading: boolean = false;
   searchTerm: string = '';
   selectedStatus: string = 'ALL';
@@ -105,11 +106,14 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
 
   loadTransactions(): void {
     this.isLoading = true;
-    this.salesService.getSalesandTransactions({ size: 100 })
-      .pipe(takeUntil(this.destroy$))
+    forkJoin({
+      transactions: this.salesService.getSalesandTransactions({ size: 100 }),
+      customers: this.salesService.getCustomers({ page: 0, size: 200 })
+    }).pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (res) => {
-          this.transactions = res.data || [];
+        next: ({ transactions, customers }: any) => {
+          this.customers = customers.data || [];
+          this.transactions = transactions.data || [];
           this.applyFilters();
           this.isLoading = false;
         },
@@ -187,13 +191,19 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
     return this.transactions.filter(tx => tx.status === status).length;
   }
 
-  getCustomerName(tx: SalesandTransactions): string {
+  getCustomerName(tx: SalesandTransactions | null): string {
     if (!tx) return 'N/A';
-    if (typeof tx.customerName === 'object' && tx.customerName?.name) {
-      return tx.customerName.name;
+    if (typeof tx.customerName === 'object' && (tx.customerName as any)?.name) {
+      return (tx.customerName as any).name;
     }
-    if (typeof tx.customerId === 'object' && tx.customerId?.name) {
-      return tx.customerId.name;
+    if (typeof tx.customerId === 'object' && (tx.customerId as any)?.name) {
+      return (tx.customerId as any).name;
+    }
+    // Resolve integer customerId against loaded customers list
+    const rawId = tx.customerId ?? tx.customerName;
+    if (rawId && this.customers.length) {
+      const found = this.customers.find(c => c.id === rawId || String(c.id) === String(rawId));
+      if (found?.name) return found.name;
     }
     return String(tx.customerName || tx.customerId || 'N/A');
   }

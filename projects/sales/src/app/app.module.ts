@@ -81,6 +81,11 @@ import { RequestForQuotationServiceFormComponent } from './ui/view/request-manag
 import { ProcurementTypeSelectorComponent } from './ui/view/request-management/procurement-type-selector/procurement-type-selector.component';
 import { RfqTemplateSelectorComponent } from './ui/view/request-management/rfq-template-selector/rfq-template-selector.component';
 import { VendorSelectionComponent } from './ui/view/request-management/vendor-selection/vendor-selection.component';
+import { SmartVendorSelectionComponent } from './ui/view/request-management/smart-vendor-selection/smart-vendor-selection.component';
+import { DeliveryTrackingComponent } from './ui/view/request-management/delivery-tracking/delivery-tracking.component';
+import { PaymentVoucherComponent } from './ui/view/request-management/payment-voucher/payment-voucher.component';
+import { NotificationPanelComponent } from './ui/view/request-management/notification-panel/notification-panel.component';
+import { ReceiptPreviewComponent } from './ui/view/request-management/receipt-preview/receipt-preview.component';
 import { RequestForQuotationDetailComponent } from './ui/view/request-management/request-for-quotation-detail/request-for-quotation-detail.component';
 import { RfqDetailWithQuotationsComponent } from './ui/view/request-management/rfq-detail-with-quotations/rfq-detail-with-quotations.component';
 import { QuotationsDashboardComponent } from './ui/view/request-management/quotations-dashboard/quotations-dashboard.component';
@@ -151,6 +156,11 @@ import { ActivityComponent } from './ui/view/vendor-management/vendor-management
     ProcurementTypeSelectorComponent,
     RfqTemplateSelectorComponent,
     VendorSelectionComponent,
+    SmartVendorSelectionComponent,
+    DeliveryTrackingComponent,
+    PaymentVoucherComponent,
+    NotificationPanelComponent,
+    ReceiptPreviewComponent,
     RequestForQuotationDetailComponent,
     RfqDetailWithQuotationsComponent,
     QuotationsDashboardComponent,

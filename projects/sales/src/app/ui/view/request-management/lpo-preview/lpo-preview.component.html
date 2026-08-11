@@ -39,6 +39,16 @@
             [class.fa-paper-plane]="!isProcessing"></i>
           Send to Vendor
         </button>
+        <button *ngIf="lpoId" class="btn-action" (click)="navigateToDelivery()"
+          style="background: #0369a1; color: white;">
+          <i class="fas fa-truck"></i>
+          Track Delivery / GRN
+        </button>
+        <button *ngIf="lpoId" class="btn-action" (click)="navigateToPaymentVoucher()"
+          style="background: #7c3aed; color: white;">
+          <i class="fas fa-money-check-dollar"></i>
+          Payment Voucher
+        </button>
       </div>
     </div>
 

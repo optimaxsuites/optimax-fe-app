@@ -134,7 +134,12 @@ export class SalesService {
 
   createQuote(data: Partial<Quote>): Observable<Quote> {
     const quoteNumber = data.quoteNumber || `QT-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
-    return this.http.post<Quote>(`${this.base}/quotes`, { ...data, quoteNumber, tenantId: this.tenantId });
+    return this.http.post<any>(`${this.base}/quotes`, { ...data, quoteNumber, tenantId: this.tenantId }).pipe(
+      switchMap(res => {
+        const id = typeof res === 'object' ? (res.id ?? res) : res;
+        return this.getQuoteById(id).pipe(map(q => q as Quote));
+      })
+    );
   }
 
   updateQuote(id: string | number, data: Partial<Quote>): Observable<Quote> {
@@ -182,7 +187,12 @@ export class SalesService {
 
   createInvoice(data: Partial<Invoice>): Observable<Invoice> {
     const invoiceNumber = data.invoiceNumber || `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
-    return this.http.post<Invoice>(`${this.base}/invoices`, { ...data, invoiceNumber, tenantId: this.tenantId });
+    return this.http.post<any>(`${this.base}/invoices`, { ...data, invoiceNumber, tenantId: this.tenantId }).pipe(
+      switchMap(res => {
+        const id = typeof res === 'object' ? (res.id ?? res) : res;
+        return this.getInvoiceById(id).pipe(map(inv => inv as Invoice));
+      })
+    );
   }
 
   updateInvoice(id: string | number, data: Partial<Invoice>): Observable<Invoice> {
@@ -214,7 +224,13 @@ export class SalesService {
 
     return this.http.get<any>(`${this.base}/customers`, { params }).pipe(
       map(res => {
-        const arr: Customer[] = Array.isArray(res) ? res : (res?.data ?? []);
+        const raw: any[] = Array.isArray(res) ? res : (res?.data ?? []);
+        const arr: Customer[] = raw.map(c => ({
+          ...c,
+          customerId: String(c.id),
+          address: c.address ? [c.address] : [],
+          deliverAddress: c.deliverAddress ? [c.deliverAddress] : []
+        }));
         return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
       }),
       catchError(() => of({ data: [], total: 0 }))
@@ -222,17 +238,32 @@ export class SalesService {
   }
 
   getCustomerById(id: string): Observable<Customer | null> {
-    return this.http.get<Customer>(`${this.base}/customers/${id}`).pipe(
+    return this.http.get<any>(`${this.base}/customers/${id}`).pipe(
+      map(c => c ? ({ ...c, customerId: String(c.id), address: c.address ? [c.address] : [], deliverAddress: c.deliverAddress ? [c.deliverAddress] : [] } as Customer) : null),
       catchError(() => of(null))
     );
   }
 
+  private flattenCustomer(data: Partial<Customer>): any {
+    return {
+      ...data,
+      tenantId: this.tenantId,
+      address: Array.isArray(data.address) ? data.address.join(', ') : (data.address ?? ''),
+      deliverAddress: Array.isArray(data.deliverAddress) ? data.deliverAddress.join(', ') : (data.deliverAddress ?? '')
+    };
+  }
+
   createCustomer(data: Partial<Customer>): Observable<Customer> {
-    return this.http.post<Customer>(`${this.base}/customers`, { ...data, tenantId: this.tenantId });
+    return this.http.post<any>(`${this.base}/customers`, this.flattenCustomer(data)).pipe(
+      switchMap(res => {
+        const id = typeof res === 'object' ? (res.id ?? res) : res;
+        return this.getCustomerById(String(id)).pipe(map(c => c as Customer));
+      })
+    );
   }
 
   updateCustomer(id: string, data: Partial<Customer>): Observable<Customer> {
-    return this.http.put<Customer>(`${this.base}/customers/${id}`, { ...data, tenantId: this.tenantId });
+    return this.http.put<Customer>(`${this.base}/customers/${id}`, this.flattenCustomer(data));
   }
 
   deleteCustomer(id: string | number): Observable<boolean> {

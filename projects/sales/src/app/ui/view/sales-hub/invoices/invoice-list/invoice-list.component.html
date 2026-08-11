@@ -1,315 +1,290 @@
-<div class="invoice-list-container">
-  <div class="list-wrapper">
+<p-toast position="top-right"></p-toast>
 
-    <!-- Header Hero Card -->
-    <div class="hero-section">
-      <div class="hero-content">
-        <div class="hero-text">
-          <div class="dashboard-badge">
-            <i class="fas fa-file-invoice-dollar"></i>
-            <span>Sales Hub • Invoices</span>
-          </div>
-          <h1>Invoices Dashboard</h1>
-          <p class="hero-subtitle">Manage, create, and track all client invoices and payment status from a single command center.</p>
-        </div>
-        <div class="hero-actions">
-          <button (click)="openNewInvoiceModal()" class="btn-primary-hero">
-            <i class="fas fa-plus"></i>
-            New Invoice
-          </button>
-        </div>
+<div class="il-layout">
+
+  <!-- ══ SIDEBAR FILTERS ═══════════════════════════════════════════════════ -->
+  <aside class="il-sidebar">
+
+    <div class="il-sidebar-title">
+      <span>Filters</span>
+      <button class="il-reset-link" (click)="resetFilters()" type="button">Reset</button>
+    </div>
+
+    <!-- Quick search -->
+    <div class="il-filter-section">
+      <div class="il-search-wrap">
+        <i class="fas fa-search il-search-icon"></i>
+        <input type="text" class="il-search-input" placeholder="Search invoices…"
+               [(ngModel)]="filters.searchTerm" (input)="applyFilters()">
       </div>
     </div>
 
-    <!-- Stats Cards - Larger & More Vibrant -->
-    <div class="stats-grid">
-      <div class="stat-card total" (click)="filters.status = 'ALL'; applyFilters()">
-        <div class="stat-icon-wrapper">
-          <i class="fas fa-file-invoice"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.total }}</div>
-          <div class="stat-label">Total Invoices</div>
-        </div>
-        <div class="stat-trend">
-          <i class="fas fa-arrow-up"></i>
-          <span>18%</span>
-        </div>
+    <!-- Status filters -->
+    <div class="il-filter-section">
+      <div class="il-filter-heading">Status</div>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'ALL'"
+              (click)="filters.status = 'ALL'; applyFilters()">
+        <i class="fas fa-layer-group"></i>
+        <span>All Invoices</span>
+        <span class="il-count-pill">{{ stats.total }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'DRAFT'"
+              (click)="filters.status = 'DRAFT'; applyFilters()">
+        <i class="fas fa-edit"></i>
+        <span>Draft</span>
+        <span class="il-count-pill il-count-pill--gray">{{ stats.draft }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'SENT'"
+              (click)="filters.status = 'SENT'; applyFilters()">
+        <i class="fas fa-paper-plane"></i>
+        <span>Sent</span>
+        <span class="il-count-pill il-count-pill--blue">{{ stats.sent }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'OVERDUE'"
+              (click)="filters.status = 'OVERDUE'; applyFilters()">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>Overdue</span>
+        <span class="il-count-pill il-count-pill--red">{{ stats.overdue }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'CANCELLED'"
+              (click)="filters.status = 'CANCELLED'; applyFilters()">
+        <i class="fas fa-ban"></i>
+        <span>Cancelled</span>
+        <span class="il-count-pill">{{ stats.cancelled }}</span>
+      </button>
+    </div>
+
+    <!-- Date range -->
+    <div class="il-filter-section">
+      <div class="il-filter-heading">Date Range</div>
+      <div class="il-field">
+        <label class="il-flabel">From</label>
+        <input type="date" class="il-date-input" [(ngModel)]="filters.dateFrom" (change)="applyFilters()">
       </div>
-      <div class="stat-card draft" (click)="filters.status = 'DRAFT'; applyFilters()">
-        <div class="stat-icon-wrapper">
-          <i class="fas fa-edit"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.draft }}</div>
-          <div class="stat-label">Draft</div>
-        </div>
-        <div class="stat-trend">
-          <i class="fas fa-minus"></i>
-          <span>2%</span>
-        </div>
-      </div>
-      <div class="stat-card sent" (click)="filters.status = 'SENT'; applyFilters()">
-        <div class="stat-icon-wrapper">
-          <i class="fas fa-paper-plane"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.sent }}</div>
-          <div class="stat-label">Sent</div>
-        </div>
-        <div class="stat-trend up">
-          <i class="fas fa-arrow-up"></i>
-          <span>10%</span>
-        </div>
-      </div>
-      <div class="stat-card cancelled" (click)="filters.status = 'CANCELLED'; applyFilters()">
-        <div class="stat-icon-wrapper">
-          <i class="fas fa-ban"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.cancelled }}</div>
-          <div class="stat-label">Cancelled</div>
-        </div>
-        <div class="stat-trend down">
-          <i class="fas fa-arrow-down"></i>
-          <span>5%</span>
-        </div>
+      <div class="il-field">
+        <label class="il-flabel">To</label>
+        <input type="date" class="il-date-input" [(ngModel)]="filters.dateTo" (change)="applyFilters()">
       </div>
     </div>
 
-    <!-- Filter Bar with Status Filters -->
-    <div class="filter-bar">
-      <div class="filter-row">
-        <div class="search-box">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-          </svg>
-          <input type="text" [(ngModel)]="filters.searchTerm" (input)="applyFilters()"
-            placeholder="Search by invoice #, customer...">
-        </div>
+  </aside>
 
-        <div class="status-filters">
-          <span class="filter-label">Status:</span>
-          <select class="status-filter-select" [(ngModel)]="filters.status" (change)="applyFilters()">
-            <option value="ALL">All Statuses</option>
-            <option value="DRAFT">Draft</option>
-            <option value="SENT">Sent</option>
-            <option value="PAID">Paid</option>
-            <option value="PARTIAL">Partial</option>
-            <option value="OVERDUE">Overdue</option>
+  <!-- ══ MAIN AREA ══════════════════════════════════════════════════════════ -->
+  <main class="il-main">
+
+    <!-- Top bar -->
+    <div class="il-top-bar">
+      <div class="il-top-bar-left">
+        <h1 class="il-title">Invoices</h1>
+        <span class="il-total-badge">{{ totalElements }}</span>
+      </div>
+      <div class="il-top-bar-right">
+        <div class="il-page-size-wrap">
+          <span class="il-page-size-label">Per page</span>
+          <select class="il-page-size-select" [(ngModel)]="filters.size" (change)="onPageSizeChange(filters.size)">
+            <option [value]="10">10</option>
+            <option [value]="25">25</option>
+            <option [value]="50">50</option>
           </select>
         </div>
-
-        <div class="date-filters">
-          <input type="date" [(ngModel)]="filters.dateFrom" (change)="applyFilters()" placeholder="From">
-          <span>→</span>
-          <input type="date" [(ngModel)]="filters.dateTo" (change)="applyFilters()" placeholder="To">
-        </div>
-
-        <button class="btn-reset" (click)="resetFilters()">
-          <i class="fas fa-undo-alt"></i>
-          Reset
+        <button type="button" class="il-btn il-btn--primary" (click)="openNewInvoiceModal()">
+          <i class="fas fa-plus"></i> New Invoice
         </button>
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div *ngIf="isLoading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading invoices...</p>
-    </div>
-
-    <!-- Invoices Table -->
-    <div *ngIf="!isLoading" class="table-container">
-      <div class="table-wrapper">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th class="checkbox-col">
-                <input type="checkbox" (change)="toggleSelectAll($event)" [checked]="isAllSelected()">
-              </th>
-              <th class="sn-col">#</th>
-              <th>Invoice #</th>
-              <th>Customer</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Issue Date</th>
-              <th>Due Date</th>
-              <th>Balance</th>
-              <th class="actions-heading">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let invoice of invoices; let i = index" 
-                [class.overdue-row]="isOverdue(invoice.dueDate) && invoice.balanceDue > 0">
-              <td class="checkbox-col">
-                <input type="checkbox" [value]="invoice.id" (change)="toggleSelection(invoice.id, $event)"
-                  [checked]="isSelected(invoice.id)">
-              </td>
-              <td class="sn-col">{{ (currentPage * pageSize) + i + 1 }}</td>
-              <td class="invoice-number">{{ invoice.invoiceNumber }}</td>
-              <td class="customer-name">{{ invoice.customerName?.name || invoice.customerName }}</td>
-              <td class="amount">{{ formatCurrency(invoice.totalAmount) }}</td>
-              <td>
-                <span class="status-badge" [class]="getStatusBadgeClass(invoice.status)">
-                  {{ getStatusLabel(invoice.status) | titlecase }}
-                </span>
-              </td>
-              <td>{{ formatDate(invoice.issueDate) }}</td>
-              <td class="due-date" [class.overdue]="isOverdue(invoice.dueDate) && invoice.balanceDue > 0">
-                {{ formatDate(invoice.dueDate) }}
-                <span *ngIf="isOverdue(invoice.dueDate) && invoice.balanceDue > 0" class="due-warning">
-                  ({{ getDaysOverdue(invoice.dueDate) }} days)
-                </span>
-              </td>
-              <td class="balance">{{ formatCurrency(invoice.balanceDue) }}</td>
-              <td class="actions-col">
-                <div class="actions-wrapper">
-                  <button class="action-btn view-btn" (click)="openInvoiceDetail(invoice.id)" title="View Details">
-                    <i class="fas fa-eye"></i>
-                  </button>
-                  <button class="action-btn edit-btn" [disabled]="invoice.status !== 'DRAFT'"
-                    (click)="openEditInvoiceModal(invoice.id)" title="Edit Invoice">
-                    <i class="fas fa-pencil-alt"></i>
-                  </button>
-                  <button class="action-btn reminder-btn" [disabled]="invoice.status !== 'SENT'"
-                    (click)="sendReminder(invoice)" title="Send Reminder">
-                    <i class="fas fa-paper-plane"></i>
-                  </button>
-                  <button class="action-btn duplicate-btn" (click)="duplicateInvoice(invoice)" title="Duplicate Invoice">
-                    <i class="fas fa-copy"></i>
-                  </button>
-                  <button class="action-btn delete-btn" [disabled]="invoice.status === 'CANCELLED'"
-                    (click)="deleteInvoice(invoice)" title="Delete">
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr *ngIf="invoices.length === 0">
-              <td colspan="10" class="empty-state">
-                <div class="empty-state-content">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                    </path>
-                  </svg>
-                  <h3>No invoices found</h3>
-                  <p>Create your first invoice to get started</p>
-                  <button (click)="openNewInvoiceModal()" class="btn-primary-sm">Create Invoice</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Pagination -->
-      <div class="pagination-section" *ngIf="totalPages > 0">
-        <div class="pagination-info">
-          Showing {{ currentPage * pageSize + 1 }} - {{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{
-          totalElements }} invoices
-        </div>
-
-        <div class="pagination-controls">
-          <select class="page-size-select" [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)">
-            <option [value]="10">10 per page</option>
-            <option [value]="25">25 per page</option>
-            <option [value]="50">50 per page</option>
-          </select>
-
-          <div class="pagination-buttons">
-            <button class="page-btn" (click)="onPageChange(0)" [disabled]="currentPage === 0">
-              <i class="fas fa-angle-double-left"></i>
-            </button>
-            <button class="page-btn" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 0">
-              <i class="fas fa-angle-left"></i>
-            </button>
-            <button *ngFor="let page of getPageNumbers()" class="page-number" [class.active]="page === currentPage"
-              (click)="onPageChange(page)">
-              {{ page + 1 }}
-            </button>
-            <button class="page-btn" (click)="onPageChange(currentPage + 1)"
-              [disabled]="currentPage === totalPages - 1">
-              <i class="fas fa-angle-right"></i>
-            </button>
-            <button class="page-btn" (click)="onPageChange(totalPages - 1)" [disabled]="currentPage === totalPages - 1">
-              <i class="fas fa-angle-double-right"></i>
-            </button>
-          </div>
+    <!-- AI Insight Banner -->
+    <div class="il-ai-banner" *ngIf="!aiDismissed && stats.overdue > 0">
+      <div class="il-ai-icon"><i class="fas fa-robot"></i></div>
+      <div class="il-ai-body">
+        <div class="il-ai-title">AI Insight</div>
+        <div class="il-ai-text">
+          <strong>{{ stats.overdue }}</strong> invoice{{ stats.overdue > 1 ? 's are' : ' is' }} overdue. Automated reminders increase collection rates by 47%. Consider sending payment reminders now.
         </div>
       </div>
+      <button type="button" class="il-ai-dismiss" (click)="aiDismissed = true"><i class="fas fa-times"></i></button>
     </div>
-  </div>
+
+    <!-- Bulk action bar -->
+    <div class="il-bulk-bar" *ngIf="selectedInvoiceIds.length > 0">
+      <i class="fas fa-check-square"></i>
+      <span><strong>{{ selectedInvoiceIds.length }}</strong> invoice{{ selectedInvoiceIds.length > 1 ? 's' : '' }} selected</span>
+      <button type="button" class="il-btn il-btn--danger-sm">
+        <i class="fas fa-trash"></i> Delete Selected
+      </button>
+      <button type="button" class="il-btn il-btn--ghost-sm" (click)="selectedInvoiceIds = []">
+        Clear
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="il-table-wrap">
+      <table class="il-table">
+        <thead>
+          <tr>
+            <th class="il-th-chk">
+              <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll($event)">
+            </th>
+            <th>Invoice #</th>
+            <th>Client</th>
+            <th>Amount</th>
+            <th>Issue Date</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th class="il-th-actions">Actions</th>
+          </tr>
+        </thead>
+
+        <!-- Loading skeleton -->
+        <tbody *ngIf="isLoading">
+          <tr class="il-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
+            <td colspan="8"><div class="il-skeleton-bar"></div></td>
+          </tr>
+        </tbody>
+
+        <!-- Empty state -->
+        <tbody *ngIf="!isLoading && invoices.length === 0">
+          <tr>
+            <td colspan="8">
+              <div class="il-empty">
+                <i class="fas fa-file-invoice il-empty-icon"></i>
+                <p class="il-empty-title">No invoices found</p>
+                <p class="il-empty-sub">Adjust your filters or create a new invoice</p>
+                <button type="button" class="il-btn il-btn--primary" (click)="openNewInvoiceModal()">
+                  <i class="fas fa-plus"></i> New Invoice
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+
+        <!-- Data rows -->
+        <tbody *ngIf="!isLoading && invoices.length > 0">
+          <tr *ngFor="let inv of invoices"
+              [class.il-row--overdue]="isOverdue(inv.dueDate) && inv.status !== 'CANCELLED'"
+              [class.il-row--cancelled]="inv.status === 'CANCELLED'">
+
+            <td class="il-td-chk">
+              <input type="checkbox" [checked]="isSelected(inv.id)" (change)="toggleSelection(inv.id, $event)">
+            </td>
+
+            <td class="il-td-num">
+              <button type="button" class="il-link" (click)="openInvoiceDetail(inv.id)">
+                {{ inv.invoiceNumber || '#' + inv.id }}
+              </button>
+            </td>
+
+            <td class="il-td-client">{{ getCustomerName(inv.customerId) }}</td>
+
+            <td class="il-td-amount">{{ formatCurrency(inv.totalAmount) }}</td>
+
+            <td class="il-td-date">{{ formatDate(inv.issueDate) }}</td>
+
+            <td class="il-td-date">
+              {{ formatDate(inv.dueDate) }}
+              <span class="il-overdue-badge" *ngIf="isOverdue(inv.dueDate) && inv.status !== 'CANCELLED'">
+                {{ getDaysOverdue(inv.dueDate) }}d overdue
+              </span>
+            </td>
+
+            <td>
+              <span class="il-status-badge"
+                    [class.il-status-badge--draft]="inv.status === 'DRAFT'"
+                    [class.il-status-badge--sent]="inv.status === 'SENT'"
+                    [class.il-status-badge--cancelled]="inv.status === 'CANCELLED'"
+                    [class.il-status-badge--overdue]="isOverdue(inv.dueDate) && inv.status !== 'CANCELLED'">
+                {{ isOverdue(inv.dueDate) && inv.status !== 'CANCELLED' ? 'Overdue' : getStatusLabel(inv.status) }}
+              </span>
+            </td>
+
+            <td class="il-td-actions">
+              <div class="il-row-actions">
+                <button type="button" class="il-action-btn" (click)="openInvoiceDetail(inv.id)" title="View">
+                  <i class="fas fa-eye"></i> View
+                </button>
+                <button type="button" class="il-action-btn" (click)="openEditInvoiceModal(inv.id)" title="Edit"
+                        *ngIf="inv.status !== 'CANCELLED'">
+                  <i class="fas fa-pencil-alt"></i> Edit
+                </button>
+                <button type="button" class="il-action-btn" (click)="duplicateInvoice(inv)" title="Duplicate">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <button type="button" class="il-action-btn il-action-btn--remind"
+                        (click)="sendReminder(inv)" title="Send Reminder"
+                        *ngIf="inv.status === 'SENT' || isOverdue(inv.dueDate)">
+                  <i class="fas fa-bell"></i> Remind
+                </button>
+                <button type="button" class="il-action-btn il-action-btn--danger"
+                        (click)="deleteInvoice(inv)" title="Cancel Invoice"
+                        *ngIf="inv.status !== 'CANCELLED'">
+                  <i class="fas fa-ban"></i>
+                </button>
+              </div>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="il-pagination" *ngIf="totalElements > 0">
+      <span>
+        Showing {{ filters.page * filters.size + 1 }}–{{ Math.min((filters.page + 1) * filters.size, totalElements) }} of {{ totalElements }}
+      </span>
+      <div class="il-page-btns">
+        <button type="button" class="il-page-btn" [disabled]="filters.page === 0" (click)="onPageChange(filters.page - 1)">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button type="button" class="il-page-btn"
+                *ngFor="let p of getPageNumbers()"
+                [class.il-page-btn--active]="p === filters.page"
+                (click)="onPageChange(p)">{{ p + 1 }}</button>
+        <button type="button" class="il-page-btn" [disabled]="filters.page >= totalPages - 1" (click)="onPageChange(filters.page + 1)">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+  </main>
 </div>
 
-<!-- Modals -->
-<app-invoice-form *ngIf="showInvoiceModal" [editId]="selectedInvoiceId" (saved)="onInvoiceSaved()" (cancelled)="closeInvoiceModal()"></app-invoice-form>
-
-<app-side-modal *ngIf="showInvoiceDetail" (close)="closeInvoiceDetail()">
-  <app-invoice-detail [detailId]="selectedInvoiceId" (closed)="closeInvoiceDetail()" (edit)="closeInvoiceDetail(); openEditInvoiceModal($event)"></app-invoice-detail>
-</app-side-modal>
-
-<!-- Custom Send Reminder Confirmation Modal Overlay -->
-<div class="custom-modal-backdrop" *ngIf="showReminderModal" (click)="showReminderModal = false">
-  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
-    <div class="custom-modal-header">
-      <div class="header-title-group">
-        <div class="icon-badge" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
-          <i class="fas fa-bell"></i>
-        </div>
-        <h3>Payment Reminder</h3>
-      </div>
-      <button type="button" class="btn-close-modal" (click)="showReminderModal = false">&times;</button>
+<!-- ══ SEND REMINDER CONFIRM ══════════════════════════════════════════════ -->
+<div class="il-confirm-backdrop" *ngIf="showReminderModal" (click)="$event.target === $event.currentTarget && (showReminderModal = false)">
+  <div class="il-confirm-modal">
+    <div class="il-confirm-icon" style="color:#4338ca"><i class="fas fa-bell"></i></div>
+    <div class="il-confirm-title">Send Payment Reminder?</div>
+    <div class="il-confirm-sub">
+      Send a reminder to <strong>{{ pendingCustomerName }}</strong> for invoice
+      <strong>{{ pendingInvoiceNumber }}</strong>?
     </div>
-
-    <div class="custom-modal-body" style="padding: 1.5rem; text-align: center;">
-      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(245, 158, 11, 0.1); color: #f59e0b; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem auto;">
-        <i class="fas fa-bell"></i>
-      </div>
-      <h4 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; font-weight: 700; color: #0f172a;">Send Payment Reminder?</h4>
-      <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
-        Send payment reminder for <strong>{{ pendingInvoiceNumber }}</strong> to <strong>{{ pendingCustomerName }}</strong>?
-      </p>
-    </div>
-
-    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
-      <button type="button" class="btn-modal-cancel" (click)="showReminderModal = false">Cancel</button>
-      <button type="button" class="btn-modal-save" (click)="confirmSendReminder()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);">
-        <i class="fas fa-paper-plane"></i> Send Reminder
+    <div class="il-confirm-actions">
+      <button type="button" class="il-btn il-btn--ghost-sm" style="padding:8px 16px;font-size:13px" (click)="showReminderModal = false">Cancel</button>
+      <button type="button" class="il-btn il-btn--primary" (click)="confirmSendReminder()">
+        <i class="fas fa-bell"></i> Send Reminder
       </button>
     </div>
   </div>
 </div>
 
-<!-- Custom Delete Invoice Confirmation Modal Overlay -->
-<div class="custom-modal-backdrop" *ngIf="showDeleteInvoiceModal" (click)="showDeleteInvoiceModal = false">
-  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
-    <div class="custom-modal-header">
-      <div class="header-title-group">
-        <div class="icon-badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
-          <i class="fas fa-trash-alt"></i>
-        </div>
-        <h3>Delete Invoice</h3>
-      </div>
-      <button type="button" class="btn-close-modal" (click)="showDeleteInvoiceModal = false">&times;</button>
+<!-- ══ DELETE / CANCEL CONFIRM ════════════════════════════════════════════ -->
+<div class="il-confirm-backdrop" *ngIf="showDeleteInvoiceModal" (click)="$event.target === $event.currentTarget && (showDeleteInvoiceModal = false)">
+  <div class="il-confirm-modal">
+    <div class="il-confirm-icon" style="color:#dc2626"><i class="fas fa-exclamation-triangle"></i></div>
+    <div class="il-confirm-title">Cancel Invoice?</div>
+    <div class="il-confirm-sub">
+      Cancel invoice <strong>{{ pendingInvoiceNumber }}</strong> for
+      <strong>{{ pendingCustomerName }}</strong>? This action cannot be undone.
     </div>
-
-    <div class="custom-modal-body" style="padding: 1.5rem; text-align: center;">
-      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem auto;">
-        <i class="fas fa-trash-alt"></i>
-      </div>
-      <h4 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; font-weight: 700; color: #0f172a;">Delete Invoice?</h4>
-      <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
-        Are you sure you want to delete invoice <strong>{{ pendingInvoiceNumber }}</strong>? This action cannot be undone.
-      </p>
-    </div>
-
-    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
-      <button type="button" class="btn-modal-cancel" (click)="showDeleteInvoiceModal = false">Cancel</button>
-      <button type="button" class="btn-modal-save" (click)="confirmDeleteInvoice()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);">
-        <i class="fas fa-trash-alt"></i> Delete Invoice
+    <div class="il-confirm-actions">
+      <button type="button" class="il-btn il-btn--ghost-sm" style="padding:8px 16px;font-size:13px" (click)="showDeleteInvoiceModal = false">Keep</button>
+      <button type="button" class="il-btn" style="background:#dc2626;color:#fff;padding:8px 16px;font-size:13px" (click)="confirmDeleteInvoice()">
+        <i class="fas fa-ban"></i> Cancel Invoice
       </button>
     </div>
   </div>
