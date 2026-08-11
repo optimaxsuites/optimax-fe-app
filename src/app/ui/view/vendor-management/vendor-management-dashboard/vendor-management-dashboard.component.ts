@@ -198,23 +198,23 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
   // ============================================================
 
   navigateToVendors(): void {
-    this.router.navigate(['/commerce/manage-vendors']);
+    this.router.navigate(['/admin/sales/commerce/manage-vendors']);
   }
 
   navigateToVendor(id: string): void {
-    this.router.navigate(['/commerce/manage-vendors', id, 'profile']);
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
   }
 
   navigateToPerformance(): void {
-    this.router.navigate(['/commerce/manage-vendors']);
+    this.router.navigate(['/admin/sales/commerce/manage-vendors']);
   }
 
   navigateToRisk(): void {
-    this.router.navigate(['/commerce/manage-vendors']);
+    this.router.navigate(['/admin/sales/commerce/manage-vendors']);
   }
 
   navigateToDocuments(id: string): void {
-    this.router.navigate(['/commerce/manage-vendors', id, 'profile']);
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
   }
 
   // ============================================================

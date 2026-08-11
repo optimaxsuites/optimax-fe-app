@@ -163,7 +163,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     if (this.close.observed) {
       this.close.emit();
     } else {
-      this.router.navigate(['/commerce/manage-vendors']);
+      this.router.navigate(['/admin/sales/commerce/manage-vendors']);
     }
   }
 
@@ -506,7 +506,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     console.log('Deleting vendor...');
     this.showConfirmDialog = false;
     this.confirmAction = null;
-    this.router.navigate(['/commerce/manage-vendors']);
+    this.router.navigate(['/admin/sales/commerce/manage-vendors']);
   }
 
   // ============================================================
@@ -575,7 +575,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   // ============================================================
 
   navigateToEdit(): void {
-    this.router.navigate(['/commerce/manage-vendors', this.vendorId, 'edit']);
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', this.vendorId, 'edit']);
   }
 
   navigateToPerformance(): void {
@@ -846,15 +846,15 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
       event.issueDate,
       event.expiryDate
     ).pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (doc) => {
-        console.log('Document uploaded:', doc);
-        this.loadRelatedData();
-      },
-      error: (err) => {
-        console.error('Failed to upload document:', err);
-      }
-    });
+      .subscribe({
+        next: (doc) => {
+          console.log('Document uploaded:', doc);
+          this.loadRelatedData();
+        },
+        error: (err) => {
+          console.error('Failed to upload document:', err);
+        }
+      });
   }
 
   handleDocumentDelete(documentId: string): void {

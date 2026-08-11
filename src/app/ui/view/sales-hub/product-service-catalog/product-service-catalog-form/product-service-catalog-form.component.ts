@@ -2,11 +2,13 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl, ValidatorFn } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Product, ProductVariant, MeasurementUnit, Supplier } from '../../../../domain/sales/sales.dto';
+import { Product, ProductVariant, MeasurementUnit, Supplier, Category } from '../../../../domain/sales/sales.dto';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 export function futureDateValidator(): ValidatorFn {
   return (control: AbstractControl): { [key: string]: any } | null => {
@@ -38,12 +40,14 @@ export function pastDateValidator(): ValidatorFn {
   selector: 'app-product-service-catalog-form',
   standalone: true,
   imports: [
-    CommonModule, 
-    RouterModule, 
-    FormsModule, 
-    ReactiveFormsModule, 
-    BackButtonComponent
+    CommonModule,
+    RouterModule,
+    FormsModule,
+    ReactiveFormsModule,
+    BackButtonComponent,
+    ToastModule
   ],
+  providers: [MessageService],
   templateUrl: './product-service-catalog-form.component.html',
   styleUrls: ['./product-service-catalog-form.component.scss']
 })
@@ -61,6 +65,7 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
   
   // Mock data
   categories: string[] = [];
+  rawCategories: Category[] = [];
   taxOptions: string[] = ['VAT 7.5%', 'VAT 5%', 'No Tax', '0%'];
   discountOptions: string[] = ['No Discount', '5%', '10%', '15%', '20%', '25%', '50%'];
   measurementUnits: MeasurementUnit[] = [];
@@ -119,18 +124,30 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.productId = this.route.snapshot.paramMap.get('id') || '';
     this.isEditMode = !!this.productId;
-    this.loadCategories();
-    this.loadUnits();
-    this.loadSuppliers();
-    
+
     if (this.isEditMode) {
-      this.loadProduct();
+      forkJoin({
+        cats: this.salesService.getCategories().pipe(catchError(() => of([]))),
+        units: this.salesService.getMeasurementUnits().pipe(catchError(() => of([]))),
+        sups: this.salesService.getSuppliers().pipe(catchError(() => of([])))
+      }).subscribe(({ cats, units, sups }) => {
+        this.rawCategories = cats;
+        this.categories = cats.map(c => c.name);
+        this.measurementUnits = units;
+        this.suppliers = sups;
+        this.loadProduct();
+      });
+    } else {
+      this.loadCategories();
+      this.loadUnits();
+      this.loadSuppliers();
     }
   }
 
   loadCategories(): void {
     this.salesService.getCategories().subscribe({
       next: (cats) => {
+        this.rawCategories = cats;
         this.categories = cats.map(c => c.name);
       }
     });
@@ -213,28 +230,31 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
   loadProduct(): void {
     this.isLoading = true;
     this.salesService.getProductById(this.productId).subscribe({
-      next: (product: Product | null) => {
+      next: (product: any) => {
         if (product) {
-          const prod: any = product;
+          const categoryName = this.rawCategories.find(c => c.id === product.categoryId)?.name || '';
+          const unitName = this.measurementUnits.find(u => u.id === product.measurementUnitId)?.name || 'Each';
+          const supplierName = this.suppliers.find(s => s.id === product.supplierId)?.name || '';
+
           this.productForm.patchValue({
-            name: prod.name,
-            description: prod.description,
-            category: prod.category,
-            sku: prod.sku,
-            costPrice: prod.costPrice,
-            sellingPrice: prod.unitPrice || prod.sellingPrice,
-            quantity: prod.stockQuantity,
-            measurementUnit: typeof prod.measurementUnit === 'object' ? prod.measurementUnit?.name : (prod.measurementUnit || 'Each'),
-            supplier: typeof prod.supplier === 'object' ? prod.supplier?.name : (prod.supplier || ''),
-            selectedSupplier: typeof prod.supplier === 'object' ? prod.supplier?.name : (prod.supplier || ''),
-            isComboProduct: prod.isComboProduct || false
+            name: product.name,
+            description: product.description,
+            category: categoryName,
+            sku: product.sku,
+            costPrice: product.costPrice,
+            sellingPrice: product.unitPrice,
+            quantity: product.stockQuantity,
+            measurementUnit: unitName,
+            supplier: supplierName,
+            selectedSupplier: supplierName,
+            isComboProduct: product.isComboProduct || false
           });
-          this.images = prod.images || [];
-          this.showComboOptions = prod.isComboProduct || false;
+          this.images = product.images || [];
+          this.showComboOptions = product.isComboProduct || false;
 
           this.variantsArray.clear();
-          if (prod.variants && Array.isArray(prod.variants)) {
-            prod.variants.forEach((v: any) => {
+          if (product.variants && Array.isArray(product.variants)) {
+            product.variants.forEach((v: any) => {
               const variantGroup = this.fb.group({
                 name: [v.name, Validators.required],
                 sku: [v.sku],
@@ -277,58 +297,37 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
 
     this.isSubmitting = true;
     const formData = this.productForm.getRawValue();
-    
-    const selectedUnitName = formData.measurementUnit || 'Each';
-    const foundUnit = this.measurementUnits.find(u => u.name === selectedUnitName);
-    const selectedUnit: MeasurementUnit = foundUnit || {
-      id: 1,
-      unitId: 'UNT-001',
-      name: selectedUnitName,
-      code: selectedUnitName.substring(0, 3).toLowerCase(),
-      description: 'Default unit'
-    };
 
-    const selectedSupplierName = formData.supplier || formData.selectedSupplier || '';
-    const foundSupplier = this.suppliers.find(s => s.name === selectedSupplierName);
-    const selectedSupplier: Supplier = foundSupplier || {
-      id: 1,
-      supplierId: 'SUP-001',
-      name: selectedSupplierName || 'Default Supplier'
-    };
+    const foundCategory = this.rawCategories.find(c => c.name === formData.category);
+    const foundUnit = this.measurementUnits.find(u => u.name === (formData.measurementUnit || 'Each'));
+    const supplierName = formData.supplier || formData.selectedSupplier || '';
+    const foundSupplier = this.suppliers.find(s => s.name === supplierName);
 
     const productData: Partial<Product> = {
       name: formData.name,
       description: formData.description,
       sku: formData.sku || `SKU-${Date.now()}`,
       unitPrice: formData.sellingPrice,
-      sellingPrice: formData.sellingPrice,
       costPrice: formData.costPrice,
       stockQuantity: formData.quantity,
-      category: formData.category,
-      measurementUnit: selectedUnit,
-      supplier: selectedSupplier,
+      categoryId: foundCategory?.id ?? undefined,
+      measurementUnitId: foundUnit?.id ?? undefined,
+      supplierId: foundSupplier?.id ?? undefined,
       taxRate: this.extractTaxRate(formData.taxes),
       currency: 'NGN',
-      status: formData.quantity > 0 ? 'ACTIVE' : 'OUT_OF_STOCK',
-      images: this.images,
-      variants: formData.variants || [],
+      status: (formData.quantity ?? 0) > 0 ? 'ACTIVE' as any : 'OUT_OF_STOCK' as any,
       isComboProduct: formData.isComboProduct || false
     };
 
-    const action = this.isEditMode 
+    const action = this.isEditMode
       ? this.salesService.updateProduct(this.productId, productData)
       : this.salesService.createProduct(productData);
 
     action.subscribe({
-      next: (result) => {
+      next: () => {
         this.isSubmitting = false;
         this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product ${this.isEditMode ? 'updated' : 'created'} successfully!` });
-        const uuid = this.route.snapshot.paramMap.get('uuid');
-        if (uuid) {
-          this.router.navigate(['/admin/sales/sales-hub', uuid]);
-        } else {
-          this.router.navigate(['/admin/sales/sales-hub']);
-        }
+        this.goBack();
       },
       error: (error: any) => {
         console.error('Error saving product:', error);

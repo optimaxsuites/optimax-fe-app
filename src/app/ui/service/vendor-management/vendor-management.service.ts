@@ -1521,59 +1521,74 @@ export class VendorService {
       if (filters.dateTo) params = params.set('dateTo', filters.dateTo);
     }
 
-    if (this.useMockData) {
-      const allMock = [
-        ...this.MOCK_VENDORS,
-        ...PendingVendorStore.getAll()
-      ];
-      // Deduplicate — store entries take precedence (they have live status)
-      const seen = new Set<string>();
-      let mockVendors = allMock.filter(v => {
-        if (seen.has(v.id)) return false;
-        seen.add(v.id);
-        return true;
-      });
-
-      // Apply tenant-specific status override
-      mockVendors = mockVendors.map(v => {
-        const tenantStatus = TenantVendorApprovalStore.getStatus(this.tenantId, v.id);
-        if (tenantStatus) {
-          return { ...v, status: tenantStatus };
-        }
-        return v;
-      });
-
-      if (filters?.statuses && Array.isArray(filters.statuses)) {
-        mockVendors = mockVendors.filter(v => filters.statuses!.includes(v.status));
-      } else if (filters?.status) {
-        mockVendors = mockVendors.filter(v => v.status === filters.status);
-      }
-
-      const listResponse: VendorListResponse = {
-        vendors: mockVendors,
-        total: mockVendors.length,
-        page,
-        limit,
-        totalPages: 1
-      };
-      this.vendorsSubject.next(mockVendors);
-      this.loadingSubject.next(false);
-      return of(listResponse);
-    }
-
     return this.http.get<any>(`${this.baseUrl}/vendors`, { params })
       .pipe(
         map(res => {
           const rawVendors: any[] = Array.isArray(res)
             ? res
             : (res?.vendors ?? res?.data ?? res?.content ?? []);
-          const vendors: Vendor[] = rawVendors.map(v => this.mapVendor(v));
+          const backendVendors: Vendor[] = rawVendors.map(v => this.mapVendor(v));
 
-          const resultVendors = vendors.length ? vendors : this.filterMockVendors(filters);
-          const totalCount = res?.total ?? res?.totalCount ?? res?.totalElements ?? resultVendors.length;
+          let finalVendors = backendVendors;
+
+          if (this.useMockData) {
+            // Merge backend vendors with mock data and local store data
+            const allMock = [
+              ...backendVendors,
+              ...this.MOCK_VENDORS,
+              ...PendingVendorStore.getAll()
+            ];
+            // Deduplicate by ID - backend and store entries take priority
+            const seen = new Set<string>();
+            finalVendors = allMock.filter(v => {
+              if (!v.id || seen.has(v.id)) return false;
+              seen.add(v.id);
+              return true;
+            });
+          }
+
+          // Apply tenant-specific status override
+          finalVendors = finalVendors.map(v => {
+            const tenantStatus = TenantVendorApprovalStore.getStatus(this.tenantId, v.id);
+            if (tenantStatus) {
+              return { ...v, status: tenantStatus };
+            }
+            return v;
+          });
+
+          // Apply filters
+          if (filters?.statuses && Array.isArray(filters.statuses)) {
+            finalVendors = finalVendors.filter(v => filters.statuses!.includes(v.status));
+          } else if (filters?.status) {
+            finalVendors = finalVendors.filter(v => v.status === filters.status);
+          }
+
+          if (filters?.tier) {
+            finalVendors = finalVendors.filter(v => v.tier === filters.tier);
+          }
+
+          if (filters?.riskLevel) {
+            finalVendors = finalVendors.filter(v => v.riskLevel === filters.riskLevel);
+          }
+
+          if (filters?.category) {
+            const category = String(filters.category).toLowerCase();
+            finalVendors = finalVendors.filter(v => (v.categories || []).some((cat: string) => cat.toLowerCase().includes(category)));
+          }
+
+          if (filters?.search) {
+            const search = String(filters.search).toLowerCase();
+            finalVendors = finalVendors.filter(v =>
+              (v.companyName || '').toLowerCase().includes(search) ||
+              (v.email || '').toLowerCase().includes(search) ||
+              (v.registrationNumber || '').toLowerCase().includes(search)
+            );
+          }
+
+          const totalCount = res?.total ?? res?.totalCount ?? res?.totalElements ?? finalVendors.length;
           const totalPages = res?.totalPages ?? res?.pages ?? Math.max(Math.ceil(totalCount / limit), 1);
           const listResponse: VendorListResponse = {
-            vendors: resultVendors,
+            vendors: finalVendors,
             total: totalCount,
             page,
             limit,
@@ -1587,7 +1602,53 @@ export class VendorService {
         }),
         catchError(err => {
           this.loadingSubject.next(false);
-          const fallbackVendors = this.filterMockVendors(filters);
+          // Fallback entirely to mock data if API call fails
+          const allMock = [
+            ...this.MOCK_VENDORS,
+            ...PendingVendorStore.getAll()
+          ];
+          const seen = new Set<string>();
+          let fallbackVendors = allMock.filter(v => {
+            if (!v.id || seen.has(v.id)) return false;
+            seen.add(v.id);
+            return true;
+          });
+
+          // Apply tenant-specific status override
+          fallbackVendors = fallbackVendors.map(v => {
+            const tenantStatus = TenantVendorApprovalStore.getStatus(this.tenantId, v.id);
+            return tenantStatus ? { ...v, status: tenantStatus } : v;
+          });
+
+          // Apply filters to fallback list
+          if (filters?.statuses && Array.isArray(filters.statuses)) {
+            fallbackVendors = fallbackVendors.filter(v => filters.statuses!.includes(v.status));
+          } else if (filters?.status) {
+            fallbackVendors = fallbackVendors.filter(v => v.status === filters.status);
+          }
+
+          if (filters?.tier) {
+            fallbackVendors = fallbackVendors.filter(v => v.tier === filters.tier);
+          }
+
+          if (filters?.riskLevel) {
+            fallbackVendors = fallbackVendors.filter(v => v.riskLevel === filters.riskLevel);
+          }
+
+          if (filters?.category) {
+            const category = String(filters.category).toLowerCase();
+            fallbackVendors = fallbackVendors.filter(v => (v.categories || []).some((cat: string) => cat.toLowerCase().includes(category)));
+          }
+
+          if (filters?.search) {
+            const search = String(filters.search).toLowerCase();
+            fallbackVendors = fallbackVendors.filter(v =>
+              (v.companyName || '').toLowerCase().includes(search) ||
+              (v.email || '').toLowerCase().includes(search) ||
+              (v.registrationNumber || '').toLowerCase().includes(search)
+            );
+          }
+
           const listResponse: VendorListResponse = { vendors: fallbackVendors, total: fallbackVendors.length, page, limit, totalPages: 1 };
           this.vendorsSubject.next(fallbackVendors);
           return of(listResponse);
@@ -2003,8 +2064,63 @@ export class VendorService {
 
     const params = new HttpParams().set('tenantId', this.tenantId);
 
-    return this.http.get<VendorDocument[]>(`${this.baseUrl}/vendors/${vendorId}/documents`, { params })
+    return this.http.get<any[]>(`${this.baseUrl}/vendors/${vendorId}/documents`, { params })
       .pipe(
+        map(res => {
+          const rawDocs = Array.isArray(res) ? res : [];
+          return rawDocs.map(raw => {
+            const expDate = raw.expiryDate ? new Date(raw.expiryDate) : new Date();
+            const uploadedAtDate = raw.uploadedDate ? new Date(raw.uploadedDate) : (raw.createdAt ? new Date(raw.createdAt) : new Date());
+            const timeDiff = expDate.getTime() - new Date().getTime();
+            const daysUntilExpiry = Math.max(0, Math.ceil(timeDiff / (1000 * 3600 * 24)));
+
+            let docStatus = DocumentStatus.PENDING_VERIFICATION;
+            const statusUpper = String(raw.status || '').toUpperCase();
+            if (statusUpper === 'ACTIVE' || statusUpper === 'APPROVED') {
+              docStatus = DocumentStatus.ACTIVE;
+            } else if (statusUpper === 'EXPIRED') {
+              docStatus = DocumentStatus.EXPIRED;
+            } else if (statusUpper === 'EXPIRING_SOON') {
+              docStatus = DocumentStatus.EXPIRING_SOON;
+            } else if (statusUpper === 'REJECTED') {
+              docStatus = DocumentStatus.REJECTED;
+            } else if (statusUpper === 'PENDING') {
+              docStatus = DocumentStatus.PENDING_VERIFICATION;
+            }
+
+            let category = DocumentCategory.REGISTRATION;
+            const categoryUpper = String(raw.category || '').toUpperCase();
+            if (categoryUpper === 'REGISTRATION') {
+              category = DocumentCategory.REGISTRATION;
+            } else if (categoryUpper === 'TAX') {
+              category = DocumentCategory.TAX;
+            } else if (categoryUpper === 'LICENCE' || categoryUpper === 'LICENSE') {
+              category = DocumentCategory.LICENCE;
+            } else if (categoryUpper === 'INSURANCE') {
+              category = DocumentCategory.INSURANCE;
+            } else if (categoryUpper === 'CERTIFICATION') {
+              category = DocumentCategory.CERTIFICATION;
+            }
+
+            return {
+              id: String(raw.id),
+              vendorId: String(raw.vendorId || vendorId),
+              category: category,
+              name: raw.label || raw.fileName || 'Unnamed Document',
+              fileName: raw.fileName || '',
+              fileUrl: raw.fileUrl || '',
+              fileSize: Number(raw.fileSize || 0),
+              fileType: raw.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/png',
+              issueDate: raw.createdAt ? new Date(raw.createdAt) : uploadedAtDate,
+              expiryDate: expDate,
+              status: docStatus,
+              isRequired: !!raw.isRequired,
+              daysUntilExpiry: daysUntilExpiry,
+              uploadedAt: uploadedAtDate,
+              uploadedBy: raw.uploadedBy || 'Vendor User'
+            } as VendorDocument;
+          });
+        }),
         tap(() => this.loadingSubject.next(false)),
         catchError(err => {
           this.loadingSubject.next(false);

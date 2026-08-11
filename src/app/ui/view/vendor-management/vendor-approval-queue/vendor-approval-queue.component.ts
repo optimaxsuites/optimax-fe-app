@@ -598,11 +598,11 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
   // ============================================================
 
   viewVendor(id: string): void {
-    this.router.navigate(['/commerce/manage-vendors', id, 'profile']);
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
   }
 
   viewDocuments(id: string): void {
-    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], { queryParams: { tab: 'documents' } });
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], { queryParams: { tab: 'documents' } });
   }
 
   // ============================================================
@@ -660,7 +660,8 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
       [VendorStatus.UNDER_REVIEW]: 'Under Review',
       [VendorStatus.SUSPENDED]: 'Suspended',
       [VendorStatus.OFFBOARDED]: 'Offboarded',
-      [VendorStatus.CONDITIONAL]: 'Conditional'
+      [VendorStatus.CONDITIONAL]: 'Conditional',
+      [VendorStatus.REJECTED]: 'Rejected'
     };
     return map[status] || status;
   }

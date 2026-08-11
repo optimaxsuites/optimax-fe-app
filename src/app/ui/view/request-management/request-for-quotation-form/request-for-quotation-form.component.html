@@ -153,6 +153,7 @@
                   <label>Unit <span class="req">*</span></label>
                   <div class="input-with-btn">
                     <select formControlName="unit" class="field-input">
+                      <option value="" disabled>Select Unit</option>
                       <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
                     </select>
                     <button type="button" class="btn-action-add" (click)="openAddUnitModal(i)" title="Add Custom Unit">

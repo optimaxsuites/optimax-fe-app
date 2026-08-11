@@ -305,22 +305,19 @@ export class SalesService {
 
   createCategory(catData: Partial<Category>): Observable<Category[]> {
     return this.http.post<any>(`${this.base}/categories`, { ...catData, tenantId: this.tenantId }).pipe(
-      switchMap(() => this.getCategories()),
-      catchError(() => of([]))
+      switchMap(() => this.getCategories())
     );
   }
 
   updateCategory(id: string | number, catData: Partial<Category>): Observable<Category[]> {
     return this.http.put<any>(`${this.base}/categories/${id}`, { ...catData, tenantId: this.tenantId }).pipe(
-      switchMap(() => this.getCategories()),
-      catchError(() => of([]))
+      switchMap(() => this.getCategories())
     );
   }
 
   deleteCategory(id: string | number): Observable<Category[]> {
     return this.http.delete<any>(`${this.base}/categories/${id}`).pipe(
-      switchMap(() => this.getCategories()),
-      catchError(() => of([]))
+      switchMap(() => this.getCategories())
     );
   }
 
@@ -471,29 +468,35 @@ export class SalesService {
   getMeasurementUnits(): Observable<MeasurementUnit[]> {
     const params = new HttpParams().set('tenantId', this.tenantId);
     return this.http.get<any>(`${this.base}/measurement-units`, { params }).pipe(
-      map(res => res.data ?? res ?? []),
+      map(res => {
+        const arr: any[] = res.data ?? (Array.isArray(res) ? res : []);
+        return arr.map(u => ({
+          id: u.id,
+          unitId: String(u.id),
+          name: u.name,
+          code: u.code,
+          description: u.description
+        } as MeasurementUnit));
+      }),
       catchError(() => of(this.defaultUnits))
     );
   }
 
   createMeasurementUnit(unitData: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
     return this.http.post<any>(`${this.base}/measurement-units`, { ...unitData, tenantId: this.tenantId }).pipe(
-      switchMap(() => this.getMeasurementUnits()),
-      catchError(() => of([]))
+      switchMap(() => this.getMeasurementUnits())
     );
   }
 
   updateMeasurementUnit(id: string | number, unitData: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
     return this.http.put<any>(`${this.base}/measurement-units/${id}`, { ...unitData, tenantId: this.tenantId }).pipe(
-      switchMap(() => this.getMeasurementUnits()),
-      catchError(() => of([]))
+      switchMap(() => this.getMeasurementUnits())
     );
   }
 
   deleteMeasurementUnit(id: string | number): Observable<MeasurementUnit[]> {
     return this.http.delete<any>(`${this.base}/measurement-units/${id}`).pipe(
-      switchMap(() => this.getMeasurementUnits()),
-      catchError(() => of([]))
+      switchMap(() => this.getMeasurementUnits())
     );
   }
 
@@ -504,29 +507,37 @@ export class SalesService {
   getSuppliers(): Observable<Supplier[]> {
     const params = new HttpParams().set('tenantId', this.tenantId);
     return this.http.get<any>(`${this.base}/suppliers`, { params }).pipe(
-      map(res => res.data ?? res ?? []),
+      map(res => {
+        const arr: any[] = res.data ?? (Array.isArray(res) ? res : []);
+        return arr.map(s => ({
+          id: s.id,
+          supplierId: String(s.id),
+          name: s.name,
+          email: s.email,
+          phone: s.phone,
+          address: s.address,
+          contactPerson: s.contactPerson
+        } as Supplier));
+      }),
       catchError(() => of([]))
     );
   }
 
   createSupplier(supplierData: Partial<Supplier>): Observable<Supplier[]> {
     return this.http.post<any>(`${this.base}/suppliers`, { ...supplierData, tenantId: this.tenantId }).pipe(
-      switchMap(() => this.getSuppliers()),
-      catchError(() => of([]))
+      switchMap(() => this.getSuppliers())
     );
   }
 
   updateSupplier(id: string | number, supplierData: Partial<Supplier>): Observable<Supplier[]> {
     return this.http.put<any>(`${this.base}/suppliers/${id}`, { ...supplierData, tenantId: this.tenantId }).pipe(
-      switchMap(() => this.getSuppliers()),
-      catchError(() => of([]))
+      switchMap(() => this.getSuppliers())
     );
   }
 
   deleteSupplier(id: string | number): Observable<Supplier[]> {
     return this.http.delete<any>(`${this.base}/suppliers/${id}`).pipe(
-      switchMap(() => this.getSuppliers()),
-      catchError(() => of([]))
+      switchMap(() => this.getSuppliers())
     );
   }
 
