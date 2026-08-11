@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, forkJoin } from 'rxjs';
 import { map, tap, catchError, switchMap } from 'rxjs/operators';
 import {
   VendorRegistration, RegistrationStatus,
@@ -123,9 +123,68 @@ export class VendorRegistrationService {
     );
   }
 
+  private uploadRegistrationDocuments(vendorId: string, docs: UploadedDocument[]): Observable<any[]> {
+    if (!docs || docs.length === 0) {
+      return of([]);
+    }
+
+    const parseFileSize = (sizeStr: string): number => {
+      if (!sizeStr) return 0;
+      const match = sizeStr.match(/^([\d.]+)\s*(B|KB|MB|GB|TB)?$/i);
+      if (!match) return 0;
+      const val = parseFloat(match[1]);
+      const unit = match[2]?.toUpperCase();
+      if (unit === 'KB') return val * 1024;
+      if (unit === 'MB') return val * 1024 * 1024;
+      if (unit === 'GB') return val * 1024 * 1024 * 1024;
+      return val;
+    };
+
+    const getCategoryForType = (type: string): string => {
+      const t = String(type || '').toLowerCase();
+      if (t === 'cac_certificate' || t === 'company_profile' || t === 'bank_reference_letter' || t === 'annual_accounts') {
+        return 'REGISTRATION';
+      } else if (t === 'tax_clearance' || t === 'vat_certificate') {
+        return 'TAX';
+      } else if (t === 'nafdac_cert' || t === 'son_cert' || t === 'iso_certificate') {
+        return 'CERTIFICATION';
+      } else if (t === 'public_liability_insurance' || t === 'professional_indemnity') {
+        return 'INSURANCE';
+      }
+      return 'REGISTRATION';
+    };
+
+    const requests = docs.map(doc => {
+      const payload = {
+        vendorId: Number(vendorId) || vendorId,
+        type: String(doc.type || '').toUpperCase(),
+        label: doc.label || this.docTypeLabel(doc.type),
+        fileName: doc.fileName || '',
+        fileSize: doc.file ? doc.file.size : parseFileSize(doc.fileSize),
+        fileUrl: doc.fileUrl || '',
+        uploadedDate: doc.uploadedDate ? new Date(doc.uploadedDate).toISOString() : new Date().toISOString(),
+        expiryDate: doc.expiryDate ? new Date(doc.expiryDate).toISOString() : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        isRequired: !!doc.isRequired,
+        status: 'PENDING',
+        category: getCategoryForType(doc.type),
+        notes: 'Submitted during registration'
+      };
+
+      return this.http.post(`${this.baseUrl}/vendors/${vendorId}/documents`, payload).pipe(
+        catchError(err => {
+          console.error('[VendorRegistrationService] Failed to upload doc:', doc.fileName, err);
+          return of(null);
+        })
+      );
+    });
+
+    return forkJoin(requests);
+  }
+
   // ── Submit ────────────────────────────────────────────────────────────────
   submit(reg: VendorRegistration): Observable<{ applicationNumber: string }> {
     const vendorId = reg.id;
+    const docs = reg.step6?.uploadedDocuments ?? [];
 
     // Helper: map registration form data to the Vendor DTO used by the
     // management side, then write it into PendingVendorStore.
@@ -245,19 +304,24 @@ export class VendorRegistrationService {
         switchMap(({ id }) => {
           this.registration$$.next({ ...reg, id } as VendorRegistration);
           mapAndStore(id);
-          return this.http.patch<{ applicationNumber: string }>(
-            `${this.baseUrl}/vendors/${id}/submit`, {}
-          ).pipe(
-            tap(res => {
-              const current = this.registration$$.getValue();
-              if (current) {
-                this.registration$$.next({
-                  ...current, status: 'submitted',
-                  submittedDate: new Date(), applicationNumber: res.applicationNumber,
-                } as VendorRegistration);
-              }
+          // Post the documents to the created vendor ID first
+          return this.uploadRegistrationDocuments(id, docs).pipe(
+            switchMap(() => {
+              return this.http.patch<{ applicationNumber: string }>(
+                `${this.baseUrl}/vendors/${id}/submit`, {}
+              ).pipe(
+                tap(res => {
+                  const current = this.registration$$.getValue();
+                  if (current) {
+                    this.registration$$.next({
+                      ...current, status: 'submitted',
+                      submittedDate: new Date(), applicationNumber: res.applicationNumber,
+                    } as VendorRegistration);
+                  }
+                }),
+                map(res => ({ applicationNumber: res.applicationNumber }))
+              );
             }),
-            map(res => ({ applicationNumber: res.applicationNumber })),
             catchError(() => {
               const appNum = mapAndStore(id);
               return of({ applicationNumber: appNum });
@@ -273,18 +337,22 @@ export class VendorRegistrationService {
       );
     }
 
-    return this.http.patch<{ applicationNumber: string }>(`${this.baseUrl}/vendors/${vendorId}/submit`, {}).pipe(
-      tap(res => {
-        const current = this.registration$$.getValue();
-        if (current) {
-          this.registration$$.next({
-            ...current, status: 'submitted',
-            submittedDate: new Date(), applicationNumber: res.applicationNumber,
-          } as VendorRegistration);
-        }
-        mapAndStore(vendorId);
+    return this.uploadRegistrationDocuments(vendorId, docs).pipe(
+      switchMap(() => {
+        return this.http.patch<{ applicationNumber: string }>(`${this.baseUrl}/vendors/${vendorId}/submit`, {}).pipe(
+          tap(res => {
+            const current = this.registration$$.getValue();
+            if (current) {
+              this.registration$$.next({
+                ...current, status: 'submitted',
+                submittedDate: new Date(), applicationNumber: res.applicationNumber,
+              } as VendorRegistration);
+            }
+            mapAndStore(vendorId);
+          }),
+          map(res => ({ applicationNumber: res.applicationNumber }))
+        );
       }),
-      map(res => ({ applicationNumber: res.applicationNumber })),
       catchError(() => {
         const appNum = mapAndStore(vendorId);
         return of({ applicationNumber: appNum });
