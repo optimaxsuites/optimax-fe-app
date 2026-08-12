@@ -1467,10 +1467,12 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     };
 
     try {
-      await lastValueFrom(this.notificationService.trigger(triggerPayload));
+      console.log('[QuoteFormComponent] Triggering email notification with payload:', triggerPayload);
+      const response = await lastValueFrom(this.notificationService.trigger(triggerPayload));
+      console.log('[QuoteFormComponent] Email notification triggered successfully:', response);
       this.messageService.add({ severity: 'success', summary: 'Email Sent', detail: `Quote sent successfully to ${email}` });
     } catch (err) {
-      console.error('Failed to send quote email:', err);
+      console.error('[QuoteFormComponent] Failed to send quote email:', err);
       this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send quote email via notification service.' });
     }
   }

@@ -177,7 +177,15 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       next: (response: Customer) => {
         this.isSubmitting = false;
         this.messages = [{ severity: 'success', summary: 'Success', detail: this.isEditMode ? 'Customer updated successfully!' : 'Customer created successfully!' }];
-        this.router.navigate(['/admin/sales/customers']);
+        let uuid = this.route.snapshot.paramMap.get('uuid');
+        if (uuid === 'edit') {
+          uuid = null;
+        }
+        if (uuid) {
+          this.router.navigate(['/admin/sales/sales-hub', uuid]);
+        } else {
+          this.router.navigate(['/admin/sales/sales-hub']);
+        }
       },
       error: (error: any) => {
         console.error('Error saving customer:', error);
