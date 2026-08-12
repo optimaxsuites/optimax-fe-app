@@ -4,6 +4,8 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, F
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
+import { PdfGenerationService } from '../../../../service/procurement/pdf-generation.service';
+import { NotificationService } from '../../../../service/procurement/notification.service';
 import { Customer, Product, Quote, QuoteStatus, QuoteItem, CustomerBankDetails } from '../../../../domain/sales/sales.dto';
 import { toDateInputValue } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
@@ -207,6 +209,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     private salesService: SalesService,
     private companyProfileService: CompanyProfileService,
     private cdr: ChangeDetectorRef,
+    private pdfGenerationService: PdfGenerationService,
+    private notificationService: NotificationService,
     router: Router
   ) {
     this.router = router;
@@ -1275,13 +1279,28 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   private async handleDeliveryAction(quote: Quote, action: 'pdf' | 'email' | 'both'): Promise<void> {
     try {
       if (action === 'pdf') {
-        const pdfBlob = await this.generateQuotePDF(quote);
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(pdfBlob);
-        link.download = `Quote-${quote.quoteNumber}.pdf`;
-        link.click();
-        URL.revokeObjectURL(link.href);
-        this.navigateAfterSubmit(quote);
+        this.pdfGenerationService.generatePdf({
+          documentType: 'QUOTATION',
+          documentId: String(quote.id),
+          documentNumber: quote.quoteNumber,
+          tenantId: 'optimax',
+          data: quote
+        }).subscribe({
+          next: (blob: any) => {
+            this.pdfGenerationService.downloadBlob(blob, `Quote-${quote.quoteNumber}.pdf`);
+            this.navigateAfterSubmit(quote);
+          },
+          error: (err) => {
+            console.warn('[QuoteFormComponent] Server PDF failed, using client fallback:', err);
+            this.generateQuotePDF(quote).then(clientBlob => {
+              this.pdfGenerationService.downloadBlob(clientBlob, `Quote-${quote.quoteNumber}.pdf`);
+              this.navigateAfterSubmit(quote);
+            }).catch(e => {
+              console.error('Client PDF generation failed:', e);
+              this.navigateAfterSubmit(quote);
+            });
+          }
+        });
       } else {
         // 'email' or 'both' -> Trigger custom Send Quote modal popup
         this.pendingDeliveryQuote = quote;
@@ -1303,12 +1322,23 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
     if (this.selectedAction === 'both') {
       try {
-        const pdfBlob = await this.generateQuotePDF(quote);
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(pdfBlob);
-        link.download = `Quote-${quote.quoteNumber}.pdf`;
-        link.click();
-        URL.revokeObjectURL(link.href);
+        this.pdfGenerationService.generatePdf({
+          documentType: 'QUOTATION',
+          documentId: String(quote.id),
+          documentNumber: quote.quoteNumber,
+          tenantId: 'optimax',
+          data: quote
+        }).subscribe({
+          next: (blob: any) => {
+            this.pdfGenerationService.downloadBlob(blob, `Quote-${quote.quoteNumber}.pdf`);
+          },
+          error: (err) => {
+            console.warn('[QuoteFormComponent] Server PDF failed on confirm, using client fallback:', err);
+            this.generateQuotePDF(quote).then(clientBlob => {
+              this.pdfGenerationService.downloadBlob(clientBlob, `Quote-${quote.quoteNumber}.pdf`);
+            }).catch(e => console.error('Client PDF failed:', e));
+          }
+        });
       } catch (e) {
         console.error('Error generating PDF during delivery:', e);
       }
@@ -1403,10 +1433,46 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     return pdf.output('blob');
   }
 
-  // Send email (placeholder)
+  // Send email via NotificationService
   private async sendQuoteEmail(quote: Quote): Promise<void> {
-    console.log(`Sending quote ${quote.quoteNumber} to ${quote.customerName}`);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const customerObj = this.customers.find(c =>
+      c.customerId === (quote.customerId as any)?.customerId ||
+      String(c.id) === String((quote.customerId as any)?.id || quote.customerId)
+    );
+    const email = customerObj?.email || (quote.customerName as any)?.email || '';
+    const name = customerObj?.name || (quote.customerName as any)?.name || 'Customer';
+
+    if (!email) {
+      console.warn('Cannot send email, customer email is missing');
+      this.messageService.add({ severity: 'warn', summary: 'Missing Email', detail: 'Could not find recipient email address' });
+      return;
+    }
+
+    console.log(`Sending quote ${quote.quoteNumber} to ${email}`);
+
+    const triggerPayload = {
+      type: 'QUOTATION_RECEIVED' as any,
+      recipientId: String(customerObj?.id || quote.customerId || '0'),
+      recipientEmail: email,
+      recipientName: name,
+      relatedEntityId: String(quote.id),
+      relatedEntityType: 'QUOTATION',
+      templateData: {
+        quoteNumber: quote.quoteNumber,
+        customerName: name,
+        totalAmount: quote.totalAmount,
+        currency: quote.currency || 'NGN',
+        validUntil: quote.validUntil
+      }
+    };
+
+    try {
+      await lastValueFrom(this.notificationService.trigger(triggerPayload));
+      this.messageService.add({ severity: 'success', summary: 'Email Sent', detail: `Quote sent successfully to ${email}` });
+    } catch (err) {
+      console.error('Failed to send quote email:', err);
+      this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send quote email via notification service.' });
+    }
   }
 
   cancel(): void {
