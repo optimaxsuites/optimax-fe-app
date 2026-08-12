@@ -479,7 +479,7 @@
 
   <!-- ══ STEP 3: Template ═════════════════════════════════════════════════ -->
   <div class="if-body if-body--centered" *ngIf="currentStep === 3">
-    <app-template-types [invoiceData]="invoiceDataForTemplate" (templateSelected)="onTemplateSelected($event)"></app-template-types>
+    <app-template-types [quoteData]="invoiceDataForTemplate" (templateSelected)="onTemplateSelected($event)"></app-template-types>
   </div>
 
   <!-- ══ STEP 4: Preview & Send ═══════════════════════════════════════════ -->

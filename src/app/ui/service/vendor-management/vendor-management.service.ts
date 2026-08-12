@@ -1536,13 +1536,17 @@ export class VendorService {
       if (filters.dateTo) params = params.set('dateTo', filters.dateTo);
     }
 
+    console.log('[VendorService] getVendors request params:', params.toString(), 'Filters:', filters);
+
     return this.http.get<any>(`${this.baseUrl}/vendors`, { params })
       .pipe(
         map(res => {
+          console.log('[VendorService] getVendors raw response:', res);
           const rawVendors: any[] = Array.isArray(res)
             ? res
             : (res?.vendors ?? res?.data ?? res?.content ?? []);
           const backendVendors: Vendor[] = rawVendors.map(v => this.mapVendor(v));
+          console.log('[VendorService] getVendors mapped backend vendors:', backendVendors);
 
           let finalVendors = backendVendors;
 
@@ -1560,6 +1564,7 @@ export class VendorService {
               seen.add(v.id);
               return true;
             });
+            console.log('[VendorService] getVendors merged mock data vendors (useMockData=true):', finalVendors);
           }
 
           // Apply tenant-specific status override
@@ -1574,8 +1579,10 @@ export class VendorService {
           // Apply filters
           if (filters?.statuses && Array.isArray(filters.statuses)) {
             finalVendors = finalVendors.filter(v => filters.statuses!.includes(v.status));
+            console.log('[VendorService] filtered by statuses:', filters.statuses, 'Count:', finalVendors.length);
           } else if (filters?.status) {
             finalVendors = finalVendors.filter(v => v.status === filters.status);
+            console.log('[VendorService] filtered by status:', filters.status, 'Count:', finalVendors.length);
           }
 
           if (filters?.tier) {
@@ -1600,6 +1607,8 @@ export class VendorService {
             );
           }
 
+          console.log('[VendorService] getVendors final visible vendors:', finalVendors);
+
           const totalCount = res?.total ?? res?.totalCount ?? res?.totalElements ?? finalVendors.length;
           const totalPages = res?.totalPages ?? res?.pages ?? Math.max(Math.ceil(totalCount / limit), 1);
           const listResponse: VendorListResponse = {
@@ -1616,6 +1625,7 @@ export class VendorService {
           this.loadingSubject.next(false);
         }),
         catchError(err => {
+          console.error('[VendorService] getVendors API failed:', err);
           this.loadingSubject.next(false);
           // Fallback entirely to mock data if API call fails
           const allMock = [
