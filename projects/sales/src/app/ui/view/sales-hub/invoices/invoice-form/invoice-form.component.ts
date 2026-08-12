@@ -1664,10 +1664,12 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     };
 
     try {
-      await lastValueFrom(this.notificationService.trigger(triggerPayload));
+      console.log('[InvoiceFormComponent] Triggering email notification with payload:', triggerPayload);
+      const response = await lastValueFrom(this.notificationService.trigger(triggerPayload));
+      console.log('[InvoiceFormComponent] Email notification triggered successfully:', response);
       this.messageService.add({ severity: 'success', summary: 'Email Sent', detail: `Invoice sent successfully to ${email}` });
     } catch (err) {
-      console.error('Failed to send invoice email:', err);
+      console.error('[InvoiceFormComponent] Failed to send invoice email:', err);
       this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send invoice email via notification service.' });
     }
   }
