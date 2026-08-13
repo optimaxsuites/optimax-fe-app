@@ -29,7 +29,8 @@
       <button class="snav-item" [class.active]="activeSection === 'payroll'" (click)="activeSection = 'payroll'">
         <i class="fas fa-money-check-alt"></i> Payroll Config
       </button>
-      <button class="snav-item" [class.active]="activeSection === 'office-hours'" (click)="activeSection = 'office-hours'">
+      <button class="snav-item" [class.active]="activeSection === 'office-hours'"
+        (click)="activeSection = 'office-hours'">
         <i class="fas fa-clock"></i> Office Hours
       </button>
     </div>
@@ -370,6 +371,88 @@
             </button>
           </div>
         </div>
+      </ng-container>
+
+      <!-- ══ PAYROLL CONFIG ══ -->
+      <ng-container *ngIf="activeSection === 'payroll'">
+        <div class="section-head">
+          <h3>Payroll Configuration</h3>
+          <p>Set pay cycle dates, statutory deductions, and default allowances for your organisation.</p>
+        </div>
+
+        <div *ngIf="payrollSettingsLoading" style="padding:32px;text-align:center;color:#94a3b8">
+          <i class="fas fa-spinner fa-spin" style="font-size:24px"></i>
+        </div>
+
+        <ng-container *ngIf="!payrollSettingsLoading">
+
+          <!-- Pay cycle -->
+          <div class="settings-group">
+            <h4 class="settings-group__title">Pay Cycle</h4>
+            <div class="settings-row">
+              <div class="settings-row__info">
+                <span class="settings-row__label">Pay Day</span>
+                <span class="settings-row__desc">Day of the month salaries are disbursed (1–31)</span>
+              </div>
+              <input type="number" min="1" max="31" [(ngModel)]="payrollConfig.payDay" class="settings-num-input" />
+            </div>
+            <div class="settings-row">
+              <div class="settings-row__info">
+                <span class="settings-row__label">Payroll Lock Day</span>
+                <span class="settings-row__desc">Day payroll is locked for processing — no changes after this</span>
+              </div>
+              <input type="number" min="1" max="31" [(ngModel)]="payrollConfig.lockDay" class="settings-num-input" />
+            </div>
+            <div class="settings-row">
+              <div class="settings-row__info">
+                <span class="settings-row__label">Working Days / Month</span>
+                <span class="settings-row__desc">Used for daily rate calculations</span>
+              </div>
+              <input type="number" min="1" max="31" [(ngModel)]="payrollConfig.workingDaysPerMonth"
+                class="settings-num-input" />
+            </div>
+          </div>
+
+          <!-- Statutory deductions -->
+          <div class="settings-group">
+            <h4 class="settings-group__title">Statutory Deductions</h4>
+            <div class="settings-row" *ngFor="let key of deductionKeys">
+              <div class="settings-row__info">
+                <span class="settings-row__label">{{ deductionLabel(key) }}</span>
+                <span class="settings-row__desc">{{ deductionDesc(key) }}</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" [(ngModel)]="deductionToggles[key]" />
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Default allowances -->
+          <div class="settings-group">
+            <h4 class="settings-group__title">Default Allowances (₦)</h4>
+            <div class="settings-row" *ngFor="let key of allowanceKeys">
+              <div class="settings-row__info">
+                <span class="settings-row__label">{{ allowanceLabel(key) }}</span>
+              </div>
+              <input type="number" min="0" [(ngModel)]="allowanceDefaults[key]" class="settings-num-input"
+                placeholder="0" />
+            </div>
+          </div>
+
+          <!-- Save -->
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 0">
+            <button class="btn-primary" (click)="savePayrollSettings()" [disabled]="payrollSettingsSaving">
+              <i class="fas" [class.fa-save]="!payrollSettingsSaving" [class.fa-spinner]="payrollSettingsSaving"
+                [class.fa-spin]="payrollSettingsSaving"></i>
+              {{ payrollSettingsSaving ? 'Saving…' : 'Save Payroll Settings' }}
+            </button>
+            <span *ngIf="payrollSaveSuccess" style="color:#10b981;font-size:13px;font-weight:600">
+              <i class="fas fa-check-circle"></i> Saved successfully
+            </span>
+          </div>
+
+        </ng-container>
       </ng-container>
 
       <!-- ══ OFFICE HOURS ══ -->

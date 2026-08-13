@@ -33,22 +33,24 @@
       <!-- SHIFT NAME -->
       <div class="form-group">
         <label>Shift <span class="required">*</span></label>
-        <select formControlName="shiftId">
+        <select formControlName="shiftId" (change)="onShiftChange($event)">
           <option value="">E.g., Morning Shift, Night Duty</option>
           <option *ngFor="let shift of shifts" [value]="shift.id">
             {{ shift.name }} ({{ shift.startTime }} – {{ shift.endTime }})
           </option>
+          <option value="__add_new__" class="add-new-option">+ Add New Shift</option>
         </select>
       </div>
 
       <!-- PROJECT -->
       <div class="form-group">
         <label>Project</label>
-        <select formControlName="project">
+        <select formControlName="project" (change)="onProjectChange($event)">
           <option value="">Select a project</option>
           <option *ngFor="let p of projects" [value]="p">
             {{ p }}
           </option>
+          <option value="__add_new__" class="add-new-option">+ Add New Project</option>
         </select>
       </div>
 
@@ -279,5 +281,53 @@
     </form>
   </div>
   </div>
-  
+
+  <!-- ADD NEW SHIFT MODAL -->
+  <div *ngIf="showAddShiftModal" class="modal-overlay" (click)="closeAddShiftModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Add New Shift</h3>
+        <button class="close-btn" (click)="closeAddShiftModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Shift Name <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="newShiftName" placeholder="E.g., Morning Shift" [ngModelOptions]="{standalone: true}">
+        </div>
+        <div class="form-group">
+          <label>Start Time <span class="required">*</span></label>
+          <input type="time" [(ngModel)]="newShiftStart" [ngModelOptions]="{standalone: true}">
+        </div>
+        <div class="form-group">
+          <label>End Time <span class="required">*</span></label>
+          <input type="time" [(ngModel)]="newShiftEnd" [ngModelOptions]="{standalone: true}">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="cancel-btn" (click)="closeAddShiftModal()">Cancel</button>
+        <button class="save-btn" (click)="saveNewShiftModal()">Save Shift</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD NEW PROJECT MODAL -->
+  <div *ngIf="showAddProjectModal" class="modal-overlay" (click)="closeAddProjectModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Add New Project</h3>
+        <button class="close-btn" (click)="closeAddProjectModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Project Name <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="newProjectName" placeholder="Enter project name" [ngModelOptions]="{standalone: true}">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="cancel-btn" (click)="closeAddProjectModal()">Cancel</button>
+        <button class="save-btn" (click)="saveNewProjectModal()">Save Project</button>
+      </div>
+    </div>
+  </div>
+
 </div>
