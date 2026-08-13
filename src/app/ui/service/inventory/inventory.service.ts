@@ -30,7 +30,10 @@ import {
   RestockStatus,
   RestockUrgency,
   StockAlertType,
-  StockAlertSeverity
+  StockAlertSeverity,
+  Supplier,
+  Category,
+  MeasurementUnit
 } from '../../domain/inventory/inventory.dto';
 
 // ============================================================
@@ -961,5 +964,187 @@ export class InventoryService {
     this.loadingSubject.next(false);
     this.errorSubject.next(null);
     this.currentBranchIdSubject.next(null);
+  }
+
+  // inventory.service.ts - Add these methods
+
+  // ============================================================
+  // CATEGORIES
+  // ============================================================
+
+  /**
+   * Get all categories
+   */
+  getCategories(): Observable<Category[]> {
+    return this.http.get<ApiResponse<Category[]>>(`${API_BASE}/categories`)
+      .pipe(
+        map(response => response.data),
+        catchError(err => {
+          this.errorSubject.next('Failed to load categories');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
+   * Create a category
+   */
+  createCategory(category: Partial<Category>): Observable<Category[]> {
+    return this.http.post<ApiResponse<Category[]>>(`${API_BASE}/categories`, category)
+      .pipe(
+        map(response => response.data),
+        catchError(err => {
+          this.errorSubject.next('Failed to create category');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
+   * Update a category
+   */
+  updateCategory(id: string, category: Partial<Category>): Observable<Category[]> {
+    return this.http.put<ApiResponse<Category[]>>(`${API_BASE}/categories/${id}`, category)
+      .pipe(
+        map(response => response.data),
+        catchError(err => {
+          this.errorSubject.next('Failed to update category');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
+   * Delete a category
+   */
+  deleteCategory(id: string): Observable<Category[]> {
+    return this.http.delete<ApiResponse<Category[]>>(`${API_BASE}/categories/${id}`)
+      .pipe(
+        map(response => response.data),
+        catchError(err => {
+          this.errorSubject.next('Failed to delete category');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  // ============================================================
+  // MEASUREMENT UNITS
+  // ============================================================
+
+  /**
+   * Get all measurement units
+   */
+  getMeasurementUnits(): Observable<MeasurementUnit[]> {
+    return this.http.get<ApiResponse<MeasurementUnit[]>>(`${API_BASE}/units`)
+      .pipe(
+        map(response => response.data),
+        catchError(err => {
+          this.errorSubject.next('Failed to load units');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
+   * Create a measurement unit
+   */
+  createMeasurementUnit(unit: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
+    return this.http.post<ApiResponse<MeasurementUnit[]>>(`${API_BASE}/units`, unit)
+      .pipe(
+        map(response => response.data),
+        catchError(err => {
+          this.errorSubject.next('Failed to create unit');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
+   * Update a measurement unit
+   */
+  updateMeasurementUnit(id: string, unit: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
+    return this.http.put<ApiResponse<MeasurementUnit[]>>(`${API_BASE}/units/${id}`, unit)
+      .pipe(
+        map(response => response.data),
+        catchError(err => {
+          this.errorSubject.next('Failed to update unit');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
+   * Delete a measurement unit
+   */
+  deleteMeasurementUnit(id: string): Observable<MeasurementUnit[]> {
+    return this.http.delete<ApiResponse<MeasurementUnit[]>>(`${API_BASE}/units/${id}`)
+      .pipe(
+        map(response => response.data),
+        catchError(err => {
+          this.errorSubject.next('Failed to delete unit');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  // ============================================================
+  // SUPPLIERS
+  // ============================================================
+
+  /**
+   * Get all suppliers
+   */
+  getSuppliers(): Observable<Supplier[]> {
+    return this.http.get<ApiResponse<Supplier[]>>(`${API_BASE}/suppliers`)
+      .pipe(
+        map(response => response.data),
+        catchError(err => {
+          this.errorSubject.next('Failed to load suppliers');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
+   * Create a supplier
+   */
+  createSupplier(supplier: Partial<Supplier>): Observable<Supplier[]> {
+    return this.http.post<ApiResponse<Supplier[]>>(`${API_BASE}/suppliers`, supplier)
+      .pipe(
+        map(response => response.data),
+        catchError(err => {
+          this.errorSubject.next('Failed to create supplier');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
+   * Update a supplier
+   */
+  updateSupplier(id: string, supplier: Partial<Supplier>): Observable<Supplier[]> {
+    return this.http.put<ApiResponse<Supplier[]>>(`${API_BASE}/suppliers/${id}`, supplier)
+      .pipe(
+        map(response => response.data),
+        catchError(err => {
+          this.errorSubject.next('Failed to update supplier');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
+   * Delete a supplier
+   */
+  deleteSupplier(id: string): Observable<Supplier[]> {
+    return this.http.delete<ApiResponse<Supplier[]>>(`${API_BASE}/suppliers/${id}`)
+      .pipe(
+        map(response => response.data),
+        catchError(err => {
+          this.errorSubject.next('Failed to delete supplier');
+          return throwError(() => err);
+        })
+      );
   }
 }
