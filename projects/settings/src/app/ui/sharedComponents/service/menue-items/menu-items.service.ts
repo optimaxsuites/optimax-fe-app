@@ -111,6 +111,14 @@ export class MenuItemsService {
           icon: 'fas fa-box',
           description: 'Manage inventory levels and stock movements.'
         },
+        {
+          label: 'Logistics',
+          code: 'COM_LOG',
+          route: this.navigationLink.getLink('LOGLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-truck',
+          description: 'Manage delivery and transportation operations across the organization.'
+        },
 
         // ── Partners ──────────────────────────────────────────────────────────
         { label: 'Partners', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },

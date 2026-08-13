@@ -106,6 +106,7 @@ export class MenuItemsService {
           { label: 'Vendor Portal', route: this.navigationLink.getLink('VPLink'), roles: ['ROLE_USER'], icon: 'pi pi-truck' },
           { label: 'Vendor Management', route: this.navigationLink.getLink('VMLink'), roles: ['ROLE_USER'], icon: 'pi pi-building' },
           { label: 'Inventory', route: this.navigationLink.getLink('INVLink'), roles: ['ROLE_USER'], icon: 'pi pi-box' },
+          { label: 'Logistics', route: this.navigationLink.getLink('LOGLink'), roles: ['ROLE_USER'], icon: 'pi pi-truck' },
           { label: 'Delivery Monitoring', route: this.navigationLink.getLink('deliveriesLink'), roles: ['ROLE_USER'], icon: 'pi pi-map-marker' },
           { label: 'Payment Tracking', route: this.navigationLink.getLink('paymentsLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
           { label: 'Reports & Analytics', route: this.navigationLink.getLink('RALink'), roles: ['ROLE_USER'], icon: 'pi pi-chart-bar' },
