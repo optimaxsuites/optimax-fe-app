@@ -1,4 +1,3 @@
-// app-routing-module.ts
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { RequestForQuotationFormComponent } from './ui/view/request-management/request-for-quotation-form/request-for-quotation-form.component';
@@ -41,6 +40,7 @@ import { PaymentVoucherComponent } from './ui/view/request-management/payment-vo
 import { ReceiptPreviewComponent } from './ui/view/request-management/receipt-preview/receipt-preview.component';
 import { InventoryComponent } from './ui/view/inventory/inventory.component';
 import { LogisticsComponent } from './ui/view/logistics/logistics.component';
+import { ProductManagementFormComponent } from './ui/view/inventory/product/product-management-form/product-management-form.component';
 
 
 export const routes: Routes = [
@@ -62,7 +62,11 @@ export const routes: Routes = [
     pathMatch: 'full'
   },
 
-  // -- Inventory --
+
+
+  // =======================================================================================================
+  //                                                INVENTORY ROUTES
+  // =======================================================================================================
   {
     path: 'commerce/inventory',
     component: InventoryComponent
@@ -72,7 +76,33 @@ export const routes: Routes = [
     component: InventoryComponent
   },
 
-  // -- Logistics --
+  // --------------------------------------- Product Management -----------------------------------------
+  {
+    path: 'inventory/products/new',
+    component: ProductManagementFormComponent
+  },
+  {
+    path: 'inventory/products/new/:uuid',
+    component: ProductManagementFormComponent
+  },
+  {
+    path: 'inventory/products/:id/edit',
+    component: ProductManagementFormComponent
+  },
+  {
+    path: 'inventory/products/:id/edit/:uuid',
+    component: ProductManagementFormComponent
+  },
+
+
+
+  // *******************************************************************************************************
+
+
+
+  // =======================================================================================================
+  //                                                LOGISTICS ROUTES
+  // =======================================================================================================
   {
     path: 'commerce/logistics',
     component: LogisticsComponent
@@ -82,7 +112,15 @@ export const routes: Routes = [
     component: LogisticsComponent
   },
 
-  // --- Vendor Management ---
+
+
+  // *******************************************************************************************************
+
+
+
+  // =======================================================================================================
+  //                                                VENDOR MANAGEMENT ROUTES
+  // =======================================================================================================
   {
     path: 'commerce/manage-vendors',
     component: VendorManagementComponent
@@ -96,7 +134,14 @@ export const routes: Routes = [
     component: VendorManagementDetailComponent
   },
 
-  // --- Sales Hub ---
+
+  // *******************************************************************************************************
+
+
+
+  // =======================================================================================================
+  //                                                SALES HUB ROUTES
+  // =======================================================================================================
   {
     path: 'sales-hub',
     component: SalesHubComponent
@@ -106,7 +151,7 @@ export const routes: Routes = [
     component: SalesHubComponent
   },
 
-  // --- Quotes ---
+  // ------------------------------------------- Quotes -----------------------------------------------------
   {
     path: 'quotes/new',
     component: QuoteFormComponent
@@ -132,7 +177,7 @@ export const routes: Routes = [
     component: QuoteDetailComponent
   },
 
-  // --- Invoices ---
+  // ------------------------------------------ Invoices ----------------------------------------------------
   {
     path: 'invoices/new',
     component: InvoiceFormComponent
@@ -158,7 +203,7 @@ export const routes: Routes = [
     component: InvoiceDetailComponent
   },
 
-  // --- Customers ---
+  // ------------------------------------------ Customers ---------------------------------------------------
   {
     path: 'customers/new',
     component: CustomerFormComponent
@@ -184,7 +229,7 @@ export const routes: Routes = [
     component: CustomerDetailComponent
   },
 
-  // --- Products/Services Catalog ---
+  // ---------------------------------------- Product/Services Catalogue ---------------------------------------
   {
     path: 'products',
     redirectTo: 'sales-hub',
@@ -215,7 +260,7 @@ export const routes: Routes = [
     component: ProductServiceCatalogDetailComponent
   },
 
-  // --- Sales & Transactions ---
+  // ----------------------------------------- Sales & Transactions -------------------------------------------
   {
     path: 'sales-and-transactions/:id',
     component: SalesAndTransactionsDetailComponent
@@ -233,7 +278,16 @@ export const routes: Routes = [
     component: SalesAndTransactionsDetailComponent
   },
 
-  // --- Request Management Routes ---
+
+  // *******************************************************************************************************
+
+
+
+  // =======================================================================================================
+  //                                                REQUEST MANAGEMENT ROUTES
+  // =======================================================================================================
+
+  // ------------------------------------------ Request Management ------------------------------------------
   {
     path: 'commerce/requests',
     component: RequestManagementComponent
@@ -298,6 +352,9 @@ export const routes: Routes = [
     path: 'commerce/service-requests',
     component: RequestManagementComponent
   },
+
+
+  // ------------------------------------------------ Quotations ---------------------------------------------
   {
     path: 'commerce/quotations',
     component: QuotationsDashboardComponent
@@ -322,12 +379,16 @@ export const routes: Routes = [
     path: 'commerce/requests/:id/quotations/:uuid',
     component: RfqDetailWithQuotationsComponent
   },
+
+
+  // ----------------------------------------------- Approvals ----------------------------------------------
   {
     path: 'commerce/requests/approvals/:id',
     component: ApprovalRfqDetailComponent
   },
 
-  // --- Supply Chain: Delivery Tracking ---
+
+  // -------------------------------------------- Delivery Tracking -----------------------------------------
   {
     path: 'commerce/requests/:id/delivery',
     component: DeliveryTrackingComponent
@@ -337,7 +398,8 @@ export const routes: Routes = [
     component: DeliveryTrackingComponent
   },
 
-  // --- Payment Vouchers ---
+
+  // -------------------------------------------- Payment Vouchers ------------------------------------------
   {
     path: 'commerce/payment-vouchers',
     component: PaymentVoucherComponent
@@ -351,7 +413,8 @@ export const routes: Routes = [
     component: PaymentVoucherComponent
   },
 
-  // --- Receipt / Document Preview ---
+
+  // --------------------------------------- Receipt / Document Preview ---------------------------------------
   {
     path: 'commerce/receipts/:type/:id',
     component: ReceiptPreviewComponent
@@ -361,7 +424,17 @@ export const routes: Routes = [
     component: ReceiptPreviewComponent
   },
 
-  // --- Vendor Portal ---
+
+
+
+  // *******************************************************************************************************
+
+
+
+  // ========================================================================================================
+  //                                                VENDOR PORTAL ROUTES
+  // ========================================================================================================
+
   {
     path: 'vendor-portal',
     component: VendorPortalComponent
@@ -371,7 +444,8 @@ export const routes: Routes = [
     component: VendorPortalComponent
   },
 
-  // --- Procurement Messaging ---
+
+  // ----------------------------------------- Procurement Messaging -----------------------------------------
   {
     path: 'commerce/requests/:id/messages',
     component: ProcurementMessagingComponent
@@ -381,7 +455,8 @@ export const routes: Routes = [
     component: ProcurementMessagingComponent
   },
 
-  // --- Delivery & Payments ---
+
+  // ------------------------------------------ Delivery Management ------------------------------------------
   {
     path: 'deliveries',
     component: DeliveryManagementComponent
@@ -390,6 +465,9 @@ export const routes: Routes = [
     path: 'deliveries/:uuid',
     component: DeliveryManagementComponent
   },
+
+
+  // ------------------------------------------- Payment Processing ------------------------------------------
   {
     path: 'payments',
     component: PaymentProcessingComponent
@@ -399,7 +477,8 @@ export const routes: Routes = [
     component: PaymentProcessingComponent
   },
 
-  // --- Reports ---
+
+  // ----------------------------------------------- Reports -------------------------------------------------
   {
     path: 'reports/:uuid',
     redirectTo: 'sales-hub',
