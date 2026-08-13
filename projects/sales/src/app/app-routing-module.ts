@@ -39,26 +39,36 @@ import { VendorManagementDetailComponent } from './ui/view/vendor-management/ven
 import { DeliveryTrackingComponent } from './ui/view/request-management/delivery-tracking/delivery-tracking.component';
 import { PaymentVoucherComponent } from './ui/view/request-management/payment-voucher/payment-voucher.component';
 import { ReceiptPreviewComponent } from './ui/view/request-management/receipt-preview/receipt-preview.component';
+import { InventoryComponent } from './ui/view/inventory/inventory.component';
+import { LogisticsComponent } from './ui/view/logistics/logistics.component';
 
 
 export const routes: Routes = [
-  // Default redirect
   {
     path: "",
-    redirectTo: 'commerce/requests',
+    redirectTo: 'commerce/inventory',
     pathMatch: 'full'
   },
-  // UUID-only path (from sidebar nav links like /admin/sales/{uuid}) → go to main RFQ list
+
+  // -- Inventory --
   {
-    path: ':uuid',
-    redirectTo: 'commerce/requests',
-    pathMatch: 'full'
+    path: 'commerce/inventory',
+    component: InventoryComponent
   },
-  // {
-  //   path: "",
-  //   redirectTo: 'sales-hub',
-  //   pathMatch: 'full'
-  // },
+  {
+    path: 'commerce/inventory/:uuid',
+    component: InventoryComponent
+  },
+
+  // -- Logistics --
+  {
+    path: 'commerce/logistics',
+    component: LogisticsComponent
+  },
+  {
+    path: 'commerce/logistics/:uuid',
+    component: LogisticsComponent
+  },
 
   // --- Vendor Management ---
   {
@@ -386,6 +396,13 @@ export const routes: Routes = [
   {
     path: 'reports',
     redirectTo: 'sales-hub',
+    pathMatch: 'full'
+  },
+
+  // UUID-only path (from sidebar nav links like /admin/sales/{uuid}) — must be last
+  {
+    path: ':uuid',
+    redirectTo: 'commerce/requests',
     pathMatch: 'full'
   },
 ];

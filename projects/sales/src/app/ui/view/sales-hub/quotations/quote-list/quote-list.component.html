@@ -183,7 +183,7 @@
         <!-- Data rows -->
         <tbody *ngIf="!isLoading && quotes.length > 0">
           <tr *ngFor="let q of quotes"
-              [class.ql-row--expiring]="isExpiringSoon(q.validUntil)"
+              [class.ql-row--expiring]="isExpiringSoon(getQuoteValidUntilValue(q))"
               [class.ql-row--converted]="q.status === 'CONVERTED'">
             <td class="ql-td-chk"><input type="checkbox" [checked]="isSelected(q.id)" (change)="toggleSelection(q.id, $event)"></td>
 
@@ -191,16 +191,16 @@
               <button type="button" class="ql-link" (click)="openQuoteDetail(q.id)">{{ q.quoteNumber || '#' + q.id }}</button>
             </td>
 
-            <td class="ql-td-client">{{ getCustomerName(q.customerId) }}</td>
+            <td class="ql-td-client">{{ getCustomerName(q.customerId, q.customerName) }}</td>
 
             <td class="ql-td-amount">{{ formatCurrency(q.totalAmount) }}</td>
 
-            <td class="ql-td-date">{{ formatDate(q.quoteDate) }}</td>
+            <td class="ql-td-date">{{ formatDate(getQuoteDateValue(q)) }}</td>
 
             <td class="ql-td-date">
-              <span>{{ formatDate(q.validUntil) }}</span>
-              <span class="ql-expiring-badge" *ngIf="isExpiringSoon(q.validUntil) && q.status !== 'CONVERTED'">
-                {{ getDaysRemaining(q.validUntil) }}d
+              <span>{{ formatDate(getQuoteValidUntilValue(q)) }}</span>
+              <span class="ql-expiring-badge" *ngIf="isExpiringSoon(getQuoteValidUntilValue(q)) && q.status !== 'CONVERTED'">
+                {{ getDaysRemaining(getQuoteValidUntilValue(q)) }}d
               </span>
             </td>
 

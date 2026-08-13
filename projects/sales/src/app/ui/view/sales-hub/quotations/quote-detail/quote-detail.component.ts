@@ -66,6 +66,46 @@ export class QuoteDetailComponent implements OnInit {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency }).format(amount);
   }
 
+  getQuoteDate(): Date | string | null {
+    return this.quote?.createdAt ?? ((this.quote as any).quoteDate ?? (this.quote as any).quote_date ?? null);
+  }
+
+  getQuoteValidUntil(): Date | string | null {
+    return this.quote?.validUntil ?? ((this.quote as any).expiresAt ?? (this.quote as any).expiryDate ?? null);
+  }
+
+  getQuoteCustomerName(): string {
+    if (!this.quote) return 'Customer';
+
+    const { customerName, customerId } = this.quote as any;
+
+    if (customerName) {
+      if (typeof customerName === 'object') {
+        return customerName.name || customerName.customerName || String(customerName) || 'Customer';
+      }
+      return String(customerName);
+    }
+
+    if (customerId) {
+      if (typeof customerId === 'object') {
+        return customerId.name || customerId.customerName || String(customerId) || 'Customer';
+      }
+      return `Customer #${customerId}`;
+    }
+
+    return 'Customer';
+  }
+
+  getQuoteCustomerId(): string {
+    if (!this.quote?.customerId) return '';
+
+    const customerId = this.quote.customerId as any;
+    if (typeof customerId === 'object') {
+      return customerId.customerId ?? String(customerId.id ?? '');
+    }
+    return String(customerId);
+  }
+
   formatDate(date: any): string {
     return formatApiDate(date, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-NG', '');
   }
@@ -106,7 +146,7 @@ export class QuoteDetailComponent implements OnInit {
     return labels[status] || status;
   }
 
-  isExpiringSoon(validUntil: Date | string): boolean {
+  isExpiringSoon(validUntil: unknown): boolean {
     const validDate = parseApiDate(validUntil);
     if (!validDate) return false;
     const diffTime = validDate.getTime() - Date.now();
@@ -318,6 +358,9 @@ export class QuoteDetailComponent implements OnInit {
     if (this.closed.observed) {
       this.closed.emit();
     } else {
+      const sessionStorageKey = 'dashboard-catalog-quotes-invoices-orders-customers-transactions';
+      sessionStorage.setItem(sessionStorageKey, 'Quotes');
+
       const uuid = this.route.snapshot.paramMap.get('uuid');
       if (uuid) {
         this.router.navigate(['/admin/sales/sales-hub', uuid]);
@@ -353,13 +396,24 @@ export class QuoteDetailComponent implements OnInit {
   }
 
   viewCustomer(): void {
-    if (this.quote && this.quote.customerId) {
-      const uuid = this.route.snapshot.paramMap.get('uuid');
-      if (uuid) {
-        this.router.navigate(['/admin/sales/customers', this.quote.customerId.customerId, uuid]);
-      } else {
-        this.router.navigate(['/admin/sales/customers', this.quote.customerId.customerId]);
-      }
+    if (!this.quote || !this.quote.customerId) return;
+
+    const customerId = this.quote.customerId as any;
+    let id = '';
+
+    if (typeof customerId === 'object') {
+      id = customerId.customerId ?? String(customerId.id ?? '');
+    } else {
+      id = String(customerId);
+    }
+
+    if (!id) return;
+
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/customers', id, uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/customers', id]);
     }
   }
 

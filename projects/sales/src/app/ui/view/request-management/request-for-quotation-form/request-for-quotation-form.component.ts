@@ -35,7 +35,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
 
   productForm: FormGroup;
   currencies = ['NGN', 'USD', 'EUR', 'GBP'];
-  units = ['Pieces', 'Boxes', 'Kg', 'Liters', 'Meters', 'Sets', 'Packages', 'Units'];
+  units: string[] = [];
   procurementCategories: ProcurementCategory[] = [];
   isEditMode = false;
   requestId: string | null = null;
@@ -112,23 +112,22 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       }
     });
 
-    // Load units from salesService and merge with default list
+    // Load units from salesService without relying on hard-coded defaults
     this.salesService.getMeasurementUnits().subscribe({
       next: (salesUnits) => {
-        const currentUnits = [...this.units];
-        salesUnits.forEach(su => {
-          if (su.name && !currentUnits.some(u => u.toLowerCase() === su.name.toLowerCase())) {
-            currentUnits.push(su.name);
-          }
-        });
-        this.units = currentUnits;
+        this.units = salesUnits
+          .map(su => su?.name?.trim())
+          .filter((name): name is string => Boolean(name));
+      },
+      error: () => {
+        this.units = [];
       }
     });
   }
 
 
   loadRequest(uuid: string): void {
-    this.procurementRequestService.getRequest(Number(uuid)).subscribe({
+    this.procurementRequestService.getRequest(parseIdToNumber(uuid)).subscribe({
       next: (req) => {
         if (req) {
           // Clear any initial item pushed in constructor
@@ -140,7 +139,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
           if (req.items && req.items.length > 0) {
             req.items.forEach(item => {
               const itemGroup = this.createItemForm();
-              
+
               // Clear custom fields array in specifications
               const specsGroup = itemGroup.get('specifications') as FormGroup;
               const customFields = specsGroup.get('customFields') as FormArray;
@@ -244,7 +243,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       categoryId: ['', Validators.required],
       partNumber: [''],
       quantity: [1, [Validators.required, Validators.min(1)]],
-      unit: ['Pieces', Validators.required],
+      unit: ['', Validators.required],
       estimatedBudget: [null, [Validators.required, Validators.min(0.01)]],
       unitPrice: [null, [Validators.min(0.01)]],
       currency: ['NGN', Validators.required],
@@ -483,9 +482,9 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
 
   formatCurrency(value: number): string {
     const currency = this.productForm.get('currency')?.value || 'NGN';
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: currency 
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency
     }).format(value || 0);
   }
 
@@ -600,7 +599,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
           }
         });
         this.procurementCategories = merged;
-        
+
         // Find matched category in this merged list
         const matched = this.procurementCategories.find(c => c.name.toLowerCase() === catName.toLowerCase());
         const item = this.items.at(this.activeItemIndexForModal);
@@ -662,14 +661,14 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
             this.units.push(su.name);
           }
         });
-        
+
         // Find matched unit
         const matched = this.units.find(u => u.toLowerCase() === unitName.toLowerCase()) || unitName;
         const item = this.items.at(this.activeItemIndexForModal);
         if (item) {
           item.get('unit')?.setValue(matched);
         }
-        
+
         this.closeAddUnitModal();
         this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Custom unit saved and selected successfully.' });
       },

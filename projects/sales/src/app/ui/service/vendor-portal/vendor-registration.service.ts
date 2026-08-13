@@ -23,7 +23,7 @@ export class VendorRegistrationService {
 
   readonly registration$ = this.registration$$.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   private get tenantId(): string {
     const h = window.location.hostname;
@@ -133,9 +133,68 @@ export class VendorRegistrationService {
     );
   }
 
+  private uploadRegistrationDocuments(vendorId: string, docs: UploadedDocument[]): Observable<any[]> {
+    if (!docs || docs.length === 0) {
+      return of([]);
+    }
+
+    const parseFileSize = (sizeStr: string): number => {
+      if (!sizeStr) return 0;
+      const match = sizeStr.match(/^([\d.]+)\s*(B|KB|MB|GB|TB)?$/i);
+      if (!match) return 0;
+      const val = parseFloat(match[1]);
+      const unit = match[2]?.toUpperCase();
+      if (unit === 'KB') return val * 1024;
+      if (unit === 'MB') return val * 1024 * 1024;
+      if (unit === 'GB') return val * 1024 * 1024 * 1024;
+      return val;
+    };
+
+    const getCategoryForType = (type: string): string => {
+      const t = String(type || '').toLowerCase();
+      if (t === 'cac_certificate' || t === 'company_profile' || t === 'bank_reference_letter' || t === 'annual_accounts') {
+        return 'REGISTRATION';
+      } else if (t === 'tax_clearance' || t === 'vat_certificate') {
+        return 'TAX';
+      } else if (t === 'nafdac_cert' || t === 'son_cert' || t === 'iso_certificate') {
+        return 'CERTIFICATION';
+      } else if (t === 'public_liability_insurance' || t === 'professional_indemnity') {
+        return 'INSURANCE';
+      }
+      return 'REGISTRATION';
+    };
+
+    const requests = docs.map(doc => {
+      const payload = {
+        vendorId: Number(vendorId) || vendorId,
+        type: String(doc.type || '').toUpperCase(),
+        label: doc.label || this.docTypeLabel(doc.type),
+        fileName: doc.fileName || '',
+        fileSize: doc.file ? doc.file.size : parseFileSize(doc.fileSize),
+        fileUrl: doc.fileUrl || '',
+        uploadedDate: doc.uploadedDate ? new Date(doc.uploadedDate).toISOString() : new Date().toISOString(),
+        expiryDate: doc.expiryDate ? new Date(doc.expiryDate).toISOString() : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        isRequired: !!doc.isRequired,
+        status: 'PENDING',
+        category: getCategoryForType(doc.type),
+        notes: 'Submitted during registration'
+      };
+
+      return this.http.post(`${this.baseUrl}/vendors/${vendorId}/documents`, payload).pipe(
+        catchError(err => {
+          console.error('[VendorRegistrationService] Failed to upload doc:', doc.fileName, err);
+          return of(null);
+        })
+      );
+    });
+
+    return forkJoin(requests);
+  }
+
   // ── Submit ────────────────────────────────────────────────────────────────
   submit(reg: VendorRegistration): Observable<{ applicationNumber: string }> {
     const vendorId = reg.id;
+    const docs = reg.step6?.uploadedDocuments ?? [];
 
     // Helper: map registration form data to the Vendor DTO used by the
     // management side, then write it into PendingVendorStore.
@@ -153,70 +212,70 @@ export class VendorRegistrationService {
       );
 
       const vendor: Vendor = {
-        id:                 appNum,
-        companyName:        s1.businessName  || '',
+        id: appNum,
+        companyName: s1.businessName || '',
         registrationNumber: s2.cacRegistrationNumber || '',
-        taxId:              s2.tinNumber     || '',
-        email:              s3.primaryContactEmail || '',
-        phone:              s3.primaryContactPhone || '',
-        website:            s1.websiteUrl    || undefined,
+        taxId: s2.tinNumber || '',
+        email: s3.primaryContactEmail || '',
+        phone: s3.primaryContactPhone || '',
+        website: s1.websiteUrl || undefined,
         address: {
-          street:  s3.registeredAddressLine1 || '',
-          city:    s3.registeredCity         || '',
-          state:   s3.registeredState        || '',
-          country: s3.registeredCountry      || 'Nigeria',
+          street: s3.registeredAddressLine1 || '',
+          city: s3.registeredCity || '',
+          state: s3.registeredState || '',
+          country: s3.registeredCountry || 'Nigeria',
           postalCode: s3.registeredPostalCode || ''
         },
-        status:             VendorStatus.PENDING_ONBOARDING,
-        tier:               VendorTier.APPROVED,
-        riskLevel:          RiskLevel.LOW,
-        performanceScore:   0,
-        totalProjects:      s5.completedProjectsCount ?? 0,
-        winRate:            0,
-        averageRating:      0,
+        status: VendorStatus.PENDING_ONBOARDING,
+        tier: VendorTier.APPROVED,
+        riskLevel: RiskLevel.LOW,
+        performanceScore: 0,
+        totalProjects: s5.completedProjectsCount ?? 0,
+        winRate: 0,
+        averageRating: 0,
         categories,
-        description:        s1.businessDescription || '',
-        paymentTerms:       s4.preferredPaymentTerms || 'Net 30',
+        description: s1.businessDescription || '',
+        paymentTerms: s4.preferredPaymentTerms || 'Net 30',
         bankDetails: {
-          bankName:      s4.primaryBankName       || '',
-          accountNumber: s4.primaryAccountNumber  || '',
-          accountName:   s4.primaryAccountName    || '',
-          accountType:   s4.primaryAccountType    || 'current',
-          sortCode:      s4.primarySortCode       || '',
-          swiftCode:     s4.primarySwiftCode      || '',
-          currency:      s4.primaryCurrency       || 'NGN',
-          bankBranch:    s4.primaryBankBranch     || '',
-          isPrimary:     true
+          bankName: s4.primaryBankName || '',
+          accountNumber: s4.primaryAccountNumber || '',
+          accountName: s4.primaryAccountName || '',
+          accountType: s4.primaryAccountType || 'current',
+          sortCode: s4.primarySortCode || '',
+          swiftCode: s4.primarySwiftCode || '',
+          currency: s4.primaryCurrency || 'NGN',
+          bankBranch: s4.primaryBankBranch || '',
+          isPrimary: true
         },
         contacts: s3.primaryContactName ? [{
-          id:        `c-${appNum}`,
-          name:      s3.primaryContactName  || '',
-          title:     s3.primaryContactTitle || '',
-          email:     s3.primaryContactEmail || '',
-          phone:     s3.primaryContactPhone || '',
+          id: `c-${appNum}`,
+          name: s3.primaryContactName || '',
+          title: s3.primaryContactTitle || '',
+          email: s3.primaryContactEmail || '',
+          phone: s3.primaryContactPhone || '',
           isPrimary: true
         }] : [],
         documents: (s6.uploadedDocuments ?? []).map((d: any) => ({
-          id:           d.id,
-          name:         d.label || d.fileName,
-          type:         d.type,
-          category:     'compliance' as any,
-          status:       'PENDING_VERIFICATION' as any,
+          id: d.id,
+          name: d.label || d.fileName,
+          type: d.type,
+          category: 'compliance' as any,
+          status: 'PENDING_VERIFICATION' as any,
           uploadedDate: d.uploadedDate ? new Date(d.uploadedDate) : new Date(),
-          expiryDate:   undefined,
-          fileUrl:      d.fileUrl,
-          fileSize:     d.fileSize,
-          vendorId:     appNum,
-          isRequired:   d.isRequired ?? false
+          expiryDate: undefined,
+          fileUrl: d.fileUrl,
+          fileSize: d.fileSize,
+          vendorId: appNum,
+          isRequired: d.isRequired ?? false
         })),
         complianceStatus: {
-          isCompliant:              false,
-          documentsVerified:        0,
-          totalRequiredDocuments:   3,
-          expiredDocuments:         0,
-          expiringDocuments:        0,
-          lastComplianceCheck:      new Date(),
-          sanctionsClear:           !(s2.hasBeenBlacklisted ?? false)
+          isCompliant: false,
+          documentsVerified: 0,
+          totalRequiredDocuments: 3,
+          expiredDocuments: 0,
+          expiringDocuments: 0,
+          lastComplianceCheck: new Date(),
+          sanctionsClear: !(s2.hasBeenBlacklisted ?? false)
         },
         performanceMetrics: {
           overallScore: 0, onTimeDeliveryRate: 0, qualityScore: 0,
@@ -226,23 +285,23 @@ export class VendorRegistrationService {
           lastUpdated: new Date(), trendData: []
         },
         lifecycleHistory: [{
-          id:          `lh-${appNum}`,
-          event:       'Registration Submitted',
-          fromStatus:  null as any,
-          toStatus:    VendorStatus.PENDING_ONBOARDING,
+          id: `lh-${appNum}`,
+          event: 'Registration Submitted',
+          fromStatus: null as any,
+          toStatus: VendorStatus.PENDING_ONBOARDING,
           performedBy: s6.declarantName || 'Vendor',
-          timestamp:   new Date(),
-          notes:       'Submitted via Vendor Portal'
+          timestamp: new Date(),
+          notes: 'Submitted via Vendor Portal'
         }],
-        riskAlerts:       [],
-        joinedDate:       new Date(),
+        riskAlerts: [],
+        joinedDate: new Date(),
         lastActivityDate: new Date(),
-        createdAt:        new Date(),
-        updatedAt:        new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         applicationNumber: appNum,
         // Keep the full submission so the approval queue / vendor directory can
         // display everything the vendor entered, not just the summary fields above.
-        registration:     { ...reg, id: appNum, applicationNumber: appNum }
+        registration: { ...reg, id: appNum, applicationNumber: appNum }
       } as any as Vendor;
 
       PendingVendorStore.add(vendor);
@@ -306,15 +365,15 @@ export class VendorRegistrationService {
   uploadFile(file: File, type: DocumentUploadType): Observable<UploadedDocument> {
     const objectUrl = URL.createObjectURL(file);
     const doc: UploadedDocument = {
-      id:           `doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: `doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       type,
-      label:        this.docTypeLabel(type),
-      fileName:     file.name,
-      fileSize:     this.formatSize(file.size),
-      fileUrl:      objectUrl,
+      label: this.docTypeLabel(type),
+      fileName: file.name,
+      fileSize: this.formatSize(file.size),
+      fileUrl: objectUrl,
       uploadedDate: new Date(),
-      isRequired:   this.isRequiredDoc(type),
-      status:       'pending',
+      isRequired: this.isRequiredDoc(type),
+      status: 'pending',
       file,
     };
     return of(doc);
@@ -324,15 +383,15 @@ export class VendorRegistrationService {
   persistDocument(vendorId: string, doc: UploadedDocument): Observable<any> {
     const payload = {
       vendorId: Number(vendorId),
-      type:         doc.type,
-      label:        doc.label,
-      fileName:     doc.fileName,
-      fileSize:     doc.file ? doc.file.size : null,
-      fileUrl:      doc.fileUrl,
+      type: doc.type,
+      label: doc.label,
+      fileName: doc.fileName,
+      fileSize: doc.file ? doc.file.size : null,
+      fileUrl: doc.fileUrl,
       uploadedDate: new Date().toISOString(),
-      isRequired:   doc.isRequired,
-      status:       'PENDING_VERIFICATION',
-      category:     'COMPLIANCE'
+      isRequired: doc.isRequired,
+      status: 'PENDING_VERIFICATION',
+      category: 'COMPLIANCE'
     };
     return this.http.post<any>(`${this.baseUrl}/vendors/${vendorId}/documents`, payload).pipe(
       catchError(err => { console.error('[VendorRegistrationService] persistDocument failed:', err); return of(null); })
@@ -451,18 +510,18 @@ export class VendorRegistrationService {
 
   docTypeLabel(type: DocumentUploadType): string {
     const m: Record<DocumentUploadType, string> = {
-      cac_certificate:            'CAC Certificate of Incorporation',
-      tax_clearance:              'Tax Clearance Certificate',
-      vat_certificate:            'VAT Registration Certificate',
-      nafdac_cert:                'NAFDAC Registration Certificate',
-      son_cert:                   'SON Certification',
+      cac_certificate: 'CAC Certificate of Incorporation',
+      tax_clearance: 'Tax Clearance Certificate',
+      vat_certificate: 'VAT Registration Certificate',
+      nafdac_cert: 'NAFDAC Registration Certificate',
+      son_cert: 'SON Certification',
       public_liability_insurance: 'Public Liability Insurance Policy',
-      professional_indemnity:     'Professional Indemnity Insurance',
-      iso_certificate:            'ISO Certification',
-      annual_accounts:            'Audited Annual Accounts',
-      company_profile:            'Company Profile Document',
-      bank_reference_letter:      'Bank Reference Letter',
-      other:                      'Other Document',
+      professional_indemnity: 'Professional Indemnity Insurance',
+      iso_certificate: 'ISO Certification',
+      annual_accounts: 'Audited Annual Accounts',
+      company_profile: 'Company Profile Document',
+      bank_reference_letter: 'Bank Reference Letter',
+      other: 'Other Document',
     };
     return m[type] ?? 'Document';
   }

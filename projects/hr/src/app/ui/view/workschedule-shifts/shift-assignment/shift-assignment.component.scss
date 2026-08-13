@@ -66,7 +66,7 @@
 }
 
 .modal-body {
-  padding: 20px 24px 24px;
+  padding: 20px 0 24px;
   overflow-y: auto;   // scrolls the form, NOT the selector panels
   flex: 1;
 }
@@ -74,6 +74,7 @@
 h3 {
   margin-bottom: 20px;
   color: #2c3e50;
+  padding: 0 20px;
 }
 
 // ── Form Elements ────────────────────────────────────────────────────────────
@@ -82,6 +83,21 @@ h3 {
   display: flex;
   flex-direction: column;
   margin-bottom: 18px;
+  padding: 0 20px;
+
+  &:has(.selector-list) {
+    padding: 0 20px;
+
+    label {
+      margin-bottom: 10px;
+    }
+
+    .selector-list,
+    .search-input,
+    .selection-mode-toggle {
+      width: 100%;
+    }
+  }
 
   label {
     font-size: 13px;
@@ -179,6 +195,7 @@ h3 {
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 10px;
+  width: 100%;
 
   button {
     flex: 1;
@@ -208,26 +225,47 @@ h3 {
 
 // ── Shared Selector List ─────────────────────────────────────────────────────
 
+.employee-selector,
+.department-selector {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .search-input {
+  margin: 0;
   margin-bottom: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid #dcdcdc;
+  font-size: 13px;
+  color: #333;
+  background: #fff;
 }
 
 .selector-list {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  max-height: 180px;
+  min-height: 250px;
+  max-height: 400px;
   overflow-y: auto;
   background: #fff;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .selector-option {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
+  gap: 14px;
+  padding: 16px 16px;
   cursor: pointer;
   transition: background 0.1s;
   border-bottom: 1px solid #f2f2f2;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 50px;
 
   &:last-child { border-bottom: none; }
 
@@ -236,8 +274,8 @@ h3 {
   &.selected { background: #edf7f5; }
 
   input[type="checkbox"] {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
     accent-color: #2a7a74;
     flex-shrink: 0;
     cursor: pointer;
@@ -245,18 +283,19 @@ h3 {
 }
 
 .option-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: #2c3e50;
   flex: 1;
 }
 
 .option-dept {
-  font-size: 11px;
+  font-size: 12px;
   color: #999;
   background: #f0f0f0;
-  padding: 2px 6px;
+  padding: 4px 8px;
   border-radius: 4px;
+  white-space: nowrap;
 }
 
 // Department option overrides
@@ -318,20 +357,26 @@ h3 {
 
 .recurrence-options {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .recurrence-option {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 10px 16px;
   border: 1px solid #dcdcdc;
-  border-radius: 20px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
+  font-weight: 500;
   transition: all 0.15s;
+  flex: 1;
+  min-width: 80px;
+  justify-content: center;
 
   input[type="radio"] { display: none; }
 
@@ -443,5 +488,123 @@ h3 {
 
   input[type='checkbox'] {
     accent-color: #2a7a74;
+  }
+}
+// Add New Shift/Project Modal
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+
+    &:hover {
+      color: #000;
+    }
+  }
+}
+
+.modal-body {
+  padding: 20px;
+  text-align: left !important;
+}
+
+.form-group {
+  margin-bottom: 15px;
+  text-align: left !important;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+    text-align: left !important;
+    width: 100%;
+
+    .required {
+      color: #e74c3c;
+    }
+  }
+
+  input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+
+    &:focus {
+      outline: none;
+      border-color: #4CAF50;
+      box-shadow: 0 0 5px rgba(76, 175, 80, 0.2);
+    }
+  }
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+  justify-content: flex-end;
+
+  .cancel-btn {
+    padding: 10px 20px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+
+    &:hover {
+      background: #e0e0e0;
+    }
+  }
+
+  .save-btn {
+    padding: 10px 20px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+
+    &:hover {
+      background: #45a049;
+    }
   }
 }

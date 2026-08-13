@@ -76,6 +76,10 @@ const DEFAULT_LOAN_ROUTE = 'loan/uu';
 
 const routes: Routes = [
   {
+    path: 'workschedule-shifts/:uuid',
+    component: WorkscheduleShiftsComponent,
+  },
+  {
     path: 'user/onboarding/:id/:uuid',
     component: EmployeeOnboardingFormComponent,
   },
@@ -124,10 +128,6 @@ const routes: Routes = [
   {
     path: 'admin/hr/loan-management/loan-dashboard/:uuid',
     component: LoanDashboardComponent,
-  },
-  {
-    path: 'workschedule-shifts/:uuid',
-    component: WorkscheduleShiftsComponent,
   },
   {
     path: 'guarantor/confirm/:token',
@@ -519,7 +519,7 @@ const routes: Routes = [
   },
 ];
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
 })
 export class AppHrRoutingModule {}

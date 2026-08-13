@@ -18,11 +18,12 @@ export class MyScheduleComponent implements OnInit{
   currentDate = new Date();
   selectedDate: string = this.formatDateLocal(new Date());
 
-  viewMode: 'calendar' | 'table' = 'calendar';
+  viewMode: 'calendar' | 'table' | 'list' = 'calendar';
   batchSelected: Set<string> = new Set();
 
   // FullCalendar
   calendarOptions!: CalendarOptions;
+
 
   // Drag-to-select
   dragStartDate: string | null = null;
@@ -157,9 +158,10 @@ export class MyScheduleComponent implements OnInit{
   this.selectedDate = target.value;
 }
 
-  setView(mode: 'calendar' | 'table') {
+  setView(mode: 'calendar' | 'table' | 'list') {
     this.viewMode = mode;
   }
+
 
   toggleBatchSelect(scheduleId: string) {
     if (this.batchSelected.has(scheduleId)) {

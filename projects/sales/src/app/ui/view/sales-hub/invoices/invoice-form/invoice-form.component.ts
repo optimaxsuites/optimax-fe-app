@@ -4,6 +4,9 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, F
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
+import { PdfGenerationService } from '../../../../service/procurement/pdf-generation.service';
+import { NotificationService } from '../../../../service/procurement/notification.service';
+import { lastValueFrom } from 'rxjs';
 import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails } from '../../../../domain/sales/sales.dto';
 import { toDateInputValue } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
@@ -244,6 +247,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private salesService: SalesService,
     private companyProfileService: CompanyProfileService,
+    private pdfGenerationService: PdfGenerationService,
+    private notificationService: NotificationService,
     router: Router
   ) {
     this.router = router;
@@ -1534,20 +1539,31 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   // ============ DELIVERY ACTIONS ============
+  // ============ DELIVERY ACTIONS ============
   private async handleDeliveryAction(invoice: Invoice, action: 'pdf' | 'email' | 'both'): Promise<void> {
     try {
       if (action === 'pdf' || action === 'both') {
-        const pdfBlob = await this.generateInvoicePDF(invoice);
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(pdfBlob);
-        link.download = `Invoice-${invoice.invoiceNumber}.pdf`;
-        link.click();
-        URL.revokeObjectURL(link.href);
+        this.pdfGenerationService.generatePdf({
+          documentType: 'INVOICE',
+          documentId: String(invoice.id),
+          documentNumber: invoice.invoiceNumber,
+          tenantId: 'optimax',
+          data: invoice
+        }).subscribe({
+          next: (blob: any) => {
+            this.pdfGenerationService.downloadBlob(blob, `Invoice-${invoice.invoiceNumber}.pdf`);
+          },
+          error: (err) => {
+            console.warn('[InvoiceFormComponent] Server PDF failed, using client fallback:', err);
+            this.generateInvoicePDF(invoice).then(clientBlob => {
+              this.pdfGenerationService.downloadBlob(clientBlob, `Invoice-${invoice.invoiceNumber}.pdf`);
+            }).catch(e => console.error('Client PDF generation failed:', e));
+          }
+        });
       }
 
       if (action === 'email' || action === 'both') {
         await this.sendInvoiceEmail(invoice);
-        this.messageService.add({ severity: 'info', summary: 'Notice', detail: `Invoice ${invoice.invoiceNumber} sent to ${invoice.customerName}` });
       }
     } catch (error) {
       console.error('Error in delivery action:', error);
@@ -1616,8 +1632,65 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   private async sendInvoiceEmail(invoice: Invoice): Promise<void> {
-    console.log(`Sending invoice ${invoice.invoiceNumber} to ${invoice.customerName}`);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const customerId = this.invoiceForm.get('customerId')?.value;
+    const customerObj = this.customers.find(c =>
+      c.customerId === customerId || String(c.id) === String(customerId)
+    );
+    const email = customerObj?.email || (invoice.customerName as any)?.email || (invoice.customerId as any)?.email || '';
+    const name = customerObj?.name || (invoice.customerName as any)?.name || 'Customer';
+
+    if (!email) {
+      console.warn('Cannot send email, customer email is missing');
+      this.messageService.add({ severity: 'warn', summary: 'Missing Email', detail: 'Could not find recipient email address' });
+      return;
+    }
+
+    console.log(`Sending invoice ${invoice.invoiceNumber} to ${email}`);
+
+    const htmlBody = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
+        <h2 style="color: #1a2d4a; margin-top: 0;">Invoice Details</h2>
+        <p>Dear ${name},</p>
+        <p>Please find the details of your invoice below:</p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Invoice Number:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${invoice.invoiceNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Total Amount:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #2EB270;">${invoice.currency || 'NGN'} ${invoice.totalAmount.toLocaleString('en-NG')}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Due Date:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}</td>
+          </tr>
+        </table>
+        <p style="margin-top: 24px;">Thank you for your business!</p>
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+        <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from OptimaX.</p>
+      </div>
+    `;
+
+    const payload = {
+      to: email,
+      cc: '',
+      bcc: '',
+      subject: `Invoice ${invoice.invoiceNumber} from OptimaX`,
+      body: htmlBody,
+      html: true,
+      tenant: 'optimax'
+    };
+
+    try {
+      console.log('[InvoiceFormComponent] Sending direct email with payload:', payload);
+      const response = await lastValueFrom(this.notificationService.sendDirectEmail(payload));
+      console.log('[InvoiceFormComponent] Email sent successfully:', response);
+      this.messageService.add({ severity: 'success', summary: 'Email Sent', detail: `Invoice sent successfully to ${email}` });
+    } catch (err) {
+      console.error('[InvoiceFormComponent] Failed to send direct invoice email:', err);
+      this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send invoice email via SMTP service.' });
+    }
   }
 
   getProductSku(productId: string): string {

@@ -148,11 +148,15 @@
 
                 <div class="field-group">
                   <label>Unit <span class="req">*</span></label>
-                  <select formControlName="unit" class="field-input"
-                    (change)="onUnitChange($event, i)">
-                    <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
-                    <option value="__add_unit__">+ Add Unit</option>
-                  </select>
+                  <div class="input-with-btn">
+                    <select formControlName="unit" class="field-input">
+                      <option value="" disabled>Select Unit</option>
+                      <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
+                    </select>
+                    <button type="button" class="btn-action-add" (click)="openAddUnitModal(i)" title="Add Custom Unit">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
 

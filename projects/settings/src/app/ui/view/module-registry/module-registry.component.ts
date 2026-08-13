@@ -28,6 +28,8 @@ const TS_MODULE_CODES: { code: string; label: string; submenus: { code: string; 
       { code: 'COM_SALES', label: 'Sales Hub' },
       { code: 'PROCURE_MGMT', label: 'Procurement Hub' },
       { code: 'VENDOR-MGMT', label: 'Vendor Management' },
+      { code: 'COM_INV', label: 'Inventory' },
+      { code: 'COM_LOG', label: 'Logistics' },
       // { code: 'DELIVERY_MGMT', label: 'Delivery Management' },
       // { code: 'DOC_MGMT', label: 'Document Management' },
       // { code: 'QUOTE_MGMT', label: 'Quote Management' },

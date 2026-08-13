@@ -338,6 +338,9 @@ export class InvoiceDetailComponent implements OnInit {
     if (this.closed.observed) {
       this.closed.emit();
     } else {
+      const sessionStorageKey = 'dashboard-catalog-quotes-invoices-orders-customers-transactions';
+      sessionStorage.setItem(sessionStorageKey, 'Invoices');
+
       const uuid = this.route.snapshot.paramMap.get('uuid');
       if (uuid) {
         this.router.navigate(['/admin/sales/sales-hub', uuid]);

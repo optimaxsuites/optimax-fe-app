@@ -37,6 +37,14 @@ export class ShiftAssignmentComponent implements OnInit {
   employeeSearchQuery = '';
   editMode: 'single' | 'series' = 'single';
 
+  // Modal state
+  showAddShiftModal = false;
+  showAddProjectModal = false;
+  newShiftName = '';
+  newShiftStart = '';
+  newShiftEnd = '';
+  newProjectName = '';
+
   /* MOCK EMPLOYEES and RECURRENECE (replace later with employee service) */
   projects = [
     'HR System Upgrade',
@@ -70,6 +78,7 @@ export class ShiftAssignmentComponent implements OnInit {
   ];
 
   @Input() preselectedDate!: string;
+  @Input() preselectedEndDate!: string;
   @Input() scheduleToEdit: ScheduleDTO | null = null;
   @Output() closeModal = new EventEmitter<void>();
 
@@ -114,7 +123,8 @@ export class ShiftAssignmentComponent implements OnInit {
 
   if (!this.scheduleToEdit && this.preselectedDate) {
     this.assignmentForm.patchValue({
-      date: this.preselectedDate
+      date: this.preselectedDate,
+      endDate: this.preselectedEndDate || ''
     });
   }
 
@@ -653,4 +663,62 @@ get showRecurrenceControls(): boolean {
 
     return dates;
   }*/
+
+  onShiftChange(event: any) {
+    if (event.target.value === '__add_new__') {
+      event.target.value = '';
+      this.assignmentForm.patchValue({ shiftId: '' });
+      this.showAddShiftModal = true;
+      this.newShiftName = '';
+      this.newShiftStart = '';
+      this.newShiftEnd = '';
+    }
+  }
+
+  onProjectChange(event: any) {
+    if (event.target.value === '__add_new__') {
+      event.target.value = '';
+      this.assignmentForm.patchValue({ project: '' });
+      this.showAddProjectModal = true;
+      this.newProjectName = '';
+    }
+  }
+
+  closeAddShiftModal() {
+    this.showAddShiftModal = false;
+    this.newShiftName = '';
+    this.newShiftStart = '';
+    this.newShiftEnd = '';
+  }
+
+  closeAddProjectModal() {
+    this.showAddProjectModal = false;
+    this.newProjectName = '';
+  }
+
+  saveNewShiftModal() {
+    if (!this.newShiftName || !this.newShiftStart || !this.newShiftEnd) {
+      alert('Please fill in all fields');
+      return;
+    }
+    const newShift: any = {
+      id: Date.now().toString(),
+      name: this.newShiftName,
+      startTime: this.newShiftStart,
+      endTime: this.newShiftEnd
+    };
+    this.shifts.push(newShift);
+    this.assignmentForm.patchValue({ shiftId: newShift.id });
+    this.closeAddShiftModal();
+  }
+
+  saveNewProjectModal() {
+    if (!this.newProjectName) {
+      alert('Please enter a project name');
+      return;
+    }
+    this.projects.push(this.newProjectName);
+    this.assignmentForm.patchValue({ project: this.newProjectName });
+    this.closeAddProjectModal();
+  }
 }

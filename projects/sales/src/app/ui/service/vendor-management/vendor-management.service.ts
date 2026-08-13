@@ -68,7 +68,20 @@ import { environment } from '../../shared-component/service/environments/environ
 
 const API_BASE = environment.apiBaseUrl;
 
-// ============================================================
+function parseSafeDate(val: any): Date {
+  if (!val) return new Date();
+  if (typeof val === 'string') {
+    const num = Number(val);
+    if (!isNaN(num)) {
+      val = num;
+    }
+  }
+  if (typeof val === 'number') {
+    return new Date(val < 10000000000 ? val * 1000 : val);
+  }
+  const parsed = new Date(val);
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
+}
 // MOCK DATA — AI VENDOR INTELLIGENCE (SENTINEL)
 // ============================================================
 
@@ -780,8 +793,7 @@ export class VendorService {
   private readonly useMockData: boolean = false;
 
   private get tenantId(): string {
-    const h = window.location.hostname;
-    return (h.includes('localhost') || h.includes('127.0.0.1')) ? 'optimax' : h.split('.')[0] || 'optimax';
+    return 'optimax';
   }
 
   // ============================================================
@@ -1428,22 +1440,25 @@ export class VendorService {
     const totalProjects = raw.totalProjects ?? raw.total_projects ?? raw.projectCount ?? 0;
     return {
       id: raw.id || raw._id || raw.vendorId || '',
-      companyName: raw.companyName || raw.company_name || raw.name || raw.company || '',
-      registrationNumber: raw.registrationNumber || raw.registration_number || raw.regNumber || raw.rc_number || '',
-      taxId: raw.taxId || raw.tax_id || raw.tin || raw.taxNumber || '',
-      email: raw.email || raw.emailAddress || raw.email_address || '',
-      phone: raw.phone || raw.phoneNumber || raw.phone_number || raw.mobile || '',
+      companyName: raw.companyName || raw.company_name || raw.name || raw.company || `Pending Registration (ID: ${raw.id || 'N/A'})`,
+      registrationNumber: raw.registrationNumber || raw.registration_number || raw.regNumber || raw.rc_number || 'Pending',
+      taxId: raw.taxId || raw.tax_id || raw.tin || raw.taxNumber || 'Pending',
+      email: raw.email || raw.emailAddress || raw.email_address || 'Pending',
+      phone: raw.phone || raw.phoneNumber || raw.phone_number || raw.mobile || 'Pending',
       website: raw.website || raw.websiteUrl || raw.web_site || undefined,
       address: raw.address || { street: '', city: '', state: '', country: 'Nigeria', postalCode: '' },
-      status: (raw.status || raw.vendorStatus || VendorStatus.PENDING_ONBOARDING) as VendorStatus,
+      status: (() => {
+        const s = raw.status || raw.vendorStatus;
+        return (s === 'DRAFT' || !s) ? VendorStatus.PENDING_ONBOARDING : s as VendorStatus;
+      })(),
       tier: (raw.tier || raw.vendorTier || VendorTier.APPROVED) as VendorTier,
       riskLevel: (raw.riskLevel || raw.risk_level || raw.risk || RiskLevel.LOW) as RiskLevel,
       performanceScore,
       totalProjects,
       winRate: raw.winRate ?? raw.win_rate ?? 0,
       averageRating: raw.averageRating ?? raw.average_rating ?? raw.rating ?? 0,
-      joinedDate: raw.joinedDate ? new Date(raw.joinedDate) : (raw.createdAt ? new Date(raw.createdAt) : new Date()),
-      lastActivityDate: raw.lastActivityDate ? new Date(raw.lastActivityDate) : (raw.updatedAt ? new Date(raw.updatedAt) : new Date()),
+      joinedDate: parseSafeDate(raw.joinedDate || raw.createdAt),
+      lastActivityDate: parseSafeDate(raw.lastActivityDate || raw.updatedAt),
       categories: Array.isArray(raw.categories) ? raw.categories : [],
       logo: raw.logo || raw.logoUrl || undefined,
       description: raw.description || '',
@@ -1464,8 +1479,8 @@ export class VendorService {
       },
       lifecycleHistory: Array.isArray(raw.lifecycleHistory) ? raw.lifecycleHistory : [],
       riskAlerts: Array.isArray(raw.riskAlerts) ? raw.riskAlerts : [],
-      createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
-      updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : new Date(),
+      createdAt: parseSafeDate(raw.createdAt),
+      updatedAt: parseSafeDate(raw.updatedAt),
       applicationNumber: raw.applicationNumber || raw.application_number || undefined,
       // The backend was originally POSTed the full 6-step registration payload
       // (see VendorRegistrationService.submit) — preserve it here too if the
@@ -1518,59 +1533,83 @@ export class VendorService {
       if (filters.dateTo) params = params.set('dateTo', filters.dateTo);
     }
 
-    if (this.useMockData) {
-      const allMock = [
-        ...this.MOCK_VENDORS,
-        ...PendingVendorStore.getAll()
-      ];
-      // Deduplicate — store entries take precedence (they have live status)
-      const seen = new Set<string>();
-      let mockVendors = allMock.filter(v => {
-        if (seen.has(v.id)) return false;
-        seen.add(v.id);
-        return true;
-      });
-
-      // Apply tenant-specific status override
-      mockVendors = mockVendors.map(v => {
-        const tenantStatus = TenantVendorApprovalStore.getStatus(this.tenantId, v.id);
-        if (tenantStatus) {
-          return { ...v, status: tenantStatus };
-        }
-        return v;
-      });
-
-      if (filters?.statuses && Array.isArray(filters.statuses)) {
-        mockVendors = mockVendors.filter(v => filters.statuses!.includes(v.status));
-      } else if (filters?.status) {
-        mockVendors = mockVendors.filter(v => v.status === filters.status);
-      }
-
-      const listResponse: VendorListResponse = {
-        vendors: mockVendors,
-        total: mockVendors.length,
-        page,
-        limit,
-        totalPages: 1
-      };
-      this.vendorsSubject.next(mockVendors);
-      this.loadingSubject.next(false);
-      return of(listResponse);
-    }
+    console.log('[VendorService] getVendors request params:', params.toString(), 'Filters:', filters);
 
     return this.http.get<any>(`${this.baseUrl}/vendors`, { params })
       .pipe(
         map(res => {
+          console.log('[VendorService] getVendors raw response:', res);
           const rawVendors: any[] = Array.isArray(res)
             ? res
             : (res?.vendors ?? res?.data ?? res?.content ?? []);
-          const vendors: Vendor[] = rawVendors.map(v => this.mapVendor(v));
+          const backendVendors: Vendor[] = rawVendors.map(v => this.mapVendor(v));
+          console.log('[VendorService] getVendors mapped backend vendors:', backendVendors);
 
-          const resultVendors = vendors.length ? vendors : this.filterMockVendors(filters);
-          const totalCount = res?.total ?? res?.totalCount ?? res?.totalElements ?? resultVendors.length;
+          let finalVendors = backendVendors;
+
+          if (this.useMockData) {
+            // Merge backend vendors with mock data and local store data
+            const allMock = [
+              ...backendVendors,
+              ...this.MOCK_VENDORS,
+              ...PendingVendorStore.getAll()
+            ];
+            // Deduplicate by ID - backend and store entries take priority
+            const seen = new Set<string>();
+            finalVendors = allMock.filter(v => {
+              if (!v.id || seen.has(v.id)) return false;
+              seen.add(v.id);
+              return true;
+            });
+            console.log('[VendorService] getVendors merged mock data vendors (useMockData=true):', finalVendors);
+          }
+
+          // Apply tenant-specific status override
+          finalVendors = finalVendors.map(v => {
+            const tenantStatus = TenantVendorApprovalStore.getStatus(this.tenantId, v.id);
+            if (tenantStatus) {
+              return { ...v, status: tenantStatus };
+            }
+            return v;
+          });
+
+          // Apply filters
+          if (filters?.statuses && Array.isArray(filters.statuses)) {
+            finalVendors = finalVendors.filter(v => filters.statuses!.includes(v.status));
+            console.log('[VendorService] filtered by statuses:', filters.statuses, 'Count:', finalVendors.length);
+          } else if (filters?.status) {
+            finalVendors = finalVendors.filter(v => v.status === filters.status);
+            console.log('[VendorService] filtered by status:', filters.status, 'Count:', finalVendors.length);
+          }
+
+          if (filters?.tier) {
+            finalVendors = finalVendors.filter(v => v.tier === filters.tier);
+          }
+
+          if (filters?.riskLevel) {
+            finalVendors = finalVendors.filter(v => v.riskLevel === filters.riskLevel);
+          }
+
+          if (filters?.category) {
+            const category = String(filters.category).toLowerCase();
+            finalVendors = finalVendors.filter(v => (v.categories || []).some((cat: string) => cat.toLowerCase().includes(category)));
+          }
+
+          if (filters?.search) {
+            const search = String(filters.search).toLowerCase();
+            finalVendors = finalVendors.filter(v =>
+              (v.companyName || '').toLowerCase().includes(search) ||
+              (v.email || '').toLowerCase().includes(search) ||
+              (v.registrationNumber || '').toLowerCase().includes(search)
+            );
+          }
+
+          console.log('[VendorService] getVendors final visible vendors:', finalVendors);
+
+          const totalCount = res?.total ?? res?.totalCount ?? res?.totalElements ?? finalVendors.length;
           const totalPages = res?.totalPages ?? res?.pages ?? Math.max(Math.ceil(totalCount / limit), 1);
           const listResponse: VendorListResponse = {
-            vendors: resultVendors,
+            vendors: finalVendors,
             total: totalCount,
             page,
             limit,
@@ -1583,8 +1622,55 @@ export class VendorService {
           this.loadingSubject.next(false);
         }),
         catchError(err => {
+          console.error('[VendorService] getVendors API failed:', err);
           this.loadingSubject.next(false);
-          const fallbackVendors = this.filterMockVendors(filters);
+          // Fallback entirely to mock data if API call fails
+          const allMock = [
+            ...this.MOCK_VENDORS,
+            ...PendingVendorStore.getAll()
+          ];
+          const seen = new Set<string>();
+          let fallbackVendors = allMock.filter(v => {
+            if (!v.id || seen.has(v.id)) return false;
+            seen.add(v.id);
+            return true;
+          });
+
+          // Apply tenant-specific status override
+          fallbackVendors = fallbackVendors.map(v => {
+            const tenantStatus = TenantVendorApprovalStore.getStatus(this.tenantId, v.id);
+            return tenantStatus ? { ...v, status: tenantStatus } : v;
+          });
+
+          // Apply filters to fallback list
+          if (filters?.statuses && Array.isArray(filters.statuses)) {
+            fallbackVendors = fallbackVendors.filter(v => filters.statuses!.includes(v.status));
+          } else if (filters?.status) {
+            fallbackVendors = fallbackVendors.filter(v => v.status === filters.status);
+          }
+
+          if (filters?.tier) {
+            fallbackVendors = fallbackVendors.filter(v => v.tier === filters.tier);
+          }
+
+          if (filters?.riskLevel) {
+            fallbackVendors = fallbackVendors.filter(v => v.riskLevel === filters.riskLevel);
+          }
+
+          if (filters?.category) {
+            const category = String(filters.category).toLowerCase();
+            fallbackVendors = fallbackVendors.filter(v => (v.categories || []).some((cat: string) => cat.toLowerCase().includes(category)));
+          }
+
+          if (filters?.search) {
+            const search = String(filters.search).toLowerCase();
+            fallbackVendors = fallbackVendors.filter(v =>
+              (v.companyName || '').toLowerCase().includes(search) ||
+              (v.email || '').toLowerCase().includes(search) ||
+              (v.registrationNumber || '').toLowerCase().includes(search)
+            );
+          }
+
           const listResponse: VendorListResponse = { vendors: fallbackVendors, total: fallbackVendors.length, page, limit, totalPages: 1 };
           this.vendorsSubject.next(fallbackVendors);
           return of(listResponse);
@@ -1996,8 +2082,65 @@ export class VendorService {
       return of(ownDocs ?? []);
     }
 
-    return this.http.get<VendorDocument[]>(`${this.baseUrl}/vendors/${vendorId}/documents`)
+    const params = new HttpParams().set('tenantId', this.tenantId);
+
+    return this.http.get<VendorDocument[]>(`${this.baseUrl}/vendors/${vendorId}/documents`, { params })
       .pipe(
+        map(res => {
+          const rawDocs = Array.isArray(res) ? res : [];
+          return rawDocs.map(raw => {
+            const expDate = parseSafeDate(raw.expiryDate);
+            const uploadedAtDate = parseSafeDate(raw.uploadedDate || raw.createdAt);
+            const timeDiff = expDate.getTime() - new Date().getTime();
+            const daysUntilExpiry = Math.max(0, Math.ceil(timeDiff / (1000 * 3600 * 24)));
+
+            let docStatus = DocumentStatus.PENDING_VERIFICATION;
+            const statusUpper = String(raw.status || '').toUpperCase();
+            if (statusUpper === 'ACTIVE' || statusUpper === 'APPROVED') {
+              docStatus = DocumentStatus.ACTIVE;
+            } else if (statusUpper === 'EXPIRED') {
+              docStatus = DocumentStatus.EXPIRED;
+            } else if (statusUpper === 'EXPIRING_SOON') {
+              docStatus = DocumentStatus.EXPIRING_SOON;
+            } else if (statusUpper === 'REJECTED') {
+              docStatus = DocumentStatus.REJECTED;
+            } else if (statusUpper === 'PENDING') {
+              docStatus = DocumentStatus.PENDING_VERIFICATION;
+            }
+
+            let category = DocumentCategory.REGISTRATION;
+            const categoryUpper = String(raw.category || '').toUpperCase();
+            if (categoryUpper === 'REGISTRATION') {
+              category = DocumentCategory.REGISTRATION;
+            } else if (categoryUpper === 'TAX') {
+              category = DocumentCategory.TAX;
+            } else if (categoryUpper === 'LICENCE' || categoryUpper === 'LICENSE') {
+              category = DocumentCategory.LICENCE;
+            } else if (categoryUpper === 'INSURANCE') {
+              category = DocumentCategory.INSURANCE;
+            } else if (categoryUpper === 'CERTIFICATION') {
+              category = DocumentCategory.CERTIFICATION;
+            }
+
+            return {
+              id: String(raw.id),
+              vendorId: String(raw.vendorId || vendorId),
+              category: category,
+              name: raw.label || raw.fileName || 'Unnamed Document',
+              fileName: raw.fileName || '',
+              fileUrl: raw.fileUrl || '',
+              fileSize: Number(raw.fileSize || 0),
+              fileType: raw.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/png',
+              issueDate: parseSafeDate(raw.createdAt || uploadedAtDate),
+              expiryDate: expDate,
+              status: docStatus,
+              isRequired: !!raw.isRequired,
+              daysUntilExpiry: daysUntilExpiry,
+              uploadedAt: uploadedAtDate,
+              uploadedBy: raw.uploadedBy || 'Vendor User'
+            } as VendorDocument;
+          });
+        }),
         tap(() => this.loadingSubject.next(false)),
         catchError(err => {
           this.loadingSubject.next(false);

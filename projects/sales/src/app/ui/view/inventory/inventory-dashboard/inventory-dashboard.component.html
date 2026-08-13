@@ -1,0 +1,352 @@
+<!-- inventory-dashboard.component.html -->
+<div class="inventory-dashboard">
+    <div class="dashboard-wrapper">
+
+        <!-- ============================================================
+    HEADER - Dark Blue Premium Card
+    ============================================================ -->
+        <div class="dashboard-header">
+            <div class="header-left">
+                <div class="header-badge">
+                    <span class="pulse-dot"></span>
+                    Live Inventory
+                </div>
+                <h1 class="page-title">Inventory Command Center</h1>
+                <p class="page-subtitle">Real-time stock levels, movements, and performance at a glance</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-secondary-glow" (click)="refresh()" [disabled]="isLoading">
+                    <i class="fas fa-sync-alt" [class.spinning]="isLoading"></i>
+                    Refresh
+                </button>
+                <button class="btn-primary-glow" (click)="navigateTo('/inventory/products/new')">
+                    <i class="fas fa-plus-circle"></i>
+                    Add Product
+                </button>
+                <button class="btn-primary-glow" (click)="navigateTo('/inventory/movements/transfer')">
+                    <i class="fas fa-exchange-alt"></i>
+                    Create Transfer
+                </button>
+            </div>
+        </div>
+
+        <!-- ============================================================
+    LOADING STATE
+    ============================================================ -->
+        <div *ngIf="isLoading" class="loading-state">
+            <div class="spinner-glow"></div>
+            <p>Loading inventory dashboard...</p>
+        </div>
+
+        <!-- ============================================================
+    ERROR STATE
+    ============================================================ -->
+        <div *ngIf="error && !isLoading" class="error-state">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Failed to Load Dashboard</h3>
+            <p>{{ error }}</p>
+            <button class="btn-primary" (click)="refresh()">
+                <i class="fas fa-sync-alt"></i> Retry
+            </button>
+        </div>
+
+        <!-- ============================================================
+    DASHBOARD CONTENT
+    ============================================================ -->
+        <ng-container *ngIf="!isLoading && stats && !error">
+
+            <!-- ROW 1: Stats Cards Grid -->
+            <div class="stats-grid">
+                <div class="stat-card stat-card-products" (click)="navigateTo('/inventory/products')">
+                    <div class="stat-card-glow"></div>
+                    <div class="stat-card-inner">
+                        <div class="stat-icon-wrapper products">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Total SKUs</span>
+                            <span class="stat-value animate-number">{{ stats?.totalSkus }}</span>
+                            <div class="stat-meta">
+                                <span class="stat-trend positive">
+                                    <i class="fas fa-arrow-up"></i> Active products
+                                </span>
+                            </div>
+                        </div>
+                        <div class="stat-sub-stats">
+                            <span class="sub-stat">
+                                <span class="sub-dot active"></span> {{ stats?.totalBranches }} Branches
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card stat-card-value" (click)="navigateTo('/inventory/products')">
+                    <div class="stat-card-glow"></div>
+                    <div class="stat-card-inner">
+                        <div class="stat-icon-wrapper value">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Stock Value</span>
+                            <span class="stat-value animate-number">{{ formatCurrency(stats?.totalStockValue || 0) }}</span>
+                            <div class="stat-meta">
+                                <span class="stat-trend positive">
+                                    <i class="fas fa-arrow-up"></i> {{ formatNumber(stats?.totalStockUnits || 0) }} units
+                                </span>
+                            </div>
+                        </div>
+                        <div class="stat-sub-stats">
+                            <span class="sub-stat">
+                                <span class="sub-dot active"></span> {{ stats?.averageStockTurnover?.toFixed(1) }}x
+                                turnover
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card stat-card-lowstock" (click)="navigateTo('/inventory/products?status=LOW_STOCK')">
+                    <div class="stat-card-glow"></div>
+                    <div class="stat-card-inner">
+                        <div class="stat-icon-wrapper lowstock">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Low Stock</span>
+                            <span class="stat-value animate-number" [class.high-risk]="(stats?.lowStockItems || 0) > 0">
+                                {{ stats?.lowStockItems }}
+                            </span>
+                            <div class="stat-meta">
+                                <span class="stat-trend" [class.negative]="(stats?.lowStockItems || 0) > 10">
+                                    <i class="fas" [class.fa-exclamation-circle]="(stats?.lowStockItems || 0) > 10"
+                                        [class.fa-check-circle]="(stats?.lowStockItems || 0) <= 10"></i>
+                                    {{ (stats?.lowStockItems || 0) > 10 ? 'Action needed' : 'Under control' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="stat-progress">
+                            <div class="progress-bar"
+                                [style.width.%]="Math.max(0, 100 - ((stats?.lowStockItems || 0) / (stats?.totalSkus || 1)) * 100)">
+                            </div>
+                            <span class="progress-label">{{ Math.max(0, 100 - ((stats?.lowStockItems || 0) / (stats?.totalSkus || 1)) *
+                                100).toFixed(0) }}% healthy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card stat-card-outofstock"
+                    (click)="navigateTo('/inventory/products?status=OUT_OF_STOCK')">
+                    <div class="stat-card-glow"></div>
+                    <div class="stat-card-inner">
+                        <div class="stat-icon-wrapper outofstock">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Out of Stock</span>
+                            <span class="stat-value animate-number" [class.high-risk]="(stats?.outOfStockItems || 0) > 0">
+                                {{ stats?.outOfStockItems }}
+                            </span>
+                            <div class="stat-meta">
+                                <span class="stat-trend" [class.negative]="(stats?.outOfStockItems || 0) > 0">
+                                    <i class="fas" [class.fa-exclamation-triangle]="(stats?.outOfStockItems || 0) > 0"
+                                        [class.fa-check-circle]="(stats?.outOfStockItems || 0) === 0"></i>
+                                    {{ (stats?.outOfStockItems || 0) > 0 ? 'Immediate attention required' : 'All in stock' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="stat-badge" [class.danger]="(stats?.outOfStockItems || 0) > 0"
+                            [class.success]="(stats?.outOfStockItems || 0) === 0">
+                            <i class="fas" [class.fa-exclamation]="(stats?.outOfStockItems || 0) > 0"
+                                [class.fa-check]="(stats?.outOfStockItems || 0) === 0"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROW 2: Quick Actions -->
+            <div class="quick-actions-row">
+                <div *ngFor="let action of quickActions" class="quick-action-card"
+                    [style.border-left-color]="action.color" (click)="navigateTo(action.route)">
+                    <div class="quick-action-icon" [style.background]="action.color + '20'"
+                        [style.color]="action.color">
+                        <i class="fas" [class]="action.icon"></i>
+                    </div>
+                    <div class="quick-action-content">
+                        <span class="quick-action-label">{{ action.label }}</span>
+                        <span class="quick-action-description">{{ action.description }}</span>
+                    </div>
+                    <i class="fas fa-chevron-right quick-action-arrow" [style.color]="action.color"></i>
+                </div>
+            </div>
+
+            <!-- ROW 3: Alerts & Top Products -->
+            <div class="two-columns-cards">
+                <!-- Alerts Panel -->
+                <div class="alerts-card glass" *ngIf="alerts.length > 0">
+                    <div class="card-header">
+                        <h3><i class="fas fa-bell"></i> Stock Alerts</h3>
+                        <span class="alert-count">{{ alerts.length }} active</span>
+                    </div>
+                    <div class="alerts-list">
+                        <div *ngFor="let alert of alerts" class="alert-item"
+                            [class]="getAlertSeverityClass(alert.severity)">
+                            <div class="alert-icon">
+                                <i class="fas" [class]="getAlertIcon(alert.type)"></i>
+                            </div>
+                            <div class="alert-content">
+                                <span class="alert-title">{{ alert.productName }}</span>
+                                <span class="alert-description">{{ alert.message }}</span>
+                                <span class="alert-meta">
+                                    <span class="alert-branch">{{ alert.branchName }}</span>
+                                    <span class="alert-time">{{ formatTime(alert.createdAt) }}</span>
+                                </span>
+                            </div>
+                            <button class="alert-resolve" (click)="$event.stopPropagation(); resolveAlert(alert.id)"
+                                title="Mark as resolved">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Products -->
+                <div class="products-card glass" *ngIf="topProducts.length > 0">
+                    <div class="card-header">
+                        <h3><i class="fas fa-trophy"></i> Top Selling Products</h3>
+                        <button class="view-link" (click)="navigateTo('/inventory/analytics/products')">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="products-list">
+                        <div *ngFor="let product of topProducts; let i = index" class="product-item"
+                            [class.top]="i === 0" (click)="navigateToProduct(product.productId)">
+                            <div class="product-rank" [class.gold]="i === 0" [class.silver]="i === 1"
+                                [class.bronze]="i === 2">
+                                <span *ngIf="i === 0">🥇</span>
+                                <span *ngIf="i === 1">🥈</span>
+                                <span *ngIf="i === 2">🥉</span>
+                                <span *ngIf="i > 2">#{{ i + 1 }}</span>
+                            </div>
+                            <div class="product-info">
+                                <span class="product-name">{{ product.productName }}</span>
+                                <span class="product-stats">
+                                    <i class="fas fa-tag"></i> {{ product.category }}
+                                    <i class="fas fa-chart-line"></i> {{ product.sellThroughRate.toFixed(0) }}%
+                                    sell-through
+                                </span>
+                            </div>
+                            <div class="product-revenue">{{ formatCurrency(product.totalRevenue) }}</div>
+                            <div class="product-bar-mini">
+                                <div class="mini-bar"
+                                    [style.width.%]="(product.totalRevenue / (topProducts[0]?.totalRevenue || 1)) * 100"></div>
+                            </div>
+                            <div class="product-trend" [style.color]="getPerformanceTrendColor(product.trend)">
+                                <i class="fas" [class]="getPerformanceTrend(product.trend)"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROW 4: Recent Movements & Branch Overview -->
+            <div class="two-columns-cards">
+                <!-- Recent Movements -->
+                <div class="movements-card glass">
+                    <div class="card-header">
+                        <h3><i class="fas fa-exchange-alt"></i> Recent Stock Movements</h3>
+                        <button class="view-link" (click)="navigateTo('/inventory/movements')">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="movements-list">
+                        <div *ngFor="let movement of recentMovements" class="movement-item"
+                            (click)="navigateToMovement(movement.id)">
+                            <div class="movement-icon" [style.color]="movement.movementType === 'PURCHASE' ? '#2EB270' : 
+                                                           movement.movementType === 'TRANSFER' ? '#3B82F6' : 
+                                                           movement.movementType === 'SALE' ? '#F5A623' : '#6B7280'">
+                                <i class="fas" [class]="getMovementTypeIcon(movement.movementType)"></i>
+                            </div>
+                            <div class="movement-content">
+                                <span class="movement-product">{{ movement.productName }}</span>
+                                <span class="movement-details">
+                                    <span class="movement-type">{{ getMovementTypeLabel(movement.movementType) }}</span>
+                                    <span class="movement-quantity">{{ movement.quantity }} units</span>
+                                    <span class="movement-location">{{ movement.fromLocation.name }} → {{
+                                        movement.toLocation.name }}</span>
+                                </span>
+                                <span class="movement-time">{{ formatTime(movement.createdAt) }}</span>
+                            </div>
+                            <span class="movement-status" [class.completed]="movement.status === 'COMPLETED'"
+                                [class.pending]="movement.status === 'PENDING'"
+                                [class.in-transit]="movement.status === 'IN_TRANSIT'">
+                                {{ movement.status }}
+                            </span>
+                        </div>
+                        <div *ngIf="recentMovements.length === 0" class="empty-state-small">
+                            <i class="fas fa-inbox"></i>
+                            <p>No recent stock movements</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Branch Stock Overview -->
+                <div class="branches-card glass">
+                    <div class="card-header">
+                        <h3><i class="fas fa-store"></i> Branch Stock Overview</h3>
+                        <button class="view-link" (click)="navigateTo('/inventory/branches')">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="branches-list">
+                        <div *ngFor="let branch of branchSummaries" class="branch-item"
+                            (click)="navigateToBranch(branch.branchId)">
+                            <div class="branch-info">
+                                <span class="branch-name">{{ branch.branchName }}</span>
+                                <span class="branch-stats">
+                                    <span class="branch-stock">{{ formatNumber(branch.totalStockUnits) }} units</span>
+                                    <span class="branch-value">{{ formatCurrency(branch.totalStockValue) }}</span>
+                                </span>
+                            </div>
+                            <div class="branch-status">
+                                <span class="branch-status-dot"
+                                    [class.warning]="branch.lowStockCount > 0 || branch.outOfStockCount > 0"
+                                    [class.danger]="branch.outOfStockCount > 0"
+                                    [class.success]="branch.lowStockCount === 0 && branch.outOfStockCount === 0">
+                                </span>
+                                <span class="branch-status-text"
+                                    [class.warning]="branch.lowStockCount > 0 || branch.outOfStockCount > 0"
+                                    [class.danger]="branch.outOfStockCount > 0"
+                                    [class.success]="branch.lowStockCount === 0 && branch.outOfStockCount === 0">
+                                    {{ branch.outOfStockCount > 0 ? 'Out of stock' :
+                                    branch.lowStockCount > 0 ? 'Low stock' : 'Healthy' }}
+                                </span>
+                            </div>
+                            <div class="branch-stock-bar">
+                                <div class="stock-bar-fill"
+                                    [style.width.%]="Math.min(100, (branch.totalStockUnits / 1000) * 100)"></div>
+                            </div>
+                            <div class="branch-products-count">
+                                <span>{{ branch.totalProducts }} products</span>
+                            </div>
+                        </div>
+                        <div *ngIf="branchSummaries.length === 0" class="empty-state-small">
+                            <i class="fas fa-store"></i>
+                            <p>No branches available</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </ng-container>
+
+        <!-- SVG Gradients -->
+        <svg style="position: absolute; width: 0; height: 0;">
+            <defs>
+                <linearGradient id="revenueGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#3a8fa8;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#3a8fa8;stop-opacity:0" />
+                </linearGradient>
+            </defs>
+        </svg>
+
+    </div>
+</div>
