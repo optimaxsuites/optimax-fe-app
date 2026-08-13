@@ -103,6 +103,14 @@ export class MenuItemsService {
           icon: 'fas fa-building',
           description: 'View and manage vendor onboarding and lifecycle.'
         },
+        {
+          label: 'Inventory',
+          code: 'COM_INV',
+          route: this.navigationLink.getLink('INVLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-box',
+          description: 'Manage inventory levels and stock movements.'
+        },
 
         // ── Partners ──────────────────────────────────────────────────────────
         { label: 'Partners', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },

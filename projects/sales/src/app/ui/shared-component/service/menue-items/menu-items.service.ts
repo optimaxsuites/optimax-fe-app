@@ -12,12 +12,12 @@ export class MenuItemsService {
 
   constructor(
     private navigationLink: NavigationLinksService
-  ){
+  ) {
     this.initializeSettingsMenuItems();
   }
 
-  
-    private initializeSettingsMenuItems(): void {
+
+  private initializeSettingsMenuItems(): void {
     this.settingsMenuItems = [
       {
         label: 'General Settings',
@@ -33,7 +33,7 @@ export class MenuItemsService {
         label: 'Sales',
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
         route: this.navigationLink.getLink('salesSettings'),
-        icon: 'pi pi-dollar', 
+        icon: 'pi pi-dollar',
         submenu: [
           { label: 'Profile', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
           { label: 'Security', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
@@ -43,7 +43,7 @@ export class MenuItemsService {
         label: 'Purchase',
         route: this.navigationLink.getLink('purchaseSettings'),
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
-        icon: 'pi pi-shopping-cart', 
+        icon: 'pi pi-shopping-cart',
         submenu: [
           { label: 'Profile', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
           { label: 'Security', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
@@ -51,9 +51,9 @@ export class MenuItemsService {
       },
       {
         label: 'Inventory',
-        roles: ['ROLE_USER' , 'ROLE_ADMIN'],
+        roles: ['ROLE_USER', 'ROLE_ADMIN'],
         route: this.navigationLink.getLink('inventorySettings'),
-  
+
         icon: 'pi pi-cog',
         submenu: [
           { label: 'User Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'], icon: 'pi pi-users' },
@@ -63,8 +63,8 @@ export class MenuItemsService {
         label: 'Procurement',
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
         route: this.navigationLink.getLink('vendorSettings'),
-  
-        icon: 'pi pi-truck', 
+
+        icon: 'pi pi-truck',
         submenu: [
           { label: 'Request For Quotation', route: this.navigationLink.getLink('rfqLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
           { label: 'Settings', route: this.navigationLink.getLink('procurementSettingsLink'), roles: ['ROLE_USER'], icon: 'pi pi-cog' },
@@ -74,8 +74,8 @@ export class MenuItemsService {
         label: 'Accounting',
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
         route: this.navigationLink.getLink('accountSettings'),
-  
-        icon: 'pi pi-credit-card', 
+
+        icon: 'pi pi-credit-card',
         submenu: [
           { label: 'Quotation', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
           // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
@@ -85,18 +85,18 @@ export class MenuItemsService {
         label: 'Human Resources',
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
         route: this.navigationLink.getLink('HRSettings'),
-  
-        icon: 'pi pi-users', 
+
+        icon: 'pi pi-users',
         submenu: [
           { label: 'Recruitment', route: this.navigationLink.getLink('recuitmentLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
           { label: 'Interview', route: this.navigationLink.getLink('interviewLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
           { label: 'Attendance', route: this.navigationLink.getLink('attendanceLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
           { label: 'Leave', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
           { label: 'Score Sheet', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-  
+
         ],
       },
-       {
+      {
         label: 'Commerce',
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
         icon: 'pi pi-shopping-bag',
@@ -105,6 +105,7 @@ export class MenuItemsService {
           { label: 'Procurement Management', route: this.navigationLink.getLink('PMLink'), roles: ['ROLE_USER'], icon: 'pi pi-file-edit' },
           { label: 'Vendor Portal', route: this.navigationLink.getLink('VPLink'), roles: ['ROLE_USER'], icon: 'pi pi-truck' },
           { label: 'Vendor Management', route: this.navigationLink.getLink('VMLink'), roles: ['ROLE_USER'], icon: 'pi pi-building' },
+          { label: 'Inventory', route: this.navigationLink.getLink('INVLink'), roles: ['ROLE_USER'], icon: 'pi pi-box' },
           { label: 'Delivery Monitoring', route: this.navigationLink.getLink('deliveriesLink'), roles: ['ROLE_USER'], icon: 'pi pi-map-marker' },
           { label: 'Payment Tracking', route: this.navigationLink.getLink('paymentsLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
           { label: 'Reports & Analytics', route: this.navigationLink.getLink('RALink'), roles: ['ROLE_USER'], icon: 'pi pi-chart-bar' },
@@ -114,18 +115,18 @@ export class MenuItemsService {
         label: 'POS',
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
         route: this.navigationLink.getLink('posSettings'),
-  
-        icon: 'pi pi-shopping-bag', 
+
+        icon: 'pi pi-shopping-bag',
         submenu: [
           { label: 'Sales', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'], icon: 'pi pi-cart' },
-         
+
         ],
       },
       {
         label: 'Checkout',
         route: this.navigationLink.getLink('checkoutSettings'),
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
-        icon: 'pi pi-check', 
+        icon: 'pi pi-check',
         submenu: [
           { label: 'Order Summary', route: this.navigationLink.getLink('checkoutLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
         ],
@@ -134,30 +135,30 @@ export class MenuItemsService {
         label: 'CRM',
         route: this.navigationLink.getLink('CRMSettings'),
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
-        icon: 'pi pi-users', 
+        icon: 'pi pi-users',
         submenu: [
           { label: 'Contacts', route: this.navigationLink.getLink('crmLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-         
+
         ],
       },
       {
         label: 'Expense',
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
         route: this.navigationLink.getLink('expenseSettings'),
-  
-        icon: 'pi pi-money-bill', 
+
+        icon: 'pi pi-money-bill',
         submenu: [
           { label: 'Expenses', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
-   
-  
+
+
         ],
       },
       {
         label: 'Tender',
         route: this.navigationLink.getLink('tenderSettings'),
-  
+
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
-        icon: 'pi pi-user' 
+        icon: 'pi pi-user'
       },
       {
         label: 'Vendor',
@@ -173,11 +174,11 @@ export class MenuItemsService {
         label: 'User Management',
         route: this.navigationLink.getLink('userManagmentSettings'),
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
-        icon: 'pi pi-cog' 
+        icon: 'pi pi-cog'
       },
     ]
   }
-  
+
 
 
 
