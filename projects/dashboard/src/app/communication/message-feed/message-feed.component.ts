@@ -774,19 +774,20 @@ export class MessageFeedComponent {
 
   private cleanStructuredPasteArtifacts(value: string): string {
     let cleaned = value || '';
-    cleaned = cleaned.replace(/https:\s*class="token[^"]*">\s*\/\//gi, 'https://');
-    cleaned = cleaned.replace(/http:\s*class="token[^"]*">\s*\/\//gi, 'http://');
-    cleaned = cleaned.replace(/https:\s*&quot;?\s*class=&quot;token[^&]*&quot;>\s*\/\//gi, 'https://');
-    cleaned = cleaned.replace(/http:\s*&quot;?\s*class=&quot;token[^&]*&quot;>\s*\/\//gi, 'http://');
-    cleaned = cleaned.replace(/(?:<span\s+)?class="token[^"]*">/gi, '');
-    cleaned = cleaned.replace(/(?:&lt;span\s+)?class=&quot;token[^&]*&quot;>/gi, '');
-    cleaned = cleaned.replace(/<\/span>/gi, '');
+    // Fix mangled protocol strings from syntax-highlighted URLs
+    cleaned = cleaned.replace(/https:\s*class=["'][\w\s-]*["']\s*>\s*\/\//gi, 'https://');
+    cleaned = cleaned.replace(/http:\s*class=["'][\w\s-]*["']\s*>\s*\/\//gi, 'http://');
+    cleaned = cleaned.replace(/https:\s*&quot;?\s*class=&quot;[\w\s-]*&quot;>\s*\/\//gi, 'https://');
+    cleaned = cleaned.replace(/http:\s*&quot;?\s*class=&quot;[\w\s-]*&quot;>\s*\/\//gi, 'http://');
+    // Strip all HTML opening tags (span, code, pre, etc.) \u2014 covers PrismJS, highlight.js, CodeMirror
+    cleaned = cleaned.replace(/<\/?[a-z][a-z0-9]*(\s[^>]*)?\/?>/gi, '');
+    // Strip leftover class="token..." or class='hljs-...' fragments that appear as raw text
+    cleaned = cleaned.replace(/class=["'][\w\s-]*["']\s*>/gi, '');
+    // Strip encoded variants (&lt;span ...&gt;)
+    cleaned = cleaned.replace(/&lt;\/?[a-z][a-z0-9]*(\s[^;]*)?&gt;/gi, '');
     cleaned = cleaned.replace(/&lt;\/span&gt;/gi, '');
+    // Normalize non-breaking spaces and trailing whitespace
     cleaned = cleaned.replace(/\u00a0/g, ' ');
-    cleaned = cleaned.replace(/\s+(?=")/g, ' ');
-    cleaned = cleaned.replace(/:\s+(?=")/g, ': ');
-    cleaned = cleaned.replace(/,\s+(?=")/g, ', ');
-    cleaned = cleaned.replace(/([{[])\s+(?=")/g, '$1 ');
     cleaned = cleaned.replace(/[ \t]+\n/g, '\n');
     cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
     return cleaned.trim();
