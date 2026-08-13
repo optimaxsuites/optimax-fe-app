@@ -806,17 +806,49 @@ export class BugTrackerComponent implements OnInit {
 
   zoomVisible = false;
   zoomedAttachment: string | null = null;
+  private zoomOverlay: HTMLElement | null = null;
 
   @HostListener('document:keydown.escape')
   onEscKey(): void { this.closeZoom(); }
 
   openZoom(dataUrl: string, event?: MouseEvent): void {
     if (event) event.stopPropagation();
-    this.zoomedAttachment = dataUrl;
+    this.closeZoom();
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.85);padding:1.5rem;animation:none;';
+
+    const shell = document.createElement('div');
+    shell.style.cssText = 'position:relative;max-width:min(92vw,70rem);max-height:88vh;border-radius:1.25rem;overflow:hidden;background:#0f172a;box-shadow:0 30px 70px rgba(15,23,42,0.45);';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.style.cssText = 'position:absolute;top:.75rem;right:.75rem;width:2.25rem;height:2.25rem;border:0;border-radius:50%;background:rgba(255,255,255,0.14);color:#fff;cursor:pointer;z-index:1;display:flex;align-items:center;justify-content:center;font-size:1.25rem;line-height:1;';
+
+    const img = document.createElement('img');
+    img.src = dataUrl;
+    img.alt = 'Attachment';
+    img.style.cssText = 'display:block;width:100%;max-height:88vh;object-fit:contain;background:#020617;';
+
+    shell.appendChild(closeBtn);
+    shell.appendChild(img);
+    overlay.appendChild(shell);
+
+    overlay.addEventListener('click', () => this.closeZoom());
+    shell.addEventListener('click', e => e.stopPropagation());
+    closeBtn.addEventListener('click', () => this.closeZoom());
+
+    document.body.appendChild(overlay);
+    this.zoomOverlay = overlay;
     this.zoomVisible = true;
   }
 
   closeZoom(): void {
+    if (this.zoomOverlay) {
+      document.body.removeChild(this.zoomOverlay);
+      this.zoomOverlay = null;
+    }
     this.zoomVisible = false;
     this.zoomedAttachment = null;
   }

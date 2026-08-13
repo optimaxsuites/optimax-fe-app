@@ -2,9 +2,9 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { ApprovalService } from '../../../service/approval-inbox/approval.service';
-import { ApprovalRequest, ApprovalStatus, ApprovalLevel, ApprovalComment } from '../../../domain/approval-inbox/approval-request.dto';
+import { WorkflowInstance } from '../../../domain/approval-inbox/approval-request.dto';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
-import { RequestStatus, ProcurementRequest } from '../../../domain/procurement-request/procurement.dto';
+import { ProcurementRequest } from '../../../domain/procurement-request/procurement.dto';
 import { ExtendedProcurementRequest, parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 
 @Component({
@@ -13,14 +13,14 @@ import { ExtendedProcurementRequest, parseIdToNumber } from '../../../service/pr
   styleUrls: ['./approval-rfq-detail.component.scss']
 })
 export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
-  approvalId: string | null = null;
-  approval: ApprovalRequest | null = null;
+  requestId: string | null = null;
   procurementRequest: ExtendedProcurementRequest | null = null;
+  workflowInstance: WorkflowInstance | null = null;
   isLoading = true;
+  isActioning = false;
   showApproveModal = false;
   showRejectModal = false;
   commentsText = '';
-  newCommentText = '';
 
   private destroy$ = new Subject<void>();
 
@@ -29,12 +29,12 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
     private router: Router,
     private approvalService: ApprovalService,
     private procurementService: ProcurementRequestService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
-    this.approvalId = this.route.snapshot.paramMap.get('id');
-    if (this.approvalId) {
-      this.loadApprovalDetails(this.approvalId);
+    this.requestId = this.route.snapshot.paramMap.get('id');
+    if (this.requestId) {
+      this.loadDetails(this.requestId);
     }
   }
 
@@ -43,38 +43,25 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  loadApprovalDetails(id: string): void {
+  loadDetails(id: string): void {
     this.isLoading = true;
-    this.approvalService.getApprovalById(id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (app) => {
-          if (app) {
-            this.approval = app;
-            this.loadProcurementDetails(app.requestId);
-          } else {
-            this.isLoading = false;
-          }
-        },
-        error: (err) => {
-          console.error('Error fetching approval request:', err);
-          this.isLoading = false;
-        }
-      });
-  }
-
-  loadProcurementDetails(requestId: string): void {
-    this.procurementService.getRequest(parseIdToNumber(requestId))
+    this.procurementService.getRequest(parseIdToNumber(id))
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (req) => {
           this.procurementRequest = req as ExtendedProcurementRequest;
           this.isLoading = false;
+          const instanceId = (req as any).approvalInstanceId;
+          if (instanceId) {
+            this.approvalService.getWorkflowInstance(Number(instanceId))
+              .pipe(takeUntil(this.destroy$))
+              .subscribe({
+                next: (inst) => { this.workflowInstance = inst; },
+                error: () => {}
+              });
+          }
         },
-        error: (err) => {
-          console.error('Error fetching procurement details:', err);
-          this.isLoading = false;
-        }
+        error: () => { this.isLoading = false; }
       });
   }
 
@@ -89,72 +76,43 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
   }
 
   confirmApprove(): void {
-    if (!this.approval) return;
+    if (!this.workflowInstance) return;
+    this.isActioning = true;
+    const userId = Number(sessionStorage.getItem('userId') || 0);
+    const roleCode = sessionStorage.getItem('role');
+    const payload = new FormData();
+    payload.append('actorUserId', String(userId));
+    if (roleCode) payload.append('actorRoleCode', roleCode);
+    payload.append('comment', this.commentsText.trim());
 
-    const levelToApprove = this.approval.currentLevel;
-
-    this.approvalService.approveRequest(this.approval.id, levelToApprove, this.commentsText)
+    this.approvalService.approveWorkflowInstance(this.workflowInstance.id, payload)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (updated) => {
-          this.approval = updated;
-          if (updated.status === 'APPROVED') {
-            this.updateProcurementRequestStatus(updated.requestId, 'APPROVED', updated.requestType);
-          }
+        next: () => {
           this.showApproveModal = false;
+          this.isActioning = false;
+          if (this.requestId) this.loadDetails(this.requestId);
         },
-        error: (error) => {
-          console.error('Error approving request:', error);
-        }
+        error: () => { this.isActioning = false; }
       });
   }
 
   confirmReject(): void {
-    if (!this.approval) return;
+    if (!this.workflowInstance || !this.commentsText.trim()) return;
+    this.isActioning = true;
+    const userId = Number(sessionStorage.getItem('userId') || 0);
+    const roleCode = sessionStorage.getItem('role');
+    const payload: any = { actorUserId: userId, actorRoleCode: roleCode, comment: this.commentsText.trim() };
 
-    const levelToReject = this.approval.currentLevel;
-
-    this.approvalService.rejectRequest(this.approval.id, levelToReject, this.commentsText)
+    this.approvalService.rejectWorkflowInstance(this.workflowInstance.id, payload)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (updated) => {
-          this.approval = updated;
-          this.updateProcurementRequestStatus(updated.requestId, 'REJECTED', updated.requestType);
+        next: () => {
           this.showRejectModal = false;
+          this.isActioning = false;
+          this.router.navigate(['/admin/sales/commerce/requests']);
         },
-        error: (error) => {
-          console.error('Error rejecting request:', error);
-        }
-      });
-  }
-
-  private updateProcurementRequestStatus(requestId: string, status: 'APPROVED' | 'REJECTED', requestType: string): void {
-    const nextStatus = status === 'APPROVED' ? 'APPROVED' : 'REJECTED';
-    this.procurementService.updateRequest(parseIdToNumber(requestId), {
-      status: nextStatus as RequestStatus
-    }).subscribe({
-      next: () => {
-        console.log(`Procurement request ${requestId} updated to ${nextStatus}`);
-      },
-      error: (error: any) => {
-        console.error('Error updating request status:', error);
-      }
-    });
-  }
-
-  addComment(): void {
-    if (!this.approval || !this.newCommentText.trim()) return;
-
-    this.approvalService.addComment(this.approval.id, this.newCommentText, true)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (updated) => {
-          this.approval = updated;
-          this.newCommentText = '';
-        },
-        error: (err) => {
-          console.error('Error adding comment:', err);
-        }
+        error: () => { this.isActioning = false; }
       });
   }
 
@@ -162,59 +120,22 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/sales/commerce/requests']);
   }
 
-  getStatusClass(status: ApprovalStatus): string {
-    const classes = {
-      'DRAFT': 'status-draft',
-      'PENDING': 'status-pending',
-      'IN_APPROVAL': 'status-in-approval',
-      'APPROVED': 'status-approved',
-      'REJECTED': 'status-rejected',
-      'CANCELLED': 'status-cancelled',
-      'EXPIRED': 'status-expired'
-    };
-    return classes[status] || 'status-pending';
-  }
-
-  getStatusLabel(status: ApprovalStatus): string {
-    const labels = {
-      'DRAFT': 'Draft',
-      'PENDING': 'Pending',
-      'IN_APPROVAL': 'In Approval',
-      'APPROVED': 'Approved',
-      'REJECTED': 'Rejected',
-      'CANCELLED': 'Cancelled',
-      'EXPIRED': 'Expired'
-    };
-    return labels[status];
-  }
-
-  getUrgencyClass(urgency: string): string {
-    const classes = {
-      'LOW': 'urgency-low',
-      'MEDIUM': 'urgency-medium',
-      'HIGH': 'urgency-high',
-      'URGENT': 'urgency-urgent'
-    };
-    return `urgency-badge ${classes[urgency as keyof typeof classes] || 'urgency-medium'}`;
-  }
-
-  getUrgencyLabel(urgency: string): string {
-    return urgency.charAt(0) + urgency.slice(1).toLowerCase();
-  }
-
-  formatCurrency(amount: number, currency: string): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
-  }
-
-  formatDate(date: Date | string | undefined): string {
+  formatDate(date: any): string {
     if (!date) return 'N/A';
     return new Date(date).toLocaleString();
   }
 
+  formatCurrency(amount: number, currency: string): string {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'NGN' }).format(amount || 0);
+  }
+
   getApprovalProgress(): number {
-    if (!this.approval) return 0;
-    const total = this.approval.approvals.filter(a => a.required).length;
-    const completed = this.approval.approvals.filter(a => a.status === 'APPROVED' && a.required).length;
-    return total > 0 ? (completed / total) * 100 : 0;
+    const stages = this.workflowInstance?.approval?.stages ?? [];
+    const actions = this.workflowInstance?.actions ?? [];
+    if (!stages.length) return 0;
+    const done = stages.filter(s =>
+      actions.some(a => a.action === 'APPROVED' && a.stageOrderIndex === s.orderIndex)
+    ).length;
+    return Math.round((done / stages.length) * 100);
   }
 }

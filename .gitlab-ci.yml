@@ -140,7 +140,7 @@ deploy-prod:
 sync-dashboard-satellite:
   <<: *satellite_sync_base
   script:
-    - bash scripts/satellite-push.sh dashboard git@gitlab.com:queensheba/erp-dashboard.git mod
+    - bash scripts/satellite-push.sh dashboard git@gitlab.com:queensheba/erp-dashboard.git mod dashboard_fe
   rules:
     - if: '$CI_COMMIT_BRANCH == "mod"'
       changes:
