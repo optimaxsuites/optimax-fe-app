@@ -52,6 +52,22 @@ export class NotificationService {
   }
 
   /**
+   * Directly sends an email using the SMTP configurations defined in Settings (User Services microservice).
+   */
+  sendDirectEmail(payload: {
+    to: string;
+    cc?: string;
+    bcc?: string;
+    subject: string;
+    body: string;
+    html: boolean;
+    tenant: string;
+  }): Observable<any> {
+    const url = `${environment.apiBaseUrl}/x/api/v2/notification/send-email`;
+    return this.http.post<any>(url, payload);
+  }
+
+  /**
    * Loads notification history for a specific entity.
    */
   getForEntity(entityId: string, entityType: string): Observable<ProcurementNotification[]> {
