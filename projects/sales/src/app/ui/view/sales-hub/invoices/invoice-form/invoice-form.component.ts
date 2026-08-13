@@ -1632,11 +1632,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   private async sendInvoiceEmail(invoice: Invoice): Promise<void> {
+    const customerId = this.invoiceForm.get('customerId')?.value;
     const customerObj = this.customers.find(c =>
-      c.customerId === (invoice.customerId as any)?.customerId ||
-      String(c.id) === String((invoice.customerId as any)?.id || invoice.customerId)
+      c.customerId === customerId || String(c.id) === String(customerId)
     );
-    const email = customerObj?.email || (invoice.customerName as any)?.email || '';
+    const email = customerObj?.email || (invoice.customerName as any)?.email || (invoice.customerId as any)?.email || '';
     const name = customerObj?.name || (invoice.customerName as any)?.name || 'Customer';
 
     if (!email) {
@@ -1647,30 +1647,49 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
     console.log(`Sending invoice ${invoice.invoiceNumber} to ${email}`);
 
-    const triggerPayload = {
-      type: 'QUOTATION_RECEIVED' as any, // fallback general notification type
-      recipientId: String(customerObj?.id || invoice.customerId || '0'),
-      recipientEmail: email,
-      recipientName: name,
-      relatedEntityId: String(invoice.id),
-      relatedEntityType: 'INVOICE',
-      templateData: {
-        invoiceNumber: invoice.invoiceNumber,
-        customerName: name,
-        totalAmount: invoice.totalAmount,
-        currency: invoice.currency || 'NGN',
-        dueDate: invoice.dueDate
-      }
+    const htmlBody = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
+        <h2 style="color: #1a2d4a; margin-top: 0;">Invoice Details</h2>
+        <p>Dear ${name},</p>
+        <p>Please find the details of your invoice below:</p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Invoice Number:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${invoice.invoiceNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Total Amount:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #2EB270;">${invoice.currency || 'NGN'} ${invoice.totalAmount.toLocaleString('en-NG')}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Due Date:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}</td>
+          </tr>
+        </table>
+        <p style="margin-top: 24px;">Thank you for your business!</p>
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+        <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from OptimaX.</p>
+      </div>
+    `;
+
+    const payload = {
+      to: email,
+      cc: '',
+      bcc: '',
+      subject: `Invoice ${invoice.invoiceNumber} from OptimaX`,
+      body: htmlBody,
+      html: true,
+      tenant: 'optimax'
     };
 
     try {
-      console.log('[InvoiceFormComponent] Triggering email notification with payload:', triggerPayload);
-      const response = await lastValueFrom(this.notificationService.trigger(triggerPayload));
-      console.log('[InvoiceFormComponent] Email notification triggered successfully:', response);
+      console.log('[InvoiceFormComponent] Sending direct email with payload:', payload);
+      const response = await lastValueFrom(this.notificationService.sendDirectEmail(payload));
+      console.log('[InvoiceFormComponent] Email sent successfully:', response);
       this.messageService.add({ severity: 'success', summary: 'Email Sent', detail: `Invoice sent successfully to ${email}` });
     } catch (err) {
-      console.error('[InvoiceFormComponent] Failed to send invoice email:', err);
-      this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send invoice email via notification service.' });
+      console.error('[InvoiceFormComponent] Failed to send direct invoice email:', err);
+      this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send invoice email via SMTP service.' });
     }
   }
 

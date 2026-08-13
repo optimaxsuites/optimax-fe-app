@@ -1442,11 +1442,11 @@ export class VendorService {
     const totalProjects = raw.totalProjects ?? raw.total_projects ?? raw.projectCount ?? 0;
     return {
       id: raw.id || raw._id || raw.vendorId || '',
-      companyName: raw.companyName || raw.company_name || raw.name || raw.company || '',
-      registrationNumber: raw.registrationNumber || raw.registration_number || raw.regNumber || raw.rc_number || '',
-      taxId: raw.taxId || raw.tax_id || raw.tin || raw.taxNumber || '',
-      email: raw.email || raw.emailAddress || raw.email_address || '',
-      phone: raw.phone || raw.phoneNumber || raw.phone_number || raw.mobile || '',
+      companyName: raw.companyName || raw.company_name || raw.name || raw.company || `Pending Registration (ID: ${raw.id || 'N/A'})`,
+      registrationNumber: raw.registrationNumber || raw.registration_number || raw.regNumber || raw.rc_number || 'Pending',
+      taxId: raw.taxId || raw.tax_id || raw.tin || raw.taxNumber || 'Pending',
+      email: raw.email || raw.emailAddress || raw.email_address || 'Pending',
+      phone: raw.phone || raw.phoneNumber || raw.phone_number || raw.mobile || 'Pending',
       website: raw.website || raw.websiteUrl || raw.web_site || undefined,
       address: raw.address || { street: '', city: '', state: '', country: 'Nigeria', postalCode: '' },
       status: (() => {

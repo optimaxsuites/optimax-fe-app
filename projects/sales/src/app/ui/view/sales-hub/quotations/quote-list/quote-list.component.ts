@@ -8,9 +8,6 @@ import { Quote, QuoteStatus } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
-import { QuoteFormComponent } from '../quote-form/quote-form.component';
-import { QuoteDetailComponent } from '../quote-detail/quote-detail.component';
-import { InvoiceFormComponent } from '../../invoices/invoice-form/invoice-form.component';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 
@@ -22,9 +19,6 @@ import { ToastModule } from 'primeng/toast';
     RouterModule,
     FormsModule,
     SharedOverlayModule,
-    QuoteFormComponent,
-    QuoteDetailComponent,
-    InvoiceFormComponent,
     ToastModule
   ],
   providers: [MessageService],
@@ -193,11 +187,33 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     });
   }
 
-  getCustomerName(customerId: any): string {
+  getQuoteDateValue(quote: any): unknown {
+    return quote?.createdAt ?? quote?.quoteDate ?? quote?.quote_date ?? null;
+  }
+
+  getQuoteValidUntilValue(quote: any): unknown {
+    return quote?.validUntil ?? quote?.expiresAt ?? quote?.expiryDate ?? null;
+  }
+
+  getCustomerName(customerId: any, customerName?: any): string {
+    if (customerName) {
+      if (typeof customerName === 'object') {
+        return customerName.name || customerName.customerName || String(customerName) || '—';
+      }
+      return String(customerName);
+    }
+
     if (!customerId) return '—';
-    const id = typeof customerId === 'object' ? (customerId?.id ?? customerId) : customerId;
-    const c = this.customers.find(c => c.id === id || String(c.id) === String(id));
-    return c?.name || `Customer #${id}`;
+
+    if (typeof customerId === 'object') {
+      if (customerId.name) return customerId.name;
+      const id = customerId.id ?? customerId.customerId ?? customerId;
+      const c = this.customers.find(c => c.id === id || String(c.id) === String(id) || String(c.customerId) === String(id));
+      return c?.name || (typeof id === 'string' ? `Customer #${id}` : 'Customer');
+    }
+
+    const c = this.customers.find(c => c.id === customerId || String(c.id) === String(customerId) || String(c.customerId) === String(customerId));
+    return c?.name || `Customer #${customerId}`;
   }
 
   private calculateStats(): void {
@@ -273,18 +289,18 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
   }
 
-  formatDate(date: Date): string {
+  formatDate(date: unknown): string {
     return formatApiDate(date);
   }
 
-  isExpiringSoon(expiryDate: Date): boolean {
+  isExpiringSoon(expiryDate: unknown): boolean {
     const expiry = parseApiDate(expiryDate);
     if (!expiry) return false;
     const daysRemaining = Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     return daysRemaining <= 3 && daysRemaining > 0;
   }
 
-  getDaysRemaining(expiryDate: Date): number {
+  getDaysRemaining(expiryDate: unknown): number {
     const expiry = parseApiDate(expiryDate);
     if (!expiry) return 0;
     return Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));

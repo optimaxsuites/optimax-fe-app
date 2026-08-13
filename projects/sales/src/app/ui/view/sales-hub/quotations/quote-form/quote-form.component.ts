@@ -1435,11 +1435,11 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   // Send email via NotificationService
   private async sendQuoteEmail(quote: Quote): Promise<void> {
+    const customerId = this.quoteForm.get('customerId')?.value;
     const customerObj = this.customers.find(c =>
-      c.customerId === (quote.customerId as any)?.customerId ||
-      String(c.id) === String((quote.customerId as any)?.id || quote.customerId)
+      c.customerId === customerId || String(c.id) === String(customerId)
     );
-    const email = customerObj?.email || (quote.customerName as any)?.email || '';
+    const email = customerObj?.email || (quote.customerName as any)?.email || (quote.customerId as any)?.email || '';
     const name = customerObj?.name || (quote.customerName as any)?.name || 'Customer';
 
     if (!email) {
@@ -1450,30 +1450,49 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
     console.log(`Sending quote ${quote.quoteNumber} to ${email}`);
 
-    const triggerPayload = {
-      type: 'QUOTATION_RECEIVED' as any,
-      recipientId: String(customerObj?.id || quote.customerId || '0'),
-      recipientEmail: email,
-      recipientName: name,
-      relatedEntityId: String(quote.id),
-      relatedEntityType: 'QUOTATION',
-      templateData: {
-        quoteNumber: quote.quoteNumber,
-        customerName: name,
-        totalAmount: quote.totalAmount,
-        currency: quote.currency || 'NGN',
-        validUntil: quote.validUntil
-      }
+    const htmlBody = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
+        <h2 style="color: #1a2d4a; margin-top: 0;">Quotation Details</h2>
+        <p>Dear ${name},</p>
+        <p>Please find the details of your quotation below:</p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Quotation Number:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${quote.quoteNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Total Amount:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #2EB270;">${quote.currency || 'NGN'} ${quote.totalAmount.toLocaleString('en-NG')}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Valid Until:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${quote.validUntil ? new Date(quote.validUntil).toLocaleDateString() : 'N/A'}</td>
+          </tr>
+        </table>
+        <p style="margin-top: 24px;">Thank you for your business!</p>
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+        <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from OptimaX.</p>
+      </div>
+    `;
+
+    const payload = {
+      to: email,
+      cc: '',
+      bcc: '',
+      subject: `Quotation ${quote.quoteNumber} from OptimaX`,
+      body: htmlBody,
+      html: true,
+      tenant: 'optimax'
     };
 
     try {
-      console.log('[QuoteFormComponent] Triggering email notification with payload:', triggerPayload);
-      const response = await lastValueFrom(this.notificationService.trigger(triggerPayload));
-      console.log('[QuoteFormComponent] Email notification triggered successfully:', response);
+      console.log('[QuoteFormComponent] Sending direct email with payload:', payload);
+      const response = await lastValueFrom(this.notificationService.sendDirectEmail(payload));
+      console.log('[QuoteFormComponent] Email sent successfully:', response);
       this.messageService.add({ severity: 'success', summary: 'Email Sent', detail: `Quote sent successfully to ${email}` });
     } catch (err) {
-      console.error('[QuoteFormComponent] Failed to send quote email:', err);
-      this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send quote email via notification service.' });
+      console.error('[QuoteFormComponent] Failed to send direct quote email:', err);
+      this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send quote email via SMTP service.' });
     }
   }
 
