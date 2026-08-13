@@ -2084,13 +2084,13 @@ export class VendorService {
 
     const params = new HttpParams().set('tenantId', this.tenantId);
 
-    return this.http.get<VendorDocument[]>(`${this.baseUrl}/vendors/${vendorId}/documents`, { params })
+    return this.http.get<any[]>(`${this.baseUrl}/vendors/${vendorId}/documents`, { params })
       .pipe(
         map(res => {
           const rawDocs = Array.isArray(res) ? res : [];
-          return rawDocs.map(raw => {
+          return rawDocs.map((raw: any) => {
             const expDate = parseSafeDate(raw.expiryDate);
-            const uploadedAtDate = parseSafeDate(raw.uploadedDate || raw.createdAt);
+            const uploadedAtDate = parseSafeDate(raw.uploadedAt || raw.uploadedDate || raw.createdAt);
             const timeDiff = expDate.getTime() - new Date().getTime();
             const daysUntilExpiry = Math.max(0, Math.ceil(timeDiff / (1000 * 3600 * 24)));
 
@@ -2126,12 +2126,12 @@ export class VendorService {
               id: String(raw.id),
               vendorId: String(raw.vendorId || vendorId),
               category: category,
-              name: raw.label || raw.fileName || 'Unnamed Document',
+              name: raw.label || raw.name || raw.fileName || 'Unnamed Document',
               fileName: raw.fileName || '',
               fileUrl: raw.fileUrl || '',
               fileSize: Number(raw.fileSize || 0),
               fileType: raw.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/png',
-              issueDate: parseSafeDate(raw.createdAt || uploadedAtDate),
+              issueDate: parseSafeDate(raw.issueDate || raw.createdAt || uploadedAtDate),
               expiryDate: expDate,
               status: docStatus,
               isRequired: !!raw.isRequired,
