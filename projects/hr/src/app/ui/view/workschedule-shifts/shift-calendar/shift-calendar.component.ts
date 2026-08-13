@@ -57,6 +57,8 @@ export class ShiftCalendarComponent implements OnInit {
   isDragging = false;
   selectedDatesRange: Set<string> = new Set();
   dateMap: Map<string, HTMLElement> = new Map();
+  dragRangeStart: string | null = null;
+  dragRangeEnd: string | null = null;
 
   selectedSummaryDate: string | null = null;
   showDateWarning = false;
@@ -288,6 +290,10 @@ export class ShiftCalendarComponent implements OnInit {
     return filtered;
   }
 
+  getSchedulesForDate(date: string): ScheduleDTO[] {
+    return this.getFilteredSchedules().filter(s => s.date === date);
+  }
+
   // Drag-to-select logic
   @HostListener('document:mouseup', ['$event'])
   onMouseUp(): void {
@@ -298,6 +304,8 @@ export class ShiftCalendarComponent implements OnInit {
     this.isDragging = true;
     this.dragStartDate = dateStr;
     this.dragEndDate = dateStr;
+    this.dragRangeStart = dateStr;
+    this.dragRangeEnd = dateStr;
     this.selectDateRange(new Date(dateStr + 'T00:00:00'), new Date(dateStr + 'T00:00:00'));
     this.updateDragRangeStyling();
   }
@@ -307,10 +315,11 @@ export class ShiftCalendarComponent implements OnInit {
     this.dragEndDate = dateStr;
     const start = new Date(this.dragStartDate + 'T00:00:00');
     const end = new Date(dateStr + 'T00:00:00');
-    this.selectDateRange(
-      start > end ? end : start,
-      start > end ? start : end
-    );
+    const sortedStart = start > end ? end : start;
+    const sortedEnd = start > end ? start : end;
+    this.dragRangeStart = this.formatDateLocal(sortedStart);
+    this.dragRangeEnd = this.formatDateLocal(sortedEnd);
+    this.selectDateRange(sortedStart, sortedEnd);
     this.updateDragRangeStyling();
   }
 
@@ -318,9 +327,7 @@ export class ShiftCalendarComponent implements OnInit {
     if (this.isDragging && this.selectedDatesRange.size > 0) {
       this.selectedDate = this.formatDateLocal(new Date(this.dragEndDate + 'T00:00:00'));
       this.isDragging = false;
-      setTimeout(() => {
-        this.openAssignment();
-      }, 100);
+      this.openAssignment();
     } else {
       this.isDragging = false;
     }

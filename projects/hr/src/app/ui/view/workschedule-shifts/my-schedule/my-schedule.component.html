@@ -2,18 +2,33 @@
 
   <!-- TOGGLE -->
   <div class="view-toggle">
-    <button [class.active]="viewMode === 'calendar'" (click)="setView('calendar')">
-      <i class="fa-solid fa-calendar"></i> Calendar
-    </button>
+    <div class="view-buttons-left">
+      <button [class.active]="viewMode === 'calendar'" (click)="setView('calendar')">
+        <i class="fa-solid fa-calendar"></i> Calendar
+      </button>
 
-    <button [class.active]="viewMode === 'table'" (click)="setView('table')">
-      <i class="fa-solid fa-table"></i> Table
-    </button>
+      <div *ngIf="batchSelected.size > 0" class="batch-actions">
+        <span class="batch-count">{{ batchSelected.size }} selected</span>
+        <button class="batch-btn clear" (click)="clearBatchSelection()">
+          <i class="fa-solid fa-x"></i> Clear
+        </button>
+      </div>
+    </div>
 
-    <div *ngIf="batchSelected.size > 0" class="batch-actions">
-      <span class="batch-count">{{ batchSelected.size }} selected</span>
-      <button class="batch-btn clear" (click)="clearBatchSelection()">
-        <i class="fa-solid fa-x"></i> Clear
+    <div class="view-toggle-group">
+      <button
+        [class.active]="viewMode === 'table'"
+        (click)="setView('table')"
+        class="toggle-btn"
+        title="Table View">
+        <i class="fa-solid fa-table"></i>
+      </button>
+      <button
+        [class.active]="viewMode === 'list'"
+        (click)="setView('list')"
+        class="toggle-btn"
+        title="List View">
+        <i class="fa-solid fa-list"></i>
       </button>
     </div>
   </div>
@@ -93,59 +108,139 @@
   </div>
 
   <!-- TABLE VIEW -->
-   <div *ngIf="viewMode === 'table'" class="table-view">
+  <div *ngIf="viewMode === 'table'" class="table-view">
 
-  <!-- DATE SELECT -->
-  <div class="top-bar">
-    <div>
-      <label>Select Date:</label>
-      <input
-        type="date"
-        [value]="selectedDate"
-        (change)="onDateChange($event)"
-      />
+    <!-- DATE SELECTOR -->
+    <div class="table-header">
+      <div class="date-picker">
+        <label>
+          <i class="fa-solid fa-calendar"></i>
+          Select Date:
+        </label>
+        <input
+          type="date"
+          [value]="selectedDate"
+          (change)="onDateChange($event)"
+          class="date-input"
+        />
+      </div>
+    </div>
+
+    <!-- SCHEDULE CARD -->
+    <div class="schedule-card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fa-solid fa-calendar-check"></i>
+          {{ selectedDateLabel }}
+        </h3>
+        <span class="shift-count">{{ shiftsForSelectedDate.length }} shift{{ shiftsForSelectedDate.length !== 1 ? 's' : '' }}</span>
+      </div>
+
+      <!-- CONFLICT INDICATOR -->
+      <div *ngIf="hasConflict(selectedDate)" class="conflict-banner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>You have overlapping shifts on this day</span>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-wrapper" *ngIf="shiftsForSelectedDate.length > 0">
+        <table class="schedule-table">
+          <thead>
+            <tr>
+              <th class="col-shift">
+                <i class="fa-solid fa-briefcase"></i> Shift
+              </th>
+              <th class="col-time">
+                <i class="fa-solid fa-clock"></i> Time
+              </th>
+              <th class="col-project">
+                <i class="fa-solid fa-folder"></i> Project
+              </th>
+              <th class="col-status">
+                <i class="fa-solid fa-circle-info"></i> Status
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let item of shiftsForSelectedDate" [class.has-conflict]="hasConflict(selectedDate)">
+              <td class="col-shift">
+                <div class="shift-cell">
+                  <div class="shift-badge" [style.backgroundColor]="item.shift?.color || '#3b82f6'"></div>
+                  <div class="shift-info">
+                    <div class="shift-name">{{ item.shift?.name }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="col-time">
+                <div class="time-info">
+                  <span class="time-badge">{{ item.shift?.startTime }}</span>
+                  <span class="time-separator">–</span>
+                  <span class="time-badge">{{ item.shift?.endTime }}</span>
+                </div>
+              </td>
+              <td class="col-project">
+                <span class="project-tag">{{ item.project }}</span>
+              </td>
+              <td class="col-status">
+                <span class="status scheduled">
+                  <i class="fa-solid fa-check-circle"></i>
+                  Scheduled
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- EMPTY STATE -->
+      <div *ngIf="shiftsForSelectedDate.length === 0" class="empty-state">
+        <i class="fa-solid fa-inbox"></i>
+        <p>No shifts scheduled for this day</p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- LIST VIEW -->
+  <div *ngIf="viewMode === 'list'" class="list-view calendar-container">
+    <div class="list-header">
+      <h3>My Schedules</h3>
+      <span class="count">{{ schedules.length }} shifts</span>
+    </div>
+
+    <div *ngIf="schedules.length === 0" class="empty-list">
+      No schedules assigned
+    </div>
+
+    <div *ngIf="schedules.length > 0" class="schedules-list">
+      <div *ngFor="let item of schedules" class="schedule-item">
+        <div class="item-date">
+          <div class="date-day">{{ item.date | date: 'dd' }}</div>
+          <div class="date-month">{{ item.date | date: 'MMM' }}</div>
+        </div>
+        <div class="item-details">
+          <div class="shift-badge-row">
+            <span class="shift-badge" [style.backgroundColor]="(shiftService.getShiftById(item.shiftId))?.color || '#3b82f6'">
+              {{ (shiftService.getShiftById(item.shiftId))?.name || 'N/A' }}
+            </span>
+          </div>
+          <div class="shift-time">
+            <i class="fa-solid fa-clock"></i>
+            {{ (shiftService.getShiftById(item.shiftId))?.startTime }} – {{ (shiftService.getShiftById(item.shiftId))?.endTime }}
+          </div>
+          <div class="shift-project">
+            <i class="fa-solid fa-folder"></i>
+            {{ item.project }}
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- CARD -->
-  <div class="schedule-card">
-
-    <h3 class="title">
-      My Shifts for {{ selectedDateLabel }}
-    </h3>
-
-    <table class="schedule-table" *ngIf="shiftsForSelectedDate.length > 0">
-      <thead>
-        <tr>
-          <th>Shift</th>
-          <th>Project</th>
-          <th>Time</th>
-          <th>Actual In/Out</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr *ngFor="let item of shiftsForSelectedDate">
-          <td>{{ item.shift?.name }}</td>
-          <td>{{ item.project }}</td>
-          <td>{{ item.shift?.startTime }} – {{ item.shift?.endTime }}</td>
-          <td>–</td>
-          <td>
-            <span class="status scheduled">Scheduled</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div *ngIf="shiftsForSelectedDate.length === 0" class="empty">
-      No shifts scheduled.
-    </div>
-
   </div>
 
-
-</div>
   <!--<div *ngIf="viewMode === 'table'">
 
     <h4>{{ selectedDateLabel }}</h4>

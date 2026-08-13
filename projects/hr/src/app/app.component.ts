@@ -49,8 +49,6 @@ export class AppHrComponent {
         email: 'eseose@optimax.com',
         role: 'ADMIN'
       }));
-      // Navigate to attendance in dev mode
-      this.router.navigate([`attendance/${devUUID}`]);
       this.metadataService.fetchMetaData(true);
     } else if (this.authenticationService.isAuthenticated()) {
       this.metadataService.fetchMetaData(true);
