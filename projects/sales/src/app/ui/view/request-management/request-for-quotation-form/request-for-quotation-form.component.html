@@ -125,16 +125,13 @@
 
                 <div class="field-group">
                   <label>Category <span class="req">*</span></label>
-                  <div class="input-with-btn">
-                    <select formControlName="categoryId" class="field-input"
-                      [class.is-error]="item.get('categoryId')?.invalid && item.get('categoryId')?.touched">
-                      <option value="" disabled>Select Category</option>
-                      <option *ngFor="let cat of procurementCategories" [value]="cat.categoryId">{{ cat.name }}</option>
-                    </select>
-                    <button type="button" class="btn-action-add" (click)="openAddCategoryModal(i)" title="Add Custom Category">
-                      <i class="fas fa-plus"></i>
-                    </button>
-                  </div>
+                  <select formControlName="categoryId" class="field-input"
+                    [class.is-error]="item.get('categoryId')?.invalid && item.get('categoryId')?.touched"
+                    (change)="onCategoryChange($event, i)">
+                    <option value="" disabled>Select Category</option>
+                    <option *ngFor="let cat of procurementCategories" [value]="cat.categoryId">{{ cat.name }}</option>
+                    <option value="__add_category__">+ Add Category</option>
+                  </select>
                   <span class="err-msg" *ngIf="item.get('categoryId')?.invalid && item.get('categoryId')?.touched">
                     {{ getItemErrorMessage(i, 'categoryId') }}
                   </span>
@@ -151,14 +148,11 @@
 
                 <div class="field-group">
                   <label>Unit <span class="req">*</span></label>
-                  <div class="input-with-btn">
-                    <select formControlName="unit" class="field-input">
-                      <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
-                    </select>
-                    <button type="button" class="btn-action-add" (click)="openAddUnitModal(i)" title="Add Custom Unit">
-                      <i class="fas fa-plus"></i>
-                    </button>
-                  </div>
+                  <select formControlName="unit" class="field-input"
+                    (change)="onUnitChange($event, i)">
+                    <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
+                    <option value="__add_unit__">+ Add Unit</option>
+                  </select>
                 </div>
               </div>
 

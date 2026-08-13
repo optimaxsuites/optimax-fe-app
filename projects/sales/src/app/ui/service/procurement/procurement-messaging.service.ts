@@ -42,7 +42,6 @@ export class ProcurementMessagingService {
   getMessages(rfqId: string | number): Observable<ProcurementMessage[]> {
     const params = new HttpParams()
       .set('rfqId', String(rfqId))
-      .set('tenantId', this.tenantId)
       .set('page', '1')
       .set('size', '100');
 

@@ -1,10 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { ApprovalService } from '../../../service/approval-inbox/approval.service';
-import { ApprovalRequest, ApprovalStatus, ApprovalFilters, ApprovalStats } from '../../../domain/approval-inbox/approval-request.dto';
-import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
-import { RequestStatus } from '../../../domain/procurement-request/procurement.dto';
-import { parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
+import { WorkflowInstance, WorkflowStage, WorkflowAction } from '../../../domain/approval-inbox/approval-request.dto';
+import { ProcurementRequest } from '../../../domain/procurement-request/procurement.dto';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-approval-inbox',
@@ -13,344 +12,250 @@ import { parseIdToNumber } from '../../../service/procurement/rfq-quotation-brid
 })
 export class ApprovalInboxComponent implements OnInit, OnDestroy {
 
-  approvals: ApprovalRequest[] = [];
-  stats: ApprovalStats | null = null;
-  isLoading = true;
-  selectedApproval: ApprovalRequest | null = null;
-  showApprovalModal = false;
+  requests: ProcurementRequest[] = [];
+  filtered: ProcurementRequest[] = [];
+  selected: ProcurementRequest | null = null;
+  workflowInstance: WorkflowInstance | null = null;
+
+  isLoading = false;
+  isLoadingInstance = false;
+  isActioning = false;
+
+  searchTerm = '';
+  filterType: 'ALL' | 'PRODUCT' | 'SERVICE' = 'ALL';
+
+  showApproveModal = false;
   showRejectModal = false;
-  approvalComments = '';
-  currentApproverLevel = 1;
-  dateRange: 'week' | 'month' | 'quarter' | 'year' = 'month';
-
-  protected readonly Math = Math;
-
-  // Filters
-  filters: ApprovalFilters = {
-    status: 'IN_APPROVAL',
-    urgency: 'ALL',
-    department: '',
-    searchTerm: '',
-    page: 0,
-    size: 10
-  };
-
-  statusOptions: { value: ApprovalStatus | 'ALL'; label: string }[] = [
-    { value: 'ALL', label: 'All Status' },
-    { value: 'PENDING', label: 'Pending Submission' },
-    { value: 'IN_APPROVAL', label: 'In Approval' },
-    { value: 'APPROVED', label: 'Approved' },
-    { value: 'REJECTED', label: 'Rejected' },
-    { value: 'EXPIRED', label: 'Expired' }
-  ];
-
-  urgencyOptions = [
-    { value: 'ALL', label: 'All Urgency' },
-    { value: 'LOW', label: 'Low', class: 'urgency-low' },
-    { value: 'MEDIUM', label: 'Medium', class: 'urgency-medium' },
-    { value: 'HIGH', label: 'High', class: 'urgency-high' },
-    { value: 'URGENT', label: 'Urgent', class: 'urgency-urgent' }
-  ];
-
-  departments: string[] = [];
-
-  // Pagination
-  currentPage = 0;
-  pageSize = 10;
-  totalElements = 0;
-  totalPages = 0;
+  approveComment = '';
+  rejectReason = '';
 
   private destroy$ = new Subject<void>();
 
+  get pendingCount(): number { return this.requests.length; }
+
   constructor(
     private approvalService: ApprovalService,
-    private procurementService: ProcurementRequestService
-  ) { }
+    private messageService: MessageService
+  ) {}
 
-  ngOnInit(): void {
-    this.loadApprovals();
-    this.loadStats();
-    this.loadDepartments();
-  }
+  ngOnInit(): void { this.load(); }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  loadApprovals(): void {
+  load(): void {
     this.isLoading = true;
-    this.approvalService.getApprovalRequests(this.filters)
+    this.approvalService.getPendingProcurementRequests(0, 100)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
-          this.approvals = response.data;
-          this.totalElements = response.totalElements;
-          this.totalPages = response.totalPages;
+        next: (res) => {
+          this.requests = res.data;
+          this.applyFilters();
           this.isLoading = false;
+          if (this.selected) {
+            const refreshed = this.requests.find(r => r.id === this.selected!.id);
+            if (refreshed) this.select(refreshed);
+          }
         },
-        error: (error) => {
-          console.error('Error loading approvals:', error);
-          this.isLoading = false;
-        }
-      });
-  }
-
-  loadStats(): void {
-    this.approvalService.getApprovalStats()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (stats) => {
-          this.stats = stats;
-        },
-        error: (error) => {
-          console.error('Error loading stats:', error);
-        }
-      });
-  }
-
-  loadDepartments(): void {
-    this.approvalService.getDepartments()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (depts) => {
-          this.departments = depts;
-        },
-        error: (error) => {
-          console.error('Error loading departments:', error);
-        }
+        error: () => { this.isLoading = false; }
       });
   }
 
   applyFilters(): void {
-    this.filters.page = 0;
-    this.loadApprovals();
-  }
-
-  resetFilters(): void {
-    this.dateRange = 'month';
-    this.filters = {
-      status: 'IN_APPROVAL',
-      urgency: 'ALL',
-      department: '',
-      searchTerm: '',
-      page: 0,
-      size: 10
-    };
-    this.loadApprovals();
-  }
-
-  changeDateRange(range: 'week' | 'month' | 'quarter' | 'year'): void {
-    this.dateRange = range;
-    const now = new Date();
-    const dateFrom = new Date();
-    if (range === 'week') {
-      dateFrom.setDate(now.getDate() - 7);
-    } else if (range === 'month') {
-      dateFrom.setMonth(now.getMonth() - 1);
-    } else if (range === 'quarter') {
-      dateFrom.setMonth(now.getMonth() - 3);
-    } else if (range === 'year') {
-      dateFrom.setFullYear(now.getFullYear() - 1);
+    let list = [...this.requests];
+    if (this.filterType !== 'ALL') {
+      list = list.filter(r => r.procurementType === this.filterType);
     }
-    this.filters.dateFrom = dateFrom;
-    this.filters.dateTo = now;
-    this.applyFilters();
+    if (this.searchTerm.trim()) {
+      const q = this.searchTerm.toLowerCase();
+      list = list.filter(r =>
+        r.title?.toLowerCase().includes(q) ||
+        String(r.id).includes(q)
+      );
+    }
+    this.filtered = list;
   }
 
-  onPageChange(page: number): void {
-    this.filters.page = page;
-    this.loadApprovals();
+  select(req: ProcurementRequest): void {
+    this.selected = req;
+    this.workflowInstance = null;
+    const instanceId = (req as any).approvalInstanceId;
+    if (instanceId) {
+      this.isLoadingInstance = true;
+      this.approvalService.getWorkflowInstance(Number(instanceId))
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (inst) => { this.workflowInstance = inst; this.isLoadingInstance = false; },
+          error: () => { this.isLoadingInstance = false; }
+        });
+    }
   }
 
-  onPageSizeChange(size: number): void {
-    this.filters.size = size;
-    this.filters.page = 0;
-    this.loadApprovals();
-  }
-
-  openApproveModal(approval: ApprovalRequest): void {
-    this.selectedApproval = approval;
-    this.approvalComments = '';
-    this.showApprovalModal = true;
-  }
-
-  openRejectModal(approval: ApprovalRequest): void {
-    this.selectedApproval = approval;
-    this.approvalComments = '';
-    this.showRejectModal = true;
-  }
+  openApprove(): void { this.approveComment = ''; this.showApproveModal = true; }
+  openReject(): void  { this.rejectReason = '';   this.showRejectModal = true; }
 
   confirmApprove(): void {
-    if (!this.selectedApproval) return;
+    if (!this.selected || !this.workflowInstance) return;
+    this.isActioning = true;
 
-    const levelToApprove = this.selectedApproval.currentLevel;
+    const userId = this.getCurrentUserId();
+    const { roleCode, roleId } = this.getCurrentRole();
 
-    this.approvalService.approveRequest(this.selectedApproval.id, levelToApprove, this.approvalComments)
+    const payload = new FormData();
+    payload.append('actorUserId', String(userId));
+    if (roleCode) payload.append('actorRoleCode', roleCode);
+    if (roleId)   payload.append('actorRoleId', String(roleId));
+    payload.append('comment', this.approveComment.trim());
+
+    this.approvalService.approveWorkflowInstance(this.workflowInstance.id, payload)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (updated) => {
-          if (updated.status === 'APPROVED') {
-            this.updateProcurementRequestStatus(updated.requestId, 'APPROVED', updated.requestType);
-          }
-
-          this.showApprovalModal = false;
-          this.loadApprovals();
-          this.loadStats();
+        next: () => {
+          this.showApproveModal = false;
+          this.isActioning = false;
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Stage Approved',
+            detail: `"${this.selected?.title}" approval stage has been approved.`
+          });
+          this.load();
         },
-        error: (error) => {
-          console.error('Error approving request:', error);
+        error: (err: any) => {
+          const detail = err?.error?.message || err?.error?.detail || 'Could not approve. Please try again.';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail });
+          this.isActioning = false;
         }
       });
   }
 
   confirmReject(): void {
-    if (!this.selectedApproval) return;
+    if (!this.selected || !this.workflowInstance || !this.rejectReason.trim()) return;
+    this.isActioning = true;
 
-    const levelToReject = this.selectedApproval.currentLevel;
+    const userId = this.getCurrentUserId();
+    const { roleCode, roleId } = this.getCurrentRole();
 
-    this.approvalService.rejectRequest(this.selectedApproval.id, levelToReject, this.approvalComments)
+    const payload: any = {
+      actorUserId: userId,
+      actorRoleCode: roleCode,
+      comment: this.rejectReason.trim()
+    };
+    if (roleId) payload.actorRoleId = roleId;
+
+    this.approvalService.rejectWorkflowInstance(this.workflowInstance.id, payload)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (updated) => {
-          this.updateProcurementRequestStatus(updated.requestId, 'REJECTED', updated.requestType);
-
+        next: () => {
           this.showRejectModal = false;
-          this.loadApprovals();
-          this.loadStats();
+          this.selected = null;
+          this.workflowInstance = null;
+          this.isActioning = false;
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Rejected',
+            detail: 'The procurement request has been rejected.'
+          });
+          this.load();
         },
-        error: (error) => {
-          console.error('Error rejecting request:', error);
+        error: (err: any) => {
+          const detail = err?.error?.message || err?.error?.detail || 'Could not reject. Please try again.';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail });
+          this.isActioning = false;
         }
       });
   }
 
-  private updateProcurementRequestStatus(requestId: string, status: 'APPROVED' | 'REJECTED', requestType: string): void {
-    const nextStatus = status === 'APPROVED' ? 'APPROVED' : 'REJECTED';
-    this.procurementService.updateRequest(parseIdToNumber(requestId), {
-      status: nextStatus as RequestStatus
-    }).subscribe({
-      next: () => {
-        console.log(`Procurement request ${requestId} updated to ${nextStatus}`);
-      },
-      error: (error: any) => {
-        console.error('Error updating request status:', error);
-      }
-    });
+  // ── Workflow instance helpers ───────────────────────────
+
+  get wfStages(): WorkflowStage[] {
+    return this.workflowInstance?.approval?.stages ?? [];
   }
 
-  getStatusIcon(status: ApprovalStatus): string {
-    const icons = {
-      'DRAFT': 'edit',
-      'PENDING': 'clock',
-      'IN_APPROVAL': 'loader',
-      'APPROVED': 'check-circle',
-      'REJECTED': 'x-circle',
-      'CANCELLED': 'x-circle',
-      'EXPIRED': 'alert-circle'
-    };
-    return icons[status] || 'circle';
+  get wfActions(): WorkflowAction[] {
+    return this.workflowInstance?.actions ?? [];
   }
 
-  getStatusClass(status: ApprovalStatus): string {
-    const classes = {
-      'DRAFT': 'status-draft',
-      'PENDING': 'status-pending',
-      'IN_APPROVAL': 'status-in-approval',
-      'APPROVED': 'status-approved',
-      'REJECTED': 'status-rejected',
-      'CANCELLED': 'status-cancelled',
-      'EXPIRED': 'status-expired'
-    };
-    return classes[status] || 'status-pending';
+  get currentStageOrder(): number | null {
+    return this.workflowInstance?.currentStage?.orderIndex ?? null;
   }
 
-  getStatusLabel(status: ApprovalStatus): string {
-    const labels = {
-      'DRAFT': 'Draft',
-      'PENDING': 'Pending',
-      'IN_APPROVAL': 'In Approval',
-      'APPROVED': 'Approved',
-      'REJECTED': 'Rejected',
-      'CANCELLED': 'Cancelled',
-      'EXPIRED': 'Expired'
-    };
-    return labels[status];
+  getStageStatus(stage: WorkflowStage): 'done' | 'active' | 'waiting' {
+    const actions = this.wfActions;
+    const approved = actions.some(a => a.action === 'APPROVED' && a.stageOrderIndex === stage.orderIndex);
+    const rejected = actions.some(a => a.action === 'REJECTED' && a.stageOrderIndex === stage.orderIndex);
+    if (approved || rejected) return 'done';
+    if (stage.orderIndex === this.currentStageOrder) return 'active';
+    return 'waiting';
   }
 
-  getUrgencyClass(urgency: string): string {
-    const classes = {
-      'LOW': 'urgency-low',
-      'MEDIUM': 'urgency-medium',
-      'HIGH': 'urgency-high',
-      'URGENT': 'urgency-urgent'
-    };
-    return `urgency-badge ${classes[urgency as keyof typeof classes] || 'urgency-medium'}`;
+  getStageActionStatus(stage: WorkflowStage): string {
+    const actions = this.wfActions;
+    const approved = actions.some(a => a.action === 'APPROVED' && a.stageOrderIndex === stage.orderIndex);
+    const rejected = actions.some(a => a.action === 'REJECTED' && a.stageOrderIndex === stage.orderIndex);
+    if (rejected) return 'REJECTED';
+    if (approved) return 'APPROVED';
+    if (stage.orderIndex === this.currentStageOrder) return 'AWAITING';
+    return 'PENDING';
   }
 
-  getUrgencyLabel(urgency: string): string {
-    return urgency.charAt(0) + urgency.slice(1).toLowerCase();
+  getStageActionAt(stage: WorkflowStage): string {
+    const action = this.wfActions
+      .filter(a => a.stageOrderIndex === stage.orderIndex && (a.action === 'APPROVED' || a.action === 'REJECTED'))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+    return action ? this.formatDate(action.createdAt) : '';
   }
 
-  getRequestTypeIcon(type: string): string {
-    const icons = {
-      'PROCUREMENT': 'package',
-      'SERVICE': 'briefcase',
-      'ORDER': 'shopping-cart'
-    };
-    return icons[type as keyof typeof icons] || 'file';
+  getStageComment(stage: WorkflowStage): string {
+    const action = this.wfActions
+      .filter(a => a.stageOrderIndex === stage.orderIndex)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+    return action?.comment || '';
   }
 
-  getRequestTypeLabel(type: string): string {
-    const labels = {
-      'PROCUREMENT': 'Product',
-      'SERVICE': 'Service',
-      'ORDER': 'Multi-Item Order'
-    };
-    return labels[type as keyof typeof labels] || type;
+  progressPct(): number {
+    const stages = this.wfStages;
+    if (!stages.length) return 0;
+    const done = stages.filter(s => this.getStageStatus(s) === 'done').length;
+    return Math.round((done / stages.length) * 100);
   }
 
-  getCurrentApprovalLevel(approval: ApprovalRequest): { level: number; approverName: string; approverRole: string } | null {
-    const current = approval.approvals.find(a => a.level === approval.currentLevel);
-    if (current) {
-      return {
-        level: current.level,
-        approverName: current.approverName,
-        approverRole: current.approverRole
-      };
+  // ── Formatters ─────────────────────────────────────────
+
+  formatBudget(req: ProcurementRequest): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency', currency: req.currency || 'NGN', maximumFractionDigits: 0
+    }).format((req as any).totalBudget || 0);
+  }
+
+  formatDate(d: any): string {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  urgencyClass(req: ProcurementRequest): { [key: string]: boolean } {
+    return { 'urgency-normal': true };
+  }
+
+  // ── Session helpers ─────────────────────────────────────
+
+  private getCurrentUserId(): number {
+    return Number(sessionStorage.getItem('userId') || sessionStorage.getItem('id') || 0);
+  }
+
+  private getCurrentRole(): { roleCode: string | null; roleId: number | null } {
+    let roleCode: string | null = sessionStorage.getItem('role') || null;
+    let roleId: number | null = null;
+    const raw = sessionStorage.getItem('userApplicationRole');
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        roleCode = parsed?.appRole?.code || parsed?.appRole?.roleCode || parsed?.appRole?.name || roleCode;
+        const rid = Number(parsed?.appRole?.id ?? parsed?.appRole?.roleId ?? 0);
+        roleId = Number.isFinite(rid) && rid > 0 ? rid : null;
+      } catch { /* ignore */ }
     }
-    return null;
-  }
-
-  getApprovalProgress(approval: ApprovalRequest): number {
-    const total = approval.approvals.filter(a => a.required).length;
-    const completed = approval.approvals.filter(a => a.status === 'APPROVED' && a.required).length;
-    return total > 0 ? (completed / total) * 100 : 0;
-  }
-
-  formatCurrency(amount: number, currency: string): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
-  }
-
-  formatDate(date: Date | string | undefined): string {
-    if (!date) return 'N/A';
-    const now = new Date();
-    const diffMs = now.getTime() - new Date(date).getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-    if (diffHours < 24 && diffHours >= 0) return `${diffHours} hours ago`;
-    return new Date(date).toLocaleDateString();
-  }
-
-  getPageNumbers(): number[] {
-    const maxVisible = 5;
-    let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
-    let end = Math.min(this.totalPages, start + maxVisible);
-
-    if (end - start < maxVisible) {
-      start = Math.max(0, end - maxVisible);
-    }
-
-    return Array.from({ length: end - start }, (_, i) => start + i);
+    return { roleCode, roleId };
   }
 }

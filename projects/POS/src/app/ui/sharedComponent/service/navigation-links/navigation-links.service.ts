@@ -14,7 +14,9 @@ export class NavigationLinksService {
 	private generateLinks(): void {
 		this.links["dashboardLink"] = "/admin/dashboard/" + uuidV4();
 		this.links["userRegistrationLink"] = "/admin/settings/user-reg/" + uuidV4();
-		this.links["salesLink"] = "/admin/sales/" + uuidV4();
+		const salesUuid = uuidV4();
+		this.links["salesLink"] = "/admin/sales/" + salesUuid;
+		this.links["commerceRequestsLink"] = "/admin/sales/" + salesUuid;
 		this.links["purchaseLink"] = "/admin/purchase/" + uuidV4();
 		this.links["inventoryLink"] = "/admin/inventory/" + uuidV4();
 

@@ -56,7 +56,7 @@ export class MenuItemsService {
   
         icon: 'pi pi-cog',
         submenu: [
-          { label: 'User Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'], icon: 'pi pi-users' },
+          { label: 'User Management', route: this.navigationLink.getLink('posInventoryLink'), roles: ['ROLE_USER'], icon: 'pi pi-users' },
         ],
       },
       {
@@ -66,7 +66,7 @@ export class MenuItemsService {
   
         icon: 'pi pi-truck', 
         submenu: [
-          { label: 'Request For Quotation', route: this.navigationLink.getLink('rfqLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
+          { label: 'Request For Quotation', route: this.navigationLink.getLink('commerceRequestsLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
           { label: 'Settings', route: this.navigationLink.getLink('procurementSettingsLink'), roles: ['ROLE_USER'], icon: 'pi pi-cog' },
         ],
       },

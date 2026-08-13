@@ -57,8 +57,7 @@ export class NotificationService {
   getForEntity(entityId: string, entityType: string): Observable<ProcurementNotification[]> {
     const params = new HttpParams()
       .set('entityId', entityId)
-      .set('entityType', entityType)
-      .set('tenantId', this.tenantId);
+      .set('entityType', entityType);
     return this.http.get<any>(`${this.baseUrl}/notifications`, { params }).pipe(
       map(res => Array.isArray(res) ? res : (res?.data ?? [])),
       tap(list => this.notifications$$.next(list)),

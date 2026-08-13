@@ -42,10 +42,16 @@ import { ReceiptPreviewComponent } from './ui/view/request-management/receipt-pr
 
 
 export const routes: Routes = [
-  // Default redirect 
+  // Default redirect
   {
     path: "",
-    redirectTo: 'commerce/manage-vendors',
+    redirectTo: 'commerce/requests',
+    pathMatch: 'full'
+  },
+  // UUID-only path (from sidebar nav links like /admin/sales/{uuid}) → go to main RFQ list
+  {
+    path: ':uuid',
+    redirectTo: 'commerce/requests',
     pathMatch: 'full'
   },
   // {

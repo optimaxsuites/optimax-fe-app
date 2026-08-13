@@ -1401,9 +1401,7 @@ export class VendorService {
     this.loadingSubject.next(true);
     this.errorSubject.next(null);
 
-    const params = new HttpParams().set('tenantId', this.tenantId);
-
-    return this.http.get<VendorDashboardStats>(`${this.baseUrl}/vendor-dashboard/stats`, { params })
+    return this.http.get<VendorDashboardStats>(`${this.baseUrl}/vendor-dashboard/stats`)
       .pipe(
         tap(stats => {
           this.dashboardStatsSubject.next(stats);
@@ -1502,7 +1500,6 @@ export class VendorService {
     this.loadingSubject.next(true);
 
     let params = new HttpParams()
-      .set('tenantId', this.tenantId)
       .set('page', page.toString())
       .set('size', limit.toString());
 
@@ -1806,9 +1803,7 @@ export class VendorService {
   getVendorPerformance(vendorId: string): Observable<VendorPerformanceResponse> {
     this.loadingSubject.next(true);
 
-    const params = new HttpParams()
-      .set('tenantId', this.tenantId)
-      .set('vendorId', vendorId);
+    const params = new HttpParams().set('vendorId', vendorId);
 
     return this.http.get<VendorPerformanceResponse>(`${this.baseUrl}/vendor-dashboard/performance`, { params })
       .pipe(
@@ -2001,9 +1996,7 @@ export class VendorService {
       return of(ownDocs ?? []);
     }
 
-    const params = new HttpParams().set('tenantId', this.tenantId);
-
-    return this.http.get<VendorDocument[]>(`${this.baseUrl}/vendors/${vendorId}/documents`, { params })
+    return this.http.get<VendorDocument[]>(`${this.baseUrl}/vendors/${vendorId}/documents`)
       .pipe(
         tap(() => this.loadingSubject.next(false)),
         catchError(err => {
@@ -2160,9 +2153,7 @@ export class VendorService {
   getLifecycleHistory(vendorId: string): Observable<VendorLifecycleHistory[]> {
     this.loadingSubject.next(true);
 
-    const params = new HttpParams().set('tenantId', this.tenantId);
-
-    return this.http.get<VendorLifecycleHistory[]>(`${this.baseUrl}/vendors/${vendorId}/lifecycle`, { params })
+    return this.http.get<VendorLifecycleHistory[]>(`${this.baseUrl}/vendors/${vendorId}/lifecycle`)
       .pipe(
         tap(() => this.loadingSubject.next(false)),
         catchError(err => {
@@ -2263,7 +2254,7 @@ export class VendorService {
   // ============================================================
 
   exportVendors(filters?: any): Observable<Blob> {
-    let params = new HttpParams().set('tenantId', this.tenantId);
+    let params = new HttpParams();
 
     if (filters) {
       Object.keys(filters).forEach(key => {

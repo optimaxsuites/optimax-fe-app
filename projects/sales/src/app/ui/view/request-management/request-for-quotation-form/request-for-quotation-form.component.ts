@@ -550,6 +550,20 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     });
   }
 
+  onCategoryChange(event: Event, index: number): void {
+    if ((event.target as HTMLSelectElement).value === '__add_category__') {
+      this.items.at(index).get('categoryId')?.setValue('', { emitEvent: false });
+      this.openAddCategoryModal(index);
+    }
+  }
+
+  onUnitChange(event: Event, index: number): void {
+    if ((event.target as HTMLSelectElement).value === '__add_unit__') {
+      this.items.at(index).get('unit')?.setValue('', { emitEvent: false });
+      this.openAddUnitModal(index);
+    }
+  }
+
   openAddCategoryModal(index: number): void {
     this.activeItemIndexForModal = index;
     this.newCategoryName = '';
