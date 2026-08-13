@@ -141,9 +141,24 @@ import { RiskComponent } from './ui/view/vendor-management/vendor-management-det
 import { VendorDocumentsComponent } from './ui/view/vendor-management/vendor-management-detail/documents/documents.component';
 import { ActivityComponent } from './ui/view/vendor-management/vendor-management-detail/activity/activity.component';
 
+import { InventoryComponent } from './ui/view/inventory/inventory.component';
+import { InventoryDashboardComponent } from './ui/view/inventory/inventory-dashboard/inventory-dashboard.component';
+import { ProductManagementComponent } from './ui/view/inventory/product-management/product-management.component';
+import { BranchInventoryComponent } from './ui/view/inventory/branch-inventory/branch-inventory.component';
+import { StockMovementComponent } from './ui/view/inventory/stock-movement/stock-movement.component';
+import { RestockManagementComponent } from './ui/view/inventory/restock-management/restock-management.component';
+import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.component';
+
 @NgModule({
   declarations: [
     App,
+    InventoryComponent,
+    InventoryDashboardComponent,
+    ProductManagementComponent,
+    BranchInventoryComponent,
+    StockMovementComponent,
+    RestockManagementComponent,
+    AnalyticsComponent,
     TableComponent,
     TableBodyDirective,
     SidebarComponent,
