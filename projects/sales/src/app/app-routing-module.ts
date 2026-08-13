@@ -39,20 +39,36 @@ import { VendorManagementDetailComponent } from './ui/view/vendor-management/ven
 import { DeliveryTrackingComponent } from './ui/view/request-management/delivery-tracking/delivery-tracking.component';
 import { PaymentVoucherComponent } from './ui/view/request-management/payment-voucher/payment-voucher.component';
 import { ReceiptPreviewComponent } from './ui/view/request-management/receipt-preview/receipt-preview.component';
+import { InventoryComponent } from './ui/view/inventory/inventory.component';
 
 
 export const routes: Routes = [
   // Default redirect 
-  {
-    path: "",
-    redirectTo: 'commerce/manage-vendors',
-    pathMatch: 'full'
-  },
+  // {
+  //   path: "",
+  //   redirectTo: 'commerce/manage-vendors',
+  //   pathMatch: 'full'
+  // },
   // {
   //   path: "",
   //   redirectTo: 'sales-hub',
   //   pathMatch: 'full'
   // },
+
+  {
+    path: "",
+    redirectTo: 'commerce/inventory',
+    pathMatch: 'full'
+  },
+  // -- Inventory --
+  {
+    path: 'commerce/inventory',
+    component: InventoryComponent
+  },
+  {
+    path: 'commerce/inventory/:uuid',
+    component: InventoryComponent
+  },
 
   // --- Vendor Management ---
   {
