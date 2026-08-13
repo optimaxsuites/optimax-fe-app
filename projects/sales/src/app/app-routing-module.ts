@@ -40,6 +40,7 @@ import { DeliveryTrackingComponent } from './ui/view/request-management/delivery
 import { PaymentVoucherComponent } from './ui/view/request-management/payment-voucher/payment-voucher.component';
 import { ReceiptPreviewComponent } from './ui/view/request-management/receipt-preview/receipt-preview.component';
 import { InventoryComponent } from './ui/view/inventory/inventory.component';
+import { LogisticsComponent } from './ui/view/logistics/logistics.component';
 
 
 export const routes: Routes = [
@@ -60,6 +61,7 @@ export const routes: Routes = [
     redirectTo: 'commerce/inventory',
     pathMatch: 'full'
   },
+
   // -- Inventory --
   {
     path: 'commerce/inventory',
@@ -68,6 +70,16 @@ export const routes: Routes = [
   {
     path: 'commerce/inventory/:uuid',
     component: InventoryComponent
+  },
+
+  // -- Logistics --
+  {
+    path: 'commerce/logistics',
+    component: LogisticsComponent
+  },
+  {
+    path: 'commerce/logistics/:uuid',
+    component: LogisticsComponent
   },
 
   // --- Vendor Management ---
