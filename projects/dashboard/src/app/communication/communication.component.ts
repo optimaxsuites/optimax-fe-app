@@ -714,19 +714,24 @@ export class CommunicationComponent
   soundEnabled = true;
   selectedRingtone = 'telephone';
   readonly ringtoneOptions = [
-    { value: 'telephone',    label: 'Old telephone' },
-    { value: 'nokia',        label: 'Nokia' },
-    { value: 'classic-uk',   label: 'Classic UK' },
-    { value: 'classic-ring', label: 'Classic ring' },
-    { value: 'office-notif', label: 'Office notification' },
-    { value: 'modern-office',label: 'Modern office' },
-    { value: 'digital-phone',label: 'Digital phone' },
-    { value: 'vintage',      label: 'Vintage ring' },
-    { value: 'classic',      label: 'Classic ping' },
-    { value: 'soft',         label: 'Soft chime' },
-    { value: 'crystal',      label: 'Crystal bell' },
-    { value: 'pulse',        label: 'Pulse' },
-    { value: 'doorbell',     label: 'Doorbell' },
+    { value: 'telephone',     label: 'Old telephone' },
+    { value: 'nokia',         label: 'Nokia' },
+    { value: 'motorola',      label: 'Motorola' },
+    { value: 'bell-telephone',label: 'Bell telephone' },
+    { value: 'classic-bell',  label: 'Classic bell' },
+    { value: 'siemens',       label: 'Siemens old phone' },
+    { value: 'ringing-tone',  label: 'Ringing tone' },
+    { value: 'classic-uk',    label: 'Classic UK' },
+    { value: 'classic-ring',  label: 'Classic ring' },
+    { value: 'office-notif',  label: 'Office notification' },
+    { value: 'modern-office', label: 'Modern office' },
+    { value: 'digital-phone', label: 'Digital phone' },
+    { value: 'vintage',       label: 'Vintage ring' },
+    { value: 'classic',       label: 'Classic ping' },
+    { value: 'soft',          label: 'Soft chime' },
+    { value: 'crystal',       label: 'Crystal bell' },
+    { value: 'pulse',         label: 'Pulse' },
+    { value: 'doorbell',      label: 'Doorbell' },
   ];
   readonly chatReactionOptions: ChatReactionOption[] = [
     { code: 'LIKE', emoji: '👍', label: 'Like' },
@@ -7025,6 +7030,36 @@ export class CommunicationComponent
         return;
       }
 
+      if (this.selectedRingtone === 'motorola' && !urgent) {
+        this.playMotorolaRingSound(ctx);
+        this.triggerMobileHaptics(urgent);
+        return;
+      }
+
+      if (this.selectedRingtone === 'bell-telephone' && !urgent) {
+        this.playBellTelephoneSound(ctx);
+        this.triggerMobileHaptics(urgent);
+        return;
+      }
+
+      if (this.selectedRingtone === 'classic-bell' && !urgent) {
+        this.playClassicBellSound(ctx);
+        this.triggerMobileHaptics(urgent);
+        return;
+      }
+
+      if (this.selectedRingtone === 'siemens' && !urgent) {
+        this.playSiemensOldPhoneSound(ctx);
+        this.triggerMobileHaptics(urgent);
+        return;
+      }
+
+      if (this.selectedRingtone === 'ringing-tone' && !urgent) {
+        this.playRingingToneSound(ctx);
+        this.triggerMobileHaptics(urgent);
+        return;
+      }
+
       if (this.selectedRingtone === 'classic-uk' && !urgent) {
         this.playClassicUkRingSound(ctx);
         this.triggerMobileHaptics(urgent);
@@ -7208,6 +7243,157 @@ export class CommunicationComponent
 
       t += dur;
     });
+  }
+
+  private playMotorolaRingSound(ctx: AudioContext): void {
+    // Motorola RAZR-era "Alert 1": rising 5-note digital staircase (square wave)
+    // C5 → E5 → G5 → A5 → C6, quick tempo, repeated 3×
+    const notes = [523.25, 659.25, 783.99, 880.00, 1046.50];
+    const noteDur = 0.085;
+    const seq = (baseTime: number): void => {
+      notes.forEach((freq, i) => {
+        const t = baseTime + i * noteDur;
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.20, t + 0.007);
+        gain.gain.setValueAtTime(0.20, t + noteDur * 0.78);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + noteDur * 0.95);
+        gain.connect(ctx.destination);
+        const osc = ctx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.value = freq;
+        osc.connect(gain);
+        osc.start(t);
+        osc.stop(t + noteDur);
+      });
+    };
+    const t = ctx.currentTime;
+    seq(t);
+    seq(t + 0.62);
+    seq(t + 1.24);
+  }
+
+  private playBellTelephoneSound(ctx: AudioContext): void {
+    // AT&T Bell System desk-phone: 1200 Hz + 2400 Hz, 20 Hz trill, 3 × paired bursts
+    const ringBurst = (startTime: number): void => {
+      const duration = 0.50;
+      const period = 1 / 20;
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0, startTime);
+      masterGain.connect(ctx.destination);
+      const cycles = Math.floor(duration / period);
+      for (let i = 0; i < cycles; i++) {
+        masterGain.gain.linearRampToValueAtTime(0.30, startTime + i * period + period * 0.22);
+        masterGain.gain.linearRampToValueAtTime(0.02, startTime + i * period + period * 0.72);
+      }
+      masterGain.gain.linearRampToValueAtTime(0, startTime + duration);
+      ([
+        { freq: 1200, type: 'triangle' as OscillatorType },
+        { freq: 2400, type: 'sine'     as OscillatorType },
+      ]).forEach(({ freq, type }) => {
+        const osc = ctx.createOscillator();
+        osc.type = type;
+        osc.frequency.value = freq;
+        osc.connect(masterGain);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      });
+    };
+    const t = ctx.currentTime;
+    ringBurst(t);        ringBurst(t + 0.65);  // Ring 1
+    ringBurst(t + 1.50); ringBurst(t + 2.15);  // Ring 2
+    ringBurst(t + 3.00); ringBurst(t + 3.65);  // Ring 3
+  }
+
+  private playClassicBellSound(ctx: AudioContext): void {
+    // Pure struck bell — school / desk bell. Sharp attack, long resonant decay.
+    // Three strikes ~1.1s apart with inharmonic partials for realistic bell timbre.
+    const strike = (startTime: number): void => {
+      ([
+        { freq: 880,  peak: 0.30, decay: 1.10 },  // fundamental A5
+        { freq: 2200, peak: 0.14, decay: 0.55 },  // inharmonic partial (bell character)
+        { freq: 1320, peak: 0.10, decay: 0.75 },  // perfect-fifth harmonic
+      ]).forEach(({ freq, peak, decay }) => {
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.exponentialRampToValueAtTime(peak, startTime + 0.003);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + decay);
+        gain.connect(ctx.destination);
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        osc.connect(gain);
+        osc.start(startTime);
+        osc.stop(startTime + decay + 0.05);
+      });
+    };
+    const t = ctx.currentTime;
+    strike(t);
+    strike(t + 1.15);
+    strike(t + 2.30);
+  }
+
+  private playSiemensOldPhoneSound(ctx: AudioContext): void {
+    // German PTT / Siemens desk-phone: 425 Hz carrier (European standard),
+    // 25 Hz AM trill, paired bursts, 3 rings
+    const ringBurst = (startTime: number): void => {
+      const duration = 0.42;
+      const period = 1 / 25;
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0, startTime);
+      masterGain.connect(ctx.destination);
+      const cycles = Math.floor(duration / period);
+      for (let i = 0; i < cycles; i++) {
+        masterGain.gain.linearRampToValueAtTime(0.26, startTime + i * period + period * 0.28);
+        masterGain.gain.linearRampToValueAtTime(0.02, startTime + i * period + period * 0.78);
+      }
+      masterGain.gain.linearRampToValueAtTime(0, startTime + duration);
+      ([
+        { freq: 425, type: 'sawtooth' as OscillatorType },
+        { freq: 850, type: 'sine'     as OscillatorType },
+      ]).forEach(({ freq, type }) => {
+        const osc = ctx.createOscillator();
+        osc.type = type;
+        osc.frequency.value = freq;
+        osc.connect(masterGain);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      });
+    };
+    const t = ctx.currentTime;
+    ringBurst(t);        ringBurst(t + 0.62);  // Ring 1
+    ringBurst(t + 1.40); ringBurst(t + 2.02);  // Ring 2
+    ringBurst(t + 2.80); ringBurst(t + 3.42);  // Ring 3
+  }
+
+  private playRingingToneSound(ctx: AudioContext): void {
+    // Modern cordless / DECT phone ringing tone: 980 Hz + 1340 Hz sine pair,
+    // pulsed at 12 Hz for a smooth electronic ring cadence. Three rings.
+    const ring = (startTime: number): void => {
+      const duration = 0.60;
+      const period = 1 / 12;
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0, startTime);
+      masterGain.connect(ctx.destination);
+      const cycles = Math.floor(duration / period);
+      for (let i = 0; i < cycles; i++) {
+        masterGain.gain.linearRampToValueAtTime(0.26, startTime + i * period + period * 0.38);
+        masterGain.gain.linearRampToValueAtTime(0.02, startTime + i * period + period * 0.88);
+      }
+      masterGain.gain.linearRampToValueAtTime(0, startTime + duration);
+      [980, 1340].forEach(freq => {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        osc.connect(masterGain);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      });
+    };
+    const t = ctx.currentTime;
+    ring(t);
+    ring(t + 0.86);
+    ring(t + 1.72);
   }
 
   private playClassicUkRingSound(ctx: AudioContext): void {
