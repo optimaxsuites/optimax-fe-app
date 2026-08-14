@@ -20,4 +20,43 @@
   &.present { border-left: 6px solid $success; }
   &.absent  { border-left: 6px solid $danger; }
   &.late    { border-left: 6px solid $warning; }
+
+  &.pending-approvals {
+    border-left: 6px solid #d97706;
+    transition: all 0.3s ease;
+
+    &.has-pending {
+      background: #fef3c7;
+      box-shadow: 0 4px 16px rgba(217, 119, 6, 0.15);
+
+      h3 {
+        color: #d97706;
+      }
+
+      p {
+        color: #d97706;
+      }
+    }
+
+    .approval-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+      font-size: 0.875rem;
+      color: #6b7280;
+
+      .breakdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        i {
+          color: #d97706;
+        }
+      }
+    }
+  }
 }

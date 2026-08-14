@@ -80,26 +80,21 @@ export class ShiftCalendarComponent implements OnInit {
   ngOnInit(): void {
     this.initializeCalendarOptions();
     this.scheduleService.schedules$.subscribe(data => {
-      console.log('📥 Schedules received from service:', data.length, 'total');
       this.schedules = data;
       this.extractShiftTypes();
 
       // Log filtered data for each view
       const filtered = this.getFilteredSchedules();
-      console.log('📊 After filters:', filtered.length, 'schedules');
-      console.log('   Filters applied - Shift:', this.selectedShiftType, 'Employee:', this.selectedEmployee, 'Query:', this.searchQuery);
 
       // Update all views
       this.updateCalendarEvents();
       this.updateSummaryMetrics();
       this.buildGanttView();
 
-      console.log('✅ All views updated');
     });
 
     const today = this.formatDateLocal(new Date());
     this.selectedSummaryDate = today;
-    console.log('📅 Summary date initialized to:', today);
 
     // Add global mouse tracking for drag-to-select
     this.addGlobalMouseTracking();
@@ -152,7 +147,6 @@ export class ShiftCalendarComponent implements OnInit {
 
   updateCalendarEvents(): void {
     const filtered = this.getFilteredSchedules();
-    console.log('Updating calendar events with', filtered.length, 'filtered schedules');
     const events = filtered.map(schedule => {
       const shift = this.shiftService.getShiftById(schedule.shiftId);
       const emp = this.employees.find(e => e.id === schedule.employeeId);
@@ -221,15 +215,12 @@ export class ShiftCalendarComponent implements OnInit {
 
     // Log all schedules with their dates
     if (this.schedules.length > 0) {
-      console.log('📋 All schedules:');
       this.schedules.forEach(s => {
         const emp = this.employees.find(e => e.id === s.employeeId);
         const shift = this.shiftService.getShiftById(s.shiftId);
-        console.log(`   ${emp?.name || 'N/A'}: ${shift?.name || 'N/A'} on ${s.date}`);
       });
     }
 
-    console.log('📊 Summary metrics:', this.totalShifts, 'total shifts,', this.totalEmployees, 'unique employees');
     const requiredDailySlots = 10;
     this.totalOpenSlots = Math.max(0, requiredDailySlots - this.schedules.length);
   }
@@ -245,20 +236,17 @@ export class ShiftCalendarComponent implements OnInit {
 
   applyFilters(): void {
     const filtered = this.getFilteredSchedules();
-    console.log('🔍 Applying filters - Visible schedules:', filtered.length, 'of', this.schedules.length);
     this.updateCalendarEvents();
     this.buildGanttView();
     this.updateSummaryMetrics();
   }
 
   clearFilters(): void {
-    console.log('🔄 Clearing all filters');
     this.selectedShiftType = null;
     this.selectedEmployee = null;
     this.searchQuery = '';
 
     const filtered = this.getFilteredSchedules();
-    console.log('📊 After clearing filters:', filtered.length, 'schedules visible');
 
     this.updateCalendarEvents();
     this.buildGanttView();
@@ -387,7 +375,6 @@ export class ShiftCalendarComponent implements OnInit {
 
   bulkAssignShift(shiftId: string) {
     const selectedSchedules = this.schedules.filter(s => this.batchSelected.has(s.id));
-    console.log('Bulk assign shift', shiftId, 'to', selectedSchedules.length, 'schedules');
     this.batchSelected.clear();
   }
 
@@ -408,7 +395,6 @@ export class ShiftCalendarComponent implements OnInit {
   // Gantt view methods
   buildGanttView(): void {
     const filtered = this.getFilteredSchedules();
-    console.log('Building Gantt view with', filtered.length, 'filtered schedules');
 
     const uniqueEmployees = new Map<string, { id: string; name: string }>();
 
@@ -425,13 +411,10 @@ export class ShiftCalendarComponent implements OnInit {
       bars: this.getEmployeeGanttBars(emp.id, filtered)
     }));
 
-    console.log('Gantt rows created:', this.ganttRows.length, 'rows');
     this.ganttRows.forEach(row => {
-      console.log(`  ${row.employeeName}: ${row.bars.length} shifts`);
     });
 
     this.setGanttDateRange();
-    console.log(`Gantt date range: ${this.formatDateLocal(this.ganttStartDate)} to ${this.formatDateLocal(this.ganttEndDate)}`);
   }
 
   getEmployeeGanttBars(employeeId: string, schedules: ScheduleDTO[]): any[] {
@@ -450,7 +433,6 @@ export class ShiftCalendarComponent implements OnInit {
         isSelected: this.batchSelected.has(schedule.id)
       };
 
-      console.log(`    Bar: ${shift?.name || 'Unknown'} on ${schedule.date}, position: ${bar.left}px, days from start: ${daysFromStart}`);
       return bar;
     });
 
@@ -464,7 +446,6 @@ export class ShiftCalendarComponent implements OnInit {
     // Set end to end of next month to ensure we show future shifts
     this.ganttEndDate = new Date(today.getFullYear(), today.getMonth() + 2, 0);
 
-    console.log(`📅 Gantt date range: ${this.formatDateLocal(this.ganttStartDate)} to ${this.formatDateLocal(this.ganttEndDate)}`);
 
     // Log if there are schedules outside this range
     const outsideRange = this.schedules.filter(s => {
@@ -472,7 +453,6 @@ export class ShiftCalendarComponent implements OnInit {
       return d < this.ganttStartDate || d > this.ganttEndDate;
     });
     if (outsideRange.length > 0) {
-      console.warn(`⚠️  ${outsideRange.length} schedules outside Gantt date range`);
     }
   }
 
@@ -717,27 +697,29 @@ export class ShiftCalendarComponent implements OnInit {
     this.showAssignment = false;
     this.editingSchedule = null;
 
-    console.log('Modal closed. Selected dates range:', Array.from(this.selectedDatesRange), 'Total schedules:', this.schedules.length);
 
     // Handle bulk assignment for multiple selected dates
     if (this.selectedDatesRange.size > 1) {
-      console.log('Initiating bulk assignment for', this.selectedDatesRange.size, 'dates');
       setTimeout(() => {
         this.bulkAssignToSelectedDates();
         this.selectedDatesRange.clear();
+        this.dragRangeStart = null;
+        this.dragRangeEnd = null;
         // Update all views after bulk assignment
         this.updateCalendarEvents();
         this.updateSummaryMetrics();
         this.buildGanttView();
-        console.log('Bulk assignment complete. Total schedules:', this.schedules.length);
+        this.updateDragRangeStyling();
       }, 500);
     } else {
       this.selectedDatesRange.clear();
+      this.dragRangeStart = null;
+      this.dragRangeEnd = null;
       // Update all views after single assignment
       this.updateCalendarEvents();
       this.updateSummaryMetrics();
       this.buildGanttView();
-      console.log('Single date assignment or no dates selected. Total schedules:', this.schedules.length);
+      this.updateDragRangeStyling();
     }
   }
 
@@ -745,11 +727,9 @@ export class ShiftCalendarComponent implements OnInit {
     // Get all schedules created for the selected date (could be multiple employees)
     const recentSchedules = this.schedules.filter(s => s.date === this.selectedDate);
     if (recentSchedules.length === 0) {
-      console.warn('No schedules found for date:', this.selectedDate);
       return;
     }
 
-    console.log(`Found ${recentSchedules.length} schedule(s) for ${this.selectedDate}, copying to ${this.selectedDatesRange.size - 1} other date(s)`);
 
     // Get all other dates in the selection
     const datesArray = Array.from(this.selectedDatesRange);
@@ -781,7 +761,6 @@ export class ShiftCalendarComponent implements OnInit {
         // Use the proper service method to create the schedule
         const result = this.scheduleService.assignShift(newSchedule);
         if (!result.success) {
-          console.warn(`Failed to assign shift for employee ${recentSchedule.employeeId} on ${dateStr}:`, result.message);
         }
       });
     });
