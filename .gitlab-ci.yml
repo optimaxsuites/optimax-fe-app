@@ -138,3 +138,5 @@ sync-dashboard-satellite:
     - bash scripts/satellite-push.sh dashboard "$REMOTE" mod dashboard_fe
   rules:
     - if: '$CI_COMMIT_BRANCH == "mod"'
+      changes:
+        - projects/dashboard/**/*
