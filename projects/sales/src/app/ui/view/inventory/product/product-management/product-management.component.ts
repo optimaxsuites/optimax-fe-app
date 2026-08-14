@@ -24,6 +24,10 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   products: any[] = [];
   isLoading = true;
   selectedProductIds: any[] = [];
+  aiDismissed = false;
+  showDeleteModal = false;
+  pendingDeleteProductName = '';
+  pendingDeleteProductObj: Product | null = null;
 
   setViewMode(mode: 'list' | 'icon'): void {
     this.viewMode = mode;
@@ -117,6 +121,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   }
 
   openCategoryModal(): void {
+    console.log('openCategoryModal: showCategoryModal set to true');
     this.showCategoryModal = true;
     this.editingCategory = null;
     this.viewingCategoryDetails = null;
@@ -243,6 +248,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   }
 
   openUnitModal(): void {
+    console.log('openUnitModal: showUnitModal set to true');
     this.showUnitModal = true;
     this.editingUnit = null;
     this.viewingUnitDetails = null;
@@ -374,6 +380,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   }
 
   openSupplierModal(): void {
+    console.log('openSupplierModal: showSupplierModal set to true');
     this.showSupplierModal = true;
     this.editingSupplier = null;
     this.viewingSupplierDetails = null;
@@ -646,9 +653,9 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   navigateToNewProduct(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/inventory/products/new', uuid]);
+      this.router.navigate(['/admin/sales/commerce/inventory/products/new', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/inventory/products/new']);
+      this.router.navigate(['/admin/sales/commerce/inventory/products/new']);
     }
   }
 
@@ -661,34 +668,44 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   viewProduct(productId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/inventory/products', productId, uuid]);
+      this.router.navigate(['/admin/sales/commerce/inventory/products', productId, uuid]);
     } else {
-      this.router.navigate(['/admin/sales/inventory/products', productId]);
+      this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
     }
   }
 
   editProduct(productId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/inventory/products', productId, 'edit', uuid]);
+      this.router.navigate(['/admin/sales/commerce/inventory/products', productId, 'edit', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/inventory/products', productId, 'edit']);
+      this.router.navigate(['/admin/sales/commerce/inventory/products', productId, 'edit']);
     }
   }
 
   deleteProduct(product: Product): void {
-    if (confirm(`Delete product ${product.name}? This action cannot be undone.`)) {
-      this.inventoryService.deleteProduct(product.id).pipe(takeUntil(this.destroy$)).subscribe({
-        next: () => {
-          this.loadProducts();
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product ${product.name} deleted successfully` });
-        },
-        error: (error: any) => {
-          console.error('Error deleting product:', error);
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete product. Please try again.' });
-        }
-      });
-    }
+    this.pendingDeleteProductObj = product;
+    this.pendingDeleteProductName = product.name;
+    this.showDeleteModal = true;
+  }
+
+  confirmDeleteProduct(): void {
+    if (!this.pendingDeleteProductObj) return;
+    const productObj = this.pendingDeleteProductObj;
+    this.inventoryService.deleteProduct(productObj.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.loadProducts();
+        this.showDeleteModal = false;
+        this.pendingDeleteProductObj = null;
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product ${productObj.name} deleted successfully` });
+      },
+      error: (error: any) => {
+        console.error('Error deleting product:', error);
+        this.showDeleteModal = false;
+        this.pendingDeleteProductObj = null;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete product. Please try again.' });
+      }
+    });
   }
 
   getPageNumbers(): number[] {

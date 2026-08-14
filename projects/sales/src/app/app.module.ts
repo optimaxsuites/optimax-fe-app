@@ -144,7 +144,10 @@ import { ActivityComponent } from './ui/view/vendor-management/vendor-management
 import { InventoryComponent } from './ui/view/inventory/inventory.component';
 import { InventoryDashboardComponent } from './ui/view/inventory/inventory-dashboard/inventory-dashboard.component';
 import { ProductManagementComponent } from './ui/view/inventory/product/product-management/product-management.component';
-import { BranchInventoryComponent } from './ui/view/inventory/branch-inventory/branch-inventory.component';
+import { BranchInventoryComponent } from './ui/view/branch/branch-inventory/branch-inventory.component';
+import { BranchDetailComponent } from './ui/view/branch/branch-detail/branch-detail.component';
+import { BranchInventoryTableComponent } from './ui/view/branch/branch-inventory-table/branch-inventory-table.component';
+import { BranchInventoryFormComponent } from './ui/view/branch/branch-inventory-form/branch-inventory-form.component';
 import { StockMovementComponent } from './ui/view/inventory/stock-movement/stock-movement.component';
 import { RestockManagementComponent } from './ui/view/inventory/restock-management/restock-management.component';
 import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.component';
@@ -155,6 +158,9 @@ import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.comp
     InventoryComponent,
     InventoryDashboardComponent,
     BranchInventoryComponent,
+    BranchDetailComponent,
+    BranchInventoryTableComponent,
+    BranchInventoryFormComponent,
     StockMovementComponent,
     RestockManagementComponent,
     AnalyticsComponent,

@@ -41,6 +41,8 @@ import { ReceiptPreviewComponent } from './ui/view/request-management/receipt-pr
 import { InventoryComponent } from './ui/view/inventory/inventory.component';
 import { LogisticsComponent } from './ui/view/logistics/logistics.component';
 import { ProductManagementFormComponent } from './ui/view/inventory/product/product-management-form/product-management-form.component';
+import { BranchDetailComponent } from './ui/view/branch/branch-detail/branch-detail.component';
+import { BranchInventoryFormComponent } from './ui/view/branch/branch-inventory-form/branch-inventory-form.component';
 
 
 export const routes: Routes = [
@@ -80,6 +82,20 @@ export const routes: Routes = [
   {
     path: 'inventory/products/:id/edit/:uuid',
     component: ProductManagementFormComponent
+  },
+  
+  // --------------------------------------- Branch Management -----------------------------------------
+  {
+    path: 'inventory/branches/new',
+    component: BranchInventoryFormComponent
+  },
+  {
+    path: 'inventory/branches/:branchId',
+    component: BranchDetailComponent
+  },
+  {
+    path: 'inventory/branches/:branchId/add-product',
+    component: BranchInventoryFormComponent
   },
 
 
