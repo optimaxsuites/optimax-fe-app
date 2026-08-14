@@ -715,6 +715,7 @@ export class CommunicationComponent
   selectedRingtone = 'telephone';
   readonly ringtoneOptions = [
     { value: 'telephone', label: 'Old telephone' },
+    { value: 'nokia', label: 'Nokia' },
     { value: 'classic', label: 'Classic ping' },
     { value: 'soft', label: 'Soft chime' },
     { value: 'crystal', label: 'Crystal bell' },
@@ -7012,6 +7013,12 @@ export class CommunicationComponent
         return;
       }
 
+      if (this.selectedRingtone === 'nokia' && !urgent) {
+        this.playNokiaRingSound(ctx);
+        this.triggerMobileHaptics(urgent);
+        return;
+      }
+
       if (this.selectedRingtone === 'doorbell' && !urgent) {
         this.playDoorbellSound(ctx);
         this.triggerMobileHaptics(urgent);
@@ -7110,8 +7117,55 @@ export class CommunicationComponent
     };
 
     const t = ctx.currentTime;
-    ringBurst(t);          // "brring"
-    ringBurst(t + 0.60);   // "brring" (0.18s pause between bursts)
+    ringBurst(t);         // brring
+    ringBurst(t + 0.60);  // brring  ← ring 1 pair (0.18s gap within pair)
+    ringBurst(t + 1.34);  // brring
+    ringBurst(t + 1.94);  // brring  ← ring 2 pair (0.60s pause between pairs)
+    ringBurst(t + 2.68);  // brring
+    ringBurst(t + 3.28);  // brring  ← ring 3 pair
+  }
+
+  private playNokiaRingSound(ctx: AudioContext): void {
+    // Nokia Gran Vals excerpt — the iconic 3310 ringtone.
+    // RTTTL: Nokia:d=4,o=5,b=225:8e5,8d5,4f#4,4g#4,8c#5,8b4,4d4,4e4,8b4,8a4,4c#4,4e4,a4
+    const bpm = 225;
+    const q = 60 / bpm;       // quarter-note duration in seconds
+    const e = q / 2;           // eighth-note duration
+
+    const notes: { freq: number; dur: number }[] = [
+      { freq: 659.25, dur: e },   // E5
+      { freq: 587.33, dur: e },   // D5
+      { freq: 369.99, dur: q },   // F#4
+      { freq: 415.30, dur: q },   // G#4
+      { freq: 554.37, dur: e },   // C#5
+      { freq: 493.88, dur: e },   // B4
+      { freq: 293.66, dur: q },   // D4
+      { freq: 329.63, dur: q },   // E4
+      { freq: 493.88, dur: e },   // B4
+      { freq: 440.00, dur: e },   // A4
+      { freq: 277.18, dur: q },   // C#4
+      { freq: 329.63, dur: q },   // E4
+      { freq: 440.00, dur: q },   // A4 (final note)
+    ];
+
+    let t = ctx.currentTime;
+    notes.forEach(({ freq, dur }) => {
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.28, t + 0.012);
+      gain.gain.setValueAtTime(0.28, t + dur * 0.82);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.95);
+      gain.connect(ctx.destination);
+
+      const osc = ctx.createOscillator();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      osc.start(t);
+      osc.stop(t + dur);
+
+      t += dur;
+    });
   }
 
   private playDoorbellSound(ctx: AudioContext): void {

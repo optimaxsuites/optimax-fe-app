@@ -137,6 +137,10 @@ export class ProcurementMessagingComponent implements OnInit, OnDestroy {
       const t = ctx.currentTime;
       ringBurst(t);
       ringBurst(t + 0.60);
+      ringBurst(t + 1.34);
+      ringBurst(t + 1.94);
+      ringBurst(t + 2.68);
+      ringBurst(t + 3.28);
     } catch (_) {}
   }
 
