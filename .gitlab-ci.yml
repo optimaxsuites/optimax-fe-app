@@ -137,4 +137,6 @@ sync-dashboard-satellite:
     - REMOTE="https://oauth2:${ERPDASH_TOKEN}@gitlab.com/j2yemi/erp-dashboard.git"
     - bash scripts/satellite-push.sh dashboard "$REMOTE" mod dashboard_fe
   rules:
-    - if: '$CI_COMMIT_BRANCH == "mod"'
+    - if: '$CI_COMMIT_BRANCH == "mod" && $CI_COMMIT_MESSAGE !~ /\[skip satellite\]/'
+      changes:
+        - projects/dashboard/**/*
