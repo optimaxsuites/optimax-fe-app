@@ -41,8 +41,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Fetch satellite so cached subtree hashes can be resolved
-git fetch "${REMOTE_NAME}" "${SAT_BRANCH}" 2>/dev/null || true
+# Fetch all satellite refs + tags so cached subtree split hashes can be resolved.
+# The monorepo has squash commits annotated with split hashes from the satellite's
+# history; without those objects locally, git subtree split fails.
+git fetch "${REMOTE_NAME}" --tags 2>/dev/null || true
 
 # Split subtree into a throwaway branch.
 # --rejoin writes a merge commit back so the next split starts from here,
