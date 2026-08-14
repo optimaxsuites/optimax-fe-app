@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, inject, ViewChild } from '@angular/core';
 import { AttendashboardService } from '../../../../service/attendance/attendashboard.service';
 import { AttendanceTableRecord } from '../../../../domain/attendance/attendancetable.dto';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
@@ -26,6 +26,7 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
   heatmapData: { department: string; attendance: number }[] = [];
   lateArrivalsData: any[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
+  attendance: AttendanceTableRecord[] = [];
   currentFilters: any = {};
 
   // Summary cards data
@@ -34,12 +35,19 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
   absentCount = 0;
   pendingCorrectionsCount = 0;
   pendingCorrectionRequests: AttendanceTableRecord[] = [];
+  pendingApprovalsCount = 0;
+  crossBranchCount = 0;
+  correctionRequestsCount = 0;
+  activeCard: string | null = null;
+
+  @ViewChild('attendanceTable') attendanceTableComponent: any;
 
   onDataChange(event: { data: AttendanceTableRecord[], filters:any }) {
-  this.filteredAttendance = event.data;
-  this.currentFilters = event.filters;
-  this.calculateDashboardData();
-}
+    this.filteredAttendance = event.data;
+    this.currentFilters = event.filters;
+    this.calculateDashboardData();
+  }
+
   calculateDashboardData() {const data = this.filteredAttendance;
 
   const total = data.length;
@@ -60,12 +68,21 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
   this.pendingCorrectionsCount = pendingModifications + pendingCorrections;
   this.pendingCorrectionRequests = data.filter(r => r.correctionRequest?.status === 'PENDING');
 
-  //stats
+  // Count cross-branch and correction requests needing approval
+  const crossBranch = data.filter(r => r.isCrossBranchAttendance ||
+    (r.checkedInBranchId && r.homeBranchId && r.checkedInBranchId !== r.homeBranchId)).length;
+  const correctionReqs = data.filter(r => r.correctionRequest?.status === 'PENDING').length;
+  this.crossBranchCount = crossBranch;
+  this.correctionRequestsCount = correctionReqs;
+  this.pendingApprovalsCount = crossBranch + correctionReqs;
+
+  //stats - handle zero total to avoid NaN
+  const safeTotal = total > 0 ? total : 1;
   this.statsData = {
-    present: ((present / total) * 100).toFixed(1),
-    absent: ((absent / total) * 100).toFixed(1),
-    late: ((late / total) * 100).toFixed(1),
-    onLeave: ((onLeave / total) * 100).toFixed(1)
+    present: ((present / safeTotal) * 100).toFixed(1),
+    absent: ((absent / safeTotal) * 100).toFixed(1),
+    late: ((late / safeTotal) * 100).toFixed(1),
+    onLeave: ((onLeave / safeTotal) * 100).toFixed(1)
   };
 
  //latearrivals
@@ -119,6 +136,7 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
+          this.attendance = data;
           const today = new Date().toISOString().split('T')[0];
           const todaysData = data.filter(r => r.date === today);
           this.filteredAttendance = todaysData;
@@ -164,6 +182,32 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
 
   refreshData(): void {
     this.attendanceService.fetchAllRecords();
+  }
+
+  filterByStatus(status: 'PRESENT' | 'LATE' | 'ABSENT'): void {
+    this.activeCard = status;
+    this.currentFilters = { status };
+    // Filter the table but keep card counts static (don't recalculate)
+    this.filteredAttendance = this.attendance.filter(r => r.status === status);
+  }
+
+  filterByPendingApproval(): void {
+    if (this.pendingApprovalsCount === 0) return;
+
+    this.activeCard = 'PENDING_APPROVAL';
+    this.currentFilters = { status: 'PENDING_APPROVAL' };
+    // Show only records that need approval
+    this.filteredAttendance = this.attendance.filter(r =>
+      (r.isCrossBranchAttendance ||
+      (r.checkedInBranchId && r.homeBranchId && r.checkedInBranchId !== r.homeBranchId)) ||
+      r.correctionRequest?.status === 'PENDING'
+    );
+  }
+
+  clearCardFilter(): void {
+    this.activeCard = null;
+    this.currentFilters = {};
+    this.filteredAttendance = this.attendance;
   }
 
 }

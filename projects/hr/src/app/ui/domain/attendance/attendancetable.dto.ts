@@ -55,6 +55,9 @@ export interface AttendanceTableRecord {
   // --- CROSS-BRANCH ATTENDANCE ---
   checkedInBranchId?: number;
   homeBranchId?: number;
+  checkedInBranchName?: string;
+  homeBranchName?: string;
+  isCrossBranchAttendance?: boolean;
   crossBranchRequestId?: string;
   crossBranchApprovalStatus?: 'APPROVED' | 'PENDING' | 'REJECTED';
 

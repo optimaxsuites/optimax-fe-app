@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, Output, EventEmitter, HostListener, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnInit, Output, EventEmitter, HostListener, ChangeDetectorRef, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
@@ -18,7 +18,7 @@ import { environment } from '../../../../../shared-component/environments/enviro
   templateUrl: './attendancetable.component.html',
   styleUrl: './attendancetable.component.scss'
 })
-export class AttendancetableComponent implements OnInit{
+export class AttendancetableComponent implements OnInit, OnChanges {
 
   private attendancetableService = inject(AttendancetableService);
   private userSession = inject(UserSessionService);
@@ -31,6 +31,14 @@ export class AttendancetableComponent implements OnInit{
   filteredAttendance: AttendanceTableRecord[] = [];
   isLoading = true;
   private preservedCorrections: Map<number, any> = new Map();
+
+  @Input() externalFilters: AttendanceTableRecord[] | null = null;
+
+  openActionMenu: number | null = null;
+
+  toggleActionMenu(recordId: number): void {
+    this.openActionMenu = this.openActionMenu === recordId ? null : recordId;
+  }
 
   editingRecord: AttendanceTableRecord | null = null;
   detailsRecord: AttendanceTableRecord | null = null;
@@ -53,7 +61,8 @@ tableColumns: TableColumn<AttendanceTableRecord>[] = [
   { header: 'Clock In', field: 'checkIn', sortable: true },
   { header: 'Clock Out', field: 'checkOut', sortable: true },
   { header: 'Status', field: 'status', sortable: true },
-  { header: 'Hours', field: 'hours', sortable: true }
+  { header: 'Hours', field: 'hours', sortable: true },
+  { header: 'Flags', field: 'flags', sortable: false }
 ];
 
 tableActions: TableAction<AttendanceTableRecord>[] = [
@@ -93,6 +102,13 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
 
   @Output() dataChange = new EventEmitter<{ data: AttendanceTableRecord[], filters: any }>();
  
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['externalFilters'] && this.externalFilters) {
+      this.filteredAttendance = [...this.externalFilters];
+      this.cdr.markForCheck();
+    }
+  }
+
   ngOnInit(): void {
       this.startClosingWatcher();
       this.isLoading = true;
@@ -807,6 +823,18 @@ private saveToStorage(): void {
   } catch {
     // Storage error, continue
   }
+}
+
+isCrossBranchAttendance(record: AttendanceTableRecord): boolean {
+  return !!(record.isCrossBranchAttendance ||
+    (record.checkedInBranchId && record.homeBranchId && record.checkedInBranchId !== record.homeBranchId));
+}
+
+getCrossBranchBranchNames(record: AttendanceTableRecord): string {
+  if (record.checkedInBranchName && record.homeBranchName) {
+    return `From: ${record.homeBranchName} → To: ${record.checkedInBranchName}`;
+  }
+  return 'Cross-branch attendance';
 }
 
 }

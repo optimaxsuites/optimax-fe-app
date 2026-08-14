@@ -15,31 +15,57 @@
       <!-- Record Count (shown only when not loading) -->
       <div class="record-count" *ngIf="!isLoading">
         <h3>Attendance Records</h3>
-        <span class="count-badge">Showing {{ filteredAttendance.length }} of {{ attendance.length }}</span>
       </div>
 
       <!-- Simple Working Table -->
-      <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <div style="background: white; border-radius: 8px; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
         <table style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
-              <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;" *ngFor="let col of tableColumns">
+              <th style="padding: 0.5rem 0.5rem; text-align: left; font-weight: 600; color: #374151; font-size: 0.8rem;" *ngFor="let col of tableColumns">
                 {{ col.header }}
               </th>
-              <th *ngIf="tableActions.length" style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Actions</th>
+              <th *ngIf="tableActions.length" style="padding: 0; text-align: center; width: 16px; font-weight: 600; color: #374151; font-size: 0.8rem;">ACTIONS</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let record of filteredAttendance" style="border-bottom: 1px solid #e5e7eb; hover: background-color: #f9fafb;">
-              <td style="padding: 1rem;" *ngFor="let col of tableColumns">
-                {{ record[col.field] }}
+              <td style="padding: 0.5rem 0.5rem; font-size: 0.9rem;" *ngFor="let col of tableColumns">
+                <ng-container *ngIf="col.field !== 'flags'; else flagsTemplate">
+                  {{ record[col.field] }}
+                </ng-container>
+                <ng-template #flagsTemplate>
+                  <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <span *ngIf="isCrossBranchAttendance(record)"
+                      style="display: inline-block; background: #fef08a; color: #854d0e; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500; border: 1px solid #fcd34d; cursor: help;"
+                      [title]="getCrossBranchBranchNames(record)">
+                      ⚠️ Cross-Branch
+                    </span>
+                    <span *ngIf="record.correctionRequest?.status === 'PENDING'"
+                      style="display: inline-block; background: #fed7aa; color: #92400e; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500; border: 1px solid #fdba74; cursor: help;"
+                      title="Correction request pending approval">
+                      📝 Correction
+                    </span>
+                  </div>
+                </ng-template>
               </td>
-              <td style="padding: 1rem;" *ngIf="tableActions.length">
-                <button *ngFor="let action of tableActions"
-                  (click)="onTableActionClick({actionId: action.id, row: record})"
-                  style="padding: 0.5rem 1rem; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 4px; cursor: pointer; margin-right: 0.5rem;">
-                  {{ action.label }}
-                </button>
+              <td style="padding: 0; text-align: center; width: 16px;" *ngIf="tableActions.length">
+                <!-- Dropdown menu - just colon -->
+                <div class="actions-menu" style="position: relative; display: inline-block; width: 100%;">
+                  <button (click)="toggleActionMenu(record.id)"
+                    style="padding: 0; background: none; border: none; cursor: pointer; font-size: 0.9rem; line-height: 1; color: #6b7280; min-width: auto; width: 100%; text-align: center;">
+                    :</button>
+                  <div class="action-dropdown" *ngIf="openActionMenu === record.id"
+                    style="position: absolute; top: 100%; right: 0; background: white; border: 1px solid #e5e7eb; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10; min-width: 110px; margin-top: 4px;">
+                    <button *ngFor="let action of tableActions"
+                      (click)="onTableActionClick({actionId: action.id, row: record}); openActionMenu = null"
+                      style="display: block; width: 100%; text-align: left; padding: 0.6rem 1rem; border: none; background: none; cursor: pointer; font-size: 0.9rem; transition: background 0.2s; color: #374151;"
+                      (mouseenter)="$event.target.style.background = '#f3f4f6'"
+                      (mouseleave)="$event.target.style.background = 'none'">
+                      {{ action.label }}
+                    </button>
+                  </div>
+                </div>
               </td>
             </tr>
             <tr *ngIf="!isLoading && filteredAttendance.length === 0">
@@ -148,7 +174,7 @@
           </div>
 
           <div class="detail-section">
-            <h4>Locations</h4>
+            <h4>Locations & Branch Information</h4>
             <div class="detail-row">
               <span class="label">Check-in:</span>
               <span class="value">
@@ -165,6 +191,17 @@
                   <i class="fa-solid fa-location-dot"></i> {{ record.checkOutLocation.address }}
                 </span>
                 <ng-template #noCheckOutLoc>-</ng-template>
+              </span>
+            </div>
+            <div class="detail-row" *ngIf="record.homeBranchName || record.checkedInBranchName">
+              <span class="label">Home Branch:</span>
+              <span class="value">{{ record.homeBranchName || '-' }}</span>
+            </div>
+            <div class="detail-row" *ngIf="record.homeBranchName || record.checkedInBranchName">
+              <span class="label">Checked-in Branch:</span>
+              <span class="value" [style.color]="isCrossBranchAttendance(record) ? '#dc2626' : 'inherit'">
+                {{ record.checkedInBranchName || '-' }}
+                <span *ngIf="isCrossBranchAttendance(record)" style="margin-left: 0.5rem; color: #dc2626; font-weight: 600;">⚠️ Different</span>
               </span>
             </div>
           </div>
