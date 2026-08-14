@@ -5,7 +5,7 @@
 # Usage: ./scripts/satellite-pull.sh <module> <remote-url> [satellite-branch] [monorepo-branch]
 #
 # Example:
-#   ./scripts/satellite-pull.sh dashboard git@gitlab.com:queensheba/erp-dashboard.git master mod
+#   ./scripts/satellite-pull.sh dashboard https://gitlab.com/j2yemi/erp-dashboard.git master mod
 #
 # The script:
 #   1. Adds the satellite remote temporarily (or reuses it).

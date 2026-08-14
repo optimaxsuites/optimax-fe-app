@@ -125,7 +125,10 @@ deploy-prod:
   stage: sync
   image: alpine:3.19
   before_script:
-    - apk add --no-cache git bash
+    - apk add --no-cache git bash curl
+    - curl -fsSL "https://raw.githubusercontent.com/git/git/master/contrib/subtree/git-subtree.sh"
+        -o "$(git --exec-path)/git-subtree"
+    - chmod +x "$(git --exec-path)/git-subtree"
     - git config --global user.email "ci@optimaxsuites.com"
     - git config --global user.name "OptimaX CI"
     - git fetch --unshallow 2>/dev/null || true
@@ -133,7 +136,7 @@ deploy-prod:
 sync-dashboard-satellite:
   <<: *satellite_sync_base
   script:
-    - REMOTE="https://oauth2:${ERPDASH_TOKEN}@gitlab.com/queensheba/erp-dashboard.git"
+    - REMOTE="https://oauth2:${ERPDASH_TOKEN}@gitlab.com/j2yemi/erp-dashboard.git"
     - bash scripts/satellite-push.sh dashboard "$REMOTE" mod dashboard_fe
   rules:
     - if: '$CI_COMMIT_BRANCH == "mod"'
