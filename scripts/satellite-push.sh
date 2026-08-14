@@ -40,10 +40,15 @@ trap cleanup EXIT
 TREE_SHA=$(git rev-parse "${MONO_BRANCH}:${PREFIX}")
 MONO_SHA=$(git rev-parse --short "${MONO_BRANCH}")
 
-# Fetch the satellite's current branch tip to use as parent commit
+# Fetch the satellite's current branch tip to use as parent commit.
+# Use FETCH_HEAD directly — avoids relying on remote-tracking ref creation.
 echo "  Fetching satellite…"
-git fetch "${REMOTE_NAME}" "${SAT_BRANCH}" 2>/dev/null || true
-PARENT=$(git rev-parse "${REMOTE_NAME}/${SAT_BRANCH}" 2>/dev/null || echo "")
+if git fetch "${REMOTE_NAME}" "${SAT_BRANCH}" 2>/dev/null; then
+  PARENT=$(git rev-parse FETCH_HEAD 2>/dev/null || echo "")
+else
+  echo "  (satellite branch not found — will create as orphan)"
+  PARENT=""
+fi
 
 # Create a commit containing only the subtree content
 echo "  Creating sync commit…"
