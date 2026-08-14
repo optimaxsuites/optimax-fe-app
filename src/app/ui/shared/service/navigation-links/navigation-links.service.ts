@@ -19,9 +19,11 @@ export class NavigationLinksService {
     this.links['meetingsAppointmentsLink'] = '/admin/dashboard/meetings-appointments/' + uuidV4();
     this.links['feedLink'] = '/admin/dashboard/tasks-routines/' + uuidV4();
     this.links['userRegistrationLink'] = '/admin/settings/user-reg/' + uuidV4();
-    this.links['salesLink'] = '/admin/sales/' +uuidV4();
+    const salesUuid = uuidV4();
+    this.links['salesLink'] = '/admin/sales/' + salesUuid;
+    this.links['commerceRequestsLink'] = '/admin/sales/' + salesUuid;
     this.links['purchaseLink'] = '/admin/purchase/' +uuidV4();
-    this.links['inventoryLink'] = '/admin/inventory/' +uuidV4();
+    this.links['inventoryLink'] = '/admin/inventory-management/' +uuidV4();
 
     this.links['procurementLink'] = '/admin/procurement/' +uuidV4();
     this.links['procurementSettingsLink'] = '/admin/procurement/settings/' +uuidV4();
@@ -105,8 +107,8 @@ export class NavigationLinksService {
 
 // POS ================================================================================================================
 this.links['productLink'] = '/admin/pos/product/' +uuidV4();
-this.links['inventoryLink'] = `/admin/pos/inventory/${uuidV4()}`;
-this.links['salesLink'] = '/admin/pos/sale/' +uuidV4();
+this.links['posInventoryLink'] = `/admin/pos/inventory/${uuidV4()}`;
+this.links['posSaleLink'] = '/admin/pos/sale/' +uuidV4();
 this.links['refundLink'] = '/admin/pos/refunds/' +uuidV4();
 this.links['reportLink'] = '/admin/pos/report/' +uuidV4();
 

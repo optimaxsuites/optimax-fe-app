@@ -32,7 +32,6 @@ export class QuotationManagementService {
 
   getQuotationsByRfq(rfqId: string): Observable<VendorQuotation[]> {
     const params = new HttpParams()
-      .set('tenantId', this.tenantId)
       .set('page', '1')
       .set('size', '100')
       .set('rfqId', rfqId);
@@ -47,7 +46,6 @@ export class QuotationManagementService {
 
   getAllQuotations(filters?: any): Observable<VendorQuotation[]> {
     let params = new HttpParams()
-      .set('tenantId', this.tenantId)
       .set('page', String((filters?.page || 0) + 1))
       .set('size', String(filters?.size || 50));
 

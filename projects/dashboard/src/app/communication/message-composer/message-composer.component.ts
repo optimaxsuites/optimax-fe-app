@@ -150,6 +150,55 @@ export class MessageComposerComponent {
     el.style.height = Math.min(el.scrollHeight, 160) + 'px';
   }
 
+  onComposerPaste(e: ClipboardEvent, el: HTMLTextAreaElement): void {
+    const html = e.clipboardData?.getData('text/html') || '';
+    const plain = e.clipboardData?.getData('text/plain') || '';
+
+    // Only intercept if clipboard HTML contains syntax-highlighter class markup.
+    // When pasting from a code block (PrismJS/highlight.js/CodeMirror), the
+    // browser puts the raw highlighted HTML in text/html and the class attribute
+    // text leaks into text/plain in some Electron webviews.
+    const hasSyntaxMarkup = /class=["']token[\s"']/i.test(plain) || /class=["'](?:hljs|cm)-/i.test(plain);
+    if (!hasSyntaxMarkup && !html) return;
+
+    e.preventDefault();
+
+    // Prefer stripping the HTML clipboard version which is always complete.
+    const source = html || plain;
+    const cleaned = this.stripSyntaxMarkup(source);
+
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const next = el.value.slice(0, start) + cleaned + el.value.slice(end);
+
+    this.draftChange.emit(next);
+    setTimeout(() => {
+      el.selectionStart = el.selectionEnd = start + cleaned.length;
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    });
+  }
+
+  private stripSyntaxMarkup(text: string): string {
+    // Decode HTML entities first
+    const tmp = document.createElement('textarea');
+    tmp.innerHTML = text;
+    let out = tmp.value;
+
+    // Remove all HTML opening/closing tags (span, pre, code, etc.)
+    out = out.replace(/<\/?[a-z][^>]*>/gi, '');
+    // Remove leftover class="token..." fragments that appear as raw text
+    out = out.replace(/class=["'][\w\s-]*["']\s*>/gi, '');
+    // Decode HTML entities a second time in case of double-encoding
+    tmp.innerHTML = out;
+    out = tmp.value;
+    // Normalize non-breaking spaces and excessive whitespace
+    out = out.replace(/ /g, ' ');
+    out = out.replace(/\r\n/g, '\n');
+    out = out.replace(/\r/g, '\n');
+    return out;
+  }
+
   toggleEmojiMenu(): void {
     this.emojiMenuOpen = !this.emojiMenuOpen;
   }

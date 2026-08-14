@@ -49,7 +49,6 @@ export class ProcurementRequestService {
 
   getRequests(filters: RequestFilters): Observable<PaginatedResponse<ProcurementRequest>> {
     let params = new HttpParams()
-      .set('tenantId', this.tenantId)
       .set('page', String((filters.page || 0) + 1))
       .set('size', String(filters.size || 10));
 
@@ -112,7 +111,7 @@ export class ProcurementRequestService {
   submitForApproval(id: number): Observable<ProcurementRequest> {
     return this.http.patch<ProcurementRequest>(
       `${this.baseUrl}/procurement-requests/${id}/submit-for-approval`,
-      {}
+      null
     );
   }
 
@@ -172,7 +171,7 @@ export class ProcurementRequestService {
   }
 
   getRFQTemplates(): Observable<RFQTemplate[]> {
-    const params = new HttpParams().set('tenantId', this.tenantId).set('page', '1').set('size', '50');
+    const params = new HttpParams().set('page', '1').set('size', '50');
     return this.http.get<any>(
       `${this.baseUrl}/rfq-templates/`,
       { params }
@@ -341,28 +340,20 @@ export class ProcurementRequestService {
   }
 
   getProcurementCategories(): Observable<ProcurementCategory[]> {
-    const params = new HttpParams().set('tenantId', this.tenantId);
-    return this.http.get<any>(`${this.baseUrl}/categories`, { params }).pipe(
+    return this.http.get<any>(`${this.baseUrl}/categories`).pipe(
       map((res: any) => {
-        const arr = res.data ?? res ?? [];
-        const defaults = this.getDefaultCategories();
+        const arr: any[] = res?.data ?? res?.content ?? res?.items ?? (Array.isArray(res) ? res : []);
         if (Array.isArray(arr) && arr.length > 0) {
-          const custom = arr.map((cat: any) => ({
+          return arr.map((cat: any) => ({
             id: cat.id,
             categoryId: cat.categoryId || cat.name || String(cat.id),
             name: cat.name,
             description: cat.description || ''
           }));
-          const filteredDefaults = defaults.filter(d => 
-            !custom.some(c => c.name.toLowerCase() === d.name.toLowerCase())
-          );
-          return [...custom, ...filteredDefaults];
         }
-        return defaults;
+        return this.getDefaultCategories();
       }),
-      catchError(() => {
-        return of(this.getDefaultCategories());
-      })
+      catchError(() => of(this.getDefaultCategories()))
     );
   }
 

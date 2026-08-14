@@ -17,7 +17,7 @@ set -euo pipefail
 
 MODULE="${1:?Usage: $0 <module> <remote-url> [satellite-branch] [monorepo-branch]}"
 REMOTE_URL="${2:?Usage: $0 <module> <remote-url> [satellite-branch] [monorepo-branch]}"
-SAT_BRANCH="${3:-master}"
+SAT_BRANCH="${3:-dashboard_fe}"
 MONO_BRANCH="${4:-mod}"
 PREFIX="projects/${MODULE}"
 REMOTE_NAME="_sat_${MODULE}"

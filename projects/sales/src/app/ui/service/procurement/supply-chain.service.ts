@@ -32,7 +32,7 @@ export class SupplyChainService {
   // ── Delivery Tracking ───────────────────────────────────────────────────────
 
   getDeliveries(filters?: { lpoId?: string; vendorId?: string; status?: DeliveryStatus; page?: number; size?: number }): Observable<DeliveryTracking[]> {
-    let params = new HttpParams().set('tenantId', this.tenantId).set('page', '1').set('size', '50');
+    let params = new HttpParams().set('page', '1').set('size', '50');
     if (filters?.lpoId) params = params.set('lpoId', filters.lpoId);
     if (filters?.vendorId) params = params.set('vendorId', filters.vendorId);
     if (filters?.status) params = params.set('status', filters.status);
@@ -69,7 +69,7 @@ export class SupplyChainService {
   // ── GRN ────────────────────────────────────────────────────────────────────
 
   getGrns(filters?: { lpoId?: string; status?: GrnStatus; page?: number }): Observable<GoodsReceivedNote[]> {
-    let params = new HttpParams().set('tenantId', this.tenantId).set('page', '1').set('size', '50');
+    let params = new HttpParams().set('page', '1').set('size', '50');
     if (filters?.lpoId) params = params.set('lpoId', filters.lpoId);
     if (filters?.status) params = params.set('status', filters.status);
     return this.http.get<any>(`${this.baseUrl}/grns`, { params }).pipe(
@@ -128,7 +128,7 @@ export class SupplyChainService {
   }
 
   getPaymentVouchers(filters?: { lpoId?: string; invoiceId?: string; page?: number }): Observable<PaymentVoucher[]> {
-    let params = new HttpParams().set('tenantId', this.tenantId).set('page', '1').set('size', '50');
+    let params = new HttpParams().set('page', '1').set('size', '50');
     if (filters?.lpoId) params = params.set('lpoId', filters.lpoId);
     if (filters?.invoiceId) params = params.set('invoiceId', filters.invoiceId);
     return this.http.get<any>(`${this.baseUrl}/payment-vouchers`, { params }).pipe(
