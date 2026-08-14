@@ -125,10 +125,7 @@ deploy-prod:
   stage: sync
   image: alpine:3.19
   before_script:
-    - apk add --no-cache git bash curl
-    - curl -fsSL "https://raw.githubusercontent.com/git/git/master/contrib/subtree/git-subtree.sh"
-        -o "$(git --exec-path)/git-subtree"
-    - chmod +x "$(git --exec-path)/git-subtree"
+    - apk add --no-cache git bash
     - git config --global user.email "ci@optimaxsuites.com"
     - git config --global user.name "OptimaX CI"
     - git fetch --unshallow 2>/dev/null || true
