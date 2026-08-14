@@ -44,6 +44,7 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
 
   // Stats
   stats: InventoryDashboardStats | null = null;
+  aiDismissed: boolean = false;
 
   // Data Arrays
   alerts: StockAlert[] = [];
@@ -136,15 +137,15 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
   }
 
   navigateToProduct(productId: string): void {
-    this.router.navigate(['/inventory/products', productId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
   }
 
   navigateToBranch(branchId: string): void {
-    this.router.navigate(['/inventory/branches', branchId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
   }
 
   navigateToMovement(movementId: string): void {
-    this.router.navigate(['/inventory/movements', movementId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements', movementId]);
   }
 
   resolveAlert(alertId: string): void {

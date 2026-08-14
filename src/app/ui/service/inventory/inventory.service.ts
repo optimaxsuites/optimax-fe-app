@@ -607,6 +607,28 @@ export class InventoryService {
   }
 
   /**
+   * Update a branch
+   */
+  updateBranch(id: string, branch: Partial<Branch>): Observable<Branch> {
+    return this.http.put<ApiResponse<Branch>>(`${API_BASE}/branches/${id}`, branch)
+      .pipe(
+        map(response => response.data),
+        tap(updated => {
+          const current = this.branchesSubject.value;
+          const index = current.findIndex(b => b.id === id);
+          if (index !== -1) {
+            current[index] = updated;
+            this.branchesSubject.next([...current]);
+          }
+        }),
+        catchError(err => {
+          this.errorSubject.next('Failed to update branch');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
    * Get branch inventory
    */
   getBranchInventory(branchId: string): Observable<BranchInventory[]> {
