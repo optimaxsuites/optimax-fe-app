@@ -1,8 +1,6 @@
 import { Component } from '@angular/core';
 import { TabConfig } from '../../shared-component/service/interface/data';
 import { MyAttendanceComponent } from './my-attendance/my-attendance.component';
-import { AttendanceSheetsComponent } from './attendance-sheet/attendance-sheet.component';
-import { TimeSheetComponent } from './time-sheet/time-sheet.component';
 import { AttendashboardComponent } from './admin/attendashboard/attendashboard.component';
 import { EmployeedashboardComponent } from './employee/employeedashboard/employeedashboard.component';
 import { CorrectionrequestComponent } from './employee/correctionrequest/correctionrequest.component';
@@ -10,7 +8,6 @@ import { ReportsComponent } from './admin/reports/reports.component';
 import { RemoteCheckinComponent } from './employee/remote-checkin/remote-checkin.component';
 import { BiometricEnrollmentComponent } from '../biometric/biometric-enrollment/biometric-enrollment.component';
 import { CrossBranchRequestComponent } from './employee/cross-branch/cross-branch-request.component';
-import { FraudDetectionDashboardComponent } from './admin/fraud-detection-dashboard/fraud-detection-dashboard.component';
 import { SupervisorApprovalQueueComponent } from './admin/supervisor-approval-queue/supervisor-approval-queue.component';
 
 @Component({

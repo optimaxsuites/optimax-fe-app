@@ -112,8 +112,6 @@ import {
 } from '@angular/common/http';
 import { AttendanceSheetsComponent } from './ui/view/attendance/attendance-sheet/attendance-sheet.component';
 import { NotificationComponent } from './ui/view/attendance/notification/notification.component';
-import { TimeSheetComponent } from './ui/view/attendance/time-sheet/time-sheet.component';
-import { TimesheetApprovalsComponent } from './ui/view/workschedule-shifts/timesheet-approvals/timesheet-approvals.component';
 import { MyAttendanceComponent } from './ui/view/attendance/my-attendance/my-attendance.component';
 import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/employee-payroll.component';
 import { PayrollDashboardComponent } from './ui/view/payroll/payroll-dashboard/payroll-dashboard.component';
@@ -167,7 +165,6 @@ import { AttendanceReportsComponent } from './ui/view/attendance/admin/attendanc
 import { BiometricEnrollmentComponent } from './ui/view/biometric/biometric-enrollment/biometric-enrollment.component';
 import { RemoteCheckinComponent } from './ui/view/attendance/employee/remote-checkin/remote-checkin.component';
 import { CrossBranchRequestComponent } from './ui/view/attendance/employee/cross-branch/cross-branch-request.component';
-import { FraudDetectionDashboardComponent } from './ui/view/attendance/admin/fraud-detection-dashboard/fraud-detection-dashboard.component';
 import { SupervisorApprovalQueueComponent } from './ui/view/attendance/admin/supervisor-approval-queue/supervisor-approval-queue.component';
 import { CalendarModule } from 'primeng/calendar';
 import { AttendanceDetailsComponent } from './ui/view/attendance/attendance-details/attendance-details.component';
@@ -261,7 +258,7 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
 // import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
 import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-letters.component';
 import { TimeFormatPipe } from './ui/shared-component/pipes/time-format.pipe';
-import { ToastComponent } from './ui/shared-component/view/toast/toast.component';
+import { ToastComponent } from './shared-component/view/toast/toast.component';
 import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction/payroll-correction.component';
 
 
@@ -295,8 +292,6 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     // ApplyComponent,
     PerformanceComponent,
     NotificationComponent,
-    TimeSheetComponent,
-    TimesheetApprovalsComponent,
     MyAttendanceComponent,
     EmployeePayrollComponent,
     PayrollDashboardComponent,
@@ -350,7 +345,6 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     BiometricEnrollmentComponent,
     RemoteCheckinComponent,
     CrossBranchRequestComponent,
-    FraudDetectionDashboardComponent,
     SupervisorApprovalQueueComponent,
     ProjectComponent,
     ProjectDetailComponent,

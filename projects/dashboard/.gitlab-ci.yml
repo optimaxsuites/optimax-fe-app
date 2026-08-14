@@ -1,0 +1,52 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# erp-dashboard — satellite repo CI
+#
+# On every push to dashboard_fe this job automatically syncs the changes
+# into projects/dashboard/ in the monorepo (optimax_fe_app, mod branch).
+#
+# Required CI variables (Settings → CI/CD → Variables):
+#   MONOREPO_TOKEN — Project Access Token for optimax_fe_app with
+#                    write_repository scope.
+#                    GitLab → optimax_fe_app → Settings → Access Tokens
+# ─────────────────────────────────────────────────────────────────────────────
+
+stages:
+  - sync
+
+sync-to-monorepo:
+  stage: sync
+  image: alpine:3.19
+  variables:
+    GIT_TERMINAL_PROMPT: "0"
+  before_script:
+    - apk add --no-cache git bash
+    - git config --global user.email "ci@optimaxsuites.com"
+    - git config --global user.name "OptimaX CI"
+  script:
+    - |
+      # Clone the monorepo mod branch (MONOREPO_TOKEN scoped to optimax_fe_app)
+      git clone --branch mod --depth 1 \
+        "https://oauth2:${MONOREPO_TOKEN}@gitlab.com/j2yemi/optimax_fe_app.git" \
+        /tmp/monorepo
+
+      cd /tmp/monorepo
+
+      # Fetch from the satellite using CI_JOB_TOKEN (auto-scoped to erp-dashboard)
+      git remote add satellite "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/j2yemi/erp-dashboard.git"
+      git fetch satellite dashboard_fe
+
+      # Replace existing subtree: remove old entries then read new tree in
+      git rm -rf --ignore-unmatch projects/dashboard/
+      git read-tree --prefix=projects/dashboard/ -u FETCH_HEAD
+
+      # Only push if something actually changed
+      if git diff --cached --quiet; then
+        echo "No changes to sync — monorepo already up to date."
+        exit 0
+      fi
+
+      git commit -m "chore(dashboard): sync from erp-dashboard/dashboard_fe@${CI_COMMIT_SHORT_SHA} [skip satellite]"
+      git push origin mod
+      echo "✔ Synced to optimax_fe_app/mod."
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dashboard_fe"'

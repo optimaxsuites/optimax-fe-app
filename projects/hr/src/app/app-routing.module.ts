@@ -76,6 +76,10 @@ const DEFAULT_LOAN_ROUTE = 'loan/uu';
 
 const routes: Routes = [
   {
+    path: 'attendance/employee-history',
+    component: EmployeeHistoryComponent,
+  },
+  {
     path: 'workschedule-shifts/:uuid',
     component: WorkscheduleShiftsComponent,
   },
@@ -94,9 +98,8 @@ const routes: Routes = [
     pathMatch: 'full',
   },
 
-  /*{
+  {
     path: '',
-    // redirectTo: DEFAULT_LOAN_ROUTE,
     redirectTo: DEFAULT_LOAN_ROUTE,
     pathMatch: 'full',
   },
@@ -124,7 +127,7 @@ const routes: Routes = [
     path: 'admin/hr/loan-management/loan-dashboard',
     redirectTo: DEFAULT_LOAN_ROUTE,
     pathMatch: 'full',
-  },*/
+  },
   {
     path: 'admin/hr/loan-management/loan-dashboard/:uuid',
     component: LoanDashboardComponent,
@@ -385,10 +388,6 @@ const routes: Routes = [
   {
     path: 'leave/:uuid',
     component: LeaveComponent,
-  },
-  {
-    path: 'attendance/employee-history',
-    component: EmployeeHistoryComponent,
   },
   {
     path: 'attendance/:uuid',

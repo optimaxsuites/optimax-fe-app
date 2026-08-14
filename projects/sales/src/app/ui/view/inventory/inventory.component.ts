@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
 import { TabConfig } from '../../shared-component/service/interface/data';
 import { InventoryDashboardComponent } from './inventory-dashboard/inventory-dashboard.component';
-import { ProductManagementComponent } from './product-management/product-management.component';
-import { BranchInventoryComponent } from './branch-inventory/branch-inventory.component';
-import { StockMovementComponent } from './stock-movement/stock-movement.component';
+import { ProductManagementComponent } from './product/product-management/product-management.component';
+import { BranchInventoryComponent } from '../branch/branch-inventory/branch-inventory.component';
+import { StockMovementComponent } from './stock/stock-movement/stock-movement.component';
 import { RestockManagementComponent } from './restock-management/restock-management.component';
 import { AnalyticsComponent } from './analytics/analytics.component';
 

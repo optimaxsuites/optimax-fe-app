@@ -4,7 +4,6 @@ import { ShiftListComponent } from '../../workschedule-shifts/shift-list/shift-l
 import { ShiftCalendarComponent } from '../../workschedule-shifts/shift-calendar/shift-calendar.component';
 //import { MySchedulesComponent } from './my-schedules/my-schedules.component';
 // import { SchedulesComponent } from './schedules/schedules.component';
-import { TimeSheetComponent } from '../../attendance/time-sheet/time-sheet.component';
 import { MyScheduleComponent } from '../../workschedule-shifts/my-schedule/my-schedule.component';
 
 @Component({
@@ -32,9 +31,6 @@ export class SchedulingComponent {
       // {
       //   name: 'beta My Schedule',
       //   component: MySchedulesComponent
-      // },
-       
-      
-      { name: 'Time Sheet', component: TimeSheetComponent }
+      // }
     ];
 }

@@ -5,7 +5,6 @@ import { RandomTokenService } from '../../../shared-component/service/random-tok
 import { MessageService } from 'primeng/api';
 import { MetadataService } from '../../../service/metadata.service';
 import { formatDate } from '@angular/common';
-import { TimeSheetComponent } from '../../attendance/time-sheet/time-sheet.component';
 import { EmailValidator } from '@angular/forms';
 import { EmployeeService } from '../../../service/employee.service';
 

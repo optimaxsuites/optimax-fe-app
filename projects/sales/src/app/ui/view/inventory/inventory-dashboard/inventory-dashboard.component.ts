@@ -44,6 +44,7 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
 
   // Stats
   stats: InventoryDashboardStats | null = null;
+  aiDismissed: boolean = false;
 
   // Data Arrays
   alerts: StockAlert[] = [];
@@ -103,7 +104,7 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
           this.recentMovements = data.recentMovements || [];
           this.topProducts = data.topProducts || [];
           this.branchSummaries = data.branchSummaries || [];
-          this.quickActions = this.inventoryService.getQuickActions();
+          this.inventoryService.getQuickActions().pipe(takeUntil(this.destroy$)).subscribe(actions => { this.quickActions = actions; });
           this.isLoading = false;
         },
         error: (err) => {
@@ -132,19 +133,19 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
   // ============================================================
 
   navigateTo(route: string): void {
-    this.router.navigate([route]);
+    this.router.navigateByUrl(`/admin/sales${route}`);
   }
 
   navigateToProduct(productId: string): void {
-    this.router.navigate(['/inventory/products', productId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
   }
 
   navigateToBranch(branchId: string): void {
-    this.router.navigate(['/inventory/branches', branchId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
   }
 
   navigateToMovement(movementId: string): void {
-    this.router.navigate(['/inventory/movements', movementId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements', movementId]);
   }
 
   resolveAlert(alertId: string): void {

@@ -1,0 +1,338 @@
+// branch-list.component.ts
+// ============================================================
+// IMPORTS
+// ============================================================
+
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Router } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
+import { InventoryService } from '../../../service/inventory/inventory.service';
+import {
+  Branch,
+  BranchStockSummary,
+  getStockStatus,
+  getStockStatusColor,
+  getStockStatusLabel
+} from '../../../domain/inventory/inventory.dto';
+
+// ============================================================
+// COMPONENT
+// ============================================================
+
+@Component({
+  selector: 'app-branch-inventory',
+  templateUrl: './branch-inventory.component.html',
+  styleUrls: ['./branch-inventory.component.scss']
+})
+export class BranchInventoryComponent implements OnInit, OnDestroy {
+
+  // ============================================================
+  // STATE
+  // ============================================================
+
+  // Data
+  branches: Branch[] = [];
+  branchSummaries: BranchStockSummary[] = [];
+  filteredBranches: Branch[] = [];
+  isLoading: boolean = true;
+  error: string | null = null;
+
+  // Filters
+  filters = {
+    searchTerm: '',
+    status: 'ALL',
+    type: 'ALL',
+    city: 'ALL',
+    minProducts: '',
+    maxProducts: ''
+  };
+
+  // Stats
+  stats = {
+    total: 0,
+    active: 0,
+    inactive: 0,
+    underConstruction: 0,
+    totalProducts: 0,
+    totalStockValue: 0,
+    totalStockUnits: 0
+  };
+
+  // City options for filter
+  cities: string[] = ['ALL'];
+  typeOptions = ['ALL', 'FLAGSHIP', 'STANDARD', 'MINI'];
+  statusOptions = ['ALL', 'ACTIVE', 'INACTIVE', 'UNDER_CONSTRUCTION'];
+
+  // Selected branch for detail view
+  selectedBranchId: string | null = null;
+  showBranchDetail: boolean = false;
+
+  // UI
+  Math = Math;
+  aiDismissed: boolean = false;
+  viewMode: 'list' | 'grid' = 'list';
+
+  // Private
+  private destroy$ = new Subject<void>();
+
+  // ============================================================
+  // CONSTRUCTOR
+  // ============================================================
+
+  constructor(
+    private inventoryService: InventoryService,
+    private router: Router
+  ) { }
+
+  // ============================================================
+  // LIFECYCLE HOOKS
+  // ============================================================
+
+  ngOnInit(): void {
+    this.loadBranches();
+    this.loadBranchSummaries();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // ============================================================
+  // DATA LOADING
+  // ============================================================
+
+  loadBranches(): void {
+    this.isLoading = true;
+    this.error = null;
+
+    this.inventoryService.getBranches()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (branches) => {
+          this.branches = branches;
+          this.filterBranches();
+          this.calculateStats();
+          this.isLoading = false;
+        },
+        error: (err) => {
+          console.error('Failed to load branches:', err);
+          this.error = 'Failed to load branches. Please try again.';
+          this.isLoading = false;
+        }
+      });
+  }
+
+  loadBranchSummaries(): void {
+    this.inventoryService.getBranchSummaries()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (summaries) => {
+          this.branchSummaries = summaries;
+          // Update stats with summary data
+          this.updateStatsWithSummaries();
+        },
+        error: (err) => {
+          console.error('Failed to load branch summaries:', err);
+        }
+      });
+  }
+
+  // ============================================================
+  // FILTERING
+  // ============================================================
+
+  filterBranches(): void {
+    this.filteredBranches = this.branches.filter(branch => {
+      // Search filter
+      const searchMatch = !this.filters.searchTerm ||
+        branch.name.toLowerCase().includes(this.filters.searchTerm.toLowerCase()) ||
+        branch.code.toLowerCase().includes(this.filters.searchTerm.toLowerCase()) ||
+        branch.location.city.toLowerCase().includes(this.filters.searchTerm.toLowerCase());
+
+      // Status filter
+      const statusMatch = this.filters.status === 'ALL' ||
+        branch.status === this.filters.status;
+
+      // Type filter
+      const typeMatch = this.filters.type === 'ALL' ||
+        branch.type === this.filters.type;
+
+      // City filter
+      const cityMatch = this.filters.city === 'ALL' ||
+        branch.location.city === this.filters.city;
+
+      // Products count filter (using summary data)
+      const summary = this.branchSummaries.find(s => s.branchId === branch.id);
+      const productCount = summary?.totalProducts || 0;
+      const minMatch = !this.filters.minProducts || productCount >= parseInt(this.filters.minProducts);
+      const maxMatch = !this.filters.maxProducts || productCount <= parseInt(this.filters.maxProducts);
+
+      return searchMatch && statusMatch && typeMatch && cityMatch && minMatch && maxMatch;
+    });
+
+    // Update cities for filter
+    this.updateCityOptions();
+  }
+
+  updateCityOptions(): void {
+    const cities = this.branches.map(b => b.location.city);
+    this.cities = ['ALL', ...new Set(cities)];
+  }
+
+  applyFilters(): void {
+    this.filterBranches();
+  }
+
+  resetFilters(): void {
+    this.filters = {
+      searchTerm: '',
+      status: 'ALL',
+      type: 'ALL',
+      city: 'ALL',
+      minProducts: '',
+      maxProducts: ''
+    };
+    this.filterBranches();
+  }
+
+  // ============================================================
+  // STATS CALCULATION
+  // ============================================================
+
+  calculateStats(): void {
+    this.stats.total = this.branches.length;
+    this.stats.active = this.branches.filter(b => b.status === 'ACTIVE').length;
+    this.stats.inactive = this.branches.filter(b => b.status === 'INACTIVE').length;
+    this.stats.underConstruction = this.branches.filter(b => b.status === 'UNDER_CONSTRUCTION').length;
+  }
+
+  updateStatsWithSummaries(): void {
+    let totalProducts = 0;
+    let totalStockValue = 0;
+    let totalStockUnits = 0;
+
+    this.branchSummaries.forEach(summary => {
+      totalProducts += summary.totalProducts || 0;
+      totalStockValue += summary.totalStockValue || 0;
+      totalStockUnits += summary.totalStockUnits || 0;
+    });
+
+    this.stats.totalProducts = totalProducts;
+    this.stats.totalStockValue = totalStockValue;
+    this.stats.totalStockUnits = totalStockUnits;
+  }
+
+  // ============================================================
+  // NAVIGATION
+  // ============================================================
+
+  navigateToBranch(branchId: string): void {
+    this.router.navigate(['/admin/sales/inventory/branches', branchId]);
+  }
+
+  navigateToNewBranch(): void {
+    this.router.navigate(['/admin/sales/inventory/branches/new']);
+  }
+
+  // ============================================================
+  // VIEW MODE
+  // ============================================================
+
+  setViewMode(mode: 'list' | 'grid'): void {
+    this.viewMode = mode;
+  }
+
+  // ============================================================
+  // UTILITY HELPERS
+  // ============================================================
+
+  getBranchStatusColor(status: string): string {
+    const map: Record<string, string> = {
+      'ACTIVE': '#2EB270',
+      'INACTIVE': '#6B7280',
+      'UNDER_CONSTRUCTION': '#F59E0B'
+    };
+    return map[status] || '#6B7280';
+  }
+
+  getBranchTypeLabel(type: string): string {
+    const map: Record<string, string> = {
+      'FLAGSHIP': '⭐ Flagship',
+      'STANDARD': 'Standard',
+      'MINI': 'Mini'
+    };
+    return map[type] || type;
+  }
+
+  getStatusLabel(status: string): string {
+    return status.replace(/_/g, ' ').toLowerCase()
+      .replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  getStockStatus(quantity: number, reorderPoint: number, safetyStock: number): 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK' {
+    return getStockStatus(quantity, reorderPoint, safetyStock);
+  }
+
+  getStockStatusColor(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK'): string {
+    return getStockStatusColor(status);
+  }
+
+  getStockStatusLabel(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK'): string {
+    return getStockStatusLabel(status);
+  }
+
+  getBranchSummary(branchId: string): BranchStockSummary | undefined {
+    return this.branchSummaries.find(s => s.branchId === branchId);
+  }
+
+  formatCurrency(value: number): string {
+    if (!value) return '₦0';
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  }
+
+  formatNumber(value: number): string {
+    if (!value) return '0';
+    if (value >= 1000000) {
+      return (value / 1000000).toFixed(1) + 'M';
+    }
+    if (value >= 1000) {
+      return (value / 1000).toFixed(1) + 'K';
+    }
+    return value.toString();
+  }
+
+  getInitials(name: string): string {
+    if (!name) return '?';
+    return name.charAt(0).toUpperCase();
+  }
+
+  getStatusClass(status: string): string {
+    return status.toLowerCase().replace(/_/g, '-');
+  }
+
+  getActiveFilterCount(): number {
+    let count = 0;
+    if (this.filters.status !== 'ALL') count++;
+    if (this.filters.type !== 'ALL') count++;
+    if (this.filters.city !== 'ALL') count++;
+    if (this.filters.searchTerm) count++;
+    if (this.filters.minProducts) count++;
+    if (this.filters.maxProducts) count++;
+    return count;
+  }
+
+  // ============================================================
+  // REFRESH
+  // ============================================================
+
+  refresh(): void {
+    this.loadBranches();
+    this.loadBranchSummaries();
+  }
+}

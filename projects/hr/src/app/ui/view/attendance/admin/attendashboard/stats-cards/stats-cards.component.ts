@@ -9,10 +9,14 @@ import { AttendanceStats } from '../../../../../domain/attendance/attendashboard
 export class StatsCardsComponent {
   @Input() stats!: {
     present: string;
-  absent: string;
-  late: string;
-  onLeave: string;
+    absent: string;
+    late: string;
+    onLeave: string;
   };
+
+  @Input() pendingApprovals: number = 0;
+  @Input() crossBranchCount: number = 0;
+  @Input() correctionRequestsCount: number = 0;
 
   //@Input() stats!: AttendanceStats;
   /*stats = {

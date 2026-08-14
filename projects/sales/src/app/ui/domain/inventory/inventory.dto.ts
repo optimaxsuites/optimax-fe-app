@@ -59,17 +59,23 @@ export enum StockAlertSeverity {
 // CORE MODELS
 // ============================================================
 
+// inventory.dto.ts - Add/Update Product interface
+
 export interface Product {
     id: string;
+    productId?: string; // For compatibility with sales service
     sku: string;
     name: string;
     description: string;
-    category: string;
+    category: string | Category; // Support both string and object
     subCategory: string;
     brand: string;
     unitOfMeasure: 'EACH' | 'BOX' | 'KG' | 'LITER' | 'METER';
     costPrice: number;
     sellingPrice: number;
+    unitPrice?: number; // Alias for sellingPrice (for compatibility)
+    price?: number; // Another alias
+    stockQuantity: number; // ← IMPORTANT: Add this for stock tracking
     weight: number;
     dimensions: {
         length: number;
@@ -80,6 +86,39 @@ export interface Product {
     tags: string[];
     status: ProductStatus;
     supplierIds: string[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+// Add Category interface if not present
+export interface Category {
+    id: string;
+    name: string;
+    description?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+// Add MeasurementUnit interface
+export interface MeasurementUnit {
+    id: string;
+    unitId?: string;
+    name: string;
+    code: string;
+    description?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+// Add Supplier interface
+export interface Supplier {
+    id: string;
+    supplierId?: string;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    contactPerson: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -148,6 +187,7 @@ export interface StockMovement {
     batchNumber: string;
     expiryDate: Date;
     notes: string;
+    scheduledDate?: Date | string;
     createdBy: string;
     createdByName: string;
     approvedBy: string;

@@ -77,12 +77,16 @@ export class AttendancetableService implements OnDestroy {
   }
 
   private loadInitialData(): AttendanceTableRecord[] {
+    // In development mode, always use fresh mock data
+    if (USE_MOCK_DATA_ONLY) {
+      return MOCK_ATTENDANCE;
+    }
+
     const stored = localStorage.getItem('attendanceTestData');
     if (stored) {
       try {
         return JSON.parse(stored);
       } catch (e) {
-        console.error('Failed to parse stored attendance data:', e);
       }
     }
     return MOCK_ATTENDANCE;
@@ -1076,7 +1080,6 @@ export class AttendancetableService implements OnDestroy {
         this.handleClockInSuccess(res, employeeId);
       },
       error: (err) => {
-        console.error('Clock-in API failed:', err);
       }
     });
   }
@@ -1107,7 +1110,6 @@ export class AttendancetableService implements OnDestroy {
         this.setClockStatus('CLOCKED_OUT');
       },
       error: (err) => {
-        console.error('Clock-out API failed:', err);
       }
     });
   }
@@ -1123,7 +1125,6 @@ export class AttendancetableService implements OnDestroy {
     this.http.post<any>(API_ENDPOINTS.OVERRIDE_OPEN(apiRecordId), body).subscribe({
       next: () => { },
       error: (err) => {
-        console.error('Override open API failed:', err);
       }
     });
   }
