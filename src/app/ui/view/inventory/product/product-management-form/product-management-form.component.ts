@@ -37,6 +37,29 @@ export function pastDateValidator(): ValidatorFn {
   };
 }
 
+const MOCK_CATEGORIES: Category[] = [
+  { id: 1, categoryId: 'cat-1', name: 'Electronics', description: 'Gadgets, appliances, laptops, phones' },
+  { id: 2, categoryId: 'cat-2', name: 'Furniture', description: 'Chairs, desks, sofas, tables' },
+  { id: 3, categoryId: 'cat-3', name: 'Office Supplies', description: 'Papers, pens, staplers' },
+  { id: 4, categoryId: 'cat-4', name: 'Apparel', description: 'Clothing, uniforms, shoes' },
+  { id: 5, categoryId: 'cat-5', name: 'Hardware', description: 'Tools, building supplies, equipment' }
+];
+
+const MOCK_UNITS: MeasurementUnit[] = [
+  { id: 1, unitId: 'unit-1', name: 'pcs', description: 'Pieces' },
+  { id: 2, unitId: 'unit-2', name: 'kg', description: 'Kilograms' },
+  { id: 3, unitId: 'unit-3', name: 'box', description: 'Boxes' },
+  { id: 4, unitId: 'unit-4', name: 'pack', description: 'Packs' },
+  { id: 5, unitId: 'unit-5', name: 'm', description: 'Meters' }
+];
+
+const MOCK_SUPPLIERS: Supplier[] = [
+  { id: 1, supplierId: 'sup-1', name: 'Alibaba Group', contactPerson: 'Jack Ma', email: 'sales@alibaba.com', phone: '123456789' },
+  { id: 2, supplierId: 'sup-2', name: 'Jumia Business', contactPerson: 'Amina Bello', email: 'amina@jumia.com', phone: '987654321' },
+  { id: 3, supplierId: 'sup-3', name: 'Konga Wholesales', contactPerson: 'Obinna Ike', email: 'obinna@konga.com', phone: '555666777' },
+  { id: 4, supplierId: 'sup-4', name: 'Global Logistics Partners', contactPerson: 'John Smith', email: 'john@glp.com', phone: '888999000' }
+];
+
 @Component({
   selector: 'app-product-management-form',
   standalone: true,
@@ -132,10 +155,10 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
         units: this.salesService.getMeasurementUnits().pipe(catchError(() => of([]))),
         sups: this.salesService.getSuppliers().pipe(catchError(() => of([])))
       }).subscribe(({ cats, units, sups }) => {
-        this.rawCategories = cats;
-        this.categories = cats.map(c => c.name);
-        this.measurementUnits = units;
-        this.suppliers = sups;
+        this.rawCategories = cats.length ? cats : MOCK_CATEGORIES;
+        this.categories = this.rawCategories.map(c => c.name);
+        this.measurementUnits = units.length ? units : MOCK_UNITS;
+        this.suppliers = sups.length ? sups : MOCK_SUPPLIERS;
         this.loadProduct();
       });
     } else {
@@ -148,8 +171,12 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   loadCategories(): void {
     this.salesService.getCategories().subscribe({
       next: (cats) => {
-        this.rawCategories = cats;
-        this.categories = cats.map(c => c.name);
+        this.rawCategories = cats.length ? cats : MOCK_CATEGORIES;
+        this.categories = this.rawCategories.map(c => c.name);
+      },
+      error: () => {
+        this.rawCategories = MOCK_CATEGORIES;
+        this.categories = MOCK_CATEGORIES.map(c => c.name);
       }
     });
   }
@@ -157,7 +184,10 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   loadUnits(): void {
     this.salesService.getMeasurementUnits().subscribe({
       next: (units) => {
-        this.measurementUnits = units;
+        this.measurementUnits = units.length ? units : MOCK_UNITS;
+      },
+      error: () => {
+        this.measurementUnits = MOCK_UNITS;
       }
     });
   }
@@ -165,7 +195,10 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   loadSuppliers(): void {
     this.salesService.getSuppliers().subscribe({
       next: (sups) => {
-        this.suppliers = sups;
+        this.suppliers = sups.length ? sups : MOCK_SUPPLIERS;
+      },
+      error: () => {
+        this.suppliers = MOCK_SUPPLIERS;
       }
     });
   }
