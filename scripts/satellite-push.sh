@@ -5,7 +5,7 @@
 # Usage: ./scripts/satellite-push.sh <module> <remote-url> [monorepo-branch] [satellite-branch]
 #
 # Example:
-#   ./scripts/satellite-push.sh dashboard git@gitlab.com:queensheba/erp-dashboard.git mod dashboard_fe
+#   ./scripts/satellite-push.sh dashboard https://gitlab.com/j2yemi/erp-dashboard.git mod dashboard_fe
 #
 # The script:
 #   1. Adds the satellite remote temporarily (or reuses it).
