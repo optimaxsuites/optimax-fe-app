@@ -981,7 +981,7 @@ export class InventoryService {
         id: 'create-transfer',
         label: 'Create Transfer',
         icon: 'fa-exchange-alt',
-        route: '/inventory/movements/transfer',
+        route: '/admin/sales/inventory/movements/transfer',
         color: '#2E6276',
         description: 'Transfer stock between branches'
       },
@@ -989,7 +989,7 @@ export class InventoryService {
         id: 'request-restock',
         label: 'Request Restock',
         icon: 'fa-truck-loading',
-        route: '/inventory/restock/requests/new',
+        route: '/admin/sales/inventory/restock/requests/new',
         color: '#F5A623',
         description: 'Request restock from procurement'
       },
@@ -997,7 +997,7 @@ export class InventoryService {
         id: 'stock-count',
         label: 'Stock Count',
         icon: 'fa-clipboard-list',
-        route: '/inventory/movements/adjustment',
+        route: '/admin/sales/inventory/movements/adjustment',
         color: '#8B5CF6',
         description: 'Perform stock count adjustment'
       },
@@ -1005,7 +1005,7 @@ export class InventoryService {
         id: 'add-product',
         label: 'Add Product',
         icon: 'fa-plus-circle',
-        route: '/inventory/products/new',
+        route: '/admin/sales/inventory/products/new',
         color: '#2EB270',
         description: 'Add new product to catalog'
       }

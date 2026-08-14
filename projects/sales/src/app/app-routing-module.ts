@@ -70,43 +70,43 @@ export const routes: Routes = [
 
   // --------------------------------------- Product Management -----------------------------------------
   {
-    path: 'inventory/products/new',
+    path: 'admin/sales/inventory/products/new',
     component: ProductManagementFormComponent
   },
   {
-    path: 'inventory/products/new/:uuid',
+    path: 'admin/sales/inventory/products/new/:uuid',
     component: ProductManagementFormComponent
   },
   {
-    path: 'inventory/products/:id/edit',
+    path: 'admin/sales/inventory/products/:id/edit',
     component: ProductManagementFormComponent
   },
   {
-    path: 'inventory/products/:id/edit/:uuid',
+    path: 'admin/sales/inventory/products/:id/edit/:uuid',
     component: ProductManagementFormComponent
   },
   
   // --------------------------------------- Branch Management -----------------------------------------
   {
-    path: 'inventory/branches/new',
+    path: 'admin/sales/inventory/branches/new',
     component: BranchFormComponent
   },
   {
-    path: 'inventory/branches/:branchId',
+    path: 'admin/sales/inventory/branches/:branchId',
     component: BranchDetailComponent
   },
   {
-    path: 'inventory/branches/:branchId/add-product',
+    path: 'admin/sales/inventory/branches/:branchId/add-product',
     component: BranchInventoryFormComponent
   },
   
   // --------------------------------------- Stock Movements -----------------------------------------
   {
-    path: 'inventory/movements/new',
+    path: 'admin/sales/inventory/movements/new',
     component: StockMovementFormComponent
   },
   {
-    path: 'inventory/movements/:id',
+    path: 'admin/sales/inventory/movements/:id',
     component: StockMovementFormComponent
   },
 
