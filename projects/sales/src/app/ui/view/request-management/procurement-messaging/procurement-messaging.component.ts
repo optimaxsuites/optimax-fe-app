@@ -42,6 +42,7 @@ export class ProcurementMessagingComponent implements OnInit, OnDestroy {
   ];
 
   private pollInterval: ReturnType<typeof setInterval> | null = null;
+  private audioCtx: AudioContext | null = null;
 
   constructor(
     private messagingService: ProcurementMessagingService,
@@ -59,6 +60,10 @@ export class ProcurementMessagingComponent implements OnInit, OnDestroy {
     if (this.pollInterval !== null) {
       clearInterval(this.pollInterval);
       this.pollInterval = null;
+    }
+    if (this.audioCtx) {
+      void this.audioCtx.close();
+      this.audioCtx = null;
     }
   }
 
@@ -83,13 +88,56 @@ export class ProcurementMessagingComponent implements OnInit, OnDestroy {
     this.messagingService.getMessages(this.rfqId).subscribe({
       next: (msgs) => {
         if (msgs.length !== this.messages.length) {
+          const newMsgs = msgs.slice(this.messages.length);
+          const hasIncoming = newMsgs.some(m => !this.isOwnMessage(m));
           this.messages = msgs;
           this.cdr.detectChanges();
           this.scrollToBottom();
           this.markUnreadAsRead(msgs);
+          if (hasIncoming) {
+            this.ringTelephoneSound();
+          }
         }
       }
     });
+  }
+
+  private ringTelephoneSound(): void {
+    try {
+      const AudioCtxCtor = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtxCtor) return;
+      if (!this.audioCtx) {
+        this.audioCtx = new AudioCtxCtor() as AudioContext;
+      }
+      const ctx = this.audioCtx;
+      if (ctx.state === 'suspended') { void ctx.resume(); }
+
+      const ringBurst = (startTime: number): void => {
+        const duration = 0.42;
+        const period = 1 / 20;
+        const masterGain = ctx.createGain();
+        masterGain.gain.setValueAtTime(0, startTime);
+        masterGain.connect(ctx.destination);
+        const cycles = Math.floor(duration / period);
+        for (let i = 0; i < cycles; i++) {
+          masterGain.gain.linearRampToValueAtTime(0.36, startTime + i * period + period * 0.25);
+          masterGain.gain.linearRampToValueAtTime(0.03, startTime + i * period + period * 0.75);
+        }
+        masterGain.gain.linearRampToValueAtTime(0, startTime + duration);
+        ([{ freq: 1350, type: 'sawtooth' }, { freq: 2700, type: 'triangle' }] as const).forEach(({ freq, type }) => {
+          const osc = ctx.createOscillator();
+          osc.type = type as OscillatorType;
+          osc.frequency.value = freq;
+          osc.connect(masterGain);
+          osc.start(startTime);
+          osc.stop(startTime + duration);
+        });
+      };
+
+      const t = ctx.currentTime;
+      ringBurst(t);
+      ringBurst(t + 0.60);
+    } catch (_) {}
   }
 
   private markUnreadAsRead(msgs: ProcurementMessage[]): void {

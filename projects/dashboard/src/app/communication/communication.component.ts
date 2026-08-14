@@ -712,8 +712,9 @@ export class CommunicationComponent
   messagesLoading = false;
   conversationAccessMessage = '';
   soundEnabled = true;
-  selectedRingtone = 'classic';
+  selectedRingtone = 'telephone';
   readonly ringtoneOptions = [
+    { value: 'telephone', label: 'Old telephone' },
     { value: 'classic', label: 'Classic ping' },
     { value: 'soft', label: 'Soft chime' },
     { value: 'crystal', label: 'Crystal bell' },
@@ -800,7 +801,7 @@ export class CommunicationComponent
   ) {}
 
   ngOnInit() {
-    this.selectedRingtone = localStorage.getItem('optimax_message_ringtone') || 'classic';
+    this.selectedRingtone = localStorage.getItem('optimax_message_ringtone') || 'telephone';
     this.restoreSeenFeedNotificationIds();
     this.workspaceMode =
       sessionStorage.getItem('optimax_workspace_mode') === 'chat'
@@ -7005,6 +7006,12 @@ export class CommunicationComponent
         void ctx.resume().catch(() => {});
       }
 
+      if (this.selectedRingtone === 'telephone' && !urgent) {
+        this.playTelephoneRingSound(ctx);
+        this.triggerMobileHaptics(urgent);
+        return;
+      }
+
       if (this.selectedRingtone === 'doorbell' && !urgent) {
         this.playDoorbellSound(ctx);
         this.triggerMobileHaptics(urgent);
@@ -7062,6 +7069,49 @@ export class CommunicationComponent
       });
       this.triggerMobileHaptics(urgent);
     } catch (_) {}
+  }
+
+  private playTelephoneRingSound(ctx: AudioContext): void {
+    // Classic old rotary-telephone ring: two "brring" bursts ~0.6s apart.
+    // Each burst is a sawtooth + triangle carrier at 1350/2700 Hz, amplitude-
+    // trilled at 20 Hz by scheduling 9 gain peaks in 420ms — the same effect
+    // a mechanical ringer produces by hammering a bell 20 times per second.
+    const ringBurst = (startTime: number): void => {
+      const duration = 0.42;
+      const trillHz = 20;
+      const period = 1 / trillHz;
+
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0, startTime);
+      masterGain.connect(ctx.destination);
+
+      // Schedule the 20 Hz trill envelope
+      const cycles = Math.floor(duration / period);
+      for (let i = 0; i < cycles; i++) {
+        const peak = startTime + i * period + period * 0.25;
+        const valley = startTime + i * period + period * 0.75;
+        masterGain.gain.linearRampToValueAtTime(0.36, peak);
+        masterGain.gain.linearRampToValueAtTime(0.03, valley);
+      }
+      masterGain.gain.linearRampToValueAtTime(0, startTime + duration);
+
+      // Two partials for the bell timbre
+      ([
+        { freq: 1350, type: 'sawtooth' as OscillatorType },
+        { freq: 2700, type: 'triangle' as OscillatorType },
+      ] as { freq: number; type: OscillatorType }[]).forEach(({ freq, type }) => {
+        const osc = ctx.createOscillator();
+        osc.type = type;
+        osc.frequency.value = freq;
+        osc.connect(masterGain);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      });
+    };
+
+    const t = ctx.currentTime;
+    ringBurst(t);          // "brring"
+    ringBurst(t + 0.60);   // "brring" (0.18s pause between bursts)
   }
 
   private playDoorbellSound(ctx: AudioContext): void {
