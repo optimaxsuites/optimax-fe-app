@@ -4,9 +4,7 @@
 // ============================================================
 
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
-import { map, tap, catchError, delay, shareReplay } from 'rxjs/operators';
 import {
   Product,
   Branch,
@@ -37,14 +35,23 @@ import {
 } from '../../domain/inventory/inventory.dto';
 
 // ============================================================
-// ENVIRONMENT CONFIG
+// LOCAL STORAGE KEYS & MOCK DATA
 // ============================================================
 
-const API_BASE = '/api/inventory';
+const LOCAL_KEYS = {
+  DASHBOARD: 'inventory_dashboard',
+  PRODUCTS: 'inventory_products',
+  BRANCHES: 'inventory_branches',
+  BRANCH_INVENTORY: 'inventory_branch_inventory',
+  MOVEMENTS: 'inventory_movements',
+  CATEGORIES: 'inventory_categories',
+  MEASUREMENT_UNITS: 'inventory_measurement_units',
+  SUPPLIERS: 'inventory_suppliers'
+};
 
-// ============================================================
-// MOCK DATA
-// ============================================================
+// ---------------------------------------------------
+// MOCK DATA (kept unchanged from original file)
+// ---------------------------------------------------
 
 const MOCK_STATS: InventoryDashboardStats = {
   totalSkus: 1420,
@@ -306,7 +313,7 @@ const MOCK_DASHBOARD_DATA: InventoryDashboardData = {
 };
 
 // ============================================================
-// INVENTORY SERVICE
+// INVENTORY SERVICE (LocalStorage implementation)
 // ============================================================
 
 @Injectable({
@@ -314,10 +321,9 @@ const MOCK_DASHBOARD_DATA: InventoryDashboardData = {
 })
 export class InventoryService {
 
-  // ============================================================
-  // STATE MANAGEMENT
-  // ============================================================
-
+  // ----------------------------------------------------
+  // STATE MANAGEMENT (RxJS subjects)
+  // ----------------------------------------------------
   private dashboardDataSubject = new BehaviorSubject<InventoryDashboardData | null>(null);
   dashboardData$ = this.dashboardDataSubject.asObservable();
 
@@ -342,870 +348,422 @@ export class InventoryService {
   private currentBranchIdSubject = new BehaviorSubject<string | null>(null);
   currentBranchId$ = this.currentBranchIdSubject.asObservable();
 
-  // ============================================================
-  // CONSTRUCTOR
-  // ============================================================
+  // ----------------------------------------------------
+  // CONSTRUCTOR – seed LocalStorage if empty
+  // ----------------------------------------------------
+  constructor() {
+    if (!localStorage.getItem(LOCAL_KEYS.DASHBOARD)) {
+      // seed all keys with initial mock data
+      localStorage.setItem(LOCAL_KEYS.DASHBOARD, JSON.stringify(MOCK_DASHBOARD_DATA));
+      localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify([]));
+      localStorage.setItem(LOCAL_KEYS.BRANCHES, JSON.stringify([]));
+      localStorage.setItem(LOCAL_KEYS.BRANCH_INVENTORY, JSON.stringify([]));
+      localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify([]));
+      localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify([]));
+      localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify([]));
+      localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify([]));
+    }
+    this.loadInitialState();
+  }
 
-  constructor(private http: HttpClient) { }
+  private loadInitialState(): void {
+    this.dashboardDataSubject.next(
+      JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData
+    );
+    this.productsSubject.next(
+      JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[]
+    );
+    this.branchesSubject.next(
+      JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[]
+    );
+    // Removed erroneous self-referential call; quick actions are accessed via component subscription.
 
-  // ============================================================
+
+    this.branchInventorySubject.next(
+      JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string) as BranchInventory[]
+    );
+    this.movementsSubject.next(
+      JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[]
+    );
+  }
+
+  // ----------------------------------------------------
   // DASHBOARD
-  // ============================================================
-
-  /**
-   * Get inventory dashboard data
-   */
+  // ----------------------------------------------------
+  /** Get full dashboard data */
   getDashboardData(): Observable<InventoryDashboardData> {
     this.loadingSubject.next(true);
-    this.errorSubject.next(null);
-
-    return this.http.get<ApiResponse<InventoryDashboardData>>(`${API_BASE}/dashboard`)
-      .pipe(
-        map(response => response.data),
-        tap(data => {
-          this.dashboardDataSubject.next(data);
-          this.loadingSubject.next(false);
-        }),
-        catchError(err => {
-          this.dashboardDataSubject.next(MOCK_DASHBOARD_DATA);
-          this.loadingSubject.next(false);
-          return of(MOCK_DASHBOARD_DATA);
-        })
-      );
+    const data = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
+    this.dashboardDataSubject.next(data);
+    this.loadingSubject.next(false);
+    return of(data);
   }
 
-  /**
-   * Get dashboard stats only
-   */
+  /** Get only stats */
   getDashboardStats(): Observable<InventoryDashboardStats> {
-    return this.http.get<ApiResponse<InventoryDashboardStats>>(`${API_BASE}/dashboard/stats`)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          return of(MOCK_STATS);
-        })
-      );
+    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
+    return of(dash.stats);
   }
 
-  /**
-   * Get dashboard alerts
-   */
+  /** Get alerts */
   getDashboardAlerts(): Observable<StockAlert[]> {
-    return this.http.get<ApiResponse<StockAlert[]>>(`${API_BASE}/dashboard/alerts`)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          return of(MOCK_ALERTS);
-        })
-      );
+    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
+    return of(dash.alerts);
   }
 
-  /**
-   * Get recent stock movements
-   */
+  /** Recent movements (limit optional) */
   getRecentMovements(limit: number = 10): Observable<StockMovement[]> {
-    const params = new HttpParams().set('limit', limit.toString());
-    return this.http.get<ApiResponse<StockMovement[]>>(`${API_BASE}/dashboard/movements`, { params })
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          return of(MOCK_MOVEMENTS.slice(0, limit));
-        })
-      );
+    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
+    return of(dash.recentMovements.slice(0, limit));
   }
 
-  /**
-   * Get top selling products
-   */
+  /** Top products (limit optional) */
   getTopProducts(limit: number = 5): Observable<ProductPerformance[]> {
-    const params = new HttpParams().set('limit', limit.toString());
-    return this.http.get<ApiResponse<ProductPerformance[]>>(`${API_BASE}/dashboard/top-products`, { params })
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          return of(MOCK_TOP_PRODUCTS.slice(0, limit));
-        })
-      );
+    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
+    return of(dash.topProducts.slice(0, limit));
   }
 
-  /**
-   * Get branch stock summaries
-   */
+  /** Branch summaries */
   getBranchSummaries(): Observable<BranchStockSummary[]> {
-    return this.http.get<ApiResponse<BranchStockSummary[]>>(`${API_BASE}/dashboard/branch-summaries`)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          return of(MOCK_BRANCH_SUMMARIES);
-        })
-      );
+    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
+    return of(dash.branchSummaries);
   }
 
-  /**
-   * Resolve an alert
-   */
+  /** Resolve an alert – marks it resolved in storage */
   resolveAlert(alertId: string): Observable<void> {
-    return this.http.post<ApiResponse<void>>(`${API_BASE}/alerts/${alertId}/resolve`, {})
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to resolve alert');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  // ============================================================
-  // PRODUCTS
-  // ============================================================
-
-  /**
-   * Get all products with filters
-   */
-  getProducts(filters?: ProductFilters): Observable<PaginatedResponse<Product>> {
-    this.loadingSubject.next(true);
-
-    let params = new HttpParams();
-    if (filters) {
-      if (filters.search) params = params.set('search', filters.search);
-      if (filters.category) params = params.set('category', filters.category);
-      if (filters.brand) params = params.set('brand', filters.brand);
-      if (filters.status) params = params.set('status', filters.status);
-      if (filters.minPrice) params = params.set('minPrice', filters.minPrice.toString());
-      if (filters.maxPrice) params = params.set('maxPrice', filters.maxPrice.toString());
-      if (filters.page) params = params.set('page', filters.page.toString());
-      if (filters.limit) params = params.set('limit', filters.limit.toString());
+    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
+    const alert = dash.alerts.find(a => a.id === alertId);
+    if (alert) {
+      alert.isResolved = true;
+      localStorage.setItem(LOCAL_KEYS.DASHBOARD, JSON.stringify(dash));
     }
-
-    return this.http.get<ApiResponse<PaginatedResponse<Product>>>(`${API_BASE}/products`, { params })
-      .pipe(
-        map(response => response.data),
-        tap(data => {
-          this.productsSubject.next(data.data);
-          this.loadingSubject.next(false);
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to load products');
-          return throwError(() => err);
-        })
-      );
+    return of(undefined);
   }
 
-  /**
-   * Get a single product
-   */
+  // ----------------------------------------------------
+  // PRODUCTS
+  // ----------------------------------------------------
+  /** Get all products (filters ignored for local mode) */
+  getProducts(_filters?: ProductFilters): Observable<PaginatedResponse<Product>> {
+    this.loadingSubject.next(true);
+    const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
+    const response: PaginatedResponse<Product> = {
+      data: products,
+      total: products.length,
+      page: 1,
+      limit: products.length,
+      totalPages: 1
+    };
+    this.productsSubject.next(products);
+    this.loadingSubject.next(false);
+    return of(response);
+  }
+
+  /** Single product by id */
   getProduct(id: string): Observable<Product> {
     this.loadingSubject.next(true);
-
-    return this.http.get<ApiResponse<Product>>(`${API_BASE}/products/${id}`)
-      .pipe(
-        map(response => response.data),
-        tap(() => this.loadingSubject.next(false)),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to load product');
-          return throwError(() => err);
-        })
-      );
+    const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
+    const product = products.find(p => p.id === id);
+    this.loadingSubject.next(false);
+    return product ? of(product) : throwError(() => new Error('Product not found'));
   }
 
-  /**
-   * Create a new product
-   */
+  /** Create product – generates a simple temporary id */
   createProduct(product: Partial<Product>): Observable<Product> {
     this.loadingSubject.next(true);
-
-    return this.http.post<ApiResponse<Product>>(`${API_BASE}/products`, product)
-      .pipe(
-        map(response => response.data),
-        tap(() => {
-          this.loadingSubject.next(false);
-          this.getProducts().subscribe();
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to create product');
-          return throwError(() => err);
-        })
-      );
+    const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
+    const newProduct: Product = {
+      ...(product as Product),
+      id: 'prod-' + Date.now(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as Product;
+    products.push(newProduct);
+    localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+    this.productsSubject.next(products);
+    this.loadingSubject.next(false);
+    return of(newProduct);
   }
 
-  /**
-   * Update a product
-   */
+  /** Update existing product */
   updateProduct(id: string, product: Partial<Product>): Observable<Product> {
     this.loadingSubject.next(true);
-
-    return this.http.put<ApiResponse<Product>>(`${API_BASE}/products/${id}`, product)
-      .pipe(
-        map(response => response.data),
-        tap(() => {
-          this.loadingSubject.next(false);
-          this.getProducts().subscribe();
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to update product');
-          return throwError(() => err);
-        })
-      );
+    const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
+    const index = products.findIndex(p => p.id === id);
+    if (index === -1) {
+      this.loadingSubject.next(false);
+      return throwError(() => new Error('Product not found'));
+    }
+    const updated = { ...products[index], ...product, updatedAt: new Date() } as Product;
+    products[index] = updated;
+    localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+    this.productsSubject.next(products);
+    this.loadingSubject.next(false);
+    return of(updated);
   }
 
-  /**
-   * Delete a product
-   */
+  /** Delete product */
   deleteProduct(id: string): Observable<void> {
     this.loadingSubject.next(true);
-
-    return this.http.delete<ApiResponse<void>>(`${API_BASE}/products/${id}`)
-      .pipe(
-        map(response => response.data),
-        tap(() => {
-          this.loadingSubject.next(false);
-          this.getProducts().subscribe();
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to delete product');
-          return throwError(() => err);
-        })
-      );
+    let products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
+    products = products.filter(p => p.id !== id);
+    localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+    this.productsSubject.next(products);
+    this.loadingSubject.next(false);
+    return of(undefined);
   }
 
-  // ============================================================
+  // ----------------------------------------------------
   // BRANCHES
-  // ============================================================
-
-  /**
-   * Get all branches
-   */
+  // ----------------------------------------------------
   getBranches(): Observable<Branch[]> {
-    return this.http.get<ApiResponse<Branch[]>>(`${API_BASE}/branches`)
-      .pipe(
-        map(response => response.data),
-        tap(data => this.branchesSubject.next(data)),
-        catchError(err => {
-          this.errorSubject.next('Failed to load branches');
-          return throwError(() => err);
-        })
-      );
+    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[];
+    this.branchesSubject.next(branches);
+    return of(branches);
   }
 
-  /**
-   * Get a single branch
-   */
   getBranch(id: string): Observable<Branch> {
-    return this.http.get<ApiResponse<Branch>>(`${API_BASE}/branches/${id}`)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to load branch');
-          return throwError(() => err);
-        })
-      );
+    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[];
+    const branch = branches.find(b => b.id === id);
+    return branch ? of(branch) : throwError(() => new Error('Branch not found'));
   }
 
-  /**
-   * Update a branch
-   */
   updateBranch(id: string, branch: Partial<Branch>): Observable<Branch> {
-    return this.http.put<ApiResponse<Branch>>(`${API_BASE}/branches/${id}`, branch)
-      .pipe(
-        map(response => response.data),
-        tap(updated => {
-          const current = this.branchesSubject.value;
-          const index = current.findIndex(b => b.id === id);
-          if (index !== -1) {
-            current[index] = updated;
-            this.branchesSubject.next([...current]);
-          }
-        }),
-        catchError(err => {
-          this.errorSubject.next('Failed to update branch');
-          return throwError(() => err);
-        })
-      );
+    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[];
+    const index = branches.findIndex(b => b.id === id);
+    if (index === -1) {
+      return throwError(() => new Error('Branch not found'));
+    }
+    const updated = { ...branches[index], ...branch, updatedAt: new Date() } as Branch;
+    branches[index] = updated;
+    localStorage.setItem(LOCAL_KEYS.BRANCHES, JSON.stringify(branches));
+    this.branchesSubject.next(branches);
+    return of(updated);
   }
 
-  /**
-   * Create a branch
-   */
   createBranch(branch: Partial<Branch>): Observable<Branch> {
-    return this.http.post<ApiResponse<Branch>>(`${API_BASE}/branches`, branch)
-      .pipe(
-        map(response => response.data),
-        tap(created => {
-          const current = this.branchesSubject.value;
-          this.branchesSubject.next([...current, created]);
-        }),
-        catchError(err => {
-          this.errorSubject.next('Failed to create branch');
-          return throwError(() => err);
-        })
-      );
+    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[];
+    const newBranch: Branch = {
+      ...(branch as Branch),
+      id: 'br-' + Date.now(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as Branch;
+    branches.push(newBranch);
+    localStorage.setItem(LOCAL_KEYS.BRANCHES, JSON.stringify(branches));
+    this.branchesSubject.next(branches);
+    return of(newBranch);
   }
 
-  /**
-   * Get branch inventory
-   */
-  getBranchInventory(branchId: string): Observable<BranchInventory[]> {
-    this.loadingSubject.next(true);
-
-    return this.http.get<ApiResponse<BranchInventory[]>>(`${API_BASE}/branches/${branchId}/inventory`)
-      .pipe(
-        map(response => response.data),
-        tap(data => {
-          this.branchInventorySubject.next(data);
-          this.loadingSubject.next(false);
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to load branch inventory');
-          return throwError(() => err);
-        })
-      );
+  /** Get inventory for a branch – returns whole list (no per‑branch filtering for now) */
+  getBranchInventory(_branchId: string): Observable<BranchInventory[]> {
+    const inventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string) as BranchInventory[];
+    this.branchInventorySubject.next(inventory);
+    return of(inventory);
   }
 
-  /**
-   * Set current branch
-   */
   setCurrentBranch(branchId: string | null): void {
     this.currentBranchIdSubject.next(branchId);
   }
 
-  /**
-   * Get current branch ID
-   */
   getCurrentBranchId(): string | null {
     return this.currentBranchIdSubject.value;
   }
 
-  // ============================================================
+  // ----------------------------------------------------
   // STOCK MOVEMENTS
-  // ============================================================
-
-  /**
-   * Get stock movements with filters
-   */
-  getMovements(filters?: MovementFilters): Observable<PaginatedResponse<StockMovement>> {
+  // ----------------------------------------------------
+  /** Get stock movements (filters ignored) */
+  getMovements(_filters?: MovementFilters): Observable<PaginatedResponse<StockMovement>> {
     this.loadingSubject.next(true);
-
-    let params = new HttpParams();
-    if (filters) {
-      if (filters.type) params = params.set('type', filters.type);
-      if (filters.status) params = params.set('status', filters.status);
-      if (filters.branchId) params = params.set('branchId', filters.branchId);
-      if (filters.productId) params = params.set('productId', filters.productId);
-      if (filters.dateFrom) params = params.set('dateFrom', filters.dateFrom.toISOString());
-      if (filters.dateTo) params = params.set('dateTo', filters.dateTo.toISOString());
-      if (filters.page) params = params.set('page', filters.page.toString());
-      if (filters.limit) params = params.set('limit', filters.limit.toString());
-    }
-
-    return this.http.get<ApiResponse<PaginatedResponse<StockMovement>>>(`${API_BASE}/movements`, { params })
-      .pipe(
-        map(response => response.data),
-        tap(data => {
-          this.movementsSubject.next(data.data);
-          this.loadingSubject.next(false);
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to load movements');
-          return throwError(() => err);
-        })
-      );
+    const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
+    const response: PaginatedResponse<StockMovement> = {
+      data: movements,
+      total: movements.length,
+      page: 1,
+      limit: movements.length,
+      totalPages: 1
+    };
+    this.movementsSubject.next(movements);
+    this.loadingSubject.next(false);
+    return of(response);
   }
 
-  /**
-   * Create a stock movement (transfer/transfer)
-   */
+  /** Create a movement (transfer / adjustment / etc.) */
   createMovement(movement: Partial<StockMovement>): Observable<StockMovement> {
     this.loadingSubject.next(true);
-
-    return this.http.post<ApiResponse<StockMovement>>(`${API_BASE}/movements`, movement)
-      .pipe(
-        map(response => response.data),
-        tap(() => {
-          this.loadingSubject.next(false);
-          this.getMovements().subscribe();
-          this.getDashboardData().subscribe();
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to create movement');
-          return throwError(() => err);
-        })
-      );
+    const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
+    const newMovement: StockMovement = {
+      ...(movement as StockMovement),
+      id: 'mov-' + Date.now(),
+      createdAt: new Date(),
+      status: MovementStatus.PENDING
+    } as StockMovement;
+    movements.push(newMovement);
+    localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
+    this.movementsSubject.next(movements);
+    this.loadingSubject.next(false);
+    return of(newMovement);
   }
 
-  /**
-   * Update a stock movement
-   */
+  /** Update a movement */
   updateMovement(id: string, movement: Partial<StockMovement>): Observable<StockMovement> {
     this.loadingSubject.next(true);
-
-    return this.http.put<ApiResponse<StockMovement>>(`${API_BASE}/movements/${id}`, movement)
-      .pipe(
-        map(response => response.data),
-        tap(() => {
-          this.loadingSubject.next(false);
-          this.getMovements().subscribe();
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to update movement');
-          return throwError(() => err);
-        })
-      );
+    const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
+    const index = movements.findIndex(m => m.id === id);
+    if (index === -1) {
+      this.loadingSubject.next(false);
+      return throwError(() => new Error('Movement not found'));
+    }
+    const updated = { ...movements[index], ...movement, updatedAt: new Date() } as StockMovement;
+    movements[index] = updated;
+    localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
+    this.movementsSubject.next(movements);
+    this.loadingSubject.next(false);
+    return of(updated);
   }
 
-  /**
-   * Approve a stock movement
-   */
+  /** Approve a movement – set status to COMPLETED */
   approveMovement(id: string): Observable<void> {
     this.loadingSubject.next(true);
-
-    return this.http.post<ApiResponse<void>>(`${API_BASE}/movements/${id}/approve`, {})
-      .pipe(
-        map(response => response.data),
-        tap(() => {
-          this.loadingSubject.next(false);
-          this.getMovements().subscribe();
-          this.getDashboardData().subscribe();
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to approve movement');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  /**
-   * Reject a stock movement
-   */
-  rejectMovement(id: string, reason: string): Observable<void> {
-    this.loadingSubject.next(true);
-
-    return this.http.post<ApiResponse<void>>(`${API_BASE}/movements/${id}/reject`, { reason })
-      .pipe(
-        map(response => response.data),
-        tap(() => {
-          this.loadingSubject.next(false);
-          this.getMovements().subscribe();
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to reject movement');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  /**
-   * Get a single movement
-   */
-  getMovement(id: string): Observable<StockMovement> {
-    return this.http.get<ApiResponse<StockMovement>>(`${API_BASE}/movements/${id}`)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to load movement');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  // ============================================================
-  // RESTOCKING
-  // ============================================================
-
-  /**
-   * Get restock requests with filters
-   */
-  getRestockRequests(filters?: RestockFilters): Observable<PaginatedResponse<RestockRequest>> {
-    this.loadingSubject.next(true);
-
-    let params = new HttpParams();
-    if (filters) {
-      if (filters.status) params = params.set('status', filters.status);
-      if (filters.urgency) params = params.set('urgency', filters.urgency);
-      if (filters.branchId) params = params.set('branchId', filters.branchId);
-      if (filters.productId) params = params.set('productId', filters.productId);
-      if (filters.dateFrom) params = params.set('dateFrom', filters.dateFrom.toISOString());
-      if (filters.dateTo) params = params.set('dateTo', filters.dateTo.toISOString());
-      if (filters.page) params = params.set('page', filters.page.toString());
-      if (filters.limit) params = params.set('limit', filters.limit.toString());
+    const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
+    const movement = movements.find(m => m.id === id);
+    if (movement) {
+      movement.status = MovementStatus.COMPLETED;
+      (movement as any).approvedAt = new Date();
+      localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
     }
-
-    return this.http.get<ApiResponse<PaginatedResponse<RestockRequest>>>(`${API_BASE}/restock/requests`, { params })
-      .pipe(
-        map(response => response.data),
-        tap(() => this.loadingSubject.next(false)),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to load restock requests');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  /**
-   * Create a restock request
-   */
-  createRestockRequest(request: Partial<RestockRequest>): Observable<RestockRequest> {
-    this.loadingSubject.next(true);
-
-    return this.http.post<ApiResponse<RestockRequest>>(`${API_BASE}/restock/requests`, request)
-      .pipe(
-        map(response => response.data),
-        tap(() => {
-          this.loadingSubject.next(false);
-          this.getRestockRequests().subscribe();
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to create restock request');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  /**
-   * Approve a restock request
-   */
-  approveRestockRequest(id: string, notes: string): Observable<void> {
-    this.loadingSubject.next(true);
-
-    return this.http.post<ApiResponse<void>>(`${API_BASE}/restock/requests/${id}/approve`, { notes })
-      .pipe(
-        map(response => response.data),
-        tap(() => {
-          this.loadingSubject.next(false);
-          this.getRestockRequests().subscribe();
-          this.getDashboardData().subscribe();
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to approve restock request');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  /**
-   * Reject a restock request
-   */
-  rejectRestockRequest(id: string, reason: string): Observable<void> {
-    this.loadingSubject.next(true);
-
-    return this.http.post<ApiResponse<void>>(`${API_BASE}/restock/requests/${id}/reject`, { reason })
-      .pipe(
-        map(response => response.data),
-        tap(() => {
-          this.loadingSubject.next(false);
-          this.getRestockRequests().subscribe();
-        }),
-        catchError(err => {
-          this.loadingSubject.next(false);
-          this.errorSubject.next('Failed to reject restock request');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  /**
-   * Get restock suggestions for a branch
-   */
-  getRestockSuggestions(branchId: string): Observable<RestockRequest[]> {
-    return this.http.get<ApiResponse<RestockRequest[]>>(`${API_BASE}/restock/suggestions/${branchId}`)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to load restock suggestions');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  // ============================================================
-  // ANALYTICS
-  // ============================================================
-
-  /**
-   * Get product performance
-   */
-  getProductPerformance(productId: string, period?: { start: Date; end: Date }): Observable<ProductPerformance> {
-    let params = new HttpParams();
-    if (period) {
-      params = params.set('start', period.start.toISOString());
-      params = params.set('end', period.end.toISOString());
-    }
-
-    return this.http.get<ApiResponse<ProductPerformance>>(`${API_BASE}/analytics/products/${productId}`, { params })
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to load product performance');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  /**
-   * Get branch analytics
-   */
-  getBranchAnalytics(branchId: string): Observable<BranchStockSummary> {
-    return this.http.get<ApiResponse<BranchStockSummary>>(`${API_BASE}/analytics/branches/${branchId}`)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to load branch analytics');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  // ============================================================
-  // QUICK ACTIONS
-  // ============================================================
-
-  /**
-   * Get quick actions configuration
-   */
-  getQuickActions(): QuickAction[] {
-    return [
-      {
-        id: 'create-transfer',
-        label: 'Create Transfer',
-        icon: 'fa-exchange-alt',
-        route: '/admin/sales/inventory/movements/transfer',
-        color: '#2E6276',
-        description: 'Transfer stock between branches'
-      },
-      {
-        id: 'request-restock',
-        label: 'Request Restock',
-        icon: 'fa-truck-loading',
-        route: '/admin/sales/inventory/restock/requests/new',
-        color: '#F5A623',
-        description: 'Request restock from procurement'
-      },
-      {
-        id: 'stock-count',
-        label: 'Stock Count',
-        icon: 'fa-clipboard-list',
-        route: '/admin/sales/inventory/movements/adjustment',
-        color: '#8B5CF6',
-        description: 'Perform stock count adjustment'
-      },
-      {
-        id: 'add-product',
-        label: 'Add Product',
-        icon: 'fa-plus-circle',
-        route: '/admin/sales/inventory/products/new',
-        color: '#2EB270',
-        description: 'Add new product to catalog'
-      }
-    ];
-  }
-
-  // ============================================================
-  // CLEAR STATE
-  // ============================================================
-
-  clearState(): void {
-    this.dashboardDataSubject.next(null);
-    this.productsSubject.next([]);
-    this.branchesSubject.next([]);
-    this.branchInventorySubject.next([]);
-    this.movementsSubject.next([]);
+    this.movementsSubject.next(movements);
     this.loadingSubject.next(false);
-    this.errorSubject.next(null);
-    this.currentBranchIdSubject.next(null);
+    return of(undefined);
   }
 
-  // inventory.service.ts - Add these methods
-
-  // ============================================================
-  // CATEGORIES
-  // ============================================================
-
-  /**
-   * Get all categories
-   */
-  getCategories(): Observable<Category[]> {
-    return this.http.get<ApiResponse<Category[]>>(`${API_BASE}/categories`)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to load categories');
-          return throwError(() => err);
-        })
-      );
+  /** Reject a movement – set status to CANCELLED */
+  rejectMovement(id: string, _reason: string): Observable<void> {
+    this.loadingSubject.next(true);
+    const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
+    const movement = movements.find(m => m.id === id);
+    if (movement) {
+      movement.status = MovementStatus.CANCELLED;
+      localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
+    }
+    this.movementsSubject.next(movements);
+    this.loadingSubject.next(false);
+    return of(undefined);
   }
 
-  /**
-   * Create a category
-   */
-  createCategory(category: Partial<Category>): Observable<Category[]> {
-    return this.http.post<ApiResponse<Category[]>>(`${API_BASE}/categories`, category)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to create category');
-          return throwError(() => err);
-        })
-      );
-  }
+// ----------------------------------------------------
+// QUICK ACTIONS (read from dashboard data)
+// ----------------------------------------------------
+getQuickActions(): Observable<QuickAction[]> {
+  const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
+  return of(dash.quickActions);
+}
 
-  /**
-   * Update a category
-   */
-  updateCategory(id: string, category: Partial<Category>): Observable<Category[]> {
-    return this.http.put<ApiResponse<Category[]>>(`${API_BASE}/categories/${id}`, category)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to update category');
-          return throwError(() => err);
-        })
-      );
-  }
+// ----------------------------------------------------
+// CATEGORIES CRUD
+// ----------------------------------------------------
+getCategories(): Observable<Category[]> {
+  const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
+  return of(categories);
+}
+createCategory(cat: Partial<Category>): Observable<Category[]> {
+  const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
+  const newCat: Category = { ...(cat as Category), id: 'cat-' + Date.now() } as Category;
+  categories.push(newCat);
+  localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
+  return of(categories);
+}
+updateCategory(id: string, cat: Partial<Category>): Observable<Category[]> {
+  const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
+  const idx = categories.findIndex(c => c.id === id);
+  if (idx === -1) return throwError(() => new Error('Category not found'));
+  const updated = { ...categories[idx], ...cat } as Category;
+  categories[idx] = updated;
+  localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
+  return of(categories);
+}
+deleteCategory(id: string): Observable<Category[]> {
+  let categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
+  categories = categories.filter(c => c.id !== id);
+  localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
+  return of(categories);
+}
 
-  /**
-   * Delete a category
-   */
-  deleteCategory(id: string): Observable<Category[]> {
-    return this.http.delete<ApiResponse<Category[]>>(`${API_BASE}/categories/${id}`)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to delete category');
-          return throwError(() => err);
-        })
-      );
-  }
+// ----------------------------------------------------
+// MEASUREMENT UNITS CRUD
+// ----------------------------------------------------
+getMeasurementUnits(): Observable<MeasurementUnit[]> {
+  const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
+  return of(units);
+}
+createMeasurementUnit(unit: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
+  const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
+  const newUnit: MeasurementUnit = { ...(unit as MeasurementUnit), id: 'unit-' + Date.now() } as MeasurementUnit;
+  units.push(newUnit);
+  localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
+  return of(units);
+}
+updateMeasurementUnit(id: string, unit: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
+  const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
+  const idx = units.findIndex(u => u.id === id);
+  if (idx === -1) return throwError(() => new Error('Unit not found'));
+  const updated = { ...units[idx], ...unit } as MeasurementUnit;
+  units[idx] = updated;
+  localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
+  return of(units);
+}
+deleteMeasurementUnit(id: string): Observable<MeasurementUnit[]> {
+  let units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
+  units = units.filter(u => u.id !== id);
+  localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
+  return of(units);
+}
 
-  // ============================================================
-  // MEASUREMENT UNITS
-  // ============================================================
+// ----------------------------------------------------
+// SUPPLIERS CRUD
+// ----------------------------------------------------
+getSuppliers(): Observable<Supplier[]> {
+  const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
+  return of(suppliers);
+}
+createSupplier(supplier: Partial<Supplier>): Observable<Supplier[]> {
+  const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
+  const newSup: Supplier = { ...(supplier as Supplier), id: 'sup-' + Date.now() } as Supplier;
+  suppliers.push(newSup);
+  localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+  return of(suppliers);
+}
+updateSupplier(id: string, supplier: Partial<Supplier>): Observable<Supplier[]> {
+  const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
+  const idx = suppliers.findIndex(s => s.id === id);
+  if (idx === -1) return throwError(() => new Error('Supplier not found'));
+  const updated = { ...suppliers[idx], ...supplier } as Supplier;
+  suppliers[idx] = updated;
+  localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+  return of(suppliers);
+}
+deleteSupplier(id: string): Observable<Supplier[]> {
+  let suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
+  suppliers = suppliers.filter(s => s.id !== id);
+  localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+  return of(suppliers);
+}
 
-  /**
-   * Get all measurement units
-   */
-  getMeasurementUnits(): Observable<MeasurementUnit[]> {
-    return this.http.get<ApiResponse<MeasurementUnit[]>>(`${API_BASE}/units`)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to load units');
-          return throwError(() => err);
-        })
-      );
-  }
+// ----------------------------------------------------
+// SINGLE MOVEMENT FETCH
+// ----------------------------------------------------
+getMovement(id: string): Observable<StockMovement> {
+  const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
+  const mov = movements.find(m => m.id === id);
+  return mov ? of(mov) : throwError(() => new Error('Movement not found'));
+}
 
-  /**
-   * Create a measurement unit
-   */
-  createMeasurementUnit(unit: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
-    return this.http.post<ApiResponse<MeasurementUnit[]>>(`${API_BASE}/units`, unit)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to create unit');
-          return throwError(() => err);
-        })
-      );
-  }
+// ----------------------------------------------------
+// BRANCH ANALYTICS (stub)
+// ----------------------------------------------------
+getBranchAnalytics(_branchId: string): Observable<any> {
+  return of({});
+}
 
-  /**
-   * Update a measurement unit
-   */
-  updateMeasurementUnit(id: string, unit: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
-    return this.http.put<ApiResponse<MeasurementUnit[]>>(`${API_BASE}/units/${id}`, unit)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to update unit');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  /**
-   * Delete a measurement unit
-   */
-  deleteMeasurementUnit(id: string): Observable<MeasurementUnit[]> {
-    return this.http.delete<ApiResponse<MeasurementUnit[]>>(`${API_BASE}/units/${id}`)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to delete unit');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  // ============================================================
-  // SUPPLIERS
-  // ============================================================
-
-  /**
-   * Get all suppliers
-   */
-  getSuppliers(): Observable<Supplier[]> {
-    return this.http.get<ApiResponse<Supplier[]>>(`${API_BASE}/suppliers`)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to load suppliers');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  /**
-   * Create a supplier
-   */
-  createSupplier(supplier: Partial<Supplier>): Observable<Supplier[]> {
-    return this.http.post<ApiResponse<Supplier[]>>(`${API_BASE}/suppliers`, supplier)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to create supplier');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  /**
-   * Update a supplier
-   */
-  updateSupplier(id: string, supplier: Partial<Supplier>): Observable<Supplier[]> {
-    return this.http.put<ApiResponse<Supplier[]>>(`${API_BASE}/suppliers/${id}`, supplier)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to update supplier');
-          return throwError(() => err);
-        })
-      );
-  }
-
-  /**
-   * Delete a supplier
-   */
-  deleteSupplier(id: string): Observable<Supplier[]> {
-    return this.http.delete<ApiResponse<Supplier[]>>(`${API_BASE}/suppliers/${id}`)
-      .pipe(
-        map(response => response.data),
-        catchError(err => {
-          this.errorSubject.next('Failed to delete supplier');
-          return throwError(() => err);
-        })
-      );
-  }
 }
