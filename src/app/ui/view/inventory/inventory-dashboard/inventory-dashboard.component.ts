@@ -104,7 +104,7 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
           this.recentMovements = data.recentMovements || [];
           this.topProducts = data.topProducts || [];
           this.branchSummaries = data.branchSummaries || [];
-          this.quickActions = this.inventoryService.getQuickActions();
+          this.inventoryService.getQuickActions().pipe(takeUntil(this.destroy$)).subscribe(actions => { this.quickActions = actions; });
           this.isLoading = false;
         },
         error: (err) => {

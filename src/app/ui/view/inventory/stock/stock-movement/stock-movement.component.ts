@@ -303,19 +303,19 @@ export class StockMovementComponent implements OnInit, OnDestroy {
   // ============================================================
 
   viewMovement(id: string): void {
-    this.router.navigate(['/inventory/movements', id]);
+    this.router.navigate(['/admin/sales/inventory/movements', id]);
   }
 
   navigateToNew(): void {
-    this.router.navigate(['/inventory/movements/new']);
+    this.router.navigate(['/admin/sales/inventory/movements/new']);
   }
 
   navigateToTransfer(): void {
-    this.router.navigate(['/inventory/movements/transfer']);
+    this.router.navigate(['/admin/sales/inventory/movements/transfer']);
   }
 
   navigateToAdjustment(): void {
-    this.router.navigate(['/inventory/movements/adjustment']);
+    this.router.navigate(['/admin/sales/inventory/movements/adjustment']);
   }
 
   // ============================================================
