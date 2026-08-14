@@ -133,7 +133,7 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
   // ============================================================
 
   navigateTo(route: string): void {
-    this.router.navigate([route]);
+    this.router.navigateByUrl(`/admin/sales${route}`);
   }
 
   navigateToProduct(productId: string): void {

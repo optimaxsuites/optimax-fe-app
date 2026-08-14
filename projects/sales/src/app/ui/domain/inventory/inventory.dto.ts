@@ -187,6 +187,7 @@ export interface StockMovement {
     batchNumber: string;
     expiryDate: Date;
     notes: string;
+    scheduledDate?: Date | string;
     createdBy: string;
     createdByName: string;
     approvedBy: string;

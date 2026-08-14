@@ -629,6 +629,24 @@ export class InventoryService {
   }
 
   /**
+   * Create a branch
+   */
+  createBranch(branch: Partial<Branch>): Observable<Branch> {
+    return this.http.post<ApiResponse<Branch>>(`${API_BASE}/branches`, branch)
+      .pipe(
+        map(response => response.data),
+        tap(created => {
+          const current = this.branchesSubject.value;
+          this.branchesSubject.next([...current, created]);
+        }),
+        catchError(err => {
+          this.errorSubject.next('Failed to create branch');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
    * Get branch inventory
    */
   getBranchInventory(branchId: string): Observable<BranchInventory[]> {
@@ -717,6 +735,27 @@ export class InventoryService {
         catchError(err => {
           this.loadingSubject.next(false);
           this.errorSubject.next('Failed to create movement');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /**
+   * Update a stock movement
+   */
+  updateMovement(id: string, movement: Partial<StockMovement>): Observable<StockMovement> {
+    this.loadingSubject.next(true);
+
+    return this.http.put<ApiResponse<StockMovement>>(`${API_BASE}/movements/${id}`, movement)
+      .pipe(
+        map(response => response.data),
+        tap(() => {
+          this.loadingSubject.next(false);
+          this.getMovements().subscribe();
+        }),
+        catchError(err => {
+          this.loadingSubject.next(false);
+          this.errorSubject.next('Failed to update movement');
           return throwError(() => err);
         })
       );

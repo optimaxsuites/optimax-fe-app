@@ -148,7 +148,9 @@ import { BranchInventoryComponent } from './ui/view/branch/branch-inventory/bran
 import { BranchDetailComponent } from './ui/view/branch/branch-detail/branch-detail.component';
 import { BranchInventoryTableComponent } from './ui/view/branch/branch-inventory-table/branch-inventory-table.component';
 import { BranchInventoryFormComponent } from './ui/view/branch/branch-inventory-form/branch-inventory-form.component';
-import { StockMovementComponent } from './ui/view/inventory/stock-movement/stock-movement.component';
+import { BranchFormComponent } from './ui/view/branch/branch-form/branch-form.component';
+import { StockMovementComponent } from './ui/view/inventory/stock/stock-movement/stock-movement.component';
+import { StockMovementFormComponent } from './ui/view/inventory/stock/stock-movement-form/stock-movement-form.component';
 import { RestockManagementComponent } from './ui/view/inventory/restock-management/restock-management.component';
 import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.component';
 
@@ -161,7 +163,9 @@ import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.comp
     BranchDetailComponent,
     BranchInventoryTableComponent,
     BranchInventoryFormComponent,
+    BranchFormComponent,
     StockMovementComponent,
+    StockMovementFormComponent,
     RestockManagementComponent,
     AnalyticsComponent,
     TableComponent,

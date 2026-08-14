@@ -653,9 +653,9 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   navigateToNewProduct(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/commerce/inventory/products/new', uuid]);
+      this.router.navigate(['/admin/sales/inventory/products/new', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/commerce/inventory/products/new']);
+      this.router.navigate(['/admin/sales/inventory/products/new']);
     }
   }
 
@@ -677,9 +677,9 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   editProduct(productId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/commerce/inventory/products', productId, 'edit', uuid]);
+      this.router.navigate(['/admin/sales/inventory/products', productId, 'edit', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/commerce/inventory/products', productId, 'edit']);
+      this.router.navigate(['/admin/sales/inventory/products', productId, 'edit']);
     }
   }
 

@@ -43,6 +43,8 @@ import { LogisticsComponent } from './ui/view/logistics/logistics.component';
 import { ProductManagementFormComponent } from './ui/view/inventory/product/product-management-form/product-management-form.component';
 import { BranchDetailComponent } from './ui/view/branch/branch-detail/branch-detail.component';
 import { BranchInventoryFormComponent } from './ui/view/branch/branch-inventory-form/branch-inventory-form.component';
+import { BranchFormComponent } from './ui/view/branch/branch-form/branch-form.component';
+import { StockMovementFormComponent } from './ui/view/inventory/stock/stock-movement-form/stock-movement-form.component';
 
 
 export const routes: Routes = [
@@ -87,7 +89,7 @@ export const routes: Routes = [
   // --------------------------------------- Branch Management -----------------------------------------
   {
     path: 'inventory/branches/new',
-    component: BranchInventoryFormComponent
+    component: BranchFormComponent
   },
   {
     path: 'inventory/branches/:branchId',
@@ -96,6 +98,16 @@ export const routes: Routes = [
   {
     path: 'inventory/branches/:branchId/add-product',
     component: BranchInventoryFormComponent
+  },
+  
+  // --------------------------------------- Stock Movements -----------------------------------------
+  {
+    path: 'inventory/movements/new',
+    component: StockMovementFormComponent
+  },
+  {
+    path: 'inventory/movements/:id',
+    component: StockMovementFormComponent
   },
 
 
