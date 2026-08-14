@@ -48,7 +48,7 @@ export interface ApprovalComment {
   isInternal: boolean;
 }
 
-export type ApprovalStatus = 
+export type ApprovalStatus =
   | 'DRAFT'
   | 'PENDING'
   | 'IN_APPROVAL'
@@ -74,4 +74,47 @@ export interface ApprovalFilters {
   searchTerm?: string;
   page: number;
   size: number;
+}
+
+// ── Workflow Instance types (mirrors OptimaXWorkflowServices ApprovalInstanceFullDTO) ──
+
+export interface WorkflowStage {
+  id: number;
+  orderIndex: number;
+  name: string;
+  description?: string;
+  approvalType: 'ANY' | 'ALL' | 'QUORUM';
+  quorumCount?: number;
+  roles?: WorkflowStageRole[];
+}
+
+export interface WorkflowStageRole {
+  id: number;
+  roleCode: string;
+  roleName?: string;
+}
+
+export interface WorkflowAction {
+  id: number;
+  actorUserId: number;
+  actorRoleCode?: string;
+  actorName?: string;
+  action: 'APPROVED' | 'REJECTED' | 'COMMENTED';
+  comment?: string;
+  stageOrderIndex?: number;
+  createdAt: string;
+}
+
+export interface WorkflowInstance {
+  id: number;
+  status: 'PENDING' | 'IN_PROGRESS' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  referenceId: string;
+  referenceType: string;
+  approval?: {
+    stages: WorkflowStage[];
+  };
+  currentStage?: WorkflowStage;
+  actions?: WorkflowAction[];
+  createdAt?: string;
+  updatedAt?: string;
 }

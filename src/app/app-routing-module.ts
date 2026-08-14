@@ -46,18 +46,6 @@ import { BranchInventoryFormComponent } from './ui/view/branch/branch-inventory-
 
 
 export const routes: Routes = [
-  // Default redirect 
-  // {
-  //   path: "",
-  //   redirectTo: 'commerce/manage-vendors',
-  //   pathMatch: 'full'
-  // },
-  // {
-  //   path: "",
-  //   redirectTo: 'sales-hub',
-  //   pathMatch: 'full'
-  // },
-
   {
     path: "",
     redirectTo: 'commerce/inventory',
@@ -503,6 +491,13 @@ export const routes: Routes = [
   {
     path: 'reports',
     redirectTo: 'sales-hub',
+    pathMatch: 'full'
+  },
+
+  // UUID-only path (from sidebar nav links like /admin/sales/{uuid}) — must be last
+  {
+    path: ':uuid',
+    redirectTo: 'commerce/requests',
     pathMatch: 'full'
   },
 ];

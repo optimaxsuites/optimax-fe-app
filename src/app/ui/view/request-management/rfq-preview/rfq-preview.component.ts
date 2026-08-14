@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ProcurementRequest, RFQTemplate, VendorSuggestion } from '../../../domain/procurement-request/procurement.dto';
 import { ExtendedProcurementRequest, parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
-import { ApprovalService } from '../../../service/approval-inbox/approval.service';
+import { MessageService } from 'primeng/api';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -27,7 +27,7 @@ export class RfqPreviewComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private procurementService: ProcurementRequestService,
-    private approvalService: ApprovalService
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
@@ -59,21 +59,12 @@ export class RfqPreviewComponent implements OnInit {
 
   loadTemplateDetails(templateId: string): void {
     this.procurementService.getRFQTemplate(templateId).subscribe({
-      next: (tpl) => {
-        this.template = tpl;
-      },
+      next: (tpl) => { this.template = tpl; },
       error: () => {
-        // Use default template
         this.template = {
-          id: 'default',
-          name: 'Standard RFQ',
-          description: 'Default template',
-          layout: 'STANDARD',
-          isDefault: true,
-          sections: [],
-          createdBy: 'system',
-          createdAt: new Date(),
-          updatedAt: new Date()
+          id: 'default', name: 'Standard RFQ', description: 'Default template',
+          layout: 'STANDARD', isDefault: true, sections: [],
+          createdBy: 'system', createdAt: new Date(), updatedAt: new Date()
         };
       }
     });
@@ -92,19 +83,12 @@ export class RfqPreviewComponent implements OnInit {
 
   formatBudget(value: number, currency?: string): string {
     const curr = currency || this.request?.currency || 'NGN';
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: curr 
-    }).format(value || 0);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: curr }).format(value || 0);
   }
 
   formatDate(date: any): string {
     if (!date) return '';
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
   getTemplateClass(): string {
@@ -133,7 +117,6 @@ export class RfqPreviewComponent implements OnInit {
 
   onBack(): void {
     if (this.requestId) {
-      // Determine which type path to use based on the request
       const typePath = this.request?.procurementType === 'SERVICE' ? 'service' : 'product';
       this.router.navigate(['/admin/sales/commerce/requests/new', typePath, this.requestId, 'vendors']);
     } else {
@@ -142,67 +125,27 @@ export class RfqPreviewComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.requestId && this.request) {
-      this.isSubmitting = true;
-      this.procurementService.updateRequest(parseIdToNumber(this.requestId), {
-        status: 'PENDING_APPROVAL'
-      }).subscribe({
-        next: (updatedRequest) => {
-          this.createApprovalRequest(updatedRequest);
-        },
-        error: (err) => {
-          console.error('Failed to submit request:', err);
-          this.isSubmitting = false;
-          this.router.navigate(['/admin/sales/commerce/requests']);
-        }
-      });
-    }
-  }
-
-  createApprovalRequest(req: ExtendedProcurementRequest): void {
-    const urgency = req.deliveryDeadline ? this.calculateUrgency(req.deliveryDeadline) : 'LOW';
-    
-    const approvals = [{ level: 1, approverRole: 'Department Head', required: true }];
-
-    const approvalData = {
-      requestId: req.id,
-      requestType: req.procurementType === 'SERVICE' ? 'SERVICE' : 'PROCUREMENT',
-      requestTitle: req.title,
-      requesterId: req.customerId || 'CUST-101',
-      requesterName: req.customerName || 'HQ Corporate Operations',
-      requesterDepartment: 'Procurement',
-      budget: req.totalBudget,
-      currency: req.currency || 'NGN',
-      items: (req.items || []).map((item, idx) => ({
-        id: item.id || `item-${idx}`,
-        productName: item.name,
-        quantity: item.quantity,
-        budget: item.estimatedBudget,
-        currency: item.currency || req.currency || 'NGN'
-      })),
-      urgency: urgency,
-      approvals: approvals
-    };
-
-    this.approvalService.createApprovalRequest(approvalData).subscribe({
+    if (!this.requestId || !this.request) return;
+    this.isSubmitting = true;
+    this.procurementService.submitForApproval(parseIdToNumber(this.requestId)).subscribe({
       next: () => {
         this.isSubmitting = false;
-        this.router.navigate(['/admin/sales/commerce/requests']);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Request Submitted',
+          detail: 'Your procurement request has been submitted for approval. Vendors will be notified once all approval stages are completed.'
+        });
+        setTimeout(() => this.router.navigate(['/admin/sales/commerce/requests', this.requestId]), 1500);
       },
       error: (err) => {
-        console.error('Failed to create approval request:', err);
+        console.error('Failed to submit request:', err);
         this.isSubmitting = false;
-        this.router.navigate(['/admin/sales/commerce/requests']);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Submission Failed',
+          detail: 'Could not submit the request. Ensure the "Commerce Procurement" approval workflow is configured in Settings → Approval Workflows.'
+        });
       }
     });
-  }
-
-  private calculateUrgency(deadline: Date | string): 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' {
-    if (!deadline) return 'MEDIUM';
-    const daysUntilDeadline = Math.ceil((new Date(deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-    if (daysUntilDeadline <= 3) return 'URGENT';
-    if (daysUntilDeadline <= 7) return 'HIGH';
-    if (daysUntilDeadline <= 14) return 'MEDIUM';
-    return 'LOW';
   }
 }
