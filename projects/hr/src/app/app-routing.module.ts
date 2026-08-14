@@ -513,13 +513,29 @@ const routes: Routes = [
     path: 'employee-update-form/:uuid',
     component: EmployeeUpdateFormComponent,
   },
+  // admin/hr/ prefixed mirrors — navigation links generate these full paths
+  { path: 'admin/hr/me/:uuid',                   component: EmployeeProfileDashboardComponent },
+  { path: 'admin/hr/employee-management/:uuid',   component: EmployeeManagementComponent },
+  { path: 'admin/hr/recruitment/:uuid',           component: RecruitmentComponent },
+  { path: 'admin/hr/leave/:uuid',                 component: LeaveComponent },
+  { path: 'admin/hr/attendance/:uuid',            component: AttendanceComponent },
+  { path: 'admin/hr/payroll-dashboard/:uuid',     component: PayrollDashboardComponent },
+  { path: 'admin/hr/payroll-operations/:uuid',    component: PayrolExtrasComponent },
+  { path: 'admin/hr/performance/:uuid',           component: ProductivityWorkspaceComponent },
+  { path: 'admin/hr/project/:uuid',               component: ProjectComponent },
+  { path: 'admin/hr/work-schedule/:uuid',         component: SchedulingComponent },
+  { path: 'admin/hr/analytics/:uuid',             component: HrAnalyticsDashboardComponent },
+  { path: 'admin/hr/overtime/:uuid',              component: OvertimeManagementComponent },
+  { path: 'admin/hr/org-chart/:uuid',             component: OrgChartComponent },
+  { path: 'admin/hr/reports/:uuid',               component: HrReportsComponent },
+  { path: 'admin/hr/pre-onboarding-form/:uuid',   component: PreOnboardingFormComponent },
   {
     path: '**',
     redirectTo: DEFAULT_LOAN_ROUTE,
   },
 ];
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule],
 })
 export class AppHrRoutingModule {}
