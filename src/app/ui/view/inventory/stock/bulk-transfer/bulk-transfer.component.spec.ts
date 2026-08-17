@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TrackingComponent } from './tracking.component';
+import { BulkTransferComponent } from './bulk-transfer.component';
 
-describe('TrackingComponent', () => {
-  let component: TrackingComponent;
-  let fixture: ComponentFixture<TrackingComponent>;
+describe('BulkTransferComponent', () => {
+  let component: BulkTransferComponent;
+  let fixture: ComponentFixture<BulkTransferComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [TrackingComponent]
+      declarations: [BulkTransferComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(TrackingComponent);
+    fixture = TestBed.createComponent(BulkTransferComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

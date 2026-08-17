@@ -7,13 +7,12 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Subject, takeUntil, switchMap } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../service/inventory/inventory.service';
 import {
   Branch,
   BranchInventory,
   BranchStockSummary,
-  Product,
   StockMovement,
   StockAlert,
   getStockStatus,
@@ -42,7 +41,7 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   branchId: string = '';
   branch: Branch | null = null;
   branchInventory: BranchInventory[] = [];
-  branchSummary: any = null;
+  branchSummary: BranchStockSummary | null = null;
   isLoading: boolean = true;
   error: string | null = null;
   isSaving: boolean = false;
@@ -74,13 +73,6 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
 
   // UI
   Math = Math;
-  showConfirmDialog: boolean = false;
-  confirmAction: 'delete' | 'update' | null = null;
-  confirmMessage: string = '';
-
-  // Selected product for detail
-  selectedProductId: string | null = null;
-  showProductDetail: boolean = false;
 
   // Movement types for filter
   movementTypes = ['ALL', 'PURCHASE', 'TRANSFER', 'SALE', 'RETURN', 'ADJUSTMENT', 'DAMAGED'];
@@ -130,7 +122,7 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
-      this.branchId = params['id'];
+      this.branchId = params['branchId'];
       if (this.branchId) {
         this.loadBranchData();
       }
@@ -286,19 +278,13 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
 
   applyInventoryFilters(): void {
     this.filteredInventory = this.branchInventory.filter(item => {
-      // Search filter
       const searchMatch = !this.inventoryFilters.searchTerm ||
         item.productName.toLowerCase().includes(this.inventoryFilters.searchTerm.toLowerCase()) ||
         item.sku.toLowerCase().includes(this.inventoryFilters.searchTerm.toLowerCase());
 
-      // Stock status filter
       const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);
       const statusMatch = this.inventoryFilters.stockStatus === 'ALL' ||
         status === this.inventoryFilters.stockStatus;
-
-      // Category filter
-      // Note: Category would need to be fetched from product data
-      // For now, we'll skip category filtering or add it later
 
       return searchMatch && statusMatch;
     });
@@ -317,8 +303,6 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   }
 
   private updateCategories(): void {
-    // In a real implementation, you'd fetch product categories
-    // For now, we'll use a placeholder
     this.categories = ['ALL', 'Electronics', 'Building Materials', 'Paints', 'Plumbing'];
   }
 
@@ -358,25 +342,45 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   // TAB MANAGEMENT
   // ============================================================
 
-  setActiveTab(tab: any): void {
+  setActiveTab(tab: typeof this.activeTab): void {
     this.activeTab = tab;
   }
 
   // ============================================================
-  // INVENTORY ACTIONS
+  // ACTIONS
   // ============================================================
 
   navigateToProduct(productId: string): void {
     this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
   }
 
-  createTransfer(productId: string): void {
+  createTransfer(productId?: string): void {
     this.router.navigate(['/admin/sales/commerce/inventory/movements/transfer'], {
-      queryParams: {
+      queryParams: productId ? {
         productId: productId,
         branchId: this.branchId
-      }
+      } : { branchId: this.branchId }
     });
+  }
+
+  createRestockRequest(): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/restock/requests/new'], {
+      queryParams: { branchId: this.branchId }
+    });
+  }
+
+  createStockCount(): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/adjustment'], {
+      queryParams: { branchId: this.branchId }
+    });
+  }
+
+  navigateToAddProduct(): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', this.branchId, 'inventory', 'new']);
+  }
+
+  viewMovement(movementId: string): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/movements', movementId]);
   }
 
   // ============================================================
@@ -402,16 +406,15 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
     this.inventoryService.updateBranch(this.branchId, formValue)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (updated: any) => {
+        next: (updated) => {
           this.branch = updated;
           this.isEditing = false;
           this.isSaving = false;
-          // Show success message
-          console.log('Branch updated successfully');
         },
-        error: (err: any) => {
+        error: (err) => {
           console.error('Failed to update branch:', err);
           this.isSaving = false;
+          this.error = 'Failed to update branch. Please try again.';
         }
       });
   }
@@ -422,6 +425,14 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     this.location.back();
+  }
+
+  // ============================================================
+  // REFRESH
+  // ============================================================
+
+  refresh(): void {
+    this.loadBranchData();
   }
 
   // ============================================================
@@ -523,15 +534,6 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
     return name.charAt(0).toUpperCase();
   }
 
-  getAlertSeverityClass(severity: string): string {
-    const map: Record<string, string> = {
-      'CRITICAL': 'alert--critical',
-      'WARNING': 'alert--warning',
-      'INFO': 'alert--info'
-    };
-    return map[severity] || '';
-  }
-
   isFieldInvalid(fieldName: string): boolean {
     const control = this.editForm.get(fieldName);
     return !!control?.invalid && !!control?.touched;
@@ -547,13 +549,5 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
     if (errors['minlength']) return `Minimum ${errors['minlength'].requiredLength} characters required`;
 
     return 'Invalid input';
-  }
-
-  // ============================================================
-  // REFRESH
-  // ============================================================
-
-  refresh(): void {
-    this.loadBranchData();
   }
 }
