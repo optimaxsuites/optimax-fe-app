@@ -1,331 +1,393 @@
+<!-- product-management-form.component.html -->
 <p-toast position="top-right"></p-toast>
-<div class="product-form-container">
-    <div class="form-wrapper">
 
-        <!-- Clean Form Header -->
-        <div class="form-header">
-            <div class="header-back-title-group">
-                <app-back-button (click)="goBack()"></app-back-button>
-                <div class="header-content">
-                    <div class="header-badge">
-                        <i class="fas fa-box"></i>
-                        <span>{{ isEditMode ? 'Edit Product' : 'Add New Product' }}</span>
-                    </div>
-                    <h1 class="header-title">{{ isEditMode ? 'Edit Product' : 'Create New Product' }}</h1>
-                    <p class="header-subtitle">
-                        {{ isEditMode ? 'Update and manage your product details' : 'Add a new product to your catalog'
-                        }}
-                    </p>
+<div class="ql-layout">
+
+    <!-- ══ MAIN AREA ═════════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Top bar -->
+        <div class="ql-top-bar">
+            <div class="ql-top-bar-left">
+                <button type="button" class="ql-back-btn" (click)="goBack()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div>
+                    <h1 class="ql-title">
+                        {{ isEditMode ? 'Edit Product' : 'Add New Product' }}
+                    </h1>
+                    <span class="ql-subtitle">
+                        {{ isEditMode ? 'Update product details' : 'Add a new product to your catalog' }}
+                    </span>
                 </div>
+                <span class="ql-badge ql-badge--{{ isEditMode ? 'primary' : 'success' }}">
+                    {{ isEditMode ? 'Editing' : 'New' }}
+                </span>
+                <span class="ql-sku-badge" *ngIf="isEditMode && productForm.get('sku')?.value">
+                    <i class="fas fa-tag"></i>
+                    {{ productForm.get('sku')?.value }}
+                </span>
             </div>
-            <div class="header-actions">
-                <div class="product-code" *ngIf="isEditMode">
-                    <span class="product-label">SKU</span>
-                    <strong>{{ productForm.get('sku')?.value || 'N/A' }}</strong>
-                </div>
-                <button type="submit" class="btn-save-header" [disabled]="isSubmitting" (click)="onSubmit()">
-                    <i *ngIf="!isSubmitting" class="fas fa-check"></i>
-                    <div *ngIf="isSubmitting" class="spinner-mini"></div>
-                    {{ isSubmitting ? 'Saving...' : (isEditMode ? 'Update' : 'Create') }}
+            <div class="ql-top-bar-right">
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="goBack()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="ql-btn ql-btn--primary" (click)="onSubmit()" [disabled]="isSubmitting">
+                    <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-save]="!isSubmitting" 
+                       [class.ql-spinning]="isSubmitting"></i>
+                    {{ isSubmitting ? 'Saving...' : (isEditMode ? 'Update Product' : 'Create Product') }}
                 </button>
             </div>
         </div>
 
-        <!-- Loading State -->
-        <div *ngIf="isLoading" class="loading-state">
-            <div class="spinner-glow"></div>
-            <p>Loading product details...</p>
+        <!-- Error banner -->
+        <div class="ql-error-banner" *ngIf="error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="error = null"><i class="fas fa-times"></i></button>
         </div>
 
-        <!-- Form -->
-        <form [formGroup]="productForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading" class="product-form">
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading product details...</span>
+        </div>
 
-            <!-- Two-Column Form Layout -->
-            <div class="form-columns-wrapper">
+        <!-- ============================================================
+        FORM CONTENT
+        ============================================================ -->
+        <form [formGroup]="productForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading" class="ql-form-layout">
 
+            <div class="ql-form-grid">
                 <!-- LEFT COLUMN -->
-                <div class="form-column left-column">
+                <div class="ql-form-column ql-form-column--left">
 
-                    <!-- Section 1: General Information -->
-                    <div class="form-card glass">
-                        <div class="card-header">
-                            <div class="card-header-icon">
+                    <!-- Section: General Information -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
                                 <i class="fas fa-info-circle"></i>
                             </div>
                             <h3>General Information</h3>
                         </div>
-                        <div class="card-body">
-                            <div class="form-row">
-                                <div class="form-group flex-1">
-                                    <label class="form-label required">Name</label>
-                                    <input type="text" formControlName="name" class="form-control"
-                                        placeholder="Enter product name">
-                                    <div class="form-error" *ngIf="isFieldInvalid('name')">{{ getFieldError('name') }}
-                                    </div>
-                                </div>
+                        <div class="ql-form-card-body">
+                            <div class="ql-field">
+                                <label class="ql-flabel">Product Name <span class="ql-required">*</span></label>
+                                <input type="text" formControlName="name" class="ql-input" 
+                                       placeholder="Enter product name"
+                                       [class.ql-input--error]="isFieldInvalid('name')">
+                                <span class="ql-field-error" *ngIf="isFieldInvalid('name')">
+                                    {{ getFieldError('name') }}
+                                </span>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label required">Description</label>
-                                <textarea formControlName="description" class="form-textarea"
-                                    placeholder="Enter product description" rows="3"></textarea>
-                                <div class="form-error" *ngIf="isFieldInvalid('description')">{{
-                                    getFieldError('description') }}</div>
+
+                            <div class="ql-field">
+                                <label class="ql-flabel">Description <span class="ql-required">*</span></label>
+                                <textarea formControlName="description" class="ql-input ql-textarea" 
+                                          placeholder="Enter product description" rows="3"
+                                          [class.ql-input--error]="isFieldInvalid('description')"></textarea>
+                                <span class="ql-field-error" *ngIf="isFieldInvalid('description')">
+                                    {{ getFieldError('description') }}
+                                </span>
                             </div>
-                            <div class="form-row">
-                                <div class="form-group flex-1">
-                                    <label class="form-label required">Category</label>
-                                    <select formControlName="category" class="form-control">
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Category <span class="ql-required">*</span></label>
+                                    <select formControlName="category" class="ql-input"
+                                            [class.ql-input--error]="isFieldInvalid('category')">
                                         <option value="">Select category</option>
                                         <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
                                     </select>
-                                    <div class="form-error" *ngIf="isFieldInvalid('category')">{{
-                                        getFieldError('category') }}</div>
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('category')">
+                                        {{ getFieldError('category') }}
+                                    </span>
                                 </div>
-                                <div class="form-group flex-1">
-                                    <label class="form-label">Measurement Unit</label>
-                                    <select formControlName="measurementUnit" class="form-control">
-                                        <option *ngFor="let unit of measurementUnits" [value]="unit.name">{{ unit.name
-                                            }}</option>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Measurement Unit</label>
+                                    <select formControlName="measurementUnit" class="ql-input">
+                                        <option *ngFor="let unit of measurementUnits" [value]="unit.name">
+                                            {{ unit.name }}
+                                        </option>
                                     </select>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Section 2: Identifiers -->
-                    <div class="form-card glass">
-                        <div class="card-header">
-                            <div class="card-header-icon">
+                    <!-- Section: Identifiers -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
                                 <i class="fas fa-tags"></i>
                             </div>
                             <h3>Identifiers</h3>
                         </div>
-                        <div class="card-body">
-                            <div class="form-row">
-                                <div class="form-group flex-1">
-                                    <label class="form-label">Part Number</label>
-                                    <input type="text" formControlName="partNumber" class="form-control"
-                                        placeholder="Enter part number">
+                        <div class="ql-form-card-body">
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Part Number</label>
+                                    <input type="text" formControlName="partNumber" class="ql-input" 
+                                           placeholder="Enter part number">
                                 </div>
-                                <div class="form-group flex-1">
-                                    <label class="form-label">SKU</label>
-                                    <div class="sku-input-wrapper">
-                                        <input type="text" formControlName="sku" class="form-control"
-                                            placeholder="SKU will be auto-generated" readonly>
-                                        <button type="button" class="btn-generate-sku" (click)="generateSku()"
-                                            title="Generate SKU">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">SKU</label>
+                                    <div class="ql-input-group">
+                                        <input type="text" formControlName="sku" class="ql-input" 
+                                               placeholder="Auto-generated" readonly>
+                                        <button type="button" class="ql-btn ql-btn--icon" 
+                                                (click)="generateSku()" title="Generate SKU">
                                             <i class="fas fa-sync-alt"></i>
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                            <div class="form-row">
-                                <div class="form-group flex-1">
-                                    <label class="form-label">Code (UPC/Barcode)</label>
-                                    <div class="code-input-wrapper">
-                                        <input type="text" formControlName="code" class="form-control"
-                                            placeholder="Enter code (UPC for auto-fill)">
-                                        <button type="button" class="btn-auto-fill" (click)="autoFillFromCode()"
-                                            title="Auto-fill from code">
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Code (UPC/Barcode)</label>
+                                    <div class="ql-input-group">
+                                        <input type="text" formControlName="code" class="ql-input" 
+                                               placeholder="Enter code">
+                                        <button type="button" class="ql-btn ql-btn--icon ql-btn--success" 
+                                                (click)="autoFillFromCode()" title="Auto-fill from code">
                                             <i class="fas fa-magic"></i>
                                         </button>
                                     </div>
-                                    <small class="form-hint">Enter a product code (e.g., UPC/Barcode 12-13 digits) to
-                                        auto-fill product information from online databases.</small>
+                                    <span class="ql-hint">Enter a product code (UPC/Barcode) to auto-fill product details</span>
                                 </div>
-                                <div class="form-group flex-1">
-                                    <label class="form-label">Reorder Threshold</label>
-                                    <input type="number" formControlName="reorderThreshold" class="form-control"
-                                        placeholder="Enter threshold value">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Reorder Threshold</label>
+                                    <input type="number" formControlName="reorderThreshold" class="ql-input" 
+                                           placeholder="Enter threshold" min="0">
                                 </div>
                             </div>
-                            <div class="form-row">
-                                <div class="form-group flex-1">
-                                    <label class="form-label">Weight (in KG)</label>
-                                    <input type="number" formControlName="weight" class="form-control"
-                                        placeholder="Enter weight in kg" step="0.01">
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Weight (KG)</label>
+                                    <input type="number" formControlName="weight" class="ql-input" 
+                                           placeholder="0.00" step="0.01" min="0">
                                 </div>
-                                <div class="form-group flex-1"
-                                    style="display: flex; align-items: flex-end; justify-content: flex-end;">
-                                    <label class="checkbox-label">
+                                <div class="ql-field" style="justify-content: flex-end;">
+                                    <label class="ql-checkbox">
                                         <input type="checkbox" formControlName="availableOnline">
-                                        <span class="checkbox-custom"></span>
-                                        <span class="checkbox-text">Available in Online Store</span>
+                                        <span class="ql-checkbox-custom"></span>
+                                        Available in Online Store
                                     </label>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Section 3: Pricing & Inventory -->
-                    <div class="form-card glass">
-                        <div class="card-header">
-                            <div class="card-header-icon">
+                    <!-- Section: Pricing & Inventory -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
                                 <i class="fas fa-money-bill-wave"></i>
                             </div>
                             <h3>Pricing &amp; Inventory</h3>
                         </div>
-                        <div class="card-body">
-                            <div class="form-row">
-                                <div class="form-group flex-1">
-                                    <label class="form-label required">Cost Price</label>
-                                    <div class="currency-input">
-                                        <span class="currency-symbol">₦</span>
-                                        <input type="number" formControlName="costPrice" class="form-control"
-                                            placeholder="0.00" step="0.01">
+                        <div class="ql-form-card-body">
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Cost Price <span class="ql-required">*</span></label>
+                                    <div class="ql-currency-input">
+                                        <span class="ql-currency-symbol">₦</span>
+                                        <input type="number" formControlName="costPrice" class="ql-input" 
+                                               placeholder="0.00" step="0.01" min="0"
+                                               [class.ql-input--error]="isFieldInvalid('costPrice')">
                                     </div>
-                                    <div class="form-error" *ngIf="isFieldInvalid('costPrice')">{{
-                                        getFieldError('costPrice') }}</div>
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('costPrice')">
+                                        {{ getFieldError('costPrice') }}
+                                    </span>
                                 </div>
-                                <div class="form-group flex-1">
-                                    <label class="form-label required">Selling Price</label>
-                                    <div class="currency-input">
-                                        <span class="currency-symbol">₦</span>
-                                        <input type="number" formControlName="sellingPrice" class="form-control"
-                                            placeholder="0.00" step="0.01">
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Selling Price <span class="ql-required">*</span></label>
+                                    <div class="ql-currency-input">
+                                        <span class="ql-currency-symbol">₦</span>
+                                        <input type="number" formControlName="sellingPrice" class="ql-input" 
+                                               placeholder="0.00" step="0.01" min="0"
+                                               [class.ql-input--error]="isFieldInvalid('sellingPrice')">
                                     </div>
-                                    <div class="form-error" *ngIf="isFieldInvalid('sellingPrice')">{{
-                                        getFieldError('sellingPrice') }}</div>
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('sellingPrice')">
+                                        {{ getFieldError('sellingPrice') }}
+                                    </span>
                                 </div>
-                                <div class="form-group flex-1">
-                                    <label class="form-label required">Quantity</label>
-                                    <input type="number" formControlName="quantity" class="form-control" placeholder="0"
-                                        min="0">
-                                    <div class="form-error" *ngIf="isFieldInvalid('quantity')">{{
-                                        getFieldError('quantity') }}</div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Quantity <span class="ql-required">*</span></label>
+                                    <input type="number" formControlName="quantity" class="ql-input" 
+                                           placeholder="0" min="0"
+                                           [class.ql-input--error]="isFieldInvalid('quantity')">
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('quantity')">
+                                        {{ getFieldError('quantity') }}
+                                    </span>
                                 </div>
                             </div>
-                            <div class="form-row">
-                                <div class="form-group flex-1">
-                                    <label class="form-label">Expiry Date</label>
-                                    <input type="date" formControlName="expiryDate" class="form-control"
-                                        [min]="todayDateString">
-                                    <div class="form-error" *ngIf="isFieldInvalid('expiryDate')">{{
-                                        getFieldError('expiryDate') }}</div>
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Expiry Date</label>
+                                    <input type="date" formControlName="expiryDate" class="ql-input" 
+                                           [min]="todayDateString"
+                                           [class.ql-input--error]="isFieldInvalid('expiryDate')">
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('expiryDate')">
+                                        {{ getFieldError('expiryDate') }}
+                                    </span>
                                 </div>
-                                <div class="form-group flex-1">
-                                    <label class="form-label">Discount</label>
-                                    <select formControlName="discount" class="form-control">
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Discount</label>
+                                    <select formControlName="discount" class="ql-input">
                                         <option *ngFor="let opt of discountOptions" [value]="opt">{{ opt }}</option>
                                     </select>
                                 </div>
-                                <div class="form-group flex-1">
-                                    <label class="form-label">Supplier</label>
-                                    <div class="supplier-select-wrapper">
-                                        <select formControlName="supplier" class="form-control">
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Supplier</label>
+                                    <div class="ql-input-group">
+                                        <select formControlName="supplier" class="ql-input">
                                             <option value="">Select supplier</option>
-                                            <option *ngFor="let sup of suppliers" [value]="sup.name">{{ sup.name }}
-                                            </option>
+                                            <option *ngFor="let sup of suppliers" [value]="sup.name">{{ sup.name }}</option>
                                         </select>
-                                        <button type="button" class="btn-add-supplier"
-                                            (click)="addSupplier()">+</button>
+                                        <button type="button" class="ql-btn ql-btn--icon ql-btn--primary" 
+                                                (click)="addSupplier()" title="Add Supplier">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-                            <div class="form-row">
-                                <div class="form-group flex-1">
-                                    <label class="form-label">Tax(es)</label>
-                                    <select formControlName="taxes" class="form-control">
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Tax(es)</label>
+                                    <select formControlName="taxes" class="ql-input">
                                         <option *ngFor="let tax of taxOptions" [value]="tax">{{ tax }}</option>
                                     </select>
                                 </div>
-                                <div class="form-group flex-1" style="display: flex; align-items: flex-end;">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" formControlName="isComboProduct"
-                                            (change)="showComboOptions = !showComboOptions">
-                                        <span class="checkbox-custom"></span>
-                                        <span class="checkbox-text">Is this a combo product?</span>
+                                <div class="ql-field" style="justify-content: flex-end;">
+                                    <label class="ql-checkbox">
+                                        <input type="checkbox" formControlName="isComboProduct" 
+                                               (change)="showComboOptions = !showComboOptions">
+                                        <span class="ql-checkbox-custom"></span>
+                                        Is this a combo product?
                                     </label>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Section 4: Combo Options (Conditional) -->
-                    <div class="form-card glass" *ngIf="showComboOptions">
-                        <div class="card-header">
-                            <div class="card-header-icon">
-                                <i class="fas fa-layer-group"></i>
+                    <!-- Section: Stock Movement -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
+                                <i class="fas fa-exchange-alt"></i>
                             </div>
-                            <h3>Combo Options</h3>
+                            <h3>Stock Movement</h3>
                         </div>
-                        <div class="card-body">
-                            <div class="combo-info">
-                                <p class="combo-hint">Configure the products that make up this combo product.</p>
-                                <button type="button" class="btn-add-item" (click)="openVariantModal()">
-                                    <i class="fas fa-plus"></i> Add Combo Item
-                                </button>
+                        <div class="ql-form-card-body">
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Movement Date</label>
+                                    <input type="date" formControlName="movementDate" class="ql-input" 
+                                           [max]="todayDateString"
+                                           [class.ql-input--error]="isFieldInvalid('movementDate')">
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('movementDate')">
+                                        {{ getFieldError('movementDate') }}
+                                    </span>
+                                </div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Quantity</label>
+                                    <input type="number" formControlName="movementQuantity" class="ql-input" 
+                                           placeholder="1" min="1">
+                                </div>
+                            </div>
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Purchase Price</label>
+                                    <div class="ql-currency-input">
+                                        <span class="ql-currency-symbol">₦</span>
+                                        <input type="text" formControlName="movementPurchasePrice" class="ql-input" 
+                                               placeholder="N/A" readonly>
+                                    </div>
+                                </div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Tax</label>
+                                    <input type="text" formControlName="movementTax" class="ql-input" 
+                                           placeholder="e.g. VAT 7.5%">
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Section 5: Product Variants -->
-                    <div class="form-card glass">
-                        <div class="card-header">
-                            <div class="card-header-icon">
+                    <!-- Section: Combo Options (Conditional) -->
+                    <div class="ql-form-card" *ngIf="showComboOptions">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <h3>Combo Options</h3>
+                        </div>
+                        <div class="ql-form-card-body">
+                            <p class="ql-hint">Configure the products that make up this combo product.</p>
+                            <button type="button" class="ql-btn ql-btn--primary ql-btn--sm" 
+                                    (click)="openVariantModal()">
+                                <i class="fas fa-plus"></i> Add Combo Item
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Section: Product Variants -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
                                 <i class="fas fa-cubes"></i>
                             </div>
                             <h3>Product Variants</h3>
-                            <button type="button" class="btn-add-item" (click)="openVariantModal()">
+                            <button type="button" class="ql-btn ql-btn--primary ql-btn--sm" 
+                                    (click)="openVariantModal()">
                                 <i class="fas fa-plus"></i> Add Variant
                             </button>
                         </div>
-                        <div class="card-body">
-                            <div *ngIf="variantsArray.length === 0" class="empty-state-small">
-                                <i class="fas fa-cubes"
-                                    style="font-size: 2rem; color: #cbd5e1; margin-bottom: 0.5rem;"></i>
-                                <p>No variants added yet.</p>
-                                <span>Click "Add Variant" to create product variations.</span>
+                        <div class="ql-form-card-body">
+                            <div *ngIf="variantsArray.length === 0" class="ql-empty-state">
+                                <i class="fas fa-cubes"></i>
+                                <p>No variants added yet</p>
+                                <span>Click "Add Variant" to create product variations</span>
                             </div>
-                            <div *ngFor="let variant of variantsArray.controls; let i = index" class="variant-item">
-                                <div class="variant-info">
-                                    <div class="variant-title-row"
-                                        style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem;">
-                                        <strong class="variant-name" style="color: #0f172a; font-size: 0.95rem;">{{
-                                            variant.get('name')?.value || 'Variant ' + (i + 1) }}</strong>
-                                        <span class="variant-sku-badge" *ngIf="variant.get('sku')?.value"
-                                            style="background: #f1f5f9; color: #475569; font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 4px; font-family: monospace;">
-                                            SKU: {{ variant.get('sku')?.value }}
+                            <div *ngFor="let variant of variantsArray.controls; let i = index" class="ql-variant-item">
+                                <div class="ql-variant-info">
+                                    <span class="ql-variant-name">{{ variant.get('name')?.value || 'Variant ' + (i + 1) }}</span>
+                                    <span class="ql-variant-sku" *ngIf="variant.get('sku')?.value">
+                                        {{ variant.get('sku')?.value }}
+                                    </span>
+                                    <span class="ql-variant-attributes">
+                                        <span class="ql-attr-tag" *ngIf="variant.get('attributes.color')?.value">
+                                            {{ variant.get('attributes.color')?.value }}
                                         </span>
-                                    </div>
-                                    <div class="variant-attributes"
-                                        *ngIf="variant.get('attributes.color')?.value || variant.get('attributes.size')?.value || variant.get('attributes.material')?.value || variant.get('attributes.model')?.value || variant.get('attributes.year')?.value"
-                                        style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.35rem;">
-                                        <span class="attr-tag" *ngIf="variant.get('attributes.color')?.value"
-                                            style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
-                                            Color: {{ variant.get('attributes.color')?.value }}
+                                        <span class="ql-attr-tag" *ngIf="variant.get('attributes.size')?.value">
+                                            {{ variant.get('attributes.size')?.value }}
                                         </span>
-                                        <span class="attr-tag" *ngIf="variant.get('attributes.size')?.value"
-                                            style="background: #fef3c7; color: #92400e; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
-                                            Size: {{ variant.get('attributes.size')?.value }}
+                                        <span class="ql-attr-tag" *ngIf="variant.get('attributes.material')?.value">
+                                            {{ variant.get('attributes.material')?.value }}
                                         </span>
-                                        <span class="attr-tag" *ngIf="variant.get('attributes.material')?.value"
-                                            style="background: #f3e8ff; color: #6b21a8; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
-                                            Material: {{ variant.get('attributes.material')?.value }}
-                                        </span>
-                                        <span class="attr-tag" *ngIf="variant.get('attributes.model')?.value"
-                                            style="background: #dcfce7; color: #15803d; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
-                                            Model: {{ variant.get('attributes.model')?.value }}
-                                        </span>
-                                        <span class="attr-tag" *ngIf="variant.get('attributes.year')?.value"
-                                            style="background: #ffe4e6; color: #be123c; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
-                                            Year: {{ variant.get('attributes.year')?.value }}
-                                        </span>
-                                    </div>
-                                    <div class="variant-meta" style="display: flex; gap: 1rem; font-size: 0.85rem;">
-                                        <span class="variant-price" style="font-weight: 700; color: #059669;">₦{{
-                                            (variant.get('price')?.value || 0) | number:'1.2-2' }}</span>
-                                        <span class="variant-qty" style="color: #64748b;">{{
-                                            variant.get('quantity')?.value || 0 }} units in stock</span>
-                                    </div>
+                                    </span>
+                                    <span class="ql-variant-price">₦{{ (variant.get('price')?.value || 0) | number:'1.2-2' }}</span>
+                                    <span class="ql-variant-qty">{{ variant.get('quantity')?.value || 0 }} units</span>
                                 </div>
-                                <div class="variant-actions" style="display: flex; gap: 0.35rem;">
-                                    <button type="button" class="btn-icon-sm" (click)="openEditVariantModal(i)"
-                                        title="Edit Variant">
+                                <div class="ql-variant-actions">
+                                    <button type="button" class="ql-btn ql-btn--icon ql-btn--ghost-sm" 
+                                            (click)="openEditVariantModal(i)" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button type="button" class="btn-icon-sm btn-danger" (click)="removeVariant(i)"
-                                        title="Remove Variant">
+                                    <button type="button" class="ql-btn ql-btn--icon ql-btn--danger-sm" 
+                                            (click)="removeVariant(i)" title="Remove">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </div>
@@ -335,51 +397,48 @@
                 </div>
 
                 <!-- RIGHT COLUMN -->
-                <div class="form-column right-column">
+                <div class="ql-form-column ql-form-column--right">
 
                     <!-- Section: Product Images -->
-                    <div class="form-card glass">
-                        <div class="card-header">
-                            <div class="card-header-icon">
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
                                 <i class="fas fa-images"></i>
                             </div>
                             <h3>Product Images</h3>
                         </div>
-                        <div class="card-body">
-                            <!-- Upload Dropzone -->
-                            <div class="image-upload-dropzone" (click)="imageInput.click()">
-                                <i class="fas fa-cloud-upload-alt fa-2x"></i>
+                        <div class="ql-form-card-body">
+                            <div class="ql-upload-zone" (click)="imageInput.click()">
+                                <i class="fas fa-cloud-upload-alt"></i>
                                 <p>Click to upload product images</p>
                                 <span>Supports PNG, JPG, JPEG</span>
                             </div>
-                            <input type="file" #imageInput accept="image/*" (change)="onImageSelected($event)" multiple
-                                style="display: none;">
+                            <input type="file" #imageInput accept="image/*" (change)="onImageSelected($event)" multiple style="display: none;">
 
-                            <!-- URL Input Group -->
-                            <div class="image-url-input-group mt-3">
-                                <input type="text" #urlInput class="form-control" placeholder="Or paste image URL...">
-                                <button type="button" class="btn-add-url"
-                                    (click)="addImageUrl(urlInput.value); urlInput.value=''">Add</button>
+                            <div class="ql-input-group ql-input-group--url">
+                                <input type="text" #urlInput class="ql-input" placeholder="Or paste image URL...">
+                                <button type="button" class="ql-btn ql-btn--primary ql-btn--sm" 
+                                        (click)="addImageUrl(urlInput.value); urlInput.value=''">
+                                    Add
+                                </button>
                             </div>
 
-                            <!-- Demo Images Grid -->
-                            <div class="demo-images-gallery mt-3">
-                                <span class="gallery-title">Quick Add Demo Images:</span>
-                                <div class="demo-images-list">
-                                    <div class="demo-thumb-container" *ngFor="let demo of demoImages"
-                                        (click)="addImageUrl(demo.url)" [title]="demo.name">
-                                        <img [src]="demo.url" class="demo-thumb">
-                                        <span class="demo-label">{{ demo.name }}</span>
+                            <div class="ql-demo-images" *ngIf="images.length === 0">
+                                <span class="ql-demo-label">Quick add demo images:</span>
+                                <div class="ql-demo-list">
+                                    <div class="ql-demo-item" *ngFor="let demo of demoImages" 
+                                         (click)="addImageUrl(demo.url)">
+                                        <img [src]="demo.url" alt="{{ demo.name }}">
+                                        <span>{{ demo.name }}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Image Previews Grid -->
-                            <div class="images-preview-grid mt-3" *ngIf="images.length > 0">
-                                <div class="image-preview-card" *ngFor="let img of images; let idx = index">
-                                    <img [src]="img" class="preview-img">
-                                    <button type="button" class="btn-remove-image" (click)="removeImage(idx)"
-                                        title="Remove Image">
+                            <div class="ql-image-grid" *ngIf="images.length > 0">
+                                <div class="ql-image-item" *ngFor="let img of images; let idx = index">
+                                    <img [src]="img" alt="Product image">
+                                    <button type="button" class="ql-btn ql-btn--icon ql-btn--danger-sm" 
+                                            (click)="removeImage(idx)" title="Remove">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </div>
@@ -387,198 +446,148 @@
                         </div>
                     </div>
 
-                    <!-- Section 6: Stock Movement & Pricing -->
-                    <div class="form-card glass">
-                        <div class="card-header">
-                            <div class="card-header-icon">
-                                <i class="fas fa-exchange-alt"></i>
-                            </div>
-                            <h3>Stock Movement &amp; Pricing</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-row">
-                                <div class="form-group flex-1">
-                                    <label class="form-label">Movement Date</label>
-                                    <input type="date" formControlName="movementDate" class="form-control"
-                                        [max]="todayDateString">
-                                    <div class="form-error" *ngIf="isFieldInvalid('movementDate')">{{
-                                        getFieldError('movementDate') }}</div>
-                                </div>
-                                <div class="form-group flex-1">
-                                    <label class="form-label">Quantity</label>
-                                    <input type="number" formControlName="movementQuantity" class="form-control"
-                                        min="1">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group flex-1">
-                                    <label class="form-label">Purchase Price</label>
-                                    <div class="currency-input">
-                                        <span class="currency-symbol">₦</span>
-                                        <input type="text" formControlName="movementPurchasePrice" class="form-control"
-                                            placeholder="N/A" readonly>
-                                    </div>
-                                </div>
-                                <div class="form-group flex-1">
-                                    <label class="form-label required">Tax</label>
-                                    <input type="text" formControlName="movementTax" class="form-control"
-                                        placeholder="e.g. VAT 7.5%, 5%, etc.">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section 7: Reference -->
-                    <div class="form-card glass">
-                        <div class="card-header">
-                            <div class="card-header-icon">
-                                <i class="fas fa-file-alt"></i>
-                            </div>
-                            <h3>Reference</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label class="form-label">Enter reference (optional)</label>
-                                <input type="text" formControlName="reference" class="form-control"
-                                    placeholder="Enter reference">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section 8: Supplier -->
-                    <div class="form-card glass">
-                        <div class="card-header">
-                            <div class="card-header-icon">
-                                <i class="fas fa-truck"></i>
-                            </div>
-                            <h3>Supplier</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label class="form-label">Select supplier</label>
-                                <select formControlName="selectedSupplier" class="form-control">
-                                    <option value="">Select supplier</option>
-                                    <option *ngFor="let sup of suppliers" [value]="sup.name">{{ sup.name }}</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section 9: Selling Price & Discount Summary -->
-                    <div class="form-card glass">
-                        <div class="card-header">
-                            <div class="card-header-icon">
+                    <!-- Section: Pricing Summary -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
                                 <i class="fas fa-percent"></i>
                             </div>
                             <h3>Pricing Summary</h3>
                         </div>
-                        <div class="card-body">
-                            <div class="pricing-summary">
-                                <div class="summary-item">
-                                    <span class="summary-label">Selling Price</span>
-                                    <span class="summary-value">{{ (productForm.get('sellingPrice')?.value || 0) |
-                                        currency:'NGN':'symbol':'1.2-2' }}</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="summary-label">Cost Price</span>
-                                    <span class="summary-value">{{ (productForm.get('costPrice')?.value || 0) |
-                                        currency:'NGN':'symbol':'1.2-2' }}</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="summary-label">Discount</span>
-                                    <span class="summary-value">{{ productForm.get('discount')?.value || 'No Discount'
-                                        }}</span>
-                                </div>
-                                <div class="summary-item total">
-                                    <span class="summary-label">Current Stock Value</span>
-                                    <span class="summary-value grand-total">
-                                        {{ ((productForm.get('sellingPrice')?.value || 0) *
+                        <div class="ql-form-card-body">
+                            <div class="ql-summary-item">
+                                <span class="ql-summary-label">Selling Price</span>
+                                <span class="ql-summary-value">
+                                    {{ (productForm.get('sellingPrice')?.value || 0) | currency:'NGN':'symbol':'1.2-2' }}
+                                </span>
+                            </div>
+                            <div class="ql-summary-item">
+                                <span class="ql-summary-label">Cost Price</span>
+                                <span class="ql-summary-value">
+                                    {{ (productForm.get('costPrice')?.value || 0) | currency:'NGN':'symbol':'1.2-2' }}
+                                </span>
+                            </div>
+                            <div class="ql-summary-item">
+                                <span class="ql-summary-label">Discount</span>
+                                <span class="ql-summary-value">{{ productForm.get('discount')?.value || 'No Discount' }}</span>
+                            </div>
+                            <div class="ql-summary-item ql-summary-item--total">
+                                <span class="ql-summary-label">Current Stock Value</span>
+                                <span class="ql-summary-value ql-summary-grand-total">
+                                    {{ ((productForm.get('sellingPrice')?.value || 0) * 
                                         (productForm.get('quantity')?.value || 0)) | currency:'NGN':'symbol':'1.2-2' }}
-                                    </span>
-                                </div>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Reference -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <h3>Reference</h3>
+                        </div>
+                        <div class="ql-form-card-body">
+                            <div class="ql-field">
+                                <label class="ql-flabel">Reference (optional)</label>
+                                <input type="text" formControlName="reference" class="ql-input" 
+                                       placeholder="Enter reference">
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </form>
-    </div>
-</div>
 
-<!-- Variant Modal -->
-<div class="modal-overlay" *ngIf="showVariantModal" (click)="showVariantModal = false">
-    <form class="modal-container" (click)="$event.stopPropagation()" [formGroup]="variantModalForm"
-        (ngSubmit)="saveVariant()">
-        <div class="modal-header">
-            <h3><i class="fas fa-cube"></i> {{ currentVariantIndex !== null ? 'Edit Variant' : 'Add Variant' }}</h3>
-            <button type="button" class="modal-close" (click)="showVariantModal = false">×</button>
+        </form>
+
+        <!-- ============================================================
+        VARIANT MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showVariantModal" (click)="$event.target === $event.currentTarget && (showVariantModal = false)">
+            <div class="ql-modal">
+                <div class="ql-modal-header">
+                    <h3>
+                        <i class="fas fa-cube"></i>
+                        {{ currentVariantIndex !== null ? 'Edit Variant' : 'Add Variant' }}
+                    </h3>
+                    <button type="button" class="ql-modal-close" (click)="showVariantModal = false">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <form [formGroup]="variantModalForm" (ngSubmit)="saveVariant()">
+                        <div class="ql-field">
+                            <label class="ql-flabel">Variant Name <span class="ql-required">*</span></label>
+                            <input type="text" formControlName="name" class="ql-input" placeholder="e.g., Large, Red, Deluxe"
+                                   [class.ql-input--error]="variantModalForm.get('name')?.invalid && variantModalForm.get('name')?.touched">
+                            <span class="ql-field-error" *ngIf="variantModalForm.get('name')?.invalid && variantModalForm.get('name')?.touched">
+                                Variant name is required
+                            </span>
+                        </div>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel">SKU</label>
+                                <input type="text" formControlName="sku" class="ql-input" placeholder="Auto-generated">
+                            </div>
+                            <div class="ql-field">
+                                <label class="ql-flabel">Price <span class="ql-required">*</span></label>
+                                <div class="ql-currency-input">
+                                    <span class="ql-currency-symbol">₦</span>
+                                    <input type="number" formControlName="price" class="ql-input" placeholder="0.00" step="0.01" min="0"
+                                           [class.ql-input--error]="variantModalForm.get('price')?.invalid && variantModalForm.get('price')?.touched">
+                                </div>
+                                <span class="ql-field-error" *ngIf="variantModalForm.get('price')?.invalid && variantModalForm.get('price')?.touched">
+                                    Price must be 0 or greater
+                                </span>
+                            </div>
+                            <div class="ql-field">
+                                <label class="ql-flabel">Quantity <span class="ql-required">*</span></label>
+                                <input type="number" formControlName="quantity" class="ql-input" placeholder="0" min="0"
+                                       [class.ql-input--error]="variantModalForm.get('quantity')?.invalid && variantModalForm.get('quantity')?.touched">
+                                <span class="ql-field-error" *ngIf="variantModalForm.get('quantity')?.invalid && variantModalForm.get('quantity')?.touched">
+                                    Quantity must be 0 or greater
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel">Color</label>
+                                <input type="text" formControlName="color" class="ql-input" placeholder="e.g., Red">
+                            </div>
+                            <div class="ql-field">
+                                <label class="ql-flabel">Size</label>
+                                <input type="text" formControlName="size" class="ql-input" placeholder="e.g., Large">
+                            </div>
+                            <div class="ql-field">
+                                <label class="ql-flabel">Material</label>
+                                <input type="text" formControlName="material" class="ql-input" placeholder="e.g., Wood">
+                            </div>
+                        </div>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel">Model</label>
+                                <input type="text" formControlName="model" class="ql-input" placeholder="e.g., XPS 13">
+                            </div>
+                            <div class="ql-field">
+                                <label class="ql-flabel">Year</label>
+                                <input type="text" formControlName="year" class="ql-input" placeholder="e.g., 2026">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="showVariantModal = false">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="saveVariant()">
+                        {{ currentVariantIndex !== null ? 'Save Changes' : 'Add Variant' }}
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label class="form-label required">Variant Name</label>
-                <input type="text" formControlName="name" class="form-control" placeholder="e.g., Large, Red, Deluxe">
-                <div class="form-error"
-                    *ngIf="variantModalForm.get('name')?.invalid && variantModalForm.get('name')?.touched">
-                    Variant name is required
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group flex-1">
-                    <label class="form-label">SKU</label>
-                    <input type="text" formControlName="sku" class="form-control"
-                        placeholder="Variant SKU (auto-generated if empty)">
-                </div>
-                <div class="form-group flex-1">
-                    <label class="form-label required">Price</label>
-                    <div class="currency-input">
-                        <span class="currency-symbol">₦</span>
-                        <input type="number" formControlName="price" class="form-control" placeholder="0.00"
-                            step="0.01">
-                    </div>
-                    <div class="form-error"
-                        *ngIf="variantModalForm.get('price')?.invalid && variantModalForm.get('price')?.touched">
-                        Price must be 0 or greater
-                    </div>
-                </div>
-                <div class="form-group flex-1">
-                    <label class="form-label required">Quantity</label>
-                    <input type="number" formControlName="quantity" class="form-control" placeholder="0" min="0">
-                    <div class="form-error"
-                        *ngIf="variantModalForm.get('quantity')?.invalid && variantModalForm.get('quantity')?.touched">
-                        Quantity must be 0 or greater
-                    </div>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group flex-1">
-                    <label class="form-label">Color</label>
-                    <input type="text" formControlName="color" class="form-control" placeholder="e.g., Red">
-                </div>
-                <div class="form-group flex-1">
-                    <label class="form-label">Size</label>
-                    <input type="text" formControlName="size" class="form-control" placeholder="e.g., Large">
-                </div>
-                <div class="form-group flex-1">
-                    <label class="form-label">Material</label>
-                    <input type="text" formControlName="material" class="form-control" placeholder="e.g., Wood">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group flex-1">
-                    <label class="form-label">Model</label>
-                    <input type="text" formControlName="model" class="form-control" placeholder="e.g., XPS 13, Pro Max">
-                </div>
-                <div class="form-group flex-1">
-                    <label class="form-label">Year</label>
-                    <input type="text" formControlName="year" class="form-control" placeholder="e.g., 2026">
-                </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="showVariantModal = false">Cancel</button>
-            <button type="submit" class="btn-save">
-                {{ currentVariantIndex !== null ? 'Save Changes' : 'Add Variant' }}
-            </button>
-        </div>
-    </form>
+
+    </main>
 </div>
