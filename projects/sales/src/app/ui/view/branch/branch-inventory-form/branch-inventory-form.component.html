@@ -15,7 +15,9 @@
                     mode === 'batch' ? 'Batch Add' :
                     'Edit Stock' }}
                 </h1>
-                <span class="ql-branch-badge" *ngIf="branch">
+                <app-branch-selector *ngIf="branch && mode !== 'edit'" [branches]="branches"
+                    [selectedBranchId]="branchId" (branchChange)="onBranchChange($event)"></app-branch-selector>
+                <span class="ql-branch-badge" *ngIf="branch && mode === 'edit'">
                     <i class="fas fa-store"></i>
                     {{ branch.name }}
                 </span>

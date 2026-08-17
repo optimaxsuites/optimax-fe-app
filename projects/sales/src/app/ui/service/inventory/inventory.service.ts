@@ -1217,9 +1217,10 @@ export class InventoryService {
     return of(newBranch);
   }
 
-  /** Get inventory for a branch – returns whole list (no per‑branch filtering for now) */
-  getBranchInventory(_branchId: string): Observable<BranchInventory[]> {
-    const inventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string) as BranchInventory[];
+  /** Get inventory for a branch, scoped to that branch. */
+  getBranchInventory(branchId: string): Observable<BranchInventory[]> {
+    const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string) as BranchInventory[];
+    const inventory = branchId ? allInventory.filter(i => i.branchId === branchId) : allInventory;
     this.branchInventorySubject.next(inventory);
     return of(inventory);
   }

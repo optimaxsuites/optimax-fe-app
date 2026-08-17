@@ -20,6 +20,14 @@
             </div>
         </div>
 
+        <!-- Quick filter / jump to a single branch -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Branch</div>
+            <app-branch-selector [branches]="branches" [selectedBranchId]="filters.branchId"
+                [showAllOption]="true" allOptionLabel="All Branches"
+                (branchChange)="onBranchFilterChange($event)"></app-branch-selector>
+        </div>
+
         <!-- Status filters -->
         <div class="ql-filter-section">
             <div class="ql-filter-heading">Status</div>
@@ -307,23 +315,8 @@
                         {{ branch.location.city }}, {{ branch.location.state }}
                     </div>
 
-                    <div class="ql-grid-stats">
-                        <div class="ql-grid-stat">
-                            <span class="ql-grid-stat-value">{{ getBranchSummary(branch.id)?.totalProducts || 0
-                                }}</span>
-                            <span class="ql-grid-stat-label">Products</span>
-                        </div>
-                        <div class="ql-grid-stat">
-                            <span class="ql-grid-stat-value">{{
-                                formatNumber(getBranchSummary(branch.id)?.totalStockUnits || 0) }}</span>
-                            <span class="ql-grid-stat-label">Units</span>
-                        </div>
-                        <div class="ql-grid-stat">
-                            <span class="ql-grid-stat-value">{{
-                                formatCurrency(getBranchSummary(branch.id)?.totalStockValue || 0) }}</span>
-                            <span class="ql-grid-stat-label">Stock Value</span>
-                        </div>
-                    </div>
+                    <app-branch-stock-summary [branchId]="branch.id" [compact]="true"
+                        [showActions]="false"></app-branch-stock-summary>
                 </div>
 
                 <div class="ql-grid-footer">
