@@ -5,13 +5,10 @@
 # Usage: ./scripts/satellite-pull.sh <module> <remote-url> [satellite-branch] [monorepo-branch]
 #
 # Example:
-#   ./scripts/satellite-pull.sh dashboard git@gitlab.com:queensheba/erp-dashboard.git master mod
+#   ./scripts/satellite-pull.sh dashboard https://gitlab.com/j2yemi/erp-dashboard.git dashboard_fe mod
 #
-# The script:
-#   1. Adds the satellite remote temporarily (or reuses it).
-#   2. Fetches from the satellite.
-#   3. Merges using git subtree pull (squash merge).
-#   4. Removes the temporary remote.
+# Uses git read-tree instead of git subtree pull to avoid the cached split-hash
+# lookup problem that occurs when the monorepo has old squash commit annotations.
 
 set -euo pipefail
 
@@ -49,11 +46,16 @@ trap cleanup EXIT
 echo "  Fetching satellite…"
 git fetch "${REMOTE_NAME}" "${SAT_BRANCH}"
 
-echo "  Merging subtree (squash)…"
-git subtree pull \
-  --prefix="${PREFIX}" \
-  "${REMOTE_NAME}" "${SAT_BRANCH}" \
-  --squash \
-  -m "chore(${MODULE}): sync from satellite ${SAT_BRANCH}"
+SAT_SHA=$(git rev-parse FETCH_HEAD)
+SAT_SHORT=$(git rev-parse --short FETCH_HEAD)
+
+echo "  Merging ${SAT_SHORT} into ${PREFIX}/…"
+
+# Read the satellite's tree directly into the subtree prefix.
+# This stages all changes from the satellite branch into the monorepo subtree.
+git read-tree --prefix="${PREFIX}/" -u FETCH_HEAD
+
+# Commit the result
+git commit -m "chore(${MODULE}): sync from satellite ${SAT_BRANCH}@${SAT_SHORT}"
 
 echo "✔ Done. Review changes then push to origin ${MONO_BRANCH}."
