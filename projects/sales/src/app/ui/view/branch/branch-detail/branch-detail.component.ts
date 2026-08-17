@@ -397,8 +397,7 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/sales/commerce/inventory/branches', this.branchId, 'inventory', 'new']);
   }
 
-  viewMovement(movement: StockMovement): void {
-    const movementId = typeof movement === 'string' ? movement : movement.id;
+  viewMovement(movementId: string): void {
     this.router.navigate(['/admin/sales/commerce/inventory/movements', movementId]);
   }
 

@@ -46,6 +46,8 @@ import { BranchInventoryFormComponent } from './ui/view/branch/branch-inventory-
 import { BranchFormComponent } from './ui/view/branch/branch-form/branch-form.component';
 import { StockMovementFormComponent } from './ui/view/inventory/stock/stock-movement-form/stock-movement-form.component';
 import { StockMovementDetailComponent } from './ui/view/inventory/stock/stock-movement-detail/stock-movement-detail.component';
+import { TransferWizardComponent } from './ui/view/inventory/stock/transfer-wizard/transfer-wizard.component';
+import { BulkTransferComponent } from './ui/view/inventory/stock/bulk-transfer/bulk-transfer.component';
 
 
 export const routes: Routes = [
@@ -105,6 +107,14 @@ export const routes: Routes = [
   {
     path: 'admin/sales/inventory/movements/new',
     component: StockMovementFormComponent
+  },
+  {
+    path: 'admin/sales/inventory/movements/transfer',
+    component: TransferWizardComponent
+  },
+  {
+    path: 'admin/sales/inventory/movements/bulk-transfer',
+    component: BulkTransferComponent
   },
   {
     path: 'admin/sales/inventory/movements/:id',

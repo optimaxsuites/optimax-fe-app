@@ -107,9 +107,33 @@
                 <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
                     <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i> Refresh
                 </button>
-                <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToTransfer()">
-                    <i class="fas fa-exchange-alt"></i> Transfer
-                </button>
+                <div class="ql-split-btn">
+                    <button type="button" class="ql-btn ql-btn--primary ql-split-btn-main"
+                        (click)="navigateToTransfer()">
+                        <i class="fas fa-exchange-alt"></i> Transfer
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--primary ql-split-btn-toggle"
+                        (click)="toggleTransferMenu()" [class.ql-split-btn-toggle--open]="showTransferMenu">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="ql-dropdown-backdrop" *ngIf="showTransferMenu" (click)="closeTransferMenu()"></div>
+                    <div class="ql-dropdown-menu" *ngIf="showTransferMenu">
+                        <button type="button" class="ql-dropdown-item" (click)="navigateToTransfer()">
+                            <i class="fas fa-exchange-alt"></i>
+                            <div>
+                                <span class="ql-dropdown-item-title">Quick Transfer</span>
+                                <span class="ql-dropdown-item-sub">Step-by-step wizard for a single transfer</span>
+                            </div>
+                        </button>
+                        <button type="button" class="ql-dropdown-item" (click)="navigateToBulkTransfer()">
+                            <i class="fas fa-layer-group"></i>
+                            <div>
+                                <span class="ql-dropdown-item-title">Bulk Transfer</span>
+                                <span class="ql-dropdown-item-sub">Move many products between branches at once</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
                 <button type="button" class="ql-btn ql-btn--secondary" (click)="navigateToNew()">
                     <i class="fas fa-plus"></i> New Movement
                 </button>
@@ -191,9 +215,15 @@
                                 <i class="fas fa-exchange-alt ql-empty-icon"></i>
                                 <p class="ql-empty-title">No movements found</p>
                                 <p class="ql-empty-sub">Try adjusting your filters or create a new movement</p>
-                                <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToTransfer()">
-                                    <i class="fas fa-exchange-alt"></i> Create Transfer
-                                </button>
+                                <div class="ql-empty-actions">
+                                    <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToTransfer()">
+                                        <i class="fas fa-exchange-alt"></i> Quick Transfer
+                                    </button>
+                                    <button type="button" class="ql-btn ql-btn--secondary"
+                                        (click)="navigateToBulkTransfer()">
+                                        <i class="fas fa-layer-group"></i> Bulk Transfer
+                                    </button>
+                                </div>
                             </div>
                         </td>
                     </tr>

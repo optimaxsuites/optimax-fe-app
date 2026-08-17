@@ -435,6 +435,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
       this.isSubmitting = false;
       // Emit completion with first movement
       this.completed.emit(movements[0] as StockMovement);
+      this.router.navigate(['/admin/sales/inventory/movements']);
     }, 1500);
   }
 
@@ -448,12 +449,14 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
       this.confirmMessage = 'You have unsaved changes. Are you sure you want to leave?';
     } else {
       this.cancelled.emit();
+      this.router.navigate(['/admin/sales/inventory/movements']);
     }
   }
 
   confirmCancel(): void {
     this.showConfirmDialog = false;
     this.cancelled.emit();
+    this.router.navigate(['/admin/sales/inventory/movements']);
   }
 
   cancelConfirmDialog(): void {
