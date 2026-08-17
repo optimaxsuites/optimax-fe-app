@@ -152,9 +152,16 @@ import { BranchFormComponent } from './ui/view/branch/branch-form/branch-form.co
 import { StockMovementComponent } from './ui/view/inventory/stock/stock-movement/stock-movement.component';
 import { StockMovementFormComponent } from './ui/view/inventory/stock/stock-movement-form/stock-movement-form.component';
 import { TransferWizardComponent } from './ui/view/inventory/stock/transfer-wizard/transfer-wizard.component';
+import { BulkTransferComponent } from './ui/view/inventory/stock/bulk-transfer/bulk-transfer.component';
 import { StockMovementDetailComponent } from './ui/view/inventory/stock/stock-movement-detail/stock-movement-detail.component';
 import { RestockManagementComponent } from './ui/view/inventory/restock-management/restock-management.component';
 import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.component';
+import { LogisticsComponent } from './ui/view/logistics/logistics.component';
+import { LogisticsDashboardComponent } from './ui/view/logistics/logistics-dashboard/logistics-dashboard.component';
+import { TrackingComponent } from './ui/view/logistics/tracking/tracking.component';
+import { FleetManagementComponent } from './ui/view/logistics/fleet-management/fleet-management.component';
+import { RouteOptimizationComponent } from './ui/view/logistics/route-optimization/route-optimization.component';
+import { DeliveryManagementsComponent } from './ui/view/logistics/delivery-management/delivery-management.component';
 
 @NgModule({
   declarations: [
@@ -169,6 +176,7 @@ import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.comp
     StockMovementComponent,
     StockMovementFormComponent,
     TransferWizardComponent,
+    BulkTransferComponent,
     StockMovementDetailComponent,
     RestockManagementComponent,
     AnalyticsComponent,
@@ -228,6 +236,13 @@ import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.comp
     RiskComponent,
     VendorDocumentsComponent,
     ActivityComponent,
+
+    LogisticsComponent,
+    LogisticsDashboardComponent,
+    RouteOptimizationComponent,
+    DeliveryManagementsComponent,
+    FleetManagementComponent,
+    TrackingComponent,
   ],
   imports: [
     // BrowserModule,
@@ -303,7 +318,6 @@ import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.comp
     TemplateTypesComponent,
     VpStatusBadgeComponent,
     CommandPaletteComponent,
-
   ],
   exports: [TableComponent],
   providers: [
@@ -326,8 +340,8 @@ import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.comp
     provideHttpClient(withInterceptorsFromDi()),
     ConfirmationService,
     MessageService,
-    DecimalPipe
+    DecimalPipe,
   ],
-  bootstrap: [App]
+  bootstrap: [App],
 })
-export class AppModule { }
+export class AppModule {}

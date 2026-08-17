@@ -235,6 +235,10 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/sales/inventory/branches/new']);
   }
 
+  navigateToAddProduct(branchId: string): void {
+    this.router.navigate(['/admin/sales/inventory/branches', branchId, 'add-product']);
+  }
+
   // ============================================================
   // VIEW MODE
   // ============================================================

@@ -264,6 +264,8 @@ export interface ProductPerformance {
     };
 }
 
+// inventory.dto.ts - Update BranchStockSummary interface
+
 export interface BranchStockSummary {
     branchId: string;
     branchName: string;
@@ -272,7 +274,9 @@ export interface BranchStockSummary {
     totalStockUnits: number;
     lowStockCount: number;
     outOfStockCount: number;
-    topSellingProducts: {
+    stockTurnover?: number;        
+    daysOfInventory?: number;      
+    topSellingProducts?: {
         productId: string;
         productName: string;
         quantity: number;

@@ -878,6 +878,58 @@ const MOCK_BRANCH_INVENTORY: BranchInventory[] = [
   { id: 'bi-33', branchId: 'br-6', branchName: 'Enugu Express Depot',      productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)',          sku: 'IRN-16MM-TON',    quantity: 8,    reorderPoint: 15,  reorderQuantity: 30,  safetyStock: 8,   sellingPrice: 352000, costPrice: 300000, lastUpdated: new Date(Date.now() - 4 * 86400000) }
 ];
 
+const MOCK_CATEGORIES: Category[] = [
+  { id: 'cat-1',  name: 'Building Materials',    description: 'Cement, blocks, aggregates and general construction materials', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'cat-2',  name: 'Metal & Steel',         description: 'Iron rods, steel beams and metal fabrication stock',           createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'cat-3',  name: 'Paints & Finishes',     description: 'Paints, primers, varnishes and surface finishes',              createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'cat-4',  name: 'Plumbing & Pipes',      description: 'PVC pipes, fittings and plumbing accessories',                 createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'cat-5',  name: 'Tiles & Flooring',      description: 'Floor and wall tiles, grout and flooring accessories',         createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
+  { id: 'cat-6',  name: 'Electrical',            description: 'Cables, fittings and electrical fixtures',                    createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
+  { id: 'cat-7',  name: 'Roofing',               description: 'Roofing sheets, nails and roofing accessories',                createdAt: new Date('2023-02-15'), updatedAt: new Date('2023-02-15') },
+  { id: 'cat-8',  name: 'Wood & Timber',         description: 'Plywood, planks and timber products',                         createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') },
+  { id: 'cat-9',  name: 'Sanitary Ware',         description: 'WC suites, wash basins and bathroom fittings',                 createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') },
+  { id: 'cat-10', name: 'Hardware & Fasteners',  description: 'Screws, nails, bolts and general hardware',                    createdAt: new Date('2023-04-10'), updatedAt: new Date('2023-04-10') }
+];
+
+const MOCK_MEASUREMENT_UNITS: MeasurementUnit[] = [
+  { id: 'unit-1', name: 'Each',      code: 'EACH', description: 'Single individual unit',        createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'unit-2', name: 'Box',       code: 'BOX',  description: 'Boxed unit of multiple pieces',  createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'unit-3', name: 'Kilogram',  code: 'KG',   description: 'Weight measured in kilograms',   createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'unit-4', name: 'Litre',     code: 'LITER',description: 'Volume measured in litres',      createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'unit-5', name: 'Metre',     code: 'METER',description: 'Length measured in metres',      createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'unit-6', name: 'Ton',       code: 'TON',  description: 'Weight measured in metric tons', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
+  { id: 'unit-7', name: 'Bag',       code: 'BAG',  description: 'Bagged unit (e.g. cement bags)', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
+  { id: 'unit-8', name: 'Roll',      code: 'ROLL', description: 'Rolled unit (e.g. cable rolls)', createdAt: new Date('2023-02-15'), updatedAt: new Date('2023-02-15') },
+  { id: 'unit-9', name: 'Set',       code: 'SET',  description: 'Matched set of parts',           createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') }
+];
+
+const MOCK_SUPPLIERS: Supplier[] = [
+  { id: 'sup-1', name: 'Dangote Cement Factory',      email: 'sales@dangotecement.com',      phone: '+234-1-448-0001', address: 'Ibese Plant, Ogun State, Nigeria',        contactPerson: 'Ibrahim Sule',    createdAt: new Date('2023-01-10'), updatedAt: new Date('2023-01-10') },
+  { id: 'sup-2', name: 'Niger Delta Plastics Ltd',    email: 'info@ndplastics.ng',           phone: '+234-84-770-2201', address: 'Trans-Amadi Industrial Layout, Port Harcourt', contactPerson: 'Ngozi Amadi',     createdAt: new Date('2023-01-20'), updatedAt: new Date('2023-01-20') },
+  { id: 'sup-3', name: 'Coleman Cables Nigeria',      email: 'orders@colemancables.com.ng',  phone: '+234-1-271-3300',  address: '19 Iyalla Street, Surulere, Lagos',       contactPerson: 'David Ekpo',      createdAt: new Date('2023-02-05'), updatedAt: new Date('2023-02-05') },
+  { id: 'sup-4', name: 'Tropical Timber Mills',       email: 'sales@tropicaltimber.ng',      phone: '+234-9-670-4410',  address: 'Kilometer 12, Kaduna Road, Abuja',        contactPerson: 'Solomon Danjuma', createdAt: new Date('2023-02-18'), updatedAt: new Date('2023-02-18') },
+  { id: 'sup-5', name: 'Porcelain Palace Lagos',      email: 'contact@porcelainpalace.ng',   phone: '+234-1-905-6612',  address: '44 Ikorodu Road, Lagos',                  contactPerson: 'Funmi Adebayo',   createdAt: new Date('2023-03-02'), updatedAt: new Date('2023-03-02') },
+  { id: 'sup-6', name: 'Roca Sanitaryware Nigeria',   email: 'ng.sales@roca.com',            phone: '+234-1-462-7788',  address: '3 Ozumba Mbadiwe Avenue, Victoria Island, Lagos', contactPerson: 'Patrick Nnamdi', createdAt: new Date('2023-03-15'), updatedAt: new Date('2023-03-15') },
+  { id: 'sup-7', name: 'Delta Steel Company',         email: 'procurement@deltasteel.ng',    phone: '+234-56-610-3390', address: 'Ovwian-Aladja, Delta State, Nigeria',     contactPerson: 'Efe Okonta',      createdAt: new Date('2023-04-01'), updatedAt: new Date('2023-04-01') },
+  { id: 'sup-8', name: 'Ace Hardware Supplies Nigeria', email: 'sales@acehardware.ng',       phone: '+234-1-330-8845',  address: '12 Nnamdi Azikiwe Street, Onitsha, Anambra', contactPerson: 'Chidi Eze',      createdAt: new Date('2023-04-20'), updatedAt: new Date('2023-04-20') }
+];
+
+const MOCK_PRODUCTS: Product[] = [
+  { id: 'prod-1',  sku: 'CEM-DG-425',      name: 'Cement Dangote Grade 42.5R',       description: 'High-strength Portland-limestone cement, 50kg bag, ideal for all structural applications.', category: 'Building Materials',   subCategory: 'Cement',           brand: 'Dangote',   unitOfMeasure: 'EACH', costPrice: 6000,   sellingPrice: 7000,   stockQuantity: 4800, weight: 50,   dimensions: { length: 60, width: 40, height: 10 }, images: [], tags: ['cement', 'bestseller'],        status: ProductStatus.ACTIVE,       supplierIds: ['sup-1'], createdAt: new Date('2023-01-15'), updatedAt: new Date('2026-08-01') },
+  { id: 'prod-2',  sku: 'IRN-16MM-TON',    name: 'Iron Rod 16mm (Per Ton)',          description: 'High-tensile deformed steel reinforcement bar, 16mm diameter, sold per metric ton.',       category: 'Metal & Steel',         subCategory: 'Rebar',            brand: 'Delta Steel', unitOfMeasure: 'KG',  costPrice: 300000, sellingPrice: 350000, stockQuantity: 127,  weight: 1000, dimensions: { length: 1200, width: 1.6, height: 1.6 }, images: [], tags: ['steel', 'rebar'],           status: ProductStatus.ACTIVE,       supplierIds: ['sup-7'], createdAt: new Date('2023-01-20'), updatedAt: new Date('2026-08-01') },
+  { id: 'prod-3',  sku: 'PNT-WS-20L',      name: 'Wall Paint White Satin 20L',       description: 'Premium washable satin-finish emulsion paint, 20-litre pail, interior and exterior use.',    category: 'Paints & Finishes',     subCategory: 'Emulsion',         brand: 'Dulux',      unitOfMeasure: 'LITER', costPrice: 18000, sellingPrice: 24000, stockQuantity: 925,  weight: 22,   dimensions: { length: 30, width: 30, height: 35 }, images: [], tags: ['paint', 'interior'],       status: ProductStatus.ACTIVE,       supplierIds: [],        createdAt: new Date('2023-02-01'), updatedAt: new Date('2026-07-15') },
+  { id: 'prod-4',  sku: 'PVC-4IN-6M',      name: 'PVC Pipes 4-inch (Length 6m)',     description: 'Schedule-40 uPVC drainage pipe, 4-inch diameter, 6-metre length, solvent-weld ends.',       category: 'Plumbing & Pipes',      subCategory: 'Pipes',            brand: 'Niger Delta Plastics', unitOfMeasure: 'EACH', costPrice: 5000, sellingPrice: 7000, stockQuantity: 4540, weight: 8,    dimensions: { length: 600, width: 10, height: 10 }, images: [], tags: ['plumbing', 'pvc'],         status: ProductStatus.ACTIVE,       supplierIds: ['sup-2'], createdAt: new Date('2023-02-10'), updatedAt: new Date('2026-07-20') },
+  { id: 'prod-5',  sku: 'TIL-FLR-6060',    name: 'Floor Tiles 60x60cm (Box)',        description: 'Polished porcelain floor tiles, 60x60cm, 4 pieces per box (1.44sqm coverage).',            category: 'Tiles & Flooring',      subCategory: 'Floor Tiles',      brand: 'Porcelain Palace', unitOfMeasure: 'BOX', costPrice: 5000, sellingPrice: 7500, stockQuantity: 3370, weight: 32,   dimensions: { length: 62, width: 62, height: 8 }, images: [], tags: ['tiles', 'flooring'],       status: ProductStatus.ACTIVE,       supplierIds: ['sup-5'], createdAt: new Date('2023-02-20'), updatedAt: new Date('2026-06-30') },
+  { id: 'prod-6',  sku: 'ELC-CBL-15-100',  name: 'Electrical Cable 1.5mm (100m Roll)', description: 'Single-core PVC-insulated copper wiring cable, 1.5mm², 100-metre roll.',                  category: 'Electrical',            subCategory: 'Cables',           brand: 'Coleman',    unitOfMeasure: 'EACH', costPrice: 11000, sellingPrice: 15000, stockQuantity: 665, weight: 12,   dimensions: { length: 40, width: 40, height: 15 }, images: [], tags: ['electrical', 'cable'],     status: ProductStatus.ACTIVE,       supplierIds: ['sup-3'], createdAt: new Date('2023-03-01'), updatedAt: new Date('2026-05-20') },
+  { id: 'prod-7',  sku: 'ROF-LS-MTR',      name: 'Roofing Sheet Long Span (Per Meter)', description: 'Pre-painted aluminium long-span roofing sheet, 0.45mm gauge, sold per linear metre.',    category: 'Roofing',               subCategory: 'Roofing Sheets',   brand: 'Colorbond',  unitOfMeasure: 'METER', costPrice: 6000, sellingPrice: 8500, stockQuantity: 8020, weight: 3.5,  dimensions: { length: 100, width: 90, height: 1 }, images: [], tags: ['roofing', 'aluminium'],   status: ProductStatus.ACTIVE,       supplierIds: [],        createdAt: new Date('2023-03-10'), updatedAt: new Date('2026-08-01') },
+  { id: 'prod-8',  sku: 'PLY-18MM-4X8',    name: 'Plywood Sheet 18mm (4x8ft)',       description: 'Marine-grade plywood sheet, 18mm thickness, 4ft x 8ft panel.',                             category: 'Wood & Timber',         subCategory: 'Plywood',          brand: 'Tropical Timber', unitOfMeasure: 'EACH', costPrice: 22000, sellingPrice: 30000, stockQuantity: 570, weight: 28,  dimensions: { length: 244, width: 122, height: 1.8 }, images: [], tags: ['wood', 'plywood'],       status: ProductStatus.ACTIVE,       supplierIds: ['sup-4'], createdAt: new Date('2023-03-20'), updatedAt: new Date('2026-07-01') },
+  { id: 'prod-9',  sku: 'SAN-WC-SUITE',    name: 'Sanitary Ware — WC Suite Set',     description: 'Close-coupled ceramic WC suite with cistern, seat and fittings included.',                 category: 'Sanitary Ware',         subCategory: 'WC Suites',        brand: 'Roca',       unitOfMeasure: 'EACH', costPrice: 200000, sellingPrice: 260000, stockQuantity: 28, weight: 35,  dimensions: { length: 70, width: 40, height: 75 }, images: [], tags: ['sanitary', 'bathroom'],  status: ProductStatus.ACTIVE,       supplierIds: ['sup-6'], createdAt: new Date('2023-04-01'), updatedAt: new Date('2026-06-15') },
+  { id: 'prod-10', sku: 'SAN-WB-SET',      name: 'Ceramic Wash Basin Set',           description: 'Pedestal-mounted ceramic wash basin with tap and waste fittings — currently out of stock.', category: 'Sanitary Ware',         subCategory: 'Wash Basins',      brand: 'Roca',       unitOfMeasure: 'EACH', costPrice: 45000, sellingPrice: 60000, stockQuantity: 0, weight: 18,   dimensions: { length: 55, width: 45, height: 85 }, images: [], tags: ['sanitary', 'basin'],     status: ProductStatus.OUT_OF_STOCK, supplierIds: ['sup-6'], createdAt: new Date('2023-05-05'), updatedAt: new Date('2026-08-10') },
+  { id: 'prod-11', sku: 'HDW-SCR-200',     name: 'Wood Screws Assorted Box (200pc)', description: 'Mixed-size zinc-plated wood screws, 200 pieces per box, for general carpentry.',            category: 'Hardware & Fasteners',  subCategory: 'Screws & Fasteners', brand: 'Ace Hardware', unitOfMeasure: 'BOX', costPrice: 3500, sellingPrice: 5000, stockQuantity: 340, weight: 2.5, dimensions: { length: 20, width: 15, height: 8 }, images: [], tags: ['hardware', 'fasteners'], status: ProductStatus.ACTIVE,       supplierIds: ['sup-8'], createdAt: new Date('2023-05-15'), updatedAt: new Date('2026-07-05') },
+  { id: 'prod-12', sku: 'ELC-FAN-56W',     name: 'Ceiling Fan 56-inch White',        description: 'Three-blade ceiling fan with light kit, 56-inch sweep, remote control included.',           category: 'Electrical',            subCategory: 'Fans & Lighting',  brand: 'Binatone',   unitOfMeasure: 'EACH', costPrice: 18000, sellingPrice: 25000, stockQuantity: 210, weight: 6,   dimensions: { length: 142, width: 142, height: 40 }, images: [], tags: ['electrical', 'fan'],     status: ProductStatus.ACTIVE,       supplierIds: ['sup-3'], createdAt: new Date('2023-06-01'), updatedAt: new Date('2026-06-20') },
+  { id: 'prod-13', sku: 'ELC-WH-30L-OLD',  name: 'Water Heater 30L (Old Model)',     description: 'Discontinued 30-litre electric storage water heater, replaced by newer energy-efficient model.', category: 'Electrical',       subCategory: 'Water Heaters',    brand: 'Binatone',   unitOfMeasure: 'EACH', costPrice: 35000, sellingPrice: 48000, stockQuantity: 15, weight: 14,   dimensions: { length: 45, width: 45, height: 60 }, images: [], tags: ['electrical', 'discontinued'], status: ProductStatus.DISCONTINUED, supplierIds: ['sup-3'], createdAt: new Date('2022-11-10'), updatedAt: new Date('2026-01-05') }
+];
+
 const MOCK_DASHBOARD_DATA: InventoryDashboardData = {
   stats: MOCK_STATS,
   alerts: MOCK_ALERTS,
@@ -930,13 +982,13 @@ export class InventoryService {
     if (!localStorage.getItem(LOCAL_KEYS.DASHBOARD)) {
       // seed all keys with initial mock data
       localStorage.setItem(LOCAL_KEYS.DASHBOARD, JSON.stringify(MOCK_DASHBOARD_DATA));
-      localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify([]));
+      localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(MOCK_PRODUCTS));
       localStorage.setItem(LOCAL_KEYS.BRANCHES, JSON.stringify(MOCK_BRANCHES));
       localStorage.setItem(LOCAL_KEYS.BRANCH_INVENTORY, JSON.stringify(MOCK_BRANCH_INVENTORY));
       localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(MOCK_MOVEMENTS));
-      localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify([]));
-      localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify([]));
-      localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify([]));
+      localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(MOCK_CATEGORIES));
+      localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(MOCK_MEASUREMENT_UNITS));
+      localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(MOCK_SUPPLIERS));
     } else {
       // Back-fill any keys that were previously seeded as empty arrays
       const existingBranches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[];
@@ -950,6 +1002,22 @@ export class InventoryService {
       const existingInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string) as BranchInventory[];
       if (!existingInventory || existingInventory.length === 0) {
         localStorage.setItem(LOCAL_KEYS.BRANCH_INVENTORY, JSON.stringify(MOCK_BRANCH_INVENTORY));
+      }
+      const existingProducts = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
+      if (!existingProducts || existingProducts.length === 0) {
+        localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(MOCK_PRODUCTS));
+      }
+      const existingCategories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
+      if (!existingCategories || existingCategories.length === 0) {
+        localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(MOCK_CATEGORIES));
+      }
+      const existingUnits = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
+      if (!existingUnits || existingUnits.length === 0) {
+        localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(MOCK_MEASUREMENT_UNITS));
+      }
+      const existingSuppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
+      if (!existingSuppliers || existingSuppliers.length === 0) {
+        localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(MOCK_SUPPLIERS));
       }
       // Refresh dashboard branch summaries with richer data
       const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;

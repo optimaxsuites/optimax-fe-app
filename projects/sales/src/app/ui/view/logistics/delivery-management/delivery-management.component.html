@@ -1,1 +1,418 @@
-<p>delivery-management works!</p>
+<div class="dm">
+
+  <!-- ================= LIST VIEW ================= -->
+  <ng-container *ngIf="view === 'list'">
+    <header class="dm-header">
+      <div>
+        <h1>Deliveries</h1>
+        <p>Every branch transfer, supplier purchase and customer delivery in one place.</p>
+      </div>
+      <button class="btn btn-primary" (click)="openNewDeliveryForm()">
+        <i class="pi pi-plus"></i> New delivery
+      </button>
+    </header>
+
+    <div class="status-pills">
+      <button
+        *ngFor="let s of statusFilterOrder"
+        class="pill"
+        [class.pill--active]="statusFilter === s"
+        (click)="setStatusFilter(s)">
+        <span class="pill-dot" *ngIf="s !== 'ALL'" [style.background]="statusMeta[s].color"></span>
+        {{ s === 'ALL' ? 'All' : statusMeta[s].label }}
+        <span class="pill-count">{{ statusCounts[s] ?? 0 }}</span>
+      </button>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <i class="pi pi-search"></i>
+        <input type="text" placeholder="Search delivery #, customer or driver…" [(ngModel)]="search" (ngModelChange)="onSearchInput()" />
+      </div>
+
+      <select class="select-filter" [(ngModel)]="typeFilter" (ngModelChange)="applyFilters()">
+        <option value="ALL">All types</option>
+        <option *ngFor="let t of typeOptions" [value]="t">{{ typeMeta[t].label }}</option>
+      </select>
+
+      <select class="select-filter" [(ngModel)]="priorityFilter" (ngModelChange)="applyFilters()">
+        <option value="ALL">All priorities</option>
+        <option *ngFor="let p of priorityOptions" [value]="p">{{ priorityMeta[p].label }}</option>
+      </select>
+
+      <button class="btn btn-ghost" *ngIf="hasActiveFilters" (click)="clearFilters()">
+        <i class="pi pi-times"></i> Clear
+      </button>
+    </div>
+
+    <div class="table-card" *ngIf="!isLoading; else loadingState">
+      <app-table
+        [columns]="deliveryColumns"
+        [rows]="deliveries"
+        [rowClickable]="true"
+        emptyMessage="No deliveries match these filters."
+        (rowClick)="openDelivery($event)"
+      >
+        <ng-template appTableBody let-d>
+          <td class="app-table-main-col">
+            <span class="mono">{{ d.deliveryNumber }}</span>
+            <span class="ref" *ngIf="d.linkedOrderRef">{{ d.linkedOrderRef }}</span>
+          </td>
+          <td>
+            <span class="type-tag"><i [class]="typeIcon(d.type)"></i>{{ typeLabel(d.type) }}</span>
+          </td>
+          <td class="route-cell">
+            <span class="truncate">{{ d.origin.label }}</span>
+            <i class="pi pi-arrow-right route-arrow"></i>
+            <span class="truncate">{{ d.destination.label }}</span>
+          </td>
+          <td>
+            <div class="driver-vehicle" *ngIf="d.driverName; else unassigned">
+              <span class="dv-driver">{{ d.driverName }}</span>
+              <span class="dv-vehicle mono">{{ d.vehiclePlate }}</span>
+            </div>
+            <ng-template #unassigned><span class="text-muted">Unassigned</span></ng-template>
+          </td>
+          <td>
+            <span class="priority-dot" [style.background]="priorityColor(d.priority)"></span>{{ priorityLabel(d.priority) }}
+          </td>
+          <td>
+            <span class="badge" [style.--badge-color]="statusColor(d.status)">{{ statusLabel(d.status) }}</span>
+          </td>
+          <td class="text-muted">{{ d.eta ? formatDate(d.eta) : (d.deliveredAt ? formatDate(d.deliveredAt) : '—') }}</td>
+          <td class="mono">{{ formatCurrency(d.cost) }}</td>
+        </ng-template>
+      </app-table>
+
+      <div class="table-footer" *ngIf="total > 0">
+        <span>{{ pageStart }}–{{ pageEnd }} of {{ total }}</span>
+        <div class="pager">
+          <button [disabled]="page === 0" (click)="prevPage()"><i class="pi pi-chevron-left"></i></button>
+          <button [disabled]="pageEnd >= total" (click)="nextPage()"><i class="pi pi-chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #loadingState>
+      <div class="table-card">
+        <div class="empty-state"><i class="pi pi-spin pi-spinner"></i></div>
+      </div>
+    </ng-template>
+  </ng-container>
+
+  <!-- ================= DETAIL VIEW (full page) ================= -->
+  <ng-container *ngIf="view === 'detail' && selectedDelivery as d">
+    <header class="page-header">
+      <button class="back-btn" (click)="backToList()"><i class="pi pi-arrow-left"></i> Back to deliveries</button>
+    </header>
+
+    <div class="detail-title-row">
+      <div>
+        <span class="badge badge-lg" [style.--badge-color]="statusMeta[d.status].color">{{ statusMeta[d.status].label }}</span>
+        <h1 class="mono">{{ d.deliveryNumber }}</h1>
+      </div>
+      <div class="detail-title-actions" *ngIf="d.status !== 'DELIVERED' && d.status !== 'CANCELLED'">
+        <button class="btn btn-ghost btn-danger" (click)="cancelDelivery()">Cancel delivery</button>
+        <button class="btn btn-ghost" *ngIf="d.status !== 'DELAYED'" (click)="markDelayed()">Mark delayed</button>
+        <button class="btn btn-primary" *ngIf="nextStatusLabel" (click)="advanceStatus()">
+          Move to {{ nextStatusLabel }} <i class="pi pi-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-col-main">
+
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="fc-icon"><i class="pi pi-map"></i></span>
+            <h2>Route</h2>
+          </div>
+          <div class="route-summary">
+            <div class="route-point">
+              <span class="route-label">Origin</span>
+              <span class="route-value">{{ d.origin.label }}</span>
+              <span class="route-sub">{{ d.origin.line1 }}</span>
+            </div>
+            <div class="route-line"><i class="pi pi-arrow-right"></i></div>
+            <div class="route-point">
+              <span class="route-label">Destination</span>
+              <span class="route-value">{{ d.destination.label }}</span>
+              <span class="route-sub">{{ d.destination.line1 }}</span>
+              <span class="route-sub" *ngIf="d.destination.contactPhone">{{ d.destination.contactPhone }}</span>
+            </div>
+          </div>
+          <div class="meta-strip">
+            <div class="meta-cell"><span>Type</span><strong>{{ typeMeta[d.type].label }}</strong></div>
+            <div class="meta-cell"><span>Priority</span><strong><span class="priority-dot" [style.background]="priorityMeta[d.priority].color"></span>{{ priorityMeta[d.priority].label }}</strong></div>
+            <div class="meta-cell"><span>Distance</span><strong>{{ d.distanceKm }} km</strong></div>
+            <div class="meta-cell"><span>Cost</span><strong>{{ formatCurrency(d.cost) }}</strong></div>
+          </div>
+        </section>
+
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="fc-icon"><i class="pi pi-box"></i></span>
+            <h2>Items ({{ d.itemCount }})</h2>
+          </div>
+          <div class="item-list">
+            <div class="item-row" *ngFor="let it of d.items">
+              <span class="item-name">{{ it.name }}</span>
+              <span class="item-sku mono">{{ it.sku }}</span>
+              <span class="item-qty">{{ it.quantity }} {{ it.unit }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="fc-icon"><i class="pi pi-clock"></i></span>
+            <h2>Timeline</h2>
+          </div>
+          <div class="timeline">
+            <div class="timeline-item" *ngFor="let ev of d.timeline; let last = last">
+              <div class="timeline-marker" [class.timeline-marker--current]="last" [style.background]="statusMeta[ev.status].color"></div>
+              <div class="timeline-copy">
+                <span class="timeline-label">{{ ev.label }}</span>
+                <span class="timeline-time">{{ formatDate(ev.timestamp) }} <ng-container *ngIf="ev.actor">· {{ ev.actor }}</ng-container></span>
+                <span class="timeline-note" *ngIf="ev.note">{{ ev.note }}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-card" *ngIf="d.proofOfDelivery">
+          <div class="form-card-head">
+            <span class="fc-icon fc-icon--green"><i class="pi pi-verified"></i></span>
+            <h2>Proof of delivery</h2>
+          </div>
+          <div class="pod-card">
+            <i class="pi pi-verified"></i>
+            <div>
+              <strong>Received by {{ d.proofOfDelivery.receivedBy }}</strong>
+              <span>{{ formatDate(d.proofOfDelivery.deliveredAt) }}</span>
+              <span class="pod-note" *ngIf="d.proofOfDelivery.notes">"{{ d.proofOfDelivery.notes }}"</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="detail-col-side">
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="fc-icon"><i class="pi pi-user"></i></span>
+            <h2>Driver &amp; vehicle</h2>
+          </div>
+
+          <div class="assignment-view" *ngIf="!showAssignPanel">
+            <div class="assignment-chips-row">
+              <ng-container *ngIf="d.driverName; else noAssignment">
+                <div class="assignment-chip">
+                  <i class="pi pi-user"></i>
+                  <div><strong>{{ d.driverName }}</strong><span>Driver</span></div>
+                </div>
+                <div class="assignment-chip">
+                  <i class="pi pi-car"></i>
+                  <div><strong>{{ d.vehiclePlate }}</strong><span>Vehicle</span></div>
+                </div>
+              </ng-container>
+              <ng-template #noAssignment>
+                <div class="empty-mini">No driver or vehicle assigned yet.</div>
+              </ng-template>
+            </div>
+            <button class="btn btn-ghost btn-block" (click)="toggleAssignPanel()">
+              <i class="pi pi-user-edit"></i> {{ d.driverName ? 'Reassign' : 'Assign driver & vehicle' }}
+            </button>
+          </div>
+
+          <div class="assign-form" *ngIf="showAssignPanel">
+            <label>
+              Driver
+              <select [(ngModel)]="assignForm.driverId">
+                <option value="" disabled>Select driver</option>
+                <option *ngFor="let dr of availableDrivers()" [value]="dr.id">{{ dr.name }} — {{ dr.status === 'ON_DUTY' ? 'On duty' : 'Assigned' }}</option>
+              </select>
+            </label>
+            <label>
+              Vehicle
+              <select [(ngModel)]="assignForm.vehicleId">
+                <option value="" disabled>Select vehicle</option>
+                <option *ngFor="let v of availableVehicles()" [value]="v.id">{{ v.plateNumber }} — {{ v.name }}</option>
+              </select>
+            </label>
+            <div class="assign-actions">
+              <button class="btn btn-ghost" (click)="toggleAssignPanel()">Cancel</button>
+              <button class="btn btn-primary" [disabled]="isSavingAssignment" (click)="saveAssignment()">
+                <i class="pi pi-spin pi-spinner" *ngIf="isSavingAssignment"></i> Save
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-card" *ngIf="d.linkedOrderRef">
+          <div class="form-card-head">
+            <span class="fc-icon"><i class="pi pi-link"></i></span>
+            <h2>Linked reference</h2>
+          </div>
+          <dl class="kv-list">
+            <div class="kv-row"><dt>Module</dt><dd>{{ d.linkedModule }}</dd></div>
+            <div class="kv-row"><dt>Reference</dt><dd class="mono">{{ d.linkedOrderRef }}</dd></div>
+          </dl>
+        </section>
+
+        <section class="form-card" *ngIf="d.notes">
+          <div class="form-card-head">
+            <span class="fc-icon"><i class="pi pi-file-edit"></i></span>
+            <h2>Notes</h2>
+          </div>
+          <p class="notes-text">{{ d.notes }}</p>
+        </section>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ================= NEW DELIVERY FORM (full page) ================= -->
+  <ng-container *ngIf="view === 'form'">
+    <header class="page-header">
+      <button class="back-btn" (click)="cancelForm()"><i class="pi pi-arrow-left"></i> Back to deliveries</button>
+    </header>
+
+    <div class="form-title-row">
+      <h1>New delivery</h1>
+      <p>Create a delivery for a customer order, branch transfer, or supplier purchase.</p>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-col-main">
+
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="fc-icon"><i class="pi pi-info-circle"></i></span>
+            <h2>Delivery information</h2>
+          </div>
+          <div class="field-grid field-grid--2">
+            <div class="field">
+              <label>Delivery type <span class="req">*</span></label>
+              <select [(ngModel)]="formModel.type">
+                <option *ngFor="let t of typeOptions" [value]="t">{{ typeMeta[t].label }}</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Priority <span class="req">*</span></label>
+              <select [(ngModel)]="formModel.priority">
+                <option *ngFor="let p of priorityOptions" [value]="p">{{ priorityMeta[p].label }} — {{ priorityMeta[p].sla }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label>Linked order / PO reference</label>
+              <input type="text" placeholder="e.g. SO-20458 or PO-18320" [(ngModel)]="formModel.linkedOrderRef" />
+            </div>
+          </div>
+        </section>
+
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="fc-icon"><i class="pi pi-map-marker"></i></span>
+            <h2>Origin &amp; destination</h2>
+          </div>
+          <div class="field-grid field-grid--2">
+            <div class="field">
+              <label>Origin label <span class="req">*</span></label>
+              <input type="text" placeholder="e.g. Lekki Branch" [(ngModel)]="formModel.originLabel" />
+            </div>
+            <div class="field">
+              <label>Origin address <span class="req">*</span></label>
+              <input type="text" placeholder="Enter street address" [(ngModel)]="formModel.originLine1" />
+            </div>
+          </div>
+          <div class="field-grid field-grid--2">
+            <div class="field">
+              <label>Destination label <span class="req">*</span></label>
+              <input type="text" placeholder="e.g. customer's name or branch" [(ngModel)]="formModel.destinationLabel" />
+            </div>
+            <div class="field">
+              <label>Destination address <span class="req">*</span></label>
+              <input type="text" placeholder="Enter street address" [(ngModel)]="formModel.destinationLine1" />
+            </div>
+          </div>
+          <div class="field-grid field-grid--2">
+            <div class="field">
+              <label>Contact name</label>
+              <input type="text" placeholder="Recipient's full name" [(ngModel)]="formModel.destinationContactName" />
+            </div>
+            <div class="field">
+              <label>Contact phone</label>
+              <input type="text" placeholder="+234 800 000 0000" [(ngModel)]="formModel.destinationContactPhone" />
+            </div>
+          </div>
+        </section>
+
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="fc-icon"><i class="pi pi-box"></i></span>
+            <h2>Items</h2>
+          </div>
+          <div class="item-form-list">
+            <div class="item-form-row" *ngFor="let it of formItems; let i = index">
+              <input type="text" placeholder="Item name" [(ngModel)]="it.name" class="item-input-name" />
+              <input type="text" placeholder="SKU" [(ngModel)]="it.sku" class="item-input-sku" />
+              <input type="number" min="1" placeholder="Qty" [(ngModel)]="it.quantity" class="item-input-qty" />
+              <input type="text" placeholder="Unit" [(ngModel)]="it.unit" class="item-input-unit" />
+              <button class="item-remove-btn" (click)="removeFormItem(i)" [disabled]="formItems.length === 1">
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
+          </div>
+          <button class="add-item-btn" (click)="addFormItem()"><i class="pi pi-plus"></i> Add item</button>
+        </section>
+      </div>
+
+      <div class="detail-col-side">
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="fc-icon"><i class="pi pi-user"></i></span>
+            <h2>Assignment</h2>
+          </div>
+          <p class="field-hint">Optional — leave blank to assign later from the delivery list.</p>
+          <div class="field">
+            <label>Driver</label>
+            <select [(ngModel)]="formModel.driverId">
+              <option value="">Assign later</option>
+              <option *ngFor="let dr of drivers" [value]="dr.id">{{ dr.name }}</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Vehicle</label>
+            <select [(ngModel)]="formModel.vehicleId">
+              <option value="">Assign later</option>
+              <option *ngFor="let v of vehicles" [value]="v.id">{{ v.plateNumber }} — {{ v.name }}</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="fc-icon"><i class="pi pi-file-edit"></i></span>
+            <h2>Notes</h2>
+          </div>
+          <div class="field">
+            <label>Additional information</label>
+            <textarea rows="5" placeholder="Add any notes about this delivery…" [(ngModel)]="formModel.notes"></textarea>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-ghost" (click)="cancelForm()"><i class="pi pi-times"></i> Cancel</button>
+      <button class="btn btn-primary" [disabled]="isSubmittingForm" (click)="submitNewDelivery()">
+        <i class="pi pi-spin pi-spinner" *ngIf="isSubmittingForm"></i>
+        <i class="pi pi-check" *ngIf="!isSubmittingForm"></i>
+        Create delivery
+      </button>
+    </div>
+  </ng-container>
+
+</div>

@@ -268,6 +268,11 @@
                                     title="Edit">
                                     <i class="fas fa-pencil-alt"></i>
                                 </button>
+                                <button type="button" class="ql-action-btn"
+                                    (click)="$event.stopPropagation(); navigateToAddProduct(branch.id)"
+                                    title="Assign Product to Branch">
+                                    <i class="fas fa-box-open"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -325,6 +330,11 @@
                     <button type="button" class="ql-btn ql-btn--small ql-btn--primary"
                         (click)="$event.stopPropagation(); navigateToBranch(branch.id)">
                         <i class="fas fa-eye"></i> View
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--small ql-btn--ghost"
+                        (click)="$event.stopPropagation(); navigateToAddProduct(branch.id)"
+                        title="Assign Product to Branch">
+                        <i class="fas fa-box-open"></i> Assign Product
                     </button>
                 </div>
             </div>
