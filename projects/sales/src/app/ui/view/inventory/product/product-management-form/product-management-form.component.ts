@@ -85,6 +85,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   productId: string = '';
   isLoading = false;
   isSubmitting = false;
+  error: string | null = null;
   variantModalForm!: FormGroup;
 
   // Mock data
@@ -309,13 +310,15 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error loading product:', error);
         this.isLoading = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load product. Please try again.' });
+        this.error = 'Failed to load product. Please try again.';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: this.error });
         this.goBack();
       }
     });
   }
 
   onSubmit(): void {
+    this.error = null;
     if (this.productForm.invalid) {
       this.productForm.markAllAsTouched();
       const invalidControls: string[] = [];
@@ -364,7 +367,8 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error saving product:', error);
         this.isSubmitting = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save product. Please try again.' });
+        this.error = 'Failed to save product. Please try again.';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: this.error });
       }
     });
   }
