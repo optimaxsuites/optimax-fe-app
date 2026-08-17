@@ -252,9 +252,10 @@
 
                         <td class="ql-td-actions">
                             <div class="ql-row-actions">
-                                <button type="button" class="ql-action-btn" (click)="viewMovement(movement.id)"
-                                    title="View">
+                                <button type="button" class="ql-action-btn ql-action-btn--view" (click)="viewMovement(movement.id)"
+                                    title="View movement details">
                                     <i class="fas fa-eye"></i>
+                                    <span>View</span>
                                 </button>
                                 <button type="button" class="ql-action-btn ql-action-btn--approve"
                                     *ngIf="movement.status === 'PENDING'" title="Approve">

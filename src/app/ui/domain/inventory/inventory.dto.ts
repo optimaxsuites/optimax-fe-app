@@ -86,6 +86,8 @@ export interface Product {
     tags: string[];
     status: ProductStatus;
     supplierIds: string[];
+    isComboProduct?: boolean;
+    variants?: any[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -195,6 +197,8 @@ export interface StockMovement {
     createdAt: Date;
     approvedAt: Date;
     completedAt: Date;
+    updatedAt?: Date;
+    estimatedArrival?: Date;
 }
 
 export interface RestockRequest {
@@ -422,4 +426,14 @@ export function getMovementTypeIcon(type: MovementType): string {
         [MovementType.DAMAGED]: 'fa-exclamation-triangle'
     };
     return map[type];
+}
+
+export function getMovementStatusLabel(status: MovementStatus): string {
+    const map: Record<MovementStatus, string> = {
+        [MovementStatus.PENDING]: 'Pending',
+        [MovementStatus.IN_TRANSIT]: 'In Transit',
+        [MovementStatus.COMPLETED]: 'Completed',
+        [MovementStatus.CANCELLED]: 'Cancelled'
+    };
+    return map[status] || status;
 }

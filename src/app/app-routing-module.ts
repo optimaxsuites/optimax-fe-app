@@ -45,6 +45,7 @@ import { BranchDetailComponent } from './ui/view/branch/branch-detail/branch-det
 import { BranchInventoryFormComponent } from './ui/view/branch/branch-inventory-form/branch-inventory-form.component';
 import { BranchFormComponent } from './ui/view/branch/branch-form/branch-form.component';
 import { StockMovementFormComponent } from './ui/view/inventory/stock/stock-movement-form/stock-movement-form.component';
+import { StockMovementDetailComponent } from './ui/view/inventory/stock/stock-movement-detail/stock-movement-detail.component';
 
 
 export const routes: Routes = [
@@ -107,6 +108,10 @@ export const routes: Routes = [
   },
   {
     path: 'admin/sales/inventory/movements/:id',
+    component: StockMovementDetailComponent
+  },
+  {
+    path: 'admin/sales/inventory/movements/:id/edit',
     component: StockMovementFormComponent
   },
 

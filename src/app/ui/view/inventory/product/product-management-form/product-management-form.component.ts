@@ -4,8 +4,8 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Subject, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { SalesService } from '../../../../service/sales/sales.service';
-import { Product, ProductVariant, MeasurementUnit, Supplier, Category } from '../../../../domain/sales/sales.dto';
+import { InventoryService } from '../../../../service/inventory/inventory.service';
+import { Product, MeasurementUnit, Supplier, Category } from '../../../../domain/inventory/inventory.dto';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
@@ -38,26 +38,26 @@ export function pastDateValidator(): ValidatorFn {
 }
 
 const MOCK_CATEGORIES: Category[] = [
-  { id: 1, categoryId: 'cat-1', name: 'Electronics', description: 'Gadgets, appliances, laptops, phones' },
-  { id: 2, categoryId: 'cat-2', name: 'Furniture', description: 'Chairs, desks, sofas, tables' },
-  { id: 3, categoryId: 'cat-3', name: 'Office Supplies', description: 'Papers, pens, staplers' },
-  { id: 4, categoryId: 'cat-4', name: 'Apparel', description: 'Clothing, uniforms, shoes' },
-  { id: 5, categoryId: 'cat-5', name: 'Hardware', description: 'Tools, building supplies, equipment' }
+  { id: 'cat-1', name: 'Electronics', description: 'Gadgets, appliances, laptops, phones', createdAt: new Date(), updatedAt: new Date() },
+  { id: 'cat-2', name: 'Furniture', description: 'Chairs, desks, sofas, tables', createdAt: new Date(), updatedAt: new Date() },
+  { id: 'cat-3', name: 'Office Supplies', description: 'Papers, pens, staplers', createdAt: new Date(), updatedAt: new Date() },
+  { id: 'cat-4', name: 'Apparel', description: 'Clothing, uniforms, shoes', createdAt: new Date(), updatedAt: new Date() },
+  { id: 'cat-5', name: 'Hardware', description: 'Tools, building supplies, equipment', createdAt: new Date(), updatedAt: new Date() }
 ];
 
 const MOCK_UNITS: MeasurementUnit[] = [
-  { id: 1, unitId: 'unit-1', name: 'pcs', description: 'Pieces' },
-  { id: 2, unitId: 'unit-2', name: 'kg', description: 'Kilograms' },
-  { id: 3, unitId: 'unit-3', name: 'box', description: 'Boxes' },
-  { id: 4, unitId: 'unit-4', name: 'pack', description: 'Packs' },
-  { id: 5, unitId: 'unit-5', name: 'm', description: 'Meters' }
+  { id: 'EACH', name: 'pcs', code: 'PCS', description: 'Pieces', createdAt: new Date(), updatedAt: new Date() },
+  { id: 'KG', name: 'kg', code: 'KG', description: 'Kilograms', createdAt: new Date(), updatedAt: new Date() },
+  { id: 'BOX', name: 'box', code: 'BOX', description: 'Boxes', createdAt: new Date(), updatedAt: new Date() },
+  { id: 'EACH', name: 'pack', code: 'PACK', description: 'Packs', createdAt: new Date(), updatedAt: new Date() },
+  { id: 'METER', name: 'm', code: 'METER', description: 'Meters', createdAt: new Date(), updatedAt: new Date() }
 ];
 
 const MOCK_SUPPLIERS: Supplier[] = [
-  { id: 1, supplierId: 'sup-1', name: 'Alibaba Group', contactPerson: 'Jack Ma', email: 'sales@alibaba.com', phone: '123456789' },
-  { id: 2, supplierId: 'sup-2', name: 'Jumia Business', contactPerson: 'Amina Bello', email: 'amina@jumia.com', phone: '987654321' },
-  { id: 3, supplierId: 'sup-3', name: 'Konga Wholesales', contactPerson: 'Obinna Ike', email: 'obinna@konga.com', phone: '555666777' },
-  { id: 4, supplierId: 'sup-4', name: 'Global Logistics Partners', contactPerson: 'John Smith', email: 'john@glp.com', phone: '888999000' }
+  { id: 'sup-1', name: 'Alibaba Group', contactPerson: 'Jack Ma', email: 'sales@alibaba.com', phone: '123456789', address: 'Hangzhou, China', createdAt: new Date(), updatedAt: new Date() },
+  { id: 'sup-2', name: 'Jumia Business', contactPerson: 'Amina Bello', email: 'amina@jumia.com', phone: '987654321', address: 'Lagos, Nigeria', createdAt: new Date(), updatedAt: new Date() },
+  { id: 'sup-3', name: 'Konga Wholesales', contactPerson: 'Obinna Ike', email: 'obinna@konga.com', phone: '555666777', address: 'Lagos, Nigeria', createdAt: new Date(), updatedAt: new Date() },
+  { id: 'sup-4', name: 'Global Logistics Partners', contactPerson: 'John Smith', email: 'john@glp.com', phone: '888999000', address: 'New York, USA', createdAt: new Date(), updatedAt: new Date() }
 ];
 
 @Component({
@@ -125,7 +125,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private salesService: SalesService
+    private inventoryService: InventoryService
   ) {
     this.productForm = this.createForm();
     this.initVariantModalForm();
@@ -151,9 +151,9 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
 
     if (this.isEditMode) {
       forkJoin({
-        cats: this.salesService.getCategories().pipe(catchError(() => of([]))),
-        units: this.salesService.getMeasurementUnits().pipe(catchError(() => of([]))),
-        sups: this.salesService.getSuppliers().pipe(catchError(() => of([])))
+        cats: this.inventoryService.getCategories().pipe(catchError(() => of([]))),
+        units: this.inventoryService.getMeasurementUnits().pipe(catchError(() => of([]))),
+        sups: this.inventoryService.getSuppliers().pipe(catchError(() => of([])))
       }).subscribe(({ cats, units, sups }) => {
         this.rawCategories = cats.length ? cats : MOCK_CATEGORIES;
         this.categories = this.rawCategories.map(c => c.name);
@@ -169,7 +169,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   }
 
   loadCategories(): void {
-    this.salesService.getCategories().subscribe({
+    this.inventoryService.getCategories().subscribe({
       next: (cats) => {
         this.rawCategories = cats.length ? cats : MOCK_CATEGORIES;
         this.categories = this.rawCategories.map(c => c.name);
@@ -182,7 +182,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   }
 
   loadUnits(): void {
-    this.salesService.getMeasurementUnits().subscribe({
+    this.inventoryService.getMeasurementUnits().subscribe({
       next: (units) => {
         this.measurementUnits = units.length ? units : MOCK_UNITS;
       },
@@ -193,7 +193,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   }
 
   loadSuppliers(): void {
-    this.salesService.getSuppliers().subscribe({
+    this.inventoryService.getSuppliers().subscribe({
       next: (sups) => {
         this.suppliers = sups.length ? sups : MOCK_SUPPLIERS;
       },
@@ -219,7 +219,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       partNumber: [''],
       sku: [''],
       code: [''],
-      measurementUnit: ['Each'],
+      measurementUnit: ['pcs'],
 
       // Pricing & Inventory
       costPrice: [null, [Validators.required, Validators.min(0.01)]],
@@ -263,12 +263,12 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
 
   loadProduct(): void {
     this.isLoading = true;
-    this.salesService.getProductById(this.productId).subscribe({
+    this.inventoryService.getProduct(this.productId).subscribe({
       next: (product: any) => {
         if (product) {
-          const categoryName = this.rawCategories.find(c => c.id === product.categoryId)?.name || '';
-          const unitName = this.measurementUnits.find(u => u.id === product.measurementUnitId)?.name || 'Each';
-          const supplierName = this.suppliers.find(s => s.id === product.supplierId)?.name || '';
+          const categoryName = this.rawCategories.find(c => c.id === product.category)?.name || '';
+          const unitName = this.measurementUnits.find(u => u.id === product.unitOfMeasure)?.name || 'pcs';
+          const supplierName = this.suppliers.find(s => s.id === (product.supplierIds && product.supplierIds[0]))?.name || '';
 
           this.productForm.patchValue({
             name: product.name,
@@ -276,7 +276,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
             category: categoryName,
             sku: product.sku,
             costPrice: product.costPrice,
-            sellingPrice: product.unitPrice,
+            sellingPrice: product.sellingPrice,
             quantity: product.stockQuantity,
             measurementUnit: unitName,
             supplier: supplierName,
@@ -333,7 +333,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
     const formData = this.productForm.getRawValue();
 
     const foundCategory = this.rawCategories.find(c => c.name === formData.category);
-    const foundUnit = this.measurementUnits.find(u => u.name === (formData.measurementUnit || 'Each'));
+    const foundUnit = this.measurementUnits.find(u => u.name === (formData.measurementUnit || 'pcs'));
     const supplierName = formData.supplier || formData.selectedSupplier || '';
     const foundSupplier = this.suppliers.find(s => s.name === supplierName);
 
@@ -341,21 +341,19 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       name: formData.name,
       description: formData.description,
       sku: formData.sku || `SKU-${Date.now()}`,
-      unitPrice: formData.sellingPrice,
+      sellingPrice: formData.sellingPrice,
       costPrice: formData.costPrice,
       stockQuantity: formData.quantity,
-      categoryId: foundCategory?.id ?? undefined,
-      measurementUnitId: foundUnit?.id ?? undefined,
-      supplierId: foundSupplier?.id ?? undefined,
-      taxRate: this.extractTaxRate(formData.taxes),
-      currency: 'NGN',
+      category: foundCategory?.id,
+      unitOfMeasure: (foundUnit?.id || 'EACH') as 'EACH' | 'BOX' | 'KG' | 'LITER' | 'METER',
+      supplierIds: foundSupplier ? [foundSupplier.id] : [],
       status: (formData.quantity ?? 0) > 0 ? 'ACTIVE' as any : 'OUT_OF_STOCK' as any,
       isComboProduct: formData.isComboProduct || false
     };
 
     const action = this.isEditMode
-      ? this.salesService.updateProduct(this.productId, productData)
-      : this.salesService.createProduct(productData);
+      ? this.inventoryService.updateProduct(this.productId, productData)
+      : this.inventoryService.createProduct(productData);
 
     action.subscribe({
       next: () => {
@@ -546,8 +544,8 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
         this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Supplier "${trimmed}" already exists.` });
         return;
       }
-      this.salesService.createSupplier({ name: trimmed }).subscribe({
-        next: (updatedSups) => {
+      this.inventoryService.createSupplier({ name: trimmed }).subscribe({
+        next: (updatedSups: Supplier[]) => {
           this.suppliers = updatedSups;
           this.productForm.patchValue({
             supplier: trimmed,
@@ -555,7 +553,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
           });
           this.messageService.add({ severity: 'success', summary: 'Success', detail: `Supplier "${trimmed}" added successfully.` });
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error('Error adding supplier:', err);
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add supplier' });
         }
