@@ -11,29 +11,12 @@
             </button>
         </div>
 
-        <!-- Branch Quick Stats -->
+        <!-- Branch Stock Summary (Compact) -->
+        <app-branch-stock-summary [branchId]="branchId" [compact]="true" [showActions]="false">
+        </app-branch-stock-summary>
+
+        <!-- Movements isn't part of the reusable summary — kept branch-detail specific -->
         <div class="ql-filter-section">
-            <div class="ql-filter-heading">Branch Stats</div>
-            <div class="ql-sidebar-stat">
-                <span class="ql-sidebar-stat-label">Products</span>
-                <span class="ql-sidebar-stat-value">{{ stats.totalProducts }}</span>
-            </div>
-            <div class="ql-sidebar-stat">
-                <span class="ql-sidebar-stat-label">Stock Units</span>
-                <span class="ql-sidebar-stat-value">{{ formatNumber(stats.totalStockUnits) }}</span>
-            </div>
-            <div class="ql-sidebar-stat">
-                <span class="ql-sidebar-stat-label">Stock Value</span>
-                <span class="ql-sidebar-stat-value">{{ formatCurrency(stats.totalStockValue) }}</span>
-            </div>
-            <div class="ql-sidebar-stat">
-                <span class="ql-sidebar-stat-label">Low Stock</span>
-                <span class="ql-sidebar-stat-value ql-sidebar-stat--warning">{{ stats.lowStock }}</span>
-            </div>
-            <div class="ql-sidebar-stat">
-                <span class="ql-sidebar-stat-label">Out of Stock</span>
-                <span class="ql-sidebar-stat-value ql-sidebar-stat--danger">{{ stats.outOfStock }}</span>
-            </div>
             <div class="ql-sidebar-stat">
                 <span class="ql-sidebar-stat-label">Movements</span>
                 <span class="ql-sidebar-stat-value">{{ stats.totalMovements }}</span>
@@ -87,7 +70,8 @@
                         {{ getInitials(branch.name) }}
                     </div>
                     <div>
-                        <h1 class="ql-title">{{ branch.name }}</h1>
+                        <app-branch-selector [branches]="branches" [selectedBranchId]="branchId" size="title"
+                            (branchChange)="onBranchChange($event)"></app-branch-selector>
                         <div class="ql-branch-meta">
                             <span class="ql-meta-item">
                                 <i class="fas fa-code"></i> {{ branch.code }}
@@ -281,62 +265,11 @@
                 MOVEMENTS TAB
                 ======================================================== -->
                 <div *ngIf="activeTab === 'movements'" class="ql-tab-panel">
-                    <div class="ql-movements-container">
-                        <div class="ql-movements-filters">
-                            <div class="ql-filter-row">
-                                <div class="ql-filter-group">
-                                    <label class="ql-flabel">Type</label>
-                                    <select class="ql-filter-select" [(ngModel)]="movementFilters.type" (change)="applyMovementFilters()">
-                                        <option *ngFor="let type of movementTypes" [value]="type">
-                                            {{ type === 'ALL' ? 'All Types' : getMovementTypeLabel(type) }}
-                                        </option>
-                                    </select>
-                                </div>
-                                <div class="ql-filter-group">
-                                    <label class="ql-flabel">Status</label>
-                                    <select class="ql-filter-select" [(ngModel)]="movementFilters.status" (change)="applyMovementFilters()">
-                                        <option *ngFor="let status of movementStatuses" [value]="status">
-                                            {{ status === 'ALL' ? 'All Statuses' : getMovementStatusLabel(status) }}
-                                        </option>
-                                    </select>
-                                </div>
-                                <button class="ql-btn ql-btn--ghost-sm" (click)="movementFilters.type = 'ALL'; movementFilters.status = 'ALL'; applyMovementFilters()">
-                                    <i class="fas fa-undo-alt"></i> Reset
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="ql-movements-list">
-                            <div *ngFor="let movement of filteredMovements" class="ql-movement-item" (click)="viewMovement(movement.id)">
-                                <div class="ql-movement-icon" [style.color]="movement.movementType === 'PURCHASE' ? '#2EB270' : 
-                                                                                 movement.movementType === 'TRANSFER' ? '#3B82F6' : 
-                                                                                 movement.movementType === 'SALE' ? '#F5A623' : '#6B7280'">
-                                    <i class="fas" [class]="movement.movementType === 'PURCHASE' ? 'fa-truck-loading' :
-                                                             movement.movementType === 'TRANSFER' ? 'fa-exchange-alt' :
-                                                             movement.movementType === 'SALE' ? 'fa-shopping-cart' : 'fa-undo-alt'"></i>
-                                </div>
-                                <div class="ql-movement-content">
-                                    <span class="ql-movement-product">{{ movement.productName }}</span>
-                                    <span class="ql-movement-details">
-                                        {{ movement.quantity }} units · {{ getMovementTypeLabel(movement.movementType) }}
-                                        <span class="ql-movement-location">
-                                            {{ movement.fromLocation.name }} → {{ movement.toLocation.name }}
-                                        </span>
-                                    </span>
-                                    <span class="ql-movement-time">{{ formatDate(movement.createdAt) }} at {{ formatTime(movement.createdAt) }}</span>
-                                </div>
-                                <span class="ql-movement-status" [class.ql-movement--completed]="movement.status === 'COMPLETED'"
-                                                                            [class.ql-movement--pending]="movement.status === 'PENDING'"
-                                                                            [class.ql-movement--transit]="movement.status === 'IN_TRANSIT'">
-                                    {{ movement.status }}
-                                </span>
-                            </div>
-                            <div *ngIf="filteredMovements.length === 0" class="ql-empty-state">
-                                <i class="fas fa-exchange-alt"></i>
-                                <p>No stock movements found</p>
-                            </div>
-                        </div>
-                    </div>
+                  <app-branch-transfer-history
+                    [branchId]="branchId"
+                    [branchName]="branch?.name || ''"
+                    (movementSelected)="viewMovement($event)">
+                  </app-branch-transfer-history>
                 </div>
 
                 <!-- ========================================================

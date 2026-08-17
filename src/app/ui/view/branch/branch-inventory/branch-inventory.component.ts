@@ -43,6 +43,7 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
     status: 'ALL',
     type: 'ALL',
     city: 'ALL',
+    branchId: null as string | null,
     minProducts: '',
     maxProducts: ''
   };
@@ -162,13 +163,17 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
       const cityMatch = this.filters.city === 'ALL' ||
         branch.location.city === this.filters.city;
 
+      // Branch quick-filter (jump straight to a single branch)
+      const branchMatch = !this.filters.branchId ||
+        branch.id === this.filters.branchId;
+
       // Products count filter (using summary data)
       const summary = this.branchSummaries.find(s => s.branchId === branch.id);
       const productCount = summary?.totalProducts || 0;
       const minMatch = !this.filters.minProducts || productCount >= parseInt(this.filters.minProducts);
       const maxMatch = !this.filters.maxProducts || productCount <= parseInt(this.filters.maxProducts);
 
-      return searchMatch && statusMatch && typeMatch && cityMatch && minMatch && maxMatch;
+      return searchMatch && statusMatch && typeMatch && cityMatch && branchMatch && minMatch && maxMatch;
     });
 
     // Update cities for filter
@@ -190,10 +195,16 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
       status: 'ALL',
       type: 'ALL',
       city: 'ALL',
+      branchId: null,
       minProducts: '',
       maxProducts: ''
     };
     this.filterBranches();
+  }
+
+  onBranchFilterChange(branchId: string | null): void {
+    this.filters.branchId = branchId;
+    this.applyFilters();
   }
 
   // ============================================================
@@ -325,6 +336,7 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
     if (this.filters.status !== 'ALL') count++;
     if (this.filters.type !== 'ALL') count++;
     if (this.filters.city !== 'ALL') count++;
+    if (this.filters.branchId) count++;
     if (this.filters.searchTerm) count++;
     if (this.filters.minProducts) count++;
     if (this.filters.maxProducts) count++;

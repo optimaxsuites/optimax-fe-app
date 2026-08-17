@@ -147,6 +147,7 @@ import { ProductManagementComponent } from './ui/view/inventory/product/product-
 import { BranchInventoryComponent } from './ui/view/branch/branch-inventory/branch-inventory.component';
 import { BranchDetailComponent } from './ui/view/branch/branch-detail/branch-detail.component';
 import { BranchInventoryTableComponent } from './ui/view/branch/branch-inventory-table/branch-inventory-table.component';
+import { BranchTransferHistoryComponent } from './ui/view/branch/branch-transfer-history/branch-transfer-history.component';
 import { BranchInventoryFormComponent } from './ui/view/branch/branch-inventory-form/branch-inventory-form.component';
 import { BranchFormComponent } from './ui/view/branch/branch-form/branch-form.component';
 import { StockMovementComponent } from './ui/view/inventory/stock/stock-movement/stock-movement.component';
@@ -162,15 +163,20 @@ import { TrackingComponent } from './ui/view/logistics/tracking/tracking.compone
 import { FleetManagementComponent } from './ui/view/logistics/fleet-management/fleet-management.component';
 import { RouteOptimizationComponent } from './ui/view/logistics/route-optimization/route-optimization.component';
 import { DeliveryManagementsComponent } from './ui/view/logistics/delivery-management/delivery-management.component';
+import { BranchSelectorComponent } from './ui/shared-component/branch-selector/branch-selector.component';
+import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-summary/branch-stock-summary.component';
 
 @NgModule({
   declarations: [
     App,
     InventoryComponent,
     InventoryDashboardComponent,
+    BranchSelectorComponent,
+    BranchStockSummaryComponent,
     BranchInventoryComponent,
     BranchDetailComponent,
     BranchInventoryTableComponent,
+    BranchTransferHistoryComponent,
     BranchInventoryFormComponent,
     BranchFormComponent,
     StockMovementComponent,

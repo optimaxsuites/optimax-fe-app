@@ -40,6 +40,7 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   // Core
   branchId: string = '';
   branch: Branch | null = null;
+  branches: Branch[] = [];
   branchInventory: BranchInventory[] = [];
   branchSummary: BranchStockSummary | null = null;
   isLoading: boolean = true;
@@ -121,6 +122,7 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   // ============================================================
 
   ngOnInit(): void {
+    this.loadBranchList();
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
       this.branchId = params['branchId'];
       if (this.branchId) {
@@ -210,6 +212,15 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
           this.error = 'Failed to load branch details. Please try again.';
           this.isLoading = false;
         }
+      });
+  }
+
+  loadBranchList(): void {
+    this.inventoryService.getBranches()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (branches) => { this.branches = branches; },
+        error: (err) => console.error('Failed to load branch list:', err)
       });
   }
 
@@ -354,6 +365,13 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
   }
 
+  /** Switch to a different branch from the branch selector in the top bar. */
+  onBranchChange(branchId: string | null): void {
+    if (!branchId || branchId === this.branchId) return;
+    this.isEditing = false;
+    this.router.navigate(['/admin/sales/inventory/branches', branchId]);
+  }
+
   createTransfer(productId?: string): void {
     this.router.navigate(['/admin/sales/commerce/inventory/movements/transfer'], {
       queryParams: productId ? {
@@ -379,7 +397,8 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/sales/commerce/inventory/branches', this.branchId, 'inventory', 'new']);
   }
 
-  viewMovement(movementId: string): void {
+  viewMovement(movement: StockMovement): void {
+    const movementId = typeof movement === 'string' ? movement : movement.id;
     this.router.navigate(['/admin/sales/commerce/inventory/movements', movementId]);
   }
 

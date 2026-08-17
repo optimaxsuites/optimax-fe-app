@@ -55,11 +55,18 @@
                 <span class="ql-total-badge">{{ stats?.totalSkus || 0 }} SKUs</span>
             </div>
             <div class="ql-top-bar-right">
+                <app-branch-selector [branches]="branches" [selectedBranchId]="selectedBranchId"
+                    [showAllOption]="true" allOptionLabel="All Branches"
+                    (branchChange)="onBranchChange($event)"></app-branch-selector>
                 <button class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
                     <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i> Refresh
                 </button>
             </div>
         </div>
+
+        <!-- Branch Stock Summary -->
+        <app-branch-stock-summary [branchId]="selectedBranchId" [refreshInterval]="30000"
+            (summaryLoaded)="onSummaryLoaded($event)"></app-branch-stock-summary>
 
         <!-- AI Insight Banner -->
         <div class="ql-ai-banner" *ngIf="!aiDismissed && (stats?.outOfStockItems || 0) > 0">

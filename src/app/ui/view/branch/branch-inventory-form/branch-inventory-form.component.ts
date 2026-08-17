@@ -44,6 +44,7 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
 
   // Data
   branch: Branch | null = null;
+  branches: Branch[] = [];
   inventoryItem: BranchInventory | null = null;
   products: Product[] = [];
   filteredProducts: Product[] = [];
@@ -201,6 +202,14 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
     this.isLoading = true;
     this.error = null;
 
+    // Load branch list (for the branch selector)
+    this.inventoryService.getBranches()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (branches) => { this.branches = branches; },
+        error: (err) => console.error('Failed to load branches:', err)
+      });
+
     // Load branch
     if (this.branchId) {
       this.inventoryService.getBranch(this.branchId)
@@ -275,6 +284,18 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
       costPrice: item.costPrice || 0,
       notes: ''
     });
+  }
+
+  // ============================================================
+  // BRANCH SELECTION
+  // ============================================================
+
+  /** Switch which branch this form is managing inventory for. */
+  onBranchChange(branchId: string | null): void {
+    if (!branchId || branchId === this.branchId) return;
+    this.branchId = branchId;
+    this.resetForms();
+    this.loadData();
   }
 
   // ============================================================
