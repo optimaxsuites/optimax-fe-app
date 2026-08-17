@@ -7,22 +7,25 @@ import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
 import {
   Product,
-  Branch,
-  BranchInventory,
-  StockMovement,
-  RestockRequest,
-  StockAlert,
   ProductPerformance,
-  BranchStockSummary,
+  BranchInventory,
+  Branch,
   InventoryDashboardData,
   InventoryDashboardStats,
   QuickAction,
   ProductFilters,
   MovementFilters,
   RestockFilters,
+  getStockStatus,
+  getStockStatusLabel,
+  getStockStatusColor,
+  ProductStatus,
+  StockMovement,
+  RestockRequest,
+  StockAlert,
+  BranchStockSummary,
   ApiResponse,
   PaginatedResponse,
-  ProductStatus,
   MovementType,
   MovementStatus,
   RestockStatus,
@@ -1128,6 +1131,15 @@ export class InventoryService {
     const product = products.find(p => p.id === id);
     this.loadingSubject.next(false);
     return product ? of(product) : throwError(() => new Error('Product not found'));
+  }
+
+  /** Get performance data for a specific product */
+  getProductPerformance(productId: string): Observable<ProductPerformance> {
+    this.loadingSubject.next(true);
+    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
+    const performance = dash.topProducts.find(p => p.productId === productId);
+    this.loadingSubject.next(false);
+    return performance ? of(performance) : throwError(() => new Error('Product performance not found'));
   }
 
   /** Create product – generates a simple temporary id */

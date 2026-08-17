@@ -36,7 +36,7 @@ export class BranchTransferHistoryComponent implements OnInit, OnDestroy {
   @Input() limit: number = 20;
   @Input() compact: boolean = false;
   @Input() showFilters: boolean = true;
-  @Output() movementSelected = new EventEmitter<StockMovement>();
+  @Output() movementSelected = new EventEmitter<string>();
 
   // ============================================================
   // STATE
@@ -315,7 +315,7 @@ export class BranchTransferHistoryComponent implements OnInit, OnDestroy {
   // ============================================================
 
   viewMovement(movementId: string): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/movements', movementId]);
+    this.movementSelected.emit(movementId);
   }
 
   // ============================================================

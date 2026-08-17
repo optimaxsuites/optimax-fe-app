@@ -53,6 +53,7 @@ export class StockMovementComponent implements OnInit, OnDestroy {
   // UI
   Math = Math;
   showFilterDrawer: boolean = false;
+  showTransferMenu: boolean = false;
   aiDismissed: boolean = false;
 
   // Enums
@@ -310,8 +311,22 @@ export class StockMovementComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/sales/inventory/movements/new']);
   }
 
+  toggleTransferMenu(): void {
+    this.showTransferMenu = !this.showTransferMenu;
+  }
+
+  closeTransferMenu(): void {
+    this.showTransferMenu = false;
+  }
+
   navigateToTransfer(): void {
+    this.showTransferMenu = false;
     this.router.navigate(['/admin/sales/inventory/movements/transfer']);
+  }
+
+  navigateToBulkTransfer(): void {
+    this.showTransferMenu = false;
+    this.router.navigate(['/admin/sales/inventory/movements/bulk-transfer']);
   }
 
   navigateToAdjustment(): void {

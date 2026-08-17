@@ -659,6 +659,17 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Navigate to bulk import page
+  navigateToBulkImport(): void {
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/commerce/inventory/products', 'bulk-import', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/commerce/inventory/products', 'bulk-import']);
+    }
+  }
+
+
   generateQuoteFromProduct(productId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];

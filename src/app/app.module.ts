@@ -6,7 +6,7 @@ import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
 import { DialogModule } from '@angular/cdk/dialog';
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ProductModule } from './ui/view/inventory/product/product.module';
 import { MatDialogModule } from '@angular/material/dialog';
 import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -64,7 +64,9 @@ import { TableComponent } from './ui/shared-component/view/table/table.component
 import { TableBodyDirective } from './ui/shared-component/view/table/table-body.directive';
 import { SidebarComponent } from './ui/shared-component/view/sidebar/sidebar.component';
 import { SharedOverlayModule } from './shared-overlay.module';
+import { FormsModule } from '@angular/forms';
 
+import { ReactiveFormsModule } from '@angular/forms';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
@@ -350,4 +352,4 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
   ],
   bootstrap: [App],
 })
-export class AppModule {}
+export class AppModule { }
