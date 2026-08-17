@@ -145,7 +145,7 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
   }
 
   navigateToMovement(movementId: string): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/movements', movementId]);
+    this.router.navigate(['/admin/sales/inventory/movements', movementId]);
   }
 
   resolveAlert(alertId: string): void {

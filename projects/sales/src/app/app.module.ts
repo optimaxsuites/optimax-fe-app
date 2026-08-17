@@ -151,6 +151,8 @@ import { BranchInventoryFormComponent } from './ui/view/branch/branch-inventory-
 import { BranchFormComponent } from './ui/view/branch/branch-form/branch-form.component';
 import { StockMovementComponent } from './ui/view/inventory/stock/stock-movement/stock-movement.component';
 import { StockMovementFormComponent } from './ui/view/inventory/stock/stock-movement-form/stock-movement-form.component';
+import { TransferWizardComponent } from './ui/view/inventory/stock/transfer-wizard/transfer-wizard.component';
+import { StockMovementDetailComponent } from './ui/view/inventory/stock/stock-movement-detail/stock-movement-detail.component';
 import { RestockManagementComponent } from './ui/view/inventory/restock-management/restock-management.component';
 import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.component';
 
@@ -166,6 +168,8 @@ import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.comp
     BranchFormComponent,
     StockMovementComponent,
     StockMovementFormComponent,
+    TransferWizardComponent,
+    StockMovementDetailComponent,
     RestockManagementComponent,
     AnalyticsComponent,
     TableComponent,
