@@ -294,7 +294,7 @@ export class RestockSuggestionComponent implements OnInit, OnDestroy {
   createRestockRequest(suggestion: RestockSuggestion): void {
     this.createRequest.emit(suggestion);
     // Navigate to restock request form with pre-filled data
-    this.router.navigate(['/admin/sales/inventory/restock/requests/new'], {
+    this.router.navigate(['/admin/sales/commerce/inventory/restock/requests/new'], {
       queryParams: {
         branchId: suggestion.branchId,
         productId: suggestion.productId,
@@ -304,11 +304,11 @@ export class RestockSuggestionComponent implements OnInit, OnDestroy {
   }
 
   viewProduct(productId: string): void {
-    this.router.navigate(['/admin/sales/inventory/products', productId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
   }
 
   viewBranch(branchId: string): void {
-    this.router.navigate(['/admin/sales/inventory/branches', branchId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
   }
 
   // ============================================================

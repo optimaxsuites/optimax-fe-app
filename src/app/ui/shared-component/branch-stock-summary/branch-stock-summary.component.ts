@@ -174,13 +174,13 @@ export class BranchStockSummaryComponent implements OnInit, OnChanges, OnDestroy
 
   viewBranch(): void {
     if (this.branchId) {
-      this.router.navigate(['/admin/sales/inventory/branches', this.branchId]);
+      this.router.navigate(['/admin/sales/commerce/inventory/branches', this.branchId]);
     }
   }
 
   addProduct(): void {
     if (this.branchId) {
-      this.router.navigate(['/admin/sales/inventory/branches', this.branchId, 'add-product']);
+      this.router.navigate(['/admin/sales/commerce/inventory/branches', this.branchId, 'add-product']);
     }
   }
 
