@@ -73,6 +73,11 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
   aiDismissed: boolean = false;
   viewMode: 'list' | 'grid' = 'list';
 
+  // Pagination
+  currentPage: number = 0;
+  pageSize: number = 20;
+  pageSizeOptions: number[] = [10, 20, 50, 100];
+
   // Private
   private destroy$ = new Subject<void>();
 
@@ -178,6 +183,8 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
 
     // Update cities for filter
     this.updateCityOptions();
+
+    this.currentPage = 0;
   }
 
   updateCityOptions(): void {
@@ -205,6 +212,52 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
   onBranchFilterChange(branchId: string | null): void {
     this.filters.branchId = branchId;
     this.applyFilters();
+  }
+
+  // ============================================================
+  // PAGINATION
+  // ============================================================
+
+  get totalElements(): number {
+    return this.filteredBranches.length;
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.totalElements / this.pageSize) || 1;
+  }
+
+  get pagedBranches(): Branch[] {
+    const start = this.currentPage * this.pageSize;
+    return this.filteredBranches.slice(start, start + this.pageSize);
+  }
+
+  onPageChange(page: number): void {
+    if (page < 0 || page >= this.totalPages) return;
+    this.currentPage = page;
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.currentPage = 0;
+  }
+
+  getPageNumbers(): number[] {
+    const total = this.totalPages;
+    const current = this.currentPage;
+    const pages: number[] = [];
+
+    if (total <= 7) {
+      for (let i = 0; i < total; i++) pages.push(i);
+    } else {
+      pages.push(0);
+      if (current > 2) pages.push(-1);
+      const start = Math.max(1, current - 1);
+      const end = Math.min(total - 2, current + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (current < total - 3) pages.push(-1);
+      pages.push(total - 1);
+    }
+    return pages;
   }
 
   // ============================================================

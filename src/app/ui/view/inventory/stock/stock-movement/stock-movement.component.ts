@@ -142,9 +142,19 @@ export class StockMovementComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           this.movements = response.data;
-          this.filteredMovements = response.data;
-          this.totalElements = response.total;
-          this.totalPages = response.totalPages;
+          // Apply client-side search filter
+          const searchTerm = this.filterForm.get('search')?.value;
+          if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            this.filteredMovements = this.movements.filter(m =>
+              (m.productName && m.productName.toLowerCase().includes(term)) ||
+              (m.sku && m.sku.toLowerCase().includes(term))
+            );
+          } else {
+            this.filteredMovements = this.movements;
+          }
+          this.totalElements = this.filteredMovements.length;
+          this.totalPages = Math.ceil(this.totalElements / this.pageSize);
           this.calculateStats();
           this.isLoading = false;
           this.selectedMovementIds.clear();

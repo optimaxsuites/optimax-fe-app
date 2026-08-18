@@ -487,9 +487,9 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   goBack(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/sales-hub', uuid]);
+      this.router.navigate(['/commerce/inventory', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/sales-hub']);
+      this.router.navigate(['/commerce/inventory']);
     }
   }
 

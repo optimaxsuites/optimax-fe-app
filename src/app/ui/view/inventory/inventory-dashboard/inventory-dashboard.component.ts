@@ -7,6 +7,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, interval, takeUntil, takeWhile } from 'rxjs';
 import { InventoryService } from '../../../service/inventory/inventory.service';
+import { RestockSuggestion } from '../restock/restock-suggestion/restock-suggestion.component';
 import {
   InventoryDashboardData,
   InventoryDashboardStats,
@@ -203,6 +204,11 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
 
   navigateToMovement(movementId: string): void {
     this.router.navigate(['/admin/sales/inventory/movements', movementId]);
+  }
+
+  /** Fired by <app-restock-suggestion> when a suggestion is turned into a request (it handles its own navigation). */
+  navigateToRestockRequest(_suggestion: RestockSuggestion): void {
+    this.refresh();
   }
 
   /** Fired by <app-branch-stock-summary> once it (re)loads its data. */

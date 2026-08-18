@@ -9,6 +9,7 @@ import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../service/inventory/inventory.service';
+import { RestockSuggestion } from '../../inventory/restock/restock-suggestion/restock-suggestion.component';
 import {
   Branch,
   BranchInventory,
@@ -382,9 +383,14 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   }
 
   createRestockRequest(): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/restock/requests/new'], {
+    this.router.navigate(['/admin/sales/inventory/restock/requests/new'], {
       queryParams: { branchId: this.branchId }
     });
+  }
+
+  /** Fired by <app-restock-suggestion> when a suggestion is turned into a request (it handles its own navigation). */
+  onCreateRestockRequest(_suggestion: RestockSuggestion): void {
+    this.refresh();
   }
 
   createStockCount(): void {

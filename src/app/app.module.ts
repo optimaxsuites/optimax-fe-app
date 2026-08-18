@@ -157,7 +157,10 @@ import { StockMovementFormComponent } from './ui/view/inventory/stock/stock-move
 import { TransferWizardComponent } from './ui/view/inventory/stock/transfer-wizard/transfer-wizard.component';
 import { BulkTransferComponent } from './ui/view/inventory/stock/bulk-transfer/bulk-transfer.component';
 import { StockMovementDetailComponent } from './ui/view/inventory/stock/stock-movement-detail/stock-movement-detail.component';
-import { RestockManagementComponent } from './ui/view/inventory/restock-management/restock-management.component';
+import { RestockManagementComponent } from './ui/view/inventory/restock/restock-management/restock-management.component';
+import { RestockRequestFormComponent } from './ui/view/inventory/restock/restock-request-form/restock-request-form.component';
+import { RestockSuggestionComponent } from './ui/view/inventory/restock/restock-suggestion/restock-suggestion.component';
+import { RestockRequestListComponent } from './ui/view/inventory/restock/restock-request-list/restock-request-list.component';
 import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.component';
 import { LogisticsComponent } from './ui/view/logistics/logistics.component';
 import { LogisticsDashboardComponent } from './ui/view/logistics/logistics-dashboard/logistics-dashboard.component';
@@ -187,6 +190,9 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
     BulkTransferComponent,
     StockMovementDetailComponent,
     RestockManagementComponent,
+    RestockRequestFormComponent,
+    RestockSuggestionComponent,
+    RestockRequestListComponent,
     AnalyticsComponent,
     TableComponent,
     TableBodyDirective,

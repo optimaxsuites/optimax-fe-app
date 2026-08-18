@@ -345,13 +345,15 @@ export interface PaginatedResponse<T> {
 
 export interface ProductFilters {
     search?: string;
+    searchTerm?: string;
     category?: string;
     brand?: string;
-    status?: ProductStatus;
+    status?: ProductStatus | 'ALL';
     minPrice?: number;
     maxPrice?: number;
     page?: number;
     limit?: number;
+    size?: number;
 }
 
 export interface MovementFilters {
@@ -363,6 +365,7 @@ export interface MovementFilters {
     dateTo?: Date;
     page?: number;
     limit?: number;
+    size?: number;
 }
 
 export interface RestockFilters {

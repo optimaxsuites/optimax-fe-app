@@ -40,6 +40,16 @@
             </button>
         </div>
 
+        <!-- Restock Suggestions -->
+        <div class="ql-sidebar-section">
+            <app-restock-suggestion
+                [branchId]="branchId"
+                [compact]="true"
+                [limit]="3"
+                (createRequest)="onCreateRestockRequest($event)">
+            </app-restock-suggestion>
+        </div>
+
     </aside>
 
     <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
