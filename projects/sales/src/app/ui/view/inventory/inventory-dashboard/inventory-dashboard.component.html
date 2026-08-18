@@ -264,6 +264,13 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Restock Suggestions -->
+                <app-restock-suggestion
+                    [limit]="5"
+                    [compact]="true"
+                    (createRequest)="navigateToRestockRequest($event)">
+                </app-restock-suggestion>
             </div>
 
         </div>

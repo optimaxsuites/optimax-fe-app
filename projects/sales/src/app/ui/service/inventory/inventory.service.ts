@@ -841,96 +841,96 @@ const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
 
 const MOCK_BRANCH_INVENTORY: BranchInventory[] = [
   // ── Lagos Main Warehouse (br-1) ─────────────────────────────
-  { id: 'bi-1',  branchId: 'br-1', branchName: 'Lagos Main Warehouse',     productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R',       sku: 'CEM-DG-425',      quantity: 1200, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 7000,   costPrice: 6000,   lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-2',  branchId: 'br-1', branchName: 'Lagos Main Warehouse',     productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)',          sku: 'IRN-16MM-TON',    quantity: 85,   reorderPoint: 50,  reorderQuantity: 100, safetyStock: 20,  sellingPrice: 350000, costPrice: 300000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-3',  branchId: 'br-1', branchName: 'Lagos Main Warehouse',     productId: 'prod-3', productName: 'Wall Paint White Satin 20L',      sku: 'PNT-WS-20L',      quantity: 420,  reorderPoint: 100, reorderQuantity: 200, safetyStock: 50,  sellingPrice: 24000,  costPrice: 18000,  lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 'bi-4',  branchId: 'br-1', branchName: 'Lagos Main Warehouse',     productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)',       sku: 'TIL-FLR-6060',    quantity: 1800, reorderPoint: 400, reorderQuantity: 800, safetyStock: 200, sellingPrice: 7500,   costPrice: 5000,   lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-5',  branchId: 'br-1', branchName: 'Lagos Main Warehouse',     productId: 'prod-6', productName: 'Electrical Cable 1.5mm (100m Roll)', sku: 'ELC-CBL-15-100', quantity: 640,  reorderPoint: 150, reorderQuantity: 300, safetyStock: 60,  sellingPrice: 15000,  costPrice: 11000,  lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-6',  branchId: 'br-1', branchName: 'Lagos Main Warehouse',     productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR',   quantity: 4200, reorderPoint: 800, reorderQuantity: 1500, safetyStock: 400, sellingPrice: 8500,  costPrice: 6000,   lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-7',  branchId: 'br-1', branchName: 'Lagos Main Warehouse',     productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)',    sku: 'PVC-4IN-6M',      quantity: 2100, reorderPoint: 500, reorderQuantity: 1000, safetyStock: 200, sellingPrice: 7000,  costPrice: 5000,   lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 'bi-1', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 1200, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 7000, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 'bi-2', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 85, reorderPoint: 50, reorderQuantity: 100, safetyStock: 20, sellingPrice: 350000, costPrice: 300000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 'bi-3', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 420, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 24000, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 'bi-4', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 1800, reorderPoint: 400, reorderQuantity: 800, safetyStock: 200, sellingPrice: 7500, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 'bi-5', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-6', productName: 'Electrical Cable 1.5mm (100m Roll)', sku: 'ELC-CBL-15-100', quantity: 640, reorderPoint: 150, reorderQuantity: 300, safetyStock: 60, sellingPrice: 15000, costPrice: 11000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 'bi-6', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 4200, reorderPoint: 800, reorderQuantity: 1500, safetyStock: 400, sellingPrice: 8500, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 'bi-7', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 2100, reorderPoint: 500, reorderQuantity: 1000, safetyStock: 200, sellingPrice: 7000, costPrice: 5000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
   // ── Abuja Distribution Hub (br-2) ───────────────────────────
-  { id: 'bi-8',  branchId: 'br-2', branchName: 'Abuja Distribution Hub',   productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R',       sku: 'CEM-DG-425',      quantity: 800,  reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 7200,   costPrice: 6000,   lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-9',  branchId: 'br-2', branchName: 'Abuja Distribution Hub',   productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)',          sku: 'IRN-16MM-TON',    quantity: 12,   reorderPoint: 50,  reorderQuantity: 80,  safetyStock: 20,  sellingPrice: 360000, costPrice: 300000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-10', branchId: 'br-2', branchName: 'Abuja Distribution Hub',   productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)',       sku: 'TIL-FLR-6060',    quantity: 950,  reorderPoint: 200, reorderQuantity: 500, safetyStock: 100, sellingPrice: 7800,   costPrice: 5000,   lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 'bi-11', branchId: 'br-2', branchName: 'Abuja Distribution Hub',   productId: 'prod-8', productName: 'Plywood Sheet 18mm (4x8ft)',      sku: 'PLY-18MM-4X8',    quantity: 380,  reorderPoint: 80,  reorderQuantity: 200, safetyStock: 40,  sellingPrice: 30000,  costPrice: 22000,  lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-12', branchId: 'br-2', branchName: 'Abuja Distribution Hub',   productId: 'prod-3', productName: 'Wall Paint White Satin 20L',      sku: 'PNT-WS-20L',      quantity: 0,    reorderPoint: 80,  reorderQuantity: 200, safetyStock: 40,  sellingPrice: 25000,  costPrice: 18000,  lastUpdated: new Date(Date.now() - 4 * 86400000) },
-  { id: 'bi-13', branchId: 'br-2', branchName: 'Abuja Distribution Hub',   productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR',   quantity: 1100, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 8800,  costPrice: 6000,   lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 'bi-8', branchId: 'br-2', branchName: 'Abuja Distribution Hub', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 800, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 7200, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 'bi-9', branchId: 'br-2', branchName: 'Abuja Distribution Hub', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 12, reorderPoint: 50, reorderQuantity: 80, safetyStock: 20, sellingPrice: 360000, costPrice: 300000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 'bi-10', branchId: 'br-2', branchName: 'Abuja Distribution Hub', productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 950, reorderPoint: 200, reorderQuantity: 500, safetyStock: 100, sellingPrice: 7800, costPrice: 5000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 'bi-11', branchId: 'br-2', branchName: 'Abuja Distribution Hub', productId: 'prod-8', productName: 'Plywood Sheet 18mm (4x8ft)', sku: 'PLY-18MM-4X8', quantity: 380, reorderPoint: 80, reorderQuantity: 200, safetyStock: 40, sellingPrice: 30000, costPrice: 22000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 'bi-12', branchId: 'br-2', branchName: 'Abuja Distribution Hub', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 0, reorderPoint: 80, reorderQuantity: 200, safetyStock: 40, sellingPrice: 25000, costPrice: 18000, lastUpdated: new Date(Date.now() - 4 * 86400000) },
+  { id: 'bi-13', branchId: 'br-2', branchName: 'Abuja Distribution Hub', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 1100, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 8800, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
   // ── Port Harcourt Store (br-3) ───────────────────────────────
-  { id: 'bi-14', branchId: 'br-3', branchName: 'Port Harcourt Store',      productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)',    sku: 'PVC-4IN-6M',      quantity: 1600, reorderPoint: 400, reorderQuantity: 800, safetyStock: 200, sellingPrice: 7200,  costPrice: 5000,   lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-15', branchId: 'br-3', branchName: 'Port Harcourt Store',      productId: 'prod-9', productName: 'Sanitary Ware — WC Suite Set',    sku: 'SAN-WC-SUITE',    quantity: 28,   reorderPoint: 10,  reorderQuantity: 20,  safetyStock: 5,   sellingPrice: 260000, costPrice: 200000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-16', branchId: 'br-3', branchName: 'Port Harcourt Store',      productId: 'prod-3', productName: 'Wall Paint White Satin 20L',      sku: 'PNT-WS-20L',      quantity: 85,   reorderPoint: 100, reorderQuantity: 200, safetyStock: 50,  sellingPrice: 24500,  costPrice: 18000,  lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 'bi-17', branchId: 'br-3', branchName: 'Port Harcourt Store',      productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR',   quantity: 700,  reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 8700,  costPrice: 6000,   lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-18', branchId: 'br-3', branchName: 'Port Harcourt Store',      productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R',       sku: 'CEM-DG-425',      quantity: 550,  reorderPoint: 150, reorderQuantity: 300, safetyStock: 80,  sellingPrice: 7100,   costPrice: 6000,   lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 'bi-14', branchId: 'br-3', branchName: 'Port Harcourt Store', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 1600, reorderPoint: 400, reorderQuantity: 800, safetyStock: 200, sellingPrice: 7200, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 'bi-15', branchId: 'br-3', branchName: 'Port Harcourt Store', productId: 'prod-9', productName: 'Sanitary Ware — WC Suite Set', sku: 'SAN-WC-SUITE', quantity: 28, reorderPoint: 10, reorderQuantity: 20, safetyStock: 5, sellingPrice: 260000, costPrice: 200000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 'bi-16', branchId: 'br-3', branchName: 'Port Harcourt Store', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 85, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 24500, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 'bi-17', branchId: 'br-3', branchName: 'Port Harcourt Store', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 700, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 8700, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 'bi-18', branchId: 'br-3', branchName: 'Port Harcourt Store', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 550, reorderPoint: 150, reorderQuantity: 300, safetyStock: 80, sellingPrice: 7100, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
   // ── Kano Outlet (br-4) ──────────────────────────────────────
-  { id: 'bi-19', branchId: 'br-4', branchName: 'Kano Outlet',              productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R',       sku: 'CEM-DG-425',      quantity: 600,  reorderPoint: 150, reorderQuantity: 300, safetyStock: 80,  sellingPrice: 7100,   costPrice: 6000,   lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-20', branchId: 'br-4', branchName: 'Kano Outlet',              productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR',   quantity: 1200, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 8600,  costPrice: 6000,   lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-21', branchId: 'br-4', branchName: 'Kano Outlet',              productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)',          sku: 'IRN-16MM-TON',    quantity: 22,   reorderPoint: 20,  reorderQuantity: 40,  safetyStock: 10,  sellingPrice: 355000, costPrice: 300000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 'bi-22', branchId: 'br-4', branchName: 'Kano Outlet',              productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)',    sku: 'PVC-4IN-6M',      quantity: 480,  reorderPoint: 120, reorderQuantity: 250, safetyStock: 60,  sellingPrice: 7300,  costPrice: 5000,   lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-23', branchId: 'br-4', branchName: 'Kano Outlet',              productId: 'prod-3', productName: 'Wall Paint White Satin 20L',      sku: 'PNT-WS-20L',      quantity: 140,  reorderPoint: 60,  reorderQuantity: 120, safetyStock: 30,  sellingPrice: 24000,  costPrice: 18000,  lastUpdated: new Date(Date.now() - 4 * 86400000) },
+  { id: 'bi-19', branchId: 'br-4', branchName: 'Kano Outlet', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 600, reorderPoint: 150, reorderQuantity: 300, safetyStock: 80, sellingPrice: 7100, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 'bi-20', branchId: 'br-4', branchName: 'Kano Outlet', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 1200, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 8600, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 'bi-21', branchId: 'br-4', branchName: 'Kano Outlet', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 22, reorderPoint: 20, reorderQuantity: 40, safetyStock: 10, sellingPrice: 355000, costPrice: 300000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 'bi-22', branchId: 'br-4', branchName: 'Kano Outlet', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 480, reorderPoint: 120, reorderQuantity: 250, safetyStock: 60, sellingPrice: 7300, costPrice: 5000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 'bi-23', branchId: 'br-4', branchName: 'Kano Outlet', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 140, reorderPoint: 60, reorderQuantity: 120, safetyStock: 30, sellingPrice: 24000, costPrice: 18000, lastUpdated: new Date(Date.now() - 4 * 86400000) },
   // ── Ibadan Regional Store (br-5) ────────────────────────────
-  { id: 'bi-24', branchId: 'br-5', branchName: 'Ibadan Regional Store',    productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R',       sku: 'CEM-DG-425',      quantity: 900,  reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 7050,   costPrice: 6000,   lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-25', branchId: 'br-5', branchName: 'Ibadan Regional Store',    productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)',       sku: 'TIL-FLR-6060',    quantity: 620,  reorderPoint: 150, reorderQuantity: 300, safetyStock: 70,  sellingPrice: 7600,   costPrice: 5000,   lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-26', branchId: 'br-5', branchName: 'Ibadan Regional Store',    productId: 'prod-6', productName: 'Electrical Cable 1.5mm (100m Roll)', sku: 'ELC-CBL-15-100', quantity: 25,   reorderPoint: 80,  reorderQuantity: 150, safetyStock: 40,  sellingPrice: 15500,  costPrice: 11000,  lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-27', branchId: 'br-5', branchName: 'Ibadan Regional Store',    productId: 'prod-8', productName: 'Plywood Sheet 18mm (4x8ft)',      sku: 'PLY-18MM-4X8',    quantity: 190,  reorderPoint: 50,  reorderQuantity: 120, safetyStock: 25,  sellingPrice: 31000,  costPrice: 22000,  lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 'bi-28', branchId: 'br-5', branchName: 'Ibadan Regional Store',    productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)',    sku: 'PVC-4IN-6M',      quantity: 0,    reorderPoint: 100, reorderQuantity: 250, safetyStock: 50,  sellingPrice: 7100,  costPrice: 5000,   lastUpdated: new Date(Date.now() - 5 * 86400000) },
+  { id: 'bi-24', branchId: 'br-5', branchName: 'Ibadan Regional Store', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 900, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 7050, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 'bi-25', branchId: 'br-5', branchName: 'Ibadan Regional Store', productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 620, reorderPoint: 150, reorderQuantity: 300, safetyStock: 70, sellingPrice: 7600, costPrice: 5000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 'bi-26', branchId: 'br-5', branchName: 'Ibadan Regional Store', productId: 'prod-6', productName: 'Electrical Cable 1.5mm (100m Roll)', sku: 'ELC-CBL-15-100', quantity: 25, reorderPoint: 80, reorderQuantity: 150, safetyStock: 40, sellingPrice: 15500, costPrice: 11000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 'bi-27', branchId: 'br-5', branchName: 'Ibadan Regional Store', productId: 'prod-8', productName: 'Plywood Sheet 18mm (4x8ft)', sku: 'PLY-18MM-4X8', quantity: 190, reorderPoint: 50, reorderQuantity: 120, safetyStock: 25, sellingPrice: 31000, costPrice: 22000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 'bi-28', branchId: 'br-5', branchName: 'Ibadan Regional Store', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 0, reorderPoint: 100, reorderQuantity: 250, safetyStock: 50, sellingPrice: 7100, costPrice: 5000, lastUpdated: new Date(Date.now() - 5 * 86400000) },
   // ── Enugu Express Depot (br-6) ──────────────────────────────
-  { id: 'bi-29', branchId: 'br-6', branchName: 'Enugu Express Depot',      productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R',       sku: 'CEM-DG-425',      quantity: 750,  reorderPoint: 180, reorderQuantity: 350, safetyStock: 90,  sellingPrice: 7080,   costPrice: 6000,   lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-30', branchId: 'br-6', branchName: 'Enugu Express Depot',      productId: 'prod-3', productName: 'Wall Paint White Satin 20L',      sku: 'PNT-WS-20L',      quantity: 280,  reorderPoint: 70,  reorderQuantity: 140, safetyStock: 35,  sellingPrice: 24200,  costPrice: 18000,  lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 'bi-31', branchId: 'br-6', branchName: 'Enugu Express Depot',      productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)',    sku: 'PVC-4IN-6M',      quantity: 360,  reorderPoint: 100, reorderQuantity: 200, safetyStock: 50,  sellingPrice: 7050,  costPrice: 5000,   lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-32', branchId: 'br-6', branchName: 'Enugu Express Depot',      productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR',   quantity: 820,  reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 8550,  costPrice: 6000,   lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-33', branchId: 'br-6', branchName: 'Enugu Express Depot',      productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)',          sku: 'IRN-16MM-TON',    quantity: 8,    reorderPoint: 15,  reorderQuantity: 30,  safetyStock: 8,   sellingPrice: 352000, costPrice: 300000, lastUpdated: new Date(Date.now() - 4 * 86400000) }
+  { id: 'bi-29', branchId: 'br-6', branchName: 'Enugu Express Depot', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 750, reorderPoint: 180, reorderQuantity: 350, safetyStock: 90, sellingPrice: 7080, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 'bi-30', branchId: 'br-6', branchName: 'Enugu Express Depot', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 280, reorderPoint: 70, reorderQuantity: 140, safetyStock: 35, sellingPrice: 24200, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 'bi-31', branchId: 'br-6', branchName: 'Enugu Express Depot', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 360, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 7050, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 'bi-32', branchId: 'br-6', branchName: 'Enugu Express Depot', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 820, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 8550, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 'bi-33', branchId: 'br-6', branchName: 'Enugu Express Depot', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 8, reorderPoint: 15, reorderQuantity: 30, safetyStock: 8, sellingPrice: 352000, costPrice: 300000, lastUpdated: new Date(Date.now() - 4 * 86400000) }
 ];
 
 const MOCK_CATEGORIES: Category[] = [
-  { id: 'cat-1',  name: 'Building Materials',    description: 'Cement, blocks, aggregates and general construction materials', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'cat-2',  name: 'Metal & Steel',         description: 'Iron rods, steel beams and metal fabrication stock',           createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'cat-3',  name: 'Paints & Finishes',     description: 'Paints, primers, varnishes and surface finishes',              createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'cat-4',  name: 'Plumbing & Pipes',      description: 'PVC pipes, fittings and plumbing accessories',                 createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'cat-5',  name: 'Tiles & Flooring',      description: 'Floor and wall tiles, grout and flooring accessories',         createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
-  { id: 'cat-6',  name: 'Electrical',            description: 'Cables, fittings and electrical fixtures',                    createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
-  { id: 'cat-7',  name: 'Roofing',               description: 'Roofing sheets, nails and roofing accessories',                createdAt: new Date('2023-02-15'), updatedAt: new Date('2023-02-15') },
-  { id: 'cat-8',  name: 'Wood & Timber',         description: 'Plywood, planks and timber products',                         createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') },
-  { id: 'cat-9',  name: 'Sanitary Ware',         description: 'WC suites, wash basins and bathroom fittings',                 createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') },
-  { id: 'cat-10', name: 'Hardware & Fasteners',  description: 'Screws, nails, bolts and general hardware',                    createdAt: new Date('2023-04-10'), updatedAt: new Date('2023-04-10') }
+  { id: 'cat-1', name: 'Building Materials', description: 'Cement, blocks, aggregates and general construction materials', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'cat-2', name: 'Metal & Steel', description: 'Iron rods, steel beams and metal fabrication stock', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'cat-3', name: 'Paints & Finishes', description: 'Paints, primers, varnishes and surface finishes', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'cat-4', name: 'Plumbing & Pipes', description: 'PVC pipes, fittings and plumbing accessories', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'cat-5', name: 'Tiles & Flooring', description: 'Floor and wall tiles, grout and flooring accessories', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
+  { id: 'cat-6', name: 'Electrical', description: 'Cables, fittings and electrical fixtures', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
+  { id: 'cat-7', name: 'Roofing', description: 'Roofing sheets, nails and roofing accessories', createdAt: new Date('2023-02-15'), updatedAt: new Date('2023-02-15') },
+  { id: 'cat-8', name: 'Wood & Timber', description: 'Plywood, planks and timber products', createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') },
+  { id: 'cat-9', name: 'Sanitary Ware', description: 'WC suites, wash basins and bathroom fittings', createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') },
+  { id: 'cat-10', name: 'Hardware & Fasteners', description: 'Screws, nails, bolts and general hardware', createdAt: new Date('2023-04-10'), updatedAt: new Date('2023-04-10') }
 ];
 
 const MOCK_MEASUREMENT_UNITS: MeasurementUnit[] = [
-  { id: 'unit-1', name: 'Each',      code: 'EACH', description: 'Single individual unit',        createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'unit-2', name: 'Box',       code: 'BOX',  description: 'Boxed unit of multiple pieces',  createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'unit-3', name: 'Kilogram',  code: 'KG',   description: 'Weight measured in kilograms',   createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'unit-4', name: 'Litre',     code: 'LITER',description: 'Volume measured in litres',      createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'unit-5', name: 'Metre',     code: 'METER',description: 'Length measured in metres',      createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'unit-6', name: 'Ton',       code: 'TON',  description: 'Weight measured in metric tons', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
-  { id: 'unit-7', name: 'Bag',       code: 'BAG',  description: 'Bagged unit (e.g. cement bags)', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
-  { id: 'unit-8', name: 'Roll',      code: 'ROLL', description: 'Rolled unit (e.g. cable rolls)', createdAt: new Date('2023-02-15'), updatedAt: new Date('2023-02-15') },
-  { id: 'unit-9', name: 'Set',       code: 'SET',  description: 'Matched set of parts',           createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') }
+  { id: 'unit-1', name: 'Each', code: 'EACH', description: 'Single individual unit', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'unit-2', name: 'Box', code: 'BOX', description: 'Boxed unit of multiple pieces', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'unit-3', name: 'Kilogram', code: 'KG', description: 'Weight measured in kilograms', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'unit-4', name: 'Litre', code: 'LITER', description: 'Volume measured in litres', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'unit-5', name: 'Metre', code: 'METER', description: 'Length measured in metres', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 'unit-6', name: 'Ton', code: 'TON', description: 'Weight measured in metric tons', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
+  { id: 'unit-7', name: 'Bag', code: 'BAG', description: 'Bagged unit (e.g. cement bags)', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
+  { id: 'unit-8', name: 'Roll', code: 'ROLL', description: 'Rolled unit (e.g. cable rolls)', createdAt: new Date('2023-02-15'), updatedAt: new Date('2023-02-15') },
+  { id: 'unit-9', name: 'Set', code: 'SET', description: 'Matched set of parts', createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') }
 ];
 
 const MOCK_SUPPLIERS: Supplier[] = [
-  { id: 'sup-1', name: 'Dangote Cement Factory',      email: 'sales@dangotecement.com',      phone: '+234-1-448-0001', address: 'Ibese Plant, Ogun State, Nigeria',        contactPerson: 'Ibrahim Sule',    createdAt: new Date('2023-01-10'), updatedAt: new Date('2023-01-10') },
-  { id: 'sup-2', name: 'Niger Delta Plastics Ltd',    email: 'info@ndplastics.ng',           phone: '+234-84-770-2201', address: 'Trans-Amadi Industrial Layout, Port Harcourt', contactPerson: 'Ngozi Amadi',     createdAt: new Date('2023-01-20'), updatedAt: new Date('2023-01-20') },
-  { id: 'sup-3', name: 'Coleman Cables Nigeria',      email: 'orders@colemancables.com.ng',  phone: '+234-1-271-3300',  address: '19 Iyalla Street, Surulere, Lagos',       contactPerson: 'David Ekpo',      createdAt: new Date('2023-02-05'), updatedAt: new Date('2023-02-05') },
-  { id: 'sup-4', name: 'Tropical Timber Mills',       email: 'sales@tropicaltimber.ng',      phone: '+234-9-670-4410',  address: 'Kilometer 12, Kaduna Road, Abuja',        contactPerson: 'Solomon Danjuma', createdAt: new Date('2023-02-18'), updatedAt: new Date('2023-02-18') },
-  { id: 'sup-5', name: 'Porcelain Palace Lagos',      email: 'contact@porcelainpalace.ng',   phone: '+234-1-905-6612',  address: '44 Ikorodu Road, Lagos',                  contactPerson: 'Funmi Adebayo',   createdAt: new Date('2023-03-02'), updatedAt: new Date('2023-03-02') },
-  { id: 'sup-6', name: 'Roca Sanitaryware Nigeria',   email: 'ng.sales@roca.com',            phone: '+234-1-462-7788',  address: '3 Ozumba Mbadiwe Avenue, Victoria Island, Lagos', contactPerson: 'Patrick Nnamdi', createdAt: new Date('2023-03-15'), updatedAt: new Date('2023-03-15') },
-  { id: 'sup-7', name: 'Delta Steel Company',         email: 'procurement@deltasteel.ng',    phone: '+234-56-610-3390', address: 'Ovwian-Aladja, Delta State, Nigeria',     contactPerson: 'Efe Okonta',      createdAt: new Date('2023-04-01'), updatedAt: new Date('2023-04-01') },
-  { id: 'sup-8', name: 'Ace Hardware Supplies Nigeria', email: 'sales@acehardware.ng',       phone: '+234-1-330-8845',  address: '12 Nnamdi Azikiwe Street, Onitsha, Anambra', contactPerson: 'Chidi Eze',      createdAt: new Date('2023-04-20'), updatedAt: new Date('2023-04-20') }
+  { id: 'sup-1', name: 'Dangote Cement Factory', email: 'sales@dangotecement.com', phone: '+234-1-448-0001', address: 'Ibese Plant, Ogun State, Nigeria', contactPerson: 'Ibrahim Sule', createdAt: new Date('2023-01-10'), updatedAt: new Date('2023-01-10') },
+  { id: 'sup-2', name: 'Niger Delta Plastics Ltd', email: 'info@ndplastics.ng', phone: '+234-84-770-2201', address: 'Trans-Amadi Industrial Layout, Port Harcourt', contactPerson: 'Ngozi Amadi', createdAt: new Date('2023-01-20'), updatedAt: new Date('2023-01-20') },
+  { id: 'sup-3', name: 'Coleman Cables Nigeria', email: 'orders@colemancables.com.ng', phone: '+234-1-271-3300', address: '19 Iyalla Street, Surulere, Lagos', contactPerson: 'David Ekpo', createdAt: new Date('2023-02-05'), updatedAt: new Date('2023-02-05') },
+  { id: 'sup-4', name: 'Tropical Timber Mills', email: 'sales@tropicaltimber.ng', phone: '+234-9-670-4410', address: 'Kilometer 12, Kaduna Road, Abuja', contactPerson: 'Solomon Danjuma', createdAt: new Date('2023-02-18'), updatedAt: new Date('2023-02-18') },
+  { id: 'sup-5', name: 'Porcelain Palace Lagos', email: 'contact@porcelainpalace.ng', phone: '+234-1-905-6612', address: '44 Ikorodu Road, Lagos', contactPerson: 'Funmi Adebayo', createdAt: new Date('2023-03-02'), updatedAt: new Date('2023-03-02') },
+  { id: 'sup-6', name: 'Roca Sanitaryware Nigeria', email: 'ng.sales@roca.com', phone: '+234-1-462-7788', address: '3 Ozumba Mbadiwe Avenue, Victoria Island, Lagos', contactPerson: 'Patrick Nnamdi', createdAt: new Date('2023-03-15'), updatedAt: new Date('2023-03-15') },
+  { id: 'sup-7', name: 'Delta Steel Company', email: 'procurement@deltasteel.ng', phone: '+234-56-610-3390', address: 'Ovwian-Aladja, Delta State, Nigeria', contactPerson: 'Efe Okonta', createdAt: new Date('2023-04-01'), updatedAt: new Date('2023-04-01') },
+  { id: 'sup-8', name: 'Ace Hardware Supplies Nigeria', email: 'sales@acehardware.ng', phone: '+234-1-330-8845', address: '12 Nnamdi Azikiwe Street, Onitsha, Anambra', contactPerson: 'Chidi Eze', createdAt: new Date('2023-04-20'), updatedAt: new Date('2023-04-20') }
 ];
 
 const MOCK_PRODUCTS: Product[] = [
-  { id: 'prod-1',  sku: 'CEM-DG-425',      name: 'Cement Dangote Grade 42.5R',       description: 'High-strength Portland-limestone cement, 50kg bag, ideal for all structural applications.', category: 'Building Materials',   subCategory: 'Cement',           brand: 'Dangote',   unitOfMeasure: 'EACH', costPrice: 6000,   sellingPrice: 7000,   stockQuantity: 4800, weight: 50,   dimensions: { length: 60, width: 40, height: 10 }, images: [], tags: ['cement', 'bestseller'],        status: ProductStatus.ACTIVE,       supplierIds: ['sup-1'], createdAt: new Date('2023-01-15'), updatedAt: new Date('2026-08-01') },
-  { id: 'prod-2',  sku: 'IRN-16MM-TON',    name: 'Iron Rod 16mm (Per Ton)',          description: 'High-tensile deformed steel reinforcement bar, 16mm diameter, sold per metric ton.',       category: 'Metal & Steel',         subCategory: 'Rebar',            brand: 'Delta Steel', unitOfMeasure: 'KG',  costPrice: 300000, sellingPrice: 350000, stockQuantity: 127,  weight: 1000, dimensions: { length: 1200, width: 1.6, height: 1.6 }, images: [], tags: ['steel', 'rebar'],           status: ProductStatus.ACTIVE,       supplierIds: ['sup-7'], createdAt: new Date('2023-01-20'), updatedAt: new Date('2026-08-01') },
-  { id: 'prod-3',  sku: 'PNT-WS-20L',      name: 'Wall Paint White Satin 20L',       description: 'Premium washable satin-finish emulsion paint, 20-litre pail, interior and exterior use.',    category: 'Paints & Finishes',     subCategory: 'Emulsion',         brand: 'Dulux',      unitOfMeasure: 'LITER', costPrice: 18000, sellingPrice: 24000, stockQuantity: 925,  weight: 22,   dimensions: { length: 30, width: 30, height: 35 }, images: [], tags: ['paint', 'interior'],       status: ProductStatus.ACTIVE,       supplierIds: [],        createdAt: new Date('2023-02-01'), updatedAt: new Date('2026-07-15') },
-  { id: 'prod-4',  sku: 'PVC-4IN-6M',      name: 'PVC Pipes 4-inch (Length 6m)',     description: 'Schedule-40 uPVC drainage pipe, 4-inch diameter, 6-metre length, solvent-weld ends.',       category: 'Plumbing & Pipes',      subCategory: 'Pipes',            brand: 'Niger Delta Plastics', unitOfMeasure: 'EACH', costPrice: 5000, sellingPrice: 7000, stockQuantity: 4540, weight: 8,    dimensions: { length: 600, width: 10, height: 10 }, images: [], tags: ['plumbing', 'pvc'],         status: ProductStatus.ACTIVE,       supplierIds: ['sup-2'], createdAt: new Date('2023-02-10'), updatedAt: new Date('2026-07-20') },
-  { id: 'prod-5',  sku: 'TIL-FLR-6060',    name: 'Floor Tiles 60x60cm (Box)',        description: 'Polished porcelain floor tiles, 60x60cm, 4 pieces per box (1.44sqm coverage).',            category: 'Tiles & Flooring',      subCategory: 'Floor Tiles',      brand: 'Porcelain Palace', unitOfMeasure: 'BOX', costPrice: 5000, sellingPrice: 7500, stockQuantity: 3370, weight: 32,   dimensions: { length: 62, width: 62, height: 8 }, images: [], tags: ['tiles', 'flooring'],       status: ProductStatus.ACTIVE,       supplierIds: ['sup-5'], createdAt: new Date('2023-02-20'), updatedAt: new Date('2026-06-30') },
-  { id: 'prod-6',  sku: 'ELC-CBL-15-100',  name: 'Electrical Cable 1.5mm (100m Roll)', description: 'Single-core PVC-insulated copper wiring cable, 1.5mm², 100-metre roll.',                  category: 'Electrical',            subCategory: 'Cables',           brand: 'Coleman',    unitOfMeasure: 'EACH', costPrice: 11000, sellingPrice: 15000, stockQuantity: 665, weight: 12,   dimensions: { length: 40, width: 40, height: 15 }, images: [], tags: ['electrical', 'cable'],     status: ProductStatus.ACTIVE,       supplierIds: ['sup-3'], createdAt: new Date('2023-03-01'), updatedAt: new Date('2026-05-20') },
-  { id: 'prod-7',  sku: 'ROF-LS-MTR',      name: 'Roofing Sheet Long Span (Per Meter)', description: 'Pre-painted aluminium long-span roofing sheet, 0.45mm gauge, sold per linear metre.',    category: 'Roofing',               subCategory: 'Roofing Sheets',   brand: 'Colorbond',  unitOfMeasure: 'METER', costPrice: 6000, sellingPrice: 8500, stockQuantity: 8020, weight: 3.5,  dimensions: { length: 100, width: 90, height: 1 }, images: [], tags: ['roofing', 'aluminium'],   status: ProductStatus.ACTIVE,       supplierIds: [],        createdAt: new Date('2023-03-10'), updatedAt: new Date('2026-08-01') },
-  { id: 'prod-8',  sku: 'PLY-18MM-4X8',    name: 'Plywood Sheet 18mm (4x8ft)',       description: 'Marine-grade plywood sheet, 18mm thickness, 4ft x 8ft panel.',                             category: 'Wood & Timber',         subCategory: 'Plywood',          brand: 'Tropical Timber', unitOfMeasure: 'EACH', costPrice: 22000, sellingPrice: 30000, stockQuantity: 570, weight: 28,  dimensions: { length: 244, width: 122, height: 1.8 }, images: [], tags: ['wood', 'plywood'],       status: ProductStatus.ACTIVE,       supplierIds: ['sup-4'], createdAt: new Date('2023-03-20'), updatedAt: new Date('2026-07-01') },
-  { id: 'prod-9',  sku: 'SAN-WC-SUITE',    name: 'Sanitary Ware — WC Suite Set',     description: 'Close-coupled ceramic WC suite with cistern, seat and fittings included.',                 category: 'Sanitary Ware',         subCategory: 'WC Suites',        brand: 'Roca',       unitOfMeasure: 'EACH', costPrice: 200000, sellingPrice: 260000, stockQuantity: 28, weight: 35,  dimensions: { length: 70, width: 40, height: 75 }, images: [], tags: ['sanitary', 'bathroom'],  status: ProductStatus.ACTIVE,       supplierIds: ['sup-6'], createdAt: new Date('2023-04-01'), updatedAt: new Date('2026-06-15') },
-  { id: 'prod-10', sku: 'SAN-WB-SET',      name: 'Ceramic Wash Basin Set',           description: 'Pedestal-mounted ceramic wash basin with tap and waste fittings — currently out of stock.', category: 'Sanitary Ware',         subCategory: 'Wash Basins',      brand: 'Roca',       unitOfMeasure: 'EACH', costPrice: 45000, sellingPrice: 60000, stockQuantity: 0, weight: 18,   dimensions: { length: 55, width: 45, height: 85 }, images: [], tags: ['sanitary', 'basin'],     status: ProductStatus.OUT_OF_STOCK, supplierIds: ['sup-6'], createdAt: new Date('2023-05-05'), updatedAt: new Date('2026-08-10') },
-  { id: 'prod-11', sku: 'HDW-SCR-200',     name: 'Wood Screws Assorted Box (200pc)', description: 'Mixed-size zinc-plated wood screws, 200 pieces per box, for general carpentry.',            category: 'Hardware & Fasteners',  subCategory: 'Screws & Fasteners', brand: 'Ace Hardware', unitOfMeasure: 'BOX', costPrice: 3500, sellingPrice: 5000, stockQuantity: 340, weight: 2.5, dimensions: { length: 20, width: 15, height: 8 }, images: [], tags: ['hardware', 'fasteners'], status: ProductStatus.ACTIVE,       supplierIds: ['sup-8'], createdAt: new Date('2023-05-15'), updatedAt: new Date('2026-07-05') },
-  { id: 'prod-12', sku: 'ELC-FAN-56W',     name: 'Ceiling Fan 56-inch White',        description: 'Three-blade ceiling fan with light kit, 56-inch sweep, remote control included.',           category: 'Electrical',            subCategory: 'Fans & Lighting',  brand: 'Binatone',   unitOfMeasure: 'EACH', costPrice: 18000, sellingPrice: 25000, stockQuantity: 210, weight: 6,   dimensions: { length: 142, width: 142, height: 40 }, images: [], tags: ['electrical', 'fan'],     status: ProductStatus.ACTIVE,       supplierIds: ['sup-3'], createdAt: new Date('2023-06-01'), updatedAt: new Date('2026-06-20') },
-  { id: 'prod-13', sku: 'ELC-WH-30L-OLD',  name: 'Water Heater 30L (Old Model)',     description: 'Discontinued 30-litre electric storage water heater, replaced by newer energy-efficient model.', category: 'Electrical',       subCategory: 'Water Heaters',    brand: 'Binatone',   unitOfMeasure: 'EACH', costPrice: 35000, sellingPrice: 48000, stockQuantity: 15, weight: 14,   dimensions: { length: 45, width: 45, height: 60 }, images: [], tags: ['electrical', 'discontinued'], status: ProductStatus.DISCONTINUED, supplierIds: ['sup-3'], createdAt: new Date('2022-11-10'), updatedAt: new Date('2026-01-05') }
+  { id: 'prod-1', sku: 'CEM-DG-425', name: 'Cement Dangote Grade 42.5R', description: 'High-strength Portland-limestone cement, 50kg bag, ideal for all structural applications.', category: 'Building Materials', subCategory: 'Cement', brand: 'Dangote', unitOfMeasure: 'EACH', costPrice: 6000, sellingPrice: 7000, stockQuantity: 4800, weight: 50, dimensions: { length: 60, width: 40, height: 10 }, images: [], tags: ['cement', 'bestseller'], status: ProductStatus.ACTIVE, supplierIds: ['sup-1'], createdAt: new Date('2023-01-15'), updatedAt: new Date('2026-08-01') },
+  { id: 'prod-2', sku: 'IRN-16MM-TON', name: 'Iron Rod 16mm (Per Ton)', description: 'High-tensile deformed steel reinforcement bar, 16mm diameter, sold per metric ton.', category: 'Metal & Steel', subCategory: 'Rebar', brand: 'Delta Steel', unitOfMeasure: 'KG', costPrice: 300000, sellingPrice: 350000, stockQuantity: 127, weight: 1000, dimensions: { length: 1200, width: 1.6, height: 1.6 }, images: [], tags: ['steel', 'rebar'], status: ProductStatus.ACTIVE, supplierIds: ['sup-7'], createdAt: new Date('2023-01-20'), updatedAt: new Date('2026-08-01') },
+  { id: 'prod-3', sku: 'PNT-WS-20L', name: 'Wall Paint White Satin 20L', description: 'Premium washable satin-finish emulsion paint, 20-litre pail, interior and exterior use.', category: 'Paints & Finishes', subCategory: 'Emulsion', brand: 'Dulux', unitOfMeasure: 'LITER', costPrice: 18000, sellingPrice: 24000, stockQuantity: 925, weight: 22, dimensions: { length: 30, width: 30, height: 35 }, images: [], tags: ['paint', 'interior'], status: ProductStatus.ACTIVE, supplierIds: [], createdAt: new Date('2023-02-01'), updatedAt: new Date('2026-07-15') },
+  { id: 'prod-4', sku: 'PVC-4IN-6M', name: 'PVC Pipes 4-inch (Length 6m)', description: 'Schedule-40 uPVC drainage pipe, 4-inch diameter, 6-metre length, solvent-weld ends.', category: 'Plumbing & Pipes', subCategory: 'Pipes', brand: 'Niger Delta Plastics', unitOfMeasure: 'EACH', costPrice: 5000, sellingPrice: 7000, stockQuantity: 4540, weight: 8, dimensions: { length: 600, width: 10, height: 10 }, images: [], tags: ['plumbing', 'pvc'], status: ProductStatus.ACTIVE, supplierIds: ['sup-2'], createdAt: new Date('2023-02-10'), updatedAt: new Date('2026-07-20') },
+  { id: 'prod-5', sku: 'TIL-FLR-6060', name: 'Floor Tiles 60x60cm (Box)', description: 'Polished porcelain floor tiles, 60x60cm, 4 pieces per box (1.44sqm coverage).', category: 'Tiles & Flooring', subCategory: 'Floor Tiles', brand: 'Porcelain Palace', unitOfMeasure: 'BOX', costPrice: 5000, sellingPrice: 7500, stockQuantity: 3370, weight: 32, dimensions: { length: 62, width: 62, height: 8 }, images: [], tags: ['tiles', 'flooring'], status: ProductStatus.ACTIVE, supplierIds: ['sup-5'], createdAt: new Date('2023-02-20'), updatedAt: new Date('2026-06-30') },
+  { id: 'prod-6', sku: 'ELC-CBL-15-100', name: 'Electrical Cable 1.5mm (100m Roll)', description: 'Single-core PVC-insulated copper wiring cable, 1.5mm², 100-metre roll.', category: 'Electrical', subCategory: 'Cables', brand: 'Coleman', unitOfMeasure: 'EACH', costPrice: 11000, sellingPrice: 15000, stockQuantity: 665, weight: 12, dimensions: { length: 40, width: 40, height: 15 }, images: [], tags: ['electrical', 'cable'], status: ProductStatus.ACTIVE, supplierIds: ['sup-3'], createdAt: new Date('2023-03-01'), updatedAt: new Date('2026-05-20') },
+  { id: 'prod-7', sku: 'ROF-LS-MTR', name: 'Roofing Sheet Long Span (Per Meter)', description: 'Pre-painted aluminium long-span roofing sheet, 0.45mm gauge, sold per linear metre.', category: 'Roofing', subCategory: 'Roofing Sheets', brand: 'Colorbond', unitOfMeasure: 'METER', costPrice: 6000, sellingPrice: 8500, stockQuantity: 8020, weight: 3.5, dimensions: { length: 100, width: 90, height: 1 }, images: [], tags: ['roofing', 'aluminium'], status: ProductStatus.ACTIVE, supplierIds: [], createdAt: new Date('2023-03-10'), updatedAt: new Date('2026-08-01') },
+  { id: 'prod-8', sku: 'PLY-18MM-4X8', name: 'Plywood Sheet 18mm (4x8ft)', description: 'Marine-grade plywood sheet, 18mm thickness, 4ft x 8ft panel.', category: 'Wood & Timber', subCategory: 'Plywood', brand: 'Tropical Timber', unitOfMeasure: 'EACH', costPrice: 22000, sellingPrice: 30000, stockQuantity: 570, weight: 28, dimensions: { length: 244, width: 122, height: 1.8 }, images: [], tags: ['wood', 'plywood'], status: ProductStatus.ACTIVE, supplierIds: ['sup-4'], createdAt: new Date('2023-03-20'), updatedAt: new Date('2026-07-01') },
+  { id: 'prod-9', sku: 'SAN-WC-SUITE', name: 'Sanitary Ware — WC Suite Set', description: 'Close-coupled ceramic WC suite with cistern, seat and fittings included.', category: 'Sanitary Ware', subCategory: 'WC Suites', brand: 'Roca', unitOfMeasure: 'EACH', costPrice: 200000, sellingPrice: 260000, stockQuantity: 28, weight: 35, dimensions: { length: 70, width: 40, height: 75 }, images: [], tags: ['sanitary', 'bathroom'], status: ProductStatus.ACTIVE, supplierIds: ['sup-6'], createdAt: new Date('2023-04-01'), updatedAt: new Date('2026-06-15') },
+  { id: 'prod-10', sku: 'SAN-WB-SET', name: 'Ceramic Wash Basin Set', description: 'Pedestal-mounted ceramic wash basin with tap and waste fittings — currently out of stock.', category: 'Sanitary Ware', subCategory: 'Wash Basins', brand: 'Roca', unitOfMeasure: 'EACH', costPrice: 45000, sellingPrice: 60000, stockQuantity: 0, weight: 18, dimensions: { length: 55, width: 45, height: 85 }, images: [], tags: ['sanitary', 'basin'], status: ProductStatus.OUT_OF_STOCK, supplierIds: ['sup-6'], createdAt: new Date('2023-05-05'), updatedAt: new Date('2026-08-10') },
+  { id: 'prod-11', sku: 'HDW-SCR-200', name: 'Wood Screws Assorted Box (200pc)', description: 'Mixed-size zinc-plated wood screws, 200 pieces per box, for general carpentry.', category: 'Hardware & Fasteners', subCategory: 'Screws & Fasteners', brand: 'Ace Hardware', unitOfMeasure: 'BOX', costPrice: 3500, sellingPrice: 5000, stockQuantity: 340, weight: 2.5, dimensions: { length: 20, width: 15, height: 8 }, images: [], tags: ['hardware', 'fasteners'], status: ProductStatus.ACTIVE, supplierIds: ['sup-8'], createdAt: new Date('2023-05-15'), updatedAt: new Date('2026-07-05') },
+  { id: 'prod-12', sku: 'ELC-FAN-56W', name: 'Ceiling Fan 56-inch White', description: 'Three-blade ceiling fan with light kit, 56-inch sweep, remote control included.', category: 'Electrical', subCategory: 'Fans & Lighting', brand: 'Binatone', unitOfMeasure: 'EACH', costPrice: 18000, sellingPrice: 25000, stockQuantity: 210, weight: 6, dimensions: { length: 142, width: 142, height: 40 }, images: [], tags: ['electrical', 'fan'], status: ProductStatus.ACTIVE, supplierIds: ['sup-3'], createdAt: new Date('2023-06-01'), updatedAt: new Date('2026-06-20') },
+  { id: 'prod-13', sku: 'ELC-WH-30L-OLD', name: 'Water Heater 30L (Old Model)', description: 'Discontinued 30-litre electric storage water heater, replaced by newer energy-efficient model.', category: 'Electrical', subCategory: 'Water Heaters', brand: 'Binatone', unitOfMeasure: 'EACH', costPrice: 35000, sellingPrice: 48000, stockQuantity: 15, weight: 14, dimensions: { length: 45, width: 45, height: 60 }, images: [], tags: ['electrical', 'discontinued'], status: ProductStatus.DISCONTINUED, supplierIds: ['sup-3'], createdAt: new Date('2022-11-10'), updatedAt: new Date('2026-01-05') }
 ];
 
 const MOCK_DASHBOARD_DATA: InventoryDashboardData = {
@@ -977,6 +977,276 @@ export class InventoryService {
 
   private currentBranchIdSubject = new BehaviorSubject<string | null>(null);
   currentBranchId$ = this.currentBranchIdSubject.asObservable();
+
+  // ============================================================
+  // HELPER METHOD FOR MOCK DATA
+  // ============================================================
+
+  private getMockRestockRequests(): RestockRequest[] {
+    // Try to get from localStorage first
+    const stored = localStorage.getItem('restock_requests');
+    if (stored) {
+      return JSON.parse(stored) as RestockRequest[];
+    }
+
+    // Generate mock data
+    const mockRequests: RestockRequest[] = [
+      {
+        id: 'rr-1',
+        productId: 'prod-1',
+        productName: 'Cement Dangote Grade 42.5R',
+        sku: 'CEM-DG-425',
+        branchId: 'br-2',
+        branchName: 'Abuja Distribution Hub',
+        currentStock: 0,
+        reorderPoint: 80,
+        safetyStock: 40,
+        requestedQuantity: 200,
+        approvedQuantity: 0,
+        preferredSupplier: 'Dangote Cement Factory',
+        costEstimate: 1400000,
+        urgency: RestockUrgency.CRITICAL,
+        status: RestockStatus.PENDING,
+        notes: 'Completely out of stock at Abuja hub. Urgent restock needed.',
+        createdBy: 'usr-3',
+        createdByName: 'Emeka Obi',
+        approvedBy: '',
+        approvedByName: '',
+        createdAt: new Date(Date.now() - 2 * 3600000),
+        approvedAt: new Date(),
+        purchaseOrderId: ''
+      },
+      {
+        id: 'rr-2',
+        productId: 'prod-2',
+        productName: 'Iron Rod 16mm (Per Ton)',
+        sku: 'IRN-16MM-TON',
+        branchId: 'br-5',
+        branchName: 'Ibadan Regional Store',
+        currentStock: 8,
+        reorderPoint: 15,
+        safetyStock: 8,
+        requestedQuantity: 30,
+        approvedQuantity: 0,
+        preferredSupplier: 'Delta Steel Company',
+        costEstimate: 10500000,
+        urgency: RestockUrgency.CRITICAL,
+        status: RestockStatus.PENDING,
+        notes: 'Stock below safety threshold. Need immediate replenishment.',
+        createdBy: 'usr-5',
+        createdByName: 'Tunde Adeyemi',
+        approvedBy: '',
+        approvedByName: '',
+        createdAt: new Date(Date.now() - 5 * 3600000),
+        approvedAt: new Date(),
+        purchaseOrderId: ''
+      },
+      {
+        id: 'rr-3',
+        productId: 'prod-3',
+        productName: 'Wall Paint White Satin 20L',
+        sku: 'PNT-WS-20L',
+        branchId: 'br-2',
+        branchName: 'Abuja Distribution Hub',
+        currentStock: 85,
+        reorderPoint: 100,
+        safetyStock: 50,
+        requestedQuantity: 200,
+        approvedQuantity: 0,
+        preferredSupplier: '',
+        costEstimate: 4800000,
+        urgency: RestockUrgency.HIGH,
+        status: RestockStatus.PENDING,
+        notes: 'Stock falling below reorder point. Restock to maintain inventory levels.',
+        createdBy: 'usr-3',
+        createdByName: 'Emeka Obi',
+        approvedBy: '',
+        approvedByName: '',
+        createdAt: new Date(Date.now() - 8 * 3600000),
+        approvedAt: new Date(),
+        purchaseOrderId: ''
+      },
+      {
+        id: 'rr-4',
+        productId: 'prod-4',
+        productName: 'PVC Pipes 4-inch (Length 6m)',
+        sku: 'PVC-4IN-6M',
+        branchId: 'br-6',
+        branchName: 'Enugu Express Depot',
+        currentStock: 360,
+        reorderPoint: 100,
+        safetyStock: 50,
+        requestedQuantity: 200,
+        approvedQuantity: 200,
+        preferredSupplier: 'Niger Delta Plastics Ltd',
+        costEstimate: 1000000,
+        urgency: RestockUrgency.MEDIUM,
+        status: RestockStatus.APPROVED,
+        notes: 'Approved for standard restock.',
+        createdBy: 'usr-6',
+        createdByName: 'Chioma Nwosu',
+        approvedBy: 'usr-2',
+        approvedByName: 'Jane Smith',
+        createdAt: new Date(Date.now() - 3 * 86400000),
+        approvedAt: new Date(Date.now() - 2 * 86400000),
+        purchaseOrderId: 'PO-9001'
+      },
+      {
+        id: 'rr-5',
+        productId: 'prod-7',
+        productName: 'Roofing Sheet Long Span (Per Meter)',
+        sku: 'ROF-LS-MTR',
+        branchId: 'br-4',
+        branchName: 'Kano Outlet',
+        currentStock: 1200,
+        reorderPoint: 300,
+        safetyStock: 150,
+        requestedQuantity: 600,
+        approvedQuantity: 600,
+        preferredSupplier: '',
+        costEstimate: 3600000,
+        urgency: RestockUrgency.LOW,
+        status: RestockStatus.ORDERED,
+        notes: 'Scheduled restock ordered.',
+        createdBy: 'usr-6',
+        createdByName: 'Aisha Bello',
+        approvedBy: 'usr-2',
+        approvedByName: 'Jane Smith',
+        createdAt: new Date(Date.now() - 5 * 86400000),
+        approvedAt: new Date(Date.now() - 4 * 86400000),
+        purchaseOrderId: 'PO-9002'
+      },
+      {
+        id: 'rr-6',
+        productId: 'prod-1',
+        productName: 'Cement Dangote Grade 42.5R',
+        sku: 'CEM-DG-425',
+        branchId: 'br-3',
+        branchName: 'Port Harcourt Store',
+        currentStock: 550,
+        reorderPoint: 150,
+        safetyStock: 80,
+        requestedQuantity: 300,
+        approvedQuantity: 0,
+        preferredSupplier: 'Dangote Cement Factory',
+        costEstimate: 2100000,
+        urgency: RestockUrgency.MEDIUM,
+        status: RestockStatus.PENDING,
+        notes: 'Routine restock request.',
+        createdBy: 'usr-4',
+        createdByName: 'Mary Okoye',
+        approvedBy: '',
+        approvedByName: '',
+        createdAt: new Date(Date.now() - 12 * 3600000),
+        approvedAt: new Date(),
+        purchaseOrderId: ''
+      },
+      {
+        id: 'rr-7',
+        productId: 'prod-5',
+        productName: 'Floor Tiles 60x60cm (Box)',
+        sku: 'TIL-FLR-6060',
+        branchId: 'br-2',
+        branchName: 'Abuja Distribution Hub',
+        currentStock: 950,
+        reorderPoint: 200,
+        safetyStock: 100,
+        requestedQuantity: 400,
+        approvedQuantity: 0,
+        preferredSupplier: 'Porcelain Palace Lagos',
+        costEstimate: 3000000,
+        urgency: RestockUrgency.HIGH,
+        status: RestockStatus.REJECTED,
+        notes: 'Rejected due to budget constraints. Re-submit next quarter.',
+        createdBy: 'usr-3',
+        createdByName: 'Emeka Obi',
+        approvedBy: 'usr-2',
+        approvedByName: 'Jane Smith',
+        createdAt: new Date(Date.now() - 7 * 86400000),
+        approvedAt: new Date(Date.now() - 6 * 86400000),
+        purchaseOrderId: ''
+      },
+      {
+        id: 'rr-8',
+        productId: 'prod-9',
+        productName: 'Sanitary Ware — WC Suite Set',
+        sku: 'SAN-WC-SUITE',
+        branchId: 'br-3',
+        branchName: 'Port Harcourt Store',
+        currentStock: 28,
+        reorderPoint: 10,
+        safetyStock: 5,
+        requestedQuantity: 20,
+        approvedQuantity: 20,
+        preferredSupplier: 'Roca Sanitaryware Nigeria',
+        costEstimate: 4000000,
+        urgency: RestockUrgency.HIGH,
+        status: RestockStatus.RECEIVED,
+        notes: 'Stock received and verified.',
+        createdBy: 'usr-4',
+        createdByName: 'Mary Okoye',
+        approvedBy: 'usr-2',
+        approvedByName: 'Jane Smith',
+        createdAt: new Date(Date.now() - 10 * 86400000),
+        approvedAt: new Date(Date.now() - 9 * 86400000),
+        purchaseOrderId: 'PO-9003'
+      },
+      {
+        id: 'rr-9',
+        productId: 'prod-6',
+        productName: 'Electrical Cable 1.5mm (100m Roll)',
+        sku: 'ELC-CBL-15-100',
+        branchId: 'br-5',
+        branchName: 'Ibadan Regional Store',
+        currentStock: 25,
+        reorderPoint: 80,
+        safetyStock: 40,
+        requestedQuantity: 150,
+        approvedQuantity: 0,
+        preferredSupplier: 'Coleman Cables Nigeria',
+        costEstimate: 1650000,
+        urgency: RestockUrgency.CRITICAL,
+        status: RestockStatus.PENDING,
+        notes: 'Stock critically low. Immediate restock required.',
+        createdBy: 'usr-5',
+        createdByName: 'Tunde Adeyemi',
+        approvedBy: '',
+        approvedByName: '',
+        createdAt: new Date(Date.now() - 3 * 3600000),
+        approvedAt: new Date(),
+        purchaseOrderId: ''
+      },
+      {
+        id: 'rr-10',
+        productId: 'prod-8',
+        productName: 'Plywood Sheet 18mm (4x8ft)',
+        sku: 'PLY-18MM-4X8',
+        branchId: 'br-1',
+        branchName: 'Lagos Main Warehouse',
+        currentStock: 570,
+        reorderPoint: 100,
+        safetyStock: 50,
+        requestedQuantity: 200,
+        approvedQuantity: 200,
+        preferredSupplier: 'Tropical Timber Mills',
+        costEstimate: 4400000,
+        urgency: RestockUrgency.MEDIUM,
+        status: RestockStatus.ORDERED,
+        notes: 'PO issued to supplier.',
+        createdBy: 'usr-1',
+        createdByName: 'John Doe',
+        approvedBy: 'usr-2',
+        approvedByName: 'Jane Smith',
+        createdAt: new Date(Date.now() - 4 * 86400000),
+        approvedAt: new Date(Date.now() - 3 * 86400000),
+        purchaseOrderId: 'PO-9004'
+      }
+    ];
+
+    // Store in localStorage for persistence
+    localStorage.setItem('restock_requests', JSON.stringify(mockRequests));
+    return mockRequests;
+  }
 
   // ----------------------------------------------------
   // CONSTRUCTOR – seed LocalStorage if empty
@@ -1109,15 +1379,58 @@ export class InventoryService {
   // PRODUCTS
   // ----------------------------------------------------
   /** Get all products (filters ignored for local mode) */
-  getProducts(_filters?: ProductFilters): Observable<PaginatedResponse<Product>> {
+  getProducts(filters?: ProductFilters): Observable<PaginatedResponse<Product>> {
     this.loadingSubject.next(true);
-    const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
+    let products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
+
+    // Apply filters if provided
+    if (filters) {
+      // Status filter (ignore 'ALL')
+      if (filters.status && filters.status !== 'ALL') {
+        products = products.filter(p => p.status === filters.status);
+      }
+      // Category filter (ignore 'ALL')
+      if (filters.category && filters.category !== 'ALL') {
+        products = products.filter(p => {
+          const catName = typeof p.category === 'object' && p.category !== null ? (p.category as any).name : (typeof p.category === 'string' ? p.category : '');
+          return catName === filters.category;
+        });
+      }
+      // Search term filter (supports both 'search' and 'searchTerm')
+      const searchTerm = (filters.search ?? filters.searchTerm) as string | undefined;
+      if (searchTerm) {
+        const term = searchTerm.trim().toLowerCase();
+        if (term) {
+          products = products.filter(p =>
+            (p.name && p.name.toLowerCase().includes(term)) ||
+            (p.sku && p.sku.toLowerCase().includes(term))
+          );
+        }
+      }
+      // Price range filter (ignore unset/empty values so default '' from filter forms doesn't wipe results)
+      if (filters.minPrice !== undefined && filters.minPrice !== null && (filters.minPrice as any) !== '') {
+        const min = Number(filters.minPrice);
+        products = products.filter(p => (p.unitPrice ?? p.sellingPrice ?? 0) >= min);
+      }
+      if (filters.maxPrice !== undefined && filters.maxPrice !== null && (filters.maxPrice as any) !== '') {
+        const max = Number(filters.maxPrice);
+        products = products.filter(p => (p.unitPrice ?? p.sellingPrice ?? 0) <= max);
+      }
+    }
+
+    // Pagination
+    const page = filters?.page ?? 0;
+    const limit = filters?.limit ?? filters?.size ?? 10; // size used by component
+    const start = page * limit;
+    const end = start + limit;
+    const pagedData = products.slice(start, end);
+
     const response: PaginatedResponse<Product> = {
-      data: products,
+      data: pagedData,
       total: products.length,
-      page: 1,
-      limit: products.length,
-      totalPages: 1
+      page: page + 1,
+      limit: limit,
+      totalPages: Math.ceil(products.length / limit)
     };
     this.productsSubject.next(products);
     this.loadingSubject.next(false);
@@ -1248,16 +1561,43 @@ export class InventoryService {
   // ----------------------------------------------------
   // STOCK MOVEMENTS
   // ----------------------------------------------------
-  /** Get stock movements (filters ignored) */
-  getMovements(_filters?: MovementFilters): Observable<PaginatedResponse<StockMovement>> {
+  /** Get stock movements (filters applied) */
+  getMovements(filters?: MovementFilters): Observable<PaginatedResponse<StockMovement>> {
     this.loadingSubject.next(true);
     const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
+    let filtered = [...movements];
+
+    // Apply type filter
+    if (filters?.type) {
+      filtered = filtered.filter(m => m.movementType === filters.type);
+    }
+    // Apply status filter
+    if (filters?.status) {
+      filtered = filtered.filter(m => m.status === filters.status);
+    }
+    // Apply date range filters
+    if (filters?.dateFrom) {
+      const from = new Date(filters.dateFrom);
+      filtered = filtered.filter(m => new Date(m.createdAt) >= from);
+    }
+    if (filters?.dateTo) {
+      const to = new Date(filters.dateTo);
+      filtered = filtered.filter(m => new Date(m.createdAt) <= to);
+    }
+
+    const page = filters?.page ?? 0;
+    const limit = filters?.limit ?? filters?.size ?? 20;
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const start = page * limit;
+    const pagedData = filtered.slice(start, start + limit);
+
     const response: PaginatedResponse<StockMovement> = {
-      data: movements,
-      total: movements.length,
-      page: 1,
-      limit: movements.length,
-      totalPages: 1
+      data: pagedData,
+      total: total,
+      page: page,
+      limit: limit,
+      totalPages: totalPages
     };
     this.movementsSubject.next(movements);
     this.loadingSubject.next(false);
@@ -1327,118 +1667,326 @@ export class InventoryService {
     return of(undefined);
   }
 
-// ----------------------------------------------------
-// QUICK ACTIONS (read from dashboard data)
-// ----------------------------------------------------
-getQuickActions(): Observable<QuickAction[]> {
-  const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-  return of(dash.quickActions);
-}
+  // ----------------------------------------------------
+  // QUICK ACTIONS (read from dashboard data)
+  // ----------------------------------------------------
+  getQuickActions(): Observable<QuickAction[]> {
+    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
+    return of(dash.quickActions);
+  }
 
-// ----------------------------------------------------
-// CATEGORIES CRUD
-// ----------------------------------------------------
-getCategories(): Observable<Category[]> {
-  const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
-  return of(categories);
-}
-createCategory(cat: Partial<Category>): Observable<Category[]> {
-  const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
-  const newCat: Category = { ...(cat as Category), id: 'cat-' + Date.now() } as Category;
-  categories.push(newCat);
-  localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
-  return of(categories);
-}
-updateCategory(id: string, cat: Partial<Category>): Observable<Category[]> {
-  const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
-  const idx = categories.findIndex(c => c.id === id);
-  if (idx === -1) return throwError(() => new Error('Category not found'));
-  const updated = { ...categories[idx], ...cat } as Category;
-  categories[idx] = updated;
-  localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
-  return of(categories);
-}
-deleteCategory(id: string): Observable<Category[]> {
-  let categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
-  categories = categories.filter(c => c.id !== id);
-  localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
-  return of(categories);
-}
+  // ----------------------------------------------------
+  // CATEGORIES CRUD
+  // ----------------------------------------------------
+  getCategories(): Observable<Category[]> {
+    const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
+    return of(categories);
+  }
+  createCategory(cat: Partial<Category>): Observable<Category[]> {
+    const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
+    const newCat: Category = { ...(cat as Category), id: 'cat-' + Date.now() } as Category;
+    categories.push(newCat);
+    localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
+    return of(categories);
+  }
+  updateCategory(id: string, cat: Partial<Category>): Observable<Category[]> {
+    const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
+    const idx = categories.findIndex(c => c.id === id);
+    if (idx === -1) return throwError(() => new Error('Category not found'));
+    const updated = { ...categories[idx], ...cat } as Category;
+    categories[idx] = updated;
+    localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
+    return of(categories);
+  }
+  deleteCategory(id: string): Observable<Category[]> {
+    let categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
+    categories = categories.filter(c => c.id !== id);
+    localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
+    return of(categories);
+  }
 
-// ----------------------------------------------------
-// MEASUREMENT UNITS CRUD
-// ----------------------------------------------------
-getMeasurementUnits(): Observable<MeasurementUnit[]> {
-  const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
-  return of(units);
-}
-createMeasurementUnit(unit: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
-  const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
-  const newUnit: MeasurementUnit = { ...(unit as MeasurementUnit), id: 'unit-' + Date.now() } as MeasurementUnit;
-  units.push(newUnit);
-  localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
-  return of(units);
-}
-updateMeasurementUnit(id: string, unit: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
-  const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
-  const idx = units.findIndex(u => u.id === id);
-  if (idx === -1) return throwError(() => new Error('Unit not found'));
-  const updated = { ...units[idx], ...unit } as MeasurementUnit;
-  units[idx] = updated;
-  localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
-  return of(units);
-}
-deleteMeasurementUnit(id: string): Observable<MeasurementUnit[]> {
-  let units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
-  units = units.filter(u => u.id !== id);
-  localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
-  return of(units);
-}
+  // ----------------------------------------------------
+  // MEASUREMENT UNITS CRUD
+  // ----------------------------------------------------
+  getMeasurementUnits(): Observable<MeasurementUnit[]> {
+    const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
+    return of(units);
+  }
+  createMeasurementUnit(unit: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
+    const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
+    const newUnit: MeasurementUnit = { ...(unit as MeasurementUnit), id: 'unit-' + Date.now() } as MeasurementUnit;
+    units.push(newUnit);
+    localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
+    return of(units);
+  }
+  updateMeasurementUnit(id: string, unit: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
+    const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
+    const idx = units.findIndex(u => u.id === id);
+    if (idx === -1) return throwError(() => new Error('Unit not found'));
+    const updated = { ...units[idx], ...unit } as MeasurementUnit;
+    units[idx] = updated;
+    localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
+    return of(units);
+  }
+  deleteMeasurementUnit(id: string): Observable<MeasurementUnit[]> {
+    let units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
+    units = units.filter(u => u.id !== id);
+    localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
+    return of(units);
+  }
 
-// ----------------------------------------------------
-// SUPPLIERS CRUD
-// ----------------------------------------------------
-getSuppliers(): Observable<Supplier[]> {
-  const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
-  return of(suppliers);
-}
-createSupplier(supplier: Partial<Supplier>): Observable<Supplier[]> {
-  const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
-  const newSup: Supplier = { ...(supplier as Supplier), id: 'sup-' + Date.now() } as Supplier;
-  suppliers.push(newSup);
-  localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
-  return of(suppliers);
-}
-updateSupplier(id: string, supplier: Partial<Supplier>): Observable<Supplier[]> {
-  const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
-  const idx = suppliers.findIndex(s => s.id === id);
-  if (idx === -1) return throwError(() => new Error('Supplier not found'));
-  const updated = { ...suppliers[idx], ...supplier } as Supplier;
-  suppliers[idx] = updated;
-  localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
-  return of(suppliers);
-}
-deleteSupplier(id: string): Observable<Supplier[]> {
-  let suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
-  suppliers = suppliers.filter(s => s.id !== id);
-  localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
-  return of(suppliers);
-}
+  // ----------------------------------------------------
+  // SUPPLIERS CRUD
+  // ----------------------------------------------------
+  getSuppliers(): Observable<Supplier[]> {
+    const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
+    return of(suppliers);
+  }
+  createSupplier(supplier: Partial<Supplier>): Observable<Supplier[]> {
+    const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
+    const newSup: Supplier = { ...(supplier as Supplier), id: 'sup-' + Date.now() } as Supplier;
+    suppliers.push(newSup);
+    localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+    return of(suppliers);
+  }
+  updateSupplier(id: string, supplier: Partial<Supplier>): Observable<Supplier[]> {
+    const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
+    const idx = suppliers.findIndex(s => s.id === id);
+    if (idx === -1) return throwError(() => new Error('Supplier not found'));
+    const updated = { ...suppliers[idx], ...supplier } as Supplier;
+    suppliers[idx] = updated;
+    localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+    return of(suppliers);
+  }
+  deleteSupplier(id: string): Observable<Supplier[]> {
+    let suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
+    suppliers = suppliers.filter(s => s.id !== id);
+    localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+    return of(suppliers);
+  }
 
-// ----------------------------------------------------
-// SINGLE MOVEMENT FETCH
-// ----------------------------------------------------
-getMovement(id: string): Observable<StockMovement> {
-  const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
-  const mov = movements.find(m => m.id === id);
-  return mov ? of(mov) : throwError(() => new Error('Movement not found'));
-}
+  // ----------------------------------------------------
+  // SINGLE MOVEMENT FETCH
+  // ----------------------------------------------------
+  getMovement(id: string): Observable<StockMovement> {
+    const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
+    const mov = movements.find(m => m.id === id);
+    return mov ? of(mov) : throwError(() => new Error('Movement not found'));
+  }
 
-// ----------------------------------------------------
-// BRANCH ANALYTICS (stub)
-// ----------------------------------------------------
-getBranchAnalytics(_branchId: string): Observable<any> {
-  return of({});
-}
+  // ----------------------------------------------------
+  // BRANCH ANALYTICS (stub)
+  // ----------------------------------------------------
+  getBranchAnalytics(_branchId: string): Observable<any> {
+    return of({});
+  }
+
+  // ============================================================
+  // RESTOCK REQUESTS - ADD THESE METHODS
+  // ============================================================
+
+  /**
+   * Get restock requests with filters
+   */
+  getRestockRequests(filters?: RestockFilters): Observable<PaginatedResponse<RestockRequest>> {
+    this.loadingSubject.next(true);
+
+    // Get all restock requests from localStorage (or your data source)
+    // For now, we'll use mock data
+    const requests = this.getMockRestockRequests();
+
+    // Apply filters
+    let filtered = requests;
+    if (filters) {
+      if (filters.status) {
+        filtered = filtered.filter(r => r.status === filters.status);
+      }
+      if (filters.urgency) {
+        filtered = filtered.filter(r => r.urgency === filters.urgency);
+      }
+      if (filters.branchId) {
+        filtered = filtered.filter(r => r.branchId === filters.branchId);
+      }
+      // Apply pagination
+      const page = filters.page || 0;
+      const limit = filters.limit || 20;
+      const start = page * limit;
+      const end = start + limit;
+      const paginatedData = filtered.slice(start, end);
+
+      const response: PaginatedResponse<RestockRequest> = {
+        data: paginatedData,
+        total: filtered.length,
+        page: page,
+        limit: limit,
+        totalPages: Math.ceil(filtered.length / limit)
+      };
+
+      this.loadingSubject.next(false);
+      return of(response);
+    }
+
+    const response: PaginatedResponse<RestockRequest> = {
+      data: filtered,
+      total: filtered.length,
+      page: 0,
+      limit: filtered.length,
+      totalPages: 1
+    };
+
+    this.loadingSubject.next(false);
+    return of(response);
+  }
+
+  /**
+   * Create a restock request
+   */
+  createRestockRequest(request: Partial<RestockRequest>): Observable<RestockRequest> {
+    this.loadingSubject.next(true);
+
+    const newRequest: RestockRequest = {
+      ...(request as RestockRequest),
+      id: 'rr-' + Date.now(),
+      status: RestockStatus.PENDING,
+      createdAt: new Date(),
+      approvedAt: new Date(),
+      createdBy: 'usr-1',
+      createdByName: 'Current User'
+    } as RestockRequest;
+
+    // Store in localStorage
+    const requests = this.getMockRestockRequests();
+    requests.push(newRequest);
+    localStorage.setItem('restock_requests', JSON.stringify(requests));
+
+    this.loadingSubject.next(false);
+    return of(newRequest);
+  }
+
+  /**
+   * Approve a restock request
+   */
+  approveRestockRequest(id: string, notes: string): Observable<void> {
+    this.loadingSubject.next(true);
+
+    const requests = this.getMockRestockRequests();
+    const request = requests.find(r => r.id === id);
+    if (request) {
+      request.status = RestockStatus.APPROVED;
+      request.approvedBy = 'usr-2';
+      request.approvedByName = 'Jane Smith';
+      request.approvedAt = new Date();
+      request.notes = notes || request.notes;
+      localStorage.setItem('restock_requests', JSON.stringify(requests));
+    }
+
+    this.loadingSubject.next(false);
+    return of(undefined);
+  }
+
+  /**
+   * Reject a restock request
+   */
+  rejectRestockRequest(id: string, reason: string): Observable<void> {
+    this.loadingSubject.next(true);
+
+    const requests = this.getMockRestockRequests();
+    const request = requests.find(r => r.id === id);
+    if (request) {
+      request.status = RestockStatus.REJECTED;
+      request.approvedBy = 'usr-2';
+      request.approvedByName = 'Jane Smith';
+      request.approvedAt = new Date();
+      request.notes = reason || request.notes;
+      localStorage.setItem('restock_requests', JSON.stringify(requests));
+    }
+
+    this.loadingSubject.next(false);
+    return of(undefined);
+  }
+
+  /**
+   * Get a single restock request
+   */
+  getRestockRequest(id: string): Observable<RestockRequest> {
+    const requests = this.getMockRestockRequests();
+    const request = requests.find(r => r.id === id);
+    return request ? of(request) : throwError(() => new Error('Restock request not found'));
+  }
+
+  /**
+ * Get restock suggestions for a branch
+ */
+  getRestockSuggestions(branchId: string): Observable<RestockRequest[]> {
+    const inventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string) as BranchInventory[];
+    const branchItems = inventory.filter(i => i.branchId === branchId);
+
+    const suggestions: RestockRequest[] = [];
+    branchItems.forEach(item => {
+      const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);
+      if (status === 'CRITICAL' || status === 'LOW') {
+        suggestions.push({
+          id: 'sug-' + Date.now() + '-' + item.productId,
+          productId: item.productId,
+          productName: item.productName,
+          sku: item.sku,
+          branchId: item.branchId,
+          branchName: item.branchName,
+          currentStock: item.quantity,
+          reorderPoint: item.reorderPoint,
+          safetyStock: item.safetyStock,
+          requestedQuantity: item.reorderPoint * 2 - item.quantity,
+          approvedQuantity: 0,
+          preferredSupplier: '',
+          costEstimate: 0,
+          urgency: status === 'CRITICAL' ? RestockUrgency.CRITICAL : RestockUrgency.HIGH,
+          status: RestockStatus.DRAFT,
+          notes: 'Auto-suggested restock',
+          createdBy: 'system',
+          createdByName: 'System',
+          approvedBy: '',
+          approvedByName: '',
+          createdAt: new Date(),
+          approvedAt: new Date(),
+          purchaseOrderId: ''
+        });
+      }
+    });
+
+    return of(suggestions);
+  }
+
+  // inventory.service.ts - Add this method
+
+  /**
+   * Update an existing restock request
+   */
+  updateRestockRequest(id: string, request: Partial<RestockRequest>): Observable<RestockRequest> {
+    this.loadingSubject.next(true);
+
+    const requests = this.getMockRestockRequests();
+    const index = requests.findIndex(r => r.id === id);
+    if (index === -1) {
+      this.loadingSubject.next(false);
+      return throwError(() => new Error('Restock request not found'));
+    }
+
+    const updated = { ...requests[index], ...request, updatedAt: new Date() } as RestockRequest;
+    requests[index] = updated;
+    localStorage.setItem('restock_requests', JSON.stringify(requests));
+
+    this.loadingSubject.next(false);
+    return of(updated);
+  }
+
+  /**
+   * Get branch inventory for a specific product in a branch
+   */
+  getBranchInventoryForProduct(branchId: string, productId: string): Observable<BranchInventory | null> {
+    const inventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string) as BranchInventory[];
+    const item = inventory.find(i => i.branchId === branchId && i.productId === productId);
+    return of(item || null);
+  }
+
 
 }

@@ -221,10 +221,10 @@
 
                 <!-- Data rows -->
                 <tbody *ngIf="!isLoading && filteredBranches.length > 0">
-                    <tr *ngFor="let branch of filteredBranches; let i = index"
+                    <tr *ngFor="let branch of pagedBranches; let i = index"
                         [class.ql-row--inactive]="branch.status === 'INACTIVE'"
                         [class.ql-row--construction]="branch.status === 'UNDER_CONSTRUCTION'">
-                        <td class="ql-td-num">{{ i + 1 }}</td>
+                        <td class="ql-td-num">{{ currentPage * pageSize + i + 1 }}</td>
 
                         <td class="ql-td-branch">
                             <div class="ql-branch-info">
@@ -290,7 +290,7 @@
 
         <!-- Grid View -->
         <div class="ql-grid-container" *ngIf="!isLoading && viewMode === 'grid'">
-            <div class="ql-grid-card" *ngFor="let branch of filteredBranches"
+            <div class="ql-grid-card" *ngFor="let branch of pagedBranches"
                 [class.ql-grid--inactive]="branch.status === 'INACTIVE'"
                 [class.ql-grid--construction]="branch.status === 'UNDER_CONSTRUCTION'"
                 (click)="navigateToBranch(branch.id)">
@@ -339,6 +339,29 @@
                 <p class="ql-empty-sub">Try adjusting your filters or add a new branch</p>
                 <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewBranch()">
                     <i class="fas fa-plus"></i> Add Branch
+                </button>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="ql-pagination" *ngIf="!isLoading && totalElements > 0">
+            <span class="ql-page-info">
+                Showing {{ currentPage * pageSize + 1 }}–{{ Math.min((currentPage + 1) * pageSize, totalElements) }} of
+                {{ totalElements }}
+            </span>
+            <div class="ql-page-btns">
+                <button type="button" class="ql-page-btn" [disabled]="currentPage === 0"
+                    (click)="onPageChange(currentPage - 1)">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button type="button" class="ql-page-btn" *ngFor="let p of getPageNumbers()"
+                    [class.ql-page-btn--active]="p === currentPage" [class.ql-page-btn--ellipsis]="p === -1"
+                    (click)="p !== -1 && onPageChange(p)">
+                    {{ p === -1 ? '…' : p + 1 }}
+                </button>
+                <button type="button" class="ql-page-btn" [disabled]="currentPage >= totalPages - 1"
+                    (click)="onPageChange(currentPage + 1)">
+                    <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
         </div>

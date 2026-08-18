@@ -41,6 +41,8 @@ import { ReceiptPreviewComponent } from './ui/view/request-management/receipt-pr
 import { InventoryComponent } from './ui/view/inventory/inventory.component';
 import { LogisticsComponent } from './ui/view/logistics/logistics.component';
 import { ProductManagementFormComponent } from './ui/view/inventory/product/product-management-form/product-management-form.component';
+import { ProductDetailComponent } from './ui/view/inventory/product/product-detail/product-detail.component';
+import { ProductBulkImportComponent } from './ui/view/inventory/product/product-bulk-import/product-bulk-import.component';
 import { BranchDetailComponent } from './ui/view/branch/branch-detail/branch-detail.component';
 import { BranchInventoryFormComponent } from './ui/view/branch/branch-inventory-form/branch-inventory-form.component';
 import { BranchFormComponent } from './ui/view/branch/branch-form/branch-form.component';
@@ -48,6 +50,8 @@ import { StockMovementFormComponent } from './ui/view/inventory/stock/stock-move
 import { StockMovementDetailComponent } from './ui/view/inventory/stock/stock-movement-detail/stock-movement-detail.component';
 import { TransferWizardComponent } from './ui/view/inventory/stock/transfer-wizard/transfer-wizard.component';
 import { BulkTransferComponent } from './ui/view/inventory/stock/bulk-transfer/bulk-transfer.component';
+import { RestockRequestFormComponent } from './ui/view/inventory/restock/restock-request-form/restock-request-form.component';
+import { RestockRequestListComponent } from './ui/view/inventory/restock/restock-request-list/restock-request-list.component';
 
 
 export const routes: Routes = [
@@ -81,12 +85,28 @@ export const routes: Routes = [
     component: ProductManagementFormComponent
   },
   {
+    path: 'admin/sales/inventory/products/bulk-import',
+    component: ProductBulkImportComponent
+  },
+  {
+    path: 'admin/sales/inventory/products/bulk-import/:uuid',
+    component: ProductBulkImportComponent
+  },
+  {
     path: 'admin/sales/inventory/products/:id/edit',
     component: ProductManagementFormComponent
   },
   {
     path: 'admin/sales/inventory/products/:id/edit/:uuid',
     component: ProductManagementFormComponent
+  },
+  {
+    path: 'admin/sales/inventory/products/:id',
+    component: ProductDetailComponent
+  },
+  {
+    path: 'admin/sales/inventory/products/:id/:uuid',
+    component: ProductDetailComponent
   },
   
   // --------------------------------------- Branch Management -----------------------------------------
@@ -123,6 +143,20 @@ export const routes: Routes = [
   {
     path: 'admin/sales/inventory/movements/:id/edit',
     component: StockMovementFormComponent
+  },
+
+  // --------------------------------------- Restock Requests -----------------------------------------
+  {
+    path: 'admin/sales/inventory/restock/requests',
+    component: RestockRequestListComponent
+  },
+  {
+    path: 'admin/sales/inventory/restock/requests/new',
+    component: RestockRequestFormComponent
+  },
+  {
+    path: 'admin/sales/inventory/restock/requests/:id',
+    component: RestockRequestFormComponent
   },
 
 

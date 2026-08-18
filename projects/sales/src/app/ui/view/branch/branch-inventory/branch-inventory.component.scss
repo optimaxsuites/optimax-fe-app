@@ -910,3 +910,57 @@
         grid-template-columns: 1fr;
     }
 }
+
+// ============================================================
+// PAGINATION
+// ============================================================
+
+.ql-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
+.ql-page-btns {
+    display: flex;
+    gap: 4px;
+}
+
+.ql-page-btn {
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--text);
+    transition: all .12s;
+
+    &:disabled {
+        opacity: .4;
+        cursor: default;
+    }
+
+    &--active {
+        background: var(--p);
+        color: #fff;
+        border-color: var(--p);
+    }
+
+    &--ellipsis {
+        border: none;
+        cursor: default;
+        background: transparent;
+    }
+
+    &:hover:not(:disabled):not(&--active):not(&--ellipsis) {
+        background: var(--bg);
+    }
+}
