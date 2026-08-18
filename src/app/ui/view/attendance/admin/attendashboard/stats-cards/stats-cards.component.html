@@ -49,7 +49,7 @@
   </div>
 
   <div class="stat-card pending-approvals" [class.has-pending]="pendingApprovals > 0">
-    <h3>🔔 Pending Review</h3>
+    <h3>Pending Review</h3>
     <p>{{ pendingApprovals }}</p>
     <div class="approval-breakdown" *ngIf="pendingApprovals > 0">
       <span *ngIf="crossBranchCount > 0" class="breakdown-item">

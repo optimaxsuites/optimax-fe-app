@@ -17,55 +17,88 @@
         <h3>Attendance Records</h3>
       </div>
 
+      <!-- Pending Corrections Alert (shown only when there are pending) -->
+      <div *ngIf="!isLoading && getPendingCorrectionCount() > 0" class="pending-corrections-alert">
+        <div class="alert-content">
+          <div class="alert-message">
+            <span class="alert-icon">📋</span>
+            <div>
+              <p class="alert-title">{{ getPendingCorrectionCount() }} Pending Correction Request(s)</p>
+              <p class="alert-description">Click "Select All Pending" to approve them in batch</p>
+            </div>
+          </div>
+          <div class="alert-actions">
+            <button class="btn-select-all" (click)="selectAllWithPendingCorrections()">
+              <i class="fa-solid fa-check-double"></i> Select All Pending
+            </button>
+            <button *ngIf="getSelectedCount() > 0" class="btn-approve" (click)="massApproveCorrectionRequests()">
+              <i class="fa-solid fa-thumbs-up"></i> Approve {{ getSelectedCount() }}
+            </button>
+            <button *ngIf="getSelectedCount() > 0" class="btn-clear" (click)="clearSelection()">
+              <i class="fa-solid fa-times"></i> Clear
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Simple Working Table -->
       <div style="background: white; border-radius: 8px; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
         <table style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+              <th *ngIf="getPendingCorrectionCount() > 0" style="padding: 0.5rem; text-align: center; width: 40px; font-weight: 600; color: #374151; font-size: 0.8rem;">
+                <input type="checkbox" [checked]="areAllPendingSelected()"
+                  (change)="selectAllWithPendingCorrections()"
+                  style="cursor: pointer;">
+              </th>
               <th style="padding: 0.5rem 0.5rem; text-align: left; font-weight: 600; color: #374151; font-size: 0.8rem;" *ngFor="let col of tableColumns">
                 {{ col.header }}
               </th>
-              <th *ngIf="tableActions.length" style="padding: 0; text-align: center; width: 16px; font-weight: 600; color: #374151; font-size: 0.8rem;">ACTIONS</th>
+              <th *ngIf="tableActions.length" style="padding: 0.5rem; text-align: center; width: auto; min-width: 50px; font-weight: 600; color: #374151; font-size: 0.8rem;">ACTIONS</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let record of filteredAttendance" style="border-bottom: 1px solid #e5e7eb; hover: background-color: #f9fafb;">
+            <tr *ngFor="let record of filteredAttendance"
+              [style.background-color]="isRecordSelected(record.id) ? '#dbeafe' : 'transparent'"
+              style="border-bottom: 1px solid #e5e7eb;">
+              <td *ngIf="getPendingCorrectionCount() > 0" style="padding: 0.5rem; text-align: center; width: 40px;">
+                <input type="checkbox"
+                  [checked]="isRecordSelected(record.id)"
+                  (change)="toggleRecordSelection(record.id)"
+                  [disabled]="record.correctionRequest?.status !== 'PENDING'"
+                  style="cursor: pointer;">
+              </td>
               <td style="padding: 0.5rem 0.5rem; font-size: 0.9rem;" *ngFor="let col of tableColumns">
-                <ng-container *ngIf="col.field !== 'flags'; else flagsTemplate">
-                  {{ record[col.field] }}
+                <ng-container *ngIf="col.field === 'status'; else otherFields">
+                  <span class="status-badge" [ngClass]="'status-' + record.status.toLowerCase()">
+                    {{ record.status }}
+                  </span>
                 </ng-container>
+                <ng-template #otherFields>
+                  <ng-container *ngIf="col.field !== 'flags'; else flagsTemplate">
+                    {{ getFieldValue(record, col.field) }}
+                  </ng-container>
+                </ng-template>
                 <ng-template #flagsTemplate>
                   <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                    <span *ngIf="isCrossBranchAttendance(record)"
-                      style="display: inline-block; background: #fef08a; color: #854d0e; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500; border: 1px solid #fcd34d; cursor: help;"
+                    <span *ngIf="isCrossBranchAttendance(record)" class="flag-badge cross-branch"
                       [title]="getCrossBranchBranchNames(record)">
-                      ⚠️ Cross-Branch
+                      Cross-Branch
                     </span>
-                    <span *ngIf="record.correctionRequest?.status === 'PENDING'"
-                      style="display: inline-block; background: #fed7aa; color: #92400e; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500; border: 1px solid #fdba74; cursor: help;"
+                    <span *ngIf="record.correctionRequest?.status === 'PENDING'" class="flag-badge correction"
                       title="Correction request pending approval">
-                      📝 Correction
+                      Correction
                     </span>
                   </div>
                 </ng-template>
               </td>
-              <td style="padding: 0; text-align: center; width: 16px;" *ngIf="tableActions.length">
-                <!-- Dropdown menu - just colon -->
-                <div class="actions-menu" style="position: relative; display: inline-block; width: 100%;">
-                  <button (click)="toggleActionMenu(record.id)"
-                    style="padding: 0; background: none; border: none; cursor: pointer; font-size: 0.9rem; line-height: 1; color: #6b7280; min-width: auto; width: 100%; text-align: center;">
-                    :</button>
-                  <div class="action-dropdown" *ngIf="openActionMenu === record.id"
-                    style="position: absolute; top: 100%; right: 0; background: white; border: 1px solid #e5e7eb; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10; min-width: 110px; margin-top: 4px;">
-                    <button *ngFor="let action of tableActions"
-                      (click)="onTableActionClick({actionId: action.id, row: record}); openActionMenu = null"
-                      style="display: block; width: 100%; text-align: left; padding: 0.6rem 1rem; border: none; background: none; cursor: pointer; font-size: 0.9rem; transition: background 0.2s; color: #374151;"
-                      (mouseenter)="$event.target.style.background = '#f3f4f6'"
-                      (mouseleave)="$event.target.style.background = 'none'">
-                      {{ action.label }}
-                    </button>
-                  </div>
-                </div>
+              <td style="padding: 0.5rem; text-align: center; width: auto; min-width: 60px;" *ngIf="tableActions.length">
+                <button *ngFor="let action of tableActions" class="action-btn"
+                  (click)="onTableActionClick({actionId: action.id, row: record})"
+                  [title]="action.label">
+                  <i [ngClass]="action.icon"></i>
+                  <span>{{ action.label }}</span>
+                </button>
               </td>
             </tr>
             <tr *ngIf="!isLoading && filteredAttendance.length === 0">

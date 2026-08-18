@@ -1,121 +1,4 @@
 <div class="reports-container">
-  <!-- Edit Modal Backdrop -->
-  <div *ngIf="isEditMode && selectedRecord" class="modal-backdrop" (click)="cancelEdit()"></div>
-
-  <!-- Edit Modal -->
-  <div *ngIf="isEditMode && selectedRecord" class="modal-card">
-    <div class="modal-header">
-      <h3>
-        <i class="fa-solid fa-edit"></i>
-        Edit Attendance Record
-      </h3>
-      <button class="close-btn" (click)="cancelEdit()">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-    </div>
-
-    <div class="modal-content">
-      <div class="form-group">
-        <label>Employee Name</label>
-        <input type="text" [(ngModel)]="selectedRecord.employee" readonly>
-      </div>
-
-      <div class="form-group">
-        <label>Department</label>
-        <input type="text" [(ngModel)]="selectedRecord.department" readonly>
-      </div>
-
-      <div class="form-group">
-        <label>Clock In</label>
-        <input type="time" [(ngModel)]="selectedRecord.checkIn">
-      </div>
-
-      <div class="form-group">
-        <label>Clock Out</label>
-        <input type="time" [(ngModel)]="selectedRecord.checkOut">
-      </div>
-
-      <div class="form-group">
-        <label>Status</label>
-        <select [(ngModel)]="selectedRecord.status">
-          <option value="PRESENT">Present</option>
-          <option value="LATE">Late</option>
-          <option value="ABSENT">Absent</option>
-        </select>
-      </div>
-
-      <div class="form-actions">
-        <button class="btn-cancel" (click)="cancelEdit()">Cancel</button>
-        <button class="btn-save" (click)="saveRecord()">Save Changes</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Details Drawer Backdrop -->
-  <div *ngIf="selectedRecord && !isEditMode" class="details-backdrop" (click)="closeDrawer()"></div>
-
-  <!-- Details Drawer -->
-  <div *ngIf="selectedRecord && !isEditMode" class="details-drawer">
-    <div class="drawer-header">
-      <h3>
-        <i class="fa-solid fa-user-circle"></i>
-        {{ selectedRecord.employee }}
-      </h3>
-      <button class="close-btn" (click)="closeDrawer()">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-    </div>
-
-    <div class="drawer-content">
-      <div class="detail-section">
-        <h4>Attendance Information</h4>
-        <div class="detail-row">
-          <span class="label">Employee ID</span>
-          <span class="value">{{ selectedRecord.id }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Department</span>
-          <span class="value">{{ selectedRecord.department }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Branch</span>
-          <span class="value">{{ getBranchName(selectedRecord.checkedInBranchId) }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Date</span>
-          <span class="value">{{ selectedRecord.date || '—' }}</span>
-        </div>
-      </div>
-
-      <div class="detail-section">
-        <h4>Clock Times</h4>
-        <div class="detail-row">
-          <span class="label">Clock In</span>
-          <span class="value">{{ selectedRecord.checkIn || '—' }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Clock Out</span>
-          <span class="value">{{ selectedRecord.checkOut || '—' }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Hours Worked</span>
-          <span class="value">{{ selectedRecord.hours || 0 }} hours</span>
-        </div>
-      </div>
-
-      <div class="detail-section">
-        <h4>Status</h4>
-        <div class="detail-row">
-          <span class="label">Attendance Status</span>
-          <span class="value">
-            <span class="status" [ngClass]="'status-' + selectedRecord.status.toLowerCase()">
-              {{ selectedRecord.status }}
-            </span>
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
   <!-- Header -->
   <div class="header">
     <div class="header-title">
@@ -141,6 +24,7 @@
         <div class="dropdown-menu">
           <a (click)="exportExcel()">Export Excel</a>
           <a (click)="exportCsv()">Export CSV</a>
+          <a (click)="exportPdf()">Export PDF</a>
         </div>
       </div>
     </div>
@@ -220,12 +104,12 @@
   <!-- Using Shared Admin Table Component -->
   <div class="attendance-card">
     <div class="record-count">
-      <h3>Attendance Records</h3>
-      <span class="count-badge">Showing {{ filteredAttendance.length }} of {{ attendance.length }}</span>
+      <h3>Attendance Summary by Employee</h3>
+      <span class="count-badge">Showing {{ groupedSummary.length }} employees</span>
     </div>
 
     <app-table
-      [rows]="filteredAttendance"
+      [rows]="groupedSummary"
       [columns]="tableColumns"
       [actions]="tableActions"
       emptyMessage="📭 No attendance records found"

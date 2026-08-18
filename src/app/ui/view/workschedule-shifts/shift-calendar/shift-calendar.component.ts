@@ -26,6 +26,7 @@ export class ShiftCalendarComponent implements OnInit {
   currentPage = 1;
   pageSize = 5;
   selectedDate: string = this.formatDateLocal(new Date());
+  isAdmin = false;
 
   viewMode: 'calendar' | 'table' | 'summary' | 'gantt' = 'calendar';
   batchSelected: Set<string> = new Set();
@@ -78,6 +79,9 @@ export class ShiftCalendarComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    const role = sessionStorage.getItem('role');
+    this.isAdmin = role === 'ADMIN';
+
     this.initializeCalendarOptions();
     this.scheduleService.schedules$.subscribe(data => {
       this.schedules = data;

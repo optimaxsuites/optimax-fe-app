@@ -101,9 +101,14 @@
           <td>{{ record.checkIn || '-' }}</td>
           <td>{{ record.checkOut || '-' }}</td>
           <td>
-            <span class="status-badge" [ngClass]="'status-' + record.status.toLowerCase()">
-              {{ record.status }}
-            </span>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+              <span class="status-badge" [ngClass]="'status-' + record.status.toLowerCase()">
+                {{ record.status }}
+              </span>
+              <span *ngIf="record.isCrossBranchAttendance" class="flag-badge cross-branch">
+                Cross-Branch
+              </span>
+            </div>
           </td>
           <td>{{ record.hours || 0 }}h</td>
           <td>{{ record.department }}</td>

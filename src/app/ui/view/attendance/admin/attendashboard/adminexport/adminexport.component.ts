@@ -1,8 +1,8 @@
 import { Component, Input, inject, ViewChild, ElementRef } from '@angular/core';
 import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 import * as XLSX from 'xlsx';
-//import jsPDF from 'jspdf';
-//import autoTable from 'jspdf-autotable';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
 
 @Component({
@@ -16,10 +16,8 @@ export class AdminexportComponent {
   @Input() filters: any;
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
-  private attendancetableService = inject(AttendancetableService)
+  private attendancetableService = inject(AttendancetableService);
 
-
- //to generate the file's title
   generateTitle(): string {
 
     const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
@@ -89,9 +87,65 @@ exportExcel() {
   XLSX.writeFile(workbook, this.generateTitle() + '.xlsx');
 }
 
+exportPDF() {
+  if (!this.data.length) return;
+
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  doc.setFontSize(16);
+  doc.text(this.generateTitle(), pageWidth / 2, 15, { align: 'center' });
+
+  doc.setFontSize(10);
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, 25, { align: 'center' });
+
+  const tableData = this.data.map(record => [
+    record.employee || '-',
+    record.department || '-',
+    record.date || '-',
+    record.checkIn || '-',
+    record.checkOut || '-',
+    record.status || '-',
+    record.hours || '0'
+  ]);
+
+  autoTable(doc, {
+    head: [['Employee', 'Department', 'Date', 'Clock In', 'Clock Out', 'Status', 'Hours']],
+    body: tableData,
+    startY: 35,
+    styles: {
+      font: 'helvetica',
+      fontSize: 8,
+      cellPadding: 4
+    },
+    headStyles: {
+      fillColor: [46, 98, 118],
+      textColor: 255,
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245]
+    },
+    margin: { top: 35 }
+  });
+
+  const pageCount = (doc as any).internal.pages.length - 1;
+  doc.setFontSize(8);
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.text(
+      `Page ${i} of ${pageCount}`,
+      pageWidth / 2,
+      doc.internal.pageSize.getHeight() - 10,
+      { align: 'center' }
+    );
+  }
+
+  doc.save(this.generateTitle() + '.pdf');
+}
+
 importModalOpen = false;
 exportDropdownOpen = false;
-//selectedFile: File | null = null;
 
 openImportModal() {
   this.importModalOpen = true;
@@ -99,7 +153,6 @@ openImportModal() {
 
 closeImportModal() {
   this.importModalOpen = false;
-  //this.selectedFile = null;
 }
 
 toggleExportDropdown() {
@@ -144,13 +197,6 @@ downloadTemplate() {
 
   XLSX.writeFile(wb, 'Attendance_Template.xlsx');
 }
-
-/*onFileSelected(event: any) {
-  const file = event.target.files[0];
-  console.log('File selected via input: ', file);
-  this.selectedFile = file;
-  
-}*/
 
 normalizeDate(date: any): string {
   if (!date) return '';
@@ -240,57 +286,5 @@ importNow() {
   reader.readAsBinaryString(file);
 }
 
-/*importNow() {
-  console.log('Selected file before import: ', this.selectedFile)
-
-  if (!this.selectedFile) {
-    alert('Please select a file first');
-      return;
-  }
-
-  const reader = new FileReader();
-
-  reader.onload = (e: any) => {
-    const binaryStr = e.target.result;
-    const workbook = XLSX.read(binaryStr, { type: 'binary' });
-
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-
-    const jsonData = XLSX.utils.sheet_to_json(sheet);
-
-    const formattedData = jsonData
-    .filter((row: any) => {
-      return row.ID && row.Employee&& row.Date;
-    })
-    .map((row: any) => ({
-      id: row.ID,
-      employee: row.Employee,
-      department: row.Department,
-      date: this.normalizeDate(row.Date),
-      checkIn: row.In || null,
-      checkOut: row.Out || null,
-      checkInLocation: row.InLocation
-        ? { address: row.InLocation, lat: 0, lng: 0 }
-        : null,
-      checkOutLocation: row.OutLocation
-        ? { address: row.OutLocation, lat: 0, lng: 0 }
-        : null,
-      status: row.Status || 'ABSENT',
-      hours: Number(row.Hours) || 0
-    }));
-
-    //Send to service
-    this.attendancetableService.importAttendance(formattedData);
-
-    this.closeImportModal();
-  };
-
-  reader.readAsBinaryString(this.selectedFile);
-}*/
-
-
-
 previewData: AttendanceTableRecord[] = [];
-
 }
