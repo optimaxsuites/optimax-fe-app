@@ -148,8 +148,21 @@
 
 .ql-top-bar-left {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+
+    .ql-title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+}
+
+.ql-subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0;
 }
 
 .ql-top-bar-right {

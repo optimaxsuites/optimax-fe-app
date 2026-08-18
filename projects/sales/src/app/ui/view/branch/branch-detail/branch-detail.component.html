@@ -40,16 +40,6 @@
             </button>
         </div>
 
-        <!-- Restock Suggestions -->
-        <div class="ql-sidebar-section">
-            <app-restock-suggestion
-                [branchId]="branchId"
-                [compact]="true"
-                [limit]="3"
-                (createRequest)="onCreateRestockRequest($event)">
-            </app-restock-suggestion>
-        </div>
-
     </aside>
 
     <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
@@ -144,6 +134,9 @@
                 </button>
                 <button class="ql-tab" [class.ql-tab--active]="activeTab === 'analytics'" (click)="setActiveTab('analytics')">
                     <i class="fas fa-chart-line"></i> Analytics
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'restock'" (click)="setActiveTab('restock')">
+                    <i class="fas fa-lightbulb"></i> Restock
                 </button>
             </div>
 
@@ -369,6 +362,17 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- ========================================================
+                RESTOCK TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'restock'" class="ql-tab-panel">
+                    <app-restock-suggestion
+                        [branchId]="branchId"
+                        [limit]="20"
+                        (createRequest)="onCreateRestockRequest($event)">
+                    </app-restock-suggestion>
                 </div>
 
             </div>

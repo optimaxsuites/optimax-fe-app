@@ -74,16 +74,18 @@
         <!-- Top bar -->
         <div class="ql-top-bar">
             <div class="ql-top-bar-left">
-                <div class="header-badge">
-  <span class="pulse-dot"></span> Restock
-</div>
-<h1 class="page-title">Restock Dashboard</h1>
-<p class="page-subtitle">Manage restock requests, prioritize urgent items, and track fulfillment status.</p>
-<span class="ql-total-badge">{{ stats.total }} requests</span>
+                <div class="ql-title-row">
+                    <h1 class="ql-title">Restock Dashboard</h1>
+                    <span class="ql-total-badge">{{ stats.total }} requests</span>
+                </div>
+                <p class="ql-subtitle">Manage restock requests, prioritize urgent items, and track fulfillment status.</p>
             </div>
             <div class="ql-top-bar-right">
                 <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
                     <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i> Refresh
+                </button>
+                <button type="button" class="ql-btn ql-btn--secondary" (click)="navigateToSuggestions()">
+                    <i class="fas fa-lightbulb"></i> View Restock Suggestions
                 </button>
                 <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewRequest()">
                     <i class="fas fa-plus"></i> New Request
@@ -135,10 +137,6 @@
                 <span class="ql-stat-mini-label">Rejected</span>
             </div>
         </div>
-
-        <!-- Requests + Suggestions -->
-        <div class="ql-dashboard-grid">
-        <div class="ql-dashboard-left">
 
         <!-- Filter Bar -->
         <div class="ql-filter-bar">
@@ -325,17 +323,6 @@
                     </button>
                 </div>
             </div>
-        </div>
-
-        </div>
-
-        <div class="ql-dashboard-right">
-            <app-restock-suggestion
-                [limit]="5"
-                (createRequest)="onCreateRequest($event)">
-            </app-restock-suggestion>
-        </div>
-
         </div>
 
     </main>

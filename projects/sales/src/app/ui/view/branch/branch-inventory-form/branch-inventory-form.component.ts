@@ -504,6 +504,7 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
       if (savedItems.length > 0) {
         this.saved.emit(savedItems[0]);
       }
+      this.navigateAway();
     }, 1000);
   }
 
@@ -517,12 +518,21 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
       this.confirmMessage = 'You have unsaved changes. Are you sure you want to leave?';
     } else {
       this.cancelled.emit();
+      this.navigateAway();
     }
   }
 
   confirmCancel(): void {
     this.showConfirmDialog = false;
     this.cancelled.emit();
+    this.navigateAway();
+  }
+
+  /** Falls back to browser history when nothing is listening to saved/cancelled — this component is currently only ever routed to directly, never embedded. */
+  private navigateAway(): void {
+    if (!this.saved.observed && !this.cancelled.observed) {
+      this.location.back();
+    }
   }
 
   cancelConfirmDialog(): void {

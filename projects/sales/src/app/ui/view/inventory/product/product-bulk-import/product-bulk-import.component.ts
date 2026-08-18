@@ -4,8 +4,7 @@
 // ============================================================
 
 import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
-import { Router } from '@angular/router';
-import { Location } from '@angular/common';
+import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
@@ -74,7 +73,7 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
   constructor(
     private inventoryService: InventoryService,
     private router: Router,
-    private location: Location,
+    private route: ActivatedRoute,
     private fb: FormBuilder
   ) {
     this.importForm = this.buildForm();
@@ -463,15 +462,27 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
   // ============================================================
 
   goBack(): void {
-    if (this.importResults) {
-      this.cancelled.emit();
-    } else {
-      this.cancelled.emit();
+    this.cancelled.emit();
+    if (!this.cancelled.observed) {
+      this.navigateToProducts();
     }
   }
 
   finishImport(): void {
     this.completed.emit(this.parsedData.map(row => this.mapRowToProduct(row, this.importForm.value)) as Product[]);
+    if (!this.completed.observed) {
+      this.navigateToProducts();
+    }
+  }
+
+  /** Falls back to the product list when nothing is listening to completed/cancelled — this component is currently only ever routed to directly, never embedded. */
+  private navigateToProducts(): void {
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/commerce/inventory', uuid]);
+    } else {
+      this.router.navigate(['/commerce/inventory']);
+    }
   }
 
   // ============================================================

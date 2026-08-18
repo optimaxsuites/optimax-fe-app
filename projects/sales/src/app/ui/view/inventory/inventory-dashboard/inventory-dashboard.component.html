@@ -51,8 +51,11 @@
         <!-- Top bar -->
         <div class="ql-top-bar">
             <div class="ql-top-bar-left">
-                <h1 class="ql-title">Inventory Command Center</h1>
-                <span class="ql-total-badge">{{ stats?.totalSkus || 0 }} SKUs</span>
+                <div class="ql-title-row">
+                    <h1 class="ql-title">Inventory Command Center</h1>
+                    <span class="ql-total-badge">{{ stats?.totalSkus || 0 }} SKUs</span>
+                </div>
+                <p class="ql-subtitle">Real-time view of stock levels, alerts, and activity across all branches.</p>
             </div>
             <div class="ql-top-bar-right">
                 <app-branch-selector [branches]="branches" [selectedBranchId]="selectedBranchId"
@@ -264,13 +267,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Restock Suggestions -->
-                <app-restock-suggestion
-                    [limit]="5"
-                    [compact]="true"
-                    (createRequest)="navigateToRestockRequest($event)">
-                </app-restock-suggestion>
             </div>
 
         </div>
