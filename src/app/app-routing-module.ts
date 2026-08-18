@@ -52,6 +52,7 @@ import { TransferWizardComponent } from './ui/view/inventory/stock/transfer-wiza
 import { BulkTransferComponent } from './ui/view/inventory/stock/bulk-transfer/bulk-transfer.component';
 import { RestockRequestFormComponent } from './ui/view/inventory/restock/restock-request-form/restock-request-form.component';
 import { RestockRequestListComponent } from './ui/view/inventory/restock/restock-request-list/restock-request-list.component';
+import { RestockSuggestionsPageComponent } from './ui/view/inventory/restock/restock-suggestions-page/restock-suggestions-page.component';
 
 
 export const routes: Routes = [
@@ -157,6 +158,10 @@ export const routes: Routes = [
   {
     path: 'admin/sales/inventory/restock/requests/:id',
     component: RestockRequestFormComponent
+  },
+  {
+    path: 'admin/sales/inventory/restock/suggestions',
+    component: RestockSuggestionsPageComponent
   },
 
 

@@ -475,11 +475,46 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
     this.variantsArray.removeAt(index);
   }
 
-  // File Upload
+  // File Upload (legacy filename capture)
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       this.attachmentFileName = input.files[0].name;
+    }
+  }
+
+  // Image selection handling for previews
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      for (let i = 0; i < input.files.length; i++) {
+        const file = input.files.item(i);
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const result = e.target?.result as string;
+            if (result) {
+              this.images.push(result);
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+  }
+
+  // Add image from URL input
+  addImageUrl(url: string): void {
+    const trimmed = url?.trim();
+    if (trimmed) {
+      this.images.push(trimmed);
+    }
+  }
+
+  // Remove image from preview list
+  removeImage(index: number): void {
+    if (index >= 0 && index < this.images.length) {
+      this.images.splice(index, 1);
     }
   }
 
@@ -565,28 +600,5 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
     }
   }
 
-  onImageSelected(event: any): void {
-    const files = event.target.files;
-    if (files) {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const reader = new FileReader();
-        reader.onload = (e: any) => {
-          this.images.push(e.target.result);
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-  }
 
-  addImageUrl(url: string): void {
-    const trimmed = url ? url.trim() : '';
-    if (trimmed && !this.images.includes(trimmed)) {
-      this.images.push(trimmed);
-    }
-  }
-
-  removeImage(index: number): void {
-    this.images.splice(index, 1);
-  }
 }

@@ -7,14 +7,11 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, interval, takeUntil, takeWhile } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
-import { RestockSuggestion } from '../restock-suggestion/restock-suggestion.component';
 import {
   RestockRequest,
   RestockStatus,
   RestockUrgency,
   Branch,
-  Product,
-  BranchInventory,
   getStockStatus,
   getStockStatusLabel,
   getStockStatusColor
@@ -39,8 +36,6 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
   restockRequests: RestockRequest[] = [];
   filteredRequests: RestockRequest[] = [];
   branches: Branch[] = [];
-  inventoryItems: BranchInventory[] = [];
-  products: Product[] = [];
 
   // Loading
   isLoading: boolean = true;
@@ -157,34 +152,6 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
         error: (err) => console.error('Failed to load branches:', err)
       });
 
-    // Load branch inventory for suggestions
-    this.inventoryService.getBranches()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (branches) => {
-          branches.forEach(branch => {
-            this.inventoryService.getBranchInventory(branch.id)
-              .pipe(takeUntil(this.destroy$))
-              .subscribe({
-                next: (items) => {
-                  this.inventoryItems.push(...items);
-                },
-                error: (err) => console.error('Failed to load inventory:', err)
-              });
-          });
-        },
-        error: (err) => console.error('Failed to load branches:', err)
-      });
-
-    // Load products
-    this.inventoryService.getProducts({ limit: 200 })
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          this.products = response.data;
-        },
-        error: (err) => console.error('Failed to load products:', err)
-      });
   }
 
   // ============================================================
@@ -386,6 +353,10 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/sales/inventory/restock/thresholds']);
   }
 
+  navigateToSuggestions(): void {
+    this.router.navigate(['/admin/sales/inventory/restock/suggestions']);
+  }
+
   // ============================================================
   // AI INSIGHTS
   // ============================================================
@@ -395,32 +366,6 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
       r.status === RestockStatus.PENDING &&
       (r.urgency === RestockUrgency.CRITICAL || r.urgency === RestockUrgency.HIGH)
     ).length;
-  }
-
-  getSuggestedProducts(): any[] {
-    // Find products below reorder point
-    const suggestions: any[] = [];
-
-    this.inventoryItems.forEach(item => {
-      const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);
-      if (status === 'CRITICAL' || status === 'LOW') {
-        const product = this.products.find(p => p.id === item.productId);
-        if (product) {
-          suggestions.push({
-            product: product,
-            branchId: item.branchId,
-            branchName: item.branchName,
-            currentStock: item.quantity,
-            reorderPoint: item.reorderPoint,
-            safetyStock: item.safetyStock,
-            suggestedQuantity: item.reorderPoint * 2 - item.quantity,
-            status: status
-          });
-        }
-      }
-    });
-
-    return suggestions.slice(0, 5);
   }
 
   // ============================================================
@@ -527,15 +472,6 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
   getInitials(name: string): string {
     if (!name) return '?';
     return name.charAt(0).toUpperCase();
-  }
-
-  // ============================================================
-  // SUGGESTIONS
-  // ============================================================
-
-  /** Fired by <app-restock-suggestion> when a suggestion is turned into a request (it handles its own navigation). */
-  onCreateRequest(_suggestion: RestockSuggestion): void {
-    this.refresh();
   }
 
   // ============================================================

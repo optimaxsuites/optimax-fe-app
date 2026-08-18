@@ -508,6 +508,7 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
 
     if (this.mode === 'view') {
       this.cancelled.emit();
+      this.navigateAway();
       return;
     }
 
@@ -540,6 +541,7 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
           next: (result) => {
             this.isSaving = false;
             this.saved.emit(result);
+            this.navigateAway();
           },
           error: (err) => {
             console.error('Failed to update request:', err);
@@ -555,6 +557,7 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
           next: (result) => {
             this.isSaving = false;
             this.saved.emit(result);
+            this.navigateAway();
           },
           error: (err) => {
             console.error('Failed to create request:', err);
@@ -575,12 +578,21 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
       this.confirmMessage = 'You have unsaved changes. Are you sure you want to leave?';
     } else {
       this.cancelled.emit();
+      this.navigateAway();
     }
   }
 
   confirmCancel(): void {
     this.showConfirmDialog = false;
     this.cancelled.emit();
+    this.navigateAway();
+  }
+
+  /** Falls back to browser history when nothing is listening to saved/cancelled — this component is currently only ever routed to directly, never embedded. */
+  private navigateAway(): void {
+    if (!this.saved.observed && !this.cancelled.observed) {
+      this.location.back();
+    }
   }
 
   cancelConfirmDialog(): void {

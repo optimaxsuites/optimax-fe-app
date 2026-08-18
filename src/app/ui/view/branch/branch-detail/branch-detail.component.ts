@@ -49,7 +49,7 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   isSaving: boolean = false;
 
   // Tabs
-  activeTab: 'overview' | 'inventory' | 'movements' | 'alerts' | 'analytics' = 'overview';
+  activeTab: 'overview' | 'inventory' | 'movements' | 'alerts' | 'analytics' | 'restock' = 'overview';
 
   // Inventory filters
   inventoryFilters = {

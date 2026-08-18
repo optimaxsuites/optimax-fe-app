@@ -161,6 +161,7 @@ import { RestockManagementComponent } from './ui/view/inventory/restock/restock-
 import { RestockRequestFormComponent } from './ui/view/inventory/restock/restock-request-form/restock-request-form.component';
 import { RestockSuggestionComponent } from './ui/view/inventory/restock/restock-suggestion/restock-suggestion.component';
 import { RestockRequestListComponent } from './ui/view/inventory/restock/restock-request-list/restock-request-list.component';
+import { RestockSuggestionsPageComponent } from './ui/view/inventory/restock/restock-suggestions-page/restock-suggestions-page.component';
 import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.component';
 import { LogisticsComponent } from './ui/view/logistics/logistics.component';
 import { LogisticsDashboardComponent } from './ui/view/logistics/logistics-dashboard/logistics-dashboard.component';
@@ -193,6 +194,7 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
     RestockRequestFormComponent,
     RestockSuggestionComponent,
     RestockRequestListComponent,
+    RestockSuggestionsPageComponent,
     AnalyticsComponent,
     TableComponent,
     TableBodyDirective,
