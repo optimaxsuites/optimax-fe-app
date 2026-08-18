@@ -78,89 +78,89 @@ export const routes: Routes = [
 
   // --------------------------------------- Product Management -----------------------------------------
   {
-    path: 'admin/sales/inventory/products/new',
+    path: 'admin/sales/commerce/inventory/products/new',
     component: ProductManagementFormComponent
   },
   {
-    path: 'admin/sales/inventory/products/new/:uuid',
+    path: 'admin/sales/commerce/inventory/products/new/:uuid',
     component: ProductManagementFormComponent
   },
   {
-    path: 'admin/sales/inventory/products/bulk-import',
+    path: 'admin/sales/commerce/inventory/products/bulk-import',
     component: ProductBulkImportComponent
   },
   {
-    path: 'admin/sales/inventory/products/bulk-import/:uuid',
+    path: 'admin/sales/commerce/inventory/products/bulk-import/:uuid',
     component: ProductBulkImportComponent
   },
   {
-    path: 'admin/sales/inventory/products/:id/edit',
+    path: 'admin/sales/commerce/inventory/products/:id/edit',
     component: ProductManagementFormComponent
   },
   {
-    path: 'admin/sales/inventory/products/:id/edit/:uuid',
+    path: 'admin/sales/commerce/inventory/products/:id/edit/:uuid',
     component: ProductManagementFormComponent
   },
   {
-    path: 'admin/sales/inventory/products/:id',
+    path: 'admin/sales/commerce/inventory/products/:id',
     component: ProductDetailComponent
   },
   {
-    path: 'admin/sales/inventory/products/:id/:uuid',
+    path: 'admin/sales/commerce/inventory/products/:id/:uuid',
     component: ProductDetailComponent
   },
-  
+
   // --------------------------------------- Branch Management -----------------------------------------
   {
-    path: 'admin/sales/inventory/branches/new',
+    path: 'admin/sales/commerce/inventory/branches/new',
     component: BranchFormComponent
   },
   {
-    path: 'admin/sales/inventory/branches/:branchId',
+    path: 'admin/sales/commerce/inventory/branches/:branchId',
     component: BranchDetailComponent
   },
   {
-    path: 'admin/sales/inventory/branches/:branchId/add-product',
+    path: 'admin/sales/commerce/inventory/branches/:branchId/add-product',
     component: BranchInventoryFormComponent
   },
-  
+
   // --------------------------------------- Stock Movements -----------------------------------------
   {
-    path: 'admin/sales/inventory/movements/new',
+    path: 'admin/sales/commerce/inventory/movements/new',
     component: StockMovementFormComponent
   },
   {
-    path: 'admin/sales/inventory/movements/transfer',
+    path: 'admin/sales/commerce/inventory/movements/transfer',
     component: TransferWizardComponent
   },
   {
-    path: 'admin/sales/inventory/movements/bulk-transfer',
+    path: 'admin/sales/commerce/inventory/movements/bulk-transfer',
     component: BulkTransferComponent
   },
   {
-    path: 'admin/sales/inventory/movements/:id',
+    path: 'admin/sales/commerce/inventory/movements/:id',
     component: StockMovementDetailComponent
   },
   {
-    path: 'admin/sales/inventory/movements/:id/edit',
+    path: 'admin/sales/commerce/inventory/movements/:id/edit',
     component: StockMovementFormComponent
   },
 
   // --------------------------------------- Restock Requests -----------------------------------------
   {
-    path: 'admin/sales/inventory/restock/requests',
+    path: 'admin/sales/commerce/inventory/restock/requests',
     component: RestockRequestListComponent
   },
   {
-    path: 'admin/sales/inventory/restock/requests/new',
+    path: 'admin/sales/commerce/inventory/restock/requests/new',
     component: RestockRequestFormComponent
   },
   {
-    path: 'admin/sales/inventory/restock/requests/:id',
+    path: 'admin/sales/commerce/inventory/restock/requests/:id',
     component: RestockRequestFormComponent
   },
   {
-    path: 'admin/sales/inventory/restock/suggestions',
+    path: 'admin/sales/commerce/inventory/restock/suggestions',
     component: RestockSuggestionsPageComponent
   },
 
