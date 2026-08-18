@@ -27,15 +27,43 @@ export class CorrectionrequestformComponent {
     { value: 'OTHER', label: 'Other' }
   ];
 
+  showAddIssueModal = false;
+  newIssueTypeLabel = '';
+  evidenceFileName = '';
+  evidenceFile: File | null = null;
+
   constructor(private fb: FormBuilder) {
     this.form = this.fb.group({
       date: ['', Validators.required],
       issueType: ['', Validators.required],
-      requestedClockIn: [''],
-      requestedClockOut: [''],
       description: ['', Validators.required],
       evidence: ['']
     });
+  }
+
+  onIssueTypeChange(event: any): void {
+    if (event.target.value === 'ADD_NEW') {
+      this.showAddIssueModal = true;
+      this.form.get('issueType')?.setValue('');
+    }
+  }
+
+  addNewIssueType(): void {
+    if (!this.newIssueTypeLabel.trim()) return;
+
+    const newValue = this.newIssueTypeLabel.toUpperCase().replace(/\s+/g, '_');
+    this.issueTypes.push({
+      value: newValue,
+      label: this.newIssueTypeLabel
+    });
+
+    this.form.get('issueType')?.setValue(newValue);
+    this.closeAddIssueModal();
+  }
+
+  closeAddIssueModal(): void {
+    this.showAddIssueModal = false;
+    this.newIssueTypeLabel = '';
   }
 
   submit() {
@@ -48,8 +76,6 @@ export class CorrectionrequestformComponent {
       department: this.currentUser.department,
       date: this.form.value.date,
       issueType: this.form.value.issueType,
-      requestedClockIn: this.form.value.requestedClockIn,
-      requestedClockOut: this.form.value.requestedClockOut,
       description: this.form.value.description,
       evidence: this.form.value.evidence,
       status: 'PENDING',
@@ -63,5 +89,13 @@ export class CorrectionrequestformComponent {
 
   cancel() {
     this.close.emit();
+  }
+
+  onEvidenceFileSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      this.evidenceFile = file;
+      this.evidenceFileName = file.name;
+    }
   }
 }

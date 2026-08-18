@@ -13,11 +13,6 @@ export class ShiftListComponent implements OnInit{
 
   searchText = '';
   shiftTypeFilter = '';
-  //departmentFilter = '';
-
-  morningCount = 0;
-  eveningCount = 0;
-  nightCount = 0;
 
   constructor(private shiftserviceService: ShiftserviceService) {}
 
@@ -25,7 +20,6 @@ export class ShiftListComponent implements OnInit{
     this.shiftserviceService.shifts$.subscribe(shifts => {
       this.shifts = shifts;
       this.filteredShifts = shifts;
-      this.calculateSummary();
     });
   }
 
@@ -49,34 +43,13 @@ export class ShiftListComponent implements OnInit{
 
 resetFilter() {
   this.searchText = '';
-  //this.departmentFilter = '';
-
   this.shiftTypeFilter = '';
-
   this.filteredShifts = this.shifts;
 }
 
 deleteShift(id: string) {
-  this.shiftserviceService.deleteShift(id); // method already exists in service
+  this.shiftserviceService.deleteShift(id);
 }
-
-  calculateSummary() {
-    this.morningCount = this.shifts.filter(s =>
-      s.type === 'morning')
-    .length;
-
-    this.eveningCount = this.shifts.filter(s =>
-      s.type === 'evening')
-    .length;
-
-    this.nightCount = this.shifts.filter(s =>
-      s.type === 'night')
-    .length;
-  }
-
-  /*createShift() {
-    console.log("open shift form");
-  }*/
 
   showForm = false;
   selectedShift?: ShiftDTO;

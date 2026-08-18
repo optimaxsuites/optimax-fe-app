@@ -10,14 +10,7 @@
       </button>
 
       <button
-        [class.active]="viewMode === 'summary'"
-        (click)="setView('summary')">
-        <i class="fa-solid fa-chart-column"></i>
-        Summary
-      </button>
-
-      <button
-        *ngIf="viewMode !== 'summary' && viewMode !== 'gantt' && viewMode !== 'table'"
+        *ngIf="isAdmin && viewMode !== 'summary' && viewMode !== 'gantt' && viewMode !== 'table'"
         class="add-btn"
         (click)="openAssignment()"
         [disabled]="isSelectedDateLocked">

@@ -13,7 +13,12 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   currentTime: string = '';
   currentRecord: AttendanceRecord | null = null;
   history: AttendanceRecord[] = [];
+  filteredHistory: AttendanceRecord[] = [];
   private sub = new Subscription();
+
+  // Date range filtering
+  startDate: string = '';
+  endDate: string = '';
 
   // Calculated metrics
   hoursWorkedToday: string = '0h';
@@ -27,6 +32,9 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   lateMinutesLabel: string = 'On time';
   overtimeLabel: string = 'No overtime';
 
+  // Correction request modal
+  showCorrectionModal = false;
+
   constructor(private attendanceService: AttendanceService, private confirmationService: ConfirmationService, private messageService: MessageService) {}
 
   ngOnInit() {
@@ -34,6 +42,14 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
     this.setEmployeeInfoFromSession();
 
     this.history = this.attendanceService.getHistory();
+    this.filteredHistory = [...this.history];
+
+    // Set default date range (last 30 days)
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    this.endDate = today.toISOString().split('T')[0];
+    this.startDate = thirtyDaysAgo.toISOString().split('T')[0];
+
     this.calculateMetrics();
 
     this.sub.add(
@@ -228,6 +244,112 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
     if (difference < 0) difference += 24 * 60;
 
     return difference;
+  }
+
+  applyDateFilter(): void {
+    if (!this.startDate || !this.endDate) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Date Range Required',
+        detail: 'Please select both start and end dates.',
+        key: 'tl',
+        life: 3000
+      });
+      return;
+    }
+
+    this.filteredHistory = this.history.filter(record => {
+      if (!record.date) return false;
+      return record.date >= this.startDate && record.date <= this.endDate;
+    });
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Filter Applied',
+      detail: `Showing ${this.filteredHistory.length} records`,
+      key: 'tl',
+      life: 3000
+    });
+  }
+
+  resetDateFilter(): void {
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    this.endDate = today.toISOString().split('T')[0];
+    this.startDate = thirtyDaysAgo.toISOString().split('T')[0];
+    this.filteredHistory = [...this.history];
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Filter Reset',
+      detail: 'Showing all records',
+      key: 'tl',
+      life: 3000
+    });
+  }
+
+  exportAttendanceCSV(): void {
+    if (this.filteredHistory.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No Records',
+        detail: 'No attendance records to export',
+        key: 'tl',
+        life: 3000
+      });
+      return;
+    }
+
+    const headers = ['Date', 'Clock In', 'Clock Out', 'Hours', 'Status'];
+    let csv = headers.join(',') + '\n';
+
+    this.filteredHistory.forEach(record => {
+      const row = [
+        record.date || '',
+        record.clockIn || '-',
+        record.clockOut || '-',
+        record.duration || '-',
+        record.status || ''
+      ];
+      csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `my-attendance-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Export Successful',
+      detail: `Exported ${this.filteredHistory.length} records`,
+      key: 'tl',
+      life: 3000
+    });
+  }
+
+  openCorrectionModal(): void {
+    this.showCorrectionModal = true;
+  }
+
+  closeCorrectionModal(): void {
+    this.showCorrectionModal = false;
+  }
+
+  handleCorrectionSubmit(event: any): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Correction Request Submitted',
+      detail: 'Your request has been submitted for review',
+      key: 'tl',
+      life: 3000
+    });
+    this.closeCorrectionModal();
   }
 
   ngOnDestroy() {
