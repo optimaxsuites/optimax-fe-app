@@ -1466,7 +1466,13 @@ export class InventoryService {
       updatedAt: new Date()
     } as Product;
     products.push(newProduct);
-    localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+    try {
+      localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+    } catch (e) {
+      this.loadingSubject.next(false);
+      // Most commonly a QuotaExceededError from large (e.g. photo) image data URLs.
+      return throwError(() => new Error('Failed to save product — storage limit reached. Try a smaller image.'));
+    }
     this.productsSubject.next(products);
     this.loadingSubject.next(false);
     return of(newProduct);
@@ -1483,7 +1489,13 @@ export class InventoryService {
     }
     const updated = { ...products[index], ...product, updatedAt: new Date() } as Product;
     products[index] = updated;
-    localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+    try {
+      localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+    } catch (e) {
+      this.loadingSubject.next(false);
+      // Most commonly a QuotaExceededError from large (e.g. photo) image data URLs.
+      return throwError(() => new Error('Failed to save product — storage limit reached. Try a smaller image.'));
+    }
     this.productsSubject.next(products);
     this.loadingSubject.next(false);
     return of(updated);
