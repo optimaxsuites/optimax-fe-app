@@ -314,11 +314,11 @@ export class StockMovementComponent implements OnInit, OnDestroy {
   // ============================================================
 
   viewMovement(id: string): void {
-    this.router.navigate(['/admin/sales/inventory/movements', id]);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements', id]);
   }
 
   navigateToNew(): void {
-    this.router.navigate(['/admin/sales/inventory/movements/new']);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/new']);
   }
 
   toggleTransferMenu(): void {
@@ -331,16 +331,16 @@ export class StockMovementComponent implements OnInit, OnDestroy {
 
   navigateToTransfer(): void {
     this.showTransferMenu = false;
-    this.router.navigate(['/admin/sales/inventory/movements/transfer']);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/transfer']);
   }
 
   navigateToBulkTransfer(): void {
     this.showTransferMenu = false;
-    this.router.navigate(['/admin/sales/inventory/movements/bulk-transfer']);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/bulk-transfer']);
   }
 
   navigateToAdjustment(): void {
-    this.router.navigate(['/admin/sales/inventory/movements/adjustment']);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/adjustment']);
   }
 
   // ============================================================

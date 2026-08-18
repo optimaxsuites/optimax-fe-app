@@ -253,7 +253,7 @@ export class StockMovementDetailComponent implements OnInit, OnDestroy {
 
   editMovement(): void {
     if (this.movement) {
-      this.router.navigate(['/admin/sales/inventory/movements', this.movement.id, 'edit']);
+      this.router.navigate(['/admin/sales/commerce/inventory/movements', this.movement.id, 'edit']);
     }
   }
 

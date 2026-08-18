@@ -370,7 +370,7 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   onBranchChange(branchId: string | null): void {
     if (!branchId || branchId === this.branchId) return;
     this.isEditing = false;
-    this.router.navigate(['/admin/sales/inventory/branches', branchId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
   }
 
   createTransfer(productId?: string): void {
@@ -383,7 +383,7 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   }
 
   createRestockRequest(): void {
-    this.router.navigate(['/admin/sales/inventory/restock/requests/new'], {
+    this.router.navigate(['/admin/sales/commerce/inventory/restock/requests/new'], {
       queryParams: { branchId: this.branchId }
     });
   }
