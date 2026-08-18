@@ -347,6 +347,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       sellingPrice: formData.sellingPrice,
       costPrice: formData.costPrice,
       stockQuantity: formData.quantity,
+      images: this.images,
       category: foundCategory?.id,
       unitOfMeasure: (foundUnit?.id || 'EACH') as 'EACH' | 'BOX' | 'KG' | 'LITER' | 'METER',
       supplierIds: foundSupplier ? [foundSupplier.id] : [],
@@ -367,7 +368,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error saving product:', error);
         this.isSubmitting = false;
-        this.error = 'Failed to save product. Please try again.';
+        this.error = String(error?.message || 'Failed to save product. Please try again.');
         this.messageService.add({ severity: 'error', summary: 'Error', detail: this.error });
       }
     });
