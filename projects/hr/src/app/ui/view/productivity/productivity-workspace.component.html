@@ -704,6 +704,106 @@
           </div>
         </div>
 
+        <!-- ── 5. Workload Distribution by Assignee ───────────────────── -->
+        <div class="panel-card">
+          <h4 class="panel-card-title"><i class="fas fa-users" style="color:#2563eb;margin-right:6px"></i>Workload Distribution by Assignee</h4>
+          <div *ngIf="assigneeDistribution.length; else noAssigneeDist" class="chart-bar-list">
+            <ng-container *ngFor="let row of assigneeDistribution">
+              <div class="chart-bar-row dist-row">
+                <span class="chart-bar-lbl dist-name" [title]="row.name">{{ row.name }}</span>
+                <div class="dist-stack-track">
+                  <div class="dist-seg dist-seg--done"   [style.width.%]="row.donePct"   [title]="'Done: ' + row.done"></div>
+                  <div class="dist-seg dist-seg--active" [style.width.%]="row.activePct" [title]="'Active: ' + row.active"></div>
+                  <div class="dist-seg dist-seg--over"   [style.width.%]="row.overduePct" [title]="'Overdue: ' + row.overdue"></div>
+                </div>
+                <span class="chart-bar-count">{{ row.total }}</span>
+              </div>
+            </ng-container>
+          </div>
+          <ng-template #noAssigneeDist><div class="chart-empty">No tasks match the current filter.</div></ng-template>
+          <div class="dist-legend">
+            <span class="dist-leg-item dist-leg--done">Done</span>
+            <span class="dist-leg-item dist-leg--active">Active</span>
+            <span class="dist-leg-item dist-leg--over">Overdue</span>
+          </div>
+        </div>
+
+        <!-- ── 6. Monthly Task Distribution ──────────────────────────── -->
+        <div class="panel-card">
+          <h4 class="panel-card-title"><i class="fas fa-chart-bar" style="color:#7c3aed;margin-right:6px"></i>Monthly Task Distribution (by Due Date)</h4>
+          <div *ngIf="tasksByMonth.length; else noMonths" class="chart-bar-list">
+            <ng-container *ngFor="let row of tasksByMonth">
+              <div class="chart-bar-row">
+                <span class="chart-bar-lbl">{{ row.label }}</span>
+                <div class="chart-bar-track">
+                  <div class="chart-bar-fill" [style.width.%]="row.pct" style="background:#7c3aed"></div>
+                </div>
+                <span class="chart-bar-count">{{ row.count }}</span>
+              </div>
+            </ng-container>
+          </div>
+          <ng-template #noMonths><div class="chart-empty">No tasks with due dates match the current filter.</div></ng-template>
+        </div>
+
+        <!-- ── 7. Due-Day-of-Week Distribution ───────────────────────── -->
+        <div class="panel-card">
+          <h4 class="panel-card-title"><i class="fas fa-calendar-day" style="color:#0891b2;margin-right:6px"></i>Task Due Day Distribution</h4>
+          <div *ngIf="tasksByDayOfWeek.length; else noDays" class="chart-bar-list">
+            <ng-container *ngFor="let row of tasksByDayOfWeek">
+              <div class="chart-bar-row">
+                <span class="chart-bar-lbl">{{ row.label }}</span>
+                <div class="chart-bar-track">
+                  <div class="chart-bar-fill" [style.width.%]="row.pct" style="background:#0891b2"></div>
+                </div>
+                <span class="chart-bar-count">{{ row.count }}</span>
+              </div>
+            </ng-container>
+          </div>
+          <ng-template #noDays><div class="chart-empty">No tasks with due dates match the current filter.</div></ng-template>
+        </div>
+
+        <!-- ── 8. Effectiveness Rating by Assignee ───────────────────── -->
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <h4 class="panel-card-title"><i class="fas fa-star-half-alt" style="color:#d97706;margin-right:6px"></i>Effectiveness Rating by Assignee</h4>
+            <span class="panel-card-meta-txt">Score = 60% completion + 40% on-time rate &nbsp;|&nbsp; Click a row to filter charts by that person</span>
+          </div>
+          <div *ngIf="assigneeEffectiveness.length; else noEff" class="table-wrap">
+            <table class="list-table">
+              <thead>
+                <tr>
+                  <th>Assignee</th>
+                  <th style="text-align:right">Total</th>
+                  <th style="text-align:right">Done</th>
+                  <th style="text-align:right">Overdue</th>
+                  <th style="text-align:right">Completion</th>
+                  <th style="text-align:right">On-Time</th>
+                  <th style="text-align:right">Score</th>
+                  <th style="text-align:center">Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of assigneeEffectiveness"
+                    class="tr-drill"
+                    (click)="chartFilterAssignee = row.name"
+                    [class.eff-row-selected]="chartFilterAssignee === row.name">
+                  <td style="font-weight:600">{{ row.name }}</td>
+                  <td style="text-align:right">{{ row.total }}</td>
+                  <td style="text-align:right;color:#16a34a">{{ row.done }}</td>
+                  <td style="text-align:right;color:#dc2626">{{ row.overdue }}</td>
+                  <td style="text-align:right">{{ row.completionPct }}%</td>
+                  <td style="text-align:right">{{ row.onTimePct }}%</td>
+                  <td style="text-align:right;font-weight:700">{{ row.score }}</td>
+                  <td style="text-align:center">
+                    <span class="perf-team-grade" [ngClass]="'perf-team-grade' + row.gradeClass">{{ row.grade }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ng-template #noEff><div class="chart-empty">No tasks match the current filter.</div></ng-template>
+        </div>
+
       </ng-container>
     </ng-container>
 

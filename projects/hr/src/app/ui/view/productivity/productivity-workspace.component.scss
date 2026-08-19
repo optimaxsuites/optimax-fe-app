@@ -3905,3 +3905,38 @@
   &--bad       { background: #fee2e2; color: #dc2626; }
 }
 .perf-team-tasks { font-size: 11px; color: #9ca3af; text-align: right; }
+
+/* ── Assignment & Distribution Panels ───────────────────────────────────── */
+.dist-row { align-items: center; }
+
+.dist-name {
+  max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.dist-stack-track {
+  flex: 1; height: 12px; border-radius: 6px; overflow: hidden;
+  display: flex; background: #f1f5f9;
+}
+
+.dist-seg { height: 100%; transition: width .4s ease; min-width: 0; }
+.dist-seg--done   { background: #16a34a; }
+.dist-seg--active { background: #2563eb; }
+.dist-seg--over   { background: #dc2626; }
+
+.dist-legend {
+  display: flex; gap: 14px; padding: 10px 4px 2px; flex-wrap: wrap;
+}
+
+.dist-leg-item {
+  font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; gap: 5px;
+  &::before {
+    content: ''; display: inline-block;
+    width: 10px; height: 10px; border-radius: 3px;
+  }
+}
+.dist-leg--done   { color: #16a34a; &::before { background: #16a34a; } }
+.dist-leg--active { color: #2563eb; &::before { background: #2563eb; } }
+.dist-leg--over   { color: #dc2626; &::before { background: #dc2626; } }
+
+.eff-row-selected { background: #eff6ff !important; }

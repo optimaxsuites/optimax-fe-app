@@ -751,6 +751,92 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.openDetail(task);
   }
 
+  // ── Assignment & Distribution report getters ───────────────────────────────
+
+  get assigneeDistribution(): Array<{
+    name: string; total: number;
+    done: number; active: number; overdue: number;
+    donePct: number; activePct: number; overduePct: number;
+  }> {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const map = new Map<string, { done: number; active: number; overdue: number }>();
+    this.chartFilteredTasks.forEach(t => {
+      const name = t.assignee || 'Unassigned';
+      if (!map.has(name)) map.set(name, { done: 0, active: 0, overdue: 0 });
+      const row = map.get(name)!;
+      if (t.status === 'Done' || t.closed) {
+        row.done++;
+      } else {
+        const due = t.dueDate ? new Date(t.dueDate) : null;
+        if (due && due < today) row.overdue++;
+        else row.active++;
+      }
+    });
+    return [...map.entries()]
+      .map(([name, r]) => {
+        const total = r.done + r.active + r.overdue;
+        return {
+          name, total,
+          done: r.done, active: r.active, overdue: r.overdue,
+          donePct: total ? Math.round((r.done / total) * 100) : 0,
+          activePct: total ? Math.round((r.active / total) * 100) : 0,
+          overduePct: total ? Math.round((r.overdue / total) * 100) : 0,
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+  }
+
+  get tasksByMonth(): Array<{ label: string; count: number; pct: number }> {
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const map = new Map<string, number>();
+    this.chartFilteredTasks
+      .filter(t => t.dueDate && !t.closed)
+      .forEach(t => {
+        const d = new Date(t.dueDate);
+        if (isNaN(d.getTime())) return;
+        const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+        map.set(key, (map.get(key) || 0) + 1);
+      });
+    const max = Math.max(...[...map.values()], 1);
+    return [...map.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, count]) => {
+        const [yr, mo] = key.split('-');
+        return { label: `${MONTHS[+mo]} ${yr}`, count, pct: Math.round((count / max) * 100) };
+      });
+  }
+
+  get tasksByDayOfWeek(): Array<{ label: string; count: number; pct: number }> {
+    const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const counts = [0,0,0,0,0,0,0];
+    this.chartFilteredTasks
+      .filter(t => t.dueDate && !t.closed)
+      .forEach(t => {
+        const d = new Date(t.dueDate);
+        if (!isNaN(d.getTime())) counts[d.getDay()]++;
+      });
+    const max = Math.max(...counts, 1);
+    return DAYS.map((label, i) => ({
+      label, count: counts[i], pct: Math.round((counts[i] / max) * 100)
+    })).filter(d => d.count > 0);
+  }
+
+  get assigneeEffectiveness(): Array<{
+    name: string; total: number; done: number; overdue: number;
+    completionPct: number; onTimePct: number; score: number; grade: string; gradeClass: string;
+  }> {
+    return this.assigneeDistribution.map(r => {
+      const completionPct = r.donePct;
+      const onTimePct = 100 - r.overduePct;
+      const score = Math.round(completionPct * 0.6 + onTimePct * 0.4);
+      let grade = 'Poor'; let gradeClass = '--bad';
+      if (score >= 80) { grade = 'Excellent'; gradeClass = '--excellent'; }
+      else if (score >= 60) { grade = 'Good'; gradeClass = '--good'; }
+      else if (score >= 40) { grade = 'Fair'; gradeClass = '--fair'; }
+      return { name: r.name, total: r.total, done: r.done, overdue: r.overdue, completionPct, onTimePct, score, grade, gradeClass };
+    }).sort((a, b) => b.score - a.score);
+  }
+
   // ── Assignee performance analytics ────────────────────────────────────────
   getAssigneePerformance(assigneeName: string): {
     grade: 'Excellent' | 'Good' | 'Fair' | 'Bad';
