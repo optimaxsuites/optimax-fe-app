@@ -119,6 +119,11 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
               });
           } else {
             this.isLoadingInstance = false;
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'Approval Workflow Not Configured',
+              detail: 'No approval workflow is configured for Procurement. Go to Settings → Approval Workflows and enable the Commerce Procurement workflow.'
+            });
           }
         },
         error: () => { this.isLoadingInstance = false; }
