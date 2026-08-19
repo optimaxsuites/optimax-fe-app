@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { NgxIndexedDBService } from 'ngx-indexed-db';
-import { BehaviorSubject, firstValueFrom, map, Observable, switchMap } from 'rxjs';
+import { BehaviorSubject, catchError, firstValueFrom, map, Observable, of, switchMap } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -17,11 +17,11 @@ export class OfflineService {
     this.loadInitialData();
    }
 
- private async loadInitialData() {
-    this.dbService.getAll('products').subscribe(data => this.products$.next(data));
-    this.dbService.getAll('categories').subscribe(data => this.categories$.next(data));
-    this.dbService.getAll('pendingPayments').subscribe(data => this.pendingPayments$.next(data));
-    this.dbService.getAll('savedTransactions').subscribe(data => this.pendingTransactions$.next(data));
+ private loadInitialData() {
+    this.dbService.getAll('products').pipe(catchError(() => of([]))).subscribe(data => this.products$.next(data));
+    this.dbService.getAll('categories').pipe(catchError(() => of([]))).subscribe(data => this.categories$.next(data));
+    this.dbService.getAll('pendingPayments').pipe(catchError(() => of([]))).subscribe(data => this.pendingPayments$.next(data));
+    this.dbService.getAll('savedTransactions').pipe(catchError(() => of([]))).subscribe(data => this.pendingTransactions$.next(data));
   }
  async addProduct(product: any) {
 console.log("caching offline")
