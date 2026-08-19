@@ -1,22 +1,21 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TopProductService {
-  constructor() { }
+  private baseUrl = (environment as any).apiBaseUrl + '/x/api/v2/commerce/dashboard';
 
-  initializeTopProduct(): {
-    dateAndTime: string;
-    invoice: string;
-    invoiceNo: number;
-    clientName: string;
-    amount: string;
-    status: string;
-  } [] {
-    return [
-      
-    ];
+  constructor(private http: HttpClient) {}
+
+  getTopProducts(limit = 10): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/top-products?limit=${limit}`);
+  }
+
+  initializeTopProduct(): any[] {
+    return [];
   }
 }

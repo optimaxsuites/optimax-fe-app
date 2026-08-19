@@ -237,6 +237,7 @@ export interface ProcurementRequest {
   approvedBy: string;
   approvedAt: Date;
   approvalComments?: string;
+  approvalInstanceId?: number | null;
   // Vendor Selection
   specialInstructions?: string;
   serviceCategory?: string;

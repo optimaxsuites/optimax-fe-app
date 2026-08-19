@@ -498,12 +498,21 @@ export class MessageFeedComponent {
     } catch { return false; }
   }
 
-  parseIssueCard(msg: Message): { id: number; title: string; module: string; priority: string; status: string; description: string; reporterName: string } | null {
+  parseIssueCard(msg: Message): { id: number; title: string; module: string; priority: string; status: string; description: string; reporterName: string; createdAt?: string; resolutionHours?: number } | null {
     try {
       return JSON.parse(msg.content);
     } catch {
       return null;
     }
+  }
+
+  formatResolution(hours?: number): string {
+    if (hours == null) return '';
+    if (hours < 1)   return '< 1h';
+    if (hours < 24)  return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    const rem  = hours % 24;
+    return rem ? `${days}d ${rem}h` : `${days}d`;
   }
 
   issueCardPriorityClass(priority: string): string {
@@ -519,6 +528,7 @@ export class MessageFeedComponent {
     if (s === 'OPEN') return 'issue-status-open';
     if (s === 'IN_PROGRESS') return 'issue-status-progress';
     if (s === 'BLOCKED') return 'issue-status-blocked';
+    if (s === 'TESTING') return 'issue-status-testing';
     if (s === 'DONE') return 'issue-status-done';
     return 'issue-status-default';
   }

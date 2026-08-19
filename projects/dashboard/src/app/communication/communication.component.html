@@ -446,10 +446,10 @@
                     class="feed-post-avatar"
                     [style.background]="feedAuthorColor(post.author?.userId || post.author?.id || post.id)"
                   >
-                    {{ feedAuthorInitials(post.author) }}
+                    {{ feedAuthorInitials(post.author, post.authorUserId) }}
                   </div>
                   <div>
-                    <strong>{{ feedAuthorName(post.author) }}</strong>
+                    <strong>{{ feedAuthorName(post.author, post.authorUserId) }}</strong>
                     <p>
                       {{ post.postType || 'UPDATE' }} ·
                       {{ feedPublishedLabel(post.publishedAt || post.createdAt) }}
@@ -675,7 +675,7 @@
 
                 <div class="thread-search-results" *ngIf="feedThreads[post.id].searchResults.length">
                   <article *ngFor="let comment of feedThreads[post.id].searchResults">
-                    <strong>{{ feedAuthorName(comment.author) }}</strong>
+                    <strong>{{ feedAuthorName(comment.author, comment.authorUserId) }}</strong>
                     <p>{{ comment.content }}</p>
                   </article>
                 </div>
@@ -692,11 +692,11 @@
                     [class.depth-2]="comment.depth === 2"
                   >
                     <div class="feed-comment-avatar">
-                      {{ feedAuthorInitials(comment.author) }}
+                      {{ feedAuthorInitials(comment.author, comment.authorUserId) }}
                     </div>
                     <div class="feed-comment-body">
                       <div class="feed-comment-meta">
-                        <strong>{{ feedAuthorName(comment.author) }}</strong>
+                        <strong>{{ feedAuthorName(comment.author, comment.authorUserId) }}</strong>
                         <span>{{ feedPublishedLabel(comment.createdAt) }}</span>
                       </div>
                       <div class="feed-comment-text" [innerHTML]="feedDisplayCommentContent(comment.content)"></div>
@@ -814,11 +814,11 @@
                           [class.depth-2]="reply.depth === 2"
                         >
                           <div class="feed-comment-avatar">
-                            {{ feedAuthorInitials(reply.author) }}
+                            {{ feedAuthorInitials(reply.author, reply.authorUserId) }}
                           </div>
                           <div class="feed-comment-body">
                             <div class="feed-comment-meta">
-                              <strong>{{ feedAuthorName(reply.author) }}</strong>
+                              <strong>{{ feedAuthorName(reply.author, reply.authorUserId) }}</strong>
                               <span>{{ feedPublishedLabel(reply.createdAt) }}</span>
                             </div>
                             <div class="feed-comment-text" [innerHTML]="feedDisplayCommentContent(reply.content)"></div>
@@ -930,11 +930,11 @@
                                 class="feed-comment-card child depth-2"
                               >
                                 <div class="feed-comment-avatar">
-                                  {{ feedAuthorInitials(replyLevel3.author) }}
+                                  {{ feedAuthorInitials(replyLevel3.author, replyLevel3.authorUserId) }}
                                 </div>
                                 <div class="feed-comment-body">
                                   <div class="feed-comment-meta">
-                                    <strong>{{ feedAuthorName(replyLevel3.author) }}</strong>
+                                    <strong>{{ feedAuthorName(replyLevel3.author, replyLevel3.authorUserId) }}</strong>
                                     <span>{{ feedPublishedLabel(replyLevel3.createdAt) }}</span>
                                   </div>
                                   <div class="feed-comment-text" [innerHTML]="feedDisplayCommentContent(replyLevel3.content)"></div>

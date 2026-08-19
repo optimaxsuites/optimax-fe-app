@@ -35,7 +35,12 @@ export class ApprovalWorkflowService {
       .pipe(catchError(this.handleError));
     }
 
-  
+    deleteStage(id: number){
+      return this.http
+      .delete<any>(this.baseUrl + `/x/api/v2/workflow/approvalStages/${id}`)
+      .pipe(catchError(this.handleError));
+    }
+
    private handleError(error: HttpErrorResponse) {
       let errorMessage = 'An unknown error occurred!';
       if (error.error instanceof ErrorEvent) {

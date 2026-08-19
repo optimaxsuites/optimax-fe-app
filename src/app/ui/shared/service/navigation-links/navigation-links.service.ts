@@ -22,6 +22,10 @@ export class NavigationLinksService {
     const salesUuid = uuidV4();
     this.links['salesLink'] = '/admin/sales/' + salesUuid;
     this.links['commerceRequestsLink'] = '/admin/sales/' + salesUuid;
+    this.links['INVLink'] = '/admin/sales/commerce/inventory/' + uuidV4();
+    this.links['LOGLink'] = '/admin/sales/commerce/logistics/' + uuidV4();
+    this.links['VPLink'] = '/admin/sales/vendor-portal/' + uuidV4();
+    this.links['esalesLink'] = '/admin/sales/' + uuidV4();
     this.links['purchaseLink'] = '/admin/purchase/' +uuidV4();
     this.links['inventoryLink'] = '/admin/inventory-management/' +uuidV4();
 
