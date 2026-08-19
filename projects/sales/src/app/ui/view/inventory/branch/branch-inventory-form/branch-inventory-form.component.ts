@@ -8,14 +8,14 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
-import { InventoryService } from '../../../service/inventory/inventory.service';
+import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   Branch,
   BranchInventory,
   Product,
   getStockStatus,
   getStockStatusLabel
-} from '../../../domain/inventory/inventory.dto';
+} from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
 // COMPONENT
