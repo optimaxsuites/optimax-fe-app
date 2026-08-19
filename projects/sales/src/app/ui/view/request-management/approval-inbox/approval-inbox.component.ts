@@ -96,10 +96,31 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
   }
 
   private lookupByReference(req: ProcurementRequest): void {
-    this.approvalService.lookupWorkflowInstance('PROCUREMENT_REQUEST', String(req.id), 'POST')
+    this.approvalService.lookupWorkflowInstance('PROCUREMENT_REQUEST', String(req.id))
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (inst) => { this.workflowInstance = inst; this.isLoadingInstance = false; },
+        error: () => this.retriggerThenFetch(req)
+      });
+  }
+
+  private retriggerThenFetch(req: ProcurementRequest): void {
+    this.approvalService.retriggerApproval(req.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (updated: any) => {
+          const instanceId = updated?.approvalInstanceId;
+          if (instanceId) {
+            this.approvalService.getWorkflowInstance(Number(instanceId))
+              .pipe(takeUntil(this.destroy$))
+              .subscribe({
+                next: (inst) => { this.workflowInstance = inst; this.isLoadingInstance = false; },
+                error: () => { this.isLoadingInstance = false; }
+              });
+          } else {
+            this.isLoadingInstance = false;
+          }
+        },
         error: () => { this.isLoadingInstance = false; }
       });
   }

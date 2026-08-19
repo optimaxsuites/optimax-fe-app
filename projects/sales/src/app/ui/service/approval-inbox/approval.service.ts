@@ -46,12 +46,15 @@ export class ApprovalService {
     return this.http.get<WorkflowInstance>(`${this.workflowUrl}/approvalInstances/${instanceId}`);
   }
 
-  lookupWorkflowInstance(referenceType: string, referenceId: string, operationType: string): Observable<WorkflowInstance> {
+  lookupWorkflowInstance(referenceType: string, referenceId: string): Observable<WorkflowInstance> {
     const params = new HttpParams()
       .set('referenceType', referenceType)
-      .set('referenceId', referenceId)
-      .set('operationType', operationType);
-    return this.http.get<WorkflowInstance>(`${this.workflowUrl}/approvalInstances/lookup`, { params });
+      .set('referenceId', referenceId);
+    return this.http.get<WorkflowInstance>(`${this.workflowUrl}/approvalInstances/find-by-reference`, { params });
+  }
+
+  retriggerApproval(id: number): Observable<any> {
+    return this.http.patch<any>(`${this.commerceUrl}/procurement-requests/${id}/submit-for-approval`, {});
   }
 
   approveWorkflowInstance(instanceId: number, payload: FormData): Observable<any> {
