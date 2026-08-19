@@ -428,6 +428,7 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
           next: (result: StockMovement) => {
             this.isSaving = false;
             this.saved.emit(result);
+            this.navigateAway();
           },
           error: (err: any) => {
             console.error('Failed to update movement:', err);
@@ -443,6 +444,7 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
           next: (result: StockMovement) => {
             this.isSaving = false;
             this.saved.emit(result);
+            this.navigateAway();
           },
           error: (err: any) => {
             console.error('Failed to create movement:', err);
@@ -463,12 +465,21 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
       this.confirmMessage = 'You have unsaved changes. Are you sure you want to leave?';
     } else {
       this.cancelled.emit();
+      this.navigateAway();
     }
   }
 
   confirmCancel(): void {
     this.showConfirmDialog = false;
     this.cancelled.emit();
+    this.navigateAway();
+  }
+
+  /** Falls back to browser history when nothing is listening to saved/cancelled — this component is currently only ever routed to directly, never embedded. */
+  private navigateAway(): void {
+    if (!this.saved.observed && !this.cancelled.observed) {
+      this.location.back();
+    }
   }
 
   cancelConfirmDialog(): void {

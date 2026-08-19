@@ -75,27 +75,41 @@ import { EmployeeHistoryComponent } from './ui/view/attendance/admin/employee-hi
 const DEFAULT_LOAN_ROUTE = 'loan/uu';
 
 const routes: Routes = [
+  // Attendance Routes - Specific paths must come BEFORE parameterized paths
   {
     path: 'attendance/employee-history',
     component: EmployeeHistoryComponent,
   },
   {
+    path: 'admin/hr/attendance',
+    redirectTo: 'admin/hr/attendance/uu',
+    pathMatch: 'full',
+  },
+  {
+    path: 'admin/hr/attendance/:uuid',
+    component: AttendanceComponent,
+  },
+  {
+    path: 'attendance/:uuid',
+    component: AttendanceComponent,
+  },
+
+  // Workschedule Routes
+  {
     path: 'workschedule-shifts/:uuid',
     component: WorkscheduleShiftsComponent,
   },
+
+  // Onboarding Routes
   {
     path: 'user/onboarding/:id/:uuid',
     component: EmployeeOnboardingFormComponent,
   },
+
+  // Guarantor Routes
   {
     path: 'guarantor/confirm/:token/:uuid',
     component: GuarantorConfirmationComponent,
-  },
-
-  {
-    path: 'admin/hr/attendance',
-    redirectTo: 'attendance/uu',
-    pathMatch: 'full',
   },
 
   {
@@ -389,10 +403,6 @@ const routes: Routes = [
     path: 'leave/:uuid',
     component: LeaveComponent,
   },
-  {
-    path: 'attendance/:uuid',
-    component: AttendanceComponent,
-  },
   // {
   //   path: 'employee-management/:uuid',
   //   component: EmployeeManagementComponent,
@@ -469,7 +479,7 @@ const routes: Routes = [
     component: ProjectComponent,
   },
   {
-    path: 'work-schedule/:uuid',
+    path: 'admin/hr/workschedule-shifts/:uuid',
     component: SchedulingComponent,
   },
   {

@@ -43,6 +43,7 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
     status: 'ALL',
     type: 'ALL',
     city: 'ALL',
+    branchId: null as string | null,
     minProducts: '',
     maxProducts: ''
   };
@@ -71,6 +72,11 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
   Math = Math;
   aiDismissed: boolean = false;
   viewMode: 'list' | 'grid' = 'list';
+
+  // Pagination
+  currentPage: number = 0;
+  pageSize: number = 20;
+  pageSizeOptions: number[] = [10, 20, 50, 100];
 
   // Private
   private destroy$ = new Subject<void>();
@@ -162,17 +168,23 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
       const cityMatch = this.filters.city === 'ALL' ||
         branch.location.city === this.filters.city;
 
+      // Branch quick-filter (jump straight to a single branch)
+      const branchMatch = !this.filters.branchId ||
+        branch.id === this.filters.branchId;
+
       // Products count filter (using summary data)
       const summary = this.branchSummaries.find(s => s.branchId === branch.id);
       const productCount = summary?.totalProducts || 0;
       const minMatch = !this.filters.minProducts || productCount >= parseInt(this.filters.minProducts);
       const maxMatch = !this.filters.maxProducts || productCount <= parseInt(this.filters.maxProducts);
 
-      return searchMatch && statusMatch && typeMatch && cityMatch && minMatch && maxMatch;
+      return searchMatch && statusMatch && typeMatch && cityMatch && branchMatch && minMatch && maxMatch;
     });
 
     // Update cities for filter
     this.updateCityOptions();
+
+    this.currentPage = 0;
   }
 
   updateCityOptions(): void {
@@ -190,10 +202,62 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
       status: 'ALL',
       type: 'ALL',
       city: 'ALL',
+      branchId: null,
       minProducts: '',
       maxProducts: ''
     };
     this.filterBranches();
+  }
+
+  onBranchFilterChange(branchId: string | null): void {
+    this.filters.branchId = branchId;
+    this.applyFilters();
+  }
+
+  // ============================================================
+  // PAGINATION
+  // ============================================================
+
+  get totalElements(): number {
+    return this.filteredBranches.length;
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.totalElements / this.pageSize) || 1;
+  }
+
+  get pagedBranches(): Branch[] {
+    const start = this.currentPage * this.pageSize;
+    return this.filteredBranches.slice(start, start + this.pageSize);
+  }
+
+  onPageChange(page: number): void {
+    if (page < 0 || page >= this.totalPages) return;
+    this.currentPage = page;
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.currentPage = 0;
+  }
+
+  getPageNumbers(): number[] {
+    const total = this.totalPages;
+    const current = this.currentPage;
+    const pages: number[] = [];
+
+    if (total <= 7) {
+      for (let i = 0; i < total; i++) pages.push(i);
+    } else {
+      pages.push(0);
+      if (current > 2) pages.push(-1);
+      const start = Math.max(1, current - 1);
+      const end = Math.min(total - 2, current + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (current < total - 3) pages.push(-1);
+      pages.push(total - 1);
+    }
+    return pages;
   }
 
   // ============================================================
@@ -228,11 +292,15 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
   // ============================================================
 
   navigateToBranch(branchId: string): void {
-    this.router.navigate(['/admin/sales/inventory/branches', branchId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
   }
 
   navigateToNewBranch(): void {
-    this.router.navigate(['/admin/sales/inventory/branches/new']);
+    this.router.navigate(['/admin/sales/commerce/inventory/branches/new']);
+  }
+
+  navigateToAddProduct(branchId: string): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId, 'add-product']);
   }
 
   // ============================================================
@@ -321,6 +389,7 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
     if (this.filters.status !== 'ALL') count++;
     if (this.filters.type !== 'ALL') count++;
     if (this.filters.city !== 'ALL') count++;
+    if (this.filters.branchId) count++;
     if (this.filters.searchTerm) count++;
     if (this.filters.minProducts) count++;
     if (this.filters.maxProducts) count++;

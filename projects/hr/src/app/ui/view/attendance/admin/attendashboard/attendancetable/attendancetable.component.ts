@@ -35,6 +35,7 @@ export class AttendancetableComponent implements OnInit, OnChanges {
   @Input() externalFilters: AttendanceTableRecord[] | null = null;
 
   openActionMenu: number | null = null;
+  selectedRecords: Set<number> = new Set();
 
   toggleActionMenu(recordId: number): void {
     this.openActionMenu = this.openActionMenu === recordId ? null : recordId;
@@ -58,6 +59,8 @@ approverNotes: Map<number, string> = new Map();
 tableColumns: TableColumn<AttendanceTableRecord>[] = [
   { header: 'Employee', field: 'employee', sortable: true },
   { header: 'Department', field: 'department', sortable: true },
+  { header: 'Date', field: 'date', sortable: true },
+  { header: 'Location', field: 'checkInLocation.address', sortable: false },
   { header: 'Clock In', field: 'checkIn', sortable: true },
   { header: 'Clock Out', field: 'checkOut', sortable: true },
   { header: 'Status', field: 'status', sortable: true },
@@ -72,20 +75,6 @@ tableActions: TableAction<AttendanceTableRecord>[] = [
     icon: 'fa-solid fa-eye',
     ariaLabel: 'View attendance details',
     visible: () => true
-  },
-  {
-    id: 'modify',
-    label: 'Edit',
-    icon: 'fa-solid fa-pen',
-    ariaLabel: 'Edit attendance record',
-    visible: (row) => !this.isOfficeClosed()
-  },
-  {
-    id: 'open',
-    label: 'Open',
-    icon: 'fa-solid fa-lock-open',
-    ariaLabel: 'Mark attendance as open',
-    visible: (row) => this.isToday(row.date) && row.status === 'ABSENT' && !row.overrideOpen
   }
 ];
 
@@ -835,6 +824,82 @@ getCrossBranchBranchNames(record: AttendanceTableRecord): string {
     return `From: ${record.homeBranchName} → To: ${record.checkedInBranchName}`;
   }
   return 'Cross-branch attendance';
+}
+
+getFieldValue(record: AttendanceTableRecord, field: string): any {
+  if (!field) return '';
+  if (!field.includes('.')) {
+    return record[field as keyof AttendanceTableRecord] || '';
+  }
+  const parts = field.split('.');
+  let value: any = record;
+  for (const part of parts) {
+    value = value?.[part];
+  }
+  return value || '-';
+}
+
+toggleRecordSelection(recordId: number): void {
+  if (this.selectedRecords.has(recordId)) {
+    this.selectedRecords.delete(recordId);
+  } else {
+    this.selectedRecords.add(recordId);
+  }
+}
+
+isRecordSelected(recordId: number): boolean {
+  return this.selectedRecords.has(recordId);
+}
+
+selectAllWithPendingCorrections(): void {
+  const pendingRecords = this.filteredAttendance.filter(r => r.correctionRequest?.status === 'PENDING');
+  if (pendingRecords.length === 0) {
+    this.toastService.warning('No pending correction requests to select');
+    return;
+  }
+  pendingRecords.forEach(r => this.selectedRecords.add(r.id));
+  this.toastService.info(`✅ Selected ${pendingRecords.length} records with pending corrections`);
+}
+
+massApproveCorrectionRequests(): void {
+  const recordsToApprove = Array.from(this.selectedRecords).filter(id => {
+    const record = this.filteredAttendance.find(r => r.id === id);
+    return record?.correctionRequest?.status === 'PENDING';
+  });
+
+  if (recordsToApprove.length === 0) {
+    this.toastService.warning('No pending corrections selected');
+    return;
+  }
+
+  const adminName = sessionStorage.getItem('fullname') || 'Admin';
+
+  recordsToApprove.forEach(recordId => {
+    this.approveCorrectionRequest(recordId);
+  });
+
+  this.selectedRecords.clear();
+  this.toastService.success(`✅ Approved ${recordsToApprove.length} correction requests`);
+}
+
+clearSelection(): void {
+  this.selectedRecords.clear();
+}
+
+getSelectedCount(): number {
+  return this.selectedRecords.size;
+}
+
+getPendingCorrectionCount(): number {
+  return this.filteredAttendance.filter(r => r.correctionRequest?.status === 'PENDING').length;
+}
+
+
+
+areAllPendingSelected(): boolean {
+  const pendingRecords = this.filteredAttendance.filter(r => r.correctionRequest?.status === 'PENDING');
+  if (pendingRecords.length === 0) return false;
+  return pendingRecords.every(r => this.selectedRecords.has(r.id));
 }
 
 }

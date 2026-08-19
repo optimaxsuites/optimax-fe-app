@@ -27,17 +27,12 @@
     <app-employeesummary></app-employeesummary>
   </div>
 
-  <!-- Correction Form Modal -->
-  <div class="modal-backdrop" *ngIf="showCorrectionModal"></div>
-  <div class="correction-modal" *ngIf="showCorrectionModal">
-    <div class="modal-header">
-      <h2>Request Attendance Correction</h2>
-      <button class="close-btn" (click)="closeCorrectionForm()">×</button>
-    </div>
-    <div class="modal-content">
-      <app-correctionrequest></app-correctionrequest>
-    </div>
-  </div>
+  <!-- Correction Request Form Modal -->
+  <app-correctionrequestform
+    *ngIf="showCorrectionModal"
+    (close)="closeCorrectionForm()"
+    (submitRequest)="handleCorrectionSubmit($event)">
+  </app-correctionrequestform>
 
 </div>
 

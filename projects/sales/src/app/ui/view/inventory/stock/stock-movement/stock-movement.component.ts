@@ -53,6 +53,7 @@ export class StockMovementComponent implements OnInit, OnDestroy {
   // UI
   Math = Math;
   showFilterDrawer: boolean = false;
+  showTransferMenu: boolean = false;
   aiDismissed: boolean = false;
 
   // Enums
@@ -141,9 +142,19 @@ export class StockMovementComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           this.movements = response.data;
-          this.filteredMovements = response.data;
-          this.totalElements = response.total;
-          this.totalPages = response.totalPages;
+          // Apply client-side search filter
+          const searchTerm = this.filterForm.get('search')?.value;
+          if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            this.filteredMovements = this.movements.filter(m =>
+              (m.productName && m.productName.toLowerCase().includes(term)) ||
+              (m.sku && m.sku.toLowerCase().includes(term))
+            );
+          } else {
+            this.filteredMovements = this.movements;
+          }
+          this.totalElements = this.filteredMovements.length;
+          this.totalPages = Math.ceil(this.totalElements / this.pageSize);
           this.calculateStats();
           this.isLoading = false;
           this.selectedMovementIds.clear();
@@ -303,19 +314,33 @@ export class StockMovementComponent implements OnInit, OnDestroy {
   // ============================================================
 
   viewMovement(id: string): void {
-    this.router.navigate(['/admin/sales/inventory/movements', id]);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements', id]);
   }
 
   navigateToNew(): void {
-    this.router.navigate(['/admin/sales/inventory/movements/new']);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/new']);
+  }
+
+  toggleTransferMenu(): void {
+    this.showTransferMenu = !this.showTransferMenu;
+  }
+
+  closeTransferMenu(): void {
+    this.showTransferMenu = false;
   }
 
   navigateToTransfer(): void {
-    this.router.navigate(['/admin/sales/inventory/movements/transfer']);
+    this.showTransferMenu = false;
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/transfer']);
+  }
+
+  navigateToBulkTransfer(): void {
+    this.showTransferMenu = false;
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/bulk-transfer']);
   }
 
   navigateToAdjustment(): void {
-    this.router.navigate(['/admin/sales/inventory/movements/adjustment']);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/adjustment']);
   }
 
   // ============================================================

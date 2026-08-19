@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TrackingComponent } from './tracking.component';
+import { TransferWizardComponent } from './transfer-wizard.component';
 
-describe('TrackingComponent', () => {
-  let component: TrackingComponent;
-  let fixture: ComponentFixture<TrackingComponent>;
+describe('TransferWizardComponent', () => {
+  let component: TransferWizardComponent;
+  let fixture: ComponentFixture<TransferWizardComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [TrackingComponent]
+      declarations: [TransferWizardComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(TrackingComponent);
+    fixture = TestBed.createComponent(TransferWizardComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

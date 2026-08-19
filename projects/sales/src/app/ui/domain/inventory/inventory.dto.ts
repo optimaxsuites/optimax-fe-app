@@ -86,6 +86,8 @@ export interface Product {
     tags: string[];
     status: ProductStatus;
     supplierIds: string[];
+    isComboProduct?: boolean;
+    variants?: any[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -195,6 +197,8 @@ export interface StockMovement {
     createdAt: Date;
     approvedAt: Date;
     completedAt: Date;
+    updatedAt?: Date;
+    estimatedArrival?: Date;
 }
 
 export interface RestockRequest {
@@ -260,6 +264,8 @@ export interface ProductPerformance {
     };
 }
 
+// inventory.dto.ts - Update BranchStockSummary interface
+
 export interface BranchStockSummary {
     branchId: string;
     branchName: string;
@@ -268,7 +274,9 @@ export interface BranchStockSummary {
     totalStockUnits: number;
     lowStockCount: number;
     outOfStockCount: number;
-    topSellingProducts: {
+    stockTurnover?: number;        
+    daysOfInventory?: number;      
+    topSellingProducts?: {
         productId: string;
         productName: string;
         quantity: number;
@@ -337,13 +345,15 @@ export interface PaginatedResponse<T> {
 
 export interface ProductFilters {
     search?: string;
+    searchTerm?: string;
     category?: string;
     brand?: string;
-    status?: ProductStatus;
+    status?: ProductStatus | 'ALL';
     minPrice?: number;
     maxPrice?: number;
     page?: number;
     limit?: number;
+    size?: number;
 }
 
 export interface MovementFilters {
@@ -355,6 +365,7 @@ export interface MovementFilters {
     dateTo?: Date;
     page?: number;
     limit?: number;
+    size?: number;
 }
 
 export interface RestockFilters {
@@ -422,4 +433,14 @@ export function getMovementTypeIcon(type: MovementType): string {
         [MovementType.DAMAGED]: 'fa-exclamation-triangle'
     };
     return map[type];
+}
+
+export function getMovementStatusLabel(status: MovementStatus): string {
+    const map: Record<MovementStatus, string> = {
+        [MovementStatus.PENDING]: 'Pending',
+        [MovementStatus.IN_TRANSIT]: 'In Transit',
+        [MovementStatus.COMPLETED]: 'Completed',
+        [MovementStatus.CANCELLED]: 'Cancelled'
+    };
+    return map[status] || status;
 }

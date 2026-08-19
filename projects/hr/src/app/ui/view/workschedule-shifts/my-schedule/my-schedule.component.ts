@@ -13,7 +13,7 @@ import interactionPlugin from '@fullcalendar/interaction';
   styleUrl: './my-schedule.component.scss'
 })
 export class MyScheduleComponent implements OnInit{
-  currentEmployeeId = 'emp-1'; // later filter from auth service
+  currentEmployeeId: string = 'emp-1';
   schedules: ScheduleDTO[] = [];
   currentDate = new Date();
   selectedDate: string = this.formatDateLocal(new Date());
@@ -41,14 +41,9 @@ export class MyScheduleComponent implements OnInit{
 
     this.scheduleService.schedules$
         .subscribe(data => {
-
-          this.schedules =
-            data.filter(
-              s =>
-                s.employeeId ===
-                this.currentEmployeeId
-            );
-
+          this.schedules = data.filter(
+            s => s.employeeId === this.currentEmployeeId
+          );
           this.updateCalendarEvents();
         });
   }

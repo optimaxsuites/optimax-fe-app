@@ -79,8 +79,11 @@
     <!-- Top bar -->
     <div class="ql-top-bar">
       <div class="ql-top-bar-left">
-        <h1 class="ql-title">Product Catalog</h1>
-        <span class="ql-total-badge">{{ totalElements }}</span>
+        <div class="ql-title-row">
+          <h1 class="ql-title">Product Catalog</h1>
+          <span class="ql-total-badge">{{ totalElements }}</span>
+        </div>
+        <p class="ql-subtitle">Manage your product listings, categories, units, and suppliers.</p>
       </div>
       <div class="ql-top-bar-right">
         <div class="ql-view-switcher">
@@ -101,6 +104,9 @@
             <option [value]="50">50</option>
           </select>
         </div>
+        <button type="button" class="ql-btn ql-btn--secondary" (click)="navigateToBulkImport()">
+          <i class="fas fa-upload"></i> Bulk Import
+        </button>
         <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewProduct()">
           <i class="fas fa-plus"></i> Add Product
         </button>

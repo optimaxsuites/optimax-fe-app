@@ -20,6 +20,14 @@
             </div>
         </div>
 
+        <!-- Quick filter / jump to a single branch -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Branch</div>
+            <app-branch-selector [branches]="branches" [selectedBranchId]="filters.branchId"
+                [showAllOption]="true" allOptionLabel="All Branches"
+                (branchChange)="onBranchFilterChange($event)"></app-branch-selector>
+        </div>
+
         <!-- Status filters -->
         <div class="ql-filter-section">
             <div class="ql-filter-heading">Status</div>
@@ -91,8 +99,11 @@
         <!-- Top bar -->
         <div class="ql-top-bar">
             <div class="ql-top-bar-left">
-                <h1 class="ql-title">Branch Directory</h1>
-                <span class="ql-total-badge">{{ stats.total }}</span>
+                <div class="ql-title-row">
+                    <h1 class="ql-title">Branch Directory</h1>
+                    <span class="ql-total-badge">{{ stats.total }}</span>
+                </div>
+                <p class="ql-subtitle">Browse and manage all branches, their stock levels, and locations.</p>
             </div>
             <div class="ql-top-bar-right">
                 <div class="ql-view-switcher">
@@ -213,10 +224,10 @@
 
                 <!-- Data rows -->
                 <tbody *ngIf="!isLoading && filteredBranches.length > 0">
-                    <tr *ngFor="let branch of filteredBranches; let i = index"
+                    <tr *ngFor="let branch of pagedBranches; let i = index"
                         [class.ql-row--inactive]="branch.status === 'INACTIVE'"
                         [class.ql-row--construction]="branch.status === 'UNDER_CONSTRUCTION'">
-                        <td class="ql-td-num">{{ i + 1 }}</td>
+                        <td class="ql-td-num">{{ currentPage * pageSize + i + 1 }}</td>
 
                         <td class="ql-td-branch">
                             <div class="ql-branch-info">
@@ -268,6 +279,11 @@
                                     title="Edit">
                                     <i class="fas fa-pencil-alt"></i>
                                 </button>
+                                <button type="button" class="ql-action-btn"
+                                    (click)="$event.stopPropagation(); navigateToAddProduct(branch.id)"
+                                    title="Assign Product to Branch">
+                                    <i class="fas fa-box-open"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -277,7 +293,7 @@
 
         <!-- Grid View -->
         <div class="ql-grid-container" *ngIf="!isLoading && viewMode === 'grid'">
-            <div class="ql-grid-card" *ngFor="let branch of filteredBranches"
+            <div class="ql-grid-card" *ngFor="let branch of pagedBranches"
                 [class.ql-grid--inactive]="branch.status === 'INACTIVE'"
                 [class.ql-grid--construction]="branch.status === 'UNDER_CONSTRUCTION'"
                 (click)="navigateToBranch(branch.id)">
@@ -302,29 +318,19 @@
                         {{ branch.location.city }}, {{ branch.location.state }}
                     </div>
 
-                    <div class="ql-grid-stats">
-                        <div class="ql-grid-stat">
-                            <span class="ql-grid-stat-value">{{ getBranchSummary(branch.id)?.totalProducts || 0
-                                }}</span>
-                            <span class="ql-grid-stat-label">Products</span>
-                        </div>
-                        <div class="ql-grid-stat">
-                            <span class="ql-grid-stat-value">{{
-                                formatNumber(getBranchSummary(branch.id)?.totalStockUnits || 0) }}</span>
-                            <span class="ql-grid-stat-label">Units</span>
-                        </div>
-                        <div class="ql-grid-stat">
-                            <span class="ql-grid-stat-value">{{
-                                formatCurrency(getBranchSummary(branch.id)?.totalStockValue || 0) }}</span>
-                            <span class="ql-grid-stat-label">Stock Value</span>
-                        </div>
-                    </div>
+                    <app-branch-stock-summary [branchId]="branch.id" [compact]="true"
+                        [showActions]="false"></app-branch-stock-summary>
                 </div>
 
                 <div class="ql-grid-footer">
                     <button type="button" class="ql-btn ql-btn--small ql-btn--primary"
                         (click)="$event.stopPropagation(); navigateToBranch(branch.id)">
                         <i class="fas fa-eye"></i> View
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--small ql-btn--ghost"
+                        (click)="$event.stopPropagation(); navigateToAddProduct(branch.id)"
+                        title="Assign Product to Branch">
+                        <i class="fas fa-box-open"></i> Assign Product
                     </button>
                 </div>
             </div>
@@ -336,6 +342,29 @@
                 <p class="ql-empty-sub">Try adjusting your filters or add a new branch</p>
                 <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewBranch()">
                     <i class="fas fa-plus"></i> Add Branch
+                </button>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="ql-pagination" *ngIf="!isLoading && totalElements > 0">
+            <span class="ql-page-info">
+                Showing {{ currentPage * pageSize + 1 }}–{{ Math.min((currentPage + 1) * pageSize, totalElements) }} of
+                {{ totalElements }}
+            </span>
+            <div class="ql-page-btns">
+                <button type="button" class="ql-page-btn" [disabled]="currentPage === 0"
+                    (click)="onPageChange(currentPage - 1)">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button type="button" class="ql-page-btn" *ngFor="let p of getPageNumbers()"
+                    [class.ql-page-btn--active]="p === currentPage" [class.ql-page-btn--ellipsis]="p === -1"
+                    (click)="p !== -1 && onPageChange(p)">
+                    {{ p === -1 ? '…' : p + 1 }}
+                </button>
+                <button type="button" class="ql-page-btn" [disabled]="currentPage >= totalPages - 1"
+                    (click)="onPageChange(currentPage + 1)">
+                    <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
         </div>

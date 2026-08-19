@@ -15,6 +15,7 @@ import {
   ProductPerformance,
   BranchStockSummary,
   QuickAction,
+  Branch,
   getStockStatus,
   getStockStatusColor,
   getStockStatusLabel,
@@ -41,6 +42,10 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
   isLoading: boolean = true;
   dashboardData: InventoryDashboardData | null = null;
   error: string | null = null;
+
+  // Branch context — null means "All Branches"
+  branches: Branch[] = [];
+  selectedBranchId: string | null = null;
 
   // Stats
   stats: InventoryDashboardStats | null = null;
@@ -74,6 +79,7 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
   // ============================================================
 
   ngOnInit(): void {
+    this.loadBranches();
     this.loadDashboardData();
     this.startAutoRefresh();
   }
@@ -99,11 +105,7 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (data) => {
           this.dashboardData = data;
-          this.stats = data.stats;
-          this.alerts = data.alerts || [];
-          this.recentMovements = data.recentMovements || [];
-          this.topProducts = data.topProducts || [];
-          this.branchSummaries = data.branchSummaries || [];
+          this.applyBranchScope();
           this.inventoryService.getQuickActions().pipe(takeUntil(this.destroy$)).subscribe(actions => { this.quickActions = actions; });
           this.isLoading = false;
         },
@@ -113,6 +115,61 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
           this.isLoading = false;
         }
       });
+  }
+
+  loadBranches(): void {
+    this.inventoryService.getBranches()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (branches) => { this.branches = branches; },
+        error: (err) => console.error('Failed to load branches:', err)
+      });
+  }
+
+  // ============================================================
+  // BRANCH SWITCHING
+  // ============================================================
+
+  /** Called from the branch selector in the top bar. `null` = All Branches. */
+  onBranchChange(branchId: string | null): void {
+    this.selectedBranchId = branchId;
+    this.applyBranchScope();
+  }
+
+  /** Re-derives every dashboard view (stats, alerts, movements, branch cards) scoped to the selected branch. */
+  private applyBranchScope(): void {
+    if (!this.dashboardData) return;
+
+    if (!this.selectedBranchId) {
+      this.stats = this.dashboardData.stats;
+      this.alerts = this.dashboardData.alerts || [];
+      this.recentMovements = this.dashboardData.recentMovements || [];
+      this.topProducts = this.dashboardData.topProducts || [];
+      this.branchSummaries = this.dashboardData.branchSummaries || [];
+      return;
+    }
+
+    const branchId = this.selectedBranchId;
+    const summary = (this.dashboardData.branchSummaries || []).find(b => b.branchId === branchId) || null;
+
+    this.branchSummaries = summary ? [summary] : [];
+    this.alerts = (this.dashboardData.alerts || []).filter(a => a.branchId === branchId);
+    this.recentMovements = (this.dashboardData.recentMovements || []).filter(m =>
+      m.fromLocation.id === branchId || m.toLocation.id === branchId
+    );
+    // Top products aren't tracked per-branch in the data model, so this stays global.
+    this.topProducts = this.dashboardData.topProducts || [];
+
+    this.stats = summary ? {
+      ...this.dashboardData.stats,
+      totalSkus: summary.totalProducts,
+      totalStockValue: summary.totalStockValue,
+      totalStockUnits: summary.totalStockUnits,
+      lowStockItems: summary.lowStockCount,
+      outOfStockItems: summary.outOfStockCount,
+      totalBranches: 1,
+      monthlyMovementCount: this.recentMovements.length
+    } : this.dashboardData.stats;
   }
 
   // ============================================================
@@ -146,6 +203,12 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
 
   navigateToMovement(movementId: string): void {
     this.router.navigate(['/admin/sales/commerce/inventory/movements', movementId]);
+  }
+
+  /** Fired by <app-branch-stock-summary> once it (re)loads its data. */
+  onSummaryLoaded(_summary: BranchStockSummary): void {
+    // Currently just informational — the summary widget manages its own state.
+    // Hook available for callers that want to react to fresh branch stock totals.
   }
 
   resolveAlert(alertId: string): void {

@@ -6,7 +6,7 @@ import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
 import { DialogModule } from '@angular/cdk/dialog';
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ProductModule } from './ui/view/inventory/product/product.module';
 import { MatDialogModule } from '@angular/material/dialog';
 import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -64,7 +64,9 @@ import { TableComponent } from './ui/shared-component/view/table/table.component
 import { TableBodyDirective } from './ui/shared-component/view/table/table-body.directive';
 import { SidebarComponent } from './ui/shared-component/view/sidebar/sidebar.component';
 import { SharedOverlayModule } from './shared-overlay.module';
+import { FormsModule } from '@angular/forms';
 
+import { ReactiveFormsModule } from '@angular/forms';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
@@ -147,26 +149,52 @@ import { ProductManagementComponent } from './ui/view/inventory/product/product-
 import { BranchInventoryComponent } from './ui/view/branch/branch-inventory/branch-inventory.component';
 import { BranchDetailComponent } from './ui/view/branch/branch-detail/branch-detail.component';
 import { BranchInventoryTableComponent } from './ui/view/branch/branch-inventory-table/branch-inventory-table.component';
+import { BranchTransferHistoryComponent } from './ui/view/branch/branch-transfer-history/branch-transfer-history.component';
 import { BranchInventoryFormComponent } from './ui/view/branch/branch-inventory-form/branch-inventory-form.component';
 import { BranchFormComponent } from './ui/view/branch/branch-form/branch-form.component';
 import { StockMovementComponent } from './ui/view/inventory/stock/stock-movement/stock-movement.component';
 import { StockMovementFormComponent } from './ui/view/inventory/stock/stock-movement-form/stock-movement-form.component';
-import { RestockManagementComponent } from './ui/view/inventory/restock-management/restock-management.component';
+import { TransferWizardComponent } from './ui/view/inventory/stock/transfer-wizard/transfer-wizard.component';
+import { BulkTransferComponent } from './ui/view/inventory/stock/bulk-transfer/bulk-transfer.component';
+import { StockMovementDetailComponent } from './ui/view/inventory/stock/stock-movement-detail/stock-movement-detail.component';
+import { RestockManagementComponent } from './ui/view/inventory/restock/restock-management/restock-management.component';
+import { RestockRequestFormComponent } from './ui/view/inventory/restock/restock-request-form/restock-request-form.component';
+import { RestockSuggestionComponent } from './ui/view/inventory/restock/restock-suggestion/restock-suggestion.component';
+import { RestockRequestListComponent } from './ui/view/inventory/restock/restock-request-list/restock-request-list.component';
+import { RestockSuggestionsPageComponent } from './ui/view/inventory/restock/restock-suggestions-page/restock-suggestions-page.component';
 import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.component';
+import { LogisticsComponent } from './ui/view/logistics/logistics.component';
+import { LogisticsDashboardComponent } from './ui/view/logistics/logistics-dashboard/logistics-dashboard.component';
+import { TrackingComponent } from './ui/view/logistics/tracking/tracking.component';
+import { FleetManagementComponent } from './ui/view/logistics/fleet-management/fleet-management.component';
+import { RouteOptimizationComponent } from './ui/view/logistics/route-optimization/route-optimization.component';
+import { DeliveryManagementsComponent } from './ui/view/logistics/delivery-management/delivery-management.component';
+import { BranchSelectorComponent } from './ui/shared-component/branch-selector/branch-selector.component';
+import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-summary/branch-stock-summary.component';
 
 @NgModule({
   declarations: [
     App,
     InventoryComponent,
     InventoryDashboardComponent,
+    BranchSelectorComponent,
+    BranchStockSummaryComponent,
     BranchInventoryComponent,
     BranchDetailComponent,
     BranchInventoryTableComponent,
+    BranchTransferHistoryComponent,
     BranchInventoryFormComponent,
     BranchFormComponent,
     StockMovementComponent,
     StockMovementFormComponent,
+    TransferWizardComponent,
+    BulkTransferComponent,
+    StockMovementDetailComponent,
     RestockManagementComponent,
+    RestockRequestFormComponent,
+    RestockSuggestionComponent,
+    RestockRequestListComponent,
+    RestockSuggestionsPageComponent,
     AnalyticsComponent,
     TableComponent,
     TableBodyDirective,
@@ -224,6 +252,13 @@ import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.comp
     RiskComponent,
     VendorDocumentsComponent,
     ActivityComponent,
+
+    LogisticsComponent,
+    LogisticsDashboardComponent,
+    RouteOptimizationComponent,
+    DeliveryManagementsComponent,
+    FleetManagementComponent,
+    TrackingComponent,
   ],
   imports: [
     // BrowserModule,
@@ -299,7 +334,6 @@ import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.comp
     TemplateTypesComponent,
     VpStatusBadgeComponent,
     CommandPaletteComponent,
-
   ],
   exports: [TableComponent],
   providers: [
@@ -322,8 +356,8 @@ import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.comp
     provideHttpClient(withInterceptorsFromDi()),
     ConfirmationService,
     MessageService,
-    DecimalPipe
+    DecimalPipe,
   ],
-  bootstrap: [App]
+  bootstrap: [App],
 })
 export class AppModule { }

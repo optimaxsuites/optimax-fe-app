@@ -1,10 +1,55 @@
 <div class="attendance-list">
 
   <div class="header">
-
     <div class="filter">
       <label>Month:</label>
       <input type="month" [value]="selectedMonth" (change)="onMonthChange($event)" />
+    </div>
+
+    <div class="filter-actions">
+      <button class="btn-filter-toggle" (click)="toggleDateRangeFilter()" title="Toggle date range filter">
+        <i class="fa-solid fa-calendar-range"></i> {{ showDateRangeFilter ? 'Hide' : 'Show' }} Date Range
+      </button>
+
+      <!-- Download Dropdown Menu -->
+      <div class="download-menu-container">
+        <button class="btn-download" (click)="toggleExportMenu()" title="Download attendance records">
+          <i class="fa-solid fa-download"></i> Download
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="download-menu" *ngIf="showExportMenu">
+          <button class="menu-item csv-option" (click)="exportToCSV()">
+            <i class="fa-solid fa-file-csv"></i>
+            <span>Export as CSV</span>
+          </button>
+          <button class="menu-item pdf-option" (click)="exportToPDF()">
+            <i class="fa-solid fa-file-pdf"></i>
+            <span>Export as PDF</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Date Range Filter Section -->
+  <div class="date-range-filter" *ngIf="showDateRangeFilter">
+    <div class="filter-content">
+      <div class="date-input-group">
+        <label for="start-date">FROM</label>
+        <input type="date" id="start-date" [(ngModel)]="startDate" class="date-input">
+      </div>
+      <div class="date-input-group">
+        <label for="end-date">TO</label>
+        <input type="date" id="end-date" [(ngModel)]="endDate" class="date-input">
+      </div>
+      <div class="filter-buttons">
+        <button class="btn-apply" (click)="applyDateRangeFilter()">
+          <i class="fa-solid fa-filter"></i> Apply
+        </button>
+        <button class="btn-reset" (click)="resetDateRangeFilter()">
+          <i class="fa-solid fa-redo"></i> Reset
+        </button>
+      </div>
     </div>
   </div>
 

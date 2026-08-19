@@ -919,3 +919,132 @@ input:focus-visible {
     display: none;
   }
 }
+
+// ── Filter Controls Styling ──────────────────────────────────────────────
+
+.filter-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.date-range-inputs {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.date-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-text-secondary;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .date-input {
+    padding: 0.625rem 0.875rem;
+    border: 1px solid $color-border;
+    border-radius: 6px;
+    font-size: $font-size-base;
+    color: $color-text-primary;
+    background: $color-bg-card;
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: $color-teal-light;
+      box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+    }
+  }
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-apply,
+.btn-reset,
+.btn-export {
+  padding: 0.625rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+
+  i {
+    font-size: 0.875rem;
+  }
+}
+
+.btn-apply {
+  background: $color-teal-light;
+  color: white;
+
+  &:hover {
+    background: $color-teal-primary;
+  }
+}
+
+.btn-reset {
+  background: $color-warning-light;
+  color: $color-warning;
+  border: 1px solid $color-warning;
+
+  &:hover {
+    background: $color-warning;
+    color: white;
+  }
+}
+
+.btn-export {
+  background: $color-info-light;
+  color: $color-info;
+  border: 1px solid $color-info;
+
+  &:hover {
+    background: $color-info;
+    color: white;
+  }
+}
+
+@media (max-width: 768px) {
+  .filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-range-inputs {
+    width: 100%;
+  }
+
+  .date-input-group {
+    flex: 1;
+  }
+
+  .filter-buttons {
+    width: 100%;
+
+    .btn-apply,
+    .btn-reset,
+    .btn-export {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+}

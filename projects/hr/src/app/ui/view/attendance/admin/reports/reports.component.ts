@@ -7,6 +7,8 @@ import { AttendanceTableRecord } from '../../../../domain/attendance/attendancet
 import { ToastService } from '../../../../shared-component/service/toast/toast.service';
 import { MOCK_ATTENDANCE, BRANCHES, BRANCH_NAMES } from '../../../../domain/attendance/attendancetable.mock';
 import { TableComponent, TableColumn, TableAction } from '../../../../shared-component/view/table/table.component';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 @Component({
   selector: 'app-reports',
@@ -22,9 +24,8 @@ export class ReportsComponent implements OnInit {
 
   attendance: AttendanceTableRecord[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
+  groupedSummary: any[] = [];
   isLoading = false;
-  selectedRecord: AttendanceTableRecord | null = null;
-  isEditMode = false;
 
   startDate = new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0];
   endDate = new Date().toISOString().split('T')[0];
@@ -50,16 +51,14 @@ export class ReportsComponent implements OnInit {
   tableColumns: TableColumn[] = [
     { header: 'Employee', field: 'employee' },
     { header: 'Department', field: 'department' },
-    { header: 'Clock In', field: 'checkIn' },
-    { header: 'Clock Out', field: 'checkOut' },
-    { header: 'Status', field: 'status' },
-    { header: 'Hours', field: 'hours' }
+    { header: 'Date', field: 'date' },
+    { header: 'Location', field: 'location' },
+    { header: 'Total Hours', field: 'totalHours' },
+    { header: 'Cumulative Days', field: 'cumulativeDays' }
   ];
 
   tableActions: TableAction[] = [
-    { id: 'view', icon: 'fa-solid fa-eye', label: 'View' },
-    { id: 'history', icon: 'fa-solid fa-chart-line', label: 'History' },
-    { id: 'edit', icon: 'fa-solid fa-pen', label: 'Edit' }
+    { id: 'history', icon: 'fa-solid fa-chart-line', label: 'History' }
   ];
 
   ngOnInit(): void {
@@ -118,6 +117,34 @@ export class ReportsComponent implements OnInit {
       pendingReview: this.filteredAttendance.filter(r => r.correctionRequest?.status === 'PENDING').length,
       total
     };
+    this.groupAttendanceByEmployee();
+  }
+
+  groupAttendanceByEmployee(): void {
+    const groupedMap = new Map<string, any>();
+
+    this.filteredAttendance.forEach(record => {
+      const key = record.employee;
+      if (!groupedMap.has(key)) {
+        groupedMap.set(key, {
+          employee: record.employee,
+          department: record.department,
+          date: record.date,
+          location: record.checkInLocation?.address || '-',
+          totalHours: 0,
+          cumulativeDays: 0
+        });
+      }
+
+      const group = groupedMap.get(key);
+      group.totalHours += record.hours || 0;
+
+      if (record.status === 'PRESENT' || record.status === 'LATE') {
+        group.cumulativeDays += 1;
+      }
+    });
+
+    this.groupedSummary = Array.from(groupedMap.values());
   }
 
   getPercentage(count: number): number {
@@ -202,44 +229,71 @@ export class ReportsComponent implements OnInit {
     this.toastService.success('✅ Report exported as Excel');
   }
 
+  exportPdf(): void {
+    if (this.filteredAttendance.length === 0) {
+      this.toastService.warning('No records to export');
+      return;
+    }
+
+    const doc = new jsPDF();
+    const title = 'Attendance Report';
+    const date = new Date().toLocaleDateString();
+
+    doc.setFontSize(16);
+    doc.text(title, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text(`Generated: ${date}`, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+
+    const tableData = this.filteredAttendance.map(r => [
+      r.employee,
+      r.department,
+      r.date,
+      r.checkIn || '-',
+      r.checkOut || '-',
+      r.status,
+      r.hours || 0,
+      this.getBranchName(r.checkedInBranchId)
+    ]);
+
+    autoTable(doc, {
+      head: [['Employee', 'Department', 'Date', 'Clock In', 'Clock Out', 'Status', 'Hours', 'Branch']],
+      body: tableData,
+      startY: 30,
+      styles: { fontSize: 9 },
+      margin: { top: 30 }
+    });
+
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.getWidth() - 20, doc.internal.pageSize.getHeight() - 10);
+    }
+
+    doc.save(`attendance-report-${new Date().toISOString().split('T')[0]}.pdf`);
+    this.toastService.success('✅ Report exported as PDF');
+  }
+
   getBranchName(branchId?: number): string {
     if (!branchId) return '-';
     return BRANCH_NAMES[branchId] || '-';
   }
 
-  onTableActionClick(event: { actionId: string; row: AttendanceTableRecord }): void {
-    if (event.actionId === 'view') {
-      this.selectedRecord = { ...event.row };
-      this.isEditMode = false;
-    } else if (event.actionId === 'history') {
-      this.router.navigate(['/attendance/employee-history'], { queryParams: { name: event.row.employee } });
-    } else if (event.actionId === 'edit') {
-      this.selectedRecord = { ...event.row };
-      this.isEditMode = true;
-    }
-  }
-
-  closeDrawer(): void {
-    this.selectedRecord = null;
-    this.isEditMode = false;
-  }
-
-  cancelEdit(): void {
-    this.selectedRecord = null;
-    this.isEditMode = false;
-  }
-
-  saveRecord(): void {
-    if (this.selectedRecord) {
-      const index = this.attendance.findIndex(r => r.id === this.selectedRecord!.id);
-      if (index !== -1) {
-        this.attendance[index] = this.selectedRecord;
-        this.applyFilters();
-        this.toastService.success(`Record updated for ${this.selectedRecord.employee}`);
+  onTableActionClick(event: { actionId: string; row: any }): void {
+    if (event.actionId === 'history') {
+      if (!event.row.employee) {
+        this.toastService.error('Employee name not found');
+        return;
       }
+      this.router.navigate(['/attendance/employee-history'], {
+        queryParams: { name: event.row.employee }
+      }).catch(err => {
+        this.toastService.error('Failed to navigate to employee history');
+        console.error('Navigation error:', err);
+      });
     }
-    this.cancelEdit();
   }
+
 
   getEmployeeHistory(employee: string): AttendanceTableRecord[] {
     return this.attendance.filter(r => r.employee === employee);

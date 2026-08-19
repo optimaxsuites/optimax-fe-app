@@ -309,7 +309,9 @@
 
                         <!-- Vendor Rows - Removed row click -->
                         <tr *ngFor="let vendor of filteredVendors; let i = index"
-                            [class.selected]="isSelected(vendor.id)">
+                            [class.selected]="isSelected(vendor.id)"
+                            class="clickable-row"
+                            (click)="viewVendor(vendor.id)">
                             <td *ngIf="visibleColumns.select" class="checkbox-col" (click)="$event.stopPropagation()">
                                 <input type="checkbox" [checked]="isSelected(vendor.id)"
                                     (change)="toggleSelectVendor(vendor.id)" />

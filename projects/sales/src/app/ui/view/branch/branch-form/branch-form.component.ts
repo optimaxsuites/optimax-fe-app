@@ -129,7 +129,7 @@ export class BranchFormComponent implements OnInit, OnDestroy {
         .subscribe({
           next: () => {
             this.isSaving = false;
-            this.router.navigate(['/admin/sales/inventory/branches', this.branchId]);
+            this.router.navigate(['/admin/sales/commerce/inventory/branches', this.branchId]);
           },
           error: (err) => {
             console.error('Failed to update branch:', err);
@@ -143,7 +143,7 @@ export class BranchFormComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (newBranch) => {
             this.isSaving = false;
-            this.router.navigate(['/admin/sales/inventory/branches', newBranch.id]);
+            this.router.navigate(['/admin/sales/commerce/inventory/branches', newBranch.id]);
           },
           error: (err) => {
             console.error('Failed to create branch:', err);

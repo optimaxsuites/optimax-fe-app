@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { TabConfig } from '../../shared-component/service/interface/data';
 import { MyAttendanceComponent } from './my-attendance/my-attendance.component';
 import { AttendashboardComponent } from './admin/attendashboard/attendashboard.component';
@@ -15,22 +15,43 @@ import { SupervisorApprovalQueueComponent } from './admin/supervisor-approval-qu
   templateUrl: './attendance.component.html',
   styleUrl: './attendance.component.scss'
 })
-export class AttendanceComponent {
-  tabsConfig: TabConfig[] = [
-    // Admin features
-    { name: 'Admin Dashboard',
-    component: AttendashboardComponent,
-    icon: 'fa-solid fa-chart-line' },
-    { name: 'Reports',
-      component: ReportsComponent,
-    icon: 'fa-solid fa-file-lines' },
+export class AttendanceComponent implements OnInit {
+  tabsConfig: TabConfig[] = [];
 
-    // Employee features
-    { name: 'My Attendance',
-      component: EmployeedashboardComponent,
-    icon: 'fa-solid fa-user' },
-    { name: 'Biometric Enrollment',
-      component: BiometricEnrollmentComponent,
-    icon: 'fa-solid fa-fingerprint' }
-  ];
+  ngOnInit(): void {
+    this.tabsConfig = [
+      ...this.getAdminTabs(),
+      ...this.getEmployeeTabs()
+    ];
+  }
+
+  private getAdminTabs(): TabConfig[] {
+    return [
+      {
+        name: 'Admin Dashboard',
+        component: AttendashboardComponent,
+        icon: 'fa-solid fa-chart-line'
+      },
+      {
+        name: 'Reports',
+        component: ReportsComponent,
+        icon: 'fa-solid fa-file-lines'
+      }
+    ];
+  }
+
+  private getEmployeeTabs(): TabConfig[] {
+    return [
+      {
+        name: 'My Attendance',
+        component: EmployeedashboardComponent,
+        icon: 'fa-solid fa-user'
+      },
+      {
+        name: 'Biometric Enrollment',
+        component: BiometricEnrollmentComponent,
+        icon: 'fa-solid fa-fingerprint'
+      }
+    ];
+  }
 }

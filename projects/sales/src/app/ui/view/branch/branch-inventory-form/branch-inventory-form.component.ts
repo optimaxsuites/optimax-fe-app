@@ -44,6 +44,7 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
 
   // Data
   branch: Branch | null = null;
+  branches: Branch[] = [];
   inventoryItem: BranchInventory | null = null;
   products: Product[] = [];
   filteredProducts: Product[] = [];
@@ -201,6 +202,14 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
     this.isLoading = true;
     this.error = null;
 
+    // Load branch list (for the branch selector)
+    this.inventoryService.getBranches()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (branches) => { this.branches = branches; },
+        error: (err) => console.error('Failed to load branches:', err)
+      });
+
     // Load branch
     if (this.branchId) {
       this.inventoryService.getBranch(this.branchId)
@@ -275,6 +284,18 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
       costPrice: item.costPrice || 0,
       notes: ''
     });
+  }
+
+  // ============================================================
+  // BRANCH SELECTION
+  // ============================================================
+
+  /** Switch which branch this form is managing inventory for. */
+  onBranchChange(branchId: string | null): void {
+    if (!branchId || branchId === this.branchId) return;
+    this.branchId = branchId;
+    this.resetForms();
+    this.loadData();
   }
 
   // ============================================================
@@ -483,6 +504,7 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
       if (savedItems.length > 0) {
         this.saved.emit(savedItems[0]);
       }
+      this.navigateAway();
     }, 1000);
   }
 
@@ -496,12 +518,21 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
       this.confirmMessage = 'You have unsaved changes. Are you sure you want to leave?';
     } else {
       this.cancelled.emit();
+      this.navigateAway();
     }
   }
 
   confirmCancel(): void {
     this.showConfirmDialog = false;
     this.cancelled.emit();
+    this.navigateAway();
+  }
+
+  /** Falls back to browser history when nothing is listening to saved/cancelled — this component is currently only ever routed to directly, never embedded. */
+  private navigateAway(): void {
+    if (!this.saved.observed && !this.cancelled.observed) {
+      this.location.back();
+    }
   }
 
   cancelConfirmDialog(): void {

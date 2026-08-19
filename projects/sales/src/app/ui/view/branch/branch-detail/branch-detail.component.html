@@ -1,258 +1,249 @@
 <!-- branch-detail.component.html -->
-<div class="branch-detail">
-    <div class="detail-wrapper">
+<div class="ql-layout">
 
-        <!-- ============================================================
-    LOADING STATE
-    ============================================================ -->
-        <div *ngIf="isLoading" class="loading-state">
-            <div class="spinner-glow"></div>
-            <p>Loading branch details...</p>
-        </div>
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
 
-        <!-- ============================================================
-    ERROR STATE
-    ============================================================ -->
-        <div *ngIf="error && !isLoading" class="error-state">
-            <i class="fas fa-exclamation-triangle"></i>
-            <h3>Failed to Load Branch</h3>
-            <p>{{ error }}</p>
-            <button class="btn-primary" (click)="refresh()">
-                <i class="fas fa-sync-alt"></i> Retry
+        <div class="ql-sidebar-title">
+            <span>Branch Details</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
             </button>
         </div>
 
+        <!-- Branch Stock Summary (Compact) -->
+        <app-branch-stock-summary [branchId]="branchId" [compact]="true" [showActions]="false">
+        </app-branch-stock-summary>
+
+        <!-- Movements isn't part of the reusable summary — kept branch-detail specific -->
+        <div class="ql-filter-section">
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Movements</span>
+                <span class="ql-sidebar-stat-value">{{ stats.totalMovements }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Quick Actions</div>
+            <button class="ql-sidebar-action" (click)="createTransfer()">
+                <i class="fas fa-exchange-alt"></i> Transfer Stock
+            </button>
+            <button class="ql-sidebar-action" (click)="createRestockRequest()">
+                <i class="fas fa-truck-loading"></i> Request Restock
+            </button>
+            <button class="ql-sidebar-action" (click)="createStockCount()">
+                <i class="fas fa-clipboard-list"></i> Stock Count
+            </button>
+            <button class="ql-sidebar-action" (click)="navigateToAddProduct()">
+                <i class="fas fa-plus-circle"></i> Add Product
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading branch details...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="refresh()"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
         <!-- ============================================================
-    CONTENT
-    ============================================================ -->
+        CONTENT
+        ============================================================ -->
         <ng-container *ngIf="!isLoading && branch && !error">
 
-            <!-- ==========================================================
-      HEADER - Premium Card
-      ========================================================== -->
-            <div class="detail-header">
-                <div class="header-top">
-                    <div class="header-left">
-                        <button class="back-btn" (click)="goBack()">
-                            <i class="fas fa-arrow-left"></i>
-                            Back to Branches
-                        </button>
-                        <div class="branch-brand">
-                            <div class="branch-avatar-large">
-                                {{ getInitials(branch.name) }}
-                            </div>
-                            <div class="branch-title">
-                                <h1 class="branch-name">{{ branch.name }}</h1>
-                                <div class="branch-meta">
-                                    <span class="meta-item">
-                                        <i class="fas fa-code"></i>
-                                        {{ branch.code }}
-                                    </span>
-                                    <span class="meta-item">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        {{ branch.location.city }}, {{ branch.location.state }}
-                                    </span>
-                                    <span class="meta-item">
-                                        <i class="fas fa-phone"></i>
-                                        {{ branch.contact.phone }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+            <!-- Top Bar -->
+            <div class="ql-top-bar">
+                <div class="ql-top-bar-left">
+                    <div class="ql-branch-avatar">
+                        {{ getInitials(branch.name) }}
                     </div>
-                    <div class="header-right">
-                        <div class="header-badges">
-                            <span class="badge-type" [class.flagship]="branch.type === 'FLAGSHIP'"
-                                [class.standard]="branch.type === 'STANDARD'" [class.mini]="branch.type === 'MINI'">
-                                {{ getBranchTypeLabel(branch.type) }}
+                    <div>
+                        <app-branch-selector [branches]="branches" [selectedBranchId]="branchId" size="title"
+                            (branchChange)="onBranchChange($event)"></app-branch-selector>
+                        <div class="ql-branch-meta">
+                            <span class="ql-meta-item">
+                                <i class="fas fa-code"></i> {{ branch.code }}
                             </span>
-                            <span class="badge-status" [style.background]="getBranchStatusColor(branch.status) + '20'"
-                                [style.color]="getBranchStatusColor(branch.status)">
-                                <span class="status-dot"
-                                    [style.background]="getBranchStatusColor(branch.status)"></span>
-                                {{ getStatusLabel(branch.status) }}
+                            <span class="ql-meta-item">
+                                <i class="fas fa-map-marker-alt"></i> {{ branch.location.city }}, {{ branch.location.state }}
                             </span>
-                        </div>
-                        <div class="header-actions">
-                            <button class="btn-refresh" (click)="refresh()" title="Refresh">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                            <button class="btn-edit" (click)="toggleEdit()">
-                                <i class="fas" [class.fa-edit]="!isEditing" [class.fa-times]="isEditing"></i>
-                                {{ isEditing ? 'Cancel' : 'Edit' }}
-                            </button>
-                            <button class="btn-save" (click)="saveBranch()" [disabled]="!isEditing || isSaving">
-                                <i class="fas fa-save"></i>
-                                {{ isSaving ? 'Saving...' : 'Save' }}
-                            </button>
+                            <span class="ql-meta-item">
+                                <i class="fas fa-phone"></i> {{ branch.contact.phone }}
+                            </span>
                         </div>
                     </div>
                 </div>
-
-                <!-- Edit Mode Indicator -->
-                <div class="edit-banner" *ngIf="isEditing">
-                    <i class="fas fa-pencil-alt"></i>
-                    You are editing branch information. Changes will be saved when you click Save.
-                </div>
-            </div>
-
-            <!-- ==========================================================
-      STATS CARDS
-      ========================================================== -->
-            <div class="stats-grid">
-                <div class="stat-card-mini">
-                    <span class="stat-value">{{ stats.totalProducts }}</span>
-                    <span class="stat-label">Total Products</span>
-                </div>
-                <div class="stat-card-mini">
-                    <span class="stat-value">{{ formatNumber(stats.totalStockUnits) }}</span>
-                    <span class="stat-label">Total Stock Units</span>
-                </div>
-                <div class="stat-card-mini">
-                    <span class="stat-value">{{ formatCurrency(stats.totalStockValue) }}</span>
-                    <span class="stat-label">Stock Value</span>
-                </div>
-                <div class="stat-card-mini">
-                    <span class="stat-value" [class.warning]="stats.lowStock > 0">{{ stats.lowStock }}</span>
-                    <span class="stat-label">Low Stock</span>
-                </div>
-                <div class="stat-card-mini">
-                    <span class="stat-value" [class.danger]="stats.outOfStock > 0">{{ stats.outOfStock }}</span>
-                    <span class="stat-label">Out of Stock</span>
-                </div>
-                <div class="stat-card-mini">
-                    <span class="stat-value">{{ stats.totalMovements }}</span>
-                    <span class="stat-label">Total Movements</span>
-                </div>
-            </div>
-
-            <!-- ==========================================================
-      TABS
-      ========================================================== -->
-            <div class="tabs-container">
-                <div class="tabs-scroll">
-                    <button *ngFor="let tab of ['overview','inventory','movements','alerts','analytics']"
-                        class="tab-btn" [class.active]="activeTab === tab" (click)="setActiveTab(tab)">
-                        <i class="fas" [class.fa-info-circle]="tab === 'overview'"
-                            [class.fa-boxes]="tab === 'inventory'" [class.fa-exchange-alt]="tab === 'movements'"
-                            [class.fa-bell]="tab === 'alerts'" [class.fa-chart-line]="tab === 'analytics'"></i>
-                        {{ tab | titlecase }}
+                <div class="ql-top-bar-right">
+                    <span class="ql-type-badge" [class.ql-type--flagship]="branch.type === 'FLAGSHIP'"
+                                                      [class.ql-type--standard]="branch.type === 'STANDARD'"
+                                                      [class.ql-type--mini]="branch.type === 'MINI'">
+                        {{ getBranchTypeLabel(branch.type) }}
+                    </span>
+                    <span class="ql-status-badge ql-status-badge--{{ branch.status?.toLowerCase() }}">
+                        <span class="ql-status-dot" [style.background]="getBranchStatusColor(branch.status)"></span>
+                        {{ getStatusLabel(branch.status) }}
+                    </span>
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" title="Refresh">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="toggleEdit()">
+                        <i class="fas" [class.fa-edit]="!isEditing" [class.fa-times]="isEditing"></i>
+                        {{ isEditing ? 'Cancel' : 'Edit' }}
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="saveBranch()" [disabled]="!isEditing || isSaving">
+                        <i class="fas" [class.fa-spinner]="isSaving" [class.fa-save]="!isSaving" [class.ql-spinning]="isSaving"></i>
+                        {{ isSaving ? 'Saving...' : 'Save' }}
                     </button>
                 </div>
             </div>
 
-            <!-- ==========================================================
-      TAB CONTENT
-      ========================================================== -->
-            <div class="tab-content">
+            <!-- Edit Mode Indicator -->
+            <div class="ql-edit-banner" *ngIf="isEditing">
+                <i class="fas fa-pencil-alt"></i>
+                You are editing branch information. Changes will be saved when you click Save.
+            </div>
+
+            <!-- Tabs -->
+            <div class="ql-tabs">
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'overview'" (click)="setActiveTab('overview')">
+                    <i class="fas fa-info-circle"></i> Overview
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'inventory'" (click)="setActiveTab('inventory')">
+                    <i class="fas fa-boxes"></i> Inventory
+                    <span class="ql-tab-badge ql-tab-badge--warning" *ngIf="stats.lowStock > 0">{{ stats.lowStock }}</span>
+                    <span class="ql-tab-badge ql-tab-badge--danger" *ngIf="stats.outOfStock > 0">{{ stats.outOfStock }}</span>
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'movements'" (click)="setActiveTab('movements')">
+                    <i class="fas fa-exchange-alt"></i> Movements
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'alerts'" (click)="setActiveTab('alerts')">
+                    <i class="fas fa-bell"></i> Alerts
+                    <span class="ql-tab-badge ql-tab-badge--danger" *ngIf="alerts.length > 0">{{ alerts.length }}</span>
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'analytics'" (click)="setActiveTab('analytics')">
+                    <i class="fas fa-chart-line"></i> Analytics
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'restock'" (click)="setActiveTab('restock')">
+                    <i class="fas fa-lightbulb"></i> Restock
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="ql-tab-content">
 
                 <!-- ========================================================
-        OVERVIEW TAB
-        ======================================================== -->
-                <div *ngIf="activeTab === 'overview'" class="tab-panel">
-                    <div class="overview-grid">
-                        <!-- Left Column: Info -->
-                        <div class="overview-left">
-                            <!-- Contact Info -->
-                            <div class="info-card">
-                                <h3><i class="fas fa-address-card"></i> Contact Information</h3>
-                                <div class="info-grid">
-                                    <div class="info-item">
-                                        <span class="info-label">Phone</span>
-                                        <span class="info-value">{{ branch.contact.phone }}</span>
+                OVERVIEW TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'overview'" class="ql-tab-panel">
+                    <div class="ql-overview-grid">
+                        <!-- Left Column -->
+                        <div class="ql-overview-left">
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-address-card"></i> Contact Information</h3>
+                                <div class="ql-info-grid">
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Phone</span>
+                                        <span class="ql-info-value">{{ branch.contact.phone }}</span>
                                     </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Email</span>
-                                        <span class="info-value">{{ branch.contact.email || '—' }}</span>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Email</span>
+                                        <span class="ql-info-value">{{ branch.contact.email || '—' }}</span>
                                     </div>
-                                    <div class="info-item full-width">
-                                        <span class="info-label">Manager</span>
-                                        <span class="info-value">{{ branch.contact.manager }}</span>
+                                    <div class="ql-info-item full-width">
+                                        <span class="ql-info-label">Manager</span>
+                                        <span class="ql-info-value">{{ branch.contact.manager }}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Location -->
-                            <div class="info-card">
-                                <h3><i class="fas fa-map-marker-alt"></i> Location</h3>
-                                <div class="info-grid">
-                                    <div class="info-item full-width">
-                                        <span class="info-label">Address</span>
-                                        <span class="info-value">{{ branch.location.address }}</span>
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-map-marker-alt"></i> Location</h3>
+                                <div class="ql-info-grid">
+                                    <div class="ql-info-item full-width">
+                                        <span class="ql-info-label">Address</span>
+                                        <span class="ql-info-value">{{ branch.location.address }}</span>
                                     </div>
-                                    <div class="info-item">
-                                        <span class="info-label">City</span>
-                                        <span class="info-value">{{ branch.location.city }}</span>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">City</span>
+                                        <span class="ql-info-value">{{ branch.location.city }}</span>
                                     </div>
-                                    <div class="info-item">
-                                        <span class="info-label">State</span>
-                                        <span class="info-value">{{ branch.location.state }}</span>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">State</span>
+                                        <span class="ql-info-value">{{ branch.location.state }}</span>
                                     </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Country</span>
-                                        <span class="info-value">{{ branch.location.country }}</span>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Country</span>
+                                        <span class="ql-info-value">{{ branch.location.country }}</span>
                                     </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Postal Code</span>
-                                        <span class="info-value">{{ branch.location.postalCode || '—' }}</span>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Postal Code</span>
+                                        <span class="ql-info-value">{{ branch.location.postalCode || '—' }}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Right Column: Summary -->
-                        <div class="overview-right">
-                            <!-- Branch Summary -->
-                            <div class="info-card" *ngIf="branchSummary">
-                                <h3><i class="fas fa-chart-pie"></i> Branch Summary</h3>
-                                <div class="summary-grid">
-                                    <div class="summary-item">
-                                        <span class="summary-value">{{ branchSummary.totalProducts }}</span>
-                                        <span class="summary-label">Total Products</span>
+                        <!-- Right Column -->
+                        <div class="ql-overview-right">
+                            <div class="ql-info-card" *ngIf="branchSummary">
+                                <h3 class="ql-info-title"><i class="fas fa-chart-pie"></i> Branch Summary</h3>
+                                <div class="ql-summary-grid">
+                                    <div class="ql-summary-item">
+                                        <span class="ql-summary-value">{{ branchSummary.totalProducts }}</span>
+                                        <span class="ql-summary-label">Products</span>
                                     </div>
-                                    <div class="summary-item">
-                                        <span class="summary-value">{{ formatNumber(branchSummary.totalStockUnits)
-                                            }}</span>
-                                        <span class="summary-label">Total Units</span>
+                                    <div class="ql-summary-item">
+                                        <span class="ql-summary-value">{{ formatNumber(branchSummary.totalStockUnits) }}</span>
+                                        <span class="ql-summary-label">Units</span>
                                     </div>
-                                    <div class="summary-item">
-                                        <span class="summary-value">{{ formatCurrency(branchSummary.totalStockValue)
-                                            }}</span>
-                                        <span class="summary-label">Stock Value</span>
+                                    <div class="ql-summary-item">
+                                        <span class="ql-summary-value">{{ formatCurrency(branchSummary.totalStockValue) }}</span>
+                                        <span class="ql-summary-label">Stock Value</span>
                                     </div>
-                                    <div class="summary-item">
-                                        <span class="summary-value" [class.warning]="branchSummary.lowStockCount > 0">
+                                    <div class="ql-summary-item">
+                                        <span class="ql-summary-value" [class.ql-summary--warning]="branchSummary.lowStockCount > 0">
                                             {{ branchSummary.lowStockCount }}
                                         </span>
-                                        <span class="summary-label">Low Stock</span>
+                                        <span class="ql-summary-label">Low Stock</span>
                                     </div>
-                                    <div class="summary-item">
-                                        <span class="summary-value" [class.danger]="branchSummary.outOfStockCount > 0">
+                                    <div class="ql-summary-item">
+                                        <span class="ql-summary-value" [class.ql-summary--danger]="branchSummary.outOfStockCount > 0">
                                             {{ branchSummary.outOfStockCount }}
                                         </span>
-                                        <span class="summary-label">Out of Stock</span>
+                                        <span class="ql-summary-label">Out of Stock</span>
+                                    </div>
+                                    <div class="ql-summary-item" *ngIf="branchSummary.stockTurnover !== undefined">
+                                        <span class="ql-summary-value">{{ branchSummary.stockTurnover?.toFixed(1) || '—' }}x</span>
+                                        <span class="ql-summary-label">Turnover</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Quick Actions -->
-                            <div class="info-card">
-                                <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
-                                <div class="quick-actions">
-                                    <button class="quick-action-btn"
-                                        (click)="router.navigate(['/admin/sales/inventory/movements/transfer'], { queryParams: { branchId: branch.id } })">
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-bolt"></i> Quick Actions</h3>
+                                <div class="ql-quick-actions">
+                                    <button class="ql-quick-action-btn" (click)="createTransfer()">
                                         <i class="fas fa-exchange-alt"></i> Transfer Stock
                                     </button>
-                                    <button class="quick-action-btn"
-                                        (click)="router.navigate(['/admin/sales/inventory/restock/requests/new'], { queryParams: { branchId: branch.id } })">
+                                    <button class="ql-quick-action-btn" (click)="createRestockRequest()">
                                         <i class="fas fa-truck-loading"></i> Request Restock
                                     </button>
-                                    <button class="quick-action-btn"
-                                        (click)="router.navigate(['/admin/sales/inventory/movements/adjustment'])">
+                                    <button class="ql-quick-action-btn" (click)="createStockCount()">
                                         <i class="fas fa-clipboard-list"></i> Stock Count
                                     </button>
-                                    <button class="quick-action-btn"
-                                        (click)="router.navigate(['/admin/sales/inventory/products/new'])">
+                                    <button class="ql-quick-action-btn" (click)="navigateToAddProduct()">
                                         <i class="fas fa-plus-circle"></i> Add Product
                                     </button>
                                 </div>
@@ -262,109 +253,54 @@
                 </div>
 
                 <!-- ========================================================
-        INVENTORY TAB - UPDATED WITH BranchInventoryTableComponent
-        ======================================================== -->
-                <div *ngIf="activeTab === 'inventory'" class="tab-panel">
-                    <app-branch-inventory-table [branchId]="branchId" [branch]="branch"
-                        (productSelected)="navigateToProduct($event)" (transferRequested)="createTransfer($event)">
+                INVENTORY TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'inventory'" class="ql-tab-panel">
+                    <app-branch-inventory-table 
+                        [branchId]="branchId" 
+                        [branch]="branch"
+                        (productSelected)="navigateToProduct($event)"
+                        (transferRequested)="createTransfer($event)">
                     </app-branch-inventory-table>
                 </div>
 
                 <!-- ========================================================
-        MOVEMENTS TAB
-        ======================================================== -->
-                <div *ngIf="activeTab === 'movements'" class="tab-panel">
-                    <div class="movements-container">
-                        <!-- Movement Filters -->
-                        <div class="movement-filters">
-                            <div class="filter-row">
-                                <div class="filter-group">
-                                    <label>Type</label>
-                                    <select [(ngModel)]="movementFilters.type" (change)="applyMovementFilters()"
-                                        class="filter-select">
-                                        <option *ngFor="let type of movementTypes" [value]="type">
-                                            {{ type === 'ALL' ? 'All Types' : getMovementTypeLabel(type) }}
-                                        </option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label>Status</label>
-                                    <select [(ngModel)]="movementFilters.status" (change)="applyMovementFilters()"
-                                        class="filter-select">
-                                        <option *ngFor="let status of movementStatuses" [value]="status">
-                                            {{ status === 'ALL' ? 'All Statuses' : getMovementStatusLabel(status) }}
-                                        </option>
-                                    </select>
-                                </div>
-                                <button class="btn-reset"
-                                    (click)="movementFilters.type = 'ALL'; movementFilters.status = 'ALL'; applyMovementFilters()">
-                                    <i class="fas fa-undo-alt"></i> Reset
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Movements List -->
-                        <div class="movements-list-container">
-                            <div *ngFor="let movement of filteredMovements" class="movement-item">
-                                <div class="movement-icon" [style.color]="movement.movementType === 'PURCHASE' ? '#2EB270' : 
-                                                         movement.movementType === 'TRANSFER' ? '#3B82F6' : 
-                                                         movement.movementType === 'SALE' ? '#F5A623' : '#6B7280'">
-                                    <i class="fas" [class]="movement.movementType === 'PURCHASE' ? 'fa-truck-loading' :
-                                         movement.movementType === 'TRANSFER' ? 'fa-exchange-alt' :
-                                         movement.movementType === 'SALE' ? 'fa-shopping-cart' : 'fa-undo-alt'"></i>
-                                </div>
-                                <div class="movement-content">
-                                    <span class="movement-product">{{ movement.productName }}</span>
-                                    <span class="movement-details">
-                                        {{ movement.quantity }} units · {{ getMovementTypeLabel(movement.movementType)
-                                        }}
-                                        <span class="movement-location">
-                                            {{ movement.fromLocation.name }} → {{ movement.toLocation.name }}
-                                        </span>
-                                    </span>
-                                    <span class="movement-time">{{ formatDate(movement.createdAt) }} at {{
-                                        formatTime(movement.createdAt) }}</span>
-                                </div>
-                                <span class="movement-status" [class.completed]="movement.status === 'COMPLETED'"
-                                    [class.pending]="movement.status === 'PENDING'"
-                                    [class.in-transit]="movement.status === 'IN_TRANSIT'">
-                                    {{ movement.status }}
-                                </span>
-                            </div>
-                            <div *ngIf="filteredMovements.length === 0" class="empty-state-small">
-                                <i class="fas fa-exchange-alt"></i>
-                                <p>No stock movements found</p>
-                            </div>
-                        </div>
-                    </div>
+                MOVEMENTS TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'movements'" class="ql-tab-panel">
+                  <app-branch-transfer-history
+                    [branchId]="branchId"
+                    [branchName]="branch?.name || ''"
+                    (movementSelected)="viewMovement($event)">
+                  </app-branch-transfer-history>
                 </div>
 
                 <!-- ========================================================
-        ALERTS TAB
-        ======================================================== -->
-                <div *ngIf="activeTab === 'alerts'" class="tab-panel">
-                    <div class="alerts-container">
-                        <div *ngFor="let alert of alerts" class="alert-item"
-                            [class]="getAlertSeverityClass(alert.severity)">
-                            <div class="alert-icon">
+                ALERTS TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'alerts'" class="ql-tab-panel">
+                    <div class="ql-alerts-container">
+                        <div *ngFor="let alert of alerts" class="ql-alert-item" [class.ql-alert--critical]="alert.severity === 'CRITICAL'"
+                                                                                      [class.ql-alert--warning]="alert.severity === 'WARNING'"
+                                                                                      [class.ql-alert--info]="alert.severity === 'INFO'">
+                            <div class="ql-alert-icon">
                                 <i class="fas" [class]="alert.type === 'OUT_OF_STOCK' ? 'fa-times-circle' :
-                                       alert.type === 'LOW_STOCK' ? 'fa-exclamation-triangle' :
-                                       alert.type === 'EXPIRING' ? 'fa-clock' : 'fa-bell'"></i>
+                                                         alert.type === 'LOW_STOCK' ? 'fa-exclamation-triangle' :
+                                                         alert.type === 'EXPIRING' ? 'fa-clock' : 'fa-bell'"></i>
                             </div>
-                            <div class="alert-content">
-                                <span class="alert-title">{{ alert.productName }}</span>
-                                <span class="alert-description">{{ alert.message }}</span>
-                                <span class="alert-meta">
-                                    <span class="alert-product">{{ alert.sku }}</span>
-                                    <span class="alert-time">{{ formatDate(alert.createdAt) }} at {{
-                                        formatTime(alert.createdAt) }}</span>
+                            <div class="ql-alert-content">
+                                <span class="ql-alert-title">{{ alert.productName }}</span>
+                                <span class="ql-alert-desc">{{ alert.message }}</span>
+                                <span class="ql-alert-meta">
+                                    <span class="ql-alert-product">{{ alert.sku }}</span>
+                                    <span class="ql-alert-time">{{ formatDate(alert.createdAt) }} at {{ formatTime(alert.createdAt) }}</span>
                                 </span>
                             </div>
-                            <span class="alert-status" [class.resolved]="alert.isResolved">
+                            <span class="ql-alert-status" [class.ql-alert--resolved]="alert.isResolved">
                                 {{ alert.isResolved ? 'Resolved' : 'Active' }}
                             </span>
                         </div>
-                        <div *ngIf="alerts.length === 0" class="empty-state-small">
+                        <div *ngIf="alerts.length === 0" class="ql-empty-state">
                             <i class="fas fa-check-circle" style="color: #2EB270;"></i>
                             <p>No alerts for this branch</p>
                         </div>
@@ -372,70 +308,76 @@
                 </div>
 
                 <!-- ========================================================
-        ANALYTICS TAB
-        ======================================================== -->
-                <div *ngIf="activeTab === 'analytics'" class="tab-panel">
-                    <div class="analytics-container">
-                        <div class="analytics-grid">
+                ANALYTICS TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'analytics'" class="ql-tab-panel">
+                    <div class="ql-analytics-container">
+                        <div class="ql-analytics-grid">
                             <!-- Stock Turnover -->
-                            <div class="analytics-card">
+                            <div class="ql-analytics-card">
                                 <h3><i class="fas fa-sync-alt"></i> Stock Turnover</h3>
-                                <div class="analytics-value">{{ branchSummary?.stockTurnover?.toFixed(1) || '—' }}x
-                                </div>
-                                <div class="analytics-label">Average stock turnover rate</div>
+                                <div class="ql-analytics-value">{{ branchSummary?.stockTurnover?.toFixed(1) || '—' }}x</div>
+                                <div class="ql-analytics-label">Average turnover rate</div>
                             </div>
 
                             <!-- Days of Inventory -->
-                            <div class="analytics-card">
+                            <div class="ql-analytics-card">
                                 <h3><i class="fas fa-calendar-day"></i> Days of Inventory</h3>
-                                <div class="analytics-value">{{ branchSummary?.daysOfInventory?.toFixed(0) || '—' }}
-                                </div>
-                                <div class="analytics-label">Average days inventory held</div>
+                                <div class="ql-analytics-value">{{ branchSummary?.daysOfInventory?.toFixed(0) || '—' }}</div>
+                                <div class="ql-analytics-label">Average days held</div>
                             </div>
 
                             <!-- Product Diversity -->
-                            <div class="analytics-card">
+                            <div class="ql-analytics-card">
                                 <h3><i class="fas fa-th-list"></i> Product Diversity</h3>
-                                <div class="analytics-value">{{ branchSummary?.totalProducts || 0 }}</div>
-                                <div class="analytics-label">Unique products in stock</div>
+                                <div class="ql-analytics-value">{{ branchSummary?.totalProducts || 0 }}</div>
+                                <div class="ql-analytics-label">Unique products in stock</div>
                             </div>
 
                             <!-- Stock Health -->
-                            <div class="analytics-card">
+                            <div class="ql-analytics-card">
                                 <h3><i class="fas fa-heartbeat"></i> Stock Health</h3>
-                                <div class="analytics-value"
-                                    [class.healthy]="(branchSummary?.lowStockCount || 0) === 0 && (branchSummary?.outOfStockCount || 0) === 0"
-                                    [class.warning]="(branchSummary?.lowStockCount || 0) > 0 && (branchSummary?.outOfStockCount || 0) === 0"
-                                    [class.danger]="(branchSummary?.outOfStockCount || 0) > 0">
-                                    {{ (branchSummary?.lowStockCount || 0) === 0 && (branchSummary?.outOfStockCount ||
-                                    0) === 0 ? 'Healthy' :
-                                    (branchSummary?.outOfStockCount || 0) > 0 ? 'Critical' : 'Needs Attention' }}
+                                <div class="ql-analytics-value" [class.ql-analytics--healthy]="(branchSummary?.lowStockCount || 0) === 0 && (branchSummary?.outOfStockCount || 0) === 0"
+                                                                         [class.ql-analytics--warning]="(branchSummary?.lowStockCount || 0) > 0 && (branchSummary?.outOfStockCount || 0) === 0"
+                                                                         [class.ql-analytics--danger]="(branchSummary?.outOfStockCount || 0) > 0">
+                                    {{ (branchSummary?.lowStockCount || 0) === 0 && (branchSummary?.outOfStockCount || 0) === 0 ? 'Healthy' :
+                                       (branchSummary?.outOfStockCount || 0) > 0 ? 'Critical' : 'Needs Attention' }}
                                 </div>
-                                <div class="analytics-label">
-                                    {{ branchSummary?.lowStockCount || 0 }} low stock · {{
-                                    branchSummary?.outOfStockCount || 0 }} out of stock
+                                <div class="ql-analytics-label">
+                                    {{ branchSummary?.lowStockCount || 0 }} low · {{ branchSummary?.outOfStockCount || 0 }} out of stock
                                 </div>
                             </div>
                         </div>
 
                         <!-- Top Selling Products -->
-                        <div class="analytics-card full-width" *ngIf="branchSummary?.topSellingProducts?.length">
+                        <div class="ql-analytics-card ql-analytics-card--full" *ngIf="branchSummary && branchSummary.topSellingProducts && branchSummary.topSellingProducts.length > 0">
                             <h3><i class="fas fa-trophy"></i> Top Selling Products</h3>
-                            <div class="top-products-list">
-                                <div *ngFor="let product of branchSummary.topSellingProducts; let i = index"
-                                    class="top-product-item">
-                                    <span class="top-rank">#{{ i + 1 }}</span>
-                                    <span class="top-name">{{ product.productName }}</span>
-                                    <span class="top-quantity">{{ product.quantity }} units</span>
-                                    <span class="top-revenue">{{ formatCurrency(product.revenue) }}</span>
+                            <div class="ql-top-products-list">
+                                <div *ngFor="let product of branchSummary.topSellingProducts; let i = index" class="ql-top-product-item">
+                                    <span class="ql-top-rank">#{{ i + 1 }}</span>
+                                    <span class="ql-top-name">{{ product.productName }}</span>
+                                    <span class="ql-top-qty">{{ product.quantity }} units</span>
+                                    <span class="ql-top-revenue">{{ formatCurrency(product.revenue) }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- ========================================================
+                RESTOCK TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'restock'" class="ql-tab-panel">
+                    <app-restock-suggestion
+                        [branchId]="branchId"
+                        [limit]="20"
+                        (createRequest)="onCreateRestockRequest($event)">
+                    </app-restock-suggestion>
+                </div>
+
             </div>
+
         </ng-container>
 
-    </div>
+    </main>
 </div>

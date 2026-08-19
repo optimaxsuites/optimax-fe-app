@@ -7,30 +7,21 @@
   </div>
 
   <form [formGroup]="form" (ngSubmit)="submit()">
-    <div class="form-group">
-      <label>Date of Incident</label>
-      <input type="date" formControlName="date" required />
-    </div>
-
-    <div class="form-group">
-      <label>Issue Type</label>
-      <select formControlName="issueType">
-        <option value="" disabled>Select issue type</option>
-        <option *ngFor="let type of issueTypes" [value]="type.value">
-          {{ type.label }}
-        </option>
-      </select>
-    </div>
-
     <div class="form-row">
       <div class="form-group">
-        <label>Requested Clock In</label>
-        <input type="time" formControlName="requestedClockIn" />
+        <label>Date of Incident</label>
+        <input type="date" formControlName="date" required />
       </div>
 
       <div class="form-group">
-        <label>Requested Clock Out</label>
-        <input type="time" formControlName="requestedClockOut" />
+        <label>Issue Type</label>
+        <select formControlName="issueType" (change)="onIssueTypeChange($event)">
+          <option value="" disabled>Select issue type</option>
+          <option *ngFor="let type of issueTypes" [value]="type.value">
+            {{ type.label }}
+          </option>
+          <option value="ADD_NEW" style="color: #10b981; font-weight: 600;">+ Add New Issue Type</option>
+        </select>
       </div>
     </div>
 
@@ -45,11 +36,27 @@
 
     <div class="form-group">
       <label>Evidence</label>
-      <textarea
-        rows="3"
-        formControlName="evidence"
-        placeholder="Add supporting details, document references, or manager notes">
-      </textarea>
+      <div class="evidence-container">
+        <textarea
+          rows="3"
+          formControlName="evidence"
+          placeholder="Add supporting details, document references, or manager notes">
+        </textarea>
+        <div class="evidence-upload">
+          <label for="evidence-file" class="file-upload-btn">
+            <i class="fa-solid fa-image"></i> Upload Picture
+          </label>
+          <input
+            type="file"
+            id="evidence-file"
+            accept="image/*"
+            (change)="onEvidenceFileSelected($event)"
+            style="display: none;">
+          <div *ngIf="evidenceFileName" class="file-info">
+            📎 {{ evidenceFileName }}
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="actions">
@@ -59,4 +66,24 @@
       </button>
     </div>
   </form>
+
+  <!-- Add New Issue Type Modal -->
+  <div class="modal-backdrop-inner" *ngIf="showAddIssueModal" (click)="closeAddIssueModal()"></div>
+  <div class="add-issue-modal" *ngIf="showAddIssueModal">
+    <div class="modal-header-inner">
+      <h4>Add New Issue Type</h4>
+      <button type="button" class="close-btn-inner" (click)="closeAddIssueModal()">x</button>
+    </div>
+    <div class="modal-content-inner">
+      <input
+        type="text"
+        [(ngModel)]="newIssueTypeLabel"
+        placeholder="Enter issue type name"
+        (keyup.enter)="addNewIssueType()">
+    </div>
+    <div class="modal-actions-inner">
+      <button type="button" class="cancel-btn" (click)="closeAddIssueModal()">Cancel</button>
+      <button type="button" class="submit-btn" (click)="addNewIssueType()" [disabled]="!newIssueTypeLabel.trim()">Add</button>
+    </div>
+  </div>
 </div>
