@@ -3,8 +3,8 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
-import { InventoryService } from '../../../service/inventory/inventory.service';
-import { Branch } from '../../../domain/inventory/inventory.dto';
+import { InventoryService } from '../../../../service/inventory/inventory.service';
+import { Branch } from '../../../../domain/inventory/inventory.dto';
 
 @Component({
   selector: 'app-branch-form',

@@ -7,14 +7,14 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angu
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
-import { InventoryService } from '../../../service/inventory/inventory.service';
+import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   StockMovement,
   MovementType,
   MovementStatus,
   getMovementTypeLabel,
   getMovementTypeIcon
-} from '../../../domain/inventory/inventory.dto';
+} from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
 // COMPONENT
@@ -209,7 +209,7 @@ export class BranchTransferHistoryComponent implements OnInit, OnDestroy {
   private filterByDate(movement: StockMovement): boolean {
     const dateFrom = this.filterForm.get('dateFrom')?.value;
     const dateTo = this.filterForm.get('dateTo')?.value;
-    
+
     if (dateFrom && dateTo) {
       const from = new Date(dateFrom);
       const to = new Date(dateTo);
