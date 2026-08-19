@@ -146,12 +146,12 @@ import { ActivityComponent } from './ui/view/vendor-management/vendor-management
 import { InventoryComponent } from './ui/view/inventory/inventory.component';
 import { InventoryDashboardComponent } from './ui/view/inventory/inventory-dashboard/inventory-dashboard.component';
 import { ProductManagementComponent } from './ui/view/inventory/product/product-management/product-management.component';
-import { BranchInventoryComponent } from './ui/view/branch/branch-inventory/branch-inventory.component';
-import { BranchDetailComponent } from './ui/view/branch/branch-detail/branch-detail.component';
-import { BranchInventoryTableComponent } from './ui/view/branch/branch-inventory-table/branch-inventory-table.component';
-import { BranchTransferHistoryComponent } from './ui/view/branch/branch-transfer-history/branch-transfer-history.component';
-import { BranchInventoryFormComponent } from './ui/view/branch/branch-inventory-form/branch-inventory-form.component';
-import { BranchFormComponent } from './ui/view/branch/branch-form/branch-form.component';
+import { BranchInventoryComponent } from './ui/view/inventory/branch/branch-inventory/branch-inventory.component';
+import { BranchDetailComponent } from './ui/view/inventory/branch/branch-detail/branch-detail.component';
+import { BranchInventoryTableComponent } from './ui/view/inventory/branch/branch-inventory-table/branch-inventory-table.component';
+import { BranchTransferHistoryComponent } from './ui/view/inventory/branch/branch-transfer-history/branch-transfer-history.component';
+import { BranchInventoryFormComponent } from './ui/view/inventory/branch/branch-inventory-form/branch-inventory-form.component';
+import { BranchFormComponent } from './ui/view/inventory/branch/branch-form/branch-form.component';
 import { StockMovementComponent } from './ui/view/inventory/stock/stock-movement/stock-movement.component';
 import { StockMovementFormComponent } from './ui/view/inventory/stock/stock-movement-form/stock-movement-form.component';
 import { TransferWizardComponent } from './ui/view/inventory/stock/transfer-wizard/transfer-wizard.component';
@@ -162,6 +162,7 @@ import { RestockRequestFormComponent } from './ui/view/inventory/restock/restock
 import { RestockSuggestionComponent } from './ui/view/inventory/restock/restock-suggestion/restock-suggestion.component';
 import { RestockRequestListComponent } from './ui/view/inventory/restock/restock-request-list/restock-request-list.component';
 import { RestockSuggestionsPageComponent } from './ui/view/inventory/restock/restock-suggestions-page/restock-suggestions-page.component';
+import { ThresholdManagementComponent } from './ui/view/inventory/restock/threshold-management/threshold-management.component';
 import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.component';
 import { LogisticsComponent } from './ui/view/logistics/logistics.component';
 import { LogisticsDashboardComponent } from './ui/view/logistics/logistics-dashboard/logistics-dashboard.component';
@@ -195,6 +196,7 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
     RestockSuggestionComponent,
     RestockRequestListComponent,
     RestockSuggestionsPageComponent,
+    ThresholdManagementComponent,
     AnalyticsComponent,
     TableComponent,
     TableBodyDirective,

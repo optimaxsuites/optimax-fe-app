@@ -5,8 +5,8 @@
 
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
-import { InventoryService } from '../../../service/inventory/inventory.service';
-import { BranchStockSummary } from '../../../domain/inventory/inventory.dto';
+import { InventoryService } from '../../../../service/inventory/inventory.service';
+import { BranchStockSummary } from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
 // COMPONENT
@@ -50,7 +50,7 @@ export class BranchStockSummaryComponent implements OnInit, OnDestroy {
   // CONSTRUCTOR
   // ============================================================
 
-  constructor(private inventoryService: InventoryService) {}
+  constructor(private inventoryService: InventoryService) { }
 
   // ============================================================
   // LIFECYCLE HOOKS

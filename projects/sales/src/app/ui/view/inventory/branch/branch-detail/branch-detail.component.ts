@@ -8,8 +8,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
-import { InventoryService } from '../../../service/inventory/inventory.service';
-import { RestockSuggestion } from '../../inventory/restock/restock-suggestion/restock-suggestion.component';
+import { InventoryService } from '../../../../service/inventory/inventory.service';
+import { RestockSuggestion } from '../../restock/restock-suggestion/restock-suggestion.component';
 import {
   Branch,
   BranchInventory,
@@ -21,7 +21,7 @@ import {
   getStockStatusLabel,
   MovementType,
   MovementStatus
-} from '../../../domain/inventory/inventory.dto';
+} from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
 // COMPONENT

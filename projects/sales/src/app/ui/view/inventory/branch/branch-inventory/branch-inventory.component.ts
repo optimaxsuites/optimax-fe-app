@@ -6,14 +6,14 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
-import { InventoryService } from '../../../service/inventory/inventory.service';
+import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   Branch,
   BranchStockSummary,
   getStockStatus,
   getStockStatusColor,
   getStockStatusLabel
-} from '../../../domain/inventory/inventory.dto';
+} from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
 // COMPONENT

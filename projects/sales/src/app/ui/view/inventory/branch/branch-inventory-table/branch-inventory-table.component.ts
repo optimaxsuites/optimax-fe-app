@@ -7,14 +7,14 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, OnChanges, S
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
-import { InventoryService } from '../../../service/inventory/inventory.service';
+import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   BranchInventory,
   Branch,
   getStockStatus,
   getStockStatusColor,
   getStockStatusLabel
-} from '../../../domain/inventory/inventory.dto';
+} from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
 // COMPONENT

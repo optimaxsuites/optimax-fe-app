@@ -6,8 +6,8 @@
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, forwardRef } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
-import { InventoryService } from '../../../service/inventory/inventory.service';
-import { Branch } from '../../../domain/inventory/inventory.dto';
+import { InventoryService } from '../../../../service/inventory/inventory.service';
+import { Branch } from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
 // COMPONENT
@@ -58,8 +58,8 @@ export class BranchSelectorComponent implements OnInit, OnDestroy, ControlValueA
 
   // ControlValueAccessor
   value: string | null = null;
-  onChange: any = () => {};
-  onTouched: any = () => {};
+  onChange: any = () => { };
+  onTouched: any = () => { };
 
   // UI
   Math = Math;
@@ -74,7 +74,7 @@ export class BranchSelectorComponent implements OnInit, OnDestroy, ControlValueA
   // CONSTRUCTOR
   // ============================================================
 
-  constructor(private inventoryService: InventoryService) {}
+  constructor(private inventoryService: InventoryService) { }
 
   // ============================================================
   // LIFECYCLE HOOKS
@@ -104,7 +104,7 @@ export class BranchSelectorComponent implements OnInit, OnDestroy, ControlValueA
         next: (branches) => {
           this.branches = this.applyFilters(branches);
           this.filteredBranches = this.branches;
-          
+
           // Select branch if branchId provided
           if (this.selectedBranchId) {
             const found = this.branches.find(b => b.id === this.selectedBranchId);
@@ -114,7 +114,7 @@ export class BranchSelectorComponent implements OnInit, OnDestroy, ControlValueA
               this.searchTerm = this.getDisplayName(found);
             }
           }
-          
+
           this.isLoading = false;
         },
         error: (err) => {
