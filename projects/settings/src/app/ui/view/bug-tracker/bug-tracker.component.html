@@ -6,7 +6,7 @@
   <div class="bt-header">
     <div>
       <h2 class="bt-title">Issue Tracker</h2>
-      <p class="bt-sub">Track, assign and resolve issues across all OptimaX modules. Emails sent to assignees and supervisors on raise.</p>
+      <p class="bt-sub">Track, assign and resolve issues across all OptimaX modules. Emails sent to assignees and supervisors on raise, and to reporters on status change.</p>
     </div>
     <div class="bt-header-actions">
       <button class="bt-btn bt-btn-ghost" (click)="exportCsv()"><i class="fas fa-download"></i> CSV</button>
@@ -63,6 +63,10 @@
       <option value="">All Priorities</option>
       <option *ngFor="let p of priorities">{{ p }}</option>
     </select>
+    <select [(ngModel)]="filterAssignee" (ngModelChange)="applyFilters()">
+      <option value="">All Assignees</option>
+      <option *ngFor="let a of uniqueAssignees" [value]="a">{{ a }}</option>
+    </select>
     <select [(ngModel)]="sortBy" (ngModelChange)="applyFilters()">
       <option value="newest">Newest first</option>
       <option value="oldest">Oldest first</option>
@@ -80,8 +84,18 @@
     <span>Loading issues…</span>
   </div>
 
+  <!-- Service unavailable -->
+  <div class="bt-unavailable" *ngIf="!loading && serviceUnavailable">
+    <i class="fas fa-server"></i>
+    <h3>Issue Tracker Unavailable</h3>
+    <p>The issue tracker service is temporarily unavailable (503). This usually resolves within a few minutes as the service restarts.</p>
+    <button class="bt-btn bt-btn-primary" (click)="load()">
+      <i class="fas fa-sync-alt"></i> Retry
+    </button>
+  </div>
+
   <!-- Issue list -->
-  <div class="bt-list" *ngIf="!loading">
+  <div class="bt-list" *ngIf="!loading && !serviceUnavailable">
 
     <div class="bt-empty" *ngIf="filtered.length === 0">
       <i class="fas fa-bug"></i>
@@ -102,7 +116,10 @@
                 <i class="fas fa-user"></i> {{ safeDisplayName(issue.assigneeName) }}
               </span>
               <span class="bt-meta-item">
-                <i class="fas fa-clock"></i> {{ issue.createdAt | date:'dd MMM yyyy' }}
+                <i class="fas fa-clock"></i> {{ issue.createdAt | date:'dd MMM yyyy HH:mm' }} &middot; {{ timeAgo(issue.createdAt) }}
+              </span>
+              <span *ngIf="issue.resolutionHours != null" class="bt-meta-item bt-resolved-badge">
+                <i class="fas fa-check-circle"></i> Fixed in {{ formatResolution(issue.resolutionHours) }}
               </span>
               <span *ngIf="issue.workLog?.length" class="bt-meta-item">
                 <i class="fas fa-comment-alt"></i> {{ issue.workLog!.length }} log{{ issue.workLog!.length !== 1 ? 's' : '' }}
@@ -148,13 +165,34 @@
           <b>Description:</b>
           <p>{{ descriptionText(issue.description) }}</p>
         </div>
+
+        <!-- Timing -->
+        <div class="bt-timing-row">
+          <span class="bt-timing-item">
+            <i class="fas fa-calendar-plus"></i>
+            Logged: {{ issue.createdAt | date:'dd MMM yyyy HH:mm' }} ({{ timeAgo(issue.createdAt) }})
+          </span>
+          <span *ngIf="issue.resolutionHours != null" class="bt-timing-item bt-timing-resolved">
+            <i class="fas fa-flag-checkered"></i>
+            Resolved in <strong>{{ formatResolution(issue.resolutionHours) }}</strong>
+            &middot; {{ issue.resolvedAt | date:'dd MMM yyyy HH:mm' }}
+          </span>
+        </div>
+
+        <!-- Attachments -->
         <div class="bt-attach-detail" *ngIf="attachmentsFromDesc(issue.description).length">
           <div class="bt-wl-header" style="margin-bottom:8px;">Attachments</div>
           <div class="bt-attach-preview">
             <div class="bt-attach-thumb" *ngFor="let att of attachmentsFromDesc(issue.description)">
-              <img *ngIf="att.type.startsWith('image/')" [src]="att.dataUrl" [alt]="att.name"
-                   style="cursor:zoom-in;display:block;" (click)="openZoom(att.dataUrl, $event)" />
-              <a *ngIf="!att.type.startsWith('image/')" [href]="att.dataUrl" [download]="att.name" target="_blank">
+              <button *ngIf="att.type?.startsWith('image/')"
+                      class="bt-zoom-wrap"
+                      (click)="openLightbox(att.dataUrl); $event.stopPropagation()"
+                      type="button" title="Click to enlarge">
+                <img [src]="att.dataUrl" [alt]="att.name" />
+                <span class="bt-zoom-hint"><i class="fas fa-search-plus"></i></span>
+              </button>
+              <a *ngIf="!att.type?.startsWith('image/')" [href]="att.dataUrl" [download]="att.name" target="_blank"
+                 (click)="$event.stopPropagation()">
                 <div class="bt-attach-file-icon">
                   <i class="fas fa-file-alt"></i>
                   <span>{{ att.name.split('.').pop() }}</span>
@@ -164,23 +202,70 @@
             </div>
           </div>
         </div>
+
+        <!-- Meta: reporter, assignee, supervisor + reassign -->
         <div class="bt-detail-meta">
-          <span *ngIf="safeDisplayName(issue.reporterName)">Reported by: <b>{{ safeDisplayName(issue.reporterName) }}</b></span>
-          <span *ngIf="safeDisplayName(issue.supervisorName)"> &nbsp;·&nbsp; Supervisor: <b>{{ safeDisplayName(issue.supervisorName) }}</b></span>
+          <span *ngIf="safeDisplayName(issue.reporterName)">
+            Reported by: <b>{{ safeDisplayName(issue.reporterName) }}</b>
+          </span>
+          <span *ngIf="safeDisplayName(issue.assigneeName)">
+            &nbsp;·&nbsp; Assignee: <b>{{ safeDisplayName(issue.assigneeName) }}</b>
+          </span>
+          <span *ngIf="safeDisplayName(issue.supervisorName)">
+            &nbsp;·&nbsp; Supervisor: <b>{{ safeDisplayName(issue.supervisorName) }}</b>
+          </span>
+
+          <!-- Reassign inline -->
+          <ng-container *ngIf="reassigningId !== issue.id">
+            <button class="bt-reassign-btn" (click)="startReassign(issue); $event.stopPropagation()">
+              <i class="fas fa-user-edit"></i> Reassign
+            </button>
+          </ng-container>
+          <ng-container *ngIf="reassigningId === issue.id">
+            <div class="bt-reassign-row" (click)="$event.stopPropagation()">
+              <select [(ngModel)]="reassignEmail" class="bt-reassign-select">
+                <option value="">Select new assignee…</option>
+                <option *ngFor="let u of userList" [value]="u.email">{{ u.fullname }}</option>
+              </select>
+              <button class="bt-btn bt-btn-sm" [disabled]="!reassignEmail" (click)="submitReassign(issue)">
+                <i class="fas fa-check"></i> Save
+              </button>
+              <button class="bt-btn bt-btn-ghost bt-btn-sm" (click)="cancelReassign()">Cancel</button>
+            </div>
+          </ng-container>
         </div>
 
+        <!-- Work Log -->
         <div class="bt-worklog">
-          <div class="bt-wl-header">Work Log</div>
-          <div class="bt-wl-add">
-            <input type="text" placeholder="Your email…" [(ngModel)]="newLogEmail" style="max-width:180px" />
-            <input type="text" placeholder="Add a note or update…" [(ngModel)]="newLogNote" (keyup.enter)="addLog(issue)" />
-            <button class="bt-btn bt-btn-sm" (click)="addLog(issue)">Add</button>
+          <div class="bt-wl-header">Work Log &amp; Comments</div>
+
+          <!-- Compose -->
+          <div class="bt-wl-compose">
+            <textarea placeholder="Add a note, comment, or progress update…"
+                      [(ngModel)]="newLogNote"
+                      (keydown.control.enter)="addLog(issue)"
+                      (keydown.meta.enter)="addLog(issue)"></textarea>
+            <div class="bt-wl-compose-actions">
+              <button class="bt-btn bt-btn-sm" [disabled]="!newLogNote.trim()" (click)="addLog(issue)">
+                <i class="fas fa-paper-plane"></i> Add Update
+              </button>
+            </div>
           </div>
-          <div class="bt-wl-empty" *ngIf="!issue.workLog?.length">No work log entries yet.</div>
-          <div class="bt-wl-entry" *ngFor="let log of issue.workLog">
-            <span class="bt-wl-time">{{ log.createdAt | date:'dd MMM yyyy HH:mm' }}</span>
-            <span class="bt-wl-who" *ngIf="log.loggedByEmail">{{ log.loggedByName || log.loggedByEmail }}</span>
-            <span class="bt-wl-note">{{ log.note }}</span>
+
+          <!-- Entries -->
+          <div class="bt-wl-empty" *ngIf="loadingLogs === issue.id"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+          <div class="bt-wl-empty" *ngIf="loadingLogs !== issue.id && issue.workLog != null && issue.workLog.length === 0">No comments or updates yet.</div>
+          <div class="bt-wl-card" *ngFor="let log of issue.workLog">
+            <div class="bt-wl-avatar">
+              {{ (log.loggedByName || log.loggedByEmail || '?')[0].toUpperCase() }}
+            </div>
+            <div class="bt-wl-body">
+              <div class="bt-wl-meta">
+                <span class="bt-wl-name">{{ log.loggedByName || log.loggedByEmail || 'Unknown' }}</span>
+                <span class="bt-wl-ts">{{ log.createdAt | date:'dd MMM yyyy · HH:mm' }}</span>
+              </div>
+              <div class="bt-wl-text">{{ log.note }}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -332,7 +417,6 @@
 
   <div class="bt-form" *ngIf="sharingIssue">
 
-    <!-- Tab switcher -->
     <div class="bt-share-tabs">
       <button class="bt-share-tab" [class.active]="shareTab === 'DM'" (click)="shareTab = 'DM'">
         <i class="fas fa-user"></i> Direct Message
@@ -344,13 +428,11 @@
       </button>
     </div>
 
-    <!-- Loading -->
     <div class="bt-share-loading" *ngIf="shareLoading">
       <mat-spinner diameter="20"></mat-spinner>
       <span>Loading…</span>
     </div>
 
-    <!-- DM tab -->
     <ng-container *ngIf="!shareLoading && shareTab === 'DM'">
       <div class="bt-search-wrap">
         <i class="fas fa-search"></i>
@@ -372,7 +454,6 @@
       </div>
     </ng-container>
 
-    <!-- Channel tab -->
     <ng-container *ngIf="!shareLoading && shareTab === 'CHANNEL'">
       <div class="bt-search-wrap">
         <i class="fas fa-search"></i>
@@ -423,7 +504,6 @@
 
   <div class="bt-form" *ngIf="linkingIssue">
 
-    <!-- Loading -->
     <div class="bt-share-loading" *ngIf="linkPanelLoading">
       <mat-spinner diameter="20"></mat-spinner>
       <span>Loading tasks…</span>
@@ -431,7 +511,6 @@
 
     <ng-container *ngIf="!linkPanelLoading">
 
-      <!-- Currently linked task -->
       <div class="bt-linked-task" *ngIf="selectedTaskId">
         <div class="bt-linked-task-info">
           <i class="fas fa-link"></i>
@@ -442,13 +521,11 @@
         </button>
       </div>
 
-      <!-- Search -->
       <div class="bt-search-wrap">
         <i class="fas fa-search"></i>
         <input type="text" placeholder="Search tasks…" [(ngModel)]="taskSearch" />
       </div>
 
-      <!-- Task list -->
       <div class="bt-share-list bt-task-list">
         <div class="bt-share-empty" *ngIf="filteredTasks.length === 0">
           No tasks found. Create one below.
@@ -470,7 +547,6 @@
         </div>
       </div>
 
-      <!-- Create new task -->
       <div class="bt-create-task">
         <button class="bt-btn bt-btn-ghost" style="width:100%; justify-content:center; font-size:12px; padding:6px 14px;"
                 (click)="showCreateTask = !showCreateTask">
@@ -521,4 +597,10 @@
   </ng-template>
 </p-dialog>
 
-
+<!-- Image lightbox -->
+<div class="bt-lightbox-overlay" *ngIf="showLightbox" (click)="closeLightbox()">
+  <div class="bt-lightbox-content" (click)="$event.stopPropagation()">
+    <button class="bt-lightbox-close" (click)="closeLightbox()">✕</button>
+    <img [src]="lightboxSrc" alt="Attachment" />
+  </div>
+</div>

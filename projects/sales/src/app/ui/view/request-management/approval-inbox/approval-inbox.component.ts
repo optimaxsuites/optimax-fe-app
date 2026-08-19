@@ -81,16 +81,27 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
   select(req: ProcurementRequest): void {
     this.selected = req;
     this.workflowInstance = null;
-    const instanceId = (req as any).approvalInstanceId;
+    const instanceId = req.approvalInstanceId;
+    this.isLoadingInstance = true;
     if (instanceId) {
-      this.isLoadingInstance = true;
       this.approvalService.getWorkflowInstance(Number(instanceId))
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (inst) => { this.workflowInstance = inst; this.isLoadingInstance = false; },
-          error: () => { this.isLoadingInstance = false; }
+          error: () => this.lookupByReference(req)
         });
+    } else {
+      this.lookupByReference(req);
     }
+  }
+
+  private lookupByReference(req: ProcurementRequest): void {
+    this.approvalService.lookupWorkflowInstance('PROCUREMENT_REQUEST', String(req.id), 'POST')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (inst) => { this.workflowInstance = inst; this.isLoadingInstance = false; },
+        error: () => { this.isLoadingInstance = false; }
+      });
   }
 
   openApprove(): void { this.approveComment = ''; this.showApproveModal = true; }

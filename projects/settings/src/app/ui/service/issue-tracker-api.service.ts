@@ -127,6 +127,8 @@ export class IssueTrackerApiService {
       status: issue.status,
       description: cleanDesc.substring(0, 500),
       reporterName: (issue.reporterName && issue.reporterName !== 'undefined') ? issue.reporterName : '',
+      createdAt: issue.createdAt,
+      resolutionHours: issue.resolutionHours ?? null,
     });
     // Send as TEXT so the backend's messageType enum validation always passes.
     // The message-feed component detects issue cards by JSON content shape.
@@ -189,7 +191,8 @@ export class IssueTrackerApiService {
   }
 
   private err(error: HttpErrorResponse) {
-    const msg = error.error?.message || error.message || 'An unexpected error occurred.';
-    return throwError(() => msg);
+    const status = error.status ? `${error.status} ` : '';
+    const msg = error.error?.message || error.statusText || error.message || 'An unexpected error occurred.';
+    return throwError(() => `${status}${msg}`);
   }
 }

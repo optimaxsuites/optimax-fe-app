@@ -5,7 +5,7 @@ import { forkJoin, switchMap } from 'rxjs';
 import { IssueTrackerApiService } from '../../service/issue-tracker-api.service';
 
 type Priority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-type Status = 'OPEN' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE' | 'WONT_FIX';
+type Status = 'OPEN' | 'IN_PROGRESS' | 'BLOCKED' | 'TESTING' | 'DONE' | 'WONT_FIX';
 
 interface WorkLog {
   id?: number;
@@ -47,6 +47,8 @@ interface Issue {
   workTaskId?: number;
   performanceGoalId?: number;
   createdAt?: string;
+  resolvedAt?: string;
+  resolutionHours?: number;
   workLog?: WorkLog[];
   shares?: Share[];
 }
@@ -59,7 +61,7 @@ interface TaskItem { id: number; title: string; status: string; priority: string
 
 const MODULES = ['All', 'HR', 'ACCOUNTING', 'COMMERCE', 'INVENTORY', 'PROCUREMENT',
   'PAYROLL', 'ATTENDANCE', 'RECRUITMENT', 'PERFORMANCE', 'LOANS', 'POS', 'GENERAL', 'INFRASTRUCTURE'];
-const STATUSES: Status[] = ['OPEN', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'WONT_FIX'];
+const STATUSES: Status[] = ['OPEN', 'IN_PROGRESS', 'BLOCKED', 'TESTING', 'DONE', 'WONT_FIX'];
 const PRIORITIES: Priority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
 @Component({
@@ -73,10 +75,12 @@ export class BugTrackerComponent implements OnInit {
   filtered: Issue[] = [];
   loading = false;
   saving = false;
+  serviceUnavailable = false;
 
   activeModule = 'All';
   filterStatus = '';
   filterPriority = '';
+  filterAssignee = '';
   searchText = '';
   sortBy: 'newest' | 'oldest' | 'priority' | 'status' = 'newest';
 
@@ -90,10 +94,20 @@ export class BugTrackerComponent implements OnInit {
 
   expandedId: number | null = null;
   newLogNote = '';
-  newLogEmail = '';
+  loadingLogs: number | null = null;
+
+  // ── Reassign ──────────────────────────────────────────────────────────────────
+  reassigningId: number | null = null;
+  reassignEmail = '';
 
   // ── User list for assignee / supervisor dropdowns ───────────────────────────
   userList: { id: number; fullname: string; email: string }[] = [];
+
+  get uniqueAssignees(): string[] {
+    return [...new Set(
+      this.issues.filter(i => i.assigneeName).map(i => i.assigneeName!)
+    )].sort();
+  }
 
   onAssigneeSelect(email: string): void {
     const user = this.userList.find(u => u.email === email);
@@ -199,6 +213,7 @@ export class BugTrackerComponent implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.serviceUnavailable = false;
     this.api.getAll(1, 100).subscribe({
       next: (data) => {
         this.issues = data || [];
@@ -212,9 +227,13 @@ export class BugTrackerComponent implements OnInit {
           }, 100);
         }
       },
-      error: (err) => {
-        this.toast('error', err);
+      error: (err: string) => {
         this.loading = false;
+        if (typeof err === 'string' && (err.includes('503') || err.includes('502') || err.includes('Service Unavailable'))) {
+          this.serviceUnavailable = true;
+        } else {
+          this.toast('error', err);
+        }
       }
     });
   }
@@ -244,8 +263,9 @@ export class BugTrackerComponent implements OnInit {
 
   applyFilters(): void {
     let list = [...this.issues];
-    if (this.filterStatus) list = list.filter(b => b.status === this.filterStatus);
+    if (this.filterStatus)   list = list.filter(b => b.status === this.filterStatus);
     if (this.filterPriority) list = list.filter(b => b.priority === this.filterPriority);
+    if (this.filterAssignee) list = list.filter(b => b.assigneeName === this.filterAssignee);
     if (this.searchText) {
       const t = this.searchText.toLowerCase();
       list = list.filter(b =>
@@ -271,7 +291,6 @@ export class BugTrackerComponent implements OnInit {
     if (issue?.description) this.form.description = this.descriptionText(issue.description);
     this.tempFormLog = [];
     this.formLogNote = '';
-    this.formLogEmail = '';
     this.showForm = true;
   }
 
@@ -307,12 +326,11 @@ export class BugTrackerComponent implements OnInit {
           this.sendAssigneeEmail(saved);
         }
 
-        // Post any work log entries added in the form
-        const meId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || 0);
+        const meId2 = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || 0);
         logsToPost.forEach(log => {
           this.api.addWorkLog(saved.id!, {
             note: log.note,
-            loggedByUserId: meId,
+            loggedByUserId: meId2,
             loggedByEmail: log.loggedByEmail || '',
             loggedByName: log.loggedByName || ''
           }).subscribe({
@@ -344,36 +362,112 @@ export class BugTrackerComponent implements OnInit {
   }
 
   updateStatus(issue: Issue, status: Status): void {
+    const previousStatus = issue.status;
     this.api.patchStatus(issue.id!, status).subscribe({
       next: (updated) => {
         const idx = this.issues.findIndex(i => i.id === issue.id);
         if (idx > -1) this.issues[idx] = updated;
         this.applyFilters();
+        if (updated.reporterEmail) {
+          this.sendReporterStatusEmail(updated, previousStatus);
+        }
       },
       error: (err) => this.toast('error', err)
     });
   }
 
   toggleExpand(id: number): void {
-    this.expandedId = this.expandedId === id ? null : id;
+    if (this.expandedId === id) {
+      this.expandedId = null;
+    } else {
+      this.expandedId = id;
+      const issue = this.issues.find(i => i.id === id);
+      if (issue && issue.workLog == null) {
+        this.loadingLogs = id;
+        this.api.getWorkLog(id).subscribe({
+          next: (logs) => { issue.workLog = logs || []; this.loadingLogs = null; },
+          error: () => { issue.workLog = []; this.loadingLogs = null; }
+        });
+      }
+    }
     this.newLogNote = '';
-    this.newLogEmail = '';
+    this.reassigningId = null;
+    this.reassignEmail = '';
   }
 
   addLog(issue: Issue): void {
     if (!this.newLogNote.trim()) return;
-    const payload = {
-      note: this.newLogNote.trim(),
-      loggedByUserId: 0,
-      loggedByEmail: this.newLogEmail || '',
-      loggedByName: ''
+    const meId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || 0);
+    const meEmail = sessionStorage.getItem('email') || sessionStorage.getItem('userEmail') || '';
+    const rawName = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || '';
+    const meName = (rawName === 'undefined' || rawName === 'null') ? '' : rawName;
+
+    const isAssignee   = !!meEmail && meEmail === issue.assigneeEmail;
+    const isSupervisor = !!meEmail && meEmail === issue.supervisorEmail;
+
+    const noteText = this.newLogNote.trim();
+    this.newLogNote = '';
+
+    // Optimistic update — show immediately, before the API responds
+    const optimistic: WorkLog = {
+      note: noteText,
+      loggedByUserId: meId,
+      loggedByEmail: meEmail,
+      loggedByName: meName,
+      createdAt: new Date().toISOString()
     };
+    issue.workLog = [optimistic, ...(issue.workLog || [])];
+    // Also update filtered so *ngFor sees the new array reference
+    this.filtered = [...this.filtered];
+
+    const payload = { note: noteText, loggedByUserId: meId, loggedByEmail: meEmail, loggedByName: meName };
     this.api.addWorkLog(issue.id!, payload).subscribe({
       next: (log) => {
-        if (!issue.workLog) issue.workLog = [];
-        issue.workLog.unshift(log);
-        this.newLogNote = '';
-        this.newLogEmail = '';
+        // Swap optimistic entry with the server-confirmed entry (has real id + createdAt)
+        if (log && log.id) {
+          const idx = issue.workLog!.indexOf(optimistic);
+          if (idx > -1) {
+            issue.workLog = [...issue.workLog!.slice(0, idx), log, ...issue.workLog!.slice(idx + 1)];
+          }
+        }
+        if ((isAssignee || isSupervisor) && issue.reporterEmail) {
+          this.sendLogNotificationEmail(issue, log || optimistic, meName || meEmail);
+        }
+      },
+      error: (err) => {
+        // Revert the optimistic entry on failure
+        issue.workLog = issue.workLog!.filter(l => l !== optimistic);
+        this.filtered = [...this.filtered];
+        this.newLogNote = noteText;
+        this.toast('error', err);
+      }
+    });
+  }
+
+  // ── Reassign ─────────────────────────────────────────────────────────────────
+
+  startReassign(issue: Issue): void {
+    this.reassigningId = issue.id!;
+    this.reassignEmail = issue.assigneeEmail || '';
+  }
+
+  cancelReassign(): void {
+    this.reassigningId = null;
+    this.reassignEmail = '';
+  }
+
+  submitReassign(issue: Issue): void {
+    const user = this.userList.find(u => u.email === this.reassignEmail);
+    if (!user) return;
+    const payload = { ...issue, assigneeEmail: user.email, assigneeName: user.fullname, assigneeUserId: user.id };
+    this.api.update(issue.id!, payload).subscribe({
+      next: (updated) => {
+        const idx = this.issues.findIndex(i => i.id === issue.id);
+        if (idx > -1) this.issues[idx] = updated;
+        this.applyFilters();
+        this.reassigningId = null;
+        this.reassignEmail = '';
+        this.toast('success', `Reassigned to ${user.fullname}`);
       },
       error: (err) => this.toast('error', err)
     });
@@ -457,7 +551,6 @@ export class BugTrackerComponent implements OnInit {
 
     forkJoin(shareCalls).subscribe({
       next: () => {
-        // Post structured issue card messages so the share is visible in chat
         const msgCalls = this.shareTab === 'CHANNEL'
           ? selectedChannels.map(c =>
               this.api.postIssueCardMessage(c.id, senderUserId, issue))
@@ -467,7 +560,7 @@ export class BugTrackerComponent implements OnInit {
             );
 
         forkJoin(msgCalls.length ? msgCalls : [this.api.getShares(id)]).subscribe({
-          error: () => {} // message posting failure is non-critical
+          error: () => {}
         });
 
         this.shareSubmitting = false;
@@ -478,7 +571,6 @@ export class BugTrackerComponent implements OnInit {
           : `Issue shared with ${count} person${count > 1 ? 's' : ''}`;
         this.toast('success', successMsg);
 
-        // Push bell notification to sender's header
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('optimax-notification', {
             detail: { title: `Bug #${id} shared`, body: successMsg, category: 'module' }
@@ -643,6 +735,24 @@ export class BugTrackerComponent implements OnInit {
     });
   }
 
+  // ── Image lightbox ────────────────────────────────────────────────────────────
+
+  showLightbox = false;
+  lightboxSrc = '';
+
+  openLightbox(src: string): void {
+    this.lightboxSrc = src;
+    this.showLightbox = true;
+  }
+
+  @HostListener('document:keydown.escape')
+  closeLightbox(): void {
+    this.showLightbox = false;
+    this.lightboxSrc = '';
+  }
+
+  // ── Email notifications ─────────────────────────────────────────────────────
+
   private sendAssigneeEmail(issue: Issue): void {
     const assigneeName  = issue.assigneeName  || issue.assigneeEmail || 'Team Member';
     const reporterName  = issue.reporterName  || issue.reporterEmail || 'A colleague';
@@ -651,7 +761,7 @@ export class BugTrackerComponent implements OnInit {
     };
     const statusLabel: Record<string, string> = {
       OPEN: 'Open', IN_PROGRESS: 'In Progress', BLOCKED: 'Blocked',
-      DONE: 'Done', WONT_FIX: "Won't Fix",
+      TESTING: 'Testing', DONE: 'Done', WONT_FIX: "Won't Fix",
     };
     const priColor  = priorityColor[issue.priority] || '#475569';
     const appBase   = typeof window !== 'undefined' ? window.location.origin : '';
@@ -660,39 +770,25 @@ export class BugTrackerComponent implements OnInit {
 
     const body = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:0 0 32px 0;border-radius:12px;overflow:hidden;">
-        <!-- Header -->
         <div style="background:linear-gradient(135deg,#1e3a4c,#2e6276);padding:28px 32px 24px;">
-          <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.3px;">
-            OptimaX Issue Tracker
-          </h1>
-          <p style="margin:6px 0 0;color:rgba(255,255,255,0.75);font-size:13px;">
-            You have been assigned a new issue
-          </p>
+          <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.3px;">OptimaX Issue Tracker</h1>
+          <p style="margin:6px 0 0;color:rgba(255,255,255,0.75);font-size:13px;">You have been assigned a new issue</p>
         </div>
-
-        <!-- Body -->
         <div style="padding:28px 32px;">
-          <p style="margin:0 0 20px;font-size:15px;color:#1e293b;">
-            Hi <strong>${assigneeName}</strong>,
-          </p>
+          <p style="margin:0 0 20px;font-size:15px;color:#1e293b;">Hi <strong>${assigneeName}</strong>,</p>
           <p style="margin:0 0 24px;font-size:14px;color:#475569;line-height:1.6;">
-            <strong>${reporterName}</strong> has raised an issue and assigned it to you on the
-            OptimaX platform. Please review the details below and take action.
+            <strong>${reporterName}</strong> has raised an issue and assigned it to you on the OptimaX platform.
           </p>
-
-          <!-- Issue card -->
           <div style="background:#ffffff;border:1px solid #e2e8f0;border-left:4px solid ${priColor};border-radius:10px;padding:20px 22px;margin-bottom:24px;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
-              <span style="background:#2e6276;color:#fff;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:3px 8px;border-radius:4px;">${issue.module}</span>
+              <span style="background:#2e6276;color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:4px;">${issue.module}</span>
               <span style="color:#64748b;font-size:12px;font-weight:600;">#${issue.id}</span>
-              <span style="color:${priColor};background:${priColor}1a;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:4px;">${issue.priority}</span>
+              <span style="color:${priColor};background:${priColor}1a;font-size:11px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:4px;">${issue.priority}</span>
               <span style="color:#1d4ed8;background:#dbeafe;font-size:11px;font-weight:600;text-transform:uppercase;padding:2px 8px;border-radius:4px;">${statusLabel[issue.status] || issue.status}</span>
             </div>
             <h2 style="margin:0 0 10px;font-size:16px;font-weight:700;color:#0f172a;line-height:1.35;">${issue.title}</h2>
-            ${issue.description ? `<p style="margin:0;font-size:13px;color:#475569;line-height:1.6;">${issue.description}</p>` : ''}
+            ${issue.description ? `<p style="margin:0;font-size:13px;color:#475569;line-height:1.6;">${this.descriptionText(issue.description)}</p>` : ''}
           </div>
-
-          <!-- Meta table -->
           <table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;">
             <tr>
               <td style="padding:9px 14px;font-weight:600;background:#f8fafc;border:1px solid #e2e8f0;color:#374151;width:35%;">Reported By</td>
@@ -713,30 +809,17 @@ export class BugTrackerComponent implements OnInit {
               <td style="padding:9px 14px;border:1px solid #e2e8f0;color:#1e293b;">${issue.tags}</td>
             </tr>` : ''}
           </table>
-
-          <!-- CTA -->
           <div style="text-align:center;margin-bottom:24px;">
-            <a href="${issueUrl}"
-               style="display:inline-block;background:#2e6276;color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:0.01em;">
+            <a href="${issueUrl}" style="display:inline-block;background:#2e6276;color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:10px;font-weight:700;font-size:14px;">
               View Issue in OptimaX
             </a>
           </div>
-
-          <p style="margin:0 0 4px;font-size:13px;color:#64748b;">
-            If the button doesn't work, paste this link into your browser:
-          </p>
-          <p style="margin:0 0 24px;font-size:12px;color:#2e6276;word-break:break-all;">${issueUrl}</p>
-
           <p style="margin:0;font-size:13px;color:#64748b;line-height:1.6;">
-            Please keep the issue status updated as you work on it. If you have questions, reach out to the reporter or your supervisor directly.
+            Please keep the issue status updated as you work on it.
           </p>
         </div>
-
-        <!-- Footer -->
         <div style="background:#f1f5f9;border-top:1px solid #e2e8f0;padding:16px 32px;text-align:center;">
-          <p style="margin:0;font-size:12px;color:#94a3b8;">
-            OptimaX ERP Platform &nbsp;·&nbsp; This is an automated notification. Do not reply to this email.
-          </p>
+          <p style="margin:0;font-size:12px;color:#94a3b8;">OptimaX ERP Platform &nbsp;·&nbsp; This is an automated notification.</p>
         </div>
       </div>
     `;
@@ -745,6 +828,104 @@ export class BugTrackerComponent implements OnInit {
       name:          assigneeName,
       receiverEmail: issue.assigneeEmail!,
       subject:       `[OptimaX] Issue Assigned: ${issue.title} [#${issue.id}]`,
+      body,
+    }).subscribe();
+  }
+
+  private sendReporterStatusEmail(issue: Issue, fromStatus: Status): void {
+    if (!issue.reporterEmail) return;
+    const reporterName = issue.reporterName || issue.reporterEmail || 'Reporter';
+    const assigneeName = issue.assigneeName || issue.assigneeEmail || 'the assigned engineer';
+    const statusLabel: Record<string, string> = {
+      OPEN: 'Open', IN_PROGRESS: 'In Progress', BLOCKED: 'Blocked',
+      TESTING: 'Testing', DONE: 'Done', WONT_FIX: "Won't Fix",
+    };
+    const statusColors: Record<string, string> = {
+      OPEN: '#dc2626', IN_PROGRESS: '#1d4ed8', BLOCKED: '#b45309',
+      TESTING: '#7c3aed', DONE: '#16a34a', WONT_FIX: '#64748b',
+    };
+    const fromLabel = statusLabel[fromStatus] || fromStatus;
+    const toLabel   = statusLabel[issue.status] || issue.status;
+    const toColor   = statusColors[issue.status] || '#475569';
+    const appBase   = typeof window !== 'undefined' ? window.location.origin : '';
+    const issueUrl  = `${appBase}/admin/settings/bug-tracker?issue=${issue.id}`;
+    const dateStr   = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    const body = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:0 0 32px;border-radius:12px;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#1e3a4c,#2e6276);padding:28px 32px 24px;">
+          <h1 style="margin:0;color:#fff;font-size:20px;font-weight:700;">OptimaX Issue Tracker</h1>
+          <p style="margin:6px 0 0;color:rgba(255,255,255,0.75);font-size:13px;">Issue status has been updated</p>
+        </div>
+        <div style="padding:28px 32px;">
+          <p style="margin:0 0 20px;font-size:15px;color:#1e293b;">Hi <strong>${reporterName}</strong>,</p>
+          <p style="margin:0 0 24px;font-size:14px;color:#475569;line-height:1.6;">
+            An issue you reported has been updated by <strong>${assigneeName}</strong>.
+          </p>
+          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px 22px;margin-bottom:24px;">
+            <h2 style="margin:0 0 16px;font-size:15px;font-weight:700;color:#0f172a;">#${issue.id} — ${issue.title}</h2>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <span style="font-size:13px;color:#64748b;">Status changed from</span>
+              <span style="background:#f1f5f9;color:#374151;font-weight:600;font-size:12px;padding:4px 10px;border-radius:6px;">${fromLabel}</span>
+              <span style="color:#94a3b8;font-size:14px;">→</span>
+              <span style="background:${toColor}1a;color:${toColor};font-weight:700;font-size:12px;padding:4px 10px;border-radius:6px;">${toLabel}</span>
+            </div>
+          </div>
+          <div style="text-align:center;margin-bottom:24px;">
+            <a href="${issueUrl}" style="display:inline-block;background:#2e6276;color:#fff;text-decoration:none;padding:13px 28px;border-radius:10px;font-weight:700;font-size:14px;">
+              View Issue in OptimaX
+            </a>
+          </div>
+          <p style="margin:0;font-size:12px;color:#94a3b8;">${dateStr} · This is an automated notification. Do not reply.</p>
+        </div>
+      </div>
+    `;
+
+    this.api.sendEmail({
+      name:          reporterName,
+      receiverEmail: issue.reporterEmail,
+      subject:       `[OptimaX] Issue #${issue.id} status updated: ${fromLabel} → ${toLabel}`,
+      body,
+    }).subscribe();
+  }
+
+  private sendLogNotificationEmail(issue: Issue, log: WorkLog, loggerName: string): void {
+    if (!issue.reporterEmail) return;
+    const reporterName = issue.reporterName || issue.reporterEmail || 'Reporter';
+    const appBase  = typeof window !== 'undefined' ? window.location.origin : '';
+    const issueUrl = `${appBase}/admin/settings/bug-tracker?issue=${issue.id}`;
+    const dateStr  = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const timeStr  = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+    const body = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:0 0 32px;border-radius:12px;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#1e3a4c,#2e6276);padding:28px 32px 24px;">
+          <h1 style="margin:0;color:#fff;font-size:20px;font-weight:700;">OptimaX Issue Tracker</h1>
+          <p style="margin:6px 0 0;color:rgba(255,255,255,0.75);font-size:13px;">A new update has been added to your issue</p>
+        </div>
+        <div style="padding:28px 32px;">
+          <p style="margin:0 0 20px;font-size:15px;color:#1e293b;">Hi <strong>${reporterName}</strong>,</p>
+          <p style="margin:0 0 20px;font-size:14px;color:#475569;line-height:1.6;">
+            <strong>${loggerName}</strong> added a work log update to issue <strong>#${issue.id}</strong>.
+          </p>
+          <div style="background:#fff;border:1px solid #e2e8f0;border-left:4px solid #2e6276;border-radius:10px;padding:18px 20px;margin-bottom:24px;">
+            <div style="font-size:11px;color:#94a3b8;margin-bottom:8px;">${loggerName} &nbsp;·&nbsp; ${dateStr} ${timeStr}</div>
+            <p style="margin:0;font-size:13.5px;color:#1e293b;line-height:1.6;white-space:pre-wrap;">${log.note}</p>
+          </div>
+          <div style="text-align:center;margin-bottom:24px;">
+            <a href="${issueUrl}" style="display:inline-block;background:#2e6276;color:#fff;text-decoration:none;padding:13px 28px;border-radius:10px;font-weight:700;font-size:14px;">
+              View Issue #${issue.id}
+            </a>
+          </div>
+          <p style="margin:0;font-size:12px;color:#94a3b8;">${dateStr} · This is an automated notification. Do not reply.</p>
+        </div>
+      </div>
+    `;
+
+    this.api.sendEmail({
+      name:          reporterName,
+      receiverEmail: issue.reporterEmail,
+      subject:       `[OptimaX] Update on Issue #${issue.id}: ${issue.title}`,
       body,
     }).subscribe();
   }
@@ -773,15 +954,14 @@ export class BugTrackerComponent implements OnInit {
   }
 
   statusClass(s: Status): string {
-    return { OPEN: 'st-open', IN_PROGRESS: 'st-inprog', BLOCKED: 'st-blocked', DONE: 'st-done', WONT_FIX: 'st-wontfix' }[s] || '';
+    return { OPEN: 'st-open', IN_PROGRESS: 'st-inprog', BLOCKED: 'st-blocked', TESTING: 'st-testing', DONE: 'st-done', WONT_FIX: 'st-wontfix' }[s] || '';
   }
 
   statusLabel(s: Status): string {
-    return { OPEN: 'Open', IN_PROGRESS: 'In Progress', BLOCKED: 'Blocked', DONE: 'Done', WONT_FIX: "Won't Fix" }[s] || s;
+    return { OPEN: 'Open', IN_PROGRESS: 'In Progress', BLOCKED: 'Blocked', TESTING: 'Testing', DONE: 'Done', WONT_FIX: "Won't Fix" }[s] || s;
   }
 
   formLogNote = '';
-  formLogEmail = '';
   tempFormLog: WorkLog[] = [];
 
   addFormLog(): void {
@@ -799,58 +979,30 @@ export class BugTrackerComponent implements OnInit {
     this.tempFormLog.splice(index, 1);
   }
 
+  timeAgo(dateStr?: string): string {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1)  return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24)  return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  }
+
+  formatResolution(hours?: number): string {
+    if (hours == null) return '';
+    if (hours < 1)   return '< 1h';
+    if (hours < 24)  return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    const rem  = hours % 24;
+    return rem ? `${days}d ${rem}h` : `${days}d`;
+  }
+
   parseTags(tags?: string): string[] {
     if (!tags) return [];
     return tags.split(',').map(t => t.trim()).filter(Boolean);
-  }
-
-  zoomVisible = false;
-  zoomedAttachment: string | null = null;
-  private zoomOverlay: HTMLElement | null = null;
-
-  @HostListener('document:keydown.escape')
-  onEscKey(): void { this.closeZoom(); }
-
-  openZoom(dataUrl: string, event?: MouseEvent): void {
-    if (event) event.stopPropagation();
-    this.closeZoom();
-
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.85);padding:1.5rem;animation:none;';
-
-    const shell = document.createElement('div');
-    shell.style.cssText = 'position:relative;max-width:min(92vw,70rem);max-height:88vh;border-radius:1.25rem;overflow:hidden;background:#0f172a;box-shadow:0 30px 70px rgba(15,23,42,0.45);';
-
-    const closeBtn = document.createElement('button');
-    closeBtn.type = 'button';
-    closeBtn.innerHTML = '&times;';
-    closeBtn.style.cssText = 'position:absolute;top:.75rem;right:.75rem;width:2.25rem;height:2.25rem;border:0;border-radius:50%;background:rgba(255,255,255,0.14);color:#fff;cursor:pointer;z-index:1;display:flex;align-items:center;justify-content:center;font-size:1.25rem;line-height:1;';
-
-    const img = document.createElement('img');
-    img.src = dataUrl;
-    img.alt = 'Attachment';
-    img.style.cssText = 'display:block;width:100%;max-height:88vh;object-fit:contain;background:#020617;';
-
-    shell.appendChild(closeBtn);
-    shell.appendChild(img);
-    overlay.appendChild(shell);
-
-    overlay.addEventListener('click', () => this.closeZoom());
-    shell.addEventListener('click', e => e.stopPropagation());
-    closeBtn.addEventListener('click', () => this.closeZoom());
-
-    document.body.appendChild(overlay);
-    this.zoomOverlay = overlay;
-    this.zoomVisible = true;
-  }
-
-  closeZoom(): void {
-    if (this.zoomOverlay) {
-      document.body.removeChild(this.zoomOverlay);
-      this.zoomOverlay = null;
-    }
-    this.zoomVisible = false;
-    this.zoomedAttachment = null;
   }
 
   safeDisplayName(name?: string): string {

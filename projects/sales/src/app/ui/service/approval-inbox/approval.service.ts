@@ -46,6 +46,14 @@ export class ApprovalService {
     return this.http.get<WorkflowInstance>(`${this.workflowUrl}/approvalInstances/${instanceId}`);
   }
 
+  lookupWorkflowInstance(referenceType: string, referenceId: string, operationType: string): Observable<WorkflowInstance> {
+    const params = new HttpParams()
+      .set('referenceType', referenceType)
+      .set('referenceId', referenceId)
+      .set('operationType', operationType);
+    return this.http.get<WorkflowInstance>(`${this.workflowUrl}/approvalInstances/lookup`, { params });
+  }
+
   approveWorkflowInstance(instanceId: number, payload: FormData): Observable<any> {
     return this.http.post(`${this.workflowUrl}/approvalInstances/${instanceId}/approve`, payload);
   }

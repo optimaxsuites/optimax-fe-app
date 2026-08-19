@@ -218,6 +218,14 @@
                     View Issue →
                   </button>
                 </div>
+                <div class="issue-card-timing">
+                  <span *ngIf="issue.createdAt" class="issue-card-timing-item">
+                    <i class="fas fa-clock"></i> Logged {{ issue.createdAt | date:'dd MMM yyyy HH:mm' }}
+                  </span>
+                  <span *ngIf="issue.resolutionHours != null" class="issue-card-timing-item issue-card-timing-resolved">
+                    <i class="fas fa-flag-checkered"></i> Fixed in <strong>{{ formatResolution(issue.resolutionHours) }}</strong>
+                  </span>
+                </div>
               </div>
             </ng-container>
           </ng-container>
