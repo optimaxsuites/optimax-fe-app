@@ -3940,3 +3940,167 @@
 .dist-leg--over   { color: #dc2626; &::before { background: #dc2626; } }
 
 .eff-row-selected { background: #eff6ff !important; }
+
+/* ── Performance Review Tab ──────────────────────────────────────────────── */
+
+.rev-access-notice {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 48px 24px; gap: 12px; color: #6b7280; text-align: center;
+  p { margin: 0 0 8px; font-size: 14px; }
+}
+
+.rev-subnav {
+  display: flex; gap: 8px; padding: 16px 0 8px; flex-wrap: wrap;
+}
+
+.rev-sub-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 8px; border: 1px solid #e5e7eb;
+  background: #fff; font-size: 13px; font-weight: 600; color: #374151;
+  cursor: pointer; transition: all .15s ease;
+  i { font-size: 12px; }
+  &:hover { background: #f8fafc; border-color: #d1d5db; }
+  &.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+}
+
+.rev-period-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0 16px; flex-wrap: wrap;
+}
+
+.rev-period-toggle {
+  display: flex; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;
+  button {
+    padding: 6px 14px; font-size: 12px; font-weight: 600; border: none;
+    background: #fff; color: #6b7280; cursor: pointer; transition: all .15s;
+    &.active { background: #1e3a5f; color: #fff; }
+    &:hover:not(.active) { background: #f1f5f9; }
+  }
+}
+
+.rev-nav-btn {
+  width: 30px; height: 30px; border-radius: 7px; border: 1px solid #e5e7eb;
+  background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: #374151;
+  &:hover { background: #f1f5f9; }
+}
+
+.rev-period-label {
+  font-size: 14px; font-weight: 700; color: #1f2937; min-width: 180px; text-align: center;
+}
+
+/* KPI grid for review periods */
+.rev-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px; margin-bottom: 16px;
+}
+
+.rev-kpi-card {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.rev-kpi-card--green  { border-top: 3px solid #16a34a; }
+.rev-kpi-card--red    { border-top: 3px solid #dc2626; }
+.rev-kpi-card--purple { border-top: 3px solid #7c3aed; }
+.rev-kpi-card--blue   { border-top: 3px solid #2563eb; }
+
+.rev-kpi-val { font-size: 1.6rem; font-weight: 800; color: #1e293b; line-height: 1; }
+.rev-kpi-lbl { font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: .4px; }
+
+/* Status pills in task tables */
+.rev-status-pill {
+  display: inline-flex; padding: 2px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; background: #f1f5f9; color: #374151;
+}
+.rev-status--done   { background: #d1fae5; color: #16a34a; }
+.rev-status--over   { background: #fee2e2; color: #dc2626; }
+.rev-status--active { background: #dbeafe; color: #2563eb; }
+
+/* Team review employee selector */
+.rev-emp-selector {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.rev-emp-label { font-size: 13px; font-weight: 700; color: #374151; white-space: nowrap; }
+.rev-emp-select { font-size: 13px; min-width: 220px; }
+
+/* Assessment meeting card */
+.rev-meeting-card { border-left: 4px solid #d97706; }
+
+.rev-meeting-field {
+  margin-bottom: 16px;
+}
+
+.rev-field-lbl {
+  display: block; font-size: 12px; font-weight: 700; color: #374151;
+  margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px;
+}
+
+.rev-star-row {
+  display: flex; align-items: center; gap: 4px;
+}
+
+.rev-star {
+  font-size: 1.4rem; cursor: pointer; color: #e5e7eb; transition: color .1s;
+  &--lit { color: #d97706; }
+  &:hover { color: #f59e0b; }
+}
+.rev-star-label { font-size: 12px; font-weight: 600; color: #6b7280; margin-left: 8px; }
+
+.rev-textarea {
+  width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px;
+  font-size: 13px; color: #374151; resize: vertical; font-family: inherit;
+  transition: border-color .15s;
+  &:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+}
+
+.rev-meeting-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-top: 12px; border-top: 1px solid #f1f5f9; flex-wrap: wrap;
+}
+
+.rev-score-preview { font-size: 13px; color: #374151; display: flex; align-items: center; gap: 4px; }
+
+.rev-record-btn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 9px 20px; border-radius: 8px; border: none;
+  background: #2563eb; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: background .15s;
+  &:hover:not(:disabled) { background: #1d4ed8; }
+  &:disabled { background: #93c5fd; cursor: not-allowed; }
+}
+
+.rev-saved-banner {
+  display: flex; align-items: center; gap: 8px;
+  background: #d1fae5; color: #16a34a; padding: 12px 16px; border-radius: 8px;
+  font-size: 13px; font-weight: 700; margin-bottom: 16px;
+}
+
+/* Sessions table extras */
+.rev-period-chip {
+  display: inline-block; padding: 1px 8px; border-radius: 20px;
+  background: #f3e8ff; color: #7c3aed; font-size: 10px; font-weight: 700;
+  margin-right: 4px; text-transform: uppercase;
+}
+
+.rev-del-btn {
+  background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 13px;
+  &:hover { color: #dc2626; }
+}
+
+/* Session discussion notes cards */
+.rev-session-notes {
+  background: #fafafa; border: 1px solid #f1f5f9; border-radius: 10px;
+  margin-top: 10px; padding: 14px 16px;
+}
+.rev-session-notes-head {
+  font-size: 13px; font-weight: 700; color: #1f2937; margin-bottom: 10px;
+  border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;
+}
+.rev-session-notes-body { margin-top: 8px; }
+.rev-notes-lbl {
+  font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase;
+  letter-spacing: .4px; margin-bottom: 4px;
+}
+.rev-session-notes-body p { font-size: 13px; color: #374151; margin: 0; line-height: 1.6; }

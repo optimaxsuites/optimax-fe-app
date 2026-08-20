@@ -52,7 +52,26 @@ import {
   SupervisorReviewDTO,
 } from './work-task-api.service';
 
-export type PMSection = 'board' | 'reports' | 'batch' | 'assessment' | 'supervisor';
+export type PMSection = 'board' | 'reports' | 'batch' | 'assessment' | 'supervisor' | 'review';
+
+export interface ReviewSession {
+  id: string;
+  supervisorName: string;
+  employeeName: string;
+  period: 'week' | 'month';
+  periodLabel: string;
+  periodStart: string;
+  periodEnd: string;
+  tasksCount: number;
+  completedCount: number;
+  overdueCount: number;
+  score: number;
+  grade: string;
+  discussionSummary: string;
+  agreedActions: string;
+  supervisorRating: number;
+  recordedAt: string;
+}
 export type BoardView = 'board' | 'list' | 'gantt';
 type TaskStatus = string; // widened to support custom stages
 type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';
@@ -254,10 +273,22 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   get pageTitle(): string {
     const map: Record<PMSection, string> = {
       board: 'Task Board', reports: 'Reports & Analytics',
-      batch: 'Batch Import', assessment: 'Self-Assessment', supervisor: 'Supervisor Review',
+      batch: 'Batch Import', assessment: 'Self-Assessment',
+      supervisor: 'Supervisor Review', review: 'Performance Review',
     };
     return map[this.pmSection];
   }
+
+  // ── Performance Review tab state ──────────────────────────────────────────
+  reviewSubTab: 'mine' | 'team' | 'sessions' = 'mine';
+  reviewPeriod: 'week' | 'month' = 'month';
+  reviewAnchorDate: Date = new Date();
+  reviewEmployee = '';
+  reviewDiscussion = '';
+  reviewAgreedActions = '';
+  reviewSupRating = 0;
+  reviewSessions: ReviewSession[] = [];
+  reviewSessionSaved = false;
 
   setPmSection(s: PMSection): void {
     this.pmSection = s;
@@ -567,6 +598,150 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   get currentUserFullName(): string {
     return this.currentUserDisplayName.toLowerCase();
+  }
+
+  // ── Performance Review ────────────────────────────────────────────────────
+
+  get reviewPeriodBounds(): { start: Date; end: Date; label: string } {
+    const d = new Date(this.reviewAnchorDate);
+    if (this.reviewPeriod === 'month') {
+      const start = new Date(d.getFullYear(), d.getMonth(), 1);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      const label = start.toLocaleString('default', { month: 'long', year: 'numeric' });
+      return { start, end, label };
+    }
+    // ISO week: Monday → Sunday
+    const dow = d.getDay(); // 0=Sun
+    const toMon = dow === 0 ? -6 : 1 - dow;
+    const start = new Date(d); start.setDate(d.getDate() + toMon); start.setHours(0, 0, 0, 0);
+    const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23, 59, 59, 999);
+    const fmt = (dt: Date) => dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    return { start, end, label: `${fmt(start)} – ${fmt(end)}, ${start.getFullYear()}` };
+  }
+
+  reviewPrev(): void {
+    const d = new Date(this.reviewAnchorDate);
+    if (this.reviewPeriod === 'month') d.setMonth(d.getMonth() - 1);
+    else d.setDate(d.getDate() - 7);
+    this.reviewAnchorDate = new Date(d);
+  }
+
+  reviewNext(): void {
+    const d = new Date(this.reviewAnchorDate);
+    if (this.reviewPeriod === 'month') d.setMonth(d.getMonth() + 1);
+    else d.setDate(d.getDate() + 7);
+    this.reviewAnchorDate = new Date(d);
+  }
+
+  private tasksInPeriod(tasks: BoardTask[], start: Date, end: Date): BoardTask[] {
+    return tasks.filter(t => {
+      const d = t.dueDate ? new Date(t.dueDate) : null;
+      return d && !isNaN(d.getTime()) && d >= start && d <= end;
+    });
+  }
+
+  private calcPeriodMetrics(tasks: BoardTask[]): {
+    completedCount: number; overdueCount: number; activeCount: number;
+    completionRate: number; onTimeRate: number; score: number; grade: string; gradeClass: string;
+  } {
+    const total = tasks.length;
+    if (!total) return { completedCount: 0, overdueCount: 0, activeCount: 0, completionRate: 0, onTimeRate: 100, score: 0, grade: '—', gradeClass: '--bad' };
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const done = tasks.filter(t => t.status === 'Done' || t.closed).length;
+    const overdue = tasks.filter(t => t.status !== 'Done' && !t.closed && t.dueDate && new Date(t.dueDate) < today).length;
+    const active = total - done - overdue;
+    const completionRate = Math.round((done / total) * 100);
+    const overdueRate = Math.round((overdue / total) * 100);
+    const onTimeRate = 100 - overdueRate;
+    const score = Math.round(completionRate * 0.6 + onTimeRate * 0.4);
+    let grade = 'Poor'; let gradeClass = '--bad';
+    if (score >= 80) { grade = 'Excellent'; gradeClass = '--excellent'; }
+    else if (score >= 60) { grade = 'Good'; gradeClass = '--good'; }
+    else if (score >= 40) { grade = 'Fair'; gradeClass = '--fair'; }
+    return { completedCount: done, overdueCount: overdue, activeCount: active, completionRate, onTimeRate, score, grade, gradeClass };
+  }
+
+  get myReviewTasks(): BoardTask[] {
+    const name = this.currentUserFullName;
+    const my = [...this.boardTasks, ...this.archivedTasks].filter(t =>
+      (t.assignee || '').toLowerCase() === name ||
+      (t.assignees || []).some(a => (a || '').toLowerCase() === name)
+    );
+    const { start, end } = this.reviewPeriodBounds;
+    return this.tasksInPeriod(my, start, end);
+  }
+
+  get myReviewMetrics() { return this.calcPeriodMetrics(this.myReviewTasks); }
+
+  get teamReviewTasks(): BoardTask[] {
+    if (!this.reviewEmployee) return [];
+    const emp = this.reviewEmployee.toLowerCase();
+    const tasks = [...this.boardTasks, ...this.archivedTasks].filter(t =>
+      (t.assignee || '').toLowerCase() === emp ||
+      (t.assignees || []).some(a => (a || '').toLowerCase() === emp)
+    );
+    const { start, end } = this.reviewPeriodBounds;
+    return this.tasksInPeriod(tasks, start, end);
+  }
+
+  get teamReviewMetrics() { return this.calcPeriodMetrics(this.teamReviewTasks); }
+
+  get reviewTeamMemberNames(): string[] {
+    const role = (sessionStorage.getItem('role') || localStorage.getItem('role') || '').toUpperCase();
+    if (!this.isAdminOrSupervisor) return [];
+    if (role.includes('ADMIN')) return this.allEmployees.map(e => e.fullName).sort();
+    const myName = this.currentUserFullName;
+    return this.allEmployees
+      .filter(e => (e.supervisor || '').toLowerCase() === myName)
+      .map(e => e.fullName).sort();
+  }
+
+  get filteredReviewSessions(): ReviewSession[] {
+    const role = (sessionStorage.getItem('role') || localStorage.getItem('role') || '').toUpperCase();
+    if (role.includes('ADMIN')) return this.reviewSessions;
+    const myName = this.currentUserDisplayName;
+    return this.reviewSessions.filter(s => s.supervisorName === myName);
+  }
+
+  recordSession(): void {
+    const m = this.teamReviewMetrics;
+    const session: ReviewSession = {
+      id: Date.now().toString(),
+      supervisorName: this.currentUserDisplayName,
+      employeeName: this.reviewEmployee,
+      period: this.reviewPeriod,
+      periodLabel: this.reviewPeriodBounds.label,
+      periodStart: this.reviewPeriodBounds.start.toISOString(),
+      periodEnd: this.reviewPeriodBounds.end.toISOString(),
+      tasksCount: this.teamReviewTasks.length,
+      completedCount: m.completedCount,
+      overdueCount: m.overdueCount,
+      score: m.score,
+      grade: m.grade,
+      discussionSummary: this.reviewDiscussion,
+      agreedActions: this.reviewAgreedActions,
+      supervisorRating: this.reviewSupRating,
+      recordedAt: new Date().toISOString(),
+    };
+    this.reviewSessions = [session, ...this.reviewSessions];
+    try { localStorage.setItem('hr_pm_review_sessions_v1', JSON.stringify(this.reviewSessions)); } catch { /* quota */ }
+    this.reviewSessionSaved = true;
+    this.reviewDiscussion = '';
+    this.reviewAgreedActions = '';
+    this.reviewSupRating = 0;
+    setTimeout(() => { this.reviewSessionSaved = false; }, 4000);
+  }
+
+  deleteSession(id: string): void {
+    this.reviewSessions = this.reviewSessions.filter(s => s.id !== id);
+    try { localStorage.setItem('hr_pm_review_sessions_v1', JSON.stringify(this.reviewSessions)); } catch { /* quota */ }
+  }
+
+  private loadReviewSessions(): void {
+    try {
+      const raw = localStorage.getItem('hr_pm_review_sessions_v1');
+      this.reviewSessions = raw ? JSON.parse(raw) : [];
+    } catch { this.reviewSessions = []; }
   }
 
   // ── Subtask inline edit ───────────────────────────────────────────────────
@@ -1522,6 +1697,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     );
     this.loadArchivedTasks();
     this.loadChannelUnread();
+    this.loadReviewSessions();
     this.productivityDataService.init();
     this.productivityReviewService.init();
     this.subscription.add(

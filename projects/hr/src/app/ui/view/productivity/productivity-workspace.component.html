@@ -77,11 +77,15 @@
       <div class="tab-divider"></div>
 
       <span class="tab-group-label">Performance</span>
+      <button class="tab-btn" [class.active]="pmSection === 'review'" (click)="setPmSection('review')">
+        <i class="fas fa-chart-line tab-icon"></i>
+        <span class="tab-label">Performance Review</span>
+      </button>
       <button class="tab-btn" [class.active]="pmSection === 'assessment'" (click)="setPmSection('assessment')">
         <i class="fas fa-star tab-icon"></i>
         <span class="tab-label">Self-Assessment</span>
       </button>
-      <button class="tab-btn" [class.active]="pmSection === 'supervisor'" (click)="setPmSection('supervisor')">
+      <button class="tab-btn" *ngIf="isAdminOrSupervisor" [class.active]="pmSection === 'supervisor'" (click)="setPmSection('supervisor')">
         <i class="fas fa-user-check tab-icon"></i>
         <span class="tab-label">Supervisor Review</span>
       </button>
@@ -537,12 +541,21 @@
     <!-- ════════════════ REPORTS ════════════════ -->
     <ng-container *ngSwitchCase="'reports'">
 
-      <ng-container>
+      <!-- Employees see a redirect notice — full analytics are admin/supervisor only -->
+      <div *ngIf="!isAdminOrSupervisor" class="rev-access-notice">
+        <i class="fas fa-lock" style="font-size:1.6rem;color:#9ca3af;margin-bottom:10px"></i>
+        <p>Team-wide analytics are visible to supervisors and admins.</p>
+        <button class="rev-sub-btn active" (click)="setPmSection('review')">
+          <i class="fas fa-chart-line"></i> View My Performance
+        </button>
+      </div>
+
+      <ng-container *ngIf="isAdminOrSupervisor">
 
         <!-- ── Section header ─────────────────────────────────────── -->
         <div class="section-head">
-          <h3>Performance Charts</h3>
-          <p>Task completion, engagement, supervisor feedback and due-date intensity — drillable to individual tasks.</p>
+          <h3>Team Analytics</h3>
+          <p>Task completion, engagement, supervisor feedback and distribution across your team — drillable to individual tasks.</p>
         </div>
 
         <!-- ── KPI summary row ─────────────────────────────────────── -->
@@ -804,7 +817,337 @@
           <ng-template #noEff><div class="chart-empty">No tasks match the current filter.</div></ng-template>
         </div>
 
+      </ng-container> <!-- /isAdminOrSupervisor -->
+    </ng-container>
+
+    <!-- ════════════════ PERFORMANCE REVIEW ════════════════ -->
+    <ng-container *ngSwitchCase="'review'">
+
+      <!-- Sub-navigation -->
+      <div class="rev-subnav">
+        <button class="rev-sub-btn" [class.active]="reviewSubTab === 'mine'" (click)="reviewSubTab = 'mine'">
+          <i class="fas fa-user"></i> My Performance
+        </button>
+        <button class="rev-sub-btn" *ngIf="isAdminOrSupervisor" [class.active]="reviewSubTab === 'team'" (click)="reviewSubTab = 'team'">
+          <i class="fas fa-users"></i> Team Review
+        </button>
+        <button class="rev-sub-btn" *ngIf="isAdminOrSupervisor" [class.active]="reviewSubTab === 'sessions'" (click)="reviewSubTab = 'sessions'">
+          <i class="fas fa-clipboard-check"></i> Recorded Sessions
+        </button>
+      </div>
+
+      <!-- Period picker — shared across all sub-tabs -->
+      <div class="rev-period-bar">
+        <div class="rev-period-toggle">
+          <button [class.active]="reviewPeriod === 'week'" (click)="reviewPeriod = 'week'; reviewAnchorDate = reviewAnchorDate">Week</button>
+          <button [class.active]="reviewPeriod === 'month'" (click)="reviewPeriod = 'month'; reviewAnchorDate = reviewAnchorDate">Month</button>
+        </div>
+        <button class="rev-nav-btn" (click)="reviewPrev()"><i class="fas fa-chevron-left"></i></button>
+        <span class="rev-period-label">{{ reviewPeriodBounds.label }}</span>
+        <button class="rev-nav-btn" (click)="reviewNext()"><i class="fas fa-chevron-right"></i></button>
+      </div>
+
+      <!-- ──────────────── MY PERFORMANCE ──────────────── -->
+      <ng-container *ngIf="reviewSubTab === 'mine'">
+        <div class="section-head" style="margin-top:0">
+          <h3>My Performance — {{ reviewPeriodBounds.label }}</h3>
+          <p>Showing your tasks due in this period and your performance score.</p>
+        </div>
+
+        <!-- Period KPI cards -->
+        <div class="rev-kpi-grid">
+          <div class="rev-kpi-card">
+            <div class="rev-kpi-val">{{ myReviewTasks.length }}</div>
+            <div class="rev-kpi-lbl">Tasks This Period</div>
+          </div>
+          <div class="rev-kpi-card rev-kpi-card--green">
+            <div class="rev-kpi-val">{{ myReviewMetrics.completedCount }}</div>
+            <div class="rev-kpi-lbl">Completed</div>
+          </div>
+          <div class="rev-kpi-card rev-kpi-card--red">
+            <div class="rev-kpi-val">{{ myReviewMetrics.overdueCount }}</div>
+            <div class="rev-kpi-lbl">Overdue</div>
+          </div>
+          <div class="rev-kpi-card rev-kpi-card--purple">
+            <div class="rev-kpi-val">{{ myReviewMetrics.score }}</div>
+            <div class="rev-kpi-lbl">Period Score</div>
+          </div>
+          <div class="rev-kpi-card rev-kpi-card--blue">
+            <div class="rev-kpi-val">{{ myReviewMetrics.completionRate }}%</div>
+            <div class="rev-kpi-lbl">Completion Rate</div>
+          </div>
+          <div class="rev-kpi-card">
+            <div class="rev-kpi-val">{{ myReviewMetrics.onTimeRate }}%</div>
+            <div class="rev-kpi-lbl">On-Time Rate</div>
+          </div>
+        </div>
+
+        <!-- Task table for the period -->
+        <div class="panel-card" style="margin-top:16px">
+          <h4 class="panel-card-title">
+            <i class="fas fa-tasks" style="color:#2563eb;margin-right:6px"></i>
+            My Tasks — {{ reviewPeriodBounds.label }}
+          </h4>
+          <div *ngIf="myReviewTasks.length; else noMyTasks" class="table-wrap">
+            <table class="list-table">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Status</th>
+                  <th>Priority</th>
+                  <th>Due Date</th>
+                  <th style="text-align:right">Progress</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let t of myReviewTasks" class="tr-drill" (click)="openDetail(t)">
+                  <td style="font-weight:600">{{ t.title }}</td>
+                  <td>
+                    <span class="rev-status-pill"
+                      [class.rev-status--done]="t.status === 'Done'"
+                      [class.rev-status--over]="t.status !== 'Done' && !t.closed && t.dueDate && isTaskOverdue(t)"
+                      [class.rev-status--active]="t.status !== 'Done' && !isTaskOverdue(t)">
+                      {{ t.closed ? 'Closed' : t.status }}
+                    </span>
+                  </td>
+                  <td>{{ t.priority }}</td>
+                  <td>{{ t.dueDate }}</td>
+                  <td style="text-align:right">{{ t.progress || 0 }}%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ng-template #noMyTasks>
+            <div class="chart-empty">No tasks due in this period.</div>
+          </ng-template>
+        </div>
       </ng-container>
+
+      <!-- ──────────────── TEAM REVIEW ──────────────── -->
+      <ng-container *ngIf="reviewSubTab === 'team' && isAdminOrSupervisor">
+        <div class="section-head" style="margin-top:0">
+          <h3>Team Review — {{ reviewPeriodBounds.label }}</h3>
+          <p>Select a team member to review their tasks and performance for this period. Record discussion notes and outcomes.</p>
+        </div>
+
+        <!-- Employee selector -->
+        <div class="rev-emp-selector">
+          <label class="rev-emp-label">Team Member</label>
+          <select class="chart-filter-sel rev-emp-select" [(ngModel)]="reviewEmployee">
+            <option value="">— Select a team member —</option>
+            <option *ngFor="let name of reviewTeamMemberNames" [value]="name">{{ name }}</option>
+          </select>
+        </div>
+
+        <ng-container *ngIf="reviewEmployee">
+          <!-- Period KPI cards for selected employee -->
+          <div class="rev-kpi-grid">
+            <div class="rev-kpi-card">
+              <div class="rev-kpi-val">{{ teamReviewTasks.length }}</div>
+              <div class="rev-kpi-lbl">Tasks This Period</div>
+            </div>
+            <div class="rev-kpi-card rev-kpi-card--green">
+              <div class="rev-kpi-val">{{ teamReviewMetrics.completedCount }}</div>
+              <div class="rev-kpi-lbl">Completed</div>
+            </div>
+            <div class="rev-kpi-card rev-kpi-card--red">
+              <div class="rev-kpi-val">{{ teamReviewMetrics.overdueCount }}</div>
+              <div class="rev-kpi-lbl">Overdue</div>
+            </div>
+            <div class="rev-kpi-card rev-kpi-card--purple">
+              <div class="rev-kpi-val">{{ teamReviewMetrics.score }}</div>
+              <div class="rev-kpi-lbl">Period Score</div>
+            </div>
+            <div class="rev-kpi-card rev-kpi-card--blue">
+              <div class="rev-kpi-val">{{ teamReviewMetrics.completionRate }}%</div>
+              <div class="rev-kpi-lbl">Completion Rate</div>
+            </div>
+            <div class="rev-kpi-card">
+              <div class="rev-kpi-val">{{ teamReviewMetrics.onTimeRate }}%</div>
+              <div class="rev-kpi-lbl">On-Time Rate</div>
+            </div>
+          </div>
+
+          <!-- Task table for selected employee in period -->
+          <div class="panel-card">
+            <h4 class="panel-card-title">
+              <i class="fas fa-tasks" style="color:#7c3aed;margin-right:6px"></i>
+              {{ reviewEmployee }}'s Tasks — {{ reviewPeriodBounds.label }}
+            </h4>
+            <div *ngIf="teamReviewTasks.length; else noTeamTasks" class="table-wrap">
+              <table class="list-table">
+                <thead>
+                  <tr>
+                    <th>Task</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Due Date</th>
+                    <th style="text-align:right">Progress</th>
+                    <th style="text-align:right">Follow-ups</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let t of teamReviewTasks" class="tr-drill" (click)="openDetail(t)">
+                    <td style="font-weight:600">{{ t.title }}</td>
+                    <td>
+                      <span class="rev-status-pill"
+                        [class.rev-status--done]="t.status === 'Done'"
+                        [class.rev-status--over]="t.status !== 'Done' && !t.closed && isTaskOverdue(t)"
+                        [class.rev-status--active]="t.status !== 'Done' && !isTaskOverdue(t)">
+                        {{ t.closed ? 'Closed' : t.status }}
+                      </span>
+                    </td>
+                    <td>{{ t.priority }}</td>
+                    <td>{{ t.dueDate }}</td>
+                    <td style="text-align:right">{{ t.progress || 0 }}%</td>
+                    <td style="text-align:right">{{ t.followUps?.length || 0 }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ng-template #noTeamTasks>
+              <div class="chart-empty">{{ reviewEmployee }} has no tasks due in this period.</div>
+            </ng-template>
+          </div>
+
+          <!-- Assessment Meeting Recording -->
+          <div class="panel-card rev-meeting-card">
+            <div class="panel-card-header">
+              <h4 class="panel-card-title">
+                <i class="fas fa-handshake" style="color:#d97706;margin-right:6px"></i>
+                Assessment Meeting Record
+              </h4>
+              <span class="panel-card-meta-txt">{{ reviewEmployee }} · {{ reviewPeriodBounds.label }}</span>
+            </div>
+
+            <!-- Success flash -->
+            <div *ngIf="reviewSessionSaved" class="rev-saved-banner">
+              <i class="fas fa-check-circle"></i> Session recorded successfully.
+            </div>
+
+            <div *ngIf="!reviewSessionSaved">
+              <!-- Supervisor rating -->
+              <div class="rev-meeting-field">
+                <label class="rev-field-lbl">Supervisor Rating (1–5)</label>
+                <div class="rev-star-row">
+                  <span *ngFor="let s of stars"
+                    class="rev-star" [class.rev-star--lit]="s <= reviewSupRating"
+                    (click)="reviewSupRating = s">&#9733;</span>
+                  <span class="rev-star-label" *ngIf="reviewSupRating">
+                    {{ ['','Needs Improvement','Below Expectations','Meets Expectations','Exceeds Expectations','Outstanding'][reviewSupRating] }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Discussion summary -->
+              <div class="rev-meeting-field">
+                <label class="rev-field-lbl">Discussion Summary</label>
+                <textarea class="rev-textarea" rows="4" [(ngModel)]="reviewDiscussion"
+                  placeholder="Summarise the key points discussed during this assessment meeting…"></textarea>
+              </div>
+
+              <!-- Agreed actions -->
+              <div class="rev-meeting-field">
+                <label class="rev-field-lbl">Agreed Actions / Next Steps</label>
+                <textarea class="rev-textarea" rows="3" [(ngModel)]="reviewAgreedActions"
+                  placeholder="List actions agreed by both parties — deadlines, targets, development areas…"></textarea>
+              </div>
+
+              <div class="rev-meeting-footer">
+                <span class="rev-score-preview" *ngIf="teamReviewTasks.length">
+                  System Score: <strong>{{ teamReviewMetrics.score }}/100</strong>
+                  <span class="perf-team-grade" [ngClass]="'perf-team-grade' + teamReviewMetrics.gradeClass" style="margin-left:6px">{{ teamReviewMetrics.grade }}</span>
+                </span>
+                <button class="rev-record-btn"
+                  [disabled]="!reviewDiscussion.trim() || !reviewSupRating"
+                  (click)="recordSession()">
+                  <i class="fas fa-save"></i> Record This Session
+                </button>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <div *ngIf="!reviewEmployee" class="chart-empty" style="margin-top:24px;text-align:center">
+          Select a team member above to begin the review.
+        </div>
+      </ng-container>
+
+      <!-- ──────────────── RECORDED SESSIONS ──────────────── -->
+      <ng-container *ngIf="reviewSubTab === 'sessions' && isAdminOrSupervisor">
+        <div class="section-head" style="margin-top:0">
+          <h3>Recorded Assessment Sessions</h3>
+          <p>All performance review meetings recorded in the system.</p>
+        </div>
+
+        <div *ngIf="filteredReviewSessions.length; else noSessions" class="table-wrap">
+          <table class="list-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Period</th>
+                <th>Tasks</th>
+                <th style="text-align:right">Done</th>
+                <th style="text-align:right">Overdue</th>
+                <th style="text-align:right">Score</th>
+                <th style="text-align:center">Grade</th>
+                <th style="text-align:right">Sup. Rating</th>
+                <th>Recorded</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let s of filteredReviewSessions">
+                <td style="font-weight:600">{{ s.employeeName }}</td>
+                <td>
+                  <span class="rev-period-chip">{{ s.period === 'week' ? 'Week' : 'Month' }}</span>
+                  {{ s.periodLabel }}
+                </td>
+                <td>{{ s.tasksCount }}</td>
+                <td style="text-align:right;color:#16a34a">{{ s.completedCount }}</td>
+                <td style="text-align:right;color:#dc2626">{{ s.overdueCount }}</td>
+                <td style="text-align:right;font-weight:700">{{ s.score }}</td>
+                <td style="text-align:center">
+                  <span class="perf-team-grade"
+                    [ngClass]="s.grade === 'Excellent' ? 'perf-team-grade--excellent' : s.grade === 'Good' ? 'perf-team-grade--good' : s.grade === 'Fair' ? 'perf-team-grade--fair' : 'perf-team-grade--bad'">
+                    {{ s.grade }}
+                  </span>
+                </td>
+                <td style="text-align:right">
+                  <span *ngFor="let star of stars" style="color:{{s.supervisorRating >= star ? '#d97706' : '#e5e7eb'}}">&#9733;</span>
+                </td>
+                <td style="font-size:11px;color:#6b7280">{{ s.recordedAt | date:'d MMM y, HH:mm' }}</td>
+                <td>
+                  <button class="rev-del-btn" title="Delete session" (click)="deleteSession(s.id)">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Expandable discussion notes per session -->
+        <div *ngFor="let s of filteredReviewSessions" class="rev-session-notes">
+          <div class="rev-session-notes-head">
+            <strong>{{ s.employeeName }}</strong> · {{ s.periodLabel }}
+            <span style="font-size:11px;color:#9ca3af;margin-left:8px">{{ s.recordedAt | date:'d MMM y' }}</span>
+          </div>
+          <div class="rev-session-notes-body" *ngIf="s.discussionSummary">
+            <div class="rev-notes-lbl">Discussion Summary</div>
+            <p>{{ s.discussionSummary }}</p>
+          </div>
+          <div class="rev-session-notes-body" *ngIf="s.agreedActions">
+            <div class="rev-notes-lbl">Agreed Actions</div>
+            <p>{{ s.agreedActions }}</p>
+          </div>
+        </div>
+
+        <ng-template #noSessions>
+          <div class="chart-empty" style="margin-top:24px;text-align:center">No review sessions recorded yet.</div>
+        </ng-template>
+      </ng-container>
+
     </ng-container>
 
     <!-- ════════════════ BATCH ════════════════ -->
