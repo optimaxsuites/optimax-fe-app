@@ -36,6 +36,8 @@ export class ApprovalComponent implements OnInit {
   selectedAction: { [key: string]: string } = {}
   private readonly submoduleControlNameByIds = new Map<string, string>();
 
+  private patchApplied = false;
+
   applyModuleSearch(): void {
     const term = this.moduleSearchTerm.toLowerCase().trim();
     this.filteredDisplayModules = term
@@ -71,13 +73,16 @@ export class ApprovalComponent implements OnInit {
           this.buildApprovalForm();
           
           // Load existing configurations from backend
-          forkJoin({
-            workflows: this.workflowService.getWorkflows(),
-            approvalStages: this.workflowService.getApprovalStages()
-          }).subscribe(({ workflows, approvalStages }) => {
-            const merged = this.mergeWorkflowStages(workflows, approvalStages);
-            this.patchExistingWorkflows(merged);
-          });
+          if (!this.patchApplied) {
+            this.patchApplied = true;
+            forkJoin({
+              workflows: this.workflowService.getWorkflows(),
+              approvalStages: this.workflowService.getApprovalStages()
+            }).subscribe(({ workflows, approvalStages }) => {
+              const merged = this.mergeWorkflowStages(workflows, approvalStages);
+              this.patchExistingWorkflows(merged);
+            });
+          }
         }
       });
 
@@ -232,7 +237,21 @@ export class ApprovalComponent implements OnInit {
   // Update removeStage to include actionKey
   removeStage(moduleTitle: string, appName: string, actionKey: string, stageIndex: number) {
     const stages = this.getStages(moduleTitle, appName, actionKey);
-    stages.removeAt(stageIndex);
+    const stageId = stages.at(stageIndex)?.get('id')?.value;
+
+    if (stageId && stageId > 0) {
+      this.workflowService.deleteStage(stageId).subscribe({
+        next: () => {
+          stages.removeAt(stageIndex);
+          this.messageService.add({ severity: 'success', summary: 'Removed', detail: 'Stage removed successfully', key: 'tl' });
+        },
+        error: (err) => {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: typeof err === 'string' ? err : 'Failed to remove stage', key: 'tl' });
+        }
+      });
+    } else {
+      stages.removeAt(stageIndex);
+    }
   }
 
   patchExistingWorkflows(workflows: any[]) {
@@ -335,9 +354,7 @@ export class ApprovalComponent implements OnInit {
       const key = [
         workflow?.module?.id ?? 'x',
         workflow?.submodule?.id ?? 'x',
-        workflow?.actionKey ?? '',
-        workflow?.serviceName ?? '',
-        workflow?.resourceName ?? ''
+        workflow?.actionKey ?? ''
       ].join('|');
 
       const existing = bestByBusinessKey.get(key);
@@ -440,20 +457,20 @@ export class ApprovalComponent implements OnInit {
           }))
         };
 
-        console.log(`Saving workflow for ${actionKey}...`, payload);
-        
-        const request$ = actionSettings.id
+        const isExisting = actionSettings.id && actionSettings.id > 0;
+        const request$ = isExisting
           ? this.workflowService.updateWorkflow(actionSettings.id, payload)
           : this.workflowService.createWorkflow(payload);
 
         request$.subscribe({
           next: (res) => {
-            console.log(`${actionKey} saved successfully`)
+            if (!isExisting && res?.id) {
+              const actionGroup = this.approvalForm.get(`submodules.${controlName}.actions.${actionKey}`) as FormGroup;
+              actionGroup?.patchValue({ id: res.id }, { emitEvent: false });
+            }
             this.messageService.add({ severity: 'success', summary: 'Success', detail: `${app.appName} ${actionKey} approval workflow saved successfully`, key: 'tl'});
-
           },
           error: (err) => {
-            console.error(`Error saving ${actionKey}`, err)
             this.messageService.add({ severity: 'error', summary: 'Error', detail: typeof err === 'string' ? err : `Failed to save ${app.appName} ${actionKey} workflow`, key: 'tl'});
           }
         });

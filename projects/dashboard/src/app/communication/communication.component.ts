@@ -1526,6 +1526,7 @@ export class CommunicationComponent
         this.loadFeedNotifications();
         this.feedHomeLoading = false;
         this.loadingMoreFeed = false;
+        this.resolveFeedAuthorNames(mergedPosts);
         this.cdr.detectChanges();
       },
       error: () => {
@@ -1569,6 +1570,7 @@ export class CommunicationComponent
             this.feedHomeLoading = false;
             this.loadingMoreFeed = false;
             this.feedHomeError = this.feedPosts.length ? null : 'Could not load enterprise feed.';
+            this.resolveFeedAuthorNames(nextPosts);
             this.cdr.detectChanges();
           },
           error: () => {
@@ -1580,6 +1582,14 @@ export class CommunicationComponent
         });
       },
     });
+  }
+
+  private resolveFeedAuthorNames(posts: CollabFeedPost[]): void {
+    const missingIds = posts
+      .filter((p) => !p.author && p.authorUserId && !this.userDirectory[p.authorUserId])
+      .map((p) => p.authorUserId as number);
+    if (!missingIds.length) return;
+    this.loadUserDirectory(missingIds, () => this.cdr.detectChanges());
   }
 
   refreshFeed(): void {
@@ -2346,7 +2356,7 @@ export class CommunicationComponent
     const source = [...featuredPosts, ...posts].slice(0, 3);
     return source.map((post, index) => ({
       id: post.id || index + 1,
-      author: this.feedAuthorName(post.author),
+      author: this.feedAuthorName(post.author, post.authorUserId),
       role: (post.moduleCodes || []).slice(0, 2).join(' • ') || (post.postType || 'UPDATE'),
       timeAgo: this.feedPublishedLabel(post.publishedAt || post.createdAt),
       content: this.extractTextFromHtml(post.summary || post.body || '').slice(0, 140) || 'New collaboration highlight available.',
@@ -2358,7 +2368,7 @@ export class CommunicationComponent
     return posts.slice(0, 3).map((post, index) => ({
       id: post.id || index + 1,
       title: post.title || `${post.postType || 'Update'} follow-up`,
-      owner: this.feedAuthorName(post.author),
+      owner: this.feedAuthorName(post.author, post.authorUserId),
       due: this.feedPublishedLabel(post.publishedAt || post.createdAt),
       status: index === 0 ? 'Pending' : index === 1 ? 'In Progress' : 'Review',
     }));
@@ -2542,14 +2552,18 @@ export class CommunicationComponent
     this.cdr.detectChanges();
   }
 
-  feedAuthorName(user?: any): string {
-    if (!user) return 'Unknown author';
+  feedAuthorName(user?: any, fallbackUserId?: number | null): string {
+    if (!user) {
+      const uid = Number(fallbackUserId || 0);
+      if (uid && this.userDirectory[uid]) return this.userDirectory[uid];
+      return uid ? `User ${uid}` : 'Unknown';
+    }
     const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
     return fullName || user.fullname || user.username || `User ${user.userId || user.id || ''}`.trim();
   }
 
-  feedAuthorInitials(user?: any): string {
-    return initialsFrom(this.feedAuthorName(user));
+  feedAuthorInitials(user?: any, fallbackUserId?: number | null): string {
+    return initialsFrom(this.feedAuthorName(user, fallbackUserId));
   }
 
   feedAuthorColor(seed: number): string {
