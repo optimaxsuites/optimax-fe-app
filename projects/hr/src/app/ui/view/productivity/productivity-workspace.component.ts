@@ -280,7 +280,10 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   // ── Performance Review tab state ──────────────────────────────────────────
-  reviewSubTab: 'mine' | 'team' | 'sessions' = 'mine';
+  reviewSubTab: 'mine' | 'self' | 'team' | 'sessions' = 'mine';
+  apiGoals: PerformanceGoalFull[] = [];
+  apiGoalsLoading = false;
+  apiGoalsSaving: Record<number, boolean> = {};
   reviewPeriod: 'week' | 'month' = 'month';
   reviewAnchorDate: Date = new Date();
   reviewEmployee = '';
@@ -744,6 +747,37 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     } catch { this.reviewSessions = []; }
   }
 
+  loadApiGoals(): void {
+    if (!this.resolvedEmployeeId) return;
+    this.apiGoalsLoading = true;
+    this.subscription.add(
+      this.workTaskApi.getGoalsByEmployee(this.resolvedEmployeeId)
+        .pipe(catchError(() => of([] as PerformanceGoalFull[])))
+        .subscribe(goals => {
+          this.apiGoals = goals;
+          this.apiGoalsLoading = false;
+        })
+    );
+  }
+
+  saveGoalRating(goal: PerformanceGoalFull, rating: number, rationale: string): void {
+    this.apiGoalsSaving = { ...this.apiGoalsSaving, [goal.id]: true };
+    this.subscription.add(
+      this.workTaskApi.submitSelfAssessment(goal.id, rating, rationale)
+        .pipe(catchError(() => of(null)))
+        .subscribe(updated => {
+          if (updated) {
+            this.apiGoals = this.apiGoals.map(g => g.id === goal.id ? { ...g, selfRating: rating, rationale } : g);
+          }
+          const s = { ...this.apiGoalsSaving }; delete s[goal.id];
+          this.apiGoalsSaving = s;
+        })
+    );
+  }
+
+  get apiRatedCount(): number { return this.apiGoals.filter(g => g.selfRating > 0).length; }
+  get apiGoalWeightSum(): number { return this.apiGoals.reduce((s, g) => s + (g.weight || 0), 0); }
+
   // ── Subtask inline edit ───────────────────────────────────────────────────
   editingSubtaskId: string | null = null;
   editingSubtaskTitle = '';
@@ -782,12 +816,20 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return [...this.boardTasks, ...this.archivedTasks];
   }
 
+  reportsMonthFilter = '';   // 'YYYY-MM', empty = all months
+
   get chartFilteredTasks(): BoardTask[] {
     return this.allTasksForCharts.filter(t => {
       if (this.chartFilterAssignee && t.assignee !== this.chartFilterAssignee) return false;
       if (this.chartFilterSupervisor && t.team !== this.chartFilterSupervisor) return false;
       if (this.chartFilterPriority && t.priority !== this.chartFilterPriority) return false;
       if (this.chartFilterTag && !(t.tags ?? []).includes(this.chartFilterTag)) return false;
+      if (this.reportsMonthFilter) {
+        const d = t.dueDate ? new Date(t.dueDate) : null;
+        if (!d || isNaN(d.getTime())) return false;
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (key !== this.reportsMonthFilter) return false;
+      }
       return true;
     });
   }

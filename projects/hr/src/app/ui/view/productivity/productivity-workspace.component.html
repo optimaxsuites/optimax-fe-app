@@ -81,10 +81,6 @@
         <i class="fas fa-chart-line tab-icon"></i>
         <span class="tab-label">Performance Review</span>
       </button>
-      <button class="tab-btn" [class.active]="pmSection === 'assessment'" (click)="setPmSection('assessment')">
-        <i class="fas fa-star tab-icon"></i>
-        <span class="tab-label">Self-Assessment</span>
-      </button>
       <button class="tab-btn" *ngIf="isAdminOrSupervisor" [class.active]="pmSection === 'supervisor'" (click)="setPmSection('supervisor')">
         <i class="fas fa-user-check tab-icon"></i>
         <span class="tab-label">Supervisor Review</span>
@@ -588,9 +584,18 @@
             <option value="">All Tags</option>
             <option *ngFor="let t of chartAllTags" [value]="t">{{ t }}</option>
           </select>
-          <button class="chart-filter-reset" (click)="resetChartFilters()" title="Clear filters">
+          <input type="month" class="chart-filter-sel" [(ngModel)]="reportsMonthFilter"
+                 title="Filter all charts by due-date month" style="min-width:145px">
+          <button class="chart-filter-reset" (click)="resetChartFilters(); reportsMonthFilter = ''" title="Clear all filters">
             <i class="fas fa-times"></i> Clear
           </button>
+        </div>
+        <div *ngIf="reportsMonthFilter" class="rev-saved-banner" style="background:#eff6ff;color:#2563eb;margin-bottom:8px">
+          <i class="fas fa-filter"></i>
+          Showing tasks with due dates in <strong>{{ reportsMonthFilter | date:'MMMM yyyy':'UTC' }}</strong>
+          &nbsp;·&nbsp;{{ chartFilteredTasks.length }} task(s)
+          <button style="margin-left:auto;background:none;border:none;color:#2563eb;cursor:pointer;font-size:12px;font-weight:700"
+                  (click)="reportsMonthFilter = ''">Clear month filter</button>
         </div>
 
         <!-- ── 1. Task Completion by Status ───────────────────────── -->
@@ -828,6 +833,10 @@
         <button class="rev-sub-btn" [class.active]="reviewSubTab === 'mine'" (click)="reviewSubTab = 'mine'">
           <i class="fas fa-user"></i> My Performance
         </button>
+        <button class="rev-sub-btn" [class.active]="reviewSubTab === 'self'"
+                (click)="reviewSubTab = 'self'; loadApiGoals()">
+          <i class="fas fa-star"></i> Self-Assessment
+        </button>
         <button class="rev-sub-btn" *ngIf="isAdminOrSupervisor" [class.active]="reviewSubTab === 'team'" (click)="reviewSubTab = 'team'">
           <i class="fas fa-users"></i> Team Review
         </button>
@@ -921,6 +930,101 @@
             <div class="chart-empty">No tasks due in this period.</div>
           </ng-template>
         </div>
+      </ng-container>
+
+      <!-- ──────────────── SELF-ASSESSMENT ──────────────── -->
+      <ng-container *ngIf="reviewSubTab === 'self'">
+        <div class="section-head" style="margin-top:0">
+          <h3>Self-Assessment — {{ reviewPeriodBounds.label }}</h3>
+          <p>Rate each goal honestly and save. Your ratings are submitted to your supervisor.</p>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="apiGoalsLoading" class="chart-empty">Loading your goals…</div>
+
+        <!-- No goals from API — show guidance -->
+        <ng-container *ngIf="!apiGoalsLoading && apiGoals.length === 0">
+          <div class="rev-access-notice">
+            <i class="fas fa-star" style="font-size:1.6rem;color:#d97706;margin-bottom:10px"></i>
+            <p style="font-weight:600">No performance goals found for your profile.</p>
+            <p style="font-size:12px;color:#9ca3af">Goals are assigned by your supervisor or HR admin. Contact your supervisor to have goals set up for the current cycle.</p>
+          </div>
+        </ng-container>
+
+        <!-- API goals -->
+        <ng-container *ngIf="!apiGoalsLoading && apiGoals.length > 0">
+          <div class="rev-kpi-grid" style="margin-bottom:16px">
+            <div class="rev-kpi-card">
+              <div class="rev-kpi-val">{{ apiGoals.length }}</div>
+              <div class="rev-kpi-lbl">Total Goals</div>
+            </div>
+            <div class="rev-kpi-card rev-kpi-card--green">
+              <div class="rev-kpi-val">{{ apiRatedCount }}</div>
+              <div class="rev-kpi-lbl">Rated</div>
+            </div>
+            <div class="rev-kpi-card rev-kpi-card--purple">
+              <div class="rev-kpi-val">{{ apiGoalWeightSum }}%</div>
+              <div class="rev-kpi-lbl">Total Weight</div>
+            </div>
+          </div>
+
+          <div class="assess-goals">
+            <div class="goal-card" *ngFor="let goal of apiGoals" [class.open]="goal['_open']">
+              <div class="goal-card-head" (click)="goal['_open'] = !goal['_open']">
+                <div class="goal-avatar" style="background:#2563eb">
+                  <i class="fas fa-bullseye" style="font-size:12px"></i>
+                </div>
+                <div style="flex:1">
+                  <div class="goal-title">{{ goal.title }}</div>
+                  <div class="goal-meta-line">
+                    Weight: {{ goal.weight }}%
+                    <span *ngIf="goal.dueDate"> · Due {{ goal.dueDate }}</span>
+                    <span *ngIf="goal.cycleQuarter"> · {{ goal.cycleQuarter }} {{ goal.cycleYear }}</span>
+                  </div>
+                </div>
+                <div class="goal-head-right">
+                  <span class="assess-star" *ngFor="let s of stars"
+                        [class.on]="s <= goal.selfRating"
+                        (click)="goal['_rating'] = s; $event.stopPropagation()">★</span>
+                  <span class="badge" [ngClass]="goal.selfRating > 0 ? 'b-green' : 'b-gray'">
+                    {{ goal.selfRating > 0 ? (goal.selfRating + ' / 5') : 'Not rated' }}
+                  </span>
+                  <span class="chevron-icon">{{ goal['_open'] ? '▼' : '▶' }}</span>
+                </div>
+              </div>
+
+              <div class="goal-card-body" *ngIf="goal['_open']">
+                <div *ngIf="goal.description" class="goal-target-text">
+                  <strong>Target:</strong> {{ goal.description }}
+                </div>
+
+                <div class="self-rating-label">Your Self-Rating</div>
+                <div class="star-row">
+                  <span class="assess-star" *ngFor="let s of stars"
+                        [class.on]="s <= (goal['_rating'] ?? goal.selfRating)"
+                        (click)="goal['_rating'] = s">★</span>
+                  <span class="rev-star-label" *ngIf="goal['_rating'] || goal.selfRating">
+                    {{ ['','Needs Improvement','Below Expectations','Meets Expectations','Exceeds Expectations','Outstanding'][goal['_rating'] ?? goal.selfRating] }}
+                  </span>
+                </div>
+
+                <div class="rationale-label">Rationale &amp; Evidence</div>
+                <textarea class="rev-textarea" rows="3"
+                  [(ngModel)]="goal['_rationale']"
+                  [placeholder]="goal.rationale || 'Describe your performance on this goal…'"></textarea>
+
+                <div class="goal-attach-row" style="margin-top:10px">
+                  <button class="rev-record-btn"
+                    [disabled]="!(goal['_rating'] ?? goal.selfRating) || apiGoalsSaving[goal.id]"
+                    (click)="saveGoalRating(goal, goal['_rating'] ?? goal.selfRating, goal['_rationale'] ?? goal.rationale ?? '')">
+                    <i class="fas fa-save"></i>
+                    {{ apiGoalsSaving[goal.id] ? 'Saving…' : 'Save Rating' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
       </ng-container>
 
       <!-- ──────────────── TEAM REVIEW ──────────────── -->
