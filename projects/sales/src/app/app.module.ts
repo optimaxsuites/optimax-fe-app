@@ -164,6 +164,12 @@ import { RestockRequestListComponent } from './ui/view/inventory/restock/restock
 import { RestockSuggestionsPageComponent } from './ui/view/inventory/restock/restock-suggestions-page/restock-suggestions-page.component';
 import { ThresholdManagementComponent } from './ui/view/inventory/restock/threshold-management/threshold-management.component';
 import { AnalyticsComponent } from './ui/view/inventory/inventory-analytics/analytics/analytics.component';
+import { ProductAnalyticsComponent } from './ui/view/inventory/inventory-analytics/product-analytics/product-analytics.component';
+import { BranchAnalyticsComponent } from './ui/view/inventory/inventory-analytics/branch-analytics/branch-analytics.component';
+import { AffordabilityDashboardComponent } from './ui/view/inventory/inventory-analytics/affordability-dashboard/affordability-dashboard.component';
+import { StockTurnoverComponent } from './ui/view/inventory/inventory-analytics/stock-turnover/stock-turnover.component';
+import { SellLikelihoodComponent } from './ui/view/inventory/inventory-analytics/sell-likelihood/sell-likelihood.component';
+import { PerformanceReportComponent } from './ui/view/inventory/inventory-analytics/performance-report/performance-report.component';
 import { LogisticsComponent } from './ui/view/logistics/logistics.component';
 import { LogisticsDashboardComponent } from './ui/view/logistics/logistics-dashboard/logistics-dashboard.component';
 import { TrackingComponent } from './ui/view/logistics/tracking/tracking.component';
@@ -198,6 +204,12 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
     RestockSuggestionsPageComponent,
     ThresholdManagementComponent,
     AnalyticsComponent,
+    ProductAnalyticsComponent,
+    BranchAnalyticsComponent,
+    AffordabilityDashboardComponent,
+    StockTurnoverComponent,
+    SellLikelihoodComponent,
+    PerformanceReportComponent,
     TableComponent,
     TableBodyDirective,
     SidebarComponent,

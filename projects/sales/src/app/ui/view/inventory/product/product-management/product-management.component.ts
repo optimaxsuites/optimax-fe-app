@@ -20,7 +20,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
 
   protected readonly Math = Math;
 
-  viewMode: 'list' | 'icon' = 'icon';
+  viewMode: 'list' | 'icon' = 'list';
   products: any[] = [];
   isLoading = true;
   selectedProductIds: any[] = [];

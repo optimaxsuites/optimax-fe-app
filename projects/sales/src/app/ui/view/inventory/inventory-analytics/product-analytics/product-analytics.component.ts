@@ -3,7 +3,7 @@
 // IMPORTS
 // ============================================================
 
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnChanges, OnDestroy, Input, Output, EventEmitter, SimpleChanges } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { Subject, takeUntil, forkJoin } from 'rxjs';
@@ -28,7 +28,7 @@ import {
   templateUrl: './product-analytics.component.html',
   styleUrls: ['./product-analytics.component.scss']
 })
-export class ProductAnalyticsComponent implements OnInit, OnDestroy {
+export class ProductAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
 
   // ============================================================
   // INPUTS / OUTPUTS
@@ -92,6 +92,13 @@ export class ProductAnalyticsComponent implements OnInit, OnDestroy {
         }
       });
     } else {
+      this.loadData();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // Re-load when the caller (e.g. a selector dropdown) picks a different product.
+    if (changes['productId'] && !changes['productId'].firstChange && this.productId) {
       this.loadData();
     }
   }
@@ -384,5 +391,42 @@ export class ProductAnalyticsComponent implements OnInit, OnDestroy {
 
   getChartWidth(index: number, total: number): number {
     return ((index + 1) / total) * 100;
+  }
+
+  getColor(index: number): string {
+    const colors = ['#2E6276', '#2EB270', '#F5A623', '#DC2626', '#3B82F6', '#8B5CF6'];
+    return colors[index % colors.length];
+  }
+
+  getConicGradient(): string {
+    if (!this.branchInventory || this.branchInventory.length === 0) {
+      return '#e2e8f0';
+    }
+
+    const total = this.branchInventory.reduce((sum, item) => sum + item.quantity, 0);
+    if (total === 0) return '#e2e8f0';
+
+    let gradient = '';
+    let currentAngle = 0;
+
+    this.branchInventory.forEach((item, index) => {
+      const percentage = (item.quantity / total) * 100;
+      const end = currentAngle + percentage;
+      const color = this.getColor(index);
+
+      if (index === 0) {
+        gradient = `conic-gradient(${color} 0% ${end}%`;
+      } else {
+        gradient += `, ${color} ${currentAngle}% ${end}%`;
+      }
+
+      if (index === this.branchInventory.length - 1) {
+        gradient += ')';
+      }
+
+      currentAngle = end;
+    });
+
+    return gradient;
   }
 }
