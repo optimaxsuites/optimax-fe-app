@@ -633,11 +633,19 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // ── Role-based visibility ─────────────────────────────────────────────────
   get isAdminOrSupervisor(): boolean {
     const role = (sessionStorage.getItem('role') || localStorage.getItem('role') || '').toUpperCase();
-    return role.includes('ADMIN') || role.includes('SUPERVISOR') || role.includes('MANAGER');
+    if (role.includes('ADMIN') || role.includes('SUPERVISOR') || role.includes('MANAGER') ||
+        role.includes('HR') || role.includes('HEAD') || role.includes('LEAD')) return true;
+    // Structural check: if any employee lists the current user as their supervisor, they ARE a supervisor
+    const myName = this.currentUserDisplayName.toLowerCase();
+    if (myName && this.allEmployees.some(e => e.supervisor?.toLowerCase() === myName)) return true;
+    return false;
   }
 
   get currentUserDisplayName(): string {
-    return sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || '';
+    const raw = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') ||
+                sessionStorage.getItem('name') || '';
+    // Guard against apps that store the literal string "undefined" or "null"
+    return (raw && raw !== 'undefined' && raw !== 'null') ? raw : '';
   }
 
   get currentUserFullName(): string {
