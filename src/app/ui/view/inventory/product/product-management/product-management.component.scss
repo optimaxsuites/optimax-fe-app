@@ -48,6 +48,41 @@ $radius-sm: var(--radius-sm);
 .ql-top-bar-right { display:flex; align-items:center; gap:10px; }
 .ql-title { font-size:20px; font-weight:800; color:var(--text); margin:0; }
 .ql-total-badge { background:var(--p-lt); color:var(--p); font-size:12px; font-weight:700; padding:2px 10px; border-radius:12px; }
+
+.ql-view-switcher {
+    display: flex;
+    background: var(--bg);
+    border-radius: 7px;
+    padding: 3px;
+    border: 1px solid var(--border);
+}
+
+.ql-switch-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all .2s;
+
+    i { font-size: 14px; }
+
+    &.active {
+        background: var(--surface);
+        color: var(--p);
+        box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+
+    &:hover:not(.active) {
+        color: var(--text);
+    }
+}
+
 .ql-page-size-wrap { display:flex; align-items:center; gap:6px; }
 .ql-page-size-select { padding:5px 8px; border:1px solid var(--border); border-radius:6px; font-size:13px; font-family:inherit; }
 .ql-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:7px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; border:none; transition:all .15s; &--primary { background:var(--p); color:#fff; &:hover { background:#0f2d2a; } } &--ghost-sm { padding:4px 10px; font-size:12px; background:transparent; border:1px solid var(--border); color:var(--muted); } &--danger-sm { padding:4px 10px; font-size:12px; background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; } &--secondary { background:#f1f5f9; color:var(--text); &:hover { background:#e2e8f0; } } }

@@ -189,8 +189,19 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
   // NAVIGATION
   // ============================================================
 
+  /**
+   * Product Management, Stock Movements, Branch Directory, and Analytics are tabs inside the
+   * Inventory shell (/commerce/inventory) rather than standalone routes, so most of these targets
+   * can't be deep-linked to directly. Only the routes below actually exist on their own; anything
+   * else falls back to the shell itself instead of hitting a dead route.
+   */
   navigateTo(route: string): void {
-    this.router.navigateByUrl(`/admin/sales${route}`);
+    const path = route.split('?')[0];
+    const realRoutes: Record<string, string> = {
+      '/inventory/products/new': '/admin/sales/commerce/inventory/products/new',
+      '/inventory/movements/transfer': '/admin/sales/commerce/inventory/movements/transfer'
+    };
+    this.router.navigateByUrl(realRoutes[path] || '/commerce/inventory');
   }
 
   navigateToProduct(productId: string): void {

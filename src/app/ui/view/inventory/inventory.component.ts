@@ -5,7 +5,7 @@ import { ProductManagementComponent } from './product/product-management/product
 import { BranchInventoryComponent } from './branch/branch-inventory/branch-inventory.component';
 import { StockMovementComponent } from './stock/stock-movement/stock-movement.component';
 import { RestockManagementComponent } from './restock/restock-management/restock-management.component';
-import { AnalyticsComponent } from './analytics/analytics.component';
+import { AnalyticsComponent } from './inventory-analytics/analytics/analytics.component';
 
 @Component({
   selector: 'app-inventory',
