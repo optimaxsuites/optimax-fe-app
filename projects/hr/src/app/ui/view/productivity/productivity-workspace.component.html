@@ -834,7 +834,7 @@
           <i class="fas fa-user"></i> My Performance
         </button>
         <button class="rev-sub-btn" [class.active]="reviewSubTab === 'self'"
-                (click)="reviewSubTab = 'self'; loadApiGoals()">
+                (click)="reviewSubTab = 'self'; loadApiGoals(); loadMySubmission()">
           <i class="fas fa-star"></i> Self-Assessment
         </button>
         <button class="rev-sub-btn" *ngIf="isAdminOrSupervisor" [class.active]="reviewSubTab === 'team'" (click)="reviewSubTab = 'team'">
@@ -953,6 +953,35 @@
 
         <!-- API goals -->
         <ng-container *ngIf="!apiGoalsLoading && apiGoals.length > 0">
+          <!-- Submission status bar -->
+          <div class="submission-status-bar" *ngIf="!submissionLoading">
+            <div class="sub-status-left">
+              <ng-container *ngIf="mySubmission">
+                <span class="badge" [ngClass]="mySubmission.status === 'SUBMITTED' ? 'b-green' : 'b-gray'">
+                  <i class="fas" [ngClass]="mySubmission.status === 'SUBMITTED' ? 'fa-check-circle' : 'fa-clock'"></i>
+                  {{ mySubmission.status === 'SUBMITTED' ? 'Submitted to Supervisor' : 'Draft — Not yet submitted' }}
+                </span>
+                <span style="font-size:11px;color:#6b7280;margin-left:8px" *ngIf="mySubmission.submittedAt">
+                  Submitted {{ mySubmission.submittedAt | date:'d MMM y, HH:mm' }}
+                </span>
+              </ng-container>
+              <span *ngIf="!mySubmission" class="badge b-gray">
+                <i class="fas fa-info-circle"></i> Not submitted yet
+              </span>
+            </div>
+            <button class="rev-record-btn"
+              *ngIf="mySubmission?.status !== 'SUBMITTED'"
+              [disabled]="!allGoalsRated || submitting"
+              [title]="!allGoalsRated ? 'Rate all goals before submitting' : ''"
+              (click)="submitMyAppraisal()">
+              <i class="fas" [ngClass]="submitting ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+              {{ submitting ? 'Submitting…' : 'Submit Appraisal' }}
+            </button>
+            <span *ngIf="mySubmission?.status === 'SUBMITTED'" class="sub-submitted-badge">
+              <i class="fas fa-check-circle"></i> Appraisal submitted
+            </span>
+          </div>
+
           <div class="rev-kpi-grid" style="margin-bottom:16px">
             <div class="rev-kpi-card">
               <div class="rev-kpi-val">{{ apiGoals.length }}</div>
@@ -1037,7 +1066,8 @@
         <!-- Employee selector -->
         <div class="rev-emp-selector">
           <label class="rev-emp-label">Team Member</label>
-          <select class="chart-filter-sel rev-emp-select" [(ngModel)]="reviewEmployee">
+          <select class="chart-filter-sel rev-emp-select" [ngModel]="reviewEmployee"
+                  (ngModelChange)="onReviewEmployeeChange($event)">
             <option value="">— Select a team member —</option>
             <option *ngFor="let name of reviewTeamMemberNames" [value]="name">{{ name }}</option>
           </select>
@@ -1069,6 +1099,112 @@
             <div class="rev-kpi-card">
               <div class="rev-kpi-val">{{ teamReviewMetrics.onTimeRate }}%</div>
               <div class="rev-kpi-lbl">On-Time Rate</div>
+            </div>
+          </div>
+
+          <!-- Performance Goals for selected employee -->
+          <div class="panel-card" style="margin-bottom:16px">
+            <div class="panel-card-header">
+              <h4 class="panel-card-title">
+                <i class="fas fa-bullseye" style="color:#2563eb;margin-right:6px"></i>
+                {{ reviewEmployee }}'s Performance Goals
+              </h4>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button class="btn-sm btn-outline" (click)="loadTeamMemberGoals()" [disabled]="teamGoalsLoading">
+                  <i class="fas fa-sync-alt" [class.fa-spin]="teamGoalsLoading"></i> Refresh
+                </button>
+                <button class="btn-sm btn-primary" (click)="showGoalForm = !showGoalForm">
+                  <i class="fas fa-plus"></i> {{ showGoalForm ? 'Cancel' : 'Add Goal' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Goal creation form -->
+            <div *ngIf="showGoalForm" class="goal-create-form">
+              <div class="goal-form-row">
+                <div class="goal-form-field" style="flex:2">
+                  <label class="rev-field-lbl">Goal Title *</label>
+                  <input class="form-input" type="text" [(ngModel)]="newGoal.title" placeholder="e.g. Improve customer response time">
+                </div>
+                <div class="goal-form-field">
+                  <label class="rev-field-lbl">Weight (%)</label>
+                  <input class="form-input" type="number" min="1" max="100" [(ngModel)]="newGoal.weight">
+                </div>
+                <div class="goal-form-field">
+                  <label class="rev-field-lbl">Due Date</label>
+                  <input class="form-input" type="date" [(ngModel)]="newGoal.dueDate">
+                </div>
+              </div>
+              <div class="goal-form-row">
+                <div class="goal-form-field" style="flex:1">
+                  <label class="rev-field-lbl">Cycle Year</label>
+                  <input class="form-input" type="number" [(ngModel)]="newGoal.cycleYear" min="2020" max="2099">
+                </div>
+                <div class="goal-form-field" style="flex:1">
+                  <label class="rev-field-lbl">Quarter</label>
+                  <select class="form-input" [(ngModel)]="newGoal.cycleQuarter">
+                    <option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option>
+                  </select>
+                </div>
+                <div class="goal-form-field" style="flex:3">
+                  <label class="rev-field-lbl">Description / Target</label>
+                  <input class="form-input" type="text" [(ngModel)]="newGoal.description" placeholder="Describe the success criteria for this goal">
+                </div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-top:8px">
+                <button class="rev-record-btn" [disabled]="!newGoal.title.trim() || goalSaving" (click)="createGoalForEmployee()">
+                  <i class="fas fa-save"></i> {{ goalSaving ? 'Saving…' : 'Save Goal' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Goals list -->
+            <div *ngIf="teamGoalsLoading" class="chart-empty">Loading goals…</div>
+            <div *ngIf="!teamGoalsLoading && teamEmployeeGoals.length === 0 && !showGoalForm" class="chart-empty" style="padding:16px 0">
+              No goals set for {{ reviewEmployee }} yet. Click <strong>Add Goal</strong> to create one.
+            </div>
+            <div *ngIf="!teamGoalsLoading && teamEmployeeGoals.length > 0" class="table-wrap">
+              <table class="list-table">
+                <thead>
+                  <tr>
+                    <th>Goal</th>
+                    <th>Cycle</th>
+                    <th style="text-align:right">Weight</th>
+                    <th>Due</th>
+                    <th style="text-align:center">Self Rating</th>
+                    <th style="text-align:center">Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let g of teamEmployeeGoals">
+                    <td>
+                      <div style="font-weight:600">{{ g.title }}</div>
+                      <div *ngIf="g.description" style="font-size:11px;color:#6b7280">{{ g.description }}</div>
+                    </td>
+                    <td style="font-size:12px">{{ g.cycleQuarter }} {{ g.cycleYear }}</td>
+                    <td style="text-align:right">{{ g.weight }}%</td>
+                    <td style="font-size:12px">{{ g.dueDate || '—' }}</td>
+                    <td style="text-align:center">
+                      <span *ngIf="g.selfRating > 0" style="color:#d97706">
+                        <span *ngFor="let star of stars">{{ star <= g.selfRating ? '★' : '☆' }}</span>
+                        ({{ g.selfRating }}/5)
+                      </span>
+                      <span *ngIf="!g.selfRating" class="badge b-gray">Not rated</span>
+                    </td>
+                    <td style="text-align:center">
+                      <span class="badge" [ngClass]="g.status === 'SUBMITTED' ? 'b-green' : g.status === 'REVIEWED' ? 'b-blue' : 'b-gray'">
+                        {{ g.status || 'DRAFT' }}
+                      </span>
+                    </td>
+                    <td>
+                      <button class="rev-del-btn" title="Remove goal" (click)="deleteTeamGoal(g)">
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -1163,9 +1299,10 @@
                   <span class="perf-team-grade" [ngClass]="'perf-team-grade' + teamReviewMetrics.gradeClass" style="margin-left:6px">{{ teamReviewMetrics.grade }}</span>
                 </span>
                 <button class="rev-record-btn"
-                  [disabled]="!reviewDiscussion.trim() || !reviewSupRating"
+                  [disabled]="!reviewDiscussion.trim() || !reviewSupRating || sessionRecording"
                   (click)="recordSession()">
-                  <i class="fas fa-save"></i> Record This Session
+                  <i class="fas" [ngClass]="sessionRecording ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                  {{ sessionRecording ? 'Saving…' : 'Record This Session' }}
                 </button>
               </div>
             </div>

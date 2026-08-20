@@ -1424,6 +1424,29 @@
   &.open .goal-card-head { background: #f0fdf9; }
 }
 
+.goal-create-form {
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #f0f9ff;
+  padding: 14px 16px;
+  margin: 12px 0;
+}
+
+.goal-form-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.goal-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 120px;
+}
+
 .goal-card-head {
   display: flex;
   align-items: center;
@@ -4027,6 +4050,20 @@
 
 /* Assessment meeting card */
 .rev-meeting-card { border-left: 4px solid #d97706; }
+
+.submission-status-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 10px 16px; margin-bottom: 16px;
+}
+
+.sub-status-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.sub-submitted-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: #16a34a; font-size: 13px; font-weight: 600;
+}
 
 .rev-meeting-field {
   margin-bottom: 16px;
