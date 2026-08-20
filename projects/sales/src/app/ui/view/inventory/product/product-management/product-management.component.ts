@@ -672,7 +672,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
 
   generateQuoteFromProduct(productId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
-    const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
+    const path = uuid ? ['/quotes/new', uuid] : ['/quotes/new'];
     this.router.navigate(path, { queryParams: { productId: productId } });
   }
 

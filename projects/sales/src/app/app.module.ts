@@ -163,7 +163,7 @@ import { RestockSuggestionComponent } from './ui/view/inventory/restock/restock-
 import { RestockRequestListComponent } from './ui/view/inventory/restock/restock-request-list/restock-request-list.component';
 import { RestockSuggestionsPageComponent } from './ui/view/inventory/restock/restock-suggestions-page/restock-suggestions-page.component';
 import { ThresholdManagementComponent } from './ui/view/inventory/restock/threshold-management/threshold-management.component';
-import { AnalyticsComponent } from './ui/view/inventory/analytics/analytics.component';
+import { AnalyticsComponent } from './ui/view/inventory/inventory-analytics/analytics/analytics.component';
 import { LogisticsComponent } from './ui/view/logistics/logistics.component';
 import { LogisticsDashboardComponent } from './ui/view/logistics/logistics-dashboard/logistics-dashboard.component';
 import { TrackingComponent } from './ui/view/logistics/tracking/tracking.component';
