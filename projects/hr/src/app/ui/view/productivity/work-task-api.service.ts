@@ -535,6 +535,52 @@ export class WorkTaskApiService {
       .pipe(catchError(this.handleError));
   }
 
+  // ── Channels: unread counts + mark-read ───────────────────────────────────
+  getHomeChannelsWithUnread(): Observable<Array<{ id: number; name: string; channelCode: string; channelType: string; status: string; unreadCount?: number }>> {
+    const token = sessionStorage.getItem('Token') || sessionStorage.getItem('token') || sessionStorage.getItem('accessToken') || '';
+    const tenantId = sessionStorage.getItem('tenantId') || 'default';
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'X-Tenant-ID': tenantId, 'Content-Type': 'application/json' });
+    return this.http.get<{ channels?: any[] }>('https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/home/me', { headers })
+      .pipe(
+        map(res => res?.channels || []),
+        catchError(() => of([]))
+      );
+  }
+
+  getChannelMessages(channelId: number): Observable<Array<{ id: number; channelId: number; content: string; sentAt: any }>> {
+    const token = sessionStorage.getItem('Token') || sessionStorage.getItem('token') || sessionStorage.getItem('accessToken') || '';
+    const tenantId = sessionStorage.getItem('tenantId') || 'default';
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'X-Tenant-ID': tenantId, 'Content-Type': 'application/json' });
+    return this.http.get<any[]>(`https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/message/channel/${channelId}`, { headers })
+      .pipe(catchError(() => of([])));
+  }
+
+  markChannelRead(channelId: number, lastReadMessageId: number): Observable<any> {
+    const token = sessionStorage.getItem('Token') || sessionStorage.getItem('token') || sessionStorage.getItem('accessToken') || '';
+    const tenantId = sessionStorage.getItem('tenantId') || 'default';
+    const userId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || '0');
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'X-Tenant-ID': tenantId, 'Content-Type': 'application/json' });
+    return this.http.post<any>(
+      'https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/read/mark',
+      { channelId, userId, lastReadMessageId },
+      { headers })
+      .pipe(catchError(() => of(null)));
+  }
+
+  // ── Board config (kanban stages) ────────────────────────────────────────────
+  getBoardConfig(): Observable<{ stages?: Array<{ key: string; label: string }> }> {
+    const userId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || '0') || null;
+    const params = userId ? `?userId=${userId}` : '';
+    return this.http.get<{ stages?: Array<{ key: string; label: string }> }>(`${this.base}/boardConfig${params}`)
+      .pipe(catchError(() => of({})));
+  }
+
+  saveBoardConfig(stages: Array<{ key: string; label: string }>): Observable<any> {
+    const userId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || '0') || null;
+    return this.http.put<any>(`${this.base}/boardConfig`, { userId, stages })
+      .pipe(catchError(() => of(null)));
+  }
+
   private handleError(error: any): Observable<never> {
     console.error('WorkTaskApiService error:', error);
     return throwError(() => error);

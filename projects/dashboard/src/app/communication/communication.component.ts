@@ -8948,8 +8948,9 @@ export class CommunicationComponent
         }
 
         // ── tasks ────────────────────────────────────────────────────────────
+        // Any status that is not explicitly "finished" counts as open.
         const taskCount = new Map<number, number>(); // keyed by userId
-        const TASK_DONE = new Set(['DONE', 'ARCHIVED', 'CLOSED', 'COMPLETED']);
+        const TASK_DONE = new Set(['DONE', 'COMPLETED']);
         for (const task of taskArr) {
           if (TASK_DONE.has(String(task.status || '').toUpperCase())) continue;
           // try employee ID first (backend returns assigneeEmployee.id)
@@ -8957,8 +8958,15 @@ export class CommunicationComponent
           let uid = empId ? (contactByEmpId.get(empId) ?? 0) : 0;
           // fallback: direct userId fields
           if (!uid) uid = Number(task.assigneeUserId ?? task.userId ?? 0);
-          // fallback: name/email strings
-          if (!uid) uid = resolve(task.assigneeName || task.assigneeEmail || '');
+          // fallback: any name/email string the API might use
+          if (!uid) uid = resolve(task.assigneeName || task.assigneeEmail || task.assignee || '');
+          // fallback: multi-assignees array
+          if (!uid && Array.isArray(task.assignees)) {
+            for (const a of task.assignees as any[]) {
+              uid = resolve(typeof a === 'string' ? a : (a?.fullName || a?.name || a?.email || ''));
+              if (uid) break;
+            }
+          }
           if (uid) taskCount.set(uid, (taskCount.get(uid) ?? 0) + 1);
         }
 
