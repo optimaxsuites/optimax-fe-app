@@ -7,6 +7,7 @@ import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/cor
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
+import * as XLSX from 'xlsx';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import { Product, Category, MeasurementUnit, Supplier } from '../../../../domain/inventory/inventory.dto';
 
@@ -36,6 +37,8 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
   categories: Category[] = [];
   measurementUnits: MeasurementUnit[] = [];
   suppliers: Supplier[] = [];
+  /** All existing products, used to resolve "Overwrite existing" by SKU during import. */
+  existingProducts: Product[] = [];
 
   // UI
   Math = Math;
@@ -152,6 +155,18 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
           console.error('Failed to load suppliers:', err);
         }
       });
+
+    // Load all existing products (unpaginated) so "Overwrite existing" can match by SKU
+    this.inventoryService.getProducts({ limit: 100000 })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res) => {
+          this.existingProducts = res.data;
+        },
+        error: (err) => {
+          console.error('Failed to load existing products:', err);
+        }
+      });
   }
 
   // ============================================================
@@ -165,15 +180,7 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
     this.selectedFile = input.files[0];
     this.fileName = this.selectedFile.name;
     this.error = null;
-
-    // Read file content
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      this.fileContent = content;
-      this.parseFile(content);
-    };
-    reader.readAsText(this.selectedFile);
+    this.readFile(this.selectedFile);
   }
 
   onDragOver(event: DragEvent): void {
@@ -201,14 +208,49 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
       this.selectedFile = files[0];
       this.fileName = this.selectedFile.name;
       this.error = null;
+      this.readFile(this.selectedFile);
+    }
+  }
 
+  /** Dispatches to the CSV/TSV text parser or the Excel binary parser based on file extension. */
+  private readFile(file: File): void {
+    const isExcel = /\.xlsx?$/i.test(file.name);
+
+    if (isExcel) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[firstSheetName];
+          // header:1 gives an array-of-arrays (row 0 = headers) so we can reuse the same
+          // header/row processing pipeline as the CSV path.
+          const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
+          this.processRows(rows);
+        } catch (err) {
+          console.error('Error parsing Excel file:', err);
+          this.error = 'Failed to read Excel file. Please ensure it is a valid .xlsx or .xls file.';
+          this.isProcessing = false;
+        }
+      };
+      reader.onerror = () => {
+        this.error = 'Failed to read the file.';
+        this.isProcessing = false;
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target?.result as string;
         this.fileContent = content;
         this.parseFile(content);
       };
-      reader.readAsText(this.selectedFile);
+      reader.onerror = () => {
+        this.error = 'Failed to read the file.';
+        this.isProcessing = false;
+      };
+      reader.readAsText(file);
     }
   }
 
@@ -233,7 +275,7 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
 
     try {
       // Try to parse as CSV or TSV
-      const lines = content.split('\n').filter(line => line.trim());
+      const lines = content.split(/\r?\n/).filter(line => line.trim());
       if (lines.length === 0) {
         this.error = 'File is empty. Please upload a valid CSV file.';
         this.isProcessing = false;
@@ -241,41 +283,57 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
       }
 
       // Detect delimiter (comma or tab)
-      const firstLine = lines[0];
-      const hasComma = firstLine.includes(',');
-      const hasTab = firstLine.includes('\t');
+      const hasTab = lines[0].includes('\t');
       const delimiter = hasTab ? '\t' : ',';
+      const rows = lines.map(line => this.parseCSVLine(line, delimiter));
 
-      // Parse headers
-      const headers = this.parseCSVLine(firstLine, delimiter);
-      const expectedHeaders = ['name', 'sku', 'category', 'sellingPrice', 'costPrice', 'quantity', 'description'];
+      this.processRows(rows);
+    } catch (err) {
+      console.error('Error parsing file:', err);
+      this.error = 'Failed to parse file. Please ensure it is a valid CSV file.';
+      this.isProcessing = false;
+    }
+  }
 
-      // Validate headers
-      const normalizedHeaders = headers.map(h => h.toLowerCase().trim().replace(/\s/g, ''));
-      const missingHeaders = expectedHeaders.filter(h => !normalizedHeaders.includes(h));
-
-      if (missingHeaders.length > 0) {
-        this.error = `Missing required columns: ${missingHeaders.join(', ')}. Expected: ${expectedHeaders.join(', ')}`;
+  /**
+   * Shared row-processing pipeline for both the CSV/TSV path (parseFile) and the Excel path
+   * (readFile) — both end up producing a plain array-of-arrays (row 0 = headers) before reaching here.
+   */
+  private processRows(rows: any[][]): void {
+    try {
+      const nonEmptyRows = rows.filter(r => r.some(cell => String(cell ?? '').trim() !== ''));
+      if (nonEmptyRows.length === 0) {
+        this.error = 'File is empty. Please upload a file with data.';
         this.isProcessing = false;
         return;
       }
 
-      // Parse data rows
+      // Normalize headers by stripping whitespace and lowercasing (e.g. "Selling Price" -> "sellingprice")
+      const rawHeaders = nonEmptyRows[0].map(h => String(h ?? ''));
+      const normalizedHeaders = rawHeaders.map(h => h.toLowerCase().trim().replace(/\s/g, ''));
+
+      // Only these are truly required to build a valid product — every other template column
+      // (description, category, cost price, quantity, unit, weight, supplier) is optional.
+      const requiredHeaders = ['name', 'sku', 'sellingprice'];
+      const missingHeaders = requiredHeaders.filter(h => !normalizedHeaders.includes(h));
+
+      if (missingHeaders.length > 0) {
+        this.error = `Missing required columns: ${missingHeaders.join(', ')}. Download the template for the full list of supported columns.`;
+        this.isProcessing = false;
+        return;
+      }
+
       const data: any[] = [];
       const errors: { row: number; message: string }[] = [];
 
-      for (let i = 1; i < lines.length; i++) {
-        const values = this.parseCSVLine(lines[i], delimiter);
-        if (values.length < headers.length) continue;
-
+      for (let i = 1; i < nonEmptyRows.length; i++) {
+        const values = nonEmptyRows[i];
         const row: any = {};
-        headers.forEach((header, index) => {
-          const key = header.toLowerCase().trim().replace(/\s/g, '');
-          const value = values[index]?.trim() || '';
-          row[key] = value;
+        normalizedHeaders.forEach((key, index) => {
+          const value = values[index];
+          row[key] = value !== undefined && value !== null ? String(value).trim() : '';
         });
 
-        // Validate row
         const rowErrors = this.validateRow(row, i + 1);
         if (rowErrors.length > 0) {
           errors.push(...rowErrors);
@@ -289,7 +347,9 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
       this.previewData = data.slice(0, 10); // Show first 10 rows in preview
 
       if (data.length === 0) {
-        this.error = 'No valid rows found in the file. Please check your data.';
+        this.error = errors.length > 0
+          ? `No valid rows found — row ${errors[0].row}: ${errors[0].message}`
+          : 'No valid rows found in the file. Please check your data.';
       }
 
       this.isProcessing = false;
@@ -298,10 +358,9 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
       if (data.length > 0) {
         this.currentStep = 2;
       }
-
     } catch (err) {
-      console.error('Error parsing file:', err);
-      this.error = 'Failed to parse file. Please ensure it is a valid CSV file.';
+      console.error('Error processing file data:', err);
+      this.error = 'Failed to process file data.';
       this.isProcessing = false;
     }
   }
@@ -348,6 +407,10 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
 
     if (row.quantity && isNaN(parseInt(row.quantity))) {
       errors.push({ row: rowNumber, message: 'Quantity must be a number' });
+    }
+
+    if (row.weight && isNaN(parseFloat(row.weight))) {
+      errors.push({ row: rowNumber, message: 'Weight must be a number' });
     }
 
     if (row.category && !this.categories.some(c => c.name.toLowerCase() === row.category.toLowerCase())) {
@@ -410,50 +473,102 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
     this.error = null;
 
     const formValue = this.importForm.value;
-    const products = this.parsedData.map(row => this.mapRowToProduct(row, formValue));
+    const rows = this.parsedData;
+    const total = rows.length;
+    const errors: { row: number; message: string }[] = [];
+    let successful = 0;
+    let failed = 0;
 
-    // Simulate import process
-    setTimeout(() => {
-      const total = products.length;
-      const successful = Math.floor(total * 0.9); // Simulate 90% success rate
-      const failed = total - successful;
-      const errors: { row: number; message: string }[] = [];
-
-      // Simulate some errors
-      for (let i = 0; i < failed; i++) {
-        errors.push({
-          row: i + 1,
-          message: 'Invalid product data'
-        });
-      }
-
-      this.importResults = {
-        total,
-        successful,
-        failed,
-        errors
-      };
-
+    if (formValue.validateOnly) {
+      // Rows here already passed per-row validation in processRows(), so with no rows to
+      // actually save, everything that got this far "would" import successfully.
+      this.importResults = { total, successful: total, failed: 0, errors: [] };
       this.isProcessing = false;
       this.currentStep = 3;
-    }, 1500);
+      return;
+    }
+
+    // NOTE: InventoryService's createProduct/updateProduct are a localStorage-backed mock and
+    // resolve synchronously (via `of(...)`), so this plain for-loop completes in one tick — no
+    // recursion/concatMap needed. If the service is ever swapped for real HTTP calls, this loop
+    // will need to become a proper async sequence (e.g. concatMap) instead.
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
+      const rowNumber = index + 2; // +1 for the header row, +1 for 1-based row numbering
+      const productData = this.mapRowToProduct(row, formValue);
+
+      const existing = formValue.overwriteExisting && productData.sku
+        ? this.existingProducts.find(p => p.sku?.toLowerCase() === String(productData.sku).toLowerCase())
+        : undefined;
+
+      const action = existing
+        ? this.inventoryService.updateProduct(existing.id, productData)
+        : this.inventoryService.createProduct(productData);
+
+      let rowFailed = false;
+      let rowErrorMessage = '';
+
+      action.subscribe({
+        next: (saved) => {
+          successful++;
+          if (!existing) {
+            this.existingProducts.push(saved);
+          }
+        },
+        error: (err) => {
+          rowFailed = true;
+          rowErrorMessage = err?.message || 'Failed to save product';
+        }
+      });
+
+      if (rowFailed) {
+        failed++;
+        errors.push({ row: rowNumber, message: rowErrorMessage });
+        if (!formValue.skipErrors) {
+          const remaining = rows.length - (index + 1);
+          if (remaining > 0) {
+            errors.push({ row: rowNumber, message: `Import stopped — ${remaining} remaining row(s) were not attempted. Enable "Skip errors" to import the rest anyway.` });
+          }
+          break;
+        }
+      }
+    }
+
+    this.importResults = { total, successful, failed, errors };
+    this.isProcessing = false;
+    this.currentStep = 3;
   }
 
   private mapRowToProduct(row: any, formValue: any): Partial<Product> {
-    const category = this.categories.find(c => c.name.toLowerCase() === row.category?.toLowerCase());
-    const unit = this.measurementUnits.find(u => u.name === (formValue.defaultUnit || 'pcs'));
+    const category = row.category
+      ? this.categories.find(c => c.name.toLowerCase() === row.category.toLowerCase())
+      : undefined;
+
+    const unitName = row.unitofmeasure || formValue.defaultUnit || 'pcs';
+    const unit = this.measurementUnits.find(u => u.name.toLowerCase() === String(unitName).toLowerCase())
+      || this.measurementUnits.find(u => u.id === formValue.defaultUnit);
+
+    const supplier = row.supplier
+      ? this.suppliers.find(s => s.name.toLowerCase() === row.supplier.toLowerCase())
+      : undefined;
+    const supplierIds = supplier
+      ? [supplier.id]
+      : (formValue.defaultSupplier ? [formValue.defaultSupplier] : []);
+
+    const quantity = parseInt(row.quantity, 10) || 0;
 
     return {
       name: row.name,
       sku: row.sku,
       description: row.description || '',
-      category: category?.id || formValue.defaultCategory || 'Uncategorized',
-      unitOfMeasure: unit?.id as any || 'EACH',
+      category: category?.id || formValue.defaultCategory || undefined,
+      unitOfMeasure: (unit?.id || 'EACH') as any,
       sellingPrice: parseFloat(row.sellingprice) || 0,
       costPrice: parseFloat(row.costprice) || 0,
-      stockQuantity: parseInt(row.quantity) || 0,
-      status: (parseInt(row.quantity) || 0) > 0 ? 'ACTIVE' as any : 'OUT_OF_STOCK' as any,
-      supplierIds: []
+      stockQuantity: quantity,
+      weight: parseFloat(row.weight) || 0,
+      status: quantity > 0 ? 'ACTIVE' as any : 'OUT_OF_STOCK' as any,
+      supplierIds
     };
   }
 
@@ -519,9 +634,56 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
       'sellingprice': 'Selling Price',
       'costprice': 'Cost Price',
       'quantity': 'Quantity',
-      'description': 'Description'
+      'description': 'Description',
+      'unitofmeasure': 'Unit of Measure',
+      'weight': 'Weight',
+      'supplier': 'Supplier'
     };
     return map[key] || key;
+  }
+
+  // ============================================================
+  // TEMPLATE DOWNLOAD
+  // ============================================================
+
+  /** Column headers offered in the downloadable template — normalize (lowercase, no spaces) to
+   *  exactly the row keys `processRows()`/`mapRowToProduct()` expect, covering the majority of
+   *  fields on the Add/Edit Product form. */
+  private readonly TEMPLATE_HEADERS = [
+    'Name', 'Description', 'SKU', 'Category', 'Cost Price', 'Selling Price', 'Quantity', 'Unit Of Measure', 'Weight', 'Supplier'
+  ];
+
+  private readonly TEMPLATE_SAMPLE_ROWS: (string | number)[][] = [
+    ['Portland Cement 50kg Bag', 'High-strength Portland-limestone cement, 50kg bag', 'CEM-001', 'Building Materials', 6000, 7000, 100, 'EACH', 50, 'Dangote Cement Factory'],
+    ['Ceiling Fan 56-inch White', 'Three-blade ceiling fan with light kit, 56-inch sweep', 'ELC-FAN-56W', 'Electrical', 18000, 25000, 40, 'EACH', 4, 'Alibaba Group']
+  ];
+
+  downloadTemplate(format: 'csv' | 'xlsx'): void {
+    const rows = [this.TEMPLATE_HEADERS, ...this.TEMPLATE_SAMPLE_ROWS];
+
+    if (format === 'xlsx') {
+      const worksheet = XLSX.utils.aoa_to_sheet(rows);
+      worksheet['!cols'] = this.TEMPLATE_HEADERS.map(() => ({ wch: 22 }));
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
+      XLSX.writeFile(workbook, 'product_import_template.xlsx');
+      return;
+    }
+
+    const escapeCsvCell = (value: string | number): string => {
+      const str = String(value ?? '');
+      return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+    };
+    const csvContent = rows.map(row => row.map(escapeCsvCell).join(',')).join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'product_import_template.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   isStepValid(step: number): boolean {

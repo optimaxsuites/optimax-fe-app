@@ -1,4 +1,3 @@
-<p>product-detail works!</p>
 <!-- product-detail.component.html -->
 <div class="ql-layout">
 
@@ -85,7 +84,7 @@
                                 <i class="fas fa-tag"></i> {{ product.sku }}
                             </span>
                             <span class="ql-meta-item">
-                                <i class="fas fa-box"></i> {{ product.category || 'Uncategorized' }}
+                                <i class="fas fa-box"></i> {{ getCategoryName() }}
                             </span>
                             <span class="ql-meta-item">
                                 <i class="fas fa-money-bill-wave"></i> {{ formatCurrency(product.sellingPrice) }}
@@ -148,7 +147,7 @@
                                     </div>
                                     <div class="ql-info-item">
                                         <span class="ql-info-label">Category</span>
-                                        <span class="ql-info-value">{{ product.category || 'Uncategorized' }}</span>
+                                        <span class="ql-info-value">{{ getCategoryName() }}</span>
                                     </div>
                                     <div class="ql-info-item">
                                         <span class="ql-info-label">Brand</span>
@@ -224,7 +223,7 @@
                                 <div class="ql-supplier-list">
                                     <div *ngFor="let supplierId of product.supplierIds" class="ql-supplier-item">
                                         <i class="fas fa-truck"></i>
-                                        <span>Supplier #{{ supplierId }}</span>
+                                        <span>{{ getSupplierName(supplierId) }}</span>
                                     </div>
                                 </div>
                             </div>
