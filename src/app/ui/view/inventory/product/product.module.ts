@@ -1,5 +1,5 @@
 // product.module.ts
-import { NgModule } from '@angular/core';
+import { NgModule, NO_ERRORS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ToastModule } from 'primeng/toast';
@@ -24,6 +24,7 @@ import { ProductManagementFormComponent } from './product-management-form/produc
     ProductManagementComponent,
     ProductManagementFormComponent
   ],
-  providers: [MessageService]
+  providers: [MessageService],
+  schemas: [NO_ERRORS_SCHEMA]
 })
 export class ProductModule {}

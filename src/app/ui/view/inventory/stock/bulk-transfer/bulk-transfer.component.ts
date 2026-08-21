@@ -461,7 +461,7 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.isSubmitting = false;
       this.completed.emit(movements as StockMovement[]);
-      this.router.navigate(['/admin/sales/commerce/inventory/movements']);
+      this.router.navigate(['/commerce/inventory']);
     }, 1500);
   }
 
@@ -475,14 +475,14 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
       this.confirmMessage = 'You have unsaved changes. Are you sure you want to leave?';
     } else {
       this.cancelled.emit();
-      this.router.navigate(['/admin/sales/commerce/inventory/movements']);
+      this.router.navigate(['/commerce/inventory']);
     }
   }
 
   confirmCancel(): void {
     this.showConfirmDialog = false;
     this.cancelled.emit();
-    this.router.navigate(['/admin/sales/commerce/inventory/movements']);
+    this.router.navigate(['/commerce/inventory']);
   }
 
   cancelConfirmDialog(): void {

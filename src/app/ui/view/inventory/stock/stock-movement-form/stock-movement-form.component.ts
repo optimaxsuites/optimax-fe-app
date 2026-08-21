@@ -94,7 +94,12 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
       this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
         if (params['id']) {
           this.movementId = params['id'];
-          this.mode = 'view';
+          // This component is only ever routed to with an id via the .../:id/edit route —
+          // read-only viewing of a movement is handled by StockMovementDetailComponent instead —
+          // so an id here always means "edit", not "view". Previously this set 'view' and the
+          // form's own template disables every field whenever mode === 'view', so the Edit
+          // button on the detail page opened a form you couldn't actually type into.
+          this.mode = 'edit';
         }
       });
     }

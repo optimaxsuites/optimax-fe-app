@@ -1391,10 +1391,10 @@ export class InventoryService {
       }
       // Category filter (ignore 'ALL')
       if (filters.category && filters.category !== 'ALL') {
-        products = products.filter(p => {
-          const catName = typeof p.category === 'object' && p.category !== null ? (p.category as any).name : (typeof p.category === 'string' ? p.category : '');
-          return catName === filters.category;
-        });
+        const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
+        products = products.filter(p =>
+          this.resolveProductCategoryName(p, categories) === filters.category
+        );
       }
       // Search term filter (supports both 'search' and 'searchTerm')
       const searchTerm = (filters.search ?? filters.searchTerm) as string | undefined;
@@ -1417,6 +1417,9 @@ export class InventoryService {
         products = products.filter(p => (p.unitPrice ?? p.sellingPrice ?? 0) <= max);
       }
     }
+
+    // Alphabetical order by name
+    products = [...products].sort((a, b) => a.name.localeCompare(b.name));
 
     // Pagination
     const page = filters?.page ?? 0;
@@ -1461,7 +1464,9 @@ export class InventoryService {
     const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
     const newProduct: Product = {
       ...(product as Product),
-      id: 'prod-' + Date.now(),
+      // Random suffix guards against id collisions when several products are created back-to-back
+      // in the same millisecond (e.g. a bulk import loop), which Date.now() alone can't tell apart.
+      id: 'prod-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
       createdAt: new Date(),
       updatedAt: new Date()
     } as Product;
@@ -1562,6 +1567,69 @@ export class InventoryService {
     return of(inventory);
   }
 
+  /** Create or update a single branch inventory record (upsert by branchId + productId). */
+  saveBranchInventoryItem(data: {
+    branchId: string;
+    productId: string;
+    quantity: number;
+    reorderPoint: number;
+    safetyStock: number;
+    sellingPrice: number;
+    costPrice?: number;
+  }): Observable<BranchInventory> {
+    this.loadingSubject.next(true);
+    const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string || '[]') as BranchInventory[];
+    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
+    const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
+
+    const branch = branches.find(b => b.id === data.branchId);
+    const product = products.find(p => p.id === data.productId);
+
+    if (!product) {
+      this.loadingSubject.next(false);
+      return throwError(() => new Error('Product not found'));
+    }
+
+    const existingIndex = allInventory.findIndex(i => i.branchId === data.branchId && i.productId === data.productId);
+    const existingRecord = existingIndex > -1 ? allInventory[existingIndex] : undefined;
+
+    const record: BranchInventory = {
+      id: existingRecord ? existingRecord.id : 'binv-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+      branchId: data.branchId,
+      branchName: branch?.name || '',
+      productId: data.productId,
+      productName: product.name,
+      sku: product.sku,
+      quantity: data.quantity,
+      reorderPoint: data.reorderPoint,
+      // This form only ever collects a single "reorder point" value — there's no separate
+      // reorder-quantity input — so preserve whatever an existing record already had instead of
+      // clobbering it every time stock is merely adjusted (e.g. by a transfer).
+      reorderQuantity: existingRecord ? existingRecord.reorderQuantity : data.reorderPoint,
+      safetyStock: data.safetyStock,
+      sellingPrice: data.sellingPrice,
+      costPrice: data.costPrice || 0,
+      lastUpdated: new Date()
+    };
+
+    if (existingIndex > -1) {
+      allInventory[existingIndex] = record;
+    } else {
+      allInventory.push(record);
+    }
+
+    try {
+      localStorage.setItem(LOCAL_KEYS.BRANCH_INVENTORY, JSON.stringify(allInventory));
+    } catch (e) {
+      this.loadingSubject.next(false);
+      return throwError(() => new Error('Failed to save — storage limit reached.'));
+    }
+
+    this.branchInventorySubject.next(allInventory.filter(i => i.branchId === data.branchId));
+    this.loadingSubject.next(false);
+    return of(record);
+  }
+
   setCurrentBranch(branchId: string | null): void {
     this.currentBranchIdSubject.next(branchId);
   }
@@ -1596,6 +1664,11 @@ export class InventoryService {
       const to = new Date(filters.dateTo);
       filtered = filtered.filter(m => new Date(m.createdAt) <= to);
     }
+
+    // Most recent first. Movements are appended to the end of storage as they're created, so
+    // without this a newly created movement would only show up on a later page instead of
+    // immediately at the top of the list.
+    filtered = filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const page = filters?.page ?? 0;
     const limit = filters?.limit ?? filters?.size ?? 20;
@@ -2000,5 +2073,17 @@ export class InventoryService {
     return of(item || null);
   }
 
+  /** Resolve a product's category field (id, name, or object) to its display name. */
+  private resolveProductCategoryName(product: Product, categories: Category[]): string {
+    if (typeof product.category === 'object' && product.category !== null) {
+      return (product.category as Category).name || '';
+    }
+    const raw = product.category ?? (product as any).categoryId;
+    if (typeof raw === 'string') {
+      const byId = categories.find(c => c.id === raw || String(c.id) === String(raw));
+      return byId?.name || raw;
+    }
+    return '';
+  }
 
 }

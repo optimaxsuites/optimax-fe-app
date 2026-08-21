@@ -403,40 +403,102 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     this.error = null;
 
     const formValue = this.wizardForm.value;
-    const items = formValue.items;
+    const items: any[] = formValue.items;
+    const sourceBranchId = formValue.sourceBranchId;
+    const destinationBranchId = formValue.destinationBranchId;
+    const sourceBranchName = this.getBranchName(sourceBranchId);
+    const destinationBranchName = this.getBranchName(destinationBranchId);
 
-    // Create movements for each item
-    const movements = items.map((item: any) => ({
-      productId: item.productId,
-      productName: item.productName,
-      sku: item.sku,
-      quantity: parseInt(item.quantity),
-      movementType: MovementType.TRANSFER,
-      fromLocation: {
-        type: 'BRANCH',
-        id: formValue.sourceBranchId,
-        name: this.getBranchName(formValue.sourceBranchId)
-      },
-      toLocation: {
-        type: 'BRANCH',
-        id: formValue.destinationBranchId,
-        name: this.getBranchName(formValue.destinationBranchId)
-      },
-      notes: formValue.notes || '',
-      priority: formValue.priority,
-      status: MovementStatus.PENDING
-    }));
+    let firstMovement: StockMovement | null = null;
+    let failedProductName: string | null = null;
+    let failureMessage = '';
 
-    // In a real implementation, this would call an API to create the transfer
-    // For now, we'll simulate
-    console.log('Creating transfers:', movements);
+    // NOTE: every InventoryService call here (saveBranchInventoryItem/createMovement/
+    // approveMovement) is a localStorage-backed mock that resolves synchronously (via
+    // `of(...)`), so this plain for-loop completes in one tick — no concatMap needed.
+    for (const item of items) {
+      if (failedProductName) break;
 
-    setTimeout(() => {
-      this.isSubmitting = false;
-      // Emit completion with first movement
-      this.completed.emit(movements[0] as StockMovement);
-      this.router.navigate(['/admin/sales/commerce/inventory/movements']);
-    }, 1500);
+      const quantity = parseInt(item.quantity, 10) || 0;
+      const sourceItem = this.sourceInventory.find(i => i.productId === item.productId);
+      if (!sourceItem || sourceItem.quantity < quantity) {
+        failedProductName = item.productName;
+        failureMessage = `Insufficient stock for ${item.productName}. Available: ${sourceItem?.quantity || 0}`;
+        break;
+      }
+      const destItem = this.destInventory.find(i => i.productId === item.productId);
+
+      // Move the actual stock: decrement it at the source branch...
+      this.inventoryService.saveBranchInventoryItem({
+        branchId: sourceBranchId,
+        productId: item.productId,
+        quantity: sourceItem.quantity - quantity,
+        reorderPoint: sourceItem.reorderPoint,
+        safetyStock: sourceItem.safetyStock,
+        sellingPrice: sourceItem.sellingPrice,
+        costPrice: sourceItem.costPrice
+      }).subscribe({
+        error: (err) => {
+          failedProductName = item.productName;
+          failureMessage = err?.message || `Failed to update source stock for ${item.productName}`;
+        }
+      });
+      if (failedProductName) break;
+
+      // ...and increment it at the destination branch (creating the record there if this
+      // product wasn't already stocked at that branch).
+      this.inventoryService.saveBranchInventoryItem({
+        branchId: destinationBranchId,
+        productId: item.productId,
+        quantity: (destItem?.quantity || 0) + quantity,
+        reorderPoint: destItem?.reorderPoint ?? sourceItem.reorderPoint,
+        safetyStock: destItem?.safetyStock ?? sourceItem.safetyStock,
+        sellingPrice: destItem?.sellingPrice ?? sourceItem.sellingPrice,
+        costPrice: destItem?.costPrice ?? sourceItem.costPrice
+      }).subscribe({
+        error: (err) => {
+          failedProductName = item.productName;
+          failureMessage = err?.message || `Failed to update destination stock for ${item.productName}`;
+        }
+      });
+      if (failedProductName) break;
+
+      // Record the transfer itself. The stock has already moved above, so this is logged as
+      // an already-completed movement rather than a pending one awaiting approval.
+      this.inventoryService.createMovement({
+        productId: item.productId,
+        productName: item.productName,
+        sku: item.sku,
+        quantity,
+        movementType: MovementType.TRANSFER,
+        fromLocation: { type: 'BRANCH', id: sourceBranchId, name: sourceBranchName },
+        toLocation: { type: 'BRANCH', id: destinationBranchId, name: destinationBranchName },
+        notes: formValue.notes || ''
+      }).subscribe({
+        next: (movement) => {
+          this.inventoryService.approveMovement(movement.id).subscribe();
+          if (!firstMovement) {
+            firstMovement = { ...movement, status: MovementStatus.COMPLETED };
+          }
+        },
+        error: (err) => {
+          failedProductName = item.productName;
+          failureMessage = err?.message || `Failed to record movement for ${item.productName}`;
+        }
+      });
+    }
+
+    this.isSubmitting = false;
+
+    if (failedProductName) {
+      this.error = failureMessage;
+      return;
+    }
+
+    if (firstMovement) {
+      this.completed.emit(firstMovement);
+    }
+    this.router.navigate(['/commerce/inventory']);
   }
 
   // ============================================================
@@ -449,14 +511,14 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
       this.confirmMessage = 'You have unsaved changes. Are you sure you want to leave?';
     } else {
       this.cancelled.emit();
-      this.router.navigate(['/admin/sales/commerce/inventory/movements']);
+      this.router.navigate(['/commerce/inventory']);
     }
   }
 
   confirmCancel(): void {
     this.showConfirmDialog = false;
     this.cancelled.emit();
-    this.router.navigate(['/admin/sales/commerce/inventory/movements']);
+    this.router.navigate(['/commerce/inventory']);
   }
 
   cancelConfirmDialog(): void {

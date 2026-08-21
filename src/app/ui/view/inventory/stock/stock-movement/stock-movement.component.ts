@@ -340,7 +340,7 @@ export class StockMovementComponent implements OnInit, OnDestroy {
   }
 
   navigateToAdjustment(): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/movements/adjustment']);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/new']);
   }
 
   // ============================================================

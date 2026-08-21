@@ -282,7 +282,8 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
             measurementUnit: unitName,
             supplier: supplierName,
             selectedSupplier: supplierName,
-            isComboProduct: product.isComboProduct || false
+            isComboProduct: product.isComboProduct || false,
+            weight: product.weight || 0
           });
           this.images = product.images || [];
           this.showComboOptions = product.isComboProduct || false;
@@ -352,7 +353,8 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       unitOfMeasure: (foundUnit?.id || 'EACH') as 'EACH' | 'BOX' | 'KG' | 'LITER' | 'METER',
       supplierIds: foundSupplier ? [foundSupplier.id] : [],
       status: (formData.quantity ?? 0) > 0 ? 'ACTIVE' as any : 'OUT_OF_STOCK' as any,
-      isComboProduct: formData.isComboProduct || false
+      isComboProduct: formData.isComboProduct || false,
+      weight: Number(formData.weight) || 0
     };
 
     const action = this.isEditMode
@@ -363,7 +365,13 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       next: () => {
         this.isSubmitting = false;
         this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product ${this.isEditMode ? 'updated' : 'created'} successfully!` });
-        this.goBack();
+        // After editing, land on the product's details page so the change is visible immediately.
+        // After creating, there's no existing detail context to return to, so keep the prior behavior.
+        if (this.isEditMode) {
+          this.router.navigate(['/admin/sales/commerce/inventory/products', this.productId]);
+        } else {
+          this.goBack();
+        }
       },
       error: (error: any) => {
         console.error('Error saving product:', error);

@@ -13,6 +13,8 @@ import {
   ProductPerformance,
   BranchInventory,
   Branch,
+  Category,
+  Supplier,
   getStockStatus,
   getStockStatusLabel,
   getStockStatusColor,
@@ -46,6 +48,8 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   productPerformance: ProductPerformance | null = null;
   branchInventory: BranchInventory[] = [];
   branches: Branch[] = [];
+  categories: Category[] = [];
+  suppliers: Supplier[] = [];
   isLoading: boolean = true;
   error: string | null = null;
 
@@ -116,6 +120,8 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
           this.loadProductPerformance();
           this.loadBranchInventory();
           this.loadBranches();
+          this.loadCategories();
+          this.loadSuppliers();
         },
         error: (err) => {
           console.error('Failed to load product:', err);
@@ -170,6 +176,28 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
           this.branches = branches;
         },
         error: (err) => console.error('Failed to load branches:', err)
+      });
+  }
+
+  loadCategories(): void {
+    this.inventoryService.getCategories()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (categories) => {
+          this.categories = categories;
+        },
+        error: (err) => console.error('Failed to load categories:', err)
+      });
+  }
+
+  loadSuppliers(): void {
+    this.inventoryService.getSuppliers()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (suppliers) => {
+          this.suppliers = suppliers;
+        },
+        error: (err) => console.error('Failed to load suppliers:', err)
       });
   }
 
@@ -327,6 +355,23 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   getBranchName(branchId: string): string {
     const branch = this.branches.find(b => b.id === branchId);
     return branch?.name || branchId;
+  }
+
+  getCategoryName(): string {
+    const raw = (this.product?.category as any)?.name || this.product?.category;
+    if (!raw) return 'Uncategorized';
+    if (typeof raw === 'string') {
+      // `category` may hold either the category's id or its literal name (legacy data) —
+      // resolve it to a name if it matches a known category, otherwise trust it as-is.
+      const byId = this.categories.find(c => c.id === raw || String(c.id) === String(raw));
+      return byId?.name || raw;
+    }
+    return 'Uncategorized';
+  }
+
+  getSupplierName(supplierId: string): string {
+    const supplier = this.suppliers.find(s => s.id === supplierId || s.supplierId === supplierId);
+    return supplier?.name || supplierId;
   }
 
   getStockStatusClass(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK'): string {

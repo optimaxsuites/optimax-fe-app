@@ -349,7 +349,7 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
   private bulkAdjust(): void {
     // Navigate to adjustment with selected items
     const ids = Array.from(this.selectedItems);
-    this.router.navigate(['/admin/sales/commerce/inventory/movements/adjustment'], {
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/new'], {
       queryParams: {
         ids: ids.join(','),
         branchId: this.branchId
