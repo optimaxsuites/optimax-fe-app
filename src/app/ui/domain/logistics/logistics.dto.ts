@@ -1,406 +1,403 @@
-// ============================================================================
-// LOGISTICS SUBMODULE — DOMAIN MODELS
-// Derived from: Logistics Submodule - Comprehensive PRD Document
-// ============================================================================
+// logistics.dto.ts
+// ============================================================
+// ENUMS
+// ============================================================
 
-// ----------------------------------------------------------------------------
-// ENUMS / UNION TYPES
-// ----------------------------------------------------------------------------
-
-/** 3.1.1 Delivery Types */
-export type DeliveryType =
-  | 'BRANCH_TRANSFER'
-  | 'SUPPLIER_PURCHASE'
-  | 'CUSTOMER_DELIVERY'
-  | 'RETURN_DELIVERY'
-  | 'BULK_TRANSFER';
-
-/** 3.1.2 Delivery Status Workflow */
-export type DeliveryStatus =
-  | 'PENDING'
-  | 'PICKING'
-  | 'PACKING'
-  | 'DISPATCHED'
-  | 'IN_TRANSIT'
-  | 'DELAYED'
-  | 'ARRIVED'
-  | 'DELIVERED'
-  | 'CANCELLED';
-
-/** 3.1.4 Delivery Priority Levels */
-export type DeliveryPriority = 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW';
-
-export type VehicleType = 'VAN' | 'TRUCK' | 'BIKE' | 'CAR' | 'TRICYCLE';
-
-export type VehicleStatus = 'ACTIVE' | 'IDLE' | 'MAINTENANCE' | 'OUT_OF_SERVICE';
-
-export type DriverStatus = 'ON_DUTY' | 'ON_DELIVERY' | 'OFF_DUTY' | 'ON_LEAVE';
-
-export type RouteStatus = 'DRAFT' | 'OPTIMIZED' | 'ACTIVE' | 'COMPLETED';
-
-// ----------------------------------------------------------------------------
-// STATIC LOOKUP CONFIG (labels, colors, SLA) — used across all logistics views
-// ----------------------------------------------------------------------------
-
-export interface StatusMeta {
-  label: string;
-  description: string;
-  color: string;
-  order: number;
+export enum FulfillmentType {
+  UNASSIGNED = 'UNASSIGNED',
+  PICKUP = 'PICKUP',
+  DELIVERY = 'DELIVERY'
 }
 
-export const DELIVERY_STATUS_META: Record<DeliveryStatus, StatusMeta> = {
-  PENDING: { label: 'Pending', description: 'Awaiting processing', color: '#8a8f98', order: 0 },
-  PICKING: { label: 'Picking', description: 'Items being picked', color: '#a16207', order: 1 },
-  PACKING: { label: 'Packing', description: 'Being packaged', color: '#a16207', order: 2 },
-  DISPATCHED: { label: 'Dispatched', description: 'On the way to destination', color: '#3b82f6', order: 3 },
-  IN_TRANSIT: { label: 'In Transit', description: 'In transit to destination', color: '#2563eb', order: 4 },
-  DELAYED: { label: 'Delayed', description: 'Delayed due to issues', color: '#dc2626', order: 5 },
-  ARRIVED: { label: 'Arrived', description: 'Arrived at destination', color: '#0891b2', order: 6 },
-  DELIVERED: { label: 'Delivered', description: 'Successfully delivered', color: '#16a34a', order: 7 },
-  CANCELLED: { label: 'Cancelled', description: 'Cancelled before delivery', color: '#6b7280', order: 8 },
-};
-
-export interface PriorityMeta {
-  label: string;
-  sla: string;
-  color: string;
+export enum OrderStatus {
+  PENDING_ROUTING = 'PENDING_ROUTING',
+  // pickup lane
+  READY_FOR_PICKUP = 'READY_FOR_PICKUP',
+  COLLECTED = 'COLLECTED',
+  // delivery lane
+  POOL = 'POOL',
+  CLAIMED = 'CLAIMED',
+  ROUTE_PENDING_APPROVAL = 'ROUTE_PENDING_APPROVAL',
+  ROUTE_APPROVED = 'ROUTE_APPROVED',
+  IN_TRANSIT = 'IN_TRANSIT',
+  DELIVERED = 'DELIVERED',
+  FAILED = 'FAILED',
+  // terminal
+  CLOSED = 'CLOSED'
 }
 
-export const DELIVERY_PRIORITY_META: Record<DeliveryPriority, PriorityMeta> = {
-  URGENT: { label: 'Urgent', sla: 'Same day, < 4 hours', color: '#dc2626' },
-  HIGH: { label: 'High', sla: 'Same day, < 8 hours', color: '#ea580c' },
-  MEDIUM: { label: 'Medium', sla: 'Next day', color: '#2563eb' },
-  LOW: { label: 'Low', sla: 'Within 3 days', color: '#6b7280' },
-};
-
-export interface DeliveryTypeMeta {
-  label: string;
-  description: string;
-  useCase: string;
-  icon: string;
+export enum BatchStatus {
+  CLAIMING = 'CLAIMING',           // rider still adding orders / building route
+  ROUTE_SUBMITTED = 'ROUTE_SUBMITTED', // waiting on admin decision
+  ROUTE_APPROVED = 'ROUTE_APPROVED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED'
 }
 
-export const DELIVERY_TYPE_META: Record<DeliveryType, DeliveryTypeMeta> = {
-  BRANCH_TRANSFER: { label: 'Branch Transfer', description: 'Stock movement between branches', useCase: 'Rebalancing inventory', icon: 'pi pi-arrow-right-arrow-left' },
-  SUPPLIER_PURCHASE: { label: 'Supplier Purchase', description: 'Stock from supplier to warehouse', useCase: 'Restocking', icon: 'pi pi-box' },
-  CUSTOMER_DELIVERY: { label: 'Customer Delivery', description: 'Last-mile delivery to customer', useCase: 'Customer orders', icon: 'pi pi-send' },
-  RETURN_DELIVERY: { label: 'Return Delivery', description: 'Returns management', useCase: 'Customer returns', icon: 'pi pi-replay' },
-  BULK_TRANSFER: { label: 'Bulk Transfer', description: 'Bulk movement to multiple destinations', useCase: 'Large-scale distribution', icon: 'pi pi-th-large' },
-};
+export enum StopStatus {
+  PENDING = 'PENDING',
+  EN_ROUTE = 'EN_ROUTE',
+  DELIVERED = 'DELIVERED',
+  FAILED = 'FAILED'
+}
 
-export const VEHICLE_STATUS_META: Record<VehicleStatus, { label: string; color: string }> = {
-  ACTIVE: { label: 'Active', color: '#16a34a' },
-  IDLE: { label: 'Idle', color: '#8a8f98' },
-  MAINTENANCE: { label: 'Maintenance', color: '#d97706' },
-  OUT_OF_SERVICE: { label: 'Out of Service', color: '#dc2626' },
-};
+export enum ProofType {
+  SIGNATURE = 'SIGNATURE',
+  PHOTO = 'PHOTO',
+  CODE = 'CODE'
+}
 
-export const DRIVER_STATUS_META: Record<DriverStatus, { label: string; color: string }> = {
-  ON_DUTY: { label: 'On Duty', color: '#16a34a' },
-  ON_DELIVERY: { label: 'On Delivery', color: '#2563eb' },
-  OFF_DUTY: { label: 'Off Duty', color: '#8a8f98' },
-  ON_LEAVE: { label: 'On Leave', color: '#d97706' },
-};
+export enum FailureReason {
+  NOT_HOME = 'NOT_HOME',
+  REFUSED = 'REFUSED',
+  WRONG_ADDRESS = 'WRONG_ADDRESS',
+  DAMAGED = 'DAMAGED',
+  OTHER = 'OTHER'
+}
 
-/** Ordered pipeline used by kanban / progress-bar views */
-export const DELIVERY_STATUS_FLOW: DeliveryStatus[] = [
-  'PENDING', 'PICKING', 'PACKING', 'DISPATCHED', 'IN_TRANSIT', 'ARRIVED', 'DELIVERED',
-];
+export enum FailedOrderAction {
+  REQUEUE = 'REQUEUE',
+  CANCEL = 'CANCEL',
+  ESCALATE = 'ESCALATE'
+}
 
-// ----------------------------------------------------------------------------
-// CORE ENTITIES
-// ----------------------------------------------------------------------------
+export enum RiderActiveStatus {
+  AVAILABLE = 'AVAILABLE',
+  ON_ROUTE = 'ON_ROUTE',
+  OFFLINE = 'OFFLINE'
+}
+
+export enum VehicleType {
+  BIKE = 'BIKE',
+  VAN = 'VAN',
+  TRUCK = 'TRUCK'
+}
+
+// ============================================================
+// CORE MODELS
+// ============================================================
+
+export interface OrderItem {
+  id: string;
+  name: string;
+  quantity: number;
+  note?: string;   // e.g. "Fragile", "Keep upright"
+}
+
+export interface Order {
+  id: string;               // internal id
+  orderId: string;           // display code e.g. #ORD-8821-A
+  customerName: string;
+  itemsSummary: string;      // e.g. "3 items (Heavy, Fragile)"
+  itemCount: number;
+  items?: OrderItem[];
+  deliveryLocation: string;
+  fullAddress?: string;
+  area?: string;
+  weightKg?: number;
+  lat?: number;
+  lng?: number;
+  paymentStatus: 'paid';
+  fulfillmentType: FulfillmentType;
+  status: OrderStatus;
+  paidAt: string;             // ISO date
+  routedAt?: string;
+  enteredPoolAt?: string;
+  claimedAt?: string;
+  batchId?: string;
+  riderId?: string;
+  riderName?: string;
+  deliveryAttemptId?: string;
+  isAging?: boolean;          // derived client-side for pool orders
+  timeInPoolMinutes?: number; // derived
+  priority?: 'standard' | 'high';
+  distanceKm?: number;        // derived client-side, rider's distance to stop
+}
+
+export interface Rider {
+  id: string;
+  riderCode?: string;         // display id e.g. R-4921
+  name: string;
+  initials: string;
+  phone?: string;
+  email?: string;
+  activeStatus: RiderActiveStatus;
+  currentBatchId?: string;
+  currentLoad: number;        // count of active claimed orders
+  vehicleType: VehicleType;
+  todayDelivered: number;
+  todayFailed: number;
+  avgDeliveryMinutes?: number;
+}
+
+export interface RouteStop {
+  sequence: number;           // 1-based order in the route
+  orderId: string;
+  orderDisplayId: string;
+  location: string;
+  itemsSummary: string;
+  stopStatus: StopStatus;
+  lat?: number;
+  lng?: number;
+  locationConfirmed?: boolean; // rider has pinned/confirmed the exact drop location
+  weightKg?: number;
+  customerName?: string;
+  area?: string;
+  distanceKm?: number;
+  requiresSignature?: boolean;
+}
+
+export interface DeliveryBatch {
+  id: string;
+  batchCode: string;          // display e.g. B-7492
+  riderId: string;
+  riderName: string;
+  riderInitials: string;
+  vehicleType: VehicleType;
+  status: BatchStatus;
+  orderIds: string[];
+  proposedRoute: RouteStop[];
+  totalItems: number;
+  isHighPriorityArea?: boolean;
+  submittedAt?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  adminNotes?: string;
+  waitMinutes?: number;       // derived: time waiting for approval
+  createdAt: string;
+}
+
+export interface DeliveryAttempt {
+  id: string;
+  orderId: string;
+  orderDisplayId: string;
+  customerName: string;
+  deliveryLocation: string;
+  batchId: string;
+  riderId: string;
+  riderName: string;
+  riderInitials: string;
+  outcome?: 'delivered' | 'failed';
+  failureReason?: FailureReason;
+  proofOfDeliveryId?: string;
+  proof?: ProofOfDelivery;
+  attemptedAt?: string;
+  escalationNote?: string;
+  escalatedAt?: string;
+  closedReason?: string;
+  isResolved?: boolean; // failed attempts leave the active exceptions list once actioned
+}
+
+export interface ProofOfDelivery {
+  id: string;
+  deliveryAttemptId: string;
+  type: ProofType;
+  dataUrl?: string;
+  code?: string;
+  capturedAt: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  entityType: 'ORDER' | 'BATCH';
+  entityId: string;
+  entityDisplayId?: string;
+  actor: string;
+  actorType: 'admin' | 'rider' | 'system';
+  action: string;         // short human label e.g. "Routed to Delivery"
+  fromStatus: string;
+  toStatus: string;
+  note?: string;
+  timestamp: string;
+}
+
+export interface RiderPerformanceStat {
+  riderId: string;
+  riderName: string;
+  riderInitials: string;
+  ordersClaimedWeek: number;
+  delivered: number;
+  failed: number;
+  avgTimeMinutes: number;        // avg claim-to-deliver time
+  avgApprovalWaitMinutes: number; // avg time a submitted route sits before approval
+  isHoardingRisk: boolean;
+}
+
+export interface AuditLogFilter {
+  orderId?: string;
+  riderId?: string;
+  actionType?: string;
+  dateRange?: string;
+}
+
+export interface RiderCreatePayload {
+  name: string;
+  email: string;
+  phone: string;
+  vehicleType: VehicleType;
+  activeStatus: RiderActiveStatus;
+}
 
 export interface GeoPoint {
+  label: string;
   lat: number;
   lng: number;
 }
 
-export interface Address {
-  label: string;
-  line1: string;
-  city: string;
-  state: string;
-  contactName?: string;
-  contactPhone?: string;
-  geo?: GeoPoint;
-}
+// ============================================================
+// RESPONSE WRAPPERS
+// ============================================================
 
-export interface DeliveryTimelineEvent {
-  status: DeliveryStatus;
-  label: string;
-  timestamp: string;
-  note?: string;
-  actor?: string;
-}
-
-export interface ProofOfDelivery {
-  receivedBy: string;
-  signatureUrl?: string;
-  photoUrl?: string;
-  deliveredAt: string;
-  notes?: string;
-}
-
-export interface DeliveryItem {
-  id: string;
-  name: string;
-  sku: string;
-  quantity: number;
-  unit: string;
-}
-
-export interface Delivery {
-  id: string;
-  deliveryNumber: string;
-  type: DeliveryType;
-  status: DeliveryStatus;
-  priority: DeliveryPriority;
-
-  origin: Address;
-  destination: Address;
-
-  linkedOrderRef?: string;   // Sales order / PO reference
-  linkedModule?: 'Sales' | 'Procurement' | 'Inventory' | 'Vendor Management' | 'Branch Management';
-
-  driverId?: string;
-  driverName?: string;
-  vehicleId?: string;
-  vehiclePlate?: string;
-
-  items: DeliveryItem[];
-  itemCount: number;
-
-  distanceKm: number;
-  cost: number;
-
-  createdAt: string;
-  scheduledAt?: string;
-  dispatchedAt?: string;
-  eta?: string;
-  deliveredAt?: string;
-
-  timeline: DeliveryTimelineEvent[];
-  proofOfDelivery?: ProofOfDelivery;
-
-  currentLocation?: GeoPoint;
-  notes?: string;
-}
-
-export interface Vehicle {
-  id: string;
-  plateNumber: string;
-  name: string;
-  type: VehicleType;
-  status: VehicleStatus;
-  capacityKg: number;
-  odometerKm: number;
-  fuelLevelPct: number;
-  ageYears: number;
-  purchaseDate: string;
-  lastServiceDate: string;
-  nextServiceDue: string;
-  nextServiceKm: number;
-  assignedDriverId?: string;
-  assignedDriverName?: string;
-  currentLocation?: GeoPoint;
-  homeBranch: string;
-  documents: { name: string; expiresAt: string; status: 'valid' | 'expiring' | 'expired' }[];
-  utilizationPct: number;
-  activeDeliveries: number;
-  totalDeliveriesCompleted: number;
-}
-
-export interface Driver {
-  id: string;
-  name: string;
-  initials: string;
-  phone: string;
-  email?: string;
-  licenseNumber: string;
-  licenseExpiry: string;
-  status: DriverStatus;
-  assignedVehicleId?: string;
-  assignedVehiclePlate?: string;
-  rating: number;
-  totalDeliveries: number;
-  successRatePct: number;
-  onTimeRatePct: number;
-  yearsOfService: number;
-  homeBranch: string;
-}
-
-export interface RouteStop {
-  order: number;
-  deliveryId: string;
-  deliveryNumber: string;
-  address: Address;
-  status: DeliveryStatus;
-  etaMinutesFromStart: number;
-  distanceFromPrevKm: number;
-}
-
-export interface DeliveryRoute {
-  id: string;
-  name: string;
-  status: RouteStatus;
-  driverId?: string;
-  driverName?: string;
-  vehicleId?: string;
-  vehiclePlate?: string;
-  stops: RouteStop[];
-  totalDistanceKm: number;
-  totalDistanceKmBeforeOptimization?: number;
-  estimatedDurationMin: number;
-  estimatedDurationMinBeforeOptimization?: number;
-  estimatedFuelCost: number;
-  estimatedFuelCostBeforeOptimization?: number;
-  createdAt: string;
-  scheduledFor: string;
-  optimized: boolean;
-}
-
-// ----------------------------------------------------------------------------
-// ANALYTICS (3.3)
-// ----------------------------------------------------------------------------
-
-export interface PerformanceOverview {
-  deliverySuccessRatePct: number;
-  deliverySuccessRateTrendPct: number;
-  onTimeDeliveryRatePct: number;
-  onTimeDeliveryRateTrendPct: number;
-  avgDeliveryTimeMin: number;
-  avgDeliveryTimeTrendPct: number;
-  vehicleUtilizationPct: number;
-  vehicleUtilizationTrendPct: number;
-}
-
-export interface VolumeMetrics {
-  totalDeliveriesThisMonth: number;
-  avgDailyDeliveries: number;
-  peakHour: string;
-  busiestDay: string;
-}
-
-export interface CostMetrics {
-  totalDeliveryCost: number;
-  costPerDelivery: number;
-  fuelCost: number;
-  driverCost: number;
-}
-
-export interface FleetMetrics {
-  totalVehicles: number;
-  activeVehicles: number;
-  maintenanceVehicles: number;
-  idleVehicles: number;
-  averageAgeYears: number;
-}
-
-export interface DriverMetrics {
-  bestDriverName: string;
-  bestDriverSuccessRatePct: number;
-  mostDeliveriesDriverName: string;
-  mostDeliveriesCount: number;
-  averageRating: number;
-  driverTurnoverPct: number;
-}
-
-export interface LogisticsAnalytics {
-  performance: PerformanceOverview;
-  volume: VolumeMetrics;
-  cost: CostMetrics;
-  fleet: FleetMetrics;
-  driver: DriverMetrics;
-  deliveriesByType: { type: DeliveryType; count: number }[];
-  deliveriesByStatus: { status: DeliveryStatus; count: number }[];
-  dailyTrend: { date: string; completed: number; delayed: number }[];
-}
-
-export interface LogisticsDashboardSummary {
-  activeDeliveries: number;
-  pendingDeliveries: number;
-  delayedDeliveries: number;
-  deliveredToday: number;
-  availableVehicles: number;
-  availableDrivers: number;
-  urgentCount: number;
-}
-
-// ----------------------------------------------------------------------------
-// FORM PAYLOADS (create / edit)
-// ----------------------------------------------------------------------------
-
-export interface DeliveryItemInput {
-  name: string;
-  sku: string;
-  quantity: number;
-  unit: string;
-}
-
-export interface NewDeliveryPayload {
-  type: DeliveryType;
-  priority: DeliveryPriority;
-  linkedOrderRef?: string;
-
-  originLabel: string;
-  originLine1: string;
-  destinationLabel: string;
-  destinationLine1: string;
-  destinationContactName?: string;
-  destinationContactPhone?: string;
-
-  driverId?: string;
-  vehicleId?: string;
-
-  items: DeliveryItemInput[];
-  notes?: string;
-}
-
-export interface VehicleFormPayload {
-  plateNumber: string;
-  name: string;
-  type: VehicleType;
-  status: VehicleStatus;
-  capacityKg: number;
-  homeBranch: string;
-  purchaseDate?: string;
-  assignedDriverId?: string;
-}
-
-export interface DriverFormPayload {
-  name: string;
-  phone: string;
-  email?: string;
-  licenseNumber: string;
-  licenseExpiry: string;
-  status: DriverStatus;
-  homeBranch: string;
-  assignedVehicleId?: string;
-}
-
-export const VEHICLE_TYPE_OPTIONS: VehicleType[] = ['VAN', 'TRUCK', 'BIKE', 'CAR', 'TRICYCLE'];
-export const VEHICLE_STATUS_OPTIONS: VehicleStatus[] = ['ACTIVE', 'IDLE', 'MAINTENANCE', 'OUT_OF_SERVICE'];
-export const DRIVER_STATUS_OPTIONS: DriverStatus[] = ['ON_DUTY', 'ON_DELIVERY', 'OFF_DUTY', 'ON_LEAVE'];
-export const BRANCH_OPTIONS: string[] = ['Lekki', 'Mushin', 'Ikeja', 'Warehouse A', 'Warehouse B'];
-
-// ----------------------------------------------------------------------------
-// FILTERS
-// ----------------------------------------------------------------------------
-
-export interface DeliveryFilters {
-  search?: string;
-  status?: DeliveryStatus | 'ALL';
-  type?: DeliveryType | 'ALL';
-  priority?: DeliveryPriority | 'ALL';
-  driverId?: string;
-  dateRange?: 'today' | 'week' | 'month' | 'all';
-  page?: number;
-  size?: number;
-}
-
-export interface PagedResult<T> {
-  data: T[];
+export interface TriageListResponse {
+  orders: Order[];
   total: number;
+}
+
+export interface PoolListResponse {
+  orders: Order[];
+  total: number;
+  agingCount: number;
+}
+
+export interface ApprovalQueueResponse {
+  batches: DeliveryBatch[];
+  total: number;
+}
+
+export interface ActiveRoutesResponse {
+  batches: DeliveryBatch[];
+  total: number;
+}
+
+export interface DeliveredListResponse {
+  attempts: DeliveryAttempt[];
+  total: number;
+}
+
+export interface FailedListResponse {
+  attempts: DeliveryAttempt[];
+  total: number;
+}
+
+export interface PickupListResponse {
+  orders: Order[];
+  total: number;
+}
+
+export interface RiderRosterResponse {
+  riders: Rider[];
+  total: number;
+}
+
+export interface RiderPerformanceResponse {
+  stats: RiderPerformanceStat[];
+  total: number;
+  activeRiders: number;
+  avgDeliveryRate: number;   // %
+  avgTimePerOrderMinutes: number;
+  hoardingRiskCount: number;
+}
+
+export interface AuditLogResponse {
+  entries: AuditLogEntry[];
+  total: number;
+}
+
+export interface AvailablePoolResponse {
+  orders: Order[];
+  total: number;
+  claimLimit: number;
+  currentLoad: number;
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+export const AGING_THRESHOLD_MINUTES = 240; // 4h default, admin-configurable later
+
+export function getOrderStatusLabel(status: OrderStatus): string {
+  const map: Record<OrderStatus, string> = {
+    [OrderStatus.PENDING_ROUTING]: 'Pending Routing',
+    [OrderStatus.READY_FOR_PICKUP]: 'Ready for Pickup',
+    [OrderStatus.COLLECTED]: 'Collected',
+    [OrderStatus.POOL]: 'In Pool',
+    [OrderStatus.CLAIMED]: 'Claimed',
+    [OrderStatus.ROUTE_PENDING_APPROVAL]: 'Pending Approval',
+    [OrderStatus.ROUTE_APPROVED]: 'Route Approved',
+    [OrderStatus.IN_TRANSIT]: 'In Transit',
+    [OrderStatus.DELIVERED]: 'Delivered',
+    [OrderStatus.FAILED]: 'Failed',
+    [OrderStatus.CLOSED]: 'Closed'
+  };
+  return map[status] ?? status;
+}
+
+export function getOrderStatusBadgeClass(status: OrderStatus): string {
+  switch (status) {
+    case OrderStatus.DELIVERED:
+    case OrderStatus.COLLECTED:
+      return 'bg-[#00a191]/10 text-[#00a191]';
+    case OrderStatus.FAILED:
+      return 'bg-[#dc2626]/10 text-[#dc2626]';
+    case OrderStatus.IN_TRANSIT:
+    case OrderStatus.ROUTE_APPROVED:
+      return 'bg-[#2563eb]/10 text-[#2563eb]';
+    case OrderStatus.POOL:
+    case OrderStatus.READY_FOR_PICKUP:
+      return 'bg-[#eab308]/10 text-[#a16207]';
+    case OrderStatus.ROUTE_PENDING_APPROVAL:
+    case OrderStatus.CLAIMED:
+      return 'bg-[#f97316]/10 text-[#f97316]';
+    default:
+      return 'bg-[#9aa7ae]/10 text-[#566670]';
+  }
+}
+
+export function getStopStatusBadgeClass(status: StopStatus): string {
+  switch (status) {
+    case StopStatus.DELIVERED:
+      return 'bg-[#16a34a]/10 text-[#16a34a]';
+    case StopStatus.FAILED:
+      return 'bg-[#dc2626]/10 text-[#dc2626]';
+    case StopStatus.EN_ROUTE:
+      return 'bg-[#eab308]/10 text-[#a16207]';
+    default:
+      return 'bg-[#9aa7ae]/10 text-[#566670]';
+  }
+}
+
+export function minutesBetween(fromIso: string, toIso: string = new Date().toISOString()): number {
+  const from = new Date(fromIso).getTime();
+  const to = new Date(toIso).getTime();
+  return Math.max(0, Math.round((to - from) / 60000));
+}
+
+export function formatDuration(mins: number): string {
+  if (mins < 60) return `${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+export function getFailureReasonLabel(reason?: FailureReason): string {
+  const map: Record<FailureReason, string> = {
+    [FailureReason.NOT_HOME]: 'Not Home',
+    [FailureReason.REFUSED]: 'Refused',
+    [FailureReason.WRONG_ADDRESS]: 'Wrong Address',
+    [FailureReason.DAMAGED]: 'Damaged',
+    [FailureReason.OTHER]: 'Other'
+  };
+  return reason ? map[reason] ?? reason : '—';
+}
+
+export function getRiderStatusBadgeClass(status: RiderActiveStatus): string {
+  switch (status) {
+    case RiderActiveStatus.AVAILABLE:
+      return 'bg-[#16a34a]/10 text-[#16a34a]';
+    case RiderActiveStatus.ON_ROUTE:
+      return 'bg-[#2563eb]/10 text-[#2563eb]';
+    default:
+      return 'bg-[#9aa7ae]/10 text-[#566670]';
+  }
 }
