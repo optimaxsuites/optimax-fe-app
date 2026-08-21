@@ -171,11 +171,19 @@ import { StockTurnoverComponent } from './ui/view/inventory/inventory-analytics/
 import { SellLikelihoodComponent } from './ui/view/inventory/inventory-analytics/sell-likelihood/sell-likelihood.component';
 import { PerformanceReportComponent } from './ui/view/inventory/inventory-analytics/performance-report/performance-report.component';
 import { LogisticsComponent } from './ui/view/logistics/logistics.component';
-import { LogisticsDashboardComponent } from './ui/view/logistics/logistics-dashboard/logistics-dashboard.component';
-import { TrackingComponent } from './ui/view/logistics/tracking/tracking.component';
-import { FleetManagementComponent } from './ui/view/logistics/fleet-management/fleet-management.component';
-import { RouteOptimizationComponent } from './ui/view/logistics/route-optimization/route-optimization.component';
-import { DeliveryManagementsComponent } from './ui/view/logistics/delivery-management/delivery-management.component';
+import { RoutingQueueComponent } from './ui/view/logistics/routing-queue/routing-queue.component';
+import { RouteApprovalComponent } from './ui/view/logistics/route-approval/route-approval.component';
+import { RouteMapComponent } from './ui/view/logistics/route-map/route-map.component';
+import { OrderDetailDrawerComponent } from './ui/view/logistics/order-detail-drawer/order-detail-drawer.component';
+import { DeliveryRecordsComponent } from './ui/view/logistics/delivery-records/delivery-records.component';
+import { ProofDetailDrawerComponent } from './ui/view/logistics/proof-detail-drawer/proof-detail-drawer.component';
+import { RiderActivityComponent } from './ui/view/logistics/rider-activity/rider-activity.component';
+import { AddRiderFormComponent } from './ui/view/logistics/add-rider-form/add-rider-form.component';
+import { RiderDetailDrawerComponent } from './ui/view/logistics/rider-detail-drawer/rider-detail-drawer.component';
+import { RouteBuilderComponent } from './ui/view/logistics/route-builder/route-builder.component';
+import { StopChecklistComponent } from './ui/view/logistics/stop-checklist/stop-checklist.component';
+import { LocationPickerComponent } from './ui/view/logistics/location-picker/location-picker.component';
+import { RouteBuilderMapComponent } from './ui/view/logistics/route-builder-map/route-builder-map.component';
 import { BranchSelectorComponent } from './ui/shared-component/branch-selector/branch-selector.component';
 import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-summary/branch-stock-summary.component';
 
@@ -268,11 +276,19 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
     ActivityComponent,
 
     LogisticsComponent,
-    LogisticsDashboardComponent,
-    RouteOptimizationComponent,
-    DeliveryManagementsComponent,
-    FleetManagementComponent,
-    TrackingComponent,
+    RoutingQueueComponent,
+    RouteApprovalComponent,
+    RouteMapComponent,
+    OrderDetailDrawerComponent,
+    DeliveryRecordsComponent,
+    ProofDetailDrawerComponent,
+    RiderActivityComponent,
+    AddRiderFormComponent,
+    RiderDetailDrawerComponent,
+    RouteBuilderComponent,
+    StopChecklistComponent,
+    LocationPickerComponent,
+    RouteBuilderMapComponent,
   ],
   imports: [
     // BrowserModule,
@@ -375,4 +391,4 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
   ],
   bootstrap: [App],
 })
-export class AppModule { }
+export class AppModule {}

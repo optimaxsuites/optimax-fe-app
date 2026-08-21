@@ -1,621 +1,1779 @@
+// logistics.service.ts
+// ============================================================
+// IMPORTS
+// ============================================================
+
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { catchError, delay } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, of, timer } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import {
-  Delivery,
-  DeliveryFilters,
-  DeliveryPriority,
-  DeliveryRoute,
-  DeliveryStatus,
-  DeliveryType,
-  Driver,
-  DriverFormPayload,
-  LogisticsAnalytics,
-  LogisticsDashboardSummary,
-  NewDeliveryPayload,
-  PagedResult,
-  Vehicle,
-  VehicleFormPayload,
+  Order,
+  Rider,
+  DeliveryBatch,
+  DeliveryAttempt,
+  AuditLogEntry,
+  FulfillmentType,
+  OrderStatus,
+  BatchStatus,
+  StopStatus,
+  RiderActiveStatus,
+  VehicleType,
+  ProofType,
+  FailureReason,
+  RiderPerformanceStat,
+  AuditLogFilter,
+  RiderCreatePayload,
+  GeoPoint,
+  AvailablePoolResponse,
+  TriageListResponse,
+  PoolListResponse,
+  ApprovalQueueResponse,
+  ActiveRoutesResponse,
+  DeliveredListResponse,
+  FailedListResponse,
+  PickupListResponse,
+  RiderRosterResponse,
+  RiderPerformanceResponse,
+  AuditLogResponse,
+  AGING_THRESHOLD_MINUTES,
+  minutesBetween,
+  RouteStop,
 } from '../../domain/logistics/logistics.dto';
 import { environment } from '../../shared-component/service/environments/environment';
 
+const API_BASE = environment.apiBaseUrl;
+
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class LogisticsService {
+  private readonly baseUrl = `${API_BASE}/logistics`;
 
-  private readonly base = `${environment.apiBaseUrl}/x/api/v2/logistics`;
+  // Live counters other parts of the shell (e.g. tab badges) can subscribe to.
+  private readonly unroutedCount$$ = new BehaviorSubject<number>(0);
+  private readonly poolAgingCount$$ = new BehaviorSubject<number>(0);
+  private readonly pendingApprovalCount$$ = new BehaviorSubject<number>(0);
 
-  private get tenantId(): string {
-    const h = window.location.hostname;
-    return (h.includes('localhost') || h.includes('127.0.0.1')) ? 'optimax' : h.split('.')[0] || 'optimax';
-  }
+  readonly unroutedCount = this.unroutedCount$$.asObservable();
+  readonly poolAgingCount = this.poolAgingCount$$.asObservable();
+  readonly pendingApprovalCount = this.pendingApprovalCount$$.asObservable();
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
-  // ============================================
-  // DASHBOARD
-  // ============================================
+  // ============================================================
+  // ROUTING QUEUE — PART A: TRIAGE
+  // ============================================================
 
-  getDashboardSummary(): Observable<LogisticsDashboardSummary> {
-    return this.http.get<LogisticsDashboardSummary>(`${this.base}/dashboard-summary`).pipe(
-      catchError(() => of(this.mockSummary()))
-    );
-  }
-
-  getAnalytics(range: 'today' | 'week' | 'month' = 'month'): Observable<LogisticsAnalytics> {
-    const params = new HttpParams().set('dateRange', range);
-    return this.http.get<LogisticsAnalytics>(`${this.base}/analytics`, { params }).pipe(
-      catchError(() => of(this.mockAnalytics()))
-    );
-  }
-
-  getRecentDeliveries(limit: number = 6): Observable<Delivery[]> {
-    return this.getDeliveries({ page: 0, size: limit }).pipe(
-      delay(0),
-      catchError(() => of({ data: this.allDeliveries.slice(0, limit), total: this.allDeliveries.length })),
-    ) as unknown as Observable<Delivery[]>;
-  }
-
-  // ============================================
-  // DELIVERIES
-  // ============================================
-
-  getDeliveries(filters: DeliveryFilters): Observable<PagedResult<Delivery>> {
-    let params = new HttpParams().set('tenantId', this.tenantId);
-    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
-    if (filters?.size !== undefined) params = params.set('size', String(filters.size));
-    if (filters?.search) params = params.set('search', filters.search);
-    if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
-    if (filters?.type && filters.type !== 'ALL') params = params.set('type', filters.type);
-    if (filters?.priority && filters.priority !== 'ALL') params = params.set('priority', filters.priority);
-
-    return this.http.get<PagedResult<Delivery>>(`${this.base}/deliveries`, { params }).pipe(
-      catchError(() => of(this.filterMockDeliveries(filters)))
-    );
-  }
-
-  getDeliveryById(id: string): Observable<Delivery | undefined> {
-    return this.http.get<Delivery>(`${this.base}/deliveries/${id}`).pipe(
-      catchError(() => of(this.allDeliveries.find(d => d.id === id)))
-    );
-  }
-
-  updateDeliveryStatus(id: string, status: DeliveryStatus, note?: string): Observable<Delivery | undefined> {
-    return this.http.patch<Delivery>(`${this.base}/deliveries/${id}/status`, { status, note }).pipe(
-      catchError(() => {
-        const d = this.allDeliveries.find(x => x.id === id);
-        if (d) {
-          d.status = status;
-          d.timeline.push({ status, label: status.replace('_', ' '), timestamp: new Date().toISOString(), note });
-        }
-        return of(d);
-      })
-    );
-  }
-
-  createDelivery(payload: NewDeliveryPayload): Observable<Delivery> {
-    return this.http.post<Delivery>(`${this.base}/deliveries`, payload).pipe(
-      delay(400),
-      catchError(() => {
-        const driver = payload.driverId ? this.allDriversStore.find(d => d.id === payload.driverId) : undefined;
-        const vehicle = payload.vehicleId ? this.allVehiclesStore.find(v => v.id === payload.vehicleId) : undefined;
-        const now = new Date();
-        const created: Delivery = {
-          id: `del-new-${Date.now()}`,
-          deliveryNumber: `DEL-${100000 + Math.floor(Math.random() * 89999)}`,
-          type: payload.type,
-          status: 'PENDING',
-          priority: payload.priority,
-          origin: { label: payload.originLabel, line1: payload.originLine1, city: 'Lagos', state: 'Lagos' },
-          destination: {
-            label: payload.destinationLabel,
-            line1: payload.destinationLine1,
-            city: 'Lagos',
-            state: 'Lagos',
-            contactName: payload.destinationContactName,
-            contactPhone: payload.destinationContactPhone,
-          },
-          linkedOrderRef: payload.linkedOrderRef,
-          linkedModule: 'Sales',
-          driverId: driver?.id,
-          driverName: driver?.name,
-          vehicleId: vehicle?.id,
-          vehiclePlate: vehicle?.plateNumber,
-          items: payload.items.map((it, i) => ({ id: `new-it-${i}`, name: it.name, sku: it.sku, quantity: it.quantity, unit: it.unit })),
-          itemCount: payload.items.reduce((s, it) => s + it.quantity, 0),
-          distanceKm: 0,
-          cost: 0,
-          createdAt: now.toISOString(),
-          timeline: [{ status: 'PENDING', label: 'Order created', timestamp: now.toISOString(), actor: 'You' }],
-          notes: payload.notes,
-        };
-        this.allDeliveries.unshift(created);
-        return of(created);
-      })
-    );
-  }
-
-  assignDriverAndVehicle(deliveryId: string, driverId: string, vehicleId: string): Observable<Delivery | undefined> {
-    return this.http.post<Delivery>(`${this.base}/deliveries/${deliveryId}/assign`, { driverId, vehicleId }).pipe(
-      catchError(() => {
-        const d = this.allDeliveries.find(x => x.id === deliveryId);
-        const driver = this.allDriversStore.find(x => x.id === driverId);
-        const vehicle = this.allVehiclesStore.find(x => x.id === vehicleId);
-        if (d) {
-          d.driverId = driverId;
-          d.driverName = driver?.name;
-          d.vehicleId = vehicleId;
-          d.vehiclePlate = vehicle?.plateNumber;
-        }
-        return of(d);
-      })
-    );
-  }
-
-  // ============================================
-  // FLEET
-  // ============================================
-
-  getVehicles(status?: VehicleFilterStatus): Observable<Vehicle[]> {
-    let params = new HttpParams();
-    if (status && status !== 'ALL') params = params.set('status', status);
-    return this.http.get<Vehicle[]>(`${this.base}/vehicles`, { params }).pipe(
-      catchError(() => of(status && status !== 'ALL' ? this.allVehiclesStore.filter(v => v.status === status) : this.allVehiclesStore))
-    );
-  }
-
-  getVehicleById(id: string): Observable<Vehicle | undefined> {
-    return this.http.get<Vehicle>(`${this.base}/vehicles/${id}`).pipe(
-      catchError(() => of(this.allVehiclesStore.find(v => v.id === id)))
-    );
-  }
-
-  createVehicle(payload: VehicleFormPayload): Observable<Vehicle> {
-    return this.http.post<Vehicle>(`${this.base}/vehicles`, payload).pipe(
-      delay(400),
-      catchError(() => {
-        const driver = payload.assignedDriverId ? this.allDriversStore.find(d => d.id === payload.assignedDriverId) : undefined;
-        const created: Vehicle = {
-          id: `veh-new-${Date.now()}`,
-          plateNumber: payload.plateNumber,
-          name: payload.name,
-          type: payload.type,
-          status: payload.status,
-          capacityKg: payload.capacityKg,
-          odometerKm: 0,
-          fuelLevelPct: 100,
-          ageYears: 0,
-          purchaseDate: payload.purchaseDate || new Date().toISOString(),
-          lastServiceDate: new Date().toISOString(),
-          nextServiceDue: new Date(Date.now() + 90 * 86400000).toISOString(),
-          nextServiceKm: 5000,
-          assignedDriverId: driver?.id,
-          assignedDriverName: driver?.name,
-          homeBranch: payload.homeBranch,
-          documents: [],
-          utilizationPct: 0,
-          activeDeliveries: 0,
-          totalDeliveriesCompleted: 0,
-        };
-        this.allVehiclesStore.push(created);
-        return of(created);
-      })
-    );
-  }
-
-  updateVehicle(id: string, payload: Partial<VehicleFormPayload>): Observable<Vehicle | undefined> {
-    return this.http.patch<Vehicle>(`${this.base}/vehicles/${id}`, payload).pipe(
-      catchError(() => {
-        const v = this.allVehiclesStore.find(x => x.id === id);
-        if (v) {
-          if (payload.plateNumber) v.plateNumber = payload.plateNumber;
-          if (payload.name) v.name = payload.name;
-          if (payload.type) v.type = payload.type;
-          if (payload.status) v.status = payload.status;
-          if (payload.capacityKg) v.capacityKg = payload.capacityKg;
-          if (payload.homeBranch) v.homeBranch = payload.homeBranch;
-          if (payload.assignedDriverId !== undefined) {
-            const driver = this.allDriversStore.find(d => d.id === payload.assignedDriverId);
-            v.assignedDriverId = driver?.id;
-            v.assignedDriverName = driver?.name;
-          }
-        }
-        return of(v);
-      })
-    );
-  }
-
-  getDrivers(): Observable<Driver[]> {
-    return this.http.get<Driver[]>(`${this.base}/drivers`).pipe(
-      catchError(() => of(this.allDriversStore))
-    );
-  }
-
-  getDriverById(id: string): Observable<Driver | undefined> {
-    return this.http.get<Driver>(`${this.base}/drivers/${id}`).pipe(
-      catchError(() => of(this.allDriversStore.find(d => d.id === id)))
-    );
-  }
-
-  createDriver(payload: DriverFormPayload): Observable<Driver> {
-    return this.http.post<Driver>(`${this.base}/drivers`, payload).pipe(
-      delay(400),
-      catchError(() => {
-        const vehicle = payload.assignedVehicleId ? this.allVehiclesStore.find(v => v.id === payload.assignedVehicleId) : undefined;
-        const initials = payload.name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
-        const created: Driver = {
-          id: `drv-new-${Date.now()}`,
-          name: payload.name,
-          initials,
-          phone: payload.phone,
-          email: payload.email,
-          licenseNumber: payload.licenseNumber,
-          licenseExpiry: payload.licenseExpiry,
-          status: payload.status,
-          assignedVehicleId: vehicle?.id,
-          assignedVehiclePlate: vehicle?.plateNumber,
-          rating: 0,
-          totalDeliveries: 0,
-          successRatePct: 0,
-          onTimeRatePct: 0,
-          yearsOfService: 0,
-          homeBranch: payload.homeBranch,
-        };
-        this.allDriversStore.push(created);
-        return of(created);
-      })
-    );
-  }
-
-  updateDriver(id: string, payload: Partial<DriverFormPayload>): Observable<Driver | undefined> {
-    return this.http.patch<Driver>(`${this.base}/drivers/${id}`, payload).pipe(
-      catchError(() => {
-        const d = this.allDriversStore.find(x => x.id === id);
-        if (d) {
-          if (payload.name) d.name = payload.name;
-          if (payload.phone) d.phone = payload.phone;
-          if (payload.email) d.email = payload.email;
-          if (payload.licenseNumber) d.licenseNumber = payload.licenseNumber;
-          if (payload.licenseExpiry) d.licenseExpiry = payload.licenseExpiry;
-          if (payload.status) d.status = payload.status;
-          if (payload.homeBranch) d.homeBranch = payload.homeBranch;
-          if (payload.assignedVehicleId !== undefined) {
-            const vehicle = this.allVehiclesStore.find(v => v.id === payload.assignedVehicleId);
-            d.assignedVehicleId = vehicle?.id;
-            d.assignedVehiclePlate = vehicle?.plateNumber;
-          }
-        }
-        return of(d);
-      })
-    );
-  }
-
-  // ============================================
-  // ROUTE OPTIMIZATION
-  // ============================================
-
-  getRoutes(): Observable<DeliveryRoute[]> {
-    return this.http.get<DeliveryRoute[]>(`${this.base}/routes`).pipe(
-      catchError(() => of(this.allRoutes))
-    );
-  }
-
-  getRouteById(id: string): Observable<DeliveryRoute | undefined> {
-    return this.http.get<DeliveryRoute>(`${this.base}/routes/${id}`).pipe(
-      catchError(() => of(this.allRoutes.find(r => r.id === id)))
-    );
-  }
-
-  optimizeRoute(id: string): Observable<DeliveryRoute | undefined> {
-    return this.http.post<DeliveryRoute>(`${this.base}/routes/${id}/optimize`, {}).pipe(
-      delay(900),
-      catchError(() => {
-        const r = this.allRoutes.find(x => x.id === id);
-        if (r && !r.optimized) {
-          r.totalDistanceKmBeforeOptimization = r.totalDistanceKm;
-          r.estimatedDurationMinBeforeOptimization = r.estimatedDurationMin;
-          r.estimatedFuelCostBeforeOptimization = r.estimatedFuelCost;
-          r.totalDistanceKm = +(r.totalDistanceKm * 0.79).toFixed(1);
-          r.estimatedDurationMin = Math.round(r.estimatedDurationMin * 0.74);
-          r.estimatedFuelCost = Math.round(r.estimatedFuelCost * 0.79);
-          r.optimized = true;
-          r.status = 'OPTIMIZED';
-        }
-        return of(r);
-      })
-    );
-  }
-
-  // ============================================
-  // TRACKING
-  // ============================================
-
-  trackByDeliveryNumber(deliveryNumber: string): Observable<Delivery | undefined> {
-    return this.http.get<Delivery>(`${this.base}/track/${deliveryNumber}`).pipe(
-      catchError(() => of(this.allDeliveries.find(d => d.deliveryNumber.toLowerCase() === deliveryNumber.toLowerCase())))
-    );
-  }
-
-  // ============================================
-  // HELPERS
-  // ============================================
-
-  formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(amount || 0);
-  }
-
-  // ============================================
-  // MOCK DATA — used only as a fallback when the real endpoint is unavailable
-  // ============================================
-
-  private filterMockDeliveries(filters: DeliveryFilters): PagedResult<Delivery> {
-    let data = [...this.allDeliveries];
-    if (filters?.search) {
-      const s = filters.search.toLowerCase();
-      data = data.filter(d =>
-        d.deliveryNumber.toLowerCase().includes(s) ||
-        d.destination.contactName?.toLowerCase().includes(s) ||
-        d.destination.label.toLowerCase().includes(s) ||
-        d.driverName?.toLowerCase().includes(s)
+  getTriageOrders(search: string = ''): Observable<TriageListResponse> {
+    return this.http
+      .get<TriageListResponse>(`${this.baseUrl}/routing-queue/triage`, { params: { search } })
+      .pipe(
+        tap((res) => this.unroutedCount$$.next(res.total)),
+        catchError(() => {
+          const mock = mockTriage(search);
+          this.unroutedCount$$.next(mock.total);
+          return of(mock);
+        }),
       );
-    }
-    if (filters?.status && filters.status !== 'ALL') data = data.filter(d => d.status === filters.status);
-    if (filters?.type && filters.type !== 'ALL') data = data.filter(d => d.type === filters.type);
-    if (filters?.priority && filters.priority !== 'ALL') data = data.filter(d => d.priority === filters.priority);
-
-    const total = data.length;
-    const page = filters?.page || 0;
-    const size = filters?.size || 20;
-    data = data.slice(page * size, page * size + size);
-    return { data, total };
   }
 
-  private mockSummary(): LogisticsDashboardSummary {
-    const d = this.allDeliveries;
-    return {
-      activeDeliveries: d.filter(x => ['DISPATCHED', 'IN_TRANSIT', 'PICKING', 'PACKING'].includes(x.status)).length,
-      pendingDeliveries: d.filter(x => x.status === 'PENDING').length,
-      delayedDeliveries: d.filter(x => x.status === 'DELAYED').length,
-      deliveredToday: d.filter(x => x.status === 'DELIVERED').length,
-      availableVehicles: this.allVehiclesStore.filter(v => v.status === 'ACTIVE' || v.status === 'IDLE').length,
-      availableDrivers: this.allDriversStore.filter(dr => dr.status === 'ON_DUTY').length,
-      urgentCount: d.filter(x => x.priority === 'URGENT' && x.status !== 'DELIVERED' && x.status !== 'CANCELLED').length,
-    };
+  routeOrder(
+    orderId: string,
+    fulfillmentType: FulfillmentType.PICKUP | FulfillmentType.DELIVERY,
+  ): Observable<Order> {
+    return this.http
+      .post<Order>(`${this.baseUrl}/routing-queue/${orderId}/route`, { fulfillmentType })
+      .pipe(catchError(() => of(mockRouteOrder(orderId, fulfillmentType))));
   }
 
-  private mockAnalytics(): LogisticsAnalytics {
-    const byType: { type: DeliveryType; count: number }[] = (
-      ['BRANCH_TRANSFER', 'SUPPLIER_PURCHASE', 'CUSTOMER_DELIVERY', 'RETURN_DELIVERY', 'BULK_TRANSFER'] as DeliveryType[]
-    ).map(type => ({ type, count: this.allDeliveries.filter(d => d.type === type).length }));
-
-    const byStatus: { status: DeliveryStatus; count: number }[] = (
-      ['PENDING', 'PICKING', 'PACKING', 'DISPATCHED', 'IN_TRANSIT', 'DELAYED', 'ARRIVED', 'DELIVERED', 'CANCELLED'] as DeliveryStatus[]
-    ).map(status => ({ status, count: this.allDeliveries.filter(d => d.status === status).length }));
-
-    return {
-      performance: {
-        deliverySuccessRatePct: 94,
-        deliverySuccessRateTrendPct: 5,
-        onTimeDeliveryRatePct: 87,
-        onTimeDeliveryRateTrendPct: 3,
-        avgDeliveryTimeMin: 45,
-        avgDeliveryTimeTrendPct: -10,
-        vehicleUtilizationPct: 78,
-        vehicleUtilizationTrendPct: 8,
-      },
-      volume: {
-        totalDeliveriesThisMonth: 1247,
-        avgDailyDeliveries: 42,
-        peakHour: '11:00 - 12:00',
-        busiestDay: 'Friday',
-      },
-      cost: {
-        totalDeliveryCost: 4500000,
-        costPerDelivery: 3610,
-        fuelCost: 1800000,
-        driverCost: 2700000,
-      },
-      fleet: {
-        totalVehicles: 12,
-        activeVehicles: 9,
-        maintenanceVehicles: 2,
-        idleVehicles: 1,
-        averageAgeYears: 3.5,
-      },
-      driver: {
-        bestDriverName: 'John Doe',
-        bestDriverSuccessRatePct: 98,
-        mostDeliveriesDriverName: 'Jane Smith',
-        mostDeliveriesCount: 156,
-        averageRating: 4.7,
-        driverTurnoverPct: 12,
-      },
-      deliveriesByType: byType,
-      deliveriesByStatus: byStatus,
-      dailyTrend: this.buildDailyTrend(),
-    };
+  bulkRouteOrders(
+    orderIds: string[],
+    fulfillmentType: FulfillmentType.PICKUP | FulfillmentType.DELIVERY,
+  ): Observable<{ routed: number }> {
+    return this.http
+      .post<{
+        routed: number;
+      }>(`${this.baseUrl}/routing-queue/bulk-route`, { orderIds, fulfillmentType })
+      .pipe(catchError(() => of({ routed: orderIds.length })));
   }
 
-  private buildDailyTrend(): { date: string; completed: number; delayed: number }[] {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days.map((d, i) => ({
-      date: d,
-      completed: [38, 42, 40, 44, 51, 30, 22][i],
-      delayed: [3, 2, 4, 2, 5, 1, 1][i],
-    }));
+  // ============================================================
+  // ROUTING QUEUE — PART B: POOL OVERSIGHT
+  // ============================================================
+
+  getPoolOrders(
+    agingThresholdMinutes: number = AGING_THRESHOLD_MINUTES,
+  ): Observable<PoolListResponse> {
+    return this.http
+      .get<PoolListResponse>(`${this.baseUrl}/routing-queue/pool`, {
+        params: { agingThresholdMinutes },
+      })
+      .pipe(
+        tap((res) => this.poolAgingCount$$.next(res.agingCount)),
+        catchError(() => {
+          const mock = mockPool(agingThresholdMinutes);
+          this.poolAgingCount$$.next(mock.agingCount);
+          return of(mock);
+        }),
+      );
   }
 
-  // ---- Static mock entities (deterministic, resembles real operational data) ----
-
-  private allDriversStore: Driver[] = [
-    { id: 'drv-1', name: 'John Doe', initials: 'JD', phone: '+234 803 555 0110', licenseNumber: 'LG-DL-88213', licenseExpiry: '2027-03-14', status: 'ON_DELIVERY', assignedVehicleId: 'veh-1', assignedVehiclePlate: 'LND-224-KJA', rating: 4.9, totalDeliveries: 341, successRatePct: 98, onTimeRatePct: 95, yearsOfService: 4, homeBranch: 'Lekki' },
-    { id: 'drv-2', name: 'Jane Smith', initials: 'JS', phone: '+234 803 555 0121', licenseNumber: 'LG-DL-77410', licenseExpiry: '2026-11-02', status: 'ON_DELIVERY', assignedVehicleId: 'veh-2', assignedVehiclePlate: 'LND-118-KJA', rating: 4.8, totalDeliveries: 412, successRatePct: 96, onTimeRatePct: 91, yearsOfService: 5, homeBranch: 'Mushin' },
-    { id: 'drv-3', name: 'Ibrahim Musa', initials: 'IM', phone: '+234 803 555 0132', licenseNumber: 'LG-DL-65310', licenseExpiry: '2025-09-21', status: 'ON_DUTY', assignedVehicleId: 'veh-3', assignedVehiclePlate: 'LND-305-KJA', rating: 4.6, totalDeliveries: 298, successRatePct: 93, onTimeRatePct: 88, yearsOfService: 3, homeBranch: 'Ikeja' },
-    { id: 'drv-4', name: 'Amaka Chukwu', initials: 'AC', phone: '+234 803 555 0143', licenseNumber: 'LG-DL-54211', licenseExpiry: '2026-05-30', status: 'OFF_DUTY', rating: 4.7, totalDeliveries: 256, successRatePct: 95, onTimeRatePct: 90, yearsOfService: 2, homeBranch: 'Lekki' },
-    { id: 'drv-5', name: 'Tunde Bakare', initials: 'TB', phone: '+234 803 555 0154', licenseNumber: 'LG-DL-43112', licenseExpiry: '2027-01-11', status: 'ON_DUTY', assignedVehicleId: 'veh-5', assignedVehiclePlate: 'LND-451-KJA', rating: 4.4, totalDeliveries: 189, successRatePct: 90, onTimeRatePct: 84, yearsOfService: 1, homeBranch: 'Mushin' },
-    { id: 'drv-6', name: 'Grace Effiong', initials: 'GE', phone: '+234 803 555 0165', licenseNumber: 'LG-DL-32013', licenseExpiry: '2026-08-19', status: 'ON_LEAVE', rating: 4.5, totalDeliveries: 201, successRatePct: 92, onTimeRatePct: 87, yearsOfService: 2, homeBranch: 'Ikeja' },
-    { id: 'drv-7', name: 'Segun Adeyemi', initials: 'SA', phone: '+234 803 555 0176', licenseNumber: 'LG-DL-21914', licenseExpiry: '2025-12-04', status: 'ON_DUTY', assignedVehicleId: 'veh-7', assignedVehiclePlate: 'LND-762-KJA', rating: 4.3, totalDeliveries: 167, successRatePct: 89, onTimeRatePct: 83, yearsOfService: 1, homeBranch: 'Lekki' },
-  ];
-
-  private allVehiclesStore: Vehicle[] = [
-    { id: 'veh-1', plateNumber: 'LND-224-KJA', name: 'Hilux 01', type: 'TRUCK', status: 'ACTIVE', capacityKg: 2500, odometerKm: 68210, fuelLevelPct: 72, ageYears: 2, purchaseDate: '2024-02-10', lastServiceDate: '2026-06-01', nextServiceDue: '2026-09-01', nextServiceKm: 72000, assignedDriverId: 'drv-1', assignedDriverName: 'John Doe', homeBranch: 'Lekki', utilizationPct: 91, activeDeliveries: 2, totalDeliveriesCompleted: 214,
-      documents: [{ name: 'Vehicle Insurance', expiresAt: '2026-12-01', status: 'valid' }, { name: 'Road Worthiness', expiresAt: '2026-09-05', status: 'expiring' }] },
-    { id: 'veh-2', plateNumber: 'LND-118-KJA', name: 'Sprinter Van 02', type: 'VAN', status: 'ACTIVE', capacityKg: 1200, odometerKm: 51340, fuelLevelPct: 54, ageYears: 3, purchaseDate: '2023-04-18', lastServiceDate: '2026-05-15', nextServiceDue: '2026-08-15', nextServiceKm: 55000, assignedDriverId: 'drv-2', assignedDriverName: 'Jane Smith', homeBranch: 'Mushin', utilizationPct: 88, activeDeliveries: 3, totalDeliveriesCompleted: 301,
-      documents: [{ name: 'Vehicle Insurance', expiresAt: '2027-01-20', status: 'valid' }, { name: 'Road Worthiness', expiresAt: '2027-01-01', status: 'valid' }] },
-    { id: 'veh-3', plateNumber: 'LND-305-KJA', name: 'Bus 03', type: 'TRUCK', status: 'ACTIVE', capacityKg: 3000, odometerKm: 94810, fuelLevelPct: 38, ageYears: 5, purchaseDate: '2021-06-02', lastServiceDate: '2026-07-02', nextServiceDue: '2026-10-02', nextServiceKm: 98000, assignedDriverId: 'drv-3', assignedDriverName: 'Ibrahim Musa', homeBranch: 'Ikeja', utilizationPct: 76, activeDeliveries: 1, totalDeliveriesCompleted: 189,
-      documents: [{ name: 'Vehicle Insurance', expiresAt: '2026-08-30', status: 'expiring' }, { name: 'Road Worthiness', expiresAt: '2026-04-01', status: 'expired' }] },
-    { id: 'veh-4', plateNumber: 'LND-090-KJA', name: 'Bike 04', type: 'BIKE', status: 'MAINTENANCE', capacityKg: 40, odometerKm: 22110, fuelLevelPct: 0, ageYears: 1, purchaseDate: '2025-01-08', lastServiceDate: '2026-08-10', nextServiceDue: '2026-08-16', nextServiceKm: 23000, homeBranch: 'Lekki', utilizationPct: 0, activeDeliveries: 0, totalDeliveriesCompleted: 88,
-      documents: [{ name: 'Vehicle Insurance', expiresAt: '2027-02-14', status: 'valid' }] },
-    { id: 'veh-5', plateNumber: 'LND-451-KJA', name: 'Sprinter Van 05', type: 'VAN', status: 'ACTIVE', capacityKg: 1200, odometerKm: 33220, fuelLevelPct: 81, ageYears: 2, purchaseDate: '2024-09-19', lastServiceDate: '2026-06-20', nextServiceDue: '2026-09-20', nextServiceKm: 37000, assignedDriverId: 'drv-5', assignedDriverName: 'Tunde Bakare', homeBranch: 'Mushin', utilizationPct: 84, activeDeliveries: 2, totalDeliveriesCompleted: 132,
-      documents: [{ name: 'Vehicle Insurance', expiresAt: '2027-03-11', status: 'valid' }, { name: 'Road Worthiness', expiresAt: '2026-11-11', status: 'valid' }] },
-    { id: 'veh-6', plateNumber: 'LND-620-KJA', name: 'Hilux 06', type: 'TRUCK', status: 'IDLE', capacityKg: 2500, odometerKm: 41880, fuelLevelPct: 66, ageYears: 3, purchaseDate: '2023-11-30', lastServiceDate: '2026-05-01', nextServiceDue: '2026-08-01', nextServiceKm: 45000, homeBranch: 'Ikeja', utilizationPct: 45, activeDeliveries: 0, totalDeliveriesCompleted: 176,
-      documents: [{ name: 'Vehicle Insurance', expiresAt: '2026-10-10', status: 'valid' }] },
-    { id: 'veh-7', plateNumber: 'LND-762-KJA', name: 'Sprinter Van 07', type: 'VAN', status: 'ACTIVE', capacityKg: 1200, odometerKm: 18040, fuelLevelPct: 47, ageYears: 1, purchaseDate: '2025-03-22', lastServiceDate: '2026-07-15', nextServiceDue: '2026-10-15', nextServiceKm: 22000, assignedDriverId: 'drv-7', assignedDriverName: 'Segun Adeyemi', homeBranch: 'Lekki', utilizationPct: 79, activeDeliveries: 1, totalDeliveriesCompleted: 61,
-      documents: [{ name: 'Vehicle Insurance', expiresAt: '2027-04-02', status: 'valid' }] },
-    { id: 'veh-8', plateNumber: 'LND-833-KJA', name: 'Bike 08', type: 'BIKE', status: 'ACTIVE', capacityKg: 40, odometerKm: 9210, fuelLevelPct: 92, ageYears: 1, purchaseDate: '2025-05-14', lastServiceDate: '2026-07-01', nextServiceDue: '2026-10-01', nextServiceKm: 12000, homeBranch: 'Mushin', utilizationPct: 68, activeDeliveries: 1, totalDeliveriesCompleted: 44,
-      documents: [{ name: 'Vehicle Insurance', expiresAt: '2027-01-09', status: 'valid' }] },
-    { id: 'veh-9', plateNumber: 'LND-902-KJA', name: 'Truck 09', type: 'TRUCK', status: 'OUT_OF_SERVICE', capacityKg: 4000, odometerKm: 132900, fuelLevelPct: 12, ageYears: 7, purchaseDate: '2019-02-01', lastServiceDate: '2026-03-01', nextServiceDue: '2026-06-01', nextServiceKm: 133500, homeBranch: 'Ikeja', utilizationPct: 0, activeDeliveries: 0, totalDeliveriesCompleted: 402,
-      documents: [{ name: 'Vehicle Insurance', expiresAt: '2026-05-01', status: 'expired' }, { name: 'Road Worthiness', expiresAt: '2026-05-01', status: 'expired' }] },
-  ];
-
-  private allRoutes: DeliveryRoute[] = [
-    {
-      id: 'rt-1', name: 'Lekki AM Run', status: 'DRAFT', driverId: 'drv-1', driverName: 'John Doe', vehicleId: 'veh-1', vehiclePlate: 'LND-224-KJA',
-      totalDistanceKm: 38.4, estimatedDurationMin: 132, estimatedFuelCost: 9200, createdAt: '2026-08-13T06:10:00Z', scheduledFor: '2026-08-13T08:00:00Z', optimized: false,
-      stops: [
-        { order: 1, deliveryId: 'del-1', deliveryNumber: 'DEL-100241', address: { label: 'Lekki Phase 1', line1: '12 Admiralty Way', city: 'Lagos', state: 'Lagos' }, status: 'PENDING', etaMinutesFromStart: 18, distanceFromPrevKm: 6.2 },
-        { order: 2, deliveryId: 'del-2', deliveryNumber: 'DEL-100244', address: { label: 'Chevron Drive', line1: '4 Chevron Drive', city: 'Lagos', state: 'Lagos' }, status: 'PENDING', etaMinutesFromStart: 41, distanceFromPrevKm: 9.8 },
-        { order: 3, deliveryId: 'del-3', deliveryNumber: 'DEL-100249', address: { label: 'Ikate', line1: '8 Freedom Way', city: 'Lagos', state: 'Lagos' }, status: 'PENDING', etaMinutesFromStart: 76, distanceFromPrevKm: 12.1 },
-        { order: 4, deliveryId: 'del-4', deliveryNumber: 'DEL-100252', address: { label: 'Ajah', line1: '19 Addo Road', city: 'Lagos', state: 'Lagos' }, status: 'PENDING', etaMinutesFromStart: 132, distanceFromPrevKm: 10.3 },
-      ],
-    },
-    {
-      id: 'rt-2', name: 'Mushin–Ikeja Midday', status: 'OPTIMIZED', driverId: 'drv-2', driverName: 'Jane Smith', vehicleId: 'veh-2', vehiclePlate: 'LND-118-KJA',
-      totalDistanceKm: 22.7, totalDistanceKmBeforeOptimization: 29.9, estimatedDurationMin: 96, estimatedDurationMinBeforeOptimization: 128, estimatedFuelCost: 5100, estimatedFuelCostBeforeOptimization: 6600,
-      createdAt: '2026-08-13T05:40:00Z', scheduledFor: '2026-08-13T11:00:00Z', optimized: true,
-      stops: [
-        { order: 1, deliveryId: 'del-5', deliveryNumber: 'DEL-100238', address: { label: 'Mushin Market', line1: '3 Ojuwoye St', city: 'Lagos', state: 'Lagos' }, status: 'DISPATCHED', etaMinutesFromStart: 14, distanceFromPrevKm: 4.1 },
-        { order: 2, deliveryId: 'del-6', deliveryNumber: 'DEL-100240', address: { label: 'Isolo', line1: '21 Ago Palace Way', city: 'Lagos', state: 'Lagos' }, status: 'DISPATCHED', etaMinutesFromStart: 38, distanceFromPrevKm: 7.5 },
-        { order: 3, deliveryId: 'del-7', deliveryNumber: 'DEL-100245', address: { label: 'Ikeja GRA', line1: '9 Oduduwa Cres', city: 'Lagos', state: 'Lagos' }, status: 'PENDING', etaMinutesFromStart: 96, distanceFromPrevKm: 11.1 },
-      ],
-    },
-    {
-      id: 'rt-3', name: 'Ajah Bulk Distribution', status: 'ACTIVE', driverId: 'drv-5', driverName: 'Tunde Bakare', vehicleId: 'veh-5', vehiclePlate: 'LND-451-KJA',
-      totalDistanceKm: 51.2, estimatedDurationMin: 187, estimatedFuelCost: 12300, createdAt: '2026-08-12T22:00:00Z', scheduledFor: '2026-08-13T07:30:00Z', optimized: true,
-      totalDistanceKmBeforeOptimization: 63.5, estimatedDurationMinBeforeOptimization: 240, estimatedFuelCostBeforeOptimization: 15200,
-      stops: [
-        { order: 1, deliveryId: 'del-8', deliveryNumber: 'DEL-100230', address: { label: 'Sangotedo Branch', line1: '5 Abraham Adesanya Rd', city: 'Lagos', state: 'Lagos' }, status: 'DELIVERED', etaMinutesFromStart: 22, distanceFromPrevKm: 8.4 },
-        { order: 2, deliveryId: 'del-9', deliveryNumber: 'DEL-100232', address: { label: 'Awoyaya Branch', line1: '2 Lekki-Epe Expy', city: 'Lagos', state: 'Lagos' }, status: 'DELIVERED', etaMinutesFromStart: 61, distanceFromPrevKm: 14.7 },
-        { order: 3, deliveryId: 'del-10', deliveryNumber: 'DEL-100235', address: { label: 'Abraham Adesanya', line1: '11 Abraham Adesanya Rd', city: 'Lagos', state: 'Lagos' }, status: 'IN_TRANSIT', etaMinutesFromStart: 130, distanceFromPrevKm: 16.9 },
-        { order: 4, deliveryId: 'del-11', deliveryNumber: 'DEL-100236', address: { label: 'Eleko', line1: 'KM 40 Lekki-Epe Expy', city: 'Lagos', state: 'Lagos' }, status: 'PENDING', etaMinutesFromStart: 187, distanceFromPrevKm: 11.2 },
-      ],
-    },
-  ];
-
-  private _deliveriesStore?: Delivery[];
-
-  private get allDeliveries(): Delivery[] {
-    if (!this._deliveriesStore) {
-      this._deliveriesStore = this.buildMockDeliveries();
-    }
-    return this._deliveriesStore;
+  getActiveRiders(): Observable<Rider[]> {
+    return this.http
+      .get<Rider[]>(`${this.baseUrl}/riders`, { params: { status: 'active' } })
+      .pipe(catchError(() => of(MOCK_RIDERS)));
   }
 
-  private buildMockDeliveries(): Delivery[] {
-    const types: DeliveryType[] = ['BRANCH_TRANSFER', 'SUPPLIER_PURCHASE', 'CUSTOMER_DELIVERY', 'RETURN_DELIVERY', 'BULK_TRANSFER'];
-    const priorities: DeliveryPriority[] = ['URGENT', 'HIGH', 'MEDIUM', 'LOW'];
-    const customers = ['Adaeze Okoye', 'Bright Star Stores', 'Chinedu Eze', 'Femi Adigun', 'Golden Foods Ltd', 'Hauwa Bello', 'Prime Retailers'];
-    const branches = ['Lekki Branch', 'Mushin Branch', 'Ikeja Branch', 'Warehouse A', 'Warehouse B'];
+  forceAssignOrder(orderId: string, riderId: string): Observable<Order> {
+    return this.http
+      .post<Order>(`${this.baseUrl}/routing-queue/pool/${orderId}/force-assign`, { riderId })
+      .pipe(catchError(() => of(mockForceAssign(orderId, riderId))));
+  }
 
-    const rows: { status: DeliveryStatus; type: DeliveryType; priority: DeliveryPriority; driverIdx: number }[] = [
-      { status: 'DELIVERED', type: 'CUSTOMER_DELIVERY', priority: 'HIGH', driverIdx: 0 },
-      { status: 'IN_TRANSIT', type: 'CUSTOMER_DELIVERY', priority: 'URGENT', driverIdx: 1 },
-      { status: 'DISPATCHED', type: 'BRANCH_TRANSFER', priority: 'MEDIUM', driverIdx: 2 },
-      { status: 'DELAYED', type: 'CUSTOMER_DELIVERY', priority: 'HIGH', driverIdx: 4 },
-      { status: 'PENDING', type: 'SUPPLIER_PURCHASE', priority: 'LOW', driverIdx: -1 },
-      { status: 'PACKING', type: 'BULK_TRANSFER', priority: 'MEDIUM', driverIdx: -1 },
-      { status: 'PICKING', type: 'RETURN_DELIVERY', priority: 'LOW', driverIdx: -1 },
-      { status: 'DELIVERED', type: 'CUSTOMER_DELIVERY', priority: 'MEDIUM', driverIdx: 6 },
-      { status: 'ARRIVED', type: 'BRANCH_TRANSFER', priority: 'HIGH', driverIdx: 1 },
-      { status: 'DELIVERED', type: 'CUSTOMER_DELIVERY', priority: 'URGENT', driverIdx: 0 },
-      { status: 'CANCELLED', type: 'CUSTOMER_DELIVERY', priority: 'LOW', driverIdx: -1 },
-      { status: 'IN_TRANSIT', type: 'BULK_TRANSFER', priority: 'MEDIUM', driverIdx: 4 },
-      { status: 'DELIVERED', type: 'SUPPLIER_PURCHASE', priority: 'MEDIUM', driverIdx: 2 },
-      { status: 'DELAYED', type: 'CUSTOMER_DELIVERY', priority: 'URGENT', driverIdx: 6 },
-      { status: 'PENDING', type: 'CUSTOMER_DELIVERY', priority: 'HIGH', driverIdx: -1 },
-      { status: 'DELIVERED', type: 'RETURN_DELIVERY', priority: 'LOW', driverIdx: 0 },
-      { status: 'DISPATCHED', type: 'CUSTOMER_DELIVERY', priority: 'HIGH', driverIdx: 1 },
-      { status: 'DELIVERED', type: 'CUSTOMER_DELIVERY', priority: 'MEDIUM', driverIdx: 2 },
-    ];
+  // ============================================================
+  // ROUTE APPROVAL — PART A: APPROVAL QUEUE
+  // ============================================================
 
-    return rows.map((r, i) => {
-      const driver = r.driverIdx >= 0 ? this.allDriversStore[r.driverIdx] : undefined;
-      const num = 100230 + i * 3;
-      const createdHoursAgo = 3 + i * 4;
-      const created = new Date(Date.now() - createdHoursAgo * 3600 * 1000);
-      const dest = customers[i % customers.length];
-      const origin = branches[i % branches.length];
-      const isCustomer = r.type === 'CUSTOMER_DELIVERY' || r.type === 'RETURN_DELIVERY';
+  getPendingApprovalBatches(): Observable<ApprovalQueueResponse> {
+    return this.http.get<ApprovalQueueResponse>(`${this.baseUrl}/route-approval/pending`).pipe(
+      tap((res) => this.pendingApprovalCount$$.next(res.total)),
+      catchError(() => {
+        const mock = mockPendingApproval();
+        this.pendingApprovalCount$$.next(mock.total);
+        return of(mock);
+      }),
+    );
+  }
 
-      const timeline: import('../../domain/logistics/logistics.dto').DeliveryTimelineEvent[] = [
-        { status: 'PENDING', label: 'Order created', timestamp: created.toISOString(), actor: 'System' },
-      ];
-      const order: DeliveryStatus[] = ['PENDING', 'PICKING', 'PACKING', 'DISPATCHED', 'IN_TRANSIT', 'ARRIVED', 'DELIVERED'];
-      const currentIdx = order.indexOf(r.status);
-      if (currentIdx > 0) {
-        for (let s = 1; s <= currentIdx; s++) {
-          timeline.push({
-            status: order[s],
-            label: order[s].replace('_', ' '),
-            timestamp: new Date(created.getTime() + s * 35 * 60000).toISOString(),
-            actor: driver?.name || 'Warehouse',
-          });
-        }
-      }
-      if (r.status === 'DELAYED') {
-        timeline.push({ status: 'DELAYED', label: 'Delayed — traffic on route', timestamp: new Date(created.getTime() + 90 * 60000).toISOString(), actor: driver?.name });
-      }
-      if (r.status === 'CANCELLED') {
-        timeline.push({ status: 'CANCELLED', label: 'Cancelled by customer', timestamp: new Date(created.getTime() + 20 * 60000).toISOString(), actor: 'System' });
-      }
+  approveBatch(batchId: string, note?: string): Observable<DeliveryBatch> {
+    return this.http
+      .post<DeliveryBatch>(`${this.baseUrl}/route-approval/${batchId}/approve`, { note })
+      .pipe(catchError(() => of(mockApprove(batchId, note))));
+  }
 
-      return {
-        id: `del-${i + 1}`,
-        deliveryNumber: `DEL-${num}`,
-        type: r.type,
-        status: r.status,
-        priority: r.priority,
-        origin: { label: origin, line1: `${origin}, Warehouse Complex`, city: 'Lagos', state: 'Lagos' },
-        destination: isCustomer
-          ? { label: dest, line1: `${12 + i} Adeola Odeku St`, city: 'Lagos', state: 'Lagos', contactName: dest, contactPhone: `+234 80${i}1 234 5${(670 + i) % 900}` }
-          : { label: branches[(i + 2) % branches.length], line1: `${branches[(i + 2) % branches.length]}, Zone ${i % 4 + 1}`, city: 'Lagos', state: 'Lagos' },
-        linkedOrderRef: isCustomer ? `SO-${20250 + i}` : `PO-${18320 + i}`,
-        linkedModule: isCustomer ? 'Sales' : (r.type === 'SUPPLIER_PURCHASE' ? 'Procurement' : 'Branch Management'),
-        driverId: driver?.id,
-        driverName: driver?.name,
-        vehicleId: driver?.assignedVehicleId,
-        vehiclePlate: driver?.assignedVehiclePlate,
-        items: [
-          { id: `it-${i}-1`, name: 'Packaged Goods Carton', sku: `SKU-${1000 + i}`, quantity: 4 + (i % 6), unit: 'ctn' },
-          { id: `it-${i}-2`, name: 'Sealed Bundle', sku: `SKU-${2000 + i}`, quantity: 2 + (i % 3), unit: 'pcs' },
-        ],
-        itemCount: 6 + (i % 6),
-        distanceKm: +(6 + (i * 2.3) % 24).toFixed(1),
-        cost: 2500 + (i * 340) % 6000,
-        createdAt: created.toISOString(),
-        scheduledAt: new Date(created.getTime() + 30 * 60000).toISOString(),
-        dispatchedAt: currentIdx >= 3 ? new Date(created.getTime() + 105 * 60000).toISOString() : undefined,
-        eta: (r.status !== 'DELIVERED' && r.status !== 'CANCELLED') ? new Date(Date.now() + (25 + i * 5) * 60000).toISOString() : undefined,
-        deliveredAt: r.status === 'DELIVERED' ? new Date(created.getTime() + 175 * 60000).toISOString() : undefined,
-        timeline,
-        proofOfDelivery: r.status === 'DELIVERED' ? { receivedBy: dest, deliveredAt: new Date(created.getTime() + 175 * 60000).toISOString(), notes: 'Received in good condition' } : undefined,
-        currentLocation: (r.status === 'IN_TRANSIT' || r.status === 'DISPATCHED') ? { lat: 6.45 + (i % 5) * 0.01, lng: 3.4 + (i % 5) * 0.01 } : undefined,
-        notes: r.status === 'DELAYED' ? 'Heavy traffic reported along Third Mainland Bridge.' : undefined,
-      } as Delivery;
-    });
+  rejectBatch(batchId: string, note: string): Observable<DeliveryBatch> {
+    return this.http
+      .post<DeliveryBatch>(`${this.baseUrl}/route-approval/${batchId}/reject`, { note })
+      .pipe(catchError(() => of(mockReject(batchId, note))));
+  }
+
+  // ============================================================
+  // ROUTE APPROVAL — PART B: LIVE TRACKING
+  // ============================================================
+
+  getActiveRouteBatches(): Observable<ActiveRoutesResponse> {
+    return this.http
+      .get<ActiveRoutesResponse>(`${this.baseUrl}/route-approval/active`)
+      .pipe(catchError(() => of(mockActiveRoutes())));
+  }
+
+  /** Poll active routes every N ms — used for "near real-time" updates without a manual refresh. */
+  pollActiveRouteBatches(intervalMs: number = 15000): Observable<ActiveRoutesResponse> {
+    return timer(0, intervalMs).pipe(
+      map(() => null),
+      // switchMap would be ideal but kept simple/dependency-light here
+      map(() => mockActiveRoutes()),
+    );
+  }
+
+  // ============================================================
+  // SHARED — ORDER DETAIL + AUDIT TRAIL
+  // ============================================================
+
+  getOrderDetail(orderId: string): Observable<Order | undefined> {
+    return this.http
+      .get<Order>(`${this.baseUrl}/orders/${orderId}`)
+      .pipe(catchError(() => of(findMockOrder(orderId))));
+  }
+
+  getAuditLog(entityId: string): Observable<AuditLogEntry[]> {
+    return this.http
+      .get<AuditLogEntry[]>(`${this.baseUrl}/audit-log`, { params: { entityId } })
+      .pipe(catchError(() => of(mockAuditLog(entityId))));
+  }
+
+  // ============================================================
+  // DELIVERY RECORDS — PART A: DELIVERED (PROOF REVIEW)
+  // ============================================================
+
+  getDeliveredAttempts(search: string = ''): Observable<DeliveredListResponse> {
+    return this.http
+      .get<DeliveredListResponse>(`${this.baseUrl}/delivery-records/delivered`, {
+        params: { search },
+      })
+      .pipe(catchError(() => of(mockDelivered(search))));
+  }
+
+  // ============================================================
+  // DELIVERY RECORDS — PART B: FAILED (EXCEPTIONS)
+  // ============================================================
+
+  getFailedAttempts(): Observable<FailedListResponse> {
+    return this.http
+      .get<FailedListResponse>(`${this.baseUrl}/delivery-records/failed`)
+      .pipe(catchError(() => of(mockFailed())));
+  }
+
+  requeueFailedOrder(attemptId: string): Observable<DeliveryAttempt> {
+    return this.http
+      .post<DeliveryAttempt>(`${this.baseUrl}/delivery-records/failed/${attemptId}/requeue`, {})
+      .pipe(catchError(() => of(mockRequeue(attemptId))));
+  }
+
+  cancelFailedOrder(attemptId: string): Observable<DeliveryAttempt> {
+    return this.http
+      .post<DeliveryAttempt>(`${this.baseUrl}/delivery-records/failed/${attemptId}/cancel`, {})
+      .pipe(catchError(() => of(mockCancel(attemptId))));
+  }
+
+  escalateFailedOrder(attemptId: string, note: string): Observable<DeliveryAttempt> {
+    return this.http
+      .post<DeliveryAttempt>(`${this.baseUrl}/delivery-records/failed/${attemptId}/escalate`, {
+        note,
+      })
+      .pipe(catchError(() => of(mockEscalate(attemptId, note))));
+  }
+
+  // ============================================================
+  // DELIVERY RECORDS — PART C: PICKUP CONFIRMATION
+  // ============================================================
+
+  getPickupOrders(): Observable<PickupListResponse> {
+    return this.http
+      .get<PickupListResponse>(`${this.baseUrl}/delivery-records/pickups`)
+      .pipe(catchError(() => of(mockPickups())));
+  }
+
+  markCollected(orderId: string, verificationCode?: string): Observable<Order> {
+    return this.http
+      .post<Order>(`${this.baseUrl}/delivery-records/pickups/${orderId}/collect`, {
+        verificationCode,
+      })
+      .pipe(catchError(() => of(mockMarkCollected(orderId))));
+  }
+
+  // ============================================================
+  // RIDER ACTIVITY — PART A: ROSTER + PERFORMANCE
+  // ============================================================
+
+  getRiderRoster(): Observable<RiderRosterResponse> {
+    return this.http
+      .get<RiderRosterResponse>(`${this.baseUrl}/riders/roster`)
+      .pipe(catchError(() => of({ riders: MOCK_RIDERS, total: MOCK_RIDERS.length })));
+  }
+
+  addRider(payload: RiderCreatePayload): Observable<Rider> {
+    return this.http
+      .post<Rider>(`${this.baseUrl}/riders`, payload)
+      .pipe(catchError(() => of(mockAddRider(payload))));
+  }
+
+  getRiderById(riderId: string): Observable<Rider | undefined> {
+    return this.http
+      .get<Rider>(`${this.baseUrl}/riders/${riderId}`)
+      .pipe(catchError(() => of(MOCK_RIDERS.find((r) => r.id === riderId))));
+  }
+
+  getRiderPerformance(): Observable<RiderPerformanceResponse> {
+    return this.http
+      .get<RiderPerformanceResponse>(`${this.baseUrl}/riders/performance`)
+      .pipe(catchError(() => of(mockRiderPerformance())));
+  }
+
+  // ============================================================
+  // RIDER ACTIVITY — PART B: SYSTEM AUDIT LOG
+  // ============================================================
+
+  getSystemAuditLog(filter: AuditLogFilter = {}): Observable<AuditLogResponse> {
+    return this.http
+      .get<AuditLogResponse>(`${this.baseUrl}/audit-log/search`, { params: filter as any })
+      .pipe(catchError(() => of(mockSystemAuditLog(filter))));
+  }
+
+  // ============================================================
+  // RIDER APP — ROUTE BUILDER (claim → arrange → submit)
+  // ============================================================
+
+  getRiderAvailablePool(): Observable<AvailablePoolResponse> {
+    return this.http
+      .get<AvailablePoolResponse>(`${this.baseUrl}/rider-app/pool`)
+      .pipe(catchError(() => of(mockRiderPool())));
+  }
+
+  getMyBatch(): Observable<DeliveryBatch | null> {
+    return this.http
+      .get<DeliveryBatch | null>(`${this.baseUrl}/rider-app/my-batch`)
+      .pipe(catchError(() => of(RIDER_DRAFT_BATCH)));
+  }
+
+  claimOrders(orderIds: string[]): Observable<DeliveryBatch> {
+    return this.http
+      .post<DeliveryBatch>(`${this.baseUrl}/rider-app/claim`, { orderIds })
+      .pipe(catchError(() => of(mockClaimOrders(orderIds))));
+  }
+
+  removeFromBatch(orderId: string): Observable<DeliveryBatch | null> {
+    return this.http
+      .post<DeliveryBatch | null>(`${this.baseUrl}/rider-app/my-batch/remove`, { orderId })
+      .pipe(catchError(() => of(mockRemoveFromBatch(orderId))));
+  }
+
+  reorderBatch(orderedOrderIds: string[]): Observable<DeliveryBatch | null> {
+    return this.http
+      .post<DeliveryBatch | null>(`${this.baseUrl}/rider-app/my-batch/reorder`, { orderedOrderIds })
+      .pipe(catchError(() => of(mockReorderBatch(orderedOrderIds))));
+  }
+
+  updateStopLocation(orderId: string, point: GeoPoint): Observable<DeliveryBatch | null> {
+    return this.http
+      .post<DeliveryBatch | null>(`${this.baseUrl}/rider-app/my-batch/stop-location`, {
+        orderId,
+        point,
+      })
+      .pipe(catchError(() => of(mockUpdateStopLocation(orderId, point))));
+  }
+
+  confirmStopLocation(orderId: string, point: GeoPoint): Observable<DeliveryBatch | null> {
+    return this.http
+      .post<DeliveryBatch | null>(`${this.baseUrl}/rider-app/my-batch/confirm-location`, {
+        orderId,
+        point,
+      })
+      .pipe(catchError(() => of(mockUpdateStopLocation(orderId, point, true))));
+  }
+
+  submitBatchForApproval(): Observable<DeliveryBatch | null> {
+    return this.http
+      .post<DeliveryBatch | null>(`${this.baseUrl}/rider-app/my-batch/submit`, {})
+      .pipe(catchError(() => of(mockSubmitBatch())));
+  }
+
+  // ============================================================
+  // RIDER APP — STOP CHECKLIST (execute an approved route)
+  // ============================================================
+
+  getActiveBatch(): Observable<DeliveryBatch | null> {
+    return this.http
+      .get<DeliveryBatch | null>(`${this.baseUrl}/rider-app/active-batch`)
+      .pipe(catchError(() => of(RIDER_ACTIVE_BATCH)));
+  }
+
+  markStopEnRoute(orderId: string): Observable<DeliveryBatch | null> {
+    return this.http
+      .post<DeliveryBatch | null>(`${this.baseUrl}/rider-app/stops/${orderId}/en-route`, {})
+      .pipe(catchError(() => of(mockSetStopStatus(orderId, StopStatus.EN_ROUTE))));
+  }
+
+  markStopDelivered(
+    orderId: string,
+    proofType: ProofType,
+    proofValue?: string,
+    receiverName?: string,
+  ): Observable<DeliveryBatch | null> {
+    return this.http
+      .post<DeliveryBatch | null>(`${this.baseUrl}/rider-app/stops/${orderId}/delivered`, {
+        proofType,
+        proofValue,
+        receiverName,
+      })
+      .pipe(catchError(() => of(mockMarkDelivered(orderId, proofType, proofValue, receiverName))));
+  }
+
+  markStopFailed(
+    orderId: string,
+    reason: FailureReason,
+    note?: string,
+  ): Observable<DeliveryBatch | null> {
+    return this.http
+      .post<DeliveryBatch | null>(`${this.baseUrl}/rider-app/stops/${orderId}/failed`, {
+        reason,
+        note,
+      })
+      .pipe(catchError(() => of(mockMarkFailed(orderId, reason, note))));
+  }
+
+  // ============================================================
+  // GEOCODING (address autocomplete + reverse lookup via OpenStreetMap Nominatim)
+  // ============================================================
+
+  searchAddress(query: string): Observable<GeoPoint[]> {
+    if (!query || query.trim().length < 3) return of([]);
+    const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=5&q=${encodeURIComponent(query)}`;
+    return this.http.get<any[]>(url).pipe(
+      map((results) =>
+        (results || []).map((r) => ({
+          label: r.display_name,
+          lat: parseFloat(r.lat),
+          lng: parseFloat(r.lon),
+        })),
+      ),
+      catchError(() => of([])),
+    );
+  }
+
+  reverseGeocode(lat: number, lng: number): Observable<GeoPoint> {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+    return this.http.get<any>(url).pipe(
+      map((r) => ({ label: r?.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`, lat, lng })),
+      catchError(() => of({ label: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, lat, lng })),
+    );
   }
 }
 
-type VehicleFilterStatus = import('../../domain/logistics/logistics.dto').VehicleStatus | 'ALL';
+// ============================================================
+// MOCK DATA — used as a resilient fallback whenever the API
+// is unreachable (e.g. this backend route not deployed yet),
+// so the UI is always demo-able and never shows a dead screen.
+// ============================================================
+
+const NOW = Date.now();
+const minsAgo = (m: number) => new Date(NOW - m * 60000).toISOString();
+
+const MOCK_RIDERS: Rider[] = [
+  {
+    id: 'r1',
+    riderCode: 'R-4921',
+    name: 'Alex Mercer',
+    initials: 'AM',
+    email: 'a.mercer@logistics.com',
+    activeStatus: RiderActiveStatus.ON_ROUTE,
+    currentLoad: 12,
+    vehicleType: VehicleType.VAN,
+    todayDelivered: 8,
+    todayFailed: 1,
+    avgDeliveryMinutes: 22,
+  },
+  {
+    id: 'r2',
+    riderCode: 'R-5822',
+    name: 'Sarah Jenkins',
+    initials: 'SJ',
+    email: 's.jenkins@logistics.com',
+    activeStatus: RiderActiveStatus.ON_ROUTE,
+    currentLoad: 8,
+    vehicleType: VehicleType.BIKE,
+    todayDelivered: 5,
+    todayFailed: 0,
+    avgDeliveryMinutes: 18,
+  },
+  {
+    id: 'r3',
+    riderCode: 'R-6104',
+    name: 'David Kim',
+    initials: 'DK',
+    email: 'd.kim@logistics.com',
+    activeStatus: RiderActiveStatus.ON_ROUTE,
+    currentLoad: 15,
+    vehicleType: VehicleType.TRUCK,
+    todayDelivered: 11,
+    todayFailed: 2,
+    avgDeliveryMinutes: 27,
+  },
+  {
+    id: 'r4',
+    riderCode: 'R-7310',
+    name: 'Tolu Adebayo',
+    initials: 'TA',
+    email: 't.adebayo@logistics.com',
+    activeStatus: RiderActiveStatus.AVAILABLE,
+    currentLoad: 0,
+    vehicleType: VehicleType.BIKE,
+    todayDelivered: 6,
+    todayFailed: 0,
+    avgDeliveryMinutes: 15,
+  },
+  {
+    id: 'r5',
+    riderCode: 'R-8215',
+    name: 'Ngozi Eze',
+    initials: 'NE',
+    email: 'n.eze@logistics.com',
+    activeStatus: RiderActiveStatus.OFFLINE,
+    currentLoad: 0,
+    vehicleType: VehicleType.VAN,
+    todayDelivered: 3,
+    todayFailed: 1,
+    avgDeliveryMinutes: 24,
+  },
+];
+
+let MOCK_ORDERS: Order[] = [
+  {
+    id: 'o1',
+    orderId: '#ORD-8821-A',
+    customerName: 'Eleanor Vance',
+    itemsSummary: '3 items (Heavy, Fragile)',
+    itemCount: 3,
+    deliveryLocation: 'Northside District',
+    fullAddress: '17 Northside Crescent, Northside District',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.UNASSIGNED,
+    status: OrderStatus.PENDING_ROUTING,
+    paidAt: minsAgo(135),
+    items: [
+      { id: 'i1', name: 'Ceramic Dinner Set', quantity: 1, note: 'Fragile' },
+      { id: 'i2', name: 'Bookshelf (flat-pack)', quantity: 1, note: 'Heavy' },
+      { id: 'i3', name: 'Table Lamp', quantity: 1 },
+    ],
+  },
+  {
+    id: 'o2',
+    orderId: '#ORD-8822-B',
+    customerName: 'Marcus Thorne',
+    itemsSummary: '1 item (Standard)',
+    itemCount: 1,
+    deliveryLocation: 'Downtown Central',
+    fullAddress: '4 Downtown Plaza, Downtown Central',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.UNASSIGNED,
+    status: OrderStatus.PENDING_ROUTING,
+    paidAt: minsAgo(105),
+    items: [{ id: 'i4', name: 'Wireless Keyboard', quantity: 1 }],
+  },
+  {
+    id: 'o3',
+    orderId: '#ORD-8824-C',
+    customerName: 'Sarah Jenkins',
+    itemsSummary: '5 items (Perishable)',
+    itemCount: 5,
+    deliveryLocation: 'West End Hub',
+    fullAddress: '112 West End Road, West End Hub',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.UNASSIGNED,
+    status: OrderStatus.PENDING_ROUTING,
+    paidAt: minsAgo(45),
+    items: [
+      { id: 'i5', name: 'Frozen Meal Pack', quantity: 3, note: 'Keep frozen' },
+      { id: 'i6', name: 'Fresh Produce Box', quantity: 2 },
+    ],
+  },
+  {
+    id: 'o4',
+    orderId: '#ORD-8825-D',
+    customerName: 'TechCorp Inc.',
+    itemsSummary: '12 items (Electronics)',
+    itemCount: 12,
+    deliveryLocation: 'Industrial Park East',
+    fullAddress: 'Warehouse 6, Industrial Park East',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.UNASSIGNED,
+    status: OrderStatus.PENDING_ROUTING,
+    paidAt: minsAgo(15),
+    items: [{ id: 'i7', name: 'Laptop Docking Station', quantity: 12 }],
+  },
+  {
+    id: 'o5',
+    orderId: '#ORD-8811-A',
+    customerName: 'Grace Okafor',
+    itemsSummary: '2 items (Standard)',
+    itemCount: 2,
+    deliveryLocation: 'Maitama District',
+    fullAddress: '9 Aguiyi Ironsi St, Maitama District',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.POOL,
+    paidAt: minsAgo(320),
+    enteredPoolAt: minsAgo(310),
+    lat: 9.0938,
+    lng: 7.4951,
+    area: 'Downtown',
+    weightKg: 12,
+    distanceKm: 1.2,
+    items: [
+      { id: 'i8', name: 'Throw Pillow Set', quantity: 1 },
+      { id: 'i9', name: 'Table Runner', quantity: 1 },
+    ],
+  },
+  {
+    id: 'o6',
+    orderId: '#ORD-8812-B',
+    customerName: 'Chinedu Obi',
+    itemsSummary: '1 item (Fragile)',
+    itemCount: 1,
+    deliveryLocation: 'Wuse II',
+    fullAddress: '22 Aminu Kano Crescent, Wuse II',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.POOL,
+    paidAt: minsAgo(260),
+    enteredPoolAt: minsAgo(255),
+    lat: 9.0833,
+    lng: 7.4833,
+    area: 'North Hills',
+    weightKg: 2,
+    distanceKm: 3.5,
+    items: [{ id: 'i10', name: 'Wine Glass Set', quantity: 1, note: 'Fragile' }],
+  },
+  {
+    id: 'o7',
+    orderId: '#ORD-8813-C',
+    customerName: 'Bola Fashola',
+    itemsSummary: '4 items (Standard)',
+    itemCount: 4,
+    deliveryLocation: 'Garki Area 2',
+    fullAddress: '5 Muhammadu Buhari Way, Garki Area 2',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.POOL,
+    paidAt: minsAgo(50),
+    enteredPoolAt: minsAgo(40),
+    lat: 9.0392,
+    lng: 7.4934,
+    area: 'Westside',
+    weightKg: 18,
+    distanceKm: 4.1,
+    items: [
+      { id: 'i11', name: 'Office Chair', quantity: 1 },
+      { id: 'i12', name: 'Desk Organizer', quantity: 3 },
+    ],
+  },
+  {
+    id: 'o8',
+    orderId: '#ORD-8830-E',
+    customerName: 'Ifeanyi Uche',
+    itemsSummary: '2 items (Standard)',
+    itemCount: 2,
+    deliveryLocation: 'Jabi',
+    fullAddress: '3 Jabi Lake Road, Jabi',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.POOL,
+    paidAt: minsAgo(30),
+    enteredPoolAt: minsAgo(25),
+    lat: 9.0765,
+    lng: 7.4165,
+    area: 'Jabi Zone',
+    weightKg: 3.4,
+    distanceKm: 2.8,
+    items: [
+      { id: 'i13', name: 'Bluetooth Speaker', quantity: 1 },
+      { id: 'i14', name: 'Charging Cable', quantity: 1 },
+    ],
+  },
+  {
+    id: 'o9',
+    orderId: '#ORD-8831-F',
+    customerName: 'Amaka Nwachukwu',
+    itemsSummary: '3 items (Standard)',
+    itemCount: 3,
+    deliveryLocation: 'Utako',
+    fullAddress: '18 Ibrahim Babangida Way, Utako',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.POOL,
+    paidAt: minsAgo(12),
+    enteredPoolAt: minsAgo(8),
+    lat: 9.0704,
+    lng: 7.4462,
+    area: 'Utako Zone',
+    weightKg: 5.1,
+    distanceKm: 5.6,
+    items: [
+      { id: 'i15', name: 'Kitchen Utensil Set', quantity: 1 },
+      { id: 'i16', name: 'Cutting Board', quantity: 2 },
+    ],
+  },
+
+  // Orders referenced by proposed/active DeliveryBatch stops below (p1–p12).
+  {
+    id: 'p1',
+    orderId: '#8839',
+    customerName: 'Ifeoma Adeyemi',
+    itemsSummary: 'Small Parcel',
+    itemCount: 1,
+    deliveryLocation: '142 Tech Boulevard',
+    fullAddress: '142 Tech Boulevard, Central Business District',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.CLAIMED,
+    paidAt: minsAgo(230),
+    batchId: 'b1',
+    riderId: 'r1',
+    riderName: 'Alex Mercer',
+    lat: 9.0765,
+    lng: 7.3986,
+    items: [{ id: 'ip1', name: 'Small Parcel', quantity: 1 }],
+  },
+  {
+    id: 'p2',
+    orderId: '#8840',
+    customerName: 'Yusuf Bello',
+    itemsSummary: 'Medium Box',
+    itemCount: 1,
+    deliveryLocation: '89 River Road',
+    fullAddress: '89 River Road, Wuse',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.CLAIMED,
+    paidAt: minsAgo(228),
+    batchId: 'b1',
+    riderId: 'r1',
+    riderName: 'Alex Mercer',
+    lat: 9.0579,
+    lng: 7.4951,
+    items: [{ id: 'ip2', name: 'Medium Box', quantity: 1 }],
+  },
+  {
+    id: 'p3',
+    orderId: '#8841',
+    customerName: 'Chioma Eze',
+    itemsSummary: 'Large Pallet',
+    itemCount: 1,
+    deliveryLocation: '200 North Avenue',
+    fullAddress: '200 North Avenue, Garki',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.CLAIMED,
+    paidAt: minsAgo(226),
+    batchId: 'b1',
+    riderId: 'r1',
+    riderName: 'Alex Mercer',
+    lat: 9.0643,
+    lng: 7.4892,
+    items: [{ id: 'ip3', name: 'Large Pallet', quantity: 1 }],
+  },
+  {
+    id: 'p4',
+    orderId: '#8842',
+    customerName: 'Emeka Okonkwo',
+    itemsSummary: 'Small Parcel',
+    itemCount: 1,
+    deliveryLocation: '55 Independence Ave',
+    fullAddress: '55 Independence Avenue, Central Area',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.CLAIMED,
+    paidAt: minsAgo(133),
+    batchId: 'b2',
+    riderId: 'r2',
+    riderName: 'Sarah Jenkins',
+    lat: 9.0501,
+    lng: 7.4881,
+    items: [{ id: 'ip4', name: 'Small Parcel', quantity: 1 }],
+  },
+  {
+    id: 'p5',
+    orderId: '#8843',
+    customerName: 'Funmi Adekunle',
+    itemsSummary: 'Small Parcel',
+    itemCount: 1,
+    deliveryLocation: '10 Herbert Macaulay St',
+    fullAddress: '10 Herbert Macaulay Street, Wuse Zone 4',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.CLAIMED,
+    paidAt: minsAgo(131),
+    batchId: 'b2',
+    riderId: 'r2',
+    riderName: 'Sarah Jenkins',
+    lat: 9.0721,
+    lng: 7.4738,
+    items: [{ id: 'ip5', name: 'Small Parcel', quantity: 1 }],
+  },
+  {
+    id: 'p6',
+    orderId: '#8844',
+    customerName: 'Blessing Umeh',
+    itemsSummary: 'Bulk Order',
+    itemCount: 22,
+    deliveryLocation: '3 Aminu Kano Crescent',
+    fullAddress: '3 Aminu Kano Crescent, Wuse II',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.CLAIMED,
+    paidAt: minsAgo(268),
+    batchId: 'b3',
+    riderId: 'r3',
+    riderName: 'David Kim',
+    lat: 9.0833,
+    lng: 7.4833,
+    items: [{ id: 'ip6', name: 'Bulk Stationery Cartons', quantity: 22 }],
+  },
+  {
+    id: 'p7',
+    orderId: '#8801',
+    customerName: 'Tunde Bakare',
+    itemsSummary: '2 items',
+    itemCount: 2,
+    deliveryLocation: 'Jabi Lake Mall',
+    fullAddress: 'Shop 14, Jabi Lake Mall, Jabi',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.DELIVERED,
+    paidAt: minsAgo(320),
+    batchId: 'b4',
+    riderId: 'r1',
+    riderName: 'Alex Mercer',
+    items: [{ id: 'ip7', name: 'Gift Set', quantity: 2 }],
+  },
+  {
+    id: 'p8',
+    orderId: '#8802',
+    customerName: 'Nkechi Okoro',
+    itemsSummary: '1 item',
+    itemCount: 1,
+    deliveryLocation: 'Utako District',
+    fullAddress: '21 Ibrahim Babangida Way, Utako',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.DELIVERED,
+    paidAt: minsAgo(318),
+    batchId: 'b4',
+    riderId: 'r1',
+    riderName: 'Alex Mercer',
+    items: [{ id: 'ip8', name: 'Handbag', quantity: 1 }],
+  },
+  {
+    id: 'p9',
+    orderId: '#8803',
+    customerName: 'Segun Afolabi',
+    itemsSummary: '3 items',
+    itemCount: 3,
+    deliveryLocation: 'Gwarinpa Estate',
+    fullAddress: '7th Avenue, Gwarinpa Estate',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.FAILED,
+    paidAt: minsAgo(315),
+    batchId: 'b4',
+    riderId: 'r1',
+    riderName: 'Alex Mercer',
+    items: [{ id: 'ip9', name: 'Kids Toy Set', quantity: 3 }],
+  },
+  {
+    id: 'p10',
+    orderId: '#8804',
+    customerName: 'Rita Chukwu',
+    itemsSummary: '1 item',
+    itemCount: 1,
+    deliveryLocation: 'Life Camp',
+    fullAddress: '4 Life Camp Junction, Life Camp',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.IN_TRANSIT,
+    paidAt: minsAgo(310),
+    batchId: 'b4',
+    riderId: 'r1',
+    riderName: 'Alex Mercer',
+    items: [{ id: 'ip10', name: 'Yoga Mat', quantity: 1 }],
+  },
+  {
+    id: 'p11',
+    orderId: '#8810',
+    customerName: 'Halima Suleiman',
+    itemsSummary: '4 items',
+    itemCount: 4,
+    deliveryLocation: 'Central Business District',
+    fullAddress: '11 Ahmadu Bello Way, CBD',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.DELIVERED,
+    paidAt: minsAgo(200),
+    batchId: 'b5',
+    riderId: 'r3',
+    riderName: 'David Kim',
+    items: [{ id: 'ip11', name: 'Office Supplies Box', quantity: 4 }],
+  },
+  {
+    id: 'p12',
+    orderId: '#8811',
+    customerName: 'Peter Nwosu',
+    itemsSummary: '2 items',
+    itemCount: 2,
+    deliveryLocation: 'Asokoro District',
+    fullAddress: '30 Yakubu Gowon Crescent, Asokoro',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.DELIVERY,
+    status: OrderStatus.IN_TRANSIT,
+    paidAt: minsAgo(198),
+    batchId: 'b5',
+    riderId: 'r3',
+    riderName: 'David Kim',
+    items: [{ id: 'ip12', name: 'Framed Artwork', quantity: 2, note: 'Fragile' }],
+  },
+];
+
+let MOCK_BATCHES: DeliveryBatch[] = [
+  {
+    id: 'b1',
+    batchCode: 'B-7492',
+    riderId: 'r1',
+    riderName: 'Alex Mercer',
+    riderInitials: 'AM',
+    vehicleType: VehicleType.VAN,
+    status: BatchStatus.ROUTE_SUBMITTED,
+    isHighPriorityArea: true,
+    submittedAt: minsAgo(15),
+    createdAt: minsAgo(225),
+    totalItems: 18,
+    orderIds: ['p1', 'p2', 'p3'],
+    proposedRoute: [
+      {
+        sequence: 1,
+        orderId: 'p1',
+        orderDisplayId: '#8839',
+        location: '142 Tech Boulevard',
+        itemsSummary: 'Small Parcel',
+        stopStatus: StopStatus.PENDING,
+        lat: 9.0765,
+        lng: 7.3986,
+      },
+      {
+        sequence: 2,
+        orderId: 'p2',
+        orderDisplayId: '#8840',
+        location: '89 River Road',
+        itemsSummary: 'Medium Box',
+        stopStatus: StopStatus.PENDING,
+        lat: 9.0579,
+        lng: 7.4951,
+      },
+      {
+        sequence: 3,
+        orderId: 'p3',
+        orderDisplayId: '#8841',
+        location: '200 North Avenue',
+        itemsSummary: 'Large Pallet',
+        stopStatus: StopStatus.PENDING,
+        lat: 9.0643,
+        lng: 7.4892,
+      },
+    ],
+  },
+  {
+    id: 'b2',
+    batchCode: 'B-7495',
+    riderId: 'r2',
+    riderName: 'Sarah Jenkins',
+    riderInitials: 'SJ',
+    vehicleType: VehicleType.BIKE,
+    status: BatchStatus.ROUTE_SUBMITTED,
+    submittedAt: minsAgo(10),
+    createdAt: minsAgo(135),
+    totalItems: 8,
+    orderIds: ['p4', 'p5'],
+    proposedRoute: [
+      {
+        sequence: 1,
+        orderId: 'p4',
+        orderDisplayId: '#8842',
+        location: '55 Independence Ave',
+        itemsSummary: 'Small Parcel',
+        stopStatus: StopStatus.PENDING,
+        lat: 9.0501,
+        lng: 7.4881,
+      },
+      {
+        sequence: 2,
+        orderId: 'p5',
+        orderDisplayId: '#8843',
+        location: '10 Herbert Macaulay St',
+        itemsSummary: 'Small Parcel',
+        stopStatus: StopStatus.PENDING,
+        lat: 9.0721,
+        lng: 7.4738,
+      },
+    ],
+  },
+  {
+    id: 'b3',
+    batchCode: 'B-7501',
+    riderId: 'r3',
+    riderName: 'David Kim',
+    riderInitials: 'DK',
+    vehicleType: VehicleType.TRUCK,
+    status: BatchStatus.ROUTE_SUBMITTED,
+    submittedAt: minsAgo(2),
+    createdAt: minsAgo(270),
+    totalItems: 22,
+    orderIds: ['p6'],
+    proposedRoute: [
+      {
+        sequence: 1,
+        orderId: 'p6',
+        orderDisplayId: '#8844',
+        location: '3 Aminu Kano Crescent',
+        itemsSummary: 'Bulk Order',
+        stopStatus: StopStatus.PENDING,
+        lat: 9.0833,
+        lng: 7.4833,
+      },
+    ],
+  },
+  {
+    id: 'b4',
+    batchCode: 'B-7480',
+    riderId: 'r1',
+    riderName: 'Alex Mercer',
+    riderInitials: 'AM',
+    vehicleType: VehicleType.VAN,
+    status: BatchStatus.IN_PROGRESS,
+    approvedAt: minsAgo(80),
+    createdAt: minsAgo(320),
+    totalItems: 30,
+    orderIds: ['p7', 'p8', 'p9', 'p10'],
+    proposedRoute: [
+      {
+        sequence: 1,
+        orderId: 'p7',
+        orderDisplayId: '#8801',
+        location: 'Jabi Lake Mall',
+        itemsSummary: '2 items',
+        stopStatus: StopStatus.DELIVERED,
+      },
+      {
+        sequence: 2,
+        orderId: 'p8',
+        orderDisplayId: '#8802',
+        location: 'Utako District',
+        itemsSummary: '1 item',
+        stopStatus: StopStatus.DELIVERED,
+      },
+      {
+        sequence: 3,
+        orderId: 'p9',
+        orderDisplayId: '#8803',
+        location: 'Gwarinpa Estate',
+        itemsSummary: '3 items',
+        stopStatus: StopStatus.FAILED,
+      },
+      {
+        sequence: 4,
+        orderId: 'p10',
+        orderDisplayId: '#8804',
+        location: 'Life Camp',
+        itemsSummary: '1 item',
+        stopStatus: StopStatus.EN_ROUTE,
+      },
+    ],
+  },
+  {
+    id: 'b5',
+    batchCode: 'B-7483',
+    riderId: 'r3',
+    riderName: 'David Kim',
+    riderInitials: 'DK',
+    vehicleType: VehicleType.TRUCK,
+    status: BatchStatus.IN_PROGRESS,
+    approvedAt: minsAgo(60),
+    createdAt: minsAgo(200),
+    totalItems: 12,
+    orderIds: ['p11', 'p12'],
+    proposedRoute: [
+      {
+        sequence: 1,
+        orderId: 'p11',
+        orderDisplayId: '#8810',
+        location: 'Central Business District',
+        itemsSummary: '4 items',
+        stopStatus: StopStatus.DELIVERED,
+      },
+      {
+        sequence: 2,
+        orderId: 'p12',
+        orderDisplayId: '#8811',
+        location: 'Asokoro District',
+        itemsSummary: '2 items',
+        stopStatus: StopStatus.PENDING,
+      },
+    ],
+  },
+];
+
+function mockTriage(search: string): TriageListResponse {
+  let orders = MOCK_ORDERS.filter((o) => o.status === OrderStatus.PENDING_ROUTING);
+  if (search) {
+    const q = search.toLowerCase();
+    orders = orders.filter(
+      (o) => o.orderId.toLowerCase().includes(q) || o.customerName.toLowerCase().includes(q),
+    );
+  }
+  orders = orders.sort((a, b) => new Date(a.paidAt).getTime() - new Date(b.paidAt).getTime());
+  return { orders, total: orders.length };
+}
+
+function mockRouteOrder(
+  orderId: string,
+  fulfillmentType: FulfillmentType.PICKUP | FulfillmentType.DELIVERY,
+): Order {
+  const order = MOCK_ORDERS.find((o) => o.id === orderId || o.orderId === orderId);
+  if (order) {
+    order.fulfillmentType = fulfillmentType;
+    order.routedAt = new Date().toISOString();
+    order.status =
+      fulfillmentType === FulfillmentType.PICKUP ? OrderStatus.READY_FOR_PICKUP : OrderStatus.POOL;
+    if (fulfillmentType === FulfillmentType.DELIVERY)
+      order.enteredPoolAt = new Date().toISOString();
+  }
+  return order as Order;
+}
+
+function mockPool(agingThresholdMinutes: number): PoolListResponse {
+  const orders = MOCK_ORDERS.filter((o) => o.status === OrderStatus.POOL).map((o) => {
+    const timeInPoolMinutes = minutesBetween(o.enteredPoolAt || o.paidAt);
+    return { ...o, timeInPoolMinutes, isAging: timeInPoolMinutes >= agingThresholdMinutes };
+  });
+  return { orders, total: orders.length, agingCount: orders.filter((o) => o.isAging).length };
+}
+
+function mockForceAssign(orderId: string, riderId: string): Order {
+  const order = MOCK_ORDERS.find((o) => o.id === orderId || o.orderId === orderId);
+  const rider = MOCK_RIDERS.find((r) => r.id === riderId);
+  if (order) {
+    order.status = OrderStatus.CLAIMED;
+    order.riderId = riderId;
+    order.riderName = rider?.name;
+    order.claimedAt = new Date().toISOString();
+  }
+  if (rider) rider.currentLoad += 1;
+  return order as Order;
+}
+
+function mockPendingApproval(): ApprovalQueueResponse {
+  const batches = MOCK_BATCHES.filter((b) => b.status === BatchStatus.ROUTE_SUBMITTED).map((b) => ({
+    ...b,
+    waitMinutes: minutesBetween(b.submittedAt || b.createdAt),
+  }));
+  return { batches, total: batches.length };
+}
+
+function mockApprove(batchId: string, note?: string): DeliveryBatch {
+  const batch = MOCK_BATCHES.find((b) => b.id === batchId || b.batchCode === batchId);
+  if (batch) {
+    batch.status = BatchStatus.ROUTE_APPROVED;
+    batch.approvedAt = new Date().toISOString();
+    batch.approvedBy = 'Admin';
+    batch.adminNotes = note;
+  }
+  return batch as DeliveryBatch;
+}
+
+function mockReject(batchId: string, note: string): DeliveryBatch {
+  const batch = MOCK_BATCHES.find((b) => b.id === batchId || b.batchCode === batchId);
+  if (batch) {
+    batch.status = BatchStatus.CLAIMING;
+    batch.adminNotes = note;
+  }
+  return batch as DeliveryBatch;
+}
+
+function mockActiveRoutes(): ActiveRoutesResponse {
+  const batches = MOCK_BATCHES.filter(
+    (b) => b.status === BatchStatus.ROUTE_APPROVED || b.status === BatchStatus.IN_PROGRESS,
+  );
+  return { batches, total: batches.length };
+}
+
+function findMockOrder(orderId: string): Order | undefined {
+  return MOCK_ORDERS.find((o) => o.id === orderId || o.orderId === orderId);
+}
+
+function mockAuditLog(entityId: string): AuditLogEntry[] {
+  return [
+    {
+      id: 'a1',
+      entityType: 'ORDER',
+      entityId,
+      actor: 'System',
+      actorType: 'system',
+      action: 'Order created',
+      fromStatus: '—',
+      toStatus: 'PENDING_ROUTING',
+      timestamp: minsAgo(140),
+    },
+    {
+      id: 'a2',
+      entityType: 'ORDER',
+      entityId,
+      actor: 'Admin',
+      actorType: 'admin',
+      action: 'Routed to Delivery',
+      fromStatus: 'PENDING_ROUTING',
+      toStatus: 'POOL',
+      timestamp: minsAgo(130),
+    },
+  ];
+}
+
+// ---------- Delivery Records mock data ----------
+
+const MOCK_DELIVERY_ATTEMPTS: DeliveryAttempt[] = [
+  {
+    id: 'da1',
+    orderId: 'o10',
+    orderDisplayId: '#ORD-8921',
+    customerName: 'Sarah Jenkins',
+    deliveryLocation: '124 Valley Road, Sector 4',
+    batchId: 'b4',
+    riderId: 'r1',
+    riderName: 'Mike Ross',
+    riderInitials: 'M',
+    outcome: 'delivered',
+    attemptedAt: minsAgo(95),
+    proofOfDeliveryId: 'pod1',
+    proof: {
+      id: 'pod1',
+      deliveryAttemptId: 'da1',
+      type: ProofType.SIGNATURE,
+      capturedAt: minsAgo(95),
+    },
+  },
+  {
+    id: 'da2',
+    orderId: 'o11',
+    orderDisplayId: '#ORD-8919',
+    customerName: 'TechCorp Inc.',
+    deliveryLocation: 'Suite 500, Main St',
+    batchId: 'b4',
+    riderId: 'r5',
+    riderName: 'Anna Lee',
+    riderInitials: 'A',
+    outcome: 'delivered',
+    attemptedAt: minsAgo(158),
+    proofOfDeliveryId: 'pod2',
+    proof: {
+      id: 'pod2',
+      deliveryAttemptId: 'da2',
+      type: ProofType.PHOTO,
+      capturedAt: minsAgo(158),
+    },
+  },
+  {
+    id: 'da3',
+    orderId: 'o12',
+    orderDisplayId: '#ORD-8915',
+    customerName: 'David Chen',
+    deliveryLocation: '78 West Avenue',
+    batchId: 'b4',
+    riderId: 'r1',
+    riderName: 'Mike Ross',
+    riderInitials: 'M',
+    outcome: 'delivered',
+    attemptedAt: minsAgo(200),
+    proofOfDeliveryId: 'pod3',
+    proof: {
+      id: 'pod3',
+      deliveryAttemptId: 'da3',
+      type: ProofType.CODE,
+      code: '7741',
+      capturedAt: minsAgo(200),
+    },
+  },
+  {
+    id: 'da4',
+    orderId: 'o13',
+    orderDisplayId: '#ORD-9012',
+    customerName: 'Grace Okafor',
+    deliveryLocation: 'Maitama District',
+    batchId: 'b5',
+    riderId: 'r3',
+    riderName: 'David Kim',
+    riderInitials: 'DK',
+    outcome: 'failed',
+    failureReason: FailureReason.NOT_HOME,
+    attemptedAt: minsAgo(40),
+    isResolved: false,
+  },
+  {
+    id: 'da5',
+    orderId: 'o14',
+    orderDisplayId: '#ORD-9018',
+    customerName: 'Chinedu Obi',
+    deliveryLocation: 'Wuse II',
+    batchId: 'b5',
+    riderId: 'r2',
+    riderName: 'Sarah Jenkins',
+    riderInitials: 'SJ',
+    outcome: 'failed',
+    failureReason: FailureReason.WRONG_ADDRESS,
+    attemptedAt: minsAgo(65),
+    isResolved: false,
+  },
+  {
+    id: 'da6',
+    orderId: 'o15',
+    orderDisplayId: '#ORD-9022',
+    customerName: 'Bola Fashola',
+    deliveryLocation: 'Garki Area 2',
+    batchId: 'b4',
+    riderId: 'r1',
+    riderName: 'Alex Mercer',
+    riderInitials: 'AM',
+    outcome: 'failed',
+    failureReason: FailureReason.REFUSED,
+    attemptedAt: minsAgo(20),
+    isResolved: false,
+  },
+];
+
+const MOCK_PICKUP_ORDERS: Order[] = [
+  {
+    id: 'p20',
+    orderId: '#ORD-9101',
+    customerName: 'Ifeoma Nwosu',
+    itemsSummary: '2 items (Standard)',
+    itemCount: 2,
+    deliveryLocation: 'Store Pickup Counter',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.PICKUP,
+    status: OrderStatus.READY_FOR_PICKUP,
+    paidAt: minsAgo(210),
+    routedAt: minsAgo(205),
+  },
+  {
+    id: 'p21',
+    orderId: '#ORD-9104',
+    customerName: 'Emeka Umeh',
+    itemsSummary: '1 item (Electronics)',
+    itemCount: 1,
+    deliveryLocation: 'Store Pickup Counter',
+    paymentStatus: 'paid',
+    fulfillmentType: FulfillmentType.PICKUP,
+    status: OrderStatus.READY_FOR_PICKUP,
+    paidAt: minsAgo(90),
+    routedAt: minsAgo(85),
+  },
+];
+
+function mockDelivered(search: string): DeliveredListResponse {
+  let attempts = MOCK_DELIVERY_ATTEMPTS.filter((a) => a.outcome === 'delivered');
+  if (search) {
+    const q = search.toLowerCase();
+    attempts = attempts.filter(
+      (a) =>
+        a.orderDisplayId.toLowerCase().includes(q) ||
+        a.customerName.toLowerCase().includes(q) ||
+        a.riderName.toLowerCase().includes(q),
+    );
+  }
+  attempts = attempts.sort(
+    (a, b) => new Date(b.attemptedAt || 0).getTime() - new Date(a.attemptedAt || 0).getTime(),
+  );
+  return { attempts, total: attempts.length };
+}
+
+function mockFailed(): FailedListResponse {
+  const attempts = MOCK_DELIVERY_ATTEMPTS.filter(
+    (a) => a.outcome === 'failed' && !a.isResolved,
+  ).sort((a, b) => new Date(b.attemptedAt || 0).getTime() - new Date(a.attemptedAt || 0).getTime());
+  return { attempts, total: attempts.length };
+}
+
+function mockRequeue(attemptId: string): DeliveryAttempt {
+  const attempt = MOCK_DELIVERY_ATTEMPTS.find((a) => a.id === attemptId);
+  if (attempt) {
+    attempt.isResolved = true;
+    const order =
+      findMockOrder(attempt.orderId) ||
+      MOCK_ORDERS.find((o) => o.orderId === attempt.orderDisplayId);
+    if (order) {
+      order.status = OrderStatus.POOL;
+      order.enteredPoolAt = new Date().toISOString();
+      order.riderId = undefined;
+      order.riderName = undefined;
+    }
+  }
+  return attempt as DeliveryAttempt;
+}
+
+function mockCancel(attemptId: string): DeliveryAttempt {
+  const attempt = MOCK_DELIVERY_ATTEMPTS.find((a) => a.id === attemptId);
+  if (attempt) {
+    attempt.isResolved = true;
+    attempt.closedReason = 'failed_delivery';
+  }
+  return attempt as DeliveryAttempt;
+}
+
+function mockEscalate(attemptId: string, note: string): DeliveryAttempt {
+  const attempt = MOCK_DELIVERY_ATTEMPTS.find((a) => a.id === attemptId);
+  if (attempt) {
+    attempt.escalationNote = note;
+    attempt.escalatedAt = new Date().toISOString();
+    // stays visible (isResolved remains false) per spec — still open until manually cleared
+  }
+  return attempt as DeliveryAttempt;
+}
+
+function mockPickups(): PickupListResponse {
+  return { orders: MOCK_PICKUP_ORDERS, total: MOCK_PICKUP_ORDERS.length };
+}
+
+function mockMarkCollected(orderId: string): Order {
+  const idx = MOCK_PICKUP_ORDERS.findIndex((o) => o.id === orderId || o.orderId === orderId);
+  const order = MOCK_PICKUP_ORDERS[idx];
+  if (order) {
+    order.status = OrderStatus.CLOSED;
+    if (idx > -1) MOCK_PICKUP_ORDERS.splice(idx, 1);
+  }
+  return order as Order;
+}
+
+// ---------- Rider Activity mock data ----------
+
+function mockAddRider(payload: RiderCreatePayload): Rider {
+  const initials =
+    payload.name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase())
+      .join('') || '??';
+  const riderCode = `R-${Math.floor(1000 + Math.random() * 9000)}`;
+  const newRider: Rider = {
+    id: `r${MOCK_RIDERS.length + 1}-${Date.now()}`,
+    riderCode,
+    name: payload.name,
+    initials,
+    email: payload.email,
+    phone: payload.phone,
+    activeStatus: payload.activeStatus,
+    currentLoad: 0,
+    vehicleType: payload.vehicleType,
+    todayDelivered: 0,
+    todayFailed: 0,
+  };
+  MOCK_RIDERS.push(newRider);
+  return newRider;
+}
+
+function mockRiderPerformance(): RiderPerformanceResponse {
+  const stats: RiderPerformanceStat[] = [
+    {
+      riderId: 'r1',
+      riderName: 'Sarah Connor',
+      riderInitials: 'SC',
+      ordersClaimedWeek: 156,
+      delivered: 154,
+      failed: 2,
+      avgTimeMinutes: 21,
+      avgApprovalWaitMinutes: 1.2,
+      isHoardingRisk: false,
+    },
+    {
+      riderId: 'r2',
+      riderName: 'Mike Ross',
+      riderInitials: 'MR',
+      ordersClaimedWeek: 182,
+      delivered: 160,
+      failed: 5,
+      avgTimeMinutes: 38,
+      avgApprovalWaitMinutes: 8.5,
+      isHoardingRisk: true,
+    },
+    {
+      riderId: 'r3',
+      riderName: 'David Kim',
+      riderInitials: 'DK',
+      ordersClaimedWeek: 120,
+      delivered: 118,
+      failed: 1,
+      avgTimeMinutes: 23,
+      avgApprovalWaitMinutes: 2.1,
+      isHoardingRisk: false,
+    },
+    {
+      riderId: 'r4',
+      riderName: 'Elena Rodriguez',
+      riderInitials: 'ER',
+      ordersClaimedWeek: 145,
+      delivered: 142,
+      failed: 3,
+      avgTimeMinutes: 25,
+      avgApprovalWaitMinutes: 1.8,
+      isHoardingRisk: false,
+    },
+  ];
+  const delivered = stats.reduce((sum, s) => sum + s.delivered, 0);
+  const claimed = stats.reduce((sum, s) => sum + s.ordersClaimedWeek, 0);
+  return {
+    stats,
+    total: stats.length,
+    activeRiders: MOCK_RIDERS.length,
+    avgDeliveryRate: claimed ? Math.round((delivered / claimed) * 1000) / 10 : 0,
+    avgTimePerOrderMinutes: Math.round(
+      stats.reduce((sum, s) => sum + s.avgTimeMinutes, 0) / stats.length,
+    ),
+    hoardingRiskCount: stats.filter((s) => s.isHoardingRisk).length,
+  };
+}
+
+const MOCK_SYSTEM_AUDIT_LOG: AuditLogEntry[] = [
+  {
+    id: 's1',
+    entityType: 'ORDER',
+    entityId: 'o1',
+    entityDisplayId: '#ORD-8821',
+    actor: 'System Admin',
+    actorType: 'admin',
+    action: 'Admin routed order #ORD-8821 to Delivery Zone B automatically.',
+    fromStatus: 'POOL',
+    toStatus: 'ROUTED',
+    timestamp: minsAgo(180),
+  },
+  {
+    id: 's2',
+    entityType: 'ORDER',
+    entityId: 'o1',
+    entityDisplayId: '#ORD-8821',
+    actor: 'Rider J. Smith',
+    actorType: 'rider',
+    action: 'Rider accepted #ORD-8821 from mobile terminal queue.',
+    fromStatus: 'ROUTED',
+    toStatus: 'CLAIMED',
+    timestamp: minsAgo(175),
+  },
+  {
+    id: 's3',
+    entityType: 'ORDER',
+    entityId: 'o1',
+    entityDisplayId: '#ORD-8821',
+    actor: 'Rider J. Smith',
+    actorType: 'rider',
+    action: 'Geolocation payload received. Proximity threshold triggered for #ORD-8821.',
+    fromStatus: 'CLAIMED',
+    toStatus: 'TRANSIT',
+    timestamp: minsAgo(150),
+  },
+  {
+    id: 's4',
+    entityType: 'ORDER',
+    entityId: 'o1',
+    entityDisplayId: '#ORD-8821',
+    actor: 'Rider J. Smith',
+    actorType: 'rider',
+    action: 'POD captured and verified for #ORD-8821.',
+    fromStatus: 'TRANSIT',
+    toStatus: 'DELIVERED',
+    timestamp: minsAgo(140),
+  },
+  {
+    id: 's5',
+    entityType: 'ORDER',
+    entityId: 'o13',
+    entityDisplayId: '#ORD-9012',
+    actor: 'Rider M. Davis',
+    actorType: 'rider',
+    action: 'Customer unavailable. Delivery failed for #ORD-9012. Requires reschedule.',
+    fromStatus: 'TRANSIT',
+    toStatus: 'FAILED',
+    timestamp: minsAgo(40),
+  },
+];
+
+function mockSystemAuditLog(filter: AuditLogFilter): AuditLogResponse {
+  let entries = [...MOCK_SYSTEM_AUDIT_LOG];
+  if (filter.orderId) {
+    const q = filter.orderId.toLowerCase();
+    entries = entries.filter((e) => (e.entityDisplayId || '').toLowerCase().includes(q));
+  }
+  if (filter.riderId) {
+    entries = entries.filter((e) => e.actor.toLowerCase().includes(filter.riderId!.toLowerCase()));
+  }
+  if (filter.actionType) {
+    entries = entries.filter((e) => e.toStatus === filter.actionType);
+  }
+  entries = entries.sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+  );
+  return { entries, total: entries.length };
+}
+
+// ============================================================
+// RIDER APP mock data — a self-contained demo "logged in as Alex Mercer"
+// draft batch + active in-progress batch, independent of the admin mocks
+// above so both admin and rider screens can be demoed side by side.
+// ============================================================
+
+const RIDER_CLAIM_LIMIT = 15;
+
+let RIDER_DRAFT_BATCH: DeliveryBatch | null = null;
+
+let RIDER_ACTIVE_BATCH: DeliveryBatch | null = {
+  id: 'rb-active',
+  batchCode: 'B-9001',
+  riderId: 'r1',
+  riderName: 'Alex Mercer',
+  riderInitials: 'AM',
+  vehicleType: VehicleType.VAN,
+  status: BatchStatus.IN_PROGRESS,
+  approvedAt: minsAgo(45),
+  createdAt: minsAgo(120),
+  totalItems: 8,
+  orderIds: ['ra1', 'ra2', 'ra3'],
+  proposedRoute: [
+    {
+      sequence: 1,
+      orderId: 'ra1',
+      orderDisplayId: '#8901',
+      location: '142 Tech Boulevard',
+      itemsSummary: '2x Electronics Box',
+      stopStatus: StopStatus.DELIVERED,
+      lat: 9.0765,
+      lng: 7.3986,
+    },
+    {
+      sequence: 2,
+      orderId: 'ra2',
+      orderDisplayId: '#8902',
+      location: '89 River Road',
+      itemsSummary: '1x Large Furniture Package',
+      stopStatus: StopStatus.EN_ROUTE,
+      lat: 9.0579,
+      lng: 7.4951,
+    },
+    {
+      sequence: 3,
+      orderId: 'ra3',
+      orderDisplayId: '#8903',
+      location: '200 North Avenue',
+      itemsSummary: '5x Document Mailers',
+      stopStatus: StopStatus.PENDING,
+      lat: 9.0643,
+      lng: 7.4892,
+    },
+  ],
+};
+
+const RIDER_ACTIVE_ORDERS: Record<string, { customerName: string }> = {
+  ra1: { customerName: 'Sarah Jenkins' },
+  ra2: { customerName: 'Michael Chang' },
+  ra3: { customerName: 'Acme Corp' },
+};
+
+function mockRiderPool(): AvailablePoolResponse {
+  const orders = MOCK_ORDERS.filter((o) => o.status === OrderStatus.POOL);
+  const currentLoad = RIDER_DRAFT_BATCH?.orderIds.length ?? 0;
+  return { orders, total: orders.length, claimLimit: RIDER_CLAIM_LIMIT, currentLoad };
+}
+
+function mockClaimOrders(orderIds: string[]): DeliveryBatch {
+  const currentLoad = RIDER_DRAFT_BATCH?.orderIds.length ?? 0;
+  if (currentLoad + orderIds.length > RIDER_CLAIM_LIMIT) {
+    throw new Error(`Claim limit of ${RIDER_CLAIM_LIMIT} would be exceeded`);
+  }
+  if (!RIDER_DRAFT_BATCH) {
+    RIDER_DRAFT_BATCH = {
+      id: 'rb-draft',
+      batchCode: 'B-DRAFT',
+      riderId: 'r1',
+      riderName: 'Alex Mercer',
+      riderInitials: 'AM',
+      vehicleType: VehicleType.VAN,
+      status: BatchStatus.CLAIMING,
+      createdAt: new Date().toISOString(),
+      totalItems: 0,
+      orderIds: [],
+      proposedRoute: [],
+    };
+  }
+  orderIds.forEach((id) => {
+    const order = MOCK_ORDERS.find((o) => o.id === id);
+    if (order && order.status === OrderStatus.POOL) {
+      order.status = OrderStatus.CLAIMED;
+      order.claimedAt = new Date().toISOString();
+      order.riderId = 'r1';
+      order.riderName = 'Alex Mercer';
+      order.batchId = RIDER_DRAFT_BATCH!.id;
+      RIDER_DRAFT_BATCH!.orderIds.push(order.id);
+      RIDER_DRAFT_BATCH!.proposedRoute.push({
+        sequence: RIDER_DRAFT_BATCH!.proposedRoute.length + 1,
+        orderId: order.id,
+        orderDisplayId: order.orderId,
+        location: order.deliveryLocation,
+        itemsSummary: order.itemsSummary,
+        stopStatus: StopStatus.PENDING,
+        lat: order.lat,
+        lng: order.lng,
+        locationConfirmed: false,
+        weightKg: order.weightKg,
+        customerName: order.customerName,
+        area: order.area,
+        distanceKm: order.distanceKm,
+      });
+      RIDER_DRAFT_BATCH!.totalItems += order.itemCount;
+    }
+  });
+  return RIDER_DRAFT_BATCH;
+}
+
+function mockRemoveFromBatch(orderId: string): DeliveryBatch | null {
+  if (!RIDER_DRAFT_BATCH) return null;
+  RIDER_DRAFT_BATCH.orderIds = RIDER_DRAFT_BATCH.orderIds.filter((id) => id !== orderId);
+  RIDER_DRAFT_BATCH.proposedRoute = RIDER_DRAFT_BATCH.proposedRoute
+    .filter((s) => s.orderId !== orderId)
+    .map((s, idx) => ({ ...s, sequence: idx + 1 }));
+  const order = MOCK_ORDERS.find((o) => o.id === orderId);
+  if (order) {
+    order.status = OrderStatus.POOL;
+    order.enteredPoolAt = new Date().toISOString();
+    order.riderId = undefined;
+    order.riderName = undefined;
+    order.batchId = undefined;
+    order.claimedAt = undefined;
+  }
+  if (!RIDER_DRAFT_BATCH.orderIds.length) {
+    RIDER_DRAFT_BATCH = null;
+    return null;
+  }
+  return RIDER_DRAFT_BATCH;
+}
+
+function mockReorderBatch(orderedOrderIds: string[]): DeliveryBatch | null {
+  if (!RIDER_DRAFT_BATCH) return null;
+  const stopMap = new Map(RIDER_DRAFT_BATCH.proposedRoute.map((s) => [s.orderId, s]));
+  RIDER_DRAFT_BATCH.proposedRoute = orderedOrderIds
+    .map((id) => stopMap.get(id))
+    .filter((s): s is RouteStop => !!s)
+    .map((s, idx) => ({ ...s, sequence: idx + 1 }));
+  RIDER_DRAFT_BATCH.orderIds = orderedOrderIds;
+  return RIDER_DRAFT_BATCH;
+}
+
+function mockUpdateStopLocation(
+  orderId: string,
+  point: GeoPoint,
+  confirm: boolean = false,
+): DeliveryBatch | null {
+  if (!RIDER_DRAFT_BATCH) return null;
+  const stop = RIDER_DRAFT_BATCH.proposedRoute.find((s) => s.orderId === orderId);
+  if (stop) {
+    stop.lat = point.lat;
+    stop.lng = point.lng;
+    stop.location = point.label;
+    if (confirm) stop.locationConfirmed = true;
+  }
+  return RIDER_DRAFT_BATCH;
+}
+
+function mockSubmitBatch(): DeliveryBatch | null {
+  if (!RIDER_DRAFT_BATCH) return null;
+  RIDER_DRAFT_BATCH.status = BatchStatus.ROUTE_SUBMITTED;
+  RIDER_DRAFT_BATCH.submittedAt = new Date().toISOString();
+  return RIDER_DRAFT_BATCH;
+}
+
+function mockSetStopStatus(orderId: string, status: StopStatus): DeliveryBatch | null {
+  if (!RIDER_ACTIVE_BATCH) return null;
+  const stop = RIDER_ACTIVE_BATCH.proposedRoute.find((s) => s.orderId === orderId);
+  if (stop) stop.stopStatus = status;
+  return RIDER_ACTIVE_BATCH;
+}
+
+function mockMarkDelivered(
+  orderId: string,
+  proofType: ProofType,
+  proofValue?: string,
+  receiverName?: string,
+): DeliveryBatch | null {
+  return mockSetStopStatus(orderId, StopStatus.DELIVERED);
+}
+
+function mockMarkFailed(
+  orderId: string,
+  reason: FailureReason,
+  note?: string,
+): DeliveryBatch | null {
+  return mockSetStopStatus(orderId, StopStatus.FAILED);
+}

@@ -1,10 +1,12 @@
 import { Component } from '@angular/core';
 import { TabConfig } from '../../shared-component/service/interface/data';
-import { LogisticsDashboardComponent } from './logistics-dashboard/logistics-dashboard.component';
-import { DeliveryManagementsComponent } from './delivery-management/delivery-management.component';
-import { FleetManagementComponent } from './fleet-management/fleet-management.component';
-import { RouteOptimizationComponent } from './route-optimization/route-optimization.component';
-import { TrackingComponent } from './tracking/tracking.component';
+import { RoutingQueueComponent } from './routing-queue/routing-queue.component';
+import { RouteApprovalComponent } from './route-approval/route-approval.component';
+import { DeliveryRecordsComponent } from './delivery-records/delivery-records.component';
+import { RiderActivityComponent } from './rider-activity/rider-activity.component';
+import { RouteBuilderComponent } from './route-builder/route-builder.component';
+import { StopChecklistComponent } from './stop-checklist/stop-checklist.component';
+
 
 @Component({
   selector: 'app-logistics',
@@ -14,31 +16,40 @@ import { TrackingComponent } from './tracking/tracking.component';
 export class LogisticsComponent {
   tabsConfig: TabConfig[] = [
     {
-      name: 'Logistics Dashboard',
-      component: LogisticsDashboardComponent,
-      icon: 'pi pi-dashboard'
+      name: 'Routing Queue',
+      component: RoutingQueueComponent,
+      icon: 'pi pi-sort-amount-down'
     },
     {
-      name: 'Delivery management',
-      component: DeliveryManagementsComponent,
-      icon: 'pi pi-dashboard'
+      name: 'Route Approval',
+      component: RouteApprovalComponent,
+      icon: 'pi pi-check-square'
     },
     {
-      name: 'Fleet management',
-      component: FleetManagementComponent,
-      icon: 'pi pi-dashboard'
+      name: 'Delivery Records',
+      component: DeliveryRecordsComponent,
+      icon: 'pi pi-box'
     },
     {
-      name: 'Route Optimization',
-      component: RouteOptimizationComponent,
-      icon: 'pi pi-dashboard'
+      name: 'Rider Activity',
+      component: RiderActivityComponent,
+      icon: 'pi pi-users'
     },
     {
-      name: 'Tracking',
-      component: TrackingComponent,
-      icon: 'pi pi-dashboard'
+      name: 'Route Builder',
+      component: RouteBuilderComponent,
+      icon: 'pi pi-map'
     },
-
+    {
+      name: 'Stop Checklist',
+      component: StopChecklistComponent,
+      icon: 'pi pi-check-circle'
+    },
+    // Route Builder & Stop Checklist are the rider-facing, mobile-first
+    // screens (per the brief). They're included as tabs here for now so
+    // they're reachable from the same admin shell; if/when riders get a
+    // separate app entry point, these two can move there without any
+    // change to their own component code.
   ]
 
 
