@@ -480,6 +480,10 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/sales/commerce/inventory/restock/requests/new']);
   }
 
+  navigateToApprovals(): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/restock/approvals']);
+  }
+
   // ============================================================
   // EXPORT
   // ============================================================

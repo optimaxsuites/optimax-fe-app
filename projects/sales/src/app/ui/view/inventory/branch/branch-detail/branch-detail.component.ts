@@ -6,7 +6,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import { RestockSuggestion } from '../../restock/restock-suggestion/restock-suggestion.component';
@@ -46,7 +45,6 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   branchSummary: BranchStockSummary | null = null;
   isLoading: boolean = true;
   error: string | null = null;
-  isSaving: boolean = false;
 
   // Tabs
   activeTab: 'overview' | 'inventory' | 'movements' | 'alerts' | 'analytics' | 'restock' = 'overview';
@@ -68,10 +66,6 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
     dateFrom: '',
     dateTo: ''
   };
-
-  // Edit mode
-  isEditing: boolean = false;
-  editForm!: FormGroup;
 
   // UI
   Math = Math;
@@ -112,11 +106,8 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     public router: Router,
     private location: Location,
-    private inventoryService: InventoryService,
-    private fb: FormBuilder
-  ) {
-    this.buildForm();
-  }
+    private inventoryService: InventoryService
+  ) {}
 
   // ============================================================
   // LIFECYCLE HOOKS
@@ -138,56 +129,6 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // FORM BUILDING
-  // ============================================================
-
-  private buildForm(): void {
-    this.editForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
-      code: ['', [Validators.required, Validators.minLength(2)]],
-      type: ['', Validators.required],
-      status: ['', Validators.required],
-      location: this.fb.group({
-        address: ['', Validators.required],
-        city: ['', Validators.required],
-        state: ['', Validators.required],
-        country: ['Nigeria', Validators.required],
-        postalCode: [''],
-        lat: [''],
-        lng: ['']
-      }),
-      contact: this.fb.group({
-        phone: ['', Validators.required],
-        email: ['', [Validators.email]],
-        manager: ['', Validators.required]
-      })
-    });
-  }
-
-  private populateForm(branch: Branch): void {
-    this.editForm.patchValue({
-      name: branch.name,
-      code: branch.code,
-      type: branch.type,
-      status: branch.status,
-      location: {
-        address: branch.location.address,
-        city: branch.location.city,
-        state: branch.location.state,
-        country: branch.location.country,
-        postalCode: branch.location.postalCode || '',
-        lat: branch.location.lat || '',
-        lng: branch.location.lng || ''
-      },
-      contact: {
-        phone: branch.contact.phone,
-        email: branch.contact.email || '',
-        manager: branch.contact.manager
-      }
-    });
-  }
-
-  // ============================================================
   // DATA LOADING
   // ============================================================
 
@@ -201,7 +142,6 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (branch) => {
           this.branch = branch;
-          this.populateForm(branch);
           this.loadBranchInventory();
           this.loadBranchSummary();
           this.loadBranchAlerts();
@@ -369,7 +309,6 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   /** Switch to a different branch from the branch selector in the top bar. */
   onBranchChange(branchId: string | null): void {
     if (!branchId || branchId === this.branchId) return;
-    this.isEditing = false;
     this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
   }
 
@@ -411,36 +350,10 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   // EDIT MODE
   // ============================================================
 
-  toggleEdit(): void {
-    this.isEditing = !this.isEditing;
-    if (!this.isEditing && this.branch) {
-      this.populateForm(this.branch);
-    }
-  }
-
-  saveBranch(): void {
-    if (this.editForm.invalid) {
-      this.editForm.markAllAsTouched();
-      return;
-    }
-
-    this.isSaving = true;
-    const formValue = this.editForm.value;
-
-    this.inventoryService.updateBranch(this.branchId, formValue)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (updated) => {
-          this.branch = updated;
-          this.isEditing = false;
-          this.isSaving = false;
-        },
-        error: (err) => {
-          console.error('Failed to update branch:', err);
-          this.isSaving = false;
-          this.error = 'Failed to update branch. Please try again.';
-        }
-      });
+  /** Opens the dedicated branch form (same one used for "New Branch") pre-filled with this
+   *  branch's current details, so editing actually has real input fields to change. */
+  navigateToEdit(): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', this.branchId, 'edit']);
   }
 
   // ============================================================
@@ -486,11 +399,19 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
 
   getBranchTypeLabel(type: string): string {
     const map: Record<string, string> = {
-      'FLAGSHIP': '⭐ Flagship',
+      'FLAGSHIP': 'Flagship',
       'STANDARD': 'Standard',
       'MINI': 'Mini'
     };
-    return map[type] || type;
+    if (map[type]) return map[type];
+    // Custom branch types are shown in Title Case no matter how they were typed in.
+    return type.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  /** True for any branch type outside the three built-in ones — used to give custom types
+   *  their own badge color instead of falling through unstyled. */
+  isCustomBranchType(type: string): boolean {
+    return !['FLAGSHIP', 'STANDARD', 'MINI'].includes(type);
   }
 
   getStatusLabel(status: string): string {
@@ -558,20 +479,4 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
     return name.charAt(0).toUpperCase();
   }
 
-  isFieldInvalid(fieldName: string): boolean {
-    const control = this.editForm.get(fieldName);
-    return !!control?.invalid && !!control?.touched;
-  }
-
-  getFieldError(fieldName: string): string {
-    const control = this.editForm.get(fieldName);
-    if (!control || !control.errors) return '';
-
-    const errors = control.errors;
-    if (errors['required']) return 'This field is required';
-    if (errors['email']) return 'Please enter a valid email address';
-    if (errors['minlength']) return `Minimum ${errors['minlength'].requiredLength} characters required`;
-
-    return 'Invalid input';
-  }
 }

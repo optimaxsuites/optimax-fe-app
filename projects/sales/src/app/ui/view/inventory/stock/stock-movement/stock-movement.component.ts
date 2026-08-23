@@ -141,20 +141,16 @@ export class StockMovementComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
+          // The search filter is applied server-side (via buildFilters()) before pagination,
+          // so response.data is already the correct page of already-filtered results — no
+          // client-side re-filtering needed here.
           this.movements = response.data;
-          // Apply client-side search filter
-          const searchTerm = this.filterForm.get('search')?.value;
-          if (searchTerm) {
-            const term = searchTerm.toLowerCase();
-            this.filteredMovements = this.movements.filter(m =>
-              (m.productName && m.productName.toLowerCase().includes(term)) ||
-              (m.sku && m.sku.toLowerCase().includes(term))
-            );
-          } else {
-            this.filteredMovements = this.movements;
-          }
-          this.totalElements = this.filteredMovements.length;
-          this.totalPages = Math.ceil(this.totalElements / this.pageSize);
+          this.filteredMovements = response.data;
+          // Previously these were derived from filteredMovements.length, i.e. the size of the
+          // current page (at most pageSize) — so totalPages was always ~1 and Next/page-number
+          // buttons never had anywhere further to go. Use the service's real grand total instead.
+          this.totalElements = response.total;
+          this.totalPages = response.totalPages;
           this.calculateStats();
           this.isLoading = false;
           this.selectedMovementIds.clear();
@@ -176,6 +172,7 @@ export class StockMovementComponent implements OnInit, OnDestroy {
 
     if (formValue.type && formValue.type !== 'ALL') filters.type = formValue.type;
     if (formValue.status && formValue.status !== 'ALL') filters.status = formValue.status;
+    if (formValue.search) filters.search = formValue.search;
     if (formValue.dateFrom) filters.dateFrom = new Date(formValue.dateFrom);
     if (formValue.dateTo) filters.dateTo = new Date(formValue.dateTo);
 
@@ -341,6 +338,14 @@ export class StockMovementComponent implements OnInit, OnDestroy {
 
   navigateToAdjustment(): void {
     this.router.navigate(['/admin/sales/commerce/inventory/movements/new']);
+  }
+
+  navigateToApprovals(): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
+  }
+
+  navigateToTracking(): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/tracking']);
   }
 
   // ============================================================

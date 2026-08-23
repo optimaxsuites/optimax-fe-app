@@ -129,7 +129,9 @@ export interface Branch {
     id: string;
     name: string;
     code: string;
-    type: 'FLAGSHIP' | 'STANDARD' | 'MINI';
+    // Widened from a fixed 'FLAGSHIP' | 'STANDARD' | 'MINI' union so users can add their own
+    // custom branch types (see InventoryService.getBranchTypes()/createBranchType()).
+    type: string;
     location: {
         address: string;
         city: string;
@@ -361,6 +363,7 @@ export interface MovementFilters {
     status?: MovementStatus;
     branchId?: string;
     productId?: string;
+    search?: string;
     dateFrom?: Date;
     dateTo?: Date;
     page?: number;

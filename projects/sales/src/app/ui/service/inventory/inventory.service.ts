@@ -49,8 +49,11 @@ const LOCAL_KEYS = {
   MOVEMENTS: 'inventory_movements',
   CATEGORIES: 'inventory_categories',
   MEASUREMENT_UNITS: 'inventory_measurement_units',
-  SUPPLIERS: 'inventory_suppliers'
+  SUPPLIERS: 'inventory_suppliers',
+  BRANCH_TYPES: 'inventory_branch_types'
 };
+
+const MOCK_BRANCH_TYPES: string[] = ['STANDARD', 'FLAGSHIP', 'MINI'];
 
 // ---------------------------------------------------
 // MOCK DATA (kept unchanged from original file)
@@ -1262,6 +1265,7 @@ export class InventoryService {
       localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(MOCK_CATEGORIES));
       localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(MOCK_MEASUREMENT_UNITS));
       localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(MOCK_SUPPLIERS));
+      localStorage.setItem(LOCAL_KEYS.BRANCH_TYPES, JSON.stringify(MOCK_BRANCH_TYPES));
     } else {
       // Back-fill any keys that were previously seeded as empty arrays
       const existingBranches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[];
@@ -1291,6 +1295,10 @@ export class InventoryService {
       const existingSuppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
       if (!existingSuppliers || existingSuppliers.length === 0) {
         localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(MOCK_SUPPLIERS));
+      }
+      const existingBranchTypes = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_TYPES) as string) as string[];
+      if (!existingBranchTypes || existingBranchTypes.length === 0) {
+        localStorage.setItem(LOCAL_KEYS.BRANCH_TYPES, JSON.stringify(MOCK_BRANCH_TYPES));
       }
       // Refresh dashboard branch summaries with richer data
       const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
@@ -1358,10 +1366,49 @@ export class InventoryService {
     return of(dash.topProducts.slice(0, limit));
   }
 
-  /** Branch summaries */
+  /**
+   * Branch summaries — computed live from current branches + branch inventory, not the frozen
+   * dashboard snapshot (which never reflected inventory added/changed after initial seed, so a
+   * newly created branch or a newly added product never showed up here).
+   */
   getBranchSummaries(): Observable<BranchStockSummary[]> {
-    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-    return of(dash.branchSummaries);
+    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
+    const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string || '[]') as BranchInventory[];
+    const summaries = branches.map(branch =>
+      this.computeBranchStockSummary(branch, allInventory.filter(i => i.branchId === branch.id))
+    );
+    return of(summaries);
+  }
+
+  /** Shared calculation behind getBranchSummaries()/getBranchAnalytics() so both stay consistent. */
+  private computeBranchStockSummary(branch: Branch, inventory: BranchInventory[]): BranchStockSummary {
+    let totalStockValue = 0;
+    let totalStockUnits = 0;
+    let lowStockCount = 0;
+    let outOfStockCount = 0;
+
+    inventory.forEach(item => {
+      totalStockUnits += item.quantity;
+      totalStockValue += item.quantity * (item.sellingPrice || 0);
+      if (item.quantity <= 0) {
+        outOfStockCount++;
+      } else {
+        const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);
+        if (status === 'CRITICAL' || status === 'LOW') {
+          lowStockCount++;
+        }
+      }
+    });
+
+    return {
+      branchId: branch.id,
+      branchName: branch.name,
+      totalProducts: inventory.length,
+      totalStockValue,
+      totalStockUnits,
+      lowStockCount,
+      outOfStockCount
+    };
   }
 
   /** Resolve an alert – marks it resolved in storage */
@@ -1559,6 +1606,23 @@ export class InventoryService {
     return of(newBranch);
   }
 
+  /** Branch types (Standard/Flagship/Mini + any custom ones users have added). */
+  getBranchTypes(): Observable<string[]> {
+    const types = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_TYPES) as string || '[]') as string[];
+    return of(types);
+  }
+
+  /** Add a new custom branch type (no-op if it already exists, case-insensitively). */
+  createBranchType(name: string): Observable<string[]> {
+    const types = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_TYPES) as string || '[]') as string[];
+    const exists = types.some(t => t.toLowerCase() === name.toLowerCase());
+    if (!exists) {
+      types.push(name);
+      localStorage.setItem(LOCAL_KEYS.BRANCH_TYPES, JSON.stringify(types));
+    }
+    return of(types);
+  }
+
   /** Get inventory for a branch, scoped to that branch. */
   getBranchInventory(branchId: string): Observable<BranchInventory[]> {
     const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string) as BranchInventory[];
@@ -1654,6 +1718,17 @@ export class InventoryService {
     // Apply status filter
     if (filters?.status) {
       filtered = filtered.filter(m => m.status === filters.status);
+    }
+    // Apply search filter (product name or SKU) — done server-side so it's applied before
+    // pagination, unlike a client-side filter which could only ever search within one page.
+    if (filters?.search) {
+      const term = filters.search.trim().toLowerCase();
+      if (term) {
+        filtered = filtered.filter(m =>
+          (m.productName && m.productName.toLowerCase().includes(term)) ||
+          (m.sku && m.sku.toLowerCase().includes(term))
+        );
+      }
     }
     // Apply date range filters
     if (filters?.dateFrom) {
@@ -1860,10 +1935,18 @@ export class InventoryService {
   }
 
   // ----------------------------------------------------
-  // BRANCH ANALYTICS (stub)
+  // BRANCH ANALYTICS
   // ----------------------------------------------------
-  getBranchAnalytics(_branchId: string): Observable<any> {
-    return of({});
+  /** Live stock summary for a single branch — previously a stub that always returned `{}`,
+   *  which is why Branch Detail's "Branch Summary" card and Analytics tab always showed blank. */
+  getBranchAnalytics(branchId: string): Observable<BranchStockSummary | null> {
+    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
+    const branch = branches.find(b => b.id === branchId);
+    if (!branch) return of(null);
+
+    const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string || '[]') as BranchInventory[];
+    const inventory = allInventory.filter(i => i.branchId === branchId);
+    return of(this.computeBranchStockSummary(branch, inventory));
   }
 
   // ============================================================
@@ -2084,6 +2167,14 @@ export class InventoryService {
       return byId?.name || raw;
     }
     return '';
+  }
+
+/**
+ * Alias for getMovements() - returns stock movements with filters
+ * Used by MovementApprovalComponent
+ */
+  getStockMovements(filters?: MovementFilters): Observable<PaginatedResponse<StockMovement>> {
+    return this.getMovements(filters);
   }
 
 }

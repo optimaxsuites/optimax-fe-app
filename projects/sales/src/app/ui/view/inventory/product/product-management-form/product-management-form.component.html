@@ -95,9 +95,11 @@
                                 <div class="ql-field">
                                     <label class="ql-flabel">Category <span class="ql-required">*</span></label>
                                     <select formControlName="category" class="ql-input"
-                                            [class.ql-input--error]="isFieldInvalid('category')">
+                                            [class.ql-input--error]="isFieldInvalid('category')"
+                                            (change)="onCategoryChange($event)">
                                         <option value="">Select category</option>
                                         <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+                                        <option value="__add_category__">+ Add Category</option>
                                     </select>
                                     <span class="ql-field-error" *ngIf="isFieldInvalid('category')">
                                         {{ getFieldError('category') }}
@@ -106,10 +108,11 @@
 
                                 <div class="ql-field">
                                     <label class="ql-flabel">Measurement Unit</label>
-                                    <select formControlName="measurementUnit" class="ql-input">
+                                    <select formControlName="measurementUnit" class="ql-input" (change)="onUnitChange($event)">
                                         <option *ngFor="let unit of measurementUnits" [value]="unit.name">
                                             {{ unit.name }}
                                         </option>
+                                        <option value="__add_unit__">+ Add Unit</option>
                                     </select>
                                 </div>
                             </div>
@@ -248,16 +251,11 @@
 
                                 <div class="ql-field">
                                     <label class="ql-flabel">Supplier</label>
-                                    <div class="ql-input-group">
-                                        <select formControlName="supplier" class="ql-input">
-                                            <option value="">Select supplier</option>
-                                            <option *ngFor="let sup of suppliers" [value]="sup.name">{{ sup.name }}</option>
-                                        </select>
-                                        <button type="button" class="ql-btn ql-btn--icon ql-btn--primary" 
-                                                (click)="addSupplier()" title="Add Supplier">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
-                                    </div>
+                                    <select formControlName="supplier" class="ql-input" (change)="onSupplierChange($event)">
+                                        <option value="">Select supplier</option>
+                                        <option *ngFor="let sup of suppliers" [value]="sup.name">{{ sup.name }}</option>
+                                        <option value="__add_supplier__">+ Add Supplier</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -584,6 +582,102 @@
                     <button type="button" class="ql-btn ql-btn--ghost" (click)="showVariantModal = false">Cancel</button>
                     <button type="button" class="ql-btn ql-btn--primary" (click)="saveVariant()">
                         {{ currentVariantIndex !== null ? 'Save Changes' : 'Add Variant' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ADD CATEGORY MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showAddCategoryModal"
+             (click)="$event.target === $event.currentTarget && closeAddCategoryModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-tags" style="color: #2EB270;"></i> Add Custom Category</h3>
+                    <button type="button" class="ql-modal-close" (click)="closeAddCategoryModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Category Name <span class="ql-required">*</span></label>
+                        <input type="text" class="ql-input" [(ngModel)]="newCategoryName"
+                               [ngModelOptions]="{standalone: true}"
+                               placeholder="e.g. Office Miscellaneous">
+                    </div>
+                    <div class="ql-field">
+                        <label class="ql-flabel">Description</label>
+                        <textarea class="ql-input" rows="3" [(ngModel)]="newCategoryDesc"
+                                  [ngModelOptions]="{standalone: true}"
+                                  placeholder="Enter category description..."></textarea>
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeAddCategoryModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" [disabled]="!newCategoryName.trim()"
+                            (click)="saveCustomCategory()">
+                        <i class="fas fa-save"></i> Save Category
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ADD UNIT MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showAddUnitModal"
+             (click)="$event.target === $event.currentTarget && closeAddUnitModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-balance-scale" style="color: #2EB270;"></i> Add Custom Unit</h3>
+                    <button type="button" class="ql-modal-close" (click)="closeAddUnitModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Unit Name <span class="ql-required">*</span></label>
+                        <input type="text" class="ql-input" [(ngModel)]="newUnitName"
+                               [ngModelOptions]="{standalone: true}"
+                               placeholder="e.g. dozen">
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeAddUnitModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" [disabled]="!newUnitName.trim()"
+                            (click)="saveCustomUnit()">
+                        <i class="fas fa-save"></i> Save Unit
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ADD SUPPLIER MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showAddSupplierModal"
+             (click)="$event.target === $event.currentTarget && closeAddSupplierModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-truck" style="color: #2EB270;"></i> Add Custom Supplier</h3>
+                    <button type="button" class="ql-modal-close" (click)="closeAddSupplierModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Supplier Name <span class="ql-required">*</span></label>
+                        <input type="text" class="ql-input" [(ngModel)]="newSupplierName"
+                               [ngModelOptions]="{standalone: true}"
+                               placeholder="e.g. Acme Distributors">
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeAddSupplierModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" [disabled]="!newSupplierName.trim()"
+                            (click)="saveCustomSupplier()">
+                        <i class="fas fa-save"></i> Save Supplier
                     </button>
                 </div>
             </div>

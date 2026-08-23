@@ -352,7 +352,7 @@ export class BranchAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
 
   getBranchTypeLabel(type: string): string {
     const map: Record<string, string> = {
-      'FLAGSHIP': '⭐ Flagship',
+      'FLAGSHIP': 'Flagship',
       'STANDARD': 'Standard',
       'MINI': 'Mini'
     };

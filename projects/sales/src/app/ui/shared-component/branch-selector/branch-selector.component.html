@@ -2,9 +2,9 @@
     <i class="fas fa-store ql-branch-selector-icon" *ngIf="size === 'default'"></i>
     <select class="ql-branch-selector-select" [disabled]="disabled || isLoading"
         [value]="selectedBranchId || ''" (change)="onSelectChange($any($event.target).value)">
-        <option *ngIf="showAllOption" value="">{{ allOptionLabel }}</option>
-        <option *ngIf="!showAllOption && !selectedBranchId" value="" disabled>{{ placeholder }}</option>
-        <option *ngFor="let branch of branchOptions" [value]="branch.id">
+        <option *ngIf="showAllOption" value="" [selected]="!selectedBranchId">{{ allOptionLabel }}</option>
+        <option *ngIf="!showAllOption && !selectedBranchId" value="" disabled selected>{{ placeholder }}</option>
+        <option *ngFor="let branch of branchOptions" [value]="branch.id" [selected]="branch.id === selectedBranchId">
             {{ branch.name }}{{ branch.location?.city ? ' (' + branch.location.city + ')' : '' }}
         </option>
     </select>

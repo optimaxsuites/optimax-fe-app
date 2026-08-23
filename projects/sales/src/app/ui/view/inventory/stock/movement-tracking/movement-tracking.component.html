@@ -1,0 +1,740 @@
+<!-- movement-tracking.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Movement Tracking</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Tracking Stats -->
+        <div class="ql-filter-section" *ngIf="trackingStats">
+            <div class="ql-filter-heading">Live Stats</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">In Transit</span>
+                <span class="ql-sidebar-stat-value" style="color: #3B82F6;">{{ trackingStats.totalInTransit }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Delivered Today</span>
+                <span class="ql-sidebar-stat-value" style="color: #2EB270;">{{ trackingStats.totalDelivered }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Delayed</span>
+                <span class="ql-sidebar-stat-value" style="color: #DC2626;">{{ trackingStats.totalDelayed }}</span>
+            </div>
+            <div class="ql-sidebar-stat" style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;">
+                <span class="ql-sidebar-stat-label">On-Time Rate</span>
+                <span class="ql-sidebar-stat-value" style="color: #2EB270;">{{ trackingStats.onTimeDeliveryRate.toFixed(0) }}%</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Active Drivers</span>
+                <span class="ql-sidebar-stat-value" style="color: #3B82F6;">{{ trackingStats.activeDrivers }}/{{ trackingStats.totalVehicles }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Avg Delivery Time</span>
+                <span class="ql-sidebar-stat-value">{{ trackingStats.averageDeliveryTime.toFixed(1) }}h</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Actions</div>
+            <button class="ql-sidebar-action" (click)="refreshTracking()" [disabled]="isRefreshing">
+                <i class="fas fa-sync-alt" [class.ql-spinning]="isRefreshing"></i>
+                {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
+            </button>
+            <button class="ql-sidebar-action" (click)="exportReport()">
+                <i class="fas fa-file-export"></i> Export Report
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading tracking data...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="refreshTracking()"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading">
+
+            <!-- Top bar -->
+            <div class="ql-top-bar">
+                <div class="ql-top-bar-left">
+                    <h1 class="ql-title">Movement Tracking</h1>
+                    <span class="ql-total-badge">Live</span>
+                    <span class="ql-live-badge" style="background: #DC262620; color: #DC2626;">
+                        <span class="ql-live-dot"></span>
+                        {{ getInTransitCount() }} in transit
+                    </span>
+                </div>
+                <div class="ql-top-bar-right">
+                    <div class="ql-auto-refresh-indicator" *ngIf="autoRefresh">
+                        <i class="fas fa-sync-alt fa-fw" [class.ql-spinning]="isRefreshing"></i>
+                        Auto-refresh
+                    </div>
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="refreshTracking()" [disabled]="isRefreshing">
+                        <i class="fas fa-sync-alt" [class.ql-spinning]="isRefreshing"></i>
+                        {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="ql-filters-bar">
+                <div class="ql-filter-group">
+                    <input type="text" class="ql-search-input" 
+                           placeholder="Search by product, SKU, branch..."
+                           (input)="onSearch($event)"
+                           [value]="searchTerm">
+                    <i class="fas fa-search ql-search-icon"></i>
+                </div>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" (change)="setFilter($any($event.target).value)" [value]="selectedFilter">
+                        <option value="ALL">All Movements</option>
+                        <option value="IN_TRANSIT">In Transit</option>
+                        <option value="DELAYED">Delayed</option>
+                        <option value="COMPLETED">Completed</option>
+                    </select>
+                </div>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" (change)="setTypeFilter($any($event.target).value)" [value]="selectedTypeFilter">
+                        <option value="ALL">All Types</option>
+                        <option value="TRANSFER">Transfer</option>
+                        <option value="PURCHASE">Purchase</option>
+                        <option value="SALE">Sale</option>
+                        <option value="RETURN">Return</option>
+                    </select>
+                </div>
+                <button class="ql-clear-filters" (click)="clearFilters()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="ql-tabs">
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'tracking'" (click)="activeTab = 'tracking'">
+                    <i class="fas fa-map-marker-alt"></i> Tracking
+                    <span class="ql-tab-badge" *ngIf="getInTransitCount() > 0">{{ getInTransitCount() }}</span>
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'history'" (click)="activeTab = 'history'">
+                    <i class="fas fa-history"></i> History
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'fleet'" (click)="activeTab = 'fleet'">
+                    <i class="fas fa-truck"></i> Fleet
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'stats'" (click)="activeTab = 'stats'">
+                    <i class="fas fa-chart-bar"></i> Statistics
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="ql-tab-content">
+
+                <!-- ========================================================
+                TRACKING TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'tracking'" class="ql-tab-panel">
+                    <div class="ql-tracking-grid">
+                        <!-- Movement List -->
+                        <div class="ql-movement-list">
+                            <div *ngFor="let movement of filteredMovements" 
+                                 class="ql-movement-item"
+                                 [class.ql-movement-item--active]="selectedMovement?.id === movement.id"
+                                 [class.ql-movement-item--in-transit]="movement.status === 'IN_TRANSIT'"
+                                 (click)="selectMovement(movement.id)">
+                                <div class="ql-movement-header">
+                                    <div class="ql-movement-type">
+                                        <i class="fas" [class]="getMovementTypeIcon(movement.movementType)"></i>
+                                        <span>{{ getMovementTypeLabel(movement.movementType) }}</span>
+                                    </div>
+                                    <div class="ql-movement-status" [style.color]="getStatusColor(movement.status)">
+                                        <i class="fas" [class]="getStatusIcon(movement.status)"></i>
+                                        {{ getMovementStatusLabel(movement.status) }}
+                                    </div>
+                                </div>
+                                <div class="ql-movement-body">
+                                    <div class="ql-movement-product">
+                                        <span class="ql-movement-product-name">{{ movement.productName }}</span>
+                                        <span class="ql-movement-sku">{{ movement.sku }}</span>
+                                    </div>
+                                    <div class="ql-movement-details">
+                                        <span class="ql-movement-qty">{{ movement.quantity }} units</span>
+                                        <span class="ql-movement-cost">{{ formatCurrency(movement.cost) }}</span>
+                                    </div>
+                                    <div class="ql-movement-locations">
+                                        <span class="ql-movement-from">
+                                            <i class="fas fa-arrow-right"></i>
+                                            {{ movement.fromLocation?.name || 'N/A' }}
+                                        </span>
+                                        <span class="ql-movement-to">
+                                            <i class="fas fa-arrow-right"></i>
+                                            {{ movement.toLocation?.name || 'N/A' }}
+                                        </span>
+                                    </div>
+                                    <!-- Progress Bar -->
+                                    <div class="ql-movement-progress" *ngIf="movement.status === 'IN_TRANSIT' || movement.status === 'COMPLETED'">
+                                        <div class="ql-progress-bar">
+                                            <div class="ql-progress-fill" 
+                                                 [style.width.%]="(currentTracking?.movementId === movement.id ? currentTracking?.progress || 0 : 0)"
+                                                 [style.background]="getProgressColor(currentTracking?.movementId === movement.id ? currentTracking?.progress || 0 : 0)"></div>
+                                        </div>
+                                        <span class="ql-progress-label">{{ currentTracking?.movementId === movement.id ? currentTracking?.progress || 0 : 0 }}%</span>
+                                    </div>
+                                    <div class="ql-movement-meta">
+                                        <span class="ql-movement-date">{{ getTimeAgo(movement.createdAt) }}</span>
+                                        <span class="ql-movement-driver" *ngIf="currentTracking?.movementId === movement.id && currentTracking?.driverName">
+                                            <i class="fas fa-user"></i>
+                                            {{ currentTracking!.driverName }}
+                                        </span>
+                                        <span class="ql-movement-eta" *ngIf="movement.status === 'IN_TRANSIT' && currentTracking?.movementId === movement.id">
+                                            <i class="fas fa-clock"></i>
+                                            {{ getTimeRemaining(currentTracking!.estimatedArrival) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div *ngIf="filteredMovements.length === 0" class="ql-empty-state-small">
+                                <i class="fas fa-truck" style="color: #3B82F6;"></i>
+                                <span>No movements to track</span>
+                            </div>
+                        </div>
+
+                        <!-- Tracking Detail -->
+                        <div class="ql-tracking-detail" *ngIf="selectedMovement && currentTracking">
+                            <!-- Header -->
+                            <div class="ql-detail-header">
+                                <div>
+                                    <h3>{{ selectedMovement.productName }}</h3>
+                                    <span class="ql-detail-id">#{{ selectedMovement.id }}</span>
+                                </div>
+                                <span class="ql-detail-status" [style.background]="getStatusColor(selectedMovement.status) + '20'" 
+                                                       [style.color]="getStatusColor(selectedMovement.status)">
+                                    <i class="fas" [class]="getStatusIcon(selectedMovement.status)"></i>
+                                    {{ getMovementStatusLabel(selectedMovement.status) }}
+                                </span>
+                            </div>
+
+                            <!-- Tracking Map -->
+                            <div class="ql-tracking-map">
+                                <div class="ql-map-placeholder">
+                                    <div class="ql-map-content">
+                                        <i class="fas fa-map-marked-alt"></i>
+                                        <div class="ql-map-route">
+                                            <div class="ql-map-point ql-map-point--from">
+                                                <span class="ql-map-dot"></span>
+                                                <span class="ql-map-label">{{ selectedMovement.fromLocation?.name || 'Origin' }}</span>
+                                            </div>
+                                            <div class="ql-map-line">
+                                                <div class="ql-map-line-fill" 
+                                                     [style.width.%]="currentTracking.progress"></div>
+                                            </div>
+                                            <div class="ql-map-point ql-map-point--to">
+                                                <span class="ql-map-dot" [style.background]="currentTracking.progress >= 100 ? '#2EB270' : '#3B82F6'"></span>
+                                                <span class="ql-map-label">{{ selectedMovement.toLocation?.name || 'Destination' }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="ql-map-progress">
+                                            <span class="ql-map-progress-value">{{ currentTracking.progress }}%</span>
+                                            <span class="ql-map-progress-label">Completed</span>
+                                        </div>
+                                        <div class="ql-map-driver" *ngIf="currentTracking.driverName">
+                                            <i class="fas fa-user-circle"></i>
+                                            <span>{{ currentTracking.driverName }}</span>
+                                            <span class="ql-map-vehicle">{{ currentTracking.vehiclePlate }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ql-map-controls">
+                                    <button class="ql-map-btn" (click)="toggleMapView()">
+                                        <i class="fas" [class.fa-globe]="mapView === 'route'" [class.fa-satellite]="mapView === 'satellite'"></i>
+                                        {{ mapView === 'route' ? 'Satellite' : 'Route' }}
+                                    </button>
+                                    <button class="ql-map-btn" (click)="copyTrackingLink()">
+                                        <i class="fas fa-link"></i> Copy Link
+                                    </button>
+                                    <button class="ql-map-btn" (click)="openTrackingLink()">
+                                        <i class="fas fa-external-link-alt"></i> Open
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Tracking Details -->
+                            <div class="ql-detail-info">
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Status</span>
+                                    <span class="ql-detail-value" [style.color]="getStatusColor(selectedMovement.status)">
+                                        {{ getMovementStatusLabel(selectedMovement.status) }}
+                                    </span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Driver</span>
+                                    <span class="ql-detail-value">{{ currentTracking.driverName || 'Unassigned' }}</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Vehicle</span>
+                                    <span class="ql-detail-value">{{ currentTracking.vehiclePlate || '—' }}</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Estimated Arrival</span>
+                                    <span class="ql-detail-value" [style.color]="selectedMovement.status === 'IN_TRANSIT' ? '#3B82F6' : '#2EB270'">
+                                        {{ getEstimatedArrival(currentTracking.estimatedArrival) }}
+                                    </span>
+                                </div>
+                                <div class="ql-detail-row" *ngIf="currentTracking.actualArrival">
+                                    <span class="ql-detail-label">Actual Arrival</span>
+                                    <span class="ql-detail-value" style="color: #2EB270;">
+                                        {{ formatDateTime(currentTracking.actualArrival) }}
+                                    </span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Tracking URL</span>
+                                    <span class="ql-detail-value" style="color: var(--p); cursor: pointer;" (click)="openTrackingLink()">
+                                        {{ currentTracking.trackingUrl }}
+                                    </span>
+                                </div>
+                                <div class="ql-detail-row" *ngIf="currentTracking.notes">
+                                    <span class="ql-detail-label">Notes</span>
+                                    <span class="ql-detail-value">{{ currentTracking.notes }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="ql-tracking-actions">
+                                <button class="ql-action-btn ql-action-btn--update" (click)="openUpdateModal()" 
+                                        *ngIf="selectedMovement.status !== 'COMPLETED' && selectedMovement.status !== 'CANCELLED'">
+                                    <i class="fas fa-edit"></i> Update Status
+                                </button>
+                                <button class="ql-action-btn ql-action-btn--driver" (click)="openDriverModal()"
+                                        *ngIf="selectedMovement.status !== 'COMPLETED' && selectedMovement.status !== 'CANCELLED'">
+                                    <i class="fas fa-user-plus"></i> Assign Driver
+                                </button>
+                                <button class="ql-action-btn ql-action-btn--complete" (click)="confirmDelivery()"
+                                        *ngIf="selectedMovement.status === 'IN_TRANSIT'">
+                                    <i class="fas fa-check"></i> Complete Delivery
+                                </button>
+                                <button class="ql-action-btn ql-action-btn--view" (click)="viewMovementDetail(selectedMovement.id)">
+                                    <i class="fas fa-eye"></i> View Full Details
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="ql-tracking-detail ql-tracking-detail--empty" *ngIf="!selectedMovement && filteredMovements.length > 0">
+                            <i class="fas fa-hand-pointer"></i>
+                            <p>Select a movement to track</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                HISTORY TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'history'" class="ql-tab-panel">
+                    <div class="ql-history-container">
+                        <div class="ql-history-header">
+                            <h3><i class="fas fa-history"></i> Tracking History</h3>
+                            <span class="ql-history-count">{{ trackingUpdates.length }} records</span>
+                        </div>
+
+                        <div class="ql-timeline">
+                            <div *ngFor="let update of trackingUpdates" class="ql-timeline-item">
+                                <div class="ql-timeline-icon" [style.background]="getStatusColor(update.status) + '20'" 
+                                                      [style.color]="getStatusColor(update.status)">
+                                    <i class="fas" [class]="getStatusIcon(update.status)"></i>
+                                </div>
+                                <div class="ql-timeline-content">
+                                    <div class="ql-timeline-header">
+                                        <span class="ql-timeline-action" [style.color]="getStatusColor(update.status)">
+                                            {{ getMovementStatusLabel(update.status) }}
+                                        </span>
+                                        <span class="ql-timeline-date">{{ formatDateTime(update.timestamp) }}</span>
+                                    </div>
+                                    <div class="ql-timeline-body">
+                                        <span class="ql-timeline-movement">Movement #{{ update.movementId }}</span>
+                                        <span class="ql-timeline-driver">by {{ update.driverName || 'Unknown' }}</span>
+                                    </div>
+                                    <div class="ql-timeline-comments" *ngIf="update.notes">
+                                        <i class="fas fa-quote-left"></i>
+                                        {{ update.notes }}
+                                    </div>
+                                    <div class="ql-timeline-location" *ngIf="update.location">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        {{ update.location.address }}
+                                    </div>
+                                    <div class="ql-timeline-progress" *ngIf="update.progress > 0">
+                                        <span class="ql-timeline-progress-label">Progress</span>
+                                        <div class="ql-timeline-progress-bar">
+                                            <div class="ql-timeline-progress-fill" 
+                                                 [style.width.%]="update.progress"
+                                                 [style.background]="getProgressColor(update.progress)"></div>
+                                        </div>
+                                        <span class="ql-timeline-progress-value">{{ update.progress }}%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div *ngIf="trackingUpdates.length === 0" class="ql-empty-state-small">
+                                <i class="fas fa-history"></i>
+                                <span>No tracking history available</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                FLEET TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'fleet'" class="ql-tab-panel">
+                    <div class="ql-fleet-container">
+                        <div class="ql-fleet-header">
+                            <h3><i class="fas fa-truck"></i> Fleet Status</h3>
+                            <span class="ql-fleet-count">{{ drivers.length }} vehicles</span>
+                        </div>
+
+                        <div class="ql-fleet-stats">
+                            <div class="ql-fleet-stat">
+                                <span class="ql-fleet-stat-value" style="color: #2EB270;">
+                                    {{ getDriverCountByStatus('AVAILABLE') }}
+                                </span>
+                                <span class="ql-fleet-stat-label">Available</span>
+                            </div>
+                            <div class="ql-fleet-stat">
+                                <span class="ql-fleet-stat-value" style="color: #3B82F6;">
+                                    {{ getActiveDriverCount() }}
+                                </span>
+                                <span class="ql-fleet-stat-label">Active</span>
+                            </div>
+                            <div class="ql-fleet-stat">
+                                <span class="ql-fleet-stat-value" style="color: #F5A623;">
+                                    {{ getDriverCountByStatus('ON_ROUTE') }}
+                                </span>
+                                <span class="ql-fleet-stat-label">On Route</span>
+                            </div>
+                            <div class="ql-fleet-stat">
+                                <span class="ql-fleet-stat-value" style="color: #6B7280;">
+                                    {{ getDriverCountByStatus('OFF_DUTY') }}
+                                </span>
+                                <span class="ql-fleet-stat-label">Off Duty</span>
+                            </div>
+                        </div>
+
+                        <div class="ql-fleet-grid">
+                            <div *ngFor="let driver of drivers" class="ql-fleet-card">
+                                <div class="ql-fleet-card-header">
+                                    <div class="ql-fleet-avatar">
+                                        <span>{{ getInitials(driver.name) }}</span>
+                                    </div>
+                                    <div class="ql-fleet-info">
+                                        <span class="ql-fleet-name">{{ driver.name }}</span>
+                                        <span class="ql-fleet-phone">{{ driver.phone }}</span>
+                                    </div>
+                                    <span class="ql-fleet-status" [style.background]="getDriverStatusColor(driver.status) + '20'"
+                                                           [style.color]="getDriverStatusColor(driver.status)">
+                                        {{ getDriverStatus(driver.status) }}
+                                    </span>
+                                </div>
+                                <div class="ql-fleet-card-body">
+                                    <div class="ql-fleet-detail">
+                                        <span class="ql-fleet-detail-label">Vehicle</span>
+                                        <span class="ql-fleet-detail-value">{{ driver.vehicle }}</span>
+                                    </div>
+                                    <div class="ql-fleet-detail">
+                                        <span class="ql-fleet-detail-label">Plate</span>
+                                        <span class="ql-fleet-detail-value">{{ driver.plate }}</span>
+                                    </div>
+                                    <div class="ql-fleet-detail">
+                                        <span class="ql-fleet-detail-label">Status</span>
+                                        <span class="ql-fleet-detail-value" [style.color]="getDriverStatusColor(driver.status)">
+                                            {{ getDriverStatus(driver.status) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                STATISTICS TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'stats'" class="ql-tab-panel">
+                    <div class="ql-stats-container">
+                        <div class="ql-stats-header">
+                            <h3><i class="fas fa-chart-bar"></i> Tracking Statistics</h3>
+                        </div>
+
+                        <div class="ql-stats-grid" *ngIf="trackingStats">
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #3B82F6;">{{ trackingStats.totalInTransit }}</span>
+                                <span class="ql-stat-card-label">In Transit</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #2EB270;">{{ trackingStats.totalDelivered }}</span>
+                                <span class="ql-stat-card-label">Delivered</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #DC2626;">{{ trackingStats.totalDelayed }}</span>
+                                <span class="ql-stat-card-label">Delayed</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #2EB270;">{{ trackingStats.onTimeDeliveryRate.toFixed(0) }}%</span>
+                                <span class="ql-stat-card-label">On-Time Rate</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #3B82F6;">{{ trackingStats.averageDeliveryTime.toFixed(1) }}h</span>
+                                <span class="ql-stat-card-label">Avg Delivery Time</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #F5A623;">{{ trackingStats.activeDrivers }}</span>
+                                <span class="ql-stat-card-label">Active Drivers</span>
+                            </div>
+                        </div>
+
+                        <!-- Status Distribution -->
+                        <div class="ql-info-card">
+                            <h4>Status Distribution</h4>
+                            <div class="ql-distribution-bars">
+                                <div class="ql-distribution-item">
+                                    <span class="ql-distribution-label">Pending</span>
+                                    <div class="ql-distribution-bar">
+                                        <div class="ql-distribution-fill" 
+                                             [style.width.%]="(getPendingCount() / movements.length) * 100"
+                                             style="background: #F5A623;"></div>
+                                    </div>
+                                    <span class="ql-distribution-value">{{ getPendingCount() }}</span>
+                                </div>
+                                <div class="ql-distribution-item">
+                                    <span class="ql-distribution-label">In Transit</span>
+                                    <div class="ql-distribution-bar">
+                                        <div class="ql-distribution-fill" 
+                                             [style.width.%]="(getInTransitCount() / movements.length) * 100"
+                                             style="background: #3B82F6;"></div>
+                                    </div>
+                                    <span class="ql-distribution-value">{{ getInTransitCount() }}</span>
+                                </div>
+                                <div class="ql-distribution-item">
+                                    <span class="ql-distribution-label">Completed</span>
+                                    <div class="ql-distribution-bar">
+                                        <div class="ql-distribution-fill" 
+                                             [style.width.%]="(getCompletedCount() / movements.length) * 100"
+                                             style="background: #2EB270;"></div>
+                                    </div>
+                                    <span class="ql-distribution-value">{{ getCompletedCount() }}</span>
+                                </div>
+                                <div class="ql-distribution-item">
+                                    <span class="ql-distribution-label">Cancelled</span>
+                                    <div class="ql-distribution-bar">
+                                        <div class="ql-distribution-fill" 
+                                             [style.width.%]="(movements.length - getPendingCount() - getInTransitCount() - getCompletedCount()) / movements.length * 100"
+                                             style="background: #DC2626;"></div>
+                                    </div>
+                                    <span class="ql-distribution-value">{{ movements.length - getPendingCount() - getInTransitCount() - getCompletedCount() }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Movement Type Breakdown -->
+                        <div class="ql-info-card">
+                            <h4>Movement Type Breakdown</h4>
+                            <div class="ql-type-grid">
+                                <div *ngFor="let type of movementTypeList"
+                                     class="ql-type-item">
+                                    <span class="ql-type-label">
+                                        <i class="fas" [class]="getMovementTypeIcon(type)"></i>
+                                        {{ getMovementTypeLabel(type) }}
+                                    </span>
+                                    <span class="ql-type-count">{{ getTypeCount(type) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </ng-container>
+
+        <!-- ============================================================
+        UPDATE STATUS MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showUpdateModal"
+             (click)="$event.target === $event.currentTarget && closeUpdateModal()">
+            <div class="ql-modal">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-edit" style="color: #3B82F6;"></i> Update Status</h3>
+                    <button class="ql-modal-close" (click)="closeUpdateModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Update tracking status for <strong>{{ selectedMovement?.productName }}</strong></p>
+                    <form [formGroup]="updateForm">
+                        <div class="ql-field">
+                            <label class="ql-flabel">Status <span class="ql-required">*</span></label>
+                            <select class="ql-input" formControlName="status">
+                                <option value="PENDING">Pending</option>
+                                <option value="IN_TRANSIT">In Transit</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Location</label>
+                            <input type="text" class="ql-input" formControlName="location" placeholder="Current location">
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Estimated Arrival <span class="ql-required">*</span></label>
+                            <input type="datetime-local" class="ql-input" formControlName="estimatedArrival">
+                            <span class="ql-field-error" *ngIf="updateForm.get('estimatedArrival')?.invalid && updateForm.get('estimatedArrival')?.touched">
+                                Estimated arrival is required
+                            </span>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Driver</label>
+                            <select class="ql-input" formControlName="driverId">
+                                <option value="">Select Driver</option>
+                                <option *ngFor="let driver of drivers" [value]="driver.id">
+                                    {{ driver.name }} - {{ driver.vehicle }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Notes</label>
+                            <textarea class="ql-input" formControlName="notes" rows="3" 
+                                      placeholder="Add any additional notes..."></textarea>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">
+                                <input type="checkbox" formControlName="notifyRecipient">
+                                Notify recipient of update
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeUpdateModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="submitUpdate()" [disabled]="isSubmitting || updateForm.invalid">
+                        <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-save]="!isSubmitting" 
+                           [class.ql-spinning]="isSubmitting"></i>
+                        {{ isSubmitting ? 'Updating...' : 'Update Status' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ASSIGN DRIVER MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showDriverModal"
+             (click)="$event.target === $event.currentTarget && closeDriverModal()">
+            <div class="ql-modal">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-user-plus" style="color: #3B82F6;"></i> Assign Driver</h3>
+                    <button class="ql-modal-close" (click)="closeDriverModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Assign a driver to <strong>{{ selectedMovement?.productName }}</strong></p>
+                    <form [formGroup]="driverForm">
+                        <div class="ql-field">
+                            <label class="ql-flabel">Driver <span class="ql-required">*</span></label>
+                            <select class="ql-input" formControlName="driverId">
+                                <option value="">Select Driver</option>
+                                <option *ngFor="let driver of drivers" [value]="driver.id">
+                                    {{ driver.name }} - {{ driver.vehicle }} ({{ getDriverStatus(driver.status) }})
+                                </option>
+                            </select>
+                            <span class="ql-field-error" *ngIf="driverForm.get('driverId')?.invalid && driverForm.get('driverId')?.touched">
+                                Please select a driver
+                            </span>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Estimated Arrival <span class="ql-required">*</span></label>
+                            <input type="datetime-local" class="ql-input" formControlName="estimatedArrival">
+                            <span class="ql-field-error" *ngIf="driverForm.get('estimatedArrival')?.invalid && driverForm.get('estimatedArrival')?.touched">
+                                Estimated arrival is required
+                            </span>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Notes</label>
+                            <textarea class="ql-input" formControlName="notes" rows="3" 
+                                      placeholder="Add any additional notes..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeDriverModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="assignDriver()" [disabled]="isSubmitting || driverForm.invalid">
+                        <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-user-check]="!isSubmitting" 
+                           [class.ql-spinning]="isSubmitting"></i>
+                        {{ isSubmitting ? 'Assigning...' : 'Assign Driver' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        CONFIRM DELIVERY MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showConfirmModal"
+             (click)="$event.target === $event.currentTarget && (showConfirmModal = false)">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-check-circle" style="color: #2EB270;"></i> Confirm Delivery</h3>
+                    <button class="ql-modal-close" (click)="showConfirmModal = false">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Confirm that <strong>{{ selectedMovement?.productName }}</strong> has been delivered successfully?</p>
+                    <div class="ql-confirm-details">
+                        <div class="ql-confirm-item">
+                            <span class="ql-confirm-label">Product</span>
+                            <span class="ql-confirm-value">{{ selectedMovement?.productName }}</span>
+                        </div>
+                        <div class="ql-confirm-item">
+                            <span class="ql-confirm-label">Quantity</span>
+                            <span class="ql-confirm-value">{{ selectedMovement?.quantity }} units</span>
+                        </div>
+                        <div class="ql-confirm-item">
+                            <span class="ql-confirm-label">Destination</span>
+                            <span class="ql-confirm-value">{{ selectedMovement?.toLocation?.name || 'N/A' }}</span>
+                        </div>
+                        <div class="ql-confirm-item">
+                            <span class="ql-confirm-label">Driver</span>
+                            <span class="ql-confirm-value">{{ currentTracking?.driverName || 'Unassigned' }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="showConfirmModal = false">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="completeDelivery()" [disabled]="isSubmitting">
+                        <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-check]="!isSubmitting" 
+                           [class.ql-spinning]="isSubmitting"></i>
+                        {{ isSubmitting ? 'Confirming...' : 'Confirm Delivery' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

@@ -246,7 +246,8 @@
                         <td class="ql-td-type">
                             <span class="ql-type-badge" [class.ql-type--flagship]="branch.type === 'FLAGSHIP'"
                                 [class.ql-type--standard]="branch.type === 'STANDARD'"
-                                [class.ql-type--mini]="branch.type === 'MINI'">
+                                [class.ql-type--mini]="branch.type === 'MINI'"
+                                [class.ql-type--custom]="isCustomBranchType(branch.type)">
                                 {{ getBranchTypeLabel(branch.type) }}
                             </span>
                         </td>

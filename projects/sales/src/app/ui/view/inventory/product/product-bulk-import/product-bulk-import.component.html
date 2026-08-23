@@ -321,6 +321,22 @@
                                 <span class="ql-complete-error-message">{{ error.message }}</span>
                             </div>
                         </div>
+
+                        <!-- Created Products — the product catalog is alphabetically sorted and
+                        paginated, so a freshly imported batch can land anywhere in it with no
+                        visible confirmation. Link straight to each one instead. -->
+                        <div class="ql-complete-created" *ngIf="createdProducts.length > 0">
+                            <h4><i class="fas fa-box-open"></i> Imported Products</h4>
+                            <div class="ql-complete-created-item" *ngFor="let product of createdProducts">
+                                <div class="ql-complete-created-info">
+                                    <span class="ql-complete-created-name">{{ product.name }}</span>
+                                    <span class="ql-complete-created-sku">{{ product.sku }}</span>
+                                </div>
+                                <button type="button" class="ql-btn ql-btn--ghost" (click)="viewCreatedProduct(product.id)">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
