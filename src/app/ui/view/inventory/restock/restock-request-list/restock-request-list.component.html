@@ -128,6 +128,9 @@
                 <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
                     <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i> Refresh
                 </button>
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="navigateToApprovals()">
+                    <i class="fas fa-clipboard-check"></i> Approvals
+                </button>
                 <button type="button" class="ql-btn ql-btn--secondary" (click)="exportRequests()">
                     <i class="fas fa-file-export"></i> Export
                 </button>

@@ -485,6 +485,17 @@
     color: rgba(255, 255, 255, .9);
 }
 
+.ql-ai-link {
+    color: #6ee7b7;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+
+    &:hover {
+        color: #a7f3d0;
+    }
+}
+
 .ql-ai-dismiss {
     background: none;
     border: none;
@@ -546,12 +557,13 @@
     border-radius: 10px;
     border: 1px solid var(--border);
     box-shadow: var(--shadow);
-    overflow: hidden;
+    overflow-x: auto;
     flex: 1;
 }
 
 .ql-table {
     width: 100%;
+    min-width: 820px;
     border-collapse: collapse;
 
     th {
@@ -591,6 +603,14 @@
     .ql-th-actions,
     .ql-td-actions {
         text-align: right;
+        white-space: nowrap;
+    }
+
+    .ql-td-type,
+    .ql-td-qty,
+    .ql-td-location,
+    .ql-td-date {
+        white-space: nowrap;
     }
 }
 

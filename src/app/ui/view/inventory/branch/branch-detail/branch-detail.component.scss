@@ -334,6 +334,12 @@
         background: #e0f2fe;
         color: #0369a1;
     }
+
+    // Any custom branch type added via "+ Add Branch Type" that isn't one of the three built-ins.
+    &.ql-type--custom {
+        background: #dbeafe;
+        color: #1e40af;
+    }
 }
 
 .ql-status-badge {

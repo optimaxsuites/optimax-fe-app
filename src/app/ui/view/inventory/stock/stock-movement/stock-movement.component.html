@@ -110,6 +110,12 @@
                 <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
                     <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i> Refresh
                 </button>
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="navigateToApprovals()">
+                    <i class="fas fa-clipboard-check"></i> Approvals
+                </button>
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="navigateToTracking()">
+                    <i class="fas fa-map-marker-alt"></i> Track Shipments
+                </button>
                 <div class="ql-split-btn">
                     <button type="button" class="ql-btn ql-btn--primary ql-split-btn-main"
                         (click)="navigateToTransfer()">
@@ -150,12 +156,12 @@
                 <div class="ql-ai-title">AI Insight</div>
                 <div class="ql-ai-text">
                     <ng-container *ngIf="stats.pending > 5">
-                        <strong>{{ stats.pending }}</strong> movements are pending approval. Review them to avoid
-                        delays.
+                        <strong>{{ stats.pending }}</strong> movements are pending approval.
+                        <a class="ql-ai-link" (click)="navigateToApprovals()">Review them</a> to avoid delays.
                     </ng-container>
                     <ng-container *ngIf="stats.inTransit > 3 && stats.pending <= 5">
-                        <strong>{{ stats.inTransit }}</strong> movements are currently in transit. Monitor their
-                        progress.
+                        <strong>{{ stats.inTransit }}</strong> movements are currently in transit.
+                        <a class="ql-ai-link" (click)="navigateToTracking()">Monitor their progress</a>.
                     </ng-container>
                 </div>
             </div>

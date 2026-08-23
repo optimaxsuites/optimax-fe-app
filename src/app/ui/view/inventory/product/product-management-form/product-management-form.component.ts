@@ -96,6 +96,18 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   measurementUnits: MeasurementUnit[] = [];
   suppliers: Supplier[] = [];
 
+  // "+ Add X" modals for Category / Measurement Unit / Supplier — same pattern as the
+  // Request for Quotation form's "+ Add Category" option.
+  showAddCategoryModal = false;
+  newCategoryName = '';
+  newCategoryDesc = '';
+
+  showAddUnitModal = false;
+  newUnitName = '';
+
+  showAddSupplierModal = false;
+  newSupplierName = '';
+
   // Product variants
   variants: any[] = [];
   showVariantModal = false;
@@ -584,30 +596,140 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
     }
   }
 
-  addSupplier(): void {
-    const newSupplier = prompt('Enter new supplier name:');
-    if (newSupplier && newSupplier.trim()) {
-      const trimmed = newSupplier.trim();
-      if (this.suppliers.some(s => s.name.toLowerCase() === trimmed.toLowerCase())) {
-        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Supplier "${trimmed}" already exists.` });
-        return;
-      }
-      this.inventoryService.createSupplier({ name: trimmed }).subscribe({
-        next: (updatedSups: Supplier[]) => {
-          this.suppliers = updatedSups;
-          this.productForm.patchValue({
-            supplier: trimmed,
-            selectedSupplier: trimmed
-          });
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: `Supplier "${trimmed}" added successfully.` });
-        },
-        error: (err: any) => {
-          console.error('Error adding supplier:', err);
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add supplier' });
-        }
-      });
+  // ============================================================
+  // CATEGORY — "+ Add Category"
+  // ============================================================
+
+  onCategoryChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === '__add_category__') {
+      this.productForm.get('category')?.setValue('', { emitEvent: false });
+      this.openAddCategoryModal();
     }
   }
 
+  openAddCategoryModal(): void {
+    this.newCategoryName = '';
+    this.newCategoryDesc = '';
+    this.showAddCategoryModal = true;
+  }
 
+  closeAddCategoryModal(): void {
+    this.showAddCategoryModal = false;
+  }
+
+  saveCustomCategory(): void {
+    const name = this.newCategoryName.trim();
+    if (!name) return;
+
+    if (this.rawCategories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Category "${name}" already exists.` });
+      return;
+    }
+
+    this.inventoryService.createCategory({ name, description: this.newCategoryDesc.trim() }).subscribe({
+      next: (updatedCats: Category[]) => {
+        this.rawCategories = updatedCats;
+        this.categories = updatedCats.map(c => c.name);
+        this.productForm.patchValue({ category: name });
+        this.closeAddCategoryModal();
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Category "${name}" added successfully.` });
+      },
+      error: (err: any) => {
+        console.error('Error adding category:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add category' });
+      }
+    });
+  }
+
+  // ============================================================
+  // MEASUREMENT UNIT — "+ Add Unit"
+  // ============================================================
+
+  onUnitChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === '__add_unit__') {
+      this.productForm.get('measurementUnit')?.setValue('', { emitEvent: false });
+      this.openAddUnitModal();
+    }
+  }
+
+  openAddUnitModal(): void {
+    this.newUnitName = '';
+    this.showAddUnitModal = true;
+  }
+
+  closeAddUnitModal(): void {
+    this.showAddUnitModal = false;
+  }
+
+  saveCustomUnit(): void {
+    const name = this.newUnitName.trim();
+    if (!name) return;
+
+    if (this.measurementUnits.some(u => u.name.toLowerCase() === name.toLowerCase())) {
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Unit "${name}" already exists.` });
+      return;
+    }
+
+    const code = name.replace(/\s+/g, '').toUpperCase();
+    this.inventoryService.createMeasurementUnit({ name, code }).subscribe({
+      next: (updatedUnits: MeasurementUnit[]) => {
+        this.measurementUnits = updatedUnits;
+        this.productForm.patchValue({ measurementUnit: name });
+        this.closeAddUnitModal();
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Unit "${name}" added successfully.` });
+      },
+      error: (err: any) => {
+        console.error('Error adding unit:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add unit' });
+      }
+    });
+  }
+
+  // ============================================================
+  // SUPPLIER — "+ Add Supplier"
+  // ============================================================
+
+  onSupplierChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === '__add_supplier__') {
+      this.productForm.get('supplier')?.setValue('', { emitEvent: false });
+      this.openAddSupplierModal();
+    }
+  }
+
+  openAddSupplierModal(): void {
+    this.newSupplierName = '';
+    this.showAddSupplierModal = true;
+  }
+
+  closeAddSupplierModal(): void {
+    this.showAddSupplierModal = false;
+  }
+
+  saveCustomSupplier(): void {
+    const trimmed = this.newSupplierName.trim();
+    if (!trimmed) return;
+
+    if (this.suppliers.some(s => s.name.toLowerCase() === trimmed.toLowerCase())) {
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Supplier "${trimmed}" already exists.` });
+      return;
+    }
+    this.inventoryService.createSupplier({ name: trimmed }).subscribe({
+      next: (updatedSups: Supplier[]) => {
+        this.suppliers = updatedSups;
+        this.productForm.patchValue({
+          supplier: trimmed,
+          selectedSupplier: trimmed
+        });
+        this.closeAddSupplierModal();
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Supplier "${trimmed}" added successfully.` });
+      },
+      error: (err: any) => {
+        console.error('Error adding supplier:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add supplier' });
+      }
+    });
+  }
 }

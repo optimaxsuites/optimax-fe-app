@@ -609,7 +609,7 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
 
   getBranchTypeLabel(type: string): string {
     const map: Record<string, string> = {
-      'FLAGSHIP': '⭐ Flagship',
+      'FLAGSHIP': 'Flagship',
       'STANDARD': 'Standard',
       'MINI': 'Mini'
     };

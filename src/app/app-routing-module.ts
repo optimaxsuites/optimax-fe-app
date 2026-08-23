@@ -50,10 +50,13 @@ import { StockMovementFormComponent } from './ui/view/inventory/stock/stock-move
 import { StockMovementDetailComponent } from './ui/view/inventory/stock/stock-movement-detail/stock-movement-detail.component';
 import { TransferWizardComponent } from './ui/view/inventory/stock/transfer-wizard/transfer-wizard.component';
 import { BulkTransferComponent } from './ui/view/inventory/stock/bulk-transfer/bulk-transfer.component';
+import { MovementApprovalComponent } from './ui/view/inventory/stock/movement-approval/movement-approval.component';
+import { MovementTrackingComponent } from './ui/view/inventory/stock/movement-tracking/movement-tracking.component';
 import { RestockRequestFormComponent } from './ui/view/inventory/restock/restock-request-form/restock-request-form.component';
 import { RestockRequestListComponent } from './ui/view/inventory/restock/restock-request-list/restock-request-list.component';
 import { RestockSuggestionsPageComponent } from './ui/view/inventory/restock/restock-suggestions-page/restock-suggestions-page.component';
 import { ThresholdManagementComponent } from './ui/view/inventory/restock/threshold-management/threshold-management.component';
+import { RestockApprovalComponent } from './ui/view/inventory/restock/restock-approval/restock-approval.component';
 
 
 export const routes: Routes = [
@@ -121,6 +124,10 @@ export const routes: Routes = [
     component: BranchDetailComponent
   },
   {
+    path: 'admin/sales/commerce/inventory/branches/:branchId/edit',
+    component: BranchFormComponent
+  },
+  {
     path: 'admin/sales/commerce/inventory/branches/:branchId/add-product',
     component: BranchInventoryFormComponent
   },
@@ -137,6 +144,14 @@ export const routes: Routes = [
   {
     path: 'admin/sales/commerce/inventory/movements/bulk-transfer',
     component: BulkTransferComponent
+  },
+  {
+    path: 'admin/sales/commerce/inventory/movements/approvals',
+    component: MovementApprovalComponent
+  },
+  {
+    path: 'admin/sales/commerce/inventory/movements/tracking',
+    component: MovementTrackingComponent
   },
   {
     path: 'admin/sales/commerce/inventory/movements/:id',
@@ -167,6 +182,10 @@ export const routes: Routes = [
   {
     path: 'admin/sales/commerce/inventory/restock/thresholds',
     component: ThresholdManagementComponent
+  },
+  {
+    path: 'admin/sales/commerce/inventory/restock/approvals',
+    component: RestockApprovalComponent
   },
 
 

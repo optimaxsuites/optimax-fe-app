@@ -62,6 +62,10 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
     failed: number;
     errors: { row: number; message: string }[];
   } | null = null;
+  /** The actual saved products from this run, so the completion screen can link straight to
+   *  them — otherwise they just land somewhere in the full (alphabetically-sorted, paginated)
+   *  product list with no indication of where. */
+  createdProducts: Product[] = [];
 
   // Form
   importForm: FormGroup;
@@ -478,6 +482,7 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
     const errors: { row: number; message: string }[] = [];
     let successful = 0;
     let failed = 0;
+    this.createdProducts = [];
 
     if (formValue.validateOnly) {
       // Rows here already passed per-row validation in processRows(), so with no rows to
@@ -511,6 +516,7 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
       action.subscribe({
         next: (saved) => {
           successful++;
+          this.createdProducts.push(saved);
           if (!existing) {
             this.existingProducts.push(saved);
           }
@@ -598,6 +604,13 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
     } else {
       this.router.navigate(['/commerce/inventory']);
     }
+  }
+
+  /** Jump straight to one just-imported product's detail page — the full product list is
+   *  alphabetically sorted and paginated, so a freshly imported batch can easily land on a
+   *  later page with no visual cue that the import actually worked. */
+  viewCreatedProduct(productId: string): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
   }
 
   // ============================================================
