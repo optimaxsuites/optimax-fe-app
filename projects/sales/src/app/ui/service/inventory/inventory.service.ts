@@ -68,7 +68,14 @@ const MOCK_LOCATION_TYPES: string[] = ['WAREHOUSE', 'BRANCH', 'SUPPLIER', 'CUSTO
 
 const MOCK_GENERIC_LOCATIONS: { id: string; type: string; name: string }[] = [
   { id: 'loc-wh-1', type: 'WAREHOUSE', name: 'Central Warehouse' },
-  { id: 'loc-cust-1', type: 'CUSTOMER', name: 'Walk-in Customer' }
+  { id: 'loc-wh-2', type: 'WAREHOUSE', name: 'Apapa Bonded Warehouse' },
+  { id: 'loc-wh-3', type: 'WAREHOUSE', name: 'Kano Distribution Warehouse' },
+  { id: 'loc-wh-4', type: 'WAREHOUSE', name: 'Onitsha Overflow Warehouse' },
+  { id: 'loc-cust-1', type: 'CUSTOMER', name: 'Walk-in Customer' },
+  { id: 'loc-cust-2', type: 'CUSTOMER', name: 'Julius Berger Nigeria Plc' },
+  { id: 'loc-cust-3', type: 'CUSTOMER', name: 'Costain West Africa' },
+  { id: 'loc-cust-4', type: 'CUSTOMER', name: 'Setraco Nigeria Ltd' },
+  { id: 'loc-cust-5', type: 'CUSTOMER', name: 'PW Nigeria Ltd' }
 ];
 
 // ---------------------------------------------------
@@ -1307,9 +1314,17 @@ export class InventoryService {
       if (!existingLocationTypes || existingLocationTypes.length === 0) {
         localStorage.setItem(LOCAL_KEYS.LOCATION_TYPES, JSON.stringify(MOCK_LOCATION_TYPES));
       }
+      // Merge in any mock locations missing by id (not just backfill when fully empty) — so
+      // browsers that already seeded the old, sparser location list still pick up new ones.
       const existingGenericLocations = JSON.parse(localStorage.getItem(LOCAL_KEYS.GENERIC_LOCATIONS) as string) as any[];
       if (!existingGenericLocations || existingGenericLocations.length === 0) {
         localStorage.setItem(LOCAL_KEYS.GENERIC_LOCATIONS, JSON.stringify(MOCK_GENERIC_LOCATIONS));
+      } else {
+        const existingIds = new Set(existingGenericLocations.map(l => l.id));
+        const missing = MOCK_GENERIC_LOCATIONS.filter(l => !existingIds.has(l.id));
+        if (missing.length > 0) {
+          localStorage.setItem(LOCAL_KEYS.GENERIC_LOCATIONS, JSON.stringify([...existingGenericLocations, ...missing]));
+        }
       }
       // Refresh dashboard branch summaries with richer data
       const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;

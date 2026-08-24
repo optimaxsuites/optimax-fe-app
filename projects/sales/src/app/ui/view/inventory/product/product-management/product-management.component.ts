@@ -208,6 +208,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
           this.newCategoryName = '';
           this.newCategoryDesc = '';
           this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Category added successfully!' });
+          alert(`Category "${trimmedName}" has been created successfully.`);
         },
         error: (err: any) => {
           console.error('Error adding category:', err);
@@ -340,6 +341,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
           this.newUnitCode = '';
           this.newUnitDesc = '';
           this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Measurement Unit added successfully!' });
+          alert(`Measurement Unit "${trimmedName}" has been created successfully.`);
         },
         error: (err: any) => {
           console.error('Error adding unit:', err);

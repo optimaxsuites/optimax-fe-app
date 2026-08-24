@@ -7,6 +7,7 @@ import {
   StockMovement,
   MovementType,
   MovementStatus,
+  hasUnresolvedChangeRequest,
   getMovementTypeLabel,
   getMovementTypeIcon,
   MovementFilters
@@ -55,6 +56,15 @@ export class StockMovementComponent implements OnInit, OnDestroy {
   showFilterDrawer: boolean = false;
   showTransferMenu: boolean = false;
   aiDismissed: boolean = false;
+
+  // Row-level Approve/Reject confirmation
+  actionTargetMovement: StockMovement | null = null;
+  showApproveConfirm: boolean = false;
+  showRejectConfirm: boolean = false;
+  showRequestChangesModal: boolean = false;
+  isProcessingAction: boolean = false;
+  rejectReason: string = '';
+  changesReason: string = '';
 
   // Enums
   MovementType = MovementType;
@@ -353,6 +363,131 @@ export class StockMovementComponent implements OnInit, OnDestroy {
 
   navigateToApprovals(): void {
     this.router.navigate(['/commerce/inventory/movements/approvals']);
+  }
+
+  // ============================================================
+  // ROW-LEVEL APPROVE / REJECT
+  // ============================================================
+
+  /** True for a TRANSFER movement — the Approve confirmation offers "Request Changes" as an
+   *  alternative to a straight approve only for these, matching Movement Approvals. */
+  isTransferMovement(movement: StockMovement | null): boolean {
+    return movement?.movementType === MovementType.TRANSFER;
+  }
+
+  /** While changes are outstanding, Approve/Reject/Request Changes stay hidden — nothing to
+   *  approve or reject yet, and asking for changes twice makes no sense. They reappear once
+   *  the movement is edited (see StockMovementFormComponent.save()). */
+  hasUnresolvedChangeRequest(movement: StockMovement): boolean {
+    return hasUnresolvedChangeRequest(movement);
+  }
+
+  openApproveConfirm(movement: StockMovement): void {
+    this.actionTargetMovement = movement;
+    this.showApproveConfirm = true;
+  }
+
+  openRejectConfirm(movement: StockMovement): void {
+    this.actionTargetMovement = movement;
+    this.rejectReason = '';
+    this.showRejectConfirm = true;
+  }
+
+  openRequestChangesConfirm(movement: StockMovement): void {
+    this.actionTargetMovement = movement;
+    this.changesReason = '';
+    this.showRequestChangesModal = true;
+  }
+
+  /** From the Approve confirmation, switches to the Request Changes form for the same movement
+   *  instead of approving it outright — only reachable there for transfers. */
+  switchToRequestChanges(): void {
+    this.showApproveConfirm = false;
+    this.changesReason = '';
+    this.showRequestChangesModal = true;
+  }
+
+  closeActionModals(): void {
+    this.showApproveConfirm = false;
+    this.showRejectConfirm = false;
+    this.showRequestChangesModal = false;
+    this.actionTargetMovement = null;
+    this.rejectReason = '';
+    this.changesReason = '';
+  }
+
+  confirmApproveMovement(): void {
+    if (!this.actionTargetMovement || this.isProcessingAction) return;
+    this.isProcessingAction = true;
+    const id = this.actionTargetMovement.id;
+
+    // Approving moves a transfer to IN_TRANSIT, not straight to COMPLETED — stock only actually
+    // moves once the movement is later marked COMPLETED (see InventoryService.updateMovement()/
+    // applyTransferStockAdjustment()). For non-transfer movement types this is simply their
+    // approval step in the same PENDING -> IN_TRANSIT -> COMPLETED lifecycle.
+    this.inventoryService.updateMovement(id, {
+      status: MovementStatus.IN_TRANSIT,
+      approvedBy: 'usr-1',
+      approvedByName: 'John Doe',
+      approvedAt: new Date()
+    }).subscribe({
+      next: () => {
+        this.isProcessingAction = false;
+        this.closeActionModals();
+        this.loadMovements();
+      },
+      error: (err) => {
+        console.error('Failed to approve movement:', err);
+        this.isProcessingAction = false;
+      }
+    });
+  }
+
+  confirmRejectMovement(): void {
+    if (!this.actionTargetMovement || this.isProcessingAction) return;
+    this.isProcessingAction = true;
+    const movement = this.actionTargetMovement;
+    const reason = this.rejectReason.trim();
+
+    this.inventoryService.updateMovement(movement.id, {
+      status: MovementStatus.CANCELLED,
+      notes: (movement.notes || '') + (reason ? `\nRejection reason: ${reason}` : '')
+    }).subscribe({
+      next: () => {
+        this.isProcessingAction = false;
+        this.closeActionModals();
+        this.loadMovements();
+      },
+      error: (err) => {
+        console.error('Failed to reject movement:', err);
+        this.isProcessingAction = false;
+      }
+    });
+  }
+
+  confirmRequestChanges(): void {
+    if (!this.actionTargetMovement || this.isProcessingAction) return;
+    const reason = this.changesReason.trim();
+    if (!reason) return;
+    this.isProcessingAction = true;
+    const movement = this.actionTargetMovement;
+
+    // Status stays PENDING — requesting changes doesn't approve or reject, just leaves a note
+    // (matches Movement Approvals' submitChanges()); the Branch Manager dashboard surfaces this
+    // note as a notification linking straight to the edit form.
+    this.inventoryService.updateMovement(movement.id, {
+      notes: (movement.notes || '') + `\nChanges requested: ${reason}`
+    }).subscribe({
+      next: () => {
+        this.isProcessingAction = false;
+        this.closeActionModals();
+        this.loadMovements();
+      },
+      error: (err) => {
+        console.error('Failed to request changes:', err);
+        this.isProcessingAction = false;
+      }
+    });
   }
 
   // ============================================================

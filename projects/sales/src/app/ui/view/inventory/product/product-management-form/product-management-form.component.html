@@ -421,16 +421,7 @@
                                 </button>
                             </div>
 
-                            <div class="ql-demo-images" *ngIf="images.length === 0">
-                                <span class="ql-demo-label">Quick add demo images:</span>
-                                <div class="ql-demo-list">
-                                    <div class="ql-demo-item" *ngFor="let demo of demoImages" 
-                                         (click)="addImageUrl(demo.url)">
-                                        <img [src]="demo.url" alt="{{ demo.name }}">
-                                        <span>{{ demo.name }}</span>
-                                    </div>
-                                </div>
-                            </div>
+
 
                             <div class="ql-image-grid" *ngIf="images.length > 0">
                                 <div class="ql-image-item" *ngFor="let img of images; let idx = index">
