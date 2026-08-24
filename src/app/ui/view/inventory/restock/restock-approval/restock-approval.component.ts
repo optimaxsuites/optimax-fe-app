@@ -714,13 +714,13 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
 
   viewProduct(productId: string): void {
     if (productId) {
-      this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
+      this.router.navigate(['/commerce/inventory/products', productId]);
     }
   }
 
   viewBranch(branchId: string): void {
     if (branchId) {
-      this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
+      this.router.navigate(['/commerce/inventory/branches', branchId]);
     }
   }
 

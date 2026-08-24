@@ -483,7 +483,7 @@ export class StockTurnoverComponent implements OnInit, OnChanges, OnDestroy {
   selectProduct(productId: string): void {
     this.selectedProduct = this.turnoverData.find(d => d.productId === productId) || null;
     if (this.selectedProduct) {
-      this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
+      this.router.navigate(['/commerce/inventory/products', productId]);
     }
   }
 
@@ -513,13 +513,13 @@ export class StockTurnoverComponent implements OnInit, OnChanges, OnDestroy {
 
   viewBranch(branchId: string): void {
     if (branchId) {
-      this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
+      this.router.navigate(['/commerce/inventory/branches', branchId]);
     }
   }
 
   viewProduct(productId: string): void {
     if (productId) {
-      this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
+      this.router.navigate(['/commerce/inventory/products', productId]);
     }
   }
 

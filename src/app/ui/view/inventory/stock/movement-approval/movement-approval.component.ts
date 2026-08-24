@@ -622,18 +622,18 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
   }
 
   viewMovementDetail(movementId: string): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/movements', movementId]);
+    this.router.navigate(['/commerce/inventory/movements', movementId]);
   }
 
   viewBranch(branchId: string): void {
     if (branchId) {
-      this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
+      this.router.navigate(['/commerce/inventory/branches', branchId]);
     }
   }
 
   viewProduct(productId: string): void {
     if (productId) {
-      this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
+      this.router.navigate(['/commerce/inventory/products', productId]);
     }
   }
 

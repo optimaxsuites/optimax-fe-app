@@ -458,7 +458,7 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
 
   viewBranch(branchId: string): void {
     if (branchId) {
-      this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
+      this.router.navigate(['/commerce/inventory/branches', branchId]);
     }
   }
 
