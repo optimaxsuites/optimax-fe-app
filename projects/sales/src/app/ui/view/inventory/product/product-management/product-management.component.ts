@@ -657,9 +657,9 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   navigateToNewProduct(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/commerce/inventory/products/new', uuid]);
+      this.router.navigate(['/commerce/inventory/products/new', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/commerce/inventory/products/new']);
+      this.router.navigate(['/commerce/inventory/products/new']);
     }
   }
 
@@ -667,9 +667,9 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   navigateToBulkImport(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/commerce/inventory/products', 'bulk-import', uuid]);
+      this.router.navigate(['/commerce/inventory/products', 'bulk-import', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/commerce/inventory/products', 'bulk-import']);
+      this.router.navigate(['/commerce/inventory/products', 'bulk-import']);
     }
   }
 
@@ -677,18 +677,18 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   viewProduct(productId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/commerce/inventory/products', productId, uuid]);
+      this.router.navigate(['/commerce/inventory/products', productId, uuid]);
     } else {
-      this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
+      this.router.navigate(['/commerce/inventory/products', productId]);
     }
   }
 
   editProduct(productId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/commerce/inventory/products', productId, 'edit', uuid]);
+      this.router.navigate(['/commerce/inventory/products', productId, 'edit', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/commerce/inventory/products', productId, 'edit']);
+      this.router.navigate(['/commerce/inventory/products', productId, 'edit']);
     }
   }
 

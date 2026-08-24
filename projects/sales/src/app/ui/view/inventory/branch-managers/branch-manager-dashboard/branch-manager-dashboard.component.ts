@@ -103,7 +103,7 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
       id: 'new-restock',
       label: 'Request Restock',
       icon: 'fa-boxes',
-      route: '/admin/sales/commerce/inventory/branch-manager/requests/new',
+      route: '/commerce/inventory/branch-manager/requests/new',
       queryParams: { branchId: this.BRANCH_ID },
       color: '#184440',
       description: 'Request stock replenishment'
@@ -112,7 +112,7 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
       id: 'new-transfer',
       label: 'Create Transfer',
       icon: 'fa-exchange-alt',
-      route: '/admin/sales/commerce/inventory/branch-manager/transfers/new',
+      route: '/commerce/inventory/branch-manager/transfers/new',
       queryParams: { lockedBranchId: this.BRANCH_ID },
       color: '#3B82F6',
       description: 'Send stock to or request stock from another branch'
@@ -121,7 +121,7 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
       id: 'view-inventory',
       label: 'View Inventory',
       icon: 'fa-warehouse',
-      route: '/admin/sales/commerce/inventory/branches/' + this.BRANCH_ID,
+      route: '/commerce/inventory/branches/' + this.BRANCH_ID,
       queryParams: { tab: 'inventory' },
       color: '#8B5CF6',
       description: 'Manage your branch stock'
@@ -130,7 +130,7 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
       id: 'view-requests',
       label: 'My Requests',
       icon: 'fa-list',
-      route: '/admin/sales/commerce/inventory/branch-manager/requests',
+      route: '/commerce/inventory/branch-manager/requests',
       queryParams: { branchId: this.BRANCH_ID },
       color: '#F5A623',
       description: 'Track your restock requests'
@@ -233,8 +233,9 @@ loadData(): void {
 
   /** Builds the "Notifications" panel from data already loaded above — no separate
    *  backend needed. Covers: transfers heading to this branch that haven't arrived yet,
-   *  their own restock requests that are pending or were rejected, and products recently
-   *  added to this branch's inventory (e.g. assigned by an admin). */
+   *  transfers of theirs that Movement Approvals sent back for changes, their own restock
+   *  requests that are pending or were rejected, and products recently added to this
+   *  branch's inventory (e.g. assigned by an admin). */
   private buildNotifications(): void {
     const notifications: DashboardNotification[] = [];
 
@@ -249,7 +250,27 @@ loadData(): void {
           title: `${m.quantity} × ${m.productName} is on its way to your branch`,
           subtitle: m.status === MovementStatus.IN_TRANSIT ? 'In transit' : 'Awaiting approval',
           timestamp: new Date(m.createdAt),
-          route: '/admin/sales/commerce/inventory/movements/' + m.id
+          route: '/commerce/inventory/movements/' + m.id
+        });
+      });
+
+    // "Request Changes" on Movement Approvals leaves the movement PENDING and appends a note
+    // (see MovementApprovalComponent.submitChanges()) rather than a dedicated status — so a
+    // transfer touching this branch, still PENDING, with that note is how we know changes
+    // were asked for. Links straight to the edit form so they can act on it immediately.
+    this.movements
+      .filter(m => (m.fromLocation?.id === this.branchId || m.toLocation?.id === this.branchId) &&
+        m.status === MovementStatus.PENDING &&
+        !!m.notes && m.notes.includes('Changes requested:'))
+      .forEach(m => {
+        notifications.push({
+          id: 'changes-' + m.id,
+          icon: 'fa-triangle-exclamation',
+          color: '#F5A623',
+          title: `Admin requested changes to your transfer for ${m.productName}`,
+          subtitle: 'Review the note and update the transfer',
+          timestamp: new Date(m.updatedAt || m.createdAt),
+          route: '/commerce/inventory/movements/' + m.id + '/edit'
         });
       });
 
@@ -266,7 +287,7 @@ loadData(): void {
             : `Your request for ${r.productName} is awaiting approval`,
           subtitle: `${r.requestedQuantity} units requested`,
           timestamp: new Date(r.createdAt),
-          route: '/admin/sales/commerce/inventory/branch-manager/requests',
+          route: '/commerce/inventory/branch-manager/requests',
           queryParams: { branchId: this.BRANCH_ID }
         });
       });
@@ -282,7 +303,7 @@ loadData(): void {
           title: `${i.productName} was added to your branch's inventory`,
           subtitle: `${i.quantity} units in stock`,
           timestamp: new Date(i.lastUpdated),
-          route: '/admin/sales/commerce/inventory/branches/' + this.BRANCH_ID,
+          route: '/commerce/inventory/branches/' + this.BRANCH_ID,
           queryParams: { tab: 'inventory' }
         });
       });
@@ -321,23 +342,24 @@ loadData(): void {
   }
 
   goToRequestRestock(): void {
-    this.navigateTo('/admin/sales/commerce/inventory/branch-manager/requests/new', { branchId: this.BRANCH_ID });
+    this.navigateTo('/commerce/inventory/branch-manager/requests/new', { branchId: this.BRANCH_ID });
   }
 
   goToCreateTransfer(): void {
-    this.navigateTo('/admin/sales/commerce/inventory/branch-manager/transfers/new', { lockedBranchId: this.BRANCH_ID });
+    this.navigateTo('/commerce/inventory/branch-manager/transfers/new', { lockedBranchId: this.BRANCH_ID });
   }
 
   goToInventory(): void {
-    this.navigateTo('/admin/sales/commerce/inventory/branches/' + this.BRANCH_ID, { tab: 'inventory' });
+    this.navigateTo('/commerce/inventory/branches/' + this.BRANCH_ID, { tab: 'inventory' });
   }
 
   goToMyRequests(): void {
-    this.navigateTo('/admin/sales/commerce/inventory/branch-manager/requests', { branchId: this.BRANCH_ID });
+    this.navigateTo('/commerce/inventory/branch-manager/requests', { branchId: this.BRANCH_ID });
   }
 
   goBack(): void {
-    // Navigate to main dashboard or close
+    // Back to the tab shell (with the nav-tab bar), not the standalone /branch-manager route.
+    this.router.navigate(['/commerce/inventory']);
   }
 
   // ============================================================

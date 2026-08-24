@@ -527,10 +527,14 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     // A Branch Manager (this form locked to their branch) goes back to their own dashboard,
     // where the new transfer shows up as a pending request — not into the admin approval
     // queue, which they have no reason to see. Everyone else still lands on Approvals.
+    //
+    // Routed to the tab shell itself (not the standalone /branch-manager route) so the
+    // nav-tab bar comes back too — the shell remembers "Branch Manager" was the last tab
+    // selected (that's how they got to this form in the first place) and restores it.
     if (this.lockedBranchId) {
-      this.router.navigate(['/admin/sales/commerce/inventory/branch-manager']);
+      this.router.navigate(['/commerce/inventory']);
     } else {
-      this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
+      this.router.navigate(['/commerce/inventory/movements/approvals']);
     }
   }
 
@@ -574,7 +578,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
   }
 
   goToBulkTransfer(): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/movements/bulk-transfer']);
+    this.router.navigate(['/commerce/inventory/movements/bulk-transfer']);
   }
 
   getSourceStock(productId: string): number {

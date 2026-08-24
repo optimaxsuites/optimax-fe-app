@@ -438,7 +438,7 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
   // ============================================================
 
   viewProduct(productId: string): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
+    this.router.navigate(['/commerce/inventory/products', productId]);
   }
 
   // ============================================================

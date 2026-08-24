@@ -308,15 +308,15 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
   // ============================================================
 
   navigateToBranch(branchId: string): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
+    this.router.navigate(['/commerce/inventory/branches', branchId]);
   }
 
   navigateToNewBranch(): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/branches/new']);
+    this.router.navigate(['/commerce/inventory/branches/new']);
   }
 
   navigateToAddProduct(branchId: string): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId, 'add-product']);
+    this.router.navigate(['/commerce/inventory/branches', branchId, 'add-product']);
   }
 
   // ============================================================

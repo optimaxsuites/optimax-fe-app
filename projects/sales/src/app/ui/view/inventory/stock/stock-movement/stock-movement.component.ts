@@ -322,11 +322,11 @@ export class StockMovementComponent implements OnInit, OnDestroy {
   // ============================================================
 
   viewMovement(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/movements', id]);
+    this.router.navigate(['/commerce/inventory/movements', id]);
   }
 
   navigateToNew(): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/movements/new']);
+    this.router.navigate(['/commerce/inventory/movements/new']);
   }
 
   toggleTransferMenu(): void {
@@ -339,20 +339,20 @@ export class StockMovementComponent implements OnInit, OnDestroy {
 
   navigateToTransfer(): void {
     this.showTransferMenu = false;
-    this.router.navigate(['/admin/sales/commerce/inventory/movements/transfer']);
+    this.router.navigate(['/commerce/inventory/movements/transfer']);
   }
 
   navigateToBulkTransfer(): void {
     this.showTransferMenu = false;
-    this.router.navigate(['/admin/sales/commerce/inventory/movements/bulk-transfer']);
+    this.router.navigate(['/commerce/inventory/movements/bulk-transfer']);
   }
 
   navigateToAdjustment(): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/movements/new']);
+    this.router.navigate(['/commerce/inventory/movements/new']);
   }
 
   navigateToApprovals(): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
+    this.router.navigate(['/commerce/inventory/movements/approvals']);
   }
 
   // ============================================================

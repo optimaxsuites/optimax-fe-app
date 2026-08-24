@@ -234,7 +234,7 @@ export class ProductAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
 
   viewProduct(): void {
     if (this.product) {
-      this.router.navigate(['/admin/sales/commerce/inventory/products', this.product.id]);
+      this.router.navigate(['/commerce/inventory/products', this.product.id]);
     }
   }
 

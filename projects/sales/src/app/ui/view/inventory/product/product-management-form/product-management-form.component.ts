@@ -380,7 +380,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
         // After editing, land on the product's details page so the change is visible immediately.
         // After creating, there's no existing detail context to return to, so keep the prior behavior.
         if (this.isEditMode) {
-          this.router.navigate(['/admin/sales/commerce/inventory/products', this.productId]);
+          this.router.navigate(['/commerce/inventory/products', this.productId]);
         } else {
           this.goBack();
         }
