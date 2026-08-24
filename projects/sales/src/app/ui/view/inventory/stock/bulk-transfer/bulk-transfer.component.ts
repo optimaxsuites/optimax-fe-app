@@ -8,7 +8,6 @@ import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
-import { UserContextService } from '../../../../service/inventory/user-context.service';
 import {
   Branch,
   Product,
@@ -42,10 +41,6 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
 
   // Data
   branches: Branch[] = [];
-  // "Create transfers (limited)": a Branch Manager can only send stock out of their own
-  // branch, so the Source Branch dropdown is scoped to this list; destination still uses
-  // the full `branches` list since they can transfer stock *to* any branch.
-  sourceBranches: Branch[] = [];
   products: Product[] = [];
   sourceInventory: BranchInventory[] = [];
   destInventory: BranchInventory[] = [];
@@ -79,7 +74,6 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
 
   constructor(
     private inventoryService: InventoryService,
-    private userContext: UserContextService,
     private router: Router,
     private fb: FormBuilder
   ) {
@@ -154,16 +148,6 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (branches) => {
           this.branches = branches;
-          if (this.userContext.isBranchManager()) {
-            const ownBranchId = this.userContext.getUserBranchId();
-            this.sourceBranches = branches.filter(b => b.id === ownBranchId);
-            // Only one possible source, so pick it for them automatically.
-            if (this.sourceBranches.length === 1) {
-              this.bulkForm.patchValue({ sourceBranchId: this.sourceBranches[0].id });
-            }
-          } else {
-            this.sourceBranches = branches;
-          }
           this.checkLoadingComplete();
         },
         error: (err) => {

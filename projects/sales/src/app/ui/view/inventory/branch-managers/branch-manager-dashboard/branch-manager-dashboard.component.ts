@@ -7,7 +7,6 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
-import { UserContextService } from '../../../../service/inventory/user-context.service';
 import {
   BranchInventory,
   StockMovement,
@@ -39,6 +38,7 @@ interface QuickAction {
   label: string;
   icon: string;
   route: string;
+  queryParams?: Record<string, string>;
   color: string;
   description: string;
 }
@@ -54,6 +54,7 @@ interface DashboardNotification {
   subtitle: string;
   timestamp: Date;
   route: string;
+  queryParams?: Record<string, string>;
 }
 
 // ============================================================
@@ -70,6 +71,11 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
   // ============================================================
   // STATE
   // ============================================================
+
+  // This tab is a fixed, single-branch view for now — no login/role system behind it, so
+  // the branch it manages is just hardcoded here rather than looked up from a user account.
+  readonly BRANCH_ID = 'br-1';
+  readonly BRANCH_NAME = 'Lagos Main Warehouse';
 
   // Data
   branchInventory: BranchInventory[] = [];
@@ -89,13 +95,16 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
   error: string | null = null;
   activeTab: 'overview' | 'inventory' | 'requests' = 'overview';
 
-  // Quick Actions
+  // Quick Actions — each links into the normal shared pages, but with a query param that
+  // scopes/locks them to this one branch (see TransferWizardComponent's lockedBranchId
+  // handling, and RestockRequestForm/ListComponent's existing branchId prefill support).
   quickActions: QuickAction[] = [
     {
       id: 'new-restock',
       label: 'Request Restock',
       icon: 'fa-boxes',
       route: '/admin/sales/commerce/inventory/branch-manager/requests/new',
+      queryParams: { branchId: this.BRANCH_ID },
       color: '#184440',
       description: 'Request stock replenishment'
     },
@@ -104,14 +113,16 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
       label: 'Create Transfer',
       icon: 'fa-exchange-alt',
       route: '/admin/sales/commerce/inventory/branch-manager/transfers/new',
+      queryParams: { lockedBranchId: this.BRANCH_ID },
       color: '#3B82F6',
-      description: 'Transfer stock between branches'
+      description: 'Send stock to or request stock from another branch'
     },
     {
       id: 'view-inventory',
       label: 'View Inventory',
       icon: 'fa-warehouse',
-      route: '/admin/sales/commerce/inventory/branch-manager/inventory',
+      route: '/admin/sales/commerce/inventory/branches/' + this.BRANCH_ID,
+      queryParams: { tab: 'inventory' },
       color: '#8B5CF6',
       description: 'Manage your branch stock'
     },
@@ -120,6 +131,7 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
       label: 'My Requests',
       icon: 'fa-list',
       route: '/admin/sales/commerce/inventory/branch-manager/requests',
+      queryParams: { branchId: this.BRANCH_ID },
       color: '#F5A623',
       description: 'Track your restock requests'
     }
@@ -134,7 +146,6 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
 
   constructor(
     private inventoryService: InventoryService,
-    private userContext: UserContextService,
     private router: Router
   ) {}
 
@@ -161,9 +172,8 @@ loadData(): void {
   this.isLoading = true;
   this.error = null;
 
-  const user = this.userContext.getUser();
-  this.branchId = user.branchId || '';
-  this.branchName = user.branchName || 'My Branch';
+  this.branchId = this.BRANCH_ID;
+  this.branchName = this.BRANCH_NAME;
 
   forkJoin({
     inventory: this.inventoryService.getBranchInventory(this.branchId),
@@ -256,7 +266,8 @@ loadData(): void {
             : `Your request for ${r.productName} is awaiting approval`,
           subtitle: `${r.requestedQuantity} units requested`,
           timestamp: new Date(r.createdAt),
-          route: '/admin/sales/commerce/inventory/branch-manager/requests'
+          route: '/admin/sales/commerce/inventory/branch-manager/requests',
+          queryParams: { branchId: this.BRANCH_ID }
         });
       });
 
@@ -271,7 +282,8 @@ loadData(): void {
           title: `${i.productName} was added to your branch's inventory`,
           subtitle: `${i.quantity} units in stock`,
           timestamp: new Date(i.lastUpdated),
-          route: '/admin/sales/commerce/inventory/branch-manager/inventory'
+          route: '/admin/sales/commerce/inventory/branches/' + this.BRANCH_ID,
+          queryParams: { tab: 'inventory' }
         });
       });
 
@@ -304,8 +316,24 @@ loadData(): void {
   // NAVIGATION
   // ============================================================
 
-  navigateTo(route: string): void {
-    this.router.navigate([route]);
+  navigateTo(route: string, queryParams?: Record<string, string>): void {
+    this.router.navigate([route], queryParams ? { queryParams } : undefined);
+  }
+
+  goToRequestRestock(): void {
+    this.navigateTo('/admin/sales/commerce/inventory/branch-manager/requests/new', { branchId: this.BRANCH_ID });
+  }
+
+  goToCreateTransfer(): void {
+    this.navigateTo('/admin/sales/commerce/inventory/branch-manager/transfers/new', { lockedBranchId: this.BRANCH_ID });
+  }
+
+  goToInventory(): void {
+    this.navigateTo('/admin/sales/commerce/inventory/branches/' + this.BRANCH_ID, { tab: 'inventory' });
+  }
+
+  goToMyRequests(): void {
+    this.navigateTo('/admin/sales/commerce/inventory/branch-manager/requests', { branchId: this.BRANCH_ID });
   }
 
   goBack(): void {

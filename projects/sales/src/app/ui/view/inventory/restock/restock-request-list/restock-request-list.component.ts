@@ -4,11 +4,10 @@
 // ============================================================
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
-import { UserContextService } from '../../../../service/inventory/user-context.service';
 import {
   RestockRequest,
   RestockStatus,
@@ -97,17 +96,11 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
 
   constructor(
     private inventoryService: InventoryService,
-    private userContext: UserContextService,
     private router: Router,
+    private route: ActivatedRoute,
     private fb: FormBuilder
   ) {
     this.filterForm = this.buildFilterForm();
-  }
-
-  /** "See all requests" is Admin-only — a Branch Manager only ever sees their own branch's
-   *  restock requests, so their branch filter is locked to their branch instead of "ALL". */
-  get canSeeAllRequests(): boolean {
-    return !this.userContext.isBranchManager();
   }
 
   // ============================================================
@@ -115,12 +108,11 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
   // ============================================================
 
   ngOnInit(): void {
-    if (!this.canSeeAllRequests) {
-      const ownBranchId = this.userContext.getUserBranchId();
-      if (ownBranchId) {
-        this.filterForm.patchValue({ branchId: ownBranchId });
-        this.filterForm.get('branchId')?.disable();
-      }
+    // Optional prefill, e.g. ?branchId=br-1 — used when linking in from a specific branch's
+    // page so the list opens already filtered to it (the filter stays editable).
+    const branchId = this.route.snapshot.queryParamMap.get('branchId');
+    if (branchId) {
+      this.filterForm.patchValue({ branchId });
     }
     this.loadRequests();
     this.loadBranches();
@@ -202,9 +194,7 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
   }
 
   private buildFilters(): any {
-    // getRawValue() (not .value) so a Branch Manager's disabled, locked branchId control
-    // still makes it into the filters — .value silently omits disabled controls.
-    const formValue = this.filterForm.getRawValue();
+    const formValue = this.filterForm.value;
     const filters: any = {
       page: this.currentPage,
       limit: this.pageSize
@@ -245,7 +235,7 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
       search: '',
       status: 'ALL',
       urgency: 'ALL',
-      branchId: this.canSeeAllRequests ? 'ALL' : (this.userContext.getUserBranchId() || 'ALL'),
+      branchId: 'ALL',
       dateFrom: '',
       dateTo: ''
     });
@@ -263,7 +253,7 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
   }
 
   getActiveFilterCount(): number {
-    const formValue = this.filterForm.getRawValue();
+    const formValue = this.filterForm.value;
     let count = 0;
     if (formValue.search) count++;
     if (formValue.status !== 'ALL') count++;
@@ -276,7 +266,7 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
 
   getFilterSummary(): string {
     const parts: string[] = [];
-    const formValue = this.filterForm.getRawValue();
+    const formValue = this.filterForm.value;
 
     if (formValue.status !== 'ALL') parts.push(`Status: ${this.getStatusLabel(formValue.status)}`);
     if (formValue.urgency !== 'ALL') parts.push(`Urgency: ${this.getUrgencyLabel(formValue.urgency)}`);

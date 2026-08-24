@@ -50,7 +50,7 @@ export class StockMovementDetailComponent implements OnInit, OnDestroy {
 
   // UI
   Math = Math;
-  activeTab: 'details' | 'tracking' | 'history' = 'details';
+  activeTab: 'details' | 'history' = 'details';
   currentStep: number = 1;
   totalSteps: number = 3;
 

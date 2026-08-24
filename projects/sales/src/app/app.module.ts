@@ -158,7 +158,6 @@ import { TransferWizardComponent } from './ui/view/inventory/stock/transfer-wiza
 import { BulkTransferComponent } from './ui/view/inventory/stock/bulk-transfer/bulk-transfer.component';
 import { StockMovementDetailComponent } from './ui/view/inventory/stock/stock-movement-detail/stock-movement-detail.component';
 import { MovementApprovalComponent } from './ui/view/inventory/stock/movement-approval/movement-approval.component';
-import { MovementTrackingComponent } from './ui/view/inventory/stock/movement-tracking/movement-tracking.component';
 import { RestockManagementComponent } from './ui/view/inventory/restock/restock-management/restock-management.component';
 import { RestockRequestFormComponent } from './ui/view/inventory/restock/restock-request-form/restock-request-form.component';
 import { RestockSuggestionComponent } from './ui/view/inventory/restock/restock-suggestion/restock-suggestion.component';
@@ -210,7 +209,6 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
     BulkTransferComponent,
     StockMovementDetailComponent,
     MovementApprovalComponent,
-    MovementTrackingComponent,
     RestockManagementComponent,
     RestockRequestFormComponent,
     RestockSuggestionComponent,

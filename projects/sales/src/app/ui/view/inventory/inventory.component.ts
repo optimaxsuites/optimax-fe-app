@@ -7,7 +7,6 @@ import { StockMovementComponent } from './stock/stock-movement/stock-movement.co
 import { RestockManagementComponent } from './restock/restock-management/restock-management.component';
 import { AnalyticsComponent } from './inventory-analytics/analytics/analytics.component';
 import { BranchManagerDashboardComponent } from './branch-managers/branch-manager-dashboard/branch-manager-dashboard.component';
-import { UserContextService, UserRole } from '../../service/inventory/user-context.service';
 
 @Component({
   selector: 'app-inventory',
@@ -15,23 +14,6 @@ import { UserContextService, UserRole } from '../../service/inventory/user-conte
   styleUrl: './inventory.component.scss'
 })
 export class InventoryComponent {
-  // Demo-only "View as" switcher: this mock module has no real login, so this is how the
-  // Admin vs. Branch Manager permission matrix (branch scoping, approval/threshold access,
-  // limited transfers) can actually be exercised and seen in the UI.
-  constructor(private userContext: UserContextService) {}
-
-  get currentRole(): UserRole {
-    return this.userContext.getUserRole();
-  }
-
-  onRoleChange(role: UserRole): void {
-    this.userContext.setUser({ ...this.userContext.getUser(), role });
-    // Simplest reliable way to make every already-loaded inventory component re-fetch
-    // and re-guard against the new role, rather than wiring a role-change subscription
-    // through each one individually.
-    window.location.reload();
-  }
-
   tabsConfig: TabConfig[] = [
     {
       name: 'Inventory Dashboard',

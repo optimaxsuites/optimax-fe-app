@@ -187,7 +187,6 @@ export interface StockMovement {
     status: MovementStatus;
     cost: number;
     sellingPrice: number;
-    trackingNumber: string;
     batchNumber: string;
     expiryDate: Date;
     notes: string;
@@ -200,7 +199,6 @@ export interface StockMovement {
     approvedAt: Date;
     completedAt: Date;
     updatedAt?: Date;
-    estimatedArrival?: Date;
 }
 
 export interface RestockRequest {

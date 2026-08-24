@@ -5,7 +5,6 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { Product, Category, MeasurementUnit, Supplier } from '../../../../domain/inventory/inventory.dto';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
-import { UserContextService } from '../../../../service/inventory/user-context.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 
@@ -98,15 +97,9 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  // "Branch manager should only see products in their branch" — populated once for Branch
-  // Managers from their own branch's inventory, then passed as a productIds filter on every
-  // loadProducts() call. Stays null (no restriction) for Admin and any other role.
-  private ownBranchProductIds: string[] | null = null;
-
   constructor(
     private messageService: MessageService,
     private inventoryService: InventoryService,
-    private userContext: UserContextService,
     private router: Router,
     private route: ActivatedRoute
   ) { }
@@ -115,29 +108,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
     this.loadCategories();
     this.loadUnits();
     this.loadSuppliers();
-
-    const branchId = this.userContext.getUserBranchId();
-    if (this.userContext.isBranchManager() && branchId) {
-      this.inventoryService.getBranchInventory(branchId)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (items) => {
-            this.ownBranchProductIds = items.map(i => i.productId);
-            this.loadProducts();
-          },
-          error: (err) => {
-            console.error('Failed to load branch inventory for product scoping:', err);
-            this.ownBranchProductIds = [];
-            this.loadProducts();
-          }
-        });
-    } else if (this.userContext.isBranchManager()) {
-      // Branch Manager with no branch on record — show nothing rather than everything.
-      this.ownBranchProductIds = [];
-      this.loadProducts();
-    } else {
-      this.loadProducts();
-    }
+    this.loadProducts();
   }
 
   loadCategories(): void {
@@ -546,12 +517,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   loadProducts(): void {
     this.isLoading = true;
 
-    const filters: any = { ...this.filters };
-    if (this.ownBranchProductIds) {
-      filters.productIds = this.ownBranchProductIds;
-    }
-
-    this.inventoryService.getProducts(filters).pipe(takeUntil(this.destroy$)).subscribe({
+    this.inventoryService.getProducts(this.filters as any).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         this.products = response.data;
         this.totalElements = response.total;

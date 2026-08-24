@@ -81,10 +81,6 @@
                     (click)="setActiveTab('details')">
                     <i class="fas fa-info-circle"></i> Details
                 </button>
-                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'tracking'"
-                    (click)="setActiveTab('tracking')">
-                    <i class="fas fa-map-marker-alt"></i> Tracking
-                </button>
                 <button class="ql-tab" [class.ql-tab--active]="activeTab === 'history'"
                     (click)="setActiveTab('history')">
                     <i class="fas fa-history"></i> History
@@ -131,10 +127,6 @@
                                     <div class="ql-info-item">
                                         <span class="ql-info-label">Quantity</span>
                                         <span class="ql-info-value">{{ movement.quantity }} units</span>
-                                    </div>
-                                    <div class="ql-info-item">
-                                        <span class="ql-info-label">Tracking Number</span>
-                                        <span class="ql-info-value">{{ movement.trackingNumber || '—' }}</span>
                                     </div>
                                     <div class="ql-info-item">
                                         <span class="ql-info-label">Batch Number</span>
@@ -198,46 +190,6 @@
                                         <span class="ql-info-value">{{ movement.notes }}</span>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tracking Tab -->
-                <div *ngIf="activeTab === 'tracking'" class="ql-tab-panel">
-                    <div class="ql-tracking-container">
-                        <div class="ql-tracking-status">
-                            <div class="ql-tracking-icon">
-                                <i class="fas fa-map-marker-alt"></i>
-                            </div>
-                            <div class="ql-tracking-info">
-                                <h3>Tracking Information</h3>
-                                <p>Current Status: <strong>{{ getMovementStatusLabel(movement.status) }}</strong></p>
-                                <p *ngIf="movement.trackingNumber">Tracking #: <strong>{{ movement.trackingNumber
-                                        }}</strong></p>
-                            </div>
-                        </div>
-
-                        <div class="ql-tracking-map-placeholder">
-                            <i class="fas fa-map"></i>
-                            <p>Live tracking map would appear here</p>
-                            <span>Integration with Google Maps API required</span>
-                        </div>
-
-                        <div class="ql-tracking-details">
-                            <div class="ql-tracking-detail-item">
-                                <span class="ql-tracking-detail-label">Current Location</span>
-                                <span class="ql-tracking-detail-value">{{ movement.toLocation.name }}</span>
-                            </div>
-                            <div class="ql-tracking-detail-item">
-                                <span class="ql-tracking-detail-label">Last Update</span>
-                                <span class="ql-tracking-detail-value">{{ formatDateTime(movement.updatedAt ||
-                                    movement.createdAt) }}</span>
-                            </div>
-                            <div class="ql-tracking-detail-item" *ngIf="movement.estimatedArrival">
-                                <span class="ql-tracking-detail-label">Estimated Arrival</span>
-                                <span class="ql-tracking-detail-value">{{ formatDateTime(movement.estimatedArrival)
-                                    }}</span>
                             </div>
                         </div>
                     </div>

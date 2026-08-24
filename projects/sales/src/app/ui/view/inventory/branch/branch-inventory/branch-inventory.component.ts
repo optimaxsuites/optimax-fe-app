@@ -7,7 +7,6 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
-import { UserContextService } from '../../../../service/inventory/user-context.service';
 import {
   Branch,
   BranchStockSummary,
@@ -90,15 +89,8 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
 
   constructor(
     private inventoryService: InventoryService,
-    private userContext: UserContextService,
     private router: Router
   ) { }
-
-  /** Branch Managers only ever see their own branch here ("See all branches" is Admin-only
-   *  per the permission matrix) — everyone else (Admin and other roles) sees every branch. */
-  get canSeeAllBranches(): boolean {
-    return !this.userContext.isBranchManager();
-  }
 
   // ============================================================
   // LIFECYCLE HOOKS
@@ -127,9 +119,7 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (branches) => {
-          this.branches = this.canSeeAllBranches
-            ? branches
-            : branches.filter(b => b.id === this.userContext.getUserBranchId());
+          this.branches = branches;
           this.filterBranches();
           this.calculateStats();
           this.isLoading = false;
@@ -147,9 +137,7 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (summaries) => {
-          this.branchSummaries = this.canSeeAllBranches
-            ? summaries
-            : summaries.filter(s => s.branchId === this.userContext.getUserBranchId());
+          this.branchSummaries = summaries;
           // Update stats with summary data
           this.updateStatsWithSummaries();
         },

@@ -1,10 +1,9 @@
 // transfer-wizard.component.ts
 import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
-import { UserContextService } from '../../../../service/inventory/user-context.service';
 import {
   Branch,
   Product,
@@ -38,10 +37,15 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
 
   // Data
   branches: Branch[] = [];
-  // "Create transfers (limited)": a Branch Manager can only send stock out of their own
-  // branch, so the Source Branch dropdown is scoped to this list; destination still uses
-  // the full `branches` list since they can transfer stock *to* any branch.
+  // When a caller links in with ?lockedBranchId=<id> (e.g. the Branch Manager tab's "Create
+  // Transfer" quick action), that one branch is fixed on either the Source or Destination side —
+  // whichever the user picks via the direction toggle below — and the other side offers every
+  // other ACTIVE branch. Outside that flow (plain /movements/transfer), lockedBranchId is null,
+  // no direction toggle is shown, and both dropdowns just list every branch as before.
+  lockedBranchId: string | null = null;
+  direction: 'FROM' | 'TO' | null = null;
   sourceBranches: Branch[] = [];
+  destinationBranches: Branch[] = [];
   products: Product[] = [];
   sourceInventory: BranchInventory[] = [];
   destInventory: BranchInventory[] = [];
@@ -77,8 +81,8 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
 
   constructor(
     private inventoryService: InventoryService,
-    private userContext: UserContextService,
     private router: Router,
+    private route: ActivatedRoute,
     private fb: FormBuilder
   ) {
     this.buildForm();
@@ -89,6 +93,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
   // ============================================================
 
   ngOnInit(): void {
+    this.lockedBranchId = this.route.snapshot.queryParamMap.get('lockedBranchId');
     this.loadData();
   }
 
@@ -152,15 +157,13 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (branches: Branch[]) => {
           this.branches = branches;
-          if (this.userContext.isBranchManager()) {
-            const ownBranchId = this.userContext.getUserBranchId();
-            this.sourceBranches = branches.filter(b => b.id === ownBranchId);
-            // Only one possible source, so pick it for them automatically.
-            if (this.sourceBranches.length === 1) {
-              this.wizardForm.patchValue({ sourceBranchId: this.sourceBranches[0].id });
-            }
+          if (this.lockedBranchId) {
+            // Direction not chosen yet — chooseDirection() populates these once it is.
+            this.sourceBranches = [];
+            this.destinationBranches = [];
           } else {
             this.sourceBranches = branches;
+            this.destinationBranches = branches;
           }
           this.checkLoadingComplete();
         },
@@ -197,6 +200,36 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
   // ============================================================
   // BRANCH SELECTION
   // ============================================================
+
+  /** Only relevant when lockedBranchId is set (Branch Manager tab). Fixes the locked branch
+   *  on the chosen side and offers every other ACTIVE branch on the other side — 'FROM' sends
+   *  stock out of the locked branch, 'TO' requests stock be moved into it. Switching direction
+   *  clears whatever branches/products were already picked so nothing stale carries over. */
+  chooseDirection(direction: 'FROM' | 'TO'): void {
+    if (!this.lockedBranchId) return;
+    this.direction = direction;
+
+    const lockedBranch = this.branches.filter(b => b.id === this.lockedBranchId);
+    const otherActiveBranches = this.branches.filter(b => b.id !== this.lockedBranchId && b.status === 'ACTIVE');
+
+    this.sourceBranches = direction === 'FROM' ? lockedBranch : otherActiveBranches;
+    this.destinationBranches = direction === 'FROM' ? otherActiveBranches : lockedBranch;
+
+    this.wizardForm.patchValue({ sourceBranchId: '', destinationBranchId: '' });
+    this.items.clear();
+    this.selectedProducts.clear();
+    this.sourceInventory = [];
+    this.destInventory = [];
+    this.error = null;
+
+    if (direction === 'FROM' && lockedBranch.length === 1) {
+      this.wizardForm.patchValue({ sourceBranchId: lockedBranch[0].id });
+      this.onSourceBranchChange();
+    } else if (direction === 'TO' && lockedBranch.length === 1) {
+      this.wizardForm.patchValue({ destinationBranchId: lockedBranch[0].id });
+      this.onDestinationBranchChange();
+    }
+  }
 
   onSourceBranchChange(): void {
     if (this.sourceBranchId) {
@@ -490,7 +523,15 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     if (firstMovement) {
       this.completed.emit(firstMovement);
     }
-    this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
+
+    // A Branch Manager (this form locked to their branch) goes back to their own dashboard,
+    // where the new transfer shows up as a pending request — not into the admin approval
+    // queue, which they have no reason to see. Everyone else still lands on Approvals.
+    if (this.lockedBranchId) {
+      this.router.navigate(['/admin/sales/commerce/inventory/branch-manager']);
+    } else {
+      this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
+    }
   }
 
   // ============================================================

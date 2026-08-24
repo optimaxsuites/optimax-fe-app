@@ -119,7 +119,7 @@
                 <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
                     <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i> Refresh
                 </button>
-                <button type="button" class="ql-btn ql-btn--primary" *ngIf="canSeeAllBranches" (click)="navigateToNewBranch()">
+                <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewBranch()">
                     <i class="fas fa-plus"></i> Add Branch
                 </button>
             </div>
@@ -214,7 +214,7 @@
                                 <i class="fas fa-store ql-empty-icon"></i>
                                 <p class="ql-empty-title">No branches found</p>
                                 <p class="ql-empty-sub">Try adjusting your filters or add a new branch</p>
-                                <button type="button" class="ql-btn ql-btn--primary" *ngIf="canSeeAllBranches" (click)="navigateToNewBranch()">
+                                <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewBranch()">
                                     <i class="fas fa-plus"></i> Add Branch
                                 </button>
                             </div>
@@ -341,7 +341,7 @@
                 <i class="fas fa-store ql-empty-icon"></i>
                 <p class="ql-empty-title">No branches found</p>
                 <p class="ql-empty-sub">Try adjusting your filters or add a new branch</p>
-                <button type="button" class="ql-btn ql-btn--primary" *ngIf="canSeeAllBranches" (click)="navigateToNewBranch()">
+                <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewBranch()">
                     <i class="fas fa-plus"></i> Add Branch
                 </button>
             </div>
