@@ -57,13 +57,13 @@
         <!-- Quick Actions -->
         <div class="ql-filter-section">
             <div class="ql-filter-heading">Actions</div>
-            <button class="ql-sidebar-action" (click)="navigateTo('/admin/sales/commerce/inventory/branch-manager/requests/new')">
+            <button class="ql-sidebar-action" (click)="goToRequestRestock()">
                 <i class="fas fa-boxes"></i> Request Restock
             </button>
-            <button class="ql-sidebar-action" (click)="navigateTo('/admin/sales/commerce/inventory/branch-manager/transfers/new')">
+            <button class="ql-sidebar-action" (click)="goToCreateTransfer()">
                 <i class="fas fa-exchange-alt"></i> Create Transfer
             </button>
-            <button class="ql-sidebar-action" (click)="navigateTo('/admin/sales/commerce/inventory/branch-manager/inventory')">
+            <button class="ql-sidebar-action" (click)="goToInventory()">
                 <i class="fas fa-warehouse"></i> View Inventory
             </button>
         </div>
@@ -114,7 +114,7 @@
                     <span class="ql-alerts-count">{{ notifications.length }}</span>
                 </div>
                 <div class="ql-alerts-list">
-                    <div *ngFor="let note of notifications" class="ql-alert-item ql-notification-item" (click)="navigateTo(note.route)">
+                    <div *ngFor="let note of notifications" class="ql-alert-item ql-notification-item" (click)="navigateTo(note.route, note.queryParams)">
                         <i class="fas" [class]="note.icon" [style.color]="note.color"></i>
                         <span>
                             <span class="ql-notification-title">{{ note.title }}</span>
@@ -126,23 +126,23 @@
 
             <!-- Stats Cards -->
             <div class="ql-stats-row">
-                <div class="ql-stat-mini" (click)="navigateTo('/admin/sales/commerce/inventory/branch-manager/inventory')">
+                <div class="ql-stat-mini" (click)="goToInventory()">
                     <span class="ql-stat-mini-value">{{ stats?.totalProducts || 0 }}</span>
                     <span class="ql-stat-mini-label">Total Products</span>
                 </div>
-                <div class="ql-stat-mini" (click)="navigateTo('/admin/sales/commerce/inventory/branch-manager/inventory')">
+                <div class="ql-stat-mini" (click)="goToInventory()">
                     <span class="ql-stat-mini-value" style="color: #184440;">{{ formatCurrency(stats?.totalStockValue || 0) }}</span>
                     <span class="ql-stat-mini-label">Stock Value</span>
                 </div>
-                <div class="ql-stat-mini" (click)="navigateTo('/admin/sales/commerce/inventory/branch-manager/inventory')">
+                <div class="ql-stat-mini" (click)="goToInventory()">
                     <span class="ql-stat-mini-value" style="color: #F5A623;">{{ stats?.lowStockCount || 0 }}</span>
                     <span class="ql-stat-mini-label">Low Stock</span>
                 </div>
-                <div class="ql-stat-mini" (click)="navigateTo('/admin/sales/commerce/inventory/branch-manager/inventory')">
+                <div class="ql-stat-mini" (click)="goToInventory()">
                     <span class="ql-stat-mini-value" style="color: #DC2626;">{{ stats?.outOfStockCount || 0 }}</span>
                     <span class="ql-stat-mini-label">Out of Stock</span>
                 </div>
-                <div class="ql-stat-mini" (click)="navigateTo('/admin/sales/commerce/inventory/branch-manager/requests')">
+                <div class="ql-stat-mini" (click)="goToMyRequests()">
                     <span class="ql-stat-mini-value" style="color: #F5A623;">{{ stats?.pendingRestocks || 0 }}</span>
                     <span class="ql-stat-mini-label">Pending Restocks</span>
                 </div>
@@ -150,7 +150,7 @@
 
             <!-- Quick Actions Grid -->
             <div class="ql-quick-actions">
-                <div *ngFor="let action of quickActions" class="ql-quick-action" (click)="navigateTo(action.route)">
+                <div *ngFor="let action of quickActions" class="ql-quick-action" (click)="navigateTo(action.route, action.queryParams)">
                     <div class="ql-quick-action-icon" [style.background]="action.color + '20'" [style.color]="action.color">
                         <i class="fas" [class]="action.icon"></i>
                     </div>
@@ -172,14 +172,14 @@
                     <div *ngFor="let item of outOfStockItems" class="ql-alert-item ql-alert-item--critical">
                         <i class="fas fa-times-circle"></i>
                         <span><strong>{{ item.productName }}</strong> is out of stock at your branch</span>
-                        <button class="ql-alert-action" (click)="navigateTo('/admin/sales/commerce/inventory/branch-manager/requests/new')">
+                        <button class="ql-alert-action" (click)="goToRequestRestock()">
                             Request Restock
                         </button>
                     </div>
                     <div *ngFor="let item of lowStockItems" class="ql-alert-item ql-alert-item--warning">
                         <i class="fas fa-exclamation-triangle"></i>
                         <span><strong>{{ item.productName }}</strong> is low on stock ({{ item.quantity }} units remaining)</span>
-                        <button class="ql-alert-action" (click)="navigateTo('/admin/sales/commerce/inventory/branch-manager/requests/new')">
+                        <button class="ql-alert-action" (click)="goToRequestRestock()">
                             Request Restock
                         </button>
                     </div>
@@ -192,7 +192,7 @@
                 <div class="ql-info-card">
                     <div class="ql-card-header">
                         <h3><i class="fas fa-boxes"></i> Recent Restock Requests</h3>
-                        <button class="ql-card-action" (click)="navigateTo('/admin/sales/commerce/inventory/branch-manager/requests')">
+                        <button class="ql-card-action" (click)="goToMyRequests()">
                             View All <i class="fas fa-arrow-right"></i>
                         </button>
                     </div>

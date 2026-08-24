@@ -355,10 +355,6 @@ export class StockMovementComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
   }
 
-  navigateToTracking(): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/movements/tracking']);
-  }
-
   // ============================================================
   // EXPORT
   // ============================================================

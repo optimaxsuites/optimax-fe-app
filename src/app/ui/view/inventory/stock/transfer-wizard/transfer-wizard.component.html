@@ -67,10 +67,35 @@
                         <h3 class="ql-section-title"><i class="fas fa-arrow-right"></i> Select Source & Destination</h3>
                         <p class="ql-section-desc">Choose the branches to transfer stock between</p>
 
-                        <div class="ql-form-row">
+                        <!-- Direction picker — only shown when this form is locked to one branch
+                             (e.g. opened from the Branch Manager tab) -->
+                        <div class="ql-direction-picker" *ngIf="lockedBranchId">
+                            <p class="ql-direction-question">What would you like to do?</p>
+                            <div class="ql-direction-options">
+                                <button type="button" class="ql-direction-option"
+                                    [class.ql-direction-option--active]="direction === 'FROM'"
+                                    (click)="chooseDirection('FROM')">
+                                    <i class="fas fa-arrow-up-from-bracket"></i>
+                                    <span class="ql-direction-option-title">Send stock FROM my branch</span>
+                                    <span class="ql-direction-option-desc">Move stock out of your branch to
+                                        another</span>
+                                </button>
+                                <button type="button" class="ql-direction-option"
+                                    [class.ql-direction-option--active]="direction === 'TO'"
+                                    (click)="chooseDirection('TO')">
+                                    <i class="fas fa-arrow-down-to-bracket"></i>
+                                    <span class="ql-direction-option-title">Request stock TO my branch</span>
+                                    <span class="ql-direction-option-desc">Request stock be moved into your
+                                        branch from another</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="ql-form-row" *ngIf="!lockedBranchId || direction">
                             <div class="ql-field">
                                 <label class="ql-flabel">Source Branch <span class="ql-required">*</span></label>
                                 <select class="ql-input" formControlName="sourceBranchId"
+                                    [disabled]="direction === 'FROM' && sourceBranches.length === 1"
                                     (change)="onSourceBranchChange()">
                                     <option value="">Select Source Branch</option>
                                     <option *ngFor="let branch of sourceBranches" [value]="branch.id">
@@ -82,9 +107,10 @@
                             <div class="ql-field">
                                 <label class="ql-flabel">Destination Branch <span class="ql-required">*</span></label>
                                 <select class="ql-input" formControlName="destinationBranchId"
+                                    [disabled]="direction === 'TO' && destinationBranches.length === 1"
                                     (change)="onDestinationBranchChange()">
                                     <option value="">Select Destination Branch</option>
-                                    <option *ngFor="let branch of branches" [value]="branch.id">
+                                    <option *ngFor="let branch of destinationBranches" [value]="branch.id">
                                         {{ branch.name }} ({{ branch.location.city }})
                                     </option>
                                 </select>

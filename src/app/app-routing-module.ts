@@ -51,7 +51,6 @@ import { StockMovementDetailComponent } from './ui/view/inventory/stock/stock-mo
 import { TransferWizardComponent } from './ui/view/inventory/stock/transfer-wizard/transfer-wizard.component';
 import { BulkTransferComponent } from './ui/view/inventory/stock/bulk-transfer/bulk-transfer.component';
 import { MovementApprovalComponent } from './ui/view/inventory/stock/movement-approval/movement-approval.component';
-import { MovementTrackingComponent } from './ui/view/inventory/stock/movement-tracking/movement-tracking.component';
 import { RestockRequestFormComponent } from './ui/view/inventory/restock/restock-request-form/restock-request-form.component';
 import { RestockRequestListComponent } from './ui/view/inventory/restock/restock-request-list/restock-request-list.component';
 import { RestockSuggestionsPageComponent } from './ui/view/inventory/restock/restock-suggestions-page/restock-suggestions-page.component';
@@ -59,7 +58,6 @@ import { ThresholdManagementComponent } from './ui/view/inventory/restock/thresh
 import { RestockApprovalComponent } from './ui/view/inventory/restock/restock-approval/restock-approval.component';
 import { BranchManagerDashboardComponent } from './ui/view/inventory/branch-managers/branch-manager-dashboard/branch-manager-dashboard.component';
 import { BranchInventoryComponent } from './ui/view/inventory/branch/branch-inventory/branch-inventory.component';
-import { adminOnlyGuard } from './ui/service/inventory/admin-only.guard';
 
 
 export const routes: Routes = [
@@ -150,12 +148,7 @@ export const routes: Routes = [
   },
   {
     path: 'admin/sales/commerce/inventory/movements/approvals',
-    component: MovementApprovalComponent,
-    canActivate: [adminOnlyGuard]
-  },
-  {
-    path: 'admin/sales/commerce/inventory/movements/tracking',
-    component: MovementTrackingComponent
+    component: MovementApprovalComponent
   },
   {
     path: 'admin/sales/commerce/inventory/movements/:id',
@@ -185,13 +178,11 @@ export const routes: Routes = [
   },
   {
     path: 'admin/sales/commerce/inventory/restock/thresholds',
-    component: ThresholdManagementComponent,
-    canActivate: [adminOnlyGuard]
+    component: ThresholdManagementComponent
   },
   {
     path: 'admin/sales/commerce/inventory/restock/approvals',
-    component: RestockApprovalComponent,
-    canActivate: [adminOnlyGuard]
+    component: RestockApprovalComponent
   },
 
   // --------------------------------------- Branch Manager -----------------------------------------
