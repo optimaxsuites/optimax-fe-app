@@ -50,10 +50,26 @@ const LOCAL_KEYS = {
   CATEGORIES: 'inventory_categories',
   MEASUREMENT_UNITS: 'inventory_measurement_units',
   SUPPLIERS: 'inventory_suppliers',
-  BRANCH_TYPES: 'inventory_branch_types'
+  BRANCH_TYPES: 'inventory_branch_types',
+  MOVEMENT_TYPES: 'inventory_movement_types',
+  LOCATION_TYPES: 'inventory_location_types',
+  GENERIC_LOCATIONS: 'inventory_generic_locations'
 };
 
 const MOCK_BRANCH_TYPES: string[] = ['STANDARD', 'FLAGSHIP', 'MINI'];
+
+const MOCK_MOVEMENT_TYPES: string[] = ['PURCHASE', 'TRANSFER', 'SALE', 'RETURN', 'ADJUSTMENT', 'DAMAGED'];
+
+// 'BRANCH' locations come from the real Branches collection, and 'SUPPLIER' locations from the
+// real Suppliers collection — both already exist as proper reference data. WAREHOUSE/CUSTOMER
+// (and any custom location type a user adds) have no such collection in this module, so they're
+// backed by this flat, extensible list instead.
+const MOCK_LOCATION_TYPES: string[] = ['WAREHOUSE', 'BRANCH', 'SUPPLIER', 'CUSTOMER'];
+
+const MOCK_GENERIC_LOCATIONS: { id: string; type: string; name: string }[] = [
+  { id: 'loc-wh-1', type: 'WAREHOUSE', name: 'Central Warehouse' },
+  { id: 'loc-cust-1', type: 'CUSTOMER', name: 'Walk-in Customer' }
+];
 
 // ---------------------------------------------------
 // MOCK DATA (kept unchanged from original file)
@@ -1266,6 +1282,9 @@ export class InventoryService {
       localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(MOCK_MEASUREMENT_UNITS));
       localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(MOCK_SUPPLIERS));
       localStorage.setItem(LOCAL_KEYS.BRANCH_TYPES, JSON.stringify(MOCK_BRANCH_TYPES));
+      localStorage.setItem(LOCAL_KEYS.MOVEMENT_TYPES, JSON.stringify(MOCK_MOVEMENT_TYPES));
+      localStorage.setItem(LOCAL_KEYS.LOCATION_TYPES, JSON.stringify(MOCK_LOCATION_TYPES));
+      localStorage.setItem(LOCAL_KEYS.GENERIC_LOCATIONS, JSON.stringify(MOCK_GENERIC_LOCATIONS));
     } else {
       // Back-fill any keys that were previously seeded as empty arrays
       const existingBranches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[];
@@ -1299,6 +1318,18 @@ export class InventoryService {
       const existingBranchTypes = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_TYPES) as string) as string[];
       if (!existingBranchTypes || existingBranchTypes.length === 0) {
         localStorage.setItem(LOCAL_KEYS.BRANCH_TYPES, JSON.stringify(MOCK_BRANCH_TYPES));
+      }
+      const existingMovementTypes = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENT_TYPES) as string) as string[];
+      if (!existingMovementTypes || existingMovementTypes.length === 0) {
+        localStorage.setItem(LOCAL_KEYS.MOVEMENT_TYPES, JSON.stringify(MOCK_MOVEMENT_TYPES));
+      }
+      const existingLocationTypes = JSON.parse(localStorage.getItem(LOCAL_KEYS.LOCATION_TYPES) as string) as string[];
+      if (!existingLocationTypes || existingLocationTypes.length === 0) {
+        localStorage.setItem(LOCAL_KEYS.LOCATION_TYPES, JSON.stringify(MOCK_LOCATION_TYPES));
+      }
+      const existingGenericLocations = JSON.parse(localStorage.getItem(LOCAL_KEYS.GENERIC_LOCATIONS) as string) as any[];
+      if (!existingGenericLocations || existingGenericLocations.length === 0) {
+        localStorage.setItem(LOCAL_KEYS.GENERIC_LOCATIONS, JSON.stringify(MOCK_GENERIC_LOCATIONS));
       }
       // Refresh dashboard branch summaries with richer data
       const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
@@ -1463,6 +1494,12 @@ export class InventoryService {
         const max = Number(filters.maxPrice);
         products = products.filter(p => (p.unitPrice ?? p.sellingPrice ?? 0) <= max);
       }
+      // Restricts to a specific set of product ids — used to scope Product Management
+      // down to just what's stocked at a Branch Manager's own branch.
+      if (filters.productIds) {
+        const idSet = new Set(filters.productIds);
+        products = products.filter(p => idSet.has(p.id));
+      }
     }
 
     // Alphabetical order by name
@@ -1623,13 +1660,73 @@ export class InventoryService {
     return of(types);
   }
 
-  /** Get inventory for a branch, scoped to that branch. */
-  getBranchInventory(branchId: string): Observable<BranchInventory[]> {
-    const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string) as BranchInventory[];
-    const inventory = branchId ? allInventory.filter(i => i.branchId === branchId) : allInventory;
-    this.branchInventorySubject.next(inventory);
-    return of(inventory);
+  /** Movement types (Purchase/Transfer/Sale/Return/Adjustment/Damaged + any custom ones). */
+  getMovementTypes(): Observable<string[]> {
+    const types = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENT_TYPES) as string || '[]') as string[];
+    return of(types);
   }
+
+  /** Add a new custom movement type (no-op if it already exists, case-insensitively). */
+  createMovementType(name: string): Observable<string[]> {
+    const types = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENT_TYPES) as string || '[]') as string[];
+    const exists = types.some(t => t.toLowerCase() === name.toLowerCase());
+    if (!exists) {
+      types.push(name);
+      localStorage.setItem(LOCAL_KEYS.MOVEMENT_TYPES, JSON.stringify(types));
+    }
+    return of(types);
+  }
+
+  /** Location types (Warehouse/Branch/Supplier/Customer + any custom ones). */
+  getLocationTypes(): Observable<string[]> {
+    const types = JSON.parse(localStorage.getItem(LOCAL_KEYS.LOCATION_TYPES) as string || '[]') as string[];
+    return of(types);
+  }
+
+  /** Add a new custom location type (no-op if it already exists, case-insensitively). */
+  createLocationType(name: string): Observable<string[]> {
+    const types = JSON.parse(localStorage.getItem(LOCAL_KEYS.LOCATION_TYPES) as string || '[]') as string[];
+    const exists = types.some(t => t.toLowerCase() === name.toLowerCase());
+    if (!exists) {
+      types.push(name);
+      localStorage.setItem(LOCAL_KEYS.LOCATION_TYPES, JSON.stringify(types));
+    }
+    return of(types);
+  }
+
+  /**
+   * Concrete locations (id + name) for a given location type, for the Movement form's "Location
+   * ID" dropdown. 'BRANCH' and 'SUPPLIER' are backed by the real Branches/Suppliers collections
+   * (mapped to a plain {id, name} shape); any other type — including custom ones a user adds —
+   * is backed by a simple flat "generic locations" list, extensible the same way.
+   */
+  getLocationsByType(type: string): Observable<{ id: string; name: string }[]> {
+    if (type === 'BRANCH') {
+      const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
+      return of(branches.map(b => ({ id: b.id, name: b.name })));
+    }
+    if (type === 'SUPPLIER') {
+      const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[];
+      return of(suppliers.map(s => ({ id: s.id, name: s.name })));
+    }
+    const generic = JSON.parse(localStorage.getItem(LOCAL_KEYS.GENERIC_LOCATIONS) as string || '[]') as { id: string; type: string; name: string }[];
+    return of(generic.filter(l => l.type === type).map(l => ({ id: l.id, name: l.name })));
+  }
+
+  /** Add a new named location under a given (non-BRANCH, non-SUPPLIER) location type. */
+  createGenericLocation(type: string, name: string): Observable<{ id: string; name: string }[]> {
+    const generic = JSON.parse(localStorage.getItem(LOCAL_KEYS.GENERIC_LOCATIONS) as string || '[]') as { id: string; type: string; name: string }[];
+    const exists = generic.some(l => l.type === type && l.name.toLowerCase() === name.toLowerCase());
+    if (!exists) {
+      generic.push({ id: 'loc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), type, name });
+      localStorage.setItem(LOCAL_KEYS.GENERIC_LOCATIONS, JSON.stringify(generic));
+    }
+    return of(generic.filter(l => l.type === type).map(l => ({ id: l.id, name: l.name })));
+  }
+
+  // getBranchInventory() is defined further down in this file (kept there rather than
+  // duplicated here — this file is being edited concurrently and that's where the current
+  // implementation lives; it already returns BranchInventory[] directly, not paginated).
 
   /** Create or update a single branch inventory record (upsert by branchId + productId). */
   saveBranchInventoryItem(data: {
@@ -1790,7 +1887,19 @@ export class InventoryService {
       this.loadingSubject.next(false);
       return throwError(() => new Error('Movement not found'));
     }
-    const updated = { ...movements[index], ...movement, updatedAt: new Date() } as StockMovement;
+    const previous = movements[index];
+    const updated = { ...previous, ...movement, updatedAt: new Date() } as StockMovement;
+
+    // If this update is transitioning a TRANSFER movement to COMPLETED for the first time,
+    // actually move the stock (see applyTransferStockAdjustment() below) — so a transfer's
+    // stock moves exactly once no matter which UI path (Movement Approvals page, or a manual
+    // status edit on the movement's own detail page) completes it. Transfers are created PENDING
+    // and never touch stock until this happens.
+    if (updated.status === MovementStatus.COMPLETED && previous.status !== MovementStatus.COMPLETED) {
+      this.applyTransferStockAdjustment(updated);
+      (updated as any).completedAt = (updated as any).completedAt || new Date();
+    }
+
     movements[index] = updated;
     localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
     this.movementsSubject.next(movements);
@@ -1798,33 +1907,54 @@ export class InventoryService {
     return of(updated);
   }
 
-  /** Approve a movement – set status to COMPLETED */
-  approveMovement(id: string): Observable<void> {
+  /** Delete a movement. Only meant for PENDING movements (nothing has moved yet) — the calling
+   *  component is responsible for that check, same as deleteProduct()'s convention. */
+  deleteMovement(id: string): Observable<void> {
     this.loadingSubject.next(true);
-    const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
-    const movement = movements.find(m => m.id === id);
-    if (movement) {
-      movement.status = MovementStatus.COMPLETED;
-      (movement as any).approvedAt = new Date();
-      localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
-    }
+    let movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
+    movements = movements.filter(m => m.id !== id);
+    localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
     this.movementsSubject.next(movements);
     this.loadingSubject.next(false);
     return of(undefined);
   }
 
-  /** Reject a movement – set status to CANCELLED */
-  rejectMovement(id: string, _reason: string): Observable<void> {
-    this.loadingSubject.next(true);
-    const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
-    const movement = movements.find(m => m.id === id);
-    if (movement) {
-      movement.status = MovementStatus.CANCELLED;
-      localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
+  /** Moves real stock for a branch-to-branch TRANSFER movement: decrements the source branch's
+   *  inventory and increments the destination's. No-op for any other movement type/location
+   *  shape. Called exactly once per movement, from whichever path completes it. */
+  private applyTransferStockAdjustment(movement: StockMovement): void {
+    if (movement.movementType !== MovementType.TRANSFER) return;
+    if (movement.fromLocation?.type !== 'BRANCH' || movement.toLocation?.type !== 'BRANCH') return;
+
+    const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string || '[]') as BranchInventory[];
+    const sourceItem = allInventory.find(i => i.branchId === movement.fromLocation.id && i.productId === movement.productId);
+    if (!sourceItem || sourceItem.quantity < movement.quantity) {
+      // Stock may have changed since the transfer was requested — skip rather than risk going
+      // negative. The movement still gets marked completed/approved above; this is a data
+      // inconsistency for someone to follow up on, not a reason to block the approval itself.
+      return;
     }
-    this.movementsSubject.next(movements);
-    this.loadingSubject.next(false);
-    return of(undefined);
+    const destItem = allInventory.find(i => i.branchId === movement.toLocation.id && i.productId === movement.productId);
+
+    this.saveBranchInventoryItem({
+      branchId: movement.fromLocation.id,
+      productId: movement.productId,
+      quantity: sourceItem.quantity - movement.quantity,
+      reorderPoint: sourceItem.reorderPoint,
+      safetyStock: sourceItem.safetyStock,
+      sellingPrice: sourceItem.sellingPrice,
+      costPrice: sourceItem.costPrice
+    }).subscribe();
+
+    this.saveBranchInventoryItem({
+      branchId: movement.toLocation.id,
+      productId: movement.productId,
+      quantity: (destItem?.quantity || 0) + movement.quantity,
+      reorderPoint: destItem?.reorderPoint ?? sourceItem.reorderPoint,
+      safetyStock: destItem?.safetyStock ?? sourceItem.safetyStock,
+      sellingPrice: destItem?.sellingPrice ?? sourceItem.sellingPrice,
+      costPrice: destItem?.costPrice ?? sourceItem.costPrice
+    }).subscribe();
   }
 
   // ----------------------------------------------------
@@ -2176,5 +2306,50 @@ export class InventoryService {
   getStockMovements(filters?: MovementFilters): Observable<PaginatedResponse<StockMovement>> {
     return this.getMovements(filters);
   }
+
+  // inventory.service.ts - Add/Update this method
+
+/**
+ * Get inventory for a specific branch
+ * If branchId is provided, returns only that branch's inventory
+ * If no branchId, returns all inventory
+ */
+// inventory.service.ts - Replace the getBranchInventory method
+
+/**
+ * Get inventory for a specific branch
+ * If branchId is provided, returns only that branch's inventory
+ * If no branchId, returns all inventory
+ * Returns BranchInventory[] directly (not PaginatedResponse)
+ */
+getBranchInventory(branchId?: string): Observable<BranchInventory[]> {
+  this.loadingSubject.next(true);
+  
+  const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string) as BranchInventory[];
+  
+  let filtered = allInventory;
+  if (branchId) {
+    filtered = allInventory.filter(item => item.branchId === branchId);
+  }
+  
+  // Get branch details for the inventory items
+  const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[];
+  
+  // Ensure branch names are populated
+  filtered = filtered.map(item => {
+    const branch = branches.find(b => b.id === item.branchId);
+    return {
+      ...item,
+      branchName: branch?.name || item.branchName || 'Unknown Branch'
+    };
+  });
+  
+  // Sort by product name
+  filtered = filtered.sort((a, b) => a.productName.localeCompare(b.productName));
+  
+  this.branchInventorySubject.next(filtered);
+  this.loadingSubject.next(false);
+  return of(filtered); // Returns BranchInventory[] directly
+}
 
 }

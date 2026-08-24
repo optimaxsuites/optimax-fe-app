@@ -419,46 +419,49 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
     if (!this.selectedMovement || !this.selectedAction) return;
 
     this.isSubmitting = true;
+    const movementId = this.selectedMovement.id;
 
     const action: ApprovalAction = {
-      movementId: this.selectedMovement.id,
+      movementId,
       action: this.selectedAction,
-      comments: this.selectedAction === 'APPROVE' ? 'Approved' : '',
+      comments: 'Approved',
       approvedBy: 'usr-1', // Current user ID
       approvedByName: 'John Doe', // Current user name
       timestamp: new Date()
     };
 
-    // Simulate API call
-    setTimeout(() => {
-      // Update movement status
-      if (this.selectedMovement) {
-        if (this.selectedAction === 'APPROVE') {
-          this.selectedMovement.status = MovementStatus.IN_TRANSIT;
-          this.selectedMovement.approvedBy = action.approvedBy;
-          this.selectedMovement.approvedByName = action.approvedByName;
-          this.selectedMovement.approvedAt = new Date();
-        } else if (this.selectedAction === 'REJECT') {
-          this.selectedMovement.status = MovementStatus.CANCELLED;
+    // Approving moves a transfer to IN_TRANSIT, not straight to COMPLETED — stock only actually
+    // moves once the movement is later marked COMPLETED (e.g. when it's confirmed received via
+    // Stock Movement's status update), which is where InventoryService.updateMovement() applies
+    // the real stock adjustment. This is a real persisted update, not a simulation.
+    this.inventoryService.updateMovement(movementId, {
+      status: MovementStatus.IN_TRANSIT,
+      approvedBy: action.approvedBy,
+      approvedByName: action.approvedByName,
+      approvedAt: action.timestamp
+    }).subscribe({
+      next: (updated) => {
+        if (this.selectedMovement && this.selectedMovement.id === movementId) {
+          this.selectedMovement = updated;
         }
+        const idx = this.movements.findIndex(m => m.id === movementId);
+        if (idx > -1) this.movements[idx] = updated;
+
+        this.calculateStats();
+        this.filterMovements();
+        this.approvalHistory.unshift(action);
+        this.approvalComplete.emit(action);
+
+        this.isSubmitting = false;
+        this.showConfirmModal = false;
+        this.selectedAction = null;
+      },
+      error: (err) => {
+        console.error('Failed to approve movement:', err);
+        this.error = 'Failed to approve movement. Please try again.';
+        this.isSubmitting = false;
       }
-
-      // Update stats
-      this.calculateStats();
-      this.filterMovements();
-      
-      // Add to history
-      this.approvalHistory.unshift(action);
-      
-      // Emit event
-      this.approvalComplete.emit(action);
-      
-      this.isSubmitting = false;
-      this.showConfirmModal = false;
-      this.selectedAction = null;
-
-      // Show success message
-    }, 1000);
+    });
   }
 
   submitComments(): void {
@@ -467,33 +470,45 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
     }
 
     this.isSubmitting = true;
+    const movementId = this.selectedMovement.id;
+    const comments = this.commentsForm.get('comments')?.value || '';
 
     const action: ApprovalAction = {
-      movementId: this.selectedMovement.id,
+      movementId,
       action: 'REJECT',
-      comments: this.commentsForm.get('comments')?.value || '',
+      comments,
       approvedBy: 'usr-1',
       approvedByName: 'John Doe',
       timestamp: new Date()
     };
 
-    // Simulate API call
-    setTimeout(() => {
-      if (this.selectedMovement) {
-        this.selectedMovement.status = MovementStatus.CANCELLED;
-        this.selectedMovement.notes = (this.selectedMovement.notes || '') + `\nRejection reason: ${action.comments}`;
-      }
+    this.inventoryService.updateMovement(movementId, {
+      status: MovementStatus.CANCELLED,
+      notes: (this.selectedMovement.notes || '') + `\nRejection reason: ${comments}`
+    }).subscribe({
+      next: (updated) => {
+        if (this.selectedMovement && this.selectedMovement.id === movementId) {
+          this.selectedMovement = updated;
+        }
+        const idx = this.movements.findIndex(m => m.id === movementId);
+        if (idx > -1) this.movements[idx] = updated;
 
-      this.calculateStats();
-      this.filterMovements();
-      this.approvalHistory.unshift(action);
-      this.approvalComplete.emit(action);
-      
-      this.isSubmitting = false;
-      this.showCommentsModal = false;
-      this.selectedAction = null;
-      this.commentsForm.reset();
-    }, 1000);
+        this.calculateStats();
+        this.filterMovements();
+        this.approvalHistory.unshift(action);
+        this.approvalComplete.emit(action);
+
+        this.isSubmitting = false;
+        this.showCommentsModal = false;
+        this.selectedAction = null;
+        this.commentsForm.reset();
+      },
+      error: (err) => {
+        console.error('Failed to reject movement:', err);
+        this.error = 'Failed to reject movement. Please try again.';
+        this.isSubmitting = false;
+      }
+    });
   }
 
   submitChanges(): void {
@@ -502,6 +517,7 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
     }
 
     this.isSubmitting = true;
+    const movementId = this.selectedMovement.id;
 
     const changesRequested = [{
       field: this.changesForm.get('field')?.value || '',
@@ -509,34 +525,44 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
       suggestedValue: this.changesForm.get('suggestedValue')?.value || ''
     }];
 
+    const comments = this.changesForm.get('reason')?.value || '';
     const action: ApprovalAction = {
-      movementId: this.selectedMovement.id,
+      movementId,
       action: 'REQUEST_CHANGES',
-      comments: this.changesForm.get('reason')?.value || '',
+      comments,
       approvedBy: 'usr-1',
       approvedByName: 'John Doe',
       timestamp: new Date(),
       changesRequested: changesRequested
     };
 
-    // Simulate API call
-    setTimeout(() => {
-      if (this.selectedMovement) {
-        this.selectedMovement.status = MovementStatus.PENDING;
-        this.selectedMovement.notes = (this.selectedMovement.notes || '') + 
-          `\nChanges requested: ${action.comments}`;
-      }
+    // Status stays PENDING — requesting changes doesn't approve or reject, just leaves a note.
+    this.inventoryService.updateMovement(movementId, {
+      notes: (this.selectedMovement.notes || '') + `\nChanges requested: ${comments}`
+    }).subscribe({
+      next: (updated) => {
+        if (this.selectedMovement && this.selectedMovement.id === movementId) {
+          this.selectedMovement = updated;
+        }
+        const idx = this.movements.findIndex(m => m.id === movementId);
+        if (idx > -1) this.movements[idx] = updated;
 
-      this.calculateStats();
-      this.filterMovements();
-      this.approvalHistory.unshift(action);
-      this.approvalComplete.emit(action);
-      
-      this.isSubmitting = false;
-      this.showChangesModal = false;
-      this.selectedAction = null;
-      this.changesForm.reset();
-    }, 1000);
+        this.calculateStats();
+        this.filterMovements();
+        this.approvalHistory.unshift(action);
+        this.approvalComplete.emit(action);
+
+        this.isSubmitting = false;
+        this.showChangesModal = false;
+        this.selectedAction = null;
+        this.changesForm.reset();
+      },
+      error: (err) => {
+        console.error('Failed to request changes:', err);
+        this.error = 'Failed to request changes. Please try again.';
+        this.isSubmitting = false;
+      }
+    });
   }
 
   // ============================================================
@@ -544,38 +570,43 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
   // ============================================================
 
   approveAll(): void {
-    if (this.filteredMovements.length === 0) return;
-    
-    const confirm = window.confirm(`Are you sure you want to approve all ${this.filteredMovements.length} pending movements?`);
-    if (!confirm) return;
+    const pending = this.filteredMovements.filter(m => m.status === MovementStatus.PENDING);
+    if (pending.length === 0) return;
+
+    const confirmed = window.confirm(`Are you sure you want to approve all ${pending.length} pending movements?`);
+    if (!confirmed) return;
 
     this.isSubmitting = true;
 
-    // Simulate bulk approval
-    setTimeout(() => {
-      this.filteredMovements.forEach(m => {
-        if (m.status === MovementStatus.PENDING) {
-          m.status = MovementStatus.IN_TRANSIT;
-          m.approvedBy = 'usr-1';
-          m.approvedByName = 'John Doe';
-          m.approvedAt = new Date();
-          
-          const action: ApprovalAction = {
+    // updateMovement() is a localStorage-backed mock that resolves synchronously, so this plain
+    // loop completes in one tick — no forkJoin needed.
+    pending.forEach(m => {
+      const approvedAt = new Date();
+      this.inventoryService.updateMovement(m.id, {
+        status: MovementStatus.IN_TRANSIT,
+        approvedBy: 'usr-1',
+        approvedByName: 'John Doe',
+        approvedAt
+      }).subscribe({
+        next: (updated) => {
+          const idx = this.movements.findIndex(mv => mv.id === m.id);
+          if (idx > -1) this.movements[idx] = updated;
+          this.approvalHistory.unshift({
             movementId: m.id,
             action: 'APPROVE',
             comments: 'Bulk approved',
             approvedBy: 'usr-1',
             approvedByName: 'John Doe',
-            timestamp: new Date()
-          };
-          this.approvalHistory.unshift(action);
-        }
+            timestamp: approvedAt
+          });
+        },
+        error: (err) => console.error(`Failed to approve movement ${m.id}:`, err)
       });
+    });
 
-      this.calculateStats();
-      this.filterMovements();
-      this.isSubmitting = false;
-    }, 1500);
+    this.calculateStats();
+    this.filterMovements();
+    this.isSubmitting = false;
   }
 
   // ============================================================

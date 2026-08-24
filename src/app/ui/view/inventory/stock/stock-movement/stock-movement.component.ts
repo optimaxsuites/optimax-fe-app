@@ -60,8 +60,9 @@ export class StockMovementComponent implements OnInit, OnDestroy {
   MovementType = MovementType;
   MovementStatus = MovementStatus;
 
-  // Filter options
-  movementTypes = ['ALL', ...Object.values(MovementType)];
+  // Filter options — movementTypes is loaded dynamically (see loadMovementTypes()) so custom
+  // types added via the movement form's "+ Add Movement Type" show up as filters here too.
+  movementTypes: string[] = ['ALL', ...Object.values(MovementType)];
   movementStatuses = ['ALL', ...Object.values(MovementStatus)];
 
   // Stats
@@ -95,6 +96,16 @@ export class StockMovementComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadMovements();
     this.setupSearch();
+    this.loadMovementTypes();
+  }
+
+  private loadMovementTypes(): void {
+    this.inventoryService.getMovementTypes()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (types) => { this.movementTypes = ['ALL', ...types]; },
+        error: (err) => console.error('Failed to load movement types:', err)
+      });
   }
 
   ngOnDestroy(): void {

@@ -4,13 +4,13 @@ import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
+import { UserContextService } from '../../../../service/inventory/user-context.service';
 import {
   Branch,
   Product,
   BranchInventory,
   StockMovement,
   MovementType,
-  MovementStatus,
   getMovementTypeLabel
 } from '../../../../domain/inventory/inventory.dto';
 
@@ -38,6 +38,10 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
 
   // Data
   branches: Branch[] = [];
+  // "Create transfers (limited)": a Branch Manager can only send stock out of their own
+  // branch, so the Source Branch dropdown is scoped to this list; destination still uses
+  // the full `branches` list since they can transfer stock *to* any branch.
+  sourceBranches: Branch[] = [];
   products: Product[] = [];
   sourceInventory: BranchInventory[] = [];
   destInventory: BranchInventory[] = [];
@@ -73,6 +77,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
 
   constructor(
     private inventoryService: InventoryService,
+    private userContext: UserContextService,
     private router: Router,
     private fb: FormBuilder
   ) {
@@ -147,6 +152,16 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (branches: Branch[]) => {
           this.branches = branches;
+          if (this.userContext.isBranchManager()) {
+            const ownBranchId = this.userContext.getUserBranchId();
+            this.sourceBranches = branches.filter(b => b.id === ownBranchId);
+            // Only one possible source, so pick it for them automatically.
+            if (this.sourceBranches.length === 1) {
+              this.wizardForm.patchValue({ sourceBranchId: this.sourceBranches[0].id });
+            }
+          } else {
+            this.sourceBranches = branches;
+          }
           this.checkLoadingComplete();
         },
         error: (err: any) => {
@@ -267,6 +282,18 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     // Check if product already added
     if (this.selectedProducts.has(product.id)) {
       this.error = 'Product already added to transfer';
+      this.showProductDropdown = false;
+      this.productSearchTerm = '';
+      return;
+    }
+
+    // The Quick Transfer wizard is for moving a single product; anything more belongs in Bulk
+    // Transfer instead (it's built for exactly that — many products in one transfer). The exact
+    // wording is checked by isBulkTransferSuggested() below to show a "Go to Bulk Transfer"
+    // button alongside this specific error, without needing a separate flag to keep in sync with
+    // every other place `error` gets cleared.
+    if (this.items.length >= 1) {
+      this.error = 'Quick Transfer only supports one product at a time. Use Bulk Transfer to move multiple products in one go.';
       this.showProductDropdown = false;
       this.productSearchTerm = '';
       return;
@@ -413,8 +440,12 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     let failedProductName: string | null = null;
     let failureMessage = '';
 
-    // NOTE: every InventoryService call here (saveBranchInventoryItem/createMovement/
-    // approveMovement) is a localStorage-backed mock that resolves synchronously (via
+    // Transfers only ever get recorded as PENDING here — stock does not move yet. A transfer
+    // must be approved (via the Movement Approvals page, or a manual status update to COMPLETED)
+    // before InventoryService actually adjusts branch inventory; see
+    // InventoryService.applyTransferStockAdjustment().
+    //
+    // NOTE: createMovement() is a localStorage-backed mock that resolves synchronously (via
     // `of(...)`), so this plain for-loop completes in one tick — no concatMap needed.
     for (const item of items) {
       if (failedProductName) break;
@@ -426,45 +457,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
         failureMessage = `Insufficient stock for ${item.productName}. Available: ${sourceItem?.quantity || 0}`;
         break;
       }
-      const destItem = this.destInventory.find(i => i.productId === item.productId);
 
-      // Move the actual stock: decrement it at the source branch...
-      this.inventoryService.saveBranchInventoryItem({
-        branchId: sourceBranchId,
-        productId: item.productId,
-        quantity: sourceItem.quantity - quantity,
-        reorderPoint: sourceItem.reorderPoint,
-        safetyStock: sourceItem.safetyStock,
-        sellingPrice: sourceItem.sellingPrice,
-        costPrice: sourceItem.costPrice
-      }).subscribe({
-        error: (err) => {
-          failedProductName = item.productName;
-          failureMessage = err?.message || `Failed to update source stock for ${item.productName}`;
-        }
-      });
-      if (failedProductName) break;
-
-      // ...and increment it at the destination branch (creating the record there if this
-      // product wasn't already stocked at that branch).
-      this.inventoryService.saveBranchInventoryItem({
-        branchId: destinationBranchId,
-        productId: item.productId,
-        quantity: (destItem?.quantity || 0) + quantity,
-        reorderPoint: destItem?.reorderPoint ?? sourceItem.reorderPoint,
-        safetyStock: destItem?.safetyStock ?? sourceItem.safetyStock,
-        sellingPrice: destItem?.sellingPrice ?? sourceItem.sellingPrice,
-        costPrice: destItem?.costPrice ?? sourceItem.costPrice
-      }).subscribe({
-        error: (err) => {
-          failedProductName = item.productName;
-          failureMessage = err?.message || `Failed to update destination stock for ${item.productName}`;
-        }
-      });
-      if (failedProductName) break;
-
-      // Record the transfer itself. The stock has already moved above, so this is logged as
-      // an already-completed movement rather than a pending one awaiting approval.
       this.inventoryService.createMovement({
         productId: item.productId,
         productName: item.productName,
@@ -476,9 +469,8 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
         notes: formValue.notes || ''
       }).subscribe({
         next: (movement) => {
-          this.inventoryService.approveMovement(movement.id).subscribe();
           if (!firstMovement) {
-            firstMovement = { ...movement, status: MovementStatus.COMPLETED };
+            firstMovement = movement;
           }
         },
         error: (err) => {
@@ -498,7 +490,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     if (firstMovement) {
       this.completed.emit(firstMovement);
     }
-    this.router.navigate(['/commerce/inventory']);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
   }
 
   // ============================================================
@@ -532,6 +524,16 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
   getBranchName(branchId: string): string {
     const branch = this.branches.find(b => b.id === branchId);
     return branch?.name || branchId;
+  }
+
+  /** True while the current error is specifically the "one product at a time" message, so the
+   *  template can show a "Go to Bulk Transfer" button alongside it. */
+  isBulkTransferSuggested(): boolean {
+    return !!this.error?.includes('Use Bulk Transfer');
+  }
+
+  goToBulkTransfer(): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/bulk-transfer']);
   }
 
   getSourceStock(productId: string): number {

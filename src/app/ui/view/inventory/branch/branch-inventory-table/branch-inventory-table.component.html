@@ -312,8 +312,8 @@
 
             <div class="modal-footer">
                 <button class="btn-secondary" (click)="closeEditModal()">Cancel</button>
-                <button class="btn-primary" (click)="saveEdit()" [disabled]="editForm.invalid">
-                    <i class="fas fa-save"></i> Save Changes
+                <button class="btn-primary" (click)="saveEdit()" [disabled]="editForm.invalid || isSaving">
+                    <i class="fas" [class.fa-save]="!isSaving" [class.fa-spinner]="isSaving" [class.fa-spin]="isSaving"></i> {{ isSaving ? 'Saving...' : 'Save Changes' }}
                 </button>
             </div>
         </div>

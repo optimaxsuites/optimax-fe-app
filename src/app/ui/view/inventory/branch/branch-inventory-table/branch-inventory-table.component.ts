@@ -64,6 +64,7 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
   showBulkActions: boolean = false;
   showEditModal: boolean = false;
   editingItem: BranchInventory | null = null;
+  isSaving: boolean = false;
   editForm: FormGroup;
 
   // Pagination
@@ -384,24 +385,40 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
     if (!this.editingItem) return;
 
     const formValue = this.editForm.value;
+    const item = this.editingItem;
     const updates = {
-      quantity: formValue.quantity !== undefined ? parseInt(formValue.quantity) : this.editingItem.quantity,
-      reorderPoint: formValue.reorderPoint !== undefined ? parseInt(formValue.reorderPoint) : this.editingItem.reorderPoint,
-      safetyStock: formValue.safetyStock !== undefined ? parseInt(formValue.safetyStock) : this.editingItem.safetyStock,
-      sellingPrice: formValue.sellingPrice !== undefined ? parseFloat(formValue.sellingPrice) : this.editingItem.sellingPrice
+      quantity: formValue.quantity !== undefined ? parseInt(formValue.quantity) : item.quantity,
+      reorderPoint: formValue.reorderPoint !== undefined ? parseInt(formValue.reorderPoint) : item.reorderPoint,
+      safetyStock: formValue.safetyStock !== undefined ? parseInt(formValue.safetyStock) : item.safetyStock,
+      sellingPrice: formValue.sellingPrice !== undefined ? parseFloat(formValue.sellingPrice) : item.sellingPrice
     };
 
-    // In a real implementation, this would call an API to update the inventory item
-    // For now, we'll update locally
-    this.editingItem.quantity = updates.quantity;
-    this.editingItem.reorderPoint = updates.reorderPoint;
-    this.editingItem.safetyStock = updates.safetyStock;
-    this.editingItem.sellingPrice = updates.sellingPrice;
-    this.editingItem.lastUpdated = new Date();
-
-    this.closeEditModal();
-    // Show success toast
-    console.log('Inventory updated successfully');
+    this.isSaving = true;
+    this.inventoryService.saveBranchInventoryItem({
+      branchId: item.branchId,
+      productId: item.productId,
+      quantity: updates.quantity,
+      reorderPoint: updates.reorderPoint,
+      safetyStock: updates.safetyStock,
+      sellingPrice: updates.sellingPrice,
+      costPrice: item.costPrice
+    }).subscribe({
+      next: (saved) => {
+        // Mutate the same object reference that's already in inventoryItems/filteredItems
+        // so the table reflects the persisted values immediately, no re-fetch needed.
+        item.quantity = saved.quantity;
+        item.reorderPoint = saved.reorderPoint;
+        item.safetyStock = saved.safetyStock;
+        item.sellingPrice = saved.sellingPrice;
+        item.lastUpdated = saved.lastUpdated;
+        this.isSaving = false;
+        this.closeEditModal();
+      },
+      error: (err) => {
+        console.error('Failed to update inventory item:', err);
+        this.isSaving = false;
+      }
+    });
   }
 
   // ============================================================

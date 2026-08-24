@@ -57,6 +57,9 @@ import { RestockRequestListComponent } from './ui/view/inventory/restock/restock
 import { RestockSuggestionsPageComponent } from './ui/view/inventory/restock/restock-suggestions-page/restock-suggestions-page.component';
 import { ThresholdManagementComponent } from './ui/view/inventory/restock/threshold-management/threshold-management.component';
 import { RestockApprovalComponent } from './ui/view/inventory/restock/restock-approval/restock-approval.component';
+import { BranchManagerDashboardComponent } from './ui/view/inventory/branch-managers/branch-manager-dashboard/branch-manager-dashboard.component';
+import { BranchInventoryComponent } from './ui/view/inventory/branch/branch-inventory/branch-inventory.component';
+import { adminOnlyGuard } from './ui/service/inventory/admin-only.guard';
 
 
 export const routes: Routes = [
@@ -147,7 +150,8 @@ export const routes: Routes = [
   },
   {
     path: 'admin/sales/commerce/inventory/movements/approvals',
-    component: MovementApprovalComponent
+    component: MovementApprovalComponent,
+    canActivate: [adminOnlyGuard]
   },
   {
     path: 'admin/sales/commerce/inventory/movements/tracking',
@@ -181,11 +185,35 @@ export const routes: Routes = [
   },
   {
     path: 'admin/sales/commerce/inventory/restock/thresholds',
-    component: ThresholdManagementComponent
+    component: ThresholdManagementComponent,
+    canActivate: [adminOnlyGuard]
   },
   {
     path: 'admin/sales/commerce/inventory/restock/approvals',
-    component: RestockApprovalComponent
+    component: RestockApprovalComponent,
+    canActivate: [adminOnlyGuard]
+  },
+
+  // --------------------------------------- Branch Manager -----------------------------------------
+  {
+    path: 'admin/sales/commerce/inventory/branch-manager',
+    component: BranchManagerDashboardComponent
+  },
+  {
+    path: 'admin/sales/commerce/inventory/branch-manager/inventory',
+    component: BranchInventoryComponent
+  },
+  {
+    path: 'admin/sales/commerce/inventory/branch-manager/requests',
+    component: RestockRequestListComponent
+  },
+  {
+    path: 'admin/sales/commerce/inventory/branch-manager/requests/new',
+    component: RestockRequestFormComponent
+  },
+  {
+    path: 'admin/sales/commerce/inventory/branch-manager/transfers/new',
+    component: TransferWizardComponent
   },
 
 
