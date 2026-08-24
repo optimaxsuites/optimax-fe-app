@@ -15,6 +15,7 @@ import {
   MovementType,
   Branch,
   Product,
+  hasUnresolvedChangeRequest,
   getMovementTypeLabel,
   getMovementTypeIcon,
   getMovementStatusLabel
@@ -393,6 +394,13 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
   // ============================================================
   // APPROVAL ACTIONS
   // ============================================================
+
+  /** While changes are outstanding, Approve/Reject/Request Changes stay hidden — nothing to
+   *  approve or reject yet, and asking twice makes no sense. Reappear once it's edited (see
+   *  StockMovementFormComponent.save()). */
+  hasUnresolvedChangeRequest(movement: StockMovement | null): boolean {
+    return hasUnresolvedChangeRequest(movement);
+  }
 
   openActionModal(action: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES'): void {
     this.selectedAction = action;

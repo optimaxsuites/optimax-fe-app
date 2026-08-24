@@ -11,7 +11,8 @@ import {
   Branch,
   Product,
   getMovementTypeLabel as getMovementTypeLabelFn,
-  getMovementTypeIcon as getMovementTypeIconFn
+  getMovementTypeIcon as getMovementTypeIconFn,
+  hasUnresolvedChangeRequest
 } from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
@@ -603,6 +604,12 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
       notes: formValue.notes || '',
       scheduledDate: formValue.scheduledDate || null
     };
+
+    // If admin had asked for changes and it's still outstanding, saving this edit is exactly
+    // that — resolve it so Approve/Reject/Request Changes reappear (see hasUnresolvedChangeRequest()).
+    if (this.mode === 'edit' && hasUnresolvedChangeRequest(this.movement)) {
+      data.notes = (data.notes || '') + '\nChanges made: transfer updated in response to the request';
+    }
 
     if (this.mode === 'edit' && this.movementId) {
       // Update existing movement

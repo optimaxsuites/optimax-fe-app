@@ -415,6 +415,20 @@ export function getStockStatusLabel(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVE
     return map[status];
 }
 
+/** True while a movement has an admin "Request Changes" note that hasn't been addressed yet —
+ *  i.e. the last "Changes requested:" marker in its notes is more recent than any "Changes made:"
+ *  marker. Both markers are plain text appended to `notes` (see MovementApprovalComponent /
+ *  StockMovementComponent's request-changes flow, and StockMovementFormComponent's save()).
+ *  Used to hide Approve/Reject/Request Changes while a request is still outstanding, so nobody
+ *  approves or re-requests changes on a transfer that's already waiting on an edit. */
+export function hasUnresolvedChangeRequest(movement: { notes?: string } | null | undefined): boolean {
+    const notes = movement?.notes || '';
+    const lastRequested = notes.lastIndexOf('Changes requested:');
+    if (lastRequested === -1) return false;
+    const lastMade = notes.lastIndexOf('Changes made:');
+    return lastMade < lastRequested;
+}
+
 export function getMovementTypeLabel(type: MovementType | string): string {
     const map: Record<string, string> = {
         [MovementType.PURCHASE]: 'Purchase',

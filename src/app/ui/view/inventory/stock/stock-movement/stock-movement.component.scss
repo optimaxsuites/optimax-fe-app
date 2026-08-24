@@ -342,8 +342,100 @@
         }
     }
 
+    &--success {
+        background: #2EB270;
+        color: #fff;
+
+        &:hover:not(:disabled) {
+            background: #249360;
+        }
+    }
+
+    &--danger {
+        background: #DC2626;
+        color: #fff;
+
+        &:hover:not(:disabled) {
+            background: #b91c1c;
+        }
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
     .ql-spinning {
         animation: ql-spin 1s linear infinite;
+    }
+}
+
+.ql-required {
+    color: #DC2626;
+}
+
+// ============================================================
+// ROW-LEVEL APPROVE / REJECT / REQUEST-CHANGES CONFIRMATION
+// ============================================================
+
+.ql-confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .4);
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.ql-confirm-modal {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .2);
+    max-width: 440px;
+    width: 100%;
+    padding: 28px;
+    text-align: center;
+}
+
+.ql-confirm-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+}
+
+.ql-confirm-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.ql-confirm-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+}
+
+.ql-confirm-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.ql-confirm-textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+
+    &:focus {
+        outline: none;
+        border-color: var(--p);
     }
 }
 
@@ -787,6 +879,29 @@
             background: #fee2e2;
         }
     }
+
+    &--changes {
+        border-color: #fcd34d;
+        color: #92400e;
+
+        &:hover {
+            background: #fffbeb;
+        }
+    }
+}
+
+.ql-changes-pending-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border-radius: 5px;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 // ============================================================

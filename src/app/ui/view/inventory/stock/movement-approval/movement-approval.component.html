@@ -254,18 +254,24 @@
                             </div>
 
                             <!-- Approval Actions -->
-                            <div class="ql-approval-actions">
-                                <button class="ql-action-btn ql-action-btn--approve" 
+                            <!-- While a change request is outstanding, nothing to approve/reject yet — this
+                                 shows instead, and the actions come back once it's edited. -->
+                            <div class="ql-changes-pending-badge" *ngIf="hasUnresolvedChangeRequest(selectedMovement)"
+                                title="Waiting on the requested changes to be made">
+                                <i class="fas fa-hourglass-half"></i> Awaiting changes from the requester
+                            </div>
+                            <div class="ql-approval-actions" *ngIf="!hasUnresolvedChangeRequest(selectedMovement)">
+                                <button class="ql-action-btn ql-action-btn--approve"
                                         (click)="openActionModal('APPROVE')"
                                         [disabled]="isSubmitting">
                                     <i class="fas fa-check"></i> Approve
                                 </button>
-                                <button class="ql-action-btn ql-action-btn--changes" 
+                                <button class="ql-action-btn ql-action-btn--changes"
                                         (click)="openActionModal('REQUEST_CHANGES')"
                                         [disabled]="isSubmitting">
                                     <i class="fas fa-edit"></i> Request Changes
                                 </button>
-                                <button class="ql-action-btn ql-action-btn--reject" 
+                                <button class="ql-action-btn ql-action-btn--reject"
                                         (click)="openActionModal('REJECT')"
                                         [disabled]="isSubmitting">
                                     <i class="fas fa-times"></i> Reject

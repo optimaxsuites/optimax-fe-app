@@ -297,7 +297,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
             isComboProduct: product.isComboProduct || false,
             weight: product.weight || 0
           });
-          this.images = product.images || [];
+          this.images = (product.images || []).filter((img: string) => !img.includes('localhost') && !img.includes('127.0.0.1'));
           this.showComboOptions = product.isComboProduct || false;
 
           this.variantsArray.clear();
@@ -528,6 +528,10 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   addImageUrl(url: string): void {
     const trimmed = url?.trim();
     if (trimmed) {
+      if (trimmed.includes('localhost') || trimmed.includes('127.0.0.1')) {
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Localhost image URLs are not allowed.' });
+        return;
+      }
       this.images.push(trimmed);
     }
   }
@@ -634,6 +638,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
         this.productForm.patchValue({ category: name });
         this.closeAddCategoryModal();
         this.messageService.add({ severity: 'success', summary: 'Success', detail: `Category "${name}" added successfully.` });
+        alert(`Category "${name}" has been created successfully.`);
       },
       error: (err: any) => {
         console.error('Error adding category:', err);
@@ -679,6 +684,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
         this.productForm.patchValue({ measurementUnit: name });
         this.closeAddUnitModal();
         this.messageService.add({ severity: 'success', summary: 'Success', detail: `Unit "${name}" added successfully.` });
+        alert(`Measurement Unit "${name}" has been created successfully.`);
       },
       error: (err: any) => {
         console.error('Error adding unit:', err);
