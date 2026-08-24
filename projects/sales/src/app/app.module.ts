@@ -166,6 +166,7 @@ import { RestockRequestListComponent } from './ui/view/inventory/restock/restock
 import { RestockSuggestionsPageComponent } from './ui/view/inventory/restock/restock-suggestions-page/restock-suggestions-page.component';
 import { ThresholdManagementComponent } from './ui/view/inventory/restock/threshold-management/threshold-management.component';
 import { RestockApprovalComponent } from './ui/view/inventory/restock/restock-approval/restock-approval.component';
+import { BranchManagerDashboardComponent } from './ui/view/inventory/branch-managers/branch-manager-dashboard/branch-manager-dashboard.component';
 import { AnalyticsComponent } from './ui/view/inventory/inventory-analytics/analytics/analytics.component';
 import { ProductAnalyticsComponent } from './ui/view/inventory/inventory-analytics/product-analytics/product-analytics.component';
 import { BranchAnalyticsComponent } from './ui/view/inventory/inventory-analytics/branch-analytics/branch-analytics.component';
@@ -217,6 +218,7 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
     RestockSuggestionsPageComponent,
     ThresholdManagementComponent,
     RestockApprovalComponent,
+    BranchManagerDashboardComponent,
     AnalyticsComponent,
     ProductAnalyticsComponent,
     BranchAnalyticsComponent,

@@ -356,6 +356,9 @@ export interface ProductFilters {
     page?: number;
     limit?: number;
     size?: number;
+    /** When set, restricts results to only these product ids — used to scope Product
+     *  Management down to a single branch's inventory for a Branch Manager. */
+    productIds?: string[];
 }
 
 export interface MovementFilters {
@@ -414,8 +417,8 @@ export function getStockStatusLabel(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVE
     return map[status];
 }
 
-export function getMovementTypeLabel(type: MovementType): string {
-    const map: Record<MovementType, string> = {
+export function getMovementTypeLabel(type: MovementType | string): string {
+    const map: Record<string, string> = {
         [MovementType.PURCHASE]: 'Purchase',
         [MovementType.TRANSFER]: 'Transfer',
         [MovementType.SALE]: 'Sale',
@@ -423,11 +426,13 @@ export function getMovementTypeLabel(type: MovementType): string {
         [MovementType.ADJUSTMENT]: 'Adjustment',
         [MovementType.DAMAGED]: 'Damaged'
     };
-    return map[type];
+    if (map[type]) return map[type];
+    // Custom movement types are shown in Title Case no matter how they were typed in.
+    return String(type).toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
 }
 
-export function getMovementTypeIcon(type: MovementType): string {
-    const map: Record<MovementType, string> = {
+export function getMovementTypeIcon(type: MovementType | string): string {
+    const map: Record<string, string> = {
         [MovementType.PURCHASE]: 'fa-truck-loading',
         [MovementType.TRANSFER]: 'fa-exchange-alt',
         [MovementType.SALE]: 'fa-shopping-cart',
@@ -435,7 +440,7 @@ export function getMovementTypeIcon(type: MovementType): string {
         [MovementType.ADJUSTMENT]: 'fa-sliders-h',
         [MovementType.DAMAGED]: 'fa-exclamation-triangle'
     };
-    return map[type];
+    return map[type] || 'fa-box';
 }
 
 export function getMovementStatusLabel(status: MovementStatus): string {

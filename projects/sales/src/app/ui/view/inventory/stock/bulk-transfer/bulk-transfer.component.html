@@ -74,7 +74,7 @@
                                 <select class="ql-input" formControlName="sourceBranchId"
                                     (change)="onSourceBranchChange()">
                                     <option value="">Select Source Branch</option>
-                                    <option *ngFor="let branch of branches" [value]="branch.id">
+                                    <option *ngFor="let branch of sourceBranches" [value]="branch.id">
                                         {{ branch.name }} ({{ branch.location.city }})
                                     </option>
                                 </select>

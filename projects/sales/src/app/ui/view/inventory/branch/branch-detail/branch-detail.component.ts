@@ -8,6 +8,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
+import { UserContextService } from '../../../../service/inventory/user-context.service';
 import { RestockSuggestion } from '../../restock/restock-suggestion/restock-suggestion.component';
 import {
   Branch,
@@ -106,8 +107,15 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     public router: Router,
     private location: Location,
-    private inventoryService: InventoryService
+    private inventoryService: InventoryService,
+    private userContext: UserContextService
   ) {}
+
+  /** "Update inventory (their branch only)" / "See all branches: No" — a Branch Manager can
+   *  only ever view or edit their own branch's inventory here, never another branch's. */
+  get canSeeAllBranches(): boolean {
+    return !this.userContext.isBranchManager();
+  }
 
   // ============================================================
   // LIFECYCLE HOOKS
@@ -116,7 +124,17 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadBranchList();
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
-      this.branchId = params['branchId'];
+      const requestedBranchId = params['branchId'];
+      // Branch Managers are confined to their own branch — redirect any attempt to view
+      // another branch's detail/inventory page (typed URL, stale link, etc.) back to theirs.
+      if (!this.canSeeAllBranches && requestedBranchId !== this.userContext.getUserBranchId()) {
+        const ownBranchId = this.userContext.getUserBranchId();
+        if (ownBranchId) {
+          this.router.navigate(['/admin/sales/commerce/inventory/branches', ownBranchId]);
+          return;
+        }
+      }
+      this.branchId = requestedBranchId;
       if (this.branchId) {
         this.loadBranchData();
       }
@@ -160,7 +178,11 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
     this.inventoryService.getBranches()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (branches) => { this.branches = branches; },
+        next: (branches) => {
+          this.branches = this.canSeeAllBranches
+            ? branches
+            : branches.filter(b => b.id === this.userContext.getUserBranchId());
+        },
         error: (err) => console.error('Failed to load branch list:', err)
       });
   }
