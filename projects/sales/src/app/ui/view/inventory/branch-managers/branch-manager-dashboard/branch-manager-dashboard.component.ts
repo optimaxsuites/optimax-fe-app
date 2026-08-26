@@ -128,7 +128,7 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
       id: 'view-inventory',
       label: 'View Inventory',
       icon: 'fa-warehouse',
-      route: '/commerce/inventory/branches/' + this.BRANCH_ID,
+      route: '/admin/sales/commerce/inventory/branches/' + this.BRANCH_ID,
       queryParams: { tab: 'inventory' },
       color: '#8B5CF6',
       description: 'Manage your branch stock'
@@ -325,7 +325,7 @@ loadData(): void {
           title: `${i.productName} was added to your branch's inventory`,
           subtitle: `${i.quantity} units in stock`,
           timestamp: new Date(i.lastUpdated),
-          route: '/commerce/inventory/branches/' + this.BRANCH_ID,
+          route: '/admin/sales/commerce/inventory/branches/' + this.BRANCH_ID,
           queryParams: { tab: 'inventory' }
         });
       });
@@ -384,19 +384,19 @@ loadData(): void {
   }
 
   goToRequestRestock(): void {
-    this.navigateTo('/commerce/inventory/branch-manager/requests/new', { branchId: this.BRANCH_ID });
+    this.navigateTo('/admin/sales/commerce/inventory/branch-manager/requests/new', { branchId: this.BRANCH_ID });
   }
 
   goToCreateTransfer(): void {
-    this.navigateTo('/commerce/inventory/branch-manager/transfers/new', { lockedBranchId: this.BRANCH_ID });
+    this.navigateTo('/admin/sales/commerce/inventory/branch-manager/transfers/new', { lockedBranchId: this.BRANCH_ID });
   }
 
   goToInventory(): void {
-    this.navigateTo('/commerce/inventory/branches/' + this.BRANCH_ID, { tab: 'inventory' });
+    this.navigateTo('/admin/sales/commerce/inventory/branches/' + this.BRANCH_ID, { tab: 'inventory' });
   }
 
   goToMyRequests(): void {
-    this.navigateTo('/commerce/inventory/branch-manager/requests', { branchId: this.BRANCH_ID });
+    this.navigateTo('/admin/sales/commerce/inventory/branch-manager/requests', { branchId: this.BRANCH_ID });
   }
 
   goBack(): void {
