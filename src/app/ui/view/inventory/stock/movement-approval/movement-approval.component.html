@@ -253,14 +253,16 @@
                                 </div>
                             </div>
 
-                            <!-- Approval Actions -->
-                            <!-- While a change request is outstanding, nothing to approve/reject yet — this
-                                 shows instead, and the actions come back once it's edited. -->
-                            <div class="ql-changes-pending-badge" *ngIf="hasUnresolvedChangeRequest(selectedMovement)"
+                            <!-- Approval Actions — only while still PENDING; once approved/rejected there's
+                                 nothing left to do, so these (and the changes-pending badge) go away for good,
+                                 not just while a change request is outstanding. -->
+                            <div class="ql-changes-pending-badge"
+                                *ngIf="selectedMovement?.status === 'PENDING' && hasUnresolvedChangeRequest(selectedMovement)"
                                 title="Waiting on the requested changes to be made">
                                 <i class="fas fa-hourglass-half"></i> Awaiting changes from the requester
                             </div>
-                            <div class="ql-approval-actions" *ngIf="!hasUnresolvedChangeRequest(selectedMovement)">
+                            <div class="ql-approval-actions"
+                                *ngIf="selectedMovement?.status === 'PENDING' && !hasUnresolvedChangeRequest(selectedMovement)">
                                 <button class="ql-action-btn ql-action-btn--approve"
                                         (click)="openActionModal('APPROVE')"
                                         [disabled]="isSubmitting">

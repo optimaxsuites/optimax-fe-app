@@ -1,3 +1,4 @@
+//vendor-notification.dto.ts
 interface VendorNotification {
   id: string;
   vendorId: string;

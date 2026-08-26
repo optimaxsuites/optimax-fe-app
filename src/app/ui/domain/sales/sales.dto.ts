@@ -1,3 +1,4 @@
+//sales.dto.ts
 // Enum Structures
 export type CustomerStatus = 'ACTIVE' | 'INACTIVE' | 'BLACKLISTED';
 
@@ -394,6 +395,64 @@ export interface TopProduct {
   quantitySold: number;
   month: string;
   revenue: number;
+}
+
+// ============================================================
+// DOCUMENT EMAIL DELIVERY — forward Quotes & Invoices to customers
+// ============================================================
+// This is meant to replace the ad-hoc, attachment-less `sendDirectEmail` call that
+// quote-form/invoice-form currently borrow from procurement's NotificationService
+// (see quote-form.component.ts#sendQuoteEmail / invoice-form.component.ts#sendInvoiceEmail —
+// both build an HTML string and POST it with no reference to the PDF that was just
+// generated for the customer). Once a backend endpoint exists for this DTO, those two
+// methods should call it instead, passing the generated PDF as an attachment.
+
+export type SalesDocumentType = 'QUOTE' | 'INVOICE';
+
+export type EmailDeliveryStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
+
+// Field names match the existing QuoteAttachments/InvoiceAttachments shape above —
+// attachments in this app are uploaded first (see procurement.service.ts#uploadAttachment)
+// and referenced by URL, never inlined as base64.
+export interface EmailAttachment {
+  fileName: string;
+  fileUrl: string;
+  size?: number;
+  type?: string; // mime type, e.g. 'application/pdf'
+}
+
+/** Request payload for sending/forwarding a Quote or Invoice to a customer by email. */
+export interface SendDocumentEmailRequest {
+  documentType: SalesDocumentType;
+  documentId: number;              // Quote.id or Invoice.id
+  documentNumber: string;          // quoteNumber / invoiceNumber — for subject + logging
+  to: string;
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  message: string;                 // editable body shown in the send modal before dispatch
+  attachments?: EmailAttachment[]; // generated PDF, plus any user-attached files
+  sentBy: string;                  // id/name of the user who triggered the send
+}
+
+/** Delivery record returned after a send, and used to render send history on a document. */
+export interface DocumentEmailLog {
+  id: string;
+  documentType: SalesDocumentType;
+  documentId: number;
+  documentNumber: string;
+  to: string;
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  attachments: EmailAttachment[];
+  status: EmailDeliveryStatus;
+  sentAt?: Date;
+  deliveredAt?: Date;
+  failureReason?: string;
+  retryCount: number;
+  sentBy: string;
+  createdAt: Date;
 }
 
 

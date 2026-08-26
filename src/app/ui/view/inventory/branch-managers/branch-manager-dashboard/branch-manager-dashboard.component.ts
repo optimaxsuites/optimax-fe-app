@@ -14,6 +14,7 @@ import {
   RestockStatus,
   RestockUrgency,
   MovementStatus,
+  hasUnresolvedChangeRequest,
   getStockStatus,
   getStockStatusLabel,
   getStockStatusColor
@@ -85,7 +86,13 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
   outOfStockItems: BranchInventory[] = [];
   recentRequests: RestockRequest[] = [];
   recentMovements: StockMovement[] = [];
+  // Transfers of theirs still waiting on the edit Movement Approvals asked for — the
+  // "Review Changes Requested" quick action scrolls straight down to this list.
+  changesRequestedMovements: StockMovement[] = [];
   notifications: DashboardNotification[] = [];
+  // Retractable — collapsing just hides the list under the header, header (with count) stays.
+  notificationsCollapsed: boolean = false;
+  changesRequestedCollapsed: boolean = false;
   stats: DashboardStats | null = null;
   branchName: string = '';
   branchId: string = '';
@@ -134,6 +141,17 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
       queryParams: { branchId: this.BRANCH_ID },
       color: '#F5A623',
       description: 'Track your restock requests'
+    },
+    {
+      // No route/queryParams — this one scrolls down to the "Changes Requested" section on
+      // this same dashboard instead of navigating away (see the template's special-cased
+      // click handler and scrollToChangesRequested() below).
+      id: 'review-changes',
+      label: 'Review Changes Requested',
+      icon: 'fa-pencil-alt',
+      route: '',
+      color: '#F59E0B',
+      description: 'See what needs updating before it can be approved'
     }
   ];
 
@@ -214,6 +232,10 @@ loadData(): void {
         this.recentMovements = this.movements
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
           .slice(0, 5);
+
+        // Transfers still waiting on the edit an admin asked for (see "Review Changes
+        // Requested" quick action and its section further down the page).
+        this.changesRequestedMovements = this.movements.filter(m => hasUnresolvedChangeRequest(m));
 
         this.calculateStats();
         this.buildNotifications();
@@ -339,6 +361,26 @@ loadData(): void {
 
   navigateTo(route: string, queryParams?: Record<string, string>): void {
     this.router.navigate([route], queryParams ? { queryParams } : undefined);
+  }
+
+  /** "Review Changes Requested" quick action — stays on this dashboard and scrolls down to
+   *  the section listing transfers waiting on an edit, rather than navigating away. */
+  scrollToChangesRequested(): void {
+    this.changesRequestedCollapsed = false;
+    document.getElementById('changes-requested-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  goToEditMovement(movement: StockMovement): void {
+    this.navigateTo('/commerce/inventory/movements/' + movement.id + '/edit');
+  }
+
+  /** "To Abuja Distribution Hub" / "From Abuja Distribution Hub" — whichever side of the
+   *  transfer isn't this branch, for the Changes Requested list. */
+  getBranchOtherSide(movement: StockMovement): string {
+    if (movement.fromLocation?.id === this.BRANCH_ID) {
+      return 'To ' + (movement.toLocation?.name || 'another branch');
+    }
+    return 'From ' + (movement.fromLocation?.name || 'another branch');
   }
 
   goToRequestRestock(): void {

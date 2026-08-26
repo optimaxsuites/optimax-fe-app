@@ -109,11 +109,13 @@
 
             <!-- Notifications -->
             <div class="ql-alerts-section" *ngIf="notifications.length > 0">
-                <div class="ql-alerts-header">
+                <div class="ql-alerts-header ql-alerts-header--toggle" (click)="notificationsCollapsed = !notificationsCollapsed">
                     <h3><i class="fas fa-bell"></i> Notifications</h3>
                     <span class="ql-alerts-count">{{ notifications.length }}</span>
+                    <i class="fas ql-alerts-toggle-icon" [class.fa-chevron-up]="!notificationsCollapsed"
+                        [class.fa-chevron-down]="notificationsCollapsed"></i>
                 </div>
-                <div class="ql-alerts-list">
+                <div class="ql-alerts-list" *ngIf="!notificationsCollapsed">
                     <div *ngFor="let note of notifications" class="ql-alert-item ql-notification-item" (click)="navigateTo(note.route, note.queryParams)">
                         <i class="fas" [class]="note.icon" [style.color]="note.color"></i>
                         <span>
@@ -122,6 +124,32 @@
                         </span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Changes Requested — anchor target for the "Review Changes Requested" quick action -->
+            <div class="ql-alerts-section" id="changes-requested-section">
+                <div class="ql-alerts-header ql-alerts-header--toggle" (click)="changesRequestedCollapsed = !changesRequestedCollapsed">
+                    <h3><i class="fas fa-pencil-alt"></i> Changes Requested</h3>
+                    <span class="ql-alerts-count" *ngIf="changesRequestedMovements.length > 0">{{ changesRequestedMovements.length }}</span>
+                    <i class="fas ql-alerts-toggle-icon" [class.fa-chevron-up]="!changesRequestedCollapsed"
+                        [class.fa-chevron-down]="changesRequestedCollapsed"></i>
+                </div>
+                <ng-container *ngIf="!changesRequestedCollapsed">
+                    <div class="ql-alerts-list" *ngIf="changesRequestedMovements.length > 0">
+                        <div *ngFor="let movement of changesRequestedMovements" class="ql-alert-item ql-notification-item"
+                            (click)="goToEditMovement(movement)">
+                            <i class="fas fa-triangle-exclamation" style="color: #F59E0B;"></i>
+                            <span>
+                                <span class="ql-notification-title">{{ movement.quantity }} × {{ movement.productName }} needs updating</span>
+                                <span class="ql-notification-sub">{{ getBranchOtherSide(movement) }} · {{ getTimeAgo(movement.updatedAt || movement.createdAt) }}</span>
+                            </span>
+                            <span class="ql-alert-action">Edit <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </div>
+                    <div class="ql-empty-state-small" *ngIf="changesRequestedMovements.length === 0">
+                        <span>Nothing needs changes right now — Movement Approvals will let you know here if it does.</span>
+                    </div>
+                </ng-container>
             </div>
 
             <!-- Stats Cards -->
@@ -150,13 +178,25 @@
 
             <!-- Quick Actions Grid -->
             <div class="ql-quick-actions">
-                <div *ngFor="let action of quickActions" class="ql-quick-action" (click)="navigateTo(action.route, action.queryParams)">
+                <div *ngFor="let action of quickActions" class="ql-quick-action"
+                    (click)="action.id === 'review-changes' ? scrollToChangesRequested() : navigateTo(action.route, action.queryParams)">
                     <div class="ql-quick-action-icon" [style.background]="action.color + '20'" [style.color]="action.color">
                         <i class="fas" [class]="action.icon"></i>
                     </div>
                     <div class="ql-quick-action-info">
-                        <span class="ql-quick-action-label">{{ action.label }}</span>
-                        <span class="ql-quick-action-desc">{{ action.description }}</span>
+                        <span class="ql-quick-action-label">
+                            {{ action.label }}
+                            <span class="ql-quick-action-count" *ngIf="action.id === 'review-changes' && changesRequestedMovements.length > 0">
+                                {{ changesRequestedMovements.length }}
+                            </span>
+                        </span>
+                        <span class="ql-quick-action-desc">
+                            {{ action.id === 'review-changes'
+                                ? (changesRequestedMovements.length > 0
+                                    ? changesRequestedMovements.length + ' transfer' + (changesRequestedMovements.length > 1 ? 's' : '') + ' need' + (changesRequestedMovements.length > 1 ? '' : 's') + ' your input'
+                                    : 'All caught up — nothing needs changes right now')
+                                : action.description }}
+                        </span>
                     </div>
                     <i class="fas fa-chevron-right ql-quick-action-arrow"></i>
                 </div>

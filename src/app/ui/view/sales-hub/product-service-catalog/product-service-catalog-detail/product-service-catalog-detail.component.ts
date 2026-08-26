@@ -4,7 +4,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Product } from '../../../../domain/sales/sales.dto';
+import { InventoryService } from '../../../../service/inventory/inventory.service';
 import { formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { MessageService } from 'primeng/api';
@@ -18,24 +18,24 @@ import { MessageService } from 'primeng/api';
 })
 export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
   
-  product: Product | null = null;
+  // Sourced from Inventory's Product Management — this page only ever displays it, since
+  // that's the single hub for creating/editing products now.
+  product: any | null = null;
   isLoading = true;
   productId: string = '';
-  
-  // UI State
-  showDeleteConfirm = false;
-  
+
   // Mock sales history
   salesHistory: any[] = [];
   isLoadingHistory = false;
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
     private messageService: MessageService,
     private route: ActivatedRoute,
     private router: Router,
-    private salesService: SalesService
+    private salesService: SalesService,
+    private inventoryService: InventoryService
   ) {}
 
   ngOnInit(): void {
@@ -53,8 +53,8 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
 
   private loadProduct(): void {
     this.isLoading = true;
-    this.salesService.getProductById(this.productId).subscribe({
-      next: (product: Product | null) => {
+    this.inventoryService.getProduct(this.productId).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (product) => {
         this.product = product;
         this.isLoading = false;
       },
@@ -78,37 +78,33 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  editProduct(): void {
+  /** Passes the product's own details (not just its id) so the quote form can build the
+   *  line item directly — it has its own separate product list and an inventory id
+   *  wouldn't necessarily resolve there otherwise (see the catalog list's identical helper). */
+  private productQueryParams(): Record<string, string> {
+    const p = this.product;
+    return {
+      productId: String(p.id),
+      productName: p.name || '',
+      productSku: p.sku || '',
+      productDescription: p.description || '',
+      productUnitPrice: String(p.unitPrice ?? p.sellingPrice ?? 0),
+      productTaxRate: String(p.taxRate ?? 0)
+    };
+  }
+
+  generateQuote(): void {
+    if (!this.product) return;
     const uuid = this.route.snapshot.paramMap.get('uuid');
-    if (uuid) {
-      this.router.navigate(['/admin/sales/products', this.productId, 'edit', uuid]);
-    } else {
-      this.router.navigate(['/admin/sales/products', this.productId, 'edit']);
-    }
+    const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
+    this.router.navigate(path, { queryParams: this.productQueryParams() });
   }
 
-  deleteProduct(): void {
-    this.showDeleteConfirm = true;
-  }
-
-  confirmDelete(): void {
-    if (this.product) {
-      this.salesService.deleteProduct(this.product.id).subscribe({
-        next: () => {
-          this.messageService.add({ severity: 'info', summary: 'Notice', detail: `Product ${this.product?.name} has been deleted` });
-          const uuid = this.route.snapshot.paramMap.get('uuid');
-          if (uuid) {
-            this.router.navigate(['/admin/sales/sales-hub', uuid]);
-          } else {
-            this.router.navigate(['/admin/sales/sales-hub']);
-          }
-        },
-        error: (error: any) => {
-          console.error('Error deleting product:', error);
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete product. Please try again.' });
-        }
-      });
-    }
+  createInvoice(): void {
+    if (!this.product) return;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
+    this.router.navigate(path, { queryParams: this.productQueryParams() });
   }
 
   goBack(): void {
