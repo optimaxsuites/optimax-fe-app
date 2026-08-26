@@ -1,3 +1,4 @@
+// procurement.dto.ts
 // Constants
 export const MAX_QUOTATION_REVISIONS = 3;
 

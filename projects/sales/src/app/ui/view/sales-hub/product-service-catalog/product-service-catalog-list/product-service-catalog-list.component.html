@@ -1,4 +1,3 @@
-<p-toast position="top-right"></p-toast>
 <div class="product-list-container">
   <div class="list-wrapper">
 
@@ -11,7 +10,7 @@
             <span>Sales Hub • Products</span>
           </div>
           <h1>Product Catalog</h1>
-          <p class="hero-subtitle">Manage, track, and organize your entire product inventory from a single command center.</p>
+          <p class="hero-subtitle">Browse everything in Product Management and turn it into a quote or invoice. Products, categories, units, and suppliers are managed in Inventory → Product Management.</p>
         </div>
         <div class="hero-actions">
           <div class="view-switcher">
@@ -22,22 +21,6 @@
               <i class="fas fa-th"></i>
             </button>
           </div>
-          <button (click)="navigateToNewProduct()" class="btn-primary-hero">
-            <i class="fas fa-plus"></i>
-            Add Product
-          </button>
-          <button (click)="openCategoryModal()" class="btn-secondary-hero" style="margin-left: 0.75rem;">
-            <i class="fas fa-tags"></i>
-            Add Category
-          </button>
-          <button (click)="openUnitModal()" class="btn-secondary-hero" style="margin-left: 0.75rem;">
-            <i class="fas fa-balance-scale"></i>
-            Add Unit
-          </button>
-          <button (click)="openSupplierModal()" class="btn-secondary-hero" style="margin-left: 0.75rem;">
-            <i class="fas fa-truck"></i>
-            Add Supplier
-          </button>
         </div>
       </div>
     </div>
@@ -182,7 +165,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let product of products; let i = index" 
+              <tr *ngFor="let product of products; let i = index"
                   [class]="'stock-' + getStockStatusClass(product.stockQuantity)">
                 <td class="checkbox-col">
                   <input type="checkbox" [value]="product.id" (change)="toggleSelection(product.id, $event)"
@@ -230,14 +213,11 @@
                     <button class="action-btn view-btn" (click)="viewProduct(product.id)" title="View Details">
                       <i class="fas fa-eye"></i>
                     </button>
-                    <button class="action-btn generate-quote-btn" (click)="generateQuoteFromProduct(product.id)" title="Generate Quote">
+                    <button class="action-btn generate-quote-btn" (click)="generateQuoteFromProduct(product)" title="Create Quote">
                       <i class="fas fa-file-invoice"></i>
                     </button>
-                    <button class="action-btn edit-btn" (click)="editProduct(product.id)" title="Edit Product">
-                      <i class="fas fa-pencil-alt"></i>
-                    </button>
-                    <button class="action-btn delete-btn" (click)="deleteProduct(product)" title="Delete">
-                      <i class="fas fa-trash-alt"></i>
+                    <button class="action-btn create-invoice-btn" (click)="createInvoiceFromProduct(product)" title="Create Invoice">
+                      <i class="fas fa-file-invoice-dollar"></i>
                     </button>
                   </div>
                 </td>
@@ -250,8 +230,7 @@
                         d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
                     </svg>
                     <h3>No products found</h3>
-                    <p>Add your first product to get started</p>
-                    <button (click)="navigateToNewProduct()" class="btn-primary-sm">Add Product</button>
+                    <p>New products show up here as soon as they're added in Inventory → Product Management.</p>
                   </div>
                 </td>
               </tr>
@@ -262,8 +241,8 @@
 
       <!-- Icon / Grid View -->
       <div *ngIf="viewMode === 'icon'" class="grid-container">
-        <div *ngFor="let product of products; let i = index" 
-             class="product-card" 
+        <div *ngFor="let product of products; let i = index"
+             class="product-card"
              [class]="'stock-' + getStockStatusClass(product.stockQuantity)">
 
           <!-- Card Header -->
@@ -315,14 +294,11 @@
               <button class="action-btn view-btn" (click)="viewProduct(product.id)" title="View Details">
                 <i class="fas fa-eye"></i>
               </button>
-              <button class="action-btn generate-quote-btn" (click)="generateQuoteFromProduct(product.id)" title="Generate Quote">
+              <button class="action-btn generate-quote-btn" (click)="generateQuoteFromProduct(product)" title="Create Quote">
                 <i class="fas fa-file-invoice"></i>
               </button>
-              <button class="action-btn edit-btn" (click)="editProduct(product.id)" title="Edit Product">
-                <i class="fas fa-pencil-alt"></i>
-              </button>
-              <button class="action-btn delete-btn" (click)="deleteProduct(product)" title="Delete">
-                <i class="fas fa-trash-alt"></i>
+              <button class="action-btn create-invoice-btn" (click)="createInvoiceFromProduct(product)" title="Create Invoice">
+                <i class="fas fa-file-invoice-dollar"></i>
               </button>
             </div>
           </div>
@@ -336,8 +312,7 @@
                 d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
             </svg>
             <h3>No products found</h3>
-            <p>Add your first product to get started</p>
-            <button (click)="navigateToNewProduct()" class="btn-primary-sm">Add Product</button>
+            <p>New products show up here as soon as they're added in Inventory → Product Management.</p>
           </div>
         </div>
       </div>
@@ -374,368 +349,6 @@
             <button class="page-btn" (click)="onPageChange(totalPages - 1)" [disabled]="currentPage === totalPages - 1">
               <i class="fas fa-angle-double-right"></i>
             </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Category Management Side Modal -->
-  <div class="category-side-modal" [class.open]="showCategoryModal">
-    <div class="modal-overlay" (click)="closeCategoryModal()"></div>
-    <div class="modal-panel">
-      <div class="modal-header">
-        <h3><i class="fas fa-tags"></i> Manage Categories</h3>
-        <button class="btn-close" (click)="closeCategoryModal()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <!-- View Category Details Card -->
-        <div class="view-category-details-card" *ngIf="viewingCategoryDetails" style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 1.25rem; position: relative; margin-bottom: 1rem;">
-          <button style="position: absolute; right: 0.75rem; top: 0.75rem; background: transparent; border: none; font-size: 1.1rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;" (click)="closeCategoryDetails()">
-            <i class="fas fa-times"></i>
-          </button>
-          <h4 style="margin-top: 0; margin-bottom: 1rem; color: #0f1a2e; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
-            <i class="fas fa-info-circle" style="color: #3b82f6;"></i> Category Details
-          </h4>
-          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Category ID</span>
-            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem;">{{ viewingCategoryDetails.id }}</span>
-          </div>
-          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Name</span>
-            <span style="font-size: 1rem; color: #0f1a2e; margin-top: 0.15rem; font-weight: 700;">{{ viewingCategoryDetails.name }}</span>
-          </div>
-          <div style="display: flex; flex-direction: column;">
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Description</span>
-            <span style="font-size: 0.95rem; color: #334155; margin-top: 0.15rem; line-height: 1.5; white-space: pre-wrap;">{{ viewingCategoryDetails.description || 'No description provided.' }}</span>
-          </div>
-        </div>
-
-        <!-- Create/Edit Category Form -->
-        <div class="create-category-card" [class.editing]="editingCategory">
-          <label class="form-label">{{ editingCategory ? 'Edit Category Name' : 'New Category Name' }}</label>
-          <input 
-            type="text" 
-            class="form-control" 
-            placeholder="e.g. Accessories, Furniture, Electronics..." 
-            [(ngModel)]="newCategoryName"
-            style="width: 100%; margin-bottom: 0.75rem;"
-          >
-          
-          <label class="form-label">Description (Optional)</label>
-          <textarea 
-            class="form-control textarea" 
-            placeholder="Describe what items are included in this category..." 
-            [(ngModel)]="newCategoryDesc"
-            style="width: 100%; margin-bottom: 1rem; min-height: 80px; resize: vertical;"
-          ></textarea>
- 
-          <div class="action-buttons-row" style="display: flex;">
-            <button class="btn-submit-category" (click)="submitCategory()" [style.background]="editingCategory ? '#10b981' : '#1a2d4a'">
-              <i class="fas" [class.fa-save]="editingCategory" [class.fa-plus]="!editingCategory"></i> 
-              {{ editingCategory ? 'Update Category' : 'Save Category' }}
-            </button>
-            <button class="btn-cancel-edit" *ngIf="editingCategory" (click)="cancelEditCategory()" style="margin-left: 0.5rem; background: #94a3b8; border: none; color: white; padding: 0.75rem 1.25rem; border-radius: 8px; cursor: pointer; font-weight: 600;">
-              Cancel
-            </button>
-          </div>
-        </div>
- 
-        <!-- Existing Categories List -->
-        <div class="categories-list-wrapper">
-          <div class="list-header">
-            <h4>Existing Categories</h4>
-            <span class="category-count-badge">{{ rawCategories.length }}</span>
-          </div>
-          
-          <div class="categories-scroll-area">
-            <div class="category-list-item" *ngFor="let cat of rawCategories; let i = index" (click)="startViewCategory(cat)" [class.active]="(editingCategory && cat.id && editingCategory.id === cat.id) || (viewingCategoryDetails && cat.id && viewingCategoryDetails.id === cat.id)" style="cursor: pointer; position: relative;">
-              <div class="item-icon-wrapper">
-                <i class="fas fa-tag"></i>
-              </div>
-              <div class="item-content" style="flex: 1;">
-                <div class="item-name" style="font-weight: 700; color: #0f1a2e;">{{ cat.name }}</div>
-                <div class="item-desc" style="font-size: 0.8rem; color: #64748b; margin-top: 0.15rem;" *ngIf="cat.description">{{ cat.description }}</div>
-              </div>
-              <div class="item-actions-row" style="display: flex; gap: 0.25rem;">
-                <button class="btn-view-cat" (click)="$event.stopPropagation(); startViewCategory(cat)" title="View Details" style="background: transparent; border: none; color: #64748b; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
-                  <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn-edit-cat" (click)="$event.stopPropagation(); startEditCategory(cat)" title="Edit Category" style="background: transparent; border: none; color: #3b82f6; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
-                  <i class="fas fa-pencil-alt"></i>
-                </button>
-                <button class="btn-delete-cat" (click)="$event.stopPropagation(); confirmDeleteCategory(cat.id, cat.name)" title="Delete Category" style="background: transparent; border: none; color: #ef4444; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-              </div>
-            </div>
-            <div class="empty-categories" *ngIf="rawCategories.length === 0">
-              <i class="fas fa-folder-open"></i>
-              <p>No categories found. Add one above!</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Measurement Unit Management Side Modal -->
-  <div class="category-side-modal" [class.open]="showUnitModal">
-    <div class="modal-overlay" (click)="closeUnitModal()"></div>
-    <div class="modal-panel">
-      <div class="modal-header">
-        <h3><i class="fas fa-balance-scale"></i> Manage Units</h3>
-        <button class="btn-close" (click)="closeUnitModal()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <!-- View Unit Details Card -->
-        <div class="view-category-details-card" *ngIf="viewingUnitDetails" style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 1.25rem; position: relative; margin-bottom: 1rem;">
-          <button style="position: absolute; right: 0.75rem; top: 0.75rem; background: transparent; border: none; font-size: 1.1rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;" (click)="closeUnitDetails()">
-            <i class="fas fa-times"></i>
-          </button>
-          <h4 style="margin-top: 0; margin-bottom: 1rem; color: #0f1a2e; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
-            <i class="fas fa-info-circle" style="color: #3b82f6;"></i> Unit Details
-          </h4>
-          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Unit ID</span>
-            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem;">{{ viewingUnitDetails.id }}</span>
-          </div>
-          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Name</span>
-            <span style="font-size: 1rem; color: #0f1a2e; margin-top: 0.15rem; font-weight: 700;">{{ viewingUnitDetails.name }}</span>
-          </div>
-          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;" *ngIf="viewingUnitDetails.code">
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Short Code</span>
-            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem; font-family: monospace;">{{ viewingUnitDetails.code }}</span>
-          </div>
-          <div style="display: flex; flex-direction: column;">
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Description</span>
-            <span style="font-size: 0.95rem; color: #334155; margin-top: 0.15rem; line-height: 1.5; white-space: pre-wrap;">{{ viewingUnitDetails.description || 'No description provided.' }}</span>
-          </div>
-        </div>
-
-        <!-- Create/Edit Unit Form -->
-        <div class="create-category-card" [class.editing]="editingUnit">
-          <label class="form-label">{{ editingUnit ? 'Edit Unit Name' : 'New Unit Name' }}</label>
-          <input 
-            type="text" 
-            class="form-control" 
-            placeholder="e.g. Kilogram, Liters, Carton..." 
-            [(ngModel)]="newUnitName"
-            style="width: 100%; margin-bottom: 0.75rem;"
-          >
-          
-          <label class="form-label">Short Code / Abbreviation</label>
-          <input 
-            type="text" 
-            class="form-control" 
-            placeholder="e.g. kg, L, ctn..." 
-            [(ngModel)]="newUnitCode"
-            style="width: 100%; margin-bottom: 0.75rem;"
-          >
-          
-          <label class="form-label">Description (Optional)</label>
-          <textarea 
-            class="form-control textarea" 
-            placeholder="Describe unit purpose or capacity..." 
-            [(ngModel)]="newUnitDesc"
-            style="width: 100%; margin-bottom: 1rem; min-height: 80px; resize: vertical;"
-          ></textarea>
- 
-          <div class="action-buttons-row" style="display: flex;">
-            <button class="btn-submit-category" (click)="submitUnit()" [style.background]="editingUnit ? '#10b981' : '#1a2d4a'">
-              <i class="fas" [class.fa-save]="editingUnit" [class.fa-plus]="!editingUnit"></i> 
-              {{ editingUnit ? 'Update Unit' : 'Save Unit' }}
-            </button>
-            <button class="btn-cancel-edit" *ngIf="editingUnit" (click)="cancelEditUnit()" style="margin-left: 0.5rem; background: #94a3b8; border: none; color: white; padding: 0.75rem 1.25rem; border-radius: 8px; cursor: pointer; font-weight: 600;">
-              Cancel
-            </button>
-          </div>
-        </div>
- 
-        <!-- Existing Units List -->
-        <div class="categories-list-wrapper">
-          <div class="list-header">
-            <h4>Existing Units</h4>
-            <span class="category-count-badge">{{ rawUnits.length }}</span>
-          </div>
-          
-          <div class="categories-scroll-area">
-            <div class="category-list-item" *ngFor="let unit of rawUnits; let i = index" (click)="startViewUnit(unit)" [class.active]="(editingUnit && unit.id && editingUnit.id === unit.id) || (viewingUnitDetails && unit.id && viewingUnitDetails.id === unit.id)" style="cursor: pointer; position: relative;">
-              <div class="item-icon-wrapper">
-                <i class="fas fa-balance-scale"></i>
-              </div>
-              <div class="item-content" style="flex: 1;">
-                <div class="item-name" style="font-weight: 700; color: #0f1a2e;">
-                  {{ unit.name }} <span style="font-size: 0.8rem; font-weight: 400; color: #64748b; margin-left: 0.25rem;" *ngIf="unit.code">({{ unit.code }})</span>
-                </div>
-                <div class="item-desc" style="font-size: 0.8rem; color: #64748b; margin-top: 0.15rem;" *ngIf="unit.description">{{ unit.description }}</div>
-              </div>
-              <div class="item-actions-row" style="display: flex; gap: 0.25rem;">
-                <button class="btn-view-cat" (click)="$event.stopPropagation(); startViewUnit(unit)" title="View Details" style="background: transparent; border: none; color: #64748b; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
-                  <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn-edit-cat" (click)="$event.stopPropagation(); startEditUnit(unit)" title="Edit Unit" style="background: transparent; border: none; color: #3b82f6; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
-                  <i class="fas fa-pencil-alt"></i>
-                </button>
-                <button class="btn-delete-cat" (click)="$event.stopPropagation(); confirmDeleteUnit(unit.id, unit.name)" title="Delete Unit" style="background: transparent; border: none; color: #ef4444; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-              </div>
-            </div>
-            <div class="empty-categories" *ngIf="rawUnits.length === 0">
-              <i class="fas fa-balance-scale"></i>
-              <p>No measurement units found. Add one above!</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Supplier Management Side Modal -->
-  <div class="category-side-modal" [class.open]="showSupplierModal">
-    <div class="modal-overlay" (click)="closeSupplierModal()"></div>
-    <div class="modal-panel">
-      <div class="modal-header">
-        <h3><i class="fas fa-truck"></i> Manage Suppliers</h3>
-        <button class="btn-close" (click)="closeSupplierModal()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <!-- View Supplier Details Card -->
-        <div class="view-category-details-card" *ngIf="viewingSupplierDetails" style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 1.25rem; position: relative; margin-bottom: 1rem;">
-          <button style="position: absolute; right: 0.75rem; top: 0.75rem; background: transparent; border: none; font-size: 1.1rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;" (click)="closeSupplierDetails()">
-            <i class="fas fa-times"></i>
-          </button>
-          <h4 style="margin-top: 0; margin-bottom: 1rem; color: #0f1a2e; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
-            <i class="fas fa-info-circle" style="color: #3b82f6;"></i> Supplier Details
-          </h4>
-          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Supplier ID</span>
-            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem;">{{ viewingSupplierDetails.supplierId }}</span>
-          </div>
-          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Name</span>
-            <span style="font-size: 1rem; color: #0f1a2e; margin-top: 0.15rem; font-weight: 700;">{{ viewingSupplierDetails.name }}</span>
-          </div>
-          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;" *ngIf="viewingSupplierDetails.email">
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Email</span>
-            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem;">{{ viewingSupplierDetails.email }}</span>
-          </div>
-          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;" *ngIf="viewingSupplierDetails.phone">
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Phone</span>
-            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem;">{{ viewingSupplierDetails.phone }}</span>
-          </div>
-          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;" *ngIf="viewingSupplierDetails.contactPerson">
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Contact Person</span>
-            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem;">{{ viewingSupplierDetails.contactPerson }}</span>
-          </div>
-          <div style="display: flex; flex-direction: column;" *ngIf="viewingSupplierDetails.address">
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Address</span>
-            <span style="font-size: 0.95rem; color: #334155; margin-top: 0.15rem; line-height: 1.5; white-space: pre-wrap;">{{ viewingSupplierDetails.address }}</span>
-          </div>
-        </div>
-
-        <!-- Create/Edit Supplier Form -->
-        <div class="create-category-card" [class.editing]="editingSupplier">
-          <label class="form-label">{{ editingSupplier ? 'Edit Supplier Name' : 'New Supplier Name' }}</label>
-          <input 
-            type="text" 
-            class="form-control" 
-            placeholder="e.g. Centrifuge Group, Dangote Wholesales..." 
-            [(ngModel)]="newSupplierName"
-            style="width: 100%; margin-bottom: 0.75rem;"
-          >
-
-          <label class="form-label">Contact Person</label>
-          <input 
-            type="text" 
-            class="form-control" 
-            placeholder="e.g. John Doe..." 
-            [(ngModel)]="newSupplierContactPerson"
-            style="width: 100%; margin-bottom: 0.75rem;"
-          >
-
-          <label class="form-label">Email</label>
-          <input 
-            type="email" 
-            class="form-control" 
-            placeholder="e.g. sales@supplier.com..." 
-            [(ngModel)]="newSupplierEmail"
-            style="width: 100%; margin-bottom: 0.75rem;"
-          >
-
-          <label class="form-label">Phone Number</label>
-          <input 
-            type="text" 
-            class="form-control" 
-            placeholder="e.g. +234 803 000 0000..." 
-            [(ngModel)]="newSupplierPhone"
-            style="width: 100%; margin-bottom: 0.75rem;"
-          >
-
-          <label class="form-label">Address</label>
-          <textarea 
-            class="form-control textarea" 
-            placeholder="Enter physical address..." 
-            [(ngModel)]="newSupplierAddress"
-            style="width: 100%; margin-bottom: 1rem; min-height: 60px; resize: vertical;"
-          ></textarea>
- 
-          <div class="action-buttons-row" style="display: flex;">
-            <button class="btn-submit-category" (click)="submitSupplier()" [style.background]="editingSupplier ? '#10b981' : '#1a2d4a'">
-              <i class="fas" [class.fa-save]="editingSupplier" [class.fa-plus]="!editingSupplier"></i> 
-              {{ editingSupplier ? 'Update Supplier' : 'Save Supplier' }}
-            </button>
-            <button class="btn-cancel-edit" *ngIf="editingSupplier" (click)="cancelEditSupplier()" style="margin-left: 0.5rem; background: #94a3b8; border: none; color: white; padding: 0.75rem 1.25rem; border-radius: 8px; cursor: pointer; font-weight: 600;">
-              Cancel
-            </button>
-          </div>
-        </div>
- 
-        <!-- Existing Suppliers List -->
-        <div class="categories-list-wrapper">
-          <div class="list-header">
-            <h4>Existing Suppliers</h4>
-            <span class="category-count-badge">{{ rawSuppliers.length }}</span>
-          </div>
-          
-          <div class="categories-scroll-area">
-            <div class="category-list-item" *ngFor="let sup of rawSuppliers; let i = index" (click)="startViewSupplier(sup)" [class.active]="(editingSupplier && sup.id && editingSupplier.id === sup.id) || (viewingSupplierDetails && sup.id && viewingSupplierDetails.id === sup.id)" style="cursor: pointer; position: relative;">
-              <div class="item-icon-wrapper">
-                <i class="fas fa-truck"></i>
-              </div>
-              <div class="item-content" style="flex: 1;">
-                <div class="item-name" style="font-weight: 700; color: #0f1a2e;">
-                  {{ sup.name }}
-                </div>
-                <div class="item-desc" style="font-size: 0.8rem; color: #64748b; margin-top: 0.15rem;" *ngIf="sup.contactPerson">Contact: {{ sup.contactPerson }}</div>
-              </div>
-              <div class="item-actions-row" style="display: flex; gap: 0.25rem;">
-                <button class="btn-view-cat" (click)="$event.stopPropagation(); startViewSupplier(sup)" title="View Details" style="background: transparent; border: none; color: #64748b; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
-                  <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn-edit-cat" (click)="$event.stopPropagation(); startEditSupplier(sup)" title="Edit Supplier" style="background: transparent; border: none; color: #3b82f6; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
-                  <i class="fas fa-pencil-alt"></i>
-                </button>
-                <button class="btn-delete-cat" (click)="$event.stopPropagation(); confirmDeleteSupplier(sup.id, sup.name)" title="Delete Supplier" style="background: transparent; border: none; color: #ef4444; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-              </div>
-            </div>
-            <div class="empty-categories" *ngIf="rawSuppliers.length === 0">
-              <i class="fas fa-truck-moving"></i>
-              <p>No suppliers found. Add one above!</p>
-            </div>
           </div>
         </div>
       </div>

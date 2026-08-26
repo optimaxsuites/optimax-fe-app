@@ -384,6 +384,96 @@ export interface RestockFilters {
 }
 
 // ============================================================
+// NOTIFICATIONS — email/SMS/in-app alerts between branch managers and admins
+// ============================================================
+// Same channel/status shape procurement's NotificationService already uses (see
+// procurement.dto.ts's NotificationChannel/NotificationStatus/ProcurementNotification),
+// so one backend notification pipeline can serve both domains — only the trigger types
+// and recipient roles below are inventory-specific. This replaces the in-app-only
+// DashboardNotification currently defined locally in
+// branch-manager-dashboard.component.ts, which never leaves the browser.
+
+export type InventoryNotificationChannel = 'EMAIL' | 'SMS' | 'IN_APP';
+
+export type InventoryNotificationStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED';
+
+export type InventoryRecipientRole = 'ADMIN' | 'BRANCH_MANAGER';
+
+// Reuses StockAlertType for stock-driven alerts and adds the transfer/restock lifecycle
+// events branch managers and admins also need to hear about.
+export type InventoryAlertType =
+    | StockAlertType
+    | 'TRANSFER_PENDING_APPROVAL'
+    | 'TRANSFER_APPROVED'
+    | 'TRANSFER_REJECTED'
+    | 'TRANSFER_CHANGES_REQUESTED'
+    | 'RESTOCK_REQUESTED'
+    | 'RESTOCK_APPROVED'
+    | 'RESTOCK_REJECTED'
+    | 'RESTOCK_RECEIVED';
+
+export type InventoryAlertEntityType = 'STOCK_ALERT' | 'RESTOCK_REQUEST' | 'STOCK_MOVEMENT';
+
+export interface InventoryAlertRecipient {
+    id: string; // user id
+    name: string;
+    role: InventoryRecipientRole;
+    email?: string;
+    phone?: string;    // required when EMAIL/SMS channel targets this recipient
+    branchId?: string; // set when role is BRANCH_MANAGER, to scope which branch they manage
+}
+
+/** Request payload for triggering an alert, e.g. POST /inventory/notifications/trigger. */
+export interface TriggerInventoryAlertRequest {
+    type: InventoryAlertType;
+    channels: InventoryNotificationChannel[];
+    recipients: InventoryAlertRecipient[];
+    relatedEntityId: string;   // StockAlert / RestockRequest / StockMovement id
+    relatedEntityType: InventoryAlertEntityType;
+    branchId?: string;
+    branchName?: string;
+    subject: string;
+    message: string;
+    templateData?: Record<string, any>;
+}
+
+/** Delivery record for one recipient/channel — backs alert history and failed-send retries. */
+export interface InventoryNotification {
+    id: string;
+    type: InventoryAlertType;
+    channel: InventoryNotificationChannel;
+    recipientId: string;
+    recipientName: string;
+    recipientRole: InventoryRecipientRole;
+    recipientEmail?: string;
+    recipientPhone?: string;
+    subject: string;
+    message: string;
+    status: InventoryNotificationStatus;
+    sentAt?: Date;
+    deliveredAt?: Date;
+    failureReason?: string;
+    retryCount: number;
+    relatedEntityId: string;
+    relatedEntityType: InventoryAlertEntityType;
+    branchId?: string;
+    branchName?: string;
+    createdAt: Date;
+}
+
+export interface InventoryAlertFilters {
+    type?: InventoryAlertType;
+    channel?: InventoryNotificationChannel;
+    status?: InventoryNotificationStatus;
+    recipientRole?: InventoryRecipientRole;
+    branchId?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    page?: number;
+    limit?: number;
+}
+
+// ============================================================
 // HELPER FUNCTIONS
 // ============================================================
 
@@ -463,4 +553,22 @@ export function getMovementStatusLabel(status: MovementStatus): string {
         [MovementStatus.CANCELLED]: 'Cancelled'
     };
     return map[status] || status;
+}
+
+export function getInventoryAlertTypeLabel(type: InventoryAlertType): string {
+    const map: Record<string, string> = {
+        [StockAlertType.LOW_STOCK]: 'Low Stock',
+        [StockAlertType.OUT_OF_STOCK]: 'Out of Stock',
+        [StockAlertType.EXPIRING]: 'Expiring Stock',
+        [StockAlertType.OVER_STOCK]: 'Overstock',
+        TRANSFER_PENDING_APPROVAL: 'Transfer Pending Approval',
+        TRANSFER_APPROVED: 'Transfer Approved',
+        TRANSFER_REJECTED: 'Transfer Rejected',
+        TRANSFER_CHANGES_REQUESTED: 'Transfer Changes Requested',
+        RESTOCK_REQUESTED: 'Restock Requested',
+        RESTOCK_APPROVED: 'Restock Approved',
+        RESTOCK_REJECTED: 'Restock Rejected',
+        RESTOCK_RECEIVED: 'Restock Received'
+    };
+    return map[type] || String(type);
 }

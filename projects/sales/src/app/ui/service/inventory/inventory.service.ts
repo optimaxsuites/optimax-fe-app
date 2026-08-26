@@ -1534,7 +1534,38 @@ export class InventoryService {
     const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
     const performance = dash.topProducts.find(p => p.productId === productId);
     this.loadingSubject.next(false);
-    return performance ? of(performance) : throwError(() => new Error('Product performance not found'));
+
+    if (performance) {
+      return of(performance);
+    }
+
+    // Fallback: build synthetic performance data from the product record itself
+    const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
+    const product = products.find(p => p.id === productId);
+    if (!product) {
+      return throwError(() => new Error('Product not found'));
+    }
+
+    const totalSold = Math.floor(50 + Math.random() * 500);
+    const totalRevenue = totalSold * product.sellingPrice;
+    const totalProfit = totalSold * (product.sellingPrice - product.costPrice);
+    const fallback: ProductPerformance = {
+      productId: product.id,
+      productName: product.name,
+      sku: product.sku,
+      category: typeof product.category === 'string' ? product.category : product.category.name,
+      totalSold,
+      totalRevenue,
+      totalProfit,
+      averagePrice: product.sellingPrice,
+      sellThroughRate: Math.floor(40 + Math.random() * 50),
+      stockTurnover: +(1 + Math.random() * 7).toFixed(1),
+      daysOfInventory: Math.floor(10 + Math.random() * 40),
+      performanceScore: Math.floor(40 + Math.random() * 50),
+      trend: (['UP', 'DOWN', 'STABLE'] as const)[Math.floor(Math.random() * 3)],
+      period: { start: new Date(), end: new Date() }
+    };
+    return of(fallback);
   }
 
   /** Create product – generates a simple temporary id */

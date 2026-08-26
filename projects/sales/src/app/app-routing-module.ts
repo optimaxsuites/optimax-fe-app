@@ -69,9 +69,9 @@ export const routes: Routes = [
 
 
 
-  // =======================================================================================================
+  // ==================================================================================================================
   //                                                INVENTORY ROUTES
-  // =======================================================================================================
+  // ==================================================================================================================
   {
     path: 'commerce/inventory',
     component: InventoryComponent
@@ -81,7 +81,7 @@ export const routes: Routes = [
     component: InventoryComponent
   },
 
-  // --------------------------------------- Product Management -----------------------------------------
+  // ------------------------------------------ Product Management -----------------------------------------------------
   {
     path: 'commerce/inventory/products/new',
     component: ProductManagementFormComponent
@@ -115,7 +115,7 @@ export const routes: Routes = [
     component: ProductDetailComponent
   },
 
-  // --------------------------------------- Branch Management -----------------------------------------
+  // --------------------------------------------- Branch Management ---------------------------------------------------
   {
     path: 'commerce/inventory/branches/new',
     component: BranchFormComponent
@@ -133,7 +133,7 @@ export const routes: Routes = [
     component: BranchInventoryFormComponent
   },
 
-  // --------------------------------------- Stock Movements -----------------------------------------
+  // --------------------------------------------- Stock Movements ---------------------------------------------------
   {
     path: 'commerce/inventory/movements/new',
     component: StockMovementFormComponent
@@ -613,6 +613,8 @@ export const routes: Routes = [
     redirectTo: 'commerce/requests',
     pathMatch: 'full'
   },
+  // Catch-all route for any undefined paths
+  { path: '**', redirectTo: '/', pathMatch: 'full' }
 ];
 
 @NgModule({

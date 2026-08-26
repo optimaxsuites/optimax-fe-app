@@ -242,7 +242,7 @@ app-performance-report {
     display: block;
     height: 80vh;
     border-radius: 10px;
-    overflow: hidden;
+    overflow: auto;
     border: 1px solid var(--border);
     box-shadow: var(--shadow);
 }

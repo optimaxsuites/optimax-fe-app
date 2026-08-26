@@ -810,8 +810,73 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Coming from the (Inventory-backed) Product Catalog's "Create Quote" button — it can't
+   *  rely on the product existing in this form's own product list (a separate, Sales-side
+   *  list), so it passes the product's details directly via query params instead of just an
+   *  id. Builds the line item straight from those, no lookup needed. Returns true if it did. */
+  private addLineItemFromCatalogQueryParams(): boolean {
+    const qp = this.route.snapshot.queryParamMap;
+    const productName = qp.get('productName');
+    if (!productName || this.items.length > 0) return false;
+
+    this.addLineItem();
+    const itemForm = this.items.at(this.items.length - 1);
+    itemForm.patchValue({
+      productId: qp.get('productId') || '',
+      productName,
+      description: qp.get('productDescription') || '',
+      quantity: 1,
+      unitPrice: Number(qp.get('productUnitPrice')) || 0,
+      taxRate: Number(qp.get('productTaxRate')) || 0
+    });
+    this.calculateItemTotal(itemForm);
+
+    if (this.customers && this.customers.length > 0) {
+      const firstCustomer = this.customers[0];
+      this.quoteForm.patchValue({
+        customerId: firstCustomer.customerId || String(firstCustomer.id),
+        customerName: firstCustomer.name
+      });
+      this.onCustomerSelect(firstCustomer.customerId || String(firstCustomer.id));
+    }
+    this.currentStep = 1;
+    if (!this.selectedTemplate) {
+      this.selectedTemplate = {
+        id: 'standard',
+        name: 'Standard Professional',
+        description: 'Clean, balanced layout with all essential business information',
+        sections: {
+          showCustomerDetails: true,
+          showCompanyLogo: true,
+          showTaxBreakdown: true,
+          showShippingDetails: true,
+          showPaymentTerms: true,
+          showNotes: true,
+          showTermsConditions: true,
+          showSignature: true,
+          showAttachments: false,
+          showItemImages: false,
+          showSKU: true,
+          showSerialNumbers: false,
+          showBatchDetails: false,
+          showSubtotalPerGroup: true,
+          showTotalInWords: true,
+          showCurrencySymbol: true,
+          showVendorInfo: true,
+          showCustomFields: false
+        },
+        layout: 'standard',
+        fontSize: 'medium',
+        colorTheme: 'professional'
+      };
+    }
+    return true;
+  }
+
   private checkAndAddProductFromParam(): void {
     if (!this.isEditMode && this.productId) {
+      if (this.addLineItemFromCatalogQueryParams()) return;
+
       const product = this.products.find(p => String(p.id) === String(this.productId) || p.productId === this.productId);
       if (product && this.items.length === 0) {
         // Clear items form array first to avoid empty/default item
