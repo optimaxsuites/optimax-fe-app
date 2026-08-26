@@ -198,22 +198,22 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
   navigateTo(route: string): void {
     const path = route.split('?')[0];
     const realRoutes: Record<string, string> = {
-      '/inventory/products/new': '/commerce/inventory/products/new',
-      '/inventory/movements/transfer': '/commerce/inventory/movements/transfer'
+      '/inventory/products/new': '/admin/sales/commerce/inventory/products/new',
+      '/inventory/movements/transfer': '/admin/sales/commerce/inventory/movements/transfer'
     };
     this.router.navigateByUrl(realRoutes[path] || '/commerce/inventory');
   }
 
   navigateToProduct(productId: string): void {
-    this.router.navigate(['/commerce/inventory/products', productId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
   }
 
   navigateToBranch(branchId: string): void {
-    this.router.navigate(['/commerce/inventory/branches', branchId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
   }
 
   navigateToMovement(movementId: string): void {
-    this.router.navigate(['/commerce/inventory/movements', movementId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements', movementId]);
   }
 
   /** Fired by <app-branch-stock-summary> once it (re)loads its data. */
