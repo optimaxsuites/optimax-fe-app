@@ -272,7 +272,7 @@ loadData(): void {
           title: `${m.quantity} × ${m.productName} is on its way to your branch`,
           subtitle: m.status === MovementStatus.IN_TRANSIT ? 'In transit' : 'Awaiting approval',
           timestamp: new Date(m.createdAt),
-          route: '/commerce/inventory/movements/' + m.id
+          route: '/admin/sales/commerce/inventory/movements/' + m.id
         });
       });
 
@@ -292,7 +292,7 @@ loadData(): void {
           title: `Admin requested changes to your transfer for ${m.productName}`,
           subtitle: 'Review the note and update the transfer',
           timestamp: new Date(m.updatedAt || m.createdAt),
-          route: '/commerce/inventory/movements/' + m.id + '/edit'
+          route: '/admin/sales/commerce/inventory/movements/' + m.id + '/edit'
         });
       });
 
@@ -371,7 +371,7 @@ loadData(): void {
   }
 
   goToEditMovement(movement: StockMovement): void {
-    this.navigateTo('/commerce/inventory/movements/' + movement.id + '/edit');
+    this.navigateTo('/admin/sales/commerce/inventory/movements/' + movement.id + '/edit');
   }
 
   /** "To Abuja Distribution Hub" / "From Abuja Distribution Hub" — whichever side of the
