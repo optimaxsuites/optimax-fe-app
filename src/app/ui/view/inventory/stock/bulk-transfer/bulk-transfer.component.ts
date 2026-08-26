@@ -481,7 +481,7 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
     }
 
     this.completed.emit(created);
-    this.router.navigate(['/commerce/inventory/movements/approvals']);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
   }
 
   // ============================================================

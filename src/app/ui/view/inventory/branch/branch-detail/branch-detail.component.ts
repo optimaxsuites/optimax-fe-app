@@ -314,17 +314,17 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   // ============================================================
 
   navigateToProduct(productId: string): void {
-    this.router.navigate(['/commerce/inventory/products', productId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
   }
 
   /** Switch to a different branch from the branch selector in the top bar. */
   onBranchChange(branchId: string | null): void {
     if (!branchId || branchId === this.branchId) return;
-    this.router.navigate(['/commerce/inventory/branches', branchId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
   }
 
   createTransfer(productId?: string): void {
-    this.router.navigate(['/commerce/inventory/movements/transfer'], {
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/transfer'], {
       queryParams: productId ? {
         productId: productId,
         branchId: this.branchId
@@ -333,7 +333,7 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   }
 
   createRestockRequest(): void {
-    this.router.navigate(['/commerce/inventory/restock/requests/new'], {
+    this.router.navigate(['/admin/sales/commerce/inventory/restock/requests/new'], {
       queryParams: { branchId: this.branchId }
     });
   }
@@ -344,17 +344,17 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   }
 
   createStockCount(): void {
-    this.router.navigate(['/commerce/inventory/movements/new'], {
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/new'], {
       queryParams: { branchId: this.branchId }
     });
   }
 
   navigateToAddProduct(): void {
-    this.router.navigate(['/commerce/inventory/branches', this.branchId, 'add-product']);
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', this.branchId, 'add-product']);
   }
 
   viewMovement(movementId: string): void {
-    this.router.navigate(['/commerce/inventory/movements', movementId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements', movementId]);
   }
 
   // ============================================================

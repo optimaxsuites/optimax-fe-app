@@ -532,9 +532,9 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     // nav-tab bar comes back too — the shell remembers "Branch Manager" was the last tab
     // selected (that's how they got to this form in the first place) and restores it.
     if (this.lockedBranchId) {
-      this.router.navigate(['/commerce/inventory']);
+      this.router.navigate(['/admin/sales/commerce/inventory']);
     } else {
-      this.router.navigate(['/commerce/inventory/movements/approvals']);
+      this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
     }
   }
 
@@ -578,7 +578,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
   }
 
   goToBulkTransfer(): void {
-    this.router.navigate(['/commerce/inventory/movements/bulk-transfer']);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/bulk-transfer']);
   }
 
   getSourceStock(productId: string): number {

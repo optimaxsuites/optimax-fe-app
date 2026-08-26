@@ -223,16 +223,16 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
 
   editProduct(): void {
     if (this.product) {
-      this.router.navigate(['/commerce/inventory/products', this.product.id, 'edit']);
+      this.router.navigate(['/admin/sales/commerce/inventory/products', this.product.id, 'edit']);
     }
   }
 
   viewBranch(branchId: string): void {
-    this.router.navigate(['/commerce/inventory/branches', branchId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
   }
 
   createTransfer(productId: string, branchId: string): void {
-    this.router.navigate(['/commerce/inventory/movements/transfer'], {
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/transfer'], {
       queryParams: {
         productId: productId,
         branchId: branchId
