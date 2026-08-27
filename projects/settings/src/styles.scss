@@ -1,5 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
 
+/* ng-select dropdown panel must sit above PrimeNG overlays and any stacking contexts */
+.ng-dropdown-panel {
+  z-index: 99999 !important;
+}
+
 // Custom Theming for Angular Material
 // For more information: https://material.angular.io/guide/theming
 @use "@angular/material" as mat;

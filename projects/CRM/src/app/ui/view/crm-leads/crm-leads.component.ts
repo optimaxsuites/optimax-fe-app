@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, finalize } from 'rxjs';
 import { CrmApiService } from '../../service/crm-api.service';
@@ -22,6 +22,14 @@ export class CrmLeadsComponent implements OnInit {
   editingLead: Lead | null = null;
   form!: FormGroup;
 
+  importing = false;
+  importProgress = 0;
+  importDone = 0;
+  importErrors: string[] = [];
+  showImportSummary = false;
+
+  @ViewChild('leadsInput') leadsInputRef!: ElementRef<HTMLInputElement>;
+
   statusOptions = ['NEW', 'CONTACTED', 'QUALIFIED', 'DISQUALIFIED'];
   sourceOptions = ['WEBSITE', 'REFERRAL', 'WHATSAPP', 'TRADE_SHOW', 'COLD_CALL', 'LINKEDIN', 'EVENT', 'DIRECT', 'OTHER'];
 
@@ -38,9 +46,9 @@ export class CrmLeadsComponent implements OnInit {
 
   buildForm() {
     this.form = this.fb.group({
-      firstName: [''],
-      lastName: [''],
-      email: [''],
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
+      email: ['', Validators.email],
       phone: [''],
       companyName: [''],
       jobTitle: [''],
@@ -88,6 +96,7 @@ export class CrmLeadsComponent implements OnInit {
   closeForm() { this.showForm = false; this.editingLead = null; }
 
   save() {
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const payload: Lead = this.form.value;
     this.saving$.next(true);
     const op = this.editingLead?.id
@@ -141,6 +150,99 @@ export class CrmLeadsComponent implements OnInit {
       QUALIFIED: 'badge-success', DISQUALIFIED: 'badge-danger',
     };
     return `badge ${map[status || ''] || 'badge-neutral'}`;
+  }
+
+  importLeads() {
+    this.leadsInputRef.nativeElement.value = '';
+    this.leadsInputRef.nativeElement.click();
+  }
+
+  onLeadsFile(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const leads = this.parseCsv(e.target?.result as string);
+      if (!leads.length) {
+        this.snack.open('No valid rows found in CSV. Check column headers.', 'Close', { duration: 5000 });
+        return;
+      }
+      this.runImport(leads);
+    };
+    reader.readAsText(file);
+  }
+
+  private parseCsv(csv: string): Partial<Lead>[] {
+    const lines = csv.replace(/\r/g, '').split('\n').filter(l => l.trim());
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z]/g, ''));
+    const colMap: Record<string, keyof Lead> = {
+      firstname: 'firstName', first: 'firstName', fname: 'firstName',
+      lastname: 'lastName', last: 'lastName', lname: 'lastName',
+      email: 'email', emailaddress: 'email',
+      phone: 'phone', mobile: 'phone', tel: 'phone',
+      company: 'companyName', companyname: 'companyName', organisation: 'companyName',
+      jobtitle: 'jobTitle', title: 'jobTitle', position: 'jobTitle',
+      leadsource: 'leadSource', source: 'leadSource',
+      status: 'status',
+      estimatedvalue: 'estimatedValue', value: 'estimatedValue',
+      owner: 'ownerName', ownername: 'ownerName',
+      notes: 'notes', tags: 'tags',
+    };
+    const leads: Partial<Lead>[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = this.parseCsvLine(lines[i]);
+      if (values.every(v => !v.trim())) continue;
+      const lead: Partial<Lead> = {};
+      headers.forEach((h, idx) => {
+        const field = colMap[h];
+        if (field && values[idx]) (lead as any)[field] = values[idx].trim();
+      });
+      if (lead.firstName || lead.email) {
+        lead.firstName = lead.firstName || 'Unknown';
+        lead.lastName = lead.lastName || '';
+        lead.status = (lead.status as string) || 'NEW';
+        leads.push(lead);
+      }
+    }
+    return leads;
+  }
+
+  private parseCsvLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (const ch of line) {
+      if (ch === '"') { inQuotes = !inQuotes; continue; }
+      if (ch === ',' && !inQuotes) { result.push(current); current = ''; continue; }
+      current += ch;
+    }
+    result.push(current);
+    return result;
+  }
+
+  private runImport(leads: Partial<Lead>[]) {
+    this.importing = true;
+    this.importProgress = 50;
+    this.importDone = 0;
+    this.importErrors = [];
+    this.showImportSummary = false;
+    this.snack.open(`Sending ${leads.length} leads to server…`, '', { duration: 2500 });
+    this.api.bulkCreateLeads(leads as Lead[]).subscribe({
+      next: (res) => {
+        this.importing = false;
+        this.importProgress = 100;
+        this.importDone = res.created;
+        this.importErrors = res.errors || [];
+        this.showImportSummary = true;
+        this.snack.open(`Import complete: ${res.created} created, ${res.failed} failed.`, 'Close', { duration: 6000 });
+        this.load();
+      },
+      error: (e) => {
+        this.importing = false;
+        this.snack.open(`Import failed: ${e}`, 'Close', { duration: 5000 });
+      },
+    });
   }
 
   sourceClass(source?: string): string {

@@ -1,7 +1,11 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, forkJoin } from 'rxjs';
 import { CrmApiService } from '../../service/crm-api.service';
 import { Deal } from '../../domain/crm.model';
+import { CrmContactFormComponent } from '../crm-contacts/crm-contact-form.component';
 
 @Component({
   selector: 'app-crm-dashboard',
@@ -22,7 +26,13 @@ export class CrmDashboardComponent implements OnInit {
   winRate = 0;
   recentDeals: Deal[] = [];
 
-  constructor(private api: CrmApiService) {}
+  constructor(
+    private api: CrmApiService,
+    private dialog: MatDialog,
+    private router: Router,
+    private route: ActivatedRoute,
+    private snack: MatSnackBar,
+  ) {}
 
   ngOnInit() {
     forkJoin({
@@ -49,6 +59,48 @@ export class CrmDashboardComponent implements OnInit {
       },
       error: () => this.loading$.next(false),
     });
+  }
+
+  openNewContact() {
+    const ref = this.dialog.open(CrmContactFormComponent, { data: null, width: '640px', maxHeight: '90vh' });
+    ref.afterClosed().subscribe(saved => { if (saved) this.ngOnInit(); });
+  }
+
+  private get uuid(): string { return this.route.snapshot.params['uuid'] || 'default'; }
+
+  goToDeals() { this.router.navigate(['deals', this.uuid], { relativeTo: this.route.parent }); }
+  goToActivities() { this.router.navigate(['activities', this.uuid], { relativeTo: this.route.parent }); }
+  goToCampaigns() { this.router.navigate(['campaigns', this.uuid], { relativeTo: this.route.parent }); }
+  goToLeads() { this.router.navigate(['leads', this.uuid], { relativeTo: this.route.parent }); }
+
+  logCall() {
+    this.router.navigate(['activities', this.uuid], { relativeTo: this.route.parent });
+    this.snack.open('Navigating to Activities — log a call there', 'OK', { duration: 2500 });
+  }
+
+  sendEmail() {
+    this.router.navigate(['campaigns', this.uuid], {
+      relativeTo: this.route.parent,
+      state: { openForm: true, campaignType: 'EMAIL' },
+    });
+  }
+
+  whatsappBlast() {
+    this.router.navigate(['campaigns', this.uuid], {
+      relativeTo: this.route.parent,
+      state: { openForm: true, campaignType: 'WHATSAPP' },
+    });
+  }
+
+  sendProposal() {
+    this.router.navigate(['quotes', this.uuid], {
+      relativeTo: this.route.parent,
+      state: { openForm: true },
+    });
+  }
+
+  comingSoon(feature: string) {
+    this.snack.open(`${feature} — coming soon`, 'OK', { duration: 3000 });
   }
 
   formatValue(v: number): string {

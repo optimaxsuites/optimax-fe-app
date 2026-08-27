@@ -39,6 +39,7 @@ import {
   ComposerMentionOption,
   MessageComposerComponent,
 } from './message-composer/message-composer.component';
+import { ThreadPanelComponent } from './thread-panel/thread-panel.component';
 
 // damilola worked on this: feed-first collaboration, unread syncing, read receipts, and richer notifications.
 // ── Local interfaces ──────────────────────────────────────────────────────────
@@ -408,6 +409,7 @@ export class CommunicationComponent
 {
   @ViewChild('feedEl') feedEl!: ElementRef<HTMLDivElement>;
   @ViewChild(MessageComposerComponent) messageComposer?: MessageComposerComponent;
+  @ViewChild(ThreadPanelComponent) threadPanel?: ThreadPanelComponent;
   @ViewChild('threadEl') threadEl!: ElementRef<HTMLDivElement>;
   @ViewChild('feedComposerEl') feedComposerEl?: ElementRef<HTMLDivElement>;
 
@@ -607,8 +609,20 @@ export class CommunicationComponent
     duration: 0,
     muted: false,
     videoOff: false,
+    jitsiRoomUrl: undefined as string | undefined,
+    callerDisplayName: undefined as string | undefined,
   };
   private callDurationTimer: any = null;
+  private callRingInterval: any = null;
+
+  incomingCallModal = {
+    open: false,
+    type: 'CALL' as 'CALL' | 'VIDEO_CALL',
+    callerName: '',
+    callerUserId: 0,
+    meetingUrl: '',
+    channelId: 0,
+  };
 
   memberMenu = { open: false, memberId: 0, userId: 0 };
 
@@ -3120,6 +3134,28 @@ export class CommunicationComponent
           this.loadChannels(true);
         },
       );
+      client.subscribe(
+        `/topic/collab/call/user/${this.me.userId}`,
+        (frame: any) => {
+          try {
+            const action = JSON.parse(frame.body || '{}');
+            if (action.actionType === 'VIDEO_CALL' || action.actionType === 'CALL') {
+              const payload = action.payloadJson ? JSON.parse(action.payloadJson) : {};
+              const callerContact = this.dmContacts.find(c => c.userId === action.initiatorUserId);
+              this.incomingCallModal = {
+                open: true,
+                type: action.actionType,
+                callerName: callerContact?.fullName || `User ${action.initiatorUserId}`,
+                callerUserId: action.initiatorUserId,
+                meetingUrl: payload.meetingUrl || '',
+                channelId: action.channelId,
+              };
+              this.startCallRingtone();
+              this.cdr.detectChanges();
+            }
+          } catch (_) {}
+        },
+      );
       this.loadChannels(true, true);
       for (const ch of this.channels) {
         this.subscribeToChannel(ch.backendId);
@@ -3301,7 +3337,8 @@ export class CommunicationComponent
             this.playNotificationSound(this.shouldUseUrgentNotificationSound());
           }
 
-          if (!this.isViewingChannel(ch.id)) {
+          const isActiveChannelFeed = this.workspaceMode === 'chat' && this.activeView === 'channel' && this.activeChannelId === ch.id;
+          if (!isActiveChannelFeed) {
             if (!isOwnMessage) {
               ch.unreadCount = (ch.unreadCount || 0) + 1;
               ch.hasUnread = true;
@@ -3408,7 +3445,8 @@ export class CommunicationComponent
             );
             this.playNotificationSound(this.shouldUseUrgentNotificationSound());
           }
-          if (!this.isViewingDm(contact.id)) {
+          const isActiveDmFeed = this.workspaceMode === 'chat' && this.activeView === 'dm' && this.activeDmId === contact.id;
+          if (!isActiveDmFeed) {
             if (!isOwnMessage) {
               contact.unreadCount = (contact.unreadCount || 0) + 1;
               contact.hasUnread = true;
@@ -3745,6 +3783,7 @@ export class CommunicationComponent
 
       this.scrollFeed = shouldAutoScroll;
       this.cdr.detectChanges();
+      this.consumePendingNotificationHighlight(this.dmMessages[contact.id]);
     };
 
     if (senderIds.length) this.loadUserDirectory(senderIds, apply);
@@ -6158,6 +6197,7 @@ export class CommunicationComponent
       this.scrollToLatestMessageSoon();
       this.cdr.detectChanges();
       this.focusMessageComposerSoon();
+      this.consumePendingNotificationHighlight(this.dmMessages[contact.id]);
       return;
     }
     this.messagesLoading = true;
@@ -8186,6 +8226,7 @@ export class CommunicationComponent
     this.clearThreadPendingAttachments();
     this.scrollThread = true;
     this.cdr.detectChanges();
+    this.threadPanel?.focusReplyInput();
   }
 
   closeThread(): void {
@@ -9127,6 +9168,8 @@ export class CommunicationComponent
     const target = this.activeDmContact,
       targetName = target?.fullName ?? this.activeChannel?.name ?? 'Contact',
       targetUserId = target?.userId ?? 0;
+    const chId = target?.dmChannelId ?? this.activeChannel?.backendId ?? 0;
+
     this.callModal = {
       open: true,
       type,
@@ -9136,9 +9179,12 @@ export class CommunicationComponent
       duration: 0,
       muted: false,
       videoOff: type === 'CALL',
+      jitsiRoomUrl: undefined,
+      callerDisplayName: this.me.name,
     };
+    this.startCallRingtone();
     this.cdr.detectChanges();
-    const chId = target?.dmChannelId ?? this.activeChannel?.backendId ?? 0;
+
     this.collabService
       .triggerAction({
         channelId: chId,
@@ -9147,25 +9193,80 @@ export class CommunicationComponent
         targetUserId,
         actionType: type,
         subject: `${type === 'CALL' ? 'Voice' : 'Video'} call with ${targetName}`,
-        payloadJson: JSON.stringify({ type }),
+        payloadJson: undefined,
       })
       .subscribe({
-        next: () => {
-          this.callModal.status = 'connected';
-          this.callDurationTimer = setInterval(() => {
-            this.callModal.duration++;
-            this.cdr.detectChanges();
-          }, 1000);
+        next: (response: any) => {
+          this.stopCallRingtone();
+          let jitsiRoomUrl: string | undefined;
+          try {
+            const payload = response?.payloadJson ? JSON.parse(response.payloadJson) : {};
+            const meetingUrl = payload.meetingUrl || '';
+            const displayName = encodeURIComponent(this.me.name || 'User');
+            if (meetingUrl) {
+              const audioOnlyFlag = type === 'CALL' ? '&config.startWithVideoMuted=true' : '';
+              jitsiRoomUrl = `${meetingUrl}#userInfo.displayName="${displayName}"${audioOnlyFlag}`;
+            }
+          } catch (_) {}
+          this.callModal = { ...this.callModal, status: 'connected', jitsiRoomUrl };
           this.cdr.detectChanges();
         },
         error: () => {
+          this.stopCallRingtone();
           this.callModal.status = 'failed';
           this.cdr.detectChanges();
         },
       });
   }
 
+  private startCallRingtone(): void {
+    this.stopCallRingtone();
+    const ring = () => this.playNotificationSound(false);
+    ring();
+    this.callRingInterval = setInterval(ring, 3500);
+  }
+
+  private stopCallRingtone(): void {
+    if (this.callRingInterval) {
+      clearInterval(this.callRingInterval);
+      this.callRingInterval = null;
+    }
+    // Close the AudioContext immediately so any in-progress oscillators stop now,
+    // not after their pre-scheduled duration expires.
+    if (this.notificationAudioContext) {
+      try { this.notificationAudioContext.close(); } catch (_) {}
+      this.notificationAudioContext = null;
+    }
+  }
+
+  acceptIncomingCall(): void {
+    this.stopCallRingtone();
+    const { type, meetingUrl, callerName, callerUserId } = this.incomingCallModal;
+    this.incomingCallModal = { ...this.incomingCallModal, open: false };
+
+    let jitsiRoomUrl: string | undefined;
+    if (meetingUrl) {
+      const displayName = encodeURIComponent(this.me.name || 'User');
+      const audioOnlyFlag = type === 'CALL' ? '&config.startWithVideoMuted=true' : '';
+      jitsiRoomUrl = `${meetingUrl}#userInfo.displayName="${displayName}"${audioOnlyFlag}`;
+    }
+
+    this.callModal = {
+      open: true, type, targetName: callerName, targetUserId: callerUserId,
+      status: 'connected', duration: 0, muted: false, videoOff: false,
+      jitsiRoomUrl, callerDisplayName: this.me.name,
+    };
+    this.cdr.detectChanges();
+  }
+
+  declineIncomingCall(): void {
+    this.stopCallRingtone();
+    this.incomingCallModal = { ...this.incomingCallModal, open: false };
+    this.cdr.detectChanges();
+  }
+
   endCall(): void {
+    this.stopCallRingtone();
     if (this.callDurationTimer) {
       clearInterval(this.callDurationTimer);
       this.callDurationTimer = null;

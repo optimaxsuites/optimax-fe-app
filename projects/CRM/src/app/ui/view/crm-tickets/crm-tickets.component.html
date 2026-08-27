@@ -67,6 +67,7 @@
             *ngIf="!['RESOLVED','CLOSED'].includes(t.status || '')">Resolve</button>
           <button class="btn-xs" (click)="close(t)"
             *ngIf="t.status === 'RESOLVED'">Close</button>
+          <button class="btn-xs" (click)="openForm(t)">✏</button>
           <button class="btn-xs" style="color:#dc2626;border-color:#fecaca;" (click)="delete(t)">Delete</button>
         </td>
       </tr>
@@ -84,11 +85,14 @@
 <div class="side-form-overlay" *ngIf="showForm" (click)="closeForm()"></div>
 <div class="side-form" [class.open]="showForm">
   <div class="side-form-header">
-    <h2>New Ticket</h2>
+    <h2>{{ editingTicket ? 'Edit Ticket' : 'New Ticket' }}</h2>
     <button class="btn ghost" style="font-size:18px" (click)="closeForm()">✕</button>
   </div>
   <div class="side-form-body" [formGroup]="form">
-    <label class="form-field full-width">Subject *<input formControlName="subject"></label>
+    <div class="form-field-wrap" style="margin-bottom:.75rem;">
+      <label class="form-field full-width">Subject *<input formControlName="subject" [class.input-error]="form.get('subject')?.invalid && form.get('subject')?.touched"></label>
+      <span class="field-error" *ngIf="form.get('subject')?.invalid && form.get('subject')?.touched">Subject is required</span>
+    </div>
     <div class="form-row">
       <label class="form-field">Contact Name<input formControlName="contactName"></label>
       <label class="form-field">Account Name<input formControlName="accountName"></label>
@@ -124,6 +128,6 @@
   </div>
   <div class="side-form-footer">
     <button class="btn outline" (click)="closeForm()">Cancel</button>
-    <button class="btn primary" (click)="save()" [disabled]="saving$ | async">Create Ticket</button>
+    <button class="btn primary" (click)="save()" [disabled]="saving$ | async">{{ editingTicket ? 'Update' : 'Create Ticket' }}</button>
   </div>
 </div>

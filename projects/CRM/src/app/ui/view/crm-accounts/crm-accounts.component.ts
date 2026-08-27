@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, finalize } from 'rxjs';
 import { CrmApiService } from '../../service/crm-api.service';
@@ -36,7 +36,7 @@ export class CrmAccountsComponent implements OnInit {
 
   buildForm() {
     this.form = this.fb.group({
-      name: [''],
+      name: ['', Validators.required],
       industry: [''],
       accountType: ['PROSPECT'],
       website: [''],
@@ -84,6 +84,7 @@ export class CrmAccountsComponent implements OnInit {
   closeForm() { this.showForm = false; this.editingAccount = null; }
 
   save() {
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const payload: Account = this.form.value;
     this.saving$.next(true);
     const op = this.editingAccount?.id
@@ -122,6 +123,8 @@ export class CrmAccountsComponent implements OnInit {
     if (score >= 50) return 'med';
     return 'low';
   }
+
+  importAccounts() { this.snack.open('Import Accounts — coming soon', 'OK', { duration: 3000 }); }
 
   formatRevenue(v?: number): string {
     if (!v) return '—';

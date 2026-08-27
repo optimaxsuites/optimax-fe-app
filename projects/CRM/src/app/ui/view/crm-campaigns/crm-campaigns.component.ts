@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, finalize } from 'rxjs';
 import { CrmApiService } from '../../service/crm-api.service';
@@ -35,11 +35,18 @@ export class CrmCampaignsComponent implements OnInit {
   ngOnInit() {
     this.buildForm();
     this.load();
+    const nav = history.state as { openForm?: boolean; campaignType?: string };
+    if (nav?.openForm) {
+      this.openForm();
+      if (nav.campaignType) {
+        this.form.patchValue({ campaignType: nav.campaignType });
+      }
+    }
   }
 
   buildForm() {
     this.form = this.fb.group({
-      name: [''],
+      name: ['', Validators.required],
       campaignType: ['EMAIL'],
       status: ['DRAFT'],
       description: [''],
@@ -70,6 +77,7 @@ export class CrmCampaignsComponent implements OnInit {
   closeForm() { this.showForm = false; this.editingCampaign = null; }
 
   save() {
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const payload: Campaign = this.form.value;
     this.saving$.next(true);
     const op = this.editingCampaign?.id

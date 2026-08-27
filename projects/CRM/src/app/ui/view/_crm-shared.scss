@@ -214,7 +214,7 @@ select.filter {
 .pill-purple,
 .badge-purple   { background: #ede9fe; color: #6d28d9; }
 .pill-gray,
-.badge-neutral  { background: #f3f4f6; color: #475467; }
+.badge-neutral  { background: #e9ecf0; color: #1e293b; }
 .badge-orange   { background: #fed7aa; color: #c2410c; }
 .badge-teal     { background: #ccfbf1; color: #0d9488; }
 
@@ -1386,6 +1386,25 @@ select.filter {
 
 .full-width { width: 100%; }
 .ndpa-row   { margin: 4px 0; }
+
+.form-field-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  .form-field { margin-bottom: 0; }
+}
+
+.field-error {
+  font-size: 11px;
+  color: $red;
+  font-weight: 500;
+}
+
+.input-error {
+  border-color: $red !important;
+  outline-color: $red !important;
+}
 
 // ── Deals / Quotes extras ─────────────────────────────────────────────────────
 .stage-tag {

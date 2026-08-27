@@ -185,6 +185,12 @@ export class SalaryService {
     .pipe(catchError(this.handleError));
   }
 
+  updateDeduction(id: number, data: DeductionsDTO){
+    return this.http
+    .put<any>(this.getBaseApiUrl() + `/x/api/v2/hr/deductions/${id}`, data)
+    .pipe(catchError(this.handleError));
+  }
+
   deleteAllowance(id: number){
     return this.http
     .delete<any>(this.getBaseApiUrl() + `/x/api/v2/hr/allowances/${id}`)

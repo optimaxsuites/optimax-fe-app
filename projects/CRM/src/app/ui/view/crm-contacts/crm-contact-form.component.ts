@@ -1,5 +1,5 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { finalize } from 'rxjs';
@@ -9,6 +9,7 @@ import { Contact } from '../../domain/crm.model';
 @Component({
   selector: 'app-crm-contact-form',
   templateUrl: './crm-contact-form.component.html',
+  styleUrls: ['./crm-contact-form.component.scss'],
 })
 export class CrmContactFormComponent implements OnInit {
   form!: FormGroup;
@@ -30,9 +31,9 @@ export class CrmContactFormComponent implements OnInit {
   ngOnInit() {
     const d = this.data;
     this.form = this.fb.group({
-      firstName:    [d?.firstName || '', []],
-      lastName:     [d?.lastName  || '', []],
-      email:        [d?.email     || ''],
+      firstName:    [d?.firstName || '', [Validators.required]],
+      lastName:     [d?.lastName  || '', [Validators.required]],
+      email:        [d?.email     || '', [Validators.required, Validators.email]],
       phone:        [d?.phone     || ''],
       whatsapp:     [d?.whatsapp  || ''],
       jobTitle:     [d?.jobTitle  || ''],
@@ -54,7 +55,10 @@ export class CrmContactFormComponent implements OnInit {
   }
 
   save() {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
     this.saving = true;
     const payload: Contact = this.form.value;
     const obs = this.isEdit

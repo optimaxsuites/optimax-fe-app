@@ -9,7 +9,7 @@ import { Component, EventEmitter, HostListener, Output } from '@angular/core';
   animations: [
     trigger('openClose', [
       state('open', style({
-        transform: 'translateX(0)', 
+        transform: 'translateX(0)',
         opacity: 1
       })),
       state('closed', style({

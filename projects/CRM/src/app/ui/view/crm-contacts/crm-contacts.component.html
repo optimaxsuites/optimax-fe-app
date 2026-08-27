@@ -1,23 +1,47 @@
+<input #csvInput type="file" accept=".csv,text/csv" style="display:none" (change)="onCsvFile($event)">
+<input #cardInput type="file" accept="image/*" capture="environment" style="display:none" (change)="onCardFile($event)">
+
 <div class="panel-header">
   <div>
     <h1 class="panel-title">Contacts</h1>
-    <p class="panel-subtitle">{{ filtered.length }} contacts · AI-scored · enriched with company data and relationship mapping</p>
+    <p class="panel-subtitle">{{ filtered.length }} contacts · AI-scored · enriched with company data</p>
   </div>
   <div class="panel-actions">
-    <button class="btn-secondary">⬆ Import CSV</button>
+    <button class="btn-secondary" (click)="scanBusinessCard()" [disabled]="scanning">
+      <span *ngIf="scanning" class="spin-xs">⟳</span>
+      <span *ngIf="!scanning">📷</span> Scan Card
+    </button>
+    <button class="btn-secondary" (click)="importCsv()" [disabled]="importing">
+      <span *ngIf="importing">⟳ {{ importProgress }}%</span>
+      <span *ngIf="!importing">⬆ Import CSV</span>
+    </button>
     <button class="btn-primary" (click)="openForm()">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>New Contact
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:13px;height:13px;vertical-align:-1px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+      New Contact
     </button>
   </div>
+</div>
+
+<!-- Import summary bar -->
+<div *ngIf="showImportSummary" class="import-summary-bar">
+  <span>Import done: <strong>{{ importDone }}</strong> created
+    <span *ngIf="importErrors.length"> · <strong style="color:#dc2626;">{{ importErrors.length }}</strong> failed</span>
+  </span>
+  <button class="btn-xs" (click)="showImportSummary=false">Dismiss</button>
+</div>
+
+<!-- CSV format hint (shown while importing or summary) -->
+<div *ngIf="importing" class="import-progress-bar">
+  <div class="import-fill" [style.width]="importProgress + '%'"></div>
 </div>
 
 <div class="view-layout">
   <div class="saved-views-sidebar">
     <div class="sv-title">Saved Views</div>
-    <div class="sv-item active" (click)="typeFilter='';applyFilters()">All Contacts<span class="sv-count">{{ contacts.length }}</span></div>
-    <div class="sv-item" (click)="typeFilter='CUSTOMER';applyFilters()">Customers<span class="sv-count">{{ contacts.length }}</span></div>
-    <div class="sv-item" (click)="typeFilter='LEAD';applyFilters()">Leads</div>
-    <div class="sv-item" (click)="typeFilter='PROSPECT';applyFilters()">Prospects</div>
+    <div class="sv-item" [class.active]="typeFilter===''" (click)="typeFilter='';applyFilters()">All Contacts<span class="sv-count">{{ contacts.length }}</span></div>
+    <div class="sv-item" [class.active]="typeFilter==='CUSTOMER'" (click)="typeFilter='CUSTOMER';applyFilters()">Customers<span class="sv-count">{{ customerCount }}</span></div>
+    <div class="sv-item" [class.active]="typeFilter==='LEAD'" (click)="typeFilter='LEAD';applyFilters()">Leads<span class="sv-count">{{ leadCount }}</span></div>
+    <div class="sv-item" [class.active]="typeFilter==='PROSPECT'" (click)="typeFilter='PROSPECT';applyFilters()">Prospects<span class="sv-count">{{ prospectCount }}</span></div>
   </div>
 
   <div class="view-main">
@@ -42,6 +66,7 @@
         <option value="EVENT">Trade Show</option>
         <option value="COLD_CALL">Cold Call</option>
         <option value="LINKEDIN">LinkedIn</option>
+        <option value="OTHER">Other</option>
       </select>
     </div>
 
@@ -59,7 +84,7 @@
             <th>Type</th>
             <th>Owner</th>
             <th>AI Score</th>
-            <th></th>
+            <th style="width:80px;"></th>
           </tr>
         </thead>
         <tbody>
@@ -95,19 +120,31 @@
             <td>
               <span class="score-pill" [class]="scoreClass(c.aiScore)">{{ c.aiScore ?? '—' }}</span>
             </td>
-            <td class="actions-cell">
-              <button class="action-btn" title="Edit" (click)="openForm(c)">✏</button>
-              <button class="action-btn" title="Delete" (click)="delete(c)" style="color:#dc2626;">🗑</button>
+            <td>
+              <div class="row-actions">
+                <button class="row-action-btn edit-btn" title="Edit contact" (click)="openForm(c)">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </button>
+                <button class="row-action-btn delete-btn" title="Delete contact" (click)="delete(c)">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+              </div>
             </td>
           </tr>
           <tr *ngIf="filtered.length === 0">
-            <td colspan="9" style="text-align:center;padding:2rem;color:#94a3b8;">No contacts found</td>
+            <td colspan="9" style="text-align:center;padding:2rem;color:#94a3b8;">
+              <div>No contacts found</div>
+              <div style="margin-top:.5rem;font-size:11px;">Try adjusting filters or <button class="link-btn" (click)="openForm()">add a new contact</button></div>
+            </td>
           </tr>
         </tbody>
       </table>
 
       <div class="pagination-row">
         <span class="pag-info">Showing {{ filtered.length }} of {{ contacts.length }} contacts</span>
+        <div style="font-size:10px;color:#94a3b8;">
+          CSV format: firstName, lastName, email, phone, companyName, jobTitle, contactType, leadSource, city, state
+        </div>
       </div>
     </div>
   </div>

@@ -57,6 +57,11 @@ interface MentionProfileCard {
 })
 export class ThreadPanelComponent implements OnChanges, AfterViewChecked {
   @ViewChild('threadScrollEl') threadScrollEl?: ElementRef<HTMLElement>;
+  @ViewChild('replyTextarea') replyTextareaEl?: ElementRef<HTMLTextAreaElement>;
+
+  focusReplyInput(): void {
+    setTimeout(() => this.replyTextareaEl?.nativeElement?.focus(), 120);
+  }
 
   private shouldScrollReplies = false;
   private _scrollRetryTimer: ReturnType<typeof setTimeout> | null = null;

@@ -35,7 +35,8 @@
         <div class="tl-sub" *ngIf="a.dealName" style="color:#2E6276;">Deal: {{ a.dealName }}</div>
       </div>
       <div style="display:flex;gap:.5rem;flex-shrink:0;">
-        <button class="btn-xs" *ngIf="a.status !== 'COMPLETED'" (click)="complete(a)">Log</button>
+        <button class="btn-xs" *ngIf="a.status !== 'COMPLETED'" (click)="complete(a)">Complete</button>
+        <button class="btn-xs" (click)="openForm(a)">✏</button>
         <button class="btn-xs" style="color:#dc2626;border-color:#fecaca;" (click)="delete(a)">✕</button>
       </div>
     </div>
@@ -50,19 +51,22 @@
 <div class="side-form-overlay" *ngIf="showForm" (click)="closeForm()"></div>
 <div class="side-form" [class.open]="showForm">
   <div class="side-form-header">
-    <h2>Log Activity</h2>
+    <h2>{{ editingActivity ? 'Edit Activity' : 'Log Activity' }}</h2>
     <button class="btn ghost" style="font-size:18px" (click)="closeForm()">✕</button>
   </div>
   <div class="side-form-body" [formGroup]="form">
     <div class="form-row">
-      <label class="form-field">Type
-        <select formControlName="activityType">
+      <label class="form-field">Type *
+        <select formControlName="activityType" [class.input-error]="form.get('activityType')?.invalid && form.get('activityType')?.touched">
           <option *ngFor="let t of typeOptions" [value]="t">{{ icon(t) }} {{ t }}</option>
         </select>
       </label>
       <label class="form-field">Due Date<input formControlName="dueDate" type="datetime-local"></label>
     </div>
-    <label class="form-field full-width">Subject *<input formControlName="subject"></label>
+    <div class="form-field-wrap" style="margin-bottom:.75rem;">
+      <label class="form-field full-width">Subject *<input formControlName="subject" [class.input-error]="form.get('subject')?.invalid && form.get('subject')?.touched"></label>
+      <span class="field-error" *ngIf="form.get('subject')?.invalid && form.get('subject')?.touched">Subject is required</span>
+    </div>
     <div class="form-row">
       <label class="form-field">Contact Name<input formControlName="contactName"></label>
       <label class="form-field">Deal Name<input formControlName="dealName"></label>
@@ -73,6 +77,6 @@
   </div>
   <div class="side-form-footer">
     <button class="btn outline" (click)="closeForm()">Cancel</button>
-    <button class="btn primary" (click)="save()" [disabled]="saving$ | async">Log Activity</button>
+    <button class="btn primary" (click)="save()" [disabled]="saving$ | async">{{ editingActivity ? 'Update' : 'Log Activity' }}</button>
   </div>
 </div>

@@ -4,7 +4,7 @@
     <p class="panel-subtitle">{{ filtered.length }} companies · track relationships at the organisation level</p>
   </div>
   <div class="panel-actions">
-    <button class="btn-secondary">⬆ Import Accounts</button>
+    <button class="btn-secondary" (click)="importAccounts()">⬆ Import Accounts</button>
     <button class="btn-primary" (click)="openForm()">+ New Account</button>
   </div>
 </div>
@@ -84,7 +84,10 @@
   </div>
   <div class="side-form-body" [formGroup]="form">
     <div class="form-section-label">Basic Info</div>
-    <label class="form-field full-width">Account Name *<input formControlName="name"></label>
+    <div class="form-field-wrap" style="margin-bottom:.75rem;">
+      <label class="form-field full-width">Account Name *<input formControlName="name" [class.input-error]="form.get('name')?.invalid && form.get('name')?.touched"></label>
+      <span class="field-error" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">Account name is required</span>
+    </div>
     <div class="form-row">
       <label class="form-field">Industry
         <select formControlName="industry">

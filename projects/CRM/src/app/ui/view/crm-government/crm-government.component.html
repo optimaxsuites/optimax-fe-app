@@ -3,7 +3,7 @@
         <div class="panel-actions">
           <button class="btn-secondary">🔒 Audit Log</button>
           <button class="btn-secondary">📋 Compliance Report</button>
-          <button class="btn-primary">+ New Record</button>
+          <button class="btn-primary" (click)="newRecord()">+ New Record</button>
         </div>
       </div>
 
@@ -23,59 +23,91 @@
         <button class="gov-tab" [class.active]="activeTab === 'tenders'" (click)="setTab('tenders')">🏗 Tender / Procurement</button>
       </div>
 
-      <!-- CITIZENS SUB-PANEL -->
+      <!-- CITIZENS SUB-PANEL — real data from Contacts API -->
       <div *ngIf="activeTab === 'citizens'" class="gov-panel active">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;">
-          <div style="font-size:12px;font-weight:700;color:#2E6276;">Registered Citizens &amp; Organisations — 4,281 records</div>
-          <div style="display:flex;gap:.5rem;"><button class="btn-xs">⬆ Bulk Import</button><button class="btn-primary" style="font-size:10px;padding:.35rem .75rem;">+ Register Citizen</button></div>
+          <div style="font-size:12px;font-weight:700;color:#2E6276;">
+            Registered Citizens &amp; Contacts — {{ contacts.length }} records
+            <span *ngIf="loading$ | async" style="color:#94a3b8;font-weight:400;"> Loading…</span>
+          </div>
+          <div style="display:flex;gap:.5rem;">
+            <button class="btn-primary" style="font-size:10px;padding:.35rem .75rem;" (click)="newRecord()">+ Register Citizen</button>
+          </div>
         </div>
         <div class="filter-bar" style="margin-bottom:.875rem;">
-          <div class="search-box" style="max-width:280px;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg><input type="text" placeholder="Search NIN, name, ward, LGA…"></div>
-          <select class="filter-select"><option>All Types</option><option>Individual</option><option>Business</option><option>NGO</option><option>Govt Agency</option></select>
-          <select class="filter-select"><option>All States</option><option>Lagos</option><option>Abuja (FCT)</option><option>Kano</option><option>Rivers</option><option>Oyo</option></select>
-          <select class="filter-select"><option>All LGAs</option></select>
+          <div class="search-box" style="max-width:280px;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg><input type="text" [(ngModel)]="searchTerm" placeholder="Search NIN, name, phone, email…"></div>
         </div>
         <div class="table-container">
-          <table class="data-table">
-            <thead><tr><th style="width:36px;"><input type="checkbox"></th><th>Citizen / Entity</th><th>Type</th><th>NIN / Reg No.</th><th>LGA / Ward</th><th>State</th><th>Cases</th><th>Last Interaction</th><th>Officer</th><th></th></tr></thead>
+          <div *ngIf="loading$ | async" style="text-align:center;padding:2rem;color:#94a3b8;">Loading records…</div>
+          <table class="data-table" *ngIf="!(loading$ | async)">
+            <thead><tr><th style="width:36px;"><input type="checkbox"></th><th>Name</th><th>Type</th><th>NIN / ID</th><th>City / State</th><th>Email</th><th>Phone</th><th>Owner</th><th></th></tr></thead>
             <tbody>
-              <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#25925B;">AK</div><div><div class="contact-name">Adewale Kolawole</div><div class="contact-email">adewale.k&#64;gmail.com · +234 803 112 3344</div></div></div></td><td><span class="citizen-type-tag individual">Individual</span></td><td style="font-family:monospace;font-size:11px;">NIN: 7823 4512 9001</td><td>Surulere, Ward 4</td><td>Lagos</td><td><span class="badge badge-info">2 active</span></td><td style="color:#94a3b8;">Today</td><td><div class="owner-cell"><div class="o-avatar">MO</div>M. Okafor</div></td><td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs">New Case</button></td></tr>
-              <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#7c3aed;font-size:9px;">NGO</div><div><div class="contact-name">Arise Africa Foundation</div><div class="contact-email">info&#64;ariseafrica.org</div></div></div></td><td><span class="citizen-type-tag ngo">NGO</span></td><td style="font-family:monospace;font-size:11px;">CAC: RC-1184527</td><td>Central Area</td><td>FCT Abuja</td><td><span class="badge badge-warning">1 grant</span></td><td style="color:#94a3b8;">Yesterday</td><td><div class="owner-cell"><div class="o-avatar" style="background:#2E6276;">AJ</div>A. Johnson</div></td><td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs">New Grant</button></td></tr>
-              <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#f59e0b;font-size:9px;">BIZ</div><div><div class="contact-name">Kano Textile Ltd.</div><div class="contact-email">info&#64;kanotextile.com.ng</div></div></div></td><td><span class="citizen-type-tag business">Business</span></td><td style="font-family:monospace;font-size:11px;">TIN: 0012345678</td><td>Nassarawa LGA</td><td>Kano</td><td><span class="badge badge-info">1 permit</span></td><td style="color:#94a3b8;">Jun 20</td><td><div class="owner-cell"><div class="o-avatar" style="background:#f59e0b;">HU</div>H. Usman</div></td><td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs">New Permit</button></td></tr>
-              <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#10b981;font-size:9px;">GOV</div><div><div class="contact-name">NDDC Regional Office</div><div class="contact-email">nddc-rivers&#64;gov.ng</div></div></div></td><td><span class="citizen-type-tag govt">Govt Agency</span></td><td style="font-family:monospace;font-size:11px;">MDА: NDDC-PH-01</td><td>Port Harcourt</td><td>Rivers</td><td><span class="badge badge-purple">2 tenders</span></td><td style="color:#94a3b8;">Jun 18</td><td><div class="owner-cell"><div class="o-avatar" style="background:#25925B;">EO</div>E. Obi</div></td><td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs">New Tender</button></td></tr>
+              <tr *ngFor="let c of filteredContacts">
+                <td><input type="checkbox"></td>
+                <td>
+                  <div class="contact-cell">
+                    <div class="c-avatar" [style.background]="avatarColor(c)">{{ initials(c) }}</div>
+                    <div>
+                      <div class="contact-name">{{ c.firstName }} {{ c.lastName }}</div>
+                      <div class="contact-email">{{ c.email || '—' }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge badge-neutral" style="font-size:9px;">{{ c.contactType || 'CONTACT' }}</span></td>
+                <td style="font-family:monospace;font-size:11px;">{{ c.nin || '—' }}</td>
+                <td>{{ c.city || '—' }}{{ c.state ? ', ' + c.state : '' }}</td>
+                <td style="color:#64748b;font-size:11px;">{{ c.email || '—' }}</td>
+                <td style="font-size:11px;">{{ c.phone || '—' }}</td>
+                <td>
+                  <div class="owner-cell">
+                    <div class="o-avatar">{{ (c.ownerName || '?')[0] }}</div>
+                    {{ c.ownerName || '—' }}
+                  </div>
+                </td>
+                <td><button class="btn-xs">View</button></td>
+              </tr>
+              <tr *ngIf="filteredContacts.length === 0 && !(loading$ | async)">
+                <td colspan="9" style="text-align:center;padding:2rem;color:#94a3b8;">No records found. Add contacts via the Contacts menu.</td>
+              </tr>
             </tbody>
           </table>
-          <div class="pagination-row"><span class="pag-info">Showing 1–4 of 4,281 records</span><div class="pag-btns"><button class="page-btn" disabled>‹</button><button class="page-btn active">1</button><button class="page-btn">2</button><span>…</span><button class="page-btn">714</button><button class="page-btn">›</button></div></div>
+          <div class="pagination-row">
+            <span class="pag-info">Showing {{ filteredContacts.length }} of {{ contacts.length }} records</span>
+          </div>
         </div>
       </div>
 
-      <!-- CASES SUB-PANEL -->
+      <!-- CASES SUB-PANEL — real data from Tickets API -->
       <div *ngIf="activeTab === 'cases'" class="gov-panel active">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;">
-          <div style="font-size:12px;font-weight:700;color:#2E6276;">Citizen Cases &amp; Service Requests — 342 open</div>
+          <div style="font-size:12px;font-weight:700;color:#2E6276;">Cases &amp; Service Requests — {{ tickets.length }} total</div>
           <div style="display:flex;gap:.5rem;">
-            <button class="btn-xs">⚙ Escalation Matrix</button>
-            <button class="btn-primary" style="font-size:10px;padding:.35rem .75rem;">+ New Case</button>
+            <button class="btn-primary" style="font-size:10px;padding:.35rem .75rem;" (click)="newCase()">+ New Case</button>
           </div>
         </div>
-        <!-- Ministry Hierarchy Notice -->
         <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:.625rem;padding:.75rem 1rem;margin-bottom:.875rem;font-size:11px;color:#166534;">
           <strong>Approval Hierarchy Active:</strong> Officer → Director → Permanent Secretary → Minister &nbsp;|&nbsp; Cases escalated automatically at each SLA threshold
         </div>
         <div class="filter-bar" style="margin-bottom:.75rem;">
-          <div class="search-box" style="max-width:280px;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg><input type="text" placeholder="Search case ID, citizen, category…"></div>
-          <select class="filter-select"><option>All Status</option><option>Open</option><option>In Progress</option><option>Escalated</option><option>Resolved</option><option>Closed</option></select>
-          <select class="filter-select"><option>All Priority</option><option>Critical</option><option>High</option><option>Normal</option><option>Low</option></select>
-          <select class="filter-select"><option>All Categories</option><option>Infrastructure</option><option>Social Services</option><option>Tax &amp; Revenue</option><option>Complaints</option><option>FOIA Request</option></select>
+          <div class="search-box" style="max-width:280px;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg><input type="text" [(ngModel)]="caseSearch" placeholder="Search case, citizen, subject…"></div>
         </div>
         <div class="table-container">
           <table class="data-table">
-            <thead><tr><th>Case ID</th><th>Citizen / Entity</th><th>Category</th><th>Description</th><th>Priority</th><th>Status</th><th>SLA</th><th>Officer</th><th>Opened</th><th></th></tr></thead>
+            <thead><tr><th>Case ID</th><th>Contact / Account</th><th>Subject</th><th>Priority</th><th>Status</th><th>Owner</th><th>Opened</th><th></th></tr></thead>
             <tbody>
-              <tr style="background:#fff5f5;"><td style="font-weight:700;color:#dc2626;">CAS-0428</td><td>Adewale Kolawole</td><td><span class="badge badge-info" style="font-size:10px;">Infrastructure</span></td><td style="font-size:11px;max-width:200px;">Road damage — Surulere Apapa Rd pothole causing accidents</td><td><span class="case-priority critical">Critical</span></td><td><span class="case-status escalated">Escalated</span></td><td><div style="font-size:10px;font-weight:700;color:#dc2626;">1h 20m left</div><div class="sla-bar"><div class="sla-fill breach" style="width:80%;"></div></div></td><td>Dir. Okonkwo</td><td style="color:#94a3b8;">Today</td><td><button class="btn-xs">View</button></td></tr>
-              <tr><td style="font-weight:700;color:#2E6276;">CAS-0427</td><td>Arise Africa Foundation</td><td><span class="badge badge-purple" style="font-size:10px;">Social Services</span></td><td style="font-size:11px;max-width:200px;">Grant disbursement delay — 3 months outstanding</td><td><span class="case-priority high">High</span></td><td><span class="case-status in-progress">In Progress</span></td><td><div style="font-size:10px;font-weight:700;color:#d97706;">4h left</div><div class="sla-bar"><div class="sla-fill warn" style="width:55%;"></div></div></td><td>A. Johnson</td><td style="color:#94a3b8;">Yesterday</td><td><button class="btn-xs">View</button></td></tr>
-              <tr><td style="font-weight:700;color:#2E6276;">CAS-0426</td><td>Fatima Bello</td><td><span class="badge badge-warning" style="font-size:10px;">Tax &amp; Revenue</span></td><td style="font-size:11px;max-width:200px;">FOIA Request — copies of 2024 constituency project budget</td><td><span class="case-priority normal">Normal</span></td><td><span class="case-status open">Open</span></td><td><div style="font-size:10px;font-weight:700;color:#25925B;">2d left</div><div class="sla-bar"><div class="sla-fill ok" style="width:20%;"></div></div></td><td>M. Okafor</td><td style="color:#94a3b8;">Jun 20</td><td><button class="btn-xs">View</button></td></tr>
-              <tr><td style="font-weight:700;color:#2E6276;">CAS-0425</td><td>Kano Textile Ltd.</td><td><span class="badge badge-teal" style="font-size:10px;">Business Reg.</span></td><td style="font-size:11px;max-width:200px;">Operating permit renewal — factory expansion approval</td><td><span class="case-priority normal">Normal</span></td><td><span class="case-status resolved">Resolved</span></td><td><div style="font-size:10px;font-weight:700;color:#25925B;">Resolved in 18h</div><div class="sla-bar"><div class="sla-fill ok" style="width:100%;"></div></div></td><td>H. Usman</td><td style="color:#94a3b8;">Jun 18</td><td><button class="btn-xs">View</button></td></tr>
+              <tr *ngFor="let t of filteredTickets">
+                <td style="font-weight:700;color:#2E6276;">TKT-{{ t.id }}</td>
+                <td style="font-size:11px;">{{ t.contactName || t.accountName || '—' }}</td>
+                <td style="font-size:11px;max-width:220px;">{{ t.subject || '—' }}</td>
+                <td><span [class]="ticketPriorityClass(t.priority)">{{ t.priority || 'Normal' }}</span></td>
+                <td><span [class]="ticketStatusClass(t.status)">{{ t.status || 'Open' }}</span></td>
+                <td style="font-size:11px;">{{ t.ownerName || '—' }}</td>
+                <td style="color:#94a3b8;font-size:11px;">{{ t.createdAt | date:'d MMM' }}</td>
+                <td><button class="btn-xs">View</button></td>
+              </tr>
+              <tr *ngIf="filteredTickets.length === 0">
+                <td colspan="8" style="text-align:center;padding:2rem;color:#94a3b8;">No cases found. Create cases via the Tickets menu.</td>
+              </tr>
             </tbody>
           </table>
           <div class="pagination-row"><span class="pag-info">Showing 1–4 of 342 open cases</span><div class="pag-btns"><button class="page-btn" disabled>‹</button><button class="page-btn active">1</button><button class="page-btn">2</button><button class="page-btn">›</button></div></div>

@@ -1,10 +1,21 @@
+<input #leadsInput type="file" accept=".csv,text/csv" style="display:none" (change)="onLeadsFile($event)">
+
+<!-- Import summary -->
+<div *ngIf="showImportSummary" class="import-summary-bar">
+  <span>Import done: <strong>{{ importDone }}</strong> created
+    <span *ngIf="importErrors.length"> · <strong style="color:#dc2626;">{{ importErrors.length }}</strong> failed</span>
+  </span>
+  <button class="btn-xs" (click)="showImportSummary=false">Dismiss</button>
+</div>
+<div *ngIf="importing" class="import-progress-bar"><div class="import-fill" [style.width]="importProgress + '%'"></div></div>
+
 <div class="panel-header">
   <div>
     <h1 class="panel-title">Leads</h1>
     <p class="panel-subtitle">{{ filtered.length }} leads · AI-scored · auto-assigned · priority queue active</p>
   </div>
   <div class="panel-actions">
-    <button class="btn-secondary">⬆ Import Leads</button>
+    <button class="btn-secondary" (click)="importLeads()">⬆ Import Leads</button>
     <button class="btn-primary" (click)="openForm()">+ New Lead</button>
   </div>
 </div>
@@ -94,8 +105,14 @@
   <div class="side-form-body" [formGroup]="form">
     <div class="form-section-label">Contact Info</div>
     <div class="form-row">
-      <label class="form-field">First Name<input formControlName="firstName"></label>
-      <label class="form-field">Last Name<input formControlName="lastName"></label>
+      <div class="form-field-wrap">
+        <label class="form-field">First Name *<input formControlName="firstName" [class.input-error]="form.get('firstName')?.invalid && form.get('firstName')?.touched"></label>
+        <span class="field-error" *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched">Required</span>
+      </div>
+      <div class="form-field-wrap">
+        <label class="form-field">Last Name *<input formControlName="lastName" [class.input-error]="form.get('lastName')?.invalid && form.get('lastName')?.touched"></label>
+        <span class="field-error" *ngIf="form.get('lastName')?.invalid && form.get('lastName')?.touched">Required</span>
+      </div>
     </div>
     <div class="form-row">
       <label class="form-field">Email<input formControlName="email" type="email"></label>
