@@ -246,7 +246,7 @@ export class BranchFormComponent implements OnInit, OnDestroy {
    *  a bookmark, a direct link, or a fresh tab. */
   private navigateToBranchDetail(branchId: string): void {
     if (this.saved.observed) return;
-    this.router.navigate(['/commerce/inventory/branches', branchId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
   }
 
   goBack(): void {
@@ -255,7 +255,7 @@ export class BranchFormComponent implements OnInit, OnDestroy {
       return;
     }
     // Same about:blank risk as above — fall back to the branch list rather than trusting history.
-    this.router.navigate(['/commerce/inventory']);
+    this.router.navigate(['/admin/sales/commerce/inventory']);
   }
 
   cancel(): void {

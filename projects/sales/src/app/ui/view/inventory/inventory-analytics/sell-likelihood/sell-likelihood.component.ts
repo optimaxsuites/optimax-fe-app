@@ -359,13 +359,13 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
 
   viewProduct(): void {
     if (this.productId) {
-      this.router.navigate(['/commerce/inventory/products', this.productId]);
+      this.router.navigate(['/admin/sales/commerce/inventory/products', this.productId]);
     }
   }
 
   viewBranch(): void {
     if (this.branchId) {
-      this.router.navigate(['/commerce/inventory/branches', this.branchId]);
+      this.router.navigate(['/admin/sales/commerce/inventory/branches', this.branchId]);
     }
   }
 

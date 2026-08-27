@@ -380,7 +380,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
         // After editing, land on the product's details page so the change is visible immediately.
         // After creating, there's no existing detail context to return to, so keep the prior behavior.
         if (this.isEditMode) {
-          this.router.navigate(['/commerce/inventory/products', this.productId]);
+          this.router.navigate(['/admin/sales/commerce/inventory/products', this.productId]);
         } else {
           this.goBack();
         }
@@ -547,9 +547,9 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   goBack(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/commerce/inventory', uuid]);
+      this.router.navigate(['/admin/sales/commerce/inventory', uuid]);
     } else {
-      this.router.navigate(['/commerce/inventory']);
+      this.router.navigate(['/admin/sales/commerce/inventory']);
     }
   }
 

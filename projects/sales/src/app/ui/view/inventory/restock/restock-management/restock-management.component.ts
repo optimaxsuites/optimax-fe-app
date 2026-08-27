@@ -342,23 +342,23 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
   }
 
   navigateToNewRequest(): void {
-    this.router.navigate(['/commerce/inventory/restock/requests/new']);
+    this.router.navigate(['/admin/sales/commerce/inventory/restock/requests/new']);
   }
 
   navigateToRequestDetail(id: string): void {
-    this.router.navigate(['/commerce/inventory/restock/requests', id]);
+    this.router.navigate(['/admin/sales/commerce/inventory/restock/requests', id]);
   }
 
   navigateToThresholds(): void {
-    this.router.navigate(['/commerce/inventory/restock/thresholds']);
+    this.router.navigate(['/admin/sales/commerce/inventory/restock/thresholds']);
   }
 
   navigateToSuggestions(): void {
-    this.router.navigate(['/commerce/inventory/restock/suggestions']);
+    this.router.navigate(['/admin/sales/commerce/inventory/restock/suggestions']);
   }
 
   navigateToApprovals(): void {
-    this.router.navigate(['/commerce/inventory/restock/approvals']);
+    this.router.navigate(['/admin/sales/commerce/inventory/restock/approvals']);
   }
 
   // ============================================================

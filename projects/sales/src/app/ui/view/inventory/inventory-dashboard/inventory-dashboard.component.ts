@@ -201,7 +201,7 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
       '/inventory/products/new': '/admin/sales/commerce/inventory/products/new',
       '/inventory/movements/transfer': '/admin/sales/commerce/inventory/movements/transfer'
     };
-    this.router.navigateByUrl(realRoutes[path] || '/commerce/inventory');
+    this.router.navigateByUrl(realRoutes[path] || '/admin/sales/commerce/inventory');
   }
 
   navigateToProduct(productId: string): void {

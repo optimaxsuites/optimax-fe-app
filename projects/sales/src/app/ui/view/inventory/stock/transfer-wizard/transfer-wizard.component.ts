@@ -548,14 +548,14 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
       this.confirmMessage = 'You have unsaved changes. Are you sure you want to leave?';
     } else {
       this.cancelled.emit();
-      this.router.navigate(['/commerce/inventory']);
+      this.router.navigate(['/admin/sales/commerce/inventory']);
     }
   }
 
   confirmCancel(): void {
     this.showConfirmDialog = false;
     this.cancelled.emit();
-    this.router.navigate(['/commerce/inventory']);
+    this.router.navigate(['/admin/sales/commerce/inventory']);
   }
 
   cancelConfirmDialog(): void {

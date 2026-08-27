@@ -236,7 +236,7 @@ export class StockMovementDetailComponent implements OnInit, OnDestroy {
           this.isUpdating = false;
           this.showDeleteConfirm = false;
           this.close.emit();
-          this.router.navigate(['/commerce/inventory']);
+          this.router.navigate(['/admin/sales/commerce/inventory']);
         },
         error: (err) => {
           console.error('Failed to delete movement:', err);
@@ -265,7 +265,7 @@ export class StockMovementDetailComponent implements OnInit, OnDestroy {
 
   editMovement(): void {
     if (this.movement) {
-      this.router.navigate(['/commerce/inventory/movements', this.movement.id, 'edit']);
+      this.router.navigate(['/admin/sales/commerce/inventory/movements', this.movement.id, 'edit']);
     }
   }
 

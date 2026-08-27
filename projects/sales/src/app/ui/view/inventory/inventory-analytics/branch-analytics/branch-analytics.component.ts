@@ -286,12 +286,12 @@ export class BranchAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
 
   viewBranch(): void {
     if (this.branch) {
-      this.router.navigate(['/commerce/inventory/branches', this.branch.id]);
+      this.router.navigate(['/admin/sales/commerce/inventory/branches', this.branch.id]);
     }
   }
 
   viewProduct(productId: string): void {
-    this.router.navigate(['/commerce/inventory/products', productId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
   }
 
   // ============================================================
