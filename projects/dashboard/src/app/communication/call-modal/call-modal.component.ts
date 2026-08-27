@@ -15,6 +15,7 @@ export interface CallModalState {
   type: 'CALL' | 'VIDEO_CALL';
   targetName: string;
   targetUserId: number;
+  myUserId?: number;
   status: 'ringing' | 'connected' | 'ended' | 'failed';
   duration: number;
   muted: boolean;
@@ -47,8 +48,8 @@ export class CallModalComponent implements OnChanges, OnDestroy {
     const prev: CallModalState | undefined = changes['state'].previousValue;
     const curr: CallModalState             = changes['state'].currentValue;
 
-    // Build iframe URL when status transitions to 'connected'
-    if (curr?.status === 'connected' && curr?.jitsiRoomUrl && prev?.status !== 'connected') {
+    // Build iframe URL when status transitions to 'connected' (with or without a backend room URL)
+    if (curr?.status === 'connected' && prev?.status !== 'connected') {
       const url = this.buildIframeUrl(curr);
       this.trustedIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
     }
@@ -81,7 +82,11 @@ export class CallModalComponent implements OnChanges, OnDestroy {
       }
     }
 
-    if (!room) room = `dm-${s.targetUserId}-${Date.now()}`;
+    if (!room) {
+      const a = Math.min(s.myUserId ?? 0, s.targetUserId);
+      const b = Math.max(s.myUserId ?? 0, s.targetUserId);
+      room = `dm-${a}-${b}`;
+    }
 
     let url = `${JITSI_BASE}/${room}`;
     if (jwt) url += `?jwt=${jwt}`;

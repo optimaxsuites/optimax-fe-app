@@ -605,6 +605,7 @@ export class CommunicationComponent
     type: 'CALL' as 'CALL' | 'VIDEO_CALL',
     targetName: '',
     targetUserId: 0,
+    myUserId: 0,
     status: 'ringing' as 'ringing' | 'connected' | 'ended' | 'failed',
     duration: 0,
     muted: false,
@@ -3139,6 +3140,7 @@ export class CommunicationComponent
         (frame: any) => {
           try {
             const action = JSON.parse(frame.body || '{}');
+            if (String(action.initiatorUserId) === String(this.me.userId)) return;
             if (action.actionType === 'VIDEO_CALL' || action.actionType === 'CALL') {
               const payload = action.payloadJson ? JSON.parse(action.payloadJson) : {};
               const callerContact = this.dmContacts.find(c => c.userId === action.initiatorUserId);
@@ -9175,6 +9177,7 @@ export class CommunicationComponent
       type,
       targetName,
       targetUserId,
+      myUserId: this.me.userId,
       status: 'ringing',
       duration: 0,
       muted: false,
@@ -9209,7 +9212,7 @@ export class CommunicationComponent
         },
         error: () => {
           this.stopCallRingtone();
-          this.callModal.status = 'failed';
+          this.callModal = { ...this.callModal, status: 'failed' };
           this.cdr.detectChanges();
         },
       });
@@ -9243,6 +9246,7 @@ export class CommunicationComponent
     this.callModal = {
       open: true, type,
       targetName: callerName, targetUserId: callerUserId,
+      myUserId: this.me.userId,
       status: 'connected', duration: 0, muted: false, videoOff: false,
       jitsiRoomUrl: meetingUrl || undefined,
       callerDisplayName: this.me.name,
@@ -9271,20 +9275,20 @@ export class CommunicationComponent
       clearInterval(this.callDurationTimer);
       this.callDurationTimer = null;
     }
-    this.callModal.status = 'ended';
-    setTimeout(() => {
-      this.callModal.open = false;
-      this.cdr.detectChanges();
-    }, 1200);
+    this.callModal = { ...this.callModal, status: 'ended' };
     this.cdr.detectChanges();
+    setTimeout(() => {
+      this.callModal = { ...this.callModal, open: false };
+      this.cdr.detectChanges();
+    }, 1500);
   }
 
   toggleMute(): void {
-    this.callModal.muted = !this.callModal.muted;
+    this.callModal = { ...this.callModal, muted: !this.callModal.muted };
     this.cdr.detectChanges();
   }
   toggleVideo(): void {
-    this.callModal.videoOff = !this.callModal.videoOff;
+    this.callModal = { ...this.callModal, videoOff: !this.callModal.videoOff };
     this.cdr.detectChanges();
   }
 
