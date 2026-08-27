@@ -201,6 +201,11 @@ export class PayrollService {
       .pipe(catchError(this.handleError));
   }
 
+  deleteEmployeePayrollBonus(id: number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/x/api/v2/hr/employeePayrollBonuss/${id}`)
+      .pipe(catchError(this.handleError));
+  }
+
   postEmployeePayrollDeduction(payload: any): Observable<any> {
     return this.http.post(`${this.baseUrl}/x/api/v2/hr/employeePayrollDeductionss`, payload)
       .pipe(catchError(this.handleError));

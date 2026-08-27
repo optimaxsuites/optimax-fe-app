@@ -63,7 +63,10 @@
     <button class="btn ghost" style="font-size:18px" (click)="closeForm()">✕</button>
   </div>
   <div class="side-form-body" [formGroup]="form">
-    <label class="form-field full-width">Quote Title<input formControlName="title"></label>
+    <div class="form-field-wrap" style="margin-bottom:.75rem;">
+      <label class="form-field full-width">Quote Title *<input formControlName="title" [class.input-error]="form.get('title')?.invalid && form.get('title')?.touched"></label>
+      <span class="field-error" *ngIf="form.get('title')?.invalid && form.get('title')?.touched">Title is required</span>
+    </div>
     <div class="form-row">
       <label class="form-field">Contact Name<input formControlName="contactName"></label>
       <label class="form-field">Account Name<input formControlName="accountName"></label>

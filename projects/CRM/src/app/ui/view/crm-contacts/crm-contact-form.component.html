@@ -1,66 +1,133 @@
-<div class="form-dialog">
-  <h2 mat-dialog-title>{{ isEdit ? 'Edit Contact' : 'New Contact' }}</h2>
+<div class="contact-form-dialog">
+  <div class="form-dialog-header">
+    <h2 class="form-title">{{ isEdit ? 'Edit Contact' : 'New Contact' }}</h2>
+    <button class="close-btn" mat-dialog-close>✕</button>
+  </div>
 
-  <mat-dialog-content [formGroup]="form">
-    <div class="form-section-label">Basic Info</div>
-    <div class="form-row">
-      <label class="form-field">First Name *<input formControlName="firstName"></label>
-      <label class="form-field">Last Name *<input formControlName="lastName"></label>
-    </div>
-    <div class="form-row">
-      <label class="form-field">Email<input formControlName="email" type="email"></label>
-      <label class="form-field">Phone<input formControlName="phone"></label>
-    </div>
-    <div class="form-row">
-      <label class="form-field">WhatsApp<input formControlName="whatsapp"></label>
-      <label class="form-field">LinkedIn URL<input formControlName="linkedinUrl"></label>
-    </div>
+  <mat-dialog-content>
+    <form [formGroup]="form" autocomplete="off">
 
-    <div class="form-section-label">Work</div>
-    <div class="form-row">
-      <label class="form-field">Job Title<input formControlName="jobTitle"></label>
-      <label class="form-field">Company Name<input formControlName="companyName"></label>
-    </div>
-    <div class="form-row">
-      <label class="form-field">Contact Type
-        <select formControlName="contactType">
-          <option *ngFor="let t of typeOptions" [value]="t">{{ t }}</option>
-        </select>
+      <div class="form-section-label">Basic Information</div>
+      <div class="form-row">
+        <div class="form-field-wrap">
+          <label class="field-label">First Name <span class="req">*</span></label>
+          <input class="field-input" formControlName="firstName" placeholder="e.g. Emeka" [class.invalid]="form.get('firstName')?.invalid && form.get('firstName')?.touched">
+          <span class="field-error" *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched">First name is required</span>
+        </div>
+        <div class="form-field-wrap">
+          <label class="field-label">Last Name <span class="req">*</span></label>
+          <input class="field-input" formControlName="lastName" placeholder="e.g. Okafor" [class.invalid]="form.get('lastName')?.invalid && form.get('lastName')?.touched">
+          <span class="field-error" *ngIf="form.get('lastName')?.invalid && form.get('lastName')?.touched">Last name is required</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field-wrap">
+          <label class="field-label">Email Address <span class="req">*</span></label>
+          <input class="field-input" formControlName="email" type="email" placeholder="e.g. emeka@company.com" [class.invalid]="form.get('email')?.invalid && form.get('email')?.touched">
+          <span class="field-error" *ngIf="form.get('email')?.hasError('required') && form.get('email')?.touched">Email is required</span>
+          <span class="field-error" *ngIf="form.get('email')?.hasError('email') && form.get('email')?.touched">Enter a valid email address</span>
+        </div>
+        <div class="form-field-wrap">
+          <label class="field-label">Phone Number</label>
+          <input class="field-input" formControlName="phone" placeholder="e.g. +234 801 234 5678">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field-wrap">
+          <label class="field-label">WhatsApp Number</label>
+          <input class="field-input" formControlName="whatsapp" placeholder="e.g. +234 801 234 5678">
+        </div>
+        <div class="form-field-wrap">
+          <label class="field-label">LinkedIn URL</label>
+          <input class="field-input" formControlName="linkedinUrl" placeholder="https://linkedin.com/in/...">
+        </div>
+      </div>
+
+      <div class="form-section-label">Work Details</div>
+      <div class="form-row">
+        <div class="form-field-wrap">
+          <label class="field-label">Job Title</label>
+          <input class="field-input" formControlName="jobTitle" placeholder="e.g. Head of Finance">
+        </div>
+        <div class="form-field-wrap">
+          <label class="field-label">Company Name</label>
+          <input class="field-input" formControlName="companyName" placeholder="e.g. GTBank PLC">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field-wrap">
+          <label class="field-label">Contact Type</label>
+          <select class="field-input" formControlName="contactType">
+            <option *ngFor="let t of typeOptions" [value]="t">{{ t }}</option>
+          </select>
+        </div>
+        <div class="form-field-wrap">
+          <label class="field-label">Lead Source</label>
+          <select class="field-input" formControlName="leadSource">
+            <option value="">— Select source —</option>
+            <option *ngFor="let s of sourceOptions" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-field-wrap" style="margin-bottom:1rem;">
+        <label class="field-label">Owner / Assigned To</label>
+        <input class="field-input" formControlName="ownerName" placeholder="e.g. Sarah Adeyemi">
+      </div>
+
+      <div class="form-section-label">Location</div>
+      <div class="form-row">
+        <div class="form-field-wrap">
+          <label class="field-label">City</label>
+          <input class="field-input" formControlName="city" placeholder="e.g. Lagos">
+        </div>
+        <div class="form-field-wrap">
+          <label class="field-label">State</label>
+          <input class="field-input" formControlName="state" placeholder="e.g. Lagos State">
+        </div>
+      </div>
+      <div class="form-field-wrap" style="margin-bottom:1rem;">
+        <label class="field-label">Address</label>
+        <textarea class="field-input field-textarea" formControlName="address" rows="2" placeholder="Street address"></textarea>
+      </div>
+
+      <div class="form-section-label">Government IDs</div>
+      <div class="form-row form-row-3">
+        <div class="form-field-wrap">
+          <label class="field-label">NIN</label>
+          <input class="field-input" formControlName="nin" placeholder="National ID No.">
+        </div>
+        <div class="form-field-wrap">
+          <label class="field-label">BVN</label>
+          <input class="field-input" formControlName="bvn" placeholder="Bank Verification No.">
+        </div>
+        <div class="form-field-wrap">
+          <label class="field-label">TIN</label>
+          <input class="field-input" formControlName="tin" placeholder="Tax ID No.">
+        </div>
+      </div>
+
+      <div class="form-field-wrap" style="margin-bottom:.75rem;">
+        <label class="field-label">Tags <span class="hint">(comma separated)</span></label>
+        <input class="field-input" formControlName="tags" placeholder="e.g. vip, enterprise, lagos">
+      </div>
+
+      <label class="checkbox-row">
+        <input type="checkbox" formControlName="ndpaConsent">
+        <span>NDPA 2023 Consent Obtained</span>
       </label>
-      <label class="form-field">Lead Source
-        <select formControlName="leadSource">
-          <option *ngFor="let s of sourceOptions" [value]="s">{{ s }}</option>
-        </select>
-      </label>
-    </div>
 
-    <div class="form-section-label">Location</div>
-    <div class="form-row">
-      <label class="form-field">City<input formControlName="city"></label>
-      <label class="form-field">State<input formControlName="state"></label>
-    </div>
-    <label class="form-field full-width">Address<textarea formControlName="address" rows="2"></textarea></label>
-
-    <div class="form-section-label">Government IDs</div>
-    <div class="form-row">
-      <label class="form-field">NIN<input formControlName="nin"></label>
-      <label class="form-field">BVN<input formControlName="bvn"></label>
-      <label class="form-field">TIN<input formControlName="tin"></label>
-    </div>
-
-    <div class="form-section-label">Tags & NDPA</div>
-    <label class="form-field full-width">Tags (comma separated)<input formControlName="tags"></label>
-    <label class="checkbox-row">
-      <input type="checkbox" formControlName="ndpaConsent">
-      NDPA 2023 Consent Obtained
-    </label>
+    </form>
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button class="btn outline" mat-dialog-close>Cancel</button>
-    <button class="btn primary" (click)="save()" [disabled]="saving">
-      <mat-icon *ngIf="saving">hourglass_empty</mat-icon>
-      {{ isEdit ? 'Update' : 'Create' }}
+    <button class="btn-cancel" mat-dialog-close>Cancel</button>
+    <button class="btn-save" (click)="save()" [disabled]="saving">
+      <span *ngIf="saving" class="btn-spinner"></span>
+      {{ isEdit ? 'Update Contact' : 'Create Contact' }}
     </button>
   </mat-dialog-actions>
 </div>

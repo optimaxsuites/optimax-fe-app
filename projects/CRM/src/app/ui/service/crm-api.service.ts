@@ -28,6 +28,12 @@ export class CrmApiService {
   createContact(body: Contact) {
     return this.http.post<Contact>(`${this.base()}/contacts`, body).pipe(catchError(this.err));
   }
+  bulkCreateContacts(bodies: Contact[]) {
+    return this.http.post<{ created: number; failed: number; errors: string[] }>(`${this.base()}/contacts/bulk`, bodies).pipe(catchError(this.err));
+  }
+  scanBusinessCard(base64Image: string, mimeType = 'image/jpeg') {
+    return this.http.post<Contact>(`${this.base()}/contacts/scan-card`, { image: base64Image, mimeType }).pipe(catchError(this.err));
+  }
   updateContact(id: number, body: Contact) {
     return this.http.put<Contact>(`${this.base()}/contacts/${id}`, body).pipe(catchError(this.err));
   }
@@ -101,6 +107,9 @@ export class CrmApiService {
   // ── Leads ───────────────────────────────────────────────────
   getLeads(page = 1, size = 50) {
     return this.http.get<Lead[]>(`${this.base()}/leads?page=${page}&size=${size}`).pipe(catchError(this.err));
+  }
+  bulkCreateLeads(bodies: Lead[]) {
+    return this.http.post<{ created: number; failed: number; errors: string[] }>(`${this.base()}/leads/bulk`, bodies).pipe(catchError(this.err));
   }
   getLead(id: number) {
     return this.http.get<Lead>(`${this.base()}/leads/${id}`).pipe(catchError(this.err));

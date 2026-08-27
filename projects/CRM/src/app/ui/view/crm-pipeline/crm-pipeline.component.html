@@ -6,7 +6,7 @@
     </p>
   </div>
   <div class="panel-actions">
-    <button class="btn-secondary">📊 Forecast View</button>
+    <button class="btn-secondary" (click)="openManagePanel()">⚙ Manage Pipelines</button>
     <button class="btn-primary" (click)="columns.length && openDealForm(columns[0].stage.id!)">+ New Deal</button>
   </div>
 </div>
@@ -76,6 +76,93 @@
     </div>
 
     <button class="kanban-add-btn" (click)="openDealForm(col.stage.id!)">+ Add deal</button>
+  </div>
+</div>
+
+<!-- Manage Pipelines panel -->
+<div class="side-form-overlay" *ngIf="showManagePanel" (click)="closeManagePanel()"></div>
+<div class="side-form wide" [class.open]="showManagePanel">
+  <div class="side-form-header">
+    <h2>Manage Pipelines</h2>
+    <button class="btn ghost" style="font-size:18px" (click)="closeManagePanel()">✕</button>
+  </div>
+  <div class="side-form-body">
+
+    <!-- Create new pipeline -->
+    <div class="manage-section">
+      <div class="manage-section-title">Create New Pipeline</div>
+      <div [formGroup]="pipelineForm" class="manage-form">
+        <label class="form-field full-width">
+          Pipeline Name *
+          <input formControlName="name" placeholder="e.g. Enterprise Sales" [class.input-error]="pipelineForm.get('name')?.invalid && pipelineForm.get('name')?.touched">
+          <span class="field-error" *ngIf="pipelineForm.get('name')?.invalid && pipelineForm.get('name')?.touched">Name is required</span>
+        </label>
+        <label class="form-field full-width">
+          Description
+          <input formControlName="description" placeholder="Optional description">
+        </label>
+        <button class="btn primary sm" (click)="createPipeline()" [disabled]="savingPipeline$ | async">
+          {{ (savingPipeline$ | async) ? 'Creating…' : 'Create Pipeline' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Current pipeline stages -->
+    <div class="manage-section" *ngIf="activePipeline">
+      <div class="manage-section-title">Stages — {{ activePipeline.name }}</div>
+
+      <div class="stage-list">
+        <div *ngFor="let stage of activePipeline.stages" class="stage-row">
+          <ng-container *ngIf="editingStage?.id !== stage.id">
+            <div class="stage-info">
+              <span class="stage-name">{{ stage.name }}</span>
+              <span class="stage-prob" *ngIf="stage.probability != null">{{ stage.probability }}%</span>
+            </div>
+            <div class="stage-row-actions">
+              <button class="row-action-btn edit-btn" title="Edit stage" (click)="startEditStage(stage)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+              </button>
+              <button class="row-action-btn delete-btn" title="Delete stage" (click)="removeStage(stage)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              </button>
+            </div>
+          </ng-container>
+
+          <!-- Inline stage edit -->
+          <ng-container *ngIf="editingStage?.id === stage.id">
+            <div class="stage-edit-row" [formGroup]="stageEditForm">
+              <input formControlName="name" class="stage-edit-input" placeholder="Stage name">
+              <input formControlName="probability" type="number" min="0" max="100" class="stage-edit-prob" placeholder="%">
+              <button class="btn primary sm" (click)="saveStage()" [disabled]="savingStage$ | async">Save</button>
+              <button class="btn outline sm" (click)="cancelStageEdit()">Cancel</button>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- Add new stage -->
+      <div class="manage-form" [formGroup]="stageForm" style="margin-top:.75rem;">
+        <div class="manage-section-title" style="font-size:11px;">Add Stage</div>
+        <div class="form-row">
+          <label class="form-field">
+            Stage Name *
+            <input formControlName="name" placeholder="e.g. Proposal">
+          </label>
+          <label class="form-field" style="max-width:90px;">
+            Win%
+            <input formControlName="probability" type="number" min="0" max="100" placeholder="e.g. 50">
+          </label>
+          <label class="form-field" style="max-width:70px;">
+            Order
+            <input formControlName="stageOrder" type="number" min="1" placeholder="1">
+          </label>
+        </div>
+        <button class="btn primary sm" (click)="addStage()" [disabled]="savingStage$ | async">
+          {{ (savingStage$ | async) ? 'Adding…' : '+ Add Stage' }}
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>
 

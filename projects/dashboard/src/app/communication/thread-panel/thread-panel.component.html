@@ -630,6 +630,7 @@
       </div>
       <div class="thread-compose-row flex items-end gap-3 border border-gray-200 rounded-2xl px-4 py-3 bg-white focus-within:border-[#2e6276]/40 transition-all">
         <textarea
+          #replyTextarea
           [value]="threadReplyDraft"
           (input)="onThreadDraftInput($any($event.target).value)"
           [placeholder]="activeThreadReplyToId && activeThreadReplyTarget ? 'Reply to ' + activeThreadReplyTarget.author + '…' : 'Reply in thread…'"

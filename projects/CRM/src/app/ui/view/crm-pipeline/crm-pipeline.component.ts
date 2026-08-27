@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, finalize } from 'rxjs';
 import { CrmApiService } from '../../service/crm-api.service';
@@ -27,6 +27,15 @@ export class CrmPipelineComponent implements OnInit {
   targetStageId: number | null = null;
   dealForm!: FormGroup;
 
+  // Pipeline management
+  showManagePanel = false;
+  pipelineForm!: FormGroup;
+  stageForm!: FormGroup;
+  stageEditForm!: FormGroup;
+  editingStage: PipelineStage | null = null;
+  savingPipeline$ = new BehaviorSubject(false);
+  savingStage$ = new BehaviorSubject(false);
+
   constructor(
     private api: CrmApiService,
     private fb: FormBuilder,
@@ -35,6 +44,8 @@ export class CrmPipelineComponent implements OnInit {
 
   ngOnInit() {
     this.buildDealForm();
+    this.buildPipelineForm();
+    this.buildStageForm();
     this.loadPipelines();
   }
 
@@ -48,6 +59,26 @@ export class CrmPipelineComponent implements OnInit {
       probability: [null],
       expectedClose: [null],
       ownerName: [''],
+    });
+  }
+
+  buildPipelineForm() {
+    this.pipelineForm = this.fb.group({
+      name: ['', Validators.required],
+      description: [''],
+    });
+  }
+
+  buildStageForm() {
+    this.stageForm = this.fb.group({
+      name: ['', Validators.required],
+      probability: [null],
+      stageOrder: [null],
+    });
+    this.stageEditForm = this.fb.group({
+      name: ['', Validators.required],
+      probability: [null],
+      stageOrder: [null],
     });
   }
 
@@ -144,6 +175,98 @@ export class CrmPipelineComponent implements OnInit {
     if (!confirm(`Delete deal "${deal.title}"?`)) return;
     this.api.deleteDeal(deal.id!).subscribe({
       next: () => { this.snack.open('Deal deleted', 'Close', { duration: 3000 }); if (this.activePipeline?.id) this.loadDeals(this.activePipeline.id); },
+      error: (e) => this.snack.open(e, 'Close', { duration: 4000 }),
+    });
+  }
+
+  // ── Pipeline Management ──────────────────────────────────────────────────
+
+  openManagePanel() {
+    this.pipelineForm.reset();
+    this.stageForm.reset();
+    this.editingStage = null;
+    this.showManagePanel = true;
+  }
+
+  closeManagePanel() { this.showManagePanel = false; }
+
+  createPipeline() {
+    if (this.pipelineForm.invalid) { this.pipelineForm.markAllAsTouched(); return; }
+    const payload: Pipeline = { ...this.pipelineForm.value, stages: [] };
+    this.savingPipeline$.next(true);
+    this.api.createPipeline(payload).pipe(finalize(() => this.savingPipeline$.next(false))).subscribe({
+      next: (p) => {
+        this.snack.open(`Pipeline "${p.name}" created`, 'Close', { duration: 3000 });
+        this.pipelineForm.reset();
+        this.loadPipelines();
+      },
+      error: (e) => this.snack.open(e, 'Close', { duration: 4000 }),
+    });
+  }
+
+  editCurrentPipeline() {
+    if (!this.activePipeline) return;
+    this.pipelineForm.patchValue({ name: this.activePipeline.name, description: this.activePipeline.description });
+  }
+
+  updatePipeline() {
+    if (!this.activePipeline?.id || this.pipelineForm.invalid) { this.pipelineForm.markAllAsTouched(); return; }
+    const payload: Pipeline = { ...this.activePipeline, ...this.pipelineForm.value };
+    this.savingPipeline$.next(true);
+    this.api.updatePipeline(this.activePipeline.id, payload).pipe(finalize(() => this.savingPipeline$.next(false))).subscribe({
+      next: (p) => {
+        this.snack.open(`Pipeline updated`, 'Close', { duration: 3000 });
+        this.loadPipelines();
+      },
+      error: (e) => this.snack.open(e, 'Close', { duration: 4000 }),
+    });
+  }
+
+  addStage() {
+    if (this.stageForm.invalid) { this.stageForm.markAllAsTouched(); return; }
+    const payload: PipelineStage = {
+      ...this.stageForm.value,
+      pipelineId: this.activePipeline?.id,
+      stageOrder: this.stageForm.value.stageOrder || (this.activePipeline?.stages?.length || 0) + 1,
+    };
+    this.savingStage$.next(true);
+    this.api.createStage(payload).pipe(finalize(() => this.savingStage$.next(false))).subscribe({
+      next: () => {
+        this.snack.open('Stage added', 'Close', { duration: 3000 });
+        this.stageForm.reset();
+        this.editingStage = null;
+        this.loadPipelines();
+      },
+      error: (e) => this.snack.open(e, 'Close', { duration: 4000 }),
+    });
+  }
+
+  startEditStage(stage: PipelineStage) {
+    this.editingStage = stage;
+    this.stageEditForm.patchValue({ name: stage.name, probability: stage.probability, stageOrder: stage.stageOrder });
+  }
+
+  saveStage() {
+    if (!this.editingStage?.id || this.stageEditForm.invalid) { this.stageEditForm.markAllAsTouched(); return; }
+    const payload: PipelineStage = { ...this.editingStage, ...this.stageEditForm.value };
+    this.savingStage$.next(true);
+    this.api.updateStage(this.editingStage.id, payload).pipe(finalize(() => this.savingStage$.next(false))).subscribe({
+      next: () => {
+        this.snack.open('Stage updated', 'Close', { duration: 3000 });
+        this.stageEditForm.reset();
+        this.editingStage = null;
+        this.loadPipelines();
+      },
+      error: (e) => this.snack.open(e, 'Close', { duration: 4000 }),
+    });
+  }
+
+  cancelStageEdit() { this.editingStage = null; this.stageEditForm.reset(); }
+
+  removeStage(stage: PipelineStage) {
+    if (!stage.id || !confirm(`Delete stage "${stage.name}"? Deals in this stage will need reassignment.`)) return;
+    this.api.deleteStage(stage.id).subscribe({
+      next: () => { this.snack.open('Stage deleted', 'Close', { duration: 3000 }); this.loadPipelines(); },
       error: (e) => this.snack.open(e, 'Close', { duration: 4000 }),
     });
   }

@@ -166,7 +166,7 @@
           <div class="sc-add-field">
             <label class="sp-label">Type <span class="sp-req">*</span></label>
             <ng-select [items]="availableAllowanceTypes" bindLabel="name" bindValue="id"
-              placeholder="Select allowance type" formControlName="type" class="sc-ng-select" appendTo="body"></ng-select>
+              placeholder="Select allowance type" formControlName="type" class="sc-ng-select"></ng-select>
             <div *ngIf="allowanceForm.get('type')?.invalid && allowanceForm.get('type')?.touched" class="sp-error">Type is required.</div>
           </div>
           <div class="sc-add-field">
@@ -194,13 +194,35 @@
         </div>
 
         <div class="sc-items-list" *ngIf="deductions.length">
-          <div class="sc-item-row" *ngFor="let item of deductions; let i = index">
-            <span class="sc-item-name">{{ getDeductionName(item.deductionsTypeId) }}</span>
-            <span class="sc-item-amount">{{ item.amount | currency:'NGN':'symbol':'1.0-0' }}</span>
-            <button type="button" class="sc-item-del" (click)="removeDeduction(i, item.id)" title="Remove">
-              <i class="fas fa-trash"></i>
-            </button>
-          </div>
+          <ng-container *ngFor="let item of deductions; let i = index">
+
+            <!-- inline edit row -->
+            <div class="sc-item-row sc-item-row--editing" *ngIf="editingDeductionIndex === i">
+              <span class="sc-item-name">{{ getDeductionName(item.deductionsTypeId) }}</span>
+              <input [formControl]="editDeductionAmount" class="sp-input sc-item-edit-input" type="number" placeholder="Amount" min="0" />
+              <div class="sc-item-edit-actions">
+                <button type="button" class="sc-item-save" (click)="saveEditDeduction(i, item)" title="Save">
+                  <i class="fas fa-check"></i>
+                </button>
+                <button type="button" class="sc-item-cancel-edit" (click)="cancelEditDeduction()" title="Cancel">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- normal display row -->
+            <div class="sc-item-row" *ngIf="editingDeductionIndex !== i">
+              <span class="sc-item-name">{{ getDeductionName(item.deductionsTypeId) }}</span>
+              <span class="sc-item-amount">{{ item.amount | currency:'NGN':'symbol':'1.0-0' }}</span>
+              <button type="button" class="sc-item-edit" (click)="startEditDeduction(i, item)" title="Edit">
+                <i class="fas fa-pen"></i>
+              </button>
+              <button type="button" class="sc-item-del" (click)="removeDeduction(i, item.id)" title="Remove">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+
+          </ng-container>
         </div>
         <div class="sc-empty-items" *ngIf="!deductions.length && !showDeductionAdd">No deductions added yet.</div>
 
@@ -208,7 +230,7 @@
           <div class="sc-add-field">
             <label class="sp-label">Type <span class="sp-req">*</span></label>
             <ng-select [items]="availableDeductionTypes" bindLabel="name" bindValue="id"
-              placeholder="Select deduction type" formControlName="type" class="sc-ng-select" appendTo="body"></ng-select>
+              placeholder="Select deduction type" formControlName="type" class="sc-ng-select"></ng-select>
             <div *ngIf="deductionForm.get('type')?.invalid && deductionForm.get('type')?.touched" class="sp-error">Type is required.</div>
           </div>
           <div class="sc-add-field">
@@ -250,7 +272,7 @@
           <div class="sc-add-field">
             <label class="sp-label">Type <span class="sp-req">*</span></label>
             <ng-select [items]="availableBonusTypes" bindLabel="name" bindValue="id"
-              placeholder="Select bonus type" formControlName="type" class="sc-ng-select" appendTo="body"></ng-select>
+              placeholder="Select bonus type" formControlName="type" class="sc-ng-select"></ng-select>
             <div *ngIf="bonusForm.get('type')?.invalid && bonusForm.get('type')?.touched" class="sp-error">Type is required.</div>
           </div>
           <div class="sc-add-field">
@@ -292,7 +314,7 @@
           <div class="sc-add-field">
             <label class="sp-label">Type <span class="sp-req">*</span></label>
             <ng-select [items]="availableOvertimeTypes" bindLabel="name" bindValue="id"
-              placeholder="Select overtime type" formControlName="type" class="sc-ng-select" appendTo="body"></ng-select>
+              placeholder="Select overtime type" formControlName="type" class="sc-ng-select"></ng-select>
             <div *ngIf="overtimeForm.get('type')?.invalid && overtimeForm.get('type')?.touched" class="sp-error">Type is required.</div>
           </div>
           <div class="sc-add-field">

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, finalize } from 'rxjs';
 import { CrmApiService } from '../../service/crm-api.service';
@@ -29,11 +29,15 @@ export class CrmQuotesComponent implements OnInit {
   ngOnInit() {
     this.buildForm();
     this.load();
+    const nav = history.state as { openForm?: boolean };
+    if (nav?.openForm) {
+      this.openForm();
+    }
   }
 
   buildForm() {
     this.form = this.fb.group({
-      title: [''],
+      title: ['', Validators.required],
       contactName: [''],
       accountName: [''],
       dealName: [''],
@@ -67,6 +71,7 @@ export class CrmQuotesComponent implements OnInit {
   closeForm() { this.showForm = false; this.editingQuote = null; }
 
   save() {
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const payload: Quote = this.form.value;
     this.saving$.next(true);
     const op = this.editingQuote?.id

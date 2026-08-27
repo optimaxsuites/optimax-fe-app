@@ -63,7 +63,10 @@
     <button class="btn ghost" style="font-size:18px" (click)="closeForm()">✕</button>
   </div>
   <div class="side-form-body" [formGroup]="form">
-    <label class="form-field full-width">Campaign Name *<input formControlName="name"></label>
+    <div class="form-field-wrap" style="margin-bottom:.75rem;">
+      <label class="form-field full-width">Campaign Name *<input formControlName="name" [class.input-error]="form.get('name')?.invalid && form.get('name')?.touched"></label>
+      <span class="field-error" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">Campaign name is required</span>
+    </div>
     <div class="form-row">
       <label class="form-field">Type
         <select formControlName="campaignType">

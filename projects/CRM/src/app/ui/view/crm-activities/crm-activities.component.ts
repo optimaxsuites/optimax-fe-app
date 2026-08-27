@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, finalize } from 'rxjs';
 import { CrmApiService } from '../../service/crm-api.service';
@@ -17,6 +17,7 @@ export class CrmActivitiesComponent implements OnInit {
   filtered: Activity[] = [];
   typeFilter = '';
   showForm = false;
+  editingActivity: Activity | null = null;
   form!: FormGroup;
 
   typeOptions = ['CALL', 'EMAIL', 'WHATSAPP', 'MEETING', 'TASK', 'SMS', 'NOTE'];
@@ -38,8 +39,8 @@ export class CrmActivitiesComponent implements OnInit {
 
   buildForm() {
     this.form = this.fb.group({
-      activityType: ['CALL'],
-      subject: [''],
+      activityType: ['CALL', Validators.required],
+      subject: ['', Validators.required],
       description: [''],
       contactName: [''],
       dealName: [''],
@@ -67,19 +68,25 @@ export class CrmActivitiesComponent implements OnInit {
     );
   }
 
-  openForm() {
+  openForm(a?: Activity) {
+    this.editingActivity = a || null;
     this.form.reset({ activityType: 'CALL' });
+    if (a) this.form.patchValue(a);
     this.showForm = true;
   }
 
-  closeForm() { this.showForm = false; }
+  closeForm() { this.showForm = false; this.editingActivity = null; }
 
   save() {
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const payload: Activity = this.form.value;
     this.saving$.next(true);
-    this.api.createActivity(payload).pipe(finalize(() => this.saving$.next(false))).subscribe({
+    const op = this.editingActivity?.id
+      ? this.api.updateActivity(this.editingActivity.id, payload)
+      : this.api.createActivity(payload);
+    op.pipe(finalize(() => this.saving$.next(false))).subscribe({
       next: () => {
-        this.snack.open('Activity logged', 'Close', { duration: 3000 });
+        this.snack.open(`Activity ${this.editingActivity ? 'updated' : 'logged'}`, 'Close', { duration: 3000 });
         this.closeForm();
         this.load();
       },
