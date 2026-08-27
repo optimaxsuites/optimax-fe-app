@@ -80,7 +80,7 @@ export class NavigationLinksService {
 // Vendor link========================================================================================================
     this.links['vendorLink'] = '/admin/vendor/' +uuidV4();
     this.links['vendorRfqLink'] = '/admin/vendor/rfq/' +uuidV4();
-    this.links['VMLink'] = '/manage-vendors/' + uuidV4();
+    this.links['VMLink'] = '/admin/sales/commerce/manage-vendors/' + uuidV4();
 
 
 

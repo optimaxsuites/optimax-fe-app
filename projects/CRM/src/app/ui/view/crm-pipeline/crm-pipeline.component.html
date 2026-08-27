@@ -143,16 +143,16 @@
       <!-- Add new stage -->
       <div class="manage-form" [formGroup]="stageForm" style="margin-top:.75rem;">
         <div class="manage-section-title" style="font-size:11px;">Add Stage</div>
-        <div class="form-row">
+        <div class="form-row" style="grid-template-columns: 1fr 90px 70px;">
           <label class="form-field">
             Stage Name *
             <input formControlName="name" placeholder="e.g. Proposal">
           </label>
-          <label class="form-field" style="max-width:90px;">
+          <label class="form-field">
             Win%
             <input formControlName="probability" type="number" min="0" max="100" placeholder="e.g. 50">
           </label>
-          <label class="form-field" style="max-width:70px;">
+          <label class="form-field">
             Order
             <input formControlName="stageOrder" type="number" min="1" placeholder="1">
           </label>
