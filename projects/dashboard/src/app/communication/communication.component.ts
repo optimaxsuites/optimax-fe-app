@@ -9201,14 +9201,10 @@ export class CommunicationComponent
           let jitsiRoomUrl: string | undefined;
           try {
             const payload = response?.payloadJson ? JSON.parse(response.payloadJson) : {};
-            const meetingUrl = payload.meetingUrl || '';
-            const displayName = encodeURIComponent(this.me.name || 'User');
-            if (meetingUrl) {
-              const audioOnlyFlag = type === 'CALL' ? '&config.startWithVideoMuted=true' : '';
-              jitsiRoomUrl = `${meetingUrl}#userInfo.displayName="${displayName}"${audioOnlyFlag}`;
-            }
+            jitsiRoomUrl = payload.meetingUrl || undefined;
           } catch (_) {}
           this.callModal = { ...this.callModal, status: 'connected', jitsiRoomUrl };
+          this.startCallDurationTimer();
           this.cdr.detectChanges();
         },
         error: () => {
@@ -9244,18 +9240,14 @@ export class CommunicationComponent
     const { type, meetingUrl, callerName, callerUserId } = this.incomingCallModal;
     this.incomingCallModal = { ...this.incomingCallModal, open: false };
 
-    let jitsiRoomUrl: string | undefined;
-    if (meetingUrl) {
-      const displayName = encodeURIComponent(this.me.name || 'User');
-      const audioOnlyFlag = type === 'CALL' ? '&config.startWithVideoMuted=true' : '';
-      jitsiRoomUrl = `${meetingUrl}#userInfo.displayName="${displayName}"${audioOnlyFlag}`;
-    }
-
     this.callModal = {
-      open: true, type, targetName: callerName, targetUserId: callerUserId,
+      open: true, type,
+      targetName: callerName, targetUserId: callerUserId,
       status: 'connected', duration: 0, muted: false, videoOff: false,
-      jitsiRoomUrl, callerDisplayName: this.me.name,
+      jitsiRoomUrl: meetingUrl || undefined,
+      callerDisplayName: this.me.name,
     };
+    this.startCallDurationTimer();
     this.cdr.detectChanges();
   }
 
@@ -9263,6 +9255,14 @@ export class CommunicationComponent
     this.stopCallRingtone();
     this.incomingCallModal = { ...this.incomingCallModal, open: false };
     this.cdr.detectChanges();
+  }
+
+  private startCallDurationTimer(): void {
+    if (this.callDurationTimer) clearInterval(this.callDurationTimer);
+    this.callDurationTimer = setInterval(() => {
+      this.callModal = { ...this.callModal, duration: this.callModal.duration + 1 };
+      this.cdr.detectChanges();
+    }, 1000);
   }
 
   endCall(): void {
