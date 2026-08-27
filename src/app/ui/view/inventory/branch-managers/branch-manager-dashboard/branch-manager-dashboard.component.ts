@@ -110,7 +110,7 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
       id: 'new-restock',
       label: 'Request Restock',
       icon: 'fa-boxes',
-      route: '/commerce/inventory/branch-manager/requests/new',
+      route: '/admin/sales/commerce/inventory/branch-manager/requests/new',
       queryParams: { branchId: this.BRANCH_ID },
       color: '#184440',
       description: 'Request stock replenishment'
@@ -119,7 +119,7 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
       id: 'new-transfer',
       label: 'Create Transfer',
       icon: 'fa-exchange-alt',
-      route: '/commerce/inventory/branch-manager/transfers/new',
+      route: '/admin/sales/commerce/inventory/branch-manager/transfers/new',
       queryParams: { lockedBranchId: this.BRANCH_ID },
       color: '#3B82F6',
       description: 'Send stock to or request stock from another branch'
@@ -137,7 +137,7 @@ export class BranchManagerDashboardComponent implements OnInit, OnDestroy {
       id: 'view-requests',
       label: 'My Requests',
       icon: 'fa-list',
-      route: '/commerce/inventory/branch-manager/requests',
+      route: '/admin/sales/commerce/inventory/branch-manager/requests',
       queryParams: { branchId: this.BRANCH_ID },
       color: '#F5A623',
       description: 'Track your restock requests'
@@ -309,7 +309,7 @@ loadData(): void {
             : `Your request for ${r.productName} is awaiting approval`,
           subtitle: `${r.requestedQuantity} units requested`,
           timestamp: new Date(r.createdAt),
-          route: '/commerce/inventory/branch-manager/requests',
+          route: '/admin/sales/commerce/inventory/branch-manager/requests',
           queryParams: { branchId: this.BRANCH_ID }
         });
       });
@@ -401,7 +401,7 @@ loadData(): void {
 
   goBack(): void {
     // Back to the tab shell (with the nav-tab bar), not the standalone /branch-manager route.
-    this.router.navigate(['/commerce/inventory']);
+    this.router.navigate(['/admin/sales/commerce/inventory']);
   }
 
   // ============================================================

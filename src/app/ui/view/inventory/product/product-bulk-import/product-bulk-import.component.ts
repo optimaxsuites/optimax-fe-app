@@ -600,9 +600,9 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
   private navigateToProducts(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/commerce/inventory', uuid]);
+      this.router.navigate(['/admin/sales/commerce/inventory', uuid]);
     } else {
-      this.router.navigate(['/commerce/inventory']);
+      this.router.navigate(['/admin/sales/commerce/inventory']);
     }
   }
 
@@ -610,7 +610,7 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
    *  alphabetically sorted and paginated, so a freshly imported batch can easily land on a
    *  later page with no visual cue that the import actually worked. */
   viewCreatedProduct(productId: string): void {
-    this.router.navigate(['/commerce/inventory/products', productId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
   }
 
   // ============================================================

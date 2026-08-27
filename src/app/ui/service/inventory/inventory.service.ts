@@ -2119,8 +2119,8 @@ export class InventoryService {
     // For now, we'll use mock data
     const requests = this.getMockRestockRequests();
 
-    // Apply filters
-    let filtered = requests;
+    // Apply filters and sort by most recent first
+    let filtered = requests.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     if (filters) {
       if (filters.status) {
         filtered = filtered.filter(r => r.status === filters.status);
