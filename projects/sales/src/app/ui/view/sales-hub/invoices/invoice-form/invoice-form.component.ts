@@ -352,7 +352,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
             this.invoiceForm.patchValue({ customerId: customerId });
             this.onCustomerSelect(customerId);
           }
-          this.addLineItem();
+          if (!this.addLineItemFromCatalogQueryParams()) {
+            this.addLineItem();
+          }
         }
       },
       error: (error: any) => {
@@ -408,6 +410,29 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   // Form Arrays
   get items(): FormArray {
     return this.invoiceForm.get('items') as FormArray;
+  }
+
+  /** Coming from the (Inventory-backed) Product Catalog's "Create Invoice" button — it can't
+   *  rely on the product existing in this form's own product list (a separate, Sales-side
+   *  list), so it passes the product's details directly via query params instead of just an
+   *  id. Builds the line item straight from those, no lookup needed. Returns true if it did. */
+  private addLineItemFromCatalogQueryParams(): boolean {
+    const qp = this.route.snapshot.queryParamMap;
+    const productName = qp.get('productName');
+    if (!productName || this.items.length > 0) return false;
+
+    this.addLineItem();
+    const itemForm = this.items.at(this.items.length - 1);
+    itemForm.patchValue({
+      productId: qp.get('productId') || '',
+      productName,
+      description: qp.get('productDescription') || '',
+      quantity: 1,
+      unitPrice: Number(qp.get('productUnitPrice')) || 0,
+      taxRate: Number(qp.get('productTaxRate')) || 0
+    });
+    this.calculateItemTotal(itemForm);
+    return true;
   }
 
   addLineItem(): void {

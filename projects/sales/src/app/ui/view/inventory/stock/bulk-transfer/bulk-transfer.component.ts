@@ -14,7 +14,6 @@ import {
   BranchInventory,
   StockMovement,
   MovementType,
-  MovementStatus,
   getMovementTypeLabel
 } from '../../../../domain/inventory/inventory.dto';
 
@@ -431,38 +430,58 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
     this.error = null;
 
     const formValue = this.bulkForm.value;
-    const items = formValue.items;
+    const items: any[] = formValue.items;
+    const sourceBranchId = formValue.sourceBranchId;
+    const destinationBranchId = formValue.destinationBranchId;
+    const sourceBranchName = this.getBranchName(sourceBranchId);
+    const destinationBranchName = this.getBranchName(destinationBranchId);
 
-    // Create movements for each item
-    const movements = items.map((item: any) => ({
-      productId: item.productId,
-      productName: item.productName,
-      sku: item.sku,
-      quantity: parseInt(item.quantity),
-      movementType: MovementType.TRANSFER,
-      fromLocation: {
-        type: 'BRANCH',
-        id: formValue.sourceBranchId,
-        name: this.getBranchName(formValue.sourceBranchId)
-      },
-      toLocation: {
-        type: 'BRANCH',
-        id: formValue.destinationBranchId,
-        name: this.getBranchName(formValue.destinationBranchId)
-      },
-      notes: formValue.notes || '',
-      priority: formValue.priority,
-      status: MovementStatus.PENDING
-    }));
+    const created: StockMovement[] = [];
+    let failedProductName: string | null = null;
+    let failureMessage = '';
 
-    // In a real implementation, this would call a bulk API endpoint
-    console.log('Creating bulk transfers:', movements);
+    // Recorded PENDING — stock doesn't move until the transfer is approved (Movement Approvals
+    // page or a manual status update to COMPLETED); see
+    // InventoryService.applyTransferStockAdjustment(). createMovement() is a localStorage-backed
+    // mock that resolves synchronously, so this plain for-loop completes in one tick.
+    for (const item of items) {
+      if (failedProductName) break;
 
-    setTimeout(() => {
-      this.isSubmitting = false;
-      this.completed.emit(movements as StockMovement[]);
-      this.router.navigate(['/admin/sales/commerce/inventory/movements']);
-    }, 1500);
+      const quantity = parseInt(item.quantity, 10) || 0;
+      const sourceStock = parseInt(item.sourceStock, 10) || 0;
+      if (quantity > sourceStock) {
+        failedProductName = item.productName;
+        failureMessage = `Insufficient stock for ${item.productName}. Available: ${sourceStock}`;
+        break;
+      }
+
+      this.inventoryService.createMovement({
+        productId: item.productId,
+        productName: item.productName,
+        sku: item.sku,
+        quantity,
+        movementType: MovementType.TRANSFER,
+        fromLocation: { type: 'BRANCH', id: sourceBranchId, name: sourceBranchName },
+        toLocation: { type: 'BRANCH', id: destinationBranchId, name: destinationBranchName },
+        notes: formValue.notes || ''
+      }).subscribe({
+        next: (movement) => created.push(movement),
+        error: (err) => {
+          failedProductName = item.productName;
+          failureMessage = err?.message || `Failed to record movement for ${item.productName}`;
+        }
+      });
+    }
+
+    this.isSubmitting = false;
+
+    if (failedProductName) {
+      this.error = failureMessage;
+      return;
+    }
+
+    this.completed.emit(created);
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
   }
 
   // ============================================================
@@ -475,14 +494,14 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
       this.confirmMessage = 'You have unsaved changes. Are you sure you want to leave?';
     } else {
       this.cancelled.emit();
-      this.router.navigate(['/admin/sales/commerce/inventory/movements']);
+      this.router.navigate(['/admin/sales/commerce/inventory']);
     }
   }
 
   confirmCancel(): void {
     this.showConfirmDialog = false;
     this.cancelled.emit();
-    this.router.navigate(['/admin/sales/commerce/inventory/movements']);
+    this.router.navigate(['/admin/sales/commerce/inventory']);
   }
 
   cancelConfirmDialog(): void {

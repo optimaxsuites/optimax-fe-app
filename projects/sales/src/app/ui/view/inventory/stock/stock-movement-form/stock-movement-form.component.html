@@ -80,11 +80,13 @@
                         <div class="ql-form-row">
                             <div class="ql-field">
                                 <label class="ql-flabel">Movement Type <span class="ql-required">*</span></label>
-                                <select formControlName="movementType" class="ql-input" [disabled]="mode === 'view'">
+                                <select formControlName="movementType" class="ql-input" [disabled]="mode === 'view'"
+                                        (change)="onMovementTypeChange($event)">
                                     <option value="">Select Type</option>
                                     <option *ngFor="let type of movementTypes" [value]="type">
                                         {{ getMovementTypeLabel(type) }}
                                     </option>
+                                    <option value="__add_movement_type__">+ Add Movement Type</option>
                                 </select>
                                 <span class="ql-field-error" *ngIf="isFieldInvalid('movementType')">
                                     {{ getFieldError('movementType') }}
@@ -106,25 +108,29 @@
                             <div class="ql-field">
                                 <label class="ql-flabel">From Location <span class="ql-required">*</span></label>
                                 <select formControlName="fromLocationType" class="ql-input"
-                                    (change)="movementForm.patchValue({ fromLocationId: '' })"
+                                    (change)="onLocationTypeChange('from', $event)"
                                     [disabled]="mode === 'view'">
                                     <option value="">Select Location Type</option>
                                     <option *ngFor="let type of locationTypes" [value]="type">{{ type }}</option>
+                                    <option value="__add_location_type__">+ Add Location Type</option>
                                 </select>
                             </div>
 
                             <div class="ql-field">
                                 <label class="ql-flabel">From Location ID <span class="ql-required">*</span></label>
-                                <select formControlName="fromLocationId" class="ql-input" [disabled]="mode === 'view'">
+                                <select formControlName="fromLocationId" class="ql-input" [disabled]="mode === 'view'"
+                                    (change)="onLocationIdChange('from', $event)">
                                     <option value="">Select Location</option>
-                                    <option
-                                        *ngFor="let location of getLocationsForType(movementForm.get('fromLocationType')?.value)"
-                                        [value]="location.id">
+                                    <option *ngFor="let location of fromLocationOptions" [value]="location.id">
                                         {{ location.name || location.id }}
                                     </option>
+                                    <option value="__add_location__" *ngIf="!isAddLocationDisabled('from')">+ Add Location</option>
                                 </select>
                                 <span class="ql-field-error" *ngIf="isFieldInvalid('fromLocationId')">
                                     {{ getFieldError('fromLocationId') }}
+                                </span>
+                                <span class="ql-hint" *ngIf="isAddLocationDisabled('from')">
+                                    Add new branches from Branch Inventory.
                                 </span>
                             </div>
                         </div>
@@ -133,25 +139,29 @@
                             <div class="ql-field">
                                 <label class="ql-flabel">To Location <span class="ql-required">*</span></label>
                                 <select formControlName="toLocationType" class="ql-input"
-                                    (change)="movementForm.patchValue({ toLocationId: '' })"
+                                    (change)="onLocationTypeChange('to', $event)"
                                     [disabled]="mode === 'view'">
                                     <option value="">Select Location Type</option>
                                     <option *ngFor="let type of locationTypes" [value]="type">{{ type }}</option>
+                                    <option value="__add_location_type__">+ Add Location Type</option>
                                 </select>
                             </div>
 
                             <div class="ql-field">
                                 <label class="ql-flabel">To Location ID <span class="ql-required">*</span></label>
-                                <select formControlName="toLocationId" class="ql-input" [disabled]="mode === 'view'">
+                                <select formControlName="toLocationId" class="ql-input" [disabled]="mode === 'view'"
+                                    (change)="onLocationIdChange('to', $event)">
                                     <option value="">Select Location</option>
-                                    <option
-                                        *ngFor="let location of getLocationsForType(movementForm.get('toLocationType')?.value)"
-                                        [value]="location.id">
+                                    <option *ngFor="let location of toLocationOptions" [value]="location.id">
                                         {{ location.name || location.id }}
                                     </option>
+                                    <option value="__add_location__" *ngIf="!isAddLocationDisabled('to')">+ Add Location</option>
                                 </select>
                                 <span class="ql-field-error" *ngIf="isFieldInvalid('toLocationId')">
                                     {{ getFieldError('toLocationId') }}
+                                </span>
+                                <span class="ql-hint" *ngIf="isAddLocationDisabled('to')">
+                                    Add new branches from Branch Inventory.
                                 </span>
                             </div>
                         </div>
@@ -393,6 +403,96 @@
                         style="background:#dc2626;color:#fff;padding:8px 16px;font-size:13px;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer"
                         (click)="confirmCancel()">
                         <i class="fas fa-trash"></i> Discard
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ADD MOVEMENT TYPE MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showAddMovementTypeModal"
+             (click)="$event.target === $event.currentTarget && closeAddMovementTypeModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-truck" style="color: var(--p);"></i> Add Movement Type</h3>
+                    <button type="button" class="ql-modal-close" (click)="closeAddMovementTypeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Movement Type Name <span class="ql-required">*</span></label>
+                        <input type="text" class="ql-input" [(ngModel)]="newMovementTypeName"
+                               [ngModelOptions]="{standalone: true}"
+                               placeholder="e.g. Consignment">
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeAddMovementTypeModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" [disabled]="!newMovementTypeName.trim()"
+                            (click)="saveCustomMovementType()">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ADD LOCATION TYPE MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showAddLocationTypeModal"
+             (click)="$event.target === $event.currentTarget && closeAddLocationTypeModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-map-marker-alt" style="color: var(--p);"></i> Add Location Type</h3>
+                    <button type="button" class="ql-modal-close" (click)="closeAddLocationTypeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Location Type Name <span class="ql-required">*</span></label>
+                        <input type="text" class="ql-input" [(ngModel)]="newLocationTypeName"
+                               [ngModelOptions]="{standalone: true}"
+                               placeholder="e.g. Distribution Center">
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeAddLocationTypeModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" [disabled]="!newLocationTypeName.trim()"
+                            (click)="saveCustomLocationType()">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ADD LOCATION MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showAddLocationModal"
+             (click)="$event.target === $event.currentTarget && closeAddLocationModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-map-pin" style="color: var(--p);"></i> Add Location</h3>
+                    <button type="button" class="ql-modal-close" (click)="closeAddLocationModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Location Name <span class="ql-required">*</span></label>
+                        <input type="text" class="ql-input" [(ngModel)]="newLocationName"
+                               [ngModelOptions]="{standalone: true}"
+                               placeholder="e.g. North Warehouse">
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeAddLocationModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" [disabled]="!newLocationName.trim()"
+                            (click)="saveCustomLocation()">
+                        <i class="fas fa-save"></i> Save
                     </button>
                 </div>
             </div>

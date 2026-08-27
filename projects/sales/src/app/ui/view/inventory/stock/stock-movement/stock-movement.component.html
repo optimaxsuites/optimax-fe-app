@@ -110,6 +110,9 @@
                 <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
                     <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i> Refresh
                 </button>
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="navigateToApprovals()">
+                    <i class="fas fa-clipboard-check"></i> Approvals
+                </button>
                 <div class="ql-split-btn">
                     <button type="button" class="ql-btn ql-btn--primary ql-split-btn-main"
                         (click)="navigateToTransfer()">
@@ -150,12 +153,12 @@
                 <div class="ql-ai-title">AI Insight</div>
                 <div class="ql-ai-text">
                     <ng-container *ngIf="stats.pending > 5">
-                        <strong>{{ stats.pending }}</strong> movements are pending approval. Review them to avoid
-                        delays.
+                        <strong>{{ stats.pending }}</strong> movements are pending approval.
+                        <a class="ql-ai-link" (click)="navigateToApprovals()">Review them</a> to avoid delays.
                     </ng-container>
                     <ng-container *ngIf="stats.inTransit > 3 && stats.pending <= 5">
-                        <strong>{{ stats.inTransit }}</strong> movements are currently in transit. Monitor their
-                        progress.
+                        <strong>{{ stats.inTransit }}</strong> movements are currently in transit. Mark them
+                        Completed once the destination branch confirms receipt.
                     </ng-container>
                 </div>
             </div>
@@ -290,14 +293,29 @@
                                     <i class="fas fa-eye"></i>
                                     <span>View</span>
                                 </button>
-                                <button type="button" class="ql-action-btn ql-action-btn--approve"
-                                    *ngIf="movement.status === 'PENDING'" title="Approve">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                                <button type="button" class="ql-action-btn ql-action-btn--reject"
-                                    *ngIf="movement.status === 'PENDING'" title="Reject">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                                <ng-container *ngIf="movement.status === 'PENDING'">
+                                    <!-- While a change request is outstanding, nothing to approve/reject yet —
+                                         this shows instead, and the buttons come back once it's edited. -->
+                                    <span class="ql-changes-pending-badge" *ngIf="hasUnresolvedChangeRequest(movement)"
+                                        title="Waiting on the requested changes to be made">
+                                        <i class="fas fa-hourglass-half"></i> Awaiting changes
+                                    </span>
+                                    <ng-container *ngIf="!hasUnresolvedChangeRequest(movement)">
+                                        <button type="button" class="ql-action-btn ql-action-btn--approve"
+                                            title="Approve" (click)="openApproveConfirm(movement)">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button type="button" class="ql-action-btn ql-action-btn--changes"
+                                            *ngIf="isTransferMovement(movement)" title="Request Changes"
+                                            (click)="openRequestChangesConfirm(movement)">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </button>
+                                        <button type="button" class="ql-action-btn ql-action-btn--reject"
+                                            title="Reject" (click)="openRejectConfirm(movement)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </ng-container>
+                                </ng-container>
                             </div>
                         </td>
                     </tr>
@@ -329,4 +347,93 @@
         </div>
 
     </main>
+
+    <!-- ============================================================
+    APPROVE CONFIRMATION
+    ============================================================ -->
+    <div class="ql-confirm-backdrop" *ngIf="showApproveConfirm"
+        (click)="$event.target === $event.currentTarget && closeActionModals()">
+        <div class="ql-confirm-modal">
+            <div class="ql-confirm-icon" style="color:#2EB270"><i class="fas fa-check-circle"></i></div>
+            <div class="ql-confirm-title">Approve this movement?</div>
+            <div class="ql-confirm-sub">
+                {{ actionTargetMovement?.quantity }} × {{ actionTargetMovement?.productName }} —
+                this moves it to In Transit. Stock only actually moves once it's later marked Completed.
+            </div>
+            <div class="ql-confirm-actions">
+                <button type="button" class="ql-btn ql-btn--ghost" [disabled]="isProcessingAction"
+                    (click)="closeActionModals()">Cancel</button>
+                <button type="button" class="ql-btn ql-btn--ghost" *ngIf="isTransferMovement(actionTargetMovement)"
+                    [disabled]="isProcessingAction" (click)="switchToRequestChanges()">Request Changes
+                    Instead</button>
+                <button type="button" class="ql-btn ql-btn--success" [disabled]="isProcessingAction"
+                    (click)="confirmApproveMovement()">
+                    <i class="fas" [class.fa-spinner]="isProcessingAction" [class.ql-spinning]="isProcessingAction"
+                        [class.fa-check]="!isProcessingAction"></i>
+                    {{ isProcessingAction ? 'Approving...' : 'Approve' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    REJECT CONFIRMATION
+    ============================================================ -->
+    <div class="ql-confirm-backdrop" *ngIf="showRejectConfirm"
+        (click)="$event.target === $event.currentTarget && closeActionModals()">
+        <div class="ql-confirm-modal">
+            <div class="ql-confirm-icon" style="color:#DC2626"><i class="fas fa-times-circle"></i></div>
+            <div class="ql-confirm-title">Reject this movement?</div>
+            <div class="ql-confirm-sub">
+                {{ actionTargetMovement?.quantity }} × {{ actionTargetMovement?.productName }} —
+                this cancels it. It can't be approved after this.
+            </div>
+            <div class="ql-field" style="text-align:left; margin-bottom: 16px;">
+                <label class="ql-flabel">Reason (optional)</label>
+                <textarea class="ql-confirm-textarea" rows="3" placeholder="Why is this being rejected?"
+                    [(ngModel)]="rejectReason" [ngModelOptions]="{standalone: true}"></textarea>
+            </div>
+            <div class="ql-confirm-actions">
+                <button type="button" class="ql-btn ql-btn--ghost" [disabled]="isProcessingAction"
+                    (click)="closeActionModals()">Cancel</button>
+                <button type="button" class="ql-btn ql-btn--danger" [disabled]="isProcessingAction"
+                    (click)="confirmRejectMovement()">
+                    <i class="fas" [class.fa-spinner]="isProcessingAction" [class.ql-spinning]="isProcessingAction"
+                        [class.fa-times]="!isProcessingAction"></i>
+                    {{ isProcessingAction ? 'Rejecting...' : 'Reject' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    REQUEST CHANGES (transfers, from the Approve confirmation)
+    ============================================================ -->
+    <div class="ql-confirm-backdrop" *ngIf="showRequestChangesModal"
+        (click)="$event.target === $event.currentTarget && closeActionModals()">
+        <div class="ql-confirm-modal">
+            <div class="ql-confirm-icon" style="color:#F5A623"><i class="fas fa-triangle-exclamation"></i></div>
+            <div class="ql-confirm-title">Request changes to this transfer</div>
+            <div class="ql-confirm-sub">
+                {{ actionTargetMovement?.quantity }} × {{ actionTargetMovement?.productName }} —
+                stays Pending. The branch manager who created it will be notified.
+            </div>
+            <div class="ql-field" style="text-align:left; margin-bottom: 16px;">
+                <label class="ql-flabel">What needs to change? <span class="ql-required">*</span></label>
+                <textarea class="ql-confirm-textarea" rows="3" placeholder="e.g. Confirm quantity with warehouse first"
+                    [(ngModel)]="changesReason" [ngModelOptions]="{standalone: true}"></textarea>
+            </div>
+            <div class="ql-confirm-actions">
+                <button type="button" class="ql-btn ql-btn--ghost" [disabled]="isProcessingAction"
+                    (click)="closeActionModals()">Cancel</button>
+                <button type="button" class="ql-btn ql-btn--primary" [disabled]="isProcessingAction || !changesReason.trim()"
+                    (click)="confirmRequestChanges()">
+                    <i class="fas" [class.fa-spinner]="isProcessingAction" [class.ql-spinning]="isProcessingAction"
+                        [class.fa-paper-plane]="!isProcessingAction"></i>
+                    {{ isProcessingAction ? 'Sending...' : 'Send Request' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
 </div>

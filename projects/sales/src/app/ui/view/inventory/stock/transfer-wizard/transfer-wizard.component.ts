@@ -1,6 +1,6 @@
 // transfer-wizard.component.ts
 import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
@@ -10,7 +10,6 @@ import {
   BranchInventory,
   StockMovement,
   MovementType,
-  MovementStatus,
   getMovementTypeLabel
 } from '../../../../domain/inventory/inventory.dto';
 
@@ -38,6 +37,15 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
 
   // Data
   branches: Branch[] = [];
+  // When a caller links in with ?lockedBranchId=<id> (e.g. the Branch Manager tab's "Create
+  // Transfer" quick action), that one branch is fixed on either the Source or Destination side —
+  // whichever the user picks via the direction toggle below — and the other side offers every
+  // other ACTIVE branch. Outside that flow (plain /movements/transfer), lockedBranchId is null,
+  // no direction toggle is shown, and both dropdowns just list every branch as before.
+  lockedBranchId: string | null = null;
+  direction: 'FROM' | 'TO' | null = null;
+  sourceBranches: Branch[] = [];
+  destinationBranches: Branch[] = [];
   products: Product[] = [];
   sourceInventory: BranchInventory[] = [];
   destInventory: BranchInventory[] = [];
@@ -74,6 +82,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
   constructor(
     private inventoryService: InventoryService,
     private router: Router,
+    private route: ActivatedRoute,
     private fb: FormBuilder
   ) {
     this.buildForm();
@@ -84,6 +93,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
   // ============================================================
 
   ngOnInit(): void {
+    this.lockedBranchId = this.route.snapshot.queryParamMap.get('lockedBranchId');
     this.loadData();
   }
 
@@ -147,6 +157,14 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (branches: Branch[]) => {
           this.branches = branches;
+          if (this.lockedBranchId) {
+            // Direction not chosen yet — chooseDirection() populates these once it is.
+            this.sourceBranches = [];
+            this.destinationBranches = [];
+          } else {
+            this.sourceBranches = branches;
+            this.destinationBranches = branches;
+          }
           this.checkLoadingComplete();
         },
         error: (err: any) => {
@@ -182,6 +200,36 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
   // ============================================================
   // BRANCH SELECTION
   // ============================================================
+
+  /** Only relevant when lockedBranchId is set (Branch Manager tab). Fixes the locked branch
+   *  on the chosen side and offers every other ACTIVE branch on the other side — 'FROM' sends
+   *  stock out of the locked branch, 'TO' requests stock be moved into it. Switching direction
+   *  clears whatever branches/products were already picked so nothing stale carries over. */
+  chooseDirection(direction: 'FROM' | 'TO'): void {
+    if (!this.lockedBranchId) return;
+    this.direction = direction;
+
+    const lockedBranch = this.branches.filter(b => b.id === this.lockedBranchId);
+    const otherActiveBranches = this.branches.filter(b => b.id !== this.lockedBranchId && b.status === 'ACTIVE');
+
+    this.sourceBranches = direction === 'FROM' ? lockedBranch : otherActiveBranches;
+    this.destinationBranches = direction === 'FROM' ? otherActiveBranches : lockedBranch;
+
+    this.wizardForm.patchValue({ sourceBranchId: '', destinationBranchId: '' });
+    this.items.clear();
+    this.selectedProducts.clear();
+    this.sourceInventory = [];
+    this.destInventory = [];
+    this.error = null;
+
+    if (direction === 'FROM' && lockedBranch.length === 1) {
+      this.wizardForm.patchValue({ sourceBranchId: lockedBranch[0].id });
+      this.onSourceBranchChange();
+    } else if (direction === 'TO' && lockedBranch.length === 1) {
+      this.wizardForm.patchValue({ destinationBranchId: lockedBranch[0].id });
+      this.onDestinationBranchChange();
+    }
+  }
 
   onSourceBranchChange(): void {
     if (this.sourceBranchId) {
@@ -267,6 +315,18 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     // Check if product already added
     if (this.selectedProducts.has(product.id)) {
       this.error = 'Product already added to transfer';
+      this.showProductDropdown = false;
+      this.productSearchTerm = '';
+      return;
+    }
+
+    // The Quick Transfer wizard is for moving a single product; anything more belongs in Bulk
+    // Transfer instead (it's built for exactly that — many products in one transfer). The exact
+    // wording is checked by isBulkTransferSuggested() below to show a "Go to Bulk Transfer"
+    // button alongside this specific error, without needing a separate flag to keep in sync with
+    // every other place `error` gets cleared.
+    if (this.items.length >= 1) {
+      this.error = 'Quick Transfer only supports one product at a time. Use Bulk Transfer to move multiple products in one go.';
       this.showProductDropdown = false;
       this.productSearchTerm = '';
       return;
@@ -403,40 +463,79 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     this.error = null;
 
     const formValue = this.wizardForm.value;
-    const items = formValue.items;
+    const items: any[] = formValue.items;
+    const sourceBranchId = formValue.sourceBranchId;
+    const destinationBranchId = formValue.destinationBranchId;
+    const sourceBranchName = this.getBranchName(sourceBranchId);
+    const destinationBranchName = this.getBranchName(destinationBranchId);
 
-    // Create movements for each item
-    const movements = items.map((item: any) => ({
-      productId: item.productId,
-      productName: item.productName,
-      sku: item.sku,
-      quantity: parseInt(item.quantity),
-      movementType: MovementType.TRANSFER,
-      fromLocation: {
-        type: 'BRANCH',
-        id: formValue.sourceBranchId,
-        name: this.getBranchName(formValue.sourceBranchId)
-      },
-      toLocation: {
-        type: 'BRANCH',
-        id: formValue.destinationBranchId,
-        name: this.getBranchName(formValue.destinationBranchId)
-      },
-      notes: formValue.notes || '',
-      priority: formValue.priority,
-      status: MovementStatus.PENDING
-    }));
+    let firstMovement: StockMovement | null = null;
+    let failedProductName: string | null = null;
+    let failureMessage = '';
 
-    // In a real implementation, this would call an API to create the transfer
-    // For now, we'll simulate
-    console.log('Creating transfers:', movements);
+    // Transfers only ever get recorded as PENDING here — stock does not move yet. A transfer
+    // must be approved (via the Movement Approvals page, or a manual status update to COMPLETED)
+    // before InventoryService actually adjusts branch inventory; see
+    // InventoryService.applyTransferStockAdjustment().
+    //
+    // NOTE: createMovement() is a localStorage-backed mock that resolves synchronously (via
+    // `of(...)`), so this plain for-loop completes in one tick — no concatMap needed.
+    for (const item of items) {
+      if (failedProductName) break;
 
-    setTimeout(() => {
-      this.isSubmitting = false;
-      // Emit completion with first movement
-      this.completed.emit(movements[0] as StockMovement);
-      this.router.navigate(['/admin/sales/commerce/inventory/movements']);
-    }, 1500);
+      const quantity = parseInt(item.quantity, 10) || 0;
+      const sourceItem = this.sourceInventory.find(i => i.productId === item.productId);
+      if (!sourceItem || sourceItem.quantity < quantity) {
+        failedProductName = item.productName;
+        failureMessage = `Insufficient stock for ${item.productName}. Available: ${sourceItem?.quantity || 0}`;
+        break;
+      }
+
+      this.inventoryService.createMovement({
+        productId: item.productId,
+        productName: item.productName,
+        sku: item.sku,
+        quantity,
+        movementType: MovementType.TRANSFER,
+        fromLocation: { type: 'BRANCH', id: sourceBranchId, name: sourceBranchName },
+        toLocation: { type: 'BRANCH', id: destinationBranchId, name: destinationBranchName },
+        notes: formValue.notes || ''
+      }).subscribe({
+        next: (movement) => {
+          if (!firstMovement) {
+            firstMovement = movement;
+          }
+        },
+        error: (err) => {
+          failedProductName = item.productName;
+          failureMessage = err?.message || `Failed to record movement for ${item.productName}`;
+        }
+      });
+    }
+
+    this.isSubmitting = false;
+
+    if (failedProductName) {
+      this.error = failureMessage;
+      return;
+    }
+
+    if (firstMovement) {
+      this.completed.emit(firstMovement);
+    }
+
+    // A Branch Manager (this form locked to their branch) goes back to their own dashboard,
+    // where the new transfer shows up as a pending request — not into the admin approval
+    // queue, which they have no reason to see. Everyone else still lands on Approvals.
+    //
+    // Routed to the tab shell itself (not the standalone /branch-manager route) so the
+    // nav-tab bar comes back too — the shell remembers "Branch Manager" was the last tab
+    // selected (that's how they got to this form in the first place) and restores it.
+    if (this.lockedBranchId) {
+      this.router.navigate(['/admin/sales/commerce/inventory']);
+    } else {
+      this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
+    }
   }
 
   // ============================================================
@@ -449,14 +548,14 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
       this.confirmMessage = 'You have unsaved changes. Are you sure you want to leave?';
     } else {
       this.cancelled.emit();
-      this.router.navigate(['/admin/sales/commerce/inventory/movements']);
+      this.router.navigate(['/admin/sales/commerce/inventory']);
     }
   }
 
   confirmCancel(): void {
     this.showConfirmDialog = false;
     this.cancelled.emit();
-    this.router.navigate(['/admin/sales/commerce/inventory/movements']);
+    this.router.navigate(['/admin/sales/commerce/inventory']);
   }
 
   cancelConfirmDialog(): void {
@@ -470,6 +569,16 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
   getBranchName(branchId: string): string {
     const branch = this.branches.find(b => b.id === branchId);
     return branch?.name || branchId;
+  }
+
+  /** True while the current error is specifically the "one product at a time" message, so the
+   *  template can show a "Go to Bulk Transfer" button alongside it. */
+  isBulkTransferSuggested(): boolean {
+    return !!this.error?.includes('Use Bulk Transfer');
+  }
+
+  goToBulkTransfer(): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/bulk-transfer']);
   }
 
   getSourceStock(productId: string): number {

@@ -4,7 +4,7 @@
 // ============================================================
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
@@ -97,6 +97,7 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
   constructor(
     private inventoryService: InventoryService,
     private router: Router,
+    private route: ActivatedRoute,
     private fb: FormBuilder
   ) {
     this.filterForm = this.buildFilterForm();
@@ -107,6 +108,12 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
   // ============================================================
 
   ngOnInit(): void {
+    // Optional prefill, e.g. ?branchId=br-1 — used when linking in from a specific branch's
+    // page so the list opens already filtered to it (the filter stays editable).
+    const branchId = this.route.snapshot.queryParamMap.get('branchId');
+    if (branchId) {
+      this.filterForm.patchValue({ branchId });
+    }
     this.loadRequests();
     this.loadBranches();
     this.setupSearch();
@@ -478,6 +485,10 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
 
   navigateToNew(): void {
     this.router.navigate(['/admin/sales/commerce/inventory/restock/requests/new']);
+  }
+
+  navigateToApprovals(): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/restock/approvals']);
   }
 
   // ============================================================

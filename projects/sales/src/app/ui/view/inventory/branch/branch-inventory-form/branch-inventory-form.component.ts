@@ -373,7 +373,16 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
     if (this.validateCurrentStep()) {
       if (this.currentStep < this.totalSteps) {
         this.currentStep++;
+        this.error = null;
       }
+    } else {
+      // Previously this silently did nothing when validation failed, which looked like the
+      // button was broken. Now it marks the offending fields touched (so their inline error
+      // messages appear) and surfaces a clear reason via the error banner.
+      this.markStepAsTouched(this.currentStep);
+      this.error = this.currentStep === 1
+        ? 'Please select a product before continuing.'
+        : 'Please fill in all required fields before continuing.';
     }
   }
 
@@ -386,17 +395,30 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
   private validateCurrentStep(): boolean {
     switch (this.currentStep) {
       case 1:
+        // Step 1 only asks the user to pick a product — quantity/pricing/reorder fields
+        // don't render until step 2, so they must not be required to leave step 1.
         if (this.mode === 'batch') {
           return this.batchItemsArray.length > 0;
         } else {
-          return !!(this.inventoryForm.get('productId')?.valid &&
-            this.inventoryForm.get('quantity')?.valid);
+          return !!this.inventoryForm.get('productId')?.valid;
         }
       case 2:
-        return !!this.inventoryForm.get('sellingPrice')?.valid;
+        return !!(this.inventoryForm.get('quantity')?.valid &&
+          this.inventoryForm.get('sellingPrice')?.valid &&
+          this.inventoryForm.get('reorderPoint')?.valid &&
+          this.inventoryForm.get('safetyStock')?.valid);
       default:
         return true;
     }
+  }
+
+  /** Marks the fields relevant to a step as touched so their validation messages actually appear. */
+  private markStepAsTouched(step: number): void {
+    const fieldsByStep: Record<number, string[]> = {
+      1: ['productId'],
+      2: ['quantity', 'sellingPrice', 'reorderPoint', 'safetyStock']
+    };
+    (fieldsByStep[step] || []).forEach(name => this.inventoryForm.get(name)?.markAsTouched());
   }
 
   // ============================================================
@@ -422,41 +444,26 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
     this.error = null;
 
     const formValue = this.inventoryForm.value;
-    const data = {
+
+    this.inventoryService.saveBranchInventoryItem({
       branchId: this.branchId,
       productId: formValue.productId,
-      quantity: parseInt(formValue.quantity),
-      reorderPoint: parseInt(formValue.reorderPoint),
-      safetyStock: parseInt(formValue.safetyStock),
+      quantity: parseInt(formValue.quantity, 10),
+      reorderPoint: parseInt(formValue.reorderPoint, 10),
+      safetyStock: parseInt(formValue.safetyStock, 10),
       sellingPrice: parseFloat(formValue.sellingPrice),
-      costPrice: parseFloat(formValue.costPrice || 0),
-      notes: formValue.notes || ''
-    };
-
-    // In a real implementation, this would call an API
-    // For now, we'll simulate saving
-    console.log('Saving inventory:', data);
-
-    setTimeout(() => {
-      this.isSaving = false;
-      // Emit saved event with mock data
-      const savedItem: BranchInventory = {
-        id: Date.now().toString(),
-        branchId: this.branchId,
-        branchName: this.branch?.name || '',
-        productId: data.productId,
-        productName: this.selectedProduct?.name || '',
-        sku: this.selectedProduct?.sku || '',
-        quantity: data.quantity,
-        reorderPoint: data.reorderPoint,
-        safetyStock: data.safetyStock,
-        reorderQuantity: data.reorderPoint,
-        sellingPrice: data.sellingPrice,
-        costPrice: data.costPrice,
-        lastUpdated: new Date()
-      };
-      this.saved.emit(savedItem);
-    }, 1000);
+      costPrice: parseFloat(formValue.costPrice || 0)
+    }).subscribe({
+      next: (savedItem) => {
+        this.isSaving = false;
+        this.saved.emit(savedItem);
+        this.navigateAway();
+      },
+      error: (err) => {
+        this.isSaving = false;
+        this.error = err?.message || 'Failed to save inventory. Please try again.';
+      }
+    });
   }
 
   saveBatch(): void {
@@ -464,48 +471,53 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
       this.error = 'Please add at least one product';
       return;
     }
+    if (this.batchForm.invalid) {
+      this.batchForm.markAllAsTouched();
+      this.error = 'Please fix all validation errors';
+      return;
+    }
 
     this.isSaving = true;
     this.error = null;
 
     const items = this.batchItemsArray.value;
-    const data = items.map((item: any) => ({
-      branchId: this.branchId,
-      productId: item.productId,
-      quantity: parseInt(item.quantity),
-      reorderPoint: parseInt(item.reorderPoint),
-      safetyStock: parseInt(item.safetyStock),
-      sellingPrice: parseFloat(item.sellingPrice),
-      costPrice: parseFloat(item.costPrice || 0)
-    }));
+    let savedFirst: BranchInventory | null = null;
+    let failedCount = 0;
+    let firstErrorMessage = '';
 
-    // In a real implementation, this would call an API
-    console.log('Saving batch inventory:', data);
-
-    setTimeout(() => {
-      this.isSaving = false;
-      // Emit saved event with mock data
-      const savedItems = data.map((d: any, index: number) => ({
-        id: (Date.now() + index).toString(),
+    // The mock InventoryService's saveBranchInventoryItem resolves synchronously (via `of(...)`),
+    // so this plain for-loop completes in one tick.
+    for (const item of items) {
+      this.inventoryService.saveBranchInventoryItem({
         branchId: this.branchId,
-        branchName: this.branch?.name || '',
-        productId: d.productId,
-        productName: this.products.find(p => p.id === d.productId)?.name || '',
-        sku: this.products.find(p => p.id === d.productId)?.sku || '',
-        quantity: d.quantity,
-        reorderPoint: d.reorderPoint,
-        safetyStock: d.safetyStock,
-        reorderQuantity: d.reorderPoint,
-        sellingPrice: d.sellingPrice,
-        costPrice: d.costPrice,
-        lastUpdated: new Date()
-      }));
-      // Emit only the first one for simplicity, or you can emit the whole list
-      if (savedItems.length > 0) {
-        this.saved.emit(savedItems[0]);
-      }
-      this.navigateAway();
-    }, 1000);
+        productId: item.productId,
+        quantity: parseInt(item.quantity, 10),
+        reorderPoint: parseInt(item.reorderPoint, 10),
+        safetyStock: parseInt(item.safetyStock, 10),
+        sellingPrice: parseFloat(item.sellingPrice),
+        costPrice: parseFloat(item.costPrice || 0)
+      }).subscribe({
+        next: (saved) => {
+          if (!savedFirst) savedFirst = saved;
+        },
+        error: (err) => {
+          failedCount++;
+          firstErrorMessage = firstErrorMessage || err?.message || 'Failed to save an item';
+        }
+      });
+    }
+
+    this.isSaving = false;
+
+    if (failedCount > 0) {
+      this.error = `${failedCount} of ${items.length} item(s) failed to save: ${firstErrorMessage}`;
+      return;
+    }
+
+    if (savedFirst) {
+      this.saved.emit(savedFirst);
+    }
+    this.navigateAway();
   }
 
   // ============================================================
@@ -597,7 +609,7 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
 
   getBranchTypeLabel(type: string): string {
     const map: Record<string, string> = {
-      'FLAGSHIP': '⭐ Flagship',
+      'FLAGSHIP': 'Flagship',
       'STANDARD': 'Standard',
       'MINI': 'Mini'
     };

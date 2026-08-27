@@ -61,7 +61,9 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
 
   // City options for filter
   cities: string[] = ['ALL'];
-  typeOptions = ['ALL', 'FLAGSHIP', 'STANDARD', 'MINI'];
+  // Loaded dynamically (see loadBranchTypes()) so custom branch types show up here too, not
+  // just the three built-in ones.
+  typeOptions: string[] = ['ALL', 'FLAGSHIP', 'STANDARD', 'MINI'];
   statusOptions = ['ALL', 'ACTIVE', 'INACTIVE', 'UNDER_CONSTRUCTION'];
 
   // Selected branch for detail view
@@ -97,6 +99,7 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadBranches();
     this.loadBranchSummaries();
+    this.loadBranchTypes();
   }
 
   ngOnDestroy(): void {
@@ -141,6 +144,19 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Failed to load branch summaries:', err);
         }
+      });
+  }
+
+  /** Populates the Type filter with every branch type that exists, including custom ones added
+   *  via the branch form's "+ Add Branch Type" — not just the three built-in ones. */
+  loadBranchTypes(): void {
+    this.inventoryService.getBranchTypes()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (types) => {
+          this.typeOptions = ['ALL', ...types];
+        },
+        error: (err) => console.error('Failed to load branch types:', err)
       });
   }
 
@@ -326,11 +342,19 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
 
   getBranchTypeLabel(type: string): string {
     const map: Record<string, string> = {
-      'FLAGSHIP': '⭐ Flagship',
+      'FLAGSHIP': 'Flagship',
       'STANDARD': 'Standard',
       'MINI': 'Mini'
     };
-    return map[type] || type;
+    if (map[type]) return map[type];
+    // Custom branch types are shown in Title Case no matter how they were typed in.
+    return type.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  /** True for any branch type outside the three built-in ones — used to give custom types
+   *  their own badge color instead of falling through unstyled. */
+  isCustomBranchType(type: string): boolean {
+    return !['FLAGSHIP', 'STANDARD', 'MINI'].includes(type);
   }
 
   getStatusLabel(status: string): string {

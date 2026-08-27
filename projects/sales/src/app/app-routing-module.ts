@@ -50,10 +50,14 @@ import { StockMovementFormComponent } from './ui/view/inventory/stock/stock-move
 import { StockMovementDetailComponent } from './ui/view/inventory/stock/stock-movement-detail/stock-movement-detail.component';
 import { TransferWizardComponent } from './ui/view/inventory/stock/transfer-wizard/transfer-wizard.component';
 import { BulkTransferComponent } from './ui/view/inventory/stock/bulk-transfer/bulk-transfer.component';
+import { MovementApprovalComponent } from './ui/view/inventory/stock/movement-approval/movement-approval.component';
 import { RestockRequestFormComponent } from './ui/view/inventory/restock/restock-request-form/restock-request-form.component';
 import { RestockRequestListComponent } from './ui/view/inventory/restock/restock-request-list/restock-request-list.component';
 import { RestockSuggestionsPageComponent } from './ui/view/inventory/restock/restock-suggestions-page/restock-suggestions-page.component';
 import { ThresholdManagementComponent } from './ui/view/inventory/restock/threshold-management/threshold-management.component';
+import { RestockApprovalComponent } from './ui/view/inventory/restock/restock-approval/restock-approval.component';
+import { BranchManagerDashboardComponent } from './ui/view/inventory/branch-managers/branch-manager-dashboard/branch-manager-dashboard.component';
+import { BranchInventoryComponent } from './ui/view/inventory/branch/branch-inventory/branch-inventory.component';
 
 
 export const routes: Routes = [
@@ -65,9 +69,9 @@ export const routes: Routes = [
 
 
 
-  // =======================================================================================================
+  // ==================================================================================================================
   //                                                INVENTORY ROUTES
-  // =======================================================================================================
+  // ==================================================================================================================
   {
     path: 'commerce/inventory',
     component: InventoryComponent
@@ -77,96 +81,134 @@ export const routes: Routes = [
     component: InventoryComponent
   },
 
-  // --------------------------------------- Product Management -----------------------------------------
+  // ------------------------------------------ Product Management -----------------------------------------------------
   {
-    path: 'admin/sales/commerce/inventory/products/new',
+    path: 'commerce/inventory/products/new',
     component: ProductManagementFormComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/products/new/:uuid',
+    path: 'commerce/inventory/products/new/:uuid',
     component: ProductManagementFormComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/products/bulk-import',
+    path: 'commerce/inventory/products/bulk-import',
     component: ProductBulkImportComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/products/bulk-import/:uuid',
+    path: 'commerce/inventory/products/bulk-import/:uuid',
     component: ProductBulkImportComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/products/:id/edit',
+    path: 'commerce/inventory/products/:id/edit',
     component: ProductManagementFormComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/products/:id/edit/:uuid',
+    path: 'commerce/inventory/products/:id/edit/:uuid',
     component: ProductManagementFormComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/products/:id',
+    path: 'commerce/inventory/products/:id',
     component: ProductDetailComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/products/:id/:uuid',
+    path: 'commerce/inventory/products/:id/:uuid',
     component: ProductDetailComponent
   },
 
-  // --------------------------------------- Branch Management -----------------------------------------
+  // --------------------------------------------- Branch Management ---------------------------------------------------
   {
-    path: 'admin/sales/commerce/inventory/branches/new',
+    path: 'commerce/inventory/branches/new',
     component: BranchFormComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/branches/:branchId',
+    path: 'commerce/inventory/branches/:branchId',
     component: BranchDetailComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/branches/:branchId/add-product',
+    path: 'commerce/inventory/branches/:branchId/edit',
+    component: BranchFormComponent
+  },
+  {
+    path: 'commerce/inventory/branches/:branchId/add-product',
     component: BranchInventoryFormComponent
   },
 
-  // --------------------------------------- Stock Movements -----------------------------------------
+  // --------------------------------------------- Stock Movements ---------------------------------------------------
   {
-    path: 'admin/sales/commerce/inventory/movements/new',
+    path: 'commerce/inventory/movements/new',
     component: StockMovementFormComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/movements/transfer',
+    path: 'commerce/inventory/movements/transfer',
     component: TransferWizardComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/movements/bulk-transfer',
+    path: 'commerce/inventory/movements/bulk-transfer',
     component: BulkTransferComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/movements/:id',
+    path: 'commerce/inventory/movements/approvals',
+    component: MovementApprovalComponent
+  },
+  {
+    path: 'commerce/inventory/movements/:id',
     component: StockMovementDetailComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/movements/:id/edit',
+    path: 'commerce/inventory/movements/:id/edit',
     component: StockMovementFormComponent
   },
 
   // --------------------------------------- Restock Requests -----------------------------------------
   {
-    path: 'admin/sales/commerce/inventory/restock/requests',
+    path: 'commerce/inventory/restock/requests',
     component: RestockRequestListComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/restock/requests/new',
+    path: 'commerce/inventory/restock/requests/new',
     component: RestockRequestFormComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/restock/requests/:id',
+    path: 'commerce/inventory/restock/requests/:id',
     component: RestockRequestFormComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/restock/suggestions',
+    path: 'commerce/inventory/restock/suggestions',
     component: RestockSuggestionsPageComponent
   },
   {
-    path: 'admin/sales/commerce/inventory/restock/thresholds',
+    path: 'commerce/inventory/restock/thresholds',
     component: ThresholdManagementComponent
+  },
+  {
+    path: 'commerce/inventory/restock/approvals',
+    component: RestockApprovalComponent
+  },
+
+  // --------------------------------------- Branch Manager -----------------------------------------
+  // 'branch-manager' alone would be a 3-segment path — identical in shape to the tab shell's
+  // own 'commerce/inventory/:uuid' route above, which would shadow it. Nothing currently links
+  // directly to this bare dashboard route (the shell itself, reached via 'commerce/inventory',
+  // is how it's normally opened) — this just keeps a non-colliding direct URL available.
+  {
+    path: 'commerce/inventory/branch-manager/dashboard',
+    component: BranchManagerDashboardComponent
+  },
+  {
+    path: 'commerce/inventory/branch-manager/inventory',
+    component: BranchInventoryComponent
+  },
+  {
+    path: 'commerce/inventory/branch-manager/requests',
+    component: RestockRequestListComponent
+  },
+  {
+    path: 'commerce/inventory/branch-manager/requests/new',
+    component: RestockRequestFormComponent
+  },
+  {
+    path: 'commerce/inventory/branch-manager/transfers/new',
+    component: TransferWizardComponent
   },
 
 
@@ -571,6 +613,8 @@ export const routes: Routes = [
     redirectTo: 'commerce/requests',
     pathMatch: 'full'
   },
+  // Catch-all route for any undefined paths
+  { path: '**', redirectTo: '/', pathMatch: 'full' }
 ];
 
 @NgModule({

@@ -129,7 +129,9 @@ export interface Branch {
     id: string;
     name: string;
     code: string;
-    type: 'FLAGSHIP' | 'STANDARD' | 'MINI';
+    // Widened from a fixed 'FLAGSHIP' | 'STANDARD' | 'MINI' union so users can add their own
+    // custom branch types (see InventoryService.getBranchTypes()/createBranchType()).
+    type: string;
     location: {
         address: string;
         city: string;
@@ -185,7 +187,6 @@ export interface StockMovement {
     status: MovementStatus;
     cost: number;
     sellingPrice: number;
-    trackingNumber: string;
     batchNumber: string;
     expiryDate: Date;
     notes: string;
@@ -198,7 +199,6 @@ export interface StockMovement {
     approvedAt: Date;
     completedAt: Date;
     updatedAt?: Date;
-    estimatedArrival?: Date;
 }
 
 export interface RestockRequest {
@@ -354,6 +354,9 @@ export interface ProductFilters {
     page?: number;
     limit?: number;
     size?: number;
+    /** When set, restricts results to only these product ids — used to scope Product
+     *  Management down to a single branch's inventory for a Branch Manager. */
+    productIds?: string[];
 }
 
 export interface MovementFilters {
@@ -361,6 +364,7 @@ export interface MovementFilters {
     status?: MovementStatus;
     branchId?: string;
     productId?: string;
+    search?: string;
     dateFrom?: Date;
     dateTo?: Date;
     page?: number;
@@ -373,6 +377,96 @@ export interface RestockFilters {
     urgency?: RestockUrgency;
     branchId?: string;
     productId?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    page?: number;
+    limit?: number;
+}
+
+// ============================================================
+// NOTIFICATIONS — email/SMS/in-app alerts between branch managers and admins
+// ============================================================
+// Same channel/status shape procurement's NotificationService already uses (see
+// procurement.dto.ts's NotificationChannel/NotificationStatus/ProcurementNotification),
+// so one backend notification pipeline can serve both domains — only the trigger types
+// and recipient roles below are inventory-specific. This replaces the in-app-only
+// DashboardNotification currently defined locally in
+// branch-manager-dashboard.component.ts, which never leaves the browser.
+
+export type InventoryNotificationChannel = 'EMAIL' | 'SMS' | 'IN_APP';
+
+export type InventoryNotificationStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED';
+
+export type InventoryRecipientRole = 'ADMIN' | 'BRANCH_MANAGER';
+
+// Reuses StockAlertType for stock-driven alerts and adds the transfer/restock lifecycle
+// events branch managers and admins also need to hear about.
+export type InventoryAlertType =
+    | StockAlertType
+    | 'TRANSFER_PENDING_APPROVAL'
+    | 'TRANSFER_APPROVED'
+    | 'TRANSFER_REJECTED'
+    | 'TRANSFER_CHANGES_REQUESTED'
+    | 'RESTOCK_REQUESTED'
+    | 'RESTOCK_APPROVED'
+    | 'RESTOCK_REJECTED'
+    | 'RESTOCK_RECEIVED';
+
+export type InventoryAlertEntityType = 'STOCK_ALERT' | 'RESTOCK_REQUEST' | 'STOCK_MOVEMENT';
+
+export interface InventoryAlertRecipient {
+    id: string; // user id
+    name: string;
+    role: InventoryRecipientRole;
+    email?: string;
+    phone?: string;    // required when EMAIL/SMS channel targets this recipient
+    branchId?: string; // set when role is BRANCH_MANAGER, to scope which branch they manage
+}
+
+/** Request payload for triggering an alert, e.g. POST /inventory/notifications/trigger. */
+export interface TriggerInventoryAlertRequest {
+    type: InventoryAlertType;
+    channels: InventoryNotificationChannel[];
+    recipients: InventoryAlertRecipient[];
+    relatedEntityId: string;   // StockAlert / RestockRequest / StockMovement id
+    relatedEntityType: InventoryAlertEntityType;
+    branchId?: string;
+    branchName?: string;
+    subject: string;
+    message: string;
+    templateData?: Record<string, any>;
+}
+
+/** Delivery record for one recipient/channel — backs alert history and failed-send retries. */
+export interface InventoryNotification {
+    id: string;
+    type: InventoryAlertType;
+    channel: InventoryNotificationChannel;
+    recipientId: string;
+    recipientName: string;
+    recipientRole: InventoryRecipientRole;
+    recipientEmail?: string;
+    recipientPhone?: string;
+    subject: string;
+    message: string;
+    status: InventoryNotificationStatus;
+    sentAt?: Date;
+    deliveredAt?: Date;
+    failureReason?: string;
+    retryCount: number;
+    relatedEntityId: string;
+    relatedEntityType: InventoryAlertEntityType;
+    branchId?: string;
+    branchName?: string;
+    createdAt: Date;
+}
+
+export interface InventoryAlertFilters {
+    type?: InventoryAlertType;
+    channel?: InventoryNotificationChannel;
+    status?: InventoryNotificationStatus;
+    recipientRole?: InventoryRecipientRole;
+    branchId?: string;
     dateFrom?: Date;
     dateTo?: Date;
     page?: number;
@@ -411,8 +505,22 @@ export function getStockStatusLabel(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVE
     return map[status];
 }
 
-export function getMovementTypeLabel(type: MovementType): string {
-    const map: Record<MovementType, string> = {
+/** True while a movement has an admin "Request Changes" note that hasn't been addressed yet —
+ *  i.e. the last "Changes requested:" marker in its notes is more recent than any "Changes made:"
+ *  marker. Both markers are plain text appended to `notes` (see MovementApprovalComponent /
+ *  StockMovementComponent's request-changes flow, and StockMovementFormComponent's save()).
+ *  Used to hide Approve/Reject/Request Changes while a request is still outstanding, so nobody
+ *  approves or re-requests changes on a transfer that's already waiting on an edit. */
+export function hasUnresolvedChangeRequest(movement: { notes?: string } | null | undefined): boolean {
+    const notes = movement?.notes || '';
+    const lastRequested = notes.lastIndexOf('Changes requested:');
+    if (lastRequested === -1) return false;
+    const lastMade = notes.lastIndexOf('Changes made:');
+    return lastMade < lastRequested;
+}
+
+export function getMovementTypeLabel(type: MovementType | string): string {
+    const map: Record<string, string> = {
         [MovementType.PURCHASE]: 'Purchase',
         [MovementType.TRANSFER]: 'Transfer',
         [MovementType.SALE]: 'Sale',
@@ -420,11 +528,13 @@ export function getMovementTypeLabel(type: MovementType): string {
         [MovementType.ADJUSTMENT]: 'Adjustment',
         [MovementType.DAMAGED]: 'Damaged'
     };
-    return map[type];
+    if (map[type]) return map[type];
+    // Custom movement types are shown in Title Case no matter how they were typed in.
+    return String(type).toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
 }
 
-export function getMovementTypeIcon(type: MovementType): string {
-    const map: Record<MovementType, string> = {
+export function getMovementTypeIcon(type: MovementType | string): string {
+    const map: Record<string, string> = {
         [MovementType.PURCHASE]: 'fa-truck-loading',
         [MovementType.TRANSFER]: 'fa-exchange-alt',
         [MovementType.SALE]: 'fa-shopping-cart',
@@ -432,7 +542,7 @@ export function getMovementTypeIcon(type: MovementType): string {
         [MovementType.ADJUSTMENT]: 'fa-sliders-h',
         [MovementType.DAMAGED]: 'fa-exclamation-triangle'
     };
-    return map[type];
+    return map[type] || 'fa-box';
 }
 
 export function getMovementStatusLabel(status: MovementStatus): string {
@@ -443,4 +553,22 @@ export function getMovementStatusLabel(status: MovementStatus): string {
         [MovementStatus.CANCELLED]: 'Cancelled'
     };
     return map[status] || status;
+}
+
+export function getInventoryAlertTypeLabel(type: InventoryAlertType): string {
+    const map: Record<string, string> = {
+        [StockAlertType.LOW_STOCK]: 'Low Stock',
+        [StockAlertType.OUT_OF_STOCK]: 'Out of Stock',
+        [StockAlertType.EXPIRING]: 'Expiring Stock',
+        [StockAlertType.OVER_STOCK]: 'Overstock',
+        TRANSFER_PENDING_APPROVAL: 'Transfer Pending Approval',
+        TRANSFER_APPROVED: 'Transfer Approved',
+        TRANSFER_REJECTED: 'Transfer Rejected',
+        TRANSFER_CHANGES_REQUESTED: 'Transfer Changes Requested',
+        RESTOCK_REQUESTED: 'Restock Requested',
+        RESTOCK_APPROVED: 'Restock Approved',
+        RESTOCK_REJECTED: 'Restock Rejected',
+        RESTOCK_RECEIVED: 'Restock Received'
+    };
+    return map[type] || String(type);
 }

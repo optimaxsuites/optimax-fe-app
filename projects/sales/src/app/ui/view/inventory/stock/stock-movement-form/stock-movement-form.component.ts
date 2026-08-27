@@ -11,7 +11,8 @@ import {
   Branch,
   Product,
   getMovementTypeLabel as getMovementTypeLabelFn,
-  getMovementTypeIcon as getMovementTypeIconFn
+  getMovementTypeIcon as getMovementTypeIconFn,
+  hasUnresolvedChangeRequest
 } from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
@@ -60,12 +61,33 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
   showConfirmDialog: boolean = false;
   confirmMessage: string = '';
 
-  // Movement types
-  movementTypes = Object.values(MovementType);
+  // Movement types — loaded dynamically (see loadMovementTypes()) so custom types added via
+  // "+ Add Movement Type" show up here too, not just the six built-in ones.
+  movementTypes: string[] = [];
   movementStatuses = Object.values(MovementStatus);
 
-  // Location types
-  locationTypes = ['WAREHOUSE', 'BRANCH', 'SUPPLIER', 'CUSTOMER'];
+  // Location types — loaded dynamically (see loadLocationTypes()), same reasoning.
+  locationTypes: string[] = [];
+
+  // Concrete locations for whichever type is currently selected in each of the two location
+  // dropdowns — refreshed via onFromLocationTypeChange()/onToLocationTypeChange() below.
+  // Previously this only ever returned data for 'BRANCH' (see the old getLocationsForType()),
+  // so picking any other location type left the Location ID dropdown completely empty with no
+  // way to proceed.
+  fromLocationOptions: { id: string; name: string }[] = [];
+  toLocationOptions: { id: string; name: string }[] = [];
+
+  // "+ Add X" modals — same pattern as the RFQ form's "+ Add Category".
+  showAddMovementTypeModal = false;
+  newMovementTypeName = '';
+
+  showAddLocationTypeModal = false;
+  newLocationTypeName = '';
+
+  showAddLocationModal = false;
+  newLocationName = '';
+  /** Which location dropdown ("from" or "to") triggered the add-location modal. */
+  addLocationTarget: 'from' | 'to' = 'from';
 
   // Private
   private destroy$ = new Subject<void>();
@@ -94,7 +116,12 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
       this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
         if (params['id']) {
           this.movementId = params['id'];
-          this.mode = 'view';
+          // This component is only ever routed to with an id via the .../:id/edit route —
+          // read-only viewing of a movement is handled by StockMovementDetailComponent instead —
+          // so an id here always means "edit", not "view". Previously this set 'view' and the
+          // form's own template disables every field whenever mode === 'view', so the Edit
+          // button on the detail page opened a form you couldn't actually type into.
+          this.mode = 'edit';
         }
       });
     }
@@ -182,6 +209,9 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
         }
       });
 
+    this.loadMovementTypes();
+    this.loadLocationTypes();
+
     // Load products
     this.inventoryService.getProducts({ limit: 100 })
       .pipe(takeUntil(this.destroy$))
@@ -239,6 +269,10 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
       notes: movement.notes || '',
       scheduledDate: movement.scheduledDate || ''
     });
+    // Load the location options for whichever types this movement already has, so the
+    // prefilled from/to Location ID values actually show up as valid selections.
+    this.loadLocationOptions('from', movement.fromLocation.type);
+    this.loadLocationOptions('to', movement.toLocation.type);
 
     // Add items
     this.items.clear();
@@ -272,6 +306,7 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
         fromLocationType: 'BRANCH',
         fromLocationId: this.prefillData.branchId
       });
+      this.loadLocationOptions('from', 'BRANCH');
     }
   }
 
@@ -327,15 +362,164 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
   }
 
   // ============================================================
-  // LOCATION HELPERS
+  // MOVEMENT TYPE / LOCATION TYPE — dynamic lists + "+ Add X"
   // ============================================================
 
-  getLocationsForType(type: string): any[] {
-    if (type === 'BRANCH') {
-      return this.branches;
+  loadMovementTypes(): void {
+    this.inventoryService.getMovementTypes()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (types) => { this.movementTypes = types; },
+        error: (err) => console.error('Failed to load movement types:', err)
+      });
+  }
+
+  loadLocationTypes(): void {
+    this.inventoryService.getLocationTypes()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (types) => { this.locationTypes = types; },
+        error: (err) => console.error('Failed to load location types:', err)
+      });
+  }
+
+  onMovementTypeChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === '__add_movement_type__') {
+      this.movementForm.get('movementType')?.setValue('', { emitEvent: false });
+      this.newMovementTypeName = '';
+      this.showAddMovementTypeModal = true;
     }
-    // For other types, return mock data or empty
-    return [];
+  }
+
+  closeAddMovementTypeModal(): void {
+    this.showAddMovementTypeModal = false;
+  }
+
+  saveCustomMovementType(): void {
+    const name = this.newMovementTypeName.trim();
+    if (!name) return;
+    this.inventoryService.createMovementType(name)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (types) => {
+          this.movementTypes = types;
+          const matched = types.find(t => t.toLowerCase() === name.toLowerCase()) || name;
+          this.movementForm.get('movementType')?.setValue(matched);
+          this.closeAddMovementTypeModal();
+        },
+        error: (err) => console.error('Failed to add movement type:', err)
+      });
+  }
+
+  onLocationTypeChange(target: 'from' | 'to', event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === '__add_location_type__') {
+      this.movementForm.get(target === 'from' ? 'fromLocationType' : 'toLocationType')?.setValue('', { emitEvent: false });
+      this.newLocationTypeName = '';
+      this.showAddLocationTypeModal = true;
+      return;
+    }
+    // Clear the now-stale Location ID and load the options for the newly selected type.
+    this.movementForm.patchValue({ [target === 'from' ? 'fromLocationId' : 'toLocationId']: '' });
+    this.loadLocationOptions(target, value);
+  }
+
+  closeAddLocationTypeModal(): void {
+    this.showAddLocationTypeModal = false;
+  }
+
+  saveCustomLocationType(): void {
+    const name = this.newLocationTypeName.trim();
+    if (!name) return;
+    this.inventoryService.createLocationType(name)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (types) => {
+          this.locationTypes = types;
+          const matched = types.find(t => t.toLowerCase() === name.toLowerCase()) || name;
+          // We don't know here whether "from" or "to" triggered this — both selects share the
+          // same type list, so just leave the field for the user to pick again from the now
+          // up-to-date list rather than guessing which side to fill in.
+          this.closeAddLocationTypeModal();
+        },
+        error: (err) => console.error('Failed to add location type:', err)
+      });
+  }
+
+  // ============================================================
+  // LOCATION ID — dynamic options per type + "+ Add Location"
+  // ============================================================
+
+  /** Loads the concrete location list for whichever type is now selected in the "from" or "to"
+   *  dropdown. Previously this only ever worked for 'BRANCH' — every other location type left
+   *  the Location ID dropdown empty with nothing to select, blocking the whole form. */
+  loadLocationOptions(target: 'from' | 'to', type: string): void {
+    if (!type) {
+      if (target === 'from') this.fromLocationOptions = [];
+      else this.toLocationOptions = [];
+      return;
+    }
+    this.inventoryService.getLocationsByType(type)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (locations) => {
+          if (target === 'from') this.fromLocationOptions = locations;
+          else this.toLocationOptions = locations;
+        },
+        error: (err) => console.error('Failed to load locations:', err)
+      });
+  }
+
+  onLocationIdChange(target: 'from' | 'to', event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === '__add_location__') {
+      this.movementForm.get(target === 'from' ? 'fromLocationId' : 'toLocationId')?.setValue('', { emitEvent: false });
+      this.addLocationTarget = target;
+      this.newLocationName = '';
+      this.showAddLocationModal = true;
+    }
+  }
+
+  /** 'BRANCH' locations are added via the dedicated Branch form, not inline here. */
+  isAddLocationDisabled(target: 'from' | 'to'): boolean {
+    const type = this.movementForm.get(target === 'from' ? 'fromLocationType' : 'toLocationType')?.value;
+    return type === 'BRANCH';
+  }
+
+  closeAddLocationModal(): void {
+    this.showAddLocationModal = false;
+  }
+
+  saveCustomLocation(): void {
+    const name = this.newLocationName.trim();
+    if (!name) return;
+    const target = this.addLocationTarget;
+    const typeControl = target === 'from' ? 'fromLocationType' : 'toLocationType';
+    const idControl = target === 'from' ? 'fromLocationId' : 'toLocationId';
+    const type = this.movementForm.get(typeControl)?.value;
+    if (!type) return;
+
+    const save$ = type === 'SUPPLIER'
+      ? this.inventoryService.createSupplier({ name }).pipe(
+        // Normalize Supplier[] to the same {id, name} shape createGenericLocation() returns.
+        takeUntil(this.destroy$)
+      )
+      : this.inventoryService.createGenericLocation(type, name).pipe(takeUntil(this.destroy$));
+
+    save$.subscribe({
+      next: (list: any[]) => {
+        const options = list.map(l => ({ id: l.id, name: l.name }));
+        if (target === 'from') this.fromLocationOptions = options;
+        else this.toLocationOptions = options;
+        const matched = options.find(o => o.name.toLowerCase() === name.toLowerCase());
+        if (matched) {
+          this.movementForm.get(idControl)?.setValue(matched.id);
+        }
+        this.closeAddLocationModal();
+      },
+      error: (err) => console.error('Failed to add location:', err)
+    });
   }
 
   getLocationName(type: string, id: string): string {
@@ -343,7 +527,8 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
       const branch = this.branches.find(b => b.id === id);
       return branch?.name || id;
     }
-    return id;
+    const options = this.fromLocationOptions.find(o => o.id === id) || this.toLocationOptions.find(o => o.id === id);
+    return options?.name || id;
   }
 
   // ============================================================
@@ -419,6 +604,12 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
       notes: formValue.notes || '',
       scheduledDate: formValue.scheduledDate || null
     };
+
+    // If admin had asked for changes and it's still outstanding, saving this edit is exactly
+    // that — resolve it so Approve/Reject/Request Changes reappear (see hasUnresolvedChangeRequest()).
+    if (this.mode === 'edit' && hasUnresolvedChangeRequest(this.movement)) {
+      data.notes = (data.notes || '') + '\nChanges made: transfer updated in response to the request';
+    }
 
     if (this.mode === 'edit' && this.movementId) {
       // Update existing movement

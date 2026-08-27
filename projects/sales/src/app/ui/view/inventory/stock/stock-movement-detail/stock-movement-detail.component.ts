@@ -50,7 +50,7 @@ export class StockMovementDetailComponent implements OnInit, OnDestroy {
 
   // UI
   Math = Math;
-  activeTab: 'details' | 'tracking' | 'history' = 'details';
+  activeTab: 'details' | 'history' = 'details';
   currentStep: number = 1;
   totalSteps: number = 3;
 
@@ -195,22 +195,26 @@ export class StockMovementDetailComponent implements OnInit, OnDestroy {
     if (!this.movement || !this.selectedStatus) return;
 
     this.isUpdating = true;
+    const newStatus = this.selectedStatus;
 
-    // In a real implementation, this would call an API
-    // For now, we'll simulate
-    console.log(`Updating movement ${this.movement.id} to ${this.selectedStatus}`);
-
-    setTimeout(() => {
-      if (this.movement) {
-        this.movement.status = this.selectedStatus!;
-        if (this.selectedStatus === MovementStatus.COMPLETED) {
-          this.movement.completedAt = new Date();
+    // Marking a TRANSFER movement COMPLETED here actually moves the stock — see
+    // InventoryService.updateMovement()/applyTransferStockAdjustment() — so completing a
+    // transfer works the same way whether it's done from here or from the Approvals page.
+    this.inventoryService.updateMovement(this.movement.id, { status: newStatus })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (updated) => {
+          this.movement = updated;
+          this.generateTimeline();
+          this.isUpdating = false;
+          this.closeStatusModal();
+        },
+        error: (err) => {
+          console.error('Failed to update movement status:', err);
+          this.error = 'Failed to update status. Please try again.';
+          this.isUpdating = false;
         }
-        this.generateTimeline();
-      }
-      this.isUpdating = false;
-      this.closeStatusModal();
-    }, 1000);
+      });
   }
 
   // ============================================================
@@ -222,17 +226,25 @@ export class StockMovementDetailComponent implements OnInit, OnDestroy {
   }
 
   confirmDelete(): void {
+    if (!this.movement) return;
     this.isUpdating = true;
 
-    // In a real implementation, this would call an API
-    console.log(`Deleting movement ${this.movement?.id}`);
-
-    setTimeout(() => {
-      this.isUpdating = false;
-      this.showDeleteConfirm = false;
-      this.close.emit();
-      this.router.navigate(['/commerce/inventory']);
-    }, 1000);
+    this.inventoryService.deleteMovement(this.movement.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.isUpdating = false;
+          this.showDeleteConfirm = false;
+          this.close.emit();
+          this.router.navigate(['/admin/sales/commerce/inventory']);
+        },
+        error: (err) => {
+          console.error('Failed to delete movement:', err);
+          this.error = 'Failed to delete movement. Please try again.';
+          this.isUpdating = false;
+          this.showDeleteConfirm = false;
+        }
+      });
   }
 
   cancelDelete(): void {

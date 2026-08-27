@@ -357,6 +357,10 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/sales/commerce/inventory/restock/suggestions']);
   }
 
+  navigateToApprovals(): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/restock/approvals']);
+  }
+
   // ============================================================
   // AI INSIGHTS
   // ============================================================

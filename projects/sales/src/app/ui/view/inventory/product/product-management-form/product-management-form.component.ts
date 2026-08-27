@@ -96,6 +96,18 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   measurementUnits: MeasurementUnit[] = [];
   suppliers: Supplier[] = [];
 
+  // "+ Add X" modals for Category / Measurement Unit / Supplier — same pattern as the
+  // Request for Quotation form's "+ Add Category" option.
+  showAddCategoryModal = false;
+  newCategoryName = '';
+  newCategoryDesc = '';
+
+  showAddUnitModal = false;
+  newUnitName = '';
+
+  showAddSupplierModal = false;
+  newSupplierName = '';
+
   // Product variants
   variants: any[] = [];
   showVariantModal = false;
@@ -282,9 +294,10 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
             measurementUnit: unitName,
             supplier: supplierName,
             selectedSupplier: supplierName,
-            isComboProduct: product.isComboProduct || false
+            isComboProduct: product.isComboProduct || false,
+            weight: product.weight || 0
           });
-          this.images = product.images || [];
+          this.images = (product.images || []).filter((img: string) => !img.includes('localhost') && !img.includes('127.0.0.1'));
           this.showComboOptions = product.isComboProduct || false;
 
           this.variantsArray.clear();
@@ -352,7 +365,8 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       unitOfMeasure: (foundUnit?.id || 'EACH') as 'EACH' | 'BOX' | 'KG' | 'LITER' | 'METER',
       supplierIds: foundSupplier ? [foundSupplier.id] : [],
       status: (formData.quantity ?? 0) > 0 ? 'ACTIVE' as any : 'OUT_OF_STOCK' as any,
-      isComboProduct: formData.isComboProduct || false
+      isComboProduct: formData.isComboProduct || false,
+      weight: Number(formData.weight) || 0
     };
 
     const action = this.isEditMode
@@ -363,7 +377,13 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       next: () => {
         this.isSubmitting = false;
         this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product ${this.isEditMode ? 'updated' : 'created'} successfully!` });
-        this.goBack();
+        // After editing, land on the product's details page so the change is visible immediately.
+        // After creating, there's no existing detail context to return to, so keep the prior behavior.
+        if (this.isEditMode) {
+          this.router.navigate(['/admin/sales/commerce/inventory/products', this.productId]);
+        } else {
+          this.goBack();
+        }
       },
       error: (error: any) => {
         console.error('Error saving product:', error);
@@ -508,6 +528,10 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   addImageUrl(url: string): void {
     const trimmed = url?.trim();
     if (trimmed) {
+      if (trimmed.includes('localhost') || trimmed.includes('127.0.0.1')) {
+        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Localhost image URLs are not allowed.' });
+        return;
+      }
       this.images.push(trimmed);
     }
   }
@@ -523,9 +547,9 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   goBack(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/commerce/inventory', uuid]);
+      this.router.navigate(['/admin/sales/commerce/inventory', uuid]);
     } else {
-      this.router.navigate(['/commerce/inventory']);
+      this.router.navigate(['/admin/sales/commerce/inventory']);
     }
   }
 
@@ -576,30 +600,142 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
     }
   }
 
-  addSupplier(): void {
-    const newSupplier = prompt('Enter new supplier name:');
-    if (newSupplier && newSupplier.trim()) {
-      const trimmed = newSupplier.trim();
-      if (this.suppliers.some(s => s.name.toLowerCase() === trimmed.toLowerCase())) {
-        this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Supplier "${trimmed}" already exists.` });
-        return;
-      }
-      this.inventoryService.createSupplier({ name: trimmed }).subscribe({
-        next: (updatedSups: Supplier[]) => {
-          this.suppliers = updatedSups;
-          this.productForm.patchValue({
-            supplier: trimmed,
-            selectedSupplier: trimmed
-          });
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: `Supplier "${trimmed}" added successfully.` });
-        },
-        error: (err: any) => {
-          console.error('Error adding supplier:', err);
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add supplier' });
-        }
-      });
+  // ============================================================
+  // CATEGORY — "+ Add Category"
+  // ============================================================
+
+  onCategoryChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === '__add_category__') {
+      this.productForm.get('category')?.setValue('', { emitEvent: false });
+      this.openAddCategoryModal();
     }
   }
 
+  openAddCategoryModal(): void {
+    this.newCategoryName = '';
+    this.newCategoryDesc = '';
+    this.showAddCategoryModal = true;
+  }
 
+  closeAddCategoryModal(): void {
+    this.showAddCategoryModal = false;
+  }
+
+  saveCustomCategory(): void {
+    const name = this.newCategoryName.trim();
+    if (!name) return;
+
+    if (this.rawCategories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Category "${name}" already exists.` });
+      return;
+    }
+
+    this.inventoryService.createCategory({ name, description: this.newCategoryDesc.trim() }).subscribe({
+      next: (updatedCats: Category[]) => {
+        this.rawCategories = updatedCats;
+        this.categories = updatedCats.map(c => c.name);
+        this.productForm.patchValue({ category: name });
+        this.closeAddCategoryModal();
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Category "${name}" added successfully.` });
+        alert(`Category "${name}" has been created successfully.`);
+      },
+      error: (err: any) => {
+        console.error('Error adding category:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add category' });
+      }
+    });
+  }
+
+  // ============================================================
+  // MEASUREMENT UNIT — "+ Add Unit"
+  // ============================================================
+
+  onUnitChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === '__add_unit__') {
+      this.productForm.get('measurementUnit')?.setValue('', { emitEvent: false });
+      this.openAddUnitModal();
+    }
+  }
+
+  openAddUnitModal(): void {
+    this.newUnitName = '';
+    this.showAddUnitModal = true;
+  }
+
+  closeAddUnitModal(): void {
+    this.showAddUnitModal = false;
+  }
+
+  saveCustomUnit(): void {
+    const name = this.newUnitName.trim();
+    if (!name) return;
+
+    if (this.measurementUnits.some(u => u.name.toLowerCase() === name.toLowerCase())) {
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Unit "${name}" already exists.` });
+      return;
+    }
+
+    const code = name.replace(/\s+/g, '').toUpperCase();
+    this.inventoryService.createMeasurementUnit({ name, code }).subscribe({
+      next: (updatedUnits: MeasurementUnit[]) => {
+        this.measurementUnits = updatedUnits;
+        this.productForm.patchValue({ measurementUnit: name });
+        this.closeAddUnitModal();
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Unit "${name}" added successfully.` });
+        alert(`Measurement Unit "${name}" has been created successfully.`);
+      },
+      error: (err: any) => {
+        console.error('Error adding unit:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add unit' });
+      }
+    });
+  }
+
+  // ============================================================
+  // SUPPLIER — "+ Add Supplier"
+  // ============================================================
+
+  onSupplierChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === '__add_supplier__') {
+      this.productForm.get('supplier')?.setValue('', { emitEvent: false });
+      this.openAddSupplierModal();
+    }
+  }
+
+  openAddSupplierModal(): void {
+    this.newSupplierName = '';
+    this.showAddSupplierModal = true;
+  }
+
+  closeAddSupplierModal(): void {
+    this.showAddSupplierModal = false;
+  }
+
+  saveCustomSupplier(): void {
+    const trimmed = this.newSupplierName.trim();
+    if (!trimmed) return;
+
+    if (this.suppliers.some(s => s.name.toLowerCase() === trimmed.toLowerCase())) {
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: `Supplier "${trimmed}" already exists.` });
+      return;
+    }
+    this.inventoryService.createSupplier({ name: trimmed }).subscribe({
+      next: (updatedSups: Supplier[]) => {
+        this.suppliers = updatedSups;
+        this.productForm.patchValue({
+          supplier: trimmed,
+          selectedSupplier: trimmed
+        });
+        this.closeAddSupplierModal();
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Supplier "${trimmed}" added successfully.` });
+      },
+      error: (err: any) => {
+        console.error('Error adding supplier:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add supplier' });
+      }
+    });
+  }
 }

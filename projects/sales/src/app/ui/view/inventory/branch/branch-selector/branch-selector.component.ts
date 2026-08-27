@@ -308,7 +308,7 @@ export class BranchSelectorComponent implements OnInit, OnDestroy, ControlValueA
 
   getBranchTypeLabel(type: string): string {
     const map: Record<string, string> = {
-      'FLAGSHIP': '⭐ Flagship',
+      'FLAGSHIP': 'Flagship',
       'STANDARD': 'Standard',
       'MINI': 'Mini'
     };

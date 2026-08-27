@@ -52,9 +52,12 @@
         <!-- Quick Actions -->
         <div class="ql-filter-section">
             <div class="ql-filter-heading">Help</div>
-            <a class="ql-sidebar-action" href="#" download="product_import_template.csv">
-                <i class="fas fa-download"></i> Download Template
-            </a>
+            <button class="ql-sidebar-action" type="button" (click)="downloadTemplate('csv')">
+                <i class="fas fa-download"></i> Download CSV Template
+            </button>
+            <button class="ql-sidebar-action" type="button" (click)="downloadTemplate('xlsx')">
+                <i class="fas fa-download"></i> Download Excel Template
+            </button>
             <button class="ql-sidebar-action" (click)="removeFile()" *ngIf="selectedFile">
                 <i class="fas fa-trash"></i> Remove File
             </button>
@@ -100,31 +103,31 @@
             <div class="ql-form-container">
                 <div class="ql-form-section">
                     <h3 class="ql-section-title"><i class="fas fa-file-upload"></i> Upload File</h3>
-                    <p class="ql-section-desc">Upload a CSV file containing your product data.</p>
+                    <p class="ql-section-desc">Upload a CSV or Excel (.xlsx) file containing your product data.</p>
 
                     <!-- Upload Zone -->
-                    <div class="ql-upload-zone" 
+                    <div class="ql-upload-zone"
                          (dragover)="onDragOver($event)"
                          (dragleave)="onDragLeave($event)"
                          (drop)="onDrop($event)"
                          (click)="fileInput.click()"
                          [class.ql-upload-zone--has-file]="selectedFile">
-                        <input type="file" #fileInput id="fileInput" accept=".csv,.tsv" 
+                        <input type="file" #fileInput id="fileInput" accept=".csv,.tsv,.xlsx,.xls"
                                (change)="onFileSelected($event)" style="display: none;">
 
                         <div *ngIf="!selectedFile" class="ql-upload-content">
                             <i class="fas fa-cloud-upload-alt"></i>
                             <h4>Drag & Drop or Click to Upload</h4>
-                            <span>Supported formats: CSV, TSV</span>
+                            <span>Supported formats: CSV, TSV, Excel (.xlsx, .xls)</span>
                         </div>
 
                         <div *ngIf="selectedFile" class="ql-upload-file-info">
-                            <i class="fas fa-file-csv"></i>
+                            <i class="fas" [class.fa-file-csv]="!selectedFile.name.match('\\.xlsx?$')" [class.fa-file-excel]="selectedFile.name.match('\\.xlsx?$')"></i>
                             <div class="ql-upload-file-details">
                                 <span class="ql-upload-file-name">{{ fileName }}</span>
                                 <span class="ql-upload-file-size">{{ getFileSize(selectedFile.size) }}</span>
                             </div>
-                            <button class="ql-btn ql-btn--icon ql-btn--danger-sm" 
+                            <button class="ql-btn ql-btn--icon ql-btn--danger-sm"
                                     (click)="$event.stopPropagation(); removeFile()">
                                 <i class="fas fa-times"></i>
                             </button>
@@ -133,7 +136,12 @@
 
                     <!-- Template Download -->
                     <div class="ql-template-download">
-                        <p>Need a template? <a href="#" download="product_import_template.csv">Download sample CSV template</a></p>
+                        <p>
+                            Need a template? Download a pre-filled sample with all the supported columns:
+                            <a href="javascript:void(0)" (click)="downloadTemplate('csv')">CSV template</a>
+                            &nbsp;or&nbsp;
+                            <a href="javascript:void(0)" (click)="downloadTemplate('xlsx')">Excel template</a>
+                        </p>
                     </div>
 
                     <!-- Parsing Progress -->
@@ -311,6 +319,22 @@
                             <div class="ql-complete-error-item" *ngFor="let error of importResults.errors">
                                 <span class="ql-complete-error-row">Row {{ error.row }}</span>
                                 <span class="ql-complete-error-message">{{ error.message }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Created Products — the product catalog is alphabetically sorted and
+                        paginated, so a freshly imported batch can land anywhere in it with no
+                        visible confirmation. Link straight to each one instead. -->
+                        <div class="ql-complete-created" *ngIf="createdProducts.length > 0">
+                            <h4><i class="fas fa-box-open"></i> Imported Products</h4>
+                            <div class="ql-complete-created-item" *ngFor="let product of createdProducts">
+                                <div class="ql-complete-created-info">
+                                    <span class="ql-complete-created-name">{{ product.name }}</span>
+                                    <span class="ql-complete-created-sku">{{ product.sku }}</span>
+                                </div>
+                                <button type="button" class="ql-btn ql-btn--ghost" (click)="viewCreatedProduct(product.id)">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
                             </div>
                         </div>
                     </div>

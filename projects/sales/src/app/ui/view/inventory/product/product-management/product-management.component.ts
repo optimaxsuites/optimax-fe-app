@@ -20,7 +20,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
 
   protected readonly Math = Math;
 
-  viewMode: 'list' | 'icon' = 'icon';
+  viewMode: 'list' | 'icon' = 'list';
   products: any[] = [];
   isLoading = true;
   selectedProductIds: any[] = [];
@@ -208,6 +208,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
           this.newCategoryName = '';
           this.newCategoryDesc = '';
           this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Category added successfully!' });
+          alert(`Category "${trimmedName}" has been created successfully.`);
         },
         error: (err: any) => {
           console.error('Error adding category:', err);
@@ -340,6 +341,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
           this.newUnitCode = '';
           this.newUnitDesc = '';
           this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Measurement Unit added successfully!' });
+          alert(`Measurement Unit "${trimmedName}" has been created successfully.`);
         },
         error: (err: any) => {
           console.error('Error adding unit:', err);
@@ -643,11 +645,15 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
 
   getCategoryName(product: any): string {
     if (product?.category?.name) return product.category.name;
-    if (product?.category && typeof product.category === 'string') return product.category;
-    const id = product?.categoryId;
-    if (!id) return '—';
-    const cat = this.rawCategories.find(c => c.id === id || String(c.id) === String(id));
-    return cat?.name || '—';
+    const raw = product?.category ?? product?.categoryId;
+    if (!raw) return '—';
+    if (typeof raw === 'string') {
+      // `category` may hold either the category's id or its literal name (legacy data) —
+      // resolve it to a name if it matches a known category, otherwise trust it as-is.
+      const byId = this.rawCategories.find(c => c.id === raw || String(c.id) === String(raw));
+      return byId?.name || raw;
+    }
+    return '—';
   }
 
   navigateToNewProduct(): void {
@@ -655,7 +661,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
     if (uuid) {
       this.router.navigate(['/admin/sales/commerce/inventory/products/new', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/commerce/inventory/products/new']);
+      this.router.navigate(['/admin/sals/commerce/inventory/products/new']);
     }
   }
 
@@ -669,12 +675,6 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
     }
   }
 
-
-  generateQuoteFromProduct(productId: string): void {
-    const uuid = this.route.snapshot.paramMap.get('uuid');
-    const path = uuid ? ['/quotes/new', uuid] : ['/quotes/new'];
-    this.router.navigate(path, { queryParams: { productId: productId } });
-  }
 
   viewProduct(productId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');

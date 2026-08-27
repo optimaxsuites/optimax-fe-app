@@ -177,14 +177,18 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
       .subscribe({
         next: ({ branches, products, inventory }) => {
           this.branches = branches;
-          this.products = products.data;
-          this.filteredProducts = products.data;
-          this.branchInventory = inventory;
 
           // Apply prefill data
           if (this.prefillData) {
+            if (this.prefillData.branchId) {
+              this.branches = this.branches.filter(b => b.id === this.prefillData.branchId);
+            }
             this.applyPrefill();
           }
+
+          this.products = products.data;
+          this.filteredProducts = products.data;
+          this.branchInventory = inventory;
 
           // Load request if in edit/view mode
           if (this.requestId && (this.mode === 'edit' || this.mode === 'view')) {
@@ -614,7 +618,7 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
 
   getBranchTypeLabel(type: string): string {
     const map: Record<string, string> = {
-      'FLAGSHIP': '⭐ Flagship',
+      'FLAGSHIP': 'Flagship',
       'STANDARD': 'Standard',
       'MINI': 'Mini'
     };

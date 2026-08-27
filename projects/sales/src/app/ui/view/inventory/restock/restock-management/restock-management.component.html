@@ -84,6 +84,9 @@
                 <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
                     <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i> Refresh
                 </button>
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="navigateToApprovals()">
+                    <i class="fas fa-clipboard-check"></i> Approvals
+                </button>
                 <button type="button" class="ql-btn ql-btn--secondary" (click)="navigateToSuggestions()">
                     <i class="fas fa-lightbulb"></i> View Restock Suggestions
                 </button>
@@ -104,6 +107,7 @@
                     <span *ngIf="stats.critical > 0">
                         <strong>{{ stats.critical }}</strong> of these are critical — immediate attention required.
                     </span>
+                    <a class="ql-ai-link" (click)="navigateToApprovals()">Review approvals</a>.
                 </div>
             </div>
             <button type="button" class="ql-ai-dismiss" (click)="aiDismissed = true" *ngIf="!aiDismissed"><i

@@ -66,7 +66,7 @@ export class RestockSuggestionsPageComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['/commerce/inventory']);
+    this.router.navigate(['/admin/sales/commerce/inventory']);
   }
 
   /** <app-restock-suggestion> handles its own navigation to the new-request form. */

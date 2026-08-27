@@ -88,7 +88,8 @@
                 <div class="ql-top-bar-right">
                     <span class="ql-type-badge" [class.ql-type--flagship]="branch.type === 'FLAGSHIP'"
                                                       [class.ql-type--standard]="branch.type === 'STANDARD'"
-                                                      [class.ql-type--mini]="branch.type === 'MINI'">
+                                                      [class.ql-type--mini]="branch.type === 'MINI'"
+                                                      [class.ql-type--custom]="isCustomBranchType(branch.type)">
                         {{ getBranchTypeLabel(branch.type) }}
                     </span>
                     <span class="ql-status-badge ql-status-badge--{{ branch.status?.toLowerCase() }}">
@@ -98,21 +99,10 @@
                     <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" title="Refresh">
                         <i class="fas fa-sync-alt"></i>
                     </button>
-                    <button type="button" class="ql-btn ql-btn--ghost" (click)="toggleEdit()">
-                        <i class="fas" [class.fa-edit]="!isEditing" [class.fa-times]="isEditing"></i>
-                        {{ isEditing ? 'Cancel' : 'Edit' }}
-                    </button>
-                    <button type="button" class="ql-btn ql-btn--primary" (click)="saveBranch()" [disabled]="!isEditing || isSaving">
-                        <i class="fas" [class.fa-spinner]="isSaving" [class.fa-save]="!isSaving" [class.ql-spinning]="isSaving"></i>
-                        {{ isSaving ? 'Saving...' : 'Save' }}
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToEdit()">
+                        <i class="fas fa-edit"></i> Edit
                     </button>
                 </div>
-            </div>
-
-            <!-- Edit Mode Indicator -->
-            <div class="ql-edit-banner" *ngIf="isEditing">
-                <i class="fas fa-pencil-alt"></i>
-                You are editing branch information. Changes will be saved when you click Save.
             </div>
 
             <!-- Tabs -->

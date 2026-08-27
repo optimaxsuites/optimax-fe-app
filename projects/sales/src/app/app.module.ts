@@ -157,19 +157,36 @@ import { StockMovementFormComponent } from './ui/view/inventory/stock/stock-move
 import { TransferWizardComponent } from './ui/view/inventory/stock/transfer-wizard/transfer-wizard.component';
 import { BulkTransferComponent } from './ui/view/inventory/stock/bulk-transfer/bulk-transfer.component';
 import { StockMovementDetailComponent } from './ui/view/inventory/stock/stock-movement-detail/stock-movement-detail.component';
+import { MovementApprovalComponent } from './ui/view/inventory/stock/movement-approval/movement-approval.component';
 import { RestockManagementComponent } from './ui/view/inventory/restock/restock-management/restock-management.component';
 import { RestockRequestFormComponent } from './ui/view/inventory/restock/restock-request-form/restock-request-form.component';
 import { RestockSuggestionComponent } from './ui/view/inventory/restock/restock-suggestion/restock-suggestion.component';
 import { RestockRequestListComponent } from './ui/view/inventory/restock/restock-request-list/restock-request-list.component';
 import { RestockSuggestionsPageComponent } from './ui/view/inventory/restock/restock-suggestions-page/restock-suggestions-page.component';
 import { ThresholdManagementComponent } from './ui/view/inventory/restock/threshold-management/threshold-management.component';
+import { RestockApprovalComponent } from './ui/view/inventory/restock/restock-approval/restock-approval.component';
+import { BranchManagerDashboardComponent } from './ui/view/inventory/branch-managers/branch-manager-dashboard/branch-manager-dashboard.component';
 import { AnalyticsComponent } from './ui/view/inventory/inventory-analytics/analytics/analytics.component';
+import { ProductAnalyticsComponent } from './ui/view/inventory/inventory-analytics/product-analytics/product-analytics.component';
+import { BranchAnalyticsComponent } from './ui/view/inventory/inventory-analytics/branch-analytics/branch-analytics.component';
+import { AffordabilityDashboardComponent } from './ui/view/inventory/inventory-analytics/affordability-dashboard/affordability-dashboard.component';
+import { StockTurnoverComponent } from './ui/view/inventory/inventory-analytics/stock-turnover/stock-turnover.component';
+import { SellLikelihoodComponent } from './ui/view/inventory/inventory-analytics/sell-likelihood/sell-likelihood.component';
+import { PerformanceReportComponent } from './ui/view/inventory/inventory-analytics/performance-report/performance-report.component';
 import { LogisticsComponent } from './ui/view/logistics/logistics.component';
-import { LogisticsDashboardComponent } from './ui/view/logistics/logistics-dashboard/logistics-dashboard.component';
-import { TrackingComponent } from './ui/view/logistics/tracking/tracking.component';
-import { FleetManagementComponent } from './ui/view/logistics/fleet-management/fleet-management.component';
-import { RouteOptimizationComponent } from './ui/view/logistics/route-optimization/route-optimization.component';
-import { DeliveryManagementsComponent } from './ui/view/logistics/delivery-management/delivery-management.component';
+import { RoutingQueueComponent } from './ui/view/logistics/routing-queue/routing-queue.component';
+import { RouteApprovalComponent } from './ui/view/logistics/route-approval/route-approval.component';
+import { RouteMapComponent } from './ui/view/logistics/route-map/route-map.component';
+import { OrderDetailDrawerComponent } from './ui/view/logistics/order-detail-drawer/order-detail-drawer.component';
+import { DeliveryRecordsComponent } from './ui/view/logistics/delivery-records/delivery-records.component';
+import { ProofDetailDrawerComponent } from './ui/view/logistics/proof-detail-drawer/proof-detail-drawer.component';
+import { RiderActivityComponent } from './ui/view/logistics/rider-activity/rider-activity.component';
+import { AddRiderFormComponent } from './ui/view/logistics/add-rider-form/add-rider-form.component';
+import { RiderDetailDrawerComponent } from './ui/view/logistics/rider-detail-drawer/rider-detail-drawer.component';
+import { RouteBuilderComponent } from './ui/view/logistics/route-builder/route-builder.component';
+import { StopChecklistComponent } from './ui/view/logistics/stop-checklist/stop-checklist.component';
+import { LocationPickerComponent } from './ui/view/logistics/location-picker/location-picker.component';
+import { RouteBuilderMapComponent } from './ui/view/logistics/route-builder-map/route-builder-map.component';
 import { BranchSelectorComponent } from './ui/shared-component/branch-selector/branch-selector.component';
 import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-summary/branch-stock-summary.component';
 
@@ -191,13 +208,22 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
     TransferWizardComponent,
     BulkTransferComponent,
     StockMovementDetailComponent,
+    MovementApprovalComponent,
     RestockManagementComponent,
     RestockRequestFormComponent,
     RestockSuggestionComponent,
     RestockRequestListComponent,
     RestockSuggestionsPageComponent,
     ThresholdManagementComponent,
+    RestockApprovalComponent,
+    BranchManagerDashboardComponent,
     AnalyticsComponent,
+    ProductAnalyticsComponent,
+    BranchAnalyticsComponent,
+    AffordabilityDashboardComponent,
+    StockTurnoverComponent,
+    SellLikelihoodComponent,
+    PerformanceReportComponent,
     TableComponent,
     TableBodyDirective,
     SidebarComponent,
@@ -256,11 +282,19 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
     ActivityComponent,
 
     LogisticsComponent,
-    LogisticsDashboardComponent,
-    RouteOptimizationComponent,
-    DeliveryManagementsComponent,
-    FleetManagementComponent,
-    TrackingComponent,
+    RoutingQueueComponent,
+    RouteApprovalComponent,
+    RouteMapComponent,
+    OrderDetailDrawerComponent,
+    DeliveryRecordsComponent,
+    ProofDetailDrawerComponent,
+    RiderActivityComponent,
+    AddRiderFormComponent,
+    RiderDetailDrawerComponent,
+    RouteBuilderComponent,
+    StopChecklistComponent,
+    LocationPickerComponent,
+    RouteBuilderMapComponent,
   ],
   imports: [
     // BrowserModule,
@@ -363,4 +397,4 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
   ],
   bootstrap: [App],
 })
-export class AppModule { }
+export class AppModule {}

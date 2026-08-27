@@ -6,6 +6,7 @@ import { BranchInventoryComponent } from './branch/branch-inventory/branch-inven
 import { StockMovementComponent } from './stock/stock-movement/stock-movement.component';
 import { RestockManagementComponent } from './restock/restock-management/restock-management.component';
 import { AnalyticsComponent } from './inventory-analytics/analytics/analytics.component';
+import { BranchManagerDashboardComponent } from './branch-managers/branch-manager-dashboard/branch-manager-dashboard.component';
 
 @Component({
   selector: 'app-inventory',
@@ -44,5 +45,10 @@ export class InventoryComponent {
       component: AnalyticsComponent,
       icon: 'fa-sharp fa-solid fa-chart-line'
     },
+    {
+      name: 'Branch Manager',
+      component: BranchManagerDashboardComponent,
+      icon: 'fa-solid fa-user'
+    }
   ]
 }
