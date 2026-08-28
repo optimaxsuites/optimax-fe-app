@@ -617,6 +617,8 @@ export class CommunicationComponent
   private callRingInterval: any = null;
   private callRingTimeout: any = null;
   private activeCallChannelId = 0;
+  // Tracks callers who ended the call so a late-arriving CALL action doesn't reopen ringing
+  private recentlyEndedCallers = new Map<string, number>();
 
   incomingCallModal = {
     open: false,
@@ -3177,6 +3179,10 @@ export class CommunicationComponent
               this.stopCallRingtone();
               if (this.callRingTimeout) { clearTimeout(this.callRingTimeout); this.callRingTimeout = null; }
               if (this.callDurationTimer) { clearInterval(this.callDurationTimer); this.callDurationTimer = null; }
+              // Remember this caller ended the call so a late CALL action doesn't reopen ringing
+              const endedKey = String(action.initiatorUserId);
+              this.recentlyEndedCallers.set(endedKey, Date.now());
+              setTimeout(() => this.recentlyEndedCallers.delete(endedKey), 15000);
               this.incomingCallModal = { ...this.incomingCallModal, open: false };
               if (this.callModal.open) {
                 this.callModal = { ...this.callModal, status: 'ended' };
@@ -3199,6 +3205,9 @@ export class CommunicationComponent
 
             // ── New incoming call ────────────────────────────────────────
             if (action.actionType === 'VIDEO_CALL' || action.actionType === 'CALL') {
+              // Drop if the caller already cancelled before this CALL action arrived (race condition)
+              const endedAt = this.recentlyEndedCallers.get(String(action.initiatorUserId));
+              if (endedAt && Date.now() - endedAt < 15000) return;
               const callerContact = this.dmContacts.find(c => c.userId === action.initiatorUserId);
               this.incomingCallModal = {
                 open: true,
@@ -3278,17 +3287,6 @@ export class CommunicationComponent
 
   private resolveCollabWebSocketUrl(): string {
     const configuredBaseUrl = (this.collabService.apiBaseUrl || '').replace(/\/+$/, '');
-    if (typeof window !== 'undefined') {
-      const currentHost = window.location.host;
-      const currentProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const currentHostname = window.location.hostname || '';
-      const shouldPreferCurrentOrigin =
-        !!currentHost &&
-        !/^(localhost|127\.0\.0\.1)$/i.test(currentHostname);
-      if (shouldPreferCurrentOrigin) {
-        return `${currentProtocol}//${currentHost}/x/ws/collab`;
-      }
-    }
     if (configuredBaseUrl.startsWith('https://')) {
       return `wss://${configuredBaseUrl.replace('https://', '')}/x/ws/collab`;
     }
