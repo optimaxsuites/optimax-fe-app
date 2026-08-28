@@ -1,11 +1,11 @@
 <div *ngIf="state.open" class="fixed inset-0 z-[100]">
 
   <!-- ══════════════════════════════════════════════════════════════
-       HIDDEN AUDIO IFRAME  –  always present while connected so
-       Jitsi stays live even during the voice-call card view.
-       1×1 px off-screen; we control mic/video via toggle buttons.
+       HIDDEN AUDIO IFRAME  –  stays live for the Jitsi audio stream.
+       Mute is relayed via postMessage (sendJitsiCommand).
        ══════════════════════════════════════════════════════════════ -->
   <iframe
+    #audioFrame
     *ngIf="state.status === 'connected' && trustedIframeUrl && state.type === 'CALL'"
     [src]="trustedIframeUrl"
     allow="camera; microphone; fullscreen; display-capture"
@@ -139,58 +139,38 @@
   </ng-container>
 
   <!-- ══════════════════════════════════════════════════════════════
-       VIDEO CALL  ·  connected — full-screen Jitsi iframe behind
-       our custom overlay controls.
+       VIDEO CALL  ·  connected
+       Jitsi fills top portion; our End Call strip sits below it.
+       Jitsi's native mic+camera toolbar appears inside the iframe.
        ══════════════════════════════════════════════════════════════ -->
   <ng-container *ngIf="state.type === 'VIDEO_CALL' && state.status === 'connected'">
 
-    <!-- Jitsi iframe — fills full viewport, z-index 0 -->
+    <!-- Jitsi iframe — leaves 80 px at the bottom for our End Call strip -->
     <iframe
       *ngIf="trustedIframeUrl"
       [src]="trustedIframeUrl"
       allow="camera; microphone; fullscreen; display-capture"
-      class="absolute inset-0 w-full h-full border-none bg-black"
+      class="absolute inset-x-0 top-0 w-full border-none bg-black"
+      style="height: calc(100% - 80px)"
       title="video-call"
     ></iframe>
 
-    <!-- Top gradient: name + timer (pointer-events:none so clicks pass to iframe) -->
-    <div class="absolute top-0 left-0 right-0 px-5 py-4
-                bg-gradient-to-b from-black/70 to-transparent
-                flex items-start pointer-events-none" style="z-index:10">
-      <div>
-        <p class="text-white font-semibold text-base leading-tight drop-shadow">{{ state.targetName }}</p>
-        <p class="text-emerald-400 text-sm font-medium drop-shadow">{{ formatCallDuration(state.duration) }}</p>
+    <!-- Top bar: solid black at top (fully covers Jitsi watermark), fades below.
+         pointer-events-none so Jitsi video/mic interactions still work. -->
+    <div class="absolute top-0 left-0 right-0 flex items-center justify-between px-5 pointer-events-none"
+         style="height:56px; z-index:10; background:linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,0.85) 70%,transparent 100%)">
+      <span class="text-xl font-extrabold text-white select-none" style="letter-spacing:0.04em">
+        OptimaXVoice
+      </span>
+      <div class="text-right">
+        <p class="text-white font-semibold text-sm leading-tight">{{ state.targetName }}</p>
+        <p class="text-emerald-400 text-sm font-medium">{{ formatCallDuration(state.duration) }}</p>
       </div>
     </div>
 
-    <!-- Bottom gradient: controls (pointer-events active for buttons only) -->
-    <div class="absolute bottom-0 left-0 right-0 pb-8 pt-16
-                bg-gradient-to-t from-black/70 to-transparent
-                flex items-center justify-center gap-7" style="z-index:10"
-         (click)="$event.stopPropagation()">
-
-      <!-- Mute mic -->
-      <button (click)="muteToggled.emit()"
-              class="w-14 h-14 rounded-full flex items-center justify-center
-                     transition-all duration-200 backdrop-blur-sm"
-              [ngClass]="state.muted
-                ? 'bg-white text-gray-900 shadow-lg'
-                : 'bg-black/50 text-white border border-white/25 hover:bg-black/70'">
-        <svg *ngIf="!state.muted" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4
-                   m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-        </svg>
-        <svg *ngIf="state.muted" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707
-                   C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
-        </svg>
-      </button>
-
-      <!-- End call -->
+    <!-- End Call strip — fully outside the iframe, no overlap with Jitsi toolbar -->
+    <div class="absolute bottom-0 left-0 right-0 flex items-center justify-center"
+         style="height:80px; z-index:10; background:rgba(0,0,0,0.85)">
       <button (click)="callEnded.emit()"
               class="w-[4.5rem] h-[4.5rem] rounded-full bg-red-500 hover:bg-red-600
                      flex items-center justify-center shadow-xl shadow-red-500/50
@@ -200,27 +180,8 @@
                 transform="scale(-1,1) translate(-24,0)"/>
         </svg>
       </button>
-
-      <!-- Camera toggle -->
-      <button (click)="videoToggled.emit()"
-              class="w-14 h-14 rounded-full flex items-center justify-center
-                     transition-all duration-200 backdrop-blur-sm"
-              [ngClass]="state.videoOff
-                ? 'bg-white text-gray-900 shadow-lg'
-                : 'bg-black/50 text-white border border-white/25 hover:bg-black/70'">
-        <svg *ngIf="!state.videoOff" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14
-                   M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-        </svg>
-        <svg *ngIf="state.videoOff" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14
-                   M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2zM3 3l18 18"/>
-        </svg>
-      </button>
-
     </div>
+
   </ng-container>
 
 </div>

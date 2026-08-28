@@ -7,6 +7,8 @@ import {
   OnChanges,
   OnDestroy,
   SimpleChanges,
+  ViewChild,
+  ElementRef,
 } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
@@ -39,6 +41,8 @@ export class CallModalComponent implements OnChanges, OnDestroy {
   @Output() muteToggled  = new EventEmitter<void>();
   @Output() videoToggled = new EventEmitter<void>();
 
+  @ViewChild('audioFrame') audioFrameRef?: ElementRef<HTMLIFrameElement>;
+
   trustedIframeUrl: SafeResourceUrl | null = null;
 
   constructor(private sanitizer: DomSanitizer) {}
@@ -59,10 +63,26 @@ export class CallModalComponent implements OnChanges, OnDestroy {
         (curr?.status === 'ended' || curr?.status === 'failed' || !curr?.open)) {
       this.trustedIframeUrl = null;
     }
+
+    // For voice calls: relay mute toggle to the hidden Jitsi iframe via postMessage
+    if (curr?.type === 'CALL' && prev && prev.muted !== curr.muted) {
+      this.sendJitsiCommand('toggleAudio');
+    }
   }
 
   ngOnDestroy(): void {
     this.trustedIframeUrl = null;
+  }
+
+  private sendJitsiCommand(command: string): void {
+    const frame = this.audioFrameRef?.nativeElement;
+    if (!frame?.contentWindow) return;
+    try {
+      frame.contentWindow.postMessage(
+        JSON.stringify({ type: 'execute', name: command }),
+        JITSI_BASE,
+      );
+    } catch (_) {}
   }
 
   private buildIframeUrl(s: CallModalState): string {
@@ -74,7 +94,6 @@ export class CallModalComponent implements OnChanges, OnDestroy {
       try {
         const clean = s.jitsiRoomUrl.split('#')[0];
         const u     = new URL(clean);
-        // Use room path from backend URL regardless of its domain
         room = u.pathname.replace(/^\//, '');
         jwt  = u.searchParams.get('jwt') || '';
       } catch {
@@ -91,14 +110,21 @@ export class CallModalComponent implements OnChanges, OnDestroy {
     let url = `${JITSI_BASE}/${room}`;
     if (jwt) url += `?jwt=${jwt}`;
 
-    // Suppress pre-join, toolbar, watermark via URL hash (same as Meetings module)
+    // For video calls: show mic + camera in Jitsi's own toolbar (cross-origin iframe
+    // cannot be controlled from outside). End Call lives in our strip below the iframe.
+    // For audio calls: no toolbar — iframe is hidden; mute via postMessage instead.
+    const toolbarButtons = isAudio ? '[]' : '["microphone","camera"]';
+
     url += '#config.prejoinPageEnabled=false'
          + `&config.startWithVideoMuted=${isAudio}`
          + '&config.startWithAudioMuted=false'
          + '&config.disableDeepLinking=true'
-         + '&config.toolbarButtons=[]'
+         + '&config.disableHangupButton=true'
+         + `&config.toolbarButtons=${toolbarButtons}`
          + '&interfaceConfig.SHOW_JITSI_WATERMARK=false'
-         + '&interfaceConfig.TOOLBAR_ALWAYS_VISIBLE=false'
+         + '&interfaceConfig.SHOW_BRAND_WATERMARK=false'
+         + '&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false'
+         + `&interfaceConfig.TOOLBAR_ALWAYS_VISIBLE=${!isAudio}`
          + '&interfaceConfig.MOBILE_APP_PROMO=false'
          + '&interfaceConfig.DISABLE_JOIN_LEAVE_NOTIFICATIONS=true';
 

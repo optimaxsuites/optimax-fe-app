@@ -9388,7 +9388,7 @@ export class CommunicationComponent
         initiatorUserId: this.me.userId, targetUserId: this.callModal.targetUserId,
         actionType: 'CALL_SIGNAL' as any, subject: 'call-ended',
         payloadJson: JSON.stringify({ callStatus: 'ENDED' }),
-      }).subscribe({ error: () => {} });
+      }).subscribe({ error: (e) => console.error('[CALL] ENDED signal failed:', e) });
     }
 
     this.callModal = { ...this.callModal, status: 'ended' };
