@@ -48,7 +48,7 @@ export class CallModalComponent implements OnChanges, OnDestroy {
     const prev: CallModalState | undefined = changes['state'].previousValue;
     const curr: CallModalState             = changes['state'].currentValue;
 
-    // Build iframe URL when status transitions to 'connected' (with or without a backend room URL)
+    // Build iframe URL when status transitions to 'connected'
     if (curr?.status === 'connected' && prev?.status !== 'connected') {
       const url = this.buildIframeUrl(curr);
       this.trustedIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
@@ -106,6 +106,7 @@ export class CallModalComponent implements OnChanges, OnDestroy {
   }
 
   formatCallDuration(secs: number): string {
+    if (secs < 0) return 'Calling…';
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
     const s = (secs % 60).toString().padStart(2, '0');
     return `${m}:${s}`;

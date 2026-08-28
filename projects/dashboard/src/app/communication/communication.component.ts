@@ -615,6 +615,8 @@ export class CommunicationComponent
   };
   private callDurationTimer: any = null;
   private callRingInterval: any = null;
+  private callRingTimeout: any = null;
+  private activeCallChannelId = 0;
 
   incomingCallModal = {
     open: false,
@@ -873,6 +875,7 @@ export class CommunicationComponent
     if (this.presencePollTimer) clearInterval(this.presencePollTimer);
     if (this.conversationSyncTimer) clearInterval(this.conversationSyncTimer);
     if (this.callDurationTimer) clearInterval(this.callDurationTimer);
+    if (this.callRingTimeout) clearTimeout(this.callRingTimeout);
     if (this.recognition) {
       try {
         this.voiceManualStop = true;
@@ -3140,9 +3143,62 @@ export class CommunicationComponent
         (frame: any) => {
           try {
             const action = JSON.parse(frame.body || '{}');
+            console.log('[CALL STOMP]', action.actionType, 'from', action.initiatorUserId, 'payloadJson:', action.payloadJson);
             if (String(action.initiatorUserId) === String(this.me.userId)) return;
+            let payload: any = {};
+            try {
+              payload = typeof action.payloadJson === 'string'
+                ? JSON.parse(action.payloadJson)
+                : (action.payloadJson || {});
+            } catch (_) {}
+            console.log('[CALL STOMP] parsed payload:', payload, '| callModal.open:', this.callModal.open, '| status:', this.callModal.status, '| duration:', this.callModal.duration);
+
+            // ── Signaling responses ──────────────────────────────────────
+            if (payload.callStatus === 'ACCEPTED') {
+              // Only ignore if modal is already closed (call was ended before pick-up)
+              if (!this.callModal.open) return;
+              this.stopCallRingtone();
+              if (this.callRingTimeout) { clearTimeout(this.callRingTimeout); this.callRingTimeout = null; }
+              // Receiver picked up — transition to connected, start the visible timer.
+              // Also capture jitsiRoomUrl from signal payload in case HTTP response hasn't arrived yet.
+              const acceptedUrl = payload.meetingUrl || undefined;
+              this.callModal = {
+                ...this.callModal,
+                status: 'connected',
+                duration: 0,
+                ...(acceptedUrl ? { jitsiRoomUrl: acceptedUrl } : {}),
+              };
+              this.startCallDurationTimer();
+              this.cdr.detectChanges();
+              return;
+            }
+
+            if (payload.callStatus === 'ENDED') {
+              this.stopCallRingtone();
+              if (this.callRingTimeout) { clearTimeout(this.callRingTimeout); this.callRingTimeout = null; }
+              if (this.callDurationTimer) { clearInterval(this.callDurationTimer); this.callDurationTimer = null; }
+              this.incomingCallModal = { ...this.incomingCallModal, open: false };
+              if (this.callModal.open) {
+                this.callModal = { ...this.callModal, status: 'ended' };
+                this.cdr.detectChanges();
+                setTimeout(() => { this.callModal = { ...this.callModal, open: false }; this.cdr.detectChanges(); }, 1500);
+              } else {
+                this.cdr.detectChanges();
+              }
+              return;
+            }
+
+            if (payload.callStatus === 'DECLINED') {
+              if (this.callRingTimeout) { clearTimeout(this.callRingTimeout); this.callRingTimeout = null; }
+              this.stopCallRingtone();
+              this.callModal = { ...this.callModal, status: 'failed' };
+              this.cdr.detectChanges();
+              setTimeout(() => { this.callModal = { ...this.callModal, open: false }; this.cdr.detectChanges(); }, 2000);
+              return;
+            }
+
+            // ── New incoming call ────────────────────────────────────────
             if (action.actionType === 'VIDEO_CALL' || action.actionType === 'CALL') {
-              const payload = action.payloadJson ? JSON.parse(action.payloadJson) : {};
               const callerContact = this.dmContacts.find(c => c.userId === action.initiatorUserId);
               this.incomingCallModal = {
                 open: true,
@@ -9172,6 +9228,8 @@ export class CommunicationComponent
       targetUserId = target?.userId ?? 0;
     const chId = target?.dmChannelId ?? this.activeChannel?.backendId ?? 0;
 
+    this.activeCallChannelId = chId;
+
     this.callModal = {
       open: true,
       type,
@@ -9179,7 +9237,7 @@ export class CommunicationComponent
       targetUserId,
       myUserId: this.me.userId,
       status: 'ringing',
-      duration: 0,
+      duration: -1,
       muted: false,
       videoOff: type === 'CALL',
       jitsiRoomUrl: undefined,
@@ -9200,17 +9258,47 @@ export class CommunicationComponent
       })
       .subscribe({
         next: (response: any) => {
-          this.stopCallRingtone();
+          // Go connected so Jitsi iframe loads while ringtone keeps playing.
+          // Ringtone stops only when ACCEPTED arrives. duration stays -1 ("Calling…")
+          // until receiver picks up.
           let jitsiRoomUrl: string | undefined;
           try {
-            const payload = response?.payloadJson ? JSON.parse(response.payloadJson) : {};
-            jitsiRoomUrl = payload.meetingUrl || undefined;
+            const p = typeof response?.payloadJson === 'string'
+              ? JSON.parse(response.payloadJson)
+              : (response?.payloadJson || {});
+            jitsiRoomUrl = p.meetingUrl || undefined;
           } catch (_) {}
           this.callModal = { ...this.callModal, status: 'connected', jitsiRoomUrl };
-          this.startCallDurationTimer();
           this.cdr.detectChanges();
+
+          // Safety fallback: if ACCEPTED signal never arrives (e.g. lost in transit) but
+          // Jitsi is already connected, auto-start the timer after 8 s so the call
+          // doesn't get killed by the 30 s unanswered-call timeout below.
+          setTimeout(() => {
+            if (this.callModal.open && this.callModal.duration < 0) {
+              console.warn('[CALL] ACCEPTED signal not received after 8 s — auto-starting timer');
+              this.stopCallRingtone();
+              this.callModal = { ...this.callModal, duration: 0 };
+              this.startCallDurationTimer();
+              this.cdr.detectChanges();
+            }
+          }, 8000);
+
+          // Auto-terminate after 30 s ONLY if the receiver never picked up at all
+          // (duration is still -1, meaning neither ACCEPTED nor the 8 s fallback fired).
+          if (this.callRingTimeout) clearTimeout(this.callRingTimeout);
+          this.callRingTimeout = setTimeout(() => {
+            this.callRingTimeout = null;
+            if (this.callModal.open && this.callModal.duration < 0) {
+              this.stopCallRingtone();
+              if (this.callDurationTimer) { clearInterval(this.callDurationTimer); this.callDurationTimer = null; }
+              this.callModal = { ...this.callModal, status: 'failed', open: false };
+              this.cdr.detectChanges();
+            }
+          }, 30000);
         },
         error: () => {
+          if (this.callRingTimeout) { clearTimeout(this.callRingTimeout); this.callRingTimeout = null; }
           this.stopCallRingtone();
           this.callModal = { ...this.callModal, status: 'failed' };
           this.cdr.detectChanges();
@@ -9240,8 +9328,17 @@ export class CommunicationComponent
 
   acceptIncomingCall(): void {
     this.stopCallRingtone();
-    const { type, meetingUrl, callerName, callerUserId } = this.incomingCallModal;
+    const { type, meetingUrl, callerName, callerUserId, channelId } = this.incomingCallModal;
     this.incomingCallModal = { ...this.incomingCallModal, open: false };
+    this.activeCallChannelId = channelId;
+
+    // Notify caller the call was accepted so their side transitions to connected
+    this.collabService.triggerAction({
+      channelId, messageId: null,
+      initiatorUserId: this.me.userId, targetUserId: callerUserId,
+      actionType: 'CALL_SIGNAL' as any, subject: 'call-accepted',
+      payloadJson: JSON.stringify({ callStatus: 'ACCEPTED', meetingUrl }),
+    }).subscribe({ error: (e) => console.error('[CALL] ACCEPTED signal failed:', e) });
 
     this.callModal = {
       open: true, type,
@@ -9257,7 +9354,17 @@ export class CommunicationComponent
 
   declineIncomingCall(): void {
     this.stopCallRingtone();
+    const { type, callerUserId, channelId } = this.incomingCallModal;
     this.incomingCallModal = { ...this.incomingCallModal, open: false };
+
+    // Notify caller the call was declined
+    this.collabService.triggerAction({
+      channelId, messageId: null,
+      initiatorUserId: this.me.userId, targetUserId: callerUserId,
+      actionType: 'CALL_SIGNAL' as any, subject: 'call-declined',
+      payloadJson: JSON.stringify({ callStatus: 'DECLINED' }),
+    }).subscribe({ error: () => {} });
+
     this.cdr.detectChanges();
   }
 
@@ -9271,10 +9378,19 @@ export class CommunicationComponent
 
   endCall(): void {
     this.stopCallRingtone();
-    if (this.callDurationTimer) {
-      clearInterval(this.callDurationTimer);
-      this.callDurationTimer = null;
+    if (this.callRingTimeout) { clearTimeout(this.callRingTimeout); this.callRingTimeout = null; }
+    if (this.callDurationTimer) { clearInterval(this.callDurationTimer); this.callDurationTimer = null; }
+
+    // Notify the other party so their side closes immediately
+    if (this.callModal.open && this.callModal.targetUserId) {
+      this.collabService.triggerAction({
+        channelId: this.activeCallChannelId, messageId: null,
+        initiatorUserId: this.me.userId, targetUserId: this.callModal.targetUserId,
+        actionType: 'CALL_SIGNAL' as any, subject: 'call-ended',
+        payloadJson: JSON.stringify({ callStatus: 'ENDED' }),
+      }).subscribe({ error: () => {} });
     }
+
     this.callModal = { ...this.callModal, status: 'ended' };
     this.cdr.detectChanges();
     setTimeout(() => {
