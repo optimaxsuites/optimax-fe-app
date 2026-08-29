@@ -87,7 +87,10 @@
               <span class="w-2 h-2 rounded-full bg-yellow-400 animate-ping"></span>
               {{ state.type === 'VIDEO_CALL' ? 'Connecting video…' : 'Calling…' }}
             </span>
-            <span *ngSwitchCase="'connected'">{{ formatCallDuration(state.duration) }}</span>
+            <span *ngSwitchCase="'connected'" class="flex flex-col items-center gap-0.5">
+              <span>{{ formatCallDuration(state.duration) }}</span>
+              <span class="text-xs font-normal text-emerald-300 tracking-widest uppercase">Connected</span>
+            </span>
             <span *ngSwitchCase="'ended'">Call ended</span>
             <span *ngSwitchCase="'failed'">Could not connect</span>
           </ng-container>
@@ -165,6 +168,7 @@
       <div class="text-right">
         <p class="text-white font-semibold text-sm leading-tight">{{ state.targetName }}</p>
         <p class="text-emerald-400 text-sm font-medium">{{ formatCallDuration(state.duration) }}</p>
+        <p class="text-emerald-300 text-xs tracking-widest uppercase">Connected</p>
       </div>
     </div>
 

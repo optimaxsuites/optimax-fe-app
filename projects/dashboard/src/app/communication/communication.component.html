@@ -1179,6 +1179,27 @@
                 <span>Video</span>
               </button>
             </ng-container>
+            <!-- Channel call buttons -->
+            <ng-container *ngIf="activeView === 'channel' && activeChannel">
+              <button
+                type="button"
+                class="toolbar-action icon-action"
+                title="Start voice call in channel"
+                (click)="startCall('CALL')"
+              >
+                <i class="pi pi-phone"></i>
+                <span>Call</span>
+              </button>
+              <button
+                type="button"
+                class="toolbar-action icon-action"
+                title="Start video call in channel"
+                (click)="startCall('VIDEO_CALL')"
+              >
+                <i class="pi pi-video"></i>
+                <span>Video</span>
+              </button>
+            </ng-container>
             <span *ngIf="historyLoading" class="chat-loading-chip">
               <i class="pi pi-spin pi-spinner"></i>
               <span>Loading messages</span>
@@ -1260,6 +1281,7 @@
             [mentionCandidates]="getMentionCandidates()"
             [resolveMentionProfileCard]="resolveMentionProfileCard"
             [reactionOptions]="chatReactionOptions"
+            [activeChannelCall]="activeChannelCall"
             (retryMessage)="retryFailedMessage($event)"
             (threadOpened)="openThread($event)"
             (likeToggled)="toggleLike($event)"
@@ -1273,6 +1295,8 @@
             (deleteDismissed)="dismissDelete()"
             (attachmentDownload)="downloadAttachment($event.attachment, $event.event)"
             (mentionActivated)="openMentionConversation($event)"
+            (channelCallJoined)="joinChannelCall()"
+            (callBackRequested)="handleCallBack($event)"
           ></app-message-feed>
         </div>
 
@@ -1912,19 +1936,60 @@
     <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
     <div class="relative bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
       <div class="px-6 pt-8 pb-6 flex flex-col items-center text-center">
+        <!-- Avatar / icon -->
         <div
-          class="w-20 h-20 rounded-full flex items-center justify-center text-white text-[24px] font-bold bg-[#2e6276] mb-4 ring-4 ring-emerald-400 ring-offset-2 ring-offset-gray-900 animate-pulse"
+          class="w-20 h-20 rounded-full flex items-center justify-center text-white text-[24px] font-bold mb-4 ring-4 ring-offset-2 ring-offset-gray-900 animate-pulse"
+          [ngClass]="incomingCallModal.isChannelCall ? 'bg-emerald-700 ring-emerald-400' : 'bg-[#2e6276] ring-emerald-400'"
         >
-          {{ incomingCallModal.callerName | slice:0:1 }}
+          <span *ngIf="!incomingCallModal.isChannelCall">{{ incomingCallModal.callerName | slice:0:1 }}</span>
+          <svg *ngIf="incomingCallModal.isChannelCall && incomingCallModal.type === 'CALL'" width="32" height="32" fill="white" viewBox="0 0 24 24">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+          </svg>
+          <svg *ngIf="incomingCallModal.isChannelCall && incomingCallModal.type === 'VIDEO_CALL'" width="32" height="32" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
         </div>
+
         <h3 class="text-[20px] font-bold text-white mb-1">{{ incomingCallModal.callerName }}</h3>
+        <p class="text-[13px] text-gray-400 mb-1" *ngIf="incomingCallModal.isChannelCall">started a group call</p>
         <p class="text-[14px] font-medium text-yellow-400 mb-6">
           <span class="inline-flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-yellow-400 animate-ping inline-block"></span>
-            Incoming {{ incomingCallModal.type === 'VIDEO_CALL' ? 'video' : 'voice' }} call…
+            {{ incomingCallModal.isChannelCall ? 'Tap Join to connect' : ('Incoming ' + (incomingCallModal.type === 'VIDEO_CALL' ? 'video' : 'voice') + ' call…') }}
           </span>
         </p>
-        <div class="flex items-center justify-center gap-8">
+
+        <!-- Channel call: Dismiss + Join -->
+        <div *ngIf="incomingCallModal.isChannelCall" class="flex items-center justify-center gap-8">
+          <div class="flex flex-col items-center gap-2">
+            <button
+              (click)="declineIncomingCall()"
+              class="w-16 h-16 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center transition-all shadow-lg"
+            >
+              <svg width="22" height="22" fill="white" viewBox="0 0 24 24">
+                <path d="M6 18L18 6M6 6l12 12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <span class="text-xs text-gray-400">Dismiss</span>
+          </div>
+          <div class="flex flex-col items-center gap-2">
+            <button
+              (click)="joinChannelCall()"
+              class="w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-400 flex items-center justify-center transition-all shadow-lg shadow-emerald-500/40"
+            >
+              <svg *ngIf="incomingCallModal.type === 'CALL'" width="22" height="22" fill="white" viewBox="0 0 24 24">
+                <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/>
+              </svg>
+              <svg *ngIf="incomingCallModal.type === 'VIDEO_CALL'" width="22" height="22" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+            </button>
+            <span class="text-xs text-emerald-400 font-semibold">Join</span>
+          </div>
+        </div>
+
+        <!-- DM call: Decline + Accept -->
+        <div *ngIf="!incomingCallModal.isChannelCall" class="flex items-center justify-center gap-8">
           <div class="flex flex-col items-center gap-2">
             <button
               (click)="declineIncomingCall()"
