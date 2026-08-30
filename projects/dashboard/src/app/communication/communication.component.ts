@@ -2319,7 +2319,8 @@ export class CommunicationComponent
         this.notificationFieldText(msg.senderName, '') ||
         this.notificationFieldText(msg.authorName, '') ||
         'New message';
-      const content = this.notificationFieldText(msg.content, '')
+      const rawContent = this.notificationFieldText(msg.content, '');
+      const content = this.formatMessagePreview(rawContent)
         .replace(/\s+/g, ' ')
         .trim()
         .slice(0, 120);
@@ -9315,19 +9316,29 @@ export class CommunicationComponent
       this.activeChannelCall = { channelId: chId, jitsiRoom, type, callerName: this.me.name || '' };
       this.activeCallChannelId = chId;
       this.isCallInitiator = true;
+      this.callSummaryPosted = false;
+      this.callAccepted = false;
 
+      // Start in ringing state — Jitsi connects after 3 s
       this.callModal = {
         open: true, type,
         targetName: ch.name,
         targetUserId: 0,
         myUserId: this.me.userId,
-        status: 'connected',
-        duration: 0, muted: false, videoOff: type === 'CALL',
-        jitsiRoomUrl: meetingUrl,
+        status: 'ringing',
+        duration: -1, muted: false, videoOff: type === 'CALL',
+        jitsiRoomUrl: undefined,
         callerDisplayName: this.me.name,
       };
-      this.startCallDurationTimer();
+      this.startCallRingtone();
       this.cdr.detectChanges();
+
+      setTimeout(() => {
+        this.stopCallRingtone();
+        this.callModal = { ...this.callModal, status: 'connected', duration: 0, jitsiRoomUrl: meetingUrl };
+        this.startCallDurationTimer();
+        this.cdr.detectChanges();
+      }, 3000);
 
       // Post a CALL_CARD message in the channel so latecomers can join
       this.collabService.sendMessage({
@@ -9337,16 +9348,54 @@ export class CommunicationComponent
         messageType: 'CALL_CARD',
       }).subscribe({ error: () => {} });
 
-      // Fan out a CALL action to every other active member
+      // Fan out a CALL action to every other active member (with STOMP fallback)
       const others = (this.channelMembers || []).filter(m => m.userId !== this.me.userId && m.status !== 'BANNED');
+      const channelCallPayload = JSON.stringify({ meetingUrl, jitsiRoom, isChannelCall: true, channelId: chId, channelName: ch.name });
+
       for (const member of others) {
+        const memberId = member.userId;
         this.collabService.triggerAction({
           channelId: chId, messageId: null,
-          initiatorUserId: this.me.userId, targetUserId: member.userId,
+          initiatorUserId: this.me.userId, targetUserId: memberId,
           actionType: type,
           subject: `${type === 'CALL' ? 'Voice' : 'Video'} call in #${ch.name}`,
-          payloadJson: JSON.stringify({ meetingUrl, jitsiRoom, isChannelCall: true, channelId: chId, channelName: ch.name }),
-        }).subscribe({ error: () => {} });
+          payloadJson: channelCallPayload,
+        }).subscribe({
+          error: () => {
+            // STOMP fallback so member receives ringing even if HTTP fails
+            if (this.stompClient?.connected) {
+              this.stompClient.publish({
+                destination: `/topic/collab/call/user/${memberId}`,
+                body: JSON.stringify({
+                  actionType: type,
+                  initiatorUserId: this.me.userId,
+                  targetUserId: memberId,
+                  channelId: chId,
+                  payloadJson: channelCallPayload,
+                  status: 'COMPLETED',
+                }),
+              });
+            }
+          },
+        });
+
+        // Always send a DM invite card so member can join even after missing the ring
+        const dmContact = this.dmContacts.find(c => Number(c.userId) === Number(memberId));
+        if (dmContact?.dmChannelId) {
+          this.collabService.sendMessage({
+            channelId: dmContact.dmChannelId,
+            senderUserId: this.me.userId,
+            content: JSON.stringify({
+              __callInvite: true,
+              callType: type,
+              meetingUrl,
+              channelName: ch.name,
+              callerName: this.me.name || '',
+              callerUserId: this.me.userId,
+            }),
+            messageType: 'TEXT',
+          }).subscribe({ error: () => {} });
+        }
       }
       return;
     }
@@ -9639,6 +9688,31 @@ export class CommunicationComponent
             },
           });
         }
+        // Post call summary card to the channel feed
+        const callDuration = this.callModal.duration;
+        const callType = this.callModal.type;
+        if (!this.callSummaryPosted) {
+          this.callSummaryPosted = true;
+          this.collabService.sendMessage({
+            channelId: chId,
+            senderUserId: this.me.userId,
+            content: JSON.stringify({
+              __callSummary: true,
+              callType,
+              duration: callDuration,
+              callerName: this.me.name || '',
+              callerUserId: this.me.userId,
+              targetUserId: 0,
+            }),
+            messageType: 'TEXT',
+          }).subscribe({
+            next: () => {
+              const ch2 = this.activeChannel;
+              if (ch2 && ch2.backendId === chId) this.fetchAndReconcileChannel(ch2);
+            },
+            error: () => {},
+          });
+        }
         this.activeChannelCall = null;
       } else if (this.callModal.targetUserId) {
         // DM 1-to-1 call
@@ -9725,6 +9799,27 @@ export class CommunicationComponent
 
   handleCallBack(event: { callType: 'CALL' | 'VIDEO_CALL' }): void {
     this.startCall(event.callType);
+  }
+
+  handleCallInviteJoin(event: { meetingUrl: string; callType: 'CALL' | 'VIDEO_CALL' }): void {
+    if (!event.meetingUrl) return;
+    this.stopCallRingtone();
+    this.incomingCallModal = { ...this.incomingCallModal, open: false };
+    this.callModal = {
+      open: true,
+      type: event.callType,
+      targetName: 'Channel Call',
+      targetUserId: 0,
+      myUserId: this.me.userId,
+      status: 'connected',
+      duration: 0,
+      muted: false,
+      videoOff: event.callType === 'CALL',
+      jitsiRoomUrl: event.meetingUrl,
+      callerDisplayName: this.me.name,
+    };
+    this.startCallDurationTimer();
+    this.cdr.detectChanges();
   }
 
   toggleMute(): void {
@@ -10587,12 +10682,34 @@ export class CommunicationComponent
     return null;
   }
 
+  private formatMessagePreview(content: string): string {
+    try {
+      const d = JSON.parse(content);
+      if (d?.__callSummary) {
+        const label = d.callType === 'VIDEO_CALL' ? 'Video call' : 'Voice call';
+        return d.duration >= 0 ? `📞 ${label} · ${this.formatCallDuration(d.duration)}` : '📞 Missed call';
+      }
+      if (d?.__callInvite) {
+        const label = d.callType === 'VIDEO_CALL' ? 'video' : 'voice';
+        return `📞 ${d.callerName} started a ${label} call`;
+      }
+    } catch (_) {}
+    return content;
+  }
+
+  private formatCallDuration(secs: number): string {
+    if (secs < 0) return '';
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
   private updateDmConversationMeta(contact: DmContact, messages: Message[]): void {
     const latest = this.findLatestMessage(messages);
     if (!latest) return;
     contact.lastMessagePreview = latest.attachment?.name
       ? `Attachment: ${latest.attachment.name}`
-      : latest.content;
+      : this.formatMessagePreview(latest.content);
     contact.lastMessageTime = latest.time;
     const ts = this.messageTimestamp(latest);
     if (ts) {

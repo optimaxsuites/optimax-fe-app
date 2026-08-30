@@ -101,7 +101,8 @@
       <ng-container *ngIf="cs">
         <div class="flex px-3 my-2" [ngClass]="isOwnMessage(msg) ? 'justify-end' : 'justify-start'">
           <div class="flex items-center gap-3 px-4 py-2.5 rounded-2xl border max-w-[320px]"
-               [ngClass]="cs.duration < 0 ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-gray-50'">
+               [ngClass]="cs.duration < 0 ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-gray-50'"
+               (dblclick)="threadOpened.emit({ msg, event: $event })">
 
             <!-- Phone / video icon -->
             <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
@@ -144,7 +145,38 @@
                       : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'">
               {{ isOwnMessage(msg) ? 'Call again' : 'Call back' }}
             </button>
+            <span class="text-[10px] text-gray-400 ml-1 flex-shrink-0">{{ msg.time }}</span>
 
+          </div>
+        </div>
+      </ng-container>
+    </ng-container>
+
+    <!-- DM call invite card (channel call notification sent to each member's DM) -->
+    <ng-container *ngIf="!msg.isSystem && parseCallInvite(msg.content) as ci">
+      <ng-container *ngIf="ci">
+        <div class="flex px-3 my-2" [ngClass]="isOwnMessage(msg) ? 'justify-end' : 'justify-start'">
+          <div class="flex items-center gap-3 px-4 py-2.5 rounded-2xl border border-emerald-200 bg-emerald-50 max-w-[340px]"
+               (dblclick)="threadOpened.emit({ msg, event: $event })">
+            <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-emerald-100">
+              <svg *ngIf="ci.callType !== 'VIDEO_CALL'" width="16" height="16" viewBox="0 0 24 24" class="fill-emerald-600">
+                <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.27-.27.67-.36 1-.24 1.1.45 2.3.69 3.6.69.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C3.61 21 0 17.39 0 12 0 5.93 4.93 1 11 1c.55 0 1 .45 1 1v3.5c0 .55-.45 1-1 1-1.32 0-2.58.22-3.76.64-.32.11-.67.03-.94-.25L6.6 10.8z"/>
+              </svg>
+              <svg *ngIf="ci.callType === 'VIDEO_CALL'" width="16" height="16" fill="none" class="stroke-emerald-600" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[13px] font-semibold text-gray-700 leading-tight">
+                {{ ci.callerName }} started a {{ ci.callType === 'VIDEO_CALL' ? 'video' : 'voice' }} call
+              </p>
+              <p class="text-[11px] text-gray-500 mt-0.5">In #{{ ci.channelName }}</p>
+            </div>
+            <button (click)="callInviteJoined.emit({ meetingUrl: ci.meetingUrl, callType: ci.callType })"
+                    class="flex-shrink-0 text-[12px] font-semibold px-2 py-1 rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 transition-colors">
+              Join
+            </button>
+            <span class="text-[10px] text-gray-400 ml-1 flex-shrink-0">{{ msg.time }}</span>
           </div>
         </div>
       </ng-container>
@@ -194,7 +226,7 @@
 
     <!-- Regular message -->
     <div
-      *ngIf="!msg.isSystem && msg.messageType !== 'CALL_CARD' && msg.messageType !== 'CALL_SUMMARY' && !parseCallSummary(msg.content)"
+      *ngIf="!msg.isSystem && msg.messageType !== 'CALL_CARD' && msg.messageType !== 'CALL_SUMMARY' && !parseCallSummary(msg.content) && !parseCallInvite(msg.content)"
       [id]="'msg-' + msg.id"
       class="msg-row group flex gap-4 px-3 py-3 rounded-xl mb-0.5 transition-all relative"
       [ngClass]="{
