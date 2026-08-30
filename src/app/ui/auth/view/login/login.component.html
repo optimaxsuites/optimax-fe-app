@@ -6,66 +6,70 @@
   <aside class="brand">
     <div class="brand-inner">
 
-      <div class="brand-top">
-        <div class="wordmark">
-          <span class="wordmark-name">OptimaX Suites</span>
-          <span class="wordmark-sub">Business Solution</span>
+      <!-- Scrollable body (header + modules). Footer lives outside this. -->
+      <div class="brand-body">
+        <div class="brand-top">
+          <div class="wordmark">
+            <span class="wordmark-name">OptimaX Suites</span>
+            <span class="wordmark-sub">Business Solution</span>
+          </div>
+          <div class="secure-badge">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 1L2 4v4c0 3.3 2.5 6.4 6 7 3.5-.6 6-3.7 6-7V4L8 1z"/>
+              <path d="M5.5 8l1.5 1.5 3-3"/>
+            </svg>
+            Secured access
+          </div>
         </div>
-        <div class="secure-badge">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M8 1L2 4v4c0 3.3 2.5 6.4 6 7 3.5-.6 6-3.7 6-7V4L8 1z"/>
-            <path d="M5.5 8l1.5 1.5 3-3"/>
-          </svg>
-          Secured access
+
+        <h1 class="brand-headline">
+          One workspace.<br/>
+          Every part of<br/>
+          your <em>business.</em>
+        </h1>
+
+        <p class="brand-subline">
+          OptimaX Suites unifies HR, payroll, finance, procurement,
+          approvals, and real-time analytics — built for the way
+          modern enterprises actually operate.
+        </p>
+
+        <div class="module-grid">
+          <div class="module-card">
+            <div class="module-icon">👥</div>
+            <div class="module-name">HR + Payroll</div>
+            <div class="module-desc">People records, attendance, leave, and payroll automation</div>
+          </div>
+          <div class="module-card">
+            <div class="module-icon">📊</div>
+            <div class="module-name">Performance</div>
+            <div class="module-desc">Goals, reviews, execution tracking, and output visibility</div>
+          </div>
+          <div class="module-card">
+            <div class="module-icon">💰</div>
+            <div class="module-name">Finance + AI</div>
+            <div class="module-desc">Accounting, approvals, expense control, and AI insights</div>
+          </div>
+          <div class="module-card">
+            <div class="module-icon">🛒</div>
+            <div class="module-name">POS + Inventory</div>
+            <div class="module-desc">Sales tracking, stock, multi-branch, and revenue visibility</div>
+          </div>
+          <div class="module-card">
+            <div class="module-icon">📦</div>
+            <div class="module-name">Procurement</div>
+            <div class="module-desc">RFQ workflow, vendor management, and supply chain control</div>
+          </div>
+          <div class="module-card">
+            <div class="module-icon">📡</div>
+            <div class="module-name">Analytics</div>
+            <div class="module-desc">Live dashboards, KPIs, and business intelligence</div>
+          </div>
         </div>
       </div>
 
-      <h1 class="brand-headline">
-        One workspace.<br/>
-        Every part of<br/>
-        your <em>business.</em>
-      </h1>
-
-      <p class="brand-subline">
-        OptimaX Suites unifies HR, payroll, finance, procurement,
-        approvals, and real-time analytics — built for the way
-        modern enterprises actually operate.
-      </p>
-
-      <div class="module-grid">
-        <div class="module-card">
-          <div class="module-icon">👥</div>
-          <div class="module-name">HR + Payroll</div>
-          <div class="module-desc">People records, attendance, leave, and payroll automation</div>
-        </div>
-        <div class="module-card">
-          <div class="module-icon">📊</div>
-          <div class="module-name">Performance</div>
-          <div class="module-desc">Goals, reviews, execution tracking, and output visibility</div>
-        </div>
-        <div class="module-card">
-          <div class="module-icon">💰</div>
-          <div class="module-name">Finance + AI</div>
-          <div class="module-desc">Accounting, approvals, expense control, and AI insights</div>
-        </div>
-        <div class="module-card">
-          <div class="module-icon">🛒</div>
-          <div class="module-name">POS + Inventory</div>
-          <div class="module-desc">Sales tracking, stock, multi-branch, and revenue visibility</div>
-        </div>
-        <div class="module-card">
-          <div class="module-icon">📦</div>
-          <div class="module-name">Procurement</div>
-          <div class="module-desc">RFQ workflow, vendor management, and supply chain control</div>
-        </div>
-        <div class="module-card">
-          <div class="module-icon">📡</div>
-          <div class="module-name">Analytics</div>
-          <div class="module-desc">Live dashboards, KPIs, and business intelligence</div>
-        </div>
-      </div>
-
+      <!-- Footer always pinned at bottom, never scrolls away -->
       <div class="brand-footer">
         <div class="tenant-info">
           <span class="tenant-name">{{ tenantDisplayName }}</span>
