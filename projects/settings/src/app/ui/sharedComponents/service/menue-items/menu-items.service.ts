@@ -1185,11 +1185,23 @@ export class MenuItemsService {
         const allowed = this.getUserPermissions();
 
         const filterSubmenu = (submenu: any[]) => {
-          return submenu.filter(item =>
+          const permitted = submenu.filter(item =>
             item.doNotRegisterAsPermission ||
             allowed.codes.includes(item.code) ||
             allowed.labels.some(l => l.toLowerCase() === item.label?.toLowerCase())
           );
+          // Remove section headers that have no real items beneath them
+          return permitted.filter((item, idx) => {
+            if (!item.isSectionHeader) return true;
+            const nextReal = permitted.slice(idx + 1).find(s => !s.isSectionHeader && !s.isNotSidebarItem);
+            const nextHeader = permitted.slice(idx + 1).find(s => s.isSectionHeader);
+            // Keep header only if a real item comes before the next header (or end of list)
+            if (!nextReal) return false;
+            if (!nextHeader) return true;
+            const realIdx = permitted.indexOf(nextReal);
+            const headerIdx = permitted.indexOf(nextHeader);
+            return realIdx < headerIdx;
+          });
         };
 
         const filteredMenus = modules
@@ -1200,7 +1212,8 @@ export class MenuItemsService {
 
             if (menu.submenu) {
               const filteredSubmenu = filterSubmenu(menu.submenu);
-              if (filteredSubmenu.length > 0) {
+              const hasVisibleItem = filteredSubmenu.some(item => !item.isSectionHeader && !item.isNotSidebarItem);
+              if (hasVisibleItem) {
                 return { ...menu, submenu: filteredSubmenu, locked: false };
               } else {
                 return null;

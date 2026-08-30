@@ -102,6 +102,7 @@ export class MessageFeedComponent {
   @Output() retryMessage = new EventEmitter<Message>();
   @Output() authorClicked = new EventEmitter<number>();
   @Output() callBackRequested = new EventEmitter<{ callType: 'CALL' | 'VIDEO_CALL' }>();
+  @Output() callInviteJoined = new EventEmitter<{ meetingUrl: string; callType: 'CALL' | 'VIDEO_CALL' }>();
 
   activeMentionProfile: MentionProfileCard | null = null;
   mentionCardPosition: { top: number; left: number } | null = null;
@@ -116,6 +117,14 @@ export class MessageFeedComponent {
     try {
       const d = JSON.parse(content);
       if (!d || typeof d !== 'object' || !d.__callSummary) return null;
+      return d;
+    } catch { return null; }
+  }
+
+  parseCallInvite(content: string): { __callInvite: true; callType: 'CALL' | 'VIDEO_CALL'; channelName: string; meetingUrl: string; callerName: string } | null {
+    try {
+      const d = JSON.parse(content);
+      if (!d || typeof d !== 'object' || !d.__callInvite) return null;
       return d;
     } catch { return null; }
   }
