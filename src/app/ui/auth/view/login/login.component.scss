@@ -1,18 +1,19 @@
-*, *::before, *::after {
+/* Reset global overrides (12px / Roboto Slab) for the login shell */
+app-login,
+app-login * {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+app-login *:not(i):not([class^="fa"]):not([class^="pi"]) {
+  font-size: unset;
 }
 
-:host {
+app-login {
   display: block;
-  height: 100%;
-  font-family: 'Inter', system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
 
+  /* Design tokens */
   --navy:        #09162A;
   --navy-mid:    #112140;
-  --navy-light:  #1A3260;
   --gold:        #C8972B;
   --gold-light:  #E8B84B;
   --white:       #FFFFFF;
@@ -23,13 +24,12 @@
   --text-light:  #9CAABF;
   --danger:      #D94040;
   --input-focus: #1A56DB;
-  --radius-sm:   6px;
   --radius-md:   10px;
   --radius-lg:   16px;
 }
 
-// ── SHELL ──────────────────────────────────────────────────────
-.shell {
+/* ── SHELL ──────────────────────────────────────────────────── */
+app-login .shell {
   position: fixed;
   inset: 0;
   display: flex;
@@ -38,8 +38,8 @@
   color: var(--text-primary);
 }
 
-// ── LEFT BRAND PANEL ───────────────────────────────────────────
-.brand {
+/* ── LEFT BRAND PANEL ───────────────────────────────────────── */
+app-login .brand {
   flex: 0 0 46%;
   max-width: 560px;
   position: relative;
@@ -47,72 +47,71 @@
   flex-direction: column;
   background: var(--navy);
   overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(26, 86, 219, 0.18) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 50% at 85% 80%, rgba(200, 151, 43, 0.10) 0%, transparent 55%),
-      linear-gradient(160deg, #09162A 0%, #112140 50%, #0D1E38 100%);
-    z-index: 0;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-    background-size: 48px 48px;
-    z-index: 0;
-  }
 }
 
-.brand-inner {
+app-login .brand::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(26, 86, 219, 0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 80%, rgba(200, 151, 43, 0.10) 0%, transparent 55%),
+    linear-gradient(160deg, #09162A 0%, #112140 50%, #0D1E38 100%);
+  z-index: 0;
+}
+
+app-login .brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  z-index: 0;
+}
+
+app-login .brand-inner {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 2.5rem 3rem;
+  padding: 40px 48px;
   overflow-y: auto;
   scrollbar-width: none;
-
-  &::-webkit-scrollbar { display: none; }
 }
+app-login .brand-inner::-webkit-scrollbar { display: none; }
 
-.brand-top {
+app-login .brand-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 3.5rem;
+  margin-bottom: 56px;
 }
 
-.wordmark {
+app-login .wordmark {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.wordmark-name {
-  font-size: 1.25rem;
+app-login .wordmark-name {
+  font-size: 20px !important;
   font-weight: 700;
   color: var(--white);
   letter-spacing: -0.3px;
 }
 
-.wordmark-sub {
-  font-size: 0.68rem;
+app-login .wordmark-sub {
+  font-size: 11px !important;
   font-weight: 500;
   color: var(--gold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.secure-badge {
+app-login .secure-badge {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -121,58 +120,55 @@
   border: 1px solid rgba(200, 151, 43, 0.3);
   background: rgba(200, 151, 43, 0.08);
   color: var(--gold-light);
-  font-size: 0.72rem;
+  font-size: 12px !important;
   font-weight: 500;
   letter-spacing: 0.04em;
-
-  svg { width: 12px; height: 12px; }
 }
+app-login .secure-badge svg { width: 12px; height: 12px; }
 
-.brand-headline {
-  font-size: clamp(1.6rem, 2.2vw, 2.4rem);
+app-login .brand-headline {
+  font-size: clamp(26px, 2.2vw, 38px) !important;
   font-weight: 700;
   color: var(--white);
   line-height: 1.22;
   letter-spacing: -0.6px;
-  margin-bottom: 1rem;
-
-  em {
-    font-style: normal;
-    color: var(--gold-light);
-  }
+  margin-bottom: 16px;
+}
+app-login .brand-headline em {
+  font-style: normal;
+  color: var(--gold-light);
 }
 
-.brand-subline {
-  font-size: 0.9rem;
+app-login .brand-subline {
+  font-size: 14px !important;
   color: rgba(255,255,255,0.5);
   line-height: 1.65;
   max-width: 380px;
-  margin-bottom: 2.5rem;
+  margin-bottom: 40px;
 }
 
-.module-grid {
+app-login .module-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 16px;
   margin-bottom: auto;
 }
 
-.module-card {
-  padding: 1.1rem 1.2rem;
+app-login .module-card {
+  padding: 18px 19px;
   border-radius: var(--radius-md);
   border: 1px solid rgba(255,255,255,0.06);
   background: rgba(255,255,255,0.03);
   backdrop-filter: blur(8px);
   transition: border-color 0.2s, background 0.2s;
   cursor: default;
-
-  &:hover {
-    border-color: rgba(200, 151, 43, 0.25);
-    background: rgba(200, 151, 43, 0.05);
-  }
+}
+app-login .module-card:hover {
+  border-color: rgba(200, 151, 43, 0.25);
+  background: rgba(200, 151, 43, 0.05);
 }
 
-.module-icon {
+app-login .module-icon {
   width: 34px;
   height: 34px;
   border-radius: 8px;
@@ -180,72 +176,70 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.75rem;
-  font-size: 1rem;
+  margin-bottom: 12px;
+  font-size: 16px !important;
 }
 
-.module-name {
-  font-size: 0.8rem;
+app-login .module-name {
+  font-size: 13px !important;
   font-weight: 600;
   color: rgba(255,255,255,0.85);
-  margin-bottom: 0.3rem;
+  margin-bottom: 5px;
 }
 
-.module-desc {
-  font-size: 0.72rem;
+app-login .module-desc {
+  font-size: 12px !important;
   color: rgba(255,255,255,0.38);
   line-height: 1.5;
 }
 
-.brand-footer {
-  margin-top: 2.5rem;
-  padding-top: 1.5rem;
+app-login .brand-footer {
+  margin-top: 40px;
+  padding-top: 24px;
   border-top: 1px solid rgba(255,255,255,0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.tenant-info {
+app-login .tenant-info {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
-.tenant-name {
-  font-size: 0.82rem;
+app-login .tenant-name {
+  font-size: 13px !important;
   font-weight: 600;
   color: rgba(255,255,255,0.8);
 }
 
-.tenant-domain {
-  font-size: 0.72rem;
+app-login .tenant-domain {
+  font-size: 12px !important;
   color: rgba(255,255,255,0.35);
 }
 
-.env-pill {
+app-login .env-pill {
   padding: 3px 10px;
   border-radius: 20px;
-  font-size: 0.68rem;
+  font-size: 11px !important;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-
-  &--production {
-    background: rgba(31, 173, 114, 0.15);
-    color: #3DD68C;
-    border: 1px solid rgba(31,173,114,0.25);
-  }
-
-  &--staging {
-    background: rgba(200,151,43,0.15);
-    color: var(--gold-light);
-    border: 1px solid rgba(200,151,43,0.25);
-  }
+}
+app-login .env-pill--production {
+  background: rgba(31, 173, 114, 0.15);
+  color: #3DD68C;
+  border: 1px solid rgba(31,173,114,0.25);
+}
+app-login .env-pill--staging {
+  background: rgba(200,151,43,0.15);
+  color: var(--gold-light);
+  border: 1px solid rgba(200,151,43,0.25);
 }
 
-// ── RIGHT LOGIN PANEL ──────────────────────────────────────────
-.login {
+/* ── RIGHT LOGIN PANEL ──────────────────────────────────────── */
+app-login .login {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -254,131 +248,124 @@
   background: var(--off-white);
   overflow-y: auto;
   scrollbar-width: none;
-  padding: 2rem 2.5rem;
-
-  &::-webkit-scrollbar { display: none; }
+  padding: 32px 40px;
 }
+app-login .login::-webkit-scrollbar { display: none; }
 
-.login-card {
+app-login .login-card {
   width: 100%;
   max-width: 420px;
 }
 
-.login-eyebrow {
+app-login .login-eyebrow {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.72rem;
+  font-size: 12px !important;
   font-weight: 600;
   color: var(--text-muted);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-bottom: 0.75rem;
-
-  &::before {
-    content: '';
-    display: block;
-    width: 20px;
-    height: 2px;
-    background: var(--gold);
-    border-radius: 2px;
-  }
+  margin-bottom: 12px;
+}
+app-login .login-eyebrow::before {
+  content: '';
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--gold);
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
-.login-title {
-  font-size: 1.75rem;
+app-login .login-title {
+  font-size: 28px !important;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.5px;
-  margin-bottom: 0.4rem;
+  margin-bottom: 6px;
 }
 
-.login-desc {
-  font-size: 0.875rem;
+app-login .login-desc {
+  font-size: 14px !important;
   color: var(--text-muted);
   line-height: 1.55;
-  margin-bottom: 2rem;
+  margin-bottom: 32px;
 }
 
-// ── BANNERS ────────────────────────────────────────────────────
-.info-banner {
+/* ── BANNERS ────────────────────────────────────────────────── */
+app-login .info-banner {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 0.85rem 1rem;
+  padding: 14px 16px;
   border-radius: var(--radius-md);
   background: #EEF4FF;
   border: 1px solid #C7D7F8;
-  margin-bottom: 1.5rem;
-  font-size: 0.8rem;
+  margin-bottom: 24px;
+  font-size: 13px !important;
   color: #3B5BA5;
   line-height: 1.5;
-
-  svg { flex-shrink: 0; margin-top: 1px; }
 }
+app-login .info-banner svg { flex-shrink: 0; margin-top: 1px; }
 
-.redirect-banner {
+app-login .redirect-banner {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 0.85rem 1rem;
+  padding: 14px 16px;
   border-radius: var(--radius-md);
   background: #F0FDF4;
   border: 1px solid #BBF7D0;
-  margin-bottom: 1.5rem;
-  font-size: 0.8rem;
+  margin-bottom: 24px;
+  font-size: 13px !important;
   color: #166534;
   line-height: 1.5;
-
-  svg { flex-shrink: 0; margin-top: 1px; }
-
-  strong { display: block; }
-
-  span {
-    display: block;
-    margin-top: 2px;
-    font-size: 0.72rem;
-    opacity: 0.7;
-    word-break: break-all;
-  }
+}
+app-login .redirect-banner svg { flex-shrink: 0; margin-top: 1px; }
+app-login .redirect-banner strong { display: block; }
+app-login .redirect-banner span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px !important;
+  opacity: 0.7;
+  word-break: break-all;
 }
 
-// ── FORM ───────────────────────────────────────────────────────
-.form {
+/* ── FORM ───────────────────────────────────────────────────── */
+app-login .form {
   display: flex;
   flex-direction: column;
-  gap: 1.15rem;
+  gap: 18px;
 }
 
-.field {
+app-login .field {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-
-  &.has-error .field-input {
-    border-color: var(--danger);
-    box-shadow: 0 0 0 3px rgba(217, 64, 64, 0.1);
-  }
-
-  &.has-error .field-error {
-    display: block;
-  }
+  gap: 6px;
+}
+app-login .field.has-error .field-input {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(217, 64, 64, 0.1);
+}
+app-login .field.has-error .field-error {
+  display: block;
 }
 
-.field-label {
-  font-size: 0.8rem;
+app-login .field-label {
+  font-size: 13px !important;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: 0.01em;
 }
 
-.input-wrap {
+app-login .input-wrap {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.input-icon {
+app-login .input-icon {
   position: absolute;
   left: 14px;
   display: flex;
@@ -386,36 +373,30 @@
   color: var(--text-light);
   pointer-events: none;
   transition: color 0.15s;
-
-  svg { width: 16px; height: 16px; }
 }
+app-login .input-icon svg { width: 16px; height: 16px; }
+app-login .input-wrap:focus-within .input-icon { color: var(--input-focus); }
 
-.input-wrap:focus-within .input-icon {
-  color: var(--input-focus);
-}
-
-.field-input {
+app-login .field-input {
   width: 100%;
-  height: 3rem;
-  padding: 0 3rem 0 2.75rem;
+  height: 48px;
+  padding: 0 48px 0 44px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--white);
-  font-size: 0.9rem;
-  font-family: inherit;
+  font-size: 14px !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
   color: var(--text-primary);
   outline: none;
   transition: border-color 0.18s, box-shadow 0.18s;
-
-  &::placeholder { color: var(--text-light); }
-
-  &:focus {
-    border-color: var(--input-focus);
-    box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
-  }
+}
+app-login .field-input::placeholder { color: var(--text-light); }
+app-login .field-input:focus {
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
 }
 
-.toggle-vis {
+app-login .toggle-vis {
   position: absolute;
   right: 12px;
   background: none;
@@ -427,37 +408,34 @@
   padding: 4px;
   border-radius: 4px;
   transition: color 0.15s, background 0.15s;
-
-  &:hover { color: var(--text-primary); background: var(--off-white); }
-
-  svg { width: 16px; height: 16px; }
 }
+app-login .toggle-vis:hover { color: var(--text-primary); background: var(--off-white); }
+app-login .toggle-vis svg { width: 16px; height: 16px; }
 
-.field-error {
-  font-size: 0.75rem;
+app-login .field-error {
+  font-size: 12px !important;
   color: var(--danger);
   display: none;
 }
 
-.form-options {
+app-login .form-options {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.checkbox-label {
+app-login .checkbox-label {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.82rem;
+  font-size: 13px !important;
   color: var(--text-muted);
   cursor: pointer;
   user-select: none;
-
-  input[type="checkbox"] { display: none; }
 }
+app-login .checkbox-label input[type="checkbox"] { display: none; }
 
-.checkbox-box {
+app-login .checkbox-box {
   width: 16px;
   height: 16px;
   border: 1.5px solid var(--border);
@@ -469,45 +447,42 @@
   transition: border-color 0.15s, background 0.15s;
   flex-shrink: 0;
 }
-
-.checkbox-label input:checked + .checkbox-box {
+app-login .checkbox-label input:checked + .checkbox-box {
   background: var(--input-focus);
   border-color: var(--input-focus);
-
-  &::after {
-    content: '';
-    width: 8px;
-    height: 8px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 5l3 3 5-5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
-  }
+}
+app-login .checkbox-label input:checked + .checkbox-box::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 5l3 3 5-5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 
-.forgot-link {
-  font-size: 0.82rem;
+app-login .forgot-link {
+  font-size: 13px !important;
   font-weight: 500;
   color: var(--input-focus);
   background: none;
   border: none;
   cursor: pointer;
   padding: 0;
-  font-family: inherit;
+  font-family: 'Inter', system-ui, sans-serif !important;
   transition: opacity 0.15s;
-
-  &:hover { opacity: 0.7; text-decoration: underline; }
 }
+app-login .forgot-link:hover { opacity: 0.7; text-decoration: underline; }
 
-// ── SUBMIT BUTTON ──────────────────────────────────────────────
-.submit-btn {
+/* ── SUBMIT BUTTON ──────────────────────────────────────────── */
+app-login .submit-btn {
   width: 100%;
-  height: 3rem;
-  margin-top: 0.3rem;
+  height: 48px;
+  margin-top: 5px;
   border: none;
   border-radius: var(--radius-md);
   background: var(--navy);
   color: var(--white);
-  font-size: 0.9rem;
+  font-size: 14px !important;
   font-weight: 600;
-  font-family: inherit;
+  font-family: 'Inter', system-ui, sans-serif !important;
   cursor: pointer;
   letter-spacing: 0.01em;
   position: relative;
@@ -517,149 +492,132 @@
   justify-content: center;
   gap: 8px;
   transition: background 0.2s, transform 0.12s, box-shadow 0.2s;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, transparent 0%, rgba(200,151,43,0.18) 100%);
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  &:hover { background: #112140; box-shadow: 0 4px 16px rgba(9,22,42,0.25); }
-  &:hover::before { opacity: 1; }
-  &:active { transform: translateY(1px); }
-  &:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
-
-  .spinner {
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    display: none;
-  }
-
-  .btn-label { display: block; }
-
-  &.loading {
-    pointer-events: none;
-    opacity: 0.8;
-
-    .spinner { display: block; }
-    .btn-label { display: none; }
-  }
 }
+app-login .submit-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(200,151,43,0.18) 100%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+app-login .submit-btn:hover { background: #112140; box-shadow: 0 4px 16px rgba(9,22,42,0.25); }
+app-login .submit-btn:hover::before { opacity: 1; }
+app-login .submit-btn:active { transform: translateY(1px); }
+app-login .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
-// ── DIVIDER & MODE SWITCH ──────────────────────────────────────
-.divider {
+app-login .submit-btn .spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: login-spin 0.7s linear infinite;
+  display: none;
+  flex-shrink: 0;
+}
+app-login .submit-btn .btn-label { display: block; }
+app-login .submit-btn.loading { pointer-events: none; opacity: 0.8; }
+app-login .submit-btn.loading .spinner { display: block; }
+app-login .submit-btn.loading .btn-label { display: none; }
+
+/* ── DIVIDER & MODE SWITCH ──────────────────────────────────── */
+app-login .divider {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 0.25rem 0;
+  margin: 4px 0;
 }
-
-.divider-line { flex: 1; height: 1px; background: var(--border); }
-
-.divider-text {
-  font-size: 0.75rem;
+app-login .divider-line { flex: 1; height: 1px; background: var(--border); }
+app-login .divider-text {
+  font-size: 12px !important;
   color: var(--text-light);
   white-space: nowrap;
 }
 
-.mode-row {
+app-login .mode-row {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 0.82rem;
+  font-size: 13px !important;
   color: var(--text-muted);
 }
 
-.mode-btn {
+app-login .mode-btn {
   background: none;
   border: none;
-  font-size: 0.82rem;
+  font-size: 13px !important;
   font-weight: 600;
   color: var(--input-focus);
   cursor: pointer;
   padding: 0;
-  font-family: inherit;
+  font-family: 'Inter', system-ui, sans-serif !important;
   transition: opacity 0.15s;
-
-  &:hover { opacity: 0.7; text-decoration: underline; }
 }
+app-login .mode-btn:hover { opacity: 0.7; text-decoration: underline; }
 
-// ── PIN FORM ───────────────────────────────────────────────────
-.pin-view {
-  display: flex;
-  flex-direction: column;
-}
-
-.pin-title {
-  font-size: 0.8rem;
+/* ── PIN FORM ───────────────────────────────────────────────── */
+app-login .pin-title {
+  font-size: 13px !important;
   font-weight: 600;
   color: var(--text-muted);
   text-align: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 20px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.pin-display {
+app-login .pin-display {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin: 0 0 2rem;
+  margin: 0 0 32px;
 }
 
-.pin-dot {
+app-login .pin-dot {
   width: 14px;
   height: 14px;
   border-radius: 50%;
   border: 2px solid var(--border);
   background: transparent;
   transition: background 0.15s, border-color 0.15s, transform 0.1s;
-
-  &.filled {
-    background: var(--navy);
-    border-color: var(--navy);
-    transform: scale(1.1);
-  }
+}
+app-login .pin-dot.filled {
+  background: var(--navy);
+  border-color: var(--navy);
+  transform: scale(1.1);
 }
 
-.pin-loading {
+app-login .pin-loading {
   display: flex;
   justify-content: center;
-  margin-bottom: 2rem;
+  margin-bottom: 32px;
 }
-
-.pin-loading__spinner {
-  width: 2rem;
-  height: 2rem;
+app-login .pin-loading__spinner {
+  width: 32px;
+  height: 32px;
   border: 2.5px solid var(--border);
   border-top-color: var(--navy);
   border-radius: 50%;
-  animation: spin 0.75s linear infinite;
+  animation: login-spin 0.75s linear infinite;
 }
 
-.pin-pad {
+app-login .pin-pad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
 }
 
-.pin-key {
+app-login .pin-key {
   height: 56px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--white);
-  font-size: 1.05rem;
+  font-size: 17px !important;
   font-weight: 600;
-  font-family: inherit;
+  font-family: 'Inter', system-ui, sans-serif !important;
   color: var(--text-primary);
   cursor: pointer;
   display: flex;
@@ -667,82 +625,76 @@
   justify-content: center;
   gap: 6px;
   transition: background 0.12s, border-color 0.12s, transform 0.08s;
-
-  &:hover { background: #EEF2FF; border-color: #C7D7F8; }
-  &:active { transform: scale(0.95); }
-
-  &--clear {
-    background: #FFF5F5;
-    border-color: #FECDD3;
-    color: var(--danger);
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-
-    &:hover { background: #FEE2E2; }
-  }
-
-  &--del {
-    background: #FFF8EE;
-    border-color: #FDE68A;
-    color: #B45309;
-
-    &:hover { background: #FEF3C7; }
-
-    svg { width: 16px; height: 16px; }
-  }
 }
+app-login .pin-key:hover { background: #EEF2FF; border-color: #C7D7F8; }
+app-login .pin-key:active { transform: scale(0.95); }
 
-// ── SUPPORT FOOTER ─────────────────────────────────────────────
-.support-row {
-  margin-top: 1.75rem;
-  padding-top: 1.25rem;
+app-login .pin-key--clear {
+  background: #FFF5F5;
+  border-color: #FECDD3;
+  color: var(--danger);
+  font-size: 13px !important;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+app-login .pin-key--clear:hover { background: #FEE2E2; }
+
+app-login .pin-key--del {
+  background: #FFF8EE;
+  border-color: #FDE68A;
+  color: #B45309;
+}
+app-login .pin-key--del:hover { background: #FEF3C7; }
+app-login .pin-key--del svg { width: 16px; height: 16px; }
+
+/* ── SUPPORT FOOTER ─────────────────────────────────────────── */
+app-login .support-row {
+  margin-top: 28px;
+  padding-top: 20px;
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 0.78rem;
+  font-size: 12px !important;
   color: var(--text-light);
-
-  a {
-    color: var(--input-focus);
-    font-weight: 500;
-    text-decoration: none;
-
-    &:hover { text-decoration: underline; }
-  }
 }
+app-login .support-row a {
+  color: var(--input-focus);
+  font-weight: 500;
+  text-decoration: none;
+}
+app-login .support-row a:hover { text-decoration: underline; }
 
-// ── ANIMATION ──────────────────────────────────────────────────
-@keyframes spin {
+/* ── ANIMATION ──────────────────────────────────────────────── */
+@keyframes login-spin {
   to { transform: rotate(360deg); }
 }
 
-// ── RESPONSIVE ─────────────────────────────────────────────────
+/* ── RESPONSIVE ─────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .brand { display: none; }
+  app-login .brand { display: none; }
 
-  .login {
+  app-login .login {
     background: var(--navy);
-    padding: 1.5rem;
+    padding: 24px;
   }
 
-  .login-card {
+  app-login .login-card {
     background: var(--white);
-    padding: 2rem 1.75rem;
+    padding: 32px 28px;
     border-radius: var(--radius-lg);
     box-shadow: 0 20px 60px rgba(0,0,0,0.4);
   }
 }
 
 @media (max-width: 480px) {
-  .login { padding: 0; }
+  app-login .login { padding: 0; }
 
-  .login-card {
+  app-login .login-card {
     border-radius: 0;
     min-height: 100vh;
-    padding: 2rem 1.25rem;
+    padding: 32px 20px;
     display: flex;
     flex-direction: column;
     justify-content: center;
