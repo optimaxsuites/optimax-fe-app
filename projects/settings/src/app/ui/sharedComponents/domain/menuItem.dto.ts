@@ -19,4 +19,5 @@ export interface MenuItem {
   isNotSidebarItem?: boolean;
   doNotRegisterAsPermission?: boolean;
   isSectionHeader?: boolean;
+  registeredAs?: string;
 }
