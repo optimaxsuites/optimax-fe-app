@@ -14,7 +14,7 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-tachometer-alt',
       submenu: [
-        { label: 'Communications', route: this.navigationLink.getLink('dashboardLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-comments' },
+        { label: 'Communications', route: this.navigationLink.getLink('communicationsLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-comments' },
         { label: 'Meetings & Appointments', route: this.navigationLink.getLink('meetingsAppointmentsLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-calendar-check' },
       ],
     },

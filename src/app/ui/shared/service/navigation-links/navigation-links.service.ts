@@ -14,7 +14,7 @@ export class NavigationLinksService {
   }
 
   private generateLinks(): void {
-    this.links['dashboardLink'] = '/admin/dashboard/communications/' + uuidV4();
+    this.links['dashboardLink'] = '/admin/dashboard/meetings-appointments/' + uuidV4();
     this.links['communicationsLink'] = '/admin/dashboard/communications/' + uuidV4();
     this.links['meetingsAppointmentsLink'] = '/admin/dashboard/meetings-appointments/' + uuidV4();
     this.links['feedLink'] = '/admin/dashboard/tasks-routines/' + uuidV4();
