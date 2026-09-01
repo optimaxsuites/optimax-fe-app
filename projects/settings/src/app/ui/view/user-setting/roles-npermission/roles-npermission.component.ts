@@ -100,7 +100,7 @@ export class RolesNpermissionComponent {
         const permissions = this.buildPermissionsFromModules();
 
         for (const perm of role.appRolePermissionList) {
-          const moduleTitle = this.getModuleTitleById(perm.appRegister.moduleId);
+          const moduleTitle = this.getModuleTitleByAppRegisterId(perm.appRegister.id);
           const appName = perm.appRegister.appName;
 
           if (!permissions[moduleTitle]) {
@@ -474,8 +474,13 @@ initializePermissions() {
   }
 
   getModuleTitleById(moduleId: number): string {
+    const module = this.modules.find((mod: any) => mod.id === moduleId);
+    return module?.title || 'Unknown';
+  }
+
+  getModuleTitleByAppRegisterId(appRegisterId: number): string {
     const module = this.modules.find((mod: any) =>
-      mod.appRegister?.some((app: any) => app.moduleId === moduleId)
+      mod.appRegister?.some((app: any) => app.id === appRegisterId)
     );
     return module?.title || 'Unknown';
   }
