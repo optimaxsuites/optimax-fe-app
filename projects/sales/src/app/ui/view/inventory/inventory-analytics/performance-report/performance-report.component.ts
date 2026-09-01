@@ -277,7 +277,7 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
           this.branches = branches;
 
           const inventory$ = branches.length > 0
-            ? forkJoin(branches.map(branch => this.inventoryService.getBranchInventory(branch.id)))
+            ? forkJoin(branches.map(branch => this.inventoryService.getBranchInventory(String(branch.id))))
             : of([] as BranchInventory[][]);
 
           forkJoin({
@@ -764,7 +764,7 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
   }
 
   private getBranchName(branchId: string): string {
-    const branch = this.branches.find(b => b.id === branchId);
+    const branch = this.branches.find(b => String(b.id) === branchId);
     return branch?.name || branchId;
   }
 
@@ -993,7 +993,7 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
   }
 
   getBranchNameById(id: string): string {
-    const branch = this.branches.find(b => b.id === id);
+    const branch = this.branches.find(b => String(b.id) === id);
     return branch?.name || id;
   }
 
@@ -1010,8 +1010,8 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
     const inventory = this.reportData?.inventoryData || this.inventory;
     const branchIds = new Set(inventory.map(i => i.branchId));
     return this.branches
-      .filter(b => branchIds.has(b.id))
-      .map(b => ({ id: b.id, name: b.name }));
+      .filter(b => branchIds.has(String(b.id)))
+      .map(b => ({ id: String(b.id), name: b.name }));
   }
 
   getBranchProductCount(branchId: string): number {

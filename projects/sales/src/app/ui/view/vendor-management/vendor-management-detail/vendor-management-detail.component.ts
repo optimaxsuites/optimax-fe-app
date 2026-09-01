@@ -145,7 +145,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     this.vendorService.selectedVendor$
       .pipe(takeUntil(this.destroy$))
       .subscribe(vendor => {
-        if (vendor && vendor.id === this.vendorId) {
+        if (vendor && String(vendor.id) === this.vendorId) {
           this.vendor = vendor;
           this.updateEditForm(vendor);
           this.isLoading = false;

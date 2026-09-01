@@ -151,7 +151,7 @@ export class ProductAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
           const allInventory: BranchInventory[] = [];
 
           branches.forEach(branch => {
-            this.inventoryService.getBranchInventory(branch.id)
+            this.inventoryService.getBranchInventory(String(branch.id))
               .pipe(takeUntil(this.destroy$))
               .subscribe({
                 next: (inventory) => {
@@ -331,7 +331,7 @@ export class ProductAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   getBranchName(branchId: string): string {
-    const branch = this.branches.find(b => b.id === branchId);
+    const branch = this.branches.find(b => String(b.id) === branchId);
     return branch?.name || branchId;
   }
 

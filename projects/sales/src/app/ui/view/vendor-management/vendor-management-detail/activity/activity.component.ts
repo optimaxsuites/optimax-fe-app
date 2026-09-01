@@ -313,7 +313,7 @@ export class ActivityComponent implements OnInit, OnDestroy {
   // TRACK BY
   // ============================================================
 
-  trackByEventId(index: number, event: ActivityEvent): string {
+  trackByEventId(index: number, event: ActivityEvent): number {
     return event.id;
   }
 }

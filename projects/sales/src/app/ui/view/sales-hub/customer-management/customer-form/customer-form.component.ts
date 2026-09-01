@@ -14,7 +14,6 @@ import { ToastModule } from 'primeng/toast';
   selector: 'app-customer-form',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent, ToastModule],
-  providers: [MessageService],
   templateUrl: './customer-form.component.html',
   styleUrls: ['./customer-form.component.scss']
 })
@@ -176,7 +175,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
     request.subscribe({
       next: (response: Customer) => {
         this.isSubmitting = false;
-        this.messages = [{ severity: 'success', summary: 'Success', detail: this.isEditMode ? 'Customer updated successfully!' : 'Customer created successfully!' }];
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: this.isEditMode ? 'Customer updated successfully!' : 'Customer created successfully!' });
         let uuid = this.route.snapshot.paramMap.get('uuid');
         if (uuid === 'edit') {
           uuid = null;
@@ -190,7 +189,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error saving customer:', error);
         this.isSubmitting = false;
-        this.messages = [{ severity: 'error', summary: 'Error', detail: 'Failed to save customer. Please try again.' }];
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save customer. Please try again.' });
       }
     });
   }

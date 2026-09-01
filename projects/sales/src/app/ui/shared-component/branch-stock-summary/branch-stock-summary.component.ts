@@ -28,7 +28,7 @@ export class BranchStockSummaryComponent implements OnInit, OnChanges, OnDestroy
   // ============================================================
 
   /** Branch to summarize. Falsy/null = aggregate across all branches. */
-  @Input() branchId: string | null = null;
+  @Input() branchId: string | number | null = null;
 
   /** Condensed layout for sidebars / grid cards — no top-sellers list, tighter tiles. */
   @Input() compact: boolean = false;
@@ -99,7 +99,7 @@ export class BranchStockSummaryComponent implements OnInit, OnChanges, OnDestroy
     this.error = null;
 
     if (this.branchId) {
-      this.loadSingleBranchSummary(this.branchId);
+      this.loadSingleBranchSummary(String(this.branchId));
     } else {
       this.loadAllBranchesSummary();
     }

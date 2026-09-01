@@ -4,7 +4,10 @@
 // ============================================================
 
 import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
+import { environment } from '../../shared-component/service/environments/environment';
 import {
   Product,
   ProductPerformance,
@@ -34,7 +37,10 @@ import {
   StockAlertSeverity,
   Supplier,
   Category,
-  MeasurementUnit
+  MeasurementUnit,
+  InventoryNotification,
+  TriggerInventoryAlertRequest,
+  InventoryAlertFilters
 } from '../../domain/inventory/inventory.dto';
 
 // ============================================================
@@ -53,7 +59,8 @@ const LOCAL_KEYS = {
   BRANCH_TYPES: 'inventory_branch_types',
   MOVEMENT_TYPES: 'inventory_movement_types',
   LOCATION_TYPES: 'inventory_location_types',
-  GENERIC_LOCATIONS: 'inventory_generic_locations'
+  GENERIC_LOCATIONS: 'inventory_generic_locations',
+  NOTIFICATIONS: 'inventory_notifications'
 };
 
 const MOCK_BRANCH_TYPES: string[] = ['STANDARD', 'FLAGSHIP', 'MINI'];
@@ -84,7 +91,7 @@ const MOCK_GENERIC_LOCATIONS: { id: string; type: string; name: string }[] = [
 
 const MOCK_BRANCHES: any[] = [
   {
-    id: 'br-1',
+    id: 1,
     name: 'Lagos Main Warehouse',
     code: 'LGS-MW',
     type: 'FLAGSHIP',
@@ -95,7 +102,7 @@ const MOCK_BRANCHES: any[] = [
     updatedAt: new Date('2026-08-01')
   },
   {
-    id: 'br-2',
+    id: 2,
     name: 'Abuja Distribution Hub',
     code: 'ABJ-DH',
     type: 'FLAGSHIP',
@@ -106,7 +113,7 @@ const MOCK_BRANCHES: any[] = [
     updatedAt: new Date('2026-08-01')
   },
   {
-    id: 'br-3',
+    id: 3,
     name: 'Port Harcourt Store',
     code: 'PHC-ST',
     type: 'STANDARD',
@@ -117,7 +124,7 @@ const MOCK_BRANCHES: any[] = [
     updatedAt: new Date('2026-07-15')
   },
   {
-    id: 'br-4',
+    id: 4,
     name: 'Kano Outlet',
     code: 'KAN-OT',
     type: 'STANDARD',
@@ -128,7 +135,7 @@ const MOCK_BRANCHES: any[] = [
     updatedAt: new Date('2026-07-20')
   },
   {
-    id: 'br-5',
+    id: 5,
     name: 'Ibadan Regional Store',
     code: 'IBD-RS',
     type: 'STANDARD',
@@ -139,7 +146,7 @@ const MOCK_BRANCHES: any[] = [
     updatedAt: new Date('2026-06-30')
   },
   {
-    id: 'br-6',
+    id: 6,
     name: 'Enugu Express Depot',
     code: 'ENU-XD',
     type: 'MINI',
@@ -167,13 +174,13 @@ const MOCK_STATS: InventoryDashboardStats = {
 
 const MOCK_ALERTS: StockAlert[] = [
   {
-    id: 'alt-1',
+    id: 1,
     type: StockAlertType.OUT_OF_STOCK,
     severity: StockAlertSeverity.CRITICAL,
     productId: 'prod-1',
     productName: 'Cement Dangote Grade 42.5R',
     sku: 'CEM-DG-425',
-    branchId: 'br-1',
+    branchId: '1',
     branchName: 'Lagos Main Warehouse',
     currentStock: 0,
     threshold: 100,
@@ -183,13 +190,13 @@ const MOCK_ALERTS: StockAlert[] = [
     resolvedAt: new Date()
   },
   {
-    id: 'alt-2',
+    id: 2,
     type: StockAlertType.LOW_STOCK,
     severity: StockAlertSeverity.WARNING,
     productId: 'prod-2',
     productName: 'Iron Rod 16mm (Per Ton)',
     sku: 'IRN-16MM-TON',
-    branchId: 'br-2',
+    branchId: '2',
     branchName: 'Abuja Distribution Hub',
     currentStock: 12,
     threshold: 50,
@@ -199,13 +206,13 @@ const MOCK_ALERTS: StockAlert[] = [
     resolvedAt: new Date()
   },
   {
-    id: 'alt-3',
+    id: 3,
     type: StockAlertType.EXPIRING,
     severity: StockAlertSeverity.INFO,
     productId: 'prod-3',
     productName: 'Wall Paint White Satin 20L',
     sku: 'PNT-WS-20L',
-    branchId: 'br-3',
+    branchId: '3',
     branchName: 'Port Harcourt Store',
     currentStock: 85,
     threshold: 10,
@@ -218,12 +225,12 @@ const MOCK_ALERTS: StockAlert[] = [
 
 const MOCK_MOVEMENTS: StockMovement[] = [
   {
-    id: 'mov-1',
+    id: 1,
     productId: 'prod-1',
     productName: 'Cement Dangote Grade 42.5R',
     sku: 'CEM-DG-425',
-    fromLocation: { type: 'SUPPLIER', id: 'sup-1', name: 'Dangote Cement Factory' },
-    toLocation: { type: 'WAREHOUSE', id: 'br-1', name: 'Lagos Main Warehouse' },
+    fromLocation: { type: 'SUPPLIER', id: '1', name: 'Dangote Cement Factory' },
+    toLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
     quantity: 600,
     movementType: MovementType.PURCHASE,
     status: MovementStatus.COMPLETED,
@@ -241,12 +248,12 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date(Date.now() - 1200000)
   },
   {
-    id: 'mov-2',
+    id: 2,
     productId: 'prod-2',
     productName: 'Iron Rod 16mm (Per Ton)',
     sku: 'IRN-16MM-TON',
-    fromLocation: { type: 'WAREHOUSE', id: 'br-1', name: 'Lagos Main Warehouse' },
-    toLocation: { type: 'BRANCH', id: 'br-2', name: 'Abuja Distribution Hub' },
+    fromLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
+    toLocation: { type: 'BRANCH', id: '2', name: 'Abuja Distribution Hub' },
     quantity: 45,
     movementType: MovementType.TRANSFER,
     status: MovementStatus.IN_TRANSIT,
@@ -264,11 +271,11 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date()
   },
   {
-    id: 'mov-3',
+    id: 3,
     productId: 'prod-3',
     productName: 'Wall Paint White Satin 20L',
     sku: 'PNT-WS-20L',
-    fromLocation: { type: 'BRANCH', id: 'br-3', name: 'Port Harcourt Store' },
+    fromLocation: { type: 'BRANCH', id: '3', name: 'Port Harcourt Store' },
     toLocation: { type: 'CUSTOMER', id: 'cust-1', name: 'Julius Berger Site C' },
     quantity: 120,
     movementType: MovementType.SALE,
@@ -287,12 +294,12 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date(Date.now() - 9000000)
   },
   {
-    id: 'mov-4',
+    id: 4,
     productId: 'prod-4',
     productName: 'PVC Pipes 4-inch (Length 6m)',
     sku: 'PVC-4IN-6M',
-    fromLocation: { type: 'SUPPLIER', id: 'sup-2', name: 'Niger Delta Plastics Ltd' },
-    toLocation: { type: 'BRANCH', id: 'br-3', name: 'Port Harcourt Store' },
+    fromLocation: { type: 'SUPPLIER', id: '2', name: 'Niger Delta Plastics Ltd' },
+    toLocation: { type: 'BRANCH', id: '3', name: 'Port Harcourt Store' },
     quantity: 800,
     movementType: MovementType.PURCHASE,
     status: MovementStatus.COMPLETED,
@@ -310,11 +317,11 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date(Date.now() - 2 * 86400000 + 7200000)
   },
   {
-    id: 'mov-5',
+    id: 5,
     productId: 'prod-5',
     productName: 'Floor Tiles 60x60cm (Box)',
     sku: 'TIL-FLR-6060',
-    fromLocation: { type: 'BRANCH', id: 'br-2', name: 'Abuja Distribution Hub' },
+    fromLocation: { type: 'BRANCH', id: '2', name: 'Abuja Distribution Hub' },
     toLocation: { type: 'CUSTOMER', id: 'cust-2', name: 'Maitama Estate Project' },
     quantity: 250,
     movementType: MovementType.SALE,
@@ -333,12 +340,12 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date(Date.now() - 3 * 86400000 + 4 * 3600000)
   },
   {
-    id: 'mov-6',
+    id: 6,
     productId: 'prod-1',
     productName: 'Cement Dangote Grade 42.5R',
     sku: 'CEM-DG-425',
-    fromLocation: { type: 'WAREHOUSE', id: 'br-1', name: 'Lagos Main Warehouse' },
-    toLocation: { type: 'BRANCH', id: 'br-4', name: 'Kano Outlet' },
+    fromLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
+    toLocation: { type: 'BRANCH', id: '4', name: 'Kano Outlet' },
     quantity: 200,
     movementType: MovementType.TRANSFER,
     status: MovementStatus.PENDING,
@@ -356,12 +363,12 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date()
   },
   {
-    id: 'mov-7',
+    id: 7,
     productId: 'prod-6',
     productName: 'Electrical Cable 1.5mm (100m Roll)',
     sku: 'ELC-CBL-15-100',
-    fromLocation: { type: 'SUPPLIER', id: 'sup-3', name: 'Coleman Cables Nigeria' },
-    toLocation: { type: 'WAREHOUSE', id: 'br-1', name: 'Lagos Main Warehouse' },
+    fromLocation: { type: 'SUPPLIER', id: '3', name: 'Coleman Cables Nigeria' },
+    toLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
     quantity: 500,
     movementType: MovementType.PURCHASE,
     status: MovementStatus.IN_TRANSIT,
@@ -379,11 +386,11 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date()
   },
   {
-    id: 'mov-8',
+    id: 8,
     productId: 'prod-7',
     productName: 'Roofing Sheet Long Span (Per Meter)',
     sku: 'ROF-LS-MTR',
-    fromLocation: { type: 'WAREHOUSE', id: 'br-1', name: 'Lagos Main Warehouse' },
+    fromLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
     toLocation: { type: 'CUSTOMER', id: 'cust-3', name: 'Lekki Phase 2 Developers' },
     quantity: 1500,
     movementType: MovementType.SALE,
@@ -402,12 +409,12 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date(Date.now() - 5 * 86400000 + 6 * 3600000)
   },
   {
-    id: 'mov-9',
+    id: 9,
     productId: 'prod-3',
     productName: 'Wall Paint White Satin 20L',
     sku: 'PNT-WS-20L',
-    fromLocation: { type: 'BRANCH', id: 'br-2', name: 'Abuja Distribution Hub' },
-    toLocation: { type: 'BRANCH', id: 'br-2', name: 'Abuja Distribution Hub' },
+    fromLocation: { type: 'BRANCH', id: '2', name: 'Abuja Distribution Hub' },
+    toLocation: { type: 'BRANCH', id: '2', name: 'Abuja Distribution Hub' },
     quantity: 30,
     movementType: MovementType.RETURN,
     status: MovementStatus.COMPLETED,
@@ -425,12 +432,12 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date(Date.now() - 6 * 86400000 + 9 * 3600000)
   },
   {
-    id: 'mov-10',
+    id: 10,
     productId: 'prod-2',
     productName: 'Iron Rod 16mm (Per Ton)',
     sku: 'IRN-16MM-TON',
-    fromLocation: { type: 'WAREHOUSE', id: 'br-1', name: 'Lagos Main Warehouse' },
-    toLocation: { type: 'BRANCH', id: 'br-1', name: 'Lagos Main Warehouse' },
+    fromLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
+    toLocation: { type: 'BRANCH', id: '1', name: 'Lagos Main Warehouse' },
     quantity: 5,
     movementType: MovementType.DAMAGED,
     status: MovementStatus.COMPLETED,
@@ -448,12 +455,12 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date(Date.now() - 7 * 86400000 + 5 * 3600000)
   },
   {
-    id: 'mov-11',
+    id: 11,
     productId: 'prod-8',
     productName: 'Plywood Sheet 18mm (4x8ft)',
     sku: 'PLY-18MM-4X8',
-    fromLocation: { type: 'SUPPLIER', id: 'sup-4', name: 'Tropical Timber Mills' },
-    toLocation: { type: 'BRANCH', id: 'br-2', name: 'Abuja Distribution Hub' },
+    fromLocation: { type: 'SUPPLIER', id: '4', name: 'Tropical Timber Mills' },
+    toLocation: { type: 'BRANCH', id: '2', name: 'Abuja Distribution Hub' },
     quantity: 300,
     movementType: MovementType.PURCHASE,
     status: MovementStatus.COMPLETED,
@@ -471,12 +478,12 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date(Date.now() - 8 * 86400000 + 10 * 3600000)
   },
   {
-    id: 'mov-12',
+    id: 12,
     productId: 'prod-4',
     productName: 'PVC Pipes 4-inch (Length 6m)',
     sku: 'PVC-4IN-6M',
-    fromLocation: { type: 'BRANCH', id: 'br-3', name: 'Port Harcourt Store' },
-    toLocation: { type: 'BRANCH', id: 'br-3', name: 'Port Harcourt Store' },
+    fromLocation: { type: 'BRANCH', id: '3', name: 'Port Harcourt Store' },
+    toLocation: { type: 'BRANCH', id: '3', name: 'Port Harcourt Store' },
     quantity: 50,
     movementType: MovementType.ADJUSTMENT,
     status: MovementStatus.COMPLETED,
@@ -494,12 +501,12 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date(Date.now() - 9 * 86400000 + 4 * 3600000)
   },
   {
-    id: 'mov-13',
+    id: 13,
     productId: 'prod-5',
     productName: 'Floor Tiles 60x60cm (Box)',
     sku: 'TIL-FLR-6060',
-    fromLocation: { type: 'SUPPLIER', id: 'sup-5', name: 'Porcelain Palace Lagos' },
-    toLocation: { type: 'WAREHOUSE', id: 'br-1', name: 'Lagos Main Warehouse' },
+    fromLocation: { type: 'SUPPLIER', id: '5', name: 'Porcelain Palace Lagos' },
+    toLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
     quantity: 1000,
     movementType: MovementType.PURCHASE,
     status: MovementStatus.IN_TRANSIT,
@@ -517,11 +524,11 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date()
   },
   {
-    id: 'mov-14',
+    id: 14,
     productId: 'prod-6',
     productName: 'Electrical Cable 1.5mm (100m Roll)',
     sku: 'ELC-CBL-15-100',
-    fromLocation: { type: 'WAREHOUSE', id: 'br-1', name: 'Lagos Main Warehouse' },
+    fromLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
     toLocation: { type: 'CUSTOMER', id: 'cust-5', name: 'Eko Atlantic Contractors' },
     quantity: 200,
     movementType: MovementType.SALE,
@@ -540,11 +547,11 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date()
   },
   {
-    id: 'mov-15',
+    id: 15,
     productId: 'prod-7',
     productName: 'Roofing Sheet Long Span (Per Meter)',
     sku: 'ROF-LS-MTR',
-    fromLocation: { type: 'BRANCH', id: 'br-4', name: 'Kano Outlet' },
+    fromLocation: { type: 'BRANCH', id: '4', name: 'Kano Outlet' },
     toLocation: { type: 'CUSTOMER', id: 'cust-6', name: 'Sabon Gari Housing Corp' },
     quantity: 600,
     movementType: MovementType.SALE,
@@ -563,11 +570,11 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date()
   },
   {
-    id: 'mov-16',
+    id: 16,
     productId: 'prod-8',
     productName: 'Plywood Sheet 18mm (4x8ft)',
     sku: 'PLY-18MM-4X8',
-    fromLocation: { type: 'BRANCH', id: 'br-2', name: 'Abuja Distribution Hub' },
+    fromLocation: { type: 'BRANCH', id: '2', name: 'Abuja Distribution Hub' },
     toLocation: { type: 'CUSTOMER', id: 'cust-7', name: 'Asokoro Mall Fit-Out' },
     quantity: 80,
     movementType: MovementType.SALE,
@@ -586,12 +593,12 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date(Date.now() - 11 * 86400000 + 8 * 3600000)
   },
   {
-    id: 'mov-17',
+    id: 17,
     productId: 'prod-9',
     productName: 'Sanitary Ware — WC Suite Set',
     sku: 'SAN-WC-SUITE',
-    fromLocation: { type: 'SUPPLIER', id: 'sup-6', name: 'Roca Sanitaryware Nigeria' },
-    toLocation: { type: 'BRANCH', id: 'br-3', name: 'Port Harcourt Store' },
+    fromLocation: { type: 'SUPPLIER', id: '6', name: 'Roca Sanitaryware Nigeria' },
+    toLocation: { type: 'BRANCH', id: '3', name: 'Port Harcourt Store' },
     quantity: 40,
     movementType: MovementType.PURCHASE,
     status: MovementStatus.COMPLETED,
@@ -609,12 +616,12 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date(Date.now() - 13 * 86400000 + 12 * 3600000)
   },
   {
-    id: 'mov-18',
+    id: 18,
     productId: 'prod-2',
     productName: 'Iron Rod 16mm (Per Ton)',
     sku: 'IRN-16MM-TON',
-    fromLocation: { type: 'SUPPLIER', id: 'sup-7', name: 'Delta Steel Company' },
-    toLocation: { type: 'WAREHOUSE', id: 'br-1', name: 'Lagos Main Warehouse' },
+    fromLocation: { type: 'SUPPLIER', id: '7', name: 'Delta Steel Company' },
+    toLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
     quantity: 120,
     movementType: MovementType.PURCHASE,
     status: MovementStatus.COMPLETED,
@@ -632,12 +639,12 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date(Date.now() - 14 * 86400000 + 14 * 3600000)
   },
   {
-    id: 'mov-19',
+    id: 19,
     productId: 'prod-3',
     productName: 'Wall Paint White Satin 20L',
     sku: 'PNT-WS-20L',
-    fromLocation: { type: 'BRANCH', id: 'br-1', name: 'Lagos Main Warehouse' },
-    toLocation: { type: 'BRANCH', id: 'br-4', name: 'Kano Outlet' },
+    fromLocation: { type: 'BRANCH', id: '1', name: 'Lagos Main Warehouse' },
+    toLocation: { type: 'BRANCH', id: '4', name: 'Kano Outlet' },
     quantity: 60,
     movementType: MovementType.TRANSFER,
     status: MovementStatus.CANCELLED,
@@ -655,11 +662,11 @@ const MOCK_MOVEMENTS: StockMovement[] = [
     completedAt: new Date()
   },
   {
-    id: 'mov-20',
+    id: 20,
     productId: 'prod-9',
     productName: 'Sanitary Ware — WC Suite Set',
     sku: 'SAN-WC-SUITE',
-    fromLocation: { type: 'BRANCH', id: 'br-3', name: 'Port Harcourt Store' },
+    fromLocation: { type: 'BRANCH', id: '3', name: 'Port Harcourt Store' },
     toLocation: { type: 'CUSTOMER', id: 'cust-8', name: 'Garden City Luxury Homes' },
     quantity: 12,
     movementType: MovementType.SALE,
@@ -748,7 +755,7 @@ const MOCK_TOP_PRODUCTS: ProductPerformance[] = [
 
 const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
   {
-    branchId: 'br-1',
+    branchId: '1',
     branchName: 'Lagos Main Warehouse',
     totalProducts: 850,
     totalStockValue: 120500000,
@@ -764,7 +771,7 @@ const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
     ]
   },
   {
-    branchId: 'br-2',
+    branchId: '2',
     branchName: 'Abuja Distribution Hub',
     totalProducts: 620,
     totalStockValue: 72100000,
@@ -780,7 +787,7 @@ const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
     ]
   },
   {
-    branchId: 'br-3',
+    branchId: '3',
     branchName: 'Port Harcourt Store',
     totalProducts: 480,
     totalStockValue: 36200000,
@@ -796,7 +803,7 @@ const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
     ]
   },
   {
-    branchId: 'br-4',
+    branchId: '4',
     branchName: 'Kano Outlet',
     totalProducts: 310,
     totalStockValue: 16200000,
@@ -812,7 +819,7 @@ const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
     ]
   },
   {
-    branchId: 'br-5',
+    branchId: '5',
     branchName: 'Ibadan Regional Store',
     totalProducts: 390,
     totalStockValue: 28400000,
@@ -828,7 +835,7 @@ const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
     ]
   },
   {
-    branchId: 'br-6',
+    branchId: '6',
     branchName: 'Enugu Express Depot',
     totalProducts: 265,
     totalStockValue: 19100000,
@@ -847,96 +854,96 @@ const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
 
 const MOCK_BRANCH_INVENTORY: BranchInventory[] = [
   // ── Lagos Main Warehouse (br-1) ─────────────────────────────
-  { id: 'bi-1', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 1200, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 7000, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-2', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 85, reorderPoint: 50, reorderQuantity: 100, safetyStock: 20, sellingPrice: 350000, costPrice: 300000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-3', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 420, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 24000, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 'bi-4', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 1800, reorderPoint: 400, reorderQuantity: 800, safetyStock: 200, sellingPrice: 7500, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-5', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-6', productName: 'Electrical Cable 1.5mm (100m Roll)', sku: 'ELC-CBL-15-100', quantity: 640, reorderPoint: 150, reorderQuantity: 300, safetyStock: 60, sellingPrice: 15000, costPrice: 11000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-6', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 4200, reorderPoint: 800, reorderQuantity: 1500, safetyStock: 400, sellingPrice: 8500, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-7', branchId: 'br-1', branchName: 'Lagos Main Warehouse', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 2100, reorderPoint: 500, reorderQuantity: 1000, safetyStock: 200, sellingPrice: 7000, costPrice: 5000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 1, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 1200, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 7000, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 2, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 85, reorderPoint: 50, reorderQuantity: 100, safetyStock: 20, sellingPrice: 350000, costPrice: 300000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 3, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 420, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 24000, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 4, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 1800, reorderPoint: 400, reorderQuantity: 800, safetyStock: 200, sellingPrice: 7500, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 5, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-6', productName: 'Electrical Cable 1.5mm (100m Roll)', sku: 'ELC-CBL-15-100', quantity: 640, reorderPoint: 150, reorderQuantity: 300, safetyStock: 60, sellingPrice: 15000, costPrice: 11000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 6, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 4200, reorderPoint: 800, reorderQuantity: 1500, safetyStock: 400, sellingPrice: 8500, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 7, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 2100, reorderPoint: 500, reorderQuantity: 1000, safetyStock: 200, sellingPrice: 7000, costPrice: 5000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
   // ── Abuja Distribution Hub (br-2) ───────────────────────────
-  { id: 'bi-8', branchId: 'br-2', branchName: 'Abuja Distribution Hub', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 800, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 7200, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-9', branchId: 'br-2', branchName: 'Abuja Distribution Hub', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 12, reorderPoint: 50, reorderQuantity: 80, safetyStock: 20, sellingPrice: 360000, costPrice: 300000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-10', branchId: 'br-2', branchName: 'Abuja Distribution Hub', productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 950, reorderPoint: 200, reorderQuantity: 500, safetyStock: 100, sellingPrice: 7800, costPrice: 5000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 'bi-11', branchId: 'br-2', branchName: 'Abuja Distribution Hub', productId: 'prod-8', productName: 'Plywood Sheet 18mm (4x8ft)', sku: 'PLY-18MM-4X8', quantity: 380, reorderPoint: 80, reorderQuantity: 200, safetyStock: 40, sellingPrice: 30000, costPrice: 22000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-12', branchId: 'br-2', branchName: 'Abuja Distribution Hub', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 0, reorderPoint: 80, reorderQuantity: 200, safetyStock: 40, sellingPrice: 25000, costPrice: 18000, lastUpdated: new Date(Date.now() - 4 * 86400000) },
-  { id: 'bi-13', branchId: 'br-2', branchName: 'Abuja Distribution Hub', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 1100, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 8800, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 8, branchId: '2', branchName: 'Abuja Distribution Hub', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 800, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 7200, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 9, branchId: '2', branchName: 'Abuja Distribution Hub', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 12, reorderPoint: 50, reorderQuantity: 80, safetyStock: 20, sellingPrice: 360000, costPrice: 300000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 10, branchId: '2', branchName: 'Abuja Distribution Hub', productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 950, reorderPoint: 200, reorderQuantity: 500, safetyStock: 100, sellingPrice: 7800, costPrice: 5000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 11, branchId: '2', branchName: 'Abuja Distribution Hub', productId: 'prod-8', productName: 'Plywood Sheet 18mm (4x8ft)', sku: 'PLY-18MM-4X8', quantity: 380, reorderPoint: 80, reorderQuantity: 200, safetyStock: 40, sellingPrice: 30000, costPrice: 22000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 12, branchId: '2', branchName: 'Abuja Distribution Hub', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 0, reorderPoint: 80, reorderQuantity: 200, safetyStock: 40, sellingPrice: 25000, costPrice: 18000, lastUpdated: new Date(Date.now() - 4 * 86400000) },
+  { id: 13, branchId: '2', branchName: 'Abuja Distribution Hub', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 1100, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 8800, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
   // ── Port Harcourt Store (br-3) ───────────────────────────────
-  { id: 'bi-14', branchId: 'br-3', branchName: 'Port Harcourt Store', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 1600, reorderPoint: 400, reorderQuantity: 800, safetyStock: 200, sellingPrice: 7200, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-15', branchId: 'br-3', branchName: 'Port Harcourt Store', productId: 'prod-9', productName: 'Sanitary Ware — WC Suite Set', sku: 'SAN-WC-SUITE', quantity: 28, reorderPoint: 10, reorderQuantity: 20, safetyStock: 5, sellingPrice: 260000, costPrice: 200000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-16', branchId: 'br-3', branchName: 'Port Harcourt Store', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 85, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 24500, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 'bi-17', branchId: 'br-3', branchName: 'Port Harcourt Store', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 700, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 8700, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-18', branchId: 'br-3', branchName: 'Port Harcourt Store', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 550, reorderPoint: 150, reorderQuantity: 300, safetyStock: 80, sellingPrice: 7100, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 14, branchId: '3', branchName: 'Port Harcourt Store', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 1600, reorderPoint: 400, reorderQuantity: 800, safetyStock: 200, sellingPrice: 7200, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 15, branchId: '3', branchName: 'Port Harcourt Store', productId: 'prod-9', productName: 'Sanitary Ware — WC Suite Set', sku: 'SAN-WC-SUITE', quantity: 28, reorderPoint: 10, reorderQuantity: 20, safetyStock: 5, sellingPrice: 260000, costPrice: 200000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 16, branchId: '3', branchName: 'Port Harcourt Store', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 85, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 24500, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 17, branchId: '3', branchName: 'Port Harcourt Store', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 700, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 8700, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 18, branchId: '3', branchName: 'Port Harcourt Store', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 550, reorderPoint: 150, reorderQuantity: 300, safetyStock: 80, sellingPrice: 7100, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
   // ── Kano Outlet (br-4) ──────────────────────────────────────
-  { id: 'bi-19', branchId: 'br-4', branchName: 'Kano Outlet', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 600, reorderPoint: 150, reorderQuantity: 300, safetyStock: 80, sellingPrice: 7100, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-20', branchId: 'br-4', branchName: 'Kano Outlet', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 1200, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 8600, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-21', branchId: 'br-4', branchName: 'Kano Outlet', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 22, reorderPoint: 20, reorderQuantity: 40, safetyStock: 10, sellingPrice: 355000, costPrice: 300000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 'bi-22', branchId: 'br-4', branchName: 'Kano Outlet', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 480, reorderPoint: 120, reorderQuantity: 250, safetyStock: 60, sellingPrice: 7300, costPrice: 5000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-23', branchId: 'br-4', branchName: 'Kano Outlet', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 140, reorderPoint: 60, reorderQuantity: 120, safetyStock: 30, sellingPrice: 24000, costPrice: 18000, lastUpdated: new Date(Date.now() - 4 * 86400000) },
+  { id: 19, branchId: '4', branchName: 'Kano Outlet', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 600, reorderPoint: 150, reorderQuantity: 300, safetyStock: 80, sellingPrice: 7100, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 20, branchId: '4', branchName: 'Kano Outlet', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 1200, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 8600, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 21, branchId: '4', branchName: 'Kano Outlet', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 22, reorderPoint: 20, reorderQuantity: 40, safetyStock: 10, sellingPrice: 355000, costPrice: 300000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 22, branchId: '4', branchName: 'Kano Outlet', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 480, reorderPoint: 120, reorderQuantity: 250, safetyStock: 60, sellingPrice: 7300, costPrice: 5000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 23, branchId: '4', branchName: 'Kano Outlet', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 140, reorderPoint: 60, reorderQuantity: 120, safetyStock: 30, sellingPrice: 24000, costPrice: 18000, lastUpdated: new Date(Date.now() - 4 * 86400000) },
   // ── Ibadan Regional Store (br-5) ────────────────────────────
-  { id: 'bi-24', branchId: 'br-5', branchName: 'Ibadan Regional Store', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 900, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 7050, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-25', branchId: 'br-5', branchName: 'Ibadan Regional Store', productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 620, reorderPoint: 150, reorderQuantity: 300, safetyStock: 70, sellingPrice: 7600, costPrice: 5000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-26', branchId: 'br-5', branchName: 'Ibadan Regional Store', productId: 'prod-6', productName: 'Electrical Cable 1.5mm (100m Roll)', sku: 'ELC-CBL-15-100', quantity: 25, reorderPoint: 80, reorderQuantity: 150, safetyStock: 40, sellingPrice: 15500, costPrice: 11000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-27', branchId: 'br-5', branchName: 'Ibadan Regional Store', productId: 'prod-8', productName: 'Plywood Sheet 18mm (4x8ft)', sku: 'PLY-18MM-4X8', quantity: 190, reorderPoint: 50, reorderQuantity: 120, safetyStock: 25, sellingPrice: 31000, costPrice: 22000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 'bi-28', branchId: 'br-5', branchName: 'Ibadan Regional Store', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 0, reorderPoint: 100, reorderQuantity: 250, safetyStock: 50, sellingPrice: 7100, costPrice: 5000, lastUpdated: new Date(Date.now() - 5 * 86400000) },
+  { id: 24, branchId: '5', branchName: 'Ibadan Regional Store', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 900, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 7050, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 25, branchId: '5', branchName: 'Ibadan Regional Store', productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 620, reorderPoint: 150, reorderQuantity: 300, safetyStock: 70, sellingPrice: 7600, costPrice: 5000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 26, branchId: '5', branchName: 'Ibadan Regional Store', productId: 'prod-6', productName: 'Electrical Cable 1.5mm (100m Roll)', sku: 'ELC-CBL-15-100', quantity: 25, reorderPoint: 80, reorderQuantity: 150, safetyStock: 40, sellingPrice: 15500, costPrice: 11000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 27, branchId: '5', branchName: 'Ibadan Regional Store', productId: 'prod-8', productName: 'Plywood Sheet 18mm (4x8ft)', sku: 'PLY-18MM-4X8', quantity: 190, reorderPoint: 50, reorderQuantity: 120, safetyStock: 25, sellingPrice: 31000, costPrice: 22000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 28, branchId: '5', branchName: 'Ibadan Regional Store', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 0, reorderPoint: 100, reorderQuantity: 250, safetyStock: 50, sellingPrice: 7100, costPrice: 5000, lastUpdated: new Date(Date.now() - 5 * 86400000) },
   // ── Enugu Express Depot (br-6) ──────────────────────────────
-  { id: 'bi-29', branchId: 'br-6', branchName: 'Enugu Express Depot', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 750, reorderPoint: 180, reorderQuantity: 350, safetyStock: 90, sellingPrice: 7080, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-30', branchId: 'br-6', branchName: 'Enugu Express Depot', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 280, reorderPoint: 70, reorderQuantity: 140, safetyStock: 35, sellingPrice: 24200, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 'bi-31', branchId: 'br-6', branchName: 'Enugu Express Depot', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 360, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 7050, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 'bi-32', branchId: 'br-6', branchName: 'Enugu Express Depot', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 820, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 8550, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 'bi-33', branchId: 'br-6', branchName: 'Enugu Express Depot', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 8, reorderPoint: 15, reorderQuantity: 30, safetyStock: 8, sellingPrice: 352000, costPrice: 300000, lastUpdated: new Date(Date.now() - 4 * 86400000) }
+  { id: 29, branchId: '6', branchName: 'Enugu Express Depot', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 750, reorderPoint: 180, reorderQuantity: 350, safetyStock: 90, sellingPrice: 7080, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 30, branchId: '6', branchName: 'Enugu Express Depot', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 280, reorderPoint: 70, reorderQuantity: 140, safetyStock: 35, sellingPrice: 24200, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 31, branchId: '6', branchName: 'Enugu Express Depot', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 360, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 7050, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 32, branchId: '6', branchName: 'Enugu Express Depot', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 820, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 8550, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 33, branchId: '6', branchName: 'Enugu Express Depot', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 8, reorderPoint: 15, reorderQuantity: 30, safetyStock: 8, sellingPrice: 352000, costPrice: 300000, lastUpdated: new Date(Date.now() - 4 * 86400000) }
 ];
 
 const MOCK_CATEGORIES: Category[] = [
-  { id: 'cat-1', name: 'Building Materials', description: 'Cement, blocks, aggregates and general construction materials', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'cat-2', name: 'Metal & Steel', description: 'Iron rods, steel beams and metal fabrication stock', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'cat-3', name: 'Paints & Finishes', description: 'Paints, primers, varnishes and surface finishes', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'cat-4', name: 'Plumbing & Pipes', description: 'PVC pipes, fittings and plumbing accessories', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'cat-5', name: 'Tiles & Flooring', description: 'Floor and wall tiles, grout and flooring accessories', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
-  { id: 'cat-6', name: 'Electrical', description: 'Cables, fittings and electrical fixtures', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
-  { id: 'cat-7', name: 'Roofing', description: 'Roofing sheets, nails and roofing accessories', createdAt: new Date('2023-02-15'), updatedAt: new Date('2023-02-15') },
-  { id: 'cat-8', name: 'Wood & Timber', description: 'Plywood, planks and timber products', createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') },
-  { id: 'cat-9', name: 'Sanitary Ware', description: 'WC suites, wash basins and bathroom fittings', createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') },
-  { id: 'cat-10', name: 'Hardware & Fasteners', description: 'Screws, nails, bolts and general hardware', createdAt: new Date('2023-04-10'), updatedAt: new Date('2023-04-10') }
+  { id: 1, categoryId: 'cat-1', name: 'Building Materials', description: 'Cement, blocks, aggregates and general construction materials', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 2, categoryId: 'cat-2', name: 'Metal & Steel', description: 'Iron rods, steel beams and metal fabrication stock', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 3, categoryId: 'cat-3', name: 'Paints & Finishes', description: 'Paints, primers, varnishes and surface finishes', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 4, categoryId: 'cat-4', name: 'Plumbing & Pipes', description: 'PVC pipes, fittings and plumbing accessories', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 5, categoryId: 'cat-5', name: 'Tiles & Flooring', description: 'Floor and wall tiles, grout and flooring accessories', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
+  { id: 6, categoryId: 'cat-6', name: 'Electrical', description: 'Cables, fittings and electrical fixtures', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
+  { id: 7, categoryId: 'cat-7', name: 'Roofing', description: 'Roofing sheets, nails and roofing accessories', createdAt: new Date('2023-02-15'), updatedAt: new Date('2023-02-15') },
+  { id: 8, categoryId: 'cat-8', name: 'Wood & Timber', description: 'Plywood, planks and timber products', createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') },
+  { id: 9, categoryId: 'cat-9', name: 'Sanitary Ware', description: 'WC suites, wash basins and bathroom fittings', createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') },
+  { id: 10, categoryId: 'cat-10', name: 'Hardware & Fasteners', description: 'Screws, nails, bolts and general hardware', createdAt: new Date('2023-04-10'), updatedAt: new Date('2023-04-10') }
 ];
 
 const MOCK_MEASUREMENT_UNITS: MeasurementUnit[] = [
-  { id: 'unit-1', name: 'Each', code: 'EACH', description: 'Single individual unit', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'unit-2', name: 'Box', code: 'BOX', description: 'Boxed unit of multiple pieces', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'unit-3', name: 'Kilogram', code: 'KG', description: 'Weight measured in kilograms', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'unit-4', name: 'Litre', code: 'LITER', description: 'Volume measured in litres', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'unit-5', name: 'Metre', code: 'METER', description: 'Length measured in metres', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
-  { id: 'unit-6', name: 'Ton', code: 'TON', description: 'Weight measured in metric tons', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
-  { id: 'unit-7', name: 'Bag', code: 'BAG', description: 'Bagged unit (e.g. cement bags)', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
-  { id: 'unit-8', name: 'Roll', code: 'ROLL', description: 'Rolled unit (e.g. cable rolls)', createdAt: new Date('2023-02-15'), updatedAt: new Date('2023-02-15') },
-  { id: 'unit-9', name: 'Set', code: 'SET', description: 'Matched set of parts', createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') }
+  { id: 1, unitId: 'unit-1', name: 'Each', code: 'EACH', description: 'Single individual unit', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 2, unitId: 'unit-2', name: 'Box', code: 'BOX', description: 'Boxed unit of multiple pieces', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 3, unitId: 'unit-3', name: 'Kilogram', code: 'KG', description: 'Weight measured in kilograms', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 4, unitId: 'unit-4', name: 'Litre', code: 'LITER', description: 'Volume measured in litres', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 5, unitId: 'unit-5', name: 'Metre', code: 'METER', description: 'Length measured in metres', createdAt: new Date('2023-01-15'), updatedAt: new Date('2023-01-15') },
+  { id: 6, unitId: 'unit-6', name: 'Ton', code: 'TON', description: 'Weight measured in metric tons', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
+  { id: 7, unitId: 'unit-7', name: 'Bag', code: 'BAG', description: 'Bagged unit (e.g. cement bags)', createdAt: new Date('2023-02-01'), updatedAt: new Date('2023-02-01') },
+  { id: 8, unitId: 'unit-8', name: 'Roll', code: 'ROLL', description: 'Rolled unit (e.g. cable rolls)', createdAt: new Date('2023-02-15'), updatedAt: new Date('2023-02-15') },
+  { id: 9, unitId: 'unit-9', name: 'Set', code: 'SET', description: 'Matched set of parts', createdAt: new Date('2023-03-01'), updatedAt: new Date('2023-03-01') }
 ];
 
 const MOCK_SUPPLIERS: Supplier[] = [
-  { id: 'sup-1', name: 'Dangote Cement Factory', email: 'sales@dangotecement.com', phone: '+234-1-448-0001', address: 'Ibese Plant, Ogun State, Nigeria', contactPerson: 'Ibrahim Sule', createdAt: new Date('2023-01-10'), updatedAt: new Date('2023-01-10') },
-  { id: 'sup-2', name: 'Niger Delta Plastics Ltd', email: 'info@ndplastics.ng', phone: '+234-84-770-2201', address: 'Trans-Amadi Industrial Layout, Port Harcourt', contactPerson: 'Ngozi Amadi', createdAt: new Date('2023-01-20'), updatedAt: new Date('2023-01-20') },
-  { id: 'sup-3', name: 'Coleman Cables Nigeria', email: 'orders@colemancables.com.ng', phone: '+234-1-271-3300', address: '19 Iyalla Street, Surulere, Lagos', contactPerson: 'David Ekpo', createdAt: new Date('2023-02-05'), updatedAt: new Date('2023-02-05') },
-  { id: 'sup-4', name: 'Tropical Timber Mills', email: 'sales@tropicaltimber.ng', phone: '+234-9-670-4410', address: 'Kilometer 12, Kaduna Road, Abuja', contactPerson: 'Solomon Danjuma', createdAt: new Date('2023-02-18'), updatedAt: new Date('2023-02-18') },
-  { id: 'sup-5', name: 'Porcelain Palace Lagos', email: 'contact@porcelainpalace.ng', phone: '+234-1-905-6612', address: '44 Ikorodu Road, Lagos', contactPerson: 'Funmi Adebayo', createdAt: new Date('2023-03-02'), updatedAt: new Date('2023-03-02') },
-  { id: 'sup-6', name: 'Roca Sanitaryware Nigeria', email: 'ng.sales@roca.com', phone: '+234-1-462-7788', address: '3 Ozumba Mbadiwe Avenue, Victoria Island, Lagos', contactPerson: 'Patrick Nnamdi', createdAt: new Date('2023-03-15'), updatedAt: new Date('2023-03-15') },
-  { id: 'sup-7', name: 'Delta Steel Company', email: 'procurement@deltasteel.ng', phone: '+234-56-610-3390', address: 'Ovwian-Aladja, Delta State, Nigeria', contactPerson: 'Efe Okonta', createdAt: new Date('2023-04-01'), updatedAt: new Date('2023-04-01') },
-  { id: 'sup-8', name: 'Ace Hardware Supplies Nigeria', email: 'sales@acehardware.ng', phone: '+234-1-330-8845', address: '12 Nnamdi Azikiwe Street, Onitsha, Anambra', contactPerson: 'Chidi Eze', createdAt: new Date('2023-04-20'), updatedAt: new Date('2023-04-20') }
+  { id: 1, supplierId: 'sup-1', name: 'Dangote Cement Factory', email: 'sales@dangotecement.com', phone: '+234-1-448-0001', address: 'Ibese Plant, Ogun State, Nigeria', contactPerson: 'Ibrahim Sule', createdAt: new Date('2023-01-10'), updatedAt: new Date('2023-01-10') },
+  { id: 2, supplierId: 'sup-2', name: 'Niger Delta Plastics Ltd', email: 'info@ndplastics.ng', phone: '+234-84-770-2201', address: 'Trans-Amadi Industrial Layout, Port Harcourt', contactPerson: 'Ngozi Amadi', createdAt: new Date('2023-01-20'), updatedAt: new Date('2023-01-20') },
+  { id: 3, supplierId: 'sup-3', name: 'Coleman Cables Nigeria', email: 'orders@colemancables.com.ng', phone: '+234-1-271-3300', address: '19 Iyalla Street, Surulere, Lagos', contactPerson: 'David Ekpo', createdAt: new Date('2023-02-05'), updatedAt: new Date('2023-02-05') },
+  { id: 4, supplierId: 'sup-4', name: 'Tropical Timber Mills', email: 'sales@tropicaltimber.ng', phone: '+234-9-670-4410', address: 'Kilometer 12, Kaduna Road, Abuja', contactPerson: 'Solomon Danjuma', createdAt: new Date('2023-02-18'), updatedAt: new Date('2023-02-18') },
+  { id: 5, supplierId: 'sup-5', name: 'Porcelain Palace Lagos', email: 'contact@porcelainpalace.ng', phone: '+234-1-905-6612', address: '44 Ikorodu Road, Lagos', contactPerson: 'Funmi Adebayo', createdAt: new Date('2023-03-02'), updatedAt: new Date('2023-03-02') },
+  { id: 6, supplierId: 'sup-6', name: 'Roca Sanitaryware Nigeria', email: 'ng.sales@roca.com', phone: '+234-1-462-7788', address: '3 Ozumba Mbadiwe Avenue, Victoria Island, Lagos', contactPerson: 'Patrick Nnamdi', createdAt: new Date('2023-03-15'), updatedAt: new Date('2023-03-15') },
+  { id: 7, supplierId: 'sup-7', name: 'Delta Steel Company', email: 'procurement@deltasteel.ng', phone: '+234-56-610-3390', address: 'Ovwian-Aladja, Delta State, Nigeria', contactPerson: 'Efe Okonta', createdAt: new Date('2023-04-01'), updatedAt: new Date('2023-04-01') },
+  { id: 8, supplierId: 'sup-8', name: 'Ace Hardware Supplies Nigeria', email: 'sales@acehardware.ng', phone: '+234-1-330-8845', address: '12 Nnamdi Azikiwe Street, Onitsha, Anambra', contactPerson: 'Chidi Eze', createdAt: new Date('2023-04-20'), updatedAt: new Date('2023-04-20') }
 ];
 
 const MOCK_PRODUCTS: Product[] = [
-  { id: 'prod-1', sku: 'CEM-DG-425', name: 'Cement Dangote Grade 42.5R', description: 'High-strength Portland-limestone cement, 50kg bag, ideal for all structural applications.', category: 'Building Materials', subCategory: 'Cement', brand: 'Dangote', unitOfMeasure: 'EACH', costPrice: 6000, sellingPrice: 7000, stockQuantity: 4800, weight: 50, dimensions: { length: 60, width: 40, height: 10 }, images: [], tags: ['cement', 'bestseller'], status: ProductStatus.ACTIVE, supplierIds: ['sup-1'], createdAt: new Date('2023-01-15'), updatedAt: new Date('2026-08-01') },
-  { id: 'prod-2', sku: 'IRN-16MM-TON', name: 'Iron Rod 16mm (Per Ton)', description: 'High-tensile deformed steel reinforcement bar, 16mm diameter, sold per metric ton.', category: 'Metal & Steel', subCategory: 'Rebar', brand: 'Delta Steel', unitOfMeasure: 'KG', costPrice: 300000, sellingPrice: 350000, stockQuantity: 127, weight: 1000, dimensions: { length: 1200, width: 1.6, height: 1.6 }, images: [], tags: ['steel', 'rebar'], status: ProductStatus.ACTIVE, supplierIds: ['sup-7'], createdAt: new Date('2023-01-20'), updatedAt: new Date('2026-08-01') },
+  { id: 'prod-1', sku: 'CEM-DG-425', name: 'Cement Dangote Grade 42.5R', description: 'High-strength Portland-limestone cement, 50kg bag, ideal for all structural applications.', category: 'Building Materials', subCategory: 'Cement', brand: 'Dangote', unitOfMeasure: 'EACH', costPrice: 6000, sellingPrice: 7000, stockQuantity: 4800, weight: 50, dimensions: { length: 60, width: 40, height: 10 }, images: [], tags: ['cement', 'bestseller'], status: ProductStatus.ACTIVE, supplierIds: ['1'], createdAt: new Date('2023-01-15'), updatedAt: new Date('2026-08-01') },
+  { id: 'prod-2', sku: 'IRN-16MM-TON', name: 'Iron Rod 16mm (Per Ton)', description: 'High-tensile deformed steel reinforcement bar, 16mm diameter, sold per metric ton.', category: 'Metal & Steel', subCategory: 'Rebar', brand: 'Delta Steel', unitOfMeasure: 'KG', costPrice: 300000, sellingPrice: 350000, stockQuantity: 127, weight: 1000, dimensions: { length: 1200, width: 1.6, height: 1.6 }, images: [], tags: ['steel', 'rebar'], status: ProductStatus.ACTIVE, supplierIds: ['7'], createdAt: new Date('2023-01-20'), updatedAt: new Date('2026-08-01') },
   { id: 'prod-3', sku: 'PNT-WS-20L', name: 'Wall Paint White Satin 20L', description: 'Premium washable satin-finish emulsion paint, 20-litre pail, interior and exterior use.', category: 'Paints & Finishes', subCategory: 'Emulsion', brand: 'Dulux', unitOfMeasure: 'LITER', costPrice: 18000, sellingPrice: 24000, stockQuantity: 925, weight: 22, dimensions: { length: 30, width: 30, height: 35 }, images: [], tags: ['paint', 'interior'], status: ProductStatus.ACTIVE, supplierIds: [], createdAt: new Date('2023-02-01'), updatedAt: new Date('2026-07-15') },
-  { id: 'prod-4', sku: 'PVC-4IN-6M', name: 'PVC Pipes 4-inch (Length 6m)', description: 'Schedule-40 uPVC drainage pipe, 4-inch diameter, 6-metre length, solvent-weld ends.', category: 'Plumbing & Pipes', subCategory: 'Pipes', brand: 'Niger Delta Plastics', unitOfMeasure: 'EACH', costPrice: 5000, sellingPrice: 7000, stockQuantity: 4540, weight: 8, dimensions: { length: 600, width: 10, height: 10 }, images: [], tags: ['plumbing', 'pvc'], status: ProductStatus.ACTIVE, supplierIds: ['sup-2'], createdAt: new Date('2023-02-10'), updatedAt: new Date('2026-07-20') },
-  { id: 'prod-5', sku: 'TIL-FLR-6060', name: 'Floor Tiles 60x60cm (Box)', description: 'Polished porcelain floor tiles, 60x60cm, 4 pieces per box (1.44sqm coverage).', category: 'Tiles & Flooring', subCategory: 'Floor Tiles', brand: 'Porcelain Palace', unitOfMeasure: 'BOX', costPrice: 5000, sellingPrice: 7500, stockQuantity: 3370, weight: 32, dimensions: { length: 62, width: 62, height: 8 }, images: [], tags: ['tiles', 'flooring'], status: ProductStatus.ACTIVE, supplierIds: ['sup-5'], createdAt: new Date('2023-02-20'), updatedAt: new Date('2026-06-30') },
-  { id: 'prod-6', sku: 'ELC-CBL-15-100', name: 'Electrical Cable 1.5mm (100m Roll)', description: 'Single-core PVC-insulated copper wiring cable, 1.5mm², 100-metre roll.', category: 'Electrical', subCategory: 'Cables', brand: 'Coleman', unitOfMeasure: 'EACH', costPrice: 11000, sellingPrice: 15000, stockQuantity: 665, weight: 12, dimensions: { length: 40, width: 40, height: 15 }, images: [], tags: ['electrical', 'cable'], status: ProductStatus.ACTIVE, supplierIds: ['sup-3'], createdAt: new Date('2023-03-01'), updatedAt: new Date('2026-05-20') },
+  { id: 'prod-4', sku: 'PVC-4IN-6M', name: 'PVC Pipes 4-inch (Length 6m)', description: 'Schedule-40 uPVC drainage pipe, 4-inch diameter, 6-metre length, solvent-weld ends.', category: 'Plumbing & Pipes', subCategory: 'Pipes', brand: 'Niger Delta Plastics', unitOfMeasure: 'EACH', costPrice: 5000, sellingPrice: 7000, stockQuantity: 4540, weight: 8, dimensions: { length: 600, width: 10, height: 10 }, images: [], tags: ['plumbing', 'pvc'], status: ProductStatus.ACTIVE, supplierIds: ['2'], createdAt: new Date('2023-02-10'), updatedAt: new Date('2026-07-20') },
+  { id: 'prod-5', sku: 'TIL-FLR-6060', name: 'Floor Tiles 60x60cm (Box)', description: 'Polished porcelain floor tiles, 60x60cm, 4 pieces per box (1.44sqm coverage).', category: 'Tiles & Flooring', subCategory: 'Floor Tiles', brand: 'Porcelain Palace', unitOfMeasure: 'BOX', costPrice: 5000, sellingPrice: 7500, stockQuantity: 3370, weight: 32, dimensions: { length: 62, width: 62, height: 8 }, images: [], tags: ['tiles', 'flooring'], status: ProductStatus.ACTIVE, supplierIds: ['5'], createdAt: new Date('2023-02-20'), updatedAt: new Date('2026-06-30') },
+  { id: 'prod-6', sku: 'ELC-CBL-15-100', name: 'Electrical Cable 1.5mm (100m Roll)', description: 'Single-core PVC-insulated copper wiring cable, 1.5mm², 100-metre roll.', category: 'Electrical', subCategory: 'Cables', brand: 'Coleman', unitOfMeasure: 'EACH', costPrice: 11000, sellingPrice: 15000, stockQuantity: 665, weight: 12, dimensions: { length: 40, width: 40, height: 15 }, images: [], tags: ['electrical', 'cable'], status: ProductStatus.ACTIVE, supplierIds: ['3'], createdAt: new Date('2023-03-01'), updatedAt: new Date('2026-05-20') },
   { id: 'prod-7', sku: 'ROF-LS-MTR', name: 'Roofing Sheet Long Span (Per Meter)', description: 'Pre-painted aluminium long-span roofing sheet, 0.45mm gauge, sold per linear metre.', category: 'Roofing', subCategory: 'Roofing Sheets', brand: 'Colorbond', unitOfMeasure: 'METER', costPrice: 6000, sellingPrice: 8500, stockQuantity: 8020, weight: 3.5, dimensions: { length: 100, width: 90, height: 1 }, images: [], tags: ['roofing', 'aluminium'], status: ProductStatus.ACTIVE, supplierIds: [], createdAt: new Date('2023-03-10'), updatedAt: new Date('2026-08-01') },
-  { id: 'prod-8', sku: 'PLY-18MM-4X8', name: 'Plywood Sheet 18mm (4x8ft)', description: 'Marine-grade plywood sheet, 18mm thickness, 4ft x 8ft panel.', category: 'Wood & Timber', subCategory: 'Plywood', brand: 'Tropical Timber', unitOfMeasure: 'EACH', costPrice: 22000, sellingPrice: 30000, stockQuantity: 570, weight: 28, dimensions: { length: 244, width: 122, height: 1.8 }, images: [], tags: ['wood', 'plywood'], status: ProductStatus.ACTIVE, supplierIds: ['sup-4'], createdAt: new Date('2023-03-20'), updatedAt: new Date('2026-07-01') },
-  { id: 'prod-9', sku: 'SAN-WC-SUITE', name: 'Sanitary Ware — WC Suite Set', description: 'Close-coupled ceramic WC suite with cistern, seat and fittings included.', category: 'Sanitary Ware', subCategory: 'WC Suites', brand: 'Roca', unitOfMeasure: 'EACH', costPrice: 200000, sellingPrice: 260000, stockQuantity: 28, weight: 35, dimensions: { length: 70, width: 40, height: 75 }, images: [], tags: ['sanitary', 'bathroom'], status: ProductStatus.ACTIVE, supplierIds: ['sup-6'], createdAt: new Date('2023-04-01'), updatedAt: new Date('2026-06-15') },
-  { id: 'prod-10', sku: 'SAN-WB-SET', name: 'Ceramic Wash Basin Set', description: 'Pedestal-mounted ceramic wash basin with tap and waste fittings — currently out of stock.', category: 'Sanitary Ware', subCategory: 'Wash Basins', brand: 'Roca', unitOfMeasure: 'EACH', costPrice: 45000, sellingPrice: 60000, stockQuantity: 0, weight: 18, dimensions: { length: 55, width: 45, height: 85 }, images: [], tags: ['sanitary', 'basin'], status: ProductStatus.OUT_OF_STOCK, supplierIds: ['sup-6'], createdAt: new Date('2023-05-05'), updatedAt: new Date('2026-08-10') },
-  { id: 'prod-11', sku: 'HDW-SCR-200', name: 'Wood Screws Assorted Box (200pc)', description: 'Mixed-size zinc-plated wood screws, 200 pieces per box, for general carpentry.', category: 'Hardware & Fasteners', subCategory: 'Screws & Fasteners', brand: 'Ace Hardware', unitOfMeasure: 'BOX', costPrice: 3500, sellingPrice: 5000, stockQuantity: 340, weight: 2.5, dimensions: { length: 20, width: 15, height: 8 }, images: [], tags: ['hardware', 'fasteners'], status: ProductStatus.ACTIVE, supplierIds: ['sup-8'], createdAt: new Date('2023-05-15'), updatedAt: new Date('2026-07-05') },
-  { id: 'prod-12', sku: 'ELC-FAN-56W', name: 'Ceiling Fan 56-inch White', description: 'Three-blade ceiling fan with light kit, 56-inch sweep, remote control included.', category: 'Electrical', subCategory: 'Fans & Lighting', brand: 'Binatone', unitOfMeasure: 'EACH', costPrice: 18000, sellingPrice: 25000, stockQuantity: 210, weight: 6, dimensions: { length: 142, width: 142, height: 40 }, images: [], tags: ['electrical', 'fan'], status: ProductStatus.ACTIVE, supplierIds: ['sup-3'], createdAt: new Date('2023-06-01'), updatedAt: new Date('2026-06-20') },
-  { id: 'prod-13', sku: 'ELC-WH-30L-OLD', name: 'Water Heater 30L (Old Model)', description: 'Discontinued 30-litre electric storage water heater, replaced by newer energy-efficient model.', category: 'Electrical', subCategory: 'Water Heaters', brand: 'Binatone', unitOfMeasure: 'EACH', costPrice: 35000, sellingPrice: 48000, stockQuantity: 15, weight: 14, dimensions: { length: 45, width: 45, height: 60 }, images: [], tags: ['electrical', 'discontinued'], status: ProductStatus.DISCONTINUED, supplierIds: ['sup-3'], createdAt: new Date('2022-11-10'), updatedAt: new Date('2026-01-05') }
+  { id: 'prod-8', sku: 'PLY-18MM-4X8', name: 'Plywood Sheet 18mm (4x8ft)', description: 'Marine-grade plywood sheet, 18mm thickness, 4ft x 8ft panel.', category: 'Wood & Timber', subCategory: 'Plywood', brand: 'Tropical Timber', unitOfMeasure: 'EACH', costPrice: 22000, sellingPrice: 30000, stockQuantity: 570, weight: 28, dimensions: { length: 244, width: 122, height: 1.8 }, images: [], tags: ['wood', 'plywood'], status: ProductStatus.ACTIVE, supplierIds: ['4'], createdAt: new Date('2023-03-20'), updatedAt: new Date('2026-07-01') },
+  { id: 'prod-9', sku: 'SAN-WC-SUITE', name: 'Sanitary Ware — WC Suite Set', description: 'Close-coupled ceramic WC suite with cistern, seat and fittings included.', category: 'Sanitary Ware', subCategory: 'WC Suites', brand: 'Roca', unitOfMeasure: 'EACH', costPrice: 200000, sellingPrice: 260000, stockQuantity: 28, weight: 35, dimensions: { length: 70, width: 40, height: 75 }, images: [], tags: ['sanitary', 'bathroom'], status: ProductStatus.ACTIVE, supplierIds: ['6'], createdAt: new Date('2023-04-01'), updatedAt: new Date('2026-06-15') },
+  { id: 'prod-10', sku: 'SAN-WB-SET', name: 'Ceramic Wash Basin Set', description: 'Pedestal-mounted ceramic wash basin with tap and waste fittings — currently out of stock.', category: 'Sanitary Ware', subCategory: 'Wash Basins', brand: 'Roca', unitOfMeasure: 'EACH', costPrice: 45000, sellingPrice: 60000, stockQuantity: 0, weight: 18, dimensions: { length: 55, width: 45, height: 85 }, images: [], tags: ['sanitary', 'basin'], status: ProductStatus.OUT_OF_STOCK, supplierIds: ['6'], createdAt: new Date('2023-05-05'), updatedAt: new Date('2026-08-10') },
+  { id: 'prod-11', sku: 'HDW-SCR-200', name: 'Wood Screws Assorted Box (200pc)', description: 'Mixed-size zinc-plated wood screws, 200 pieces per box, for general carpentry.', category: 'Hardware & Fasteners', subCategory: 'Screws & Fasteners', brand: 'Ace Hardware', unitOfMeasure: 'BOX', costPrice: 3500, sellingPrice: 5000, stockQuantity: 340, weight: 2.5, dimensions: { length: 20, width: 15, height: 8 }, images: [], tags: ['hardware', 'fasteners'], status: ProductStatus.ACTIVE, supplierIds: ['8'], createdAt: new Date('2023-05-15'), updatedAt: new Date('2026-07-05') },
+  { id: 'prod-12', sku: 'ELC-FAN-56W', name: 'Ceiling Fan 56-inch White', description: 'Three-blade ceiling fan with light kit, 56-inch sweep, remote control included.', category: 'Electrical', subCategory: 'Fans & Lighting', brand: 'Binatone', unitOfMeasure: 'EACH', costPrice: 18000, sellingPrice: 25000, stockQuantity: 210, weight: 6, dimensions: { length: 142, width: 142, height: 40 }, images: [], tags: ['electrical', 'fan'], status: ProductStatus.ACTIVE, supplierIds: ['3'], createdAt: new Date('2023-06-01'), updatedAt: new Date('2026-06-20') },
+  { id: 'prod-13', sku: 'ELC-WH-30L-OLD', name: 'Water Heater 30L (Old Model)', description: 'Discontinued 30-litre electric storage water heater, replaced by newer energy-efficient model.', category: 'Electrical', subCategory: 'Water Heaters', brand: 'Binatone', unitOfMeasure: 'EACH', costPrice: 35000, sellingPrice: 48000, stockQuantity: 15, weight: 14, dimensions: { length: 45, width: 45, height: 60 }, images: [], tags: ['electrical', 'discontinued'], status: ProductStatus.DISCONTINUED, supplierIds: ['3'], createdAt: new Date('2022-11-10'), updatedAt: new Date('2026-01-05') }
 ];
 
 const MOCK_DASHBOARD_DATA: InventoryDashboardData = {
@@ -956,6 +963,13 @@ const MOCK_DASHBOARD_DATA: InventoryDashboardData = {
   providedIn: 'root'
 })
 export class InventoryService {
+
+  private readonly baseUrl = environment.apiBaseUrl + '/x/api/v2/commerce';
+
+  private get tenantId(): string {
+    const h = window.location.hostname;
+    return (h.includes('localhost') || h.includes('127.0.0.1')) ? 'optimax' : h.split('.')[0] || 'optimax';
+  }
 
   // ----------------------------------------------------
   // STATE MANAGEMENT (RxJS subjects)
@@ -1002,7 +1016,7 @@ export class InventoryService {
         productId: 'prod-1',
         productName: 'Cement Dangote Grade 42.5R',
         sku: 'CEM-DG-425',
-        branchId: 'br-2',
+        branchId: '2',
         branchName: 'Abuja Distribution Hub',
         currentStock: 0,
         reorderPoint: 80,
@@ -1027,7 +1041,7 @@ export class InventoryService {
         productId: 'prod-2',
         productName: 'Iron Rod 16mm (Per Ton)',
         sku: 'IRN-16MM-TON',
-        branchId: 'br-5',
+        branchId: '5',
         branchName: 'Ibadan Regional Store',
         currentStock: 8,
         reorderPoint: 15,
@@ -1052,7 +1066,7 @@ export class InventoryService {
         productId: 'prod-3',
         productName: 'Wall Paint White Satin 20L',
         sku: 'PNT-WS-20L',
-        branchId: 'br-2',
+        branchId: '2',
         branchName: 'Abuja Distribution Hub',
         currentStock: 85,
         reorderPoint: 100,
@@ -1077,7 +1091,7 @@ export class InventoryService {
         productId: 'prod-4',
         productName: 'PVC Pipes 4-inch (Length 6m)',
         sku: 'PVC-4IN-6M',
-        branchId: 'br-6',
+        branchId: '6',
         branchName: 'Enugu Express Depot',
         currentStock: 360,
         reorderPoint: 100,
@@ -1102,7 +1116,7 @@ export class InventoryService {
         productId: 'prod-7',
         productName: 'Roofing Sheet Long Span (Per Meter)',
         sku: 'ROF-LS-MTR',
-        branchId: 'br-4',
+        branchId: '4',
         branchName: 'Kano Outlet',
         currentStock: 1200,
         reorderPoint: 300,
@@ -1127,7 +1141,7 @@ export class InventoryService {
         productId: 'prod-1',
         productName: 'Cement Dangote Grade 42.5R',
         sku: 'CEM-DG-425',
-        branchId: 'br-3',
+        branchId: '3',
         branchName: 'Port Harcourt Store',
         currentStock: 550,
         reorderPoint: 150,
@@ -1152,7 +1166,7 @@ export class InventoryService {
         productId: 'prod-5',
         productName: 'Floor Tiles 60x60cm (Box)',
         sku: 'TIL-FLR-6060',
-        branchId: 'br-2',
+        branchId: '2',
         branchName: 'Abuja Distribution Hub',
         currentStock: 950,
         reorderPoint: 200,
@@ -1177,7 +1191,7 @@ export class InventoryService {
         productId: 'prod-9',
         productName: 'Sanitary Ware — WC Suite Set',
         sku: 'SAN-WC-SUITE',
-        branchId: 'br-3',
+        branchId: '3',
         branchName: 'Port Harcourt Store',
         currentStock: 28,
         reorderPoint: 10,
@@ -1202,7 +1216,7 @@ export class InventoryService {
         productId: 'prod-6',
         productName: 'Electrical Cable 1.5mm (100m Roll)',
         sku: 'ELC-CBL-15-100',
-        branchId: 'br-5',
+        branchId: '5',
         branchName: 'Ibadan Regional Store',
         currentStock: 25,
         reorderPoint: 80,
@@ -1227,7 +1241,7 @@ export class InventoryService {
         productId: 'prod-8',
         productName: 'Plywood Sheet 18mm (4x8ft)',
         sku: 'PLY-18MM-4X8',
-        branchId: 'br-1',
+        branchId: '1',
         branchName: 'Lagos Main Warehouse',
         currentStock: 570,
         reorderPoint: 100,
@@ -1257,7 +1271,7 @@ export class InventoryService {
   // ----------------------------------------------------
   // CONSTRUCTOR – seed LocalStorage if empty
   // ----------------------------------------------------
-  constructor() {
+  constructor(private http: HttpClient) {
     if (!localStorage.getItem(LOCAL_KEYS.DASHBOARD)) {
       // seed all keys with initial mock data
       localStorage.setItem(LOCAL_KEYS.DASHBOARD, JSON.stringify(MOCK_DASHBOARD_DATA));
@@ -1360,12 +1374,67 @@ export class InventoryService {
   // DASHBOARD
   // ----------------------------------------------------
   /** Get full dashboard data */
+  /**
+   * The API's recentMovements entries carry flat `fromLocation`/`toLocation` strings and
+   * `createdById`/`approvedById`, but the rest of this app (movement forms/detail/approval)
+   * works off StockMovement.fromLocation/toLocation {type,id,name} and createdBy/approvedBy.
+   * This is a read-only reconstruction for dashboard display only — the movements create/edit
+   * endpoints haven't been connected yet, so there's no matching write-side flattener, and the
+   * `type` on each location is a guess (WAREHOUSE) since a bare string doesn't carry it.
+   */
+  private stockMovementFromApi(raw: any): StockMovement {
+    return {
+      ...raw,
+      fromLocation: { type: 'WAREHOUSE', id: raw.fromLocation, name: raw.fromLocation },
+      toLocation: { type: 'WAREHOUSE', id: raw.toLocation, name: raw.toLocation },
+      createdBy: raw.createdById,
+      approvedBy: raw.approvedById,
+      expiryDate: new Date(raw.expiryDate),
+      createdAt: new Date(raw.createdAt),
+      approvedAt: raw.approvedAt ? new Date(raw.approvedAt) : raw.approvedAt,
+      completedAt: raw.completedAt ? new Date(raw.completedAt) : raw.completedAt,
+      updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : raw.updatedAt,
+      scheduledDate: raw.scheduledDate ? new Date(raw.scheduledDate) : raw.scheduledDate
+    };
+  }
+
+  /**
+   * GET /inventory/dashboard — falls back to the local mock/localStorage copy if the API is
+   * unavailable. Note: the API response has no `topProducts` field, so that part of the
+   * dashboard is merged in from the local copy regardless of whether the live call succeeds.
+   */
   getDashboardData(): Observable<InventoryDashboardData> {
     this.loadingSubject.next(true);
-    const data = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-    this.dashboardDataSubject.next(data);
-    this.loadingSubject.next(false);
-    return of(data);
+    const cached = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
+
+    return this.http.get<any>(`${this.baseUrl}/inventory/dashboard`, {
+      params: new HttpParams().set('tenantId', this.tenantId)
+    }).pipe(
+      map(raw => ({
+        stats: { ...raw.stats, lastUpdated: new Date(raw.stats.lastUpdated) },
+        alerts: (raw.alerts || []).map((a: any) => ({
+          ...a,
+          createdAt: new Date(a.createdAt),
+          resolvedAt: a.resolvedAt ? new Date(a.resolvedAt) : a.resolvedAt
+        })),
+        recentMovements: (raw.recentMovements || []).map((m: any) => this.stockMovementFromApi(m)),
+        branchSummaries: raw.branchSummaries || [],
+        quickActions: raw.quickActions || [],
+        // Not part of this endpoint's response — carried over from whatever we already had.
+        topProducts: cached?.topProducts || []
+      } as InventoryDashboardData)),
+      tap(data => {
+        localStorage.setItem(LOCAL_KEYS.DASHBOARD, JSON.stringify(data));
+        this.dashboardDataSubject.next(data);
+        this.loadingSubject.next(false);
+      }),
+      catchError(() => {
+        const data = cached as InventoryDashboardData;
+        this.dashboardDataSubject.next(data);
+        this.loadingSubject.next(false);
+        return of(data);
+      })
+    );
   }
 
   /** Get only stats */
@@ -1401,7 +1470,7 @@ export class InventoryService {
     const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
     const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string || '[]') as BranchInventory[];
     const summaries = branches.map(branch =>
-      this.computeBranchStockSummary(branch, allInventory.filter(i => i.branchId === branch.id))
+      this.computeBranchStockSummary(branch, allInventory.filter(i => i.branchId === String(branch.id)))
     );
     return of(summaries);
   }
@@ -1427,7 +1496,7 @@ export class InventoryService {
     });
 
     return {
-      branchId: branch.id,
+      branchId: String(branch.id),
       branchName: branch.name,
       totalProducts: inventory.length,
       totalStockValue,
@@ -1438,9 +1507,9 @@ export class InventoryService {
   }
 
   /** Resolve an alert – marks it resolved in storage */
-  resolveAlert(alertId: string): Observable<void> {
+  resolveAlert(alertId: string | number): Observable<void> {
     const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-    const alert = dash.alerts.find(a => a.id === alertId);
+    const alert = dash.alerts.find(a => a.id === Number(alertId));
     if (alert) {
       alert.isResolved = true;
       localStorage.setItem(LOCAL_KEYS.DASHBOARD, JSON.stringify(dash));
@@ -1630,43 +1699,175 @@ export class InventoryService {
   // ----------------------------------------------------
   // BRANCHES
   // ----------------------------------------------------
+  // The /inventory/branches API only has flat `location: string` and
+  // `contactEmployeeId: string` fields, but the rest of this app (the branch
+  // form, branch detail page, branch-selector, branch-inventory filtering)
+  // works off a richer Branch.location {address,city,state,country,postalCode,
+  // lat,lng} / Branch.contact {manager,phone,email} shape. Rather than gut that
+  // UI, we keep the rich shape as the app's model and translate at the API
+  // boundary — branchToApiPayload() flattens it going out, branchFromApiResponse()
+  // reconstructs it coming back. This is inherently lossy against a real backend:
+  // phone/email and the individual address parts (city/state/country/postalCode/
+  // lat/lng) have no wire representation, so a fresh GET from the real API can
+  // only recover the manager name (via contactEmployeeId) and the address line
+  // (via location) — the rest reverts to blank unless we still have a local copy
+  // to merge with (which merge*() does whenever one's available).
+
+  /** Flattens the rich Branch shape into the API's {location, contactEmployeeId} fields. */
+  private branchToApiPayload(branch: Partial<Branch>) {
+    const loc = branch.location;
+    const location = loc
+      ? [loc.address, loc.city, loc.state, loc.country, loc.postalCode].filter(Boolean).join(', ')
+      : '';
+    return {
+      name: branch.name,
+      code: branch.code,
+      type: branch.type,
+      location,
+      contactEmployeeId: branch.contact?.manager || '',
+      status: branch.status
+    };
+  }
+
+  /**
+   * Reconstructs the rich Branch shape from a flat API response. When `existing`
+   * is passed (e.g. we already had this branch locally), its location/contact
+   * detail is preserved instead of being blanked out by fields the wire format
+   * doesn't carry.
+   */
+  private branchFromApiResponse(raw: any, existing?: Branch): Branch {
+    return {
+      id: raw.id,
+      tenantId: raw.tenantId,
+      name: raw.name,
+      code: raw.code,
+      type: raw.type,
+      location: existing?.location ?? {
+        address: raw.location || '',
+        city: '',
+        state: '',
+        country: '',
+        postalCode: '',
+        lat: 0,
+        lng: 0
+      },
+      contact: existing?.contact ?? {
+        manager: raw.contactEmployeeId || '',
+        phone: '',
+        email: ''
+      },
+      status: raw.status,
+      createdAt: new Date(raw.createdAt),
+      updatedAt: new Date(raw.updatedAt)
+    };
+  }
+
+  /** GET /inventory/branches — falls back to the local mock/localStorage copy if the API is unavailable. */
   getBranches(): Observable<Branch[]> {
-    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[];
-    this.branchesSubject.next(branches);
-    return of(branches);
+    const cached = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
+
+    return this.http.get<any[]>(`${this.baseUrl}/inventory/branches`, {
+      params: new HttpParams().set('tenantId', this.tenantId)
+    }).pipe(
+      map(res => Array.isArray(res) ? res : []),
+      map(rawBranches => rawBranches.map(raw => this.branchFromApiResponse(raw, cached.find(b => b.id === raw.id)))),
+      tap(branches => {
+        localStorage.setItem(LOCAL_KEYS.BRANCHES, JSON.stringify(branches));
+        this.branchesSubject.next(branches);
+      }),
+      catchError(() => {
+        this.branchesSubject.next(cached);
+        return of(cached);
+      })
+    );
   }
 
-  getBranch(id: string): Observable<Branch> {
-    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[];
-    const branch = branches.find(b => b.id === id);
-    return branch ? of(branch) : throwError(() => new Error('Branch not found'));
+  /** GET /inventory/branches/{id} — falls back to the local mock/localStorage copy if the API is unavailable. */
+  getBranch(id: string | number): Observable<Branch> {
+    const numericId = Number(id);
+    const cached = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
+    const existing = cached.find(b => b.id === numericId);
+
+    return this.http.get<any>(`${this.baseUrl}/inventory/branches/${numericId}`).pipe(
+      map(raw => this.branchFromApiResponse(raw, existing)),
+      catchError(() => existing ? of(existing) : throwError(() => new Error('Branch not found')))
+    );
   }
 
-  updateBranch(id: string, branch: Partial<Branch>): Observable<Branch> {
-    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[];
-    const index = branches.findIndex(b => b.id === id);
+  /** PUT /inventory/branches/{id} — falls back to updating the local copy if the API is unavailable. */
+  updateBranch(id: string | number, branch: Partial<Branch>): Observable<Branch> {
+    const numericId = Number(id);
+    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
+    const index = branches.findIndex(b => b.id === numericId);
     if (index === -1) {
       return throwError(() => new Error('Branch not found'));
     }
-    const updated = { ...branches[index], ...branch, updatedAt: new Date() } as Branch;
-    branches[index] = updated;
-    localStorage.setItem(LOCAL_KEYS.BRANCHES, JSON.stringify(branches));
-    this.branchesSubject.next(branches);
-    return of(updated);
+    const merged = { ...branches[index], ...branch } as Branch;
+
+    return this.http.put<any>(`${this.baseUrl}/inventory/branches/${numericId}`, this.branchToApiPayload(merged)).pipe(
+      map(raw => this.branchFromApiResponse(raw, merged)),
+      tap(updated => {
+        branches[index] = updated;
+        localStorage.setItem(LOCAL_KEYS.BRANCHES, JSON.stringify(branches));
+        this.branchesSubject.next(branches);
+      }),
+      catchError(err => {
+        console.error('[InventoryService] updateBranch failed, using local fallback:', err);
+        const updated = { ...merged, updatedAt: new Date() };
+        branches[index] = updated;
+        localStorage.setItem(LOCAL_KEYS.BRANCHES, JSON.stringify(branches));
+        this.branchesSubject.next(branches);
+        return of(updated);
+      })
+    );
   }
 
+  /** POST /inventory/branches — falls back to a local-only record if the API is unavailable. */
   createBranch(branch: Partial<Branch>): Observable<Branch> {
-    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[];
-    const newBranch: Branch = {
-      ...(branch as Branch),
-      id: 'br-' + Date.now(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    } as Branch;
-    branches.push(newBranch);
-    localStorage.setItem(LOCAL_KEYS.BRANCHES, JSON.stringify(branches));
-    this.branchesSubject.next(branches);
-    return of(newBranch);
+    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
+
+    return this.http.post<any>(`${this.baseUrl}/inventory/branches`, this.branchToApiPayload(branch)).pipe(
+      map(raw => this.branchFromApiResponse(raw, branch as Branch)),
+      tap(newBranch => {
+        branches.push(newBranch);
+        localStorage.setItem(LOCAL_KEYS.BRANCHES, JSON.stringify(branches));
+        this.branchesSubject.next(branches);
+      }),
+      catchError(err => {
+        console.error('[InventoryService] createBranch failed, using local fallback:', err);
+        const newBranch: Branch = {
+          ...(branch as Branch),
+          id: Date.now(),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        branches.push(newBranch);
+        localStorage.setItem(LOCAL_KEYS.BRANCHES, JSON.stringify(branches));
+        this.branchesSubject.next(branches);
+        return of(newBranch);
+      })
+    );
+  }
+
+  /** DELETE /inventory/branches/{id} — falls back to removing from the local copy if the API is unavailable. */
+  deleteBranch(id: string | number): Observable<void> {
+    const numericId = Number(id);
+    return this.http.delete<void>(`${this.baseUrl}/inventory/branches/${numericId}`).pipe(
+      tap(() => {
+        const branches = (JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[])
+          .filter(b => b.id !== numericId);
+        localStorage.setItem(LOCAL_KEYS.BRANCHES, JSON.stringify(branches));
+        this.branchesSubject.next(branches);
+      }),
+      catchError(err => {
+        console.error('[InventoryService] deleteBranch failed, using local fallback:', err);
+        const branches = (JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[])
+          .filter(b => b.id !== numericId);
+        localStorage.setItem(LOCAL_KEYS.BRANCHES, JSON.stringify(branches));
+        this.branchesSubject.next(branches);
+        return of(void 0);
+      })
+    );
   }
 
   /** Branch types (Standard/Flagship/Mini + any custom ones users have added). */
@@ -1729,11 +1930,11 @@ export class InventoryService {
   getLocationsByType(type: string): Observable<{ id: string; name: string }[]> {
     if (type === 'BRANCH') {
       const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
-      return of(branches.map(b => ({ id: b.id, name: b.name })));
+      return of(branches.map(b => ({ id: String(b.id), name: b.name })));
     }
     if (type === 'SUPPLIER') {
       const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[];
-      return of(suppliers.map(s => ({ id: s.id, name: s.name })));
+      return of(suppliers.map(s => ({ id: String(s.id), name: s.name })));
     }
     const generic = JSON.parse(localStorage.getItem(LOCAL_KEYS.GENERIC_LOCATIONS) as string || '[]') as { id: string; type: string; name: string }[];
     return of(generic.filter(l => l.type === type).map(l => ({ id: l.id, name: l.name })));
@@ -1754,7 +1955,12 @@ export class InventoryService {
   // duplicated here — this file is being edited concurrently and that's where the current
   // implementation lives; it already returns BranchInventory[] directly, not paginated).
 
-  /** Create or update a single branch inventory record (upsert by branchId + productId). */
+  /**
+   * Create or update a single branch inventory record (upsert by branchId + productId).
+   * Calls POST /inventory/stock for a new record, or PUT /inventory/stock/{id} when one
+   * already exists for this branch+product — falling back to the local mock/localStorage
+   * copy if the API is unavailable.
+   */
   saveBranchInventoryItem(data: {
     branchId: string;
     productId: string;
@@ -1769,7 +1975,7 @@ export class InventoryService {
     const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
     const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
 
-    const branch = branches.find(b => b.id === data.branchId);
+    const branch = branches.find(b => String(b.id) === data.branchId);
     const product = products.find(p => p.id === data.productId);
 
     if (!product) {
@@ -1780,8 +1986,7 @@ export class InventoryService {
     const existingIndex = allInventory.findIndex(i => i.branchId === data.branchId && i.productId === data.productId);
     const existingRecord = existingIndex > -1 ? allInventory[existingIndex] : undefined;
 
-    const record: BranchInventory = {
-      id: existingRecord ? existingRecord.id : 'binv-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    const payload = {
       branchId: data.branchId,
       branchName: branch?.name || '',
       productId: data.productId,
@@ -1795,26 +2000,41 @@ export class InventoryService {
       reorderQuantity: existingRecord ? existingRecord.reorderQuantity : data.reorderPoint,
       safetyStock: data.safetyStock,
       sellingPrice: data.sellingPrice,
-      costPrice: data.costPrice || 0,
-      lastUpdated: new Date()
+      costPrice: data.costPrice || 0
     };
 
-    if (existingIndex > -1) {
-      allInventory[existingIndex] = record;
-    } else {
-      allInventory.push(record);
-    }
+    const persistLocally = (record: BranchInventory): BranchInventory => {
+      if (existingIndex > -1) {
+        allInventory[existingIndex] = record;
+      } else {
+        allInventory.push(record);
+      }
+      try {
+        localStorage.setItem(LOCAL_KEYS.BRANCH_INVENTORY, JSON.stringify(allInventory));
+      } catch { /* storage limit reached — keep going, in-memory state is still updated */ }
+      this.branchInventorySubject.next(allInventory.filter(i => i.branchId === data.branchId));
+      return record;
+    };
 
-    try {
-      localStorage.setItem(LOCAL_KEYS.BRANCH_INVENTORY, JSON.stringify(allInventory));
-    } catch (e) {
-      this.loadingSubject.next(false);
-      return throwError(() => new Error('Failed to save — storage limit reached.'));
-    }
+    const request = existingRecord
+      ? this.http.put<BranchInventory>(`${this.baseUrl}/inventory/stock/${existingRecord.id}`, payload)
+      : this.http.post<BranchInventory>(`${this.baseUrl}/inventory/stock`, payload);
 
-    this.branchInventorySubject.next(allInventory.filter(i => i.branchId === data.branchId));
-    this.loadingSubject.next(false);
-    return of(record);
+    return request.pipe(
+      map(saved => persistLocally({ ...saved, lastUpdated: new Date() })),
+      tap(() => this.loadingSubject.next(false)),
+      catchError(err => {
+        console.error('[InventoryService] saveBranchInventoryItem failed, using local fallback:', err);
+        const record: BranchInventory = {
+          id: existingRecord ? existingRecord.id : Date.now(),
+          ...payload,
+          lastUpdated: new Date()
+        };
+        persistLocally(record);
+        this.loadingSubject.next(false);
+        return of(record);
+      })
+    );
   }
 
   setCurrentBranch(branchId: string | null): void {
@@ -1893,7 +2113,7 @@ export class InventoryService {
     const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
     const newMovement: StockMovement = {
       ...(movement as StockMovement),
-      id: 'mov-' + Date.now(),
+      id: Date.now(),
       createdAt: new Date(),
       status: MovementStatus.PENDING
     } as StockMovement;
@@ -1905,10 +2125,10 @@ export class InventoryService {
   }
 
   /** Update a movement */
-  updateMovement(id: string, movement: Partial<StockMovement>): Observable<StockMovement> {
+  updateMovement(id: string | number, movement: Partial<StockMovement>): Observable<StockMovement> {
     this.loadingSubject.next(true);
     const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
-    const index = movements.findIndex(m => m.id === id);
+    const index = movements.findIndex(m => m.id === Number(id));
     if (index === -1) {
       this.loadingSubject.next(false);
       return throwError(() => new Error('Movement not found'));
@@ -1935,10 +2155,10 @@ export class InventoryService {
 
   /** Delete a movement. Only meant for PENDING movements (nothing has moved yet) — the calling
    *  component is responsible for that check, same as deleteProduct()'s convention. */
-  deleteMovement(id: string): Observable<void> {
+  deleteMovement(id: string | number): Observable<void> {
     this.loadingSubject.next(true);
     let movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
-    movements = movements.filter(m => m.id !== id);
+    movements = movements.filter(m => m.id !== Number(id));
     localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
     this.movementsSubject.next(movements);
     this.loadingSubject.next(false);
@@ -1994,99 +2214,323 @@ export class InventoryService {
   // ----------------------------------------------------
   // CATEGORIES CRUD
   // ----------------------------------------------------
+  /** GET /categories — falls back to the local mock/localStorage copy if the API is unavailable. */
   getCategories(): Observable<Category[]> {
-    const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
-    return of(categories);
+    return this.http.get<Category[]>(`${this.baseUrl}/categories`, {
+      params: new HttpParams().set('tenantId', this.tenantId)
+    }).pipe(
+      map(res => Array.isArray(res) ? res : []),
+      tap(categories => localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories))),
+      catchError(() => {
+        const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string || '[]') as Category[];
+        return of(categories);
+      })
+    );
   }
+
+  /** POST /categories — falls back to a local-only record if the API is unavailable. */
   createCategory(cat: Partial<Category>): Observable<Category[]> {
-    const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
-    const newCat: Category = { ...(cat as Category), id: 'cat-' + Date.now() } as Category;
-    categories.push(newCat);
-    localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
-    return of(categories);
+    const payload = { name: cat.name, description: cat.description };
+
+    return this.http.post<Category>(`${this.baseUrl}/categories`, payload).pipe(
+      map(saved => {
+        const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string || '[]') as Category[];
+        categories.push(saved);
+        localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
+        return categories;
+      }),
+      catchError(err => {
+        console.error('[InventoryService] createCategory failed, using local fallback:', err);
+        const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string || '[]') as Category[];
+        const newCat: Category = { ...(cat as Category), id: Date.now(), createdAt: new Date(), updatedAt: new Date() };
+        categories.push(newCat);
+        localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
+        return of(categories);
+      })
+    );
   }
-  updateCategory(id: string, cat: Partial<Category>): Observable<Category[]> {
-    const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
-    const idx = categories.findIndex(c => c.id === id);
-    if (idx === -1) return throwError(() => new Error('Category not found'));
-    const updated = { ...categories[idx], ...cat } as Category;
-    categories[idx] = updated;
-    localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
-    return of(categories);
+
+  /** PUT /categories/{id} — falls back to updating the local copy if the API is unavailable. */
+  updateCategory(id: number, cat: Partial<Category>): Observable<Category[]> {
+    const payload = { name: cat.name, description: cat.description };
+
+    return this.http.put<Category>(`${this.baseUrl}/categories/${id}`, payload).pipe(
+      map(saved => {
+        const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string || '[]') as Category[];
+        const idx = categories.findIndex(c => c.id === id);
+        if (idx > -1) categories[idx] = saved; else categories.push(saved);
+        localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
+        return categories;
+      }),
+      catchError(err => {
+        console.error('[InventoryService] updateCategory failed, using local fallback:', err);
+        const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string || '[]') as Category[];
+        const idx = categories.findIndex(c => c.id === id);
+        if (idx === -1) return throwError(() => new Error('Category not found'));
+        categories[idx] = { ...categories[idx], ...cat, updatedAt: new Date() };
+        localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
+        return of(categories);
+      })
+    );
   }
-  deleteCategory(id: string): Observable<Category[]> {
-    let categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
-    categories = categories.filter(c => c.id !== id);
-    localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
-    return of(categories);
+
+  /** DELETE /categories/{id} — falls back to removing from the local copy if the API is unavailable. */
+  deleteCategory(id: number): Observable<Category[]> {
+    return this.http.delete<void>(`${this.baseUrl}/categories/${id}`).pipe(
+      map(() => {
+        const categories = (JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string || '[]') as Category[])
+          .filter(c => c.id !== id);
+        localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
+        return categories;
+      }),
+      catchError(err => {
+        console.error('[InventoryService] deleteCategory failed, using local fallback:', err);
+        const categories = (JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string || '[]') as Category[])
+          .filter(c => c.id !== id);
+        localStorage.setItem(LOCAL_KEYS.CATEGORIES, JSON.stringify(categories));
+        return of(categories);
+      })
+    );
+  }
+
+  // ----------------------------------------------------
+  // INVENTORY NOTIFICATIONS (email/SMS/in-app alerts between branch managers and admins)
+  // ----------------------------------------------------
+
+  /** GET /inventory/notifications — send history, optionally filtered. */
+  getInventoryNotifications(filters?: InventoryAlertFilters): Observable<InventoryNotification[]> {
+    let params = new HttpParams().set('tenantId', this.tenantId);
+    if (filters?.type) params = params.set('type', filters.type);
+    if (filters?.channel) params = params.set('channel', filters.channel);
+    if (filters?.status) params = params.set('status', filters.status);
+    if (filters?.recipientRole) params = params.set('recipientRole', filters.recipientRole);
+    if (filters?.branchId) params = params.set('branchId', filters.branchId);
+    if (filters?.page) params = params.set('page', String(filters.page));
+    if (filters?.limit) params = params.set('limit', String(filters.limit));
+
+    return this.http.get<InventoryNotification[]>(`${this.baseUrl}/inventory/notifications`, { params }).pipe(
+      map(res => Array.isArray(res) ? res : []),
+      catchError(err => {
+        console.error('[InventoryService] getInventoryNotifications failed:', err);
+        return of([]);
+      })
+    );
+  }
+
+  /** GET /inventory/notifications/{id} — a single logged send (e.g. to check delivery status). */
+  getInventoryNotificationById(id: number): Observable<InventoryNotification> {
+    return this.http.get<InventoryNotification>(`${this.baseUrl}/inventory/notifications/${id}`);
+  }
+
+  /**
+   * Triggers an email/SMS/in-app alert to admins/branch managers — e.g. a low-stock alert or a
+   * transfer awaiting approval.
+   * NOTE: the spec labels this endpoint as GET, but a GET request can't carry the trigger
+   * payload (type/recipients/message/etc.) — this is almost certainly meant to be POST, which is
+   * what's implemented here. Confirm with whoever owns this endpoint if POST turns out wrong.
+   */
+  triggerInventoryAlert(request: TriggerInventoryAlertRequest): Observable<InventoryNotification[]> {
+    return this.http.post<InventoryNotification[]>(`${this.baseUrl}/inventory/notifications/trigger`, {
+      ...request,
+      tenantId: this.tenantId
+    }).pipe(
+      map(res => Array.isArray(res) ? res : []),
+      catchError(err => {
+        console.error('[InventoryService] triggerInventoryAlert failed:', err);
+        return of([]);
+      })
+    );
   }
 
   // ----------------------------------------------------
   // MEASUREMENT UNITS CRUD
   // ----------------------------------------------------
+  /** GET /measurement-units — falls back to the local mock/localStorage copy if the API is unavailable. */
   getMeasurementUnits(): Observable<MeasurementUnit[]> {
-    const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
-    return of(units);
+    return this.http.get<MeasurementUnit[]>(`${this.baseUrl}/measurement-units`, {
+      params: new HttpParams().set('tenantId', this.tenantId)
+    }).pipe(
+      map(res => Array.isArray(res) ? res : []),
+      tap(units => localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units))),
+      catchError(() => {
+        const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string || '[]') as MeasurementUnit[];
+        return of(units);
+      })
+    );
   }
+
+  /** POST /measurement-units — falls back to a local-only record if the API is unavailable. */
   createMeasurementUnit(unit: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
-    const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
-    const newUnit: MeasurementUnit = { ...(unit as MeasurementUnit), id: 'unit-' + Date.now() } as MeasurementUnit;
-    units.push(newUnit);
-    localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
-    return of(units);
+    const payload = { tenantId: this.tenantId, name: unit.name, code: unit.code, description: unit.description };
+
+    return this.http.post<MeasurementUnit>(`${this.baseUrl}/measurement-units`, payload).pipe(
+      map(saved => {
+        const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string || '[]') as MeasurementUnit[];
+        units.push(saved);
+        localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
+        return units;
+      }),
+      catchError(err => {
+        console.error('[InventoryService] createMeasurementUnit failed, using local fallback:', err);
+        const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string || '[]') as MeasurementUnit[];
+        const newUnit: MeasurementUnit = { ...(unit as MeasurementUnit), id: Date.now() };
+        units.push(newUnit);
+        localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
+        return of(units);
+      })
+    );
   }
-  updateMeasurementUnit(id: string, unit: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
-    const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
-    const idx = units.findIndex(u => u.id === id);
-    if (idx === -1) return throwError(() => new Error('Unit not found'));
-    const updated = { ...units[idx], ...unit } as MeasurementUnit;
-    units[idx] = updated;
-    localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
-    return of(units);
+
+  /** PUT /measurement-units/{id} — falls back to updating the local copy if the API is unavailable. */
+  updateMeasurementUnit(id: string | number, unit: Partial<MeasurementUnit>): Observable<MeasurementUnit[]> {
+    const numericId = Number(id);
+    const payload = { tenantId: this.tenantId, name: unit.name, code: unit.code, description: unit.description };
+
+    return this.http.put<MeasurementUnit>(`${this.baseUrl}/measurement-units/${numericId}`, payload).pipe(
+      map(saved => {
+        const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string || '[]') as MeasurementUnit[];
+        const idx = units.findIndex(u => u.id === numericId);
+        if (idx > -1) units[idx] = saved; else units.push(saved);
+        localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
+        return units;
+      }),
+      catchError(err => {
+        console.error('[InventoryService] updateMeasurementUnit failed, using local fallback:', err);
+        const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string || '[]') as MeasurementUnit[];
+        const idx = units.findIndex(u => u.id === numericId);
+        if (idx === -1) return throwError(() => new Error('Unit not found'));
+        units[idx] = { ...units[idx], ...unit };
+        localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
+        return of(units);
+      })
+    );
   }
-  deleteMeasurementUnit(id: string): Observable<MeasurementUnit[]> {
-    let units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string) as MeasurementUnit[];
-    units = units.filter(u => u.id !== id);
-    localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
-    return of(units);
+
+  /** DELETE /measurement-units/{id} — falls back to removing from the local copy if the API is unavailable. */
+  deleteMeasurementUnit(id: string | number): Observable<MeasurementUnit[]> {
+    const numericId = Number(id);
+    return this.http.delete<void>(`${this.baseUrl}/measurement-units/${numericId}`).pipe(
+      map(() => {
+        const units = (JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string || '[]') as MeasurementUnit[])
+          .filter(u => u.id !== numericId);
+        localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
+        return units;
+      }),
+      catchError(err => {
+        console.error('[InventoryService] deleteMeasurementUnit failed, using local fallback:', err);
+        const units = (JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string || '[]') as MeasurementUnit[])
+          .filter(u => u.id !== numericId);
+        localStorage.setItem(LOCAL_KEYS.MEASUREMENT_UNITS, JSON.stringify(units));
+        return of(units);
+      })
+    );
   }
 
   // ----------------------------------------------------
   // SUPPLIERS CRUD
   // ----------------------------------------------------
+
+  /** GET /suppliers — falls back to the local mock/localStorage copy if the API is unavailable. */
   getSuppliers(): Observable<Supplier[]> {
-    const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
-    return of(suppliers);
+    return this.http.get<Supplier[]>(`${this.baseUrl}/suppliers`, {
+      params: new HttpParams().set('tenantId', this.tenantId)
+    }).pipe(
+      map(res => Array.isArray(res) ? res : []),
+      tap(suppliers => localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers))),
+      catchError(() => {
+        const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[];
+        return of(suppliers);
+      })
+    );
   }
+
+  /** POST /suppliers — falls back to a local-only record if the API is unavailable. */
   createSupplier(supplier: Partial<Supplier>): Observable<Supplier[]> {
-    const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
-    const newSup: Supplier = { ...(supplier as Supplier), id: 'sup-' + Date.now() } as Supplier;
-    suppliers.push(newSup);
-    localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
-    return of(suppliers);
+    const payload = {
+      tenantId: this.tenantId,
+      name: supplier.name,
+      email: supplier.email,
+      phone: supplier.phone,
+      address: supplier.address,
+      contactPerson: supplier.contactPerson
+    };
+
+    return this.http.post<Supplier>(`${this.baseUrl}/suppliers`, payload).pipe(
+      map(saved => {
+        const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[];
+        suppliers.push(saved);
+        localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+        return suppliers;
+      }),
+      catchError(err => {
+        console.error('[InventoryService] createSupplier failed, using local fallback:', err);
+        const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[];
+        const newSup: Supplier = { ...(supplier as Supplier), id: Date.now() };
+        suppliers.push(newSup);
+        localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+        return of(suppliers);
+      })
+    );
   }
-  updateSupplier(id: string, supplier: Partial<Supplier>): Observable<Supplier[]> {
-    const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
-    const idx = suppliers.findIndex(s => s.id === id);
-    if (idx === -1) return throwError(() => new Error('Supplier not found'));
-    const updated = { ...suppliers[idx], ...supplier } as Supplier;
-    suppliers[idx] = updated;
-    localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
-    return of(suppliers);
+
+  /** PUT /suppliers/{id} — falls back to updating the local copy if the API is unavailable. */
+  updateSupplier(id: string | number, supplier: Partial<Supplier>): Observable<Supplier[]> {
+    const numericId = Number(id);
+    const payload = {
+      tenantId: this.tenantId,
+      name: supplier.name,
+      email: supplier.email,
+      phone: supplier.phone,
+      address: supplier.address,
+      contactPerson: supplier.contactPerson
+    };
+
+    return this.http.put<Supplier>(`${this.baseUrl}/suppliers/${numericId}`, payload).pipe(
+      map(saved => {
+        const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[];
+        const idx = suppliers.findIndex(s => s.id === numericId);
+        if (idx > -1) suppliers[idx] = saved; else suppliers.push(saved);
+        localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+        return suppliers;
+      }),
+      catchError(err => {
+        console.error('[InventoryService] updateSupplier failed, using local fallback:', err);
+        const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[];
+        const idx = suppliers.findIndex(s => s.id === numericId);
+        if (idx === -1) return throwError(() => new Error('Supplier not found'));
+        suppliers[idx] = { ...suppliers[idx], ...supplier };
+        localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+        return of(suppliers);
+      })
+    );
   }
-  deleteSupplier(id: string): Observable<Supplier[]> {
-    let suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string) as Supplier[];
-    suppliers = suppliers.filter(s => s.id !== id);
-    localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
-    return of(suppliers);
+
+  /** DELETE /suppliers/{id} — falls back to removing from the local copy if the API is unavailable. */
+  deleteSupplier(id: string | number): Observable<Supplier[]> {
+    const numericId = Number(id);
+    return this.http.delete<void>(`${this.baseUrl}/suppliers/${numericId}`).pipe(
+      map(() => {
+        const suppliers = (JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[])
+          .filter(s => s.id !== numericId);
+        localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+        return suppliers;
+      }),
+      catchError(err => {
+        console.error('[InventoryService] deleteSupplier failed, using local fallback:', err);
+        const suppliers = (JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[])
+          .filter(s => s.id !== numericId);
+        localStorage.setItem(LOCAL_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+        return of(suppliers);
+      })
+    );
   }
 
   // ----------------------------------------------------
   // SINGLE MOVEMENT FETCH
   // ----------------------------------------------------
-  getMovement(id: string): Observable<StockMovement> {
+  getMovement(id: string | number): Observable<StockMovement> {
     const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
-    const mov = movements.find(m => m.id === id);
+    const mov = movements.find(m => m.id === Number(id));
     return mov ? of(mov) : throwError(() => new Error('Movement not found'));
   }
 
@@ -2097,7 +2541,7 @@ export class InventoryService {
    *  which is why Branch Detail's "Branch Summary" card and Analytics tab always showed blank. */
   getBranchAnalytics(branchId: string): Observable<BranchStockSummary | null> {
     const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
-    const branch = branches.find(b => b.id === branchId);
+    const branch = branches.find(b => String(b.id) === branchId);
     if (!branch) return of(null);
 
     const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string || '[]') as BranchInventory[];
@@ -2319,7 +2763,7 @@ export class InventoryService {
     }
     const raw = product.category ?? (product as any).categoryId;
     if (typeof raw === 'string') {
-      const byId = categories.find(c => c.id === raw || String(c.id) === String(raw));
+      const byId = categories.find(c => String(c.id) === String(raw) || c.categoryId === raw);
       return byId?.name || raw;
     }
     return '';
@@ -2340,42 +2784,85 @@ export class InventoryService {
  * If branchId is provided, returns only that branch's inventory
  * If no branchId, returns all inventory
  */
-// inventory.service.ts - Replace the getBranchInventory method
-
 /**
- * Get inventory for a specific branch
- * If branchId is provided, returns only that branch's inventory
- * If no branchId, returns all inventory
- * Returns BranchInventory[] directly (not PaginatedResponse)
+ * Get inventory for a specific branch — GET /inventory/stock.
+ * If branchId is provided, returns only that branch's inventory.
+ * If no branchId, returns all inventory.
+ * Returns BranchInventory[] directly (not PaginatedResponse). Falls back to the
+ * local mock/localStorage copy if the API is unavailable.
  */
 getBranchInventory(branchId?: string): Observable<BranchInventory[]> {
   this.loadingSubject.next(true);
-  
-  const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string) as BranchInventory[];
-  
-  let filtered = allInventory;
-  if (branchId) {
-    filtered = allInventory.filter(item => item.branchId === branchId);
-  }
-  
-  // Get branch details for the inventory items
-  const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string) as Branch[];
-  
-  // Ensure branch names are populated
-  filtered = filtered.map(item => {
-    const branch = branches.find(b => b.id === item.branchId);
-    return {
-      ...item,
-      branchName: branch?.name || item.branchName || 'Unknown Branch'
-    };
-  });
-  
-  // Sort by product name
-  filtered = filtered.sort((a, b) => a.productName.localeCompare(b.productName));
-  
-  this.branchInventorySubject.next(filtered);
-  this.loadingSubject.next(false);
-  return of(filtered); // Returns BranchInventory[] directly
+
+  let params = new HttpParams().set('tenantId', this.tenantId);
+  if (branchId) params = params.set('branchId', branchId);
+
+  return this.http.get<BranchInventory[]>(`${this.baseUrl}/inventory/stock`, { params }).pipe(
+    map(res => Array.isArray(res) ? res : []),
+    map(items => items.sort((a, b) => a.productName.localeCompare(b.productName))),
+    tap(items => {
+      this.branchInventorySubject.next(items);
+      this.loadingSubject.next(false);
+    }),
+    catchError(() => {
+      const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string || '[]') as BranchInventory[];
+
+      let filtered = allInventory;
+      if (branchId) {
+        filtered = allInventory.filter(item => item.branchId === branchId);
+      }
+
+      // Get branch details for the inventory items
+      const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
+
+      // Ensure branch names are populated
+      filtered = filtered.map(item => {
+        const branch = branches.find(b => String(b.id) === item.branchId);
+        return {
+          ...item,
+          branchName: branch?.name || item.branchName || 'Unknown Branch'
+        };
+      });
+
+      // Sort by product name
+      filtered = filtered.sort((a, b) => a.productName.localeCompare(b.productName));
+
+      this.branchInventorySubject.next(filtered);
+      this.loadingSubject.next(false);
+      return of(filtered); // Returns BranchInventory[] directly
+    })
+  );
+}
+
+/** Get a single branch inventory record by id — GET /inventory/stock/{id}. */
+getBranchInventoryById(id: number): Observable<BranchInventory | null> {
+  return this.http.get<BranchInventory>(`${this.baseUrl}/inventory/stock/${id}`).pipe(
+    catchError(() => {
+      const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string || '[]') as BranchInventory[];
+      return of(allInventory.find(i => i.id === id) || null);
+    })
+  );
+}
+
+/** Delete a branch inventory record — DELETE /inventory/stock/{id}. */
+deleteBranchInventoryItem(id: number): Observable<void> {
+  return this.http.delete<void>(`${this.baseUrl}/inventory/stock/${id}`).pipe(
+    tap(() => {
+      const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string || '[]') as BranchInventory[];
+      const remaining = allInventory.filter(i => i.id !== id);
+      localStorage.setItem(LOCAL_KEYS.BRANCH_INVENTORY, JSON.stringify(remaining));
+      this.branchInventorySubject.next(remaining);
+    }),
+    catchError(err => {
+      console.error('[InventoryService] deleteBranchInventoryItem failed:', err);
+      // Still remove locally so the UI reflects the delete in mock/offline mode.
+      const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string || '[]') as BranchInventory[];
+      const remaining = allInventory.filter(i => i.id !== id);
+      localStorage.setItem(LOCAL_KEYS.BRANCH_INVENTORY, JSON.stringify(remaining));
+      this.branchInventorySubject.next(remaining);
+      return of(void 0);
+    })
+  );
 }
 
 }

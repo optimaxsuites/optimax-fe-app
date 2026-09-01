@@ -247,7 +247,7 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (items) => {
-            const item = items.find(i => i.id === this.inventoryItemId);
+            const item = items.find(i => String(i.id) === this.inventoryItemId);
             if (item) {
               this.inventoryItem = item;
               this.populateForm(item);

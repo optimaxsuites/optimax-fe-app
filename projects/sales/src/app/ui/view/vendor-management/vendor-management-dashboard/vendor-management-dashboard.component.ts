@@ -21,7 +21,13 @@ import {
   getVendorTierLabel,
   getRiskLevelColor,
   getDocumentStatusColor,
-  DocumentStatus
+  DocumentStatus,
+  SentinelInsight,
+  InsightActionStatus,
+  InsightSeverity,
+  FraudFlag,
+  SentinelSummaryStats,
+  getInsightSeverityColor
 } from '../../../domain/vendor-management/vendor-management.dto';
 
 // ============================================================
@@ -45,6 +51,13 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
   expiringDocuments: VendorDocument[] = [];
   topPerformers: Vendor[] = [];
 
+  // AI suggestions (formerly the standalone "AI Vendor Intelligence" tab —
+  // surfaced inline here instead of its own workspace)
+  sentinelInsights: SentinelInsight[] = [];
+  fraudFlags: FraudFlag[] = [];
+  aiSummary: SentinelSummaryStats | null = null;
+  getInsightSeverityColor = getInsightSeverityColor;
+
   // Date range
   dateRange: 'week' | 'month' | 'quarter' | 'year' = 'month';
 
@@ -55,7 +68,8 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
     showRecentActivity: true,
     showExpiringDocuments: true,
     showTopPerformers: true,
-    showRiskAlerts: true
+    showRiskAlerts: true,
+    showAiInsights: true
   };
 
   // Chart data
@@ -146,6 +160,73 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Failed to load recent activity:', err);
       }
+    });
+
+    // AI suggestions — insights feed, fraud watch, and the rollup numbers for both
+    this.vendorService.getSentinelInsights().subscribe({
+      next: (insights) => { this.sentinelInsights = insights; },
+      error: (err) => console.error('Failed to load AI insights:', err)
+    });
+
+    this.vendorService.getFraudFlags().subscribe({
+      next: (flags) => { this.fraudFlags = flags; },
+      error: (err) => console.error('Failed to load fraud flags:', err)
+    });
+
+    this.vendorService.getSentinelSummaryStats().subscribe({
+      next: (summary) => { this.aiSummary = summary; },
+      error: (err) => console.error('Failed to load AI summary stats:', err)
+    });
+  }
+
+  // ============================================================
+  // AI SUGGESTIONS (INSIGHTS + FRAUD WATCH)
+  // ============================================================
+
+  private static readonly SEVERITY_RANK: Record<InsightSeverity, number> = {
+    [InsightSeverity.CRITICAL]: 0,
+    [InsightSeverity.HIGH]: 1,
+    [InsightSeverity.MEDIUM]: 2,
+    [InsightSeverity.LOW]: 3
+  };
+
+  /** Open insights only, most severe/recent first, capped to keep the card compact. */
+  get topInsights(): SentinelInsight[] {
+    return this.sentinelInsights
+      .filter(i => i.status === InsightActionStatus.OPEN)
+      .sort((a, b) =>
+        VendorManagementDashboardComponent.SEVERITY_RANK[a.severity] - VendorManagementDashboardComponent.SEVERITY_RANK[b.severity]
+        || new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime()
+      )
+      .slice(0, 4);
+  }
+
+  /** Fraud flags still awaiting a first look, most recent first, capped to keep the card compact. */
+  get pendingFraudFlags(): FraudFlag[] {
+    return this.fraudFlags
+      .filter(f => f.status === 'PENDING_REVIEW')
+      .sort((a, b) => new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime())
+      .slice(0, 4);
+  }
+
+  actOnInsight(insight: SentinelInsight, action: string): void {
+    this.vendorService.actOnInsight(insight.id, action).subscribe({
+      next: (updated) => { this.sentinelInsights = updated; },
+      error: (err) => console.error('Failed to act on insight:', err)
+    });
+  }
+
+  investigateFraudFlag(flag: FraudFlag): void {
+    this.vendorService.updateFraudFlagStatus(flag.id, 'INVESTIGATING').subscribe({
+      next: (updated) => { this.fraudFlags = updated; },
+      error: (err) => console.error('Failed to update fraud flag:', err)
+    });
+  }
+
+  clearFraudFlag(flag: FraudFlag): void {
+    this.vendorService.updateFraudFlagStatus(flag.id, 'CLEARED').subscribe({
+      next: (updated) => { this.fraudFlags = updated; },
+      error: (err) => console.error('Failed to update fraud flag:', err)
     });
   }
 

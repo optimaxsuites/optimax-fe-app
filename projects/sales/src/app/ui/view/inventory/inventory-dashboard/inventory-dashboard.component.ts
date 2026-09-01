@@ -222,13 +222,13 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
     // Hook available for callers that want to react to fresh branch stock totals.
   }
 
-  resolveAlert(alertId: string): void {
+  resolveAlert(alertId: string | number): void {
     this.inventoryService.resolveAlert(alertId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
           // Remove the alert from the list
-          this.alerts = this.alerts.filter(a => a.id !== alertId);
+          this.alerts = this.alerts.filter(a => a.id !== Number(alertId));
           if (this.stats) {
             this.stats.lowStockItems = this.alerts.filter(a =>
               a.type === 'LOW_STOCK' || a.type === 'OUT_OF_STOCK'
