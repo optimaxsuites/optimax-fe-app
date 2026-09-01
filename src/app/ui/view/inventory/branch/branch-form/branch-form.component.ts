@@ -210,7 +210,7 @@ export class BranchFormComponent implements OnInit, OnDestroy {
           next: (branch) => {
             this.isSaving = false;
             this.saved.emit(branch);
-            this.navigateToBranchDetail(branch.id);
+            this.navigateToBranchDetail(String(branch.id));
           },
           error: (err) => {
             console.error('Failed to update branch:', err);
@@ -225,7 +225,7 @@ export class BranchFormComponent implements OnInit, OnDestroy {
           next: (branch) => {
             this.isSaving = false;
             this.saved.emit(branch);
-            this.navigateToBranchDetail(branch.id);
+            this.navigateToBranchDetail(String(branch.id));
           },
           error: (err) => {
             console.error('Failed to create branch:', err);

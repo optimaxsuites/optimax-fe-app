@@ -153,7 +153,7 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
         next: (branches) => {
           // For each branch, get inventory and filter by product
           branches.forEach(branch => {
-            this.inventoryService.getBranchInventory(branch.id)
+            this.inventoryService.getBranchInventory(String(branch.id))
               .pipe(takeUntil(this.destroy$))
               .subscribe({
                 next: (inventory) => {
@@ -353,7 +353,7 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   }
 
   getBranchName(branchId: string): string {
-    const branch = this.branches.find(b => b.id === branchId);
+    const branch = this.branches.find(b => String(b.id) === branchId);
     return branch?.name || branchId;
   }
 
@@ -363,14 +363,14 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     if (typeof raw === 'string') {
       // `category` may hold either the category's id or its literal name (legacy data) —
       // resolve it to a name if it matches a known category, otherwise trust it as-is.
-      const byId = this.categories.find(c => c.id === raw || String(c.id) === String(raw));
+      const byId = this.categories.find(c => String(c.id) === String(raw) || c.categoryId === raw);
       return byId?.name || raw;
     }
     return 'Uncategorized';
   }
 
   getSupplierName(supplierId: string): string {
-    const supplier = this.suppliers.find(s => s.id === supplierId || s.supplierId === supplierId);
+    const supplier = this.suppliers.find(s => String(s.id) === supplierId || s.supplierId === supplierId);
     return supplier?.name || supplierId;
   }
 

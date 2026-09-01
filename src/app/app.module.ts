@@ -135,8 +135,6 @@ import { VendorManagementListComponent } from './ui/view/vendor-management/vendo
 import { VendorManagementDetailComponent } from './ui/view/vendor-management/vendor-management-detail/vendor-management-detail.component';
 import { VendorApprovalQueueComponent } from './ui/view/vendor-management/vendor-approval-queue/vendor-approval-queue.component';
 
-import { VendorAiIntelligenceComponent } from './ui/view/vendor-management/vendor-ai-intelligence/vendor-ai-intelligence.component';
-import { VendorResolutionCenterComponent } from './ui/view/vendor-management/vendor-resolution-center/vendor-resolution-center.component';
 import { OverviewComponent } from './ui/view/vendor-management/vendor-management-detail/overview/overview.component';
 import { VendorPerformanceComponent } from './ui/view/vendor-management/vendor-management-detail/performance/performance.component';
 import { RiskComponent } from './ui/view/vendor-management/vendor-management-detail/risk/risk.component';
@@ -273,8 +271,6 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
     VendorManagementDetailComponent,
     VendorApprovalQueueComponent,
 
-    VendorAiIntelligenceComponent,
-    VendorResolutionCenterComponent,
     OverviewComponent,
     VendorPerformanceComponent,
     RiskComponent,

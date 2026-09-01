@@ -228,7 +228,7 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
 
   private generateMockPrediction(): SellLikelihoodPrediction {
     const product = this.products.find(p => p.id === this.productId);
-    const branch = this.branches.find(b => b.id === this.branchId);
+    const branch = this.branches.find(b => String(b.id) === this.branchId);
 
     // Generate random factors
     const factors = [
@@ -473,7 +473,7 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   }
 
   getBranchName(branchId: string): string {
-    const branch = this.branches.find(b => b.id === branchId);
+    const branch = this.branches.find(b => String(b.id) === branchId);
     return branch?.name || branchId;
   }
 

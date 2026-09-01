@@ -5,10 +5,10 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { PdfGenerationService } from '../../../../service/procurement/pdf-generation.service';
-import { NotificationService } from '../../../../service/procurement/notification.service';
+import { SalesEmailService } from '../../../../service/sales/sales-email.service';
 import { lastValueFrom } from 'rxjs';
-import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails } from '../../../../domain/sales/sales.dto';
-import { toDateInputValue } from '../../../../service/sales/date.util';
+import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails, InvoiceAttachments, SendSalesEmailRequest, SalesEmailAttachment } from '../../../../domain/sales/sales.dto';
+import { toDateInputValue, formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
 import { jsPDF } from 'jspdf';
@@ -248,7 +248,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     private salesService: SalesService,
     private companyProfileService: CompanyProfileService,
     private pdfGenerationService: PdfGenerationService,
-    private notificationService: NotificationService,
+    private salesEmailService: SalesEmailService,
     router: Router
   ) {
     this.router = router;
@@ -1670,10 +1670,45 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log(`Sending invoice ${invoice.invoiceNumber} to ${email}`);
+    const addOpts = Array.isArray(invoice.additionalOptions) ? invoice.additionalOptions[0] : (invoice.additionalOptions as any);
+    const currency = invoice.currency || 'NGN';
+    const fmt = (n: number) => (n || 0).toLocaleString('en-NG');
+
+    const itemsRows = (invoice.items || []).map(item => `
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">
+              <div style="font-weight: 600;">${item.productName || ''}</div>
+              ${item.description ? `<div style="font-size: 12px; color: #6b7280;">${item.description}</div>` : ''}
+            </td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${currency} ${fmt(item.unitPrice)}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${item.taxRate || 0}%</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">${currency} ${fmt(item.total)}</td>
+          </tr>`).join('');
+
+    const additionalChargeRows = (invoice.additionalCharges || []).map((amount, i) => `
+          <tr>
+            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">${invoice.additionalChargesLabel?.[i] || 'Additional Charge'}:</td>
+            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(amount)}</td>
+          </tr>`).join('');
+
+    const termsAndConditions = addOpts?.terms
+      ? `<div style="margin-top: 20px;">
+           <h3 style="font-size: 14px; color: #1a2d4a; margin-bottom: 6px;">Terms &amp; Conditions</h3>
+           <p style="font-size: 13px; color: #374151; white-space: pre-line;">${addOpts.terms}</p>
+         </div>`
+      : '';
+
+    const invoiceNotes = invoice.notes || addOpts?.notes;
+    const notesSection = invoiceNotes
+      ? `<div style="margin-top: 12px;">
+           <h3 style="font-size: 14px; color: #1a2d4a; margin-bottom: 6px;">Notes</h3>
+           <p style="font-size: 13px; color: #374151; white-space: pre-line;">${invoiceNotes}</p>
+         </div>`
+      : '';
 
     const htmlBody = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
         <h2 style="color: #1a2d4a; margin-top: 0;">Invoice Details</h2>
         <p>Dear ${name},</p>
         <p>Please find the details of your invoice below:</p>
@@ -1683,38 +1718,93 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
             <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${invoice.invoiceNumber}</td>
           </tr>
           <tr>
-            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Total Amount:</td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #2EB270;">${invoice.currency || 'NGN'} ${invoice.totalAmount.toLocaleString('en-NG')}</td>
-          </tr>
-          <tr>
             <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Due Date:</td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${formatApiDate(invoice.dueDate)}</td>
           </tr>
         </table>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
+          <thead>
+            <tr style="background: #f8fafc;">
+              <th style="text-align: left; padding: 8px; border-bottom: 2px solid #e5e7eb;">Item</th>
+              <th style="text-align: center; padding: 8px; border-bottom: 2px solid #e5e7eb;">Qty</th>
+              <th style="text-align: right; padding: 8px; border-bottom: 2px solid #e5e7eb;">Unit Price</th>
+              <th style="text-align: right; padding: 8px; border-bottom: 2px solid #e5e7eb;">Tax</th>
+              <th style="text-align: right; padding: 8px; border-bottom: 2px solid #e5e7eb;">Line Total</th>
+            </tr>
+          </thead>
+          <tbody>${itemsRows}</tbody>
+        </table>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px;">
+          <tr>
+            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Subtotal:</td>
+            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(invoice.subtotal)}</td>
+          </tr>
+          ${invoice.discountAmount ? `<tr>
+            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Discount:</td>
+            <td style="padding: 4px 8px; text-align: right;">-${currency} ${fmt(invoice.discountAmount)}</td>
+          </tr>` : ''}
+          <tr>
+            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Tax:</td>
+            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(invoice.taxAmount)}</td>
+          </tr>
+          ${additionalChargeRows}
+          <tr>
+            <td colspan="4" style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid #1a2d4a;">Total Amount:</td>
+            <td style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid #1a2d4a; color: #2EB270;">${currency} ${fmt(invoice.totalAmount)}</td>
+          </tr>
+        </table>
+
+        ${termsAndConditions}
+        ${notesSection}
+
         <p style="margin-top: 24px;">Thank you for your business!</p>
         <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
         <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from OptimaX.</p>
       </div>
     `;
 
-    const payload = {
+    // Carry over any files already attached to the invoice (Additional Options →
+    // Attachments) — they already have a hosted fileUrl, so there's no need to
+    // re-upload the client-generated PDF just to email it.
+    const attachments: SalesEmailAttachment[] = (addOpts?.attachments || [])
+      .filter((a: InvoiceAttachments) => !!a.fileUrl)
+      .map((a: InvoiceAttachments) => ({
+        fileName: a.fileName || `Invoice-${invoice.invoiceNumber}.pdf`,
+        fileUrl: a.fileUrl as string,
+        size: a.size || 0,
+        type: a.type || 'application/pdf'
+      }));
+
+    const payload: SendSalesEmailRequest = {
+      documentType: 'INVOICE',
+      documentId: invoice.id,
+      documentNumber: invoice.invoiceNumber,
       to: email,
-      cc: '',
-      bcc: '',
+      cc: [],
+      bcc: [],
       subject: `Invoice ${invoice.invoiceNumber} from OptimaX`,
-      body: htmlBody,
-      html: true,
-      tenant: 'optimax'
+      message: htmlBody,
+      attachments,
+      sentBy: invoice.merchantDetails?.email || 'system'
     };
 
     try {
-      console.log('[InvoiceFormComponent] Sending direct email with payload:', payload);
-      const response = await lastValueFrom(this.notificationService.sendDirectEmail(payload));
-      console.log('[InvoiceFormComponent] Email sent successfully:', response);
-      this.messageService.add({ severity: 'success', summary: 'Email Sent', detail: `Invoice sent successfully to ${email}` });
+      const response = await lastValueFrom(this.salesEmailService.send(payload));
+      console.log('[InvoiceFormComponent] Send response:', response);
+      // A 2xx here only means the backend logged the send request — it doesn't
+      // mean the email actually left the building. Trust `status`, not the HTTP call.
+      if (response?.status === 'FAILED' || response?.status === 'BOUNCED') {
+        this.messageService.add({ severity: 'error', summary: 'Email Not Delivered', detail: response.failureReason || `Delivery to ${email} failed.` });
+      } else if (response?.status === 'PENDING') {
+        this.messageService.add({ severity: 'info', summary: 'Email Queued', detail: `Invoice queued for delivery to ${email}. It hasn't been confirmed sent yet.` });
+      } else {
+        this.messageService.add({ severity: 'success', summary: 'Email Sent', detail: `Invoice sent successfully to ${email}` });
+      }
     } catch (err) {
-      console.error('[InvoiceFormComponent] Failed to send direct invoice email:', err);
-      this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send invoice email via SMTP service.' });
+      console.error('[InvoiceFormComponent] Failed to send invoice email:', err);
+      this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send invoice email.' });
     }
   }
 

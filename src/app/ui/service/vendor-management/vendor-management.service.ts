@@ -42,26 +42,7 @@ import {
   FraudFlag,
   OnboardingCopilotSession,
   ExtractedField,
-  SmartVendorShortlistItem,
-  SentinelQueryResult,
-  SentinelGovernanceRule,
-  SentinelActionLogEntry,
   SentinelSummaryStats,
-  MessageThread,
-  ThreadMessage,
-  ThreadStatus,
-  InternalNote,
-  MessageAttachment,
-  CannedTemplate,
-  DisputeCase,
-  DisputeCategory,
-  DisputeStage,
-  DisputeOutcome,
-  DisputeTimelineEvent,
-  DisputeEvidenceItem,
-  ResolutionSummaryStats,
-  ResolutionAuditLogEntry,
-  LinkedRecord,
   AlertSeverity
 } from '../../domain/vendor-management/vendor-management.dto';
 import { environment } from '../../shared-component/service/environments/environment';
@@ -87,10 +68,10 @@ function parseSafeDate(val: any): Date {
 
 const MOCK_SENTINEL_INSIGHTS: SentinelInsight[] = [
   {
-    id: 'ins-1',
+    id: 1,
     type: InsightType.PERFORMANCE_DECLINE,
     severity: InsightSeverity.HIGH,
-    vendorId: 'v-204',
+    vendorId: '204',
     vendorName: 'Vanguard Security Services',
     finding: 'Delivery performance down 15% over the last 3 RFQs.',
     reason: 'On-time delivery rate fell from 94% to 79% across the last three fulfilled RFQs, with two consecutive late shipments flagged in the last 21 days.',
@@ -105,10 +86,10 @@ const MOCK_SENTINEL_INSIGHTS: SentinelInsight[] = [
     confidence: 87
   },
   {
-    id: 'ins-2',
+    id: 2,
     type: InsightType.FRAUD_ANOMALY,
     severity: InsightSeverity.CRITICAL,
-    vendorId: 'v-217',
+    vendorId: '217',
     vendorName: 'OmniCorp Facilities Ltd',
     finding: 'Bank details changed 2 days before the latest invoice.',
     reason: 'Bank account number and account name were updated 2 days prior to submission of a ₦4.2M invoice, a pattern statistically associated with payment redirection fraud.',
@@ -123,10 +104,10 @@ const MOCK_SENTINEL_INSIGHTS: SentinelInsight[] = [
     confidence: 92
   },
   {
-    id: 'ins-3',
+    id: 3,
     type: InsightType.TIER_UPGRADE,
     severity: InsightSeverity.LOW,
-    vendorId: 'v-101',
+    vendorId: '101',
     vendorName: 'Apex Industrial Supplies Ltd',
     finding: '6 straight months above 95%. Eligible for tier upgrade.',
     reason: 'Overall performance score has remained above 95% for 6 consecutive months, with zero compliance flags and a 98% on-time delivery rate, qualifying it for the Preferred tier upgrade criteria.',
@@ -140,10 +121,10 @@ const MOCK_SENTINEL_INSIGHTS: SentinelInsight[] = [
     confidence: 95
   },
   {
-    id: 'ins-4',
+    id: 4,
     type: InsightType.DOCUMENT_EXPIRY,
     severity: InsightSeverity.MEDIUM,
-    vendorId: 'v-233',
+    vendorId: '233',
     vendorName: 'Northbridge Cold Chain Logistics',
     finding: 'Insurance certificate expires in 9 days with no renewal on file.',
     reason: 'Public liability insurance policy expires in 9 days. No renewal document has been submitted and two automated reminders have gone unanswered.',
@@ -158,10 +139,10 @@ const MOCK_SENTINEL_INSIGHTS: SentinelInsight[] = [
     confidence: 99
   },
   {
-    id: 'ins-5',
+    id: 5,
     type: InsightType.RISK_ESCALATION,
     severity: InsightSeverity.HIGH,
-    vendorId: 'v-241',
+    vendorId: '241',
     vendorName: 'Coastline Marine Freight Co.',
     finding: 'Dispute frequency has tripled in the last 90 days.',
     reason: '3 new disputes opened in the last 90 days versus an average of 1 per quarter historically, two of which cite short-delivery of goods.',
@@ -179,7 +160,7 @@ const MOCK_SENTINEL_INSIGHTS: SentinelInsight[] = [
 
 const MOCK_RISK_TRAJECTORIES: VendorRiskTrajectory[] = [
   {
-    vendorId: 'v-204',
+    vendorId: '204',
     vendorName: 'Vanguard Security Services',
     currentRiskLevel: RiskLevel.MEDIUM,
     direction: 'RISING',
@@ -198,7 +179,7 @@ const MOCK_RISK_TRAJECTORIES: VendorRiskTrajectory[] = [
     lastUpdated: new Date()
   },
   {
-    vendorId: 'v-217',
+    vendorId: '217',
     vendorName: 'OmniCorp Facilities Ltd',
     currentRiskLevel: RiskLevel.MEDIUM,
     direction: 'RISING',
@@ -216,7 +197,7 @@ const MOCK_RISK_TRAJECTORIES: VendorRiskTrajectory[] = [
     lastUpdated: new Date()
   },
   {
-    vendorId: 'v-101',
+    vendorId: '101',
     vendorName: 'Apex Industrial Supplies Ltd',
     currentRiskLevel: RiskLevel.LOW,
     direction: 'IMPROVING',
@@ -235,7 +216,7 @@ const MOCK_RISK_TRAJECTORIES: VendorRiskTrajectory[] = [
     lastUpdated: new Date()
   },
   {
-    vendorId: 'v-233',
+    vendorId: '233',
     vendorName: 'Northbridge Cold Chain Logistics',
     currentRiskLevel: RiskLevel.LOW,
     direction: 'STABLE',
@@ -253,7 +234,7 @@ const MOCK_RISK_TRAJECTORIES: VendorRiskTrajectory[] = [
     lastUpdated: new Date()
   },
   {
-    vendorId: 'v-241',
+    vendorId: '241',
     vendorName: 'Coastline Marine Freight Co.',
     currentRiskLevel: RiskLevel.MEDIUM,
     direction: 'RISING',
@@ -274,8 +255,8 @@ const MOCK_RISK_TRAJECTORIES: VendorRiskTrajectory[] = [
 
 const MOCK_FRAUD_FLAGS: FraudFlag[] = [
   {
-    id: 'fraud-1',
-    vendorId: 'v-217',
+    id: 1,
+    vendorId: '217',
     vendorName: 'OmniCorp Facilities Ltd',
     type: 'BANK_DETAIL_CHANGE',
     title: 'Sudden bank detail change before large invoice',
@@ -291,8 +272,8 @@ const MOCK_FRAUD_FLAGS: FraudFlag[] = [
     status: 'PENDING_REVIEW'
   },
   {
-    id: 'fraud-2',
-    vendorId: 'v-256',
+    id: 2,
+    vendorId: '256',
     vendorName: 'BrightPath Office Supplies',
     type: 'DUPLICATE_INVOICE',
     title: 'Duplicate invoice number detected',
@@ -307,8 +288,8 @@ const MOCK_FRAUD_FLAGS: FraudFlag[] = [
     status: 'INVESTIGATING'
   },
   {
-    id: 'fraud-3',
-    vendorId: 'v-262',
+    id: 3,
+    vendorId: '262',
     vendorName: 'Sterling Print & Packaging',
     type: 'SUSPICIOUSLY_LOW_BID',
     title: 'Bid 41% below category average',
@@ -323,8 +304,8 @@ const MOCK_FRAUD_FLAGS: FraudFlag[] = [
     status: 'PENDING_REVIEW'
   },
   {
-    id: 'fraud-4',
-    vendorId: 'v-270',
+    id: 4,
+    vendorId: '270',
     vendorName: 'Delta Waterworks Engineering',
     type: 'DOCUMENT_METADATA_MISMATCH',
     title: 'Document metadata inconsistency on license upload',
@@ -342,7 +323,7 @@ const MOCK_FRAUD_FLAGS: FraudFlag[] = [
 
 const MOCK_ONBOARDING_COPILOT: OnboardingCopilotSession = {
   id: 'onb-copilot-1',
-  vendorId: 'v-301',
+  vendorId: '301',
   vendorName: 'Meridian Cold Storage Ltd',
   extractedFields: [
     { fieldName: 'Registration Number', extractedValue: 'RC-1182042', confidence: 97, sourceDocument: 'business_registration.pdf', confirmed: false },
@@ -362,306 +343,6 @@ const MOCK_ONBOARDING_COPILOT: OnboardingCopilotSession = {
   status: 'AWAITING_CONFIRMATION'
 };
 
-const MOCK_SMART_SHORTLIST: SmartVendorShortlistItem[] = [
-  {
-    vendorId: 'v-101',
-    vendorName: 'Apex Industrial Supplies Ltd',
-    tier: VendorTier.PREFERRED,
-    categoryMatchScore: 96,
-    capacityScore: 90,
-    costCompetitivenessScore: 88,
-    overallFitScore: 94,
-    reason: 'Strongest category history for Industrial Equipment with consistent on-time delivery and available capacity.'
-  },
-  {
-    vendorId: 'v-102',
-    vendorName: 'Global Tech Solutions PLC',
-    tier: VendorTier.PREFERRED,
-    categoryMatchScore: 84,
-    capacityScore: 82,
-    costCompetitivenessScore: 91,
-    overallFitScore: 87,
-    reason: 'Highly cost-competitive with solid delivery history, slightly less category depth than Apex.'
-  },
-  {
-    vendorId: 'v-103',
-    vendorName: 'Prime Logistics & Freight Services',
-    tier: VendorTier.APPROVED,
-    categoryMatchScore: 79,
-    capacityScore: 95,
-    costCompetitivenessScore: 75,
-    overallFitScore: 81,
-    reason: 'Highest available capacity in the shortlist; good fit for larger volume RFQs.'
-  },
-  {
-    vendorId: 'v-233',
-    vendorName: 'Northbridge Cold Chain Logistics',
-    tier: VendorTier.APPROVED,
-    categoryMatchScore: 88,
-    capacityScore: 70,
-    costCompetitivenessScore: 80,
-    overallFitScore: 79,
-    reason: 'Best specialist match for cold chain scope, capacity slightly limited this quarter.'
-  }
-];
-
-const MOCK_GOVERNANCE_RULES: SentinelGovernanceRule[] = [
-  { id: 'gov-1', actionLabel: 'Send document-expiry reminder', description: 'Automated email/portal reminder when a document is within 30 days of expiry.', autonomyLevel: 'AUTONOMOUS', editable: true },
-  { id: 'gov-2', actionLabel: 'Flag performance decline for review', description: 'Surface a review card when delivery or quality drops beyond threshold.', autonomyLevel: 'AUTONOMOUS', editable: true },
-  { id: 'gov-3', actionLabel: 'Recommend tier upgrade/downgrade', description: 'Propose a tier change based on sustained performance trends.', autonomyLevel: 'STAFF_APPROVAL_REQUIRED', editable: true },
-  { id: 'gov-4', actionLabel: 'Suspend a vendor', description: 'Temporarily block a vendor from receiving new RFQs.', autonomyLevel: 'STAFF_APPROVAL_REQUIRED', editable: false },
-  { id: 'gov-5', actionLabel: 'Change vendor tier', description: 'Move a vendor between Preferred, Approved, and Conditional tiers.', autonomyLevel: 'STAFF_APPROVAL_REQUIRED', editable: false },
-  { id: 'gov-6', actionLabel: 'Terminate vendor relationship', description: 'Fully offboard a vendor from the marketplace.', autonomyLevel: 'STAFF_APPROVAL_REQUIRED', editable: false },
-  { id: 'gov-7', actionLabel: 'Escalate fraud flag to compliance', description: 'Route a high-severity fraud flag directly to the compliance team queue.', autonomyLevel: 'AUTONOMOUS', editable: true }
-];
-
-const MOCK_ACTION_LOG: SentinelActionLogEntry[] = [
-  { id: 'log-1', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), actionLabel: 'Sent document-expiry reminder', vendorName: 'Northbridge Cold Chain Logistics', performedBy: 'Sentinel AI', executionType: 'AUTO', dataSummary: 'Insurance policy expires in 9 days — reminder #2 sent via vendor portal.' },
-  { id: 'log-2', timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), actionLabel: 'Flagged performance decline', vendorName: 'Vanguard Security Services', performedBy: 'Sentinel AI', executionType: 'AUTO', dataSummary: 'On-time delivery rate dropped from 94% to 79% over 3 RFQs.' },
-  { id: 'log-3', timestamp: new Date(Date.now() - 22 * 60 * 60 * 1000), actionLabel: 'Approved tier upgrade', vendorName: 'Titan Freight Networks', performedBy: 'A. Okoro (Procurement Lead)', executionType: 'STAFF_APPROVED', dataSummary: 'Upgraded from Approved to Preferred following Sentinel recommendation; 7 months above 93% score.' },
-  { id: 'log-4', timestamp: new Date(Date.now() - 30 * 60 * 60 * 1000), actionLabel: 'Escalated fraud flag to compliance', vendorName: 'OmniCorp Facilities Ltd', performedBy: 'Sentinel AI', executionType: 'AUTO', dataSummary: 'Bank detail change + high-value invoice within 48 hours — routed to compliance queue.' },
-  { id: 'log-5', timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000), actionLabel: 'Confirmed onboarding extraction', vendorName: 'Solaris Renewable Systems', performedBy: 'C. Adeyemi (Vendor Ops)', executionType: 'STAFF_APPROVED', dataSummary: 'Confirmed 5 of 5 extracted fields; corrected registered address.' }
-];
-
-// ============================================================
-// MOCK DATA — VENDOR RESOLUTION CENTER
-// ============================================================
-
-const MOCK_MESSAGE_THREADS: MessageThread[] = [
-  {
-    id: 'thr-1',
-    vendorId: 'v-204',
-    vendorName: 'Vanguard Security Services',
-    subject: 'Re: RFQ-2026-089 Quotation',
-    linkedRecord: { type: 'RFQ', id: 'RFQ-2026-089', label: 'RFQ-2026-089' },
-    status: 'AWAITING_STAFF',
-    lastMessageAt: new Date(Date.now() - 40 * 60 * 1000),
-    lastMessagePreview: 'We can revise the delivery schedule if the site access window is confirmed by Friday.',
-    unreadCount: 2,
-    firstResponseTimeMinutes: 38,
-    resolutionTimeMinutes: null,
-    hasLinkedDispute: false,
-    internalNotes: [
-      { id: 'note-1', authorName: 'A. Okoro (Procurement Lead)', content: 'Flag to site ops before we confirm the access window — check with facilities first.', timestamp: new Date(Date.now() - 35 * 60 * 1000) }
-    ],
-    messages: [
-      { id: 'm-1', sender: 'COMPANY', authorName: 'A. Okoro', content: 'Hi team, following up on RFQ-2026-089 — can you confirm delivery within 10 business days of PO issuance?', timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000), attachments: [] },
-      { id: 'm-2', sender: 'VENDOR', authorName: 'Vanguard Security Services', content: 'Thanks for reaching out. 10 days is tight given current stock levels, but achievable if the site access window is confirmed in advance.', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), attachments: [] },
-      {
-        id: 'm-3', sender: 'VENDOR', authorName: 'Vanguard Security Services', content: 'We can revise the delivery schedule if the site access window is confirmed by Friday.', timestamp: new Date(Date.now() - 40 * 60 * 1000), attachments: [
-          { id: 'att-1', fileName: 'revised_delivery_schedule.pdf', versions: [{ version: 1, fileName: 'revised_delivery_schedule.pdf', uploadedAt: new Date(Date.now() - 40 * 60 * 1000), uploadedBy: 'Vanguard Security Services' }] }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'thr-2',
-    vendorId: 'v-217',
-    vendorName: 'OmniCorp Facilities Ltd',
-    subject: 'Re: INV-88213 Payment Query',
-    linkedRecord: { type: 'INVOICE', id: 'INV-88213', label: 'Invoice INV-88213' },
-    status: 'OPEN',
-    lastMessageAt: new Date(Date.now() - 20 * 60 * 60 * 1000),
-    lastMessagePreview: 'We have paused processing this invoice pending a bank-details verification check.',
-    unreadCount: 0,
-    firstResponseTimeMinutes: 12,
-    resolutionTimeMinutes: null,
-    hasLinkedDispute: true,
-    disputeCaseId: 'case-2',
-    internalNotes: [],
-    messages: [
-      { id: 'm-4', sender: 'VENDOR', authorName: 'OmniCorp Facilities Ltd', content: 'Please confirm status of invoice INV-88213, it appears overdue.', timestamp: new Date(Date.now() - 21 * 60 * 60 * 1000), attachments: [] },
-      { id: 'm-5', sender: 'COMPANY', authorName: 'D. Balogun (Accounts Payable)', content: 'We have paused processing this invoice pending a bank-details verification check.', timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000), attachments: [] }
-    ]
-  },
-  {
-    id: 'thr-3',
-    vendorId: 'v-101',
-    vendorName: 'Apex Industrial Supplies Ltd',
-    subject: 'Onboarding welcome — Preferred tier',
-    linkedRecord: { type: 'NONE', id: '', label: 'General' },
-    status: 'RESOLVED',
-    lastMessageAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    lastMessagePreview: 'Thank you — looking forward to continuing to work with the OptimaX team.',
-    unreadCount: 0,
-    firstResponseTimeMinutes: 55,
-    resolutionTimeMinutes: 340,
-    hasLinkedDispute: false,
-    internalNotes: [],
-    messages: [
-      { id: 'm-6', sender: 'COMPANY', authorName: 'C. Adeyemi (Vendor Ops)', content: 'Congratulations — your consistent performance has qualified you for a tier upgrade review.', timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), attachments: [] },
-      { id: 'm-7', sender: 'VENDOR', authorName: 'Apex Industrial Supplies Ltd', content: 'Thank you — looking forward to continuing to work with the OptimaX team.', timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), attachments: [] }
-    ]
-  },
-  {
-    id: 'thr-4',
-    vendorId: 'v-241',
-    vendorName: 'Coastline Marine Freight Co.',
-    subject: 'Re: PO-7723 short delivery',
-    linkedRecord: { type: 'PO', id: 'PO-7723', label: 'PO-7723' },
-    status: 'AWAITING_VENDOR',
-    lastMessageAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
-    lastMessagePreview: 'Please provide proof of dispatch for the missing 3 units by end of day tomorrow.',
-    unreadCount: 0,
-    firstResponseTimeMinutes: 95,
-    resolutionTimeMinutes: null,
-    hasLinkedDispute: true,
-    disputeCaseId: 'case-4',
-    internalNotes: [
-      { id: 'note-2', authorName: 'A. Okoro (Procurement Lead)', content: 'Third short-delivery complaint in 90 days — loop in compliance once dispute is opened.', timestamp: new Date(Date.now() - 6.2 * 60 * 60 * 1000) }
-    ],
-    messages: [
-      { id: 'm-8', sender: 'COMPANY', authorName: 'A. Okoro', content: 'PO-7723 was received short by 3 units against the manifest. Please advise.', timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000), attachments: [] },
-      { id: 'm-9', sender: 'COMPANY', authorName: 'A. Okoro', content: 'Please provide proof of dispatch for the missing 3 units by end of day tomorrow.', timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), attachments: [] }
-    ]
-  },
-  {
-    id: 'thr-5',
-    vendorId: 'v-233',
-    vendorName: 'Northbridge Cold Chain Logistics',
-    subject: 'Document renewal reminder — Insurance Policy',
-    linkedRecord: { type: 'DOCUMENT', id: 'doc-insurance-233', label: 'Insurance Certificate' },
-    status: 'OPEN',
-    lastMessageAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    lastMessagePreview: 'Your public liability insurance certificate expires on 06 Aug 2026. Please upload a renewal.',
-    unreadCount: 0,
-    firstResponseTimeMinutes: null,
-    resolutionTimeMinutes: null,
-    hasLinkedDispute: false,
-    internalNotes: [],
-    messages: [
-      { id: 'm-10', sender: 'COMPANY', authorName: 'Sentinel AI (automated)', content: 'Your public liability insurance certificate expires on 06 Aug 2026. Please upload a renewal.', timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), attachments: [] }
-    ]
-  }
-];
-
-const MOCK_CANNED_TEMPLATES: CannedTemplate[] = [
-  { id: 'tpl-1', name: 'Document Expiry Reminder', category: 'DOCUMENT_EXPIRY', content: 'Hello {{vendorName}}, our records show your {{documentName}} expires on {{expiryDate}}. Please upload a renewed copy at your earliest convenience to avoid disruption to your active RFQs.' },
-  { id: 'tpl-2', name: 'Onboarding Welcome', category: 'ONBOARDING_WELCOME', content: 'Welcome to the OptimaX Marketplace, {{vendorName}}! Your application has been approved. You can now view open RFQs and manage your profile from the Vendor Portal.' },
-  { id: 'tpl-3', name: 'Performance Review Notice', category: 'PERFORMANCE_REVIEW', content: 'Hello {{vendorName}}, this is a scheduled performance review notice. Your current scorecard is attached — please reach out if you would like to discuss any of the metrics.' },
-  { id: 'tpl-4', name: 'Suspension Notice', category: 'SUSPENSION_NOTICE', content: 'Hello {{vendorName}}, following repeated unresolved compliance issues, your account has been temporarily suspended from receiving new RFQs pending review. Please contact your account manager for next steps.' }
-];
-
-const MOCK_DISPUTE_CASES: DisputeCase[] = [
-  {
-    id: 'case-2',
-    caseNumber: 'DSP-2026-0142',
-    vendorId: 'v-217',
-    vendorName: 'OmniCorp Facilities Ltd',
-    category: 'FRAUD_SUSPICION',
-    subject: 'Suspicious bank detail change prior to invoice submission',
-    linkedRecord: { type: 'INVOICE', id: 'INV-88213', label: 'Invoice INV-88213' },
-    stage: 'UNDER_REVIEW',
-    openedAt: new Date(Date.now() - 20 * 60 * 60 * 1000),
-    slaDeadline: new Date(Date.now() + 4 * 60 * 60 * 1000),
-    ownerName: 'D. Balogun (Compliance)',
-    threadId: 'thr-2',
-    evidence: [
-      { id: 'ev-1', fileName: 'bank_change_log.pdf', uploadedBy: 'Sentinel AI', uploadedAt: new Date(Date.now() - 20 * 60 * 60 * 1000) },
-      { id: 'ev-2', fileName: 'invoice_INV-88213.pdf', uploadedBy: 'OmniCorp Facilities Ltd', uploadedAt: new Date(Date.now() - 20 * 60 * 60 * 1000) }
-    ],
-    timeline: [
-      { id: 'tl-1', timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000), actor: 'Sentinel AI', action: 'Case opened', note: 'Auto-escalated from fraud flag: bank details changed 2 days before invoice submission.' },
-      { id: 'tl-2', timestamp: new Date(Date.now() - 19 * 60 * 60 * 1000), actor: 'D. Balogun (Compliance)', action: 'Case assigned', note: 'Assigned to compliance for review.' },
-      { id: 'tl-3', timestamp: new Date(Date.now() - 10 * 60 * 60 * 1000), actor: 'D. Balogun (Compliance)', action: 'Moved to Under Review', note: 'Requested supporting bank documentation from vendor.' }
-    ]
-  },
-  {
-    id: 'case-4',
-    caseNumber: 'DSP-2026-0138',
-    vendorId: 'v-241',
-    vendorName: 'Coastline Marine Freight Co.',
-    category: 'DELIVERY_DELAY',
-    subject: 'Short delivery on PO-7723 (3 units missing)',
-    linkedRecord: { type: 'PO', id: 'PO-7723', label: 'PO-7723' },
-    stage: 'VENDOR_NOTIFIED',
-    openedAt: new Date(Date.now() - 8 * 60 * 60 * 1000),
-    slaDeadline: new Date(Date.now() + 40 * 60 * 60 * 1000),
-    ownerName: 'A. Okoro (Procurement Lead)',
-    threadId: 'thr-4',
-    evidence: [
-      { id: 'ev-3', fileName: 'delivery_manifest_PO-7723.pdf', uploadedBy: 'A. Okoro (Procurement Lead)', uploadedAt: new Date(Date.now() - 8 * 60 * 60 * 1000) }
-    ],
-    timeline: [
-      { id: 'tl-4', timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000), actor: 'A. Okoro (Procurement Lead)', action: 'Case opened', note: 'This is the 3rd dispute against this vendor in 90 days.' },
-      { id: 'tl-5', timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), actor: 'A. Okoro (Procurement Lead)', action: 'Vendor notified', note: 'Requested proof of dispatch for missing units.' }
-    ]
-  },
-  {
-    id: 'case-5',
-    caseNumber: 'DSP-2026-0121',
-    vendorId: 'v-256',
-    vendorName: 'BrightPath Office Supplies',
-    category: 'PAYMENT',
-    subject: 'Duplicate invoice submission — INV-77120',
-    linkedRecord: { type: 'INVOICE', id: 'INV-77120', label: 'Invoice INV-77120' },
-    stage: 'MEDIATION',
-    openedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    slaDeadline: new Date(Date.now() - 6 * 60 * 60 * 1000),
-    ownerName: 'D. Balogun (Accounts Payable)',
-    evidence: [
-      { id: 'ev-4', fileName: 'duplicate_invoice_comparison.xlsx', uploadedBy: 'D. Balogun (Accounts Payable)', uploadedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }
-    ],
-    timeline: [
-      { id: 'tl-6', timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), actor: 'Sentinel AI', action: 'Case opened', note: 'Escalated from duplicate invoice fraud flag.' },
-      { id: 'tl-7', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), actor: 'D. Balogun (Accounts Payable)', action: 'Moved to Under Review' },
-      { id: 'tl-8', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), actor: 'D. Balogun (Accounts Payable)', action: 'Moved to Mediation', note: 'Vendor disputes intent; scheduling a call to reconcile PO references.' }
-    ]
-  },
-  {
-    id: 'case-6',
-    caseNumber: 'DSP-2026-0098',
-    vendorId: 'v-270',
-    vendorName: 'Delta Waterworks Engineering',
-    category: 'QUALITY',
-    subject: 'Non-conforming materials delivered against PO-6650',
-    linkedRecord: { type: 'PO', id: 'PO-6650', label: 'PO-6650' },
-    stage: 'CLOSED',
-    openedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-    slaDeadline: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    ownerName: 'A. Okoro (Procurement Lead)',
-    outcome: 'VENDOR_WARNING',
-    closedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
-    evidence: [
-      { id: 'ev-5', fileName: 'qa_inspection_report.pdf', uploadedBy: 'A. Okoro (Procurement Lead)', uploadedAt: new Date(Date.now() - 19 * 24 * 60 * 60 * 1000) }
-    ],
-    timeline: [
-      { id: 'tl-9', timestamp: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000), actor: 'A. Okoro (Procurement Lead)', action: 'Case opened' },
-      { id: 'tl-10', timestamp: new Date(Date.now() - 16 * 24 * 60 * 60 * 1000), actor: 'A. Okoro (Procurement Lead)', action: 'Moved to Under Review' },
-      { id: 'tl-11', timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000), actor: 'A. Okoro (Procurement Lead)', action: 'Case closed', note: 'Second quality issue in 6 months — formal warning issued, no penalty this time.' }
-    ]
-  },
-  {
-    id: 'case-7',
-    caseNumber: 'DSP-2026-0076',
-    vendorId: 'v-262',
-    vendorName: 'Sterling Print & Packaging',
-    category: 'CONTRACT_BREACH',
-    subject: 'Missed exclusivity clause on RFQ-2026-041',
-    linkedRecord: { type: 'CONTRACT', id: 'CTR-4471', label: 'Contract CTR-4471' },
-    stage: 'CLOSED',
-    openedAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
-    slaDeadline: new Date(Date.now() - 33 * 24 * 60 * 60 * 1000),
-    ownerName: 'D. Balogun (Compliance)',
-    outcome: 'NO_FAULT_FOUND',
-    closedAt: new Date(Date.now() - 32 * 24 * 60 * 60 * 1000),
-    evidence: [],
-    timeline: [
-      { id: 'tl-12', timestamp: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000), actor: 'D. Balogun (Compliance)', action: 'Case opened' },
-      { id: 'tl-13', timestamp: new Date(Date.now() - 32 * 24 * 60 * 60 * 1000), actor: 'D. Balogun (Compliance)', action: 'Case closed', note: 'Clause was ambiguous and did not clearly apply — no fault found on review.' }
-    ]
-  }
-];
-
-const MOCK_RESOLUTION_AUDIT_LOG: ResolutionAuditLogEntry[] = [
-  { id: 'raudit-1', timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000), actor: 'A. Okoro (Procurement Lead)', action: 'Opened dispute case', targetType: 'DISPUTE', targetLabel: 'DSP-2026-0138 · Coastline Marine Freight Co.', details: 'Category: Delivery Delay. Linked to PO-7723.' },
-  { id: 'raudit-2', timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000), actor: 'A. Okoro (Procurement Lead)', action: 'Closed dispute case', targetType: 'DISPUTE', targetLabel: 'DSP-2026-0098 · Delta Waterworks Engineering', details: 'Outcome: Vendor Warning.' },
-  { id: 'raudit-3', timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000), actor: 'Sentinel AI', action: 'Auto-escalated fraud flag to dispute case', targetType: 'DISPUTE', targetLabel: 'DSP-2026-0142 · OmniCorp Facilities Ltd', details: 'Bank detail change + high-value invoice triggered auto-escalation.' },
-  { id: 'raudit-4', timestamp: new Date(Date.now() - 35 * 60 * 1000), actor: 'A. Okoro (Procurement Lead)', action: 'Added internal note', targetType: 'NOTE', targetLabel: 'Thread: Re: RFQ-2026-089 Quotation', details: 'Flag to site ops before we confirm the access window.' },
-  { id: 'raudit-5', timestamp: new Date(Date.now() - 32 * 24 * 60 * 60 * 1000), actor: 'D. Balogun (Compliance)', action: 'Closed dispute case', targetType: 'DISPUTE', targetLabel: 'DSP-2026-0076 · Sterling Print & Packaging', details: 'Outcome: No Fault Found.' }
-];
-
-// ============================================================
 // ============================================================
 // PENDING VENDOR STORE — shared in-memory bridge between the
 // Vendor Portal and the Vendor Management side so that portal
@@ -672,9 +353,9 @@ const MOCK_RESOLUTION_AUDIT_LOG: ResolutionAuditLogEntry[] = [
 
 export class PendingVendorStore {
   private static readonly STORAGE_KEY = 'erp_pending_vendors';
-  private static store: Map<string, Vendor> = PendingVendorStore.rehydrate();
+  private static store: Map<number, Vendor> = PendingVendorStore.rehydrate();
 
-  private static rehydrate(): Map<string, Vendor> {
+  private static rehydrate(): Map<number, Vendor> {
     try {
       const raw = localStorage.getItem(PendingVendorStore.STORAGE_KEY);
       if (!raw) return new Map();
@@ -703,11 +384,11 @@ export class PendingVendorStore {
     return Array.from(PendingVendorStore.store.values());
   }
 
-  static getById(id: string): Vendor | undefined {
+  static getById(id: number): Vendor | undefined {
     return PendingVendorStore.store.get(id);
   }
 
-  static updateStatus(id: string, status: VendorStatus): Vendor | null {
+  static updateStatus(id: number, status: VendorStatus): Vendor | null {
     const vendor = PendingVendorStore.store.get(id);
     if (!vendor) return null;
     const updated: Vendor = { ...vendor, status, updatedAt: new Date() };
@@ -716,7 +397,7 @@ export class PendingVendorStore {
     return updated;
   }
 
-  static remove(id: string): void {
+  static remove(id: number): void {
     PendingVendorStore.store.delete(id);
     PendingVendorStore.persist();
   }
@@ -834,8 +515,8 @@ export class VendorService {
     },
     recentActivity: [
       {
-        id: 'activity-1',
-        vendorId: 'v-101',
+        id: 1,
+        vendorId: '101',
         vendorName: 'TechCorp Solutions',
         event: 'Onboarding completed',
         description: 'Vendor profile was approved and moved to active status.',
@@ -845,8 +526,8 @@ export class VendorService {
         color: '#2EB270'
       },
       {
-        id: 'activity-2',
-        vendorId: 'v-204',
+        id: 2,
+        vendorId: '204',
         vendorName: 'Vanguard Security Services',
         event: 'Risk alert raised',
         description: 'A performance decline alert was triggered for this vendor.',
@@ -858,7 +539,7 @@ export class VendorService {
     ],
     expiringDocumentsList: [
       {
-        id: 'doc-1',
+        id: 1,
         category: DocumentCategory.REGISTRATION,
         name: 'Business Registration',
         fileName: 'registration.pdf',
@@ -872,11 +553,11 @@ export class VendorService {
         daysUntilExpiry: 12,
         uploadedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         uploadedBy: 'Ops Team',
-        vendorId: 'v-102',
+        vendorId: '102',
         vendorName: 'Global Logistics Ltd'
       } as VendorDocument,
       {
-        id: 'doc-2',
+        id: 2,
         category: DocumentCategory.INSURANCE,
         name: 'Insurance Certificate',
         fileName: 'insurance.pdf',
@@ -890,13 +571,13 @@ export class VendorService {
         daysUntilExpiry: 5,
         uploadedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
         uploadedBy: 'Compliance',
-        vendorId: 'v-101',
+        vendorId: '101',
         vendorName: 'TechCorp Solutions'
       } as VendorDocument
     ],
     topPerformers: [
       {
-        id: 'v-101',
+        id: 101,
         companyName: 'TechCorp Solutions',
         registrationNumber: 'RC1029384',
         taxId: 'TIN-483920',
@@ -944,7 +625,7 @@ export class VendorService {
         lastActivityDate: new Date()
       } as unknown as Vendor,
       {
-        id: 'v-203',
+        id: 203,
         companyName: 'Apex Industrial Supplies Ltd',
         registrationNumber: 'RC7765421',
         taxId: 'TIN-332198',
@@ -998,7 +679,7 @@ export class VendorService {
 
   private readonly MOCK_VENDORS: Vendor[] = [
     {
-      id: 'v-101',
+      id: 101,
       companyName: 'TechCorp Solutions',
       registrationNumber: 'RC1029384',
       taxId: 'TIN-483920',
@@ -1023,7 +704,7 @@ export class VendorService {
       updatedAt: new Date()
     } as Vendor,
     {
-      id: 'v-102',
+      id: 102,
       companyName: 'Global Logistics Ltd',
       registrationNumber: 'RC5544332',
       taxId: 'TIN-994823',
@@ -1048,7 +729,7 @@ export class VendorService {
       updatedAt: new Date()
     } as Vendor,
     {
-      id: 'v-103',
+      id: 103,
       companyName: 'Meridian Cold Storage Ltd',
       registrationNumber: 'RC8876543',
       taxId: 'TIN-112233',
@@ -1073,7 +754,7 @@ export class VendorService {
       updatedAt: new Date()
     } as Vendor,
     {
-      id: 'v-204',
+      id: 204,
       companyName: 'Vanguard Security Services',
       registrationNumber: 'RC2034567',
       taxId: 'TIN-567890',
@@ -1098,7 +779,7 @@ export class VendorService {
       updatedAt: new Date()
     } as Vendor,
     {
-      id: 'v-233',
+      id: 233,
       companyName: 'Northbridge Cold Chain Logistics',
       registrationNumber: 'RC3344556',
       taxId: 'TIN-778899',
@@ -1157,8 +838,8 @@ export class VendorService {
 
   private readonly MOCK_RISK_ALERTS: RiskAlert[] = [
     {
-      id: 'alert-1',
-      vendorId: 'v-101',
+      id: 1,
+      vendorId: '101',
       severity: AlertSeverity.CRITICAL,
       type: 'COMPLIANCE',
       title: 'Expired Insurance Certificate',
@@ -1169,8 +850,8 @@ export class VendorService {
       assignedTo: 'Compliance Team'
     },
     {
-      id: 'alert-2',
-      vendorId: 'v-101',
+      id: 2,
+      vendorId: '101',
       severity: AlertSeverity.WARNING,
       type: 'PERFORMANCE',
       title: 'Performance Decline Detected',
@@ -1180,8 +861,8 @@ export class VendorService {
       actionRequired: true
     },
     {
-      id: 'alert-3',
-      vendorId: 'v-101',
+      id: 3,
+      vendorId: '101',
       severity: AlertSeverity.INFO,
       type: 'DOCUMENT',
       title: 'Document Renewal Reminder',
@@ -1192,8 +873,8 @@ export class VendorService {
     },
     // Add alerts for other vendors
     {
-      id: 'alert-4',
-      vendorId: 'v-102',
+      id: 4,
+      vendorId: '102',
       severity: AlertSeverity.WARNING,
       type: 'COMPLIANCE',
       title: 'Missing Tax Certificate',
@@ -1204,8 +885,8 @@ export class VendorService {
       assignedTo: 'Compliance Team'
     },
     {
-      id: 'alert-5',
-      vendorId: 'v-203',
+      id: 5,
+      vendorId: '203',
       severity: AlertSeverity.INFO,
       type: 'DOCUMENT',
       title: 'Document Review Required',
@@ -1220,8 +901,8 @@ export class VendorService {
 
   private readonly MOCK_DOCUMENTS: VendorDocument[] = [
     {
-      id: 'doc-1',
-      vendorId: 'v-101',
+      id: 1,
+      vendorId: '101',
       category: DocumentCategory.REGISTRATION,
       name: 'Business Registration Certificate',
       fileName: 'business_registration_v101.pdf',
@@ -1237,8 +918,8 @@ export class VendorService {
       uploadedBy: 'Vendor User'
     },
     {
-      id: 'doc-2',
-      vendorId: 'v-101',
+      id: 2,
+      vendorId: '101',
       category: DocumentCategory.TAX,
       name: 'Tax Certificate (TIN)',
       fileName: 'tax_certificate_v101.pdf',
@@ -1254,8 +935,8 @@ export class VendorService {
       uploadedBy: 'Vendor User'
     },
     {
-      id: 'doc-3',
-      vendorId: 'v-101',
+      id: 3,
+      vendorId: '101',
       category: DocumentCategory.LICENCE,
       name: 'Business Operating Licence',
       fileName: 'operating_licence_v101.pdf',
@@ -1271,8 +952,8 @@ export class VendorService {
       uploadedBy: 'Vendor User'
     },
     {
-      id: 'doc-4',
-      vendorId: 'v-101',
+      id: 4,
+      vendorId: '101',
       category: DocumentCategory.INSURANCE,
       name: 'Public Liability Insurance',
       fileName: 'insurance_policy_v101.pdf',
@@ -1288,8 +969,8 @@ export class VendorService {
       uploadedBy: 'Vendor User'
     },
     {
-      id: 'doc-5',
-      vendorId: 'v-101',
+      id: 5,
+      vendorId: '101',
       category: DocumentCategory.CERTIFICATION,
       name: 'ISO 9001 Certification',
       fileName: 'iso_certification_v101.pdf',
@@ -1305,8 +986,8 @@ export class VendorService {
       uploadedBy: 'Vendor User'
     },
     {
-      id: 'doc-6',
-      vendorId: 'v-102',
+      id: 6,
+      vendorId: '102',
       category: DocumentCategory.REGISTRATION,
       name: 'Business Registration Certificate',
       fileName: 'business_registration_v102.pdf',
@@ -1325,8 +1006,8 @@ export class VendorService {
 
   private readonly MOCK_LIFECYCLE_HISTORY: VendorLifecycleHistory[] = [
     {
-      id: 'life-1',
-      vendorId: 'v-101',
+      id: 1,
+      vendorId: '101',
       event: VendorLifecycleEvent.APPLIED,
       description: 'Vendor application submitted via the Vendor Portal',
       performedBy: 'Vendor User',
@@ -1334,8 +1015,8 @@ export class VendorService {
       metadata: { source: 'portal', applicationId: 'APP-2026-001' }
     },
     {
-      id: 'life-2',
-      vendorId: 'v-101',
+      id: 2,
+      vendorId: '101',
       event: VendorLifecycleEvent.DOCUMENTS_SUBMITTED,
       description: 'Business registration, tax certificate, and operating licence uploaded',
       performedBy: 'Vendor User',
@@ -1343,8 +1024,8 @@ export class VendorService {
       metadata: { documents: ['registration.pdf', 'tax.pdf', 'licence.pdf'] }
     },
     {
-      id: 'life-3',
-      vendorId: 'v-101',
+      id: 3,
+      vendorId: '101',
       event: VendorLifecycleEvent.UNDER_REVIEW,
       description: 'Application moved to under review by procurement team',
       performedBy: 'A. Okoro (Procurement Lead)',
@@ -1352,8 +1033,8 @@ export class VendorService {
       metadata: { assignedTo: 'A. Okoro' }
     },
     {
-      id: 'life-4',
-      vendorId: 'v-101',
+      id: 4,
+      vendorId: '101',
       event: VendorLifecycleEvent.APPROVED,
       description: 'Vendor application approved after document verification',
       performedBy: 'A. Okoro (Procurement Lead)',
@@ -1361,8 +1042,8 @@ export class VendorService {
       metadata: { approvedBy: 'A. Okoro', notes: 'All documents verified successfully' }
     },
     {
-      id: 'life-5',
-      vendorId: 'v-101',
+      id: 5,
+      vendorId: '101',
       event: VendorLifecycleEvent.ACTIVATED,
       description: 'Vendor account activated in the marketplace',
       performedBy: 'System',
@@ -1370,8 +1051,8 @@ export class VendorService {
       metadata: { status: 'ACTIVE' }
     },
     {
-      id: 'life-6',
-      vendorId: 'v-101',
+      id: 6,
+      vendorId: '101',
       event: VendorLifecycleEvent.PERFORMANCE_UPDATE,
       description: 'Performance score updated to 95.4% - Vendor upgraded to Preferred Tier',
       performedBy: 'Sentinel AI',
@@ -1379,8 +1060,8 @@ export class VendorService {
       metadata: { oldScore: 88, newScore: 95.4, oldTier: 'APPROVED', newTier: 'PREFERRED' }
     },
     {
-      id: 'life-7',
-      vendorId: 'v-101',
+      id: 7,
+      vendorId: '101',
       event: VendorLifecycleEvent.DOCUMENT_VERIFIED,
       description: 'Insurance certificate verified and approved',
       performedBy: 'D. Balogun (Compliance)',
@@ -1388,8 +1069,8 @@ export class VendorService {
       metadata: { documentId: 'doc-insurance-101', status: 'VERIFIED' }
     },
     {
-      id: 'life-8',
-      vendorId: 'v-101',
+      id: 8,
+      vendorId: '101',
       event: VendorLifecycleEvent.RISK_ALERT,
       description: 'Performance decline alert triggered - On-time delivery rate dropped below 90%',
       performedBy: 'Sentinel AI',
@@ -1555,7 +1236,7 @@ export class VendorService {
               ...PendingVendorStore.getAll()
             ];
             // Deduplicate by ID - backend and store entries take priority
-            const seen = new Set<string>();
+            const seen = new Set<number>();
             finalVendors = allMock.filter(v => {
               if (!v.id || seen.has(v.id)) return false;
               seen.add(v.id);
@@ -1566,7 +1247,7 @@ export class VendorService {
 
           // Apply tenant-specific status override
           finalVendors = finalVendors.map(v => {
-            const tenantStatus = TenantVendorApprovalStore.getStatus(this.tenantId, v.id);
+            const tenantStatus = TenantVendorApprovalStore.getStatus(this.tenantId, String(v.id));
             if (tenantStatus) {
               return { ...v, status: tenantStatus };
             }
@@ -1629,7 +1310,7 @@ export class VendorService {
             ...this.MOCK_VENDORS,
             ...PendingVendorStore.getAll()
           ];
-          const seen = new Set<string>();
+          const seen = new Set<number>();
           let fallbackVendors = allMock.filter(v => {
             if (!v.id || seen.has(v.id)) return false;
             seen.add(v.id);
@@ -1638,7 +1319,7 @@ export class VendorService {
 
           // Apply tenant-specific status override
           fallbackVendors = fallbackVendors.map(v => {
-            const tenantStatus = TenantVendorApprovalStore.getStatus(this.tenantId, v.id);
+            const tenantStatus = TenantVendorApprovalStore.getStatus(this.tenantId, String(v.id));
             return tenantStatus ? { ...v, status: tenantStatus } : v;
           });
 
@@ -1681,9 +1362,13 @@ export class VendorService {
   getVendorById(id: string): Observable<Vendor> {
     this.loadingSubject.next(true);
 
+    // Route params always arrive as strings — Vendor.id is a number, so coerce
+    // once here rather than at every comparison below.
+    const numericId = Number(id);
+
     // Check the live cache first, then the shared portal store
-    const cachedVendor = this.vendorsSubject.value.find(v => v.id === id)
-      ?? PendingVendorStore.getById(id);
+    const cachedVendor = this.vendorsSubject.value.find(v => v.id === numericId)
+      ?? PendingVendorStore.getById(numericId);
     if (cachedVendor) {
       this.selectedVendorSubject.next(cachedVendor);
       this.loadingSubject.next(false);
@@ -1699,12 +1384,12 @@ export class VendorService {
         catchError(err => {
           this.loadingSubject.next(false);
           // Check the portal store first, then fall back to static mocks
-          const storeVendor = PendingVendorStore.getById(id);
-          const fallbackVendor = storeVendor || this.MOCK_VENDORS.find(v => v.id === id) || this.MOCK_VENDORS[0];
+          const storeVendor = PendingVendorStore.getById(numericId);
+          const fallbackVendor = storeVendor || this.MOCK_VENDORS.find(v => v.id === numericId) || this.MOCK_VENDORS[0];
           if (fallbackVendor) {
             const vendorWithDefaults: Vendor = {
               ...fallbackVendor,
-              id: id,
+              id: numericId,
               companyName: fallbackVendor.companyName || 'Mock Vendor',
               registrationNumber: fallbackVendor.registrationNumber || 'RC000000',
               taxId: fallbackVendor.taxId || 'TAX-000',
@@ -1848,6 +1533,11 @@ export class VendorService {
   }
 
   updateVendorStatus(id: string, status: VendorStatus): Observable<Vendor> {
+    // Route params always arrive as strings — Vendor.id is a number, so coerce
+    // once here rather than at every comparison below. `id` (string) is kept
+    // for the HTTP URL and the tenant-approval store, which is keyed by string.
+    const numericId = Number(id);
+
     return this.http.patch<Vendor>(`${this.baseUrl}/vendors/${id}/review`, { status })
       .pipe(
         map(raw => this.mapVendor(raw)),
@@ -1855,13 +1545,13 @@ export class VendorService {
           this.selectedVendorSubject.next(vendor);
           this.updateVendorInList(vendor);
           // Sync the status change into the shared store so both sides stay consistent
-          PendingVendorStore.updateStatus(id, status);
+          PendingVendorStore.updateStatus(numericId, status);
           TenantVendorApprovalStore.setStatus(this.tenantId, id, status);
         }),
         catchError(() => {
           // Mock fallback — update the shared store and emit the changed vendor
           TenantVendorApprovalStore.setStatus(this.tenantId, id, status);
-          const updated = PendingVendorStore.updateStatus(id, status);
+          const updated = PendingVendorStore.updateStatus(numericId, status);
           if (updated) {
             const tenantUpdated = { ...updated, status };
             this.updateVendorInList(tenantUpdated);
@@ -1869,7 +1559,7 @@ export class VendorService {
             return of(tenantUpdated);
           }
           // Vendor might only be in MOCK_VENDORS — patch it inline
-          const mockIdx = (this.MOCK_VENDORS as Vendor[]).findIndex(v => v.id === id);
+          const mockIdx = (this.MOCK_VENDORS as Vendor[]).findIndex(v => v.id === numericId);
           if (mockIdx !== -1) {
             const patched: Vendor = { ...(this.MOCK_VENDORS as Vendor[])[mockIdx], status, updatedAt: new Date() };
             (this.MOCK_VENDORS as Vendor[])[mockIdx] = patched;
@@ -2027,7 +1717,7 @@ export class VendorService {
         console.log('No alerts found for vendor, returning default info alert');
         return of([
           {
-            id: 'default-1',
+            id: 0,
             vendorId: vendorId,
             severity: AlertSeverity.INFO,
             type: 'GENERAL',
@@ -2064,10 +1754,11 @@ export class VendorService {
    *  priority over anything else, since these are what the vendor actually
    *  uploaded during registration (as opposed to generic placeholder mocks). */
   private getOwnVendorDocuments(vendorId: string): VendorDocument[] | null {
-    const vendor = this.vendorsSubject.value.find(v => v.id === vendorId)
+    const numericId = Number(vendorId);
+    const vendor = this.vendorsSubject.value.find(v => v.id === numericId)
       ?? this.selectedVendorSubject.value
-      ?? PendingVendorStore.getById(vendorId);
-    if (vendor?.id === vendorId && vendor.documents?.length) {
+      ?? PendingVendorStore.getById(numericId);
+    if (vendor?.id === numericId && vendor.documents?.length) {
       return vendor.documents;
     }
     return null;
@@ -2123,7 +1814,7 @@ export class VendorService {
             }
 
             return {
-              id: String(raw.id),
+              id: Number(raw.id),
               vendorId: String(raw.vendorId || vendorId),
               category: category,
               name: raw.label || raw.name || raw.fileName || 'Unnamed Document',
@@ -2160,7 +1851,7 @@ export class VendorService {
             // Create vendor-specific mock documents
             const vendorSpecificDocs: VendorDocument[] = [
               {
-                id: `doc-${vendorId}-1`,
+                id: Number(vendorId) * 100 + 1,
                 vendorId: vendorId,
                 category: DocumentCategory.REGISTRATION,
                 name: 'Business Registration Certificate',
@@ -2177,7 +1868,7 @@ export class VendorService {
                 uploadedBy: 'Vendor User'
               },
               {
-                id: `doc-${vendorId}-2`,
+                id: Number(vendorId) * 100 + 2,
                 vendorId: vendorId,
                 category: DocumentCategory.TAX,
                 name: 'Tax Certificate',
@@ -2194,7 +1885,7 @@ export class VendorService {
                 uploadedBy: 'Vendor User'
               },
               {
-                id: `doc-${vendorId}-3`,
+                id: Number(vendorId) * 100 + 3,
                 vendorId: vendorId,
                 category: DocumentCategory.LICENCE,
                 name: 'Operating Licence',
@@ -2309,7 +2000,7 @@ export class VendorService {
             // Return generic mock data for this vendor
             const genericData: VendorLifecycleHistory[] = [
               {
-                id: `life-${vendorId}-1`,
+                id: Number(vendorId) * 100 + 1,
                 vendorId: vendorId,
                 event: VendorLifecycleEvent.APPLIED,
                 description: 'Vendor application submitted',
@@ -2317,7 +2008,7 @@ export class VendorService {
                 timestamp: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
               },
               {
-                id: `life-${vendorId}-2`,
+                id: Number(vendorId) * 100 + 2,
                 vendorId: vendorId,
                 event: VendorLifecycleEvent.DOCUMENTS_SUBMITTED,
                 description: 'Required documents uploaded',
@@ -2325,7 +2016,7 @@ export class VendorService {
                 timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000)
               },
               {
-                id: `life-${vendorId}-3`,
+                id: Number(vendorId) * 100 + 3,
                 vendorId: vendorId,
                 event: VendorLifecycleEvent.UNDER_REVIEW,
                 description: 'Application under review',
@@ -2333,7 +2024,7 @@ export class VendorService {
                 timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
               },
               {
-                id: `life-${vendorId}-4`,
+                id: Number(vendorId) * 100 + 4,
                 vendorId: vendorId,
                 event: VendorLifecycleEvent.ACTIVATED,
                 description: 'Vendor activated in the marketplace',
@@ -2434,12 +2125,6 @@ export class VendorService {
   private fraudFlagsSubject = new BehaviorSubject<FraudFlag[]>([]);
   fraudFlags$ = this.fraudFlagsSubject.asObservable();
 
-  private actionLogSubject = new BehaviorSubject<SentinelActionLogEntry[]>(MOCK_ACTION_LOG);
-  actionLog$ = this.actionLogSubject.asObservable();
-
-  private governanceRulesSubject = new BehaviorSubject<SentinelGovernanceRule[]>(MOCK_GOVERNANCE_RULES);
-  governanceRules$ = this.governanceRulesSubject.asObservable();
-
   getSentinelInsights(): Observable<SentinelInsight[]> {
     return this.http.get<SentinelInsight[]>(`${API_BASE}/ai/sentinel/insights`)
       .pipe(
@@ -2451,7 +2136,7 @@ export class VendorService {
       );
   }
 
-  actOnInsight(insightId: string, action: string): Observable<SentinelInsight[]> {
+  actOnInsight(insightId: number, action: string): Observable<SentinelInsight[]> {
     const current = this.sentinelInsightsSubject.value.length
       ? this.sentinelInsightsSubject.value
       : MOCK_SENTINEL_INSIGHTS;
@@ -2494,7 +2179,7 @@ export class VendorService {
       );
   }
 
-  updateFraudFlagStatus(flagId: string, status: FraudFlag['status']): Observable<FraudFlag[]> {
+  updateFraudFlagStatus(flagId: number, status: FraudFlag['status']): Observable<FraudFlag[]> {
     const current = this.fraudFlagsSubject.value.length ? this.fraudFlagsSubject.value : MOCK_FRAUD_FLAGS;
     const updated = current.map(f => f.id === flagId ? { ...f, status } : f);
 
@@ -2531,67 +2216,6 @@ export class VendorService {
       );
   }
 
-  getSmartVendorShortlist(category?: string): Observable<SmartVendorShortlistItem[]> {
-    return this.http.get<SmartVendorShortlistItem[]>(`${API_BASE}/ai/sentinel/smart-shortlist`, {
-      params: category ? new HttpParams().set('category', category) : undefined
-    }).pipe(
-      catchError(() => of(MOCK_SMART_SHORTLIST))
-    );
-  }
-
-  querySentinel(query: string): Observable<SentinelQueryResult> {
-    return this.http.post<SentinelQueryResult>(`${API_BASE}/ai/sentinel/ask`, { query })
-      .pipe(
-        catchError(() => of(this.buildMockSentinelAnswer(query)))
-      );
-  }
-
-  private buildMockSentinelAnswer(query: string): SentinelQueryResult {
-    const q = query.toLowerCase();
-
-    if (q.includes('dispute')) {
-      return {
-        query,
-        answer: '2 vendors had 2 or more disputes in the last 90 days: Coastline Marine Freight Co. (3 disputes) and BrightPath Office Supplies (2 disputes).',
-        matchedVendors: [
-          { vendorId: 'v-241', vendorName: 'Coastline Marine Freight Co.', detail: '3 disputes in 90 days — 2 citing short-delivery' },
-          { vendorId: 'v-256', vendorName: 'BrightPath Office Supplies', detail: '2 disputes in 90 days — 1 duplicate invoice flag open' }
-        ],
-        generatedAt: new Date()
-      };
-    }
-    if (q.includes('risk') || q.includes('rising')) {
-      return {
-        query,
-        answer: '3 vendors currently show a Rising risk trajectory: Vanguard Security Services, OmniCorp Facilities Ltd, and Coastline Marine Freight Co.',
-        matchedVendors: [
-          { vendorId: 'v-204', vendorName: 'Vanguard Security Services', detail: 'Rising — 84% confidence, delivery trend declining' },
-          { vendorId: 'v-217', vendorName: 'OmniCorp Facilities Ltd', detail: 'Rising — 90% confidence, unresolved fraud flag' },
-          { vendorId: 'v-241', vendorName: 'Coastline Marine Freight Co.', detail: 'Rising — 79% confidence, dispute frequency tripled' }
-        ],
-        generatedAt: new Date()
-      };
-    }
-    if (q.includes('fraud') || q.includes('bank')) {
-      return {
-        query,
-        answer: '1 vendor has an unresolved bank-detail change flag: OmniCorp Facilities Ltd, pending review since this morning.',
-        matchedVendors: [
-          { vendorId: 'v-217', vendorName: 'OmniCorp Facilities Ltd', detail: 'Bank details changed 2 days before a ₦4.2M invoice — pending review' }
-        ],
-        generatedAt: new Date()
-      };
-    }
-    return {
-      query,
-      answer: 'Based on current vendor data, here are the closest matches to your question. Try asking about disputes, risk trajectory, or fraud flags for more specific results.',
-      matchedVendors: [
-        { vendorId: 'v-101', vendorName: 'Apex Industrial Supplies Ltd', detail: 'Top performer — eligible for tier upgrade' }
-      ],
-      generatedAt: new Date()
-    };
-  }
-
   getSentinelSummaryStats(): Observable<SentinelSummaryStats> {
     return this.http.get<SentinelSummaryStats>(`${API_BASE}/ai/sentinel/summary`)
       .pipe(
@@ -2599,323 +2223,12 @@ export class VendorService {
           activeInsights: MOCK_SENTINEL_INSIGHTS.filter(i => i.status === InsightActionStatus.OPEN).length,
           criticalInsights: MOCK_SENTINEL_INSIGHTS.filter(i => i.severity === InsightSeverity.CRITICAL).length,
           fraudFlagsPending: MOCK_FRAUD_FLAGS.filter(f => f.status === 'PENDING_REVIEW').length,
-          actionsAutoThisWeek: MOCK_ACTION_LOG.filter(a => a.executionType === 'AUTO').length + 9,
-          actionsStaffApprovedThisWeek: MOCK_ACTION_LOG.filter(a => a.executionType === 'STAFF_APPROVED').length + 3,
+          actionsAutoThisWeek: 0,
+          actionsStaffApprovedThisWeek: 0,
           averagePredictionConfidence: Math.round(
             MOCK_RISK_TRAJECTORIES.reduce((sum, t) => sum + t.confidence, 0) / MOCK_RISK_TRAJECTORIES.length
           )
         }))
-      );
-  }
-
-  getSentinelActionLog(): Observable<SentinelActionLogEntry[]> {
-    return this.http.get<SentinelActionLogEntry[]>(`${API_BASE}/ai/sentinel/action-log`)
-      .pipe(
-        tap(data => this.actionLogSubject.next(data)),
-        catchError(() => of(MOCK_ACTION_LOG))
-      );
-  }
-
-  getGovernanceRules(): Observable<SentinelGovernanceRule[]> {
-    return this.http.get<SentinelGovernanceRule[]>(`${API_BASE}/ai/sentinel/governance-rules`)
-      .pipe(
-        catchError(() => of(MOCK_GOVERNANCE_RULES))
-      );
-  }
-
-  updateGovernanceRule(ruleId: string, autonomyLevel: SentinelGovernanceRule['autonomyLevel']): Observable<SentinelGovernanceRule[]> {
-    const current = this.governanceRulesSubject.value;
-    const updated = current.map(r => (r.id === ruleId && r.editable) ? { ...r, autonomyLevel } : r);
-
-    return this.http.post<SentinelGovernanceRule[]>(`${API_BASE}/ai/sentinel/governance-rules/${ruleId}`, { autonomyLevel })
-      .pipe(
-        tap(() => this.governanceRulesSubject.next(updated)),
-        catchError(() => {
-          this.governanceRulesSubject.next(updated);
-          return of(updated);
-        })
-      );
-  }
-
-  // ============================================================
-  // VENDOR RESOLUTION CENTER
-  // ============================================================
-
-  private messageThreadsSubject = new BehaviorSubject<MessageThread[]>([]);
-  messageThreads$ = this.messageThreadsSubject.asObservable();
-
-  private disputeCasesSubject = new BehaviorSubject<DisputeCase[]>([]);
-  disputeCases$ = this.disputeCasesSubject.asObservable();
-
-  private resolutionAuditLogSubject = new BehaviorSubject<ResolutionAuditLogEntry[]>(MOCK_RESOLUTION_AUDIT_LOG);
-  resolutionAuditLog$ = this.resolutionAuditLogSubject.asObservable();
-
-  getMessageThreads(vendorId?: string): Observable<MessageThread[]> {
-    return this.http.get<MessageThread[]>(`${API_BASE}/resolution/threads`, {
-      params: vendorId ? new HttpParams().set('vendorId', vendorId) : undefined
-    }).pipe(
-      tap(data => this.messageThreadsSubject.next(data)),
-      catchError(() => {
-        const data = vendorId ? MOCK_MESSAGE_THREADS.filter(t => t.vendorId === vendorId) : MOCK_MESSAGE_THREADS;
-        this.messageThreadsSubject.next(this.messageThreadsSubject.value.length ? this.messageThreadsSubject.value : MOCK_MESSAGE_THREADS);
-        return of(data);
-      })
-    );
-  }
-
-  sendThreadMessage(threadId: string, content: string, authorName: string = 'You'): Observable<ThreadMessage> {
-    const newMessage: ThreadMessage = {
-      id: 'm-' + Math.random().toString(36).slice(2, 9),
-      sender: 'COMPANY',
-      authorName,
-      content,
-      timestamp: new Date(),
-      attachments: []
-    };
-
-    const current = this.messageThreadsSubject.value.length ? this.messageThreadsSubject.value : MOCK_MESSAGE_THREADS;
-    const updated = current.map(t => t.id === threadId
-      ? { ...t, messages: [...t.messages, newMessage], lastMessageAt: newMessage.timestamp, lastMessagePreview: content, status: 'AWAITING_VENDOR' as ThreadStatus }
-      : t);
-
-    return this.http.post<ThreadMessage>(`${API_BASE}/resolution/threads/${threadId}/messages`, { content })
-      .pipe(
-        tap(() => this.messageThreadsSubject.next(updated)),
-        catchError(() => {
-          this.messageThreadsSubject.next(updated);
-          return of(newMessage);
-        })
-      );
-  }
-
-  addInternalNote(threadId: string, content: string, authorName: string = 'You'): Observable<InternalNote> {
-    const newNote: InternalNote = {
-      id: 'note-' + Math.random().toString(36).slice(2, 9),
-      authorName,
-      content,
-      timestamp: new Date()
-    };
-
-    const current = this.messageThreadsSubject.value.length ? this.messageThreadsSubject.value : MOCK_MESSAGE_THREADS;
-    const updated = current.map(t => t.id === threadId
-      ? { ...t, internalNotes: [...t.internalNotes, newNote] }
-      : t);
-
-    return this.http.post<InternalNote>(`${API_BASE}/resolution/threads/${threadId}/notes`, { content })
-      .pipe(
-        tap(() => this.messageThreadsSubject.next(updated)),
-        catchError(() => {
-          this.messageThreadsSubject.next(updated);
-          return of(newNote);
-        })
-      );
-  }
-
-  updateThreadStatus(threadId: string, status: ThreadStatus): Observable<MessageThread[]> {
-    const current = this.messageThreadsSubject.value.length ? this.messageThreadsSubject.value : MOCK_MESSAGE_THREADS;
-    const updated = current.map(t => t.id === threadId ? { ...t, status } : t);
-
-    return this.http.post<MessageThread[]>(`${API_BASE}/resolution/threads/${threadId}/status`, { status })
-      .pipe(
-        tap(() => this.messageThreadsSubject.next(updated)),
-        catchError(() => {
-          this.messageThreadsSubject.next(updated);
-          return of(updated);
-        })
-      );
-  }
-
-  getCannedTemplates(): Observable<CannedTemplate[]> {
-    return this.http.get<CannedTemplate[]>(`${API_BASE}/resolution/templates`)
-      .pipe(
-        catchError(() => of(MOCK_CANNED_TEMPLATES))
-      );
-  }
-
-  getDisputeCases(vendorId?: string): Observable<DisputeCase[]> {
-    return this.http.get<DisputeCase[]>(`${API_BASE}/resolution/disputes`, {
-      params: vendorId ? new HttpParams().set('vendorId', vendorId) : undefined
-    }).pipe(
-      tap(data => this.disputeCasesSubject.next(data)),
-      catchError(() => {
-        const data = vendorId ? MOCK_DISPUTE_CASES.filter(c => c.vendorId === vendorId) : MOCK_DISPUTE_CASES;
-        this.disputeCasesSubject.next(this.disputeCasesSubject.value.length ? this.disputeCasesSubject.value : MOCK_DISPUTE_CASES);
-        return of(data);
-      })
-    );
-  }
-
-  openDisputeCase(payload: {
-    vendorId: string;
-    vendorName: string;
-    category: DisputeCategory;
-    subject: string;
-    linkedRecord: LinkedRecord;
-    ownerName: string;
-    threadId?: string;
-  }): Observable<DisputeCase> {
-    const newCase: DisputeCase = {
-      id: 'case-' + Math.random().toString(36).slice(2, 9),
-      caseNumber: 'DSP-2026-' + Math.floor(1000 + Math.random() * 8999),
-      vendorId: payload.vendorId,
-      vendorName: payload.vendorName,
-      category: payload.category,
-      subject: payload.subject,
-      linkedRecord: payload.linkedRecord,
-      stage: 'OPENED',
-      openedAt: new Date(),
-      slaDeadline: new Date(Date.now() + 48 * 60 * 60 * 1000),
-      ownerName: payload.ownerName,
-      threadId: payload.threadId,
-      evidence: [],
-      timeline: [
-        { id: 'tl-' + Math.random().toString(36).slice(2, 9), timestamp: new Date(), actor: payload.ownerName, action: 'Case opened' }
-      ]
-    };
-
-    const current = this.disputeCasesSubject.value.length ? this.disputeCasesSubject.value : MOCK_DISPUTE_CASES;
-    const updated = [newCase, ...current];
-
-    return this.http.post<DisputeCase>(`${API_BASE}/resolution/disputes`, payload)
-      .pipe(
-        tap(() => this.disputeCasesSubject.next(updated)),
-        catchError(() => {
-          this.disputeCasesSubject.next(updated);
-          return of(newCase);
-        })
-      );
-  }
-
-  advanceDisputeStage(caseId: string, stage: DisputeStage, actor: string = 'You', note?: string): Observable<DisputeCase[]> {
-    const current = this.disputeCasesSubject.value.length ? this.disputeCasesSubject.value : MOCK_DISPUTE_CASES;
-    const updated = current.map(c => {
-      if (c.id !== caseId) return c;
-      const event: DisputeTimelineEvent = {
-        id: 'tl-' + Math.random().toString(36).slice(2, 9),
-        timestamp: new Date(),
-        actor,
-        action: `Moved to ${stage.replace('_', ' ')}`,
-        note
-      };
-      return { ...c, stage, timeline: [...c.timeline, event] };
-    });
-
-    return this.http.post<DisputeCase[]>(`${API_BASE}/resolution/disputes/${caseId}/stage`, { stage, note })
-      .pipe(
-        tap(() => this.disputeCasesSubject.next(updated)),
-        catchError(() => {
-          this.disputeCasesSubject.next(updated);
-          return of(updated);
-        })
-      );
-  }
-
-  closeDisputeCase(caseId: string, outcome: DisputeOutcome, actor: string = 'You', note?: string): Observable<DisputeCase[]> {
-    const current = this.disputeCasesSubject.value.length ? this.disputeCasesSubject.value : MOCK_DISPUTE_CASES;
-    const updated = current.map(c => {
-      if (c.id !== caseId) return c;
-      const event: DisputeTimelineEvent = {
-        id: 'tl-' + Math.random().toString(36).slice(2, 9),
-        timestamp: new Date(),
-        actor,
-        action: 'Case closed',
-        note: note || `Outcome recorded: ${outcome.replace('_', ' ')}`
-      };
-      return { ...c, stage: 'CLOSED' as DisputeStage, outcome, closedAt: new Date(), timeline: [...c.timeline, event] };
-    });
-
-    return this.http.post<DisputeCase[]>(`${API_BASE}/resolution/disputes/${caseId}/close`, { outcome, note })
-      .pipe(
-        tap(() => this.disputeCasesSubject.next(updated)),
-        catchError(() => {
-          this.disputeCasesSubject.next(updated);
-          return of(updated);
-        })
-      );
-  }
-
-  getResolutionSummaryStats(): Observable<ResolutionSummaryStats> {
-    return this.http.get<ResolutionSummaryStats>(`${API_BASE}/resolution/summary`)
-      .pipe(
-        catchError(() => {
-          const threads = this.messageThreadsSubject.value.length ? this.messageThreadsSubject.value : MOCK_MESSAGE_THREADS;
-          const cases = this.disputeCasesSubject.value.length ? this.disputeCasesSubject.value : MOCK_DISPUTE_CASES;
-          const openThreads = threads.filter(t => t.status === 'OPEN' || t.status === 'AWAITING_VENDOR' || t.status === 'AWAITING_STAFF');
-          const openCases = cases.filter(c => c.stage !== 'CLOSED');
-          const overdueCases = openCases.filter(c => new Date(c.slaDeadline).getTime() < Date.now());
-          const responseTimes = threads.map(t => t.firstResponseTimeMinutes).filter((v): v is number => v !== null);
-          const resolutionTimes = threads.map(t => t.resolutionTimeMinutes).filter((v): v is number => v !== null);
-
-          return of({
-            openConversations: openThreads.length,
-            openDisputes: openCases.length,
-            overdueDisputes: overdueCases.length,
-            avgFirstResponseMinutes: responseTimes.length ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length) : 0,
-            avgResolutionMinutes: resolutionTimes.length ? Math.round(resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length) : 0
-          });
-        })
-      );
-  }
-
-  private filterMockVendors(filters?: any): Vendor[] {
-    // Merge static mock vendors with any vendors submitted via the portal
-    let vendors = [...this.MOCK_VENDORS, ...PendingVendorStore.getAll()];
-    // Deduplicate by id (store entries take precedence — they have live status)
-    const seen = new Set<string>();
-    vendors = vendors.filter(v => {
-      if (seen.has(v.id)) return false;
-      seen.add(v.id);
-      return true;
-    });
-
-    // Apply tenant-specific status override so filters (such as ACTIVE status) match correctly
-    vendors = vendors.map(v => {
-      const tenantStatus = TenantVendorApprovalStore.getStatus(this.tenantId, v.id);
-      if (tenantStatus) {
-        return { ...v, status: tenantStatus };
-      }
-      return v;
-    });
-
-    if (!filters) return vendors;
-
-    if (filters.statuses) {
-      const statuses = Array.isArray(filters.statuses) ? filters.statuses : [filters.statuses];
-      vendors = vendors.filter(v => statuses.includes(v.status));
-    } else if (filters.status) {
-      vendors = vendors.filter(v => v.status === filters.status);
-    }
-
-    if (filters.tier) {
-      vendors = vendors.filter(v => v.tier === filters.tier);
-    }
-
-    if (filters.riskLevel) {
-      vendors = vendors.filter(v => v.riskLevel === filters.riskLevel);
-    }
-
-    if (filters.category) {
-      const category = String(filters.category).toLowerCase();
-      vendors = vendors.filter(v => (v.categories || []).some((cat: string) => cat.toLowerCase().includes(category)));
-    }
-
-    if (filters.search) {
-      const search = String(filters.search).toLowerCase();
-      vendors = vendors.filter(v =>
-        (v.companyName || '').toLowerCase().includes(search) ||
-        (v.email || '').toLowerCase().includes(search) ||
-        (v.registrationNumber || '').toLowerCase().includes(search)
-      );
-    }
-
-    return vendors;
-  }
-
-  getResolutionAuditLog(): Observable<ResolutionAuditLogEntry[]> {
-    return this.http.get<ResolutionAuditLogEntry[]>(`${API_BASE}/resolution/audit-log`)
-      .pipe(
-        tap(data => this.resolutionAuditLogSubject.next(data)),
-        catchError(() => of(MOCK_RESOLUTION_AUDIT_LOG))
       );
   }
 

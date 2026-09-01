@@ -114,7 +114,12 @@ export class BranchSelectorComponent implements OnInit, OnChanges, OnDestroy {
 
   getSelectedBranchName(): string {
     if (!this.selectedBranchId) return this.allOptionLabel;
-    const branch = this.branchOptions.find(b => b.id === this.selectedBranchId);
+    const branch = this.branchOptions.find(b => this.isBranchSelected(b.id));
     return branch ? branch.name : this.placeholder;
+  }
+
+  /** selectedBranchId is a string (it comes from a route param / <select> value), Branch.id is a number. */
+  isBranchSelected(id: number): boolean {
+    return String(id) === this.selectedBranchId;
   }
 }

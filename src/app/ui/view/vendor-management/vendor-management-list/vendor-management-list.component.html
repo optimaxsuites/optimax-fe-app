@@ -359,6 +359,17 @@
                                         [class.fa-check-circle]="vendor.riskLevel === RiskLevel.LOW"></i>
                                     {{ vendor.riskLevel }}
                                 </span>
+                                <ng-container *ngIf="getRiskTrajectory(vendor.id) as trajectory">
+                                    <i class="fas" [class]="getRiskTrajectoryIcon(trajectory.direction)"
+                                        [style.color]="getRiskTrajectoryColor(trajectory.direction)"
+                                        style="margin-left: 6px;"
+                                        [title]="'AI risk trend: ' + trajectory.direction + ' (' + trajectory.confidence + '% confidence) — ' + trajectory.reason">
+                                    </i>
+                                </ng-container>
+                                <i *ngIf="hasActiveFraudFlag(vendor.id)" class="fas fa-triangle-exclamation"
+                                    style="margin-left: 6px; color: #DC2626;"
+                                    title="AI fraud watch: an active flag needs review">
+                                </i>
                             </td>
 
                             <td *ngIf="visibleColumns.performance">

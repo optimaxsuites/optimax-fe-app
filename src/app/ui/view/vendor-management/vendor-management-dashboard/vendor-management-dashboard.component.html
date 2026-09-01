@@ -435,6 +435,70 @@
 
             </div>
 
+            <!-- ROW 5: AI Suggestions (insights feed + fraud watch, inline instead of a dedicated tab) -->
+            <div class="three-columns-cards" style="grid-template-columns: 1fr 1fr;" *ngIf="customization.showAiInsights">
+
+                <!-- AI Insights -->
+                <div class="data-table-card glass">
+                    <div class="card-header">
+                        <h3><i class="fas fa-wand-magic-sparkles"></i> AI Insights</h3>
+                        <span class="view-link" *ngIf="aiSummary" style="cursor: default;">
+                            {{ aiSummary.criticalInsights }} critical
+                        </span>
+                    </div>
+                    <div class="activity-list">
+                        <div *ngFor="let insight of topInsights" class="activity-item">
+                            <div class="activity-icon" [style.background]="getInsightSeverityColor(insight.severity) + '20'"
+                                [style.color]="getInsightSeverityColor(insight.severity)">
+                                <i class="fas fa-circle-exclamation"></i>
+                            </div>
+                            <div class="activity-content">
+                                <span class="activity-title">{{ insight.finding }}</span>
+                                <span class="activity-description">{{ insight.vendorName }} — {{ insight.reason }}</span>
+                                <span class="activity-time">{{ insight.confidence }}% confidence</span>
+                            </div>
+                            <button class="activity-action" *ngIf="insight.suggestedActions?.length"
+                                [title]="insight.suggestedActions[0].label"
+                                (click)="actOnInsight(insight, insight.suggestedActions[0].action)">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div *ngIf="topInsights.length === 0" class="empty-table-row">
+                            <i class="fas fa-check-circle"></i> No open insights right now
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fraud Watch -->
+                <div class="data-table-card glass">
+                    <div class="card-header">
+                        <h3><i class="fas fa-shield-halved"></i> Fraud Watch</h3>
+                        <span class="view-link" *ngIf="aiSummary" style="cursor: default;">
+                            {{ aiSummary.fraudFlagsPending }} pending
+                        </span>
+                    </div>
+                    <div class="activity-list">
+                        <div *ngFor="let flag of pendingFraudFlags" class="activity-item">
+                            <div class="activity-icon" style="background: #DC262620; color: #DC2626;">
+                                <i class="fas fa-triangle-exclamation"></i>
+                            </div>
+                            <div class="activity-content">
+                                <span class="activity-title">{{ flag.title }}</span>
+                                <span class="activity-description">{{ flag.vendorName }} — {{ flag.description }}</span>
+                                <span class="activity-time">{{ formatDate(flag.detectedAt) }}</span>
+                            </div>
+                            <button class="activity-action" title="Investigate" (click)="investigateFraudFlag(flag)">
+                                <i class="fas fa-magnifying-glass"></i>
+                            </button>
+                        </div>
+                        <div *ngIf="pendingFraudFlags.length === 0" class="empty-table-row">
+                            <i class="fas fa-check-circle"></i> No fraud flags pending review
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
         </ng-container>
 
         <!-- SVG Gradients -->

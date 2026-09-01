@@ -365,6 +365,60 @@ export interface PaymentReceipt {
   issuedAt: Date;
 }
 
+// ------------------------------------------------------------------
+// Sales Document Email DTOs
+// Backs POST/GET /x/api/v2/commerce/sales/email(/send|/{id}) — emailing
+// a Quote or Invoice to a customer, and the send history/status for it.
+// Replaces the generic procurement NotificationService.sendDirectEmail()
+// call quote-form/invoice-form used before this endpoint existed.
+// ------------------------------------------------------------------
+
+export type SalesEmailDocumentType = 'QUOTE' | 'INVOICE';
+
+export type SalesEmailStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
+
+export interface SalesEmailAttachment {
+  fileName: string;
+  fileUrl: string;
+  size: number;
+  type: string;
+}
+
+/** Request body for POST /sales/email/send. */
+export interface SendSalesEmailRequest {
+  documentType: SalesEmailDocumentType;
+  documentId: number;
+  documentNumber: string;
+  to: string;
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  message: string;
+  attachments?: SalesEmailAttachment[];
+  sentBy: string;
+}
+
+/** A logged send, as returned by GET /sales/email and GET /sales/email/{id}. */
+export interface SalesEmailNotification {
+  id: number;
+  tenantId: string;
+  documentType: SalesEmailDocumentType;
+  documentId: number;
+  documentNumber: string;
+  to: string;
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  attachments?: SalesEmailAttachment[];
+  status: SalesEmailStatus;
+  sentAt?: Date | string;
+  deliveredAt?: Date | string;
+  failureReason?: string;
+  retryCount: number;
+  sentBy: string;
+  createdAt: Date | string;
+}
+
 export interface TopCustomers {
   customerId: Customer;
   productName: SalesandTransactions;

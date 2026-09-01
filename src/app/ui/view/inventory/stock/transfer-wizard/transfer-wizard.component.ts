@@ -209,8 +209,8 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     if (!this.lockedBranchId) return;
     this.direction = direction;
 
-    const lockedBranch = this.branches.filter(b => b.id === this.lockedBranchId);
-    const otherActiveBranches = this.branches.filter(b => b.id !== this.lockedBranchId && b.status === 'ACTIVE');
+    const lockedBranch = this.branches.filter(b => String(b.id) === this.lockedBranchId);
+    const otherActiveBranches = this.branches.filter(b => String(b.id) !== this.lockedBranchId && b.status === 'ACTIVE');
 
     this.sourceBranches = direction === 'FROM' ? lockedBranch : otherActiveBranches;
     this.destinationBranches = direction === 'FROM' ? otherActiveBranches : lockedBranch;
@@ -567,7 +567,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
   // ============================================================
 
   getBranchName(branchId: string): string {
-    const branch = this.branches.find(b => b.id === branchId);
+    const branch = this.branches.find(b => String(b.id) === branchId);
     return branch?.name || branchId;
   }
 

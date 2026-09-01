@@ -18,7 +18,9 @@ import {
   VendorListResponse,
   getVendorStatusColor,
   getVendorTierLabel,
-  getRiskLevelColor
+  getRiskLevelColor,
+  OnboardingCopilotSession,
+  ExtractedField
 } from '../../../domain/vendor-management/vendor-management.dto';
 
 // ============================================================
@@ -68,7 +70,7 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
   sortDirection: 'asc' | 'desc' = 'asc';
 
   // Selection
-  selectedVendors: Set<string> = new Set();
+  selectedVendors: Set<number> = new Set();
   selectAll: boolean = false;
 
   // UI
@@ -438,7 +440,7 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
     }
   }
 
-  toggleSelectVendor(id: string): void {
+  toggleSelectVendor(id: number): void {
     if (this.selectedVendors.has(id)) {
       this.selectedVendors.delete(id);
     } else {
@@ -447,7 +449,7 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
     this.selectAll = this.filteredVendors.every(v => this.selectedVendors.has(v.id));
   }
 
-  isSelected(id: string): boolean {
+  isSelected(id: number): boolean {
     return this.selectedVendors.has(id);
   }
 
@@ -464,6 +466,7 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
     this.reviewAction = action;
     this.reviewNotes = '';
     this.showReviewModal = true;
+    this.loadOnboardingCopilot(String(vendor.id));
   }
 
   closeReviewModal(): void {
@@ -471,6 +474,62 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
     this.selectedVendor = null;
     this.reviewAction = null;
     this.reviewNotes = '';
+    this.copilotSession = null;
+    this.editingFieldName = null;
+  }
+
+  // ============================================================
+  // ONBOARDING COPILOT (AI-extracted fields — inline instead of a dedicated tab)
+  // ============================================================
+
+  copilotSession: OnboardingCopilotSession | null = null;
+  isLoadingCopilot = false;
+  editingFieldName: string | null = null;
+  editFieldValue = '';
+
+  private loadOnboardingCopilot(vendorId: string): void {
+    this.copilotSession = null;
+    this.isLoadingCopilot = true;
+
+    this.vendorService.getOnboardingCopilotSession(vendorId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (session) => {
+          this.copilotSession = session;
+          this.isLoadingCopilot = false;
+        },
+        error: (err) => {
+          console.error('Failed to load onboarding copilot session:', err);
+          this.isLoadingCopilot = false;
+        }
+      });
+  }
+
+  startEditingField(field: ExtractedField): void {
+    this.editingFieldName = field.fieldName;
+    this.editFieldValue = field.extractedValue;
+  }
+
+  cancelEditingField(): void {
+    this.editingFieldName = null;
+    this.editFieldValue = '';
+  }
+
+  confirmField(field: ExtractedField, correctedValue?: string): void {
+    if (!this.copilotSession) return;
+
+    this.vendorService.confirmExtractedField(this.copilotSession.id, field.fieldName, correctedValue)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (updated) => {
+          const session = this.copilotSession;
+          if (!session) return;
+          session.extractedFields = session.extractedFields.map(f => f.fieldName === updated.fieldName ? updated : f);
+          this.editingFieldName = null;
+          this.editFieldValue = '';
+        },
+        error: (err) => console.error('Failed to confirm extracted field:', err)
+      });
   }
 
   submitReview(): void {
@@ -480,7 +539,7 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
 
     if (this.reviewAction === 'approve') {
       // Approve vendor - set status to ACTIVE
-      this.vendorService.updateVendorStatus(this.selectedVendor.id, VendorStatus.ACTIVE)
+      this.vendorService.updateVendorStatus(String(this.selectedVendor.id), VendorStatus.ACTIVE)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
@@ -498,7 +557,7 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
     } else {
       // Reject vendor - set status to INACTIVE or OFFBOARDED
       // In real implementation, you might want to send rejection reason
-      this.vendorService.updateVendorStatus(this.selectedVendor.id, VendorStatus.INACTIVE)
+      this.vendorService.updateVendorStatus(String(this.selectedVendor.id), VendorStatus.INACTIVE)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
@@ -545,7 +604,7 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
     let completed = 0;
 
     ids.forEach(id => {
-      this.vendorService.updateVendorStatus(id, VendorStatus.ACTIVE).subscribe({
+      this.vendorService.updateVendorStatus(String(id), VendorStatus.ACTIVE).subscribe({
         next: () => {
           completed++;
           if (completed === ids.length) {
@@ -574,7 +633,7 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
     let completed = 0;
 
     ids.forEach(id => {
-      this.vendorService.updateVendorStatus(id, VendorStatus.INACTIVE).subscribe({
+      this.vendorService.updateVendorStatus(String(id), VendorStatus.INACTIVE).subscribe({
         next: () => {
           completed++;
           if (completed === ids.length) {
@@ -597,11 +656,11 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
   // NAVIGATION
   // ============================================================
 
-  viewVendor(id: string): void {
+  viewVendor(id: number): void {
     this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
   }
 
-  viewDocuments(id: string): void {
+  viewDocuments(id: number): void {
     this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], { queryParams: { tab: 'documents' } });
   }
 

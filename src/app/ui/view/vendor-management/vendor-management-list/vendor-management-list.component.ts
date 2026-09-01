@@ -18,7 +18,11 @@ import {
   VendorListResponse,
   getVendorStatusColor,
   getVendorTierLabel,
-  getRiskLevelColor
+  getRiskLevelColor,
+  VendorRiskTrajectory,
+  FraudFlag,
+  getRiskTrajectoryColor,
+  getRiskTrajectoryIcon
 } from '../../../domain/vendor-management/vendor-management.dto';
 
 // ============================================================
@@ -67,7 +71,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   sortDirection: 'asc' | 'desc' = 'asc';
 
   // Selection
-  selectedVendors: Set<string> = new Set();
+  selectedVendors: Set<number> = new Set();
   selectAll: boolean = false;
 
   // UI
@@ -146,6 +150,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     this.setupSearch();
     this.checkScreenSize();
     this.loadColumnPreferences();
+    this.loadAiSignals();
   }
 
   ngAfterViewInit(): void {
@@ -251,6 +256,40 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
           this.isLoading = false;
         }
       });
+  }
+
+  // ============================================================
+  // AI SIGNALS (risk trend + fraud flags — inline instead of a dedicated tab)
+  // ============================================================
+
+  private riskTrajectories: VendorRiskTrajectory[] = [];
+  private activeFraudFlagVendorIds = new Set<string>();
+  getRiskTrajectoryColor = getRiskTrajectoryColor;
+  getRiskTrajectoryIcon = getRiskTrajectoryIcon;
+
+  private loadAiSignals(): void {
+    this.vendorService.getRiskTrajectories().subscribe({
+      next: (trajectories) => { this.riskTrajectories = trajectories; },
+      error: (err) => console.error('Failed to load risk trajectories:', err)
+    });
+
+    this.vendorService.getFraudFlags().subscribe({
+      next: (flags) => {
+        this.activeFraudFlagVendorIds = new Set(
+          flags.filter(f => f.status === 'PENDING_REVIEW' || f.status === 'INVESTIGATING').map(f => f.vendorId)
+        );
+      },
+      error: (err) => console.error('Failed to load fraud flags:', err)
+    });
+  }
+
+  /** A vendor's AI-projected risk trend, if Sentinel has one for them. */
+  getRiskTrajectory(vendorId: number): VendorRiskTrajectory | undefined {
+    return this.riskTrajectories.find(t => t.vendorId === String(vendorId));
+  }
+
+  hasActiveFraudFlag(vendorId: number): boolean {
+    return this.activeFraudFlagVendorIds.has(String(vendorId));
   }
 
   private buildFilters(): any {
@@ -481,7 +520,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     }
   }
 
-  toggleSelectVendor(id: string): void {
+  toggleSelectVendor(id: number): void {
     if (this.selectedVendors.has(id)) {
       this.selectedVendors.delete(id);
     } else {
@@ -490,7 +529,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     this.selectAll = this.filteredVendors.every(v => this.selectedVendors.has(v.id));
   }
 
-  isSelected(id: string): boolean {
+  isSelected(id: number): boolean {
     return this.selectedVendors.has(id);
   }
 
@@ -530,7 +569,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
 
     const ids = Array.from(this.selectedVendors);
     ids.forEach(id => {
-      this.vendorService.updateVendorStatus(id, status).subscribe({
+      this.vendorService.updateVendorStatus(String(id), status).subscribe({
         next: () => {
           const vendor = this.vendors.find(v => v.id === id);
           if (vendor) vendor.status = status;
@@ -551,7 +590,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
 
     const ids = Array.from(this.selectedVendors);
     ids.forEach(id => {
-      this.vendorService.deleteVendor(id).subscribe({
+      this.vendorService.deleteVendor(String(id)).subscribe({
         next: () => {
           // Remove from local list
           this.vendors = this.vendors.filter(v => v.id !== id);
@@ -610,7 +649,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   /**
    * View vendor details - navigates to profile page
    */
-  viewVendor(id: string): void {
+  viewVendor(id: number): void {
     this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
   }
 
@@ -621,7 +660,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
    */
   deleteVendor(vendor: Vendor): void {
     if (confirm(`Are you sure you want to delete ${vendor.companyName}? This action cannot be undone.`)) {
-      this.vendorService.deleteVendor(vendor.id).subscribe({
+      this.vendorService.deleteVendor(String(vendor.id)).subscribe({
         next: () => {
           this.loadVendors();
         },

@@ -4,7 +4,7 @@
         [value]="selectedBranchId || ''" (change)="onSelectChange($any($event.target).value)">
         <option *ngIf="showAllOption" value="" [selected]="!selectedBranchId">{{ allOptionLabel }}</option>
         <option *ngIf="!showAllOption && !selectedBranchId" value="" disabled selected>{{ placeholder }}</option>
-        <option *ngFor="let branch of branchOptions" [value]="branch.id" [selected]="branch.id === selectedBranchId">
+        <option *ngFor="let branch of branchOptions" [value]="branch.id" [selected]="isBranchSelected(branch.id)">
             {{ branch.name }}{{ branch.location?.city ? ' (' + branch.location.city + ')' : '' }}
         </option>
     </select>

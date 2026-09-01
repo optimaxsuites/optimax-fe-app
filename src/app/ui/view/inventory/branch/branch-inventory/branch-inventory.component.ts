@@ -186,10 +186,10 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
 
       // Branch quick-filter (jump straight to a single branch)
       const branchMatch = !this.filters.branchId ||
-        branch.id === this.filters.branchId;
+        String(branch.id) === this.filters.branchId;
 
       // Products count filter (using summary data)
-      const summary = this.branchSummaries.find(s => s.branchId === branch.id);
+      const summary = this.branchSummaries.find(s => s.branchId === String(branch.id));
       const productCount = summary?.totalProducts || 0;
       const minMatch = !this.filters.minProducts || productCount >= parseInt(this.filters.minProducts);
       const maxMatch = !this.filters.maxProducts || productCount <= parseInt(this.filters.maxProducts);
@@ -307,7 +307,7 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
   // NAVIGATION
   // ============================================================
 
-  navigateToBranch(branchId: string): void {
+  navigateToBranch(branchId: string | number): void {
     this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
   }
 
@@ -315,7 +315,7 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/sales/commerce/inventory/branches/new']);
   }
 
-  navigateToAddProduct(branchId: string): void {
+  navigateToAddProduct(branchId: string | number): void {
     this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId, 'add-product']);
   }
 
@@ -374,8 +374,8 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
     return getStockStatusLabel(status);
   }
 
-  getBranchSummary(branchId: string): BranchStockSummary | undefined {
-    return this.branchSummaries.find(s => s.branchId === branchId);
+  getBranchSummary(branchId: string | number): BranchStockSummary | undefined {
+    return this.branchSummaries.find(s => s.branchId === String(branchId));
   }
 
   formatCurrency(value: number): string {

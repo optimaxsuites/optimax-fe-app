@@ -833,7 +833,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   }
 
   getBranchName(branchId: string): string {
-    const branch = this.branches.find(b => b.id === branchId);
+    const branch = this.branches.find(b => String(b.id) === branchId);
     return branch?.name || branchId;
   }
 
@@ -931,7 +931,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
     return this.requests.filter(r => r.urgency === urgency).length;
   }
 
-  getBranchRequestCount(branchId: string): number {
-    return this.requests.filter(r => r.branchId === branchId).length;
+  getBranchRequestCount(branchId: string | number): number {
+    return this.requests.filter(r => r.branchId === String(branchId)).length;
   }
 }

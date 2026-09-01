@@ -608,7 +608,7 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
   // ============================================================
 
   getBranchName(branchId: string): string {
-    const branch = this.branches.find(b => b.id === branchId);
+    const branch = this.branches.find(b => String(b.id) === branchId);
     return branch?.name || branchId;
   }
 

@@ -190,7 +190,7 @@ export class StockTurnoverComponent implements OnInit, OnChanges, OnDestroy {
           this.branches = branches;
 
           const inventory$ = branches.length > 0
-            ? forkJoin(branches.map(branch => this.inventoryService.getBranchInventory(branch.id)))
+            ? forkJoin(branches.map(branch => this.inventoryService.getBranchInventory(String(branch.id))))
             : of([] as BranchInventory[][]);
 
           forkJoin({
