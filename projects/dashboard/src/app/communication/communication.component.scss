@@ -138,6 +138,10 @@
   ::ng-deep * {
     font-family: "Roboto Slab", serif !important;
   }
+  /* Restore icon fonts that the broad rule above overrides */
+  ::ng-deep .pi {
+    font-family: 'primeicons' !important;
+  }
 }
 
 .mobile-sidebar-backdrop {
@@ -1509,6 +1513,7 @@
 .chat-subtitle {
   margin: 0;
   color: #64748b;
+  font-size: 0.78rem;
   line-height: 1.6;
 }
 
@@ -1984,14 +1989,42 @@
   background: #d8e2e8;
 }
 
+.pinned-strip {
+  background: #fffbeb;
+  border-bottom: 1px solid #fde68a;
+}
+
 .chat-feed {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  position: relative;
   margin-top: 0.5rem;
   background: #fff;
   border-radius: 0;
   padding: 8px 0;
+}
+
+.chat-feed.drag-over {
+  outline: 2px dashed #2e6276;
+  outline-offset: -4px;
+  background: rgba(46, 98, 118, 0.03);
+}
+
+.chat-feed.drag-over::after {
+  content: 'Drop files to upload';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2e6276;
+  background: rgba(238, 246, 249, 0.7);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 10;
 }
 
 .chat-panel .chat-topbar,

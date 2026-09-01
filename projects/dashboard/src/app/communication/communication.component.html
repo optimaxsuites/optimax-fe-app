@@ -1253,14 +1253,50 @@
           </div>
         </div>
 
+        <!-- Pinned strip: slim collapsible bar -->
+        <div
+          *ngIf="activeView === 'channel' && pinnedMessages.length && !isShowingDocumentLibrary()"
+          class="pinned-strip flex-shrink-0"
+        >
+          <button
+            type="button"
+            class="pinned-strip-summary w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-amber-50 transition-colors border-b border-amber-100"
+            (click)="pinnedStripExpanded = !pinnedStripExpanded; $event.stopPropagation()"
+          >
+            <i class="pi pi-thumbtack text-amber-500 text-[11px]"></i>
+            <span class="text-[12px] font-semibold text-amber-700">{{ pinnedMessages.length }} pinned</span>
+            <span class="text-[12px] text-gray-500 truncate flex-1">· {{ pinnedMessages[0]?.content | slice:0:55 }}{{ (pinnedMessages[0]?.content?.length || 0) > 55 ? '…' : '' }}</span>
+            <i class="pi text-[10px] text-gray-400 flex-shrink-0" [ngClass]="pinnedStripExpanded ? 'pi-angle-up' : 'pi-angle-down'"></i>
+          </button>
+          <div *ngIf="pinnedStripExpanded" class="pinned-strip-list border-b border-amber-100 bg-amber-50/50 max-h-36 overflow-y-auto">
+            <button
+              *ngFor="let pm of pinnedMessages.slice(0, 5)"
+              type="button"
+              class="flex items-start gap-2 w-full px-4 py-2 text-left hover:bg-amber-100/60 transition-colors"
+              (click)="togglePinnedPanel(); pinnedStripExpanded = false; $event.stopPropagation()"
+            >
+              <i class="pi pi-thumbtack text-amber-400 text-[10px] mt-0.5 flex-shrink-0"></i>
+              <div class="min-w-0">
+                <span class="text-[11px] font-semibold text-gray-700">{{ pm.author }}</span>
+                <span class="text-[12px] text-gray-600 block truncate">{{ pm.content | slice:0:80 }}{{ (pm.content?.length || 0) > 80 ? '…' : '' }}</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
         <div
           *ngIf="!isShowingDocumentLibrary(); else documentLibraryView"
           #feedEl
           class="chat-feed"
           (scroll)="onChatFeedScroll()"
+          (dragover)="onChatDragOver($event)"
+          (dragleave)="onChatDragLeave($event)"
+          (drop)="onChatDrop($event)"
+          [class.drag-over]="isDraggingOver"
         >
           <app-message-feed
-            [messages]="rawMessages"
+            [messages]="visibleMessages"
+            [savedMessageIds]="savedMessageIds"
             [loading]="messagesLoading"
             [activeView]="activeView"
             [activeChannelName]="activeChannel?.name || ''"
@@ -1298,6 +1334,7 @@
             (channelCallJoined)="joinChannelCall()"
             (callBackRequested)="handleCallBack($event)"
             (callInviteJoined)="handleCallInviteJoin($event)"
+            (bookmarkToggled)="onBookmarkToggled($event)"
           ></app-message-feed>
         </div>
 

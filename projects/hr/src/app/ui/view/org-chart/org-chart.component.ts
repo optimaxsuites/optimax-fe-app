@@ -58,8 +58,10 @@ export class OrgChartComponent implements OnInit {
       departments: this.http.get<any>(`${this.BASE}/departments?size=100`).pipe(catchError(() => of([]))),
     }).subscribe({
       next: ({ employees, departments }) => {
-        this.employees = Array.isArray(employees) ? employees : (employees as any)?.content ?? [];
-        this.departments = Array.isArray(departments) ? departments : (departments as any)?.content ?? [];
+        const rawEmployees: OrgEmployee[] = Array.isArray(employees) ? employees : (employees as any)?.content ?? [];
+        this.employees = [...new Map(rawEmployees.map(e => [e.id, e])).values()];
+        const rawDepts: OrgDept[] = Array.isArray(departments) ? departments : (departments as any)?.content ?? [];
+        this.departments = [...new Map(rawDepts.map(d => [d.id, d])).values()];
         if (this.employees.length === 0) {
           this.error = true;
         } else {

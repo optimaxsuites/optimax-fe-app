@@ -6,6 +6,7 @@ import {
   ViewChild,
   ElementRef,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   SimpleChanges
 } from '@angular/core';
 
@@ -57,6 +58,56 @@ export interface ComposerMentionOption {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MessageComposerComponent {
+  constructor(private cdr: ChangeDetectorRef) {}
+
+  // ── Feature: Voice note recording ───────────────────
+  isRecording = false;
+  recordingSeconds = 0;
+  private mediaRecorder?: MediaRecorder;
+  private audioChunks: Blob[] = [];
+  private recordingTimer?: ReturnType<typeof setInterval>;
+
+  get recordingLabel(): string {
+    const m = Math.floor(this.recordingSeconds / 60).toString().padStart(2, '0');
+    const s = (this.recordingSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  startVoiceNote(): void {
+    if (this.isRecording || !navigator.mediaDevices?.getUserMedia) return;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      this.audioChunks = [];
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+      this.mediaRecorder = new MediaRecorder(stream, { mimeType });
+      this.mediaRecorder.ondataavailable = (e: BlobEvent) => {
+        if (e.data.size > 0) this.audioChunks.push(e.data);
+      };
+      this.mediaRecorder.onstop = () => {
+        const blob = new Blob(this.audioChunks, { type: mimeType });
+        const file = new File([blob], `voice-note-${Date.now()}.webm`, { type: mimeType });
+        this.filesSelected.emit([file]);
+        stream.getTracks().forEach(t => t.stop());
+        this.cdr.markForCheck();
+      };
+      this.mediaRecorder.start();
+      this.isRecording = true;
+      this.recordingSeconds = 0;
+      this.recordingTimer = setInterval(() => {
+        this.recordingSeconds++;
+        this.cdr.markForCheck();
+      }, 1000);
+      this.cdr.markForCheck();
+    }).catch(() => {});
+  }
+
+  stopVoiceNote(): void {
+    if (!this.isRecording) return;
+    this.mediaRecorder?.stop();
+    this.isRecording = false;
+    if (this.recordingTimer) clearInterval(this.recordingTimer);
+    this.cdr.markForCheck();
+  }
+
   readonly emojiChoices = [
     '😀',
     '😄',
