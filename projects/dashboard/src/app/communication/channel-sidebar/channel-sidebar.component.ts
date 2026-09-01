@@ -6,6 +6,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   HostListener,
+  OnInit,
 } from '@angular/core';
 import { Channel, DmContact } from '../communication.component';
 
@@ -24,8 +25,45 @@ export interface MeInfo {
   styleUrls: ['./channel-sidebar.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ChannelSidebarComponent {
+export class ChannelSidebarComponent implements OnInit {
   constructor(private cdr: ChangeDetectorRef) {}
+
+  // ── Feature: Presence status ─────────────────────────
+  presencePickerOpen = false;
+  presenceEmoji = '🟢';
+  presenceText = '';
+
+  ngOnInit(): void {
+    try {
+      const stored = localStorage.getItem('collab_presence_status');
+      if (stored) {
+        const p = JSON.parse(stored);
+        this.presenceEmoji = p.emoji || '🟢';
+        this.presenceText = p.text || '';
+      }
+    } catch {}
+  }
+
+  readonly presencePresets = [
+    { emoji: '🟢', text: 'Active' },
+    { emoji: '🎯', text: 'Focused — do not disturb' },
+    { emoji: '📅', text: 'In a meeting' },
+    { emoji: '🏃', text: 'Away' },
+    { emoji: '🔴', text: 'Offline' },
+  ];
+
+  savePresence(emoji: string, text: string): void {
+    this.presenceEmoji = emoji;
+    this.presenceText = text;
+    this.presencePickerOpen = false;
+    try { localStorage.setItem('collab_presence_status', JSON.stringify({ emoji, text })); } catch {}
+    this.cdr.markForCheck();
+  }
+
+  togglePresencePicker(): void {
+    this.presencePickerOpen = !this.presencePickerOpen;
+    this.cdr.markForCheck();
+  }
 
   // ── Inputs ──────────────────────────────────────────
   @Input() me!: MeInfo;
@@ -47,7 +85,7 @@ export class ChannelSidebarComponent {
   }> = [];
   @Input() activeChannelId = '';
   @Input() activeDmId = '';
-  @Input() activeView: 'channel' | 'dm' | 'threads' = 'channel';
+  @Input() activeView: 'channel' | 'dm' | 'threads' | 'saved' = 'channel';
   @Input() channelsLoading = false;
   @Input() channelsError: string | null = null;
   @Input() employeesLoading = false;
@@ -67,7 +105,7 @@ export class ChannelSidebarComponent {
   // ── Outputs ─────────────────────────────────────────
   @Output() channelSelected = new EventEmitter<string>();
   @Output() dmSelected = new EventEmitter<string>();
-  @Output() viewSet = new EventEmitter<'threads'>();
+  @Output() viewSet = new EventEmitter<'threads' | 'saved'>();
   @Output() createChannel = new EventEmitter<void>();
   @Output() dmDeactivated = new EventEmitter<DmContact>();
   @Output() deactivatedDmUsersOpened = new EventEmitter<void>();
@@ -83,6 +121,20 @@ export class ChannelSidebarComponent {
   @Output() channelAttachmentsRequested = new EventEmitter<Channel>();
   @Output() viewProfile = new EventEmitter<DmContact>();
   @Output() selfWorkspaceOpened = new EventEmitter<void>();
+
+  // ── Sidebar quick-filter ─────────────────────────────
+  sidebarFilter = '';
+
+  get filteredChannels(): Channel[] {
+    const q = this.sidebarFilter.trim().toLowerCase();
+    if (!q) return this.channels;
+    return this.channels.filter(ch => ch.name.toLowerCase().includes(q));
+  }
+
+  clearSidebarFilter(): void {
+    this.sidebarFilter = '';
+    this.cdr.markForCheck();
+  }
 
   // ── Draggable divider ────────────────────────────────
   topPanelHeight = 220;
@@ -310,8 +362,10 @@ export class ChannelSidebarComponent {
   }
 
   get visibleDmContacts(): DmContact[] {
+    const q = this.sidebarFilter.trim().toLowerCase();
     return (this.dmContacts || [])
       .filter((contact) => !this.isOwnContact(contact))
+      .filter((contact) => !q || (contact.fullName || contact.shortName || '').toLowerCase().includes(q))
       .sort((a, b) => {
         const ta = a.lastMessageTimestamp ?? 0;
         const tb = b.lastMessageTimestamp ?? 0;

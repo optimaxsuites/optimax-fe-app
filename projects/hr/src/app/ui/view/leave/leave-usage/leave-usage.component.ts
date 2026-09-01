@@ -156,7 +156,7 @@ export class LeaveUsageComponent implements OnInit {
 
         this.currentEmployee = employee;
         this.currentEmployeeId = employee.id;
-        this.currentUserId = employee.user?.userId || employee.user?.id;
+        this.currentUserId = employee.user?.userId || employee.user?.id || employee.userId;
 
         console.log('✅ Current employee loaded:', {
           employeeId: this.currentEmployeeId,
@@ -203,7 +203,7 @@ export class LeaveUsageComponent implements OnInit {
 
         // Filter leave plans for current user (PENDING or APPROVED only)
         this.leavePlans = (data.leavePlans || []).filter((plan: any) => {
-          const planUserId = plan.createdBy?.userId;
+          const planUserId = plan.createdBy?.userId || plan.createdBy?.id;
           const isMyPlan = planUserId === this.currentUserId;
           const isValidStatus =
             plan.status === 'PENDING' || plan.status === 'APPROVED';
@@ -218,7 +218,7 @@ export class LeaveUsageComponent implements OnInit {
         // Filter leave requests for current user
         this.leaveRequests = (data.leaveRequests || []).filter(
           (request: any) => {
-            const requestUserId = request.createdBy?.userId;
+            const requestUserId = request.createdBy?.userId || request.createdBy?.id;
             return requestUserId === this.currentUserId;
           },
         );

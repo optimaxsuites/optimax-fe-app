@@ -85,6 +85,77 @@ export class MessageFeedComponent {
   @Input() reactionOptions: ChatReactionOption[] = [];
   @Input() activeChannelCall: { channelId: number; jitsiRoom: string; type: 'CALL' | 'VIDEO_CALL'; callerName: string } | null = null;
 
+  // ── Feature: Saved/bookmarked messages ──────────────
+  @Input() savedMessageIds: Set<string> = new Set();
+  @Output() bookmarkToggled = new EventEmitter<Message>();
+
+  isBookmarked(msg: Message): boolean {
+    return this.savedMessageIds.has(msg.id);
+  }
+
+  // ── Facebook-style reaction picker ──────────────────
+  emojiPickerOpenForId: string | null = null;
+  private _pickerCloseTimer?: ReturnType<typeof setTimeout>;
+
+  readonly allReactions: ChatReactionOption[] = [
+    { code: 'LIKE',      emoji: '👍', label: 'Like' },
+    { code: 'LOVE',      emoji: '❤️', label: 'Love' },
+    { code: 'LAUGH',     emoji: '😂', label: 'Haha' },
+    { code: 'EMOJI_😮',  emoji: '😮', label: 'Wow' },
+    { code: 'EMOJI_😢',  emoji: '😢', label: 'Sad' },
+    { code: 'EMOJI_😡',  emoji: '😡', label: 'Angry' },
+    { code: 'CELEBRATE', emoji: '🎉', label: 'Celebrate' },
+    { code: 'FIRE',      emoji: '🔥', label: 'Fire' },
+  ];
+
+  reactionEmoji(code: string): string {
+    if (!code) return '👍';
+    if (code.startsWith('EMOJI_')) return code.slice(6);
+    return this.allReactions.find(r => r.code === code)?.emoji ?? '👍';
+  }
+
+  reactionLabel(code: string): string {
+    if (!code) return 'React';
+    if (code.startsWith('EMOJI_')) return code.slice(6);
+    return this.allReactions.find(r => r.code === code)?.label ?? 'React';
+  }
+
+  topReactionEmojis(msg: Message): string[] {
+    if (!msg.reactionCounts) return [];
+    return Object.entries(msg.reactionCounts)
+      .filter(([, count]) => (count as number) > 0)
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .slice(0, 3)
+      .map(([code]) => this.reactionEmoji(code));
+  }
+
+  totalReactionCount(msg: Message): number {
+    if (!msg.reactionCounts) return 0;
+    return Object.values(msg.reactionCounts).reduce((s, c) => s + (c as number), 0);
+  }
+
+  openReactionPicker(msgId: string): void {
+    clearTimeout(this._pickerCloseTimer);
+    this.emojiPickerOpenForId = msgId;
+  }
+
+  scheduleCloseReactionPicker(): void {
+    this._pickerCloseTimer = setTimeout(() => {
+      this.emojiPickerOpenForId = null;
+    }, 220);
+  }
+
+  cancelCloseReactionPicker(): void {
+    clearTimeout(this._pickerCloseTimer);
+  }
+
+  onReactionPick(msg: Message, code: string, event: Event): void {
+    event.stopPropagation();
+    clearTimeout(this._pickerCloseTimer);
+    this.emojiPickerOpenForId = null;
+    this.likeToggled.emit({ msg, event, reactionCode: code });
+  }
+
   // ── Outputs ─────────────────────────────────────────
   @Output() channelCallJoined = new EventEmitter<void>();
   @Output() threadOpened = new EventEmitter<{ msg: Message; event: Event }>();

@@ -228,11 +228,12 @@
     <div
       *ngIf="!msg.isSystem && msg.messageType !== 'CALL_CARD' && msg.messageType !== 'CALL_SUMMARY' && !parseCallSummary(msg.content) && !parseCallInvite(msg.content)"
       [id]="'msg-' + msg.id"
-      class="msg-row group flex gap-4 px-3 py-3 rounded-xl mb-0.5 transition-all relative"
+      class="msg-row group flex gap-3 px-4 py-1.5 mb-0 transition-all relative"
       [ngClass]="{
         'thread-active': activeThreadId === msg.id,
         'flash': isFlashing(msg.id),
-        'opacity-40': msg.deleting
+        'opacity-40': msg.deleting,
+        'msg-self': isOwnMessage(msg)
       }"
       (click)="deleteDismissed.emit()"
       (dblclick)="threadOpened.emit({ msg, event: $event })"
@@ -260,7 +261,7 @@
         <!-- Header row -->
         <div class="flex items-baseline gap-2.5 mb-1 flex-wrap">
           <span
-            class="text-[15px] font-semibold text-gray-800 cursor-pointer hover:text-[#2e6276] hover:underline transition-colors"
+            class="text-[13px] font-semibold text-gray-800 cursor-pointer hover:text-[#2e6276] hover:underline transition-colors"
             data-author-card
             (mouseenter)="onAuthorEnter($event, msg)"
             (mouseleave)="onAuthorLeave($event)"
@@ -402,7 +403,7 @@
 
           <ng-template #plainMessageContent>
             <div
-              class="text-[15px] text-gray-700 leading-relaxed break-words message-rich-html"
+              class="text-[13px] text-gray-700 leading-relaxed break-words message-rich-html"
               (click)="onRenderedContentClick($event)"
               (mouseover)="onRenderedContentHover($event)"
               (mouseout)="onRenderedContentLeave($event)"
@@ -609,8 +610,31 @@
 
           </ng-container><!-- end !isIssueCard -->
 
+          <!-- Facebook-style reaction summary (always visible when reactions exist) -->
+          <div *ngIf="totalReactionCount(msg) > 0"
+               class="fb-reaction-summary mt-1.5"
+               (click)="$event.stopPropagation()">
+            <span class="fb-reaction-bubbles">
+              <span *ngFor="let emoji of topReactionEmojis(msg)" class="fb-reaction-icon">{{ emoji }}</span>
+            </span>
+            <span class="fb-reaction-total">{{ totalReactionCount(msg) }}</span>
+          </div>
+
           <!-- Action buttons -->
           <div class="flex items-center gap-0 mt-2 flex-wrap">
+            <!-- Bookmark -->
+            <button
+              type="button"
+              class="action-btn flex items-center gap-1.5"
+              [ngClass]="{ 'action-pinned': isBookmarked(msg) }"
+              [title]="isBookmarked(msg) ? 'Remove bookmark' : 'Save message'"
+              (click)="bookmarkToggled.emit(msg); $event.stopPropagation()"
+            >
+              <svg width="13" height="13" [attr.fill]="isBookmarked(msg) ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
+              {{ isBookmarked(msg) ? 'Saved' : 'Save' }}
+            </button>
             <!-- Reply / Thread -->
             <button
               *ngIf="activeView === 'channel'|| activeView === 'dm' || activeView === 'threads'"
@@ -624,35 +648,42 @@
               {{ totalReplyCount(msg) ? totalReplyCount(msg) + ' ' + (totalReplyCount(msg) === 1 ? 'reply' : 'replies') : 'Reply' }}
             </button>
 
-            <!-- Like -->
-            <button
-              (click)="likeToggled.emit({ msg, event: $event })"
-              class="action-btn flex items-center gap-1.5"
-              [ngClass]="{ 'action-liked': msg.liked, 'opacity-60': isReacting(msg.id) }"
-              [disabled]="isReacting(msg.id)"
-            >
-              <svg *ngIf="isReacting(msg.id)" class="animate-spin" width="14" height="14" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-              <svg *ngIf="!isReacting(msg.id)" width="14" height="14" [attr.fill]="msg.liked ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
-              {{ msg.likeCount || '' }}
-            </button>
-            <div class="flex items-center gap-1 ml-1 flex-wrap">
+            <!-- Facebook-style React button with floating bubble picker -->
+            <div class="fb-react-wrap"
+                 (mouseenter)="openReactionPicker(msg.id)"
+                 (mouseleave)="scheduleCloseReactionPicker()">
+              <!-- Floating emoji bubble -->
+              <div *ngIf="emojiPickerOpenForId === msg.id"
+                   class="fb-picker-bubble"
+                   (mouseenter)="cancelCloseReactionPicker()"
+                   (mouseleave)="scheduleCloseReactionPicker()"
+                   (click)="$event.stopPropagation()">
+                <button
+                  *ngFor="let r of allReactions"
+                  type="button"
+                  class="fb-emoji-btn"
+                  [class.fb-selected]="msg.myReactionCode === r.code"
+                  [title]="r.label"
+                  (click)="onReactionPick(msg, r.code, $event)"
+                >{{ r.emoji }}</button>
+              </div>
+              <!-- The React button -->
               <button
                 type="button"
-                *ngFor="let reaction of reactionOptions"
-                (click)="likeToggled.emit({ msg, event: $event, reactionCode: reaction.code })"
-                class="reaction-picker-btn flex items-center gap-0.5 rounded-full px-1.5 py-0.5 hover:bg-gray-100 transition-colors text-[14px]"
-                [class.reaction-active]="msg.reactionCounts && msg.reactionCounts[reaction.code]"
-                [title]="reaction.label"
+                class="action-btn fb-react-btn flex items-center gap-1"
+                [class.fb-react-active]="!!msg.myReactionCode"
+                [class.opacity-60]="isReacting(msg.id)"
+                [disabled]="isReacting(msg.id)"
+                (click)="onReactionPick(msg, msg.myReactionCode || 'LIKE', $event)"
               >
-                <span>{{ reaction.emoji }}</span>
-                <span *ngIf="msg.reactionCounts && msg.reactionCounts[reaction.code]" class="text-[10px] font-semibold text-gray-600 leading-none ml-0.5">{{ msg.reactionCounts[reaction.code] }}</span>
+                <svg *ngIf="isReacting(msg.id)" class="animate-spin" width="14" height="14" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <span *ngIf="!isReacting(msg.id)" class="text-[15px] leading-none">
+                  {{ msg.myReactionCode ? reactionEmoji(msg.myReactionCode) : '😊' }}
+                </span>
+                <span class="text-[12px]">{{ msg.myReactionCode ? reactionLabel(msg.myReactionCode) : 'React' }}</span>
               </button>
             </div>
 
@@ -813,10 +844,17 @@
 
 <style>
   .msg-row:hover { background: #f9fafb; }
+  .msg-row.msg-self:hover { background: #f5faf8; }
   .msg-row.thread-active {
     background: #f0f7ff;
     border-left: 3px solid #2e6276;
     padding-left: 10px;
+  }
+  .msg-row.msg-self.thread-active {
+    border-left: none;
+    border-right: 3px solid #2e6276;
+    padding-left: 12px;
+    padding-right: 10px;
   }
   .msg-row.flash {
     animation: flash-fade 2.4s ease-out forwards;
@@ -843,4 +881,6 @@
   .reaction-picker-btn { height: 28px; min-width: 28px; }
   .reaction-picker-btn.reaction-active { background: #eff6ff; border: 1px solid #bfdbfe; }
   .reaction-picker-btn.reaction-active:hover { background: #dbeafe; }
+  .emoji-picker-popup { min-width: 160px; }
+  .emoji-more-btn { padding: 0; }
 </style>

@@ -97,6 +97,28 @@
     </div>
   </div>
 
+  <!-- Quick filter (channels + DMs) -->
+  <div class="px-3 py-2 border-b border-gray-100 flex-shrink-0">
+    <div class="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg">
+      <i class="pi pi-filter text-gray-400 text-[10px]"></i>
+      <input
+        type="text"
+        [(ngModel)]="sidebarFilter"
+        placeholder="Filter channels & people…"
+        class="flex-1 bg-transparent border-0 outline-none text-[12px] text-gray-700 placeholder-gray-400 min-w-0"
+      />
+      <button
+        *ngIf="sidebarFilter"
+        type="button"
+        (click)="clearSidebarFilter()"
+        class="text-gray-400 hover:text-gray-600 transition-colors"
+        title="Clear filter"
+      >
+        <i class="pi pi-times" style="font-size:9px"></i>
+      </button>
+    </div>
+  </div>
+
   <!-- ── Top panel: Threads + Channels ── -->
   <div class="overflow-y-auto sidebar-scroll py-2 flex-shrink-0" [style.height.px]="topPanelHeight">
     <!-- Threads -->
@@ -121,7 +143,19 @@
             d="M7 8h10M7 12h7M7 16h10M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2h-4l-3 3-3-3H5a2 2 0 01-2-2V7a2 2 0 012-2z"
           />
         </svg>
-        <span class="text-[14px]">Threads</span>
+        <span class="text-[13px]">Threads</span>
+      </button>
+    </div>
+    <div class="px-2 mb-1">
+      <button
+        (click)="viewSet.emit('saved')"
+        class="sidebar-item flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-colors text-left"
+        [ngClass]="{ active: activeView === 'saved' }"
+      >
+        <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="flex-shrink-0">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+        </svg>
+        <span class="text-[13px]">Saved</span>
       </button>
     </div>
     <div class="mx-3 my-2 h-px bg-gray-100"></div>
@@ -203,7 +237,7 @@
           No channels yet
         </div>
         <button
-          *ngFor="let ch of channels"
+          *ngFor="let ch of filteredChannels"
           (click)="channelSelected.emit(ch.id)"
           (mouseenter)="showChannelCard($event, ch)"
           (mouseleave)="hideChannelCard()"
@@ -228,7 +262,7 @@
               [attr.d]="getChannelIconPath(ch.name)"
             />
           </svg>
-          <span class="flex-1 truncate text-[14px]">{{ ch.name }}</span>
+          <span class="flex-1 truncate text-[13px]">{{ ch.name }}</span>
           <span
             *ngIf="isDocumentLibraryChannel(ch)"
             class="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[9px] font-bold uppercase tracking-[0.14em]"
@@ -408,7 +442,7 @@
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5">
-            <span class="truncate text-[14px] font-semibold text-gray-800 leading-tight">{{ me.shortName }}</span>
+            <span class="truncate text-[13px] font-semibold text-gray-800 leading-tight">{{ me.shortName }}</span>
             <span class="px-1.5 py-0.5 rounded-md bg-[#2e6276]/10 text-[#2e6276] text-[9px] font-bold uppercase tracking-wide leading-none">You</span>
           </div>
           <div class="flex items-center gap-1 mt-0.5">
@@ -467,7 +501,7 @@
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between gap-2">
-            <span class="truncate text-[14px] font-medium text-gray-800 block leading-tight">{{
+            <span class="truncate text-[13px] font-medium text-gray-800 block leading-tight">{{
               dm.shortName
             }}</span>
             <div class="flex items-center gap-1.5 flex-shrink-0">
@@ -555,11 +589,36 @@
         class="absolute -bottom-px -right-px w-3 h-3 rounded-full border-2 border-white bg-emerald-400"
       ></span>
     </div>
-    <div class="min-w-0 flex-1">
+    <div class="min-w-0 flex-1 relative">
       <p class="text-[14px] font-semibold text-gray-800 leading-none truncate">
         {{ me.shortName }}
       </p>
-      <p class="text-[12px] text-emerald-500 mt-0.5">Active</p>
+      <button
+        type="button"
+        class="flex items-center gap-1 mt-0.5 max-w-full group/status"
+        (click)="togglePresencePicker(); $event.stopPropagation()"
+        title="Set status"
+      >
+        <span class="text-[11px] leading-tight truncate" [class.text-emerald-500]="presenceEmoji === '🟢'" [class.text-gray-400]="presenceEmoji !== '🟢'">
+          {{ presenceEmoji }} {{ presenceText || 'Set status…' }}
+        </span>
+      </button>
+      <!-- Presence picker popup -->
+      <div
+        *ngIf="presencePickerOpen"
+        class="absolute bottom-full left-0 mb-2 z-50 bg-white border border-gray-200 rounded-xl shadow-xl p-2 min-w-[200px]"
+        (click)="$event.stopPropagation()"
+      >
+        <button
+          *ngFor="let preset of presencePresets"
+          type="button"
+          class="flex items-center gap-2 w-full px-3 py-2 rounded-lg hover:bg-gray-50 text-left text-[13px] text-gray-700 transition-colors"
+          (click)="savePresence(preset.emoji, preset.text)"
+        >
+          <span>{{ preset.emoji }}</span>
+          <span>{{ preset.text }}</span>
+        </button>
+      </div>
     </div>
     <button
       (click)="soundToggled.emit()"

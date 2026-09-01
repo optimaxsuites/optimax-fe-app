@@ -665,9 +665,9 @@ export class LeaveTimelineComponent implements OnInit, OnDestroy {
     this.selectedLeave = leave;
 
     // Find employee using linking logic
-    const leaveUserId = leave.createdBy?.userId;
+    const leaveUserId = leave.createdBy?.userId || leave.createdBy?.id;
     this.selectedEmployee =
-      this.allEmployees.find((emp) => emp.user?.userId === leaveUserId) || null;
+      this.allEmployees.find((emp) => (emp.user?.userId || emp.user?.id) === leaveUserId) || null;
 
     this.showLeaveModal = true;
     this.rejectionReason = '';
