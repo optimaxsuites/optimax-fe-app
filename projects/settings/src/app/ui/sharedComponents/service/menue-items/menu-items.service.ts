@@ -19,12 +19,12 @@ export class MenuItemsService {
         // ── Work ──────────────────────────────────────────────────────────────
         { label: 'Work', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
-          label: 'Tasks and Routines',
-          code: 'DASH_FEED',
-          route: this.navigationLink.getLink('feedLink'),
+          label: 'Performance',
+          code: 'HR_PERF',
+          route: this.navigationLink.getLink('performanceLink'),
           roles: ['ROLE_USER'],
-          icon: 'pi pi-calendar-plus',
-          description: 'Plan daily tasks, routines, and personal work targets.'
+          icon: 'fas fa-star',
+          description: 'Monitor employee performance, set goals, and conduct evaluations.'
         },
 
         // ── Communication ─────────────────────────────────────────────────────
@@ -323,11 +323,12 @@ export class MenuItemsService {
       ]
     },
     {
-      label: 'Human Resources',
+      label: 'Personnel',
       code: 'HR',
+      registeredAs: 'Human Resources',
       icon: 'fas fa-users',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      description: 'The Human Resources module of OptimaXSuites enables organizations to efficiently manage the employee lifecycle, from recruitment to payroll, leave, and performance tracking.',
+      description: 'The Personnel module of OptimaXSuites enables organizations to efficiently manage the employee lifecycle, from recruitment to payroll, leave, and performance tracking.',
       shortDescription: 'Manage employee data, recruitment, payroll, and performance.',
       locked: true,
       active: true,
@@ -432,16 +433,8 @@ export class MenuItemsService {
           description: 'Process employee advances and manage advance requests.'
         },
 
-        // ── Performance & Projects ────────────────────────────────────────────
-        { label: 'Performance & Projects', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
-        {
-          label: 'Performance',
-          code: 'HR_PERF',
-          route: this.navigationLink.getLink('performanceLink'),
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-star',
-          description: 'Monitor employee performance, set goals, and conduct evaluations.'
-        },
+        // ── Projects ─────────────────────────────────────────────────────────
+        { label: 'Projects', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Project',
           code: 'HR_PROJECT',
@@ -884,8 +877,9 @@ export class MenuItemsService {
       ],
     },
     {
-      label: 'Human Resources',
+      label: 'Personnel',
       code: 'HR',
+      registeredAs: 'Human Resources',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('HRSettings'),
       icon: 'fas fa-users',
@@ -1021,7 +1015,7 @@ export class MenuItemsService {
       forms: ['product', 'report', 'sales', 'inventory', 'checkout']
     },
     {
-      name: 'Human Resources',
+      name: 'Personnel',
       forms: ['employee', 'recruitment', 'Job vacancy', 'leave', 'loan', 'attendance', 'payroll']
     },
     {
@@ -1101,7 +1095,7 @@ export class MenuItemsService {
     let unlockedCount = 0;
 
     this.menuItems.forEach(module => {
-      if (unlockedRoutes.includes(module.code || 'null') || unlockedLabels.includes(module.label)) {
+      if (unlockedRoutes.includes(module.code || 'null') || unlockedLabels.includes(module.label) || (module.registeredAs && unlockedLabels.includes(module.registeredAs))) {
         module.locked = false;
 
         if (module.label !== 'Dashboard') {
@@ -1130,7 +1124,7 @@ export class MenuItemsService {
       if (alwaysUnlocked.includes(module.code || '')) {
         module.locked = false;
       } else {
-        module.locked = !(unlockedRoutes.includes(module.code || 'null') || unlockedLabels.includes(module.label));
+        module.locked = !(unlockedRoutes.includes(module.code || 'null') || unlockedLabels.includes(module.label) || (module.registeredAs && unlockedLabels.includes(module.registeredAs)));
       }
     });
     this.settingsMenuItemsSubject.next([...this.settingsMenuItems]);
@@ -1185,11 +1179,23 @@ export class MenuItemsService {
         const allowed = this.getUserPermissions();
 
         const filterSubmenu = (submenu: any[]) => {
-          return submenu.filter(item =>
+          const permitted = submenu.filter(item =>
             item.doNotRegisterAsPermission ||
             allowed.codes.includes(item.code) ||
             allowed.labels.some(l => l.toLowerCase() === item.label?.toLowerCase())
           );
+          // Remove section headers that have no real items beneath them
+          return permitted.filter((item, idx) => {
+            if (!item.isSectionHeader) return true;
+            const nextReal = permitted.slice(idx + 1).find(s => !s.isSectionHeader && !s.isNotSidebarItem);
+            const nextHeader = permitted.slice(idx + 1).find(s => s.isSectionHeader);
+            // Keep header only if a real item comes before the next header (or end of list)
+            if (!nextReal) return false;
+            if (!nextHeader) return true;
+            const realIdx = permitted.indexOf(nextReal);
+            const headerIdx = permitted.indexOf(nextHeader);
+            return realIdx < headerIdx;
+          });
         };
 
         const filteredMenus = modules
@@ -1200,7 +1206,8 @@ export class MenuItemsService {
 
             if (menu.submenu) {
               const filteredSubmenu = filterSubmenu(menu.submenu);
-              if (filteredSubmenu.length > 0) {
+              const hasVisibleItem = filteredSubmenu.some(item => !item.isSectionHeader && !item.isNotSidebarItem);
+              if (hasVisibleItem) {
                 return { ...menu, submenu: filteredSubmenu, locked: false };
               } else {
                 return null;

@@ -276,4 +276,5 @@ p { margin-bottom: 0; }
   .mat-expansion-panel-body { padding: 16px !important; }
   .mat-panel-title { font-size: 13px; font-weight: 600; color: #111827; }
   .mat-panel-description { justify-content: flex-end; }
+  .mat-expansion-panel.mat-expanded .mat-expansion-panel-content { overflow: visible; }
 }

@@ -14,7 +14,7 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-tachometer-alt',
       submenu: [
-        { label: 'Communications', route: this.navigationLink.getLink('dashboardLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-comments' },
+        { label: 'Communications', route: this.navigationLink.getLink('communicationsLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-comments' },
         { label: 'Meetings & Appointments', route: this.navigationLink.getLink('meetingsAppointmentsLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-calendar-check' },
       ],
     },
@@ -51,15 +51,18 @@ export class MenuItemsService {
     {
       label: 'Inventory',
       roles: ['ROLE_USER' , 'ROLE_ADMIN'],
-      route: this.navigationLink.getLink('inventoryLink'),
-      icon: 'fas fa-box',
+      route: this.navigationLink.getLink('INVLink'),
+      icon: 'fas fa-boxes-stacking',
       locked: true,
       active: false
-
-      // submenu: [
-      //   { label: 'User Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'], icon: 'pi pi-users' },
-      //   { label: 'Product Management', route: "", roles: ['ROLE_USER'], icon: 'pi pi-box' },
-      // ],
+    },
+    {
+      label: 'Logistics',
+      roles: ['ROLE_USER' , 'ROLE_ADMIN'],
+      route: this.navigationLink.getLink('LOGLink'),
+      icon: 'fas fa-truck',
+      locked: true,
+      active: false
     },
     {
       label: 'Procurement',

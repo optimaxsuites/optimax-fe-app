@@ -14,7 +14,7 @@ export class NavigationLinksService {
   }
 
   private generateLinks(): void {
-    this.links['dashboardLink'] = '/admin/dashboard/communications/' + uuidV4();
+    this.links['dashboardLink'] = '/admin/dashboard/meetings-appointments/' + uuidV4();
     this.links['communicationsLink'] = '/admin/dashboard/communications/' + uuidV4();
     this.links['meetingsAppointmentsLink'] = '/admin/dashboard/meetings-appointments/' + uuidV4();
     this.links['feedLink'] = '/admin/dashboard/tasks-routines/' + uuidV4();
@@ -80,7 +80,7 @@ export class NavigationLinksService {
 // Vendor link========================================================================================================
     this.links['vendorLink'] = '/admin/vendor/' +uuidV4();
     this.links['vendorRfqLink'] = '/admin/vendor/rfq/' +uuidV4();
-    this.links['VMLink'] = '/manage-vendors/' + uuidV4();
+    this.links['VMLink'] = '/admin/sales/commerce/manage-vendors/' + uuidV4();
 
 
 

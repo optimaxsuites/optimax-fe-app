@@ -50,6 +50,9 @@ export class SalaryComponent implements OnInit {
   editingAllowanceIndex: number | null = null;
   editAllowanceAmount = new FormControl<number | null>(null, [Validators.required, Validators.min(0)]);
 
+  editingDeductionIndex: number | null = null;
+  editDeductionAmount = new FormControl<number | null>(null, [Validators.required, Validators.min(0)]);
+
   constructor(
     private fb: FormBuilder,
     private confirmationService: ConfirmationService,
@@ -220,6 +223,40 @@ export class SalaryComponent implements OnInit {
     } else {
       this.allowances = this.allowances.map((a, i) => i === index ? { ...a, amount: newAmount } : a);
       this.cancelEditAllowance();
+    }
+  }
+
+  startEditDeduction(index: number, item: any) {
+    this.editingDeductionIndex = index;
+    this.editDeductionAmount.setValue(item.amount);
+    this.showDeductionAdd = false;
+  }
+
+  cancelEditDeduction() {
+    this.editingDeductionIndex = null;
+    this.editDeductionAmount.reset();
+  }
+
+  saveEditDeduction(index: number, item: any) {
+    if (this.editDeductionAmount.invalid) {
+      this.editDeductionAmount.markAsTouched();
+      return;
+    }
+    const newAmount = this.editDeductionAmount.value!;
+    const payload = { id: item.id, levelId: this.salaryForm.value.level, deductionsTypeId: item.deductionsTypeId, amount: newAmount };
+
+    if (this.isEditMode && item.id) {
+      this.salaryService.updateDeduction(item.id, payload).subscribe({
+        next: () => {
+          this.deductions = this.deductions.map((d, i) => i === index ? { ...d, amount: newAmount } : d);
+          this.cancelEditDeduction();
+          this.toast('success', 'Deduction updated.');
+        },
+        error: () => this.toast('error', 'Failed to update deduction.'),
+      });
+    } else {
+      this.deductions = this.deductions.map((d, i) => i === index ? { ...d, amount: newAmount } : d);
+      this.cancelEditDeduction();
     }
   }
 
@@ -437,6 +474,7 @@ export class SalaryComponent implements OnInit {
     this.bonuses = [];
     this.overtimes = [];
     this.cancelEditAllowance();
+    this.cancelEditDeduction();
   }
 
   private clearSubForms() {

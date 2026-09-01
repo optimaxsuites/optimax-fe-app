@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit, ViewEncapsulation, signal } from '@angular/core';
 import {
   FormControl,
   FormGroupDirective,
@@ -38,9 +38,9 @@ export class MyErrorStateMatcher implements ErrorStateMatcher {
   selector: 'app-login',
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
-  providers:[MessageService],
+  providers: [MessageService],
   changeDetection: ChangeDetectionStrategy.OnPush,
-
+  encapsulation: ViewEncapsulation.None,
 })
 export class LoginComponent implements OnInit {
 

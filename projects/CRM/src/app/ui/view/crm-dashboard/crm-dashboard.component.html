@@ -2,8 +2,8 @@
         <div><h1 class="panel-title">CRM Dashboard</h1><p class="panel-subtitle">{{ today | date:'EEEE, d MMMM yyyy' }} &nbsp;·&nbsp; Q2 2026 — 18 days remaining</p></div>
         <div class="panel-actions">
           <select class="filter-select"><option>This Month</option><option>This Quarter</option><option>This Year</option></select>
-          <button class="btn-primary"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>New Contact</button>
-          <button class="btn-secondary"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>New Deal</button>
+          <button class="btn-primary" (click)="openNewContact()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>New Contact</button>
+          <button class="btn-secondary" (click)="goToDeals()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>New Deal</button>
         </div>
       </div>
 
@@ -31,13 +31,13 @@
       <!-- Quick Actions -->
       <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;background:#fff;border-radius:.75rem;padding:.7rem 1rem;margin-bottom:1rem;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #e8edf2;">
         <span style="font-size:10px;color:#94a3b8;font-weight:700;margin-right:.25rem;">QUICK ACTIONS:</span>
-        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;">📞 Log Call</button>
-        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;">✉️ Send Email</button>
-        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;background:#f0fdf4;border-color:#bbf7d0;color:#16a34a;">💬 WhatsApp Blast</button>
-        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;">📅 Schedule Meeting</button>
-        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;">📄 Send Proposal</button>
-        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;">⚡ Qualify Lead</button>
-        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;">📢 New Campaign</button>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;" (click)="logCall()">📞 Log Call</button>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;" (click)="sendEmail()">✉️ Send Email</button>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;background:#f0fdf4;border-color:#bbf7d0;color:#16a34a;" (click)="whatsappBlast()">💬 WhatsApp Blast</button>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;" (click)="goToActivities()">📅 Schedule Meeting</button>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;" (click)="sendProposal()">📄 Send Proposal</button>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;" (click)="goToLeads()">⚡ Qualify Lead</button>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;" (click)="goToCampaigns()">📢 New Campaign</button>
       </div>
 
       <!-- Charts Row -->

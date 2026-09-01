@@ -83,8 +83,10 @@ export class MessageFeedComponent {
   @Input() mentionCandidates: MentionCandidate[] = [];
   @Input() resolveMentionProfileCard: (payload: { userId?: number; handle?: string }) => MentionProfileCard | null = () => null;
   @Input() reactionOptions: ChatReactionOption[] = [];
+  @Input() activeChannelCall: { channelId: number; jitsiRoom: string; type: 'CALL' | 'VIDEO_CALL'; callerName: string } | null = null;
 
   // ── Outputs ─────────────────────────────────────────
+  @Output() channelCallJoined = new EventEmitter<void>();
   @Output() threadOpened = new EventEmitter<{ msg: Message; event: Event }>();
   @Output() likeToggled = new EventEmitter<{ msg: Message; event: Event; reactionCode?: string }>();
   @Output() pinToggled = new EventEmitter<{ msg: Message; event: Event }>();
@@ -99,11 +101,43 @@ export class MessageFeedComponent {
   @Output() mentionActivated = new EventEmitter<number>();
   @Output() retryMessage = new EventEmitter<Message>();
   @Output() authorClicked = new EventEmitter<number>();
+  @Output() callBackRequested = new EventEmitter<{ callType: 'CALL' | 'VIDEO_CALL' }>();
+  @Output() callInviteJoined = new EventEmitter<{ meetingUrl: string; callType: 'CALL' | 'VIDEO_CALL' }>();
 
   activeMentionProfile: MentionProfileCard | null = null;
   mentionCardPosition: { top: number; left: number } | null = null;
 
   // ── Template helpers ─────────────────────────────────
+
+  parseCallCard(content: string): { callType: string; callerName: string; jitsiRoom: string; meetingUrl: string } | null {
+    try { return JSON.parse(content); } catch { return null; }
+  }
+
+  parseCallSummary(content: string): { callType: 'CALL' | 'VIDEO_CALL'; duration: number; callerName: string; callerUserId: number; targetUserId: number } | null {
+    try {
+      const d = JSON.parse(content);
+      if (!d || typeof d !== 'object' || !d.__callSummary) return null;
+      return d;
+    } catch { return null; }
+  }
+
+  parseCallInvite(content: string): { __callInvite: true; callType: 'CALL' | 'VIDEO_CALL'; channelName: string; meetingUrl: string; callerName: string } | null {
+    try {
+      const d = JSON.parse(content);
+      if (!d || typeof d !== 'object' || !d.__callInvite) return null;
+      return d;
+    } catch { return null; }
+  }
+
+  formatSummaryDuration(secs: number): string {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  isCallCardActive(card: { jitsiRoom: string } | null): boolean {
+    return !!card && !!this.activeChannelCall && this.activeChannelCall.jitsiRoom === card.jitsiRoom;
+  }
 
   isFlashing(id: string): boolean {
     return this.flashId === id;

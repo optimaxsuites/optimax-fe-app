@@ -6,6 +6,12 @@
 
 @import "@ng-select/ng-select/themes/default.theme.css";
 
+/* ng-select dropdown must sit above PrimeNG overlays and stacking contexts */
+.ng-dropdown-panel {
+  z-index: 99999 !important;
+  pointer-events: all !important;
+}
+
 @import "@fortawesome/fontawesome-free/css/all.min.css";
 
 // custom primeUI

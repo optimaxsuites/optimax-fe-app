@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, finalize } from 'rxjs';
 import { CrmApiService } from '../../service/crm-api.service';
@@ -19,6 +19,7 @@ export class CrmTicketsComponent implements OnInit {
   priorityFilter = '';
   searchTerm = '';
   showForm = false;
+  editingTicket: Ticket | null = null;
   form!: FormGroup;
 
   statusOptions = ['OPEN', 'IN_PROGRESS', 'PENDING_CLIENT', 'RESOLVED', 'CLOSED'];
@@ -38,7 +39,7 @@ export class CrmTicketsComponent implements OnInit {
 
   buildForm() {
     this.form = this.fb.group({
-      subject: [''],
+      subject: ['', Validators.required],
       description: [''],
       contactName: [''],
       accountName: [''],
@@ -74,19 +75,25 @@ export class CrmTicketsComponent implements OnInit {
     });
   }
 
-  openForm() {
+  openForm(t?: Ticket) {
+    this.editingTicket = t || null;
     this.form.reset({ status: 'OPEN', priority: 'MEDIUM', category: 'TECHNICAL', channel: 'EMAIL' });
+    if (t) this.form.patchValue(t);
     this.showForm = true;
   }
 
-  closeForm() { this.showForm = false; }
+  closeForm() { this.showForm = false; this.editingTicket = null; }
 
   save() {
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const payload: Ticket = this.form.value;
     this.saving$.next(true);
-    this.api.createTicket(payload).pipe(finalize(() => this.saving$.next(false))).subscribe({
+    const op = this.editingTicket?.id
+      ? this.api.updateTicket(this.editingTicket.id, payload)
+      : this.api.createTicket(payload);
+    op.pipe(finalize(() => this.saving$.next(false))).subscribe({
       next: () => {
-        this.snack.open('Ticket created', 'Close', { duration: 3000 });
+        this.snack.open(`Ticket ${this.editingTicket ? 'updated' : 'created'}`, 'Close', { duration: 3000 });
         this.closeForm();
         this.load();
       },

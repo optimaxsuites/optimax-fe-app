@@ -448,6 +448,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     // BrowserAnimationsModule,
     CommonModule,
     AppHrRoutingModule,
+    LargeSideModalComponent,
     FormsModule,
     ReactiveFormsModule,
     HttpClientModule,

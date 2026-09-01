@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, finalize } from 'rxjs';
 import { CrmApiService } from '../../service/crm-api.service';
@@ -33,7 +33,7 @@ export class CrmContractsComponent implements OnInit {
 
   buildForm() {
     this.form = this.fb.group({
-      title: [''],
+      title: ['', Validators.required],
       contactName: [''],
       accountName: [''],
       dealName: [''],
@@ -68,6 +68,7 @@ export class CrmContractsComponent implements OnInit {
   closeForm() { this.showForm = false; this.editingContract = null; }
 
   save() {
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const payload: Contract = this.form.value;
     this.saving$.next(true);
     const op = this.editingContract?.id

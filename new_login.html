@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OptimaX Suites — Sign In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:        #09162A;
+      --navy-mid:    #112140;
+      --navy-light:  #1A3260;
+      --gold:        #C8972B;
+      --gold-light:  #E8B84B;
+      --gold-pale:   rgba(200, 151, 43, 0.12);
+      --white:       #FFFFFF;
+      --off-white:   #F7F8FA;
+      --border:      #E2E6ED;
+      --text-primary:#0D1B2E;
+      --text-muted:  #6B7A90;
+      --text-light:  #9CAABF;
+      --success:     #1FAD72;
+      --danger:      #D94040;
+      --input-focus: #1A56DB;
+      --radius-sm:   6px;
+      --radius-md:   10px;
+      --radius-lg:   16px;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--navy);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── SHELL ────────────────────────────────────────────────── */
+
+    .shell {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── LEFT BRAND PANEL ─────────────────────────────────────── */
+
+    .brand {
+      flex: 0 0 46%;
+      max-width: 560px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      background: var(--navy);
+      overflow: hidden;
+    }
+
+    /* Layered background */
+    .brand::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(26, 86, 219, 0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 85% 80%, rgba(200, 151, 43, 0.10) 0%, transparent 55%),
+        linear-gradient(160deg, #09162A 0%, #112140 50%, #0D1E38 100%);
+      z-index: 0;
+    }
+
+    /* Geometric grid overlay */
+    .brand::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      z-index: 0;
+    }
+
+    .brand-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 2.5rem 3rem;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .brand-inner::-webkit-scrollbar { display: none; }
+
+    /* Top bar */
+    .brand-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 3.5rem;
+    }
+
+    .wordmark {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .wordmark-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.3px;
+    }
+    .wordmark-sub {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--gold);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .secure-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(200, 151, 43, 0.3);
+      background: rgba(200, 151, 43, 0.08);
+      color: var(--gold-light);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+    .secure-badge svg { width: 12px; height: 12px; }
+
+    /* Hero copy */
+    .brand-headline {
+      font-size: clamp(1.6rem, 2.2vw, 2.4rem);
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.22;
+      letter-spacing: -0.6px;
+      margin-bottom: 1rem;
+    }
+    .brand-headline em {
+      font-style: normal;
+      color: var(--gold-light);
+    }
+
+    .brand-subline {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.65;
+      max-width: 380px;
+      margin-bottom: 2.5rem;
+    }
+
+    /* Module grid */
+    .module-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: auto;
+    }
+
+    .module-card {
+      padding: 1.1rem 1.2rem;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(8px);
+      transition: border-color 0.2s, background 0.2s;
+      cursor: default;
+    }
+    .module-card:hover {
+      border-color: rgba(200, 151, 43, 0.25);
+      background: rgba(200, 151, 43, 0.05);
+    }
+
+    .module-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+      font-size: 1rem;
+    }
+
+    .module-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 0.3rem;
+    }
+    .module-desc {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.38);
+      line-height: 1.5;
+    }
+
+    /* Tenant footer */
+    .brand-footer {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tenant-info { display: flex; flex-direction: column; gap: 3px; }
+    .tenant-name { font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.8); }
+    .tenant-domain { font-size: 0.72rem; color: rgba(255,255,255,0.35); }
+
+    .env-pill {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .env-pill--production { background: rgba(31, 173, 114, 0.15); color: #3DD68C; border: 1px solid rgba(31,173,114,0.25); }
+    .env-pill--staging    { background: rgba(200,151,43,0.15); color: var(--gold-light); border: 1px solid rgba(200,151,43,0.25); }
+
+    /* ── RIGHT LOGIN PANEL ────────────────────────────────────── */
+
+    .login {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--off-white);
+      overflow-y: auto;
+      scrollbar-width: none;
+      padding: 2rem 2.5rem;
+    }
+    .login::-webkit-scrollbar { display: none; }
+
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    /* Step header */
+    .login-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+    .login-eyebrow::before {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 2px;
+      background: var(--gold);
+      border-radius: 2px;
+    }
+
+    .login-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.5px;
+      margin-bottom: 0.4rem;
+    }
+
+    .login-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 2rem;
+    }
+
+    /* Logout / info banner */
+    .info-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 0.85rem 1rem;
+      border-radius: var(--radius-md);
+      background: #EEF4FF;
+      border: 1px solid #C7D7F8;
+      margin-bottom: 1.5rem;
+      font-size: 0.8rem;
+      color: #3B5BA5;
+      line-height: 1.5;
+    }
+    .info-banner svg { flex-shrink: 0; margin-top: 1px; }
+
+    /* Form */
+    .form { display: flex; flex-direction: column; gap: 1.15rem; }
+
+    .field { display: flex; flex-direction: column; gap: 0.4rem; }
+
+    .field-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: 0.01em;
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      display: flex;
+      align-items: center;
+      color: var(--text-light);
+      pointer-events: none;
+      transition: color 0.15s;
+    }
+    .input-icon svg { width: 16px; height: 16px; }
+
+    .field-input {
+      width: 100%;
+      height: 3rem;
+      padding: 0 3rem 0 2.75rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--white);
+      font-size: 0.9rem;
+      font-family: inherit;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .field-input::placeholder { color: var(--text-light); }
+    .field-input:focus {
+      border-color: var(--input-focus);
+      box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
+    }
+    .field-input:focus ~ .input-icon,
+    .input-wrap:focus-within .input-icon { color: var(--input-focus); }
+
+    .input-wrap:focus-within .input-icon { color: var(--input-focus); }
+
+    .toggle-vis {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+      padding: 4px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .toggle-vis:hover { color: var(--text-primary); background: var(--off-white); }
+    .toggle-vis svg { width: 16px; height: 16px; }
+
+    .field-error {
+      font-size: 0.75rem;
+      color: var(--danger);
+      display: none;
+    }
+    .field.has-error .field-input {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(217, 64, 64, 0.1);
+    }
+    .field.has-error .field-error { display: block; }
+
+    /* Options row */
+    .form-options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: -0.1rem;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .checkbox-label input[type="checkbox"] { display: none; }
+    .checkbox-box {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 4px;
+      background: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+    .checkbox-label input:checked + .checkbox-box {
+      background: var(--input-focus);
+      border-color: var(--input-focus);
+    }
+    .checkbox-label input:checked + .checkbox-box::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 5l3 3 5-5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+    }
+
+    .forgot-link {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--input-focus);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+    .forgot-link:hover { opacity: 0.7; text-decoration: underline; }
+
+    /* Submit */
+    .submit-btn {
+      width: 100%;
+      height: 3rem;
+      margin-top: 0.3rem;
+      border: none;
+      border-radius: var(--radius-md);
+      background: var(--navy);
+      color: var(--white);
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: 0.01em;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.2s, transform 0.12s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .submit-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 0%, rgba(200,151,43,0.18) 100%);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .submit-btn:hover { background: #112140; box-shadow: 0 4px 16px rgba(9,22,42,0.25); }
+    .submit-btn:hover::before { opacity: 1; }
+    .submit-btn:active { transform: translateY(1px); }
+    .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    .submit-btn .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .submit-btn.loading .spinner { display: block; }
+    .submit-btn.loading .btn-label { display: none; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0.25rem 0;
+    }
+    .divider-line { flex: 1; height: 1px; background: var(--border); }
+    .divider-text { font-size: 0.75rem; color: var(--text-light); white-space: nowrap; }
+
+    /* PIN mode toggle */
+    .mode-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .mode-btn {
+      background: none;
+      border: none;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--input-focus);
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+      transition: opacity 0.15s;
+    }
+    .mode-btn:hover { opacity: 0.7; text-decoration: underline; }
+
+    /* Support */
+    .support-row {
+      margin-top: 1.75rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--text-light);
+    }
+    .support-row a {
+      color: var(--input-focus);
+      font-weight: 500;
+      text-decoration: none;
+    }
+    .support-row a:hover { text-decoration: underline; }
+
+    /* ── PIN MODE ─────────────────────────────────────────────── */
+
+    .pin-view { display: none; }
+    .pin-view.active { display: block; }
+    .cred-view.hidden { display: none; }
+
+    .pin-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 0 0 2rem;
+    }
+    .pin-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: transparent;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+    .pin-dot.filled {
+      background: var(--navy);
+      border-color: var(--navy);
+      transform: scale(1.1);
+    }
+
+    .pin-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .pin-key {
+      height: 56px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--white);
+      font-size: 1.05rem;
+      font-weight: 600;
+      font-family: inherit;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, transform 0.08s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .pin-key:hover { background: #EEF2FF; border-color: #C7D7F8; }
+    .pin-key:active { transform: scale(0.95); }
+    .pin-key--clear { background: #FFF5F5; border-color: #FECDD3; color: var(--danger); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; }
+    .pin-key--clear:hover { background: #FEE2E2; }
+    .pin-key--del { background: #FFF8EE; border-color: #FDE68A; color: #B45309; }
+    .pin-key--del:hover { background: #FEF3C7; }
+    .pin-key--del svg { width: 16px; height: 16px; }
+
+    .pin-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 1.25rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* ── RESPONSIVE ───────────────────────────────────────────── */
+
+    @media (max-width: 900px) {
+      .brand { display: none; }
+      .login {
+        background: var(--navy);
+        padding: 1.5rem;
+      }
+      .login-card {
+        background: var(--white);
+        padding: 2rem 1.75rem;
+        border-radius: var(--radius-lg);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .login { padding: 0; }
+      .login-card {
+        border-radius: 0;
+        min-height: 100vh;
+        padding: 2rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+    }
+
+    /* ── LOADING STATE OVERLAY ────────────────────────────────── */
+
+    .submit-btn.loading {
+      pointer-events: none;
+    }
+
+    /* ── FOCUS VISIBLE ────────────────────────────────────────── */
+    :focus-visible {
+      outline: 2px solid var(--input-focus);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── LEFT BRAND PANEL ──────────────────────────────────────── -->
+  <aside class="brand">
+    <div class="brand-inner">
+
+      <div class="brand-top">
+        <div class="wordmark">
+          <span class="wordmark-name">OptimaX Suites</span>
+          <span class="wordmark-sub">Business Solution</span>
+        </div>
+        <div class="secure-badge">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 1L2 4v4c0 3.3 2.5 6.4 6 7 3.5-.6 6-3.7 6-7V4L8 1z"/>
+            <path d="M5.5 8l1.5 1.5 3-3"/>
+          </svg>
+          Secured access
+        </div>
+      </div>
+
+      <h1 class="brand-headline">
+        One workspace.<br/>
+        Every part of<br/>
+        your <em>business.</em>
+      </h1>
+
+      <p class="brand-subline">
+        OptimaX Suites unifies HR, payroll, finance, procurement,
+        approvals, and real-time analytics — built for the way
+        modern enterprises actually operate.
+      </p>
+
+      <div class="module-grid">
+        <div class="module-card">
+          <div class="module-icon">👥</div>
+          <div class="module-name">HR + Payroll</div>
+          <div class="module-desc">People records, attendance, leave, and payroll automation</div>
+        </div>
+        <div class="module-card">
+          <div class="module-icon">📊</div>
+          <div class="module-name">Performance</div>
+          <div class="module-desc">Goals, reviews, execution tracking, and output visibility</div>
+        </div>
+        <div class="module-card">
+          <div class="module-icon">💰</div>
+          <div class="module-name">Finance + AI</div>
+          <div class="module-desc">Accounting, approvals, expense control, and AI insights</div>
+        </div>
+        <div class="module-card">
+          <div class="module-icon">🛒</div>
+          <div class="module-name">POS + Inventory</div>
+          <div class="module-desc">Sales tracking, stock, multi-branch, and revenue visibility</div>
+        </div>
+        <div class="module-card">
+          <div class="module-icon">📦</div>
+          <div class="module-name">Procurement</div>
+          <div class="module-desc">RFQ workflow, vendor management, and supply chain control</div>
+        </div>
+        <div class="module-card">
+          <div class="module-icon">📡</div>
+          <div class="module-name">Analytics</div>
+          <div class="module-desc">Live dashboards, KPIs, and business intelligence</div>
+        </div>
+      </div>
+
+      <div class="brand-footer">
+        <div class="tenant-info">
+          <span class="tenant-name">Centrifuge Group</span>
+          <span class="tenant-domain">centrifuge.optimaxsuites.com</span>
+        </div>
+        <span class="env-pill env-pill--production">Production</span>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ── RIGHT LOGIN PANEL ────────────────────────────────────── -->
+  <main class="login">
+    <div class="login-card">
+
+      <p class="login-eyebrow">Workspace sign in</p>
+      <h2 class="login-title" id="panel-title">Welcome back</h2>
+      <p class="login-desc" id="panel-desc">
+        Enter your credentials to access your enterprise workspace.
+      </p>
+
+      <!-- Credential form -->
+      <div class="cred-view" id="cred-view">
+        <form class="form" id="login-form" novalidate>
+
+          <div class="field" id="field-username">
+            <label class="field-label" for="username">Username</label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="10" cy="7" r="3.5"/>
+                  <path d="M2.5 17c0-4 3.36-7 7.5-7s7.5 3 7.5 7"/>
+                </svg>
+              </span>
+              <input id="username" type="text" name="username" class="field-input" placeholder="Workspace username" autocomplete="username" />
+            </div>
+            <small class="field-error">Username is required</small>
+          </div>
+
+          <div class="field" id="field-password">
+            <label class="field-label" for="password">Password</label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3.5" y="9" width="13" height="9" rx="2"/>
+                  <path d="M6.5 9V6.5a3.5 3.5 0 0 1 7 0V9"/>
+                </svg>
+              </span>
+              <input id="password" type="password" name="password" class="field-input" placeholder="Workspace password" autocomplete="current-password" />
+              <button type="button" class="toggle-vis" id="toggle-pw" aria-label="Show password" aria-pressed="false">
+                <svg id="eye-show" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/>
+                  <circle cx="10" cy="10" r="2.5"/>
+                </svg>
+                <svg id="eye-hide" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                  <path d="M2 2l16 16M7.6 7.6A4 4 0 0 0 10 14a4 4 0 0 0 4-4M4 4.9A14.5 14.5 0 0 0 1 10s3.5 6 9 6a9 9 0 0 0 4.7-1.3M8 3.2A9 9 0 0 1 10 3c5.5 0 9 7 9 7a14.6 14.6 0 0 1-1.9 2.8"/>
+                </svg>
+              </button>
+            </div>
+            <small class="field-error">Password is required</small>
+          </div>
+
+          <div class="form-options">
+            <label class="checkbox-label">
+              <input type="checkbox" id="remember" />
+              <span class="checkbox-box"></span>
+              Remember me
+            </label>
+            <button type="button" class="forgot-link">Forgot password?</button>
+          </div>
+
+          <button type="submit" class="submit-btn" id="submit-btn">
+            <div class="spinner"></div>
+            <span class="btn-label">Sign in to workspace</span>
+          </button>
+
+          <div class="divider">
+            <div class="divider-line"></div>
+            <span class="divider-text">or sign in with PIN</span>
+            <div class="divider-line"></div>
+          </div>
+
+          <div class="mode-row">
+            <span>Using a shared workstation?</span>
+            <button type="button" class="mode-btn" id="switch-to-pin">Switch to PIN mode</button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- PIN form -->
+      <div class="pin-view" id="pin-view">
+        <p class="pin-title">Enter your 6-digit access PIN</p>
+
+        <div class="pin-display" id="pin-display">
+          <span class="pin-dot" data-index="0"></span>
+          <span class="pin-dot" data-index="1"></span>
+          <span class="pin-dot" data-index="2"></span>
+          <span class="pin-dot" data-index="3"></span>
+          <span class="pin-dot" data-index="4"></span>
+          <span class="pin-dot" data-index="5"></span>
+        </div>
+
+        <div class="pin-pad">
+          <button type="button" class="pin-key" data-digit="1">1</button>
+          <button type="button" class="pin-key" data-digit="2">2</button>
+          <button type="button" class="pin-key" data-digit="3">3</button>
+          <button type="button" class="pin-key" data-digit="4">4</button>
+          <button type="button" class="pin-key" data-digit="5">5</button>
+          <button type="button" class="pin-key" data-digit="6">6</button>
+          <button type="button" class="pin-key" data-digit="7">7</button>
+          <button type="button" class="pin-key" data-digit="8">8</button>
+          <button type="button" class="pin-key" data-digit="9">9</button>
+          <button type="button" class="pin-key pin-key--clear" id="pin-clear">CLEAR</button>
+          <button type="button" class="pin-key" data-digit="0">0</button>
+          <button type="button" class="pin-key pin-key--del" id="pin-del">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 4H17a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H8l-5-6 5-6z"/>
+              <path d="M12 8l4 4M16 8l-4 4"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="mode-row" style="margin-top:1.5rem">
+          <span>Not on a shared workstation?</span>
+          <button type="button" class="mode-btn" id="switch-to-cred">Use username instead</button>
+        </div>
+      </div>
+
+      <!-- Support footer -->
+      <div class="support-row">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="8" r="7"/>
+          <path d="M8 7v4M8 5h.01"/>
+        </svg>
+        Need help?
+        <a href="mailto:support@optimaxsuites.com">support@optimaxsuites.com</a>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+  /* ── Password visibility toggle ─────────────────────────────── */
+  const togglePw  = document.getElementById('toggle-pw');
+  const pwInput   = document.getElementById('password');
+  const eyeShow   = document.getElementById('eye-show');
+  const eyeHide   = document.getElementById('eye-hide');
+
+  togglePw.addEventListener('click', () => {
+    const hidden = pwInput.type === 'password';
+    pwInput.type = hidden ? 'text' : 'password';
+    eyeShow.style.display = hidden ? 'none' : '';
+    eyeHide.style.display = hidden ? '' : 'none';
+    togglePw.setAttribute('aria-pressed', String(hidden));
+    togglePw.setAttribute('aria-label', hidden ? 'Hide password' : 'Show password');
+  });
+
+  /* ── Form validation + submit ────────────────────────────────── */
+  const form      = document.getElementById('login-form');
+  const submitBtn = document.getElementById('submit-btn');
+  const fieldUser = document.getElementById('field-username');
+  const fieldPw   = document.getElementById('field-password');
+  const userInput = document.getElementById('username');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    let valid = true;
+
+    if (!userInput.value.trim()) {
+      fieldUser.classList.add('has-error');
+      valid = false;
+    } else {
+      fieldUser.classList.remove('has-error');
+    }
+
+    if (!pwInput.value.trim()) {
+      fieldPw.classList.add('has-error');
+      valid = false;
+    } else {
+      fieldPw.classList.remove('has-error');
+    }
+
+    if (!valid) return;
+
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+
+    /* Simulate network — remove in Angular integration */
+    await new Promise(r => setTimeout(r, 1800));
+
+    submitBtn.classList.remove('loading');
+    submitBtn.disabled = false;
+    /* Angular: call your login service here */
+  });
+
+  userInput.addEventListener('input', () => fieldUser.classList.remove('has-error'));
+  pwInput.addEventListener('input', ()   => fieldPw.classList.remove('has-error'));
+
+  /* ── PIN mode ────────────────────────────────────────────────── */
+  const credView     = document.getElementById('cred-view');
+  const pinView      = document.getElementById('pin-view');
+  const switchToPin  = document.getElementById('switch-to-pin');
+  const switchToCred = document.getElementById('switch-to-cred');
+  const panelTitle   = document.getElementById('panel-title');
+  const panelDesc    = document.getElementById('panel-desc');
+  const pinDots      = document.querySelectorAll('.pin-dot');
+  let pinValue = '';
+
+  function renderDots() {
+    pinDots.forEach((dot, i) => {
+      dot.classList.toggle('filled', i < pinValue.length);
+    });
+  }
+
+  document.querySelectorAll('.pin-key[data-digit]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (pinValue.length >= 6) return;
+      pinValue += btn.dataset.digit;
+      renderDots();
+      if (pinValue.length === 6) {
+        /* Auto-submit PIN after full entry — hook into login service */
+        setTimeout(() => {
+          /* TODO: submit PIN */
+          pinValue = '';
+          renderDots();
+        }, 300);
+      }
+    });
+  });
+
+  document.getElementById('pin-del').addEventListener('click', () => {
+    pinValue = pinValue.slice(0, -1);
+    renderDots();
+  });
+
+  document.getElementById('pin-clear').addEventListener('click', () => {
+    pinValue = '';
+    renderDots();
+  });
+
+  switchToPin.addEventListener('click', () => {
+    credView.classList.add('hidden');
+    pinView.classList.add('active');
+    panelTitle.textContent = 'PIN sign in';
+    panelDesc.textContent  = 'Fast entry for shared workstations and operational desks.';
+    pinValue = '';
+    renderDots();
+  });
+
+  switchToCred.addEventListener('click', () => {
+    pinView.classList.remove('active');
+    credView.classList.remove('hidden');
+    panelTitle.textContent = 'Welcome back';
+    panelDesc.textContent  = 'Enter your credentials to access your enterprise workspace.';
+  });
+</script>
+</body>
+</html>

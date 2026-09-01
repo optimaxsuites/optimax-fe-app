@@ -78,15 +78,70 @@
 
   <div class="mt-4 bg-gray-50 border border-gray-100 rounded-2xl p-4">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div class="flex flex-col gap-1">
-        <label class="text-[12px] text-gray-500">Employee</label>
-        <ng-select [multiple]="true" [(ngModel)]="createForm.employeeIds">
+
+      <!-- Target Type -->
+      <div class="col-span-1 md:col-span-2 flex flex-col gap-1">
+        <label class="text-[12px] text-gray-500">Target By</label>
+        <div class="flex gap-3">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-md text-[13px] border"
+            [ngClass]="createForm.targetType === 'EMPLOYEE' ? 'bg-customBlue text-white border-customBlue' : 'bg-white text-gray-600 border-gray-200'"
+            (click)="createForm.targetType = 'EMPLOYEE'; onTargetTypeChange()">
+            Employee
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-md text-[13px] border"
+            [ngClass]="createForm.targetType === 'LEVEL' ? 'bg-customBlue text-white border-customBlue' : 'bg-white text-gray-600 border-gray-200'"
+            (click)="createForm.targetType = 'LEVEL'; onTargetTypeChange()">
+            Level
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-md text-[13px] border"
+            [ngClass]="createForm.targetType === 'POSITION' ? 'bg-customBlue text-white border-customBlue' : 'bg-white text-gray-600 border-gray-200'"
+            (click)="createForm.targetType = 'POSITION'; onTargetTypeChange()">
+            Position
+          </button>
+        </div>
+      </div>
+
+      <!-- Employee multi-select -->
+      <div class="col-span-1 md:col-span-2 flex flex-col gap-1" *ngIf="createForm.targetType === 'EMPLOYEE'">
+        <label class="text-[12px] text-gray-500">Employees</label>
+        <ng-select [multiple]="true" [(ngModel)]="createForm.employeeIds" appendTo="body" placeholder="Select employees">
           <ng-option *ngFor="let employee of employees" [value]="employee.id">
             {{ employee.firstName }} {{ employee.lastName }}
           </ng-option>
         </ng-select>
       </div>
 
+      <!-- Level select -->
+      <div class="col-span-1 md:col-span-2 flex flex-col gap-1" *ngIf="createForm.targetType === 'LEVEL'">
+        <label class="text-[12px] text-gray-500">Level</label>
+        <select class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.selectedLevelId">
+          <option [value]="null">-- Select Level --</option>
+          <option *ngFor="let level of levels" [value]="level.id">{{ level.name }}</option>
+        </select>
+        <p class="text-[11px] text-gray-400 mt-1" *ngIf="createForm.selectedLevelId">
+          Applies to {{ countByLevel(createForm.selectedLevelId) }} employee(s) at this level.
+        </p>
+      </div>
+
+      <!-- Position select -->
+      <div class="col-span-1 md:col-span-2 flex flex-col gap-1" *ngIf="createForm.targetType === 'POSITION'">
+        <label class="text-[12px] text-gray-500">Position / Job Title</label>
+        <select class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.selectedPosition">
+          <option [value]="null">-- Select Position --</option>
+          <option *ngFor="let pos of uniquePositions" [value]="pos">{{ pos }}</option>
+        </select>
+        <p class="text-[11px] text-gray-400 mt-1" *ngIf="createForm.selectedPosition">
+          Applies to {{ countByPosition(createForm.selectedPosition) }} employee(s) in this position.
+        </p>
+      </div>
+
+      <!-- Operation Type -->
       <div class="flex flex-col gap-1">
         <label class="text-[12px] text-gray-500">Operation Type</label>
         <select class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.operationType">
@@ -95,6 +150,13 @@
         </select>
       </div>
 
+      <!-- Amount -->
+      <div class="flex flex-col gap-1">
+        <label class="text-[12px] text-gray-500">Amount (₦)</label>
+        <input type="number" min="0" class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.amount" />
+      </div>
+
+      <!-- Period Month -->
       <div class="flex flex-col gap-1">
         <label class="text-[12px] text-gray-500">Period Month</label>
         <select class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.periodMonth">
@@ -102,6 +164,7 @@
         </select>
       </div>
 
+      <!-- Period Year -->
       <div class="flex flex-col gap-1">
         <label class="text-[12px] text-gray-500">Period Year</label>
         <select class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.periodYear">
@@ -109,16 +172,13 @@
         </select>
       </div>
 
-      <div class="flex flex-col gap-1">
-        <label class="text-[12px] text-gray-500">Amount (₦)</label>
-        <input type="number" class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.amount" />
-      </div>
-
-      <div class="flex flex-col gap-1">
+      <!-- Reason -->
+      <div class="col-span-1 md:col-span-2 flex flex-col gap-1">
         <label class="text-[12px] text-gray-500">Reason</label>
         <input type="text" class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.reason" />
       </div>
 
+      <!-- Description -->
       <div class="col-span-1 md:col-span-2 flex flex-col gap-1">
         <label class="text-[12px] text-gray-500">Description</label>
         <textarea
@@ -130,9 +190,27 @@
       </div>
     </div>
 
+    <!-- Progress bar -->
+    <div *ngIf="submitting" class="mt-3">
+      <p class="text-[12px] text-gray-500 mb-1">Submitting... {{ submitProgress }}%</p>
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="bg-customBlue h-2 rounded-full transition-all" [style.width.%]="submitProgress"></div>
+      </div>
+    </div>
+
+    <!-- Error feedback -->
+    <div *ngIf="submitError" class="mt-3 text-[12px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+      {{ submitError }}
+    </div>
+
     <div class="flex justify-end gap-2 mt-4">
-      <app-button text="Cancel" class="btn-navigate gap-2" (click)="toggleCreateForm()"></app-button>
-      <app-button text="Submit" class="btn-navigate gap-2" (click)="createAdHoc()"></app-button>
+      <app-button text="Cancel" class="btn-navigate gap-2" (click)="toggleCreateForm()" [disabled]="submitting"></app-button>
+      <app-button
+        [text]="submitting ? 'Submitting...' : 'Submit'"
+        class="btn-navigate gap-2"
+        (click)="createAdHoc()"
+        [disabled]="!isFormValid() || submitting"
+      ></app-button>
     </div>
   </div>
 </app-side-modal>
@@ -141,6 +219,12 @@
   <div class="py-3 text-customBlue table-item">
     <div class="flex justify-between items-center">
       <p class="text-center text-[16px] font-semibold">Ad Hoc Details</p>
+      <button
+        *ngIf="isAdmin && !selectedAdjustment.applied"
+        class="text-red-500 text-[12px] border border-red-300 px-3 py-1 rounded-lg hover:bg-red-50"
+        (click)="deleteAdHoc(selectedAdjustment!)">
+        Delete
+      </button>
     </div>
 
     <div class="mt-4 grid grid-cols-2 gap-6">
@@ -162,6 +246,14 @@
         <p class="font-semibold text-gray-700">Amount</p>
         <p class="text-gray-600">{{ formatSignedCurrency(selectedAdjustment.amount, selectedAdjustment.operationType) }}</p>
       </div>
+      <div *ngIf="selectedAdjustment.employee?.level?.name">
+        <p class="font-semibold text-gray-700">Level</p>
+        <p class="text-gray-600">{{ selectedAdjustment.employee?.level?.name }}</p>
+      </div>
+      <div *ngIf="selectedAdjustment.employee?.jobTitle">
+        <p class="font-semibold text-gray-700">Position</p>
+        <p class="text-gray-600">{{ selectedAdjustment.employee?.jobTitle }}</p>
+      </div>
     </div>
 
     <div class="mt-4 grid grid-cols-1 gap-3">
@@ -175,7 +267,9 @@
       </div>
       <div>
         <p class="font-semibold text-gray-700">Payroll Status</p>
-        <p class="text-gray-600">{{ selectedAdjustment.applied ? 'Applied in payroll' : 'Waiting for payroll generation' }}</p>
+        <p [ngClass]="selectedAdjustment.applied ? 'text-green-600' : 'text-yellow-600'">
+          {{ selectedAdjustment.applied ? 'Applied in payroll' : 'Waiting for payroll generation' }}
+        </p>
       </div>
     </div>
   </div>
