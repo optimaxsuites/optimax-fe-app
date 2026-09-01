@@ -357,9 +357,9 @@ export class VendorDocumentsComponent {
   // ============================================================
 
   /** Delete a document */
-  onDeleteDocument(documentId: string): void {
+  onDeleteDocument(documentId: number): void {
     if (confirm('Are you sure you want to delete this document?')) {
-      this.deleteDocument.emit(documentId);
+      this.deleteDocument.emit(String(documentId));
     }
   }
 
@@ -383,7 +383,7 @@ export class VendorDocumentsComponent {
     if (!this.selectedDocForVerification) return;
 
     this.verifyDocument.emit({
-      documentId: this.selectedDocForVerification.id,
+      documentId: String(this.selectedDocForVerification.id),
       verified: verified,
       notes: this.verificationNotes || undefined
     });
@@ -475,7 +475,7 @@ export class VendorDocumentsComponent {
   // TRACK BY FUNCTIONS
   // ============================================================
 
-  trackByDocumentId(index: number, document: VendorDocument): string {
+  trackByDocumentId(index: number, document: VendorDocument): number {
     return document.id;
   }
 

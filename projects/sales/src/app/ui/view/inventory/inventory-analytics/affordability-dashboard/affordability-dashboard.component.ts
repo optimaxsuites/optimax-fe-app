@@ -186,7 +186,7 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
             return;
           }
 
-          forkJoin(branches.map(branch => this.inventoryService.getBranchInventory(branch.id)))
+          forkJoin(branches.map(branch => this.inventoryService.getBranchInventory(String(branch.id))))
             .pipe(takeUntil(this.destroy$))
             .subscribe({
               next: (results) => {
@@ -234,7 +234,7 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
 
     // Generate affordability score for each branch
     this.affordabilityData = this.branches.map(branch => {
-      const inventory = branchMap.get(branch.id) || [];
+      const inventory = branchMap.get(String(branch.id)) || [];
       const prices = inventory.map(item => item.sellingPrice).filter(p => p > 0);
       const totalValue = inventory.reduce((sum, item) => sum + (item.quantity * item.sellingPrice), 0);
       const totalProducts = inventory.reduce((sum, item) => sum + item.quantity, 0);
@@ -306,7 +306,7 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
       );
 
       return {
-        branchId: branch.id,
+        branchId: String(branch.id),
         branchName: branch.name,
         location: `${branch.location.city}, ${branch.location.state}`,
         totalProducts,

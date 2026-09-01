@@ -56,7 +56,7 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
   sortDirection: 'asc' | 'desc' = 'asc';
 
   // Selection
-  selectedItems: Set<string> = new Set();
+  selectedItems: Set<number> = new Set();
   selectAll: boolean = false;
 
   // UI
@@ -298,7 +298,7 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
     }
   }
 
-  toggleSelectItem(id: string): void {
+  toggleSelectItem(id: number): void {
     if (this.selectedItems.has(id)) {
       this.selectedItems.delete(id);
     } else {
@@ -307,7 +307,7 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
     this.selectAll = this.filteredItems.every(item => this.selectedItems.has(item.id));
   }
 
-  isSelected(id: string): boolean {
+  isSelected(id: number): boolean {
     return this.selectedItems.has(id);
   }
 

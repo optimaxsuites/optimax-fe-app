@@ -220,7 +220,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
 
   confirmDeleteCategory(id: string | number, name: string): void {
     if (confirm(`Are you sure you want to delete the category "${name}"?`)) {
-      this.inventoryService.deleteCategory(String(id)).pipe(takeUntil(this.destroy$)).subscribe({
+      this.inventoryService.deleteCategory(Number(id)).pipe(takeUntil(this.destroy$)).subscribe({
         next: (updatedCats: Category[]) => {
           this.rawCategories = updatedCats;
           this.categories = ['ALL', ...updatedCats.map((c: Category) => c.name)];
@@ -650,7 +650,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
     if (typeof raw === 'string') {
       // `category` may hold either the category's id or its literal name (legacy data) —
       // resolve it to a name if it matches a known category, otherwise trust it as-is.
-      const byId = this.rawCategories.find(c => c.id === raw || String(c.id) === String(raw));
+      const byId = this.rawCategories.find(c => String(c.id) === String(raw) || c.categoryId === raw);
       return byId?.name || raw;
     }
     return '—';

@@ -2,7 +2,8 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, OnChanges, S
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, Observable, takeUntil } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   StockMovement,
@@ -500,15 +501,16 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
     const type = this.movementForm.get(typeControl)?.value;
     if (!type) return;
 
-    const save$ = type === 'SUPPLIER'
+    const save$: Observable<{ id: string; name: string }[]> = type === 'SUPPLIER'
       ? this.inventoryService.createSupplier({ name }).pipe(
         // Normalize Supplier[] to the same {id, name} shape createGenericLocation() returns.
+        map(suppliers => suppliers.map(s => ({ id: String(s.id), name: s.name }))),
         takeUntil(this.destroy$)
       )
       : this.inventoryService.createGenericLocation(type, name).pipe(takeUntil(this.destroy$));
 
     save$.subscribe({
-      next: (list: any[]) => {
+      next: (list) => {
         const options = list.map(l => ({ id: l.id, name: l.name }));
         if (target === 'from') this.fromLocationOptions = options;
         else this.toLocationOptions = options;
@@ -524,7 +526,7 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
 
   getLocationName(type: string, id: string): string {
     if (type === 'BRANCH') {
-      const branch = this.branches.find(b => b.id === id);
+      const branch = this.branches.find(b => String(b.id) === id);
       return branch?.name || id;
     }
     const options = this.fromLocationOptions.find(o => o.id === id) || this.toLocationOptions.find(o => o.id === id);

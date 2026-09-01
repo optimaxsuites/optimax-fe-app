@@ -419,6 +419,70 @@ REVIEW MODAL
                 </div>
             </div>
 
+            <!-- AI Onboarding Copilot — pre-filled/verified fields from the submitted documents,
+                 surfaced here instead of a separate AI workspace -->
+            <div class="ai-copilot-panel" *ngIf="isLoadingCopilot || copilotSession"
+                style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px; margin-top: 14px;">
+                <div *ngIf="isLoadingCopilot" style="font-size: 13px; color: #6b7280;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading AI-extracted fields…
+                </div>
+
+                <ng-container *ngIf="!isLoadingCopilot && copilotSession as session">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-weight: 600; font-size: 13px;">
+                            <i class="fas fa-wand-magic-sparkles"></i> AI-Extracted Fields
+                        </span>
+                        <span style="font-size: 12px; color: #6b7280;">
+                            {{ session.overallExtractionConfidence }}% overall confidence
+                        </span>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; margin-bottom: 10px;">
+                        <span>Proposed risk classification:</span>
+                        <span style="font-weight: 600;" [style.color]="getRiskLevelColor(session.proposedRiskClassification)">
+                            {{ session.proposedRiskClassification }}
+                        </span>
+                    </div>
+
+                    <div *ngFor="let field of session.extractedFields"
+                        style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #f1f5f9;">
+                        <div style="flex: 0 0 140px; font-size: 12px; color: #6b7280;">{{ field.fieldName }}</div>
+
+                        <div style="flex: 1;" *ngIf="editingFieldName !== field.fieldName">
+                            <span style="font-size: 13px;">{{ field.extractedValue }}</span>
+                            <i *ngIf="field.corrected" class="fas fa-pen" title="Corrected by staff"
+                                style="margin-left: 6px; color: #6b7280; font-size: 11px;"></i>
+                        </div>
+                        <div style="flex: 1; display: flex; gap: 6px;" *ngIf="editingFieldName === field.fieldName">
+                            <input type="text" [(ngModel)]="editFieldValue" [ngModelOptions]="{standalone: true}"
+                                style="flex: 1; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 13px;" />
+                        </div>
+
+                        <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px;"
+                            [style.background]="(field.confidence >= 90 ? '#2EB27020' : field.confidence >= 70 ? '#F59E0B20' : '#DC262620')"
+                            [style.color]="(field.confidence >= 90 ? '#2EB270' : field.confidence >= 70 ? '#F59E0B' : '#DC2626')">
+                            {{ field.confidence }}%
+                        </span>
+
+                        <ng-container *ngIf="editingFieldName === field.fieldName; else fieldActions">
+                            <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 12px;"
+                                (click)="confirmField(field, editFieldValue)">Save</button>
+                            <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 12px;"
+                                (click)="cancelEditingField()">Cancel</button>
+                        </ng-container>
+                        <ng-template #fieldActions>
+                            <i *ngIf="field.confirmed" class="fas fa-check-circle" style="color: #2EB270;" title="Confirmed"></i>
+                            <button *ngIf="!field.confirmed" type="button" class="btn-secondary"
+                                style="padding: 2px 8px; font-size: 12px;" (click)="confirmField(field)">Confirm</button>
+                            <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 12px;"
+                                (click)="startEditingField(field)" title="Correct this value">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                        </ng-template>
+                    </div>
+                </ng-container>
+            </div>
+
             <div class="review-notes">
                 <label for="reviewNotes">
                     {{ reviewAction === 'approve' ? 'Approval Notes (Optional)' : 'Rejection Reason (Required)' }}

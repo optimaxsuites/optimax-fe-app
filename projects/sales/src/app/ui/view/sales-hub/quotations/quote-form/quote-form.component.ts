@@ -5,9 +5,9 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { PdfGenerationService } from '../../../../service/procurement/pdf-generation.service';
-import { NotificationService } from '../../../../service/procurement/notification.service';
-import { Customer, Product, Quote, QuoteStatus, QuoteItem, CustomerBankDetails } from '../../../../domain/sales/sales.dto';
-import { toDateInputValue } from '../../../../service/sales/date.util';
+import { SalesEmailService } from '../../../../service/sales/sales-email.service';
+import { Customer, Product, Quote, QuoteStatus, QuoteItem, CustomerBankDetails, QuoteAttachments, SendSalesEmailRequest, SalesEmailAttachment } from '../../../../domain/sales/sales.dto';
+import { toDateInputValue, formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
 import { lastValueFrom } from 'rxjs';
@@ -210,7 +210,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     private companyProfileService: CompanyProfileService,
     private cdr: ChangeDetectorRef,
     private pdfGenerationService: PdfGenerationService,
-    private notificationService: NotificationService,
+    private salesEmailService: SalesEmailService,
     router: Router
   ) {
     this.router = router;
@@ -1498,7 +1498,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     return pdf.output('blob');
   }
 
-  // Send email via NotificationService
+  // Send email via SalesEmailService
   private async sendQuoteEmail(quote: Quote): Promise<void> {
     const customerId = this.quoteForm.get('customerId')?.value;
     const customerObj = this.customers.find(c =>
@@ -1513,10 +1513,44 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log(`Sending quote ${quote.quoteNumber} to ${email}`);
+    const addOpts = Array.isArray(quote.additionalOptions) ? quote.additionalOptions[0] : (quote.additionalOptions as any);
+    const currency = quote.currency || 'NGN';
+    const fmt = (n: number) => (n || 0).toLocaleString('en-NG');
+
+    const itemsRows = (quote.items || []).map(item => `
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">
+              <div style="font-weight: 600;">${item.productName || ''}</div>
+              ${item.description ? `<div style="font-size: 12px; color: #6b7280;">${item.description}</div>` : ''}
+            </td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${currency} ${fmt(item.unitPrice)}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${item.taxRate || 0}%</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">${currency} ${fmt(item.total)}</td>
+          </tr>`).join('');
+
+    const additionalChargeRows = (quote.additionalCharges || []).map((amount, i) => `
+          <tr>
+            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">${quote.additionalChargesLabel?.[i] || 'Additional Charge'}:</td>
+            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(amount)}</td>
+          </tr>`).join('');
+
+    const termsAndConditions = addOpts?.terms
+      ? `<div style="margin-top: 20px;">
+           <h3 style="font-size: 14px; color: #1a2d4a; margin-bottom: 6px;">Terms &amp; Conditions</h3>
+           <p style="font-size: 13px; color: #374151; white-space: pre-line;">${addOpts.terms}</p>
+         </div>`
+      : '';
+
+    const notesSection = addOpts?.notes
+      ? `<div style="margin-top: 12px;">
+           <h3 style="font-size: 14px; color: #1a2d4a; margin-bottom: 6px;">Notes</h3>
+           <p style="font-size: 13px; color: #374151; white-space: pre-line;">${addOpts.notes}</p>
+         </div>`
+      : '';
 
     const htmlBody = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
         <h2 style="color: #1a2d4a; margin-top: 0;">Quotation Details</h2>
         <p>Dear ${name},</p>
         <p>Please find the details of your quotation below:</p>
@@ -1526,38 +1560,93 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
             <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${quote.quoteNumber}</td>
           </tr>
           <tr>
-            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Total Amount:</td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #2EB270;">${quote.currency || 'NGN'} ${quote.totalAmount.toLocaleString('en-NG')}</td>
-          </tr>
-          <tr>
             <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Valid Until:</td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${quote.validUntil ? new Date(quote.validUntil).toLocaleDateString() : 'N/A'}</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${formatApiDate(quote.validUntil)}</td>
           </tr>
         </table>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
+          <thead>
+            <tr style="background: #f8fafc;">
+              <th style="text-align: left; padding: 8px; border-bottom: 2px solid #e5e7eb;">Item</th>
+              <th style="text-align: center; padding: 8px; border-bottom: 2px solid #e5e7eb;">Qty</th>
+              <th style="text-align: right; padding: 8px; border-bottom: 2px solid #e5e7eb;">Unit Price</th>
+              <th style="text-align: right; padding: 8px; border-bottom: 2px solid #e5e7eb;">Tax</th>
+              <th style="text-align: right; padding: 8px; border-bottom: 2px solid #e5e7eb;">Line Total</th>
+            </tr>
+          </thead>
+          <tbody>${itemsRows}</tbody>
+        </table>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px;">
+          <tr>
+            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Subtotal:</td>
+            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(quote.subtotal)}</td>
+          </tr>
+          ${quote.discountAmount ? `<tr>
+            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Discount:</td>
+            <td style="padding: 4px 8px; text-align: right;">-${currency} ${fmt(quote.discountAmount)}</td>
+          </tr>` : ''}
+          <tr>
+            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Tax:</td>
+            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(quote.taxAmount)}</td>
+          </tr>
+          ${additionalChargeRows}
+          <tr>
+            <td colspan="4" style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid #1a2d4a;">Total Amount:</td>
+            <td style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid #1a2d4a; color: #2EB270;">${currency} ${fmt(quote.totalAmount)}</td>
+          </tr>
+        </table>
+
+        ${termsAndConditions}
+        ${notesSection}
+
         <p style="margin-top: 24px;">Thank you for your business!</p>
         <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
         <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from OptimaX.</p>
       </div>
     `;
 
-    const payload = {
+    // Carry over any files already attached to the quote (Additional Options →
+    // Attachments) — they already have a hosted fileUrl, so there's no need to
+    // re-upload the client-generated PDF just to email it.
+    const attachments: SalesEmailAttachment[] = (addOpts?.attachments || [])
+      .filter((a: QuoteAttachments) => !!a.fileUrl)
+      .map((a: QuoteAttachments) => ({
+        fileName: a.fileName || `Quote-${quote.quoteNumber}.pdf`,
+        fileUrl: a.fileUrl as string,
+        size: a.size || 0,
+        type: a.type || 'application/pdf'
+      }));
+
+    const payload: SendSalesEmailRequest = {
+      documentType: 'QUOTE',
+      documentId: quote.id,
+      documentNumber: quote.quoteNumber,
       to: email,
-      cc: '',
-      bcc: '',
+      cc: [],
+      bcc: [],
       subject: `Quotation ${quote.quoteNumber} from OptimaX`,
-      body: htmlBody,
-      html: true,
-      tenant: 'optimax'
+      message: htmlBody,
+      attachments,
+      sentBy: quote.merchantDetails?.email || 'system'
     };
 
     try {
-      console.log('[QuoteFormComponent] Sending direct email with payload:', payload);
-      const response = await lastValueFrom(this.notificationService.sendDirectEmail(payload));
-      console.log('[QuoteFormComponent] Email sent successfully:', response);
-      this.messageService.add({ severity: 'success', summary: 'Email Sent', detail: `Quote sent successfully to ${email}` });
+      const response = await lastValueFrom(this.salesEmailService.send(payload));
+      console.log('[QuoteFormComponent] Send response:', response);
+      // A 2xx here only means the backend logged the send request — it doesn't
+      // mean the email actually left the building. Trust `status`, not the HTTP call.
+      if (response?.status === 'FAILED' || response?.status === 'BOUNCED') {
+        this.messageService.add({ severity: 'error', summary: 'Email Not Delivered', detail: response.failureReason || `Delivery to ${email} failed.` });
+      } else if (response?.status === 'PENDING') {
+        this.messageService.add({ severity: 'info', summary: 'Email Queued', detail: `Quote queued for delivery to ${email}. It hasn't been confirmed sent yet.` });
+      } else {
+        this.messageService.add({ severity: 'success', summary: 'Email Sent', detail: `Quote sent successfully to ${email}` });
+      }
     } catch (err) {
-      console.error('[QuoteFormComponent] Failed to send direct quote email:', err);
-      this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send quote email via SMTP service.' });
+      console.error('[QuoteFormComponent] Failed to send quote email:', err);
+      this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send quote email.' });
     }
   }
 

@@ -94,7 +94,9 @@ export interface Product {
 
 // Add Category interface if not present
 export interface Category {
-    id: string;
+    id: number;
+    tenantId?: string;
+    categoryId?: string;
     name: string;
     description?: string;
     createdAt: Date;
@@ -103,7 +105,8 @@ export interface Category {
 
 // Add MeasurementUnit interface
 export interface MeasurementUnit {
-    id: string;
+    id: number;
+    tenantId?: string;
     unitId?: string;
     name: string;
     code: string;
@@ -114,7 +117,8 @@ export interface MeasurementUnit {
 
 // Add Supplier interface
 export interface Supplier {
-    id: string;
+    id: number;
+    tenantId?: string;
     supplierId?: string;
     name: string;
     email: string;
@@ -126,7 +130,8 @@ export interface Supplier {
 }
 
 export interface Branch {
-    id: string;
+    id: number;
+    tenantId?: string;
     name: string;
     code: string;
     // Widened from a fixed 'FLAGSHIP' | 'STANDARD' | 'MINI' union so users can add their own
@@ -152,7 +157,8 @@ export interface Branch {
 }
 
 export interface BranchInventory {
-    id: string;
+    id: number;
+    tenantId?: string;
     branchId: string;
     branchName: string;
     productId: string;
@@ -168,7 +174,8 @@ export interface BranchInventory {
 }
 
 export interface StockMovement {
-    id: string;
+    id: number;
+    tenantId?: string;
     productId: string;
     productName: string;
     sku: string;
@@ -228,7 +235,8 @@ export interface RestockRequest {
 }
 
 export interface StockAlert {
-    id: string;
+    id: number;
+    tenantId?: string;
     type: StockAlertType;
     severity: StockAlertSeverity;
     productId: string;
@@ -312,7 +320,7 @@ export interface InventoryDashboardData {
 }
 
 export interface QuickAction {
-    id: string;
+    id: number;
     label: string;
     icon: string;
     route: string;
@@ -439,7 +447,8 @@ export interface TriggerInventoryAlertRequest {
 
 /** Delivery record for one recipient/channel — backs alert history and failed-send retries. */
 export interface InventoryNotification {
-    id: string;
+    id: number;
+    tenantId?: string;
     type: InventoryAlertType;
     channel: InventoryNotificationChannel;
     recipientId: string;

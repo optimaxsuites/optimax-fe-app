@@ -314,8 +314,8 @@ export class BranchTransferHistoryComponent implements OnInit, OnDestroy {
   // NAVIGATION
   // ============================================================
 
-  viewMovement(movementId: string): void {
-    this.movementSelected.emit(movementId);
+  viewMovement(movementId: string | number): void {
+    this.movementSelected.emit(String(movementId));
   }
 
   // ============================================================

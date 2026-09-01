@@ -48,7 +48,7 @@ export class StockMovementComponent implements OnInit, OnDestroy {
   pageSizeOptions: number[] = [10, 20, 50, 100];
 
   // Selection
-  selectedMovementIds: Set<string> = new Set();
+  selectedMovementIds: Set<number> = new Set();
   selectAll: boolean = false;
 
   // UI
@@ -309,7 +309,7 @@ export class StockMovementComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleSelection(id: string, event: Event): void {
+  toggleSelection(id: number, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
     if (checked) {
       this.selectedMovementIds.add(id);
@@ -319,7 +319,7 @@ export class StockMovementComponent implements OnInit, OnDestroy {
     this.selectAll = this.filteredMovements.every(m => this.selectedMovementIds.has(m.id));
   }
 
-  isSelected(id: string): boolean {
+  isSelected(id: number): boolean {
     return this.selectedMovementIds.has(id);
   }
 
@@ -331,7 +331,7 @@ export class StockMovementComponent implements OnInit, OnDestroy {
   // NAVIGATION
   // ============================================================
 
-  viewMovement(id: string): void {
+  viewMovement(id: string | number): void {
     this.router.navigate(['/admin/sales/commerce/inventory/movements', id]);
   }
 

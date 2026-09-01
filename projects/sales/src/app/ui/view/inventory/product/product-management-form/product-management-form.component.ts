@@ -38,26 +38,28 @@ export function pastDateValidator(): ValidatorFn {
 }
 
 const MOCK_CATEGORIES: Category[] = [
-  { id: 'cat-1', name: 'Electronics', description: 'Gadgets, appliances, laptops, phones', createdAt: new Date(), updatedAt: new Date() },
-  { id: 'cat-2', name: 'Furniture', description: 'Chairs, desks, sofas, tables', createdAt: new Date(), updatedAt: new Date() },
-  { id: 'cat-3', name: 'Office Supplies', description: 'Papers, pens, staplers', createdAt: new Date(), updatedAt: new Date() },
-  { id: 'cat-4', name: 'Apparel', description: 'Clothing, uniforms, shoes', createdAt: new Date(), updatedAt: new Date() },
-  { id: 'cat-5', name: 'Hardware', description: 'Tools, building supplies, equipment', createdAt: new Date(), updatedAt: new Date() }
+  { id: 1, categoryId: 'cat-1', name: 'Electronics', description: 'Gadgets, appliances, laptops, phones', createdAt: new Date(), updatedAt: new Date() },
+  { id: 2, categoryId: 'cat-2', name: 'Furniture', description: 'Chairs, desks, sofas, tables', createdAt: new Date(), updatedAt: new Date() },
+  { id: 3, categoryId: 'cat-3', name: 'Office Supplies', description: 'Papers, pens, staplers', createdAt: new Date(), updatedAt: new Date() },
+  { id: 4, categoryId: 'cat-4', name: 'Apparel', description: 'Clothing, uniforms, shoes', createdAt: new Date(), updatedAt: new Date() },
+  { id: 5, categoryId: 'cat-5', name: 'Hardware', description: 'Tools, building supplies, equipment', createdAt: new Date(), updatedAt: new Date() }
 ];
 
 const MOCK_UNITS: MeasurementUnit[] = [
-  { id: 'EACH', name: 'pcs', code: 'PCS', description: 'Pieces', createdAt: new Date(), updatedAt: new Date() },
-  { id: 'KG', name: 'kg', code: 'KG', description: 'Kilograms', createdAt: new Date(), updatedAt: new Date() },
-  { id: 'BOX', name: 'box', code: 'BOX', description: 'Boxes', createdAt: new Date(), updatedAt: new Date() },
-  { id: 'EACH', name: 'pack', code: 'PACK', description: 'Packs', createdAt: new Date(), updatedAt: new Date() },
-  { id: 'METER', name: 'm', code: 'METER', description: 'Meters', createdAt: new Date(), updatedAt: new Date() }
+  // `unitId` carries the matching Product.unitOfMeasure code — id is now numeric per the
+  // /measurement-units API contract, so it can no longer double as that code the way it used to.
+  { id: 1, unitId: 'EACH', name: 'pcs', code: 'PCS', description: 'Pieces', createdAt: new Date(), updatedAt: new Date() },
+  { id: 2, unitId: 'KG', name: 'kg', code: 'KG', description: 'Kilograms', createdAt: new Date(), updatedAt: new Date() },
+  { id: 3, unitId: 'BOX', name: 'box', code: 'BOX', description: 'Boxes', createdAt: new Date(), updatedAt: new Date() },
+  { id: 4, unitId: 'EACH', name: 'pack', code: 'PACK', description: 'Packs', createdAt: new Date(), updatedAt: new Date() },
+  { id: 5, unitId: 'METER', name: 'm', code: 'METER', description: 'Meters', createdAt: new Date(), updatedAt: new Date() }
 ];
 
 const MOCK_SUPPLIERS: Supplier[] = [
-  { id: 'sup-1', name: 'Alibaba Group', contactPerson: 'Jack Ma', email: 'sales@alibaba.com', phone: '123456789', address: 'Hangzhou, China', createdAt: new Date(), updatedAt: new Date() },
-  { id: 'sup-2', name: 'Jumia Business', contactPerson: 'Amina Bello', email: 'amina@jumia.com', phone: '987654321', address: 'Lagos, Nigeria', createdAt: new Date(), updatedAt: new Date() },
-  { id: 'sup-3', name: 'Konga Wholesales', contactPerson: 'Obinna Ike', email: 'obinna@konga.com', phone: '555666777', address: 'Lagos, Nigeria', createdAt: new Date(), updatedAt: new Date() },
-  { id: 'sup-4', name: 'Global Logistics Partners', contactPerson: 'John Smith', email: 'john@glp.com', phone: '888999000', address: 'New York, USA', createdAt: new Date(), updatedAt: new Date() }
+  { id: 1, name: 'Alibaba Group', contactPerson: 'Jack Ma', email: 'sales@alibaba.com', phone: '123456789', address: 'Hangzhou, China', createdAt: new Date(), updatedAt: new Date() },
+  { id: 2, name: 'Jumia Business', contactPerson: 'Amina Bello', email: 'amina@jumia.com', phone: '987654321', address: 'Lagos, Nigeria', createdAt: new Date(), updatedAt: new Date() },
+  { id: 3, name: 'Konga Wholesales', contactPerson: 'Obinna Ike', email: 'obinna@konga.com', phone: '555666777', address: 'Lagos, Nigeria', createdAt: new Date(), updatedAt: new Date() },
+  { id: 4, name: 'Global Logistics Partners', contactPerson: 'John Smith', email: 'john@glp.com', phone: '888999000', address: 'New York, USA', createdAt: new Date(), updatedAt: new Date() }
 ];
 
 @Component({
@@ -361,9 +363,9 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       costPrice: formData.costPrice,
       stockQuantity: formData.quantity,
       images: this.images,
-      category: foundCategory?.id,
-      unitOfMeasure: (foundUnit?.id || 'EACH') as 'EACH' | 'BOX' | 'KG' | 'LITER' | 'METER',
-      supplierIds: foundSupplier ? [foundSupplier.id] : [],
+      category: foundCategory ? String(foundCategory.id) : undefined,
+      unitOfMeasure: (foundUnit?.unitId || 'EACH') as 'EACH' | 'BOX' | 'KG' | 'LITER' | 'METER',
+      supplierIds: foundSupplier ? [String(foundSupplier.id)] : [],
       status: (formData.quantity ?? 0) > 0 ? 'ACTIVE' as any : 'OUT_OF_STOCK' as any,
       isComboProduct: formData.isComboProduct || false,
       weight: Number(formData.weight) || 0

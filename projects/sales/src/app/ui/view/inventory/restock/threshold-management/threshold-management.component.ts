@@ -157,14 +157,14 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
         next: (branches) => {
           this.branches = branches;
           if (this.branchId) {
-            const branch = branches.find(b => b.id === this.branchId);
+            const branch = branches.find(b => String(b.id) === this.branchId);
             if (branch) {
               this.selectedBranch = branch;
               this.loadInventory(this.branchId);
             }
           } else if (branches.length > 0) {
             this.selectedBranch = branches[0];
-            this.loadInventory(branches[0].id);
+            this.loadInventory(String(branches[0].id));
           }
           this.isLoading = false;
         },
@@ -205,11 +205,11 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
       });
   }
 
-  onBranchChange(branchId: string): void {
-    const branch = this.branches.find(b => b.id === branchId);
+  onBranchChange(branchId: string | number): void {
+    const branch = this.branches.find(b => String(b.id) === String(branchId));
     if (branch) {
       this.selectedBranch = branch;
-      this.loadInventory(branchId);
+      this.loadInventory(String(branchId));
     }
   }
 
@@ -468,7 +468,7 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
   }
 
   getBranchName(branchId: string): string {
-    const branch = this.branches.find(b => b.id === branchId);
+    const branch = this.branches.find(b => String(b.id) === branchId);
     return branch?.name || branchId;
   }
 
@@ -530,7 +530,7 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
 
   refresh(): void {
     if (this.selectedBranch) {
-      this.loadInventory(this.selectedBranch.id);
+      this.loadInventory(String(this.selectedBranch.id));
     }
   }
 

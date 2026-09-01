@@ -210,7 +210,7 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
           
           // Auto-select movement if ID provided
           if (this.movementId && this.autoSelect) {
-            this.selectedMovement = this.movements.find(m => m.id === this.movementId) || null;
+            this.selectedMovement = this.movements.find(m => String(m.id) === this.movementId) || null;
           } else if (this.movements.length > 0 && !this.selectedMovement) {
             this.selectedMovement = this.movements[0];
           }
@@ -299,7 +299,7 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
       filtered = filtered.filter(m =>
         m.productName?.toLowerCase().includes(term) ||
         m.sku?.toLowerCase().includes(term) ||
-        m.id?.toLowerCase().includes(term) ||
+        String(m.id ?? '').toLowerCase().includes(term) ||
         m.fromLocation?.name?.toLowerCase().includes(term) ||
         m.toLocation?.name?.toLowerCase().includes(term)
       );
@@ -377,8 +377,8 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
   // SELECTION
   // ============================================================
 
-  selectMovement(movementId: string): void {
-    this.selectedMovement = this.movements.find(m => m.id === movementId) || null;
+  selectMovement(movementId: string | number): void {
+    this.selectedMovement = this.movements.find(m => String(m.id) === String(movementId)) || null;
     if (this.selectedMovement) {
       // Reset forms
       this.approvalForm.reset();
@@ -427,7 +427,7 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
     if (!this.selectedMovement || !this.selectedAction) return;
 
     this.isSubmitting = true;
-    const movementId = this.selectedMovement.id;
+    const movementId = String(this.selectedMovement.id);
 
     const action: ApprovalAction = {
       movementId,
@@ -449,10 +449,10 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
       approvedAt: action.timestamp
     }).subscribe({
       next: (updated) => {
-        if (this.selectedMovement && this.selectedMovement.id === movementId) {
+        if (this.selectedMovement && String(this.selectedMovement.id) === movementId) {
           this.selectedMovement = updated;
         }
-        const idx = this.movements.findIndex(m => m.id === movementId);
+        const idx = this.movements.findIndex(m => String(m.id) === movementId);
         if (idx > -1) this.movements[idx] = updated;
 
         this.calculateStats();
@@ -478,7 +478,7 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
     }
 
     this.isSubmitting = true;
-    const movementId = this.selectedMovement.id;
+    const movementId = String(this.selectedMovement.id);
     const comments = this.commentsForm.get('comments')?.value || '';
 
     const action: ApprovalAction = {
@@ -495,10 +495,10 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
       notes: (this.selectedMovement.notes || '') + `\nRejection reason: ${comments}`
     }).subscribe({
       next: (updated) => {
-        if (this.selectedMovement && this.selectedMovement.id === movementId) {
+        if (this.selectedMovement && String(this.selectedMovement.id) === movementId) {
           this.selectedMovement = updated;
         }
-        const idx = this.movements.findIndex(m => m.id === movementId);
+        const idx = this.movements.findIndex(m => String(m.id) === movementId);
         if (idx > -1) this.movements[idx] = updated;
 
         this.calculateStats();
@@ -525,7 +525,7 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
     }
 
     this.isSubmitting = true;
-    const movementId = this.selectedMovement.id;
+    const movementId = String(this.selectedMovement.id);
 
     const changesRequested = [{
       field: this.changesForm.get('field')?.value || '',
@@ -549,10 +549,10 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
       notes: (this.selectedMovement.notes || '') + `\nChanges requested: ${comments}`
     }).subscribe({
       next: (updated) => {
-        if (this.selectedMovement && this.selectedMovement.id === movementId) {
+        if (this.selectedMovement && String(this.selectedMovement.id) === movementId) {
           this.selectedMovement = updated;
         }
-        const idx = this.movements.findIndex(m => m.id === movementId);
+        const idx = this.movements.findIndex(m => String(m.id) === movementId);
         if (idx > -1) this.movements[idx] = updated;
 
         this.calculateStats();
@@ -600,7 +600,7 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
           const idx = this.movements.findIndex(mv => mv.id === m.id);
           if (idx > -1) this.movements[idx] = updated;
           this.approvalHistory.unshift({
-            movementId: m.id,
+            movementId: String(m.id),
             action: 'APPROVE',
             comments: 'Bulk approved',
             approvedBy: 'usr-1',
@@ -750,7 +750,7 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
   }
 
   getBranchName(branchId: string): string {
-    const branch = this.branches.find(b => b.id === branchId);
+    const branch = this.branches.find(b => String(b.id) === branchId);
     return branch?.name || branchId;
   }
 

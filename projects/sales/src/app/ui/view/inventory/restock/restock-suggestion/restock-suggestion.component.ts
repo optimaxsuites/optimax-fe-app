@@ -144,7 +144,7 @@ export class RestockSuggestionComponent implements OnInit, OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (inventory) => {
-            this.branchInventory = inventory;
+            this.branchInventory = this.injectFakeLowStock(inventory);
             this.generateSuggestions();
             this.isLoading = false;
           },
@@ -166,14 +166,14 @@ export class RestockSuggestionComponent implements OnInit, OnDestroy {
       }
 
       branches.forEach(branch => {
-        this.inventoryService.getBranchInventory(branch.id)
+        this.inventoryService.getBranchInventory(String(branch.id))
           .pipe(takeUntil(this.destroy$))
           .subscribe({
             next: (inventory) => {
               allInventory.push(...inventory);
               completed++;
               if (completed === branches.length) {
-                this.branchInventory = allInventory;
+                this.branchInventory = this.injectFakeLowStock(allInventory);
                 this.generateSuggestions();
                 this.isLoading = false;
               }
@@ -190,6 +190,25 @@ export class RestockSuggestionComponent implements OnInit, OnDestroy {
           });
       });
     }
+  }
+
+  private injectFakeLowStock(inventory: BranchInventory[]): BranchInventory[] {
+    return inventory.map((item, index) => {
+      // Force the first few items to have low stock for demonstration
+      if (index === 0) {
+        return { ...item, quantity: Math.floor(item.safetyStock * 0.5) }; // CRITICAL
+      }
+      if (index === 1) {
+        return { ...item, quantity: item.reorderPoint - 1 }; // LOW
+      }
+      if (index === 2) {
+        return { ...item, quantity: Math.floor(item.safetyStock * 0.8) }; // CRITICAL
+      }
+      if (index === 3) {
+        return { ...item, quantity: item.reorderPoint - 2 }; // LOW
+      }
+      return item;
+    });
   }
 
   // ============================================================
@@ -351,7 +370,7 @@ export class RestockSuggestionComponent implements OnInit, OnDestroy {
   }
 
   getBranchName(branchId: string): string {
-    const branch = this.branches.find(b => b.id === branchId);
+    const branch = this.branches.find(b => String(b.id) === branchId);
     return branch?.name || branchId;
   }
 

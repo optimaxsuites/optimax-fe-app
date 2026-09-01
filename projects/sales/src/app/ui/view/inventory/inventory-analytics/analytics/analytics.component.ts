@@ -86,7 +86,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         next: (branches) => {
           this.branches = branches;
           if (!this.selectedBranchId && branches.length > 0) {
-            this.selectedBranchId = branches[0].id;
+            this.selectedBranchId = String(branches[0].id);
           }
           this.isLoadingBranches = false;
         },

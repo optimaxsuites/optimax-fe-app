@@ -210,9 +210,6 @@
                 </td>
                 <td class="actions-col">
                   <div class="actions-wrapper">
-                    <button class="action-btn view-btn" (click)="viewProduct(product.id)" title="View Details">
-                      <i class="fas fa-eye"></i>
-                    </button>
                     <button class="action-btn generate-quote-btn" (click)="generateQuoteFromProduct(product)" title="Create Quote">
                       <i class="fas fa-file-invoice"></i>
                     </button>
@@ -291,9 +288,6 @@
               <span class="stock-label">{{ getStockStatusLabel(product.stockQuantity) }}</span>
             </div>
             <div class="card-actions">
-              <button class="action-btn view-btn" (click)="viewProduct(product.id)" title="View Details">
-                <i class="fas fa-eye"></i>
-              </button>
               <button class="action-btn generate-quote-btn" (click)="generateQuoteFromProduct(product)" title="Create Quote">
                 <i class="fas fa-file-invoice"></i>
               </button>

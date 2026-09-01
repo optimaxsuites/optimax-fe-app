@@ -305,8 +305,8 @@ export class ProcurementRequestService {
         const matchedCategory = categoryNames.find(name => this.vendorMatchesCategory(v, [name]));
 
         return {
-          id: Number(v.id.replace(/\D/g, '')) || 0,
-          vendorId: v.id,
+          id: v.id,
+          vendorId: String(v.id),
           vendorName: v.companyName,
           vendorCode: v.registrationNumber || v.id,
           categories: v.categories || [],
