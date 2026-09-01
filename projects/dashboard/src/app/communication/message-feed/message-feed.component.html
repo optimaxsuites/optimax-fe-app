@@ -228,11 +228,12 @@
     <div
       *ngIf="!msg.isSystem && msg.messageType !== 'CALL_CARD' && msg.messageType !== 'CALL_SUMMARY' && !parseCallSummary(msg.content) && !parseCallInvite(msg.content)"
       [id]="'msg-' + msg.id"
-      class="msg-row group flex gap-4 px-3 py-3 rounded-xl mb-0.5 transition-all relative"
+      class="msg-row group flex gap-3 px-4 py-1.5 mb-0 transition-all relative"
       [ngClass]="{
         'thread-active': activeThreadId === msg.id,
         'flash': isFlashing(msg.id),
-        'opacity-40': msg.deleting
+        'opacity-40': msg.deleting,
+        'msg-self': isOwnMessage(msg)
       }"
       (click)="deleteDismissed.emit()"
       (dblclick)="threadOpened.emit({ msg, event: $event })"
@@ -813,10 +814,17 @@
 
 <style>
   .msg-row:hover { background: #f9fafb; }
+  .msg-row.msg-self:hover { background: #f5faf8; }
   .msg-row.thread-active {
     background: #f0f7ff;
     border-left: 3px solid #2e6276;
     padding-left: 10px;
+  }
+  .msg-row.msg-self.thread-active {
+    border-left: none;
+    border-right: 3px solid #2e6276;
+    padding-left: 12px;
+    padding-right: 10px;
   }
   .msg-row.flash {
     animation: flash-fade 2.4s ease-out forwards;

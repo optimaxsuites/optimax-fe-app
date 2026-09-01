@@ -1,12 +1,11 @@
 /* damilola worked on this: thread inbox card styling for channel and DM conversations. */
 .msg-row {
-  align-items: flex-start;
+  align-items: flex-end;
   min-width: 0;
   border: 1px solid transparent;
 
   &:hover {
-    border-color: #edf2f7;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    border-color: transparent;
   }
 }
 
@@ -1153,5 +1152,77 @@
     font-weight: 600;
 
     i { color: #16a34a; }
+  }
+}
+
+// ── Bubble message layout — matches mockup design ────────────────────────────
+
+// Content column becomes a flex column so bubbles can be width-constrained
+.msg-row > .flex-1 {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0.2rem !important;
+  min-width: 0;
+}
+
+// Other-person bubble: light gray pill
+.msg-row:not(.msg-self) .message-rich-html {
+  max-width: 72%;
+  background: #f2f4f6;
+  color: #1a2e3a;
+  border-radius: 0.3rem 1.1rem 1.1rem 1.1rem;
+  padding: 0.7rem 1rem;
+  align-self: flex-start;
+}
+
+// Self message row: avatar flips to right
+.msg-row.msg-self {
+  flex-direction: row-reverse;
+
+  // Content column aligns everything to the right
+  > .flex-1 {
+    align-items: flex-end !important;
+  }
+
+  // Self bubble: solid brand accent (teal-green, readable on white bg)
+  .message-rich-html {
+    max-width: 72%;
+    background: var(--comm-brand-alt, #3b8d72);
+    color: #fff;
+    border-radius: 1.1rem 0.3rem 1.1rem 1.1rem;
+    padding: 0.7rem 1rem;
+    align-self: flex-end;
+    border: none;
+
+    // Keep links readable on colored background
+    :is(a, .chat-link) { color: rgba(255,255,255,0.9) !important; }
+    // Keep mentions readable
+    :is(.chat-mention) { background: rgba(255,255,255,0.22) !important; color: #fff !important; }
+  }
+
+  // Flip the sender-name + time row
+  > .flex-1 > .flex.items-baseline {
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+  }
+
+  // Action button row aligned right
+  > .flex-1 > .flex.items-center {
+    align-self: flex-end;
+  }
+
+  // Thread preview indented from right
+  > .flex-1 > div[class*="pl-3"] {
+    align-self: flex-end;
+    border-left: none;
+    border-right: 2px solid #e5e7eb;
+    padding-left: 0;
+    padding-right: 0.75rem;
+  }
+
+  // Read receipt aligned right
+  .seen-by-chip {
+    align-self: flex-end;
   }
 }

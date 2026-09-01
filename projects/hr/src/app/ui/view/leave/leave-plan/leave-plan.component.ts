@@ -213,7 +213,7 @@ export class LeavePlanComponent implements OnInit, OnDestroy {
 
         // Filter to current user's records only
         const myRecords: LeavePlanRecord[] = (planRecords as LeavePlanRecord[]).filter(
-          (r) => r.createdBy?.userId === this.currentUserId,
+          (r) => (r.createdBy?.userId || (r.createdBy as any)?.id) === this.currentUserId,
         );
 
         this.checkForStatusChanges(myRecords);

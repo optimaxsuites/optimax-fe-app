@@ -1,11 +1,30 @@
 /* damilola worked on this: enterprise collaboration workspace styling refresh. */
+
+/*
+ * White-label colour tokens — override any of these per-tenant to rebrand
+ * the entire Communications workspace without touching component code.
+ */
+:host {
+  --comm-brand:          #2e6276;   /* primary accent (buttons, active states, links) */
+  --comm-brand-light:    #eef6f9;   /* light tint of brand (chip/badge backgrounds)  */
+  --comm-brand-alt:      #3b8d72;   /* secondary accent used in gradients             */
+  --comm-surface:        #ffffff;   /* card / panel fill                              */
+  --comm-surface-bg:     #f5f7f9;   /* workspace canvas background (neutral gray)     */
+  --comm-border:         #e2e8ed;   /* standard border                                */
+  --comm-border-subtle:  rgba(209, 219, 223, 0.7);
+  --comm-text:           #0f172a;   /* primary text                                   */
+  --comm-text-secondary: #64748b;   /* secondary / label text                         */
+  --comm-text-muted:     #94a3b8;   /* placeholder / timestamp text                   */
+  --comm-shadow-card:    0 2px 12px rgba(15, 23, 42, 0.06);
+  --comm-shadow-float:   0 8px 32px rgba(15, 23, 42, 0.10);
+  --comm-radius-card:    1.25rem;   /* card corner radius                             */
+}
+
 .comm-shell {
   position: relative;
   overflow-x: clip !important;
   overflow-y: visible !important;
-  background:
-    radial-gradient(circle at top left, rgba(46, 98, 118, 0.1), transparent 30%),
-    linear-gradient(180deg, #f3f6f8 0%, #edf2f5 100%);
+  background: var(--comm-surface-bg);
   gap: 1.25rem;
   padding: 1.25rem;
   width: 100%;
@@ -39,11 +58,11 @@
   animation: chat-toast-slide 0.26s ease;
 
   &.dm {
-    border-left: 4px solid #2e6276;
+    border-left: 4px solid var(--comm-brand);
   }
 
   &.channel {
-    border-left: 4px solid #3b8d72;
+    border-left: 4px solid var(--comm-brand-alt);
   }
 }
 
@@ -58,7 +77,7 @@
 }
 
 .chat-arrival-avatar-fallback {
-  background: linear-gradient(135deg, #2e6276, #3b8d72);
+  background: linear-gradient(135deg, var(--comm-brand), var(--comm-brand-alt));
   color: #fff;
   font-size: 0.85rem;
   font-weight: 700;
@@ -110,10 +129,15 @@
 }
 
 .workspace-sidebar-shell {
-  background: linear-gradient(180deg, #fbfcfd 0%, #f6f8fa 100%);
-  border: 1px solid rgba(209, 219, 223, 0.9);
-  border-radius: 1.5rem;
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+  background: var(--comm-surface);
+  border: 1px solid var(--comm-border-subtle);
+  border-radius: var(--comm-radius-card);
+  box-shadow: var(--comm-shadow-card);
+
+  /* Force ERP theme font (Roboto Slab) into the Tailwind-powered sidebar child */
+  ::ng-deep * {
+    font-family: "Roboto Slab", serif !important;
+  }
 }
 
 .mobile-sidebar-backdrop {
@@ -209,10 +233,10 @@
 .feed-list-card,
 .rail-card,
 .chat-panel {
-  border: 1px solid rgba(209, 219, 223, 0.9);
-  border-radius: 1.5rem;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+  border: 1px solid var(--comm-border-subtle);
+  border-radius: var(--comm-radius-card);
+  background: var(--comm-surface);
+  box-shadow: var(--comm-shadow-card);
 }
 
 .workspace-overview {
@@ -234,7 +258,7 @@
 .feed-section-kicker,
 .rail-label {
   margin: 0;
-  color: #2e6276;
+  color: var(--comm-brand);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -283,7 +307,7 @@
 
   &.accent {
     border-color: transparent;
-    background: linear-gradient(135deg, rgba(46, 98, 118, 0.95), rgba(49, 148, 115, 0.95));
+    background: linear-gradient(135deg, var(--comm-brand), var(--comm-brand-alt));
 
     span,
     strong {
@@ -368,8 +392,8 @@
   gap: 0.55rem;
   padding: 0.65rem 0.9rem;
   border-radius: 999px;
-  background: #eef6f9;
-  color: #2e6276;
+  background: var(--comm-brand-light);
+  color: var(--comm-brand);
   font-size: 0.86rem;
   font-weight: 700;
   white-space: nowrap;
@@ -395,8 +419,8 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
   &:focus {
-    border-color: rgba(46, 98, 118, 0.55);
-    box-shadow: 0 0 0 4px rgba(46, 98, 118, 0.1);
+    border-color: var(--comm-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--comm-brand) 12%, transparent);
   }
 }
 
@@ -422,7 +446,7 @@
   &.primary,
   &.active {
     border-color: transparent;
-    background: linear-gradient(135deg, #2e6276, #3b8d72);
+    background: linear-gradient(135deg, var(--comm-brand), var(--comm-brand-alt));
     color: #fff;
   }
 
@@ -566,10 +590,20 @@
 .section-header h2,
 .chat-topbar h2,
 .rail-card-header h3 {
-  margin: 0.25rem 0 0;
+  margin: 0.1rem 0 0;
   color: #0f172a;
-  font-size: 1.15rem;
+  font-size: 1rem;
   font-weight: 700;
+}
+
+// Chat topbar: slim, Slack-style channel header
+.chat-panel > .chat-topbar {
+  padding: 0 1.1rem;
+  min-height: 52px;
+  align-items: center;
+  border-bottom: 1px solid var(--comm-border, #e2e8ed);
+  border-radius: 0;
+  background: #fff;
 }
 
 .conversation-access-banner {
@@ -980,8 +1014,8 @@
   overflow: visible;
 
   &.selected {
-    border-color: rgba(46, 98, 118, 0.4);
-    box-shadow: 0 0 0 4px rgba(46, 98, 118, 0.08);
+    border-color: var(--comm-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--comm-brand) 10%, transparent);
   }
 }
 
@@ -1878,6 +1912,7 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  padding: 0 !important;  // topbar + feed handle their own spacing
 }
 
 .chat-thread-shell {
@@ -1953,10 +1988,10 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  margin-top: 1rem;
-  border: 1px solid #edf2f7;
-  border-radius: 1.1rem;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.58), rgba(255, 255, 255, 0.95));
+  margin-top: 0.5rem;
+  background: #fff;
+  border-radius: 0;
+  padding: 8px 0;
 }
 
 .chat-panel .chat-topbar,
@@ -1964,6 +1999,11 @@
 .chat-panel app-message-composer,
 .chat-panel .threads-inline-note {
   min-width: 0;
+}
+
+.chat-panel app-message-composer {
+  padding: 0 1rem 0.85rem;
+  flex-shrink: 0;
 }
 
 .threads-inline-note {
