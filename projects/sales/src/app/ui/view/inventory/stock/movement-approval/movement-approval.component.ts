@@ -755,7 +755,7 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
   }
 
   getProductName(productId: string): string {
-    const product = this.products.find(p => p.id === productId);
+    const product = this.products.find(p => String(p.id) === productId);
     return product?.name || productId;
   }
 

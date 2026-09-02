@@ -252,7 +252,7 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
               this.inventoryItem = item;
               this.populateForm(item);
               this.selectedProduct = {
-                id: item.productId,
+                id: Number(item.productId),
                 name: item.productName,
                 sku: item.sku
               } as Product;

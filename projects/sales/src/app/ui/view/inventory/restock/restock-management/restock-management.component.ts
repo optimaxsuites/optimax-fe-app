@@ -345,7 +345,7 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/sales/commerce/inventory/restock/requests/new']);
   }
 
-  navigateToRequestDetail(id: string): void {
+  navigateToRequestDetail(id: string | number): void {
     this.router.navigate(['/admin/sales/commerce/inventory/restock/requests', id]);
   }
 

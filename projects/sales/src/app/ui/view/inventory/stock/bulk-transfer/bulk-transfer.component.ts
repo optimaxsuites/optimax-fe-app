@@ -277,7 +277,7 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
     }
 
     // Check if product exists in source inventory
-    const sourceItem = this.sourceInventory.find(i => i.productId === product.id);
+    const sourceItem = this.sourceInventory.find(i => i.productId === String(product.id));
     if (!sourceItem || sourceItem.quantity <= 0) {
       this.error = 'Product not available in source branch';
       this.showProductDropdown = false;
@@ -287,7 +287,7 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
 
     // Add to form
     const item = this.createItemForm();
-    const destItem = this.destInventory.find(i => i.productId === product.id);
+    const destItem = this.destInventory.find(i => i.productId === String(product.id));
     item.patchValue({
       productId: product.id,
       productName: product.name,
@@ -517,13 +517,13 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
     return branch?.name || branchId;
   }
 
-  getSourceStock(productId: string): number {
-    const item = this.sourceInventory.find(i => i.productId === productId);
+  getSourceStock(productId: string | number): number {
+    const item = this.sourceInventory.find(i => String(i.productId) === String(productId));
     return item?.quantity || 0;
   }
 
-  getDestinationStock(productId: string): number {
-    const item = this.destInventory.find(i => i.productId === productId);
+  getDestinationStock(productId: string | number): number {
+    const item = this.destInventory.find(i => String(i.productId) === String(productId));
     return item?.quantity || 0;
   }
 
