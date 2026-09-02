@@ -211,8 +211,8 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   }
 
   selectProduct(product: Product): void {
-    this.predictionForm.patchValue({ productId: product.id });
-    this.productId = product.id;
+    this.predictionForm.patchValue({ productId: String(product.id) });
+    this.productId = String(product.id);
     // Close dropdown
     this.showProductDropdown = false;
     this.productSearchTerm = '';
@@ -227,7 +227,7 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   // ============================================================
 
   private generateMockPrediction(): SellLikelihoodPrediction {
-    const product = this.products.find(p => p.id === this.productId);
+    const product = this.products.find(p => String(p.id) === this.productId);
     const branch = this.branches.find(b => String(b.id) === this.branchId);
 
     // Generate random factors
@@ -468,7 +468,7 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   }
 
   getProductName(productId: string): string {
-    const product = this.products.find(p => p.id === productId);
+    const product = this.products.find(p => String(p.id) === productId);
     return product?.name || productId;
   }
 

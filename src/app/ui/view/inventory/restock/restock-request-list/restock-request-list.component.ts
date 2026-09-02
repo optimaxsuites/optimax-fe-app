@@ -55,7 +55,7 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
   pageSizeOptions: number[] = [10, 20, 50, 100];
 
   // Selection
-  selectedRequestIds: Set<string> = new Set();
+  selectedRequestIds: Set<number> = new Set();
   selectAll: boolean = false;
 
   // UI
@@ -328,7 +328,7 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleSelection(id: string, event: Event): void {
+  toggleSelection(id: number, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
     if (checked) {
       this.selectedRequestIds.add(id);
@@ -338,7 +338,7 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
     this.selectAll = this.filteredRequests.every(r => this.selectedRequestIds.has(r.id));
   }
 
-  isSelected(id: string): boolean {
+  isSelected(id: number): boolean {
     return this.selectedRequestIds.has(id);
   }
 
@@ -479,7 +479,7 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
   // NAVIGATION
   // ============================================================
 
-  viewRequest(id: string): void {
+  viewRequest(id: string | number): void {
     this.router.navigate(['/admin/sales/commerce/inventory/restock/requests', id]);
   }
 

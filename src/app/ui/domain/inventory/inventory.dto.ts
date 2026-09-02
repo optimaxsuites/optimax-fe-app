@@ -62,19 +62,32 @@ export enum StockAlertSeverity {
 // inventory.dto.ts - Add/Update Product interface
 
 export interface Product {
-    id: string;
+    id: number;
+    tenantId?: string;
     productId?: string; // For compatibility with sales service
     sku: string;
     name: string;
     description: string;
     category: string | Category; // Support both string and object
+    /** Wire-canonical FK from the /products API. `category` above is resolved from this
+     *  (via the cached Categories list) for display/back-compat — see productFromApi(). */
+    categoryId?: number;
+    // subCategory/brand/weight/dimensions/tags/variants have no field in the /products API —
+    // it dropped them. Kept here as client-side-only: they display and edit locally but do NOT
+    // round-trip through the real backend, so they're lost on reload once a product has only
+    // ever been saved through the live API (see productFromApi()/productToApiPayload()).
     subCategory: string;
     brand: string;
     unitOfMeasure: 'EACH' | 'BOX' | 'KG' | 'LITER' | 'METER';
+    /** Wire-canonical FK from the /products API. `unitOfMeasure` above is resolved from this
+     *  (via the cached MeasurementUnits list) for display/back-compat. */
+    measurementUnitId?: number;
     costPrice: number;
     sellingPrice: number;
-    unitPrice?: number; // Alias for sellingPrice (for compatibility)
+    unitPrice?: number; // Alias for sellingPrice (for compatibility) — this is the API's canonical price field
     price?: number; // Another alias
+    currency?: string;
+    taxRate?: number;
     stockQuantity: number; // ← IMPORTANT: Add this for stock tracking
     weight: number;
     dimensions: {
@@ -85,11 +98,28 @@ export interface Product {
     images: string[];
     tags: string[];
     status: ProductStatus;
+    // The /products API only supports a single supplierId, not a list — supplierIds (plural)
+    // is kept for the existing multi-supplier UI, but only supplierIds[0] round-trips through
+    // the real backend (as supplierId). See productToApiPayload()/productFromApi().
     supplierIds: string[];
+    supplierId?: number;
     isComboProduct?: boolean;
     variants?: any[];
     createdAt: Date;
     updatedAt: Date;
+}
+
+/**
+ * A product image — its own resource per the /products API (POST/DELETE
+ * /products/{id}/images), not an embedded field on Product anymore. Note: the given endpoints
+ * only add/remove one; there's no GET to list a product's images, so ProductImage.id below is
+ * only ever known right after a successful create.
+ */
+export interface ProductImage {
+    id?: number;
+    productId: number;
+    imageUrl: string;
+    displayOrder: number;
 }
 
 // Add Category interface if not present
@@ -209,7 +239,8 @@ export interface StockMovement {
 }
 
 export interface RestockRequest {
-    id: string;
+    id: number;
+    tenantId?: string;
     productId: string;
     productName: string;
     sku: string;

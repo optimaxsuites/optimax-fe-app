@@ -65,7 +65,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
   // Product selection
   productSearchTerm: string = '';
   showProductDropdown: boolean = false;
-  selectedProducts: Map<string, { product: Product; quantity: number; sourceStock: number; destinationStock?: number }> = new Map();
+  selectedProducts: Map<number, { product: Product; quantity: number; sourceStock: number; destinationStock?: number }> = new Map();
 
   // UI
   Math = Math;
@@ -257,7 +257,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
           this.sourceInventory = inventory;
           // Update selected products with source stock
           this.selectedProducts.forEach((value, key) => {
-            const item = inventory.find((i: BranchInventory) => i.productId === key);
+            const item = inventory.find((i: BranchInventory) => i.productId === String(key));
             value.sourceStock = item?.quantity || 0;
           });
         },
@@ -277,7 +277,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
           this.destInventory = inventory;
           // Update selected products with destination stock
           this.selectedProducts.forEach((value, key) => {
-            const item = inventory.find((i: BranchInventory) => i.productId === key);
+            const item = inventory.find((i: BranchInventory) => i.productId === String(key));
             value.destinationStock = item?.quantity || 0;
           });
         },
@@ -333,7 +333,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     }
 
     // Check if product exists in source inventory
-    const sourceItem = this.sourceInventory.find((i: BranchInventory) => i.productId === product.id);
+    const sourceItem = this.sourceInventory.find((i: BranchInventory) => i.productId === String(product.id));
     if (!sourceItem || sourceItem.quantity <= 0) {
       this.error = 'Product not available in source branch';
       this.showProductDropdown = false;
@@ -346,7 +346,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
       product: product,
       quantity: 1,
       sourceStock: sourceItem.quantity,
-      destinationStock: this.destInventory.find((i: BranchInventory) => i.productId === product.id)?.quantity || 0
+      destinationStock: this.destInventory.find((i: BranchInventory) => i.productId === String(product.id))?.quantity || 0
     });
 
     // Add to form
@@ -357,7 +357,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
       sku: product.sku,
       quantity: 1,
       sourceStock: sourceItem.quantity,
-      destinationStock: this.destInventory.find((i: BranchInventory) => i.productId === product.id)?.quantity || 0
+      destinationStock: this.destInventory.find((i: BranchInventory) => i.productId === String(product.id))?.quantity || 0
     });
     this.items.push(item);
 
@@ -366,8 +366,8 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     this.error = null;
   }
 
-  removeProduct(productId: string, index: number): void {
-    this.selectedProducts.delete(productId);
+  removeProduct(productId: string | number, index: number): void {
+    this.selectedProducts.delete(Number(productId));
     this.items.removeAt(index);
   }
 
@@ -581,13 +581,13 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/sales/commerce/inventory/movements/bulk-transfer']);
   }
 
-  getSourceStock(productId: string): number {
-    const item = this.sourceInventory.find(i => i.productId === productId);
+  getSourceStock(productId: string | number): number {
+    const item = this.sourceInventory.find(i => String(i.productId) === String(productId));
     return item?.quantity || 0;
   }
 
-  getDestinationStock(productId: string): number {
-    const item = this.destInventory.find(i => i.productId === productId);
+  getDestinationStock(productId: string | number): number {
+    const item = this.destInventory.find(i => String(i.productId) === String(productId));
     return item?.quantity || 0;
   }
 

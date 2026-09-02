@@ -609,8 +609,8 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
   /** Jump straight to one just-imported product's detail page — the full product list is
    *  alphabetically sorted and paginated, so a freshly imported batch can easily land on a
    *  later page with no visual cue that the import actually worked. */
-  viewCreatedProduct(productId: string): void {
-    this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
+  viewCreatedProduct(productId: string | number): void {
+    this.router.navigate(['/admin/sales/commerce/inventory/products', String(productId)]);
   }
 
   // ============================================================

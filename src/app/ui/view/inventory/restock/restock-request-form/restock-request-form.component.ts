@@ -245,7 +245,7 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
     });
 
     // Set selected product
-    const product = this.products.find(p => p.id === request.productId);
+    const product = this.products.find(p => String(p.id) === request.productId);
     if (product) {
       this.selectedProduct = product;
       this.productSearchTerm = product.name;
@@ -281,7 +281,7 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
           this.generateSuggestions();
           // If product was pre-selected, find its inventory
           if (this.selectedProduct) {
-            const inv = inventory.find(i => i.productId === this.selectedProduct?.id);
+            const inv = inventory.find(i => i.productId === String(this.selectedProduct?.id));
             if (inv) {
               this.selectedProductInventory = inv;
               this.updateStockFields(inv);
@@ -322,7 +322,7 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
     this.showProductSearch = false;
 
     // Find inventory for this product in the selected branch
-    const inventory = this.branchInventory.find(i => i.productId === product.id);
+    const inventory = this.branchInventory.find(i => i.productId === String(product.id));
     if (inventory) {
       this.selectedProductInventory = inventory;
       this.updateStockFields(inventory);
@@ -612,8 +612,8 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
     return branch?.name || branchId;
   }
 
-  getBranchInventory(productId: string): BranchInventory | undefined {
-    return this.branchInventory.find(i => i.productId === productId);
+  getBranchInventory(productId: string | number): BranchInventory | undefined {
+    return this.branchInventory.find(i => String(i.productId) === String(productId));
   }
 
   getBranchTypeLabel(type: string): string {

@@ -434,7 +434,7 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
     if (selectedCategories.length > 0) {
       const productIds = this.products
         .filter(p => selectedCategories.includes(typeof p.category === 'string' ? p.category : (p.category as any)?.name))
-        .map(p => p.id);
+        .map(p => String(p.id));
       filteredInventory = filteredInventory.filter(i => productIds.includes(i.productId));
       filteredPerformance = filteredPerformance.filter(p => productIds.includes(p.productId));
     }

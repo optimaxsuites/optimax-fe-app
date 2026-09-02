@@ -256,7 +256,7 @@ export class StockTurnoverComponent implements OnInit, OnChanges, OnDestroy {
 
     // Get product details
     const productDetails = new Map<string, Product>();
-    this.products.forEach(p => productDetails.set(p.id, p));
+    this.products.forEach(p => productDetails.set(String(p.id), p));
 
     // Get performance data
     const perfMap = new Map<string, ProductPerformance>();
