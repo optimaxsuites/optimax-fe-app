@@ -108,6 +108,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
 
   // Private
   private destroy$ = new Subject<void>();
+  private returnTo: 'registry' | 'directory' | 'dashboard' = 'registry';
 
   // ============================================================
   // CONSTRUCTOR
@@ -163,7 +164,13 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     if (this.close.observed) {
       this.close.emit();
     } else {
-      this.router.navigate(['/admin/sales/commerce/manage-vendors']);
+      const tabName = this.returnTo === 'directory'
+        ? 'Vendor Directory'
+        : this.returnTo === 'dashboard'
+          ? 'Dashboard'
+          : 'Vendor Global Registry';
+      sessionStorage.setItem('dashboard-vendor global registry-vendor directory', tabName);
+      this.router.navigate(['/commerce/manage-vendors']);
     }
   }
 
@@ -171,6 +178,9 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     // Check for tab from URL
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       const tab = params['tab'];
+      if (params['returnTo'] === 'directory' || params['returnTo'] === 'dashboard' || params['returnTo'] === 'registry') {
+        this.returnTo = params['returnTo'];
+      }
       if (tab && this.tabLabels[tab as keyof typeof this.tabLabels]) {
         this.activeTab = tab as typeof this.activeTab;
       }

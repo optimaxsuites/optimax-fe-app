@@ -99,6 +99,9 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
     actions: true
   };
 
+  // Error state
+  error: string | null = null;
+
   // Column configuration
   columnConfigs = [
     { key: 'select', label: '', visible: true, width: '40px' },
@@ -657,11 +660,15 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
   // ============================================================
 
   viewVendor(id: number): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
+    this.router.navigate(['/commerce/manage-vendors', String(id), 'profile'], {
+      queryParams: { returnTo: 'registry' }
+    });
   }
 
   viewDocuments(id: number): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], { queryParams: { tab: 'documents' } });
+    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+      queryParams: { tab: 'documents', returnTo: 'registry' }
+    });
   }
 
   // ============================================================
@@ -772,5 +779,26 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
 
   refresh(): void {
     this.loadPendingVendors();
+  }
+
+
+  // Export
+  exportReport(): void {
+    console.log('Exporting vendor approval report...');
+  }
+
+  // Clear selection
+  clearSelection(): void {
+    this.selectedVendors.clear();
+    this.selectAll = false;
+  }
+
+  // Filter change handler
+  onFilterChange(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    if (target && target.value !== undefined) {
+      this.currentPage = 1;
+      this.loadPendingVendors();
+    }
   }
 }
