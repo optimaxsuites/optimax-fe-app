@@ -18,6 +18,10 @@
           <i class="fa-solid fa-chevron-down"></i>
         </button>
         <div class="download-menu" *ngIf="showExportMenu">
+          <button class="menu-item excel-option" (click)="exportToExcel()">
+            <i class="fa-solid fa-file-excel"></i>
+            <span>Export as Excel</span>
+          </button>
           <button class="menu-item csv-option" (click)="exportToCSV()">
             <i class="fa-solid fa-file-csv"></i>
             <span>Export as CSV</span>
@@ -76,7 +80,7 @@
       class="table-row"
       [ngClass]="record.status.toLowerCase()"
     >
-      <span>{{ record.date }}</span>
+      <span>{{ record.date | date:'yyyy-MM-dd' }}</span>
       <span class="status">{{ record.status }}</span>
       <span>{{ record.checkIn || '—' }}</span>
       <span>{{ record.checkOut || '—' }}</span>

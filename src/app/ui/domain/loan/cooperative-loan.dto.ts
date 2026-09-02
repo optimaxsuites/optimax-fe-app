@@ -24,10 +24,10 @@ export interface CooperativeLoanGuarantorEntry {
   memberId: number;
   guaranteedAmount: number;
   status: string;
-  requestedAt: string;
-  respondedAt?: string;
+  requestedAt: Date;
+  respondedAt?: Date;
   responseNote?: string;
-  decidedAt?: string;
+  decidedAt?: Date;
   note?: string;
 }
 
@@ -52,18 +52,18 @@ export interface CooperativeLoan {
   repaymentDay?: number;
   modeOfPayment: string;
   requestDate: string;
-  approvedDate: string;
+  approvedDate: Date;
   approvedBy?: number | CooperativeLoanAuditUser;
-  disbursedDate: string;
-  disbursementInitiatedAt?: string;
+  disbursedDate: Date;
+  disbursementInitiatedAt?: Date;
   disbursementInitiatedBy?: number | CooperativeLoanAuditUser;
   disbursementInstructionLoanReference?: string;
-  disbursementConfirmedAt?: string;
+  disbursementConfirmedAt?: Date;
   disbursementConfirmedBy?: number | CooperativeLoanAuditUser;
   disbursementReference?: string;
   disbursedAmount?: number;
-  completedDate: string;
-  rejectedDate: string;
+  completedDate: Date;
+  rejectedDate: Date;
   rejectedBy?: number | CooperativeLoanAuditUser;
   status: string;
   adminComment: string;
@@ -81,7 +81,7 @@ export interface CooperativeLoan {
   outstandingPrincipal: number;
   outstandingInterest?: number;
   outstandingBalance?: number;
-  lastPaymentReceived?: string;
+  lastPaymentReceived?: Date;
   lastPaymentAmount?: number;
   nextPaymentDueDate?: string;
   skippedPaymentsCount?: number;
@@ -111,12 +111,12 @@ export interface CooperativeLoan {
   totalRepayment?: number;
   applicationDate?: string;
   completionDate?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
   adminRequestNote?: string;
   rejectionReason?: string;
-  infoRequestedDate?: string;
-  defaultedDate?: string;
+  infoRequestedDate?: Date;
+  defaultedDate?: Date;
   fundsReserved?: boolean;
   legacyGuarantor?: Guarantor;
 }
@@ -129,17 +129,17 @@ export interface CooperativeLoanGracePeriodRequest {
   paymentSubtype: string;
   amountPaid: number;
   remainingBalance: number;
-  requestedAt: string;
+  requestedAt: Date;
   requestedDays: number;
   reason: string;
   status: string;
-  reviewedAt?: string;
+  reviewedAt?: Date;
   reviewedBy?: number | CooperativeLoanAuditUser;
   reviewNote?: string;
   rejectionReason?: string;
   approvedGraceDays?: number;
   newDueDate?: string;
-  paymentCompletedAt?: string;
+  paymentCompletedAt?: Date;
 }
 
 export interface Guarantor {

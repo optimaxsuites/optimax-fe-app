@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { AttendanceService } from '../../../service/attendance.service';
+import { AttendancetableService } from '../../../service/attendance/attendancetable.service';
 import { Router } from '@angular/router';
 
 @Component({
@@ -11,12 +11,12 @@ export class AttendanceSheetsComponent implements OnInit {
   private allRecords: any[] = [];
   filteredEmployees: any[] = [];
   searchTerm = '';
-  selectedDate = new Date().toISOString().split('T')[0];
+  selectedDate = this.formatDateLocal(new Date());
   viewDetail = false;
   selectedId = 0;
   loading = true;
 
-  constructor(private attendanceService: AttendanceService, private router: Router) {}
+  constructor(private attendanceService: AttendancetableService, private router: Router) {}
 
   ngOnInit() {
     this.loadAttendance();
@@ -35,14 +35,14 @@ export class AttendanceSheetsComponent implements OnInit {
     const term = this.searchTerm.toLowerCase();
     this.filteredEmployees = this.allRecords
       .filter(r => {
-        const recDate = this.attendanceService.dateArrayToStr(r.attendanceDate);
-        const name = `${r.employeeId?.firstName ?? ''} ${r.employeeId?.lastName ?? ''}`.toLowerCase();
+        const recDate = this.attendanceService.dateArrayToStr(r.date);
+        const name = (r.employee ?? '').toLowerCase();
         return (!this.selectedDate || recDate === this.selectedDate) && name.includes(term);
       })
       .map(r => ({
-        id: r.employeeId?.id,
-        name: `${r.employeeId?.firstName ?? ''} ${r.employeeId?.lastName ?? ''}`,
-        department: r.employeeId?.department?.name ?? '-',
+        id: r.employeeId,
+        name: r.employee || '-',
+        department: r.department || '-',
         status: r.status ?? 'ABSENT',
         clockIn: r.checkIn ?? '-',
         clockOut: r.checkOut ?? '-',
@@ -56,5 +56,11 @@ export class AttendanceSheetsComponent implements OnInit {
 
   toggleSidebar() {
     this.viewDetail = !this.viewDetail;
+  }
+
+  private formatDateLocal(date: Date): string {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
   }
 }

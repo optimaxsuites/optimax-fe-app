@@ -402,7 +402,7 @@ export class CooperativeLoansComponent implements OnInit {
               this.isSubmittingDisbursement = false;
               return;
             }
-            this.disbursementInitiatedAt = updatedLoan.disbursementInitiatedAt || '';
+            this.disbursementInitiatedAt = updatedLoan.disbursementInitiatedAt ? (typeof updatedLoan.disbursementInitiatedAt === 'string' ? updatedLoan.disbursementInitiatedAt : updatedLoan.disbursementInitiatedAt.toISOString()) : '';
             this.disbursementInitiatedBy = this.getAuditUserLabel(updatedLoan.disbursementInitiatedBy) || this.getCurrentUserDisplayName();
             this.disbursementInstructionReference = updatedLoan.disbursementInstructionLoanReference || instructionReference;
             this.disbursementReference = updatedLoan.disbursementReference || this.disbursementReference;
@@ -790,7 +790,7 @@ export class CooperativeLoansComponent implements OnInit {
     this.disbursementAmount = Number(loan?.amount || 0);
     this.accountingEmail = this.getSelectedDisbursementGroup()?.accountingEmail || this.accountingEmail || '';
     this.disbursementInstructionReference = loan?.disbursementInstructionLoanReference || this.generateDisbursementReference(loan);
-    this.disbursementInitiatedAt = loan?.disbursementInitiatedAt || '';
+    this.disbursementInitiatedAt = loan?.disbursementInitiatedAt ? (typeof loan.disbursementInitiatedAt === 'string' ? loan.disbursementInitiatedAt : loan.disbursementInitiatedAt.toISOString()) : '';
     this.disbursementInitiatedBy = this.getAuditUserLabel(loan?.disbursementInitiatedBy) || '';
     this.disbursementReference = loan?.disbursementReference || '';
     this.loadSelectedEmployeeDetails();

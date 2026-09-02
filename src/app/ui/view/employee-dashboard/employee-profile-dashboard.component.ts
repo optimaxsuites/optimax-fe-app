@@ -18,7 +18,7 @@ import JsBarcode from 'jsbarcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { PayrollService } from '../../service/payroll.service';
-import { AttendanceService } from '../../service/attendance.service';
+import { AttendancetableService } from '../../service/attendance/attendancetable.service';
 
 export interface NextOfKin {
   id?: number;
@@ -184,7 +184,7 @@ export class EmployeeProfileDashboardComponent {
     private profileChangeRequestService: ProfileChangeRequestService,
     private dataService: DataService,
     private payrollService: PayrollService,
-    private attendanceService: AttendanceService,
+    private attendanceService: AttendancetableService,
     // // private companyProfileService: CompanyProfileService,
     private authenticationService: AuthenticationService,
   ) {
@@ -499,7 +499,7 @@ export class EmployeeProfileDashboardComponent {
         dark: '#0f172a',
         light: '#ffffff',
       },
-    }).then((dataUrl) => {
+    }).then((dataUrl:string) => {
       this.staffIdQrDataUrl = dataUrl;
     }).catch(() => {
       this.staffIdQrDataUrl = '';

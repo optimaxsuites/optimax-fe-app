@@ -542,7 +542,7 @@ getMemberByBorrowerRow(borrower: GroupBorrowerRow): CooperativeMember | null {
           type: 'completion',
           title: 'Loan Completed',
           description: `${memberName} completed repayment for loan ${String(loan.loanCode || loan.loanId || loan.id)}.`,
-          occurredAt: loan.completedDate || loan.completionDate || loan.disbursedDate || loan.applicationDate || loan.requestDate || new Date().toISOString()
+          occurredAt: this.dateToString(loan.completedDate) || this.dateToString(loan.completionDate) || this.dateToString(loan.disbursedDate) || loan.applicationDate || loan.requestDate || new Date().toISOString()
         });
       } else if (loan.status === 'ACTIVE' && loan.disbursedDate) {
         activities.push({
@@ -550,7 +550,7 @@ getMemberByBorrowerRow(borrower: GroupBorrowerRow): CooperativeMember | null {
           type: 'loan',
           title: 'Loan Disbursed',
           description: `${memberName} received a loan of ${this.formatCurrency(loan.amount)}.`,
-          occurredAt: loan.disbursedDate || loan.applicationDate || loan.requestDate || new Date().toISOString()
+          occurredAt: this.dateToString(loan.disbursedDate) || loan.applicationDate || loan.requestDate || new Date().toISOString()
         });
       } else if (loan.status === 'APPROVED') {
         activities.push({
@@ -558,7 +558,7 @@ getMemberByBorrowerRow(borrower: GroupBorrowerRow): CooperativeMember | null {
           type: 'loan',
           title: 'Loan Approved',
           description: `${memberName}'s loan application was approved.`,
-          occurredAt: loan.approvedDate || loan.applicationDate || loan.requestDate || new Date().toISOString()
+          occurredAt: this.dateToString(loan.approvedDate) || loan.applicationDate || loan.requestDate || new Date().toISOString()
         });
       }
     });
@@ -1025,6 +1025,14 @@ getMemberByBorrowerRow(borrower: GroupBorrowerRow): CooperativeMember | null {
 
   formatCurrency(amount: number): string {
     return this.cooperativeService.formatCurrency(amount);
+  }
+
+  private dateToString(date: Date | string | undefined): string | undefined {
+    if (!date) return undefined;
+    if (date instanceof Date) {
+      return date.toISOString();
+    }
+    return date;
   }
 
   getInitials(name: string): string {

@@ -233,6 +233,33 @@ export class LeavePlanningDashboardComponent implements OnInit {
     });
   }
 
+  // ==================== DATE HELPERS ====================
+
+  /**
+   * The API serializes LocalDateTime/LocalDate as arrays, e.g.
+   * [2026, 3, 30, 10, 0] => year, month(1-based), day, hour, minute, second, nano
+   * instead of an ISO string. `new Date(...)` cannot parse an array directly
+   * (it silently produces an Invalid Date), and any subsequent
+   * `.toISOString()` call throws a RangeError that was previously left
+   * uncaught inside the data-loading subscribe callback, so the dashboard
+   * got stuck on "Loading leave plans...".
+   * This helper normalizes both array-shaped and ISO-string dates safely.
+   */
+  private toDate(value: any): Date {
+    if (Array.isArray(value)) {
+      const [year, month, day, hour = 0, minute = 0, second = 0] = value;
+      // month from API is 1-based, JS Date months are 0-based
+      return new Date(year, (month || 1) - 1, day || 1, hour, minute, second);
+    }
+    if (value instanceof Date) return value;
+    if (!value) return new Date(NaN);
+    return new Date(value);
+  }
+
+  private isValidDate(d: Date): boolean {
+    return d instanceof Date && !isNaN(d.getTime());
+  }
+
   // ==================== FIND EMPLOYEE FOR PLAN ====================
 
   findEmployeeForPlan(plan: any): any | null {
@@ -277,8 +304,9 @@ export class LeavePlanningDashboardComponent implements OnInit {
 
       let matchesMonth = true;
       if (this.selectedMonth) {
-        const planStart = new Date(plan.startDate);
+        const planStart = this.toDate(plan.startDate);
         matchesMonth =
+          this.isValidDate(planStart) &&
           planStart.getMonth() === this.selectedMonth.getMonth() &&
           planStart.getFullYear() === this.selectedMonth.getFullYear();
       }
@@ -314,8 +342,9 @@ export class LeavePlanningDashboardComponent implements OnInit {
     // Calculate high congestion days (3+ people on same day)
     const dateCounts = new Map<string, number>();
     this.filteredLeavePlans.forEach((plan) => {
-      const start = new Date(plan.startDate);
-      const end = new Date(plan.endDate);
+      const start = this.toDate(plan.startDate);
+      const end = this.toDate(plan.endDate);
+      if (!this.isValidDate(start) || !this.isValidDate(end)) return;
 
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0];
@@ -361,8 +390,9 @@ export class LeavePlanningDashboardComponent implements OnInit {
         // Calculate congestion periods
         const dateCounts = new Map<string, number>();
         deptPlans.forEach((plan) => {
-          const start = new Date(plan.startDate);
-          const end = new Date(plan.endDate);
+          const start = this.toDate(plan.startDate);
+          const end = this.toDate(plan.endDate);
+          if (!this.isValidDate(start) || !this.isValidDate(end)) return;
           for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
             const dateStr = d.toISOString().split('T')[0];
             dateCounts.set(dateStr, (dateCounts.get(dateStr) || 0) + 1);
@@ -448,13 +478,15 @@ export class LeavePlanningDashboardComponent implements OnInit {
     });
   }
 
-  datesOverlap(
-    start1: string,
-    end1: string,
-    start2: string,
-    end2: string,
-  ): boolean {
-    return start1 <= end2 && start2 <= end1;
+  datesOverlap(start1: any, end1: any, start2: any, end2: any): boolean {
+    const s1 = this.toDate(start1).getTime();
+    const e1 = this.toDate(end1).getTime();
+    const s2 = this.toDate(start2).getTime();
+    const e2 = this.toDate(end2).getTime();
+
+    if ([s1, e1, s2, e2].some((t) => isNaN(t))) return false;
+
+    return s1 <= e2 && s2 <= e1;
   }
 
   // ==================== TABLE FILTERS ====================
@@ -498,7 +530,7 @@ export class LeavePlanningDashboardComponent implements OnInit {
   onActionClick(event: { actionId: string; row: ConflictData }) {
     const plan = event.row._rawPlan;
     if (!plan) {
-      console.error('❌ No plan found for conflict');
+      console.error(' No plan found for conflict');
       return;
     }
 
@@ -507,7 +539,7 @@ export class LeavePlanningDashboardComponent implements OnInit {
     this.adminComment = '';
     this.showActionModal = true;
 
-    console.log('👆 Action clicked:', {
+    console.log(' Action clicked:', {
       planId: plan.id,
       employee: event.row.employee,
       status: plan.status,
@@ -757,9 +789,11 @@ export class LeavePlanningDashboardComponent implements OnInit {
       .length;
   }
 
-  formatDate(dateString: string): string {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
+  formatDate(dateValue: any): string {
+    if (!dateValue) return 'N/A';
+    const d = this.toDate(dateValue);
+    if (!this.isValidDate(d)) return 'N/A';
+    return d.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

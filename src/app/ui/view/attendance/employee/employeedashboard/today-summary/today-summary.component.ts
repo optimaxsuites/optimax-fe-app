@@ -51,7 +51,7 @@ export class TodaySummaryComponent implements OnInit {
   }
 
   private calculateTodaySummary(data: AttendanceTableRecord[]) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = this.formatDateLocal(new Date());
 
   if (!this.hrEmployeeId) {
     return;
@@ -60,7 +60,7 @@ export class TodaySummaryComponent implements OnInit {
   const record = data.find(
     r =>
       Number(r.employeeId) === this.hrEmployeeId &&
-      r.date === today
+      (r.date ? this.formatDateLocal(r.date) === today : false)
   );
 
   const officeHours = this.officehoursService.getOfficeHours();
@@ -126,6 +126,12 @@ private calculateExpectedHours(openingTime: string, closingTime: string): number
   const close = new Date(`1970-01-01T${closingTime}`);
 
   return +((close.getTime() - open.getTime()) / 3600000).toFixed(2);
+}
+
+private formatDateLocal(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 

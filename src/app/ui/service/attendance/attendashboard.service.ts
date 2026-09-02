@@ -23,17 +23,6 @@ export class AttendashboardService {
     );
   }
 
-  getDepartmentHeatmap(): Observable<any[]> {
-    return this.http.get<any[]>(
-      `${this.apiUrl}/attendance/departments/heatmap`
-    ).pipe(
-      catchError(error => {
-        console.error('Failed to get department heatmap:', error);
-        return of([]);
-      })
-    );
-  }
-
   getLateArrivals(): Observable<any[]> {
     return this.http.get<any[]>(
       `${this.apiUrl}/attendance/late/today`

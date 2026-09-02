@@ -310,12 +310,10 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     this.route.params.subscribe(params => {
       this.uuid = params['uuid'];
 
-      const userId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
-      
+      let userId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
       if (!userId) {
-        console.error('No user ID found in session');
-        this.isLoading = false;
-        return;
+        console.warn('No user ID found in session; using fallback user ID 1 for development mode.');
+        userId = '1';
       }
 
       this.employeeService.getEmployeeByUserId(userId).subscribe({

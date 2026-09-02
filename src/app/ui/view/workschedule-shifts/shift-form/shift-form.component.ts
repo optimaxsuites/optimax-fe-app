@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
-import { ShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
+import { WorkShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
 import { ShiftserviceService } from '../../../service/workschedule-shift/shiftservice.service';
 
 @Component({
@@ -10,7 +10,7 @@ import { ShiftserviceService } from '../../../service/workschedule-shift/shiftse
 })
 export class ShiftFormComponent implements OnInit {
 
-   @Input() shift?: ShiftDTO;
+   @Input() shift?: WorkShiftDTO;
 
   @Output() closeForm = new EventEmitter<void>();
 
@@ -147,7 +147,7 @@ export class ShiftFormComponent implements OnInit {
 
     if (this.shiftForm.invalid) return;
 
-    const shiftData: ShiftDTO = {
+    const shiftData: WorkShiftDTO = {
       id: this.shift?.id || crypto.randomUUID(),
       ...this.shiftForm.value,
       type: this.detectedShiftType

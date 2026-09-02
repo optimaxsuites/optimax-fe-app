@@ -381,6 +381,112 @@
   }
 }
 
+// ========== PAGINATION CONTROLS ==========
+.pagination-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: $bg-white;
+  border-top: 1px solid $border-light;
+  border-radius: 0 0 8px 8px;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.pagination-info {
+  color: $text-secondary;
+  font-size: 0.9rem;
+  font-weight: 500;
+
+  @media (max-width: 768px) {
+    text-align: center;
+  }
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  .page-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: $bg-white;
+    border: 1px solid $border-primary;
+    border-radius: 6px;
+    color: $text-primary;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: $bg-hover;
+      border-color: $primary-blue-green;
+      color: $primary-blue-green;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    i {
+      font-size: 0.9rem;
+    }
+  }
+
+  .page-indicator {
+    font-size: 0.9rem;
+    color: $text-dark;
+    font-weight: 500;
+    min-width: 120px;
+    text-align: center;
+  }
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  label {
+    font-size: 0.9rem;
+    color: $text-secondary;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .page-size-select {
+    padding: 0.5rem 0.75rem;
+    background: $bg-white;
+    border: 1px solid $border-primary;
+    border-radius: 6px;
+    color: $text-dark;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: $primary-blue-green;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $primary-blue-green;
+      box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.1);
+    }
+  }
+}
+
 // ========== RESPONSIVE ==========
 @media (max-width: 768px) {
   .stats-grid {

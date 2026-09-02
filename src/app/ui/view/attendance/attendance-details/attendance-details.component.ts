@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { AttendanceService } from '../../../service/attendance.service';
+import { AttendancetableService } from '../../../service/attendance/attendancetable.service';
 
 @Component({
   selector: 'app-attendance-details',
@@ -13,20 +13,20 @@ export class AttendanceDetailsComponent implements OnInit {
   summary: any = {};
   loading = true;
 
-  constructor(private attendanceService: AttendanceService) {}
+  constructor(private attendanceService: AttendancetableService) {}
 
   ngOnInit() {
     if (!this.id) return;
     this.attendanceService.fetchEmployeeRecords(this.id).subscribe(raw => {
       if (raw.length > 0) {
-        const emp = raw[0].employeeId;
+        const record = raw[0];
         this.employee = {
-          name: `${emp?.firstName ?? ''} ${emp?.lastName ?? ''}`.trim(),
-          department: emp?.department?.name ?? '-',
+          name: record.employee || '-',
+          department: record.department || '-',
         };
       }
       this.records = raw.map(r => ({
-        date: this.attendanceService.dateArrayToStr(r.attendanceDate),
+        date: typeof r.date === 'string' ? r.date : (r.date ? this.attendanceService.dateArrayToStr([r.date.getFullYear(), r.date.getMonth() + 1, r.date.getDate()]) : ''),
         clockIn: r.checkIn ?? '-',
         clockOut: r.checkOut ?? '-',
         status: r.status ?? 'ABSENT',

@@ -17,7 +17,7 @@ export interface DailyAttendanceSummaryDTO {
   totalLate: number;
   totalEmployees: number;
   attendanceRate: number; // percentage
-  refreshedAt: string; // ISO timestamp
+  refreshedAt: Date;
 }
 
 export interface BranchAttendanceDTO {
@@ -37,8 +37,8 @@ export interface EmployeeAttendanceStatusDTO {
   employeeName: string;
   employeeCode: string;
   status: 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE';
-  clockInTime?: string; // ISO timestamp
-  clockOutTime?: string; // ISO timestamp
+  clockInTime?: Date;
+  clockOutTime?: Date;
   lateMinutes?: number;
   department?: string;
   shiftName?: string;
@@ -64,7 +64,7 @@ export interface MonthlyAttendanceReportDTO {
   correctionRequestsCount: number;
   crossBranchEventsCount: number;
   dailyRecords: DailyRecordSummaryDTO[];
-  generatedAt: string; // ISO timestamp
+  generatedAt: Date;
 }
 
 export interface DailyRecordSummaryDTO {
@@ -97,7 +97,7 @@ export interface OvertimeReportDTO {
     rateUsed: number; // OT multiplier (e.g., 1.5x)
     note: string;
   };
-  generatedAt: string;
+  generatedAt: Date;
 }
 
 export interface OvertimeEmployeeDTO {

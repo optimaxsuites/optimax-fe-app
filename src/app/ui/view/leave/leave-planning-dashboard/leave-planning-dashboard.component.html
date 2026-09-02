@@ -32,6 +32,8 @@
           </label>
           <ng-select
             [items]="leaveTypes"
+            bindLabel="name"
+            bindValue="name"
             [(ngModel)]="selectedLeaveType"
             (ngModelChange)="applyFilters()"
             placeholder="All Leave Types"

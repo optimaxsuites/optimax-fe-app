@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { CorrectionrequestService } from './correctionrequest.service';
+import { EmployeeCorrectionService } from './employee-correction.service';
 
 describe('CorrectionrequestService', () => {
-  let service: CorrectionrequestService;
+  let service: EmployeeCorrectionService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(CorrectionrequestService);
+    service = TestBed.inject(EmployeeCorrectionService);
   });
 
   it('should be created', () => {

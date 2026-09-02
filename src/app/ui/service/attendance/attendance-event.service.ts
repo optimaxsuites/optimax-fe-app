@@ -64,7 +64,7 @@ export class AttendanceEventService {
       employeeId,
       branchCode,
       deviceId: options?.deviceId,
-      eventTime: new Date().toISOString(),
+      eventTime: new Date(),
       eventType,
       rawTemplateHash: options?.rawTemplateHash,
       deviceIpAddress: options?.deviceIpAddress,

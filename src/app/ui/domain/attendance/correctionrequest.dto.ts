@@ -5,7 +5,7 @@ export interface CorrectionRequestHistory {
   status: CorrectionStatus;
   actor: string;
   note?: string;
-  createdAt: string;
+  createdAt: Date;
 }
 
 export interface CorrectionRequest {
@@ -13,10 +13,10 @@ export interface CorrectionRequest {
   employeeId: string;
   employeeName?: string;
   department: string;
-  date: string;
+  date: Date;
   issueType: IssueType;
-  requestedClockIn?: string;
-  requestedClockOut?: string;
+  requestedClockIn?: Date;
+  requestedClockOut?: Date;
   description?: string;
   evidence?: string;
   status: CorrectionStatus;
@@ -24,6 +24,6 @@ export interface CorrectionRequest {
   rejectionReason?: string;
   latestNotification?: string;
   history: CorrectionRequestHistory[];
-  createdAt: string;
-  updatedAt?: string;
+  createdAt: Date;
+  updatedAt?: Date;
 }

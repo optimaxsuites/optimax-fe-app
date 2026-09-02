@@ -47,9 +47,7 @@
             <strong>{{ request.employeeName }}</strong>
             <span class="time-ago">{{ request.requestDate }}</span>
           </div>
-          <span class="approval-type badge"
-                [class.bg-info]="request.approvalType === 'PRE_APPROVAL'"
-                [class.bg-warning]="request.approvalType === 'RETROSPECTIVE'">
+          <span class="approval-type badge bg-warning">
             {{ getApprovalTypeLabel(request.approvalType) }}
           </span>
         </div>

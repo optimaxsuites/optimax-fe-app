@@ -38,52 +38,11 @@ export class CrossBranchAttendanceService {
     return this.requestsSubject.value;
   }
 
-  requestCrossBranchCheckIn(
-    employeeId: number,
-    requestedBranchId: number,
-    homeBranchId: number,
-    approvalType: 'PRE_APPROVAL' | 'RETROSPECTIVE' = 'PRE_APPROVAL',
-    supervisorId?: number
-  ): Observable<CrossBranchCheckInRequest> {
-    const request: Omit<CrossBranchCheckInRequest, 'id' | 'createdAt' | 'updatedAt'> = {
-      employeeId,
-      requestDate: new Date().toISOString().split('T')[0],
-      workDate: new Date().toISOString().split('T')[0],
-      requestedBranchId,
-      homeBranchId,
-      approvalRequired: approvalType === 'PRE_APPROVAL',
-      approvalType,
-      reason: '',
-      supervisorId,
-      supervisorApprovalStatus: 'PENDING',
-      auditLog: [
-        {
-          id: uuidv4(),
-          actor: {
-            id: employeeId,
-            name: 'Employee',
-            role: 'EMPLOYEE'
-          },
-          action: 'REQUESTED',
-          timestamp: new Date().toISOString(),
-          details: `Cross-branch check-in request for branch ${requestedBranchId}`,
-          ipAddress: cachedIpAddress || 'Unknown',
-          userAgent: navigator.userAgent
-        }
-      ]
-    };
-
-    this.fetchIpAddressIfNeeded();
-
-    return this.http.post<CrossBranchCheckInRequest>(API_ENDPOINTS.REQUESTS(), request).pipe(
-      tap(newRequest => {
-        const requests = this.requestsSubject.value;
-        this.requestsSubject.next([...requests, newRequest]);
-        this.addAuditLogEntry(newRequest.auditLog[0]);
-      }),
-      catchError(err => { throw err; })
-    );
-  }
+  /**
+   * ⚠️ NOTE: Manual employee requests removed (2026-08-31)
+   * Cross-branch requests are now AUTO-CREATED by backend when employee checks in at different branch
+   * Requests are flagged for supervisor/admin approval after the fact (RETROSPECTIVE only)
+   */
 
   approveCrossBranchRequest(
     requestId: string,
@@ -111,7 +70,7 @@ export class CrossBranchAttendanceService {
           id: uuidv4(),
           actor: { id: supervisorId, name: supervisorName, role: 'SUPERVISOR' },
           action: 'APPROVED',
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
           details: `Supervisor approved cross-branch check-in request. Note: ${note || 'None'}`,
           ipAddress: cachedIpAddress || 'Unknown',
           userAgent: navigator.userAgent
@@ -148,7 +107,7 @@ export class CrossBranchAttendanceService {
           id: uuidv4(),
           actor: { id: supervisorId, name: supervisorName, role: 'SUPERVISOR' },
           action: 'REJECTED',
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
           details: `Supervisor rejected cross-branch check-in request. Reason: ${reason}`,
           ipAddress: cachedIpAddress || 'Unknown',
           userAgent: navigator.userAgent
@@ -210,7 +169,7 @@ export class CrossBranchAttendanceService {
           id: uuidv4(),
           actor: { id: adminId, name: adminName, role: 'ADMIN' },
           action: 'OVERRIDDEN',
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
           details: `Admin override on cross-branch request. Action: ${action}. Reason: ${reason}`,
           ipAddress: cachedIpAddress || 'Unknown',
           userAgent: navigator.userAgent

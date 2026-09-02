@@ -1411,9 +1411,9 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   // ── Follow-up photo carousel (index per follow-up id) ────────────────────
   fuPhotoIndex: Record<string, number> = {};
-  prevFuPhoto(fuId: string, len: number, e: Event): void { e.stopPropagation(); this.fuPhotoIndex[fuId] = ((this.fuPhotoIndex[fuId] ?? 0) - 1 + len) % len; }
-  nextFuPhoto(fuId: string, len: number, e: Event): void { e.stopPropagation(); this.fuPhotoIndex[fuId] = ((this.fuPhotoIndex[fuId] ?? 0) + 1) % len; }
-  fuCurrentPhoto(fuId: string, photos: string[]): string { return photos[this.fuPhotoIndex[fuId] ?? 0] ?? ''; }
+  prevFuPhoto(fuId: string, len: number, e: Event): void { e.stopPropagation(); this.fuPhotoIndex[fuId] = ((this.fuPhotoIndex[fuId]) - 1 + len) % len; }
+  nextFuPhoto(fuId: string, len: number, e: Event): void { e.stopPropagation(); this.fuPhotoIndex[fuId] = ((this.fuPhotoIndex[fuId]) + 1) % len; }
+  fuCurrentPhoto(fuId: string, photos: string[]): string { return photos[this.fuPhotoIndex[fuId]] ?? ''; }
 
   constructor(
     private readonly productivityDataService: ProductivityDataService,

@@ -1,5 +1,4 @@
 import { ShiftTrackingMetrics } from './shift-tracking-metrics.dto';
-import { RemoteAttendanceMetadata, CheckInSource, FraudDetectionFlags } from './remote-attendance.dto';
 
 export interface AttendanceTableRecord {
   id: number; //attendance record id from backend
@@ -7,7 +6,7 @@ export interface AttendanceTableRecord {
   employee: string;
   attendanceRecordId?: number;
   department: string;
-  date: string | null;
+  date: Date | null;
   checkIn: string | null;
   checkOut?: string | null;
   checkInLocation: {
@@ -34,23 +33,20 @@ export interface AttendanceTableRecord {
 
   // --- NEW: snapshot of the schedule that was active when this record was created ---
   appliedScheduleType?: 'office-hours' | 'shift';
-  appliedScheduleId?: number;
+  appliedScheduleId?: string;
   appliedExpectedStart?: string;
   appliedExpectedEnd?: string;
   appliedShiftName?: string;
   shiftMetrics?: ShiftTrackingMetrics;
 
-  // --- BIOMETRIC DEVICE INTEGRATION ---
+  // --- CLOCK-IN SOURCE ---
+  clockInSource?: 'BIOMETRIC' | 'REMOTE'; // Fingerprint scanner or web button
+  clockOutSource?: 'BIOMETRIC' | 'REMOTE';
+  
+  // --- BIOMETRIC DEVICE INFO (when source is BIOMETRIC) ---
   biometricDeviceId?: string;
   biometricEnrollmentId?: number;
   fingerprintMatched?: boolean;
-  checkInSource?: CheckInSource;
-
-  // --- REMOTE ATTENDANCE & FRAUD DETECTION ---
-  remoteMetadata?: RemoteAttendanceMetadata;
-  fraudFlags?: FraudDetectionFlags[];
-  hasFraudFlags?: boolean;
-  riskScore?: number;
 
   // --- CROSS-BRANCH ATTENDANCE ---
   checkedInBranchId?: number;
@@ -67,7 +63,7 @@ export interface AttendanceTableRecord {
     type: 'TIME_CORRECTION' | 'STATUS_CORRECTION' | 'LOCATION_CORRECTION';
     reason: string;
     status: 'PENDING' | 'APPROVED' | 'REJECTED';
-    requestedAt: string;
+    requestedAt: Date;
     requestedBy?: string;
     approvedBy?: string;
     approvalNotes?: string;

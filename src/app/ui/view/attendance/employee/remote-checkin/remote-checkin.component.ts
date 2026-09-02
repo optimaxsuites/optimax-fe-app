@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { RemoteAttendanceService } from '../../../../service/attendance/remote-attendance.service';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
+import { UserSessionService } from '../../../../service/attendance/user-session.service';
 import { RemoteAttendanceMetadata } from '../../../../domain/attendance/remote-attendance.dto';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -24,11 +25,22 @@ export class RemoteCheckinComponent implements OnInit, OnDestroy {
   currentLocation: RemoteAttendanceMetadata | null = null;
   checkInTime: string = '';
 
-  employeeId: number = 1;
-  employeeName: string = 'John Doe';
-  department: string = 'Engineering';
+  employeeId: number | null = null;
+  employeeName = '';
+  department = '';
+
+  constructor(private userSession: UserSessionService) {}
 
   ngOnInit(): void {
+    const currentUser = this.userSession.getCurrentUser();
+    if (currentUser) {
+      this.employeeId = currentUser.id;
+      this.employeeName = currentUser.name;
+      this.department = currentUser.department || 'Default Department';
+    } else {
+      this.errorMessage = 'Unable to identify the signed-in employee.';
+      return;
+    }
     this.loadLocationData();
   }
 
@@ -54,7 +66,7 @@ export class RemoteCheckinComponent implements OnInit, OnDestroy {
 
 
   async submitCheckIn(): Promise<void> {
-    if (!this.currentLocation) {
+    if (!this.currentLocation || this.employeeId === null) {
       this.errorMessage = 'Location data missing. Please try again.';
       return;
     }
@@ -63,40 +75,15 @@ export class RemoteCheckinComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
 
     try {
-      let fraudResult: any = { hasFraudIndicators: false, flags: [], riskScore: 0 };
-
-      try {
-        fraudResult = await new Promise((resolve) => {
-          this.remoteService.validateRemoteCheckIn(
-            this.currentLocation!,
-            this.employeeId,
-            0,
-            0
-          ).subscribe(resolve);
-        });
-      } catch (fraudErr) {
-        fraudResult = { hasFraudIndicators: false, flags: [], riskScore: 0 };
-      }
-
-      let warningMsg = '';
-      if (fraudResult?.hasFraudIndicators) {
-        warningMsg = `WARNING: Suspicious activity detected. ${fraudResult?.recommendations?.join('. ') || 'Please review before proceeding'}`;
-        this.errorMessage = warningMsg;
-      }
-
       await this.attendanceService.recordRemoteCheckIn(
         this.employeeId,
         this.employeeName,
         this.department,
-        this.currentLocation,
-        fraudResult
+        this.currentLocation
       );
 
       this.checkInTime = new Date().toLocaleString();
       this.successMessage = `✓ Remote check-in successful at ${this.checkInTime}`;
-      if (fraudResult?.hasFraudIndicators) {
-        this.successMessage += ' (Under review due to fraud flags)';
-      }
       this.currentMode = 'success';
     } catch (err) {
       this.errorMessage = 'Check-in failed. Please try again.';
@@ -126,16 +113,8 @@ export class RemoteCheckinComponent implements OnInit, OnDestroy {
 
     if (!this.currentLocation) return warnings;
 
-    if (this.currentLocation.vpnDetected) {
-      warnings.push('⚠️ VPN or proxy detected - your check-in will be flagged for review');
-    }
-
-    if (this.currentLocation.networkType === 'MOBILE') {
-      warnings.push('You are checking in via mobile network');
-    }
-
     if (this.currentLocation.approximateAccuracy && this.currentLocation.approximateAccuracy > 100) {
-      warnings.push('Location accuracy is low (±' + Math.round(this.currentLocation.approximateAccuracy) + 'm)');
+      warnings.push('⚠️ Location accuracy is low (±' + Math.round(this.currentLocation.approximateAccuracy) + 'm)');
     }
 
     return warnings;

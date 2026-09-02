@@ -1,72 +1,107 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { ShiftserviceService } from '../../../service/workschedule-shift/shiftservice.service';
-import { ShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
+import { WorkShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
 
 @Component({
   selector: 'app-shift-list',
   templateUrl: './shift-list.component.html',
   styleUrl: './shift-list.component.scss'
 })
-export class ShiftListComponent implements OnInit{
-  shifts: ShiftDTO[] = [];
-  filteredShifts: ShiftDTO[] = [];
+export class ShiftListComponent implements OnInit, OnDestroy {
+
+  /** Set when hosted in a drawer, so the header can offer a close button. */
+  @Input() dismissable = false;
+
+  /**
+   * Opens the create form immediately. Lets a host whose button reads
+   * "Create a new shift" land on the form rather than on the list, while the
+   * catalogue sits behind it for reference.
+   */
+  @Input() autoOpenForm = false;
+
+  @Output() dismiss = new EventEmitter<void>();
+
+  shifts: WorkShiftDTO[] = [];
+  filteredShifts: WorkShiftDTO[] = [];
 
   searchText = '';
   shiftTypeFilter = '';
 
+  readonly shiftTypes: WorkShiftDTO['type'][] = ['morning', 'evening', 'night', 'custom'];
+
+  showForm = false;
+  selectedShift?: WorkShiftDTO;
+
+  private shiftSub?: Subscription;
+
   constructor(private shiftserviceService: ShiftserviceService) {}
 
   ngOnInit(): void {
-    this.shiftserviceService.shifts$.subscribe(shifts => {
+    this.shiftSub = this.shiftserviceService.shifts$.subscribe(shifts => {
       this.shifts = shifts;
-      this.filteredShifts = shifts;
+      this.applyFilter();
+    });
+
+    if (this.autoOpenForm) this.createShift();
+  }
+
+  ngOnDestroy(): void {
+    this.shiftSub?.unsubscribe();
+  }
+
+  /** Called on every keystroke and select change — no Apply button needed. */
+  applyFilter(): void {
+    const query = this.searchText.trim().toLowerCase();
+
+    this.filteredShifts = this.shifts.filter(shift => {
+      const matchesName = !query || shift.name.toLowerCase().includes(query);
+      const matchesType = !this.shiftTypeFilter || shift.type === this.shiftTypeFilter;
+      return matchesName && matchesType;
     });
   }
 
-  applyFilter() {
-  this.filteredShifts = this.shifts.filter(shift => {
-    const matchesName =
-      !this.searchText ||
-      shift.name.toLowerCase().includes(this.searchText.toLowerCase());
+  resetFilter(): void {
+    this.searchText = '';
+    this.shiftTypeFilter = '';
+    this.applyFilter();
+  }
 
-    /*const matchesDepartment =
-      !this.departmentFilter ||
-      shift.department === this.departmentFilter;*/
+  get hasActiveFilters(): boolean {
+    return !!(this.searchText || this.shiftTypeFilter);
+  }
 
-      const matchesType =
-      !this.shiftTypeFilter ||
-      shift.type === this.shiftTypeFilter;
+  createShift(): void {
+    this.selectedShift = undefined;
+    this.showForm = true;
+  }
 
-    return matchesName && matchesType; // && matchesDepartment;
-  });
-}
+  editShift(shift: WorkShiftDTO): void {
+    this.selectedShift = shift;
+    this.showForm = true;
+  }
 
-resetFilter() {
-  this.searchText = '';
-  this.shiftTypeFilter = '';
-  this.filteredShifts = this.shifts;
-}
+  deleteShift(shift: WorkShiftDTO): void {
+    // Deleting a definition orphans every schedule pointing at it, so confirm.
+    if (!confirm(`Delete the "${shift.name}" shift?`)) return;
+    this.shiftserviceService.deleteShift(shift.id);
+  }
 
-deleteShift(id: string) {
-  this.shiftserviceService.deleteShift(id);
-}
+  closeForm(): void {
+    this.showForm = false;
+  }
 
-  showForm = false;
-  selectedShift?: ShiftDTO;
+  duration(shift: WorkShiftDTO): string {
+    const toMinutes = (time: string) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
 
-createShift() {
-  this.selectedShift = undefined;
-  this.showForm = true;
-}
+    let span = toMinutes(shift.endTime) - toMinutes(shift.startTime);
+    if (span <= 0) span += 24 * 60; // overnight shift
 
-editShift(shift: ShiftDTO) {
-  this.selectedShift = shift;
-  this.showForm = true;
-}
-
-closeForm() {
-  this.showForm = false;
-}
-
-
+    const hours = Math.floor(span / 60);
+    const minutes = span % 60;
+    return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
 }

@@ -18,12 +18,20 @@
       </div>
 
       <!-- Pending Corrections Alert (shown only when there are pending) -->
-      <div *ngIf="!isLoading && getPendingCorrectionCount() > 0" class="pending-corrections-alert">
+      <div *ngIf="!isLoading && getTotalPendingCount() > 0" class="pending-corrections-alert">
         <div class="alert-content">
           <div class="alert-message">
             <span class="alert-icon">📋</span>
             <div>
-              <p class="alert-title">{{ getPendingCorrectionCount() }} Pending Correction Request(s)</p>
+              <p class="alert-title">
+                {{ getTotalPendingCount() }} Pending Approval(s)
+                <span *ngIf="getPendingCorrectionCount() > 0">
+                  ({{ getPendingCorrectionCount() }} Correction<span *ngIf="getPendingCorrectionCount() > 1">s</span>)
+                </span>
+                <span *ngIf="getPendingCrossBranchCount() > 0">
+                  ({{ getPendingCrossBranchCount() }} Cross-Branch)
+                </span>
+              </p>
               <p class="alert-description">Click "Select All Pending" to approve them in batch</p>
             </div>
           </div>
@@ -31,7 +39,7 @@
             <button class="btn-select-all" (click)="selectAllWithPendingCorrections()">
               <i class="fa-solid fa-check-double"></i> Select All Pending
             </button>
-            <button *ngIf="getSelectedCount() > 0" class="btn-approve" (click)="massApproveCorrectionRequests()">
+            <button *ngIf="getSelectedCount() > 0" class="btn-approve" (click)="openMassApproveConfirm()">
               <i class="fa-solid fa-thumbs-up"></i> Approve {{ getSelectedCount() }}
             </button>
             <button *ngIf="getSelectedCount() > 0" class="btn-clear" (click)="clearSelection()">
@@ -46,7 +54,7 @@
         <table style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
-              <th *ngIf="getPendingCorrectionCount() > 0" style="padding: 0.5rem; text-align: center; width: 40px; font-weight: 600; color: #374151; font-size: 0.8rem;">
+              <th *ngIf="getTotalPendingCount() > 0" style="padding: 0.5rem; text-align: center; width: 40px; font-weight: 600; color: #374151; font-size: 0.8rem;">
                 <input type="checkbox" [checked]="areAllPendingSelected()"
                   (change)="selectAllWithPendingCorrections()"
                   style="cursor: pointer;">
@@ -61,11 +69,12 @@
             <tr *ngFor="let record of filteredAttendance"
               [style.background-color]="isRecordSelected(record.id) ? '#dbeafe' : 'transparent'"
               style="border-bottom: 1px solid #e5e7eb;">
-              <td *ngIf="getPendingCorrectionCount() > 0" style="padding: 0.5rem; text-align: center; width: 40px;">
+              <td *ngIf="getTotalPendingCount() > 0" style="padding: 0.5rem; text-align: center; width: 40px;">
                 <input type="checkbox"
                   [checked]="isRecordSelected(record.id)"
                   (change)="toggleRecordSelection(record.id)"
-                  [disabled]="record.correctionRequest?.status !== 'PENDING'"
+                  [disabled]="record.correctionRequest?.status !== 'PENDING' && 
+                              !(record.isCrossBranchAttendance && record.crossBranchApprovalStatus === 'PENDING')"
                   style="cursor: pointer;">
               </td>
               <td style="padding: 0.5rem 0.5rem; font-size: 0.9rem;" *ngFor="let col of tableColumns">
@@ -110,6 +119,66 @@
         </table>
       </div>
 
+      <!-- Pagination Controls -->
+      <div class="pagination-container" *ngIf="!isLoading && filteredAttendance.length > 0">
+        <div class="pagination-info">
+          Showing {{ getStartRecord() }} to {{ getEndRecord() }} of {{ totalRecords }} records
+        </div>
+        
+        <div class="pagination-controls">
+          <button 
+            class="page-btn" 
+            (click)="previousPage()" 
+            [disabled]="currentPage === 1"
+            title="Previous page">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          
+          <span class="page-indicator">
+            Page {{ currentPage }} of {{ getTotalPages() }}
+          </span>
+          
+          <button 
+            class="page-btn" 
+            (click)="nextPage()" 
+            [disabled]="currentPage >= getTotalPages()"
+            title="Next page">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+        
+        <div class="page-size-selector">
+          <label>Records per page:</label>
+          <select 
+            [value]="pageSize" 
+            (change)="onPageSizeChange(+$any($event.target).value)"
+            class="page-size-select">
+            <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+          </select>
+        </div>
+      </div>
+
+
+      <!-- Mass Approve Confirmation Modal -->
+      <div class="modal-backdrop" *ngIf="showMassApproveConfirm" (click)="cancelMassApprove()"></div>
+      <div class="modal-card confirm-modal" *ngIf="showMassApproveConfirm">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-thumbs-up"></i> Confirm Approval</h3>
+          <button class="close-btn" (click)="cancelMassApprove()">×</button>
+        </div>
+        <p class="confirm-message">
+          You are about to approve <strong>{{ getSelectedCount() }}</strong>
+          correction/cross-branch request{{ getSelectedCount() === 1 ? '' : 's' }}. 
+          Approved records will be marked as <strong>PRESENT</strong> and locked. 
+          This action cannot be undone.
+        </p>
+        <div class="confirm-actions">
+          <button class="btn-cancel" (click)="cancelMassApprove()">Cancel</button>
+          <button class="btn-confirm" (click)="massApproveCorrectionRequests()">
+            <i class="fa-solid fa-thumbs-up"></i> Approve {{ getSelectedCount() }}
+          </button>
+        </div>
+      </div>
 
       <!-- Location Map Modal -->
       <div class="modal-backdrop" *ngIf="mapModalOpen"></div>
@@ -132,7 +201,7 @@
           <button class="close-btn" (click)="cancelEdit()" title="Press Escape to close">×</button>
         </div>
         <div *ngIf="editingRecord as record" class="employee-info">
-          {{ record.employee }} — {{ record.date }}
+          {{ record.employee }} — {{ record.date | date:'yyyy-MM-dd' }}
         </div>
 
         <div class="form-group">
@@ -329,6 +398,55 @@
 
             <div class="rejection-info" *ngIf="record.correctionRequest.status === 'REJECTED'">
               <p><strong>❌ Reason:</strong> {{ record.correctionRequest.rejectionReason }}</p>
+            </div>
+          </div>
+
+          <!-- Cross-Branch Approval Section -->
+          <div class="detail-section" *ngIf="isCrossBranchAttendance(record)">
+            <h4>🏘️ Cross-Branch Attendance</h4>
+            <div class="detail-row">
+              <span class="label">Home Branch:</span>
+              <span class="value">
+                <span class="branch-badge home">
+                  <i class="fa fa-building"></i> {{ record.homeBranchName || 'Unknown' }}
+                </span>
+              </span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Clocked In At:</span>
+              <span class="value">
+                <span class="branch-badge different">
+                  <i class="fa fa-map-marker-alt"></i> {{ record.checkedInBranchName || 'Unknown' }}
+                </span>
+              </span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Status:</span>
+              <span class="value">
+                <span class="flag-badge"
+                      [style.background-color]="record.crossBranchApprovalStatus === 'PENDING' ? '#FFA500' :
+                                               record.crossBranchApprovalStatus === 'APPROVED' ? '#10B981' : '#EF4444'">
+                  {{ record.crossBranchApprovalStatus || 'PENDING' }}
+                </span>
+              </span>
+            </div>
+
+            <!-- Approval Buttons -->
+            <div class="approval-actions" *ngIf="record.crossBranchApprovalStatus === 'PENDING' || !record.crossBranchApprovalStatus">
+              <button class="approve-btn" (click)="approveCrossBranch(record.id)">
+                <i class="fa-solid fa-check"></i> Approve Cross-Branch
+              </button>
+              <button class="reject-btn" (click)="rejectCrossBranch(record.id, 'Unauthorized cross-branch')">
+                <i class="fa-solid fa-times"></i> Reject
+              </button>
+            </div>
+
+            <div class="approval-info" *ngIf="record.crossBranchApprovalStatus === 'APPROVED'">
+              <p><strong>✅ Cross-branch attendance approved</strong></p>
+            </div>
+
+            <div class="rejection-info" *ngIf="record.crossBranchApprovalStatus === 'REJECTED'">
+              <p><strong>❌ Cross-branch attendance rejected - attendance marked invalid</strong></p>
             </div>
           </div>
         </div>

@@ -78,7 +78,7 @@ export class LoanPayrollBridgeService {
     if (!nextInstallment) {
       return null;
     }
-    const installmentAmount = Number(nextInstallment.totalPayment || 0);
+    const installmentAmount = Number(nextInstallment.totalAmount || 0);
     const remainingBalance = Number(loan.currentBalance || 0);
     const amount = this.roundCurrency(Math.min(installmentAmount, remainingBalance));
     if (amount <= 0) {

@@ -208,9 +208,37 @@ export class LeaveRequestComponent implements OnInit {
     this.applyFilters();
   }
 
-  extractDate(dateString: string): string {
-    if (!dateString) return '';
-    return dateString.split('T')[0];
+  // ==================== DATE HELPERS ====================
+
+  /**
+   * API serializes LocalDateTime as arrays, e.g. [2026,3,24,13,38,52]
+   * (year, month 1-based, day, hour, minute, second[, nano]) instead of an
+   * ISO string. Passing that straight to .split('T') or `new Date(...)`
+   * throws, which previously happened synchronously inside buildDisplayData()
+   * before isLoading was set to false — leaving the screen stuck on
+   * "Loading leave requests..." even though the data had already arrived.
+   */
+  private toDate(value: any): Date {
+    if (Array.isArray(value)) {
+      const [year, month, day, hour = 0, minute = 0, second = 0] = value;
+      return new Date(year, (month || 1) - 1, day || 1, hour, minute, second);
+    }
+    if (value instanceof Date) return value;
+    if (!value) return new Date(NaN);
+    return new Date(value);
+  }
+
+  private isValidDate(d: Date): boolean {
+    return d instanceof Date && !isNaN(d.getTime());
+  }
+
+  extractDate(dateValue: any): string {
+    const d = this.toDate(dateValue);
+    if (!this.isValidDate(d)) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   // ==================== FILTERS ====================
@@ -603,18 +631,22 @@ export class LeaveRequestComponent implements OnInit {
 
   // ==================== HELPERS ====================
 
-  formatDate(dateString: string): string {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
+  formatDate(dateValue: any): string {
+    if (!dateValue) return 'N/A';
+    const d = this.toDate(dateValue);
+    if (!this.isValidDate(d)) return 'N/A';
+    return d.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     });
   }
 
-  formatDateTime(dateString: string): string {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString('en-US', {
+  formatDateTime(dateValue: any): string {
+    if (!dateValue) return 'N/A';
+    const d = this.toDate(dateValue);
+    if (!this.isValidDate(d)) return 'N/A';
+    return d.toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

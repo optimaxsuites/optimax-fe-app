@@ -1,29 +1,26 @@
-import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, inject, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewChild } from '@angular/core';
 import { AttendashboardService } from '../../../../service/attendance/attendashboard.service';
 import { AttendanceTableRecord } from '../../../../domain/attendance/attendancetable.dto';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
-import { CorrectionRequestService } from '../../../../service/attendance/correction-request.service';
+import { AdminCorrectionApprovalService } from '../../../../service/attendance/admin-correction-approval.service';
 import { interval, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-attendashboard',
   templateUrl: './attendashboard.component.html',
-  styleUrl: './attendashboard.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  styleUrl: './attendashboard.component.scss'
 })
 export class AttendashboardComponent implements OnInit, OnDestroy{
 
   private attendashboardService = inject(AttendashboardService);
   private attendanceService = inject(AttendancetableService);
-  private correctionRequestService = inject(CorrectionRequestService);
+  private correctionRequestService = inject(AdminCorrectionApprovalService);
   private destroy$ = new Subject<void>();
 
   stats$ = this.attendashboardService.getTodayStats();
-  heatmap$ = this.attendashboardService.getDepartmentHeatmap();
   lateArrivals$ = this.attendashboardService.getLateArrivals();
   statsData: any;
-  heatmapData: { department: string; attendance: number }[] = [];
   lateArrivalsData: any[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
   attendance: AttendanceTableRecord[] = [];
@@ -93,40 +90,6 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
       name: r.employee,
       time: r.checkIn
     }));
-
- //heatmap
-
-  const departmentMap: any = {};
-
-  data.forEach(record => {
-
-    if (!departmentMap[record.department]) {
-      departmentMap[record.department] = {
-        total: 0,
-        present: 0
-      };
-    }
-
-    departmentMap[record.department].total++;
-
-    if (record.status === 'PRESENT') {
-      departmentMap[record.department].present++;
-    }
-  });
-
-  const departmentRates = Object.keys(departmentMap).map(dept => {
-    const deptData = departmentMap[dept];
-    const rate = (deptData.present / deptData.total) * 100;
-
-    return {
-      department: dept,
-      attendance: Number(rate.toFixed(1))
-    };
-  });
-
-  this.heatmapData = departmentRates
-    .sort((a, b) => b.attendance - a.attendance)
-    .slice(0, 3);
 }
 
   ngOnInit(): void {
@@ -137,8 +100,8 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
       .subscribe({
         next: (data) => {
           this.attendance = data;
-          const today = new Date().toISOString().split('T')[0];
-          const todaysData = data.filter(r => r.date === today);
+          const today = this.formatDateLocal(new Date());
+          const todaysData = data.filter(r => r.date ? this.formatDateLocal(r.date) === today : false);
           this.filteredAttendance = todaysData;
           this.calculateDashboardData();
         },
@@ -175,6 +138,7 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
       });
   }
 
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
@@ -208,6 +172,12 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
     this.activeCard = null;
     this.currentFilters = {};
     this.filteredAttendance = this.attendance;
+  }
+
+  private formatDateLocal(date: Date): string {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
   }
 
 }

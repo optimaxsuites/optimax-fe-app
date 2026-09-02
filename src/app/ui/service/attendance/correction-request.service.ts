@@ -15,7 +15,7 @@ export interface CorrectionRequestSubmission {
 @Injectable({
   providedIn: 'root'
 })
-export class CorrectionRequestService {
+export class AdminCorrectionApprovalService {
   private readonly STORAGE_KEY = 'correctionRequests';
   private correctionRequestsSubject = new BehaviorSubject<AttendanceTableRecord[]>([]);
   public correctionRequests$ = this.correctionRequestsSubject.asObservable();
@@ -28,7 +28,13 @@ export class CorrectionRequestService {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY);
       if (stored) {
-        this.correctionRequestsSubject.next(JSON.parse(stored));
+        const records = JSON.parse(stored);
+        // Convert date strings back to Date objects
+        const normalized = records.map((record: any) => ({
+          ...record,
+          date: record.date ? new Date(record.date) : null
+        }));
+        this.correctionRequestsSubject.next(normalized);
       }
     } catch (e) {
       console.error('Failed to load correction requests:', e);
@@ -51,7 +57,7 @@ export class CorrectionRequestService {
         type: submission.type,
         reason: submission.reason,
         status: 'PENDING' as const,
-        requestedAt: submission.requestedAt,
+        requestedAt: new Date(submission.requestedAt),
         requestedBy: submission.employeeName
       }
     };
