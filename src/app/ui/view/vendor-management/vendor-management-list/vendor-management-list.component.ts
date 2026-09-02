@@ -56,6 +56,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   // Loading
   isLoading: boolean = false;
   isExporting: boolean = false;
+  error: string | null = null;
 
   // Pagination
   currentPage: number = 1;
@@ -352,6 +353,16 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     this.loadVendors();
   }
 
+  onFilterChange(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    const field = target.name;
+    if (!field) return;
+
+    this.filterForm.patchValue({ [field]: target.value });
+    this.currentPage = 1;
+    this.loadVendors();
+  }
+
   getActiveFilterCount(): number {
     const formValue = this.filterForm.value;
     let count = 0;
@@ -537,6 +548,11 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     return this.selectedVendors.size;
   }
 
+  clearSelection(): void {
+    this.selectedVendors.clear();
+    this.selectAll = false;
+  }
+
   // ============================================================
   // BULK ACTIONS
   // ============================================================
@@ -632,14 +648,34 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   // NAVIGATION - UPDATED to use router.navigate
   // ============================================================
 
+  private readonly VM_TAB_KEY = 'dashboard-vendor global registry-vendor directory';
+
+  goBack(): void {
+    this.router.navigate(['/commerce/manage-vendors']);
+  }
+
+  navigateToApprovalQueue(): void {
+    sessionStorage.setItem(this.VM_TAB_KEY, 'Vendor Global Registry');
+    this.router.navigate(['/commerce/manage-vendors']);
+  }
+
+  navigateToDashboard(): void {
+    sessionStorage.setItem(this.VM_TAB_KEY, 'Dashboard');
+    this.router.navigate(['/commerce/manage-vendors']);
+  }
+
   navigateToVendor(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
+    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+      queryParams: { returnTo: 'directory' }
+    });
   }
 
 
 
   navigateToVendorDetail(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
+    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+      queryParams: { returnTo: 'directory' }
+    });
   }
 
   // ============================================================
@@ -650,7 +686,9 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
    * View vendor details - navigates to profile page
    */
   viewVendor(id: number): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
+    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+      queryParams: { returnTo: 'directory' }
+    });
   }
 
   /**
@@ -673,21 +711,27 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
    * View performance - navigates to profile with performance tab
    */
   viewPerformance(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], { queryParams: { tab: 'performance' } });
+    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+      queryParams: { tab: 'performance', returnTo: 'directory' }
+    });
   }
 
   /**
    * View risk - navigates to profile with risk tab
    */
   viewRisk(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], { queryParams: { tab: 'risk' } });
+    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+      queryParams: { tab: 'risk', returnTo: 'directory' }
+    });
   }
 
   /**
    * View documents - navigates to profile with documents tab
    */
   viewDocuments(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], { queryParams: { tab: 'documents' } });
+    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+      queryParams: { tab: 'documents', returnTo: 'directory' }
+    });
   }
 
   // ============================================================
