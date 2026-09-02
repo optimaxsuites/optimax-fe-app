@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { ScheduleDTO } from '../../domain/workschedule-shift/schedule.dto';
+import { ShiftScheduleDTO } from '../../domain/workschedule-shift/schedule.dto';
 import { ConflictDTO } from '../../domain/workschedule-shift/conflict.dto';
 import { ShiftserviceService } from './shiftservice.service';
 
@@ -9,30 +9,36 @@ import { ShiftserviceService } from './shiftservice.service';
 })
 export class ScheduleserviceService {
 
-  private schedulesSubject = new BehaviorSubject<ScheduleDTO[]>([]);
+  private schedulesSubject = new BehaviorSubject<ShiftScheduleDTO[]>([]);
   schedules$ = this.schedulesSubject.asObservable();
 
   constructor(private shiftserviceService: ShiftserviceService) { 
-    const mockSchedules: ScheduleDTO[] = [
+    const scheduleDate = (daysFromToday: number): string => {
+      const date = new Date();
+      date.setDate(date.getDate() + daysFromToday);
+      return this.formatDateLocal(date);
+    };
+
+    const mockSchedules: ShiftScheduleDTO[] = [
     {
       id: 'sch-1',
       employeeId: 'emp-1',
       shiftId: 'shift-1',
-      date: '2026-04-03',
+      date: scheduleDate(0),
       project: 'CivicLens Dashboard'
     },
     {
       id: 'sch-2',
       employeeId: 'emp-2',
       shiftId: 'shift-1',
-      date: '2026-04-03',
+      date: scheduleDate(0),
       project: 'CivicLens Dashboard'
     },
     {
       id: 'sch-3',
       employeeId: 'emp-3',
       shiftId: 'shift-2',
-      date: '2026-04-03',
+      date: scheduleDate(0),
       project: 'ERP Revamp'
     },
 
@@ -41,14 +47,14 @@ export class ScheduleserviceService {
       id: 'sch-4',
       employeeId: 'emp-1',
       shiftId: 'shift-2',
-      date: '2026-04-04',
+      date: scheduleDate(1),
       project: 'ERP Revamp'
     },
     {
       id: 'sch-5',
       employeeId: 'emp-2',
-      shiftId: 'shift-3',
-      date: '2026-04-05',
+      shiftId: 'shift-2',
+      date: scheduleDate(2),
       project: 'Mobile App'
     }
   ];
@@ -74,13 +80,13 @@ export class ScheduleserviceService {
   }
 
   /* GET ALL SCHEDULES */
-  getSchedules(): Observable<ScheduleDTO[]> {
+  getSchedules(): Observable<ShiftScheduleDTO[]> {
     return this.schedules$;
   }
 
 
   /* GET SCHEDULES BY DATE */
-  getSchedulesByDate(date: string): ScheduleDTO[] {
+  getSchedulesByDate(date: string): ShiftScheduleDTO[] {
 
     return this.schedulesSubject.value.filter(
       s => s.date === date
@@ -90,7 +96,7 @@ export class ScheduleserviceService {
 
 
   /* GET EMPLOYEE SCHEDULES */
-  getSchedulesByEmployee(employeeId: string): ScheduleDTO[] {
+  getSchedulesByEmployee(employeeId: string): ShiftScheduleDTO[] {
 
     return this.schedulesSubject.value.filter(
       s => s.employeeId === employeeId
@@ -208,7 +214,7 @@ private formatDateLocal(date: Date): string {
 
 
   /* ASSIGN SHIFT */
-  assignShift(schedule: ScheduleDTO)
+  assignShift(schedule: ShiftScheduleDTO)
   /*: { success: boolean; message?: string }*/ 
   {
     console.log('ASSIGNING', schedule);
@@ -242,7 +248,7 @@ private formatDateLocal(date: Date): string {
     this.schedulesSubject.next(updated);
   }
 
-  updateSchedule(schedule: ScheduleDTO): void {
+  updateSchedule(schedule: ShiftScheduleDTO): void {
     const updated =
       this.schedulesSubject.value.map(s =>
         s.id === schedule.id
@@ -266,7 +272,7 @@ private formatDateLocal(date: Date): string {
 
   /*updateScheduleSeries(
     assignmentGroupId: string,
-    changes: Partial<ScheduleDTO>
+    changes: Partial<ShiftScheduleDTO>
   ): void {
 
     const updated =
@@ -291,7 +297,7 @@ private formatDateLocal(date: Date): string {
 
   /*updateScheduleSeries(
     assignmentGroupId: string,
-    changes: Partial<ScheduleDTO>
+    changes: Partial<ShiftScheduleDTO>
   ): void {
 
     const schedules =
@@ -353,7 +359,7 @@ private formatDateLocal(date: Date): string {
 
   updateScheduleSeries(
     assignmentGroupId: string,
-    changes: Partial<ScheduleDTO>
+    changes: Partial<ShiftScheduleDTO>
   ): void {
 
     const schedules = this.schedulesSubject.value;
@@ -455,7 +461,7 @@ private formatDateLocal(date: Date): string {
   }
 
   /* CONFLICT DETECTION */
-  detectConflict(schedule: ScheduleDTO, ignoreScheduleId?: string): ConflictDTO | null {
+  detectConflict(schedule: ShiftScheduleDTO, ignoreScheduleId?: string): ConflictDTO | null {
     const schedules = this.schedulesSubject.value;
     const employeeSchedules = schedules.filter(
       s =>
@@ -570,7 +576,7 @@ private formatDateLocal(date: Date): string {
   }
 
 
-  checkConflict(schedule: ScheduleDTO, ignoreScheduleId?: string) {
+  checkConflict(schedule: ShiftScheduleDTO, ignoreScheduleId?: string) {
     const previousSchedules = this.schedulesSubject.value.filter(
       s =>
         s.employeeId === schedule.employeeId &&

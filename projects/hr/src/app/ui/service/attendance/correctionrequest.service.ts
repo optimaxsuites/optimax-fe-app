@@ -9,7 +9,7 @@ import {
 @Injectable({
   providedIn: 'root'
 })
-export class CorrectionrequestService {
+export class EmployeeCorrectionService {
   private requestsSubject = new BehaviorSubject<CorrectionRequest[]>([]);
   requests$ = this.requestsSubject.asObservable();
   private initialized = false;
@@ -27,14 +27,23 @@ export class CorrectionrequestService {
   }
 
   private loadRequestsFromStorage() {
-    const cached: CorrectionRequest[] = JSON.parse(
+    const cached: any[] = JSON.parse(
       localStorage.getItem('correctionRequests') || '[]'
     );
-    this.requestsSubject.next(cached);
+    // Convert date strings back to Date objects
+    const requests: CorrectionRequest[] = cached.map(r => ({
+      ...r,
+      createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
+      updatedAt: r.updatedAt ? new Date(r.updatedAt) : undefined,
+      date: r.date ? new Date(r.date) : new Date(),
+      requestedClockIn: r.requestedClockIn ? new Date(r.requestedClockIn) : undefined,
+      requestedClockOut: r.requestedClockOut ? new Date(r.requestedClockOut) : undefined
+    }));
+    this.requestsSubject.next(requests);
   }
 
   addRequest(request: CorrectionRequest) {
-    const now = new Date().toISOString();
+    const now = new Date();
     const preparedRequest: CorrectionRequest = {
       ...request,
       status: 'PENDING',
@@ -134,7 +143,7 @@ export class CorrectionrequestService {
   updateRequest(id: string, changes: Partial<CorrectionRequest>) {
     const updated = this.requests.map(req =>
       req.id === id && !req.locked
-        ? { ...req, ...changes, updatedAt: new Date().toISOString() }
+        ? { ...req, ...changes, updatedAt: new Date() }
         : req
     );
     this.requestsSubject.next(updated);
@@ -175,7 +184,14 @@ export class CorrectionrequestService {
 
   private persistRequests() {
     try {
-      localStorage.setItem('correctionRequests', JSON.stringify(this.requests));
+      // Convert Date objects to ISO strings for localStorage
+      const serializableRequests = this.requests.map(r => ({
+        ...r,
+        createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
+        updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : r.updatedAt,
+        date: r.date instanceof Date ? r.date.toISOString() : r.date
+      }));
+      localStorage.setItem('correctionRequests', JSON.stringify(serializableRequests));
     } catch (e) {
       console.warn('Failed to persist correction requests to localStorage', e);
     }
@@ -196,7 +212,7 @@ export class CorrectionrequestService {
         ...(request.history || []),
         this.createHistory(status, actor, note)
       ],
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date()
     };
   }
 
@@ -205,7 +221,7 @@ export class CorrectionrequestService {
       status,
       actor,
       note,
-      createdAt: new Date().toISOString()
+      createdAt: new Date()
     };
   }
 }

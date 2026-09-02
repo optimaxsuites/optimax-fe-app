@@ -9,6 +9,7 @@ import { MOCK_ATTENDANCE, BRANCHES, BRANCH_NAMES } from '../../../../domain/atte
 import { TableComponent, TableColumn, TableAction } from '../../../../shared-component/view/table/table.component';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-reports',
@@ -25,7 +26,13 @@ export class ReportsComponent implements OnInit {
   attendance: AttendanceTableRecord[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
   groupedSummary: any[] = [];
+  paginatedGroupedSummary: any[] = [];
   isLoading = false;
+
+  // Pagination
+  currentPage = 1;
+  pageSize = 10;
+  pageSizeOptions = [10, 25, 50, 100];
 
   startDate = new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0];
   endDate = new Date().toISOString().split('T')[0];
@@ -51,7 +58,17 @@ export class ReportsComponent implements OnInit {
   tableColumns: TableColumn[] = [
     { header: 'Employee', field: 'employee' },
     { header: 'Department', field: 'department' },
-    { header: 'Date', field: 'date' },
+    { 
+      header: 'Date', 
+      field: 'date',
+      formatter: (row: any) => {
+        if (!row.date) return '-';
+        if (row.date instanceof Date) {
+          return row.date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+        }
+        return row.date;
+      }
+    },
     { header: 'Location', field: 'location' },
     { header: 'Total Hours', field: 'totalHours' },
     { header: 'Cumulative Days', field: 'cumulativeDays' }
@@ -127,6 +144,7 @@ export class ReportsComponent implements OnInit {
       const key = record.employee;
       if (!groupedMap.has(key)) {
         groupedMap.set(key, {
+          employeeId: record.employeeId,
           employee: record.employee,
           department: record.department,
           date: record.date,
@@ -145,6 +163,49 @@ export class ReportsComponent implements OnInit {
     });
 
     this.groupedSummary = Array.from(groupedMap.values());
+    this.currentPage = 1; // Reset to first page when data changes
+    this.updatePaginatedData();
+  }
+
+  // ========== PAGINATION ==========
+  updatePaginatedData(): void {
+    const start = (this.currentPage - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    this.paginatedGroupedSummary = this.groupedSummary.slice(start, end);
+  }
+
+  getTotalPages(): number {
+    return Math.ceil(this.groupedSummary.length / this.pageSize);
+  }
+
+  getStartRecord(): number {
+    if (this.groupedSummary.length === 0) return 0;
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  getEndRecord(): number {
+    const end = this.currentPage * this.pageSize;
+    return end > this.groupedSummary.length ? this.groupedSummary.length : end;
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.getTotalPages()) {
+      this.currentPage++;
+      this.updatePaginatedData();
+    }
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.updatePaginatedData();
+    }
+  }
+
+  onPageSizeChange(newSize: number): void {
+    this.pageSize = newSize;
+    this.currentPage = 1;
+    this.updatePaginatedData();
   }
 
   getPercentage(count: number): number {
@@ -167,7 +228,7 @@ export class ReportsComponent implements OnInit {
     const rows = this.filteredAttendance.map(r => [
       r.employee,
       r.department,
-      r.date,
+      r.date ? (r.date instanceof Date ? r.date.toLocaleDateString('en-CA') : r.date) : '-',
       r.checkIn || '-',
       r.checkOut || '-',
       r.status,
@@ -199,32 +260,23 @@ export class ReportsComponent implements OnInit {
       return;
     }
 
-    const headers = ['Employee', 'Department', 'Date', 'Clock In', 'Clock Out', 'Status', 'Hours', 'Branch'];
-    let csv = headers.join(',') + '\n';
+    const worksheetData = this.filteredAttendance.map(r => ({
+      'Employee': r.employee,
+      'Department': r.department,
+      'Date': r.date ? (r.date instanceof Date ? r.date.toLocaleDateString('en-CA') : r.date) : '-',
+      'Clock In': r.checkIn || '-',
+      'Clock Out': r.checkOut || '-',
+      'Status': r.status,
+      'Hours': r.hours || 0,
+      'Branch': this.getBranchName(r.checkedInBranchId)
+    }));
 
-    this.filteredAttendance.forEach(r => {
-      const row = [
-        r.employee,
-        r.department,
-        r.date,
-        r.checkIn || '-',
-        r.checkOut || '-',
-        r.status,
-        r.hours || 0,
-        this.getBranchName(r.checkedInBranchId)
-      ];
-      csv += row.map(cell => `"${cell}"`).join(',') + '\n';
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `attendance-report-${new Date().toISOString().split('T')[0]}.xlsx`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance Report');
+    
+    const filename = `attendance-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, filename);
 
     this.toastService.success('✅ Report exported as Excel');
   }
@@ -247,7 +299,7 @@ export class ReportsComponent implements OnInit {
     const tableData = this.filteredAttendance.map(r => [
       r.employee,
       r.department,
-      r.date,
+      r.date ? (r.date instanceof Date ? r.date.toLocaleDateString('en-CA') : r.date) : '-',
       r.checkIn || '-',
       r.checkOut || '-',
       r.status,
@@ -286,7 +338,7 @@ export class ReportsComponent implements OnInit {
         return;
       }
       this.router.navigate(['/attendance/employee-history'], {
-        queryParams: { name: event.row.employee }
+        queryParams: { id: event.row.employeeId, name: event.row.employee }
       }).catch(err => {
         this.toastService.error('Failed to navigate to employee history');
         console.error('Navigation error:', err);

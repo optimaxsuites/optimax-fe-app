@@ -5,10 +5,9 @@ import { map, catchError, tap } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment.prod';
 import {
   AttendanceRecordDTO,
-  RecordStatus,
-  ShiftDTO,
-  ScheduleDTO
+  RecordStatus
 } from '../../domain/attendance/attendance-event.dto';
+import { ShiftDTO, ScheduleDTO } from '../../domain/attendance/shifts-schedule.dto';
 
 @Injectable({ providedIn: 'root' })
 export class AttendanceRecordService {
@@ -37,8 +36,7 @@ export class AttendanceRecordService {
             employeeId,
             workDate,
             status: 'DRAFT',
-            isCrossBranch: false,
-            fraudFlags: []
+            isCrossBranch: false
           }
         );
       })
@@ -117,8 +115,10 @@ export class AttendanceRecordService {
 
     const clockIn = new Date(record.clockInTime);
     const clockOut = new Date(record.clockOutTime);
-    const shiftStart = this.parseTimeToDate(record.workDate, shift.startTime);
-    const shiftEnd = this.parseTimeToDate(record.workDate, shift.endTime);
+    // Convert Date to ISO string format (YYYY-MM-DD) for parseTimeToDate
+    const workDateStr = record.workDate.toISOString().split('T')[0];
+    const shiftStart = this.parseTimeToDate(workDateStr, shift.startTime);
+    const shiftEnd = this.parseTimeToDate(workDateStr, shift.endTime);
 
     // Handle overnight shifts
     let adjustedShiftEnd = shiftEnd;

@@ -5,11 +5,6 @@ export interface AttendanceStats {
   total: number;
 }
 
-export interface DepartmentHeatmap {
-  department: string;
-  attendance: number;
-}
-
 export interface LateArrival {
   id: string;
   name: string;

@@ -1,4 +1,4 @@
-export interface ShiftDTO {
+export interface WorkShiftDTO {
   id: string;
   name: string;
   type: 'morning' | 'evening' | 'night' | 'custom';

@@ -1,27 +1,40 @@
 /**
- * ⚠️ UPDATED (2026-07-14) - Added missing fields: source, eventType, employeeCode, processed, homeBranchCode
- * This file has been completed with all required fields from specification
+ * ⚠️ UPDATED (2026-08-28) - Simplified: Removed fraud detection, using local time
+ * Uses employeeDTO directly for employee information (no separate employeeId fields)
+ * Clock-in sources: BIOMETRIC (fingerprint scanner) or REMOTE (web button)
+ * See EMPLOYEE_ID_PATTERNS.md for employee identification patterns
  */
+
+import { employeeDTO } from '../employee.dto';
 
 export type EventSource = 'BIOMETRIC' | 'REMOTE' | 'MANUAL';
 export type EventType = 'IN' | 'OUT';
 export type RecordStatus = 'DRAFT' | 'SUBMITTED' | 'IN_APPROVAL' | 'APPROVED' | 'REJECTED' | 'LOCKED';
-export type FraudFlagCode = 'SUSPICIOUS_LOCATION' | 'VPN_DETECTED' | 'RAPID_LOCATION_CHANGE' | 'NEW_DEVICE' | 'DEVICE_CLONING' | 'LOCATION_SPOOFING';
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type FlagType = 'CORRECTION' | 'CROSS_BRANCH_BIOMETRIC';
+export type FraudFlagCode = 'DUPLICATE' | 'GEO_MISMATCH' | 'UNUSUAL_HOURS' | 'UNKNOWN_DEVICE';
+
+export interface ProcessingResult {
+  eventId: number;
+  status: 'SUCCESS' | 'DUPLICATE' | 'REJECTED' | 'ERROR';
+  message: string;
+  fraudFlags: FraudFlagCode[];
+}
 
 export interface AttendanceEventDTO {
   // System-generated fields
   id?: number; // Unique event identifier
-  createdAt?: string; // ISO timestamp - Event creation timestamp
+  createdAt?: Date; // Local datetime - Event creation timestamp
 
   // Event source and type
-  source: EventSource; // Source of the attendance event (BIOMETRIC|REMOTE|MANUAL)
+  source: EventSource; // Source of the attendance event (BIOMETRIC|REMOTE)
   eventType: EventType; // Check-in or Check-out event (IN|OUT)
 
   // Employee identification
-  employeeCode: string; // Employee code/ID (human-readable, e.g., EMP-001)
   employeeId: number; // Employee unique identifier (database ID)
+  employeeCode?: string; // Employee code for deduplication / lookup
+  employee?: employeeDTO; // Employee information (name, email, department, branch, etc.)
+  fraudFlags?: FraudFlagCode[];
 
   // Location information
   branchCode: string; // Branch where event occurred
@@ -29,23 +42,20 @@ export interface AttendanceEventDTO {
   homeBranchCode?: string; // Employee's primary branch
 
   // Event details
-  eventTime: string; // ISO timestamp - When the check-in/out occurred
+  eventTime: Date; // Local datetime - When the check-in/out occurred
 
-  // Device information
+  // Device information (for BIOMETRIC source)
   deviceId?: string; // ID of biometric device used
   rawTemplateHash?: string; // Biometric template hash for verification
-
-  // Remote check-in data
   deviceIpAddress?: string; // IP address of the biometric device
-  connectionIpAddress?: string; // IP address of the user/connection making the request
-  deviceFingerprint?: string; // Device fingerprint for remote check-in
+
+  // Remote check-in data (for REMOTE source - web button)
+  connectionIpAddress?: string; // IP address of the user's browser
+  deviceFingerprint?: string; // Browser fingerprint
 
   // Location tracking
-  gpsLatitude?: number; // GPS latitude for location verification
-  gpsLongitude?: number; // GPS longitude for location verification
-
-  // Fraud detection
-  fraudFlags?: FraudFlagCode[]; // Fraud detection flags
+  gpsLatitude?: number; // GPS latitude
+  gpsLongitude?: number; // GPS longitude
 
   // Processing status
   processed: boolean; // Whether event has been processed into record
@@ -56,16 +66,21 @@ export interface AttendanceRecordDTO {
   id?: number; // Unique attendance record identifier
 
   // Employee & branch information
-  employeeId: number; // Employee unique identifier
+  employeeId: number; // Employee unique identifier (database ID)
+  employee: employeeDTO; // Employee information (name, email, department, branch, etc.)
   branchCode: string; // Branch where attendance is recorded
 
   // Date & shift information
-  workDate: string; // ISO date - Date of attendance (YYYY-MM-DD)
+  workDate: Date; // Date of attendance
   shiftId?: number; // Assigned shift for this date
 
-  // Clock times
-  clockInTime?: string; // ISO timestamp - Check-in timestamp
-  clockOutTime?: string; // ISO timestamp - Check-out timestamp
+  // Clock times (local time)
+  clockInTime?: Date; // Check-in time
+  clockOutTime?: Date; // Check-out time
+
+  // Clock-in source
+  clockInSource?: EventSource; // How they clocked in (BIOMETRIC|REMOTE)
+  clockOutSource?: EventSource; // How they clocked out (BIOMETRIC|REMOTE)
 
   // Hours calculations
   totalHours?: number; // Total hours worked
@@ -85,10 +100,10 @@ export interface AttendanceRecordDTO {
   // Approval workflow
   status: RecordStatus; // Record approval status (DRAFT|SUBMITTED|IN_APPROVAL|APPROVED|REJECTED|LOCKED)
   approvedBy?: number; // ID of approver
-  approvedAt?: string; // ISO timestamp - Approval timestamp
+  approvedAt?: Date; // Approval timestamp
 
   // Modification tracking
-  modifiedAt?: string; // ISO timestamp - When record was last modified
+  modifiedAt?: Date; // When record was last modified
   modifiedBy?: number; // User ID who modified the record
   modificationReason?: string; // Reason for modification (correction)
 
@@ -98,79 +113,10 @@ export interface AttendanceRecordDTO {
   flagType?: FlagType; // Type of flag (CORRECTION|CROSS_BRANCH_BIOMETRIC)
   approverNotes?: string; // HR/Manager notes during approval
 
-  // Fraud detection
-  fraudFlags?: FraudFlagCode[]; // Detected fraud indicators
-
   // Payroll locking
-  lockedAt?: string; // ISO timestamp - Lock timestamp (frozen for payroll)
+  lockedAt?: Date; // Lock date (frozen for payroll)
 
   // Timestamps
-  createdAt?: string; // ISO timestamp - Record creation timestamp
-  updatedAt?: string; // ISO timestamp - Last update timestamp
-}
-
-export interface ShiftDTO {
-  id?: number;
-  name: string;
-  description?: string;
-  branchCode?: string;
-  timezone?: string;
-  startTime: string; // HH:mm format
-  endTime: string; // HH:mm format
-  isOvernight?: boolean;
-  graceMinutes?: number;
-  otThresholdMinutes?: number;
-  daysOfWeek: number[]; // 1=Monday, 7=Sunday (ISO 8601)
-  active: boolean;
-  createdBy?: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface ScheduleDTO {
-  id?: number;
-  employeeId: number;
-  shiftId: number;
-  startDate: string; // ISO date
-  endDate?: string; // ISO date, null = open-ended
-  notes?: string;
-  createdBy?: number;
-  createdAt?: string;
-}
-
-export interface BiometricDeviceDTO {
-  id?: number;
-  deviceId: string;
-  name?: string;
-  branchCode: string;
-  model?: string;
-  apiKeyHash: string;
-  lastSyncAt?: string;
-  status?: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
-  registeredAt?: string;
-  registeredBy?: number;
-}
-
-export interface CorrectionRequestDTO {
-  id?: number;
-  attendanceRecordId: number;
-  requestedBy: number;
-  correctType?: 'MISSING_IN' | 'MISSING_OUT' | 'WRONG_TIME' | 'OTHER';
-  originalTime?: string;
-  requestedTime?: string;
-  reason: string;
-  supportingDocs?: string[];
-  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
-  reviewedBy?: number;
-  reviewedAt?: string;
-  reviewerNotes?: string;
-  createdAt?: string;
-}
-
-export interface ProcessingResult {
-  eventId: number;
-  recordId?: number;
-  status: 'PROCESSED' | 'DUPLICATE' | 'FRAUD_FLAGGED' | 'ERROR';
-  message: string;
-  fraudFlags?: FraudFlagCode[];
+  createdAt?: Date; // Record creation timestamp
+  updatedAt?: Date; // Last update timestamp
 }

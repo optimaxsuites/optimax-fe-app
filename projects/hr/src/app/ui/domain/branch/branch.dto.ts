@@ -9,8 +9,8 @@ export interface BranchDTO {
   timezone: string;
   contactEmail: string;
   isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface BranchAssignmentDTO {

@@ -13,6 +13,10 @@
           {{ status.replace('_', ' ') }}
         </span>
       </div>
+      <div class="location-badge" *ngIf="currentLocation">
+        <i class="fa-solid fa-location-dot"></i>
+        <span>{{ currentLocation }}</span>
+      </div>
     </div>
   </div>
 
@@ -36,33 +40,18 @@
   You have already completed attendance for today.
 </p>
 
-  <!-- BEFORE OPENING -->
-  <p *ngIf="!isAfterOpening" class="closed-warning">
-    It isn’t office hours yet.
-  </p>
-
-  <!-- CLOCK IN (only during office hours) -->
+  <!-- CLOCK IN -->
   <button
-    *ngIf="status === 'CLOCKED_OUT'
-           && isWithinOfficeHours
-           && !isAbsentToday
-           && !hasCompletedToday"
+    *ngIf="status === 'CLOCKED_OUT'"
     class="main-btn"
     [disabled]="isGettingLocation"
     (click)="toggleClock()">
     Clock In
   </button>
 
-  <!-- ABSENT (only show if they can't clock in) -->
-  <p *ngIf="isAfterOpening && isAbsentToday && status === 'CLOCKED_OUT'" class="absent-warning">
-    You have been marked ABSENT for today.
-  </p>
-
-  <!-- CLOCK OUT (allowed anytime after opening) -->
+  <!-- CLOCK OUT -->
   <button
-    *ngIf="status === 'CLOCKED_IN'
-           && isAfterOpening
-           && !hasCompletedToday"
+    *ngIf="status === 'CLOCKED_IN'"
     class="main-btn"
     [disabled]="isGettingLocation"
     (click)="toggleClock()">

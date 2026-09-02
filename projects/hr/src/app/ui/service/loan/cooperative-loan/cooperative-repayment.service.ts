@@ -182,7 +182,7 @@ export class CooperativeRepaymentService {
     loan.totalPrincipalPaid = this.roundCurrency(Number(loan.totalPrincipalPaid || 0) + principalPaidTotal);
     loan.totalInterestPaid = this.roundCurrency(Number(loan.totalInterestPaid || 0) + interestPaidTotal);
     loan.totalLateFeesPaid = this.roundCurrency(Number(loan.totalLateFeesPaid || 0) + lateFeePaidTotal);
-    loan.updatedAt = paymentTimestamp;
+    loan.updatedAt = new Date(paymentTimestamp);
     this.recalculateLoanBalances(context, loan);
 
     const remainingOpen = context.repayments.some(item => String(item.loanId) === normalizedLoanId && item.status !== 'PAID');
@@ -192,7 +192,7 @@ export class CooperativeRepaymentService {
       loan.outstandingPrincipal = 0;
       loan.outstandingInterest = 0;
       loan.outstandingBalance = 0;
-      loan.updatedAt = new Date().toISOString();
+      loan.updatedAt = new Date();
 
       context.createMemberStatusNotification(
         loan,
@@ -270,9 +270,9 @@ export class CooperativeRepaymentService {
     this.refreshOverdueStatuses(context, normalizedLoanId);
 
     loan.status = 'DEFAULTED';
-    loan.defaultedDate = new Date().toISOString();
+    loan.defaultedDate = new Date();
     loan.applicationStage = undefined;
-    loan.updatedAt = new Date().toISOString();
+    loan.updatedAt = new Date();
 
     context.notifications.unshift({
       id: Date.now(),
@@ -320,7 +320,7 @@ export class CooperativeRepaymentService {
     }
 
     let remainingCredit = patronageAmount;
-    const now = new Date().toISOString();
+    const now = new Date();
     let principalPaidTotal = 0;
     let interestPaidTotal = 0;
 
@@ -338,7 +338,7 @@ export class CooperativeRepaymentService {
 
       if (remainingCredit >= installmentAmount) {
         remainingCredit = this.roundCurrency(remainingCredit - installmentAmount);
-        item.paidDate = now;
+        item.paidDate = now.toISOString();
         item.modeofPayment = 'OTHER';
         item.status = 'PAID';
         principalPaidTotal += scheduledPrincipal;
@@ -360,7 +360,7 @@ export class CooperativeRepaymentService {
       item.lateFeeAmount = this.roundCurrency(Math.max(scheduledLateFee - lateFeeReduction, 0));
       item.amount = this.roundCurrency(Math.max(installmentAmount - appliedAmount, 0));
       if (item.amount === 0) {
-        item.paidDate = now;
+        item.paidDate = now.toISOString();
         item.modeofPayment = 'OTHER';
         item.status = 'PAID';
       }
@@ -380,7 +380,7 @@ export class CooperativeRepaymentService {
 
     if (!stillOpen) {
       activeLoan.status = 'COMPLETED';
-      activeLoan.completionDate = now;
+      activeLoan.completionDate = now.toISOString();
       activeLoan.outstandingPrincipal = 0;
       activeLoan.updatedAt = now;
     } else {

@@ -268,7 +268,7 @@ export class CooperativeService {
             : `More information is required for loan ${loanCode}.`,
           loanId: loan.id,
           memberId,
-          createdAt: loan.updatedAt || loan.applicationDate || loan.requestDate || new Date().toISOString(),
+          createdAt: this.extractDateValue(loan.updatedAt) || loan.applicationDate || loan.requestDate || new Date().toISOString(),
           read: false
         });
       }
@@ -282,7 +282,7 @@ export class CooperativeService {
           message: `Your loan ${loanCode} has been marked as defaulted. Please contact the cooperative admin immediately.`,
           loanId: loan.id,
           memberId,
-          createdAt: loan.defaultedDate || loan.updatedAt || new Date().toISOString(),
+          createdAt: this.extractDateValue(loan.defaultedDate) || this.extractDateValue(loan.updatedAt) || new Date().toISOString(),
           read: false
         });
       }
@@ -1326,12 +1326,14 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
     const { reviewedBy, ...requestPayload } = request;
     return this.updateGracePeriodRequest(request.id, {
       ...requestPayload,
+      requestedAt: this.dateToString(requestPayload.requestedAt) || new Date().toISOString(),
       status: 'APPROVED',
       reviewedAt: new Date().toISOString(),
       approvedGraceDays,
       newDueDate,
       reviewNote: reviewNote || `Grace period approved for ${approvedGraceDays} day(s).`,
-      rejectionReason: ''
+      rejectionReason: '',
+      paymentCompletedAt: requestPayload.paymentCompletedAt ? this.dateToString(requestPayload.paymentCompletedAt) : undefined
     }).pipe(
       map((updatedRequest) => {
         this.applyApprovedGracePeriodToRepayment(updatedRequest);
@@ -1345,12 +1347,14 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
     const { reviewedBy, ...requestPayload } = request;
     return this.updateGracePeriodRequest(request.id, {
       ...requestPayload,
+      requestedAt: this.dateToString(requestPayload.requestedAt) || new Date().toISOString(),
       status: 'REJECTED',
       reviewedAt: new Date().toISOString(),
       reviewNote: trimmedReason,
       rejectionReason: trimmedReason,
       approvedGraceDays: undefined,
-      newDueDate: undefined
+      newDueDate: undefined,
+      paymentCompletedAt: requestPayload.paymentCompletedAt ? this.dateToString(requestPayload.paymentCompletedAt) : undefined
     });
   }
 
@@ -1488,11 +1492,11 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
         const previousStatus = loan.status;
         const previousStage = loan.applicationStage;
         loan.status = 'APPROVED';
-        loan.approvedDate = new Date().toISOString();
+        loan.approvedDate = new Date();
         loan.approvedBy = this.getCurrentAuditUserId();
         loan.approvedAmount = loan.approvedAmount ?? loan.amount;
         (loan as any).fundsReserved = true;
-        loan.updatedAt = new Date().toISOString();
+        loan.updatedAt = new Date();
         this.appendLoanStatusHistory(loan, 'APPROVED', 'Loan approved and funds reserved for disbursement.');
         return this.saveLoanWorkflowUpdate(loan, previousStatus, previousStage).pipe(map((updatedLoan) => updatedLoan || loan));
       })
@@ -1511,7 +1515,7 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
         const previousStatus = loan.status;
         const previousStage = loan.applicationStage;
         loan.status = 'APPROVED';
-        loan.approvedDate = new Date().toISOString();
+        loan.approvedDate = new Date();
         loan.approvedBy = this.getCurrentAuditUserId();
         loan.approvedAmount = loan.approvedAmount ?? loan.amount;
         (loan as any).fundsReserved = true;
@@ -1521,7 +1525,7 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
         if (options.repaymentDay)      loan.repaymentDay      = options.repaymentDay;
         if (options.repaymentStartDate) loan.repaymentStartDate = options.repaymentStartDate;
         if (options.adminComment)       loan.adminComment       = options.adminComment;
-        loan.updatedAt = new Date().toISOString();
+        loan.updatedAt = new Date();
         this.appendLoanStatusHistory(loan, 'APPROVED', options.adminComment || 'Loan approved and funds reserved for disbursement.');
         return this.saveLoanWorkflowUpdate(loan, previousStatus, previousStage).pipe(map((updatedLoan) => updatedLoan || loan));
       })
@@ -1550,7 +1554,7 @@ public sendLoanToAccountingForDisbursement(
           const group = groups.find((item) => Number(item.id) === groupId);
           const previousStatus = loan.status;
           const previousStage = loan.applicationStage;
-          const initiatedAt = new Date().toISOString();
+          const initiatedAt = new Date();
           const auditUserId = this.getCurrentAuditUserId();
           const instructionReference = options?.disbursementInstructionReference
             || loan.disbursementInstructionLoanReference
@@ -1594,7 +1598,7 @@ public sendLoanToAccountingForDisbursement(
           loan.lateFeeCollectionAccount = lateFeeCollectionAccount;
           loan.accountingEmail = accountingEmail;
 
-          this.appendLoanStatusHistory(loan, 'READY_FOR_DISBURSEMENT', workflowNote, initiatedAt);
+          this.appendLoanStatusHistory(loan, 'READY_FOR_DISBURSEMENT', workflowNote, initiatedAt.toISOString());
 
           return this.cooperativeDisbursementConfirmationService.getConfirmationByLoanId(loan.id).pipe(
             switchMap((confirmation) => {
@@ -1694,8 +1698,8 @@ public sendLoanToAccountingForDisbursement(
         const previousStage = loan.applicationStage;
         loan.status = 'REJECTED';
         (loan as any).rejectionReason = reason;
-        loan.rejectedDate = new Date().toISOString();
-        loan.updatedAt = new Date().toISOString();
+        loan.rejectedDate = new Date();
+        loan.updatedAt = new Date();
         this.appendLoanStatusHistory(loan, 'REJECTED', `Loan rejected: ${reason}`);
         return this.saveLoanWorkflowUpdate(loan, previousStatus, previousStage).pipe(map((updatedLoan) => updatedLoan || loan));
       })
@@ -1720,13 +1724,13 @@ public sendLoanToAccountingForDisbursement(
         const previousStage = loan.applicationStage;
 
         loan.status = 'ACTIVE';
-        loan.disbursedDate = new Date().toISOString();
+        loan.disbursedDate = new Date();
         loan.disbursementConfirmedAt = loan.disbursedDate;
         loan.disbursementConfirmedBy = this.getCurrentAuditUserId();
         loan.disbursedAmount = Number(options?.disbursedAmount || loan.disbursedAmount || loan.amount || 0);
         loan.disbursementReference = options?.disbursementReference || loan.disbursementReference || `COOP-DISB-${loan.id}-${Date.now()}`;
         loan.disbursementInstructionLoanReference = loan.disbursementInstructionLoanReference || loan.loanCode || `COOP-${loan.id}`;
-        loan.updatedAt = new Date().toISOString();
+        loan.updatedAt = new Date();
         this.appendLoanStatusHistory(loan, 'ACTIVE', options?.notes || 'Loan disbursed and activated.');
 
         // Auto-generate repayment schedule when loan becomes ACTIVE
@@ -1781,7 +1785,7 @@ public sendLoanToAccountingForDisbursement(
               memberId,
               groupMembershipId,
               groupName,
-              disbursementConfirmedAt: loan.disbursedDate,
+              disbursementConfirmedAt: loan.disbursedDate ? new Date(loan.disbursedDate).toISOString() : new Date().toISOString(),
               disbursementConfirmedBy: this.getCurrentAuditUserId(),
               disbursementInstructionReference,
               disbursementReference,
@@ -1822,8 +1826,8 @@ public sendLoanToAccountingForDisbursement(
         const previousStage = loan.applicationStage;
         (loan as any).adminRequestNote = note;
         loan.applicationStage = 'INFO_REQUESTED';
-        (loan as any).infoRequestedDate = new Date().toISOString();
-        loan.updatedAt = new Date().toISOString();
+        (loan as any).infoRequestedDate = new Date();
+        loan.updatedAt = new Date();
         this.appendLoanStatusHistory(loan, loan.status || 'PENDING', `Additional information requested: ${note}`);
         return this.saveLoanWorkflowUpdate(loan, previousStatus, previousStage).pipe(map((updatedLoan) => updatedLoan || loan));
       })
@@ -1843,7 +1847,7 @@ public sendLoanToAccountingForDisbursement(
         if (note) {
           (loan as any).adminRequestNote = note;
         }
-        loan.updatedAt = new Date().toISOString();
+        loan.updatedAt = new Date();
         this.appendLoanStatusHistory(loan, 'PENDING', note || 'Loan kept pending for admin review.');
         return this.saveLoanWorkflowUpdate(loan, previousStatus, previousStage).pipe(map((updatedLoan) => updatedLoan || loan));
       })
@@ -1860,7 +1864,7 @@ public sendLoanToAccountingForDisbursement(
         const previousStatus = loan.status;
         const previousStage = loan.applicationStage;
         loan.status = 'PAUSED';
-        loan.updatedAt = new Date().toISOString();
+        loan.updatedAt = new Date();
         loan.adminComment = note
           ? `${loan.adminComment ? `${loan.adminComment}\n` : ''}${note}`
           : loan.adminComment;
@@ -1885,7 +1889,7 @@ public sendLoanToAccountingForDisbursement(
         const previousStatus = loan.status;
         const previousStage = loan.applicationStage;
         loan.status = 'ACTIVE';
-        loan.updatedAt = new Date().toISOString();
+        loan.updatedAt = new Date();
         loan.adminComment = note
           ? `${loan.adminComment ? `${loan.adminComment}\n` : ''}${note}`
           : loan.adminComment;
@@ -1914,7 +1918,7 @@ public sendLoanToAccountingForDisbursement(
           return of(undefined);
         }
         guarantor.status = decision;
-        guarantor.decidedAt = new Date().toISOString();
+        guarantor.decidedAt = new Date();
         guarantor.note = decision === 'APPROVED'
           ? 'Guarantor approved through cooperative workflow.'
           : 'Guarantor rejected through cooperative workflow.';
@@ -1922,7 +1926,7 @@ public sendLoanToAccountingForDisbursement(
         const allApproved = loan.guarantors.every((g: any) => g.status === 'APPROVED');
         if (hasFailed) {
           loan.status = 'REJECTED';
-          loan.rejectedDate = new Date().toISOString();
+          loan.rejectedDate = new Date();
           (loan as any).rejectionReason = 'Guarantor approval failed.';
           loan.applicationStage = undefined;
           this.appendLoanStatusHistory(loan, 'REJECTED', (loan as any).rejectionReason);
@@ -1931,7 +1935,7 @@ public sendLoanToAccountingForDisbursement(
         } else {
           loan.applicationStage = 'PENDING_GUARANTOR_APPROVAL';
         }
-        loan.updatedAt = new Date().toISOString();
+        loan.updatedAt = new Date();
 
         const guarantorPayload: CooperativeLoanGuarantorApiPayload = {
           id: guarantor.id,
@@ -1939,8 +1943,8 @@ public sendLoanToAccountingForDisbursement(
           guarantorMemberId,
           guaranteedAmount: Number(guarantor.guaranteedAmount || 0),
           status: decision,
-          requestedAt: guarantor.requestedAt || loan.applicationDate || loan.requestDate || new Date().toISOString(),
-          respondedAt: guarantor.decidedAt,
+          requestedAt: this.dateToString(guarantor.requestedAt) || loan.applicationDate || loan.requestDate || new Date().toISOString(),
+          respondedAt: guarantor.decidedAt ? (guarantor.decidedAt instanceof Date ? guarantor.decidedAt.toISOString() : guarantor.decidedAt) : undefined,
           responseNote: guarantor.note
         };
 
@@ -1970,8 +1974,8 @@ public sendLoanToAccountingForDisbursement(
         const previousStatus = loan.status;
         const previousStage = loan.applicationStage;
         loan.status = 'DEFAULTED';
-        (loan as any).defaultedDate = new Date().toISOString();
-        loan.updatedAt = new Date().toISOString();
+        (loan as any).defaultedDate = new Date();
+        loan.updatedAt = new Date();
         this.appendLoanStatusHistory(loan, 'DEFAULTED', 'Loan marked as defaulted.');
         return this.saveLoanWorkflowUpdate(loan, previousStatus, previousStage).pipe(map((updatedLoan) => updatedLoan || loan));
       })
@@ -2091,9 +2095,9 @@ public sendLoanToAccountingForDisbursement(
               },
               ...(updatedLoan.paymentHistory || [])
             ];
-            updatedLoan.lastPaymentReceived = paymentRecord.paidAt;
+            updatedLoan.lastPaymentReceived = paymentRecord.paidAt ? new Date(paymentRecord.paidAt) : undefined;
             updatedLoan.lastPaymentAmount = paymentRecord.amount;
-            updatedLoan.updatedAt = new Date().toISOString();
+            updatedLoan.updatedAt = new Date();
 
             return this.saveLoanWorkflowUpdate(updatedLoan, previousStatus, previousStage).pipe(
               map(() => repaymentResult.repayment)
@@ -2354,6 +2358,26 @@ public sendLoanToAccountingForDisbursement(
     }
 
     return new Date(year, month - 1, day, hour, minute, second, millisecond).toISOString();
+  }
+
+  private stringToDate(value?: string | null): Date | undefined {
+    if (!value) return undefined;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? undefined : date;
+  }
+
+  private extractDateValueAsDate(value: unknown): Date | undefined {
+    const stringValue = this.extractDateValue(value);
+    if (!stringValue) return undefined;
+    return this.stringToDate(stringValue);
+  }
+
+  private dateToString(value?: string | Date | null): string | undefined {
+    if (!value) return undefined;
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+    return value;
   }
 
   private getPreferredMemberName(member?: Partial<CooperativeMember> | null): string {
@@ -2690,18 +2714,18 @@ private buildGroupApiPayload(
       repaymentDay: this.resolveLoanNumber(rawLoan.repaymentDay, sourceLoan?.repaymentDay, existingLoan?.repaymentDay),
       modeOfPayment: String(rawLoan.modeOfPayment || 'MONTHLY'),
       requestDate: this.extractDateValue(rawLoan.requestDate) || '',
-      approvedDate: this.resolveLoanDate(rawLoan.approvedDate, sourceLoan?.approvedDate, existingLoan?.approvedDate) || '',
+      approvedDate: this.stringToDate(this.resolveLoanDate(rawLoan.approvedDate, sourceLoan?.approvedDate, existingLoan?.approvedDate)) || new Date(),
       approvedBy: rawLoan.approvedBy ?? sourceLoan?.approvedBy ?? existingLoan?.approvedBy,
-      disbursedDate: this.resolveLoanDate(rawLoan.disbursedDate, sourceLoan?.disbursedDate, existingLoan?.disbursedDate) || '',
-      disbursementInitiatedAt: this.resolveLoanDate(rawLoan.disbursementInitiatedAt, sourceLoan?.disbursementInitiatedAt, existingLoan?.disbursementInitiatedAt),
+      disbursedDate: this.stringToDate(this.resolveLoanDate(rawLoan.disbursedDate, sourceLoan?.disbursedDate, existingLoan?.disbursedDate)) || new Date(),
+      disbursementInitiatedAt: this.stringToDate(this.resolveLoanDate(rawLoan.disbursementInitiatedAt, sourceLoan?.disbursementInitiatedAt, existingLoan?.disbursementInitiatedAt)),
       disbursementInitiatedBy: rawLoan.disbursementInitiatedBy ?? sourceLoan?.disbursementInitiatedBy ?? existingLoan?.disbursementInitiatedBy,
       disbursementInstructionLoanReference: String(rawLoan.disbursementInstructionLoanReference || ''),
-      disbursementConfirmedAt: this.resolveLoanDate(rawLoan.disbursementConfirmedAt, sourceLoan?.disbursementConfirmedAt, existingLoan?.disbursementConfirmedAt),
+      disbursementConfirmedAt: this.stringToDate(this.resolveLoanDate(rawLoan.disbursementConfirmedAt, sourceLoan?.disbursementConfirmedAt, existingLoan?.disbursementConfirmedAt)),
       disbursementConfirmedBy: rawLoan.disbursementConfirmedBy,
       disbursementReference: String(rawLoan.disbursementReference || ''),
       disbursedAmount: this.resolveLoanNumber(rawLoan.disbursedAmount, sourceLoan?.disbursedAmount, existingLoan?.disbursedAmount),
-      completedDate: this.resolveLoanDate(rawLoan.completedDate, sourceLoan?.completedDate, existingLoan?.completedDate) || '',
-      rejectedDate: this.resolveLoanDate(rawLoan.rejectedDate, sourceLoan?.rejectedDate, existingLoan?.rejectedDate) || '',
+      completedDate: this.stringToDate(this.resolveLoanDate(rawLoan.completedDate, sourceLoan?.completedDate, existingLoan?.completedDate)) || new Date(),
+      rejectedDate: this.stringToDate(this.resolveLoanDate(rawLoan.rejectedDate, sourceLoan?.rejectedDate, existingLoan?.rejectedDate)) || new Date(),
       rejectedBy: rawLoan.rejectedBy ?? sourceLoan?.rejectedBy ?? existingLoan?.rejectedBy,
       status: this.resolveLoanString(rawLoan.status, sourceLoan?.status, existingLoan?.status, 'PENDING'),
       adminComment: this.resolveLoanString(rawLoan.adminComment, sourceLoan?.adminComment, existingLoan?.adminComment),
@@ -2714,10 +2738,10 @@ private buildGroupApiPayload(
         memberId: Number(guarantor.guarantorMemberId || guarantor.memberId || 0),
         guaranteedAmount: Number(guarantor.guaranteedAmount || 0),
         status: String(guarantor.status || 'PENDING'),
-        requestedAt: String(guarantor.requestedAt || ''),
-        respondedAt: this.extractDateValue(guarantor.respondedAt) || undefined,
+        requestedAt: this.extractDateValueAsDate(guarantor.requestedAt) || new Date(),
+        respondedAt: this.extractDateValueAsDate(guarantor.respondedAt),
         responseNote: String(guarantor.responseNote || ''),
-        decidedAt: this.extractDateValue(guarantor.respondedAt || guarantor.decidedAt) || undefined,
+        decidedAt: this.extractDateValueAsDate(guarantor.respondedAt || guarantor.decidedAt),
         note: String(guarantor.responseNote || guarantor.note || '')
       })),
       guarantorApproval: Boolean(rawLoan.guarantorApproval),
@@ -2734,7 +2758,7 @@ private buildGroupApiPayload(
       outstandingPrincipal: Number(rawLoan.outstandingPrincipal || 0),
       outstandingInterest: Number(rawLoan.outstandingInterest || 0) || undefined,
       outstandingBalance: Number(rawLoan.outstandingBalance || 0) || undefined,
-      lastPaymentReceived: this.extractDateValue(rawLoan.lastPaymentReceived) || undefined,
+      lastPaymentReceived: this.extractDateValueAsDate(rawLoan.lastPaymentReceived),
       lastPaymentAmount: Number(rawLoan.lastPaymentAmount || 0) || undefined,
       nextPaymentDueDate: this.extractDateValue(rawLoan.nextPaymentDueDate) || undefined,
       skippedPaymentsCount: this.resolveLoanNumber(rawLoan.skippedPaymentsCount, sourceLoan?.skippedPaymentsCount, existingLoan?.skippedPaymentsCount),
@@ -2757,17 +2781,17 @@ private buildGroupApiPayload(
         paymentSubtype: String(request.paymentSubtype || ''),
         amountPaid: Number(request.amountPaid || 0),
         remainingBalance: Number(request.remainingBalance || 0),
-        requestedAt: String(request.requestedAt || ''),
+        requestedAt: this.extractDateValueAsDate(request.requestedAt) || new Date(),
         requestedDays: Number(request.requestedDays || 0),
         reason: String(request.reason || ''),
         status: String(request.status || 'PENDING'),
-        reviewedAt: this.extractDateValue(request.reviewedAt) || undefined,
+        reviewedAt: this.extractDateValueAsDate(request.reviewedAt),
         reviewedBy: request.reviewedBy,
         reviewNote: String(request.reviewNote || ''),
         rejectionReason: String(request.rejectionReason || ''),
         approvedGraceDays: Number(request.approvedGraceDays || 0) || undefined,
         newDueDate: this.extractDateValue(request.newDueDate) || undefined,
-        paymentCompletedAt: this.extractDateValue(request.paymentCompletedAt) || undefined
+        paymentCompletedAt: this.extractDateValueAsDate(request.paymentCompletedAt)
       })),
       paymentHistory: paymentHistory.map((payment: any) => ({
         id: Number(payment.id || 0),
@@ -2825,12 +2849,12 @@ private buildGroupApiPayload(
       totalRepayment: Number(rawLoan.totalRepayable || rawLoan.totalRepayment || 0),
       applicationDate: this.extractDateValue(rawLoan.requestDate) || '',
       completionDate: this.extractDateValue(rawLoan.completedDate) || '',
-      createdAt: this.extractDateValue(rawLoan.createdAt) || undefined,
-      updatedAt: this.extractDateValue(rawLoan.updatedAt) || undefined,
+      createdAt: this.extractDateValueAsDate(rawLoan.createdAt),
+      updatedAt: this.extractDateValueAsDate(rawLoan.updatedAt),
       adminRequestNote: String(rawLoan.adminRequestNote || ''),
       rejectionReason: String(rawLoan.rejectionReason || ''),
-      infoRequestedDate: this.extractDateValue(rawLoan.infoRequestedDate) || undefined,
-      defaultedDate: this.extractDateValue(rawLoan.defaultedDate) || undefined,
+      infoRequestedDate: this.extractDateValueAsDate(rawLoan.infoRequestedDate),
+      defaultedDate: this.extractDateValueAsDate(rawLoan.defaultedDate),
       fundsReserved: Boolean(rawLoan.fundsReserved),
       legacyGuarantor: !Array.isArray(rawLoan.guarantors) && rawLoan.guarantors ? rawLoan.guarantors as any : undefined
     }, sourceLoan);
@@ -3418,17 +3442,17 @@ private buildGroupApiPayload(
       paymentSubtype: String(rawRequest.paymentSubtype || ''),
       amountPaid: Number(rawRequest.amountPaid || 0),
       remainingBalance: Number(rawRequest.remainingBalance || 0),
-      requestedAt: this.extractDateValue(rawRequest.requestedAt) || new Date().toISOString(),
+      requestedAt: this.stringToDate(this.extractDateValue(rawRequest.requestedAt)) || new Date(),
       requestedDays: Number(rawRequest.requestedDays || 0),
       reason: String(rawRequest.reason || ''),
       status: String(rawRequest.status || 'PENDING'),
-      reviewedAt: this.extractDateValue(rawRequest.reviewedAt) || undefined,
+      reviewedAt: this.stringToDate(this.extractDateValue(rawRequest.reviewedAt)) || undefined,
       reviewedBy: rawRequest.reviewedBy,
       reviewNote: String(rawRequest.reviewNote || '') || undefined,
       rejectionReason: String(rawRequest.rejectionReason || '') || undefined,
       approvedGraceDays: Number(rawRequest.approvedGraceDays || 0) || undefined,
       newDueDate: this.extractDateValue(rawRequest.newDueDate) || undefined,
-      paymentCompletedAt: this.extractDateValue(rawRequest.paymentCompletedAt) || undefined
+      paymentCompletedAt: this.stringToDate(this.extractDateValue(rawRequest.paymentCompletedAt)) || undefined
     };
   }
 
@@ -3521,7 +3545,7 @@ private buildGroupApiPayload(
     const loan = this.loans.find((item) => item.id === request.loanId);
     if (loan) {
       loan.nextPaymentDueDate = request.newDueDate;
-      loan.updatedAt = new Date().toISOString();
+      loan.updatedAt = new Date();
       if (loan.status !== 'PAUSED' && loan.status !== 'COMPLETED' && loan.status !== 'DEFAULTED') {
         loan.status = 'SKIPPED';
       }
@@ -3578,7 +3602,7 @@ private buildGroupApiPayload(
     }
 
     if (hasChanges) {
-      loan.updatedAt = new Date().toISOString();
+      loan.updatedAt = new Date();
       this.saveToStorage();
       this.publishState();
     }
@@ -3617,7 +3641,7 @@ private buildGroupApiPayload(
     if (overdueCount >= 3) {
       nextStatus = 'DEFAULTED';
       if (!loan.defaultedDate) {
-        loan.defaultedDate = new Date().toISOString();
+        loan.defaultedDate = new Date();
       }
     } else if (overdueCount > 0) {
       nextStatus = 'OVERDUE';

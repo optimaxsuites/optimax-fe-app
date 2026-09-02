@@ -48,11 +48,40 @@ export class OfficeHoursService {
 
   private normalizeOfficeHours(data: any): OfficeHours {
     return {
-      openingTime: data?.openingTime ?? data?.opening_time ?? DEFAULT_OFFICE_HOURS.openingTime,
-      closingTime: data?.closingTime ?? data?.closing_time ?? DEFAULT_OFFICE_HOURS.closingTime,
-      absentTime: data?.absentTime ?? data?.absent_time ?? DEFAULT_OFFICE_HOURS.absentTime,
-      latenessGracePeriod: data?.latenessGracePeriod ?? data?.lateness_grace_period ?? DEFAULT_OFFICE_HOURS.latenessGracePeriod
+      openingTime: this.normalizeTime(data?.openingTime ?? data?.opening_time, DEFAULT_OFFICE_HOURS.openingTime),
+      closingTime: this.normalizeTime(data?.closingTime ?? data?.closing_time, DEFAULT_OFFICE_HOURS.closingTime),
+      absentTime: this.normalizeTime(data?.absentTime ?? data?.absent_time, DEFAULT_OFFICE_HOURS.absentTime),
+      latenessGracePeriod: this.normalizeTime(data?.latenessGracePeriod ?? data?.lateness_grace_period, DEFAULT_OFFICE_HOURS.latenessGracePeriod),
+      companyLatitude: this.toNumber(data?.companyLatitude),
+      companyLongitude: this.toNumber(data?.companyLongitude),
+      companyName: data?.companyName
     };
+  }
+
+  private normalizeTime(value: unknown, fallback: string): string {
+    if (Array.isArray(value)) {
+      const hours = Number(value[0]);
+      const minutes = Number(value[1] ?? 0);
+      if (Number.isFinite(hours) && Number.isFinite(minutes)) {
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      }
+    }
+
+    if (value && typeof value === 'object') {
+      const time = value as { hour?: number; minute?: number };
+      if (time.hour !== undefined || time.minute !== undefined) {
+        return `${String(Number(time.hour ?? 0)).padStart(2, '0')}:${String(Number(time.minute ?? 0)).padStart(2, '0')}`;
+      }
+    }
+
+    const text = String(value ?? '').trim();
+    const match = text.match(/(\d{1,2}):(\d{2})/);
+    return match ? `${match[1].padStart(2, '0')}:${match[2]}` : fallback;
+  }
+
+  private toNumber(value: unknown): number | undefined {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : undefined;
   }
 
   getOfficeHours(): OfficeHours {
@@ -113,17 +142,9 @@ export class OfficeHoursService {
 
   private loadOfficeHours(): OfficeHours {
     const saved = localStorage.getItem('officeHours');
-    //return saved ? JSON.parse(saved) : DEFAULT_OFFICE_HOURS;
     if (!saved) return DEFAULT_OFFICE_HOURS;
 
-  const parsed = JSON.parse(saved);
-
-  return {
-    openingTime: parsed.openingTime ?? DEFAULT_OFFICE_HOURS.openingTime,
-    closingTime: parsed.closingTime ?? DEFAULT_OFFICE_HOURS.closingTime,
-    absentTime: parsed.absentTime ?? DEFAULT_OFFICE_HOURS.absentTime,
-    latenessGracePeriod: parsed.latenessGracePeriod ?? DEFAULT_OFFICE_HOURS.latenessGracePeriod
-  };
+    return this.normalizeOfficeHours(JSON.parse(saved));
   }
 
   isWithinOfficeHours(current: Date): boolean {

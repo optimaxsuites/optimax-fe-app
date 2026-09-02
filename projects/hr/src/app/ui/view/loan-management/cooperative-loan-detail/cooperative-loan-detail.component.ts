@@ -639,7 +639,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   completeLoan(): void {
     this.loan.status = 'COMPLETED';
-    this.loan.completedDate = new Date().toISOString();
+    this.loan.completedDate = new Date();
     this.cooperativeService.updateLoan(this.loan).subscribe({
       next: (updatedLoan) => {
         this.loan = updatedLoan;
@@ -1074,14 +1074,16 @@ export class CooperativeLoanDetailComponent implements OnInit {
     return entries;
   }
 
-  private buildLifecycleEntry(status: string, changedAt: string | undefined, changedBy: string, notes: string): CooperativeLoanAuditEntryView | null {
+  private buildLifecycleEntry(status: string, changedAt: string | Date | undefined, changedBy: string, notes: string): CooperativeLoanAuditEntryView | null {
     if (!changedAt) {
       return null;
     }
 
+    const changedAtStr = typeof changedAt === 'string' ? changedAt : (changedAt instanceof Date ? changedAt.toISOString() : String(changedAt));
+
     return {
       status,
-      changedAt,
+      changedAt: changedAtStr,
       changedBy,
       notes
     };
@@ -1150,10 +1152,18 @@ export class CooperativeLoanDetailComponent implements OnInit {
       memberId: Number(guarantor.memberId ?? 0),
       guaranteedAmount: Number(guarantor.guaranteedAmount ?? 0),
       status: (guarantor.status as CooperativeLoanGuarantor['status']) || 'PENDING',
-      requestedAt: guarantor.requestedAt || new Date().toISOString(),
-      decidedAt: guarantor.decidedAt,
+      requestedAt: this.dateToString(guarantor.requestedAt) || new Date().toISOString(),
+      decidedAt: this.dateToString(guarantor.decidedAt),
       note: guarantor.note
     }));
+  }
+
+  private dateToString(value: string | Date | undefined): string {
+    if (!value) return '';
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+    return value;
   }
 
   private mapStatusHistoryEntry(entry: StatusHistory | undefined): CooperativeLoanAuditEntryView | null {

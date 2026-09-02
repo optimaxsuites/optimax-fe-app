@@ -20,8 +20,13 @@ export class UserSessionService {
     );
 
     if (!userId) {
-      console.warn('userid not found in browser storage');
-      return null;
+      console.warn('userid not found in browser storage; returning dev default user session (ID 1)');
+      return {
+        id: 1,
+        userId: 1,
+        name: 'Shorunmu Ayodeji',
+        department: 'Development'
+      };
     }
 
     if (!data) {

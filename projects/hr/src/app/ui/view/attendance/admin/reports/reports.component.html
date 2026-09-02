@@ -105,16 +105,55 @@
   <div class="attendance-card">
     <div class="record-count">
       <h3>Attendance Summary by Employee</h3>
-      <span class="count-badge">Showing {{ groupedSummary.length }} employees</span>
+      <span class="count-badge">Showing {{ getStartRecord() }} to {{ getEndRecord() }} of {{ groupedSummary.length }} employees</span>
     </div>
 
     <app-table
-      [rows]="groupedSummary"
+      [rows]="paginatedGroupedSummary"
       [columns]="tableColumns"
       [actions]="tableActions"
       emptyMessage="📭 No attendance records found"
       striped
       (actionClick)="onTableActionClick($event)">
     </app-table>
+
+    <!-- Pagination Controls -->
+    <div *ngIf="groupedSummary.length > 0" class="pagination-container">
+      <div class="pagination-info">
+        Showing {{ getStartRecord() }} to {{ getEndRecord() }} of {{ groupedSummary.length }} records
+      </div>
+      
+      <div class="pagination-controls">
+        <button 
+          class="page-btn" 
+          (click)="previousPage()" 
+          [disabled]="currentPage === 1"
+          title="Previous page">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        
+        <span class="page-indicator">
+          Page {{ currentPage }} of {{ getTotalPages() }}
+        </span>
+        
+        <button 
+          class="page-btn" 
+          (click)="nextPage()" 
+          [disabled]="currentPage >= getTotalPages()"
+          title="Next page">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+      
+      <div class="page-size-selector">
+        <label>Records per page:</label>
+        <select 
+          [value]="pageSize" 
+          (change)="onPageSizeChange(+$any($event.target).value)"
+          class="page-size-select">
+          <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+        </select>
+      </div>
+    </div>
   </div>
 </div>

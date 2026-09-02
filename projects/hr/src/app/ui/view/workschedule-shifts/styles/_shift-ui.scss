@@ -1,0 +1,917 @@
+// ============================================================
+// Work Schedule & Shifts — shared component styles
+// ============================================================
+// The pieces both the admin calendar and the employee schedule are
+// built from: toolbar, buttons, segmented control, panels, tables,
+// legend, and the FullCalendar reskin.
+//
+// Imported per component, so ::ng-deep and :host resolve against the
+// importing component's encapsulation. Anything used by only one view
+// (the timeline, the agenda list) lives in that component's own file.
+//
+// Design rules held throughout: flat surfaces, hairline rules, one
+// radius scale, no gradients, exactly one shadow, and colour reserved
+// for meaning — shift identity, conflict, status.
+
+@import './tokens';
+
+:host {
+  display: block;
+  color: $ink;
+  font-size: $fz-md;
+  line-height: 1.5;
+}
+
+.shift-view {
+  display: flex;
+  flex-direction: column;
+  gap: $s4;
+}
+
+// ── Page banner ──────────────────────────────────────────────
+// Same treatment as the attendance dashboard header: filled gradient,
+// title over a supporting line, actions pinned to the far right.
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: $s5;
+  padding: $s5;
+  border-radius: $r4;
+  background: linear-gradient(135deg, $banner-from 0%, $banner-to 100%);
+  box-shadow: 0 4px 12px $banner-shadow;
+
+  &__text { min-width: 0; }
+
+  &__title {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+
+  &__sub {
+    margin: 5px 0 0;
+    font-size: 1rem;
+    color: $on-banner;
+  }
+
+  // One right-hand control row: create action, then the view switcher.
+  // Both are 32px tall so they sit on a shared baseline, and keeping them
+  // on a single row inside the banner costs no extra vertical space.
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: $s3;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: $s4;
+    padding: $s4;
+
+    &__title { font-size: 1.5rem; }
+    &__sub { font-size: 0.9rem; }
+    &__actions { margin-left: 0; }
+  }
+}
+
+// ── Buttons ──────────────────────────────────────────────────
+.btn {
+  @include control;
+
+  &--primary { @include control-primary; }
+
+  &--icon {
+    width: 32px;
+    padding: 0;
+  }
+
+  // Compact — for actions nested inside a card or the right rail.
+  &--sm {
+    height: 27px;
+    padding: 0 10px;
+    font-size: $fz-sm;
+
+    i { font-size: 10px; }
+  }
+
+  // Row actions are colour-coded by intent: accent to edit, critical to
+  // delete. Tinted at rest so they read as actionable without a fill,
+  // solid on hover to confirm the intent.
+  &--accent {
+    border-color: $accent-line;
+    background: $accent-tint;
+    color: $accent;
+
+    &:hover:not(:disabled) {
+      border-color: $accent;
+      background: $accent;
+      color: #fff;
+    }
+  }
+
+  &--danger {
+    border-color: rgba(179, 0, 0, 0.28);
+    background: $critical-tint;
+    color: $critical;
+
+    &:hover:not(:disabled) {
+      border-color: $critical;
+      background: $critical;
+      color: #fff;
+    }
+  }
+
+  // Sits on the banner fill — translucent white rather than a solid
+  // block, so it reads as an action without punching a hole in the
+  // gradient.
+  // Height is left at the control default (32px) so it matches the
+  // segmented control sitting beside it.
+  &--on-banner {
+    padding: 0 $s3;
+    border-color: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      border-color: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.24);
+      color: #fff;
+    }
+  }
+}
+
+// ── Segmented control ────────────────────────────────────────
+// Sized to $rail-width and right-aligned in the toolbar so it lines up
+// exactly with the right rail beneath it. Segments split that width
+// evenly rather than sizing to their labels.
+.segmented {
+  display: inline-flex;
+  width: $rail-width;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 2px;
+  border: 1px solid $line-strong;
+  border-radius: $r2;
+  background: $surface-sunken;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-width: 0;
+    gap: 6px;
+    height: 26px;
+    padding: 0 $s2;
+    border: none;
+    border-radius: $r1;
+    background: transparent;
+    color: $ink-2;
+    font-family: inherit;
+    font-size: $fz-sm;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color $motion, background $motion;
+
+    i { font-size: 11px; }
+
+    &:hover:not(.is-active) { color: $ink; }
+
+    &.is-active {
+      background: $surface;
+      box-shadow: 0 1px 2px rgba(21, 36, 43, 0.06);
+      color: $accent;
+      font-weight: 600;
+    }
+  }
+
+  // On the banner fill: translucent track, and the active segment goes
+  // solid white so it still reads as selected against the gradient.
+  &--on-banner {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.12);
+
+    button {
+      color: rgba(255, 255, 255, 0.85);
+
+      &:hover:not(.is-active) { color: #fff; }
+
+      &.is-active {
+        background: #fff;
+        color: $banner-to;
+        box-shadow: none;
+      }
+    }
+  }
+}
+
+// ── Notices ──────────────────────────────────────────────────
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: $s3;
+  padding: $s2 $s3;
+  border: 1px solid $line;
+  border-radius: $r2;
+  background: $surface-sunken;
+
+  &--selection {
+    border-color: $accent-line;
+    background: $accent-tint;
+  }
+
+  &--alert {
+    border-color: rgba(179, 0, 0, 0.22);
+    background: $critical-tint;
+
+    .notice__text { color: $critical; }
+  }
+
+  &__text {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: $fz-sm;
+    color: $ink-2;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $s2;
+  }
+}
+
+.chip {
+  padding: 2px $s2;
+  border: 1px solid $line-strong;
+  border-radius: $r1;
+  background: $surface;
+  font-size: $fz-sm;
+  font-weight: 500;
+  color: $ink;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: $s2;
+  padding: $s2 $s3;
+  border: 1px solid rgba(166, 124, 0, 0.3);
+  border-radius: $r2;
+  background: $caution-tint;
+  font-size: $fz-sm;
+  color: $caution;
+}
+
+// ── Two column layout ────────────────────────────────────────
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) $rail-width;
+  align-items: start;
+  gap: $s4;
+
+  &__main {
+    display: flex;
+    flex-direction: column;
+    gap: $s3;
+    min-width: 0;
+  }
+
+  &__rail {
+    display: flex;
+    flex-direction: column;
+    gap: $s3;
+    position: sticky;
+    top: $s4;
+  }
+}
+
+@media (max-width: $stack-at) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+
+    &__rail { position: static; }
+  }
+}
+
+// ── Panels ───────────────────────────────────────────────────
+.panel {
+  @include card;
+  padding: $s4;
+
+  // Tables and timelines bleed to the panel edge.
+  &--flush {
+    padding: 0;
+
+    .panel__head {
+      padding: $s3 $s4;
+      margin-bottom: 0;
+      border-bottom: 1px solid $line;
+    }
+
+    .panel__empty { padding: $s5 $s4; }
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $s2;
+    margin-bottom: $s3;
+  }
+
+  &__label { @include section-label; }
+
+  &__count {
+    min-width: 20px;
+    padding: 1px 6px;
+    border-radius: $r1;
+    background: $surface-sunken;
+    font-size: $fz-micro;
+    font-weight: 600;
+    text-align: center;
+    color: $ink-2;
+
+    &.is-alert {
+      background: $critical-tint;
+      color: $critical;
+    }
+  }
+
+  &__subject {
+    margin: 0 0 $s3;
+    padding-bottom: $s3;
+    border-bottom: 1px solid $line;
+    font-size: $fz-md;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__empty {
+    margin: 0;
+    font-size: $fz-sm;
+    color: $ink-3;
+  }
+
+  &__hint {
+    margin: $s3 0 0;
+    padding-top: $s3;
+    border-top: 1px solid $line;
+    font-size: $fz-sm;
+    color: $ink-3;
+  }
+}
+
+// ── Shift group (right rail) ─────────────────────────────────
+.shift-group {
+  padding: $s3 0;
+  border-bottom: 1px solid $line;
+
+  &:last-child { border-bottom: none; }
+
+  &.is-selected {
+    // Bleed the tint out to the panel's padding edge.
+    margin: 0 (-$s4);
+    padding: $s3 $s4;
+    background: $accent-tint;
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: $s2;
+  }
+
+  &__pick input {
+    width: 13px;
+    height: 13px;
+    margin: 0;
+    accent-color: $accent;
+    cursor: pointer;
+  }
+
+  &__swatch {
+    width: 3px;
+    height: 22px;
+    border-radius: 2px;
+    background: $accent;
+    flex-shrink: 0;
+  }
+
+  &__ident {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    margin-right: auto;
+  }
+
+  &__name {
+    font-size: $fz-md;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__time {
+    font-size: $fz-sm;
+    font-variant-numeric: tabular-nums;
+    color: $ink-2;
+  }
+
+  &__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $s1 $s4;
+    margin: $s3 0 0;
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    dt {
+      @include section-label;
+      font-size: 10px;
+    }
+
+    dd {
+      margin: 0;
+      font-size: $fz-sm;
+      color: $ink;
+    }
+  }
+
+  &__note {
+    margin: $s2 0 0;
+    font-size: $fz-sm;
+    color: $ink-2;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $s2;
+    margin-top: $s3;
+  }
+}
+
+// ── Roster ───────────────────────────────────────────────────
+.roster {
+  margin: $s3 0 0;
+  padding: 0;
+  list-style: none;
+
+  &__label {
+    @include section-label;
+    font-size: 10px;
+    margin-bottom: $s1;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $s2;
+    padding: 5px 0;
+    border-top: 1px solid $line;
+  }
+
+  &__name {
+    font-size: $fz-sm;
+    color: $ink;
+  }
+}
+
+// ── Status ───────────────────────────────────────────────────
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: $fz-sm;
+  color: $ink-2;
+  white-space: nowrap;
+
+  &::before { @include status-dot($ink-3); }
+
+  &--scheduled::before { background: $positive; }
+}
+
+// ── Conflicts ────────────────────────────────────────────────
+.conflict-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conflict {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: $s2 0 $s2 $s3;
+  border-left: 2px solid $critical;
+  border-bottom: 1px solid $line;
+
+  &:last-child { border-bottom: none; }
+
+  &__who {
+    font-size: $fz-sm;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__what {
+    font-size: $fz-sm;
+    color: $ink-2;
+  }
+}
+
+// ── Legend ───────────────────────────────────────────────────
+.legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: $s2 $s4;
+
+  &__keys {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $s1 $s4;
+  }
+
+  &__key {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: $fz-sm;
+    color: $ink-2;
+
+    &--muted { color: $ink-3; }
+  }
+
+  &__swatch {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  &__note {
+    font-size: $fz-sm;
+    color: $ink-3;
+  }
+}
+
+// ── Fields ───────────────────────────────────────────────────
+.filters {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: $s3;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  &--grow {
+    flex: 1;
+    min-width: 180px;
+  }
+
+  &__label { @include section-label; }
+
+  &__input {
+    @include field;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+// ── Tables ───────────────────────────────────────────────────
+// The table itself is the shared <app-table>, which brings its own
+// border, radius and header fill. Only the caption row above it and
+// the custom cell content belong here.
+.table-view,
+.list-view {
+  display: flex;
+  flex-direction: column;
+  gap: $s4;
+}
+
+.table-section {
+  display: flex;
+  flex-direction: column;
+  gap: $s2;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $s2;
+  }
+}
+
+// Cells come from the appTableBody template, so they carry this
+// component's encapsulation attribute even though they render inside
+// <app-table> — no ::ng-deep needed.
+.num { font-variant-numeric: tabular-nums; }
+
+.cell-shift {
+  display: inline-flex;
+  align-items: center;
+  gap: $s2;
+
+  &__swatch {
+    width: 3px;
+    height: 16px;
+    border-radius: 2px;
+    background: $accent;
+    flex-shrink: 0;
+  }
+}
+
+// ============================================================
+// FullCalendar reskin
+// ============================================================
+// FullCalendar ships a fairly heavy default skin. Everything below
+// strips it back to hairlines and this module's type scale. ::ng-deep
+// is required because the library renders outside view encapsulation.
+
+.calendar-surface {
+  @include card;
+  padding: $s4;
+  user-select: none; // drag-to-select would otherwise highlight text
+}
+
+.calendar-surface ::ng-deep {
+
+  .fc {
+    --fc-border-color: #{$line};
+    --fc-today-bg-color: #{$accent-tint};
+    --fc-page-bg-color: #{$surface};
+    --fc-neutral-bg-color: #{$surface-sunken};
+    font-family: inherit;
+    font-size: $fz-sm;
+  }
+
+  // ── Header toolbar ──
+  .fc-header-toolbar.fc-toolbar {
+    margin-bottom: $s4;
+    gap: $s3;
+  }
+
+  .fc-toolbar-title {
+    font-size: $fz-lg;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: $ink;
+  }
+
+  .fc-toolbar-chunk {
+    display: flex;
+    align-items: center;
+    gap: $s1;
+  }
+
+  .fc-button-group { gap: 2px; }
+
+  .fc .fc-button,
+  .fc-button.fc-button-primary {
+    @include control;
+    height: 28px;
+    padding: 0 $s2;
+    font-size: $fz-sm;
+    text-transform: none;
+    box-shadow: none;
+
+    &:not(:disabled):active,
+    &.fc-button-active {
+      border-color: $accent-line;
+      background: $accent-tint;
+      color: $accent;
+      box-shadow: none;
+    }
+
+    &:focus { box-shadow: none; }
+
+    .fc-icon { font-size: 14px; }
+  }
+
+  // ── Grid ──
+  .fc-theme-standard td,
+  .fc-theme-standard th,
+  .fc-theme-standard .fc-scrollgrid {
+    border-color: $line;
+  }
+
+  .fc-col-header-cell {
+    padding: $s2 0;
+    border-radius: 0;
+    background: $surface-sunken;
+    text-transform: none;
+  }
+
+  // theme.scss styles `.fc-col-header-cell a` globally with
+  // `color: whitesmoke !important; font-size: 12px !important`, which no
+  // amount of specificity can beat — hence the only !important in this
+  // module. Without it the weekday row renders white on a near-white
+  // background.
+  .fc-col-header-cell-cushion,
+  .fc-col-header-cell a {
+    @include section-label;
+    padding: 0;
+    color: $ink-3 !important;
+    font-size: $fz-micro !important;
+    text-decoration: none;
+  }
+
+  .fc-daygrid-day-frame {
+    min-height: 92px;
+    padding: 3px;
+  }
+
+  .fc-daygrid-day-top { justify-content: flex-start; }
+
+  .fc-daygrid-day-number {
+    padding: 3px 5px;
+    font-size: $fz-sm;
+    font-variant-numeric: tabular-nums;
+    color: $ink-2;
+    text-decoration: none;
+  }
+
+  .fc-day-other .fc-daygrid-day-number { color: $ink-3; }
+
+  .fc-day-today {
+    background: transparent;
+
+    .fc-daygrid-day-number {
+      border-radius: $r1;
+      background: $accent;
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+
+  // Day cell states. These classes are toggled from the component so
+  // every colour decision stays in the stylesheet.
+  .fc-daygrid-day.day--scheduled { background: $positive-tint; }
+
+  .fc-daygrid-day.day--conflict {
+    background: $critical-tint;
+    box-shadow: inset 2px 0 0 $critical;
+  }
+
+  .fc-daygrid-day.day--in-range,
+  .fc-daygrid-day.day--picked {
+    background: $accent-tint;
+    box-shadow: inset 0 0 0 1px $accent-line;
+  }
+
+  // ── Events ──
+  // Everything in this block is about keeping the chip inside its day
+  // cell. A month cell is ~150px, the label is longer than that, and a
+  // flex child will not shrink past its content width without an
+  // explicit min-width: 0 — without it the title overflows into the
+  // next day instead of ellipsing.
+  .fc-daygrid-event-harness {
+    margin-bottom: 2px;
+    max-width: 100%;
+  }
+
+  // theme.scss also gives `.fc-event` a global padding, radius and font
+  // size. Reset them here so the chip below is the only thing drawing.
+  .fc-daygrid-event,
+  .fc-event {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    font-size: $fz-micro;
+    max-width: 100%;
+    overflow: hidden;
+
+    &:focus-visible { outline: 2px solid $accent-line; }
+  }
+
+  .fc-event-main {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    padding: 3px 5px;
+    border-radius: $r1;
+    border-left: 2px solid var(--shift-colour, #{$accent});
+    background: $surface-sunken;
+    font-size: $fz-micro;
+    line-height: 1.35;
+    cursor: pointer;
+    overflow: hidden;
+    transition: background $motion;
+
+    &:hover { background: $surface-hover; }
+  }
+
+  .fc-event.is-selected .fc-event-main {
+    background: $accent-tint;
+    box-shadow: inset 0 0 0 1px $accent-line;
+  }
+
+  .fc-event-time {
+    flex-shrink: 0;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: $ink-2;
+  }
+
+  .fc-event-title {
+    flex: 1;
+    min-width: 0;
+    font-weight: 500;
+    color: $ink;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    // FullCalendar adds .fc-sticky for horizontal-scroll views. In a
+    // month grid it only fights the clipping above.
+    &.fc-sticky { position: static; }
+  }
+
+  // ── "+n more" popover — the one thing allowed to float ──
+  .fc-daygrid-more-link {
+    padding: 2px 5px;
+    font-size: $fz-micro;
+    font-weight: 500;
+    color: $ink-2;
+
+    &:hover { color: $accent; }
+  }
+
+  .fc-popover {
+    border: 1px solid $line;
+    border-radius: $r2;
+    background: $surface;
+    box-shadow: $pop;
+  }
+
+  .fc-popover-header {
+    padding: $s2 $s3;
+    border-bottom: 1px solid $line;
+    background: $surface;
+    font-size: $fz-sm;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  .fc-popover-body { padding: $s2; }
+}
+
+// ── Narrow screens ───────────────────────────────────────────
+@media (max-width: 720px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+
+    &__controls { justify-content: space-between; }
+  }
+
+  // No rail to line up with at this width, and labels are hidden — let it
+  // shrink to the icons instead of holding the rail's width.
+  .segmented {
+    width: auto;
+
+    button span { display: none; }
+  }
+
+  .field--grow { min-width: 100%; }
+
+  .calendar-surface {
+    padding: $s3;
+
+    ::ng-deep .fc-header-toolbar.fc-toolbar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    ::ng-deep .fc-daygrid-day-frame { min-height: 64px; }
+  }
+}

@@ -6,7 +6,18 @@ import { CommonModule } from '@angular/common';
   selector: 'app-nav-tab',
   templateUrl: './nav-tab.component.html',
   styleUrl: './nav-tab.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  // NOTE: OnPush was removed. This component hosts arbitrary tab content via
+  // *ngComponentOutlet (e.g. every Leave tab). Each outletted component
+  // manages its own async state (HTTP calls, isLoading flags, etc.) and
+  // relies on normal change detection to reflect that state in the DOM.
+  // With OnPush here, Angular only re-checks this view (and everything
+  // inside the ngComponentOutlet) when one of THIS component's own inputs
+  // changes or cdr.markForCheck() is called explicitly — neither of which
+  // happens when a child component like LeaveRequestComponent finishes an
+  // async load. The result: component state updates correctly in memory
+  // (isLoading becomes false, data populates) but the view never
+  // re-renders, leaving the UI stuck on a stale "loading" state forever
+  // even though nothing is actually broken in the child component.
   // standalone: true,
   // imports: [CommonModule],
 })

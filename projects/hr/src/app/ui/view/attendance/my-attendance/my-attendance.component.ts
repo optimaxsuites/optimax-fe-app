@@ -1,7 +1,19 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { AttendanceRecord, AttendanceService } from '../../../service/attendance.service';
+import { AttendancetableService } from '../../../service/attendance/attendancetable.service';
+import { AttendanceTableRecord } from '../../../domain/attendance/attendancetable.dto';
+import { UserSessionService } from '../../../service/attendance/user-session.service';
+import { EmployeeService } from '../../../service/employee.service';
 import { Subscription, interval } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
+
+interface AttendanceViewRecord {
+  date: string;
+  clockIn: string | null;
+  clockOut: string | null;
+  duration?: string;
+  status: string;
+  expectedStartTime?: string;
+}
 
 @Component({
   selector: 'app-my-attendance',
@@ -11,9 +23,12 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 })
 export class MyAttendanceComponent implements OnInit, OnDestroy {
   currentTime: string = '';
-  currentRecord: AttendanceRecord | null = null;
-  history: AttendanceRecord[] = [];
-  filteredHistory: AttendanceRecord[] = [];
+  currentRecord: AttendanceViewRecord | null = null;
+  history: AttendanceViewRecord[] = [];
+  filteredHistory: AttendanceViewRecord[] = [];
+  private employeeId: number | null = null;
+  private employeeName = '';
+  private department = '';
   private sub = new Subscription();
 
   // Date range filtering
@@ -35,20 +50,23 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   // Correction request modal
   showCorrectionModal = false;
 
-  constructor(private attendanceService: AttendanceService, private confirmationService: ConfirmationService, private messageService: MessageService) {}
+  constructor(
+    private attendanceService: AttendancetableService,
+    private userSession: UserSessionService,
+    private employeeService: EmployeeService,
+    private confirmationService: ConfirmationService,
+    private messageService: MessageService
+  ) {}
 
   ngOnInit() {
     // Set employee info for backend API calls
     this.setEmployeeInfoFromSession();
 
-    this.history = this.attendanceService.getHistory();
-    this.filteredHistory = [...this.history];
-
     // Set default date range (last 30 days)
     const today = new Date();
     const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-    this.endDate = today.toISOString().split('T')[0];
-    this.startDate = thirtyDaysAgo.toISOString().split('T')[0];
+    this.endDate = this.formatDateLocal(today);
+    this.startDate = this.formatDateLocal(thirtyDaysAgo);
 
     this.calculateMetrics();
 
@@ -59,24 +77,56 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
     );
 
     this.sub.add(
-      this.attendanceService.currentRecord$.subscribe(record => {
-        this.currentRecord = record;
+      this.attendanceService.attendance$.subscribe(records => {
+        this.history = records
+          .filter(record => this.employeeId === null || record.employeeId === this.employeeId)
+          .map(record => this.toViewRecord(record));
+        this.filteredHistory = [...this.history];
+        this.currentRecord = this.history.find(record => record.clockIn && !record.clockOut) ?? null;
         this.calculateMetrics();
       })
     );
+
+    this.resolveEmployeeAndLoadHistory();
+  }
+
+  private resolveEmployeeAndLoadHistory(): void {
+    const currentUser = this.userSession.getCurrentUser();
+    if (!currentUser) return;
+
+    this.employeeService.getEmployeeIdForCurrentUser().subscribe({
+      next: employeeId => {
+        this.employeeId = employeeId;
+        this.attendanceService.fetchByEmployee(employeeId);
+      },
+      error: () => {
+        this.employeeId = currentUser.id;
+        this.attendanceService.fetchByEmployee(currentUser.id);
+      }
+    });
   }
 
   private setEmployeeInfoFromSession(): void {
+    const currentUser = this.userSession.getCurrentUser();
+    if (currentUser) {
+      this.employeeId = currentUser.id;
+      this.employeeName = currentUser.name;
+      this.department = currentUser.department || 'Default Department';
+      return;
+    }
+
     try {
       const userInfo = sessionStorage.getItem('userPrimaryInfoRegData');
       if (userInfo) {
         const data = JSON.parse(userInfo);
         if (Array.isArray(data) && data.length > 0) {
           const user = data[0];
-          const employeeId = user.id || user.employeeId;
+          const employeeId = Number(user.id || user.employeeId);
           const employeeName = user.fullName || user.name || '';
           if (employeeId) {
-            this.attendanceService.setEmployeeInfo(employeeId, employeeName);
+            this.employeeId = employeeId;
+            this.employeeName = employeeName;
+            this.department = user.department?.name || user.department || 'Default Department';
           }
         }
       }
@@ -85,10 +135,14 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
     }
   }
 
-  clockIn(): void {
-    this.attendanceService.clockIn();
-    this.history = this.attendanceService.getHistory();
-    this.calculateMetrics();
+  async clockIn(): Promise<void> {
+    if (this.employeeId === null) return;
+    try {
+      await this.attendanceService.clockAction(this.employeeId, this.employeeName, this.department, 'IN');
+    } catch (error) {
+      this.messageService.add({ severity: 'error', summary: 'Clock In Failed', detail: error instanceof Error ? error.message : 'Location permission is required to clock in.', key: 'tl', life: 4000 });
+      return;
+    }
     this.messageService.add({
       severity: 'success',
       summary: 'Clocked In',
@@ -98,10 +152,14 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
     });
   }
 
-  clockOut(): void {
-    this.attendanceService.clockOut();
-    this.history = this.attendanceService.getHistory();
-    this.calculateMetrics();
+  async clockOut(): Promise<void> {
+    if (this.employeeId === null) return;
+    try {
+      await this.attendanceService.clockAction(this.employeeId, this.employeeName, this.department, 'OUT');
+    } catch (error) {
+      this.messageService.add({ severity: 'error', summary: 'Clock Out Failed', detail: error instanceof Error ? error.message : 'Failed to update attendance.', key: 'tl', life: 4000 });
+      return;
+    }
     this.messageService.add({
       severity: 'success',
       summary: 'Clocked Out',
@@ -109,6 +167,35 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
       key: "tl",
       life: 3000
     });
+  }
+
+  private toViewRecord(record: AttendanceTableRecord): AttendanceViewRecord {
+    const clockIn = this.toTime(record.checkIn);
+    const clockOut = this.toTime(record.checkOut);
+    const duration = record.hours !== undefined
+      ? `${Math.round(record.hours * 10) / 10}h`
+      : clockIn && clockOut ? `${this.getTimeDifferenceInHours(clockIn, clockOut)}h` : undefined;
+
+    return {
+      date: record.date ? (typeof record.date === 'string' ? record.date : this.formatDateLocal(record.date)) : '',
+      clockIn,
+      clockOut,
+      duration,
+      status: record.status,
+      expectedStartTime: record.appliedExpectedStart
+    };
+  }
+
+  private toTime(value: string | null | undefined): string | null {
+    if (!value) return null;
+    const match = value.match(/T(\d{2}:\d{2})|^(\d{2}:\d{2})/);
+    return match?.[1] ?? match?.[2] ?? value.slice(0, 5);
+  }
+
+  private formatDateLocal(date: Date): string {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
   }
 
   calculateMetrics(): void {
@@ -132,7 +219,7 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
 
   private calculateLateMinutes(): void {
     if (this.currentRecord && this.currentRecord.clockIn) {
-      const expectedStartTime = '09:00';
+      const expectedStartTime = this.currentRecord.expectedStartTime ?? '09:00';
       const minutes = this.getTimeDifferenceInMinutes(expectedStartTime, this.currentRecord.clockIn);
       if (minutes > 0) {
         this.lateMinutesValue = `${minutes}m`;
@@ -193,9 +280,8 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const expectedStartTime = '09:00';
     const onTimeCount = validRecords.filter(r => {
-      const minutes = this.getTimeDifferenceInMinutes(expectedStartTime, r.clockIn!);
+      const minutes = this.getTimeDifferenceInMinutes(r.expectedStartTime ?? '09:00', r.clockIn!);
       return minutes <= 0;
     }).length;
 
@@ -275,8 +361,8 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   resetDateFilter(): void {
     const today = new Date();
     const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-    this.endDate = today.toISOString().split('T')[0];
-    this.startDate = thirtyDaysAgo.toISOString().split('T')[0];
+    this.endDate = this.formatDateLocal(today);
+    this.startDate = this.formatDateLocal(thirtyDaysAgo);
     this.filteredHistory = [...this.history];
 
     this.messageService.add({

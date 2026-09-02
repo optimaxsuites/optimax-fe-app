@@ -97,7 +97,7 @@
       </thead>
       <tbody>
         <tr *ngFor="let record of filteredRecords" [class.row-late]="record.status === 'LATE'" [class.row-absent]="record.status === 'ABSENT'">
-          <td>{{ record.date }}</td>
+          <td>{{ record.date | date:'yyyy-MM-dd' }}</td>
           <td>{{ record.checkIn || '-' }}</td>
           <td>{{ record.checkOut || '-' }}</td>
           <td>

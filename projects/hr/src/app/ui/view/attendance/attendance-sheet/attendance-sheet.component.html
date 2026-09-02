@@ -34,7 +34,7 @@
           <td class="table-item">{{ item.employeeID }}</td>
           <td class="table-item">{{ item.employeeName }}</td>
           <td class="table-item">{{ item.department }}</td>
-          <td class="table-item">{{ item.date }}</td>
+          <td class="table-item">{{ item.date | date:'yyyy-MM-dd' }}</td>
           <td class="actions">
             <i class="pi pi-ellipsis-v table-item" (click)="op.toggle($event)"></i>
             <p-overlayPanel #op ngClass="padding: 0;">
@@ -68,7 +68,7 @@
       <p><strong>Employee Name:</strong> {{ activeItem.employeeName }}</p>
       <p><strong>Position:</strong> Software Engineer</p>
       <p><strong>Department:</strong> {{ activeItem.department }}</p>
-      <p><strong>Date:</strong> {{ activeItem.date }}</p>
+      <p><strong>Date:</strong> {{ activeItem.date | date:'yyyy-MM-dd' }}</p>
 
       <p><strong>Clock-In Time:</strong>
         <input type="time" [value]="activeItem.inTime" style="padding: 5px; border: 1px solid #ccc; border-radius: 4px;" />

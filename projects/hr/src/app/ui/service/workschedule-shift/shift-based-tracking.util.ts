@@ -1,5 +1,6 @@
 import { WorkingWindow } from '../../domain/attendance/working-window.dto';
 import { ShiftTrackingMetrics } from '../../domain/attendance/shift-tracking-metrics.dto';
+import { getAppConfig } from '../../../config/app-config';
 
 export interface ClockPair {
   clockInIso: string | null | undefined;
@@ -22,10 +23,9 @@ function addDays(d: Date, days: number): Date {
 }
 
 function combineDateAndTime(dateIso: string, hhmm: string): Date {
-  const d = new Date(dateIso);
+  const [year, month, day] = dateIso.split('-').map(Number);
   const { h, m } = parseHHmm(hhmm);
-  d.setHours(h, m, 0, 0);
-  return d;
+  return new Date(year, month - 1, day, h, m, 0, 0);
 }
 
 function durationHours(start: Date, end: Date): number {
@@ -58,7 +58,9 @@ export function computeShiftTrackingMetrics(
   clocks: ClockPair,
   config?: ShiftTrackingConfig
 ): ShiftTrackingMetrics {
-  const otThresholdMinutes = config?.otThresholdMinutes ?? 30;
+  // Use provided config threshold, or fall back to app configuration
+  const appConfig = getAppConfig();
+  const otThresholdMinutes = config?.otThresholdMinutes ?? appConfig.attendance.overtimeThresholdMinutes;
 
   const clockIn = clocks.clockInIso ? new Date(clocks.clockInIso) : null;
   const clockOut = clocks.clockOutIso ? new Date(clocks.clockOutIso) : null;

@@ -1,8 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { take } from 'rxjs/operators';
 import { CorrectionRequest } from '../../../../domain/attendance/correctionrequest.dto';
-import { CorrectionrequestService } from '../../../../service/attendance/correctionrequest.service';
-import { CorrectionRequestService } from '../../../../service/attendance/correction-request.service';
+import { EmployeeCorrectionService } from '../../../../service/attendance/employee-correction.service';
+import { AdminCorrectionApprovalService } from '../../../../service/attendance/admin-correction-approval.service';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
 import { ToastService } from '../../../../shared-component/service/toast/toast.service';
 
@@ -74,8 +74,8 @@ export class CorrectionrequestComponent  implements OnInit{
   resubmissionEvidence: { [id: string]: string } = {};
   showForm = false;
 
-  private correctionService = inject(CorrectionrequestService);
-  private adminCorrectionRequestService = inject(CorrectionRequestService);
+  private correctionService = inject(EmployeeCorrectionService);
+  private adminCorrectionRequestService = inject(AdminCorrectionApprovalService);
   private attendanceService = inject(AttendancetableService);
   private toastService = inject(ToastService);
 
@@ -102,7 +102,8 @@ export class CorrectionrequestComponent  implements OnInit{
     const employeeName = sessionStorage.getItem('fullname') || 'Employee';
 
     // Find the attendance record for today by employee name
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     // Use take(1) to automatically unsubscribe after first emission
     this.attendanceService.attendance$.pipe(
@@ -115,7 +116,7 @@ export class CorrectionrequestComponent  implements OnInit{
 
       const todayRecord = records.find(r =>
         r.employee?.toLowerCase().includes(employeeName.toLowerCase()) &&
-        r.date === today
+        r.date.toISOString().split('T')[0] === today
       );
 
       if (todayRecord) {

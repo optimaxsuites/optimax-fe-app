@@ -16,17 +16,47 @@ export const BRANCH_NAMES: { [key: number]: string } = {
 const getDateString = (daysAgo: number): string => {
   const date = new Date();
   date.setDate(date.getDate() - daysAgo);
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getDate = (daysAgo: number): Date => {
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgo);
+  date.setHours(0, 0, 0, 0);
+  return date;
 };
 
 export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
+  // Shorunmu Ayodeji - employeeId 1
+  {
+    id: 1,
+    employee: 'Shorunmu Ayodeji',
+    employeeId: 1,
+    department: 'Development',
+    date: getDate(0),
+    checkIn: null,
+    checkOut: null,
+    checkInLocation: null,
+    checkOutLocation: null,
+    status: 'ABSENT',
+    hours: 0,
+    lateMinutes: 0,
+    overtime: 0,
+    homeBranchId: BRANCHES.HQ,
+    checkedInBranchId: undefined,
+    homeBranchName: 'HQ (Lagos)',
+    isCrossBranchAttendance: false
+  },
   // Jane Smith - 5 days of history
   {
     id: 2,
     employee: 'Jane Smith',
     employeeId: 102,
     department: 'HR',
-    date: getDateString(0),
+    date: getDate(0),
     checkIn: '09:15',
     checkOut: '18:00',
     checkInLocation: { address: '456 Business Ave, Corporate HQ, Lagos', lat: 6.5300, lng: 3.3850 },
@@ -45,7 +75,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
       type: 'TIME_CORRECTION',
       reason: 'Traffic delay due to accident on Lagos expressway.',
       status: 'PENDING',
-      requestedAt: new Date().toISOString(),
+      requestedAt: new Date(),
       requestedBy: 'Jane Smith'
     }
   },
@@ -54,7 +84,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'Jane Smith',
     employeeId: 102,
     department: 'HR',
-    date: getDateString(1),
+    date: getDate(1),
     checkIn: '09:10',
     checkOut: '17:55',
     checkInLocation: { address: '456 Business Ave, Corporate HQ, Lagos', lat: 6.5300, lng: 3.3850 },
@@ -74,7 +104,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'Jane Smith',
     employeeId: 102,
     department: 'HR',
-    date: getDateString(2),
+    date: getDate(2),
     checkIn: '09:00',
     checkOut: '18:00',
     checkInLocation: { address: '456 Business Ave, Corporate HQ, Lagos', lat: 6.5300, lng: 3.3850 },
@@ -94,7 +124,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'Jane Smith',
     employeeId: 102,
     department: 'HR',
-    date: getDateString(3),
+    date: getDate(3),
     checkIn: '09:30',
     checkOut: '18:15',
     checkInLocation: { address: '456 Business Ave, Corporate HQ, Lagos', lat: 6.5300, lng: 3.3850 },
@@ -114,7 +144,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'Jane Smith',
     employeeId: 102,
     department: 'HR',
-    date: getDateString(4),
+    date: getDate(4),
     checkIn: null,
     checkOut: null,
     checkInLocation: null,
@@ -134,7 +164,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'Mike Johnson',
     employeeId: 103,
     department: 'Finance',
-    date: new Date().toISOString().split('T')[0],
+    date: getDate(0),
     checkIn: '09:00',
     checkOut: '17:00',
     checkInLocation: { address: '789 Finance Blvd, Downtown, Lagos', lat: 6.5150, lng: 3.3700 },
@@ -155,7 +185,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'Mike Johnson',
     employeeId: 103,
     department: 'Finance',
-    date: getDateString(1),
+    date: getDate(1),
     checkIn: '09:05',
     checkOut: '17:10',
     checkInLocation: { address: '789 Finance Blvd, Downtown, Lagos', lat: 6.5150, lng: 3.3700 },
@@ -175,7 +205,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'Mike Johnson',
     employeeId: 103,
     department: 'Finance',
-    date: getDateString(2),
+    date: getDate(2),
     checkIn: '09:00',
     checkOut: '17:00',
     checkInLocation: { address: '789 Finance Blvd, Downtown, Lagos', lat: 6.5150, lng: 3.3700 },
@@ -196,7 +226,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'Sarah Williams',
     employeeId: 104,
     department: 'Engineering',
-    date: new Date().toISOString().split('T')[0],
+    date: getDate(0),
     checkIn: '09:30',
     checkOut: '18:15',
     checkInLocation: { address: '321 Innovation Drive, Tech District, Lagos', lat: 6.5280, lng: 3.3820 },
@@ -216,7 +246,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'Sarah Williams',
     employeeId: 104,
     department: 'Engineering',
-    date: getDateString(1),
+    date: getDate(1),
     checkIn: '09:15',
     checkOut: '18:30',
     checkInLocation: { address: '321 Innovation Drive, Tech District, Lagos', lat: 6.5280, lng: 3.3820 },
@@ -236,7 +266,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'Sarah Williams',
     employeeId: 104,
     department: 'Engineering',
-    date: getDateString(2),
+    date: getDate(2),
     checkIn: '09:00',
     checkOut: '18:00',
     checkInLocation: { address: '321 Innovation Drive, Tech District, Lagos', lat: 6.5280, lng: 3.3820 },
@@ -257,7 +287,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'David Brown',
     employeeId: 105,
     department: 'Sales',
-    date: new Date().toISOString().split('T')[0],
+    date: getDate(0),
     checkIn: null,
     checkOut: null,
     checkInLocation: null,
@@ -275,7 +305,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
       type: 'STATUS_CORRECTION',
       reason: 'Was working from home for a client meeting.',
       status: 'PENDING',
-      requestedAt: new Date().toISOString(),
+      requestedAt: new Date(),
       requestedBy: 'David Brown'
     }
   },
@@ -284,7 +314,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'David Brown',
     employeeId: 105,
     department: 'Sales',
-    date: getDateString(1),
+    date: getDate(1),
     checkIn: '09:20',
     checkOut: '17:45',
     checkInLocation: { address: '789 Sales Plaza, Downtown, Lagos', lat: 6.5100, lng: 3.3750 },
@@ -304,7 +334,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'David Brown',
     employeeId: 105,
     department: 'Sales',
-    date: getDateString(2),
+    date: getDate(2),
     checkIn: '09:00',
     checkOut: '17:30',
     checkInLocation: { address: '789 Sales Plaza, Downtown, Lagos', lat: 6.5100, lng: 3.3750 },
@@ -325,7 +355,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'Test Employee',
     employeeId: 999,
     department: 'Unknown',
-    date: getDateString(0),
+    date: getDate(0),
     checkIn: '09:00',
     checkOut: '17:00',
     checkInLocation: { address: '123 Test St, Lagos', lat: 6.5200, lng: 3.3800 },
@@ -345,7 +375,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     employee: 'Test Employee',
     employeeId: 999,
     department: 'Unknown',
-    date: getDateString(1),
+    date: getDate(1),
     checkIn: '09:15',
     checkOut: '17:30',
     checkInLocation: { address: '123 Test St, Lagos', lat: 6.5200, lng: 3.3800 },

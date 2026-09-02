@@ -27,17 +27,15 @@ import JsBarcode from 'jsbarcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-
 @Component({
   selector: 'app-employee-management',
   templateUrl: './employee-management.component.html',
   styleUrl: './employee-management.component.scss',
-  providers: [MessageService, ConfirmationService]
-
+  providers: [MessageService, ConfirmationService],
 })
 export class EmployeeManagementComponent implements OnDestroy {
   private readonly minimumLoaderDurationMs = 900;
-  
+
   tabsConfig: TabConfig[] = [
     { name: 'Basic Information', component: EmployeeProfileDashboardComponent, icon: 'fa-solid fa-user' },
     { name: 'Next of Kin',       component: EmployeeNokComponent,              icon: 'fa-solid fa-people-arrows' },
@@ -47,15 +45,15 @@ export class EmployeeManagementComponent implements OnDestroy {
   ];
   uniqueLevels: any;
   uniquePositions: any;
-  employeeProfilePhotoUrl: string = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='
+  employeeProfilePhotoUrl: string =
+    'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
 
-
-viewEmployee: boolean = false;
-employeeInView: any = {}
-staffIdEmployee: any = null;
-staffIdQrDataUrl = '';
-staffIdBarcodeDataUrl = '';
-searchTerm: any;
+  viewEmployee: boolean = false;
+  employeeInView: any = {};
+  staffIdEmployee: any = null;
+  staffIdQrDataUrl = '';
+  staffIdBarcodeDataUrl = '';
+  searchTerm: any;
 
 selectedPosition: any;
 openAddForm: boolean = false;
@@ -401,11 +399,11 @@ handleDateClick(arg: DateClickArg) {
     }
   }
 
-  async getProfileImage(fileName: string){
-  //  this.getEmployeesProfilePhotoUrl(fileName)
-  return this.employeeProfilePhotoUrl
+  async getProfileImage(fileName: string) {
+    //  this.getEmployeesProfilePhotoUrl(fileName)
+    return this.employeeProfilePhotoUrl;
   }
-  fetchEmployees(){
+  fetchEmployees() {
     const startedAt = this.startLoading();
     this.employeeService.getAllEmployee().subscribe({
       next: (employees) => {
@@ -414,15 +412,15 @@ handleDateClick(arg: DateClickArg) {
           ...new Set(
             this.employees
               .map((employee: { level: any }) => employee?.level?.name)
-              .filter((level: string) => level != null) 
+              .filter((level: string) => level != null),
           ),
         ];
-        
+
         this.uniquePositions = [
           ...new Set(
             this.employees
               .map((employee: { jobTitle: string }) => employee?.jobTitle)
-              .filter((jobTitle: string) => jobTitle != undefined) 
+              .filter((jobTitle: string) => jobTitle != undefined),
           ),
         ];
         this.employees.forEach((employee: { employeeMedia: { mediaNo: any; }; imageUrl: any; }) => {
@@ -436,22 +434,20 @@ handleDateClick(arg: DateClickArg) {
     
 
       },
-      error: err => {
+      error: (err) => {
         console.log(err);
         this.messageService.add({
           severity: 'error',
           summary: 'Load failed',
           detail: 'Unable to fetch employee records.',
           key: 'tl',
-          life: 3000
+          life: 3000,
         });
       },
       complete: () => {
         this.finishLoading(startedAt);
-      }
-    })
-
-
+      },
+    });
   }
 
   private startLoading(): number {
@@ -470,7 +466,9 @@ handleDateClick(arg: DateClickArg) {
   private sortEmployeesLatest(employees: any[]): any[] {
     return employees
       .slice()
-      .sort((a, b) => this.getEmployeeSortValue(b) - this.getEmployeeSortValue(a));
+      .sort(
+        (a, b) => this.getEmployeeSortValue(b) - this.getEmployeeSortValue(a),
+      );
   }
 
   private getEmployeeSortValue(employee: any): number {
@@ -498,18 +496,20 @@ handleDateClick(arg: DateClickArg) {
   }
 
   fetchProfilePhoto(employee: any): void {
-    this.employeeService.getEmployeeImage(employee.employeeMedia.mediaNo).subscribe({
-      next: (response) => {
-        const blob = new Blob([response], { type: 'image/png' });
-        employee.imageUrl = this.sanitizer.bypassSecurityTrustUrl(URL.createObjectURL(blob));
-      },
-      error: (err) => {
-        console.error('Failed to load image for employee:', err);
-      }
-    });
+    this.employeeService
+      .getEmployeeImage(employee.employeeMedia.mediaNo)
+      .subscribe({
+        next: (response) => {
+          const blob = new Blob([response], { type: 'image/png' });
+          employee.imageUrl = this.sanitizer.bypassSecurityTrustUrl(
+            URL.createObjectURL(blob),
+          );
+        },
+        error: (err) => {
+          console.error('Failed to load image for employee:', err);
+        },
+      });
   }
-
-
 
   closeAddForm() {
     this.openAddForm = false;
@@ -517,30 +517,28 @@ handleDateClick(arg: DateClickArg) {
     this.fetchEmployees();
 
   }
-  generateLeaveEvents(leaveDetails: { leavesSpent: any[]; }) {
-    return leaveDetails.leavesSpent.map(leave => {
+  generateLeaveEvents(leaveDetails: { leavesSpent: any[] }) {
+    return leaveDetails.leavesSpent.map((leave) => {
       return {
         title: `${leave.type} Leave`,
         start: leave.from,
         end: leave.to,
-        backgroundColor:  '#2EB270'   
+        backgroundColor: '#2EB270',
       };
     });
   }
- 
 
-  viewThisEmployee(employee: any){
-
+  viewThisEmployee(employee: any) {
     if (employee) {
-      console.log(employee)
+      console.log(employee);
       this.viewEmployee = false;
-      localStorage.setItem('employeeInView', JSON.stringify(employee))
+      localStorage.setItem('employeeInView', JSON.stringify(employee));
 
       this.employeeService.getNOKByEmployeeId(employee.id).subscribe({
         next: (res: any) => {
           employee.nextOfKin = res;
-          localStorage.setItem('employeeInView', JSON.stringify(employee))
-          this.employeeInView = employee
+          localStorage.setItem('employeeInView', JSON.stringify(employee));
+          this.employeeInView = employee;
         },
         error: () => {
           this.employeeInView = employee;
@@ -552,10 +550,10 @@ handleDateClick(arg: DateClickArg) {
           window.setTimeout(() => {
             this.viewEmployee = true;
           }, 0);
-        }
-      })
-    }    
-    }    
+        },
+      });
+    }
+  }
 
   openEmployeeProfile(employee: any, event?: Event) {
     event?.preventDefault();
@@ -609,11 +607,13 @@ handleDateClick(arg: DateClickArg) {
         dark: '#0f172a',
         light: '#ffffff',
       },
-    }).then((dataUrl) => {
-      this.staffIdQrDataUrl = dataUrl;
-    }).catch(() => {
-      this.staffIdQrDataUrl = '';
-    });
+    })
+      .then((dataUrl: string) => {
+        this.staffIdQrDataUrl = dataUrl;
+      })
+      .catch(() => {
+        this.staffIdQrDataUrl = '';
+      });
   }
 
   private generateStaffBarcode(employee: any): void {
@@ -640,11 +640,19 @@ handleDateClick(arg: DateClickArg) {
 
     const employeeId = employee?.id;
     if (employeeId === undefined || employeeId === null || employeeId === '') {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Employee ID is missing.', key: 'tl', life: 3000 });
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Employee ID is missing.',
+        key: 'tl',
+        life: 3000,
+      });
       return;
     }
 
-    const displayName = `${employee?.lastName ?? ''} ${employee?.firstName ?? ''}`.trim() || 'this employee';
+    const displayName =
+      `${employee?.lastName ?? ''} ${employee?.firstName ?? ''}`.trim() ||
+      'this employee';
     this.confirmationService.confirm({
       message: `Are you sure you want to delete ${displayName}?`,
       header: 'Confirm Deletion',
@@ -1046,18 +1054,14 @@ handleDateClick(arg: DateClickArg) {
     localStorage.removeItem('employeeInView');
   }
 
-
-
   getAllowanceKeys(allowances: object): string[] {
     return Object.keys(allowances);
   }
 
-
-
   toTitleCaseWithSpace(key: string): string {
     return key
       .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, str => str.toUpperCase());
+      .replace(/^./, (str) => str.toUpperCase());
   }
 
   applyFilters() {
@@ -1082,25 +1086,41 @@ handleDateClick(arg: DateClickArg) {
     });
     this.resetPagination();
   }
-  
+
   filterBySelectedEmployeeType() {
     this.filteredEmployees = this.employees.filter(
-      (employee: { level: { name: string }; }) => 
-        {return this.selectedEmployeeType.length === 0 || this.selectedEmployeeType.includes(employee?.level?.name)}
+      (employee: { level: { name: string } }) => {
+        return (
+          this.selectedEmployeeType.length === 0 ||
+          this.selectedEmployeeType.includes(employee?.level?.name)
+        );
+      },
     );
     this.resetPagination();
-    }
-
+  }
 
   filterBySelectedPosition() {
-     this.filteredEmployees = this.employees.filter((employee: { level: any; jobTitle: string; firstName: string; lastName: string; }) => {
-      return this.selectedPosition.length === 0 || this.selectedPosition.includes(employee.jobTitle);
-    })
+    this.filteredEmployees = this.employees.filter(
+      (employee: {
+        level: any;
+        jobTitle: string;
+        firstName: string;
+        lastName: string;
+      }) => {
+        return (
+          this.selectedPosition.length === 0 ||
+          this.selectedPosition.includes(employee.jobTitle)
+        );
+      },
+    );
     this.resetPagination();
-      }
+  }
 
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredEmployees.length / this.pageSize));
+    return Math.max(
+      1,
+      Math.ceil(this.filteredEmployees.length / this.pageSize),
+    );
   }
 
   get startItem(): number {
@@ -1109,7 +1129,10 @@ handleDateClick(arg: DateClickArg) {
   }
 
   get endItem(): number {
-    return Math.min(this.currentPage * this.pageSize, this.filteredEmployees.length);
+    return Math.min(
+      this.currentPage * this.pageSize,
+      this.filteredEmployees.length,
+    );
   }
 
   get pagedEmployees(): any[] {
@@ -1182,17 +1205,17 @@ handleDateClick(arg: DateClickArg) {
     this.currentPage = 1;
   }
 
-      // getEmployeesProfilePhotoUrl(filename: string){
-      //   this.employeeService.getEmployeeImage(filename).subscribe({
-      //     next: (response) => {
-      //       const blob = new Blob([response], { type: 'image/png' });
-      //       this.employeeProfilePhotoUrl = this.sanitizer.bypassSecurityTrustUrl(URL.createObjectURL(blob));
-      //     },
-      //     error: (err) => {
-      //       console.error('Failed to load employee image', err);
-      //          this.employeeProfilePhotoUrl = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
-      //     console.log(this.employeeProfilePhotoUrl)
-      //     },
-      //   });
-      // }
+  // getEmployeesProfilePhotoUrl(filename: string){
+  //   this.employeeService.getEmployeeImage(filename).subscribe({
+  //     next: (response) => {
+  //       const blob = new Blob([response], { type: 'image/png' });
+  //       this.employeeProfilePhotoUrl = this.sanitizer.bypassSecurityTrustUrl(URL.createObjectURL(blob));
+  //     },
+  //     error: (err) => {
+  //       console.error('Failed to load employee image', err);
+  //          this.employeeProfilePhotoUrl = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
+  //     console.log(this.employeeProfilePhotoUrl)
+  //     },
+  //   });
+  // }
 }

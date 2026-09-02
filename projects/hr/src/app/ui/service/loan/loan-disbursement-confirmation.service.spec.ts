@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { LoanDisbursementConfirmationService } from './loan-disbursement-confirmation.service';
+import { AdvanceDisbursementConfirmationService } from './loan-disbursement-confirmation.service';
 
-describe('LoanDisbursementConfirmationService', () => {
-  let service: LoanDisbursementConfirmationService;
+describe('AdvanceDisbursementConfirmationService', () => {
+  let service: AdvanceDisbursementConfirmationService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(LoanDisbursementConfirmationService);
+    service = TestBed.inject(AdvanceDisbursementConfirmationService);
   });
 
   it('should be created', () => {

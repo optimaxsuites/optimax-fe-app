@@ -78,17 +78,17 @@ export interface TimesheetDTO {
   totalActualHours: number;
   variance: number;
   status: TimesheetStatus;
-  submittedDate?: string;
+  submittedDate?: Date;
   submittedBy?: string;
   lineManagerId?: string;
   lineManagerName?: string;
-  approvalDate?: string;
+  approvalDate?: Date;
   approvalNotes?: string;
   rejectionReason?: string;
-  rejectionDate?: string;
-  lockedDate?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  rejectionDate?: Date;
+  lockedDate?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 /**
@@ -130,7 +130,7 @@ export interface TimesheetPayloadDTO {
   weekEndDate: string;
   entries: TimesheetEntry[];
   status: TimesheetStatus;
-  submittedDate?: string;
+  submittedDate?: Date;
   approvalNotes?: string;
   rejectionReason?: string;
 }

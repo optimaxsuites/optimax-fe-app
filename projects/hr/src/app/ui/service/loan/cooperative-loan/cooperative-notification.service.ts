@@ -136,8 +136,8 @@ export class CooperativeNotificationService {
         memberId: Number(guarantor.memberId || 0),
         guaranteedAmount: Number(guarantor.guaranteedAmount || 0),
         status: (guarantor.status as CooperativeLoanGuarantor['status']) || 'PENDING',
-        requestedAt: guarantor.requestedAt || new Date().toISOString(),
-        decidedAt: guarantor.decidedAt,
+        requestedAt: guarantor.requestedAt instanceof Date ? guarantor.requestedAt.toISOString() : (guarantor.requestedAt || new Date().toISOString()),
+        decidedAt: guarantor.decidedAt instanceof Date ? guarantor.decidedAt.toISOString() : guarantor.decidedAt,
         note: guarantor.note
       };
 

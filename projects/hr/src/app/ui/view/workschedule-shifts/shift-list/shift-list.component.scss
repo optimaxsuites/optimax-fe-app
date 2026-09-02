@@ -1,233 +1,160 @@
-$teal: #2a7a74;
-$teal-light: #e6f4f3;
-$border: #e5e7eb;
-$text-primary: #1a1a1a;
-$text-secondary: #6b7280;
+// ============================================================
+// Shift catalogue
+// ============================================================
+// Renders in two places: the 600px side drawer on the shift calendar,
+// and as a standalone tab on the scheduling page. A list rather than a
+// table so it reads at drawer width without horizontal scroll.
 
-.shift-container {
-  padding: 1.5rem;
+@import '../styles/shift-ui';
+
+.shift-catalogue {
+  display: flex;
+  flex-direction: column;
+  gap: $s4;
 }
 
-/* HEADER */
-
-.header {
+.catalogue-head {
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: $s3;
+  padding-bottom: $s3;
+  border-bottom: 1px solid $line;
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $s2;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: $s2;
+  }
+}
+
+.shift-defs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: $s2;
+}
+
+.shift-def {
+  display: flex;
   align-items: flex-start;
-  margin-bottom: 1.5rem;
+  gap: $s3;
+  padding: $s3;
+  border: 1px solid $line;
+  border-radius: $r2;
+  background: $surface;
+  transition: border-color $motion;
 
-  div {
-    flex: 1;
+  &:hover { border-color: $line-strong; }
+
+  &__swatch {
+    width: 3px;
+    align-self: stretch;
+    min-height: 34px;
+    border-radius: 2px;
+    background: $accent;
+    flex-shrink: 0;
   }
 
-  h2 {
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    margin-right: auto;
+  }
+
+  &__line {
+    display: flex;
+    align-items: center;
+    gap: $s2;
+    flex-wrap: wrap;
+  }
+
+  &__name {
+    font-size: $fz-md;
     font-weight: 600;
-    color: $text-primary;
-    margin: 0;
-    font-size: 1.5rem;
+    color: $ink;
   }
 
-  .shift-count {
-    font-size: 0.875rem;
-    color: $text-secondary;
-    margin: 0.5rem 0 0 0;
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: $fz-sm;
+    font-variant-numeric: tabular-nums;
+    color: $ink-2;
   }
 
-  .add-btn {
-    background: $teal;
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  &__sep { color: $ink-3; }
 
-    &:hover {
-      background: darken($teal, 10%);
-      transform: translateY(-1px);
-    }
+  &__note {
+    margin: 2px 0 0;
+    font-size: $fz-sm;
+    color: $ink-3;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $s2;
+    flex-shrink: 0;
   }
 }
 
-/* FILTER CARD */
-
-.filter-card {
-  display: flex;
-  gap: 0.75rem;
-  background: white;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  border: 1px solid $border;
-
-  input,
-  select {
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    border: 1px solid $border;
-    font-size: 0.875rem;
-    flex: 1;
-    min-width: 150px;
-
-    &:focus {
-      outline: none;
-      border-color: $teal;
-      box-shadow: 0 0 0 3px rgba($teal, 0.1);
-    }
-  }
-
-  .apply-btn {
-    background: $teal;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    color: white;
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background: darken($teal, 10%);
-    }
-  }
-
-  .reset-btn {
-    background: transparent;
-    border: 1px solid $border;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-
-    &:hover {
-      border-color: $teal;
-      color: $teal;
-    }
-  }
-}
-
-/* TABLE CARD */
-
-.table-card {
-  background: white;
-  border-radius: 8px;
-  border: 1px solid $border;
-  overflow: hidden;
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  thead {
-    background: #f9fafb;
-    border-bottom: 2px solid $border;
-  }
-
-  th {
-    padding: 0.75rem;
-    text-align: left;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: $text-secondary;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  td {
-    padding: 0.75rem;
-    font-size: 0.9rem;
-    border-bottom: 1px solid $border;
-    color: $text-primary;
-  }
-
-  tbody tr {
-    transition: background-color 0.2s ease;
-
-    &:hover {
-      background: $teal-light;
-    }
-
-    &:last-child td {
-      border-bottom: none;
-    }
-  }
-}
-
-/* SHIFT COLOR DOT */
-
-.color-dot {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 0.5rem;
-  vertical-align: middle;
-}
-
-.shift-type {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
+// Shift type — a quiet outline tag, tinted per type so the four kinds
+// stay distinguishable without competing with the shift's own colour.
+.type-tag {
+  padding: 1px 7px;
+  border: 1px solid $line-strong;
+  border-radius: $r1;
+  background: $surface-sunken;
+  font-size: 10px;
   font-weight: 600;
-  text-transform: capitalize;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: $ink-2;
 
-  &.morning {
-    background: #fef3c7;
-    color: #92400e;
+  &--morning {
+    border-color: rgba(166, 124, 0, 0.28);
+    background: $caution-tint;
+    color: $caution;
   }
 
-  &.evening {
-    background: #dbeafe;
-    color: #0c4a6e;
+  &--evening {
+    border-color: $accent-line;
+    background: $accent-tint;
+    color: $accent;
   }
 
-  &.night {
-    background: #f3e8ff;
-    color: #5b21b6;
+  &--night {
+    border-color: rgba(21, 36, 43, 0.2);
+    background: rgba(21, 36, 43, 0.06);
+    color: $ink;
+  }
+
+  &--custom {
+    border-color: rgba(46, 178, 112, 0.3);
+    background: $positive-tint;
+    color: $status-approved;
   }
 }
 
-/* ACTION BUTTONS */
+// In the drawer the actions would otherwise crowd the name at 600px.
+@media (max-width: 560px) {
+  .shift-def {
+    flex-wrap: wrap;
 
-.actions {
-  display: flex;
-  gap: 0.5rem;
-
-  button {
-    border: none;
-    padding: 0.4rem 0.8rem;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-weight: 500;
-  }
-
-  .edit {
-    background: transparent;
-    color: $teal;
-    border: 1px solid $border;
-
-    &:hover {
-      background: $teal-light;
-      border-color: $teal;
-    }
-  }
-
-  .delete {
-    background: transparent;
-    color: #dc2626;
-    border: 1px solid $border;
-
-    &:hover {
-      background: #fee2e2;
-      border-color: #dc2626;
+    &__actions {
+      width: 100%;
+      padding-left: calc(3px + #{$s3});
     }
   }
 }

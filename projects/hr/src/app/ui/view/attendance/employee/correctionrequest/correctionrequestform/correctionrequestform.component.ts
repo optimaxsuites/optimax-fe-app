@@ -81,7 +81,7 @@ export class CorrectionrequestformComponent {
       status: 'PENDING',
       locked: false,
       history: [],
-      createdAt: new Date().toISOString()
+      createdAt: new Date()
     };
 
     this.submitRequest.emit(newRequest);
