@@ -212,7 +212,7 @@ export class PayrollService {
   }
 
   postDeductionDetail(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/hr/deductionDetails`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/deductionDetails`, payload)
       .pipe(catchError(this.handleError))
   }
 

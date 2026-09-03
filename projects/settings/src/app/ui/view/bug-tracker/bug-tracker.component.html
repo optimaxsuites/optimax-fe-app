@@ -10,7 +10,7 @@
     </div>
     <div class="bt-header-actions">
       <button class="bt-btn bt-btn-ghost" (click)="exportCsv()"><i class="fas fa-download"></i> CSV</button>
-      <button class="bt-btn bt-btn-primary" (click)="openForm()"><i class="fas fa-plus"></i> New Issue</button>
+<button class="bt-btn bt-btn-primary" (click)="openForm()"><i class="fas fa-plus"></i> New Issue</button>
     </div>
   </div>
 
@@ -55,6 +55,11 @@
       <i class="fas fa-search"></i>
       <input type="text" placeholder="Search issues…" [(ngModel)]="searchText" (ngModelChange)="applyFilters()" />
     </div>
+    <select [(ngModel)]="filterType" (ngModelChange)="applyFilters()">
+      <option value="">All Types</option>
+      <option value="BUG">Bug</option>
+      <option value="FEATURE">New Feature</option>
+    </select>
     <select [(ngModel)]="filterStatus" (ngModelChange)="applyFilters()">
       <option value="">All Statuses</option>
       <option *ngFor="let s of statuses" [value]="s">{{ statusLabel(s) }}</option>
@@ -111,6 +116,9 @@
             <div class="bt-bug-title">{{ issue.title }}</div>
             <div class="bt-bug-meta">
               <span class="bt-module-tag">{{ issue.module }}</span>
+              <span class="bt-type-badge" [class.bt-type-feature]="issue.issueType === 'FEATURE'">
+                {{ issue.issueType === 'FEATURE' ? 'New Feature' : 'Bug' }}
+              </span>
               <span *ngFor="let tag of parseTags(issue.tags)" class="bt-tag bt-tag-inline">{{ tag }}</span>
               <span *ngIf="safeDisplayName(issue.assigneeName)" class="bt-meta-item">
                 <i class="fas fa-user"></i> {{ safeDisplayName(issue.assigneeName) }}
@@ -183,12 +191,11 @@
         <div class="bt-attach-detail" *ngIf="attachmentsFromDesc(issue.description).length">
           <div class="bt-wl-header" style="margin-bottom:8px;">Attachments</div>
           <div class="bt-attach-preview">
-            <div class="bt-attach-thumb" *ngFor="let att of attachmentsFromDesc(issue.description)">
+            <div class="bt-attach-thumb" *ngFor="let att of attachmentsFromDesc(issue.description); let i = index; trackBy: trackAttachment">
               <button *ngIf="att.type?.startsWith('image/')"
-                      class="bt-zoom-wrap"
-                      (click)="openLightbox(att.dataUrl); $event.stopPropagation()"
-                      type="button" title="Click to enlarge">
-                <img [src]="att.dataUrl" [alt]="att.name" />
+                      type="button" class="bt-zoom-wrap"
+                      (click)="openCarousel(attachmentsFromDesc(issue.description), i, $event)">
+                <img [src]="att.dataUrl" [alt]="att.name" class="bt-thumb-img" draggable="false" />
                 <span class="bt-zoom-hint"><i class="fas fa-search-plus"></i></span>
               </button>
               <a *ngIf="!att.type?.startsWith('image/')" [href]="att.dataUrl" [download]="att.name" target="_blank"
@@ -282,6 +289,21 @@
 
   <div class="bt-form">
     <div class="bt-field">
+      <label>Type <span class="bt-req">*</span></label>
+      <div class="bt-type-toggle">
+        <button type="button" class="bt-type-btn"
+                [class.active-bug]="form.issueType === 'BUG'"
+                (click)="form.issueType = 'BUG'">
+          <i class="fas fa-bug"></i> Bug
+        </button>
+        <button type="button" class="bt-type-btn"
+                [class.active-feature]="form.issueType === 'FEATURE'"
+                (click)="form.issueType = 'FEATURE'">
+          <i class="fas fa-star"></i> New Feature
+        </button>
+      </div>
+    </div>
+    <div class="bt-field">
       <label>Title <span class="bt-req">*</span></label>
       <input pInputText [(ngModel)]="form.title" placeholder="Brief description of the issue" />
     </div>
@@ -367,8 +389,13 @@
         <span class="bt-attach-hint">or paste a screenshot with <kbd>Ctrl+V</kbd> / <kbd>⌘V</kbd></span>
       </div>
       <div class="bt-attach-preview" *ngIf="formAttachments.length">
-        <div class="bt-attach-thumb" *ngFor="let att of formAttachments; let i = index">
-          <img *ngIf="att.type.startsWith('image/')" [src]="att.dataUrl" [alt]="att.name" />
+        <div class="bt-attach-thumb" *ngFor="let att of formAttachments; let i = index; trackBy: trackAttachment">
+          <button *ngIf="att.type.startsWith('image/')"
+                  type="button" class="bt-zoom-wrap"
+                  (click)="openCarousel(formAttachments, i, $event)">
+            <img [src]="att.dataUrl" [alt]="att.name" class="bt-thumb-img" draggable="false" />
+            <span class="bt-zoom-hint"><i class="fas fa-search-plus"></i></span>
+          </button>
           <div *ngIf="!att.type.startsWith('image/')" class="bt-attach-file-icon">
             <i class="fas fa-file-alt"></i>
             <span>{{ att.name.split('.').pop() }}</span>
@@ -597,10 +624,4 @@
   </ng-template>
 </p-dialog>
 
-<!-- Image lightbox -->
-<div class="bt-lightbox-overlay" *ngIf="showLightbox" (click)="closeLightbox()">
-  <div class="bt-lightbox-content" (click)="$event.stopPropagation()">
-    <button class="bt-lightbox-close" (click)="closeLightbox()">✕</button>
-    <img [src]="lightboxSrc" alt="Attachment" />
-  </div>
-</div>
+
