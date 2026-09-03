@@ -10,9 +10,10 @@ export interface SalaryDTO {
 }
 
 export interface AllowanceDTO {
-	id?: number | undefined;
-	allowanceTypeId: number;
-	amount: number
+  id?: number | undefined;
+  levelId?: number;
+  allowanceTypeId: number;
+  amount: number;
 }
 
 export interface AllowanceTypeDTO {
@@ -24,9 +25,10 @@ export interface AllowanceTypeDTO {
 
 export interface BonusDTO {
   id?: number | undefined;
-  bonusTypeId: number; 
-  amount: number; 
-  dateAwarded?: Date; 
+  levelId?: number;
+  bonusTypeId: number;
+  amount: number;
+  dateAwarded?: Date;
 }
 
 export interface BonusTypeDTO { 
@@ -35,10 +37,11 @@ export interface BonusTypeDTO {
   description?: string; 
 }
 
-export interface DeductionsDTO { 
+export interface DeductionsDTO {
   id?: number | undefined;
-  deductionsTypeId: number; 
-  amount: number; 
+  levelId?: number;
+  deductionsTypeId: number;
+  amount: number;
 }
 
 export interface DeductionsTypeDTO { 
@@ -48,11 +51,12 @@ export interface DeductionsTypeDTO {
   isTax?: boolean; 
 }
 
-export interface OvertimeDTO { 
+export interface OvertimeDTO {
   id?: number | undefined;
+  levelId?: number;
   overtimeTypeId: number;
-  maxHours: number; 
-  rate: number
+  maxHours: number;
+  rate: number;
 }
 
 export interface OvertimeTypeDTO { 

@@ -1,11 +1,14 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 import { MessageService } from 'primeng/api';
 import { forkJoin, switchMap } from 'rxjs';
 import { IssueTrackerApiService } from '../../service/issue-tracker-api.service';
+import { ImageViewerDialogComponent } from './image-viewer-dialog.component';
 
 type Priority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 type Status = 'OPEN' | 'IN_PROGRESS' | 'BLOCKED' | 'TESTING' | 'DONE' | 'WONT_FIX';
+type IssueType = 'BUG' | 'FEATURE';
 
 interface WorkLog {
   id?: number;
@@ -34,6 +37,7 @@ interface Issue {
   module: string;
   priority: Priority;
   status: Status;
+  issueType?: IssueType;
   tags?: string;
   reporterUserId?: number;
   reporterEmail?: string;
@@ -63,6 +67,7 @@ const MODULES = ['All', 'HR', 'ACCOUNTING', 'COMMERCE', 'INVENTORY', 'PROCUREMEN
   'PAYROLL', 'ATTENDANCE', 'RECRUITMENT', 'PERFORMANCE', 'LOANS', 'POS', 'GENERAL', 'INFRASTRUCTURE'];
 const STATUSES: Status[] = ['OPEN', 'IN_PROGRESS', 'BLOCKED', 'TESTING', 'DONE', 'WONT_FIX'];
 const PRIORITIES: Priority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+const ISSUE_TYPES: IssueType[] = ['BUG', 'FEATURE'];
 
 @Component({
   selector: 'app-bug-tracker',
@@ -81,12 +86,14 @@ export class BugTrackerComponent implements OnInit {
   filterStatus = '';
   filterPriority = '';
   filterAssignee = '';
+  filterType = '';
   searchText = '';
   sortBy: 'newest' | 'oldest' | 'priority' | 'status' = 'newest';
 
   modules = MODULES;
   statuses = STATUSES;
   priorities = PRIORITIES;
+  issueTypes = ISSUE_TYPES;
 
   showForm = false;
   editingIssue: Issue | null = null;
@@ -188,7 +195,8 @@ export class BugTrackerComponent implements OnInit {
   constructor(
     private api: IssueTrackerApiService,
     private messageService: MessageService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit(): void {
@@ -266,6 +274,7 @@ export class BugTrackerComponent implements OnInit {
     if (this.filterStatus)   list = list.filter(b => b.status === this.filterStatus);
     if (this.filterPriority) list = list.filter(b => b.priority === this.filterPriority);
     if (this.filterAssignee) list = list.filter(b => b.assigneeName === this.filterAssignee);
+    if (this.filterType)     list = list.filter(b => (b.issueType || 'BUG') === this.filterType);
     if (this.searchText) {
       const t = this.searchText.toLowerCase();
       list = list.filter(b =>
@@ -735,20 +744,128 @@ export class BugTrackerComponent implements OnInit {
     });
   }
 
-  // ── Image lightbox ────────────────────────────────────────────────────────────
+  // ── Image carousel / lightbox ─────────────────────────────────────────────────
 
-  showLightbox = false;
-  lightboxSrc = '';
+  openCarousel(allAtts: AttachmentItem[], clickedIndex: number, event: MouseEvent): void {
+    event.stopPropagation();
+    const imageAtts = allAtts.filter(a => a.type?.startsWith('image/'));
+    if (!imageAtts.length) return;
+    const images = imageAtts.map(a => a.dataUrl);
+    const clickedSrc = allAtts[clickedIndex]?.dataUrl ?? '';
+    const startIdx = Math.max(0, images.indexOf(clickedSrc));
+    this.showCarouselDom(images, startIdx);
+  }
 
-  openLightbox(src: string): void {
-    this.lightboxSrc = src;
-    this.showLightbox = true;
+  private showCarouselDom(images: string[], startIdx: number): void {
+    this.removeLightboxDom();
+    let idx = startIdx;
+    const total = images.length;
+
+    const overlay = document.createElement('div');
+    overlay.id = '_bt_lightbox';
+    overlay.style.cssText = [
+      'position:fixed', 'inset:0', 'z-index:2147483647',
+      'background:rgba(0,0,0,0.92)', 'display:flex',
+      'flex-direction:column', 'align-items:center', 'justify-content:center',
+      'gap:12px', 'padding:56px 80px 28px', 'box-sizing:border-box', 'cursor:default'
+    ].join(';');
+
+    const closeBtn = document.createElement('button');
+    closeBtn.style.cssText = 'position:absolute;top:14px;right:18px;background:none;border:none;color:#fff;font-size:26px;line-height:1;cursor:pointer;padding:0;';
+    closeBtn.innerHTML = '&#x2715;';
+    closeBtn.onclick = (e) => { e.stopPropagation(); this.removeLightboxDom(); };
+
+    const imgEl = document.createElement('img');
+    imgEl.src = images[idx];
+    imgEl.style.cssText = 'max-width:88vw;max-height:72vh;object-fit:contain;border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,0.6);display:block;transition:opacity 0.15s;';
+    imgEl.onclick = (e) => e.stopPropagation();
+
+    const counter = document.createElement('div');
+    counter.style.cssText = 'color:rgba(255,255,255,0.75);font-size:13px;font-family:Arial,sans-serif;min-width:60px;text-align:center;';
+
+    const dotEls: HTMLButtonElement[] = [];
+    const dotsRow = document.createElement('div');
+    dotsRow.style.cssText = 'display:flex;gap:6px;align-items:center;justify-content:center;';
+    if (total > 1 && total <= 12) {
+      for (let d = 0; d < total; d++) {
+        const dot = document.createElement('button');
+        dot.style.cssText = 'width:8px;height:8px;border-radius:50%;border:none;cursor:pointer;padding:0;transition:background 0.2s;';
+        dot.style.background = d === idx ? '#ffffff' : 'rgba(255,255,255,0.35)';
+        dotEls.push(dot);
+        dotsRow.appendChild(dot);
+      }
+    }
+
+    const hint = document.createElement('p');
+    hint.style.cssText = 'color:rgba(255,255,255,0.45);font-size:12px;margin:0;font-family:Arial,sans-serif;';
+    hint.textContent = total > 1
+      ? 'Use ← → arrow keys to navigate · Esc to close'
+      : 'Click outside or press Esc to close';
+
+    const navigate = (newIdx: number): void => {
+      idx = newIdx;
+      imgEl.style.opacity = '0';
+      setTimeout(() => { imgEl.src = images[idx]; imgEl.style.opacity = '1'; }, 150);
+      if (total > 1) counter.textContent = `${idx + 1} / ${total}`;
+      dotEls.forEach((d, i) => { d.style.background = i === idx ? '#ffffff' : 'rgba(255,255,255,0.35)'; });
+    };
+
+    dotEls.forEach((dot, d) => { dot.onclick = (e) => { e.stopPropagation(); navigate(d); }; });
+
+    if (total > 1) {
+      counter.textContent = `${idx + 1} / ${total}`;
+
+      const prevBtn = document.createElement('button');
+      prevBtn.style.cssText = 'position:absolute;left:16px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:32px;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+      prevBtn.innerHTML = '&#8249;';
+      prevBtn.onclick = (e) => { e.stopPropagation(); navigate(((idx - 1) + total) % total); };
+      prevBtn.onmouseenter = () => { prevBtn.style.background = 'rgba(255,255,255,0.25)'; };
+      prevBtn.onmouseleave = () => { prevBtn.style.background = 'rgba(255,255,255,0.12)'; };
+
+      const nextBtn = document.createElement('button');
+      nextBtn.style.cssText = 'position:absolute;right:16px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:32px;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+      nextBtn.innerHTML = '&#8250;';
+      nextBtn.onclick = (e) => { e.stopPropagation(); navigate((idx + 1) % total); };
+      nextBtn.onmouseenter = () => { nextBtn.style.background = 'rgba(255,255,255,0.25)'; };
+      nextBtn.onmouseleave = () => { nextBtn.style.background = 'rgba(255,255,255,0.12)'; };
+
+      overlay.appendChild(prevBtn);
+      overlay.appendChild(nextBtn);
+    }
+
+    const onKey = (e: KeyboardEvent) => {
+      if (total <= 1) return;
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); navigate(((idx - 1) + total) % total); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); navigate((idx + 1) % total); }
+    };
+    document.addEventListener('keydown', onKey);
+    (overlay as any)._keyHandler = onKey;
+
+    overlay.onclick = () => this.removeLightboxDom();
+
+    overlay.appendChild(closeBtn);
+    overlay.appendChild(imgEl);
+    if (total > 1) {
+      overlay.appendChild(counter);
+      if (total <= 12) overlay.appendChild(dotsRow);
+    }
+    overlay.appendChild(hint);
+
+    document.body.appendChild(overlay);
+  }
+
+  private removeLightboxDom(): void {
+    const el = document.getElementById('_bt_lightbox');
+    if (el) {
+      const kh = (el as any)._keyHandler;
+      if (kh) document.removeEventListener('keydown', kh);
+      document.body.removeChild(el);
+    }
   }
 
   @HostListener('document:keydown.escape')
   closeLightbox(): void {
-    this.showLightbox = false;
-    this.lightboxSrc = '';
+    this.removeLightboxDom();
   }
 
   // ── Email notifications ─────────────────────────────────────────────────────
@@ -1015,11 +1132,16 @@ export class BugTrackerComponent implements OnInit {
     const rawName = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || '';
     const meName = (rawName === 'undefined' || rawName === 'null') ? '' : rawName;
     return { title: '', module: '', priority: 'MEDIUM', status: 'OPEN',
+      issueType: 'BUG',
       tags: '',
       reporterUserId: meId,
       reporterEmail: meEmail, reporterName: meName,
       assigneeEmail: '', assigneeName: '',
       supervisorEmail: '', supervisorName: '', description: '' };
+  }
+
+  trackAttachment(index: number, att: AttachmentItem): string {
+    return att.dataUrl || String(index);
   }
 
   private toast(severity: 'success' | 'error', detail: string): void {
