@@ -213,9 +213,10 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   selectProduct(product: Product): void {
     this.predictionForm.patchValue({ productId: String(product.id) });
     this.productId = String(product.id);
-    // Close dropdown
+    // Close dropdown, and show the picked product in the search box
+    // (previously cleared to '', which made the field look empty after selection).
     this.showProductDropdown = false;
-    this.productSearchTerm = '';
+    this.productSearchTerm = product.name;
   }
 
   onBranchChange(): void {

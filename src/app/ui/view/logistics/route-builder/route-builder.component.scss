@@ -104,7 +104,7 @@
   border: 1px solid #e2e8f0;
 }
 
-// ---------- Desktop table (Choose Orders) ----------
+// ---------- Desktop table (Choose Orders) — uses shared app-table now ----------
 .rbw-table-card {
   margin: 0 16px 16px;
   background: #fff;
@@ -112,44 +112,6 @@
   border-radius: 12px;
   overflow: hidden;
   display: none; // shown at desktop breakpoint
-}
-.rbw-table {
-  width: 100%;
-  border-collapse: collapse;
-
-  thead th {
-    text-align: left;
-    font-size: 11px;
-    font-weight: 700;
-    color: #9aa7ae;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    padding: 12px 16px;
-    border-bottom: 1px solid #e2e8f0;
-  }
-  tbody tr {
-    border-bottom: 1px solid #eef2f5;
-    cursor: pointer;
-    transition: background 0.15s;
-
-    &:hover {
-      background: #f7f9fa;
-    }
-    &.selected {
-      background: rgba(0, 161, 145, 0.05);
-    }
-    &:last-child {
-      border-bottom: none;
-    }
-  }
-  td {
-    padding: 12px 16px;
-    font-size: 13px;
-    vertical-align: middle;
-  }
-}
-.rbw-th-check {
-  width: 40px;
 }
 .rbw-checkbox {
   width: 18px;

@@ -1,4 +1,5 @@
 <!-- performance-report.component.html -->
+<p-toast position="top-right"></p-toast>
 <div class="ql-layout">
 
     <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
@@ -273,7 +274,7 @@
                 </div>
 
                 <!-- Preview Content -->
-                <div class="ql-preview-content">
+                <div class="ql-preview-content" id="report-preview-sheet">
 
                     <!-- Summary -->
                     <div *ngIf="previewTab === 'summary'" class="ql-preview-summary">
@@ -636,29 +637,33 @@
                     </button>
                 </div>
                 <div class="ql-modal-body">
-                    <p>Export <strong>{{ reportData?.config?.name }}</strong> as {{ reportData?.config?.format }}</p>
+                    <p>Export <strong>{{ reportData?.config?.name }}</strong> as {{ exportFormat }}</p>
                     <div class="ql-export-options">
                         <label class="ql-export-option">
                             <input type="radio" name="format" value="PDF"
-                                [checked]="reportData?.config?.format === 'PDF'">
+                                [checked]="exportFormat === 'PDF'" (change)="selectExportFormat('PDF')">
                             <span>PDF Report</span>
                         </label>
                         <label class="ql-export-option">
                             <input type="radio" name="format" value="EXCEL"
-                                [checked]="reportData?.config?.format === 'EXCEL'">
+                                [checked]="exportFormat === 'EXCEL'" (change)="selectExportFormat('EXCEL')">
                             <span>Excel Spreadsheet</span>
                         </label>
                         <label class="ql-export-option">
                             <input type="radio" name="format" value="CSV"
-                                [checked]="reportData?.config?.format === 'CSV'">
+                                [checked]="exportFormat === 'CSV'" (change)="selectExportFormat('CSV')">
                             <span>CSV Data</span>
                         </label>
                     </div>
                 </div>
                 <div class="ql-modal-footer">
-                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeExportModal()">Cancel</button>
-                    <button type="button" class="ql-btn ql-btn--primary" (click)="confirmExport()">
-                        <i class="fas fa-download"></i> Export
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeExportModal()"
+                        [disabled]="isExporting">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="confirmExport()"
+                        [disabled]="isExporting">
+                        <i class="fas" [class.fa-download]="!isExporting" [class.fa-spinner]="isExporting"
+                            [class.ql-spinning]="isExporting"></i>
+                        {{ isExporting ? 'Exporting...' : 'Export' }}
                     </button>
                 </div>
             </div>

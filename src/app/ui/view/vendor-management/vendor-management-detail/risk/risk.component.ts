@@ -142,7 +142,7 @@ get lowRiskAlerts(): RiskAlert[] {
       'WARNING': { count: 0, color: '#F97316' },
       'HIGH': { count: 0, color: '#F97316' },
       'MEDIUM': { count: 0, color: '#F59E0B' },
-      'LOW': { count: 0, color: '#2E6276' },
+      'LOW': { count: 0, color: '#184440' },
       'INFO': { count: 0, color: '#3B82F6' }
     };
 

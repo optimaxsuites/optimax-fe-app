@@ -286,7 +286,7 @@
                                     <div>
                                         <strong>{{ c.companyName }}</strong>
                                         <span *ngIf="c.contractValue"> — {{ formatCurrency(c.contractValue) }} ({{ c.contractYear }})</span>
-                                        <div *ngIf="c.description" style="color: #8a9aaa; font-size: 0.85rem;">{{ c.description }}</div>
+                                        <div *ngIf="c.description" style="color: #6a8e89; font-size: 0.85rem;">{{ c.description }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -320,7 +320,7 @@
                                 Accuracy Confirmed: {{ yesNo(s6.confirmedAccuracy) }}
                             </span></div>
                         </div>
-                        <p style="margin: 0.75rem 0 0; font-size: 0.8rem; color: #8a9aaa;">
+                        <p style="margin: 0.75rem 0 0; font-size: 0.8rem; color: #6a8e89;">
                             <i class="fas fa-paperclip"></i> {{ (s6.uploadedDocuments?.length || 0) }} document(s) submitted — see the
                             <a href="javascript:void(0)" (click)="setActiveTab('documents')">Documents tab</a> for files and verification status.
                         </p>

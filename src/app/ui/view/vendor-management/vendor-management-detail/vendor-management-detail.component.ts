@@ -352,7 +352,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
         {
           label: 'Overall Score',
           data: this.performance.trendData.map(d => d.score),
-          color: '#2E6276'
+          color: '#184440'
         },
         {
           label: 'On-Time Delivery',
@@ -755,7 +755,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   getLifecycleEventColor(event: string): string {
     const map: Record<string, string> = {
       'APPLIED': '#F5A623',
-      'DOCUMENTS_SUBMITTED': '#2E6276',
+      'DOCUMENTS_SUBMITTED': '#184440',
       'UNDER_REVIEW': '#F97316',
       'APPROVED': '#2EB270',
       'REJECTED': '#DC2626',
