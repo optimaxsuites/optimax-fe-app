@@ -540,8 +540,8 @@ export enum InsightActionStatus {
 
 export interface SentinelInsightAction {
     label: string;
-    action: 'review' | 'message' | 'dismiss' | 'investigate' | 'approve' | 'escalate';
-    style: 'primary' | 'secondary' | 'danger';
+    action: 'REVIEW' | 'MESSAGE' | 'DISMISS' | 'INVESTIGATE' | 'APPROVE' | 'ESCALATE';
+    style: 'PRIMARY' | 'SECONDARY' | 'DANGER';
 }
 
 export interface SentinelInsight {
@@ -574,7 +574,7 @@ export interface VendorRiskTrajectory {
     direction: RiskTrajectoryDirection;
     confidence: number; // 0-100
     reason: string;
-    drivers: { label: string; impact: 'positive' | 'negative'; weight: number }[];
+    drivers: { label: string; impact: 'POSITIVE' | 'NEGATIVE'; weight: number }[];
     projections: RiskTrajectoryPoint[];
     lastUpdated: Date;
 }

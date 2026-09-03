@@ -151,7 +151,6 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     this.setupSearch();
     this.checkScreenSize();
     this.loadColumnPreferences();
-    this.loadAiSignals();
   }
 
   ngAfterViewInit(): void {
@@ -251,6 +250,8 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
           // Clear selection when data changes
           this.selectedVendors.clear();
           this.selectAll = false;
+          // AI signals are fetched per-vendor, so only load them for the page just shown
+          this.loadAiSignals(response.vendors.map(v => String(v.id)));
         },
         error: (err) => {
           console.error('Failed to load vendors:', err);
@@ -268,8 +269,8 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   getRiskTrajectoryColor = getRiskTrajectoryColor;
   getRiskTrajectoryIcon = getRiskTrajectoryIcon;
 
-  private loadAiSignals(): void {
-    this.vendorService.getRiskTrajectories().subscribe({
+  private loadAiSignals(vendorIds: string[]): void {
+    this.vendorService.getRiskTrajectories(vendorIds).subscribe({
       next: (trajectories) => { this.riskTrajectories = trajectories; },
       error: (err) => console.error('Failed to load risk trajectories:', err)
     });
