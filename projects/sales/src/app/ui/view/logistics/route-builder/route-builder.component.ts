@@ -28,12 +28,22 @@ export class RouteBuilderComponent implements OnInit, OnDestroy {
   pool: Order[] = [];
   filteredPool: Order[] = [];
   searchTerm = '';
-  selectedOrderIds = new Set<string>();
+  selectedRows: Order[] = [];
   isPoolLoading = true;
   claimLimit = 15;
   currentLoad = 0;
   claimLimitMessage: string | null = null;
   isClaiming = false;
+  previewOrder: Order | null = null;
+
+  readonly poolColumns = [
+    { header: 'Order ID' },
+    { header: 'Customer' },
+    { header: 'Items / Weight' },
+    { header: 'Area' },
+    { header: 'Distance' },
+    { header: 'Action', align: 'right' as const }
+  ];
 
   // ---------------- Build Route ----------------
   myBatch: DeliveryBatch | null = null;
@@ -102,21 +112,34 @@ export class RouteBuilderComponent implements OnInit, OnDestroy {
         );
   }
 
+  onSelectionChange(selection: Order[]): void {
+    this.selectedRows = selection || [];
+  }
+
   toggleSelect(order: Order): void {
-    if (this.selectedOrderIds.has(order.id)) this.selectedOrderIds.delete(order.id);
-    else this.selectedOrderIds.add(order.id);
+    const idx = this.selectedRows.findIndex((o) => o.id === order.id);
+    if (idx > -1) this.selectedRows = this.selectedRows.filter((o) => o.id !== order.id);
+    else this.selectedRows = [...this.selectedRows, order];
   }
 
   isSelected(order: Order): boolean {
-    return this.selectedOrderIds.has(order.id);
+    return this.selectedRows.some((o) => o.id === order.id);
   }
 
   get selectedCount(): number {
-    return this.selectedOrderIds.size;
+    return this.selectedRows.length;
   }
 
   get wouldExceedLimit(): boolean {
     return this.currentLoad + this.selectedCount > this.claimLimit;
+  }
+
+  openOrderPreview(order: Order): void {
+    this.previewOrder = order;
+  }
+
+  closeOrderPreview(): void {
+    this.previewOrder = null;
   }
 
   initials(name: string): string {
@@ -129,24 +152,25 @@ export class RouteBuilderComponent implements OnInit, OnDestroy {
   }
 
   addToMyRoute(): void {
-    if (!this.selectedOrderIds.size) return;
+    if (!this.selectedRows.length) return;
     if (this.wouldExceedLimit) {
       this.claimLimitMessage = `You've reached your active order limit (${this.claimLimit}). Deliver some before claiming more.`;
       return;
     }
     this.claimLimitMessage = null;
     this.isClaiming = true;
-    const ids = Array.from(this.selectedOrderIds);
+    const ids = this.selectedRows.map((o) => o.id);
     this.logisticsService
       .claimOrders(ids)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (batch) => {
           this.myBatch = batch;
-          this.pool = this.pool.filter((o) => !this.selectedOrderIds.has(o.id));
+          const idSet = new Set(ids);
+          this.pool = this.pool.filter((o) => !idSet.has(o.id));
           this.applyFilter();
           this.currentLoad += ids.length;
-          this.selectedOrderIds.clear();
+          this.selectedRows = [];
           this.isClaiming = false;
           this.pushToast(`${ids.length} order${ids.length === 1 ? '' : 's'} added to your route`);
           this.view = 'build';

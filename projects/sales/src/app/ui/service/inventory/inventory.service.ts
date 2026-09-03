@@ -1674,15 +1674,21 @@ export class InventoryService {
    * (the same local record, if we already had one) rather than being blanked on every read.
    */
   private productFromApi(raw: any, existing?: Product): Product {
+    // Compare FKs with String() coercion, not strict `===` — the API's categoryId/
+    // measurementUnitId/supplierId can come back as a numeric string (e.g. "2") while the
+    // cached Category/MeasurementUnit/Supplier records use a numeric `id`. A strict `===`
+    // would silently fail to match, leaving `category` as '' and breaking the category
+    // filter for every product (see resolveProductCategoryName below, which already does
+    // this correctly for the same reason).
     const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string || '[]') as Category[];
-    const category = categories.find(c => c.id === raw.categoryId);
+    const category = categories.find(c => String(c.id) === String(raw.categoryId) || c.categoryId === raw.categoryId);
 
     const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string || '[]') as MeasurementUnit[];
-    const unit = units.find(u => u.id === raw.measurementUnitId);
+    const unit = units.find(u => String(u.id) === String(raw.measurementUnitId));
     const unitCode = unit?.code === 'PCS' ? 'EACH' : unit?.code;
 
     const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[];
-    const supplier = suppliers.find(s => s.id === raw.supplierId);
+    const supplier = suppliers.find(s => String(s.id) === String(raw.supplierId));
 
     return {
       id: raw.id,

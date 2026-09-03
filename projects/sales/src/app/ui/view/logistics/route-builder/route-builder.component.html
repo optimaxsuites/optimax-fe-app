@@ -42,54 +42,48 @@
 
     <!-- Desktop table -->
     <div *ngIf="!isPoolLoading && filteredPool.length" class="rbw-table-card">
-      <table class="rbw-table">
-        <thead>
-          <tr>
-            <th class="rbw-th-check"></th>
-            <th>Order ID</th>
-            <th>Customer</th>
-            <th>Items / Weight</th>
-            <th>Area</th>
-            <th>Distance</th>
-            <th class="text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let order of filteredPool" [class.selected]="isSelected(order)" (click)="toggleSelect(order)">
-            <td class="rbw-th-check">
-              <input type="checkbox" class="rbw-checkbox" [checked]="isSelected(order)" (click)="$event.stopPropagation()" (change)="toggleSelect(order)" />
-            </td>
-            <td>
-              <span class="rbw-order-id">{{ order.orderId }}</span>
-            </td>
-            <td>
-              <div class="flex items-center gap-2">
-                <span class="rbw-avatar">{{ initials(order.customerName) }}</span>
-                <span class="text-[13px] text-[#14181b]">{{ order.customerName }}</span>
-              </div>
-            </td>
-            <td>
-              <p class="text-[13px] text-[#14181b]">{{ order.itemsSummary }}</p>
-              <p *ngIf="order.weightKg" class="text-[11.5px] text-[#9aa7ae]">{{ order.weightKg }}kg</p>
-            </td>
-            <td class="text-[13px] text-[#00a191] font-medium">{{ order.area || order.deliveryLocation }}</td>
-            <td>
-              <span *ngIf="order.distanceKm" class="rbw-distance">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 7-7 7 7M12 5v14"></path></svg>
-                {{ order.distanceKm }}km away
-              </span>
-            </td>
-            <td class="text-right" (click)="$event.stopPropagation()">
-              <button type="button" class="rbw-icon-btn" aria-label="Preview location">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9aa7ae" stroke-width="2">
-                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <app-table
+        [columns]="poolColumns"
+        [rows]="filteredPool"
+        [actions]="[]"
+        [selectable]="true"
+        [selectionMode]="'multiple'"
+        [selection]="selectedRows"
+        (selectionChange)="onSelectionChange($event)"
+        [dataKey]="'id'"
+        emptyMessage=""
+      >
+        <ng-template appTableBody let-order>
+          <td>
+            <span class="rbw-order-id">{{ order.orderId }}</span>
+          </td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span class="rbw-avatar">{{ initials(order.customerName) }}</span>
+              <span class="text-[13px] text-[#14181b]">{{ order.customerName }}</span>
+            </div>
+          </td>
+          <td>
+            <p class="text-[13px] text-[#14181b]">{{ order.itemsSummary }}</p>
+            <p *ngIf="order.weightKg" class="text-[11.5px] text-[#9aa7ae]">{{ order.weightKg }}kg</p>
+          </td>
+          <td class="text-[13px] text-[#00a191] font-medium">{{ order.area || order.deliveryLocation }}</td>
+          <td>
+            <span *ngIf="order.distanceKm" class="rbw-distance">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 7-7 7 7M12 5v14"></path></svg>
+              {{ order.distanceKm }}km away
+            </span>
+          </td>
+          <td class="text-right" (click)="$event.stopPropagation()">
+            <button type="button" class="rbw-icon-btn" aria-label="View order details" (click)="openOrderPreview(order)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9aa7ae" stroke-width="2">
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </td>
+        </ng-template>
+      </app-table>
     </div>
 
     <!-- Mobile checklist cards -->
@@ -105,6 +99,12 @@
           <p class="rbw-mobile-meta">{{ order.itemsSummary }}<span *ngIf="order.weightKg"> · {{ order.weightKg }}kg</span></p>
           <p class="rbw-mobile-area">{{ order.area || order.deliveryLocation }}</p>
         </div>
+        <button type="button" class="rbw-icon-btn shrink-0" aria-label="View order details" (click)="$event.preventDefault(); $event.stopPropagation(); openOrderPreview(order)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9aa7ae" stroke-width="2">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
       </label>
     </div>
   </div>
@@ -241,5 +241,8 @@
   <div class="rbw-toast-stack">
     <div *ngFor="let toast of toasts" class="rbw-toast">{{ toast.message }}</div>
   </div>
+
+  <!-- Order preview drawer (eye icon) -->
+  <app-pool-order-detail-drawer *ngIf="previewOrder" [order]="previewOrder" (closed)="closeOrderPreview()"></app-pool-order-detail-drawer>
 
 </div>

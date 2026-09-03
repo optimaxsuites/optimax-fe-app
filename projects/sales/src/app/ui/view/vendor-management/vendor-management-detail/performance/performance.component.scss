@@ -3,24 +3,26 @@
 // VARIABLES
 // ============================================================
 
-$primary-dark: #0a1628;
-$primary-mid: #1a2d4a;
-$primary-light: #2a4a6a;
-$primary-accent: #2E6276;
-$primary-surface: #e8edf4;
+// Aligned with the shared vendor-management design tokens (see
+// vendor-management-detail.component.scss for the source of truth).
+$primary-dark: #0f2d2a;
+$primary-mid: #184440;
+$primary-light: #0f2d2a;
+$primary-accent: #184440;
+$primary-surface: #e8f4f2;
 
-$text-primary: #0a1628;
-$text-secondary: #4a5a6e;
-$text-muted: #8a9aaa;
+$text-primary: #1a2e2c;
+$text-secondary: #1a2e2c;
+$text-muted: #6a8e89;
 
-$border-light: #eef2f7;
-$border-color: #dce3ec;
+$border-light: #ccddd9;
+$border-color: #ccddd9;
 
-$shadow-sm: 0 2px 8px rgba(10, 22, 40, 0.06), 0 1px 3px rgba(10, 22, 40, 0.04);
-$shadow-md: 0 4px 20px rgba(10, 22, 40, 0.08), 0 2px 6px rgba(10, 22, 40, 0.04);
+$shadow-sm: 0 1px 8px rgba(24, 68, 64, 0.08);
+$shadow-md: 0 4px 20px rgba(24, 68, 64, 0.12), 0 2px 6px rgba(24, 68, 64, 0.06);
 
-$radius-sm: 10px;
-$radius-md: 14px;
+$radius-sm: 6px;
+$radius-md: 10px;
 
 // ============================================================
 // PERFORMANCE CONTAINER
@@ -43,7 +45,7 @@ $radius-md: 14px;
     }
 
     .kpi-card {
-        background: #f8fafc;
+        background: #f0f4f3;
         border: 1px solid $border-light;
         border-radius: $radius-sm;
         padding: 1rem 1.25rem;
@@ -129,7 +131,7 @@ $radius-md: 14px;
             height: 100%;
 
             .chart-grid {
-                stroke: rgba(46, 98, 118, 0.12);
+                stroke: rgba(24, 68, 64, 0.12);
                 stroke-width: 1.5;
             }
 
@@ -140,7 +142,7 @@ $radius-md: 14px;
 
             .chart-line {
                 fill: none;
-                stroke: #2E6276;
+                stroke: #184440;
                 stroke-width: 3;
                 stroke-linecap: round;
                 stroke-linejoin: round;
@@ -148,7 +150,7 @@ $radius-md: 14px;
 
             .chart-dot {
                 fill: white;
-                stroke: #2E6276;
+                stroke: #184440;
                 stroke-width: 3;
                 cursor: pointer;
                 transition: all 0.3s ease;
@@ -156,13 +158,13 @@ $radius-md: 14px;
                 &:hover {
                     r: 8;
                     stroke-width: 4;
-                    fill: #2E6276;
+                    fill: #184440;
                 }
             }
 
             .chart-label {
                 font-size: 0.6rem;
-                fill: #8a9aaa;
+                fill: #6a8e89;
                 font-weight: 500;
                 text-anchor: middle;
             }
@@ -179,7 +181,7 @@ $radius-md: 14px;
     grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
     padding: 1rem 1.25rem;
-    background: #f8fafc;
+    background: #f0f4f3;
     border: 1px solid $border-light;
     border-radius: $radius-sm;
 
