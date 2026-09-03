@@ -52,7 +52,26 @@ import {
   SupervisorReviewDTO,
 } from './work-task-api.service';
 
-export type PMSection = 'board' | 'reports' | 'batch' | 'assessment' | 'supervisor';
+export type PMSection = 'board' | 'reports' | 'batch' | 'assessment' | 'supervisor' | 'review';
+
+export interface ReviewSession {
+  id: string;
+  supervisorName: string;
+  employeeName: string;
+  period: 'week' | 'month';
+  periodLabel: string;
+  periodStart: string;
+  periodEnd: string;
+  tasksCount: number;
+  completedCount: number;
+  overdueCount: number;
+  score: number;
+  grade: string;
+  discussionSummary: string;
+  agreedActions: string;
+  supervisorRating: number;
+  recordedAt: string;
+}
 export type BoardView = 'board' | 'list' | 'gantt';
 type TaskStatus = string; // widened to support custom stages
 type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';
@@ -254,10 +273,46 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   get pageTitle(): string {
     const map: Record<PMSection, string> = {
       board: 'Task Board', reports: 'Reports & Analytics',
-      batch: 'Batch Import', assessment: 'Self-Assessment', supervisor: 'Supervisor Review',
+      batch: 'Batch Import', assessment: 'Self-Assessment',
+      supervisor: 'Supervisor Review', review: 'Performance Review',
     };
     return map[this.pmSection];
   }
+
+  // ── Performance Review tab state ──────────────────────────────────────────
+  reviewSubTab: 'mine' | 'self' | 'team' | 'sessions' = 'mine';
+  apiGoals: PerformanceGoalFull[] = [];
+  apiGoalsLoading = false;
+  apiGoalsSaving: Record<number, boolean> = {};
+  reviewPeriod: 'week' | 'month' = 'month';
+  reviewAnchorDate: Date = new Date();
+  reviewEmployee = '';
+  reviewDiscussion = '';
+  reviewAgreedActions = '';
+  reviewSupRating = 0;
+  reviewSessions: ReviewSession[] = [];
+  reviewSessionSaved = false;
+  sessionRecording = false;
+  sessionRecordError = '';
+
+  // Team member goals (loaded when supervisor selects an employee)
+  teamEmployeeGoals: PerformanceGoalFull[] = [];
+  teamGoalsLoading = false;
+  showGoalForm = false;
+  goalSaving = false;
+  newGoal = {
+    title: '',
+    description: '',
+    weight: 10,
+    dueDate: '',
+    cycleYear: new Date().getFullYear(),
+    cycleQuarter: ('Q' + Math.ceil((new Date().getMonth() + 1) / 3)) as string,
+  };
+
+  // My appraisal submission (self-assessment flow)
+  mySubmission: AppraisalSubmissionFull | null = null;
+  submissionLoading = false;
+  submitting = false;
 
   setPmSection(s: PMSection): void {
     this.pmSection = s;
@@ -527,6 +582,26 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   private saveStages(): void {
     localStorage.setItem(ProductivityWorkspaceComponent.STAGE_STORAGE_KEY, JSON.stringify(this.columns));
+    // Also persist to backend so stages sync across browsers/devices
+    this.subscription.add(
+      this.workTaskApi.saveBoardConfig(this.columns)
+        .pipe(catchError(() => of(null)))
+        .subscribe()
+    );
+  }
+
+  private loadStagesFromApi(): void {
+    this.subscription.add(
+      this.workTaskApi.getBoardConfig()
+        .pipe(catchError(() => of({})))
+        .subscribe(config => {
+          const stages = (config as any)?.stages;
+          if (Array.isArray(stages) && stages.length > 0) {
+            this.columns = stages;
+            localStorage.setItem(ProductivityWorkspaceComponent.STAGE_STORAGE_KEY, JSON.stringify(stages));
+          }
+        })
+    );
   }
 
   addStage(): void {
@@ -558,15 +633,497 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   // ── Role-based visibility ─────────────────────────────────────────────────
   get isAdminOrSupervisor(): boolean {
     const role = (sessionStorage.getItem('role') || localStorage.getItem('role') || '').toUpperCase();
-    return role.includes('ADMIN') || role.includes('SUPERVISOR') || role.includes('MANAGER');
+    if (role.includes('ADMIN') || role.includes('SUPERVISOR') || role.includes('MANAGER') ||
+        role.includes('HR') || role.includes('HEAD') || role.includes('LEAD')) return true;
+    // Structural check: if any employee lists the current user as their supervisor, they ARE a supervisor
+    const myName = this.currentUserDisplayName.toLowerCase();
+    if (myName && this.allEmployees.some(e => e.supervisor?.toLowerCase() === myName)) return true;
+    return false;
   }
 
   get currentUserDisplayName(): string {
-    return sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || '';
+    const raw = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') ||
+                sessionStorage.getItem('name') || '';
+    // Guard against apps that store the literal string "undefined" or "null"
+    return (raw && raw !== 'undefined' && raw !== 'null') ? raw : '';
   }
 
   get currentUserFullName(): string {
     return this.currentUserDisplayName.toLowerCase();
+  }
+
+  // ── Performance Review ────────────────────────────────────────────────────
+
+  get reviewPeriodBounds(): { start: Date; end: Date; label: string } {
+    const d = new Date(this.reviewAnchorDate);
+    if (this.reviewPeriod === 'month') {
+      const start = new Date(d.getFullYear(), d.getMonth(), 1);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      const label = start.toLocaleString('default', { month: 'long', year: 'numeric' });
+      return { start, end, label };
+    }
+    // ISO week: Monday → Sunday
+    const dow = d.getDay(); // 0=Sun
+    const toMon = dow === 0 ? -6 : 1 - dow;
+    const start = new Date(d); start.setDate(d.getDate() + toMon); start.setHours(0, 0, 0, 0);
+    const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23, 59, 59, 999);
+    const fmt = (dt: Date) => dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    return { start, end, label: `${fmt(start)} – ${fmt(end)}, ${start.getFullYear()}` };
+  }
+
+  reviewPrev(): void {
+    const d = new Date(this.reviewAnchorDate);
+    if (this.reviewPeriod === 'month') d.setMonth(d.getMonth() - 1);
+    else d.setDate(d.getDate() - 7);
+    this.reviewAnchorDate = new Date(d);
+  }
+
+  reviewNext(): void {
+    const d = new Date(this.reviewAnchorDate);
+    if (this.reviewPeriod === 'month') d.setMonth(d.getMonth() + 1);
+    else d.setDate(d.getDate() + 7);
+    this.reviewAnchorDate = new Date(d);
+  }
+
+  private tasksInPeriod(tasks: BoardTask[], start: Date, end: Date): BoardTask[] {
+    return tasks.filter(t => {
+      const d = t.dueDate ? new Date(t.dueDate) : null;
+      return d && !isNaN(d.getTime()) && d >= start && d <= end;
+    });
+  }
+
+  private calcPeriodMetrics(tasks: BoardTask[]): {
+    completedCount: number; overdueCount: number; activeCount: number;
+    completionRate: number; onTimeRate: number; score: number; grade: string; gradeClass: string;
+  } {
+    const total = tasks.length;
+    if (!total) return { completedCount: 0, overdueCount: 0, activeCount: 0, completionRate: 0, onTimeRate: 100, score: 0, grade: '—', gradeClass: '--bad' };
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const done = tasks.filter(t => t.status === 'Done' || t.closed).length;
+    const overdue = tasks.filter(t => t.status !== 'Done' && !t.closed && t.dueDate && new Date(t.dueDate) < today).length;
+    const active = total - done - overdue;
+    const completionRate = Math.round((done / total) * 100);
+    const overdueRate = Math.round((overdue / total) * 100);
+    const onTimeRate = 100 - overdueRate;
+    const score = Math.round(completionRate * 0.6 + onTimeRate * 0.4);
+    let grade = 'Poor'; let gradeClass = '--bad';
+    if (score >= 80) { grade = 'Excellent'; gradeClass = '--excellent'; }
+    else if (score >= 60) { grade = 'Good'; gradeClass = '--good'; }
+    else if (score >= 40) { grade = 'Fair'; gradeClass = '--fair'; }
+    return { completedCount: done, overdueCount: overdue, activeCount: active, completionRate, onTimeRate, score, grade, gradeClass };
+  }
+
+  get myReviewTasks(): BoardTask[] {
+    const name = this.currentUserFullName;
+    const my = [...this.boardTasks, ...this.archivedTasks].filter(t =>
+      (t.assignee || '').toLowerCase() === name ||
+      (t.assignees || []).some(a => (a || '').toLowerCase() === name)
+    );
+    const { start, end } = this.reviewPeriodBounds;
+    return this.tasksInPeriod(my, start, end);
+  }
+
+  get myReviewMetrics() { return this.calcPeriodMetrics(this.myReviewTasks); }
+
+  get teamReviewTasks(): BoardTask[] {
+    if (!this.reviewEmployee) return [];
+    const emp = this.reviewEmployee.toLowerCase();
+    const tasks = [...this.boardTasks, ...this.archivedTasks].filter(t =>
+      (t.assignee || '').toLowerCase() === emp ||
+      (t.assignees || []).some(a => (a || '').toLowerCase() === emp)
+    );
+    const { start, end } = this.reviewPeriodBounds;
+    return this.tasksInPeriod(tasks, start, end);
+  }
+
+  get teamReviewMetrics() { return this.calcPeriodMetrics(this.teamReviewTasks); }
+
+  get reviewTeamMemberNames(): string[] {
+    const role = (sessionStorage.getItem('role') || localStorage.getItem('role') || '').toUpperCase();
+    if (!this.isAdminOrSupervisor) return [];
+    if (role.includes('ADMIN')) return this.allEmployees.map(e => e.fullName).sort();
+    const myName = this.currentUserFullName;
+    return this.allEmployees
+      .filter(e => (e.supervisor || '').toLowerCase() === myName)
+      .map(e => e.fullName).sort();
+  }
+
+  get filteredReviewSessions(): ReviewSession[] {
+    const role = (sessionStorage.getItem('role') || localStorage.getItem('role') || '').toUpperCase();
+    if (role.includes('ADMIN')) return this.reviewSessions;
+    const myName = this.currentUserDisplayName;
+    return this.reviewSessions.filter(s => s.supervisorName === myName);
+  }
+
+  // Called when supervisor selects a team member — loads their goals from API
+  onReviewEmployeeChange(name: string): void {
+    this.reviewEmployee = name;
+    this.teamEmployeeGoals = [];
+    this.showGoalForm = false;
+    if (name) this.loadTeamMemberGoals();
+  }
+
+  loadTeamMemberGoals(): void {
+    const emp = this.allEmployees.find(e => e.fullName === this.reviewEmployee);
+    const empId = Number(emp?.id || 0);
+    if (!empId) return;
+    this.teamGoalsLoading = true;
+    this.subscription.add(
+      this.workTaskApi.getGoalsByEmployee(empId)
+        .pipe(catchError(() => of([] as PerformanceGoalFull[])))
+        .subscribe(goals => {
+          this.teamEmployeeGoals = goals;
+          this.teamGoalsLoading = false;
+        })
+    );
+  }
+
+  createGoalForEmployee(): void {
+    if (!this.newGoal.title.trim()) return;
+    const emp = this.allEmployees.find(e => e.fullName === this.reviewEmployee);
+    const empId = Number(emp?.id || 0);
+    if (!empId) { this.showToast('Employee ID not found', 'error'); return; }
+    this.goalSaving = true;
+    const dto: PerformanceGoalDTO = {
+      employeeId: empId,
+      title: this.newGoal.title.trim(),
+      description: this.newGoal.description.trim() || undefined,
+      weight: this.newGoal.weight || 10,
+      dueDate: this.newGoal.dueDate || undefined,
+      cycleYear: this.newGoal.cycleYear,
+      cycleQuarter: this.newGoal.cycleQuarter,
+    };
+    this.subscription.add(
+      this.workTaskApi.createGoal(dto)
+        .pipe(catchError(() => of(null)))
+        .subscribe(created => {
+          this.goalSaving = false;
+          if (created) {
+            this.teamEmployeeGoals = [created, ...this.teamEmployeeGoals];
+            this.newGoal = { title: '', description: '', weight: 10, dueDate: '',
+              cycleYear: new Date().getFullYear(),
+              cycleQuarter: 'Q' + Math.ceil((new Date().getMonth() + 1) / 3) };
+            this.showGoalForm = false;
+            this.showToast('Goal created successfully', 'success');
+          } else {
+            this.showToast('Failed to create goal', 'error');
+          }
+        })
+    );
+  }
+
+  // Wired to backend: creates AppraisalSubmission + SupervisorReview, stores rich data locally
+  recordSession(): void {
+    const emp = this.allEmployees.find(e => e.fullName === this.reviewEmployee);
+    const empId = Number(emp?.id || 0);
+    const m = this.teamReviewMetrics;
+    const localSession: ReviewSession = {
+      id: Date.now().toString(),
+      supervisorName: this.currentUserDisplayName,
+      employeeName: this.reviewEmployee,
+      period: this.reviewPeriod,
+      periodLabel: this.reviewPeriodBounds.label,
+      periodStart: this.reviewPeriodBounds.start.toISOString(),
+      periodEnd: this.reviewPeriodBounds.end.toISOString(),
+      tasksCount: this.teamReviewTasks.length,
+      completedCount: m.completedCount,
+      overdueCount: m.overdueCount,
+      score: m.score,
+      grade: m.grade,
+      discussionSummary: this.reviewDiscussion,
+      agreedActions: this.reviewAgreedActions,
+      supervisorRating: this.reviewSupRating,
+      recordedAt: new Date().toISOString(),
+    };
+
+    // Always save locally first so the record persists even if API is unavailable
+    this.reviewSessions = [localSession, ...this.reviewSessions];
+    try { localStorage.setItem('hr_pm_review_sessions_v1', JSON.stringify(this.reviewSessions)); } catch { /* quota */ }
+    this.reviewSessionSaved = true;
+    const note = this.reviewDiscussion;
+    const rating = this.reviewSupRating;
+    const agreedActions = this.reviewAgreedActions;
+    this.reviewDiscussion = '';
+    this.reviewAgreedActions = '';
+    this.reviewSupRating = 0;
+    setTimeout(() => { this.reviewSessionSaved = false; }, 4000);
+
+    // Notify employee (DM + email) and admins (email) about the recorded session
+    this.postSessionNotifications(localSession, note, agreedActions, empId);
+
+    // Push to backend if employee ID is resolvable
+    if (!empId || !this.resolvedEmployeeId) return;
+    this.sessionRecording = true;
+    this.sessionRecordError = '';
+    const cycleYear = this.newGoal.cycleYear;
+    const cycleQuarter = this.newGoal.cycleQuarter;
+
+    // Step 1: find or create an appraisal submission for this employee+cycle
+    this.subscription.add(
+      this.workTaskApi.getSubmissionsByEmployee(empId)
+        .pipe(catchError(() => of([] as import('./work-task-api.service').AppraisalSubmissionFull[])))
+        .subscribe(subs => {
+          const existing = subs.find(s => s.cycleYear === cycleYear && s.cycleQuarter === cycleQuarter);
+          const submissionObs = existing
+            ? of(existing)
+            : this.workTaskApi.createSubmission({ employeeId: empId, cycleYear, cycleQuarter, status: 'DRAFT' as any });
+
+          this.subscription.add(
+            submissionObs.pipe(catchError(() => of(null))).subscribe(sub => {
+              if (!sub) { this.sessionRecording = false; return; }
+              // Step 2: record the supervisor review
+              const reviewDto: SupervisorReviewDTO = {
+                submissionId: sub.id,
+                reviewerEmployeeId: this.resolvedEmployeeId,
+                supervisorScore: Math.round(rating * 20), // 1–5 → 20–100
+                reviewNote: note,
+                decision: 'Approved',
+                status: 'COMPLETED' as any,
+              };
+              this.subscription.add(
+                this.workTaskApi.createReview(reviewDto)
+                  .pipe(catchError(() => of(null)))
+                  .subscribe(() => { this.sessionRecording = false; })
+              );
+            })
+          );
+        })
+    );
+  }
+
+  deleteSession(id: string): void {
+    this.reviewSessions = this.reviewSessions.filter(s => s.id !== id);
+    try { localStorage.setItem('hr_pm_review_sessions_v1', JSON.stringify(this.reviewSessions)); } catch { /* quota */ }
+  }
+
+  // Send DM to reviewed employee + email to employee, supervisor, and admins
+  private postSessionNotifications(session: ReviewSession, discussion: string, agreedActions: string, empId: number): void {
+    const supervisorName = this.currentUserDisplayName;
+    const employeeName = session.employeeName;
+    const period = session.periodLabel;
+    const gradeLabel = session.grade;
+    const score = session.score;
+    const rating = session.supervisorRating;
+    const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+
+    const dmMessage = `📋 Assessment Session Recorded — ${period}\n\nHello ${employeeName},\n\nYour performance review for ${period} has been recorded by ${supervisorName}.\n\n` +
+      `Performance Score: ${score}/100 (${gradeLabel})\nSupervisor Rating: ${stars}\n\n` +
+      (discussion ? `Discussion Summary:\n${discussion}\n\n` : '') +
+      (agreedActions ? `Agreed Actions:\n${agreedActions}\n\n` : '') +
+      `Please log in to OptimaX HR to view the full review details.`;
+
+    const emailHtml = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+      <div style="background:#0369a1;padding:20px 24px;border-radius:8px 8px 0 0">
+        <h2 style="color:#fff;margin:0;font-size:20px">Performance Review Session — ${period}</h2>
+      </div>
+      <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">
+        <p style="color:#374151">Hello <strong>${employeeName}</strong>,</p>
+        <p style="color:#374151">Your performance review for <strong>${period}</strong> has been recorded by <strong>${supervisorName}</strong>.</p>
+        <div style="background:#f0f9ff;border-left:4px solid #0369a1;padding:14px 16px;margin:16px 0;border-radius:0 4px 4px 0">
+          <table style="width:100%;border-collapse:collapse">
+            <tr><td style="padding:4px 0;color:#6b7280;font-size:13px">Period</td><td style="padding:4px 0;font-weight:600">${period}</td></tr>
+            <tr><td style="padding:4px 0;color:#6b7280;font-size:13px">Score</td><td style="padding:4px 0;font-weight:600">${score}/100</td></tr>
+            <tr><td style="padding:4px 0;color:#6b7280;font-size:13px">Grade</td><td style="padding:4px 0;font-weight:600">${gradeLabel}</td></tr>
+            <tr><td style="padding:4px 0;color:#6b7280;font-size:13px">Supervisor Rating</td><td style="padding:4px 0">${stars}</td></tr>
+          </table>
+        </div>
+        ${discussion ? `<p style="color:#374151;margin-top:16px"><strong>Discussion Summary:</strong></p><p style="color:#374151;white-space:pre-wrap;background:#f9fafb;padding:12px;border-radius:6px">${discussion}</p>` : ''}
+        ${agreedActions ? `<p style="color:#374151;margin-top:16px"><strong>Agreed Actions / Next Steps:</strong></p><p style="color:#374151;white-space:pre-wrap;background:#f9fafb;padding:12px;border-radius:6px">${agreedActions}</p>` : ''}
+        <p style="color:#6b7280;font-size:12px;margin-top:24px">Log in to OptimaX HR to view your full performance dashboard.</p>
+      </div>
+    </div>`;
+
+    const adminEmailHtml = emailHtml.replace(`Hello <strong>${employeeName}</strong>`,
+      `Hello (Admin/Supervisor Notice),<br>A performance review session has been recorded for <strong>${employeeName}</strong>`);
+
+    const subject = `Performance Review Session: ${employeeName} — ${period}`;
+
+    // 1. Send DM to reviewed employee
+    const myUserId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || '0');
+    const empEntry = this.allEmployees.find(e => e.fullName === employeeName);
+    const empUserId = empEntry?.userId ? Number(empEntry.userId) : null;
+    if (myUserId && empUserId && empUserId !== myUserId) {
+      this.subscription.add(
+        this.workTaskApi.getOrCreateDmChannel(myUserId, empUserId).pipe(
+          switchMap(ch => this.workTaskApi.sendChannelMessage(ch.id ?? ch.channelId, dmMessage)),
+          catchError(() => of(null))
+        ).subscribe()
+      );
+    }
+
+    // 2. Email the reviewed employee
+    const empEmail = this.employeeEmailMap[empId] || this.resolveEmailByName(employeeName);
+    if (empEmail) {
+      this.employeeService.sendNotificationEmail(empEmail, subject, emailHtml).subscribe({ error: () => {} });
+    }
+
+    // 3. Email the supervisor (self, for record)
+    const supEmail = this.resolveEmailByName(supervisorName);
+    if (supEmail && supEmail !== empEmail) {
+      this.employeeService.sendNotificationEmail(supEmail, `[Copy] ${subject}`, adminEmailHtml).subscribe({ error: () => {} });
+    }
+
+    // 4. Email admins — find users with ADMIN role in dmUserList
+    const adminRole = 'ADMIN';
+    const adminEmails = this.dmUserList
+      .filter(u => {
+        const emp = this.allEmployees.find(e => e.userId === String(u.id));
+        return emp?.role?.toUpperCase().includes(adminRole);
+      })
+      .map(u => u.email)
+      .filter(e => e && e !== empEmail && e !== supEmail);
+    [...new Set(adminEmails)].forEach(email => {
+      this.employeeService.sendNotificationEmail(email, `[Admin] ${subject}`, adminEmailHtml).subscribe({ error: () => {} });
+    });
+  }
+
+  private loadReviewSessions(): void {
+    try {
+      const raw = localStorage.getItem('hr_pm_review_sessions_v1');
+      this.reviewSessions = raw ? JSON.parse(raw) : [];
+    } catch { this.reviewSessions = []; }
+  }
+
+  // Loads sessions this supervisor has recorded from the API and merges with local rich data
+  private loadReviewSessionsFromApi(): void {
+    if (!this.resolvedEmployeeId) return;
+    this.subscription.add(
+      this.workTaskApi.getReviewsByReviewer(this.resolvedEmployeeId)
+        .pipe(catchError(() => of([] as import('./work-task-api.service').SupervisorReviewFull[])))
+        .subscribe(reviews => {
+          if (!reviews || reviews.length === 0) return;
+          const localExtended: Record<string, ReviewSession> = {};
+          this.reviewSessions.forEach(s => { if (s.id) localExtended[s.id] = s; });
+          const apiSessions: ReviewSession[] = reviews.map(r => {
+            const empRef = (r.submission as any)?.employee;
+            const empName = empRef
+              ? (`${empRef.firstName || ''} ${empRef.lastName || ''}`).trim() || String(empRef.name || '')
+              : '';
+            const apiId = 'api_' + r.id;
+            const local = localExtended[apiId] || null;
+            return {
+              id: apiId,
+              supervisorName: this.currentUserDisplayName,
+              employeeName: empName,
+              period: local?.period || 'month',
+              periodLabel: local?.periodLabel || (r.submission?.cycleQuarter || '') + ' ' + (r.submission?.cycleYear || ''),
+              periodStart: local?.periodStart || r.createdAt,
+              periodEnd: local?.periodEnd || r.createdAt,
+              tasksCount: local?.tasksCount || 0,
+              completedCount: local?.completedCount || 0,
+              overdueCount: local?.overdueCount || 0,
+              score: local?.score || r.supervisorScore,
+              grade: local?.grade || (r.supervisorScore >= 80 ? 'Excellent' : r.supervisorScore >= 60 ? 'Good' : r.supervisorScore >= 40 ? 'Fair' : 'Poor'),
+              discussionSummary: local?.discussionSummary || r.reviewNote || '',
+              agreedActions: local?.agreedActions || '',
+              supervisorRating: local?.supervisorRating || Math.round(r.supervisorScore / 20),
+              recordedAt: r.reviewedAt || r.createdAt,
+            } as ReviewSession;
+          });
+          // Merge: API sessions replace matching local ones; purely local sessions kept
+          const apiIds = new Set(apiSessions.map(s => s.id));
+          const purelyLocal = this.reviewSessions.filter(s => !s.id.startsWith('api_') && !apiIds.has(s.id));
+          this.reviewSessions = [...apiSessions, ...purelyLocal];
+          try { localStorage.setItem('hr_pm_review_sessions_v1', JSON.stringify(this.reviewSessions)); } catch { /* quota */ }
+        })
+    );
+  }
+
+  loadApiGoals(): void {
+    if (!this.resolvedEmployeeId) return;
+    this.apiGoalsLoading = true;
+    this.subscription.add(
+      this.workTaskApi.getGoalsByEmployee(this.resolvedEmployeeId)
+        .pipe(catchError(() => of([] as PerformanceGoalFull[])))
+        .subscribe(goals => {
+          this.apiGoals = goals;
+          this.apiGoalsLoading = false;
+        })
+    );
+  }
+
+  saveGoalRating(goal: PerformanceGoalFull, rating: number, rationale: string): void {
+    this.apiGoalsSaving = { ...this.apiGoalsSaving, [goal.id]: true };
+    this.subscription.add(
+      this.workTaskApi.submitSelfAssessment(goal.id, rating, rationale)
+        .pipe(catchError(() => of(null)))
+        .subscribe(updated => {
+          if (updated) {
+            this.apiGoals = this.apiGoals.map(g => g.id === goal.id ? { ...g, selfRating: rating, rationale } : g);
+          }
+          const s = { ...this.apiGoalsSaving }; delete s[goal.id];
+          this.apiGoalsSaving = s;
+        })
+    );
+  }
+
+  get apiRatedCount(): number { return this.apiGoals.filter(g => g.selfRating > 0).length; }
+  get apiGoalWeightSum(): number { return this.apiGoals.reduce((s, g) => s + (g.weight || 0), 0); }
+  get allGoalsRated(): boolean { return this.apiGoals.length > 0 && this.apiGoals.every(g => g.selfRating > 0); }
+
+  // Load the current user's appraisal submission for the current cycle
+  loadMySubmission(): void {
+    if (!this.resolvedEmployeeId) return;
+    this.submissionLoading = true;
+    const cycleYear = this.newGoal.cycleYear;
+    const cycleQuarter = this.newGoal.cycleQuarter;
+    this.subscription.add(
+      this.workTaskApi.getSubmissionsByEmployee(this.resolvedEmployeeId)
+        .pipe(catchError(() => of([] as AppraisalSubmissionFull[])))
+        .subscribe(subs => {
+          this.mySubmission = subs.find(s => s.cycleYear === cycleYear && s.cycleQuarter === cycleQuarter) ?? null;
+          this.submissionLoading = false;
+        })
+    );
+  }
+
+  // Creates a submission (if none exists) then marks it SUBMITTED so supervisor can review
+  submitMyAppraisal(): void {
+    if (!this.allGoalsRated || this.submitting) return;
+    this.submitting = true;
+    const cycleYear = this.newGoal.cycleYear;
+    const cycleQuarter = this.newGoal.cycleQuarter;
+    const empId = this.resolvedEmployeeId;
+    const proceed = (sub: AppraisalSubmissionFull) => {
+      this.subscription.add(
+        this.workTaskApi.submitAppraisal(sub.id)
+          .pipe(catchError(() => of(null)))
+          .subscribe(submitted => {
+            this.submitting = false;
+            if (submitted) {
+              this.mySubmission = submitted;
+              this.showToast('Appraisal submitted to supervisor', 'success');
+            } else {
+              this.showToast('Failed to submit appraisal', 'error');
+            }
+          })
+      );
+    };
+    if (this.mySubmission) {
+      proceed(this.mySubmission);
+    } else {
+      this.subscription.add(
+        this.workTaskApi.createSubmission({ employeeId: empId, cycleYear, cycleQuarter, status: 'DRAFT' as any })
+          .pipe(catchError(() => of(null)))
+          .subscribe(sub => {
+            if (!sub) { this.submitting = false; this.showToast('Failed to submit appraisal', 'error'); return; }
+            this.mySubmission = sub;
+            proceed(sub);
+          })
+      );
+    }
+  }
+
+  // Delete a goal from the team member's goal list (supervisor action)
+  deleteTeamGoal(goal: PerformanceGoalFull): void {
+    this.subscription.add(
+      this.workTaskApi.deleteGoal(goal.id)
+        .pipe(catchError(() => of(null)))
+        .subscribe(() => {
+          this.teamEmployeeGoals = this.teamEmployeeGoals.filter(g => g.id !== goal.id);
+          this.showToast('Goal removed', 'info');
+        })
+    );
   }
 
   // ── Subtask inline edit ───────────────────────────────────────────────────
@@ -607,12 +1164,20 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return [...this.boardTasks, ...this.archivedTasks];
   }
 
+  reportsMonthFilter = '';   // 'YYYY-MM', empty = all months
+
   get chartFilteredTasks(): BoardTask[] {
     return this.allTasksForCharts.filter(t => {
       if (this.chartFilterAssignee && t.assignee !== this.chartFilterAssignee) return false;
       if (this.chartFilterSupervisor && t.team !== this.chartFilterSupervisor) return false;
       if (this.chartFilterPriority && t.priority !== this.chartFilterPriority) return false;
       if (this.chartFilterTag && !(t.tags ?? []).includes(this.chartFilterTag)) return false;
+      if (this.reportsMonthFilter) {
+        const d = t.dueDate ? new Date(t.dueDate) : null;
+        if (!d || isNaN(d.getTime())) return false;
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (key !== this.reportsMonthFilter) return false;
+      }
       return true;
     });
   }
@@ -749,6 +1314,92 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   drillToTask(task: BoardTask): void {
     this.openDetail(task);
+  }
+
+  // ── Assignment & Distribution report getters ───────────────────────────────
+
+  get assigneeDistribution(): Array<{
+    name: string; total: number;
+    done: number; active: number; overdue: number;
+    donePct: number; activePct: number; overduePct: number;
+  }> {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const map = new Map<string, { done: number; active: number; overdue: number }>();
+    this.chartFilteredTasks.forEach(t => {
+      const name = t.assignee || 'Unassigned';
+      if (!map.has(name)) map.set(name, { done: 0, active: 0, overdue: 0 });
+      const row = map.get(name)!;
+      if (t.status === 'Done' || t.closed) {
+        row.done++;
+      } else {
+        const due = t.dueDate ? new Date(t.dueDate) : null;
+        if (due && due < today) row.overdue++;
+        else row.active++;
+      }
+    });
+    return [...map.entries()]
+      .map(([name, r]) => {
+        const total = r.done + r.active + r.overdue;
+        return {
+          name, total,
+          done: r.done, active: r.active, overdue: r.overdue,
+          donePct: total ? Math.round((r.done / total) * 100) : 0,
+          activePct: total ? Math.round((r.active / total) * 100) : 0,
+          overduePct: total ? Math.round((r.overdue / total) * 100) : 0,
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+  }
+
+  get tasksByMonth(): Array<{ label: string; count: number; pct: number }> {
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const map = new Map<string, number>();
+    this.chartFilteredTasks
+      .filter(t => t.dueDate && !t.closed)
+      .forEach(t => {
+        const d = new Date(t.dueDate);
+        if (isNaN(d.getTime())) return;
+        const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+        map.set(key, (map.get(key) || 0) + 1);
+      });
+    const max = Math.max(...[...map.values()], 1);
+    return [...map.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, count]) => {
+        const [yr, mo] = key.split('-');
+        return { label: `${MONTHS[+mo]} ${yr}`, count, pct: Math.round((count / max) * 100) };
+      });
+  }
+
+  get tasksByDayOfWeek(): Array<{ label: string; count: number; pct: number }> {
+    const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const counts = [0,0,0,0,0,0,0];
+    this.chartFilteredTasks
+      .filter(t => t.dueDate && !t.closed)
+      .forEach(t => {
+        const d = new Date(t.dueDate);
+        if (!isNaN(d.getTime())) counts[d.getDay()]++;
+      });
+    const max = Math.max(...counts, 1);
+    return DAYS.map((label, i) => ({
+      label, count: counts[i], pct: Math.round((counts[i] / max) * 100)
+    })).filter(d => d.count > 0);
+  }
+
+  get assigneeEffectiveness(): Array<{
+    name: string; total: number; done: number; overdue: number;
+    completionPct: number; onTimePct: number; score: number; grade: string; gradeClass: string;
+  }> {
+    return this.assigneeDistribution.map(r => {
+      const completionPct = r.donePct;
+      const onTimePct = 100 - r.overduePct;
+      const score = Math.round(completionPct * 0.6 + onTimePct * 0.4);
+      let grade = 'Poor'; let gradeClass = '--bad';
+      if (score >= 80) { grade = 'Excellent'; gradeClass = '--excellent'; }
+      else if (score >= 60) { grade = 'Good'; gradeClass = '--good'; }
+      else if (score >= 40) { grade = 'Fair'; gradeClass = '--fair'; }
+      return { name: r.name, total: r.total, done: r.done, overdue: r.overdue, completionPct, onTimePct, score, grade, gradeClass };
+    }).sort((a, b) => b.score - a.score);
   }
 
   // ── Assignee performance analytics ────────────────────────────────────────
@@ -1389,7 +2040,20 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   hideOverdue = true;
 
   private loadChannelUnread(): void {
+    // Seed immediately from localStorage so badges appear without waiting for API
     try { this.channelUnreadCounts = JSON.parse(localStorage.getItem('hr_ch_unread') || '{}'); } catch {}
+    // Then override with live counts from the backend
+    this.subscription.add(
+      this.workTaskApi.getHomeChannelsWithUnread()
+        .pipe(catchError(() => of([])))
+        .subscribe(channels => {
+          if (!channels || channels.length === 0) return;
+          const apiCounts: Record<number, number> = {};
+          channels.forEach(ch => { if (ch.id && (ch.unreadCount ?? 0) > 0) apiCounts[ch.id] = ch.unreadCount!; });
+          this.channelUnreadCounts = { ...this.channelUnreadCounts, ...apiCounts };
+          localStorage.setItem('hr_ch_unread', JSON.stringify(this.channelUnreadCounts));
+        })
+    );
   }
 
   incrementChannelUnread(channelId: number): void {
@@ -1403,6 +2067,16 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     delete updated[channelId];
     this.channelUnreadCounts = updated;
     localStorage.setItem('hr_ch_unread', JSON.stringify(this.channelUnreadCounts));
+    // Tell the backend this channel has been read up to the last message
+    this.subscription.add(
+      this.workTaskApi.getChannelMessages(channelId)
+        .pipe(catchError(() => of([])))
+        .subscribe(msgs => {
+          if (!msgs || msgs.length === 0) return;
+          const lastId = Math.max(...msgs.map(m => m.id));
+          if (lastId > 0) this.subscription.add(this.workTaskApi.markChannelRead(channelId, lastId).subscribe());
+        })
+    );
   }
 
   // ── Inline photo state (per-task key = task.id) ────────────────────────────
@@ -1436,6 +2110,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     );
     this.loadArchivedTasks();
     this.loadChannelUnread();
+    this.loadStagesFromApi();
+    this.loadReviewSessions();
     this.productivityDataService.init();
     this.productivityReviewService.init();
     this.subscription.add(
@@ -1462,6 +2138,9 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       this.resolvedEmployeeId = cachedEmpId;
       this.taskViewMode = defaultViewMode;
       this.loadBoardFromApi();
+      this.loadApiGoals();
+      this.loadMySubmission();
+      this.loadReviewSessionsFromApi();
     } else {
       this.subscription.add(
         this.employeeService.getEmployeeIdForCurrentUser()
@@ -1470,6 +2149,9 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
             this.resolvedEmployeeId = empId;
             this.taskViewMode = defaultViewMode;
             this.loadBoardFromApi();
+            this.loadApiGoals();
+            this.loadMySubmission();
+            this.loadReviewSessionsFromApi();
           })
       );
     }
@@ -1689,6 +2371,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         if (persist) {
           // Persist merged state so imports survive refresh even if API wipes boardTasks next time
           this.save();
+          // Push imported tasks to backend so they appear across all browsers
+          if (this.apiEnabled) newOnes.forEach(t => this.syncTaskToApi(t));
         }
       }
     } catch { /* ignore parse errors */ }
@@ -2266,6 +2950,46 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       '#6366f1',
       `Reply from ${displayName}`
     );
+    this.sendReplyDMs(this.selectedTask, fu, text, displayName);
+  }
+
+  // DM the follow-up author + task assignee + supervisor when a reply is posted
+  private sendReplyDMs(task: BoardTask, fu: FollowUp, replyText: string, senderName: string): void {
+    const myUserId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || '0');
+    if (!myUserId) return;
+
+    const preview = replyText.replace(/<[^>]*>/g, '').trim().slice(0, 200);
+    const dmContent = `💬 Reply on "${task.title}"\n\n${senderName}: ${preview}\n\nLog in to OptimaX HR to view the full thread.`;
+
+    // Collect unique recipient names: follow-up author + assignee + supervisor (skip sender)
+    const recipientNames = [...new Set([fu.author, task.assignee, task.team].filter(Boolean))]
+      .filter(name => name.toLowerCase() !== senderName.toLowerCase());
+
+    recipientNames.forEach(name => {
+      // Resolve to auth userId
+      const emp = this.allEmployees.find(e =>
+        e.fullName.toLowerCase() === name.toLowerCase() ||
+        e.fullName.toLowerCase().includes(name.toLowerCase()) ||
+        name.toLowerCase().includes(e.fullName.toLowerCase())
+      );
+      let recipientUserId: number | null = emp?.userId ? (Number(emp.userId) || null) : null;
+      if (!recipientUserId) {
+        const u = this.dmUserList.find(u =>
+          u.fullName.toLowerCase() === name.toLowerCase() ||
+          u.fullName.toLowerCase().includes(name.toLowerCase()) ||
+          name.toLowerCase().includes(u.fullName.toLowerCase())
+        );
+        recipientUserId = u?.id ?? null;
+      }
+      if (!recipientUserId || recipientUserId === myUserId) return;
+      const rid = recipientUserId;
+      this.subscription.add(
+        this.workTaskApi.getOrCreateDmChannel(myUserId, rid).pipe(
+          switchMap(ch => this.workTaskApi.sendChannelMessage(ch.id ?? ch.channelId, dmContent)),
+          catchError(() => of(null))
+        ).subscribe()
+      );
+    });
   }
 
   toggleReaction(fu: FollowUp, emoji: string): void {

@@ -66,8 +66,11 @@ import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+// BrowserModule and BrowserAnimationsModule must NOT be imported here — the root
+// app already imports them. Duplicating either causes multiple change detection
+// instances, which manifests as ngFor loops rendering cards repeatedly.
+// import { BrowserModule } from '@angular/platform-browser';
+// import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppHrRoutingModule } from './app-routing.module';
 import { AppHrComponent } from './app.component';
 import { CommonModule } from '@angular/common';
@@ -440,10 +443,11 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     // FooterComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     CommonModule,
     AppHrRoutingModule,
+    LargeSideModalComponent,
     FormsModule,
     ReactiveFormsModule,
     TableComponent,
