@@ -169,20 +169,26 @@ export class LeaveRequestComponent implements OnInit {
   }
 
   findEmployeeForRequest(request: any): any | null {
-    const requestUserId = request.createdBy?.userId || request.createdBy?.id;
-
-    const employee = this.allEmployees.find((emp) => {
-      const empUserId = emp.user?.userId || emp.user?.id;
-      return empUserId === requestUserId;
-    });
-
-    if (!employee) {
-      console.warn(
-        `⚠️ Request #${request.id} has no matching employee (userId: ${requestUserId})`,
-      );
+    const requestUserId = request.createdBy?.userId || request.createdBy?.id || request.employeeId;
+    if (requestUserId != null) {
+      const byUserId = this.allEmployees.find((emp) => {
+        const empUserId = emp.user?.userId || emp.user?.id || emp.id;
+        return String(empUserId) === String(requestUserId);
+      });
+      if (byUserId) return byUserId;
     }
 
-    return employee || null;
+    // Fallback: match by name if userId is missing
+    const fullName = request.createdBy?.fullname || request.createdBy?.name;
+    if (fullName) {
+      const byName = this.allEmployees.find((emp) => {
+        const empName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+        return empName.toLowerCase() === fullName.toLowerCase();
+      });
+      if (byName) return byName;
+    }
+
+    return null;
   }
 
   // ==================== BUILD DISPLAY DATA ====================

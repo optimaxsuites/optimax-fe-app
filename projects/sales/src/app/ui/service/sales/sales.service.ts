@@ -224,22 +224,29 @@ export class SalesService {
 
     return this.http.get<any>(`${this.base}/customers`, { params }).pipe(
       map(res => {
-        const raw: any[] = Array.isArray(res) ? res : (res?.data ?? []);
+        const raw: any[] = Array.isArray(res) ? res : (res?.content ?? res?.data ?? []);
         const arr: Customer[] = raw.map(c => ({
           ...c,
           customerId: String(c.id),
           address: c.address ? [c.address] : [],
-          deliverAddress: c.deliverAddress ? [c.deliverAddress] : []
+          deliverAddress: Array.isArray(c.deliverAddress) ? c.deliverAddress : (c.deliverAddress ? [c.deliverAddress] : [])
         }));
-        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+        const total = Array.isArray(res) ? res.length : (res?.totalSize ?? res?.totalElements ?? arr.length);
+        return {
+          data: arr,
+          total,
+          totalActive: res?.totalActive ?? 0,
+          totalInactive: res?.totalInactive ?? 0,
+          totalBlacklisted: res?.totalBlacklisted ?? 0
+        };
       }),
-      catchError(() => of({ data: [], total: 0 }))
+      catchError(() => of({ data: [], total: 0, totalActive: 0, totalInactive: 0, totalBlacklisted: 0 }))
     );
   }
 
   getCustomerById(id: string): Observable<Customer | null> {
     return this.http.get<any>(`${this.base}/customers/${id}`).pipe(
-      map(c => c ? ({ ...c, customerId: String(c.id), address: c.address ? [c.address] : [], deliverAddress: c.deliverAddress ? [c.deliverAddress] : [] } as Customer) : null),
+      map(c => c ? ({ ...c, customerId: String(c.id), address: c.address ? [c.address] : [], deliverAddress: Array.isArray(c.deliverAddress) ? c.deliverAddress : (c.deliverAddress ? [c.deliverAddress] : []) } as Customer) : null),
       catchError(() => of(null))
     );
   }
@@ -249,7 +256,7 @@ export class SalesService {
       ...data,
       tenantId: this.tenantId,
       address: Array.isArray(data.address) ? data.address.join(', ') : (data.address ?? ''),
-      deliverAddress: Array.isArray(data.deliverAddress) ? data.deliverAddress.join(', ') : (data.deliverAddress ?? '')
+      deliverAddress: Array.isArray(data.deliverAddress) ? data.deliverAddress : []
     };
   }
 

@@ -25,7 +25,7 @@ export class LeaveApiService {
 
   getEmployees(): Observable<any> {
     return this.http
-      .get<any>(`${this.baseUrl}/x/api/v2/hr/employees`)
+      .get<any>(`${this.baseUrl}/x/api/v2/hr/employees?page=1&size=1000`)
       .pipe(catchError(this.handleError));
   }
 
@@ -61,7 +61,7 @@ export class LeaveApiService {
 
   getLeaveTypes(): Observable<any> {
     return this.http
-      .get<any>(`${this.baseUrl}/x/api/v2/hr/leaveTypes`)
+      .get<any>(`${this.baseUrl}/x/api/v2/hr/leaveTypes?page=1&size=100`)
       .pipe(catchError(this.handleError));
   }
 
@@ -146,7 +146,7 @@ export class LeaveApiService {
 
   getLeaveBalances(): Observable<any> {
     return this.http
-      .get<any>(`${this.baseUrl}/x/api/v2/hr/leaves`)
+      .get<any>(`${this.baseUrl}/x/api/v2/hr/leaves?page=1&size=1000`)
       .pipe(catchError(this.handleError));
   }
 

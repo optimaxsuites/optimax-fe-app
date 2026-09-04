@@ -205,7 +205,7 @@ export class LeavePlanComponent implements OnInit, OnDestroy {
     forkJoin({
       planRecords: this.apiService.getLeavePlanRecords().pipe(catchError(() => of([]))),
       leaveTypes:  this.apiService.getLeaveTypes().pipe(catchError(() => of([]))),
-      policies:    this.apiService.getLeavePlanPolicies(1, 1).pipe(catchError(() => of([]))),
+      policies:    this.apiService.getLeavePlanPolicies(1, 100).pipe(catchError(() => of([]))),
     })
     .pipe(takeUntil(this.destroy$))
     .subscribe({
