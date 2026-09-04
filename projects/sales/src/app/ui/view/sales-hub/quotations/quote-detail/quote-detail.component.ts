@@ -159,6 +159,25 @@ export class QuoteDetailComponent implements OnInit {
     return this.quote.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   }
 
+  getMerchantAddressStr(): string {
+    const addr = (this.quote?.merchantDetails as any)?.address;
+    if (!addr) return '';
+    return Array.isArray(addr) ? addr.filter(Boolean).join(', ') : String(addr);
+  }
+
+  getCustomerAddressStr(): string {
+    const c = (this.quote?.customerId || this.quote?.customerName) as any;
+    const addr = c?.address;
+    if (!addr) return '';
+    return Array.isArray(addr) ? addr.filter(Boolean).join(', ') : String(addr);
+  }
+
+  getAdditionalCharges(): { label: string; amount: number }[] {
+    const charges: number[] = (this.quote as any)?.additionalCharges || [];
+    const labels: string[] = (this.quote as any)?.additionalChargesLabel || [];
+    return charges.map((amount, i) => ({ label: labels[i] || 'Additional Charge', amount }));
+  }
+
   getTotalInWords(amount: number): string {
     // Simple number to words conversion - you can expand this
     const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
@@ -419,36 +438,46 @@ export class QuoteDetailComponent implements OnInit {
 
   downloadPDF(): void {
     const element = document.getElementById('quote-detail-sheet');
-    if (element) {
-      this.isDownloading = true;
-      element.classList.add('pdf-printing-active');
-      
-      setTimeout(() => {
-        html2canvas(element, { 
-          scale: 2, 
-          useCORS: true, 
-          allowTaint: true,
-          backgroundColor: '#ffffff'
-        }).then((canvas) => {
-          element.classList.remove('pdf-printing-active');
-          const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF('p', 'mm', 'a4');
-          const imgWidth = 210; // A4 size width
-          const imgHeight = (canvas.height * imgWidth) / canvas.width;
-          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-          pdf.save(`Quote-${this.quote?.quoteNumber || 'Detail'}.pdf`);
-          this.isDownloading = false;
-        }).catch(err => {
-          element.classList.remove('pdf-printing-active');
-          console.error('Error generating PDF:', err);
-          this.isDownloading = false;
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate PDF. Printing window instead.' });
-          window.print();
-        });
-      }, 50);
-    } else {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find element to export. Printing window instead.' });
-      window.print();
+    if (!element) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find element to export.' });
+      return;
     }
+    this.isDownloading = true;
+    element.classList.add('pdf-printing-active');
+
+    setTimeout(() => {
+      html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }).then(canvas => {
+        element.classList.remove('pdf-printing-active');
+        const imgData = canvas.toDataURL('image/png');
+        const pageW = 210;
+        const pageH = 297;
+        const imgW = pageW;
+        const imgH = (canvas.height * imgW) / canvas.width;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        if (imgH <= pageH) {
+          pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
+        } else {
+          let heightLeft = imgH;
+          let position = 0;
+          pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
+          heightLeft -= pageH;
+          while (heightLeft > 0) {
+            position = heightLeft - imgH;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
+            heightLeft -= pageH;
+          }
+        }
+
+        pdf.save(`Quote-${this.quote?.quoteNumber || 'Detail'}.pdf`);
+        this.isDownloading = false;
+      }).catch(err => {
+        element.classList.remove('pdf-printing-active');
+        console.error('Error generating PDF:', err);
+        this.isDownloading = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate PDF.' });
+      });
+    }, 300);
   }
 }

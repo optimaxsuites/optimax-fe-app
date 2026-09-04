@@ -8741,10 +8741,21 @@ export class CommunicationComponent
       this.cdr.detectChanges();
     };
 
-    // If toggling off the same code and we have a stored server ID, delete it
     if (isSameCode && msg.likeReactionId != null) {
+      // Toggle off: delete existing reaction
       this.collabService.deleteReaction(msg.likeReactionId).subscribe({ next: refreshFromServer, error: rollback });
+    } else if (!isSameCode && prevCode && msg.likeReactionId != null) {
+      // Switching to a different reaction: delete old first, then add new
+      this.collabService.deleteReaction(msg.likeReactionId).subscribe({
+        next: () => {
+          this.collabService
+            .addReaction({ messageId: msg.backendId, userId: this.me.userId, reactionCode })
+            .subscribe({ next: refreshFromServer, error: rollback });
+        },
+        error: rollback
+      });
     } else {
+      // No prior reaction: just add
       this.collabService
         .addReaction({ messageId: msg.backendId, userId: this.me.userId, reactionCode })
         .subscribe({ next: refreshFromServer, error: rollback });

@@ -511,7 +511,6 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
     this.dragSelectStart = iso;
     this.dragSelectEnd = iso;
     this.dragSelectActive = true;
-    event.preventDefault();
   }
 
   onMonthCellMouseenter(iso: string): void {
