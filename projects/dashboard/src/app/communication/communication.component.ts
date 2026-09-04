@@ -8749,7 +8749,7 @@ export class CommunicationComponent
       this.collabService.deleteReaction(msg.likeReactionId).subscribe({
         next: () => {
           this.collabService
-            .addReaction({ messageId: msg.backendId, userId: this.me.userId, reactionCode })
+            .addReaction({ messageId: msg.backendId!, userId: this.me.userId, reactionCode })
             .subscribe({ next: refreshFromServer, error: rollback });
         },
         error: rollback
@@ -8757,7 +8757,7 @@ export class CommunicationComponent
     } else {
       // No prior reaction: just add
       this.collabService
-        .addReaction({ messageId: msg.backendId, userId: this.me.userId, reactionCode })
+        .addReaction({ messageId: msg.backendId!, userId: this.me.userId, reactionCode })
         .subscribe({ next: refreshFromServer, error: rollback });
     }
   }
