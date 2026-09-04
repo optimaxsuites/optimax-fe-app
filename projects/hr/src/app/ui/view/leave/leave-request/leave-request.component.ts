@@ -134,10 +134,22 @@ export class LeaveRequestComponent implements OnInit {
         .pipe(catchError(() => of([]))),
     }).subscribe({
       next: (data) => {
-        this.allEmployees = data.employees || [];
+        const rawEmployees = data.employees;
+        this.allEmployees = Array.isArray(rawEmployees)
+          ? rawEmployees
+          : (rawEmployees?.data || rawEmployees?.content || []);
+
         this.allLeaveRequests = data.leaveRequests || [];
-        this.leaveBalances = data.leaveBalances || [];
-        this.leaveTypes = data.leaveTypes || [];
+
+        const rawBalances = data.leaveBalances;
+        this.leaveBalances = Array.isArray(rawBalances)
+          ? rawBalances
+          : (rawBalances?.data || rawBalances?.content || []);
+
+        const rawTypes = data.leaveTypes;
+        this.leaveTypes = Array.isArray(rawTypes)
+          ? rawTypes
+          : (rawTypes?.data || rawTypes?.content || []);
 
         console.log('📊 Leave Requests:', this.allLeaveRequests);
         console.log('👥 Employees:', this.allEmployees.length);
