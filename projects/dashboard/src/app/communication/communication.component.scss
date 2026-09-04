@@ -1917,6 +1917,7 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  position: relative;
   padding: 0 !important;  // topbar + feed handle their own spacing
 }
 
@@ -2003,6 +2004,40 @@
   background: #fff;
   border-radius: 0;
   padding: 8px 0;
+}
+
+.unread-jump-pill {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: #2e6276;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(46, 98, 118, 0.35);
+  animation: jump-pill-in 0.18s ease-out;
+  user-select: none;
+
+  &:hover {
+    background: #255264;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+@keyframes jump-pill-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 .chat-feed.drag-over {

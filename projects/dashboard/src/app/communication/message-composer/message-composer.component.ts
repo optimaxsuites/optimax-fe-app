@@ -183,7 +183,7 @@ export class MessageComposerComponent {
   }
 
   onComposerKey(e: KeyboardEvent, el: HTMLTextAreaElement): void {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       this.messageSent.emit();
       return;
@@ -192,6 +192,37 @@ export class MessageComposerComponent {
     setTimeout(() => {
       el.style.height = 'auto';
       el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    });
+  }
+
+  formatText(format: 'bold' | 'italic' | 'strike' | 'code' | 'ol' | 'ul' | 'quote'): void {
+    const el = this.composerEl?.nativeElement;
+    if (!el) return;
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? 0;
+    const selected = el.value.slice(start, end);
+    let next = el.value;
+    let newStart = start;
+    let newEnd = end;
+    if (format === 'ol' || format === 'ul' || format === 'quote') {
+      const prefix = format === 'ol' ? '1. ' : format === 'ul' ? '- ' : '> ';
+      const lines = selected ? selected.split('\n').map(l => prefix + l).join('\n') : prefix;
+      next = el.value.slice(0, start) + lines + el.value.slice(end);
+      newStart = start + prefix.length;
+      newEnd = start + lines.length;
+    } else {
+      const markers: Record<string, string> = { bold: '**', italic: '_', strike: '~~', code: '`' };
+      const m = markers[format];
+      const wrapped = `${m}${selected}${m}`;
+      next = el.value.slice(0, start) + wrapped + el.value.slice(end);
+      newStart = start + m.length;
+      newEnd = start + m.length + selected.length;
+    }
+    this.draftChange.emit(next);
+    setTimeout(() => {
+      el.focus();
+      el.selectionStart = newStart;
+      el.selectionEnd = newEnd;
     });
   }
 
@@ -230,24 +261,31 @@ export class MessageComposerComponent {
     });
   }
 
-  private stripSyntaxMarkup(text: string): string {
-    // Decode HTML entities first
-    const tmp = document.createElement('textarea');
-    tmp.innerHTML = text;
-    let out = tmp.value;
-
-    // Remove all HTML opening/closing tags (span, pre, code, etc.)
-    out = out.replace(/<\/?[a-z][^>]*>/gi, '');
-    // Remove leftover class="token..." fragments that appear as raw text
-    out = out.replace(/class=["'][\w\s-]*["']\s*>/gi, '');
-    // Decode HTML entities a second time in case of double-encoding
-    tmp.innerHTML = out;
-    out = tmp.value;
-    // Normalize non-breaking spaces and excessive whitespace
-    out = out.replace(/ /g, ' ');
-    out = out.replace(/\r\n/g, '\n');
-    out = out.replace(/\r/g, '\n');
-    return out;
+  private stripSyntaxMarkup(html: string): string {
+    if (!html || typeof document === 'undefined') return html;
+    try {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      doc.querySelectorAll('br').forEach(el => el.replaceWith('\n'));
+      doc.querySelectorAll('p, div, li, h1, h2, h3, h4, h5, h6, tr').forEach(el => {
+        el.after('\n');
+      });
+      return (doc.body?.textContent ?? '')
+        .replace(/\u00a0/g, ' ')
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    } catch {
+      return html
+        .replace(/<br\s*\/?>\s*/gi, '\n')
+        .replace(/<\/(?:p|div|li|h[1-6])>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"').replace(/&#39;/g, "'"  ).replace(/&nbsp;/g, ' ')
+        .replace(/\u00a0/g, ' ')
+        .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+        .trim();
+    }
   }
 
   toggleEmojiMenu(): void {

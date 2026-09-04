@@ -806,6 +806,8 @@ export class CommunicationComponent
   private typingEndpointBlocked = false;
   private scrollFeed = false;
   private scrollThread = false;
+  showScrollDown = false;
+  scrollDownUnreadCount = 0;
   private chatResourcesLoaded = false;
   private chatRealtimeStarted = false;
   private pendingMentionConversationUserId: number | null = null;
@@ -10563,6 +10565,15 @@ export class CommunicationComponent
     return status >= 500 || !status;
   }
 
+  scrollFeedToBottom(): void {
+    const el = this.feedEl?.nativeElement;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+    this.showScrollDown = false;
+    this.scrollDownUnreadCount = 0;
+    this.cdr.markForCheck();
+  }
+
   onChatFeedScroll(): void {
     if (
       this.messagesLoading ||
@@ -10571,11 +10582,26 @@ export class CommunicationComponent
     ) {
       return;
     }
+
+    const el = this.feedEl.nativeElement;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom > 200) {
+      if (!this.showScrollDown) {
+        this.showScrollDown = true;
+        this.cdr.markForCheck();
+      }
+    } else {
+      if (this.showScrollDown) {
+        this.showScrollDown = false;
+        this.scrollDownUnreadCount = 0;
+        this.cdr.markForCheck();
+      }
+    }
+
     if (!this.historyPagingArmed) {
       this.historyPagingArmed = true;
       return;
     }
-    const el = this.feedEl.nativeElement;
     if (el.scrollTop > 80) {
       return;
     }

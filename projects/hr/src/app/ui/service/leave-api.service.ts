@@ -562,7 +562,7 @@ export class LeaveApiService {
     console.log(' Updating leave request record:', payload);
 
     return this.http
-      .post<any>(`${this.baseUrl}/x/api/v2/hr/leave-request-records`, payload)
+      .put<any>(`${this.baseUrl}/x/api/v2/hr/leave-request-records/${id}`, payload)
       .pipe(
         map((response) => this.transformSingleRequestRecord(response)),
         catchError(this.handleError),

@@ -233,33 +233,134 @@
         'thread-active': activeThreadId === msg.id,
         'flash': isFlashing(msg.id),
         'opacity-40': msg.deleting,
-        'msg-self': isOwnMessage(msg)
+        'msg-self': isOwnMessage(msg),
+        'msg-consecutive': isConsecutiveMessage(messages, i)
       }"
       (click)="deleteDismissed.emit()"
       (dblclick)="threadOpened.emit({ msg, event: $event })"
     >
+      <!-- Floating action bar (appears on group hover) -->
+      <div class="msg-float-bar hidden group-hover:flex absolute right-3 z-30 items-center gap-0 bg-white border border-gray-200 rounded-xl shadow-md px-1 py-0.5" style="top: -18px;">
+        <!-- React -->
+        <div class="relative" (mouseenter)="openReactionPicker('float-' + msg.id)" (mouseleave)="scheduleCloseReactionPicker()">
+          <div *ngIf="emojiPickerOpenForId === 'float-' + msg.id"
+               class="fb-picker-bubble"
+               (mouseenter)="cancelCloseReactionPicker()"
+               (mouseleave)="scheduleCloseReactionPicker()"
+               (click)="$event.stopPropagation()">
+            <button *ngFor="let r of allReactions" type="button" class="fb-emoji-btn"
+                    [class.fb-selected]="msg.myReactionCode === r.code"
+                    [title]="r.label"
+                    (click)="onReactionPick(msg, r.code, $event)">{{ r.emoji }}</button>
+          </div>
+          <button type="button" class="float-action-btn" title="Add reaction"
+                  [class.float-active]="!!msg.myReactionCode"
+                  (click)="onReactionPick(msg, msg.myReactionCode || 'LIKE', $event)">
+            <span class="text-[14px] leading-none">{{ msg.myReactionCode ? reactionEmoji(msg.myReactionCode) : '😊' }}</span>
+          </button>
+        </div>
+        <!-- Reply in thread -->
+        <button *ngIf="activeView === 'channel' || activeView === 'dm' || activeView === 'threads'"
+                type="button" class="float-action-btn" title="Reply in thread"
+                [class.float-active]="activeThreadId === msg.id"
+                (click)="threadOpened.emit({ msg, event: $event }); $event.stopPropagation()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+          </svg>
+        </button>
+        <!-- Bookmark -->
+        <button type="button" class="float-action-btn"
+                [title]="isBookmarked(msg) ? 'Remove bookmark' : 'Save'"
+                [class.float-active]="isBookmarked(msg)"
+                (click)="bookmarkToggled.emit(msg); $event.stopPropagation()">
+          <svg width="13" height="13" [attr.fill]="isBookmarked(msg) ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+          </svg>
+        </button>
+        <!-- Pin (channel only) -->
+        <button *ngIf="activeView === 'channel'" type="button" class="float-action-btn"
+                [title]="msg.pinned ? 'Unpin' : 'Pin'"
+                [class.float-active]="msg.pinned"
+                (click)="pinToggled.emit({ msg, event: $event }); $event.stopPropagation()">
+          <svg width="12" height="12" [attr.fill]="msg.pinned ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+          </svg>
+        </button>
+        <!-- Edit (own messages) -->
+        <button *ngIf="isOwnMessage(msg)" type="button" class="float-action-btn"
+                title="Edit"
+                [class.float-active]="isEditing(msg.id)"
+                (click)="editStarted.emit({ msg, event: $event }); $event.stopPropagation()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </button>
+        <!-- Delete (own messages) with confirm popover -->
+        <div *ngIf="isOwnMessage(msg)" class="relative" (click)="$event.stopPropagation()">
+          <button type="button" class="float-action-btn float-danger" title="Delete"
+                  [disabled]="isDeleting(msg.id)"
+                  (click)="deleteRequested.emit({ msg, event: $event })">
+            <svg *ngIf="!isDeleting(msg.id)" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <svg *ngIf="isDeleting(msg.id)" class="animate-spin" width="13" height="13" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+          </button>
+          <div *ngIf="confirmDeleteId === msg.id"
+               class="absolute bottom-full right-0 mb-2 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-56">
+            <p class="text-[13px] font-semibold text-gray-800 mb-0.5">Delete message?</p>
+            <p class="text-[12px] text-gray-500 mb-3 leading-snug">This cannot be undone.</p>
+            <div class="flex gap-2">
+              <button (click)="deleteConfirmed.emit({ msg, event: $event })"
+                      class="flex-1 py-1.5 bg-red-500 hover:bg-red-600 text-white text-[12px] font-semibold rounded-lg">Delete</button>
+              <button (click)="deleteDismissed.emit()"
+                      class="flex-1 py-1.5 bg-white border border-gray-200 text-gray-600 text-[12px] rounded-lg hover:bg-gray-50">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <!-- Retry (own failed messages) -->
+        <button *ngIf="isOwnMessage(msg) && msg.deliveryState === 'FAILED'" type="button"
+                class="float-action-btn float-danger" title="Retry"
+                (click)="retryFailed(msg, $event)">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+      </div>
       <!-- Pinned indicator -->
       <div *ngIf="msg.pinned" class="absolute left-0 top-2 bottom-2 w-[3px] bg-amber-400 rounded-r"></div>
 
-      <!-- Avatar -->
-      <div
-        class="flex-shrink-0 mt-0.5 cursor-pointer"
-        data-author-card
-        (mouseenter)="onAuthorEnter($event, msg)"
-        (mouseleave)="onAuthorLeave($event)"
-        (click)="onAuthorClick($event, msg)"
-      >
-        <img *ngIf="msg.avatarUrl" [src]="msg.avatarUrl" alt="" class="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-[#2e6276]/40 transition-all" />
+      <!-- Avatar (hidden for consecutive messages from same sender) -->
+      <ng-container *ngIf="!isConsecutiveMessage(messages, i); else consecutiveAvatar">
         <div
-          *ngIf="!msg.avatarUrl"
-          class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[11px] font-bold hover:ring-2 hover:ring-white/30 transition-all"
-          [style.background]="msg.avatarColor"
-        >{{ msg.initials }}</div>
-      </div>
+          class="flex-shrink-0 mt-0.5 cursor-pointer"
+          data-author-card
+          (mouseenter)="onAuthorEnter($event, msg)"
+          (mouseleave)="onAuthorLeave($event)"
+          (click)="onAuthorClick($event, msg)"
+        >
+          <img *ngIf="msg.avatarUrl" [src]="msg.avatarUrl" alt="" class="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-[#2e6276]/40 transition-all" />
+          <div
+            *ngIf="!msg.avatarUrl"
+            class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[11px] font-bold hover:ring-2 hover:ring-white/30 transition-all"
+            [style.background]="msg.avatarColor"
+          >{{ msg.initials }}</div>
+        </div>
+      </ng-container>
+      <ng-template #consecutiveAvatar>
+        <div class="flex-shrink-0 w-10 flex items-center justify-center">
+          <span class="consecutive-time text-[10px] text-gray-300 hidden group-hover:block"
+                [title]="msg.sentAtRaw ? parseServerDate(msg.sentAtRaw)?.toLocaleTimeString() || msg.time : msg.time">
+            {{ msg.time }}
+          </span>
+        </div>
+      </ng-template>
 
       <div class="flex-1 min-w-0">
-        <!-- Header row -->
-        <div class="flex items-baseline gap-2.5 mb-1 flex-wrap">
+        <!-- Header row (hidden for consecutive messages) -->
+        <div *ngIf="!isConsecutiveMessage(messages, i)" class="flex items-baseline gap-2.5 mb-1 flex-wrap">
           <span
             class="text-[13px] font-semibold text-gray-800 cursor-pointer hover:text-[#2e6276] hover:underline transition-colors"
             data-author-card
@@ -451,75 +552,54 @@
               </button>
             </div>
 
-            <div class="mt-3 flex flex-col gap-2" *ngIf="previewableDocumentAttachments(msg).length">
+            <div class="mt-2 flex flex-col gap-1.5" *ngIf="previewableDocumentAttachments(msg).length">
               <div
                 *ngFor="let attachment of previewableDocumentAttachments(msg)"
-                class="chat-attachment-card"
+                class="attach-chip"
               >
-                <div class="chat-attachment-icon">
+                <div class="attach-chip-icon" [ngClass]="'attach-type-' + attachmentBadge(attachment).toLowerCase()">
                   <i class="pi" [ngClass]="attachmentFileIcon(attachment)"></i>
                 </div>
-                <div class="chat-attachment-info min-w-0">
-                  <p class="chat-attachment-name">{{ attachment.name }}</p>
-                  <p class="chat-attachment-size">{{ attachmentBadge(attachment) }}</p>
+                <div class="attach-chip-meta min-w-0">
+                  <p class="attach-chip-name">{{ attachment.name }}</p>
+                  <p class="attach-chip-size">{{ attachmentBadge(attachment) }}</p>
                 </div>
-                <div class="chat-attachment-actions">
-                  <button
-                    type="button"
-                    class="chat-attachment-btn"
-                    title="Preview"
-                    (click)="openDocumentViewer(attachment, $event)"
-                  >
+                <div class="attach-chip-btns">
+                  <button type="button" class="attach-icon-btn" title="Preview" (click)="openDocumentViewer(attachment, $event)">
                     <i class="pi pi-eye"></i>
-                    <span>Preview</span>
                   </button>
-                  <button
-                    *ngIf="attachment.downloadUrl"
-                    type="button"
-                    class="chat-attachment-btn"
-                    title="Download"
-                    (click)="attachmentDownload.emit({ attachment: attachment, event: $event })"
-                  >
+                  <a *ngIf="attachment.downloadUrl" [href]="attachment.downloadUrl" download
+                     class="attach-icon-btn" title="Download"
+                     (click)="$event.stopPropagation()">
                     <i class="pi pi-download"></i>
-                    <span>Download</span>
-                  </button>
+                  </a>
                 </div>
               </div>
             </div>
 
-            <div class="mt-3 flex flex-col gap-2" *ngIf="genericAttachments(msg).length">
+            <div class="mt-2 flex flex-col gap-1.5" *ngIf="genericAttachments(msg).length">
               <div
                 *ngFor="let attachment of genericAttachments(msg)"
-                class="chat-attachment-card"
+                class="attach-chip"
               >
-                <div class="chat-attachment-icon">
+                <div class="attach-chip-icon">
                   <i class="pi" [ngClass]="attachmentFileIcon(attachment)"></i>
                 </div>
-                <div class="chat-attachment-info min-w-0">
-                  <p class="chat-attachment-name">{{ attachment.name }}</p>
-                  <p *ngIf="attachment.size" class="chat-attachment-size">{{ attachment.size }}</p>
+                <div class="attach-chip-meta min-w-0">
+                  <p class="attach-chip-name">{{ attachment.name }}</p>
+                  <p *ngIf="attachment.size" class="attach-chip-size">{{ attachment.size }}</p>
                 </div>
-                <div class="chat-attachment-actions">
-                  <button
-                    *ngIf="attachment.previewUrl || attachment.downloadUrl"
-                    type="button"
-                    class="chat-attachment-btn"
-                    title="Preview"
-                    (click)="openDocumentViewer(attachment, $event)"
-                  >
+                <div class="attach-chip-btns">
+                  <button *ngIf="attachment.previewUrl || attachment.downloadUrl"
+                          type="button" class="attach-icon-btn" title="Preview"
+                          (click)="openDocumentViewer(attachment, $event)">
                     <i class="pi pi-eye"></i>
-                    <span>Preview</span>
                   </button>
-                  <button
-                    *ngIf="attachment.downloadUrl"
-                    type="button"
-                    class="chat-attachment-btn"
-                    title="Download"
-                    (click)="attachmentDownload.emit({ attachment: attachment, event: $event })"
-                  >
+                  <a *ngIf="attachment.downloadUrl" [href]="attachment.downloadUrl" download
+                     class="attach-icon-btn" title="Download"
+                     (click)="$event.stopPropagation()">
                     <i class="pi pi-download"></i>
-                    <span>Download</span>
-                  </button>
+                  </a>
                 </div>
               </div>
             </div>
@@ -589,16 +669,55 @@
                 </button>
               </div>
               <div class="document-viewer-body">
+                <!-- PDF: native iframe render -->
                 <iframe
                   *ngIf="documentViewerType === 'pdf' && documentViewerUrl"
                   [src]="documentViewerUrl"
                   class="document-viewer-frame"
-                  title="PDF preview"
+                  title="Document preview"
                 ></iframe>
-                <div *ngIf="documentViewerType !== 'pdf'" class="document-viewer-card">
-                  <span class="document-viewer-badge">{{ documentViewerType === 'office' ? 'OFFICE' : 'FILE' }}</span>
+
+                <!-- Office: client-side rendered via mammoth / SheetJS -->
+                <ng-container *ngIf="documentViewerType === 'office'">
+                  <!-- Loading -->
+                  <div *ngIf="officePreviewLoading" class="office-preview-loading">
+                    <div class="office-preview-spinner"></div>
+                    <span>Loading preview…</span>
+                  </div>
+                  <!-- Sheet tabs (Excel only) -->
+                  <div *ngIf="!officePreviewLoading && officeSheetNames.length > 1" class="office-sheet-tabs">
+                    <button
+                      *ngFor="let name of officeSheetNames; let idx = index"
+                      type="button"
+                      class="office-sheet-tab"
+                      [class.active]="officeActiveSheet === idx"
+                      (click)="switchOfficeSheet(idx)"
+                    >{{ name }}</button>
+                  </div>
+                  <!-- Rendered HTML (Word or Excel) -->
+                  <div
+                    *ngIf="!officePreviewLoading && !officePreviewError"
+                    class="office-preview-body"
+                    [innerHTML]="officePreviewHtml"
+                  ></div>
+                  <!-- PPTX or fetch error fallback -->
+                  <div *ngIf="!officePreviewLoading && officePreviewError" class="document-viewer-card">
+                    <span class="document-viewer-badge">{{ officePreviewError === 'pptx' ? 'PPTX' : 'FILE' }}</span>
+                    <strong>{{ documentViewerTitle }}</strong>
+                    <p *ngIf="officePreviewError === 'pptx'">PowerPoint preview isn't supported in the browser. Download to view.</p>
+                    <p *ngIf="officePreviewError && officePreviewError !== 'pptx'">Could not load preview. Download the file to view it.</p>
+                    <div class="document-viewer-actions">
+                      <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" download class="toolbar-action primary">Download</a>
+                      <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" target="_blank" rel="noopener noreferrer" class="toolbar-action">Open in tab</a>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Generic file fallback -->
+                <div *ngIf="documentViewerType === 'file'" class="document-viewer-card">
+                  <span class="document-viewer-badge">FILE</span>
                   <strong>{{ documentViewerTitle }}</strong>
-                  <p>Preview is not available for this file type. Use Open or Download below.</p>
+                  <p>Preview is not available for this file type.</p>
                   <div class="document-viewer-actions">
                     <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" target="_blank" rel="noopener noreferrer" class="toolbar-action primary">Open file</a>
                     <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" download class="toolbar-action">Download</a>
@@ -610,149 +729,33 @@
 
           </ng-container><!-- end !isIssueCard -->
 
-          <!-- Facebook-style reaction summary (always visible when reactions exist) -->
-          <div *ngIf="totalReactionCount(msg) > 0"
-               class="fb-reaction-summary mt-1.5"
+          <!-- Reaction pills (Slack-style, per reaction type) -->
+          <div *ngIf="reactionPills(msg).length"
+               class="reaction-pills-row flex flex-wrap gap-1 mt-1.5"
                (click)="$event.stopPropagation()">
-            <span class="fb-reaction-bubbles">
-              <span *ngFor="let emoji of topReactionEmojis(msg)" class="fb-reaction-icon">{{ emoji }}</span>
-            </span>
-            <span class="fb-reaction-total">{{ totalReactionCount(msg) }}</span>
-          </div>
-
-          <!-- Action buttons -->
-          <div class="flex items-center gap-0 mt-2 flex-wrap">
-            <!-- Bookmark -->
             <button
+              *ngFor="let pill of reactionPills(msg)"
               type="button"
-              class="action-btn flex items-center gap-1.5"
-              [ngClass]="{ 'action-pinned': isBookmarked(msg) }"
-              [title]="isBookmarked(msg) ? 'Remove bookmark' : 'Save message'"
-              (click)="bookmarkToggled.emit(msg); $event.stopPropagation()"
-            >
-              <svg width="13" height="13" [attr.fill]="isBookmarked(msg) ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-              </svg>
-              {{ isBookmarked(msg) ? 'Saved' : 'Save' }}
+              class="reaction-pill"
+              [class.reaction-pill-self]="pill.selfReacted"
+              [title]="pill.label + ' · ' + pill.count"
+              (click)="onReactionPick(msg, pill.code, $event)">
+              <span class="text-[13px] leading-none">{{ pill.emoji }}</span>
+              <span class="text-[11px] font-semibold ml-0.5">{{ pill.count }}</span>
             </button>
-            <!-- Reply / Thread -->
-            <button
-              *ngIf="activeView === 'channel'|| activeView === 'dm' || activeView === 'threads'"
-              (click)="threadOpened.emit({ msg, event: $event })"
-              class="action-btn flex items-center gap-1.5"
-              [ngClass]="{ 'action-active': activeThreadId === msg.id }"
-            >
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-              </svg>
-              {{ totalReplyCount(msg) ? totalReplyCount(msg) + ' ' + (totalReplyCount(msg) === 1 ? 'reply' : 'replies') : 'Reply' }}
-            </button>
-
-            <!-- Facebook-style React button with floating bubble picker -->
-            <div class="fb-react-wrap"
-                 (mouseenter)="openReactionPicker(msg.id)"
-                 (mouseleave)="scheduleCloseReactionPicker()">
-              <!-- Floating emoji bubble -->
-              <div *ngIf="emojiPickerOpenForId === msg.id"
-                   class="fb-picker-bubble"
-                   (mouseenter)="cancelCloseReactionPicker()"
-                   (mouseleave)="scheduleCloseReactionPicker()"
-                   (click)="$event.stopPropagation()">
-                <button
-                  *ngFor="let r of allReactions"
-                  type="button"
-                  class="fb-emoji-btn"
-                  [class.fb-selected]="msg.myReactionCode === r.code"
-                  [title]="r.label"
-                  (click)="onReactionPick(msg, r.code, $event)"
-                >{{ r.emoji }}</button>
-              </div>
-              <!-- The React button -->
-              <button
-                type="button"
-                class="action-btn fb-react-btn flex items-center gap-1"
-                [class.fb-react-active]="!!msg.myReactionCode"
-                [class.opacity-60]="isReacting(msg.id)"
-                [disabled]="isReacting(msg.id)"
-                (click)="onReactionPick(msg, msg.myReactionCode || 'LIKE', $event)"
-              >
-                <svg *ngIf="isReacting(msg.id)" class="animate-spin" width="14" height="14" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                </svg>
-                <span *ngIf="!isReacting(msg.id)" class="text-[15px] leading-none">
-                  {{ msg.myReactionCode ? reactionEmoji(msg.myReactionCode) : '😊' }}
-                </span>
-                <span class="text-[12px]">{{ msg.myReactionCode ? reactionLabel(msg.myReactionCode) : 'React' }}</span>
-              </button>
-            </div>
-
-            <!-- Pin -->
-            <button
-              *ngIf="activeView === 'channel'"
-              (click)="pinToggled.emit({ msg, event: $event })"
-              class="action-btn flex items-center gap-1.5"
-              [ngClass]="{ 'action-pinned': msg.pinned }"
-            >
-              <svg width="14" height="14" [attr.fill]="msg.pinned ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-              </svg>
-              {{ msg.pinned ? 'Unpin' : 'Pin' }}
-            </button>
-
-            <!-- Edit / Delete (own messages only) -->
-            <ng-container *ngIf="isOwnMessage(msg)">
-              <button
-                (click)="editStarted.emit({ msg, event: $event })"
-                class="action-btn flex items-center gap-1.5"
-                [ngClass]="{ 'action-active': isEditing(msg.id) }"
-              >
-                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>Edit
-              </button>
-
-              <div class="relative" (click)="$event.stopPropagation()">
-                <button
-                  (click)="deleteRequested.emit({ msg, event: $event })"
-                  class="action-btn flex items-center gap-1.5 action-danger"
-                  [ngClass]="{ 'opacity-50': isDeleting(msg.id) }"
-                  [disabled]="isDeleting(msg.id)"
-                >
-                  <svg *ngIf="!isDeleting(msg.id)" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                  <svg *ngIf="isDeleting(msg.id)" class="animate-spin" width="13" height="13" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                  </svg>
-                  Delete
-                </button>
-                <!-- Delete confirm popover -->
-                <div
-                  *ngIf="confirmDeleteId === msg.id"
-                  class="absolute bottom-full left-0 mb-2 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-56"
-                >
-                  <p class="text-[13px] font-semibold text-gray-800 mb-0.5">Delete message?</p>
-                  <p class="text-[12px] text-gray-500 mb-3 leading-snug">This cannot be undone.</p>
-                  <div class="flex gap-2">
-                    <button
-                      (click)="deleteConfirmed.emit({ msg, event: $event })"
-                      class="flex-1 py-1.5 bg-red-500 hover:bg-red-600 text-white text-[12px] font-semibold rounded-lg"
-                    >Delete</button>
-                    <button
-                      (click)="deleteDismissed.emit()"
-                      class="flex-1 py-1.5 bg-white border border-gray-200 text-gray-600 text-[12px] rounded-lg hover:bg-gray-50"
-                    >Cancel</button>
-                  </div>
-                </div>
-              </div>
-            </ng-container>
           </div>
+
+          <!-- Thread reply count for DM view (channel view uses its own inline preview below) -->
+          <button
+            *ngIf="activeView === 'dm' && totalReplyCount(msg) > 0"
+            (click)="threadOpened.emit({ msg, event: $event })"
+            class="mt-1.5 text-[12px] text-[#2e6276] font-medium hover:underline flex items-center gap-1 w-fit"
+          >
+            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+            {{ totalReplyCount(msg) === 1 ? '1 reply' : totalReplyCount(msg) + ' replies' }}
+          </button>
 
           <div
             *ngIf="isOwnMessage(msg)"

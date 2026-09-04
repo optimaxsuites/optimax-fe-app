@@ -1338,6 +1338,16 @@
           ></app-message-feed>
         </div>
 
+        <!-- Unread jump button -->
+        <div *ngIf="showScrollDown && workspaceMode === 'chat'"
+             class="unread-jump-pill"
+             (click)="scrollFeedToBottom()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+          </svg>
+          <span>{{ scrollDownUnreadCount > 0 ? scrollDownUnreadCount + ' new' : 'Jump to latest' }}</span>
+        </div>
+
         <ng-template #documentLibraryView>
           <section class="document-library-shell flex-1 min-h-0 overflow-hidden bg-white">
             <div class="document-library-layout h-full">

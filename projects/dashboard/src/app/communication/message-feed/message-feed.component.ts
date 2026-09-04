@@ -4,9 +4,10 @@ import {
   Output,
   EventEmitter,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { DomSanitizer, SafeResourceUrl, SafeHtml } from '@angular/platform-browser';
 import { Message } from '../communication.component';
 
 interface HoverPersonCard {
@@ -57,7 +58,7 @@ export class MessageFeedComponent {
   documentViewerUrl: SafeResourceUrl = '';
   documentViewerType: 'pdf' | 'office' | 'file' = 'file';
 
-  constructor(private sanitizer: DomSanitizer, private router: Router) {}
+  constructor(private sanitizer: DomSanitizer, private router: Router, private cdr: ChangeDetectorRef) {}
   structuredViewerOpen = false;
   structuredViewerTitle = '';
   structuredViewerHtml = '';
@@ -232,6 +233,36 @@ export class MessageFeedComponent {
 
   getTopReplies(msg: Message): Message[] {
     return msg.replies.slice(0, 2);
+  }
+
+  isConsecutiveMessage(msgs: Message[], index: number): boolean {
+    if (index === 0) return false;
+    const prev = msgs[index - 1];
+    const curr = msgs[index];
+    if (prev.isSystem || curr.isSystem) return false;
+    if (curr.messageType === 'CALL_CARD' || prev.messageType === 'CALL_CARD') return false;
+    if (this.parseCallSummary(curr.content) || this.parseCallSummary(prev.content)) return false;
+    if (this.parseCallInvite(curr.content) || this.parseCallInvite(prev.content)) return false;
+    if (Number(prev.senderUserId) !== Number(curr.senderUserId)) return false;
+    if (this.shouldShowDaySeparator(msgs, index)) return false;
+    const prevDate = this.parseServerDate(prev.sentAtRaw);
+    const currDate = this.parseServerDate(curr.sentAtRaw);
+    if (!prevDate || !currDate) return false;
+    return (currDate.getTime() - prevDate.getTime()) / 60000 < 5;
+  }
+
+  reactionPills(msg: Message): Array<{ code: string; emoji: string; label: string; count: number; selfReacted: boolean }> {
+    if (!msg.reactionCounts) return [];
+    return Object.entries(msg.reactionCounts)
+      .filter(([, count]) => (count as number) > 0)
+      .map(([code, count]) => ({
+        code,
+        emoji: this.reactionEmoji(code),
+        label: this.reactionLabel(code),
+        count: count as number,
+        selfReacted: msg.myReactionCode === code,
+      }))
+      .sort((a, b) => b.count - a.count);
   }
 
   shouldShowDaySeparator(msgs: Message[], index: number): boolean {
@@ -529,22 +560,98 @@ export class MessageFeedComponent {
     return this.imageViewerItems[this.imageViewerIndex] || null;
   }
 
-  openDocumentViewer(attachment: Message['attachment'] | undefined, event?: Event): void {
+  async openDocumentViewer(attachment: Message['attachment'] | undefined, event?: Event): Promise<void> {
     event?.stopPropagation();
-    const url = attachment?.previewUrl || attachment?.downloadUrl;
-    if (!url) return;
+    const rawUrl = attachment?.previewUrl || attachment?.downloadUrl;
+    if (!rawUrl) return;
     this.documentViewerTitle = attachment!.name || 'Document preview';
-    this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
-    this.documentViewerRawUrl = url;
-    this.documentViewerType = this.isPdfAttachment(attachment)
-      ? 'pdf'
-      : this.isOfficeAttachment(attachment)
-        ? 'office'
-        : 'file';
+    this.documentViewerRawUrl = rawUrl;
+
+    if (this.isPdfAttachment(attachment)) {
+      this.documentViewerType = 'pdf';
+      this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl);
+      this.documentViewerOpen = true;
+      return;
+    }
+
+    if (this.isOfficeAttachment(attachment)) {
+      this.documentViewerType = 'office';
+      this.documentViewerOpen = true;
+      this.officePreviewLoading = true;
+      this.officePreviewHtml = this.sanitizer.bypassSecurityTrustHtml('');
+      this.officePreviewError = '';
+      this.officeSheetNames = [];
+      this.officeActiveSheet = 0;
+      this._officeWorkbook = null;
+      this.cdr.markForCheck();
+
+      const nameRef = `${attachment!.name || rawUrl}`.toLowerCase();
+      const isDocx = /\.docx?(\?|$)/.test(nameRef);
+      const isXlsx = /\.xlsx?(\?|$)/.test(nameRef);
+
+      try {
+        const res = await fetch(rawUrl, { credentials: 'include' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const arrayBuffer = await res.arrayBuffer();
+
+        if (isDocx) {
+          const mammoth = await import('mammoth');
+          const fn = (mammoth as any).convertToHtml ?? (mammoth as any).default?.convertToHtml;
+          const result = await fn({ arrayBuffer });
+          this.officePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(result.value || '');
+        } else if (isXlsx) {
+          const XLSX = await import('xlsx');
+          const XLSXmod = (XLSX as any).default ?? XLSX;
+          const workbook = XLSXmod.read(new Uint8Array(arrayBuffer), { type: 'array' });
+          this._officeWorkbook = workbook;
+          this.officeSheetNames = workbook.SheetNames as string[];
+          this.officePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(
+            this._xlsxSheetToHtml(XLSXmod, workbook, 0)
+          );
+        } else {
+          this.officePreviewError = 'pptx';
+        }
+      } catch (e: any) {
+        this.officePreviewError = e?.message || 'Failed to load preview';
+      } finally {
+        this.officePreviewLoading = false;
+        this.cdr.markForCheck();
+      }
+      return;
+    }
+
+    this.documentViewerType = 'file';
+    this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl);
     this.documentViewerOpen = true;
   }
 
+  async switchOfficeSheet(index: number): Promise<void> {
+    if (!this._officeWorkbook || index === this.officeActiveSheet) return;
+    this.officeActiveSheet = index;
+    const XLSX = await import('xlsx');
+    const XLSXmod = (XLSX as any).default ?? XLSX;
+    this.officePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(
+      this._xlsxSheetToHtml(XLSXmod, this._officeWorkbook, index)
+    );
+    this.cdr.markForCheck();
+  }
+
+  private _xlsxSheetToHtml(XLSX: any, workbook: any, sheetIndex: number): string {
+    const sheetName = workbook.SheetNames[sheetIndex];
+    if (!sheetName) return '';
+    const sheet = workbook.Sheets[sheetName];
+    const raw = XLSX.utils.sheet_to_html(sheet);
+    const match = raw.match(/<table[\s\S]*?<\/table>/i);
+    return match ? match[0] : raw;
+  }
+
   documentViewerRawUrl = '';
+  officePreviewLoading = false;
+  officePreviewHtml: SafeHtml = '';
+  officePreviewError = '';
+  officeSheetNames: string[] = [];
+  officeActiveSheet = 0;
+  private _officeWorkbook: any = null;
 
   closeDocumentViewer(): void {
     this.documentViewerOpen = false;
@@ -552,6 +659,12 @@ export class MessageFeedComponent {
     this.documentViewerUrl = '';
     this.documentViewerRawUrl = '';
     this.documentViewerType = 'file';
+    this.officePreviewLoading = false;
+    this.officePreviewHtml = this.sanitizer.bypassSecurityTrustHtml('');
+    this.officePreviewError = '';
+    this.officeSheetNames = [];
+    this.officeActiveSheet = 0;
+    this._officeWorkbook = null;
   }
 
   messageImageItems(msg: Message): Array<{ url: string; label: string }> {

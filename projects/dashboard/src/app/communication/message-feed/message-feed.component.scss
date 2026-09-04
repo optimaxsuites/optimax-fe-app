@@ -1,11 +1,83 @@
-/* damilola worked on this: thread inbox card styling for channel and DM conversations. */
+/* damilola worked on this: thread inbox card styling, floating action bar, consecutive grouping, reaction pills. */
 .msg-row {
-  align-items: flex-end;
+  align-items: flex-start;
   min-width: 0;
   border: 1px solid transparent;
 
   &:hover {
     border-color: transparent;
+  }
+
+  &.msg-consecutive {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+}
+
+/* Floating action bar */
+.msg-float-bar {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.12s, transform 0.12s;
+}
+
+.msg-row:hover .msg-float-bar {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.float-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #6b7280;
+  transition: background 0.1s, color 0.1s;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #111827;
+  }
+
+  &.float-active {
+    color: #2e6276;
+    background: rgba(46, 98, 118, 0.08);
+  }
+
+  &.float-danger:hover {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+}
+
+/* Reaction pills */
+.reaction-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 12px;
+  color: #374151;
+  transition: border-color 0.1s, background 0.1s;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #d1d5db;
+    background: #f3f4f6;
+  }
+
+  &.reaction-pill-self {
+    border-color: rgba(46, 98, 118, 0.4);
+    background: rgba(46, 98, 118, 0.07);
+    color: #2e6276;
+    font-weight: 600;
   }
 }
 
@@ -26,6 +98,13 @@
   br + br {
     content: '';
   }
+
+  // Neutralise inline color/background styles that arrive via pasted rich content.
+  // Targets only elements with a style attribute — preserves class-based coloring
+  // on links (.chat-link, .chat-mention) which don't carry inline styles.
+  ::ng-deep *:not(a)[style*="color"]      { color: inherit !important; }
+  ::ng-deep *:not(a)[style*="background"] { background-color: transparent !important; }
+  ::ng-deep font[color]                   { color: inherit !important; }
 }
 
 :host ::ng-deep .message-rich-html a.chat-link {
@@ -533,6 +612,101 @@
   padding: 1rem;
 }
 
+/* ── Office client-side preview ── */
+.office-preview-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 16px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.office-preview-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(46, 98, 118, 0.2);
+  border-top-color: #2e6276;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.office-sheet-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 12px;
+}
+
+.office-sheet-tab {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover { background: #e5e7eb; color: #374151; }
+  &.active { background: #2e6276; color: #fff; border-color: #2e6276; }
+}
+
+.office-preview-body {
+  width: 100%;
+  overflow: auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px 28px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #1a2e3a;
+
+  /* Word (mammoth) output — must use ::ng-deep for [innerHTML] content */
+  ::ng-deep h1, ::ng-deep h2, ::ng-deep h3,
+  ::ng-deep h4, ::ng-deep h5, ::ng-deep h6 {
+    font-weight: 700;
+    margin: 1em 0 0.4em;
+    color: #111827;
+  }
+  ::ng-deep p { margin: 0.4em 0; }
+  ::ng-deep ul, ::ng-deep ol { padding-left: 1.5em; margin: 0.4em 0; }
+  ::ng-deep strong, ::ng-deep b { font-weight: 700; }
+  ::ng-deep em, ::ng-deep i { font-style: italic; }
+
+  /* Excel (SheetJS) table */
+  ::ng-deep table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0.4em 0;
+    font-size: 13px;
+  }
+  ::ng-deep table td, ::ng-deep table th {
+    border: 1px solid #d1d5db;
+    padding: 5px 10px;
+    white-space: nowrap;
+    min-width: 60px;
+    text-align: left;
+  }
+  ::ng-deep table th {
+    background: #f3f4f6;
+    font-weight: 600;
+    color: #374151;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  ::ng-deep table tr:nth-child(even) td { background: #f9fafb; }
+  ::ng-deep table tr:hover td { background: #eff6ff; }
+}
+
 .document-viewer-frame {
   width: 100%;
   min-height: 72vh;
@@ -957,28 +1131,28 @@
 
 // ── Attachment card ───────────────────────────────────────────────────────────
 
-.chat-attachment-card {
+/* Compact attachment chip */
+.attach-chip {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: #fff;
+  gap: 8px;
+  padding: 6px 8px 6px 6px;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  max-width: 340px;
+  border-radius: 10px;
+  max-width: 300px;
   width: 100%;
-  transition: border-color 0.14s, box-shadow 0.14s;
+  transition: border-color 0.12s;
 
   &:hover {
-    border-color: rgba(46, 98, 118, 0.35);
-    box-shadow: 0 2px 8px rgba(46, 98, 118, 0.08);
+    border-color: rgba(46, 98, 118, 0.3);
   }
 }
 
-.chat-attachment-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+.attach-chip-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
   background: rgba(46, 98, 118, 0.1);
   color: #2e6276;
   display: flex;
@@ -986,18 +1160,21 @@
   justify-content: center;
   flex-shrink: 0;
 
-  .pi {
-    font-size: 16px;
-  }
+  .pi { font-size: 14px; }
+
+  &.attach-type-pdf { background: rgba(220,38,38,0.1); color: #dc2626; }
+  &.attach-type-docx, &.attach-type-doc { background: rgba(37,99,235,0.1); color: #2563eb; }
+  &.attach-type-xlsx, &.attach-type-xls { background: rgba(22,163,74,0.1); color: #16a34a; }
+  &.attach-type-pptx, &.attach-type-ppt { background: rgba(234,88,12,0.1); color: #ea580c; }
 }
 
-.chat-attachment-info {
+.attach-chip-meta {
   flex: 1;
   min-width: 0;
 }
 
-.chat-attachment-name {
-  font-size: 13.5px;
+.attach-chip-name {
+  font-size: 12.5px;
   font-weight: 600;
   color: #1e293b;
   overflow: hidden;
@@ -1007,40 +1184,37 @@
   line-height: 1.3;
 }
 
-.chat-attachment-size {
-  font-size: 11px;
+.attach-chip-size {
+  font-size: 10.5px;
   color: #94a3b8;
-  margin: 2px 0 0;
+  margin: 1px 0 0;
 }
 
-.chat-attachment-actions {
+.attach-chip-btns {
   display: flex;
-  gap: 6px;
+  gap: 3px;
   flex-shrink: 0;
 }
 
-.chat-attachment-btn {
+.attach-icon-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  background: rgba(46, 98, 118, 0.08);
-  color: #2e6276;
-  border: 1px solid rgba(46, 98, 118, 0.2);
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  border: none;
   cursor: pointer;
-  transition: background 0.13s, border-color 0.13s;
+  transition: background 0.1s, color 0.1s;
+  text-decoration: none;
+
+  .pi { font-size: 12px; }
 
   &:hover {
-    background: #2e6276;
-    color: #fff;
-    border-color: #2e6276;
-  }
-
-  .pi {
-    font-size: 11px;
+    background: #e2e8f0;
+    color: #2e6276;
   }
 }
 
@@ -1237,39 +1411,20 @@
 
 .fb-picker-bubble {
   position: absolute;
-  bottom: calc(100% + 10px);
-  left: -4px;
+  bottom: calc(100% + 8px);
+  right: 0;
+  left: auto;
   background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 999px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.18), 0 1px 4px rgba(0, 0, 0, 0.10);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.14);
   display: flex;
   align-items: center;
-  padding: 5px 8px;
-  gap: 2px;
+  padding: 4px 6px;
+  gap: 1px;
   z-index: 60;
   animation: fb-bubble-pop 0.14s cubic-bezier(0.34, 1.56, 0.64, 1);
   white-space: nowrap;
-
-  &::before {
-    content: '';
-    position: absolute;
-    bottom: -7px;
-    left: 16px;
-    border: 7px solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.12);
-    border-bottom: none;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -5px;
-    left: 17px;
-    border: 6px solid transparent;
-    border-top-color: #fff;
-    border-bottom: none;
-  }
 }
 
 @keyframes fb-bubble-pop {
@@ -1278,9 +1433,9 @@
 }
 
 .fb-emoji-btn {
-  font-size: 22px;
-  width: 38px;
-  height: 38px;
+  font-size: 17px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1288,17 +1443,17 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.1s;
+  transition: transform 0.13s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.1s;
 
   &:hover {
-    transform: scale(1.55) translateY(-5px);
+    transform: scale(1.3) translateY(-3px);
     background: rgba(0, 0, 0, 0.05);
   }
 
   &.fb-selected {
-    outline: 2px solid #1877f2;
+    outline: 2px solid #2e6276;
     outline-offset: 1px;
-    background: #e7f3ff;
+    background: rgba(46, 98, 118, 0.08);
   }
 }
 
