@@ -134,38 +134,46 @@ export class LeaveRequestComponent implements OnInit {
         .pipe(catchError(() => of([]))),
     }).subscribe({
       next: (data) => {
-        const rawEmployees = data.employees;
-        this.allEmployees = Array.isArray(rawEmployees)
-          ? rawEmployees
-          : (rawEmployees?.data || rawEmployees?.content || []);
+        try {
+          const rawEmployees = data.employees;
+          this.allEmployees = Array.isArray(rawEmployees)
+            ? rawEmployees
+            : (rawEmployees?.data || rawEmployees?.content || []);
 
-        this.allLeaveRequests = data.leaveRequests || [];
+          const rawRequests: any = data.leaveRequests;
+          this.allLeaveRequests = Array.isArray(rawRequests)
+            ? rawRequests
+            : (rawRequests?.data || rawRequests?.content || []);
 
-        const rawBalances = data.leaveBalances;
-        this.leaveBalances = Array.isArray(rawBalances)
-          ? rawBalances
-          : (rawBalances?.data || rawBalances?.content || []);
+          const rawBalances = data.leaveBalances;
+          this.leaveBalances = Array.isArray(rawBalances)
+            ? rawBalances
+            : (rawBalances?.data || rawBalances?.content || []);
 
-        const rawTypes = data.leaveTypes;
-        this.leaveTypes = Array.isArray(rawTypes)
-          ? rawTypes
-          : (rawTypes?.data || rawTypes?.content || []);
+          const rawTypes = data.leaveTypes;
+          this.leaveTypes = Array.isArray(rawTypes)
+            ? rawTypes
+            : (rawTypes?.data || rawTypes?.content || []);
 
-        console.log('📊 Leave Requests:', this.allLeaveRequests);
-        console.log('👥 Employees:', this.allEmployees.length);
-        console.log('💰 Leave Balances:', this.leaveBalances.length);
+          console.log('👥 Employees:', this.allEmployees.length);
+          console.log('📋 Leave Requests:', this.allLeaveRequests.length);
+          console.log('💰 Leave Balances:', this.leaveBalances.length);
 
-        // Link each request to its employee
-        this.allLeaveRequests = this.allLeaveRequests.map((request) => {
-          const employee = this.findEmployeeForRequest(request);
-          return {
-            ...request,
-            _linkedEmployee: employee,
-          };
-        });
+          // Link each request to its employee
+          this.allLeaveRequests = this.allLeaveRequests.map((request) => {
+            const employee = this.findEmployeeForRequest(request);
+            return {
+              ...request,
+              _linkedEmployee: employee,
+            };
+          });
 
-        this.buildDisplayData();
-        this.isLoading = false;
+          this.buildDisplayData();
+        } catch (e) {
+          console.error('❌ Error processing leave request data:', e);
+        } finally {
+          this.isLoading = false;
+        }
       },
       error: (err) => {
         console.error('❌ Failed to load data:', err);
