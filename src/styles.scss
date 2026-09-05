@@ -78,6 +78,7 @@ $ERP-FE-theme: mat.define-light-theme(
 a {
   text-decoration: none;
   color: inherit;
+  touch-action: manipulation;
 }
 
 a:hover,
@@ -86,6 +87,10 @@ a:active,
 a:visited {
   color: inherit;
   text-decoration: none;
+}
+
+button {
+  touch-action: manipulation;
 }
 
 

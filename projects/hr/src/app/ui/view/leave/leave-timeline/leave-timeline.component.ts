@@ -210,8 +210,8 @@ export class LeaveTimelineComponent implements OnInit, OnDestroy {
           const leaveUserId = leave.createdBy?.userId || leave.createdBy?.id;
 
           const employee = this.allEmployees.find((emp) => {
-            const empUserId = emp.user?.userId;
-            return empUserId === leaveUserId;
+            const empUserId = emp.user?.userId || emp.user?.id || emp.userId;
+            return String(empUserId) === String(leaveUserId);
           });
 
           if (!employee) {
@@ -667,7 +667,7 @@ export class LeaveTimelineComponent implements OnInit, OnDestroy {
     // Find employee using linking logic
     const leaveUserId = leave.createdBy?.userId || leave.createdBy?.id;
     this.selectedEmployee =
-      this.allEmployees.find((emp) => (emp.user?.userId || emp.user?.id) === leaveUserId) || null;
+      this.allEmployees.find((emp) => String(emp.user?.userId || emp.user?.id || emp.userId) === String(leaveUserId)) || null;
 
     this.showLeaveModal = true;
     this.rejectionReason = '';

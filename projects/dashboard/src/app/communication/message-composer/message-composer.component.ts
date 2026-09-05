@@ -67,29 +67,122 @@ export class MessageComposerComponent {
   private audioChunks: Blob[] = [];
   private recordingTimer?: ReturnType<typeof setInterval>;
 
+  // ── Voice note preview (after recording, before sending) ─
+  voicePreview: { file: File; blobUrl: string } | null = null;
+  vnpPlaying = false;
+  vnpCurrentTime = 0;
+  vnpDuration = 0;
+
   get recordingLabel(): string {
     const m = Math.floor(this.recordingSeconds / 60).toString().padStart(2, '0');
     const s = (this.recordingSeconds % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   }
 
+  vnpFormatTime(secs: number): string {
+    if (!secs || isNaN(secs) || !isFinite(secs)) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+  vnpProgress(): number {
+    return this.vnpDuration ? (this.vnpCurrentTime / this.vnpDuration) * 100 : 0;
+  }
+  vnpToggle(el: HTMLAudioElement): void {
+    if (this.vnpPlaying) { el.pause(); this.vnpPlaying = false; }
+    else { el.play().catch(() => {}); this.vnpPlaying = true; }
+    this.cdr.markForCheck();
+  }
+  vnpMeta(e: Event): void {
+    const el = e.target as HTMLAudioElement;
+    if (!isFinite(el.duration)) {
+      // Chrome WebM: no duration header — seek to end to force calculation
+      el.currentTime = 1e101;
+      el.addEventListener('seeked', () => {
+        this.vnpDuration = isFinite(el.duration) ? el.duration : 0;
+        el.currentTime = 0;
+        this.cdr.markForCheck();
+      }, { once: true });
+      return;
+    }
+    this.vnpDuration = el.duration;
+    this.cdr.markForCheck();
+  }
+  vnpTimeUpdate(e: Event): void {
+    this.vnpCurrentTime = (e.target as HTMLAudioElement).currentTime;
+    this.cdr.markForCheck();
+  }
+  vnpEnded(): void {
+    this.vnpPlaying = false;
+    this.vnpCurrentTime = 0;
+    this.cdr.markForCheck();
+  }
+  vnpSeek(el: HTMLAudioElement, e: Event): void {
+    const t = Number((e.target as HTMLInputElement).value);
+    el.currentTime = t;
+    this.vnpCurrentTime = t;
+    this.cdr.markForCheck();
+  }
+  sendVoiceNote(): void {
+    if (!this.voicePreview) return;
+    this.filesSelected.emit([this.voicePreview.file]);
+    this._clearVoicePreview();
+    this.messageSent.emit();
+  }
+  discardVoiceNote(): void {
+    this._clearVoicePreview();
+  }
+  private _clearVoicePreview(): void {
+    if (this.voicePreview) {
+      URL.revokeObjectURL(this.voicePreview.blobUrl);
+      this.voicePreview = null;
+    }
+    this.vnpPlaying = false;
+    this.vnpCurrentTime = 0;
+    this.vnpDuration = 0;
+    this.cdr.markForCheck();
+  }
+
   startVoiceNote(): void {
     if (this.isRecording || !navigator.mediaDevices?.getUserMedia) return;
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
       this.audioChunks = [];
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
-      this.mediaRecorder = new MediaRecorder(stream, { mimeType });
-      this.mediaRecorder.ondataavailable = (e: BlobEvent) => {
+
+      const candidates = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/ogg',
+        'audio/mp4',
+      ];
+      const mimeType = candidates.find(t => MediaRecorder.isTypeSupported(t)) ?? '';
+
+      let recorder: MediaRecorder;
+      try {
+        recorder = mimeType
+          ? new MediaRecorder(stream, { mimeType })
+          : new MediaRecorder(stream);
+      } catch {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+      this.mediaRecorder = recorder;
+
+      recorder.ondataavailable = (e: BlobEvent) => {
         if (e.data.size > 0) this.audioChunks.push(e.data);
       };
-      this.mediaRecorder.onstop = () => {
-        const blob = new Blob(this.audioChunks, { type: mimeType });
-        const file = new File([blob], `voice-note-${Date.now()}.webm`, { type: mimeType });
-        this.filesSelected.emit([file]);
+      recorder.onstop = () => {
+        const type = recorder.mimeType || mimeType || 'audio/webm';
+        const blob = new Blob(this.audioChunks, { type });
+        const ext = type.includes('ogg') ? 'ogg' : type.includes('mp4') ? 'mp4' : 'webm';
+        const file = new File([blob], `voice-note-${Date.now()}.${ext}`, { type });
+        // Show preview instead of uploading immediately
+        this.voicePreview = { file, blobUrl: URL.createObjectURL(blob) };
         stream.getTracks().forEach(t => t.stop());
         this.cdr.markForCheck();
       };
-      this.mediaRecorder.start();
+
+      recorder.start();
       this.isRecording = true;
       this.recordingSeconds = 0;
       this.recordingTimer = setInterval(() => {
@@ -102,9 +195,14 @@ export class MessageComposerComponent {
 
   stopVoiceNote(): void {
     if (!this.isRecording) return;
-    this.mediaRecorder?.stop();
     this.isRecording = false;
-    if (this.recordingTimer) clearInterval(this.recordingTimer);
+    if (this.recordingTimer) {
+      clearInterval(this.recordingTimer);
+      this.recordingTimer = undefined;
+    }
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
     this.cdr.markForCheck();
   }
 

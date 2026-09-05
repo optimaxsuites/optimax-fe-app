@@ -76,6 +76,7 @@
       (emailCompose)="openEmailModal()"
       (searchQueryChange)="searchQuery = $event; onSearch()"
       (searchExecuted)="onSearch()"
+      (searchFocused)="preloadAllChannelMessages()"
       (searchClosed)="closeSearch()"
       (jumpTo)="onSidebarJumpTo($event)"
       (workspaceOpened)="openAnalyticsPanel($event)"

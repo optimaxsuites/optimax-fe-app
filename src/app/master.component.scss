@@ -35,6 +35,7 @@
   flex: 1; /* Take up remaining space between navbar and footer */
   // padding: 1rem;
   box-sizing: border-box;
+  touch-action: manipulation;
 }
 
 @media screen and (max-width: 992px) {
