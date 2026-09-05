@@ -245,13 +245,14 @@
       <div class="msg-float-bar absolute right-3 z-30 items-center gap-0 bg-white border border-gray-200 rounded-xl shadow-md px-1 py-0.5"
            [class.flex]="hoveredMsgId === msg.id || confirmDeleteId === msg.id"
            [class.hidden]="hoveredMsgId !== msg.id && confirmDeleteId !== msg.id"
-           style="top: -18px;">
+           style="top: -18px;"
+           (mouseenter)="onMsgHover(msg.id)"
+           (mouseleave)="onMsgHoverEnd()">
         <!-- React -->
-        <div class="relative" (mouseenter)="openReactionPicker('float-' + msg.id)" (mouseleave)="scheduleCloseReactionPicker()">
+        <div class="relative" (mouseenter)="openReactionPicker('float-' + msg.id)">
           <div *ngIf="emojiPickerOpenForId === 'float-' + msg.id"
                class="fb-picker-bubble"
-               (mouseenter)="cancelCloseReactionPicker()"
-               (mouseleave)="scheduleCloseReactionPicker()"
+               (mouseenter)="onMsgHover(msg.id)"
                (click)="$event.stopPropagation()">
             <button *ngFor="let r of allReactions" type="button" class="fb-emoji-btn"
                     [class.fb-selected]="msg.myReactionCode === r.code"

@@ -5,9 +5,10 @@
 
 .navbar-container{
   background-color: #fff;
-  // position: sticky;
-  // z-index: 1000;
+  position: sticky;
+  z-index: 10;
   top: 0;
+  touch-action: manipulation;
 }
 .sidebar-container {
   height: 100%;
@@ -29,6 +30,7 @@
   min-height: 100vh;
   width: 100%;
   overflow-y: auto; /* Enable vertical scrolling */
+  touch-action: manipulation;
 }
 
 .main {

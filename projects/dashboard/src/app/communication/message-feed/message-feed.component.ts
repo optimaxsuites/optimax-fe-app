@@ -106,7 +106,7 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
 
   // ── Facebook-style reaction picker ──────────────────
   emojiPickerOpenForId: string | null = null;
-  private _pickerCloseTimer?: ReturnType<typeof setTimeout>;
+  private _pickerDismissListener?: (e: MouseEvent) => void;
 
   readonly allReactions: ChatReactionOption[] = [
     { code: 'LIKE',      emoji: '👍', label: 'Like' },
@@ -146,24 +146,37 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
   }
 
   openReactionPicker(msgId: string): void {
-    clearTimeout(this._pickerCloseTimer);
+    if (this.emojiPickerOpenForId === msgId) return;
     this.emojiPickerOpenForId = msgId;
+    this.cdr.markForCheck();
+    // dismiss when clicking anywhere outside the picker
+    if (this._pickerDismissListener) {
+      document.removeEventListener('click', this._pickerDismissListener, true);
+    }
+    this._pickerDismissListener = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.fb-picker-bubble') && !target.closest('.float-action-btn')) {
+        this.emojiPickerOpenForId = null;
+        this.cdr.markForCheck();
+        document.removeEventListener('click', this._pickerDismissListener!, true);
+        this._pickerDismissListener = undefined;
+      }
+    };
+    setTimeout(() => document.addEventListener('click', this._pickerDismissListener!, true), 0);
   }
 
-  scheduleCloseReactionPicker(): void {
-    this._pickerCloseTimer = setTimeout(() => {
-      this.emojiPickerOpenForId = null;
-    }, 220);
-  }
-
-  cancelCloseReactionPicker(): void {
-    clearTimeout(this._pickerCloseTimer);
+  private _closeReactionPicker(): void {
+    if (this._pickerDismissListener) {
+      document.removeEventListener('click', this._pickerDismissListener, true);
+      this._pickerDismissListener = undefined;
+    }
+    this.emojiPickerOpenForId = null;
   }
 
   onReactionPick(msg: Message, code: string, event: Event): void {
     event.stopPropagation();
-    clearTimeout(this._pickerCloseTimer);
-    this.emojiPickerOpenForId = null;
+    this._closeReactionPicker();
+    this.cdr.markForCheck();
     this.likeToggled.emit({ msg, event, reactionCode: code });
   }
 
@@ -726,6 +739,7 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
     this._audioBlobUrls.forEach(url => URL.revokeObjectURL(url));
     this._audioBlobUrls.clear();
     clearTimeout(this._msgHoverTimer);
+    this._closeReactionPicker();
   }
 
   chatMediaGridClass(imageCount: number): string {
