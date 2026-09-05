@@ -5,10 +5,15 @@ import {
   EventEmitter,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
+  OnDestroy,
+  OnChanges,
+  SimpleChanges,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl, SafeHtml } from '@angular/platform-browser';
+import { firstValueFrom } from 'rxjs';
 import { Message } from '../communication.component';
+import { CollaborationService } from '../../../app/ui/services/collaboration.service';
 
 interface HoverPersonCard {
   name: string;
@@ -47,7 +52,7 @@ interface ChatReactionOption {
   styleUrls: ['./message-feed.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MessageFeedComponent {
+export class MessageFeedComponent implements OnDestroy, OnChanges {
   private readonly urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
   private readonly mentionBoundaryAfterRegex = '(?=$|[\\s.,!?;:()\\[\\]{}"\'`])';
   imageViewerOpen = false;
@@ -58,7 +63,12 @@ export class MessageFeedComponent {
   documentViewerUrl: SafeResourceUrl = '';
   documentViewerType: 'pdf' | 'office' | 'file' = 'file';
 
-  constructor(private sanitizer: DomSanitizer, private router: Router, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private sanitizer: DomSanitizer,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+    private collabService: CollaborationService,
+  ) {}
   structuredViewerOpen = false;
   structuredViewerTitle = '';
   structuredViewerHtml = '';
@@ -445,6 +455,17 @@ export class MessageFeedComponent {
     return type === 'application/pdf' || /\.pdf(\?|$)/i.test(fileRef);
   }
 
+  isVoiceNote(attachment: Message['attachment'] | undefined): boolean {
+    if (!attachment) return false;
+    const type = (attachment.type || '').toLowerCase();
+    const name = (attachment.name || '').toLowerCase();
+    return (
+      type.startsWith('audio/') ||
+      /\.(mp3|wav|aac|m4a|opus|flac|ogg)(\?|$)/i.test(name) ||
+      name.startsWith('voice-note-')  // covers .webm / .mp4 recorded by the composer
+    );
+  }
+
   isOfficeAttachment(attachment: Message['attachment'] | undefined): boolean {
     const fileRef = `${attachment?.name || ''} ${attachment?.downloadUrl || ''}`.toLowerCase();
     return (
@@ -496,6 +517,10 @@ export class MessageFeedComponent {
     );
   }
 
+  voiceNoteAttachments(msg: Message): NonNullable<Message['attachments']> {
+    return this.nonImageAttachments(msg).filter(att => this.isVoiceNote(att));
+  }
+
   previewableDocumentAttachments(msg: Message): NonNullable<Message['attachments']> {
     return this.nonImageAttachments(msg).filter((attachment) =>
       this.isPdfAttachment(attachment) || this.isOfficeAttachment(attachment),
@@ -504,8 +529,203 @@ export class MessageFeedComponent {
 
   genericAttachments(msg: Message): NonNullable<Message['attachments']> {
     return this.nonImageAttachments(msg).filter(
-      (attachment) => !this.isPdfAttachment(attachment) && !this.isOfficeAttachment(attachment),
+      (attachment) =>
+        !this.isPdfAttachment(attachment) &&
+        !this.isOfficeAttachment(attachment) &&
+        !this.isVoiceNote(attachment),
     );
+  }
+
+  // ── Float bar hover state ────────────────────────────
+  hoveredMsgId: string | null = null;
+  private _msgHoverTimer?: ReturnType<typeof setTimeout>;
+
+  onMsgHover(msgId: string): void {
+    clearTimeout(this._msgHoverTimer);
+    this.hoveredMsgId = msgId;
+  }
+
+  onMsgHoverEnd(): void {
+    this._msgHoverTimer = setTimeout(() => {
+      this.hoveredMsgId = null;
+      this.cdr.markForCheck();
+    }, 800);
+  }
+
+  // ── Audio player state ───────────────────────────────
+  private _audioStates = new Map<string, { playing: boolean; currentTime: number; duration: number }>();
+  private _audioBlobUrls = new Map<string, string>();
+
+  private _audioKey(att: any): string {
+    return att?.downloadUrl || att?.previewUrl || att?.name || 'audio';
+  }
+
+  isAudioPlaying(att: any): boolean {
+    return this._audioStates.get(this._audioKey(att))?.playing ?? false;
+  }
+
+  getAudioCurrentTime(att: any): number {
+    return this._audioStates.get(this._audioKey(att))?.currentTime ?? 0;
+  }
+
+  getAudioDuration(att: any): number {
+    return this._audioStates.get(this._audioKey(att))?.duration ?? 0;
+  }
+
+  getAudioProgress(att: any): number {
+    const d = this.getAudioDuration(att);
+    return d ? (this.getAudioCurrentTime(att) / d) * 100 : 0;
+  }
+
+  formatAudioTime(secs: number): string {
+    if (!secs || isNaN(secs) || !isFinite(secs)) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  private async _fetchBlobUrl(url: string): Promise<string> {
+    const blob = await firstValueFrom(this.collabService.fetchChatAttachmentBlob(url));
+    return URL.createObjectURL(blob);
+  }
+
+  private _loadAudioWithDuration(audioEl: HTMLAudioElement, blobUrl: string): Promise<number> {
+    audioEl.src = blobUrl;
+    audioEl.load();
+    return new Promise<number>(resolve => {
+      const onMeta = async () => {
+        if (!isFinite(audioEl.duration)) {
+          // Chrome MediaRecorder WebM files omit the duration header.
+          // Seeking to a huge timestamp forces the browser to scan the full file and compute the real duration.
+          audioEl.currentTime = 1e101;
+          await new Promise<void>(r => {
+            audioEl.addEventListener('seeked', () => r(), { once: true });
+            setTimeout(r, 2000);
+          });
+          audioEl.currentTime = 0;
+        }
+        resolve(isFinite(audioEl.duration) ? audioEl.duration : 0);
+      };
+      audioEl.addEventListener('loadedmetadata', () => onMeta(), { once: true });
+      audioEl.addEventListener('error', () => resolve(0), { once: true });
+    });
+  }
+
+  async toggleAudio(audioEl: HTMLAudioElement, att: any): Promise<void> {
+    const key = this._audioKey(att);
+    const state = this._audioStates.get(key) ?? { playing: false, currentTime: 0, duration: 0 };
+    if (state.playing) {
+      audioEl.pause();
+      this._audioStates.set(key, { ...state, playing: false });
+      this.cdr.markForCheck();
+      return;
+    }
+
+    if (!this._audioBlobUrls.has(key)) {
+      const rawUrl = att?.downloadUrl || att?.previewUrl;
+      if (!rawUrl) return;
+      try {
+        const blobUrl = await this._fetchBlobUrl(rawUrl);
+        this._audioBlobUrls.set(key, blobUrl);
+        const dur = await this._loadAudioWithDuration(audioEl, blobUrl);
+        this._audioStates.set(key, { ...state, duration: dur });
+      } catch {
+        return;
+      }
+    } else {
+      const blobUrl = this._audioBlobUrls.get(key)!;
+      if (audioEl.src !== blobUrl) {
+        await this._loadAudioWithDuration(audioEl, blobUrl);
+      }
+    }
+
+    try {
+      await audioEl.play();
+      const updated = this._audioStates.get(key) ?? { playing: false, currentTime: 0, duration: 0 };
+      this._audioStates.set(key, { ...updated, playing: true });
+    } catch { /* autoplay policy blocked */ }
+    this.cdr.markForCheck();
+  }
+
+  onAudioMeta(event: Event, att: any): void {
+    const el = event.target as HTMLAudioElement;
+    const key = this._audioKey(att);
+    const state = this._audioStates.get(key) ?? { playing: false, currentTime: 0, duration: 0 };
+    this._audioStates.set(key, { ...state, duration: isFinite(el.duration) ? el.duration : 0 });
+    this.cdr.markForCheck();
+  }
+
+  onAudioTimeUpdate(event: Event, att: any): void {
+    const el = event.target as HTMLAudioElement;
+    const key = this._audioKey(att);
+    const state = this._audioStates.get(key) ?? { playing: true, currentTime: 0, duration: 0 };
+    this._audioStates.set(key, { ...state, currentTime: el.currentTime });
+    this.cdr.markForCheck();
+  }
+
+  onAudioEnded(att: any): void {
+    const key = this._audioKey(att);
+    const state = this._audioStates.get(key) ?? { playing: false, currentTime: 0, duration: 0 };
+    this._audioStates.set(key, { ...state, playing: false, currentTime: 0 });
+    this.cdr.markForCheck();
+  }
+
+  seekAudio(audioEl: HTMLAudioElement, event: Event, att: any): void {
+    const val = Number((event.target as HTMLInputElement).value);
+    audioEl.currentTime = val;
+    const key = this._audioKey(att);
+    const state = this._audioStates.get(key) ?? { playing: false, currentTime: 0, duration: 0 };
+    this._audioStates.set(key, { ...state, currentTime: val });
+    this.cdr.markForCheck();
+  }
+
+  async downloadAttachment(att: any, event: Event): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    const url = att?.downloadUrl || att?.previewUrl;
+    if (!url) return;
+    try {
+      const blobUrl = await this._fetchBlobUrl(url);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = att?.name || 'attachment';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+    } catch { /* ignore */ }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['messages']) {
+      this._preloadVoiceNoteDurations();
+    }
+  }
+
+  private async _preloadVoiceNoteDurations(): Promise<void> {
+    for (const msg of this.messages) {
+      for (const att of this.voiceNoteAttachments(msg)) {
+        const key = this._audioKey(att);
+        if (this._audioBlobUrls.has(key)) continue;
+        const url = att?.downloadUrl || att?.previewUrl;
+        if (!url) continue;
+        try {
+          const blobUrl = await this._fetchBlobUrl(url);
+          this._audioBlobUrls.set(key, blobUrl);
+          const tempAudio = new Audio();
+          const dur = await this._loadAudioWithDuration(tempAudio, blobUrl);
+          const existing = this._audioStates.get(key) ?? { playing: false, currentTime: 0, duration: 0 };
+          this._audioStates.set(key, { ...existing, duration: dur });
+          this.cdr.markForCheck();
+        } catch { /* ignore */ }
+      }
+    }
+  }
+
+  ngOnDestroy(): void {
+    this._audioBlobUrls.forEach(url => URL.revokeObjectURL(url));
+    this._audioBlobUrls.clear();
+    clearTimeout(this._msgHoverTimer);
   }
 
   chatMediaGridClass(imageCount: number): string {
@@ -590,9 +810,8 @@ export class MessageFeedComponent {
       const isXlsx = /\.xlsx?(\?|$)/.test(nameRef);
 
       try {
-        const res = await fetch(rawUrl, { credentials: 'include' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const arrayBuffer = await res.arrayBuffer();
+        const blob = await firstValueFrom(this.collabService.fetchChatAttachmentBlob(rawUrl));
+        const arrayBuffer = await blob.arrayBuffer();
 
         if (isDocx) {
           const mammoth = await import('mammoth');

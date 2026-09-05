@@ -115,6 +115,7 @@ export class ChannelSidebarComponent implements OnInit {
   @Output() emailCompose = new EventEmitter<void>();
   @Output() searchQueryChange = new EventEmitter<string>();
   @Output() searchExecuted = new EventEmitter<void>();
+  @Output() searchFocused = new EventEmitter<void>();
   @Output() searchClosed = new EventEmitter<void>();
   @Output() jumpTo = new EventEmitter<{ msg: any; channelId: string; channelName: string }>();
   @Output() workspaceOpened = new EventEmitter<DmContact>();

@@ -103,6 +103,70 @@
   </button>
 </div>
 
+<!-- Voice note preview panel -->
+<div *ngIf="voicePreview" class="vnp-preview-wrap">
+  <audio
+    #vnpAudio
+    [src]="voicePreview.blobUrl"
+    preload="metadata"
+    (loadedmetadata)="vnpMeta($event)"
+    (timeupdate)="vnpTimeUpdate($event)"
+    (ended)="vnpEnded()"
+  ></audio>
+
+  <div class="vnp-preview-card">
+    <!-- Mic icon -->
+    <div class="vnp-preview-icon">
+      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M9 11V7a3 3 0 016 0v4a3 3 0 01-6 0z"/>
+      </svg>
+    </div>
+
+    <!-- Play/pause button -->
+    <button type="button" class="vnp-preview-play" [class.playing]="vnpPlaying"
+            (click)="vnpToggle(vnpAudio)">
+      <svg *ngIf="!vnpPlaying" width="10" height="10" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+      <svg *ngIf="vnpPlaying" width="10" height="10" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+      </svg>
+    </button>
+
+    <!-- Seek track -->
+    <div class="vnp-preview-track">
+      <div class="vnp-preview-bar-wrap">
+        <div class="vnp-preview-bar-fill" [style.width.%]="vnpProgress()"></div>
+        <input type="range" class="vnp-preview-seek"
+               [value]="vnpCurrentTime"
+               [max]="vnpDuration || 100"
+               step="0.1"
+               (input)="vnpSeek(vnpAudio, $event)">
+      </div>
+      <div class="vnp-preview-times">
+        <span>{{ vnpFormatTime(vnpCurrentTime) }}</span>
+        <span>{{ vnpFormatTime(vnpDuration) }}</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="vnp-preview-actions">
+      <button type="button" class="vnp-discard-btn" (click)="discardVoiceNote()" title="Discard">
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </button>
+      <button type="button" class="vnp-send-btn" (click)="sendVoiceNote()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        </svg>
+        Send
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ Unified chat input box ═══ -->
 <div class="chat-input-wrap">
 

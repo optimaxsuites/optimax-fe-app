@@ -8815,8 +8815,8 @@ export class CommunicationComponent
       for (const msg of this.channelMessages[ch.id] || []) {
         if (
           !msg.isSystem &&
-          (msg.content.toLowerCase().includes(q) ||
-            msg.author.toLowerCase().includes(q))
+          ((msg.content ?? '').toLowerCase().includes(q) ||
+            (msg.author ?? '').toLowerCase().includes(q))
         )
           this.searchResults.push({
             msg,
@@ -8826,6 +8826,13 @@ export class CommunicationComponent
       }
     }
     this.showSearch = true;
+  }
+
+  preloadAllChannelMessages(): void {
+    for (const ch of this.channels) {
+      if (this.channelMessages[ch.id] === undefined)
+        this.loadChannelMessages(ch);
+    }
   }
 
   closeSearch(): void {

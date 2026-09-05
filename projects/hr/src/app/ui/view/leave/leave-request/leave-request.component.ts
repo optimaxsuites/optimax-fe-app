@@ -192,7 +192,7 @@ export class LeaveRequestComponent implements OnInit {
     const requestUserId = request.createdBy?.userId || request.createdBy?.id || request.employeeId;
     if (requestUserId != null) {
       const byUserId = this.allEmployees.find((emp) => {
-        const empUserId = emp.user?.userId || emp.user?.id || emp.id;
+        const empUserId = emp.user?.userId || emp.user?.id || emp.userId || emp.id;
         return String(empUserId) === String(requestUserId);
       });
       if (byUserId) return byUserId;

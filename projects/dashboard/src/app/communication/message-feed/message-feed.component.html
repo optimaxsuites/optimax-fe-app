@@ -238,9 +238,14 @@
       }"
       (click)="deleteDismissed.emit()"
       (dblclick)="threadOpened.emit({ msg, event: $event })"
+      (mouseenter)="onMsgHover(msg.id)"
+      (mouseleave)="onMsgHoverEnd()"
     >
-      <!-- Floating action bar (appears on group hover) -->
-      <div class="msg-float-bar hidden group-hover:flex absolute right-3 z-30 items-center gap-0 bg-white border border-gray-200 rounded-xl shadow-md px-1 py-0.5" style="top: -18px;">
+      <!-- Floating action bar -->
+      <div class="msg-float-bar absolute right-3 z-30 items-center gap-0 bg-white border border-gray-200 rounded-xl shadow-md px-1 py-0.5"
+           [class.flex]="hoveredMsgId === msg.id || confirmDeleteId === msg.id"
+           [class.hidden]="hoveredMsgId !== msg.id && confirmDeleteId !== msg.id"
+           style="top: -18px;">
         <!-- React -->
         <div class="relative" (mouseenter)="openReactionPicker('float-' + msg.id)" (mouseleave)="scheduleCloseReactionPicker()">
           <div *ngIf="emojiPickerOpenForId === 'float-' + msg.id"
@@ -295,31 +300,18 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
         </button>
-        <!-- Delete (own messages) with confirm popover -->
-        <div *ngIf="isOwnMessage(msg)" class="relative" (click)="$event.stopPropagation()">
-          <button type="button" class="float-action-btn float-danger" title="Delete"
-                  [disabled]="isDeleting(msg.id)"
-                  (click)="deleteRequested.emit({ msg, event: $event })">
-            <svg *ngIf="!isDeleting(msg.id)" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            <svg *ngIf="isDeleting(msg.id)" class="animate-spin" width="13" height="13" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-            </svg>
-          </button>
-          <div *ngIf="confirmDeleteId === msg.id"
-               class="absolute bottom-full right-0 mb-2 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-56">
-            <p class="text-[13px] font-semibold text-gray-800 mb-0.5">Delete message?</p>
-            <p class="text-[12px] text-gray-500 mb-3 leading-snug">This cannot be undone.</p>
-            <div class="flex gap-2">
-              <button (click)="deleteConfirmed.emit({ msg, event: $event })"
-                      class="flex-1 py-1.5 bg-red-500 hover:bg-red-600 text-white text-[12px] font-semibold rounded-lg">Delete</button>
-              <button (click)="deleteDismissed.emit()"
-                      class="flex-1 py-1.5 bg-white border border-gray-200 text-gray-600 text-[12px] rounded-lg hover:bg-gray-50">Cancel</button>
-            </div>
-          </div>
-        </div>
+        <!-- Delete (own messages) — confirm dialog is outside the float bar -->
+        <button *ngIf="isOwnMessage(msg)" type="button" class="float-action-btn float-danger" title="Delete"
+                [disabled]="isDeleting(msg.id)"
+                (click)="deleteRequested.emit({ msg, event: $event }); $event.stopPropagation()">
+          <svg *ngIf="!isDeleting(msg.id)" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          <svg *ngIf="isDeleting(msg.id)" class="animate-spin" width="13" height="13" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+        </button>
         <!-- Retry (own failed messages) -->
         <button *ngIf="isOwnMessage(msg) && msg.deliveryState === 'FAILED'" type="button"
                 class="float-action-btn float-danger" title="Retry"
@@ -329,6 +321,21 @@
           </svg>
         </button>
       </div>
+
+      <!-- Delete confirm dialog — lives outside the float bar so hover state can't close it -->
+      <div *ngIf="confirmDeleteId === msg.id && isOwnMessage(msg)"
+           class="absolute bottom-full right-3 mb-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-56"
+           (click)="$event.stopPropagation()">
+        <p class="text-[13px] font-semibold text-gray-800 mb-0.5">Delete message?</p>
+        <p class="text-[12px] text-gray-500 mb-3 leading-snug">This cannot be undone.</p>
+        <div class="flex gap-2">
+          <button (click)="deleteConfirmed.emit({ msg, event: $event }); $event.stopPropagation()"
+                  class="flex-1 py-1.5 bg-red-500 hover:bg-red-600 text-white text-[12px] font-semibold rounded-lg">Delete</button>
+          <button (click)="deleteDismissed.emit(); $event.stopPropagation()"
+                  class="flex-1 py-1.5 bg-white border border-gray-200 text-gray-600 text-[12px] rounded-lg hover:bg-gray-50">Cancel</button>
+        </div>
+      </div>
+
       <!-- Pinned indicator -->
       <div *ngIf="msg.pinned" class="absolute left-0 top-2 bottom-2 w-[3px] bg-amber-400 rounded-r"></div>
 
@@ -550,6 +557,66 @@
                   class="chat-image-preview"
                 />
               </button>
+            </div>
+
+            <!-- Voice notes: inline audio player -->
+            <div class="mt-2 flex flex-col gap-2" *ngIf="voiceNoteAttachments(msg).length">
+              <div *ngFor="let att of voiceNoteAttachments(msg)" class="voice-note-player">
+                <audio
+                  #audioEl
+                  preload="none"
+                  (loadedmetadata)="onAudioMeta($event, att)"
+                  (timeupdate)="onAudioTimeUpdate($event, att)"
+                  (ended)="onAudioEnded(att)"
+                ></audio>
+
+                <!-- Mic icon -->
+                <div class="vnp-icon">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M9 11V7a3 3 0 016 0v4a3 3 0 01-6 0z"/>
+                  </svg>
+                </div>
+
+                <!-- Play / Pause -->
+                <button type="button" class="vnp-play" [class.playing]="isAudioPlaying(att)"
+                        (click)="toggleAudio(audioEl, att); $event.stopPropagation()">
+                  <svg *ngIf="!isAudioPlaying(att)" width="11" height="11" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                  <svg *ngIf="isAudioPlaying(att)" width="11" height="11" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                  </svg>
+                </button>
+
+                <!-- Seek track -->
+                <div class="vnp-track">
+                  <div class="vnp-bar-wrap">
+                    <div class="vnp-bar-fill" [style.width.%]="getAudioProgress(att)"></div>
+                    <input type="range" class="vnp-seek"
+                           [value]="getAudioCurrentTime(att)"
+                           [max]="getAudioDuration(att) || 100"
+                           step="0.1"
+                           (input)="seekAudio(audioEl, $event, att)"
+                           (click)="$event.stopPropagation()">
+                  </div>
+                  <div class="vnp-times">
+                    <span>{{ formatAudioTime(getAudioCurrentTime(att)) }}</span>
+                    <span>{{ formatAudioTime(getAudioDuration(att)) }}</span>
+                  </div>
+                </div>
+
+                <!-- Download -->
+                <button *ngIf="att.downloadUrl || att.previewUrl"
+                   type="button"
+                   class="vnp-dl" title="Download"
+                   (click)="downloadAttachment(att, $event)">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <div class="mt-2 flex flex-col gap-1.5" *ngIf="previewableDocumentAttachments(msg).length">
