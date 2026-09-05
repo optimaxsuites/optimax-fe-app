@@ -509,6 +509,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     EmployeeRelativesWidgetComponent,
     TimeFormatPipe,
     ToastComponent,
+    TableComponent,
   ],
   schemas: [NO_ERRORS_SCHEMA],
   providers: [
