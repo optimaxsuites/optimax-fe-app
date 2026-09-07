@@ -36,7 +36,7 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
   isLoadingEmployeeData = true;
   currentLocation = '';
 
-  private hrEmployeeId: number | null = null;
+  private hrEmployeeId: string | null = null;
   private hrDepartment = '';
   private hrEmployeeName = '';
   private workingWindow: WorkingWindow | null = null;
@@ -62,7 +62,7 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (employeeId) => {
-          this.hrEmployeeId = employeeId || 1;
+          this.hrEmployeeId = String(employeeId || 1);
           this.isLoadingEmployeeData = false;
           void this.checkOfficeHours();
 
@@ -98,9 +98,9 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
             this.attendancetableService.refreshFromLocalStorage(stored);
           } else {
             // Only fetch from API if no mock data
-            this.attendancetableService.fetchByEmployee(Number(employeeId));
+            this.attendancetableService.fetchByEmployee(String(employeeId));
           }
-          this.attendancetableService.updateEmployeeIdentity(employeeId, this.hrEmployeeName, this.hrDepartment);
+          this.attendancetableService.updateEmployeeIdentity(String(employeeId), this.hrEmployeeName, this.hrDepartment);
         },
         error: () => {
           this.hrDepartment = 'Default Department';
@@ -118,7 +118,7 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (data) => {
           if (!this.hrEmployeeId) return;
-          const employeeId = Number(this.hrEmployeeId);
+          const employeeId = this.hrEmployeeId;
 
           this.hasCompletedToday = this.attendancetableService.hasCompletedToday(employeeId);
           this.isAbsentToday = false; // Allow clock-in in development/testing mode
@@ -151,7 +151,7 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
   private restoreClockStatus(): void {
     if (!this.hrEmployeeId) return;
 
-    const employeeId = Number(this.hrEmployeeId);
+    const employeeId = this.hrEmployeeId;
     const restored = this.attendancetableService.getTodayStatusForEmployee(employeeId);
 
     if (restored === 'CLOCKED_IN') {
@@ -170,7 +170,7 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
 
   async toggleClock() {
     if (!this.hrEmployeeId) {
-      this.hrEmployeeId = 1;
+      this.hrEmployeeId = '1';
     }
 
     this.isGettingLocation = true;

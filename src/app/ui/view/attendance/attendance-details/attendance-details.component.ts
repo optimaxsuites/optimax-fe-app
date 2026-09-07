@@ -17,7 +17,7 @@ export class AttendanceDetailsComponent implements OnInit {
 
   ngOnInit() {
     if (!this.id) return;
-    this.attendanceService.fetchEmployeeRecords(this.id).subscribe(raw => {
+    this.attendanceService.fetchEmployeeRecords(String(this.id)).subscribe(raw => {
       if (raw.length > 0) {
         const record = raw[0];
         this.employee = {

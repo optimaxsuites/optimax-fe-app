@@ -26,7 +26,7 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   currentRecord: AttendanceViewRecord | null = null;
   history: AttendanceViewRecord[] = [];
   filteredHistory: AttendanceViewRecord[] = [];
-  private employeeId: number | null = null;
+  private employeeId: string | null = null;
   private employeeName = '';
   private department = '';
   private sub = new Subscription();
@@ -96,12 +96,12 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
 
     this.employeeService.getEmployeeIdForCurrentUser().subscribe({
       next: employeeId => {
-        this.employeeId = employeeId;
-        this.attendanceService.fetchByEmployee(employeeId);
+        this.employeeId = String(employeeId);
+        this.attendanceService.fetchByEmployee(String(employeeId));
       },
       error: () => {
-        this.employeeId = currentUser.id;
-        this.attendanceService.fetchByEmployee(currentUser.id);
+        this.employeeId = String(currentUser.id);
+        this.attendanceService.fetchByEmployee(String(currentUser.id));
       }
     });
   }
@@ -109,7 +109,7 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   private setEmployeeInfoFromSession(): void {
     const currentUser = this.userSession.getCurrentUser();
     if (currentUser) {
-      this.employeeId = currentUser.id;
+      this.employeeId = String(currentUser.id);
       this.employeeName = currentUser.name;
       this.department = currentUser.department || 'Default Department';
       return;
@@ -121,7 +121,7 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
         const data = JSON.parse(userInfo);
         if (Array.isArray(data) && data.length > 0) {
           const user = data[0];
-          const employeeId = Number(user.id || user.employeeId);
+          const employeeId = String(user.id || user.employeeId);
           const employeeName = user.fullName || user.name || '';
           if (employeeId) {
             this.employeeId = employeeId;

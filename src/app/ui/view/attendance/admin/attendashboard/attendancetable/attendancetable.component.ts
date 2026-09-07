@@ -230,7 +230,7 @@ openAttendance(record: AttendanceTableRecord) {
   record.overrideOpen = true;
   const actorUserId = parseInt(sessionStorage.getItem('userid') ?? '0')
   this.attendancetableService.openAttendanceForToday(
-    record.id,
+    record.employeeId ?? '',
     actorUserId,
   //parseInt(sessionStorage.getItem('userid') ?? '0'), //userid from session
 'Attendance opened by admin' //reason
@@ -619,7 +619,7 @@ saveModification() {
   };
 
   this.attendancetableService.overrideAttendance(
-    this.editingRecord.id,
+    this.editingRecord.employeeId ?? '',
     this.editingRecord.date instanceof Date 
       ? this.editingRecord.date.toISOString().split('T')[0] 
       : this.editingRecord.date!,

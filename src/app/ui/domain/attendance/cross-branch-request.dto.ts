@@ -2,10 +2,7 @@
  * ⚠️ UPDATED (2026-08-31) - Simplified to RETROSPECTIVE only
  * Cross-branch requests are AUTO-CREATED when employee checks in at non-home branch
  * Supervisor/admin approves after the fact
- * Uses employeeDTO for employee information (see EMPLOYEE_ID_PATTERNS.md)
  */
-
-import { employeeDTO } from '../employee.dto';
 
 export type ApprovalType = 'RETROSPECTIVE'; // Auto-created after check-in (removed PRE_APPROVAL)
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -32,8 +29,7 @@ export interface CrossBranchCheckInRequest {
   updatedAt?: Date; // Last update timestamp
 
   // Employee information
-  employeeId: number; // Employee unique identifier (database ID)
-  employee: employeeDTO; // Employee information (name, email, department, primaryBranchId, etc.)
+  employeeId: string; // Employee unique identifier (database ID)
 
   // Branch information
   requestedBranchId: number; // Branch where work will occur

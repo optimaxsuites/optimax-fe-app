@@ -1,11 +1,8 @@
 /**
  * ⚠️ UPDATED (2026-08-28) - Simplified: Removed fraud detection, using local time
- * Uses employeeDTO directly for employee information (no separate employeeId fields)
  * Clock-in sources: BIOMETRIC (fingerprint scanner) or REMOTE (web button)
  * See EMPLOYEE_ID_PATTERNS.md for employee identification patterns
  */
-
-import { employeeDTO } from '../employee.dto';
 
 export type EventSource = 'BIOMETRIC' | 'REMOTE' | 'MANUAL';
 export type EventType = 'IN' | 'OUT';
@@ -31,9 +28,8 @@ export interface AttendanceEventDTO {
   eventType: EventType; // Check-in or Check-out event (IN|OUT)
 
   // Employee identification
-  employeeId: number; // Employee unique identifier (database ID)
+  employeeId: string; // Employee unique identifier (database ID)
   employeeCode?: string; // Employee code for deduplication / lookup
-  employee?: employeeDTO; // Employee information (name, email, department, branch, etc.)
   fraudFlags?: FraudFlagCode[];
 
   // Location information
@@ -66,8 +62,7 @@ export interface AttendanceRecordDTO {
   id?: number; // Unique attendance record identifier
 
   // Employee & branch information
-  employeeId: number; // Employee unique identifier (database ID)
-  employee: employeeDTO; // Employee information (name, email, department, branch, etc.)
+  employeeId: string; // Employee unique identifier (database ID)
   branchCode: string; // Branch where attendance is recorded
 
   // Date & shift information

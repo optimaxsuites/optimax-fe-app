@@ -1,10 +1,7 @@
 /**
  * ⚠️ NEW FILE (2026-07-14) - Consolidates ShiftDTO and ScheduleDTO
  * Replaces split implementation across office-hours.dto.ts and working-window.dto.ts
- * Uses employeeDTO for employee information (see EMPLOYEE_ID_PATTERNS.md)
  */
-
-import { employeeDTO } from '../employee.dto';
 
 export interface ShiftDTO {
   // System-generated fields
@@ -38,8 +35,7 @@ export interface ScheduleDTO {
   createdBy?: number; // Admin who created this schedule
 
   // Employee assignment
-  employeeId: number; // Employee unique identifier (database ID)
-  employee: employeeDTO; // Employee information (name, email, department, etc.)
+  employeeId: string; // Employee unique identifier (database ID)
 
   // Shift assignment
   shiftId: number; // Shift template to use
@@ -55,8 +51,7 @@ export interface ScheduleDTO {
 export interface ShiftAssignmentResponse {
   // Response data after creating/updating assignment
   scheduleId: number; // Created/updated schedule ID
-  employeeId: number; // Employee unique identifier (database ID)
-  employee: employeeDTO; // Employee information
+  employeeId: string; // Employee unique identifier (database ID)
   shiftName: string; // Name of assigned shift
   startDate: string; // When assignment starts
   endDate?: string; // When assignment ends

@@ -718,7 +718,7 @@ export class EmployeeProfileDashboardComponent {
     const now = new Date();
     const cm = now.getMonth() + 1;
     const cy = now.getFullYear();
-    this.attendanceService.fetchEmployeeRecords(empId).subscribe({
+    this.attendanceService.fetchEmployeeRecords(String(empId)).subscribe({
       next: (records: any[]) => {
         const thisMonth = records.filter(r => {
           const dateStr = typeof r.date === 'string' ? r.date

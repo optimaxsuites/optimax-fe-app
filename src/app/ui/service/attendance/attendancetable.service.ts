@@ -51,7 +51,7 @@ const API_ENDPOINTS = {
   ALL_RECORDS: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords`,
   RECORDS_BY_RANGE: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/dateRange`,
   RECORD_BY_ID: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${id}`,
-  RECORD_BY_EMPLOYEE: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/employee/${id}`,
+  RECORD_BY_EMPLOYEE: (id: string) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/employee/${id}`,
   CLOCK_IN: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockIn`,
   CLOCK_OUT: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockOut`,
   OVERRIDE_OPEN: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${id}/override/open`,
@@ -59,7 +59,7 @@ const API_ENDPOINTS = {
 };
 
 interface RegisteredEmployee {
-  id: number;
+  id: string;
   name: string;
   department: string;
 }
@@ -136,7 +136,7 @@ export class AttendancetableService implements OnDestroy {
     this.clockStatusSubject.next(status);
   }
 
-  updateEmployeeIdentity(employeeId: number, employeeName: string, department: string): void {
+  updateEmployeeIdentity(employeeId: string, employeeName: string, department: string): void {
     const name = employeeName.trim();
     const team = department.trim() || 'Default Department';
     if (!name) return;
@@ -152,14 +152,14 @@ export class AttendancetableService implements OnDestroy {
     this.saveToStorage(records);
   }
 
-  getTodayRecordForEmployee(employeeId: number): AttendanceTableRecord | undefined {
+  getTodayRecordForEmployee(employeeId: string): AttendanceTableRecord | undefined {
     const today = toLocalDateString(new Date());
     return this.attendanceSubject.value.find(
       r => r.employeeId === employeeId && (r.date instanceof Date ? toLocalDateString(r.date) : r.date) === today
     );
   }
 
-  getTodayStatusForEmployee(employeeId: number): 'CLOCKED_IN' | 'CLOCKED_OUT' | null {
+  getTodayStatusForEmployee(employeeId: string): 'CLOCKED_IN' | 'CLOCKED_OUT' | null {
     const today = toLocalDateString(new Date());
     const record = this.attendanceSubject.value.find(
       r => r.employeeId === employeeId && (r.date instanceof Date ? toLocalDateString(r.date) : r.date) === today
@@ -171,7 +171,7 @@ export class AttendancetableService implements OnDestroy {
     return null;
   }
 
-  isEmployeeBlockedToday(employeeId: number): boolean {
+  isEmployeeBlockedToday(employeeId: string): boolean {
     const today = toLocalDateString(new Date());
     const record = this.attendanceSubject.value.find(
       r => r.employeeId === employeeId && (r.date instanceof Date ? toLocalDateString(r.date) : r.date) === today
@@ -181,7 +181,7 @@ export class AttendancetableService implements OnDestroy {
     return record.status === 'ABSENT' && !record.overrideOpen;
   }
 
-  hasCompletedToday(employeeId: number): boolean {
+  hasCompletedToday(employeeId: string): boolean {
     // record.date is a Date object, so convert to string for comparison
     const today = toLocalDateString(new Date());
     const todayRecord = this.attendanceSubject.value.find(
@@ -234,7 +234,7 @@ export class AttendancetableService implements OnDestroy {
     });
   }
 
-  fetchByEmployee(employeeId: number, page: number = 1, size: number = 100): void {
+  fetchByEmployee(employeeId: string, page: number = 1, size: number = 100): void {
     // In development mode, skip API calls and use fresh mock data
     if (USE_MOCK_DATA_ONLY) {
       this.mergeAndPublish(MOCK_ATTENDANCE_RECORDS);
@@ -247,7 +247,7 @@ export class AttendancetableService implements OnDestroy {
     });
   }
 
-  fetchEmployeeRecords(employeeId: number): Observable<AttendanceTableRecord[]> {
+  fetchEmployeeRecords(employeeId: string): Observable<AttendanceTableRecord[]> {
     this.fetchByEmployee(employeeId);
     return this.attendance$;
   }
@@ -295,7 +295,7 @@ export class AttendancetableService implements OnDestroy {
   // ────────────────────────────────────────────────────────────
 
   async clockAction(
-    employeeId: number,
+    employeeId: string,
     employeeName: string,
     department: string,
     action: 'IN' | 'OUT'
@@ -416,7 +416,7 @@ export class AttendancetableService implements OnDestroy {
   // ────────────────────────────────────────────────────────────
 
   async recordRemoteCheckIn(
-    employeeId: number,
+    employeeId: string,
     employeeName: string,
     department: string,
     metadata: any
@@ -488,7 +488,7 @@ export class AttendancetableService implements OnDestroy {
   // Override & Status Updates
   // ────────────────────────────────────────────────────────────
 
-  openAttendanceForToday(employeeId: number, actorUserId: number, reason: string): void {
+  openAttendanceForToday(employeeId: string, actorUserId: number, reason: string): void {
     const today = toLocalDateString(new Date());
     const records = [...this.attendanceSubject.value];
     const record = records.find(r => r.employeeId === employeeId && toLocalDateString(r.date || new Date()) === today);
@@ -511,7 +511,7 @@ export class AttendancetableService implements OnDestroy {
   }
 
   overrideAttendance(
-    employeeId: number,
+    employeeId: string,
     date: string,
     newStatus: AttendanceTableRecord['status'],
     newCheckIn: string | null,
@@ -532,7 +532,7 @@ export class AttendancetableService implements OnDestroy {
   }
 
   updateAttendanceStatus(
-    employeeId: number,
+    employeeId: string,
     employeeName: string,
     department: string,
     date: string,
@@ -789,7 +789,7 @@ export class AttendancetableService implements OnDestroy {
     return {
       id: Number(api.id),
       apiRecordId: Number(api.id),
-      employeeId: Number(emp?.id),
+      employeeId: String(emp?.id),
       employee: fullName,
       department,
       date: this.toDateOnly(api.attendanceDate),
@@ -942,7 +942,7 @@ export class AttendancetableService implements OnDestroy {
     }
   }
 
-  private updateLocalAndPublish(employeeId: number, date: string, record: AttendanceTableRecord): void {
+  private updateLocalAndPublish(employeeId: string, date: string, record: AttendanceTableRecord): void {
     this.localRecords.set(this.localKey(employeeId, date), { ...record });
 
     const currentApiData = this.attendanceSubject.value.filter(
@@ -953,7 +953,7 @@ export class AttendancetableService implements OnDestroy {
   }
 
   private createNewRecord(
-    employeeId: number,
+    employeeId: string,
     employeeName: string,
     department: string,
     date: string
@@ -1112,7 +1112,7 @@ export class AttendancetableService implements OnDestroy {
     return `${employeeId}_${date}`;
   }
 
-  private ensureRegistered(id: number, name: string, department: string): void {
+  private ensureRegistered(id: string, name: string, department: string): void {
     const already = this.registeredEmployees.some(e => e.id === id);
     if (!already) {
       this.registeredEmployees.push({ id, name, department });
@@ -1176,7 +1176,7 @@ export class AttendancetableService implements OnDestroy {
     let changed = false;
 
     this.registeredEmployees.forEach(emp => {
-      const recordExists = data.some(r => r.employeeId === emp.id && toLocalDateString(r.date || new Date()) === today);
+      const recordExists = data.some(r => r.employeeId === String(emp.id) && toLocalDateString(r.date || new Date()) === today);
 
       let workingWindow: WorkingWindow | null = null;
       this.attendanceScheduleResolverService.resolve(String(emp.id), now).subscribe(window => {
@@ -1208,7 +1208,7 @@ export class AttendancetableService implements OnDestroy {
   // ────────────────────────────────────────────────────────────
 
   private clockInApi(
-    employeeId: number,
+    employeeId: string,
     checkIn: string,
     checkInLocation: string,
     checkInDistance: number
@@ -1230,7 +1230,7 @@ export class AttendancetableService implements OnDestroy {
 
   private clockOutApi(
     apiRecordId: number,
-    employeeId: number,
+    employeeId: string,
     checkOut: string,
     checkOutLocation: string,
     checkOutDistance: number

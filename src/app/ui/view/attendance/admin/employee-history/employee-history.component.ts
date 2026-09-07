@@ -21,7 +21,7 @@ export class EmployeeHistoryComponent implements OnInit {
   private toastService = inject(ToastService);
 
   employeeName: string = '';
-  employeeId: number | null = null;
+  employeeId: string | null = null;
   employeeRecords: AttendanceTableRecord[] = [];
   filteredRecords: AttendanceTableRecord[] = [];
   isLoading = true;
@@ -39,8 +39,8 @@ export class EmployeeHistoryComponent implements OnInit {
 
   ngOnInit(): void {
     this.employeeName = this.route.snapshot.queryParamMap.get('name') || '';
-    const id = Number(this.route.snapshot.queryParamMap.get('id'));
-    this.employeeId = id > 0 ? id : null;
+    const idParam = this.route.snapshot.queryParamMap.get('id');
+    this.employeeId = idParam && Number(idParam) > 0 ? idParam : null;
     if (!this.employeeName && this.employeeId === null) {
       this.toastService.error('Employee name not provided');
       this.router.navigate(['/attendance/admin']);

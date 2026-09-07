@@ -50,11 +50,11 @@ export class MonthlyattendancelistComponent implements OnInit {
 
     this.employeeService.getEmployeeIdForCurrentUser().subscribe({
       next: (hrEmployeeId) => {
-        this.attendancetableService.fetchByEmployee(Number(hrEmployeeId));
+        this.attendancetableService.fetchByEmployee(String(hrEmployeeId));
 
         this.attendancetableService.attendance$.subscribe(data => {
           this.attendanceData = data.filter(
-            r => Number(r.employeeId) === Number(hrEmployeeId)
+            r => r.employeeId === String(hrEmployeeId)
           );
 
           this.applyMonthFilter();
