@@ -341,6 +341,13 @@ export interface InventoryDashboardStats {
     lastUpdated: Date;
 }
 
+export interface TopSellingProduct {
+    productId: string;
+    productName: string;
+    quantitySold: number;
+    revenue: number;
+}
+
 export interface InventoryDashboardData {
     stats: InventoryDashboardStats;
     alerts: StockAlert[];

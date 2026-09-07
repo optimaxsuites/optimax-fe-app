@@ -9,6 +9,7 @@ import { parseApiDate } from '../../../../service/sales/date.util';
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { PaymentReceiptComponent } from '../../payment-receipt/payment-receipt.component';
 import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-sales-and-transactions-list',
@@ -18,8 +19,10 @@ import { MessageService } from 'primeng/api';
     RouterModule,
     FormsModule,
     SharedOverlayModule,
-    PaymentReceiptComponent
+    PaymentReceiptComponent,
+    ToastModule
   ],
+  providers: [MessageService],
   templateUrl: './sales-and-transactions-list.component.html',
   styleUrls: ['./sales-and-transactions-list.component.scss']
 })
@@ -62,6 +65,15 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
   currentPage: number = 1;
   pageSize: number = 10;
   totalPages: number = 1;
+
+  // Sidebar date-range filter
+  filters: { dateFrom: string; dateTo: string } = { dateFrom: '', dateTo: '' };
+
+  // AI insight banner
+  aiDismissed = false;
+
+  // Row selection (bulk actions bar)
+  selectedTransactionIds: number[] = [];
 
   statusOptions: { label: string; value: string }[] = [
     { label: 'All Lifecycle Statuses', value: 'ALL' },
@@ -133,13 +145,31 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
 
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase().trim();
-      result = result.filter(tx => 
+      result = result.filter(tx =>
         (tx.orderId || '').toLowerCase().includes(term) ||
         (tx.quoteId?.quoteNumber || '').toLowerCase().includes(term) ||
         (tx.paymentNumber || '').toLowerCase().includes(term) ||
         (tx.reference || '').toLowerCase().includes(term) ||
         (this.getCustomerName(tx)).toLowerCase().includes(term)
       );
+    }
+
+    if (this.filters.dateFrom) {
+      const from = new Date(this.filters.dateFrom);
+      from.setHours(0, 0, 0, 0);
+      result = result.filter(tx => {
+        const created = this.toDate(tx.quoteConvertedDate || tx.orderDate);
+        return !!created && created >= from;
+      });
+    }
+
+    if (this.filters.dateTo) {
+      const to = new Date(this.filters.dateTo);
+      to.setHours(23, 59, 59, 999);
+      result = result.filter(tx => {
+        const created = this.toDate(tx.quoteConvertedDate || tx.orderDate);
+        return !!created && created <= to;
+      });
     }
 
     this.totalPages = Math.ceil(result.length / this.pageSize) || 1;
@@ -154,6 +184,7 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
   resetFilters(): void {
     this.searchTerm = '';
     this.selectedStatus = 'ALL';
+    this.filters = { dateFrom: '', dateTo: '' };
     this.currentPage = 1;
     this.applyFilters();
   }
@@ -166,6 +197,61 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
   onStatusFilterChange(): void {
     this.currentPage = 1;
     this.applyFilters();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = Number(size);
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+
+  // ============================================================
+  // ROW SELECTION (bulk actions bar)
+  // ============================================================
+
+  isSelected(id: number): boolean {
+    return this.selectedTransactionIds.includes(id);
+  }
+
+  toggleSelection(id: number, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    if (checked) {
+      if (!this.isSelected(id)) {
+        this.selectedTransactionIds = [...this.selectedTransactionIds, id];
+      }
+    } else {
+      this.selectedTransactionIds = this.selectedTransactionIds.filter(x => x !== id);
+    }
+  }
+
+  isAllSelected(): boolean {
+    return this.filteredTransactions.length > 0
+      && this.filteredTransactions.every(tx => this.isSelected(tx.id));
+  }
+
+  toggleSelectAll(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    const pageIds = this.filteredTransactions.map(tx => tx.id);
+    if (checked) {
+      this.selectedTransactionIds = Array.from(new Set([...this.selectedTransactionIds, ...pageIds]));
+    } else {
+      const pageIdSet = new Set(pageIds);
+      this.selectedTransactionIds = this.selectedTransactionIds.filter(id => !pageIdSet.has(id));
+    }
+  }
+
+  /**
+   * There's no explicit "payment due date" field on a sales transaction —
+   * the closest proxy is the expected delivery date: once goods should
+   * already be delivered but a balance is still outstanding, the payment
+   * is treated as overdue (mirrors invoice-list's isOverdue convention).
+   */
+  isPaymentOverdue(tx: SalesandTransactions): boolean {
+    if (!tx || !(tx.balanceDue > 0)) return false;
+    const due = this.toDate(tx.expectedDeliveryDate);
+    if (!due) return false;
+    const now = new Date();
+    return due < now && due.toDateString() !== now.toDateString();
   }
 
   goToPage(page: number): void {
