@@ -691,11 +691,18 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     if (typeof window === 'undefined') {
       return;
     }
-    window.addEventListener('touchstart', this.primeNotificationAudio, {
-      passive: true,
-    });
-    window.addEventListener('mousedown', this.primeNotificationAudio, {
-      passive: true,
+    // Register outside Angular's zone so Zone.js does not wrap these as event
+    // tasks. Zone.js can strip { passive: true } from the options it forwards
+    // to the browser, causing iOS Safari to treat them as blocking listeners
+    // and wait for AudioContext operations to complete before synthesising a
+    // click — cancelling the tap gesture when the context takes too long.
+    this.ngZone.runOutsideAngular(() => {
+      window.addEventListener('touchstart', this.primeNotificationAudio, {
+        passive: true,
+      });
+      window.addEventListener('mousedown', this.primeNotificationAudio, {
+        passive: true,
+      });
     });
   }
 
