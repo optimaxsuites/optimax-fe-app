@@ -46,6 +46,10 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   selectedCustomerForEdit?: Customer;
   selectedCustomerDetail?: Customer;
 
+  showDeleteModal = false;
+  pendingDeleteCustomerName = '';
+  private pendingDeleteCustomer?: Customer;
+
   openCustomerModal(customer?: Customer): void {
     let uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid === 'edit') {
@@ -266,18 +270,32 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   }
 
   deleteCustomer(customer: Customer): void {
-    if (confirm(`Delete customer ${customer.name}? This action cannot be undone.`)) {
-      this.salesService.deleteCustomer(customer.id).subscribe({
-        next: () => {
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: `Customer ${customer.name} deleted successfully` });
-          this.loadCustomers();
-        },
-        error: (error: any) => {
-          console.error('Error deleting customer:', error);
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete customer. Please try again.' });
-        }
-      });
+    this.pendingDeleteCustomer = customer;
+    this.pendingDeleteCustomerName = customer.name;
+    this.showDeleteModal = true;
+  }
+
+  confirmDeleteCustomer(): void {
+    const customer = this.pendingDeleteCustomer;
+    if (!customer) {
+      this.showDeleteModal = false;
+      return;
     }
+
+    this.salesService.deleteCustomer(customer.id).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Customer ${customer.name} deleted successfully` });
+        this.showDeleteModal = false;
+        this.pendingDeleteCustomer = undefined;
+        this.loadCustomers();
+      },
+      error: (error: any) => {
+        console.error('Error deleting customer:', error);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete customer. Please try again.' });
+        this.showDeleteModal = false;
+        this.pendingDeleteCustomer = undefined;
+      }
+    });
   }
 
   getPageNumbers(): number[] {

@@ -14,6 +14,7 @@ import {
   Branch,
   InventoryDashboardData,
   InventoryDashboardStats,
+  TopSellingProduct,
   QuickAction,
   ProductFilters,
   MovementFilters,
@@ -1494,10 +1495,16 @@ export class InventoryService {
     );
   }
 
-  /** Get only stats */
+  /** GET /inventory/dashboard/stats — falls back to the local dashboard snapshot's stats. */
   getDashboardStats(): Observable<InventoryDashboardStats> {
-    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-    return of(dash.stats);
+    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
+
+    return this.http.get<InventoryDashboardStats>(`${this.baseUrl}/inventory/dashboard/stats`, {
+      params: new HttpParams().set('tenantId', this.tenantId)
+    }).pipe(
+      map(stats => ({ ...stats, lastUpdated: new Date(stats.lastUpdated) })),
+      catchError(() => of(dash?.stats ?? MOCK_STATS))
+    );
   }
 
   /** Get alerts */
@@ -1512,10 +1519,47 @@ export class InventoryService {
     return of(dash.recentMovements.slice(0, limit));
   }
 
-  /** Top products (limit optional) */
+  /** Normalises a raw /inventory/dashboard/product-performance record onto ProductPerformance. */
+  private mapProductPerformance(raw: any): ProductPerformance {
+    return {
+      ...raw,
+      period: {
+        start: new Date(raw.startDate ?? raw.period?.start),
+        end: new Date(raw.endDate ?? raw.period?.end)
+      }
+    } as ProductPerformance;
+  }
+
+  /**
+   * GET /inventory/dashboard/product-performance — falls back to the local dashboard
+   * snapshot's topProducts if the API is unavailable.
+   */
   getTopProducts(limit: number = 5): Observable<ProductPerformance[]> {
-    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-    return of(dash.topProducts.slice(0, limit));
+    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
+
+    return this.http.get<any[]>(`${this.baseUrl}/inventory/dashboard/product-performance`, {
+      params: new HttpParams().set('tenantId', this.tenantId)
+    }).pipe(
+      map(res => (Array.isArray(res) ? res : []).map(raw => this.mapProductPerformance(raw)).slice(0, limit)),
+      catchError(() => of((dash?.topProducts ?? MOCK_TOP_PRODUCTS).slice(0, limit)))
+    );
+  }
+
+  /** GET /inventory/dashboard/top-selling — falls back to a slimmed-down view of getTopProducts(). */
+  getTopSellingProducts(limit: number = 5): Observable<TopSellingProduct[]> {
+    return this.http.get<TopSellingProduct[]>(`${this.baseUrl}/inventory/dashboard/top-selling`, {
+      params: new HttpParams().set('tenantId', this.tenantId)
+    }).pipe(
+      map(res => (Array.isArray(res) ? res : []).slice(0, limit)),
+      catchError(() => this.getTopProducts(limit).pipe(
+        map(products => products.map(p => ({
+          productId: p.productId,
+          productName: p.productName,
+          quantitySold: p.totalSold,
+          revenue: p.totalRevenue
+        })))
+      ))
+    );
   }
 
   /**
@@ -1870,50 +1914,63 @@ export class InventoryService {
   }
 
   /**
-   * Get performance data for a specific product. Not backed by an endpoint yet (see the
-   * Inventory Analytics discussion) — reads from the dashboard snapshot's topProducts, which
-   * the real dashboard response doesn't populate either, so this almost always falls through to
-   * synthetic Math.random() numbers built from the product record. Treat anything from here as
-   * a placeholder until a real ProductPerformance endpoint exists.
+   * Get performance data for a specific product. The real API only exposes performance as a
+   * flat list (GET /inventory/dashboard/product-performance, no per-product endpoint), so this
+   * fetches that list and filters client-side. Falls back to the local dashboard snapshot, and
+   * finally to synthetic Math.random() numbers built from the product record if nothing else
+   * has data for this product.
    */
   getProductPerformance(productId: string): Observable<ProductPerformance> {
     this.loadingSubject.next(true);
-    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
-    const performance = dash?.topProducts.find(p => p.productId === productId);
-    this.loadingSubject.next(false);
 
-    if (performance) {
-      return of(performance);
-    }
+    return this.getTopProducts(1000).pipe(
+      map(products => {
+        const performance = products.find(p => p.productId === productId);
+        if (!performance) {
+          throw new Error('Product performance not found in list');
+        }
+        return performance;
+      }),
+      tap(() => this.loadingSubject.next(false)),
+      catchError(() => {
+        this.loadingSubject.next(false);
 
-    // Fallback: build synthetic performance data from the product record itself
-    const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
-    const product = products.find(p => String(p.id) === productId);
-    if (!product) {
-      return throwError(() => new Error('Product not found'));
-    }
+        const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
+        const cached = dash?.topProducts.find(p => p.productId === productId);
+        if (cached) {
+          return of(cached);
+        }
 
-    const price = product.unitPrice ?? product.sellingPrice;
-    const totalSold = Math.floor(50 + Math.random() * 500);
-    const totalRevenue = totalSold * price;
-    const totalProfit = totalSold * (price - product.costPrice);
-    const fallback: ProductPerformance = {
-      productId: String(product.id),
-      productName: product.name,
-      sku: product.sku,
-      category: typeof product.category === 'string' ? product.category : product.category.name,
-      totalSold,
-      totalRevenue,
-      totalProfit,
-      averagePrice: price,
-      sellThroughRate: Math.floor(40 + Math.random() * 50),
-      stockTurnover: +(1 + Math.random() * 7).toFixed(1),
-      daysOfInventory: Math.floor(10 + Math.random() * 40),
-      performanceScore: Math.floor(40 + Math.random() * 50),
-      trend: (['UP', 'DOWN', 'STABLE'] as const)[Math.floor(Math.random() * 3)],
-      period: { start: new Date(), end: new Date() }
-    };
-    return of(fallback);
+        // Fallback: build synthetic performance data from the product record itself
+        const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
+        const product = products.find(p => String(p.id) === productId);
+        if (!product) {
+          return throwError(() => new Error('Product not found'));
+        }
+
+        const price = product.unitPrice ?? product.sellingPrice;
+        const totalSold = Math.floor(50 + Math.random() * 500);
+        const totalRevenue = totalSold * price;
+        const totalProfit = totalSold * (price - product.costPrice);
+        const fallback: ProductPerformance = {
+          productId: String(product.id),
+          productName: product.name,
+          sku: product.sku,
+          category: typeof product.category === 'string' ? product.category : product.category.name,
+          totalSold,
+          totalRevenue,
+          totalProfit,
+          averagePrice: price,
+          sellThroughRate: Math.floor(40 + Math.random() * 50),
+          stockTurnover: +(1 + Math.random() * 7).toFixed(1),
+          daysOfInventory: Math.floor(10 + Math.random() * 40),
+          performanceScore: Math.floor(40 + Math.random() * 50),
+          trend: (['UP', 'DOWN', 'STABLE'] as const)[Math.floor(Math.random() * 3)],
+          period: { start: new Date(), end: new Date() }
+        };
+        return of(fallback);
+      })
+    );
   }
 
   /** POST /products — falls back to a local-only record if the API is unavailable. */

@@ -210,6 +210,15 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
   }
 
+  getStatusClass(status: string): string {
+    const classes: Record<string, string> = {
+      'ACTIVE': 'active',
+      'INACTIVE': 'inactive',
+      'BLACKLISTED': 'blacklisted'
+    };
+    return classes[status] || 'active';
+  }
+
   formatDate(date?: Date | string): string {
     return formatApiDate(date, { year: 'numeric', month: 'short', day: 'numeric' }, 'en-NG', '');
   }

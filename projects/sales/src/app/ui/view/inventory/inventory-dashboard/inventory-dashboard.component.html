@@ -171,10 +171,10 @@
                     </div>
                 </div>
 
-                <!-- Top Products -->
+                <!-- Top Performers -->
                 <div class="ql-card" *ngIf="topProducts.length > 0">
                     <div class="ql-card-header">
-                        <h3><i class="fas fa-trophy"></i> Top Selling</h3>
+                        <h3><i class="fas fa-trophy"></i> Top Performers</h3>
                         <button class="ql-link-btn" (click)="navigateTo('/inventory/analytics/products')">View All
                             →</button>
                     </div>
@@ -192,6 +192,38 @@
                             <span class="ql-top-trend" [style.color]="getPerformanceTrendColor(product.trend)">
                                 <i class="fas" [class]="getPerformanceTrend(product.trend)"></i>
                             </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Selling Products -->
+                <div class="ql-card">
+                    <div class="ql-card-header">
+                        <h3><i class="fas fa-fire"></i> Top Selling Products</h3>
+                        <button class="ql-link-btn" (click)="navigateTo('/inventory/analytics/products')">View All
+                            →</button>
+                    </div>
+                    <div class="ql-card-body">
+                        <div *ngIf="isLoadingTopSelling" class="ql-empty-small">
+                            <i class="fas fa-spinner ql-spinning"></i>
+                            <span>Loading top selling products...</span>
+                        </div>
+                        <ng-container *ngIf="!isLoadingTopSelling">
+                            <div *ngFor="let product of topSellingProducts; let i = index" class="ql-top-item">
+                                <span class="ql-top-rank" [class.ql-top-rank--gold]="i === 0"
+                                    [class.ql-top-rank--silver]="i === 1" [class.ql-top-rank--bronze]="i === 2">
+                                    {{ i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1) }}
+                                </span>
+                                <div class="ql-top-info">
+                                    <span class="ql-top-name">{{ product.productName }}</span>
+                                    <span class="ql-top-meta">{{ product.quantitySold }} sold · {{
+                                        formatCurrency(product.revenue) }}</span>
+                                </div>
+                            </div>
+                        </ng-container>
+                        <div *ngIf="!isLoadingTopSelling && topSellingProducts.length === 0" class="ql-empty-small">
+                            <i class="fas fa-inbox"></i>
+                            <span>No sales data available yet</span>
                         </div>
                     </div>
                 </div>
