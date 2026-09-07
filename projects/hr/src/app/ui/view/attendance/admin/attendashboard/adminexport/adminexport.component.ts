@@ -264,7 +264,7 @@ importNow() {
       .filter((row: any) => row.ID && row.Employee && row.Date)
       .map((row: any) => ({
         id: 0, //attendancerecordID not provided in Excel
-        employeeId:Number(row.ID),
+        employeeId: String(row.ID),
         employee: row.Employee,
         department: row.Department,
         date: typeof row.Date === 'string' ? row.Date : this.normalizeDate(row.Date),

@@ -25,7 +25,7 @@ export class RemoteCheckinComponent implements OnInit, OnDestroy {
   currentLocation: RemoteAttendanceMetadata | null = null;
   checkInTime: string = '';
 
-  employeeId: number | null = null;
+  employeeId: string | null = null;
   employeeName = '';
   department = '';
 
@@ -34,7 +34,7 @@ export class RemoteCheckinComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     const currentUser = this.userSession.getCurrentUser();
     if (currentUser) {
-      this.employeeId = currentUser.id;
+      this.employeeId = String(currentUser.id);
       this.employeeName = currentUser.name;
       this.department = currentUser.department || 'Default Department';
     } else {

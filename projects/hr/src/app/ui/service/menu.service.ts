@@ -52,6 +52,12 @@ export class MenuService {
         icon: 'fas fa-calendar-check'
       },
       {
+        label: 'Work Schedule',
+        route: this.navigationLink.getLink('workScheduleLink'),
+        roles: ['ROLE_USER', 'ROLE_ADMIN'],
+        icon: 'fas fa-clock'
+      },
+      {
         label: 'Leave',
         route: this.navigationLink.getLink('leaveLink'),
         roles: ['ROLE_USER', 'ROLE_ADMIN'],

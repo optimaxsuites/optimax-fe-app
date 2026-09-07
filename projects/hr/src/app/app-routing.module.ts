@@ -43,7 +43,6 @@ import { CooperativeLoanGroupsComponent } from './ui/view/loan-management/cooper
 import { CooperativeGroupJoinHistoryComponent } from './ui/view/loan-management/cooperative-group-join-history/cooperative-group-join-history.component';
 import { CooperativeGracePeriodRequestsManagementComponent } from './ui/view/loan-management/cooperative-grace-period-requests-management/cooperative-grace-period-requests-management.component';
 import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
-import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
 import { ShiftAssignmentComponent } from './ui/view/workschedule-shifts/shift-assignment/shift-assignment.component';
 import { ShiftCalendarComponent } from './ui/view/workschedule-shifts/shift-calendar/shift-calendar.component';
 import { ShiftFormComponent } from './ui/view/workschedule-shifts/shift-form/shift-form.component';
@@ -92,12 +91,6 @@ const routes: Routes = [
   {
     path: 'attendance/:uuid',
     component: AttendanceComponent,
-  },
-
-  // Workschedule Routes
-  {
-    path: 'workschedule-shifts/:uuid',
-    component: WorkscheduleShiftsComponent,
   },
 
   // Onboarding Routes
@@ -479,10 +472,6 @@ const routes: Routes = [
     component: ProjectComponent,
   },
   {
-    path: 'admin/hr/workschedule-shifts/:uuid',
-    component: SchedulingComponent,
-  },
-  {
     path: 'profile-change-requests/:uuid',
     component: ProfileChangeRequestsComponent,
   },
@@ -532,6 +521,7 @@ const routes: Routes = [
   { path: 'admin/hr/payroll-operations/:uuid', component: PayrolExtrasComponent },
   { path: 'admin/hr/performance/:uuid', component: ProductivityWorkspaceComponent },
   { path: 'admin/hr/project/:uuid', component: ProjectComponent },
+  { path: 'admin/hr/work-schedule', redirectTo: 'admin/hr/work-schedule/uu', pathMatch: 'full' },
   { path: 'admin/hr/work-schedule/:uuid', component: SchedulingComponent },
   { path: 'admin/hr/analytics/:uuid', component: HrAnalyticsDashboardComponent },
   { path: 'admin/hr/overtime/:uuid', component: OvertimeManagementComponent },

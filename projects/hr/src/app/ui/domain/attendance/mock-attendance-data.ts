@@ -24,7 +24,7 @@ export const MOCK_ATTENDANCE_RECORDS: AttendanceTableRecord[] = [
   // 1. Normal biometric check-in at home branch
   {
     id: 1001,
-    employeeId: 101,
+    employeeId: '101',
     employee: 'John Smith',
     department: 'Engineering',
     date: new Date('2026-08-28'),
@@ -46,7 +46,7 @@ export const MOCK_ATTENDANCE_RECORDS: AttendanceTableRecord[] = [
   // 2. PENDING cross-branch - Employee from Branch 1 checked in at Branch 2
   {
     id: 1002,
-    employeeId: 102,
+    employeeId: '102',
     employee: 'Sarah Johnson',
     department: 'Sales',
     date: new Date('2026-08-28'),
@@ -68,7 +68,7 @@ export const MOCK_ATTENDANCE_RECORDS: AttendanceTableRecord[] = [
   // 3. APPROVED cross-branch - Already approved by admin
   {
     id: 1003,
-    employeeId: 103,
+    employeeId: '103',
     employee: 'Michael Chen',
     department: 'Marketing',
     date: new Date('2026-08-27'),
@@ -91,7 +91,7 @@ export const MOCK_ATTENDANCE_RECORDS: AttendanceTableRecord[] = [
   // 4. REJECTED cross-branch - Denied by admin
   {
     id: 1004,
-    employeeId: 104,
+    employeeId: '104',
     employee: 'Emily Davis',
     department: 'HR',
     date: new Date('2026-08-26'),
@@ -113,7 +113,7 @@ export const MOCK_ATTENDANCE_RECORDS: AttendanceTableRecord[] = [
   // 5. Remote check-in at home branch
   {
     id: 1005,
-    employeeId: 101,
+    employeeId: '101',
     employee: 'John Smith',
     department: 'Engineering',
     date: new Date('2026-08-27'),
@@ -135,7 +135,7 @@ export const MOCK_ATTENDANCE_RECORDS: AttendanceTableRecord[] = [
   // 6. PENDING cross-branch + PENDING correction request
   {
     id: 1006,
-    employeeId: 102,
+    employeeId: '102',
     employee: 'Sarah Johnson',
     department: 'Sales',
     date: new Date('2026-08-26'),
@@ -165,7 +165,7 @@ export const MOCK_ATTENDANCE_RECORDS: AttendanceTableRecord[] = [
   // 7. Multiple pending cross-branch for testing bulk approve
   {
     id: 1007,
-    employeeId: 103,
+    employeeId: '103',
     employee: 'Michael Chen',
     department: 'Marketing',
     date: new Date('2026-08-28'),
@@ -187,7 +187,7 @@ export const MOCK_ATTENDANCE_RECORDS: AttendanceTableRecord[] = [
   // 8. Normal record for contrast
   {
     id: 1008,
-    employeeId: 104,
+    employeeId: '104',
     employee: 'Emily Davis',
     department: 'HR',
     date: new Date('2026-08-28'),
@@ -210,8 +210,7 @@ export const MOCK_ATTENDANCE_RECORDS: AttendanceTableRecord[] = [
 export const MOCK_ATTENDANCE_EVENTS: AttendanceEventDTO[] = [
   {
     id: 2001,
-    employeeId: 101,
-    employee: { firstName: 'John', lastName: 'Smith', email: 'john.smith@company.com', department: 'Engineering', workEmail: 'john.smith@company.com' },
+    employeeId: '101',
     eventType: 'IN',
     source: 'BIOMETRIC',
     eventTime: new Date('2026-08-28T08:15:00'),
@@ -223,8 +222,7 @@ export const MOCK_ATTENDANCE_EVENTS: AttendanceEventDTO[] = [
   },
   {
     id: 2002,
-    employeeId: 102,
-    employee: { firstName: 'Sarah', lastName: 'Johnson', email: 'sarah.johnson@company.com', department: 'Sales', workEmail: 'sarah.johnson@company.com' },
+    employeeId: '102',
     eventType: 'IN',
     source: 'BIOMETRIC',
     eventTime: new Date('2026-08-28T09:00:00'),
@@ -236,8 +234,7 @@ export const MOCK_ATTENDANCE_EVENTS: AttendanceEventDTO[] = [
   },
   {
     id: 2003,
-    employeeId: 103,
-    employee: { firstName: 'Michael', lastName: 'Chen', email: 'michael.chen@company.com', department: 'Marketing', workEmail: 'michael.chen@company.com' },
+    employeeId: '103',
     eventType: 'IN',
     source: 'REMOTE',
     eventTime: new Date('2026-08-28T09:15:00'),

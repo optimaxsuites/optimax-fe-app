@@ -34,7 +34,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 1,
     employee: 'Shorunmu Ayodeji',
-    employeeId: 1,
+    employeeId: '1',
     department: 'Development',
     date: getDate(0),
     checkIn: null,
@@ -54,7 +54,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 2,
     employee: 'Jane Smith',
-    employeeId: 102,
+    employeeId: '102',
     department: 'HR',
     date: getDate(0),
     checkIn: '09:15',
@@ -82,7 +82,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 20,
     employee: 'Jane Smith',
-    employeeId: 102,
+    employeeId: '102',
     department: 'HR',
     date: getDate(1),
     checkIn: '09:10',
@@ -102,7 +102,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 21,
     employee: 'Jane Smith',
-    employeeId: 102,
+    employeeId: '102',
     department: 'HR',
     date: getDate(2),
     checkIn: '09:00',
@@ -122,7 +122,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 22,
     employee: 'Jane Smith',
-    employeeId: 102,
+    employeeId: '102',
     department: 'HR',
     date: getDate(3),
     checkIn: '09:30',
@@ -142,7 +142,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 23,
     employee: 'Jane Smith',
-    employeeId: 102,
+    employeeId: '102',
     department: 'HR',
     date: getDate(4),
     checkIn: null,
@@ -162,7 +162,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 3,
     employee: 'Mike Johnson',
-    employeeId: 103,
+    employeeId: '103',
     department: 'Finance',
     date: getDate(0),
     checkIn: '09:00',
@@ -183,7 +183,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 30,
     employee: 'Mike Johnson',
-    employeeId: 103,
+    employeeId: '103',
     department: 'Finance',
     date: getDate(1),
     checkIn: '09:05',
@@ -203,7 +203,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 31,
     employee: 'Mike Johnson',
-    employeeId: 103,
+    employeeId: '103',
     department: 'Finance',
     date: getDate(2),
     checkIn: '09:00',
@@ -224,7 +224,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 4,
     employee: 'Sarah Williams',
-    employeeId: 104,
+    employeeId: '104',
     department: 'Engineering',
     date: getDate(0),
     checkIn: '09:30',
@@ -244,7 +244,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 40,
     employee: 'Sarah Williams',
-    employeeId: 104,
+    employeeId: '104',
     department: 'Engineering',
     date: getDate(1),
     checkIn: '09:15',
@@ -264,7 +264,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 41,
     employee: 'Sarah Williams',
-    employeeId: 104,
+    employeeId: '104',
     department: 'Engineering',
     date: getDate(2),
     checkIn: '09:00',
@@ -285,7 +285,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 5,
     employee: 'David Brown',
-    employeeId: 105,
+    employeeId: '105',
     department: 'Sales',
     date: getDate(0),
     checkIn: null,
@@ -312,7 +312,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 50,
     employee: 'David Brown',
-    employeeId: 105,
+    employeeId: '105',
     department: 'Sales',
     date: getDate(1),
     checkIn: '09:20',
@@ -332,7 +332,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 51,
     employee: 'David Brown',
-    employeeId: 105,
+    employeeId: '105',
     department: 'Sales',
     date: getDate(2),
     checkIn: '09:00',
@@ -353,7 +353,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 60,
     employee: 'Test Employee',
-    employeeId: 999,
+    employeeId: '999',
     department: 'Unknown',
     date: getDate(0),
     checkIn: '09:00',
@@ -373,7 +373,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
   {
     id: 61,
     employee: 'Test Employee',
-    employeeId: 999,
+    employeeId: '999',
     department: 'Unknown',
     date: getDate(1),
     checkIn: '09:15',

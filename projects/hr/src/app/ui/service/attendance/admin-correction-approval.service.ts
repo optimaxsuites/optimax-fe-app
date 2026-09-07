@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { AttendanceTableRecord } from '../../domain/attendance/attendancetable.dto';
 
 export interface CorrectionRequestSubmission {
-  employeeId: number;
+  employeeId: string;
   employeeName: string;
   recordId: number;
   type: 'TIME_CORRECTION' | 'STATUS_CORRECTION' | 'LOCATION_CORRECTION';

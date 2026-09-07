@@ -227,7 +227,6 @@ import { ShiftAssignmentComponent } from './ui/view/workschedule-shifts/shift-as
 import { ShiftCalendarComponent } from './ui/view/workschedule-shifts/shift-calendar/shift-calendar.component';
 import { ShiftFormComponent } from './ui/view/workschedule-shifts/shift-form/shift-form.component';
 import { ShiftListComponent } from './ui/view/workschedule-shifts/shift-list/shift-list.component';
-import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
 import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-cooperative-group/join-cooperative-group.component';
 import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-management/cooperative-membership-applications/cooperative-membership-applications.component';
 import { LoanPurposeManagementComponent } from './ui/view/loan-management/loan-purpose-management/loan-purpose-management.component';
@@ -397,7 +396,6 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     AttendancefilterComponent,
     AttendancesummaryComponent,
     JopOpeningsComponent,
-    WorkscheduleShiftsComponent,
     ShiftListComponent,
     ShiftFormComponent,
     ShiftAssignmentComponent,

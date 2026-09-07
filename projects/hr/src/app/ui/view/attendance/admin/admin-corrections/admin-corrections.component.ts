@@ -35,9 +35,9 @@ export class AdminCorrectionsComponent implements OnInit {
       return;
     }
 
-    const employeeId = Number(req.employeeId);
-    if (Number.isNaN(employeeId)) {
-      alert('Attendance correction requires a numeric employee ID.');
+    const employeeId = req.employeeId;
+    if (!employeeId) {
+      alert('Attendance correction requires an employee ID.');
       return;
     }
 

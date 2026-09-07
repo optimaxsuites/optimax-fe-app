@@ -156,7 +156,7 @@ export class CrossBranchApprovalService {
   /**
    * Get cross-branch records by employee
    */
-  getCrossBranchByEmployee(employeeId: number): AttendanceTableRecord[] {
+  getCrossBranchByEmployee(employeeId: string): AttendanceTableRecord[] {
     return this.crossBranchRecordsSubject.value.filter(
       r => r.employeeId === employeeId && r.isCrossBranchAttendance
     );
