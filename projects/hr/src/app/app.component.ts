@@ -33,7 +33,7 @@ export class AppHrComponent {
         '🔧 [Development Mode] Setting hardcoded authentication for eseose',
       );
       const devToken =
-        'eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoia2luZG5lc3MiLCJpYXQiOjE3ODgxNTU3MzUsImV4cCI6MTc4ODI0MjEzNX0.nfR5t9PrPM16FBnoxxXPC7V8Ov8sh_QVRwtmVk3zTb4';
+        'eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoia2luZG5lc3MiLCJpYXQiOjE3ODg3NjkzMzEsImV4cCI6MTc4ODg1NTczMX0.IDwFYiwTdtpcoQZ8swZFCujDZp9HDxPpVqpBIqoyAa4';
       const devUUID = '1';
       sessionStorage.setItem('Token', devToken);
       localStorage.setItem('Token', devToken);
