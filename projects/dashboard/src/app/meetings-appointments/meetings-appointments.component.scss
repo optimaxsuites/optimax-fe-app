@@ -516,6 +516,7 @@ textarea { resize: vertical; }
   border: 1px solid $border-sm;
   border-radius: 8px;
   background: $bg-card;
+  touch-action: pan-y;
 }
 
 .day-grid {
@@ -565,6 +566,7 @@ textarea { resize: vertical; }
   border: 1px solid $border-sm;
   border-radius: 8px;
   background: $bg-card;
+  touch-action: pan-x pan-y;
 }
 
 .week-head-row {

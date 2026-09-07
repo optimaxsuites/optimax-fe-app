@@ -18,14 +18,18 @@ export class MasterComponent {
 
   constructor(private router: Router) {
     this.checkScreenWidth();
+    console.log('[master] init — innerWidth:', window.innerWidth, 'sidebarHidden:', this.sidebarHidden);
        this.router.events.subscribe((event) => {
           if (event instanceof NavigationStart) {
             this.isLoading = true;
+            console.log('[master] NavigationStart →', (event as any).url);
           }
           if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
             this.isLoading = false;
+            console.log('[master] NavigationEnd/Cancel/Error — isLoading=false, url:', (event as any).url || (event as any).urlAfterRedirects);
             if (this.isMobileViewport()) {
               this.sidebarHidden = true;
+              console.log('[master] mobile viewport detected — sidebarHidden=true');
             }
           }
         });

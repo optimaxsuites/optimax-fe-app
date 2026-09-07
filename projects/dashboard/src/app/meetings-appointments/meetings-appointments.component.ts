@@ -193,6 +193,7 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    console.log('[M&A] ngOnInit — loading workspace');
     this.loadWorkspace();
     this.loadEmployees();
     // Register document listeners outside Angular's zone so that the constant
@@ -205,6 +206,7 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    console.log('[M&A] ngOnDestroy');
     this.stopTranscriptionPolling();
     document.removeEventListener('mousemove', this._boundResizeMove);
     document.removeEventListener('mouseup', this._boundMouseup);
@@ -216,7 +218,12 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
     return this.events.find(e => e.id === this.selectedEventId) || this.events[0];
   }
 
+  // Memoized: recomputed only when this.events reference changes.
+  // Prevents O(N×52) expansion from running on every change-detection cycle.
+  private _expandedCache: { ref: MeetingEvent[]; result: MeetingEvent[] } | null = null;
+
   get expandedEvents(): MeetingEvent[] {
+    if (this._expandedCache?.ref === this.events) return this._expandedCache.result;
     const result: MeetingEvent[] = [];
     const cap = new Date();
     cap.setFullYear(cap.getFullYear() + 1);
@@ -235,6 +242,7 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
         result.push({ ...ev, id: `${ev.id}-r${i}`, date: iso, status: ev.status === 'Completed' ? 'Scheduled' : ev.status });
       }
     }
+    this._expandedCache = { ref: this.events, result };
     return result;
   }
 
@@ -976,6 +984,7 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   private loadWorkspace(): void {
     this.events = this.seedEvents();
     this.selectedEventId = this.events[0]?.id || '';
+    console.log('[M&A] seed events loaded:', this.events.length);
 
     this.collaborationService.getMeetingsAppointmentsWorkspace().subscribe({
       next: ws => {
@@ -984,11 +993,15 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
           this.resources = ws.resources || this.resources;
           this.selectedEventId = this.events[0]?.id || '';
           this.navigateToNearestEvent();
+          console.log('[M&A] workspace loaded from backend:', this.events.length, 'events');
+        } else {
+          console.log('[M&A] backend workspace empty — using seed events');
         }
         this.backendStatus = 'Synced ✓';
         this.backendOnline = true;
       },
-      error: () => {
+      error: (err) => {
+        console.warn('[M&A] workspace load error:', err?.status, err?.message);
         this.backendStatus = 'Working offline';
         this.backendOnline = false;
       },
