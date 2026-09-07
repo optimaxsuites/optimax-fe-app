@@ -150,18 +150,22 @@ export class LeavePlanningDashboardComponent implements OnInit {
 
   // ==================== LOAD CURRENT ADMIN USER ====================
 
+  /**
+   * Resolves the acting user's ID directly from session (set at login),
+   * rather than via an Employee-record lookup. The previous approach
+   * required a populated employee.user relation, which silently failed
+   * (no error, no log) whenever the Employee record existed but had
+   * `user: null`, permanently blocking approve/reject for that account.
+   * decisionBy is an audit field, not an authorization check, so this
+   * only needs the session userId, which is always available once logged in.
+   */
   loadCurrentAdminUser() {
-    this.apiService.getCurrentEmployee().subscribe({
-      next: (employee) => {
-        if (employee && employee.user) {
-          this.currentAdminUserId = employee.user.id || employee.user.userId;
-          console.log('Current admin user ID:', this.currentAdminUserId);
-        }
-      },
-      error: (err) => {
-        console.error('Failed to load current admin user:', err);
-      },
-    });
+    this.currentAdminUserId = this.apiService.getCurrentUserIdAsNumber();
+    if (this.currentAdminUserId) {
+      console.log('Current admin user ID:', this.currentAdminUserId);
+    } else {
+      console.warn('⚠️ No userId found in session — decisionBy will be unavailable until re-login.');
+    }
   }
 
   // ==================== LOAD DATA FROM API ====================
@@ -558,8 +562,8 @@ export class LeavePlanningDashboardComponent implements OnInit {
   // ==================== APPROVE PLAN ====================
 
   approvePlan() {
-    if (!this.selectedPlan || !this.currentAdminUserId) {
-      console.error('❌ Cannot approve: missing plan or admin user ID');
+    if (!this.selectedPlan) {
+      console.error('❌ Cannot approve: no leave plan selected');
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -567,6 +571,9 @@ export class LeavePlanningDashboardComponent implements OnInit {
         key: 'tl',
       });
       return;
+    }
+    if (!this.currentAdminUserId) {
+      console.warn('⚠️ No admin user ID in session — proceeding, but decisionBy will be recorded as unknown.');
     }
     this.isApproving = true;
     const employeeName = this.selectedEmployee
@@ -670,8 +677,8 @@ export class LeavePlanningDashboardComponent implements OnInit {
   // ==================== REJECT PLAN ====================
 
   rejectPlan() {
-    if (!this.selectedPlan || !this.currentAdminUserId) {
-      console.error('❌ Cannot reject: missing plan or admin user ID');
+    if (!this.selectedPlan) {
+      console.error('❌ Cannot reject: no leave plan selected');
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -679,6 +686,9 @@ export class LeavePlanningDashboardComponent implements OnInit {
         key: 'tl',
       });
       return;
+    }
+    if (!this.currentAdminUserId) {
+      console.warn('⚠️ No admin user ID in session — proceeding, but decisionBy will be recorded as unknown.');
     }
     this.isRejecting = true;
     const employeeName = this.selectedEmployee
