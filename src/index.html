@@ -16,21 +16,6 @@
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1976d2">
   <script src="assets/env.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/eruda"></script>
-  <script>
-    eruda.init();
-    // Diagnostic: capture-phase listeners registered before Zone.js loads so
-    // they are native (unpatched) and fire regardless of Angular zone state.
-    document.addEventListener('touchstart', function(e) {
-      var t = e.target; console.log('[DIAG] touchstart → ' + t.tagName + '#' + (t.id||'') + ' .' + ((t.className||'').toString().slice(0,25)));
-    }, { passive: true, capture: true });
-    document.addEventListener('touchend', function(e) {
-      var t = e.target; console.log('[DIAG] touchend → ' + t.tagName + '#' + (t.id||''));
-    }, { passive: true, capture: true });
-    document.addEventListener('click', function(e) {
-      var t = e.target; console.log('[DIAG] click → ' + t.tagName + '#' + (t.id||'') + ' .' + ((t.className||'').toString().slice(0,25)));
-    }, { capture: true });
-  </script>
 </head>
 <body>
   <app-root></app-root>

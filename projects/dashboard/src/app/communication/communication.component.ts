@@ -7,6 +7,7 @@ import {
   ChangeDetectorRef,
   OnDestroy,
   HostListener,
+  NgZone,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { Client } from '@stomp/stompjs';
@@ -854,6 +855,7 @@ export class CommunicationComponent
     private collabService: CollaborationService,
     private headerStateService: HeaderStateService,
     private router: Router,
+    private ngZone: NgZone,
   ) {}
 
   ngOnInit() {
@@ -873,11 +875,9 @@ export class CommunicationComponent
         this.handleNotificationTarget as EventListener,
       );
       window.addEventListener('hashchange', this.handleMentionHashChange);
-      window.addEventListener('touchstart', this.primeNotificationAudio, {
-        passive: true,
-      });
-      window.addEventListener('mousedown', this.primeNotificationAudio, {
-        passive: true,
+      this.ngZone.runOutsideAngular(() => {
+        window.addEventListener('touchstart', this.primeNotificationAudio, { passive: true });
+        window.addEventListener('mousedown', this.primeNotificationAudio, { passive: true });
       });
     }
     this.checkVoiceSupport();
@@ -3192,6 +3192,8 @@ export class CommunicationComponent
       '';
     const wsUrl = this.resolveCollabWebSocketUrl();
 
+    let wsFailCount = 0;
+    this.ngZone.runOutsideAngular(() => {
     const client = new Client({
       brokerURL: wsUrl,
       reconnectDelay: 5000,
@@ -3207,7 +3209,8 @@ export class CommunicationComponent
     this.stompClient = client;
     this.chatRealtimeStarted = true;
 
-    client.onConnect = () => {
+    client.onConnect = () => this.ngZone.run(() => {
+      wsFailCount = 0;
       this.wsConnected = true;
       client.subscribe(
         `/topic/collab/chat/user/${this.me.userId}/unread`,
@@ -3359,13 +3362,19 @@ export class CommunicationComponent
       for (const dm of this.dmContacts) {
         this.subscribeToDmContactChannels(dm);
       }
-    };
+    });
     client.onStompError = (frame) => console.error('STOMP ERROR:', frame);
     client.onWebSocketClose = () => {
       this.wsConnected = false;
     };
-    client.onWebSocketError = (err) => console.error('WS ERROR:', err);
+    client.onWebSocketError = () => {
+      wsFailCount++;
+      if (wsFailCount >= 3) {
+        client.deactivate();
+      }
+    };
     client.activate();
+    }); // end runOutsideAngular
   }
 
   private disconnectWebSocket(): void {
@@ -7115,24 +7124,26 @@ export class CommunicationComponent
     if (this.presencePollTimer) {
       return;
     }
-    this.presencePollTimer = setInterval(() => {
-      this.collabService.getAllPresence().subscribe({
-        next: (list: any[]) => {
-          const byUser = new Map<number, any>();
-          for (const p of list || []) {
-            const prev = byUser.get(Number(p.userId));
-            if (!prev || (p.updatedAt || '') >= (prev.updatedAt || ''))
-              byUser.set(Number(p.userId), p);
-          }
-          this.applyPresenceEntries(Array.from(byUser.values()));
-          this.syncDmOnlineStatus();
-          this.cdr.detectChanges();
-        },
-        error: () => {},
-      });
-      if (this.presenceChannelId)
-        this.pollChannelPresence(this.presenceChannelId);
-    }, 15_000);
+    this.ngZone.runOutsideAngular(() => {
+      this.presencePollTimer = setInterval(() => {
+        this.collabService.getAllPresence().subscribe({
+          next: (list: any[]) => {
+            const byUser = new Map<number, any>();
+            for (const p of list || []) {
+              const prev = byUser.get(Number(p.userId));
+              if (!prev || (p.updatedAt || '') >= (prev.updatedAt || ''))
+                byUser.set(Number(p.userId), p);
+            }
+            this.applyPresenceEntries(Array.from(byUser.values()));
+            this.syncDmOnlineStatus();
+            this.cdr.detectChanges();
+          },
+          error: () => {},
+        });
+        if (this.presenceChannelId)
+          this.pollChannelPresence(this.presenceChannelId);
+      }, 15_000);
+    });
   }
 
   private stopPresencePolling(): void {
