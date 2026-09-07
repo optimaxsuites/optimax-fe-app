@@ -61,7 +61,8 @@ const LOCAL_KEYS = {
   MOVEMENT_TYPES: 'inventory_movement_types',
   LOCATION_TYPES: 'inventory_location_types',
   GENERIC_LOCATIONS: 'inventory_generic_locations',
-  NOTIFICATIONS: 'inventory_notifications'
+  NOTIFICATIONS: 'inventory_notifications',
+  PRODUCT_PERFORMANCE_FALLBACK: 'inventory_product_performance_fallback'
 };
 
 const MOCK_BRANCH_TYPES: string[] = ['STANDARD', 'FLAGSHIP', 'MINI'];
@@ -1941,7 +1942,25 @@ export class InventoryService {
           return of(cached);
         }
 
-        // Fallback: build synthetic performance data from the product record itself
+        // Fallback: synthetic performance data built from the product record itself.
+        // Generated once per product and cached — regenerating fresh Math.random()
+        // numbers on every call made the analytics cards' values jump around every
+        // time the user refreshed, even though nothing had actually changed.
+        const fallbackCache = JSON.parse(
+          localStorage.getItem(LOCAL_KEYS.PRODUCT_PERFORMANCE_FALLBACK) as string || '{}'
+        ) as Record<string, ProductPerformance>;
+
+        const cachedFallback = fallbackCache[productId];
+        if (cachedFallback) {
+          return of({
+            ...cachedFallback,
+            period: {
+              start: new Date(cachedFallback.period.start),
+              end: new Date(cachedFallback.period.end)
+            }
+          });
+        }
+
         const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
         const product = products.find(p => String(p.id) === productId);
         if (!product) {
@@ -1968,6 +1987,12 @@ export class InventoryService {
           trend: (['UP', 'DOWN', 'STABLE'] as const)[Math.floor(Math.random() * 3)],
           period: { start: new Date(), end: new Date() }
         };
+
+        fallbackCache[productId] = fallback;
+        try {
+          localStorage.setItem(LOCAL_KEYS.PRODUCT_PERFORMANCE_FALLBACK, JSON.stringify(fallbackCache));
+        } catch { /* storage limit reached — in-memory value is still returned below */ }
+
         return of(fallback);
       })
     );
