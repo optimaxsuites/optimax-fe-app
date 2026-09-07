@@ -93,39 +93,55 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     }
     const tenantId = sessionStorage.getItem('tenantId') || 'default';
     const wsUrl = this.resolveCollabWebSocketUrl();
+    let wsFailCount = 0;
+    const MAX_WS_FAILURES = 3;
 
-    const client = new Client({
-      brokerURL: wsUrl,
-      reconnectDelay: 5000,
-      heartbeatIncoming: 20000,
-      heartbeatOutgoing: 20000,
-      connectHeaders: {
-        Authorization: `Bearer ${token}`,
-        'X-Tenant-ID': tenantId,
-        'X-User-ID': String(this.currentUserId),
-        userid: String(this.currentUserId),
-      },
+    // Run entirely outside Angular's zone so WebSocket events (especially
+    // rapid error/close cycles when the collab server is unreachable) do not
+    // trigger change detection on every retry, which freezes mobile browsers.
+    this.ngZone.runOutsideAngular(() => {
+      const client = new Client({
+        brokerURL: wsUrl,
+        reconnectDelay: 5000,
+        heartbeatIncoming: 20000,
+        heartbeatOutgoing: 20000,
+        connectHeaders: {
+          Authorization: `Bearer ${token}`,
+          'X-Tenant-ID': tenantId,
+          'X-User-ID': String(this.currentUserId),
+          userid: String(this.currentUserId),
+        },
+      });
+
+      client.onConnect = () => {
+        wsFailCount = 0;
+        this.wsConnected = true;
+        client.subscribe(
+          `/topic/collab/chat/user/${this.currentUserId}/unread`,
+          () => this.ngZone.run(() => this.refreshChannels(true)),
+        );
+        this.ngZone.run(() => this.refreshChannels(true));
+      };
+
+      client.onStompError = (frame) =>
+        console.error('Global chat STOMP error:', frame);
+
+      client.onWebSocketClose = () => {
+        this.wsConnected = false;
+      };
+
+      client.onWebSocketError = () => {
+        wsFailCount++;
+        if (wsFailCount >= MAX_WS_FAILURES) {
+          // Stop reconnecting after repeated failures to avoid flooding the
+          // zone with error events and saturating the mobile CPU.
+          client.deactivate();
+        }
+      };
+
+      this.stompClient = client;
+      client.activate();
     });
-
-    client.onConnect = () => {
-      this.wsConnected = true;
-      client.subscribe(
-        `/topic/collab/chat/user/${this.currentUserId}/unread`,
-        () => this.refreshChannels(true),
-      );
-      this.refreshChannels(true);
-    };
-
-    client.onStompError = (frame) =>
-      console.error('Global chat STOMP error:', frame);
-    client.onWebSocketClose = () => {
-      this.wsConnected = false;
-    };
-    client.onWebSocketError = (error) =>
-      console.error('Global chat websocket error:', error);
-
-    this.stompClient = client;
-    client.activate();
   }
 
   private resolveCollabWebSocketUrl(): string {
@@ -245,9 +261,11 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     if (this.fallbackRefreshTimer != null || typeof window === 'undefined') {
       return;
     }
-    this.fallbackRefreshTimer = window.setInterval(() => {
-      this.refreshChannels();
-    }, this.fallbackRefreshIntervalMs);
+    this.ngZone.runOutsideAngular(() => {
+      this.fallbackRefreshTimer = window.setInterval(() => {
+        this.ngZone.run(() => this.refreshChannels());
+      }, this.fallbackRefreshIntervalMs);
+    });
   }
 
   private stopFallbackRefresh(): void {
@@ -422,7 +440,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     }
     const sub = this.stompClient.subscribe(
       `/topic/collab/chat/channel/${target.backendId}`,
-      (frame) => {
+      (frame) => this.ngZone.run(() => {
         const incoming = this.parseIncoming(frame.body);
         if (
           incoming.senderUserId &&
@@ -475,7 +493,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
               ),
           );
         });
-      },
+      }),
     );
     this.channelSubs.set(target.backendId, sub);
   }
