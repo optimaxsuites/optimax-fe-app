@@ -235,8 +235,14 @@ export class SalesService {
   // CUSTOMERS
   // ============================================
 
-  getCustomers(filters: any): Observable<{ data: Customer[]; total: number }> {
-    let params = new HttpParams().set('tenantId', this.tenantId);
+  getCustomers(filters: any): Observable<{
+    data: Customer[];
+    total: number;
+    totalActive?: number;
+    totalInactive?: number;
+    totalBlacklisted?: number;
+  }> {
+    let params = new HttpParams().set('tenantId', this.tenantId).set('sort', 'createdAt,desc');
 
     if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
     if (filters?.size !== undefined) params = params.set('size', String(filters.size));
@@ -252,9 +258,12 @@ export class SalesService {
           address: c.address ? [c.address] : [],
           deliverAddress: Array.isArray(c.deliverAddress) ? c.deliverAddress : (c.deliverAddress ? [c.deliverAddress] : [])
         }));
+        // Belt-and-braces: re-sort whatever page came back, in case the backend
+        // ignores the `sort` param or has its own default ordering.
+        const sorted = this.sortNewestFirst(arr, 'createdAt');
         const total = Array.isArray(res) ? res.length : (res?.totalSize ?? res?.totalElements ?? arr.length);
         return {
-          data: arr,
+          data: sorted,
           total,
           totalActive: res?.totalActive ?? 0,
           totalInactive: res?.totalInactive ?? 0,
@@ -385,7 +394,7 @@ export class SalesService {
   // ============================================
 
   getSalesandTransactions(filters: any): Observable<{ data: SalesandTransactions[]; total: number }> {
-    let params = new HttpParams().set('tenantId', this.tenantId);
+    let params = new HttpParams().set('tenantId', this.tenantId).set('sort', 'orderDate,desc');
 
     if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
     if (filters?.size !== undefined) params = params.set('size', String(filters.size));
@@ -396,7 +405,10 @@ export class SalesService {
     return this.http.get<any>(`${this.base}/sales-orders`, { params }).pipe(
       map(res => {
         const arr: SalesandTransactions[] = Array.isArray(res) ? res : (res?.data ?? []);
-        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+        // Belt-and-braces: re-sort whatever page came back, in case the backend
+        // ignores the `sort` param or has its own default ordering.
+        const sorted = this.sortNewestFirst(arr, 'orderDate');
+        return { data: sorted, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
       }),
       catchError(() => of({ data: [], total: 0 }))
     );
