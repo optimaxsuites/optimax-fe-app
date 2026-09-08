@@ -27,6 +27,7 @@ import {
   Supplier
 } from '../../domain/sales/sales.dto';
 import { environment } from '../../shared-component/service/environments/environment';
+import { parseApiDate } from './date.util';
 
 export const defaultMerchantInfo: MerchantInfo = {
   id: 0,
@@ -54,6 +55,20 @@ export class SalesService {
   }
 
   constructor(private http: HttpClient) {}
+
+  /**
+   * Most-recent-first. Sorts on `dateField` (falling back to `id` when the
+   * date is missing/unparseable or two records tie) rather than trusting
+   * the backend's own ordering, which isn't guaranteed to be chronological.
+   */
+  private sortNewestFirst<T extends { id: number }>(arr: T[], dateField: keyof T): T[] {
+    return [...arr].sort((a, b) => {
+      const aTime = parseApiDate(a[dateField] as any)?.getTime();
+      const bTime = parseApiDate(b[dateField] as any)?.getTime();
+      if (aTime != null && bTime != null && aTime !== bTime) return bTime - aTime;
+      return b.id - a.id;
+    });
+  }
 
   // ============================================
   // DASHBOARD — no dedicated endpoint, return stubs
@@ -109,7 +124,7 @@ export class SalesService {
   // ============================================
 
   getQuotes(filters: any): Observable<{ data: Quote[]; total: number }> {
-    let params = new HttpParams().set('tenantId', this.tenantId);
+    let params = new HttpParams().set('tenantId', this.tenantId).set('sort', 'createdAt,desc');
 
     if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
     if (filters?.size !== undefined) params = params.set('size', String(filters.size));
@@ -120,7 +135,10 @@ export class SalesService {
     return this.http.get<any>(`${this.base}/quotes`, { params }).pipe(
       map(res => {
         const arr: Quote[] = Array.isArray(res) ? res : (res?.data ?? []);
-        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+        // Belt-and-braces: re-sort whatever page came back, in case the backend
+        // ignores the `sort` param or has its own default ordering.
+        const sorted = this.sortNewestFirst(arr, 'createdAt');
+        return { data: sorted, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
       }),
       catchError(() => of({ data: [], total: 0 }))
     );
@@ -162,7 +180,7 @@ export class SalesService {
   // ============================================
 
   getInvoices(filters: any): Observable<{ data: Invoice[]; total: number }> {
-    let params = new HttpParams().set('tenantId', this.tenantId);
+    let params = new HttpParams().set('tenantId', this.tenantId).set('sort', 'issueDate,desc');
 
     if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
     if (filters?.size !== undefined) params = params.set('size', String(filters.size));
@@ -173,7 +191,10 @@ export class SalesService {
     return this.http.get<any>(`${this.base}/invoices`, { params }).pipe(
       map(res => {
         const arr: Invoice[] = Array.isArray(res) ? res : (res?.data ?? []);
-        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+        // Belt-and-braces: re-sort whatever page came back, in case the backend
+        // ignores the `sort` param or has its own default ordering.
+        const sorted = this.sortNewestFirst(arr, 'issueDate');
+        return { data: sorted, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
       }),
       catchError(() => of({ data: [], total: 0 }))
     );
