@@ -7,6 +7,7 @@ import {
   ChangeDetectorRef,
   OnDestroy,
   HostListener,
+  NgZone,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { Client } from '@stomp/stompjs';
@@ -90,6 +91,8 @@ export interface Message {
   threadReplyCount?: number;
   threadLastActivityRaw?: string | number[];
   messageType?: string;
+  reactionCounts?: Record<string, number>;
+  myReactionCode?: string;
   retryMeta?: {
     mode: 'channel' | 'dm' | 'thread';
     backendChannelId: number;
@@ -482,7 +485,17 @@ export class CommunicationComponent
   feedThreads: Record<number, FeedThreadState> = {};
   threadInboxQuery = '';
 
-  activeView: 'channel' | 'dm' | 'threads' = 'channel';
+  activeView: 'channel' | 'dm' | 'threads' | 'saved' = 'channel';
+
+  // ── Feature: Saved messages ──────────────────────────
+  savedMessageIds = new Set<string>();
+  isSavedView = false;
+
+  // ── Feature: Pinned strip ────────────────────────────
+  pinnedStripExpanded = false;
+
+  // ── Feature: Drag-and-drop upload ───────────────────
+  isDraggingOver = false;
   activeChannelId = '';
   activeDmId = '';
   activeThreadId: string | null = null;
@@ -794,6 +807,8 @@ export class CommunicationComponent
   private typingEndpointBlocked = false;
   private scrollFeed = false;
   private scrollThread = false;
+  showScrollDown = false;
+  scrollDownUnreadCount = 0;
   private chatResourcesLoaded = false;
   private chatRealtimeStarted = false;
   private pendingMentionConversationUserId: number | null = null;
@@ -840,6 +855,7 @@ export class CommunicationComponent
     private collabService: CollaborationService,
     private headerStateService: HeaderStateService,
     private router: Router,
+    private ngZone: NgZone,
   ) {}
 
   ngOnInit() {
@@ -859,11 +875,9 @@ export class CommunicationComponent
         this.handleNotificationTarget as EventListener,
       );
       window.addEventListener('hashchange', this.handleMentionHashChange);
-      window.addEventListener('touchstart', this.primeNotificationAudio, {
-        passive: true,
-      });
-      window.addEventListener('mousedown', this.primeNotificationAudio, {
-        passive: true,
+      this.ngZone.runOutsideAngular(() => {
+        window.addEventListener('touchstart', this.primeNotificationAudio, { passive: true });
+        window.addEventListener('mousedown', this.primeNotificationAudio, { passive: true });
       });
     }
     this.checkVoiceSupport();
@@ -1340,9 +1354,57 @@ export class CommunicationComponent
     });
   }
 
-  onSidebarViewSet(v: 'threads'): void {
+  onSidebarViewSet(v: 'threads' | 'saved'): void {
     this.closeMobileSidebar();
+    if (v === 'saved') {
+      this.isSavedView = true;
+      this.cdr.markForCheck();
+      return;
+    }
+    this.isSavedView = false;
     this.setView(v);
+  }
+
+  get visibleMessages(): Message[] {
+    return this.isSavedView
+      ? this.rawMessages.filter(m => this.savedMessageIds.has(m.id))
+      : this.rawMessages;
+  }
+
+  onBookmarkToggled(msg: Message): void {
+    if (this.savedMessageIds.has(msg.id)) {
+      this.savedMessageIds.delete(msg.id);
+    } else {
+      this.savedMessageIds.add(msg.id);
+    }
+    this.savedMessageIds = new Set(this.savedMessageIds);
+    this.cdr.markForCheck();
+  }
+
+  onChatDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!this.isDraggingOver) {
+      this.isDraggingOver = true;
+      this.cdr.markForCheck();
+    }
+  }
+
+  onChatDragLeave(event: DragEvent): void {
+    const feedEl = event.currentTarget as HTMLElement;
+    if (!event.relatedTarget || !feedEl.contains(event.relatedTarget as Node)) {
+      this.isDraggingOver = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  onChatDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingOver = false;
+    const files = Array.from(event.dataTransfer?.files || []);
+    if (files.length) this.onFilesSelected(files);
+    this.cdr.markForCheck();
   }
 
   onSidebarCreateChannel(): void {
@@ -3130,6 +3192,8 @@ export class CommunicationComponent
       '';
     const wsUrl = this.resolveCollabWebSocketUrl();
 
+    let wsFailCount = 0;
+    this.ngZone.runOutsideAngular(() => {
     const client = new Client({
       brokerURL: wsUrl,
       reconnectDelay: 5000,
@@ -3145,7 +3209,8 @@ export class CommunicationComponent
     this.stompClient = client;
     this.chatRealtimeStarted = true;
 
-    client.onConnect = () => {
+    client.onConnect = () => this.ngZone.run(() => {
+      wsFailCount = 0;
       this.wsConnected = true;
       client.subscribe(
         `/topic/collab/chat/user/${this.me.userId}/unread`,
@@ -3297,13 +3362,19 @@ export class CommunicationComponent
       for (const dm of this.dmContacts) {
         this.subscribeToDmContactChannels(dm);
       }
-    };
+    });
     client.onStompError = (frame) => console.error('STOMP ERROR:', frame);
     client.onWebSocketClose = () => {
       this.wsConnected = false;
     };
-    client.onWebSocketError = (err) => console.error('WS ERROR:', err);
+    client.onWebSocketError = () => {
+      wsFailCount++;
+      if (wsFailCount >= 3) {
+        client.deactivate();
+      }
+    };
     client.activate();
+    }); // end runOutsideAngular
   }
 
   private disconnectWebSocket(): void {
@@ -3704,7 +3775,10 @@ export class CommunicationComponent
       if (allExistingIds.has(m.id)) continue; // already present (existing or reply)
 
       const author =
-        this.userDirectory[m.senderUserId] || `User ${m.senderUserId}`;
+        this.userDirectory[m.senderUserId] ||
+        this.dmContacts.find((c) => Number(c.userId) === Number(m.senderUserId))?.fullName ||
+        (Number(m.senderUserId) === Number(this.me.userId) ? this.me.name : null) ||
+        `User ${m.senderUserId}`;
       const newMsg: Message = {
         id: `backend-${m.id}`,
         backendId: m.id,
@@ -6694,6 +6768,17 @@ export class CommunicationComponent
   }
 
   private loadUserDirectory(userIds: number[], callback: () => void): void {
+    // Pre-seed from locally known contacts so we never fall back to "User N"
+    for (const id of userIds) {
+      if (this.userDirectory[id]) continue;
+      if (Number(id) === Number(this.me.userId) && this.me.name) {
+        this.userDirectory[id] = this.me.name;
+        continue;
+      }
+      const known = this.dmContacts.find((c) => Number(c.userId) === Number(id));
+      if (known?.fullName) this.userDirectory[id] = known.fullName;
+    }
+
     const missing = userIds.filter((id) => !this.userDirectory[id]);
     if (!missing.length) {
       callback();
@@ -6703,8 +6788,8 @@ export class CommunicationComponent
       next: (users) => {
         for (const u of users) {
           if (u.userId != null) {
-            this.userDirectory[u.userId] =
-              u.fullname || u.username || u.email || `User ${u.userId}`;
+            const display = u.fullname || u.username || u.email;
+            if (display) this.userDirectory[u.userId] = display;
             if (u.email) this.userEmailCache[u.userId] = u.email;
           }
         }
@@ -6723,17 +6808,24 @@ export class CommunicationComponent
     const reactionCount = new Map<string, number>();
     const likedByMe = new Set<number>();
     const likeRxId = new Map<number, number>();
+    // Per-message reaction counts map (all codes) and my reaction per message
+    const rxCountsMap = new Map<number, Record<string, number>>();
+    const myRxByMsg = new Map<number, string>();
 
     for (const r of reactions) {
       const k = `${r.messageId}|${r.reactionCode}`;
       reactionCount.set(k, (reactionCount.get(k) ?? 0) + 1);
-      if (
-        r.userId != null &&
-        Number(r.userId) === Number(this.me.userId) &&
-        LIKE_CODES.includes(r.reactionCode)
-      ) {
-        likedByMe.add(Number(r.messageId));
-        if (r.id != null) likeRxId.set(Number(r.messageId), r.id);
+      // Build per-message per-code counts
+      const msgId = Number(r.messageId);
+      const perMsg = rxCountsMap.get(msgId) ?? {};
+      perMsg[r.reactionCode] = (perMsg[r.reactionCode] || 0) + 1;
+      rxCountsMap.set(msgId, perMsg);
+      if (r.userId != null && Number(r.userId) === Number(this.me.userId)) {
+        myRxByMsg.set(msgId, r.reactionCode);
+        if (LIKE_CODES.includes(r.reactionCode)) {
+          likedByMe.add(msgId);
+          if (r.id != null) likeRxId.set(msgId, r.id);
+        }
       }
     }
 
@@ -6764,7 +6856,10 @@ export class CommunicationComponent
         0,
       );
       const author =
-        this.userDirectory[m.senderUserId] || `User ${m.senderUserId}`;
+        this.userDirectory[m.senderUserId] ||
+        this.dmContacts.find((c) => Number(c.userId) === Number(m.senderUserId))?.fullName ||
+        (Number(m.senderUserId) === Number(this.me.userId) ? this.me.name : null) ||
+        `User ${m.senderUserId}`;
       const attList = attMap.get(m.id) || [];
       const msg: Message = {
         id: `backend-${m.id}`,
@@ -6780,6 +6875,8 @@ export class CommunicationComponent
         liked: likedByMe.has(m.id),
         likeCount: totalLikes,
         likeReactionId: likeRxId.get(m.id),
+        reactionCounts: { ...(rxCountsMap.get(m.id) ?? {}) },
+        myReactionCode: myRxByMsg.get(m.id),
         pinned: false,
         createdAt: new Date(),
         senderUserId: m.senderUserId,
@@ -7027,24 +7124,26 @@ export class CommunicationComponent
     if (this.presencePollTimer) {
       return;
     }
-    this.presencePollTimer = setInterval(() => {
-      this.collabService.getAllPresence().subscribe({
-        next: (list: any[]) => {
-          const byUser = new Map<number, any>();
-          for (const p of list || []) {
-            const prev = byUser.get(Number(p.userId));
-            if (!prev || (p.updatedAt || '') >= (prev.updatedAt || ''))
-              byUser.set(Number(p.userId), p);
-          }
-          this.applyPresenceEntries(Array.from(byUser.values()));
-          this.syncDmOnlineStatus();
-          this.cdr.detectChanges();
-        },
-        error: () => {},
-      });
-      if (this.presenceChannelId)
-        this.pollChannelPresence(this.presenceChannelId);
-    }, 15_000);
+    this.ngZone.runOutsideAngular(() => {
+      this.presencePollTimer = setInterval(() => {
+        this.collabService.getAllPresence().subscribe({
+          next: (list: any[]) => {
+            const byUser = new Map<number, any>();
+            for (const p of list || []) {
+              const prev = byUser.get(Number(p.userId));
+              if (!prev || (p.updatedAt || '') >= (prev.updatedAt || ''))
+                byUser.set(Number(p.userId), p);
+            }
+            this.applyPresenceEntries(Array.from(byUser.values()));
+            this.syncDmOnlineStatus();
+            this.cdr.detectChanges();
+          },
+          error: () => {},
+        });
+        if (this.presenceChannelId)
+          this.pollChannelPresence(this.presenceChannelId);
+      }, 15_000);
+    });
   }
 
   private stopPresencePolling(): void {
@@ -8584,92 +8683,122 @@ export class CommunicationComponent
     const reactionCode = (payload.reactionCode || 'LIKE').toUpperCase();
     payload.event?.stopPropagation();
     if (this.reactingIds.has(msg.id)) return;
-    const wasLiked = msg.liked,
-      wasCount = msg.likeCount,
-      wasId = msg.likeReactionId;
-    msg.liked = !wasLiked;
-    msg.likeCount = msg.liked ? wasCount + 1 : Math.max(0, wasCount - 1);
-    if (!msg.liked) msg.likeReactionId = undefined;
+    if (!msg.reactionCounts) msg.reactionCounts = {};
+
+    const prevCode = msg.myReactionCode;
+    const isSameCode = prevCode === reactionCode;
+
+    // Optimistic update: decrement previous reaction (if any), apply new one
+    if (prevCode) {
+      msg.reactionCounts[prevCode] = Math.max(0, (msg.reactionCounts[prevCode] || 1) - 1);
+    }
+    if (isSameCode) {
+      // Toggle off
+      msg.myReactionCode = undefined;
+    } else {
+      msg.reactionCounts[reactionCode] = (msg.reactionCounts[reactionCode] || 0) + 1;
+      msg.myReactionCode = reactionCode;
+    }
+    msg.reactionCounts = { ...msg.reactionCounts };
+
+    // Keep the legacy heart button in sync for standard codes
+    const LIKE_CODES = ['LIKE', 'LOVE', 'THUMBS_UP', 'LAUGH', 'CELEBRATE', 'FIRE'];
+    const myCode = msg.myReactionCode;
+    msg.liked = !!myCode && LIKE_CODES.includes(myCode);
+    msg.likeCount = LIKE_CODES.reduce((s, c) => s + (msg.reactionCounts![c] || 0), 0);
+
     this.cdr.detectChanges();
     if (!msg.backendId) return;
+
     this.reactingIds.add(msg.id);
-    const refresh = () => {
+
+    const refreshFromServer = () => {
       this.reactingIds.delete(msg.id);
       const source = this.resolveThreadMessageSource(msg);
       if (source?.type === 'channel' && source.channelBackendId) {
-        const ch = this.channels.find((entry) => entry.backendId === source.channelBackendId);
+        const ch = this.channels.find((e) => e.backendId === source.channelBackendId);
         if (ch) {
           this.getChannelSnapshotWithFallback(ch.backendId).then((snap) => {
             if (snap) this.refreshReactionCounts(ch, snap.reactions || []);
           });
         }
       } else if (source?.type === 'dm' && source.dmChannelId) {
-        const contact = this.dmContacts.find((entry) => entry.dmChannelId === source.dmChannelId);
+        const contact = this.dmContacts.find((e) => e.dmChannelId === source.dmChannelId);
         if (contact) {
           this.getChannelSnapshotWithFallback(source.dmChannelId).then((snap) => {
             if (!snap) return;
-            const renderedMessages = this.buildMessageList(
-              snap.messages || [],
-              snap.reactions || [],
-              snap.attachments || [],
-            );
-            this.dmMessages[contact.id] = this.mergeRenderedMessagesWithPending(
-              renderedMessages,
-              this.dmMessages[contact.id] || [],
-            );
+            const rendered = this.buildMessageList(snap.messages || [], snap.reactions || [], snap.attachments || []);
+            this.dmMessages[contact.id] = this.mergeRenderedMessagesWithPending(rendered, this.dmMessages[contact.id] || []);
             this.hydrateMessageAttachments(this.dmMessages[contact.id]);
             this.cdr.detectChanges();
           });
         }
       }
     };
+
     const rollback = () => {
-      msg.liked = wasLiked;
-      msg.likeCount = wasCount;
-      msg.likeReactionId = wasId;
+      // Revert optimistic update
+      if (!isSameCode && prevCode) {
+        msg.reactionCounts![prevCode] = (msg.reactionCounts![prevCode] || 0) + 1;
+        msg.reactionCounts![reactionCode] = Math.max(0, (msg.reactionCounts![reactionCode] || 1) - 1);
+      } else if (isSameCode && prevCode) {
+        msg.reactionCounts![prevCode] = (msg.reactionCounts![prevCode] || 0) + 1;
+      } else {
+        msg.reactionCounts![reactionCode] = Math.max(0, (msg.reactionCounts![reactionCode] || 1) - 1);
+      }
+      msg.myReactionCode = prevCode;
+      msg.reactionCounts = { ...msg.reactionCounts };
+      msg.liked = !!prevCode && LIKE_CODES.includes(prevCode);
+      msg.likeCount = LIKE_CODES.reduce((s, c) => s + (msg.reactionCounts![c] || 0), 0);
       this.reactingIds.delete(msg.id);
       this.cdr.detectChanges();
     };
-    if (wasLiked && wasId != null)
+
+    if (isSameCode && msg.likeReactionId != null) {
+      // Toggle off: delete existing reaction
+      this.collabService.deleteReaction(msg.likeReactionId).subscribe({ next: refreshFromServer, error: rollback });
+    } else if (!isSameCode && prevCode && msg.likeReactionId != null) {
+      // Switching to a different reaction: delete old first, then add new
+      this.collabService.deleteReaction(msg.likeReactionId).subscribe({
+        next: () => {
+          this.collabService
+            .addReaction({ messageId: msg.backendId!, userId: this.me.userId, reactionCode })
+            .subscribe({ next: refreshFromServer, error: rollback });
+        },
+        error: rollback
+      });
+    } else {
+      // No prior reaction: just add
       this.collabService
-        .deleteReaction(wasId)
-        .subscribe({ next: refresh, error: rollback });
-    else
-      this.collabService
-        .addReaction({
-          messageId: msg.backendId,
-          userId: this.me.userId,
-          reactionCode,
-        })
-        .subscribe({ next: refresh, error: rollback });
+        .addReaction({ messageId: msg.backendId!, userId: this.me.userId, reactionCode })
+        .subscribe({ next: refreshFromServer, error: rollback });
+    }
   }
 
   private refreshReactionCounts(channel: Channel, reactions: any[]): void {
     const LIKE_CODES = ['LIKE', 'LOVE', 'THUMBS_UP', 'LAUGH', 'CELEBRATE', 'FIRE'];
-    const rc = new Map<string, number>(),
-      lbm = new Set<number>(),
-      lrm = new Map<number, number>();
+    const rxCountsMap = new Map<number, Record<string, number>>();
+    const myRxByMsg = new Map<number, string>();
+    const lrm = new Map<number, number>();
+
     for (const r of reactions) {
-      rc.set(
-        `${r.messageId}|${r.reactionCode}`,
-        (rc.get(`${r.messageId}|${r.reactionCode}`) ?? 0) + 1,
-      );
-      if (
-        r.userId != null &&
-        Number(r.userId) === Number(this.me.userId) &&
-        LIKE_CODES.includes(r.reactionCode)
-      ) {
-        lbm.add(Number(r.messageId));
-        if (r.id != null) lrm.set(Number(r.messageId), r.id);
+      const msgId = Number(r.messageId);
+      const perMsg = rxCountsMap.get(msgId) ?? {};
+      perMsg[r.reactionCode] = (perMsg[r.reactionCode] || 0) + 1;
+      rxCountsMap.set(msgId, perMsg);
+      if (r.userId != null && Number(r.userId) === Number(this.me.userId)) {
+        myRxByMsg.set(msgId, r.reactionCode);
+        if (LIKE_CODES.includes(r.reactionCode) && r.id != null) lrm.set(msgId, r.id);
       }
     }
+
     for (const msg of this.channelMessages[channel.id] || []) {
       if (!msg.backendId) continue;
-      msg.likeCount = LIKE_CODES.reduce(
-        (s, c) => s + (rc.get(`${msg.backendId}|${c}`) ?? 0),
-        0,
-      );
-      msg.liked = lbm.has(msg.backendId);
+      const perMsg = rxCountsMap.get(msg.backendId) ?? {};
+      msg.reactionCounts = { ...perMsg };
+      msg.myReactionCode = myRxByMsg.get(msg.backendId);
+      msg.likeCount = LIKE_CODES.reduce((s, c) => s + (perMsg[c] || 0), 0);
+      msg.liked = !!msg.myReactionCode && LIKE_CODES.includes(msg.myReactionCode);
       msg.likeReactionId = lrm.get(msg.backendId);
     }
     this.cdr.detectChanges();
@@ -8697,8 +8826,8 @@ export class CommunicationComponent
       for (const msg of this.channelMessages[ch.id] || []) {
         if (
           !msg.isSystem &&
-          (msg.content.toLowerCase().includes(q) ||
-            msg.author.toLowerCase().includes(q))
+          ((msg.content ?? '').toLowerCase().includes(q) ||
+            (msg.author ?? '').toLowerCase().includes(q))
         )
           this.searchResults.push({
             msg,
@@ -8708,6 +8837,13 @@ export class CommunicationComponent
       }
     }
     this.showSearch = true;
+  }
+
+  preloadAllChannelMessages(): void {
+    for (const ch of this.channels) {
+      if (this.channelMessages[ch.id] === undefined)
+        this.loadChannelMessages(ch);
+    }
   }
 
   closeSearch(): void {
@@ -10447,6 +10583,15 @@ export class CommunicationComponent
     return status >= 500 || !status;
   }
 
+  scrollFeedToBottom(): void {
+    const el = this.feedEl?.nativeElement;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+    this.showScrollDown = false;
+    this.scrollDownUnreadCount = 0;
+    this.cdr.markForCheck();
+  }
+
   onChatFeedScroll(): void {
     if (
       this.messagesLoading ||
@@ -10455,11 +10600,26 @@ export class CommunicationComponent
     ) {
       return;
     }
+
+    const el = this.feedEl.nativeElement;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom > 200) {
+      if (!this.showScrollDown) {
+        this.showScrollDown = true;
+        this.cdr.markForCheck();
+      }
+    } else {
+      if (this.showScrollDown) {
+        this.showScrollDown = false;
+        this.scrollDownUnreadCount = 0;
+        this.cdr.markForCheck();
+      }
+    }
+
     if (!this.historyPagingArmed) {
       this.historyPagingArmed = true;
       return;
     }
-    const el = this.feedEl.nativeElement;
     if (el.scrollTop > 80) {
       return;
     }

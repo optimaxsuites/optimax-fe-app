@@ -117,9 +117,11 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   };
   
   currentPage = 0;
-  pageSize = 10;
   totalElements = 0;
   totalPages = 0;
+
+  get pageSize(): number { return this.filters.size; }
+  set pageSize(v: number) { this.filters.size = v; }
   
   stats = {
     total: 0,
@@ -163,30 +165,27 @@ export class CustomerListComponent implements OnInit, OnDestroy {
         this.customers = response.data;
         this.totalElements = response.total;
         this.totalPages = Math.ceil(response.total / this.filters.size);
-        this.calculateStats();
+        this.currentPage = this.filters.page;
+        this.calculateStats(response);
         this.isLoading = false;
       },
       error: (error: any) => {
         console.error('Error loading customers:', error);
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load customers. Please try again.' });
-        this.calculateStats();
+        this.calculateStats(null);
         this.isLoading = false;
       }
     });
   }
 
-  private calculateStats(): void {
-    const active = this.customers.filter(c => c.status === 'ACTIVE').length;
-    const inactive = this.customers.filter(c => c.status === 'INACTIVE').length;
-    const blacklisted = this.customers.filter(c => c.status === 'BLACKLISTED').length;
-    const totalSpent = this.customers.reduce((sum, c) => sum + c.totalSpent, 0);
-    
+  private calculateStats(response?: any): void {
+    const totalSpent = this.customers.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
     this.stats = {
-      total: this.customers.length,
-      active: active,
-      inactive: inactive,
-      blacklisted: blacklisted,
-      totalSpent: totalSpent,
+      total: this.totalElements,
+      active: response?.totalActive ?? this.customers.filter(c => c.status === 'ACTIVE').length,
+      inactive: response?.totalInactive ?? this.customers.filter(c => c.status === 'INACTIVE').length,
+      blacklisted: response?.totalBlacklisted ?? this.customers.filter(c => c.status === 'BLACKLISTED').length,
+      totalSpent,
       avgOrderValue: this.customers.length > 0 ? totalSpent / this.customers.length : 0
     };
   }
@@ -210,12 +209,14 @@ export class CustomerListComponent implements OnInit, OnDestroy {
 
   onPageChange(page: number): void {
     this.filters.page = page;
+    this.currentPage = page;
     this.loadCustomers();
   }
 
   onPageSizeChange(size: number): void {
     this.filters.size = size;
     this.filters.page = 0;
+    this.currentPage = 0;
     this.loadCustomers();
   }
 

@@ -71,7 +71,7 @@ export class LeavePolicyComponent implements OnInit {
         .getLeaveBalances()
         .pipe(catchError(() => of([]))),
       policies: this.apiService
-        .getLeavePlanPolicies(1, 1)
+        .getLeavePlanPolicies(1, 100)
         .pipe(catchError(() => of([]))),
     }).subscribe({
       next: (data) => {

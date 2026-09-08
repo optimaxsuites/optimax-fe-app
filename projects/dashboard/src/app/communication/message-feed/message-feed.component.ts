@@ -4,10 +4,16 @@ import {
   Output,
   EventEmitter,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  OnDestroy,
+  OnChanges,
+  SimpleChanges,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { DomSanitizer, SafeResourceUrl, SafeHtml } from '@angular/platform-browser';
+import { firstValueFrom } from 'rxjs';
 import { Message } from '../communication.component';
+import { CollaborationService } from '../../../app/ui/services/collaboration.service';
 
 interface HoverPersonCard {
   name: string;
@@ -46,7 +52,7 @@ interface ChatReactionOption {
   styleUrls: ['./message-feed.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MessageFeedComponent {
+export class MessageFeedComponent implements OnDestroy, OnChanges {
   private readonly urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
   private readonly mentionBoundaryAfterRegex = '(?=$|[\\s.,!?;:()\\[\\]{}"\'`])';
   imageViewerOpen = false;
@@ -57,7 +63,12 @@ export class MessageFeedComponent {
   documentViewerUrl: SafeResourceUrl = '';
   documentViewerType: 'pdf' | 'office' | 'file' = 'file';
 
-  constructor(private sanitizer: DomSanitizer, private router: Router) {}
+  constructor(
+    private sanitizer: DomSanitizer,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+    private collabService: CollaborationService,
+  ) {}
   structuredViewerOpen = false;
   structuredViewerTitle = '';
   structuredViewerHtml = '';
@@ -84,6 +95,90 @@ export class MessageFeedComponent {
   @Input() resolveMentionProfileCard: (payload: { userId?: number; handle?: string }) => MentionProfileCard | null = () => null;
   @Input() reactionOptions: ChatReactionOption[] = [];
   @Input() activeChannelCall: { channelId: number; jitsiRoom: string; type: 'CALL' | 'VIDEO_CALL'; callerName: string } | null = null;
+
+  // ── Feature: Saved/bookmarked messages ──────────────
+  @Input() savedMessageIds: Set<string> = new Set();
+  @Output() bookmarkToggled = new EventEmitter<Message>();
+
+  isBookmarked(msg: Message): boolean {
+    return this.savedMessageIds.has(msg.id);
+  }
+
+  // ── Facebook-style reaction picker ──────────────────
+  emojiPickerOpenForId: string | null = null;
+  private _pickerDismissListener?: (e: MouseEvent) => void;
+
+  readonly allReactions: ChatReactionOption[] = [
+    { code: 'LIKE',      emoji: '👍', label: 'Like' },
+    { code: 'LOVE',      emoji: '❤️', label: 'Love' },
+    { code: 'LAUGH',     emoji: '😂', label: 'Haha' },
+    { code: 'EMOJI_😮',  emoji: '😮', label: 'Wow' },
+    { code: 'EMOJI_😢',  emoji: '😢', label: 'Sad' },
+    { code: 'EMOJI_😡',  emoji: '😡', label: 'Angry' },
+    { code: 'CELEBRATE', emoji: '🎉', label: 'Celebrate' },
+    { code: 'FIRE',      emoji: '🔥', label: 'Fire' },
+  ];
+
+  reactionEmoji(code: string): string {
+    if (!code) return '👍';
+    if (code.startsWith('EMOJI_')) return code.slice(6);
+    return this.allReactions.find(r => r.code === code)?.emoji ?? '👍';
+  }
+
+  reactionLabel(code: string): string {
+    if (!code) return 'React';
+    if (code.startsWith('EMOJI_')) return code.slice(6);
+    return this.allReactions.find(r => r.code === code)?.label ?? 'React';
+  }
+
+  topReactionEmojis(msg: Message): string[] {
+    if (!msg.reactionCounts) return [];
+    return Object.entries(msg.reactionCounts)
+      .filter(([, count]) => (count as number) > 0)
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .slice(0, 3)
+      .map(([code]) => this.reactionEmoji(code));
+  }
+
+  totalReactionCount(msg: Message): number {
+    if (!msg.reactionCounts) return 0;
+    return Object.values(msg.reactionCounts).reduce((s, c) => s + (c as number), 0);
+  }
+
+  openReactionPicker(msgId: string): void {
+    if (this.emojiPickerOpenForId === msgId) return;
+    this.emojiPickerOpenForId = msgId;
+    this.cdr.markForCheck();
+    // dismiss when clicking anywhere outside the picker
+    if (this._pickerDismissListener) {
+      document.removeEventListener('click', this._pickerDismissListener, true);
+    }
+    this._pickerDismissListener = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.fb-picker-bubble') && !target.closest('.float-action-btn')) {
+        this.emojiPickerOpenForId = null;
+        this.cdr.markForCheck();
+        document.removeEventListener('click', this._pickerDismissListener!, true);
+        this._pickerDismissListener = undefined;
+      }
+    };
+    setTimeout(() => document.addEventListener('click', this._pickerDismissListener!, true), 0);
+  }
+
+  private _closeReactionPicker(): void {
+    if (this._pickerDismissListener) {
+      document.removeEventListener('click', this._pickerDismissListener, true);
+      this._pickerDismissListener = undefined;
+    }
+    this.emojiPickerOpenForId = null;
+  }
+
+  onReactionPick(msg: Message, code: string, event: Event): void {
+    event.stopPropagation();
+    this._closeReactionPicker();
+    this.cdr.markForCheck();
+    this.likeToggled.emit({ msg, event, reactionCode: code });
+  }
 
   // ── Outputs ─────────────────────────────────────────
   @Output() channelCallJoined = new EventEmitter<void>();
@@ -161,6 +256,36 @@ export class MessageFeedComponent {
 
   getTopReplies(msg: Message): Message[] {
     return msg.replies.slice(0, 2);
+  }
+
+  isConsecutiveMessage(msgs: Message[], index: number): boolean {
+    if (index === 0) return false;
+    const prev = msgs[index - 1];
+    const curr = msgs[index];
+    if (prev.isSystem || curr.isSystem) return false;
+    if (curr.messageType === 'CALL_CARD' || prev.messageType === 'CALL_CARD') return false;
+    if (this.parseCallSummary(curr.content) || this.parseCallSummary(prev.content)) return false;
+    if (this.parseCallInvite(curr.content) || this.parseCallInvite(prev.content)) return false;
+    if (Number(prev.senderUserId) !== Number(curr.senderUserId)) return false;
+    if (this.shouldShowDaySeparator(msgs, index)) return false;
+    const prevDate = this.parseServerDate(prev.sentAtRaw);
+    const currDate = this.parseServerDate(curr.sentAtRaw);
+    if (!prevDate || !currDate) return false;
+    return (currDate.getTime() - prevDate.getTime()) / 60000 < 5;
+  }
+
+  reactionPills(msg: Message): Array<{ code: string; emoji: string; label: string; count: number; selfReacted: boolean }> {
+    if (!msg.reactionCounts) return [];
+    return Object.entries(msg.reactionCounts)
+      .filter(([, count]) => (count as number) > 0)
+      .map(([code, count]) => ({
+        code,
+        emoji: this.reactionEmoji(code),
+        label: this.reactionLabel(code),
+        count: count as number,
+        selfReacted: msg.myReactionCode === code,
+      }))
+      .sort((a, b) => b.count - a.count);
   }
 
   shouldShowDaySeparator(msgs: Message[], index: number): boolean {
@@ -343,6 +468,17 @@ export class MessageFeedComponent {
     return type === 'application/pdf' || /\.pdf(\?|$)/i.test(fileRef);
   }
 
+  isVoiceNote(attachment: Message['attachment'] | undefined): boolean {
+    if (!attachment) return false;
+    const type = (attachment.type || '').toLowerCase();
+    const name = (attachment.name || '').toLowerCase();
+    return (
+      type.startsWith('audio/') ||
+      /\.(mp3|wav|aac|m4a|opus|flac|ogg)(\?|$)/i.test(name) ||
+      name.startsWith('voice-note-')  // covers .webm / .mp4 recorded by the composer
+    );
+  }
+
   isOfficeAttachment(attachment: Message['attachment'] | undefined): boolean {
     const fileRef = `${attachment?.name || ''} ${attachment?.downloadUrl || ''}`.toLowerCase();
     return (
@@ -394,6 +530,10 @@ export class MessageFeedComponent {
     );
   }
 
+  voiceNoteAttachments(msg: Message): NonNullable<Message['attachments']> {
+    return this.nonImageAttachments(msg).filter(att => this.isVoiceNote(att));
+  }
+
   previewableDocumentAttachments(msg: Message): NonNullable<Message['attachments']> {
     return this.nonImageAttachments(msg).filter((attachment) =>
       this.isPdfAttachment(attachment) || this.isOfficeAttachment(attachment),
@@ -402,8 +542,204 @@ export class MessageFeedComponent {
 
   genericAttachments(msg: Message): NonNullable<Message['attachments']> {
     return this.nonImageAttachments(msg).filter(
-      (attachment) => !this.isPdfAttachment(attachment) && !this.isOfficeAttachment(attachment),
+      (attachment) =>
+        !this.isPdfAttachment(attachment) &&
+        !this.isOfficeAttachment(attachment) &&
+        !this.isVoiceNote(attachment),
     );
+  }
+
+  // ── Float bar hover state ────────────────────────────
+  hoveredMsgId: string | null = null;
+  private _msgHoverTimer?: ReturnType<typeof setTimeout>;
+
+  onMsgHover(msgId: string): void {
+    clearTimeout(this._msgHoverTimer);
+    this.hoveredMsgId = msgId;
+  }
+
+  onMsgHoverEnd(): void {
+    this._msgHoverTimer = setTimeout(() => {
+      this.hoveredMsgId = null;
+      this.cdr.markForCheck();
+    }, 800);
+  }
+
+  // ── Audio player state ───────────────────────────────
+  private _audioStates = new Map<string, { playing: boolean; currentTime: number; duration: number }>();
+  private _audioBlobUrls = new Map<string, string>();
+
+  private _audioKey(att: any): string {
+    return att?.downloadUrl || att?.previewUrl || att?.name || 'audio';
+  }
+
+  isAudioPlaying(att: any): boolean {
+    return this._audioStates.get(this._audioKey(att))?.playing ?? false;
+  }
+
+  getAudioCurrentTime(att: any): number {
+    return this._audioStates.get(this._audioKey(att))?.currentTime ?? 0;
+  }
+
+  getAudioDuration(att: any): number {
+    return this._audioStates.get(this._audioKey(att))?.duration ?? 0;
+  }
+
+  getAudioProgress(att: any): number {
+    const d = this.getAudioDuration(att);
+    return d ? (this.getAudioCurrentTime(att) / d) * 100 : 0;
+  }
+
+  formatAudioTime(secs: number): string {
+    if (!secs || isNaN(secs) || !isFinite(secs)) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  private async _fetchBlobUrl(url: string): Promise<string> {
+    const blob = await firstValueFrom(this.collabService.fetchChatAttachmentBlob(url));
+    return URL.createObjectURL(blob);
+  }
+
+  private _loadAudioWithDuration(audioEl: HTMLAudioElement, blobUrl: string): Promise<number> {
+    audioEl.src = blobUrl;
+    audioEl.load();
+    return new Promise<number>(resolve => {
+      const onMeta = async () => {
+        if (!isFinite(audioEl.duration)) {
+          // Chrome MediaRecorder WebM files omit the duration header.
+          // Seeking to a huge timestamp forces the browser to scan the full file and compute the real duration.
+          audioEl.currentTime = 1e101;
+          await new Promise<void>(r => {
+            audioEl.addEventListener('seeked', () => r(), { once: true });
+            setTimeout(r, 2000);
+          });
+          audioEl.currentTime = 0;
+        }
+        resolve(isFinite(audioEl.duration) ? audioEl.duration : 0);
+      };
+      audioEl.addEventListener('loadedmetadata', () => onMeta(), { once: true });
+      audioEl.addEventListener('error', () => resolve(0), { once: true });
+    });
+  }
+
+  async toggleAudio(audioEl: HTMLAudioElement, att: any): Promise<void> {
+    const key = this._audioKey(att);
+    const state = this._audioStates.get(key) ?? { playing: false, currentTime: 0, duration: 0 };
+    if (state.playing) {
+      audioEl.pause();
+      this._audioStates.set(key, { ...state, playing: false });
+      this.cdr.markForCheck();
+      return;
+    }
+
+    if (!this._audioBlobUrls.has(key)) {
+      const rawUrl = att?.downloadUrl || att?.previewUrl;
+      if (!rawUrl) return;
+      try {
+        const blobUrl = await this._fetchBlobUrl(rawUrl);
+        this._audioBlobUrls.set(key, blobUrl);
+        const dur = await this._loadAudioWithDuration(audioEl, blobUrl);
+        this._audioStates.set(key, { ...state, duration: dur });
+      } catch {
+        return;
+      }
+    } else {
+      const blobUrl = this._audioBlobUrls.get(key)!;
+      if (audioEl.src !== blobUrl) {
+        await this._loadAudioWithDuration(audioEl, blobUrl);
+      }
+    }
+
+    try {
+      await audioEl.play();
+      const updated = this._audioStates.get(key) ?? { playing: false, currentTime: 0, duration: 0 };
+      this._audioStates.set(key, { ...updated, playing: true });
+    } catch { /* autoplay policy blocked */ }
+    this.cdr.markForCheck();
+  }
+
+  onAudioMeta(event: Event, att: any): void {
+    const el = event.target as HTMLAudioElement;
+    const key = this._audioKey(att);
+    const state = this._audioStates.get(key) ?? { playing: false, currentTime: 0, duration: 0 };
+    this._audioStates.set(key, { ...state, duration: isFinite(el.duration) ? el.duration : 0 });
+    this.cdr.markForCheck();
+  }
+
+  onAudioTimeUpdate(event: Event, att: any): void {
+    const el = event.target as HTMLAudioElement;
+    const key = this._audioKey(att);
+    const state = this._audioStates.get(key) ?? { playing: true, currentTime: 0, duration: 0 };
+    this._audioStates.set(key, { ...state, currentTime: el.currentTime });
+    this.cdr.markForCheck();
+  }
+
+  onAudioEnded(att: any): void {
+    const key = this._audioKey(att);
+    const state = this._audioStates.get(key) ?? { playing: false, currentTime: 0, duration: 0 };
+    this._audioStates.set(key, { ...state, playing: false, currentTime: 0 });
+    this.cdr.markForCheck();
+  }
+
+  seekAudio(audioEl: HTMLAudioElement, event: Event, att: any): void {
+    const val = Number((event.target as HTMLInputElement).value);
+    audioEl.currentTime = val;
+    const key = this._audioKey(att);
+    const state = this._audioStates.get(key) ?? { playing: false, currentTime: 0, duration: 0 };
+    this._audioStates.set(key, { ...state, currentTime: val });
+    this.cdr.markForCheck();
+  }
+
+  async downloadAttachment(att: any, event: Event): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    const url = att?.downloadUrl || att?.previewUrl;
+    if (!url) return;
+    try {
+      const blobUrl = await this._fetchBlobUrl(url);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = att?.name || 'attachment';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+    } catch { /* ignore */ }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['messages']) {
+      this._preloadVoiceNoteDurations();
+    }
+  }
+
+  private async _preloadVoiceNoteDurations(): Promise<void> {
+    for (const msg of this.messages) {
+      for (const att of this.voiceNoteAttachments(msg)) {
+        const key = this._audioKey(att);
+        if (this._audioBlobUrls.has(key)) continue;
+        const url = att?.downloadUrl || att?.previewUrl;
+        if (!url) continue;
+        try {
+          const blobUrl = await this._fetchBlobUrl(url);
+          this._audioBlobUrls.set(key, blobUrl);
+          const tempAudio = new Audio();
+          const dur = await this._loadAudioWithDuration(tempAudio, blobUrl);
+          const existing = this._audioStates.get(key) ?? { playing: false, currentTime: 0, duration: 0 };
+          this._audioStates.set(key, { ...existing, duration: dur });
+          this.cdr.markForCheck();
+        } catch { /* ignore */ }
+      }
+    }
+  }
+
+  ngOnDestroy(): void {
+    this._audioBlobUrls.forEach(url => URL.revokeObjectURL(url));
+    this._audioBlobUrls.clear();
+    clearTimeout(this._msgHoverTimer);
+    this._closeReactionPicker();
   }
 
   chatMediaGridClass(imageCount: number): string {
@@ -458,22 +794,97 @@ export class MessageFeedComponent {
     return this.imageViewerItems[this.imageViewerIndex] || null;
   }
 
-  openDocumentViewer(attachment: Message['attachment'] | undefined, event?: Event): void {
+  async openDocumentViewer(attachment: Message['attachment'] | undefined, event?: Event): Promise<void> {
     event?.stopPropagation();
-    const url = attachment?.previewUrl || attachment?.downloadUrl;
-    if (!url) return;
+    const rawUrl = attachment?.previewUrl || attachment?.downloadUrl;
+    if (!rawUrl) return;
     this.documentViewerTitle = attachment!.name || 'Document preview';
-    this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
-    this.documentViewerRawUrl = url;
-    this.documentViewerType = this.isPdfAttachment(attachment)
-      ? 'pdf'
-      : this.isOfficeAttachment(attachment)
-        ? 'office'
-        : 'file';
+    this.documentViewerRawUrl = rawUrl;
+
+    if (this.isPdfAttachment(attachment)) {
+      this.documentViewerType = 'pdf';
+      this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl);
+      this.documentViewerOpen = true;
+      return;
+    }
+
+    if (this.isOfficeAttachment(attachment)) {
+      this.documentViewerType = 'office';
+      this.documentViewerOpen = true;
+      this.officePreviewLoading = true;
+      this.officePreviewHtml = this.sanitizer.bypassSecurityTrustHtml('');
+      this.officePreviewError = '';
+      this.officeSheetNames = [];
+      this.officeActiveSheet = 0;
+      this._officeWorkbook = null;
+      this.cdr.markForCheck();
+
+      const nameRef = `${attachment!.name || rawUrl}`.toLowerCase();
+      const isDocx = /\.docx?(\?|$)/.test(nameRef);
+      const isXlsx = /\.xlsx?(\?|$)/.test(nameRef);
+
+      try {
+        const blob = await firstValueFrom(this.collabService.fetchChatAttachmentBlob(rawUrl));
+        const arrayBuffer = await blob.arrayBuffer();
+
+        if (isDocx) {
+          const mammoth = await import('mammoth');
+          const fn = (mammoth as any).convertToHtml ?? (mammoth as any).default?.convertToHtml;
+          const result = await fn({ arrayBuffer });
+          this.officePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(result.value || '');
+        } else if (isXlsx) {
+          const XLSX = await import('xlsx');
+          const XLSXmod = (XLSX as any).default ?? XLSX;
+          const workbook = XLSXmod.read(new Uint8Array(arrayBuffer), { type: 'array' });
+          this._officeWorkbook = workbook;
+          this.officeSheetNames = workbook.SheetNames as string[];
+          this.officePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(
+            this._xlsxSheetToHtml(XLSXmod, workbook, 0)
+          );
+        } else {
+          this.officePreviewError = 'pptx';
+        }
+      } catch (e: any) {
+        this.officePreviewError = e?.message || 'Failed to load preview';
+      } finally {
+        this.officePreviewLoading = false;
+        this.cdr.markForCheck();
+      }
+      return;
+    }
+
+    this.documentViewerType = 'file';
+    this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl);
     this.documentViewerOpen = true;
   }
 
+  async switchOfficeSheet(index: number): Promise<void> {
+    if (!this._officeWorkbook || index === this.officeActiveSheet) return;
+    this.officeActiveSheet = index;
+    const XLSX = await import('xlsx');
+    const XLSXmod = (XLSX as any).default ?? XLSX;
+    this.officePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(
+      this._xlsxSheetToHtml(XLSXmod, this._officeWorkbook, index)
+    );
+    this.cdr.markForCheck();
+  }
+
+  private _xlsxSheetToHtml(XLSX: any, workbook: any, sheetIndex: number): string {
+    const sheetName = workbook.SheetNames[sheetIndex];
+    if (!sheetName) return '';
+    const sheet = workbook.Sheets[sheetName];
+    const raw = XLSX.utils.sheet_to_html(sheet);
+    const match = raw.match(/<table[\s\S]*?<\/table>/i);
+    return match ? match[0] : raw;
+  }
+
   documentViewerRawUrl = '';
+  officePreviewLoading = false;
+  officePreviewHtml: SafeHtml = '';
+  officePreviewError = '';
+  officeSheetNames: string[] = [];
+  officeActiveSheet = 0;
+  private _officeWorkbook: any = null;
 
   closeDocumentViewer(): void {
     this.documentViewerOpen = false;
@@ -481,6 +892,12 @@ export class MessageFeedComponent {
     this.documentViewerUrl = '';
     this.documentViewerRawUrl = '';
     this.documentViewerType = 'file';
+    this.officePreviewLoading = false;
+    this.officePreviewHtml = this.sanitizer.bypassSecurityTrustHtml('');
+    this.officePreviewError = '';
+    this.officeSheetNames = [];
+    this.officeActiveSheet = 0;
+    this._officeWorkbook = null;
   }
 
   messageImageItems(msg: Message): Array<{ url: string; label: string }> {

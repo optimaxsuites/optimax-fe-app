@@ -106,6 +106,7 @@ import { ProbationSettingsComponent } from './ui/view/hr/probation/probation-set
 import { HrFormsComponent } from './ui/view/hr/hr-forms/hr-forms.component';
 import { ModuleRegistryComponent } from './ui/view/module-registry/module-registry.component';
 import { BugTrackerComponent } from './ui/view/bug-tracker/bug-tracker.component';
+import { ImageViewerDialogComponent } from './ui/view/bug-tracker/image-viewer-dialog.component';
 import { CrmSettingsComponent } from './ui/view/crm/crm-settings.component';
 import { FinanceSettingsComponent } from './ui/view/finance-settings/finance-settings.component';
 import { FinancePeriodCloseComponent } from './ui/view/finance-period-close/finance-period-close.component';
@@ -163,6 +164,7 @@ import { SettingsHomeComponent } from './ui/view/settings-home/settings-home.com
     HrFormsComponent,
     ModuleRegistryComponent,
     BugTrackerComponent,
+    ImageViewerDialogComponent,
     CrmSettingsComponent,
     FinanceSettingsComponent,
     FinancePeriodCloseComponent,

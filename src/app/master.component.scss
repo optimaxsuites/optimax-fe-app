@@ -5,9 +5,10 @@
 
 .navbar-container{
   background-color: #fff;
-  // position: sticky;
-  // z-index: 1000;
+  position: sticky;
+  z-index: 10;
   top: 0;
+  touch-action: manipulation;
 }
 .sidebar-container {
   height: 100%;
@@ -29,12 +30,14 @@
   min-height: 100vh;
   width: 100%;
   overflow-y: auto; /* Enable vertical scrolling */
+  touch-action: manipulation;
 }
 
 .main {
   flex: 1; /* Take up remaining space between navbar and footer */
   // padding: 1rem;
   box-sizing: border-box;
+  touch-action: manipulation;
 }
 
 @media screen and (max-width: 992px) {
@@ -50,7 +53,7 @@
     padding: 0;
     margin: 0;
     background: rgba(15, 23, 42, 0.38);
-    z-index: 39;
+    z-index: 59;
   }
 
   .sidebar-container {
@@ -60,7 +63,7 @@
     bottom: 0;
     width: min(84vw, 320px);
     max-width: 320px;
-    z-index: 40;
+    z-index: 60;
     transform: translateX(-100%);
     min-width: 0 !important;
     box-shadow: 0 24px 64px rgba(15, 23, 42, 0.2);

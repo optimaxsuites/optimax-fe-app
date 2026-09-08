@@ -445,7 +445,7 @@
               <div class="flex items-center gap-0 mt-1 flex-wrap">
                 <!-- Reply-to-reply -->
                 <button
-                  (click)="replyTargetSet.emit({ reply: r, event: $event })"
+                  (click)="replyTargetSet.emit({ reply: r, event: $event }); focusReplyInput()"
                   class="reply-action-btn flex items-center gap-1"
                   [style.color]="activeThreadReplyToId === r.id ? '#2e6276' : ''"
                 >
@@ -545,6 +545,16 @@
                   </div>
                 </ng-container>
               </div>
+            <!-- Seen-by indicator for own replies -->
+            <div *ngIf="isOwnReply(r)" class="flex justify-end pr-1 mt-0.5">
+              <span *ngIf="r.deliveryState === 'READ'" class="flex items-center gap-1 text-[10px] text-emerald-500 font-medium">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                </svg>Seen
+              </span>
+              <span *ngIf="r.deliveryState === 'DELIVERED'" class="text-[10px] text-gray-400">Delivered</span>
+              <span *ngIf="r.deliveryState === 'SENDING'" class="text-[10px] text-gray-400 animate-pulse">Sending…</span>
+            </div>
             </ng-template>
 
             <!-- Nested replies (second level) -->

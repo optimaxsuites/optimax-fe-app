@@ -183,7 +183,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
         if (uuid) {
           this.router.navigate(['/admin/sales/sales-hub', uuid]);
         } else {
-          this.router.navigate(['/admin/sales/sales-hub']);
+          this.router.navigate(['/admin/sales/customers']);
         }
       },
       error: (error: any) => {

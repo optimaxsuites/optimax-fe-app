@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import {
   AudioTranscriptionJob,
@@ -87,24 +87,27 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   private _resizeStartX = 0;
   private _resizeStartW = 0;
 
+  // Bound references kept for removeEventListener cleanup
+  private _boundResizeMove = (e: MouseEvent) => {
+    if (!this._resizing) return;
+    const delta = this._resizeStartX - e.clientX;
+    const w = Math.max(240, Math.min(640, this._resizeStartW + delta));
+    this.ngZone.run(() => { this.sidebarWidth = w; });
+  };
+
+  private _boundMouseup = () => {
+    if (!this._resizing && !this.dragSelectActive) return;
+    this.ngZone.run(() => {
+      this._resizing = false;
+      if (this.dragSelectActive) this.endDragSelect();
+    });
+  };
+
   startResize(event: MouseEvent): void {
     this._resizing = true;
     this._resizeStartX = event.clientX;
     this._resizeStartW = this.sidebarWidth;
     event.preventDefault();
-  }
-
-  @HostListener('document:mousemove', ['$event'])
-  onResizeMove(event: MouseEvent): void {
-    if (!this._resizing) return;
-    const delta = this._resizeStartX - event.clientX;
-    this.sidebarWidth = Math.max(240, Math.min(640, this._resizeStartW + delta));
-  }
-
-  @HostListener('document:mouseup')
-  onDocumentMouseup(): void {
-    this._resizing = false;
-    if (this.dragSelectActive) this.endDragSelect();
   }
 
   // ── Multi-day selection ───────────────────────────────────
@@ -183,13 +186,31 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   integrations     = ['Google Calendar', 'Microsoft Outlook', 'Exchange Server', 'iCal'];
   virtualPlatforms = ['Zoom', 'Microsoft Teams', 'Google Meet', 'Cisco Webex'];
 
-  constructor(private collaborationService: CollaborationService, private sanitizer: DomSanitizer) {}
+  constructor(
+    private collaborationService: CollaborationService,
+    private sanitizer: DomSanitizer,
+    private ngZone: NgZone,
+  ) {}
 
   ngOnInit(): void {
+    console.log('[M&A] ngOnInit — loading workspace');
     this.loadWorkspace();
     this.loadEmployees();
+    // Register document listeners outside Angular's zone so that the constant
+    // stream of mousemove/touchmove events on mobile does not trigger change
+    // detection on every frame — only ngZone.run() inside the handlers does.
+    this.ngZone.runOutsideAngular(() => {
+      document.addEventListener('mousemove', this._boundResizeMove);
+      document.addEventListener('mouseup', this._boundMouseup);
+    });
   }
-  ngOnDestroy(): void { this.stopTranscriptionPolling(); }
+
+  ngOnDestroy(): void {
+    console.log('[M&A] ngOnDestroy');
+    this.stopTranscriptionPolling();
+    document.removeEventListener('mousemove', this._boundResizeMove);
+    document.removeEventListener('mouseup', this._boundMouseup);
+  }
 
   // ── Calendar computed ─────────────────────────────────────
 
@@ -197,7 +218,12 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
     return this.events.find(e => e.id === this.selectedEventId) || this.events[0];
   }
 
+  // Memoized: recomputed only when this.events reference changes.
+  // Prevents O(N×52) expansion from running on every change-detection cycle.
+  private _expandedCache: { ref: MeetingEvent[]; result: MeetingEvent[] } | null = null;
+
   get expandedEvents(): MeetingEvent[] {
+    if (this._expandedCache?.ref === this.events) return this._expandedCache.result;
     const result: MeetingEvent[] = [];
     const cap = new Date();
     cap.setFullYear(cap.getFullYear() + 1);
@@ -216,6 +242,7 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
         result.push({ ...ev, id: `${ev.id}-r${i}`, date: iso, status: ev.status === 'Completed' ? 'Scheduled' : ev.status });
       }
     }
+    this._expandedCache = { ref: this.events, result };
     return result;
   }
 
@@ -511,7 +538,6 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
     this.dragSelectStart = iso;
     this.dragSelectEnd = iso;
     this.dragSelectActive = true;
-    event.preventDefault();
   }
 
   onMonthCellMouseenter(iso: string): void {
@@ -958,6 +984,7 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   private loadWorkspace(): void {
     this.events = this.seedEvents();
     this.selectedEventId = this.events[0]?.id || '';
+    console.log('[M&A] seed events loaded:', this.events.length);
 
     this.collaborationService.getMeetingsAppointmentsWorkspace().subscribe({
       next: ws => {
@@ -966,11 +993,15 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
           this.resources = ws.resources || this.resources;
           this.selectedEventId = this.events[0]?.id || '';
           this.navigateToNearestEvent();
+          console.log('[M&A] workspace loaded from backend:', this.events.length, 'events');
+        } else {
+          console.log('[M&A] backend workspace empty — using seed events');
         }
         this.backendStatus = 'Synced ✓';
         this.backendOnline = true;
       },
-      error: () => {
+      error: (err) => {
+        console.warn('[M&A] workspace load error:', err?.status, err?.message);
         this.backendStatus = 'Working offline';
         this.backendOnline = false;
       },

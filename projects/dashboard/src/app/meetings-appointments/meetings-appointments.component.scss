@@ -239,6 +239,7 @@ $shadow:    0 4px 20px rgba(15, 23, 42, 0.06);
     font-weight: 700;
     cursor: pointer;
     border-bottom: 2px solid transparent;
+    touch-action: manipulation;
 
     &.active {
       color: $primary;
@@ -464,6 +465,7 @@ textarea { resize: vertical; }
   background-color: #2E6276; // fallback if inline style not applied
   color: #fff !important;
   transition: filter 0.1s;
+  touch-action: manipulation;
 
   &:hover { filter: brightness(1.1); }
 
@@ -514,6 +516,7 @@ textarea { resize: vertical; }
   border: 1px solid $border-sm;
   border-radius: 8px;
   background: $bg-card;
+  touch-action: pan-y;
 }
 
 .day-grid {
@@ -545,6 +548,7 @@ textarea { resize: vertical; }
   flex: 1;
   position: relative;
   height: 900px;
+  touch-action: manipulation;
 }
 
 .dhr-line {
@@ -562,6 +566,7 @@ textarea { resize: vertical; }
   border: 1px solid $border-sm;
   border-radius: 8px;
   background: $bg-card;
+  touch-action: pan-x pan-y;
 }
 
 .week-head-row {
@@ -589,6 +594,7 @@ textarea { resize: vertical; }
   color: $text-3;
   border-left: 1px solid $border-sm;
   cursor: pointer;
+  touch-action: manipulation;
 
   &.today { background: $pri-light; color: $primary; }
   &:hover:not(.today) { background: $bg-soft; }
@@ -625,6 +631,7 @@ textarea { resize: vertical; }
   position: relative;
   height: 900px;
   border-left: 1px solid $border-sm;
+  touch-action: manipulation;
 
   &.today { background: rgba(240, 253, 250, 0.35); }
 }
@@ -672,6 +679,9 @@ textarea { resize: vertical; }
   min-height: 90px;
   padding: 0.35rem;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 
   &:nth-child(7n) { border-right: 0; }
   &.other-month { background: $bg-soft; .cell-day { color: #cbd5e1; } }
@@ -707,6 +717,7 @@ textarea { resize: vertical; }
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
+  touch-action: manipulation;
 
   &.selected { outline: 1px solid $text-1; }
 }
@@ -745,6 +756,7 @@ textarea { resize: vertical; }
   border-bottom: 1px solid $border-sm;
   cursor: pointer;
   transition: background 0.1s;
+  touch-action: manipulation;
 
   &:last-child { border-bottom: 0; }
   &:hover { background: $bg-soft; }

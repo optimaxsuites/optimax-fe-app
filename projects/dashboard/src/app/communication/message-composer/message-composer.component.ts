@@ -6,6 +6,7 @@ import {
   ViewChild,
   ElementRef,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   SimpleChanges
 } from '@angular/core';
 
@@ -57,6 +58,154 @@ export interface ComposerMentionOption {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MessageComposerComponent {
+  constructor(private cdr: ChangeDetectorRef) {}
+
+  // ── Feature: Voice note recording ───────────────────
+  isRecording = false;
+  recordingSeconds = 0;
+  private mediaRecorder?: MediaRecorder;
+  private audioChunks: Blob[] = [];
+  private recordingTimer?: ReturnType<typeof setInterval>;
+
+  // ── Voice note preview (after recording, before sending) ─
+  voicePreview: { file: File; blobUrl: string } | null = null;
+  vnpPlaying = false;
+  vnpCurrentTime = 0;
+  vnpDuration = 0;
+
+  get recordingLabel(): string {
+    const m = Math.floor(this.recordingSeconds / 60).toString().padStart(2, '0');
+    const s = (this.recordingSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  vnpFormatTime(secs: number): string {
+    if (!secs || isNaN(secs) || !isFinite(secs)) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+  vnpProgress(): number {
+    return this.vnpDuration ? (this.vnpCurrentTime / this.vnpDuration) * 100 : 0;
+  }
+  vnpToggle(el: HTMLAudioElement): void {
+    if (this.vnpPlaying) { el.pause(); this.vnpPlaying = false; }
+    else { el.play().catch(() => {}); this.vnpPlaying = true; }
+    this.cdr.markForCheck();
+  }
+  vnpMeta(e: Event): void {
+    const el = e.target as HTMLAudioElement;
+    if (!isFinite(el.duration)) {
+      // Chrome WebM: no duration header — seek to end to force calculation
+      el.currentTime = 1e101;
+      el.addEventListener('seeked', () => {
+        this.vnpDuration = isFinite(el.duration) ? el.duration : 0;
+        el.currentTime = 0;
+        this.cdr.markForCheck();
+      }, { once: true });
+      return;
+    }
+    this.vnpDuration = el.duration;
+    this.cdr.markForCheck();
+  }
+  vnpTimeUpdate(e: Event): void {
+    this.vnpCurrentTime = (e.target as HTMLAudioElement).currentTime;
+    this.cdr.markForCheck();
+  }
+  vnpEnded(): void {
+    this.vnpPlaying = false;
+    this.vnpCurrentTime = 0;
+    this.cdr.markForCheck();
+  }
+  vnpSeek(el: HTMLAudioElement, e: Event): void {
+    const t = Number((e.target as HTMLInputElement).value);
+    el.currentTime = t;
+    this.vnpCurrentTime = t;
+    this.cdr.markForCheck();
+  }
+  sendVoiceNote(): void {
+    if (!this.voicePreview) return;
+    this.filesSelected.emit([this.voicePreview.file]);
+    this._clearVoicePreview();
+    this.messageSent.emit();
+  }
+  discardVoiceNote(): void {
+    this._clearVoicePreview();
+  }
+  private _clearVoicePreview(): void {
+    if (this.voicePreview) {
+      URL.revokeObjectURL(this.voicePreview.blobUrl);
+      this.voicePreview = null;
+    }
+    this.vnpPlaying = false;
+    this.vnpCurrentTime = 0;
+    this.vnpDuration = 0;
+    this.cdr.markForCheck();
+  }
+
+  startVoiceNote(): void {
+    if (this.isRecording || !navigator.mediaDevices?.getUserMedia) return;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      this.audioChunks = [];
+
+      const candidates = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/ogg',
+        'audio/mp4',
+      ];
+      const mimeType = candidates.find(t => MediaRecorder.isTypeSupported(t)) ?? '';
+
+      let recorder: MediaRecorder;
+      try {
+        recorder = mimeType
+          ? new MediaRecorder(stream, { mimeType })
+          : new MediaRecorder(stream);
+      } catch {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+      this.mediaRecorder = recorder;
+
+      recorder.ondataavailable = (e: BlobEvent) => {
+        if (e.data.size > 0) this.audioChunks.push(e.data);
+      };
+      recorder.onstop = () => {
+        const type = recorder.mimeType || mimeType || 'audio/webm';
+        const blob = new Blob(this.audioChunks, { type });
+        const ext = type.includes('ogg') ? 'ogg' : type.includes('mp4') ? 'mp4' : 'webm';
+        const file = new File([blob], `voice-note-${Date.now()}.${ext}`, { type });
+        // Show preview instead of uploading immediately
+        this.voicePreview = { file, blobUrl: URL.createObjectURL(blob) };
+        stream.getTracks().forEach(t => t.stop());
+        this.cdr.markForCheck();
+      };
+
+      recorder.start();
+      this.isRecording = true;
+      this.recordingSeconds = 0;
+      this.recordingTimer = setInterval(() => {
+        this.recordingSeconds++;
+        this.cdr.markForCheck();
+      }, 1000);
+      this.cdr.markForCheck();
+    }).catch(() => {});
+  }
+
+  stopVoiceNote(): void {
+    if (!this.isRecording) return;
+    this.isRecording = false;
+    if (this.recordingTimer) {
+      clearInterval(this.recordingTimer);
+      this.recordingTimer = undefined;
+    }
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    this.cdr.markForCheck();
+  }
+
   readonly emojiChoices = [
     '😀',
     '😄',
@@ -132,7 +281,7 @@ export class MessageComposerComponent {
   }
 
   onComposerKey(e: KeyboardEvent, el: HTMLTextAreaElement): void {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       this.messageSent.emit();
       return;
@@ -141,6 +290,37 @@ export class MessageComposerComponent {
     setTimeout(() => {
       el.style.height = 'auto';
       el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    });
+  }
+
+  formatText(format: 'bold' | 'italic' | 'strike' | 'code' | 'ol' | 'ul' | 'quote'): void {
+    const el = this.composerEl?.nativeElement;
+    if (!el) return;
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? 0;
+    const selected = el.value.slice(start, end);
+    let next = el.value;
+    let newStart = start;
+    let newEnd = end;
+    if (format === 'ol' || format === 'ul' || format === 'quote') {
+      const prefix = format === 'ol' ? '1. ' : format === 'ul' ? '- ' : '> ';
+      const lines = selected ? selected.split('\n').map(l => prefix + l).join('\n') : prefix;
+      next = el.value.slice(0, start) + lines + el.value.slice(end);
+      newStart = start + prefix.length;
+      newEnd = start + lines.length;
+    } else {
+      const markers: Record<string, string> = { bold: '**', italic: '_', strike: '~~', code: '`' };
+      const m = markers[format];
+      const wrapped = `${m}${selected}${m}`;
+      next = el.value.slice(0, start) + wrapped + el.value.slice(end);
+      newStart = start + m.length;
+      newEnd = start + m.length + selected.length;
+    }
+    this.draftChange.emit(next);
+    setTimeout(() => {
+      el.focus();
+      el.selectionStart = newStart;
+      el.selectionEnd = newEnd;
     });
   }
 
@@ -179,24 +359,31 @@ export class MessageComposerComponent {
     });
   }
 
-  private stripSyntaxMarkup(text: string): string {
-    // Decode HTML entities first
-    const tmp = document.createElement('textarea');
-    tmp.innerHTML = text;
-    let out = tmp.value;
-
-    // Remove all HTML opening/closing tags (span, pre, code, etc.)
-    out = out.replace(/<\/?[a-z][^>]*>/gi, '');
-    // Remove leftover class="token..." fragments that appear as raw text
-    out = out.replace(/class=["'][\w\s-]*["']\s*>/gi, '');
-    // Decode HTML entities a second time in case of double-encoding
-    tmp.innerHTML = out;
-    out = tmp.value;
-    // Normalize non-breaking spaces and excessive whitespace
-    out = out.replace(/ /g, ' ');
-    out = out.replace(/\r\n/g, '\n');
-    out = out.replace(/\r/g, '\n');
-    return out;
+  private stripSyntaxMarkup(html: string): string {
+    if (!html || typeof document === 'undefined') return html;
+    try {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      doc.querySelectorAll('br').forEach(el => el.replaceWith('\n'));
+      doc.querySelectorAll('p, div, li, h1, h2, h3, h4, h5, h6, tr').forEach(el => {
+        el.after('\n');
+      });
+      return (doc.body?.textContent ?? '')
+        .replace(/\u00a0/g, ' ')
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    } catch {
+      return html
+        .replace(/<br\s*\/?>\s*/gi, '\n')
+        .replace(/<\/(?:p|div|li|h[1-6])>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"').replace(/&#39;/g, "'"  ).replace(/&nbsp;/g, ' ')
+        .replace(/\u00a0/g, ' ')
+        .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+        .trim();
+    }
   }
 
   toggleEmojiMenu(): void {

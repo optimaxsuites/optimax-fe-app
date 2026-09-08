@@ -1,4 +1,4 @@
-import { Component, Input, Type, ChangeDetectionStrategy, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Type, OnInit, ChangeDetectorRef } from '@angular/core';
 import { DropdownOption, TabConfig } from '../../service/interface/data';
 import { CommonModule } from '@angular/common';
 

@@ -260,138 +260,138 @@ export const routes: Routes = [
   //                                                SALES HUB ROUTES
   // =======================================================================================================
   {
-    path: 'admin/sales/sales-hub',
+    path: 'sales-hub',
     component: SalesHubComponent
   },
   {
-    path: 'admin/sales/sales-hub/:uuid',
+    path: 'sales-hub/:uuid',
     component: SalesHubComponent
   },
 
   // ------------------------------------------- Quotes -----------------------------------------------------
   {
-    path: 'admin/sales/quotes/new',
+    path: 'quotes/new',
     component: QuoteFormComponent
   },
   {
-    path: 'admin/sales/quotes/new/:uuid',
+    path: 'quotes/new/:uuid',
     component: QuoteFormComponent
   },
   {
-    path: 'admin/sales/quotes/:id/edit',
+    path: 'quotes/:id/edit',
     component: QuoteFormComponent
   },
   {
-    path: 'admin/sales/quotes/:id/edit/:uuid',
+    path: 'quotes/:id/edit/:uuid',
     component: QuoteFormComponent
   },
   {
-    path: 'admin/sales/quotes/:id',
+    path: 'quotes/:id',
     component: QuoteDetailComponent
   },
   {
-    path: 'admin/sales/quotes/:id/:uuid',
+    path: 'quotes/:id/:uuid',
     component: QuoteDetailComponent
   },
 
   // ------------------------------------------ Invoices ----------------------------------------------------
   {
-    path: 'admin/sales/invoices/new',
+    path: 'invoices/new',
     component: InvoiceFormComponent
   },
   {
-    path: 'admin/sales/invoices/new/:uuid',
+    path: 'invoices/new/:uuid',
     component: InvoiceFormComponent
   },
   {
-    path: 'admin/sales/invoices/:id/edit',
+    path: 'invoices/:id/edit',
     component: InvoiceFormComponent
   },
   {
-    path: 'admin/sales/invoices/:id/edit/:uuid',
+    path: 'invoices/:id/edit/:uuid',
     component: InvoiceFormComponent
   },
   {
-    path: 'admin/sales/invoices/:id',
+    path: 'invoices/:id',
     component: InvoiceDetailComponent
   },
   {
-    path: 'admin/sales/invoices/:id/:uuid',
+    path: 'invoices/:id/:uuid',
     component: InvoiceDetailComponent
   },
 
   // ------------------------------------------ Customers ---------------------------------------------------
   {
-    path: 'admin/sales/customers/new',
+    path: 'customers/new',
     component: CustomerFormComponent
   },
   {
-    path: 'admin/sales/customers/new/:uuid',
+    path: 'customers/new/:uuid',
     component: CustomerFormComponent
   },
   {
-    path: 'admin/sales/customers/:id/edit',
+    path: 'customers/:id/edit',
     component: CustomerFormComponent
   },
   {
-    path: 'admin/sales/customers/:id/edit/:uuid',
+    path: 'customers/:id/edit/:uuid',
     component: CustomerFormComponent
   },
   {
-    path: 'admin/sales/customers/:id',
+    path: 'customers/:id',
     component: CustomerDetailComponent
   },
   {
-    path: 'admin/sales/customers/:id/:uuid',
+    path: 'customers/:id/:uuid',
     component: CustomerDetailComponent
   },
 
   // ---------------------------------------- Product/Services Catalogue ---------------------------------------
   {
-    path: 'admin/sales/products',
-    redirectTo: 'admin/sales/sales-hub',
+    path: 'products',
+    redirectTo: 'sales-hub',
     pathMatch: 'full'
   },
   {
-    path: 'admin/sales/products/new',
+    path: 'products/new',
     component: ProductServiceCatalogFormComponent
   },
   {
-    path: 'admin/sales/products/new/:uuid',
+    path: 'products/new/:uuid',
     component: ProductServiceCatalogFormComponent
   },
   {
-    path: 'admin/sales/products/:id/edit',
+    path: 'products/:id/edit',
     component: ProductServiceCatalogFormComponent
   },
   {
-    path: 'admin/sales/products/:id/edit/:uuid',
+    path: 'products/:id/edit/:uuid',
     component: ProductServiceCatalogFormComponent
   },
   {
-    path: 'admin/sales/products/:id',
+    path: 'products/:id',
     component: ProductServiceCatalogDetailComponent
   },
   {
-    path: 'admin/sales/products/:id/:uuid',
+    path: 'products/:id/:uuid',
     component: ProductServiceCatalogDetailComponent
   },
 
   // ----------------------------------------- Sales & Transactions -------------------------------------------
   {
-    path: 'admin/sales/sales-and-transactions/:id',
+    path: 'sales-and-transactions/:id',
     component: SalesAndTransactionsDetailComponent
   },
   {
-    path: 'admin/sales/sales-and-transactions/:id/:uuid',
+    path: 'sales-and-transactions/:id/:uuid',
     component: SalesAndTransactionsDetailComponent
   },
   {
-    path: 'admin/sales/orders/:id',
+    path: 'orders/:id',
     component: SalesAndTransactionsDetailComponent
   },
   {
-    path: 'admin/sales/orders/:id/:uuid',
+    path: 'orders/:id/:uuid',
     component: SalesAndTransactionsDetailComponent
   },
 
@@ -575,35 +575,35 @@ export const routes: Routes = [
 
   // ------------------------------------------ Delivery Management ------------------------------------------
   {
-    path: 'admin/sales/deliveries',
+    path: 'deliveries',
     component: DeliveryManagementComponent
   },
   {
-    path: 'admin/sales/deliveries/:uuid',
+    path: 'deliveries/:uuid',
     component: DeliveryManagementComponent
   },
 
 
   // ------------------------------------------- Payment Processing ------------------------------------------
   {
-    path: 'admin/sales/payments',
+    path: 'payments',
     component: PaymentProcessingComponent
   },
   {
-    path: 'admin/sales/payments/:uuid',
+    path: 'payments/:uuid',
     component: PaymentProcessingComponent
   },
 
 
   // ----------------------------------------------- Reports -------------------------------------------------
   {
-    path: 'admin/sales/reports/:uuid',
-    redirectTo: 'admin/sales/sales-hub',
+    path: 'reports/:uuid',
+    redirectTo: 'sales-hub',
     pathMatch: 'full'
   },
   {
-    path: 'admin/sales/reports',
-    redirectTo: 'admin/sales/sales-hub',
+    path: 'reports',
+    redirectTo: 'sales-hub',
     pathMatch: 'full'
   },
 

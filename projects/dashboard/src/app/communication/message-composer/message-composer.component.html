@@ -1,401 +1,272 @@
-<!-- damilola worked on this: improved composer attachments and richer message drafting UX. -->
 <!-- Typing indicator -->
-<div *ngIf="typingUsersLabel" class="px-6 pt-1 pb-0.5">
-  <div class="flex items-center gap-2">
-    <span class="typing-dots inline-flex items-center gap-0.5">
-      <span></span><span></span><span></span>
-    </span>
-    <span class="text-[12px] text-gray-500 italic">{{ typingUsersLabel }}</span>
-  </div>
+<div *ngIf="typingUsersLabel" class="typing-indicator-row">
+  <span class="typing-dots-wrap">
+    <span></span><span></span><span></span>
+  </span>
+  <span class="typing-label-text">{{ typingUsersLabel }}</span>
 </div>
 
-<!-- Pending attachment pill -->
-<div *ngIf="pendingAttachments.length" class="px-5 pt-2 bg-white">
-  <div class="flex flex-wrap gap-3">
-    <div
-      *ngFor="let pendingAttachment of pendingAttachments; let attachmentIndex = index"
-      class="flex items-center gap-3 px-4 py-3 bg-[#f0f7ff] border border-[#2e6276]/20 rounded-xl w-fit max-w-full"
-    >
-    <img
-      *ngIf="pendingAttachment.previewUrl"
-      [src]="pendingAttachment.previewUrl"
-      [alt]="pendingAttachment.name"
-      class="w-14 h-14 rounded-xl object-cover border border-[#2e6276]/10"
-    />
-    <div
-      *ngIf="!pendingAttachment.previewUrl"
-      class="w-10 h-10 rounded-lg bg-[#2e6276]/10 flex items-center justify-center flex-shrink-0"
-    >
-      <svg class="text-[#2e6276]" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-        />
+<!-- Pending attachments -->
+<div *ngIf="pendingAttachments.length" class="pending-attach-row">
+  <div
+    *ngFor="let att of pendingAttachments; let idx = index"
+    class="pending-attach-chip"
+  >
+    <img *ngIf="att.previewUrl" [src]="att.previewUrl" [alt]="att.name" class="pending-attach-img" />
+    <div *ngIf="!att.previewUrl" class="pending-attach-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
       </svg>
     </div>
-    <div class="min-w-0">
-      <span class="block text-[13px] text-gray-700 font-medium truncate">{{ pendingAttachment.name }}</span>
-      <span class="block text-[12px] text-gray-400">{{ pendingAttachment.size }}</span>
-      <span *ngIf="uploadingAttachment" class="block text-[11px] text-[#2e6276] font-medium animate-pulse">Uploading…</span>
+    <div class="pending-attach-meta">
+      <span class="pending-attach-name">{{ att.name }}</span>
+      <span class="pending-attach-size">{{ att.size }}</span>
+      <span *ngIf="uploadingAttachment" class="pending-attach-uploading">Uploading…</span>
     </div>
-    <button (click)="attachmentRemoved.emit(attachmentIndex)" class="ml-1 text-gray-400 hover:text-gray-600">
-      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+    <button (click)="attachmentRemoved.emit(idx)" class="pending-attach-remove" title="Remove">
+      <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
       </svg>
     </button>
   </div>
 </div>
-</div>
 
-<div *ngIf="linkPreview" class="px-5 pt-2 bg-white">
-  <a
-    [href]="linkPreview.url"
-    target="_blank"
-    rel="noopener noreferrer"
-    class="flex items-center gap-3 px-4 py-3 bg-[#f8fbfd] border border-[#2e6276]/12 rounded-2xl"
-  >
-    <img
-      [src]="linkPreview.thumbnailUrl"
-      [alt]="linkPreview.title"
-      class="w-16 h-16 rounded-xl object-cover border border-[#2e6276]/10 flex-shrink-0"
-    />
-    <span class="min-w-0 flex-1">
-      <strong class="block text-[13px] text-gray-700 truncate">{{ linkPreview.title }}</strong>
-      <small class="block text-[12px] text-gray-500 truncate">{{ linkPreview.subtitle }}</small>
-      <em class="block text-[11px] text-[#2e6276] truncate not-italic">{{ linkPreview.displayUrl }}</em>
+<!-- Link preview -->
+<div *ngIf="linkPreview" class="link-preview-strip">
+  <a [href]="linkPreview.url" target="_blank" rel="noopener noreferrer" class="link-preview-card">
+    <img [src]="linkPreview.thumbnailUrl" [alt]="linkPreview.title" class="link-preview-thumb" />
+    <span class="link-preview-copy">
+      <strong>{{ linkPreview.title }}</strong>
+      <small>{{ linkPreview.subtitle }}</small>
+      <em>{{ linkPreview.displayUrl }}</em>
     </span>
   </a>
 </div>
 
-<!-- AI Output panel -->
-<!-- <div *ngIf="aiOutput.visible" class="mx-5 mb-3">
-  <div class="bg-white border border-[#2e6276]/20 rounded-2xl shadow-sm overflow-hidden">
-    <div class="flex items-center justify-between px-4 py-2.5 bg-[#2e6276]/5 border-b border-[#2e6276]/10">
-      <div class="flex items-center gap-2">
-        <div *ngIf="aiOutput.loading" class="w-3.5 h-3.5 border-2 border-[#2e6276] border-t-transparent rounded-full animate-spin"></div>
-        <span class="text-[13px] font-semibold text-[#2e6276]">{{ aiOutput.title }}</span>
-        <span *ngIf="aiOutput.loading" class="text-[12px] text-gray-400 animate-pulse">Processing…</span>
+<!-- AI output panel -->
+<div *ngIf="aiOutput.visible" class="ai-output-wrap">
+  <div class="ai-output-panel" [class.expanded]="aiOutputExpanded" (click)="!aiOutputExpanded && expandAiOutput()">
+    <div class="ai-output-header">
+      <div class="ai-output-header-left">
+        <div *ngIf="aiOutput.loading" class="ai-spin"></div>
+        <span class="ai-output-title">{{ aiOutput.title || 'AI draft' }}</span>
+        <span *ngIf="aiOutputExpanded && !aiOutput.loading" class="ai-edit-hint">Edit freely before sending</span>
+        <span *ngIf="aiOutput.loading" class="ai-loading-hint">Working on it…</span>
       </div>
-      <button
-        (click)="aiOutputClosed.emit()"
-        class="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-      >
-        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-    <div class="px-4 py-3 max-h-48 overflow-y-auto" style="scrollbar-width: thin">
-      <pre class="text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap font-sans">{{ aiOutput.loading ? 'Working on it…' : aiOutput.content }}</pre>
-    </div>
-  </div>
-</div> -->
-<!-- AI Output panel -->
-<div *ngIf="aiOutput.visible" class="mx-5 mb-3">
-  <div
-    class="ai-output-panel border rounded-2xl overflow-hidden transition-all duration-200"
-    [class.expanded]="aiOutputExpanded"
-    (click)="!aiOutputExpanded && expandAiOutput()"
-  >
-    <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-2.5 border-b"
-         style="background: rgba(46,98,118,0.04); border-color: rgba(46,98,118,0.1)">
-      <div class="flex items-center gap-2">
-        <div *ngIf="aiOutput.loading"
-             class="w-3 h-3 border-2 border-t-transparent rounded-full animate-spin"
-             style="border-color: #2e6276; border-top-color: transparent"></div>
-        <span class="text-[12px] font-medium" style="color: #2e6276">
-          {{ aiOutput.title || 'AI draft' }}
-        </span>
-        <span *ngIf="aiOutputExpanded && !aiOutput.loading"
-              class="text-[11px] italic"
-              style="color: var(--color-text-secondary)">Edit freely before sending</span>
-        <span *ngIf="aiOutput.loading"
-              class="text-[11px] animate-pulse"
-              style="color: var(--color-text-secondary)">Working on it…</span>
-      </div>
-      <div class="flex items-center gap-1.5">
-        <button
-          *ngIf="!aiOutput.loading"
-          (click)="$event.stopPropagation(); useAiOutputInEmail()"
-          class="text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors"
-          style="color: #2e6276; background: rgba(46,98,118,0.08)"
-        >
-          {{ aiOutputExpanded ? 'Use in email →' : 'Use in email' }}
+      <div class="ai-output-header-right">
+        <button *ngIf="!aiOutput.loading" (click)="$event.stopPropagation(); useAiOutputInEmail()" class="ai-use-btn">
+          Use in email →
         </button>
-        <button
-          (click)="$event.stopPropagation(); collapseAndClose()"
-          class="w-5 h-5 flex items-center justify-center rounded-md transition-colors"
-          style="color: var(--color-text-secondary)"
-        >
+        <button (click)="$event.stopPropagation(); collapseAndClose()" class="ai-close-btn">
           <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
       </div>
     </div>
-
-    <!-- Collapsed preview -->
-    <div *ngIf="!aiOutputExpanded" class="relative px-4 py-3 cursor-pointer" style="max-height: 80px; overflow: hidden;">
-      <p class="text-[13px] leading-relaxed m-0 whitespace-pre-wrap"
-         style="color: var(--color-text-primary)">
-        {{ aiOutput.loading ? 'Working on it…' : aiOutput.content }}
-      </p>
-      <div class="absolute bottom-0 left-0 right-0 flex items-end justify-end px-3 pb-1.5"
-           style="height: 36px; background: linear-gradient(transparent, var(--color-background-primary))">
-        <span *ngIf="!aiOutput.loading" class="text-[10px] font-medium" style="color: #2e6276">Expand to edit ↕</span>
-      </div>
+    <div *ngIf="!aiOutputExpanded" class="ai-output-preview">
+      <p>{{ aiOutput.loading ? 'Working on it…' : aiOutput.content }}</p>
+      <div class="ai-preview-fade" *ngIf="!aiOutput.loading"><span>Expand to edit ↕</span></div>
     </div>
-
-    <!-- Expanded editable area -->
-    <div *ngIf="aiOutputExpanded" class="flex flex-col" (click)="$event.stopPropagation()">
-      <textarea
-        [value]="editableAiContent"
-        (input)="editableAiContent = $any($event.target).value"
-        class="w-full border-0 outline-none resize-none bg-transparent leading-relaxed"
-        style="font-size: 13px; color: var(--color-text-primary); padding: 14px 16px; min-height: 180px; max-height: 320px; font-family: inherit; line-height: 1.7;"
-      ></textarea>
-      <div class="flex items-center gap-2 px-4 py-2" style="border-top: 0.5px solid rgba(46,98,118,0.08)">
-        <span class="text-[11px]" style="color: var(--color-text-secondary)">
-          {{ editableAiContent.length }} chars
-        </span>
-        <span class="flex-1"></span>
-        <button (click)="aiRewrite.emit()"
-                class="text-[11px] transition-colors"
-                style="background: transparent; border: none; cursor: pointer; color: var(--color-text-secondary)">
-          Regenerate
-        </button>
+    <div *ngIf="aiOutputExpanded" class="ai-output-editor" (click)="$event.stopPropagation()">
+      <textarea [value]="editableAiContent" (input)="editableAiContent = $any($event.target).value" class="ai-textarea"></textarea>
+      <div class="ai-editor-footer">
+        <span>{{ editableAiContent.length }} chars</span>
+        <button (click)="aiRewrite.emit()" class="ai-regen-btn">Regenerate</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- AI Toolbar -->
-<div *ngIf="showAiToolbar" class="px-5 pb-2">
-  <div class="flex items-center gap-2 flex-wrap">
-    <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mr-1">AI</span>
-    <button
-      (click)="aiRewrite.emit()"
-      [disabled]="aiOutput.loading || !draft.trim()"
-      class="ai-tool-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium"
-      [ngClass]="{ 'opacity-40': aiOutput.loading || !draft.trim() }"
-    >
-      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<!-- AI toolbar -->
+<div *ngIf="showAiToolbar" class="ai-toolbar">
+  <span class="ai-toolbar-label">AI</span>
+  <button (click)="aiRewrite.emit()" [disabled]="aiOutput.loading || !draft.trim()" class="ai-tool-chip" [class.dim]="aiOutput.loading || !draft.trim()">
+    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+    Rewrite
+  </button>
+  <button (click)="aiSubject.emit()" [disabled]="aiOutput.loading" class="ai-tool-chip" [class.dim]="aiOutput.loading">
+    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
+    Subject
+  </button>
+  <button (click)="aiSummarize.emit()" [disabled]="aiOutput.loading" class="ai-tool-chip" [class.dim]="aiOutput.loading">
+    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    Summarize
+  </button>
+  <button (click)="voiceCompose.emit()" [disabled]="!voiceSupported" class="ai-tool-chip" [class.dim]="!voiceSupported" [class.active]="voiceListening">
+    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+    {{ voiceListening ? 'Stop' : 'Voice' }}
+  </button>
+  <button (click)="emailCompose.emit()" class="ai-tool-chip">
+    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+    Email
+  </button>
+</div>
+
+<!-- Voice note preview panel -->
+<div *ngIf="voicePreview" class="vnp-preview-wrap">
+  <audio
+    #vnpAudio
+    [src]="voicePreview.blobUrl"
+    preload="metadata"
+    (loadedmetadata)="vnpMeta($event)"
+    (timeupdate)="vnpTimeUpdate($event)"
+    (ended)="vnpEnded()"
+  ></audio>
+
+  <div class="vnp-preview-card">
+    <!-- Mic icon -->
+    <div class="vnp-preview-icon">
+      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-        />
-      </svg>Rewrite
-    </button>
-    <button
-      (click)="aiSubject.emit()"
-      [disabled]="aiOutput.loading"
-      class="ai-tool-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium"
-      [ngClass]="{ 'opacity-40': aiOutput.loading }"
-    >
-      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"
-        />
-      </svg>Subject
-    </button>
-    <button
-      (click)="aiSummarize.emit()"
-      [disabled]="aiOutput.loading"
-      class="ai-tool-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium"
-      [ngClass]="{ 'opacity-40': aiOutput.loading }"
-    >
-      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-        />
-      </svg>Summarize
-    </button>
-    <button
-      (click)="voiceCompose.emit()"
-      [disabled]="!voiceSupported"
-      class="ai-tool-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium"
-      [ngClass]="{ 'voice-active': voiceListening, 'opacity-40': !voiceSupported }"
-    >
-      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-        />
+          d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M9 11V7a3 3 0 016 0v4a3 3 0 01-6 0z"/>
       </svg>
-      {{ voiceListening ? 'Stop' : 'Voice' }}
+    </div>
+
+    <!-- Play/pause button -->
+    <button type="button" class="vnp-preview-play" [class.playing]="vnpPlaying"
+            (click)="vnpToggle(vnpAudio)">
+      <svg *ngIf="!vnpPlaying" width="10" height="10" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+      <svg *ngIf="vnpPlaying" width="10" height="10" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+      </svg>
     </button>
-    <button
-      (click)="emailCompose.emit()"
-      class="ai-tool-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium"
-    >
-      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-        />
-      </svg>Email
-    </button>
+
+    <!-- Seek track -->
+    <div class="vnp-preview-track">
+      <div class="vnp-preview-bar-wrap">
+        <div class="vnp-preview-bar-fill" [style.width.%]="vnpProgress()"></div>
+        <input type="range" class="vnp-preview-seek"
+               [value]="vnpCurrentTime"
+               [max]="vnpDuration || 100"
+               step="0.1"
+               (input)="vnpSeek(vnpAudio, $event)">
+      </div>
+      <div class="vnp-preview-times">
+        <span>{{ vnpFormatTime(vnpCurrentTime) }}</span>
+        <span>{{ vnpFormatTime(vnpDuration) }}</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="vnp-preview-actions">
+      <button type="button" class="vnp-discard-btn" (click)="discardVoiceNote()" title="Discard">
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </button>
+      <button type="button" class="vnp-send-btn" (click)="sendVoiceNote()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        </svg>
+        Send
+      </button>
+    </div>
   </div>
 </div>
 
-<!-- Composer box -->
-<div class="px-5 pb-5 pt-2 bg-white">
-  <div class="composer-box border border-gray-200 rounded-2xl bg-white transition-all">
-    <div class="flex items-end gap-2 px-4 py-3">
-      <div class="flex-1 min-w-0 relative">
-        <textarea
-          #composerEl
-          [value]="draft"
-          [placeholder]="placeholder"
-          (input)="draftChange.emit($any($event.target).value); onComposerInput(composerEl)"
-          (keydown)="onComposerKey($event, composerEl)"
-          (paste)="onComposerPaste($event, composerEl)"
-          rows="1"
-          class="w-full resize-none bg-transparent border-0 outline-none text-[15px] text-gray-800 placeholder-gray-400 py-0.5 leading-relaxed min-h-[26px] max-h-40"
-        ></textarea>
-      </div>
-      <input #fileInput type="file" class="hidden" multiple (change)="onFileSelected($event)" />
-      <div class="relative flex-shrink-0">
-        <button
-          type="button"
-          (click)="toggleEmojiMenu(); $event.stopPropagation()"
-          class="toolbar-btn flex-shrink-0 mb-0.5"
-          title="Insert emoji"
-        >
-          <span class="text-[16px] leading-none">😊</span>
+<!-- ═══ Unified chat input box ═══ -->
+<div class="chat-input-wrap">
+
+  <!-- Formatting bar -->
+  <div class="chat-fmt-bar">
+    <button type="button" class="fmt-btn" title="Bold" (click)="formatText('bold')"><strong>B</strong></button>
+    <button type="button" class="fmt-btn fmt-i" title="Italic" (click)="formatText('italic')"><em>I</em></button>
+    <button type="button" class="fmt-btn fmt-s" title="Strikethrough" (click)="formatText('strike')"><s>S</s></button>
+    <button type="button" class="fmt-btn fmt-code" title="Inline code" (click)="formatText('code')"><code>&lt;/&gt;</code></button>
+    <span class="fmt-divider"></span>
+    <button type="button" class="fmt-btn" title="Ordered list" (click)="formatText('ol')">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h10M7 16h10M3 8h.01M3 12h.01M3 16h.01"/></svg>
+    </button>
+    <button type="button" class="fmt-btn" title="Bullet list" (click)="formatText('ul')">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    </button>
+    <button type="button" class="fmt-btn" title="Block quote" (click)="formatText('quote')">
+      <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+    </button>
+  </div>
+
+  <!-- Input body -->
+  <div class="chat-input-body">
+    <textarea
+      #composerEl
+      [value]="draft"
+      [placeholder]="placeholder"
+      (input)="draftChange.emit($any($event.target).value); onComposerInput(composerEl)"
+      (keydown)="onComposerKey($event, composerEl)"
+      (paste)="onComposerPaste($event, composerEl)"
+      rows="1"
+      class="chat-textarea"
+    ></textarea>
+
+    <!-- Mention menu (inside body) -->
+    <div *ngIf="showMentionMenu && mentionResults.length" class="mention-menu-pop">
+      <button
+        type="button"
+        *ngFor="let emp of mentionResults"
+        class="mention-menu-item"
+        (mousedown)="$event.preventDefault()"
+        (click)="mentionSelected.emit(emp)"
+      >{{ mentionLabel(emp) }}</button>
+    </div>
+  </div>
+
+  <!-- Footer actions -->
+  <div class="chat-input-footer">
+    <div class="chat-input-footer-left">
+      <!-- Emoji picker -->
+      <div class="relative">
+        <button type="button" class="comp-icon-btn" title="Emoji" (click)="toggleEmojiMenu(); $event.stopPropagation()">
+          <span class="text-[16px]">😊</span>
         </button>
-        <div
-          *ngIf="emojiMenuOpen"
-          class="absolute bottom-full right-0 mb-2 z-20 flex gap-1 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg"
-        >
-          <button
-            type="button"
-            *ngFor="let emoji of emojiChoices"
-            (click)="appendEmoji(emoji)"
-            class="h-8 w-8 rounded-lg text-[18px] hover:bg-gray-100"
-          >
-            {{ emoji }}
-          </button>
+        <div *ngIf="emojiMenuOpen" class="emoji-pop" (click)="$event.stopPropagation()">
+          <button *ngFor="let e of emojiChoices" type="button" class="emoji-pop-btn" (click)="appendEmoji(e)">{{ e }}</button>
         </div>
       </div>
+
       <!-- AI toggle -->
-      <button
-        (click)="aiToolbarToggled.emit(); $event.stopPropagation()"
-        class="toolbar-btn flex-shrink-0 mb-0.5 relative"
-        [style.color]="showAiToolbar ? '#2e6276' : ''"
-        [style.background]="showAiToolbar ? 'rgba(46,98,118,0.08)' : ''"
-        title="AI tools"
-      >
-        <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-          />
-        </svg>
-        <span *ngIf="showAiToolbar" class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full" style="background: #2e6276"></span>
-      </button>
-      <!-- Attach -->
-      <button (click)="triggerFileInput()" class="toolbar-btn flex-shrink-0 mb-0.5" title="Attach file">
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-          />
+      <button (click)="aiToolbarToggled.emit(); $event.stopPropagation()" class="comp-icon-btn" [class.active]="showAiToolbar" title="AI tools">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
         </svg>
       </button>
-      <!-- Send -->
-      <button
-        (click)="messageSent.emit()"
-        class="send-btn flex-shrink-0 mb-0.5 w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-        [ngClass]="{ ready: draft.trim() || pendingAttachments.length }"
-        [disabled]="sendingMessage"
-      >
-        <svg *ngIf="!sendingMessage" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+
+      <!-- Voice note -->
+      <button type="button" class="comp-icon-btn" [class.recording]="isRecording"
+              [title]="isRecording ? 'Stop (' + recordingLabel + ')' : 'Voice note'"
+              (click)="isRecording ? stopVoiceNote() : startVoiceNote()">
+        <svg *ngIf="!isRecording" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M9 11V7a3 3 0 016 0v4a3 3 0 01-6 0z"/>
         </svg>
-        <svg *ngIf="sendingMessage" class="animate-spin" width="14" height="14" fill="none" viewBox="0 0 24 24">
+        <svg *ngIf="isRecording" width="14" height="14" fill="currentColor" viewBox="0 0 24 24" class="text-red-500 animate-pulse">
+          <rect x="6" y="6" width="12" height="12" rx="2"/>
+        </svg>
+        <span *ngIf="isRecording" class="rec-timer">{{ recordingLabel }}</span>
+      </button>
+
+      <!-- Attach file -->
+      <button (click)="triggerFileInput()" class="comp-icon-btn" title="Attach file">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+        </svg>
+      </button>
+      <input #fileInput type="file" class="hidden" multiple (change)="onFileSelected($event)" />
+    </div>
+
+    <div class="chat-input-footer-right">
+      <span class="send-hint">⌘↩ send</span>
+      <!-- Send button -->
+      <button (click)="messageSent.emit()" class="send-btn" [class.ready]="draft.trim() || pendingAttachments.length" [disabled]="sendingMessage">
+        <svg *ngIf="!sendingMessage" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        </svg>
+        <svg *ngIf="sendingMessage" class="animate-spin" width="15" height="15" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
         </svg>
       </button>
     </div>
   </div>
-  <div *ngIf="showMentionMenu && mentionResults.length" class="px-4 pb-3">
-    <div class="chat-mention-menu">
-      <button
-        type="button"
-        *ngFor="let employee of mentionResults"
-        class="chat-mention-item"
-        (mousedown)="$event.preventDefault()"
-        (click)="mentionSelected.emit(employee)"
-      >
-        {{ mentionLabel(employee) }}
-      </button>
-    </div>
-  </div>
-  <p class="text-[12px] text-gray-400 mt-2 px-1 hidden sm:block">
-    <kbd class="bg-white border text-gray-400 border-gray-200 px-1.5 py-0.5 rounded text-[11px]">Enter</kbd> send ·
-    <kbd class="bg-white border text-gray-400 border-gray-200 px-1.5 py-0.5 rounded text-[11px]">Shift+Enter</kbd> new line
-  </p>
 </div>
-
-<style>
-  .composer-box:focus-within {
-    border-color: rgba(46, 98, 118, 0.4);
-    box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.07);
-  }
-  .toolbar-btn {
-    width: 32px; height: 32px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    color: #9ca3af;
-    transition: background 0.15s, color 0.15s;
-  }
-  .toolbar-btn:hover { background: #f3f4f6; color: #374151; }
-  .send-btn { background: #e5e7eb; color: #9ca3af; }
-  .send-btn.ready { background: #2e6276; color: #fff; }
-  .send-btn.ready:hover { background: #255264; }
-  .ai-tool-btn {
-    background: #f8fafc; border: 1px solid #e5e7eb; color: #374151;
-  }
-  .ai-tool-btn:hover:not(:disabled) {
-    background: #eef6f9; border-color: #2e6276; color: #2e6276;
-  }
-  .ai-tool-btn.voice-active {
-    background: #fef2f2; border-color: #f87171; color: #dc2626;
-    animation: pulse-border 1s ease-in-out infinite;
-  }
-  @keyframes pulse-border {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.3); }
-    50% { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15); }
-  }
-  .typing-dots { display: inline-flex; align-items: center; gap: 3px; }
-  .typing-dots span {
-    display: inline-block; width: 5px; height: 5px; border-radius: 50%;
-    background: #10b981; opacity: 0.7;
-    animation: typing-bounce 1.2s ease-in-out infinite;
-  }
-  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes typing-bounce {
-    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
-    40% { transform: translateY(-4px); opacity: 1; }
-  }
-  .chat-mention-menu {
-    display: grid;
-    gap: 6px;
-    max-height: 220px;
-    overflow: auto;
-    padding: 8px;
-    border: 1px solid rgba(46, 98, 118, 0.16);
-    border-radius: 16px;
-    background: #fff;
-    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.14);
-  }
-  .chat-mention-item {
-    text-align: left;
-    padding: 10px 12px;
-    border-radius: 12px;
-    font-size: 13px;
-    color: #334155;
-    transition: background 0.15s, color 0.15s;
-  }
-  .chat-mention-item:hover {
-    background: #eef6f9;
-    color: #2e6276;
-  }
-</style>

@@ -363,6 +363,20 @@ export class ThreadPanelComponent implements OnChanges, AfterViewChecked {
   }
 
   messageHtml(content: string): string {
+    // Render call summary JSON as a readable label instead of raw JSON
+    try {
+      const cs = JSON.parse(content || '');
+      if (cs && cs.__callSummary) {
+        const typeLabel = cs.callType === 'VIDEO_CALL' ? 'Video call' : 'Voice call';
+        if (cs.duration < 0) {
+          return `<span style="color:#dc2626">📵 Missed call from ${this.escapeHtml(cs.callerName || '')}</span>`;
+        }
+        const m = Math.floor(cs.duration / 60).toString().padStart(2, '0');
+        const s = (cs.duration % 60).toString().padStart(2, '0');
+        return `<span>📞 ${this.escapeHtml(typeLabel)} · ${m}:${s}</span>`;
+      }
+    } catch { /* not JSON — fall through */ }
+
     const decoded = this.decodeHtmlEntities(content || '');
     const extractedJson = this.extractStructuredJson(decoded);
     if (extractedJson) {

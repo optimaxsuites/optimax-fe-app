@@ -156,7 +156,7 @@ export class LeaveUsageComponent implements OnInit {
 
         this.currentEmployee = employee;
         this.currentEmployeeId = employee.id;
-        this.currentUserId = employee.user?.userId || employee.user?.id;
+        this.currentUserId = employee.user?.userId || employee.user?.id || employee.userId;
 
         console.log('✅ Current employee loaded:', {
           employeeId: this.currentEmployeeId,
