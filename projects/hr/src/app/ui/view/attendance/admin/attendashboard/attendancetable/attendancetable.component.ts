@@ -618,11 +618,18 @@ saveModification() {
     adminName: currentUser.name
   };
 
+  // `editingRecord.date` is `Date | null` — pulled into a local so the
+  // ternary narrows cleanly. (A trailing `!` here instead of `?? ''` trips
+  // a TS narrowing quirk: it recomputes from the declared `Date | null`
+  // type rather than the narrowed `null`, resurrecting `Date` in the
+  // union and failing the `string` param below.)
+  const editingDate = this.editingRecord.date;
+
   this.attendancetableService.overrideAttendance(
     this.editingRecord.employeeId ?? '',
-    this.editingRecord.date instanceof Date 
-      ? this.editingRecord.date.toISOString().split('T')[0] 
-      : this.editingRecord.date!,
+    editingDate instanceof Date
+      ? editingDate.toISOString().split('T')[0]
+      : editingDate ?? '',
     this.editStatus,
     this.editCheckIn,
     this.editReason,

@@ -116,7 +116,7 @@ export class CorrectionrequestComponent  implements OnInit{
 
       const todayRecord = records.find(r =>
         r.employee?.toLowerCase().includes(employeeName.toLowerCase()) &&
-        r.date.toISOString().split('T')[0] === today
+        r.date?.toISOString().split('T')[0] === today
       );
 
       if (todayRecord) {
