@@ -65,96 +65,165 @@
       <!-- Left Column: Quote Content -->
       <div class="detail-main">
         
-        <!-- Company & Billing Info -->
-        <div class="info-card glass" id="quote-detail-sheet">
-          <div class="card-body">
-            <div class="company-details" style="display: flex; justify-content: space-between; align-items: flex-start;">
-              <div style="display: flex; gap: 1.5rem; align-items: center;">
-                <img *ngIf="quote.logoUrl" [src]="quote.logoUrl" alt="Business Logo" style="max-height: 60px; max-width: 150px; object-fit: contain;">
-                <div>
-                  <h2>Centrifuge Group</h2>
-                  <p>Abuja, Nigeria</p>
-                  <p>enquiries&#64;centrifugegroup.com</p>
-                </div>
-              </div>
-              <div class="quote-meta">
-                <h3>QUOTE</h3>
-                <p><strong>Quote #:</strong> {{ quote.quoteNumber }}</p>
-                <p><strong>Date:</strong> {{ formatDate(getQuoteDate()) }}</p>
-                <p><strong>Valid Until:</strong> {{ formatDate(getQuoteValidUntil()) }}</p>
-                <p><strong>Currency:</strong> {{ quote.currency }}</p>
+        <!-- Quote PDF Document Sheet -->
+        <div id="quote-detail-sheet" style="background:#fff;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#1a2e3b;border-radius:8px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.08);">
+
+          <!-- HEADER -->
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;padding:36px 48px 22px;border-bottom:2px solid #E07820;">
+            <div>
+              <div style="font-size:2.2rem;font-weight:200;color:#1a2e3b;line-height:1;letter-spacing:-0.02em;">Quotation</div>
+              <div style="font-size:0.78rem;color:#999;margin-top:6px;">
+                Ref. {{ quote.quoteNumber }}&nbsp;·&nbsp;{{ formatDate(getQuoteDate()) }}&nbsp;·&nbsp;{{ getStatusLabel(quote.status) }}
               </div>
             </div>
-
-            <div class="billing-details">
-              <h4>Bill To</h4>
-              <strong>{{ getQuoteCustomerName() }}</strong>
-              <p *ngIf="getQuoteCustomerId()">Customer ID: {{ getQuoteCustomerId() }}</p>
+            <div style="text-align:right;">
+              <ng-container *ngIf="quote.logoUrl && quote.logoUrl[0]; else quoteNoLogo">
+                <img [src]="quote.logoUrl[0]" alt="Logo" style="max-height:72px;max-width:220px;object-fit:contain;">
+              </ng-container>
+              <ng-template #quoteNoLogo>
+                <div style="font-size:1.9rem;font-weight:900;color:#E07820;letter-spacing:0.06em;line-height:1.1;text-transform:uppercase;">{{ ($any(quote.merchantDetails))?.companyName || 'OPTIMAX' }}</div>
+                <div style="font-size:0.58rem;font-weight:700;color:#1a2e3b;letter-spacing:0.2em;text-transform:uppercase;margin-top:3px;">INFORMATION TECHNOLOGY LIMITED</div>
+                <div *ngIf="($any(quote.merchantDetails))?.taxId" style="font-size:0.6rem;color:#E07820;margin-top:2px;">RC {{ ($any(quote.merchantDetails))?.taxId }}</div>
+              </ng-template>
             </div>
+          </div>
 
-            <!-- Items Table -->
-            <div class="items-table-wrapper">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Product</th>
-                    <th>Description</th>
-                    <th class="text-right">Qty</th>
-                    <th class="text-right">Price</th>
-                    <th class="text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let item of quote.items">
-                    <td class="product-name">{{ item.productName }}</td>
-                    <td class="description">{{ item.description }}</td>
-                    <td class="text-right">{{ item.quantity }}</td>
-                    <td class="text-right">{{ formatCurrency(item.unitPrice) }}</td>
-                    <td class="text-right total">{{ formatCurrency(item.total) }}</td>
-                  </tr>
-                  <tr *ngIf="quote.items.length === 0">
-                    <td colspan="5" class="empty-items">No items added to this quote.</td>
-                  </tr>
-                </tbody>
-              </table>
+          <!-- SUMMARY BAR -->
+          <div style="background:#1a2e3b;display:flex;">
+            <div style="flex:1;padding:18px 48px;border-right:1px solid rgba(255,255,255,0.1);">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-bottom:8px;">QUOTATION NO.</div>
+              <div style="font-size:1rem;font-weight:700;color:#fff;">{{ quote.quoteNumber }}</div>
             </div>
+            <div style="flex:1;padding:18px 24px;border-right:1px solid rgba(255,255,255,0.1);">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-bottom:8px;">DATE ISSUED</div>
+              <div style="font-size:1rem;font-weight:700;color:#fff;">{{ formatDate(getQuoteDate()) }}</div>
+            </div>
+            <div style="flex:1;padding:18px 24px;text-align:right;">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-bottom:8px;">TOTAL ({{ quote.currency || 'NGN' }})</div>
+              <div style="font-size:1rem;font-weight:700;color:#E07820;">{{ formatCurrency(quote.totalAmount) }}</div>
+            </div>
+          </div>
 
-            <!-- Notes & Totals -->
-            <div class="footer-section">
-              <div class="notes-section">
-                <div *ngIf="additionalOpts && additionalOpts.notes" class="note-block">
-                  <h5><i class="fas fa-sticky-note"></i> Notes</h5>
-                  <p>{{ additionalOpts.notes }}</p>
-                </div>
-                <div *ngIf="additionalOpts && additionalOpts.terms" class="note-block">
-                  <h5><i class="fas fa-gavel"></i> Terms & Conditions</h5>
-                  <p>{{ additionalOpts.terms }}</p>
-                </div>
+          <!-- PREPARED FOR / PREPARED BY -->
+          <div style="display:flex;padding:28px 48px 24px;border-bottom:1px solid #eee;">
+            <div style="flex:1;padding-right:40px;">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:#E07820;text-transform:uppercase;font-weight:700;margin-bottom:10px;">PREPARED FOR</div>
+              <div style="font-size:0.93rem;font-weight:700;color:#1a2e3b;margin-bottom:4px;">{{ getQuoteCustomerName() }}</div>
+              <div style="font-size:0.78rem;color:#666;line-height:1.7;">{{ getCustomerAddressStr() }}</div>
+            </div>
+            <div style="width:1px;background:#eee;margin:0 0 0 0;flex-shrink:0;"></div>
+            <div style="flex:1;padding-left:40px;">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:#E07820;text-transform:uppercase;font-weight:700;margin-bottom:10px;">PREPARED BY</div>
+              <div style="font-size:0.93rem;font-weight:700;color:#1a2e3b;margin-bottom:4px;">{{ ($any(quote.merchantDetails))?.companyName || 'Centrifuge Information Technology Limited' }}</div>
+              <div style="font-size:0.78rem;color:#666;line-height:1.7;">{{ getMerchantAddressStr() }}</div>
+            </div>
+          </div>
+
+          <!-- NOTES / PROJECT TITLE (if present) -->
+          <div *ngIf="additionalOpts?.notes" style="background:#f5f6f7;border-left:4px solid #1a2e3b;padding:14px 48px;margin:0;">
+            <div style="font-size:0.55rem;letter-spacing:0.2em;color:#1a2e3b;text-transform:uppercase;font-weight:700;margin-bottom:6px;">PROJECT TITLE</div>
+            <div style="font-size:0.87rem;font-weight:600;color:#1a2e3b;">{{ additionalOpts?.notes }}</div>
+          </div>
+
+          <!-- ITEMS TABLE -->
+          <div style="padding:24px 48px 0;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+              <thead>
+                <tr style="background:#1a2e3b;">
+                  <th style="padding:10px 12px;text-align:left;font-size:0.55rem;letter-spacing:0.18em;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;width:5%;">S/N</th>
+                  <th style="padding:10px 12px;text-align:left;font-size:0.55rem;letter-spacing:0.18em;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;">DESCRIPTION</th>
+                  <th style="padding:10px 12px;text-align:center;font-size:0.55rem;letter-spacing:0.18em;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;width:7%;">QTY</th>
+                  <th style="padding:10px 12px;text-align:right;font-size:0.55rem;letter-spacing:0.18em;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;width:16%;">UNIT RATE</th>
+                  <th style="padding:10px 12px;text-align:right;font-size:0.55rem;letter-spacing:0.18em;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;width:18%;">AMOUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of quote.items; let i = index" [style.background]="i % 2 === 0 ? '#fff' : '#fafbfc'">
+                  <td style="padding:12px;color:#aaa;border-bottom:1px solid #f0f0f0;vertical-align:top;">{{ i + 1 }}</td>
+                  <td style="padding:12px;border-bottom:1px solid #f0f0f0;vertical-align:top;">
+                    <div style="font-weight:600;color:#1a2e3b;">{{ item.productName }}</div>
+                    <div *ngIf="item.description" style="font-size:0.75rem;color:#888;font-style:italic;margin-top:2px;">{{ item.description }}</div>
+                  </td>
+                  <td style="padding:12px;text-align:center;color:#555;border-bottom:1px solid #f0f0f0;vertical-align:top;">{{ item.quantity }}</td>
+                  <td style="padding:12px;text-align:right;color:#555;border-bottom:1px solid #f0f0f0;vertical-align:top;">{{ item.unitPrice | number:'1.0-0' }}</td>
+                  <td style="padding:12px;text-align:right;font-weight:700;color:#E07820;border-bottom:1px solid #f0f0f0;vertical-align:top;">{{ formatCurrency(item.total ?? item.amount) }}</td>
+                </tr>
+                <tr *ngIf="!quote.items?.length">
+                  <td colspan="5" style="padding:24px;text-align:center;color:#aaa;font-size:0.82rem;">No items added to this quote.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- TOTALS -->
+          <div style="display:flex;justify-content:flex-end;padding:20px 48px 24px;">
+            <div style="min-width:300px;">
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                <span style="color:#666;font-size:0.82rem;">Sub-total</span>
+                <span style="color:#333;font-weight:600;font-size:0.82rem;">{{ formatCurrency(quote.subtotal) }}</span>
               </div>
-              <div class="totals-section">
-                <div class="summary-row">
-                  <span>Subtotal</span>
-                  <span>{{ formatCurrency(quote.subtotal) }}</span>
+              <ng-container *ngFor="let ch of getAdditionalCharges()">
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                  <span style="color:#666;font-size:0.82rem;">{{ ch.label }}</span>
+                  <span style="color:#333;font-weight:600;font-size:0.82rem;">{{ formatCurrency(ch.amount) }}</span>
                 </div>
-                <div class="summary-row" *ngIf="quote.discountAmount > 0">
-                  <span>Discount</span>
-                  <span class="discount">-{{ formatCurrency(quote.discountAmount) }}</span>
-                </div>
-                <div class="summary-row" *ngIf="quote.taxAmount > 0">
-                  <span>Tax (7.5%)</span>
-                  <span>{{ formatCurrency(quote.taxAmount) }}</span>
-                </div>
-                <div class="summary-row total">
-                  <span>Grand Total</span>
-                  <span class="grand-total">{{ formatCurrency(quote.totalAmount) }}</span>
-                </div>
-                <div class="total-words">
-                  <span class="words-label"><i class="fas fa-font"></i> Total in words</span>
-                  <span>{{ getTotalInWords(quote.totalAmount) }}</span>
-                </div>
+              </ng-container>
+              <div *ngIf="quote.discountAmount > 0" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                <span style="color:#666;font-size:0.82rem;">Discount</span>
+                <span style="color:#c0392b;font-weight:600;font-size:0.82rem;">-{{ formatCurrency(quote.discountAmount) }}</span>
+              </div>
+              <div *ngIf="quote.taxAmount > 0" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                <span style="color:#666;font-size:0.82rem;">VAT &#64; 7.5%</span>
+                <span style="color:#333;font-weight:600;font-size:0.82rem;">{{ formatCurrency(quote.taxAmount) }}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#1a2e3b;margin-top:6px;">
+                <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:0.14em;">TOTAL ({{ quote.currency || 'NGN' }})</span>
+                <span style="font-size:1.05rem;font-weight:800;color:#E07820;">{{ formatCurrency(quote.totalAmount) }}</span>
               </div>
             </div>
           </div>
+
+          <!-- AMOUNT IN WORDS -->
+          <div style="background:#f5f6f7;border-left:4px solid #E07820;padding:16px 48px;margin:0 0 28px;">
+            <div style="font-size:0.55rem;letter-spacing:0.2em;color:#999;text-transform:uppercase;margin-bottom:6px;">AMOUNT IN WORDS</div>
+            <div style="font-size:0.88rem;font-weight:700;color:#1a2e3b;">{{ getTotalInWords(quote.totalAmount) }} only.</div>
+          </div>
+
+          <!-- PAYMENT DETAILS & TERMS -->
+          <div style="display:flex;gap:0;padding:0 48px 32px;">
+            <div *ngIf="($any(quote.merchantDetails))?.bankDetails" style="flex:1;padding-right:40px;">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:#E07820;text-transform:uppercase;font-weight:700;margin-bottom:14px;">PAYMENT DETAILS</div>
+              <div style="display:flex;gap:12px;padding:6px 0;font-size:0.8rem;border-bottom:1px solid #f5f5f5;">
+                <span style="color:#999;min-width:110px;">Bank</span>
+                <span style="color:#1a2e3b;font-weight:700;">{{ ($any(quote.merchantDetails))?.bankDetails?.bankName }}</span>
+              </div>
+              <div style="display:flex;gap:12px;padding:6px 0;font-size:0.8rem;border-bottom:1px solid #f5f5f5;">
+                <span style="color:#999;min-width:110px;">Account Name</span>
+                <span style="color:#1a2e3b;font-weight:700;">{{ ($any(quote.merchantDetails))?.bankDetails?.accountName }}</span>
+              </div>
+              <div style="display:flex;gap:12px;padding:6px 0;font-size:0.8rem;">
+                <span style="color:#999;min-width:110px;">Account Number</span>
+                <span style="color:#1a2e3b;font-weight:700;">{{ ($any(quote.merchantDetails))?.bankDetails?.accountNumber }}</span>
+              </div>
+            </div>
+            <div *ngIf="additionalOpts?.terms" style="flex:1;padding-left:40px;border-left:1px solid #eee;">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:#E07820;text-transform:uppercase;font-weight:700;margin-bottom:14px;">TERMS &amp; CONDITIONS</div>
+              <div style="font-size:0.78rem;color:#555;line-height:1.9;white-space:pre-wrap;">{{ additionalOpts?.terms }}</div>
+            </div>
+          </div>
+
+          <!-- SIGN-OFF -->
+          <div *ngIf="additionalOpts?.signatureText" style="padding:0 48px 24px;">
+            <div style="font-size:0.8rem;color:#555;font-style:italic;">{{ additionalOpts?.signatureText }}</div>
+          </div>
+
+          <!-- FOOTER -->
+          <div style="border-top:1px solid #E07820;padding:14px 48px;text-align:center;">
+            <div style="font-size:0.72rem;color:#aaa;line-height:1.6;">
+              {{ getMerchantAddressStr() }}<ng-container *ngIf="($any(quote.merchantDetails))?.email">&nbsp;·&nbsp;{{ ($any(quote.merchantDetails))?.email }}</ng-container><ng-container *ngIf="($any(quote.merchantDetails))?.phone">&nbsp;·&nbsp;{{ ($any(quote.merchantDetails))?.phone }}</ng-container>
+            </div>
+          </div>
+
         </div>
       </div>
 
