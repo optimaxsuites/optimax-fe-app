@@ -13,6 +13,7 @@ import { QuoteDetailComponent } from '../quotations/quote-detail/quote-detail.co
 import { InvoiceDetailComponent } from '../invoices/invoice-detail/invoice-detail.component';
 import { formatApiDate } from '../../../service/sales/date.util';
 import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-sales-dashboard',
@@ -26,8 +27,10 @@ import { MessageService } from 'primeng/api';
     InvoiceFormComponent,
     CustomerFormComponent,
     QuoteDetailComponent,
-    InvoiceDetailComponent
+    InvoiceDetailComponent,
+    ToastModule
   ],
+  providers: [MessageService],
   templateUrl: './sales-dashboard.component.html',
   styleUrls: ['./sales-dashboard.component.scss']
 })
@@ -58,6 +61,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   // Filters
   dateRange = 'month';
   isLoading = true;
+  error: string | null = null;
 
   showQuoteModal = false;
   showInvoiceModal = false;
@@ -116,10 +120,14 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
 
   private loadDashboardData(): void {
     this.isLoading = true;
+    this.error = null;
 
     this.salesService.getDashboardStats(this.dateRange).subscribe({
       next: (stats: any) => { this.stats = stats; },
-      error: (error: any) => { console.error('Error loading stats:', error); }
+      error: (error: any) => {
+        console.error('Error loading stats:', error);
+        this.error = 'Failed to load sales dashboard data';
+      }
     });
 
     this.salesService.getRecentQuotes(3).subscribe({
@@ -139,8 +147,16 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
 
     this.salesService.getRevenueChart(this.dateRange).subscribe({
       next: (data: any[]) => { this.revenueData = data; this.isLoading = false; },
-      error: (error: any) => { console.error('Error loading chart:', error); this.isLoading = false; }
+      error: (error: any) => {
+        console.error('Error loading chart:', error);
+        this.error = 'Failed to load sales dashboard data';
+        this.isLoading = false;
+      }
     });
+  }
+
+  refreshData(): void {
+    this.loadDashboardData();
   }
 
   changeDateRange(range: string): void {
@@ -432,6 +448,22 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   getConicLegendColor(idx: number): string {
     const colors = ['#2E6276', '#3a8fa8', '#2EB270', '#fbbf24', '#f97316', '#4f46e5'];
     return colors[idx % colors.length];
+  }
+
+  getBarColor(idx: number): string {
+    return this.getConicLegendColor(idx);
+  }
+
+  /** Resolves a display name off a quote/invoice's customerName/customerId, whichever is populated. */
+  getCustomerName(item: any): string {
+    if (!item) return 'N/A';
+    if (typeof item.customerName === 'object' && item.customerName?.name) {
+      return item.customerName.name;
+    }
+    if (typeof item.customerId === 'object' && item.customerId?.name) {
+      return item.customerId.name;
+    }
+    return String(item.customerName || item.customerId || 'N/A');
   }
 
   getConicPercent(amount: number): string {
