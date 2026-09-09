@@ -169,7 +169,8 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   // ============================================
 
   private switchToTab(tabName: string): void {
-    sessionStorage.setItem('dashboard-catalog-quotes-invoices-orders-customers', tabName);
+    // Must match the [cacheKey] passed to <app-nav-tab> in sales-hub.component.html.
+    sessionStorage.setItem('sales-hub', tabName);
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/sales-hub', uuid] : ['/admin/sales/sales-hub'];
     this.router.navigate(path).then(() => {

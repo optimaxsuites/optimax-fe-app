@@ -6,6 +6,7 @@ import { DocumentationHistoryComponent } from './documentation-history/documenta
 import { ApprovalInboxComponent } from './approval-inbox/approval-inbox.component';
 import { DeliveryTrackingComponent } from './delivery-tracking/delivery-tracking.component';
 import { PaymentVoucherComponent } from './payment-voucher/payment-voucher.component';
+import { GrnListComponent } from './grn-list/grn-list.component';
 
 @Component({
   selector: 'app-request-management',
@@ -34,6 +35,11 @@ export class RequestManagementComponent {
       name: 'Supply Chain & Delivery',
       component: DeliveryTrackingComponent,
       icon: 'fa-solid fa-truck',
+    },
+    {
+      name: 'Goods Received Notes',
+      component: GrnListComponent,
+      icon: 'fa-solid fa-clipboard-check',
     },
     {
       name: 'Payment Vouchers',
