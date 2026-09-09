@@ -534,7 +534,7 @@ export type GrnItemCondition =
   | 'EXCESS_SUPPLY';     // More units than ordered
 
 export interface GrnLineItem {
-  id: string;
+  id: number;
   lpoItemId: string;
   name: string;
   description: string;
@@ -554,9 +554,9 @@ export interface GrnLineItem {
 }
 
 export interface GoodsReceivedNote {
-  id: string;
+  id: number;
   grnNumber: string;             // e.g., GRN-2026-001
-  lpoId: string;
+  lpoId: number;
   lpoNumber: string;
   procurementRequestId: number;
   vendorId: string;
@@ -631,7 +631,7 @@ export type PaymentVoucherStatus =
   | 'REVERSED';
 
 export interface PaymentVoucher {
-  id: string;
+  id: number;
   voucherNumber: string;         // e.g., PV-2026-0042
   grnId: string;
   grnNumber: string;
@@ -647,7 +647,7 @@ export interface PaymentVoucher {
   vendorAccountName: string;
   amount: number;
   currency: string;
-  paymentMethod: 'BANK_TRANSFER' | 'CHEQUE' | 'ONLINE';
+  paymentMethod: 'BANK_TRANSFER' | 'CHEQUE' | 'CASH' | 'ONLINE' | 'MOBILE_MONEY';
   narration: string;             // e.g., "Payment for LPO-2026-4821 — Office Furniture"
   status: PaymentVoucherStatus;
   requestedBy: string;
@@ -682,7 +682,7 @@ export type NotificationChannel = 'EMAIL' | 'IN_APP' | 'SMS' | 'PUSH';
 export type NotificationStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
 
 export interface ProcurementNotification {
-  id: string;
+  id: number;
   type: NotificationType;
   channel: NotificationChannel;
   recipientId: string;

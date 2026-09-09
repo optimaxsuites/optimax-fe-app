@@ -29,17 +29,43 @@ export class NotificationService {
     return (h.includes('localhost') || h.includes('127.0.0.1')) ? 'optimax' : h.split('.')[0] || 'optimax';
   }
 
+  /** Turns a NotificationTrigger's raw type + templateData into a readable subject/body,
+   *  since the real create endpoint takes a fully-formed notification, not a template ref. */
+  private composeMessage(trigger: NotificationTrigger): { subject: string; body: string } {
+    const label = trigger.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const details = Object.entries(trigger.templateData || {})
+      .filter(([, v]) => v !== undefined && v !== null && v !== '')
+      .map(([k, v]) => `${k.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()}: ${v}`)
+      .join(', ');
+    return {
+      subject: `${label} — ${trigger.relatedEntityType} ${trigger.relatedEntityId}`,
+      body: details ? `${label}. ${details}.` : `${label}.`
+    };
+  }
+
   /**
    * Triggers an email + in-app notification. Called by procurement components
    * at each lifecycle event (RFQ sent, LPO issued, GRN approved, payment done).
    */
   trigger(trigger: NotificationTrigger): Observable<ProcurementNotification[]> {
-    return this.http.post<any>(`${this.baseUrl}/notifications/trigger`, {
-      ...trigger,
-      tenantId: this.tenantId,
-      channels: ['EMAIL', 'IN_APP']
-    }).pipe(
-      map(res => Array.isArray(res) ? res : (res?.notifications ?? [])),
+    const { subject, body } = this.composeMessage(trigger);
+    const payload: Partial<ProcurementNotification> & { tenantId: string } = {
+      type: trigger.type,
+      channel: 'EMAIL',
+      recipientId: trigger.recipientId,
+      recipientEmail: trigger.recipientEmail,
+      recipientName: trigger.recipientName,
+      subject,
+      body,
+      status: 'PENDING',
+      retryCount: 0,
+      relatedEntityId: trigger.relatedEntityId,
+      relatedEntityType: trigger.relatedEntityType,
+      tenantId: this.tenantId
+    };
+
+    return this.http.post<ProcurementNotification>(`${this.baseUrl}/procurement-notifications/`, payload).pipe(
+      map(res => [res]),
       tap(list => {
         const current = this.notifications$$.getValue();
         this.notifications$$.next([...list, ...current]);
@@ -67,29 +93,39 @@ export class NotificationService {
     return this.http.post<any>(url, payload);
   }
 
-  /**
-   * Loads notification history for a specific entity.
-   */
-  getForEntity(entityId: string, entityType: string): Observable<ProcurementNotification[]> {
-    const params = new HttpParams()
-      .set('entityId', entityId)
-      .set('entityType', entityType);
-    return this.http.get<any>(`${this.baseUrl}/notifications`, { params }).pipe(
-      map(res => Array.isArray(res) ? res : (res?.data ?? [])),
-      tap(list => this.notifications$$.next(list)),
+  /** All procurement notifications, across every entity. */
+  getAll(): Observable<ProcurementNotification[]> {
+    const params = new HttpParams().set('tenantId', this.tenantId);
+    return this.http.get<ProcurementNotification[]>(`${this.baseUrl}/procurement-notifications/`, { params }).pipe(
+      map(res => Array.isArray(res) ? res : []),
       catchError(() => of([]))
     );
   }
 
-  retryFailed(notificationId: string): Observable<ProcurementNotification> {
+  /**
+   * Loads notification history for a specific entity. The real API only exposes a flat
+   * list (no entityId/entityType query params), so this fetches that list and filters
+   * client-side.
+   */
+  getForEntity(entityId: string, entityType: string): Observable<ProcurementNotification[]> {
+    return this.getAll().pipe(
+      map(list => list.filter(n =>
+        String(n.relatedEntityId) === entityId && n.relatedEntityType === entityType
+      )),
+      tap(list => this.notifications$$.next(list))
+    );
+  }
+
+  retryFailed(notificationId: number): Observable<ProcurementNotification> {
     return this.http.patch<ProcurementNotification>(
       `${this.baseUrl}/notifications/${notificationId}/retry`, {}
     ).pipe(catchError(err => { throw err; }));
   }
 
-  getDeliveryStatus(notificationId: string): Observable<ProcurementNotification> {
+  getDeliveryStatus(notificationId: number): Observable<ProcurementNotification> {
+    const params = new HttpParams().set('tenantId', this.tenantId);
     return this.http.get<ProcurementNotification>(
-      `${this.baseUrl}/notifications/${notificationId}`
+      `${this.baseUrl}/procurement-notifications/${notificationId}`, { params }
     ).pipe(catchError(err => { throw err; }));
   }
 }
