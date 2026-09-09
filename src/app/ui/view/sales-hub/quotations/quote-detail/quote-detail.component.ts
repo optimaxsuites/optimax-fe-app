@@ -377,7 +377,8 @@ export class QuoteDetailComponent implements OnInit {
     if (this.closed.observed) {
       this.closed.emit();
     } else {
-      const sessionStorageKey = 'dashboard-catalog-quotes-invoices-orders-customers-transactions';
+      // Must match the [cacheKey] passed to <app-nav-tab> in sales-hub.component.html.
+      const sessionStorageKey = 'sales-hub';
       sessionStorage.setItem(sessionStorageKey, 'Quotes');
 
       const uuid = this.route.snapshot.paramMap.get('uuid');
@@ -390,7 +391,8 @@ export class QuoteDetailComponent implements OnInit {
   }
 
   goToQuotesList(): void {
-    const sessionStorageKey = 'dashboard-catalog-quotes-invoices-orders-customers-transactions';
+    // Must match the [cacheKey] passed to <app-nav-tab> in sales-hub.component.html.
+    const sessionStorageKey = 'sales-hub';
     sessionStorage.setItem(sessionStorageKey, 'Quotes');
 
     const uuid = this.route.snapshot.paramMap.get('uuid');

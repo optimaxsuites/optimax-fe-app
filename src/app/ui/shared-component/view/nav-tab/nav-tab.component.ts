@@ -11,6 +11,12 @@ import { CommonModule } from '@angular/common';
 })
 export class NavTabComponent {
   @Input() tabsConfig: TabConfig[] = [];
+  // Stable cache key for remembering the selected tab. Prefer this over the
+  // default (derived by joining tab names) — that derivation breaks silently
+  // any time a tab is renamed/reordered/added, since every page that wants to
+  // pre-select a tab (e.g. "go back to the Quotes tab") has to independently
+  // guess the exact same joined string. Pass an explicit, stable key instead.
+  @Input() cacheKey?: string;
 
   isDropdownOpen = false;
   selectedTab: string = '';
@@ -22,7 +28,7 @@ export class NavTabComponent {
   ngOnInit(): void {
     // this.selectedTab = this.tabsConfig[0]?.name
     this.user_role = sessionStorage.getItem('role');
-    this.#sessionStorageCacheKey = this.tabsConfig
+    this.#sessionStorageCacheKey = this.cacheKey || this.tabsConfig
       .map((tab) => tab.name)
       .join('-')
       .toLowerCase()

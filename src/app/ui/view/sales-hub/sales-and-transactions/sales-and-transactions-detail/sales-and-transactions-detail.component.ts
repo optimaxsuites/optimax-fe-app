@@ -177,7 +177,8 @@ export class SalesAndTransactionsDetailComponent implements OnInit {
   }
 
   goToTransactionsList(): void {
-    const sessionStorageKey = 'dashboard-catalog-quotes-invoices-orders-customers-transactions';
+    // Must match the [cacheKey] passed to <app-nav-tab> in sales-hub.component.html.
+    const sessionStorageKey = 'sales-hub';
     sessionStorage.setItem(sessionStorageKey, 'Sales & Transactions');
 
     const uuid = this.route.snapshot.paramMap.get('uuid');

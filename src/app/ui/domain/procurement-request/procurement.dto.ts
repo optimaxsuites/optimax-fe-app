@@ -533,6 +533,39 @@ export type GrnItemCondition =
   | 'SHORT_SUPPLY'       // Fewer units than ordered
   | 'EXCESS_SUPPLY';     // More units than ordered
 
+export function getGrnStatusLabel(status: GrnStatus): string {
+  const map: Record<GrnStatus, string> = {
+    DRAFT:     'Draft',
+    SUBMITTED: 'Submitted — Awaiting Approval',
+    APPROVED:  'Approved',
+    DISPUTED:  'Disputed',
+    CANCELLED: 'Cancelled'
+  };
+  return map[status] ?? status;
+}
+
+export function getGrnStatusSeverity(status: GrnStatus): 'info' | 'warning' | 'success' | 'danger' {
+  const map: Record<GrnStatus, 'info' | 'warning' | 'success' | 'danger'> = {
+    DRAFT:     'info',
+    SUBMITTED: 'warning',
+    APPROVED:  'success',
+    DISPUTED:  'danger',
+    CANCELLED: 'danger'
+  };
+  return map[status] ?? 'info';
+}
+
+export function getGrnStatusColor(status: GrnStatus): string {
+  const map: Record<GrnStatus, string> = {
+    DRAFT:     '#64748b',
+    SUBMITTED: '#d97706',
+    APPROVED:  '#16a34a',
+    DISPUTED:  '#dc2626',
+    CANCELLED: '#94a3b8'
+  };
+  return map[status] ?? '#64748b';
+}
+
 export interface GrnLineItem {
   id: number;
   lpoItemId: string;
