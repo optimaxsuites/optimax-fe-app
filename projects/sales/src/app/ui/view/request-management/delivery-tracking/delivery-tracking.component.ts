@@ -208,7 +208,7 @@ export class DeliveryTrackingComponent implements OnInit, OnDestroy {
     const receivedValue = this.computedReceivedValue;
 
     const grnData: Partial<GoodsReceivedNote> = {
-      lpoId:                this.lpoId,
+      lpoId:                Number(this.lpoId) || 0,
       lpoNumber:            this.lpoNumber,
       procurementRequestId: this.procurementRequestId,
       vendorName:           this.vendorName,
@@ -222,7 +222,7 @@ export class DeliveryTrackingComponent implements OnInit, OnDestroy {
       overallCondition:     formVal.overallCondition,
       discrepancyNotes:     formVal.discrepancyNotes || undefined,
       items: formVal.items.map((it: any, i: number) => ({
-        id:               this.grn?.items?.[i]?.id ?? `grn-item-${i}`,
+        id:               this.grn?.items?.[i]?.id ?? 0,
         lpoItemId:        it.lpoItemId,
         name:             it.name,
         description:      '',

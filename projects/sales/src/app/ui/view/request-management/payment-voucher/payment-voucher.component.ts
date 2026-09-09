@@ -75,7 +75,7 @@ export class PaymentVoucherComponent implements OnInit, OnDestroy {
 
   private loadExistingVoucher(): void {
     if (!this.grn?.id) return;
-    this.supplyChainService.getPaymentVouchers({ lpoId: this.grn.lpoId }).pipe(
+    this.supplyChainService.getPaymentVouchers({ lpoId: String(this.grn.lpoId) }).pipe(
       takeUntil(this.destroy$)
     ).subscribe(vouchers => {
       this.existingVoucher = vouchers[0] ?? null;
@@ -107,11 +107,11 @@ export class PaymentVoucherComponent implements OnInit, OnDestroy {
     this.isCreating = true;
     const val = this.voucherForm.value;
     const voucher: Partial<PaymentVoucher> = {
-      grnId: this.grn?.id,
+      grnId: String(this.grn?.id ?? ''),
       grnNumber: this.grn?.grnNumber,
       invoiceId: this.invoice?.id,
       invoiceNumber: this.invoice?.invoiceNumber,
-      lpoId: this.grn?.lpoId,
+      lpoId: String(this.grn?.lpoId ?? ''),
       lpoNumber: this.lpoNumber,
       procurementRequestId: this.grn?.procurementRequestId,
       vendorId: this.grn?.vendorId,
@@ -146,7 +146,7 @@ export class PaymentVoucherComponent implements OnInit, OnDestroy {
           recipientId: val.requestedBy,
           recipientEmail: '',
           recipientName: val.requestedBy,
-          relatedEntityId: saved.id,
+          relatedEntityId: String(saved.id),
           relatedEntityType: 'PAYMENT_VOUCHER',
           templateData: {
             voucherNumber: saved.voucherNumber,
