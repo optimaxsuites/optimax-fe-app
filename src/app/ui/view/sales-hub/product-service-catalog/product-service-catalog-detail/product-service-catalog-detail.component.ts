@@ -96,23 +96,23 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
   generateQuote(): void {
     if (!this.product) return;
     const uuid = this.route.snapshot.paramMap.get('uuid');
-    const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
+    const path = uuid ? ['/quotes/new', uuid] : ['/quotes/new'];
     this.router.navigate(path, { queryParams: this.productQueryParams() });
   }
 
   createInvoice(): void {
     if (!this.product) return;
     const uuid = this.route.snapshot.paramMap.get('uuid');
-    const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
+    const path = uuid ? ['/invoices/new', uuid] : ['/invoices/new'];
     this.router.navigate(path, { queryParams: this.productQueryParams() });
   }
 
   goBack(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/sales-hub', uuid]);
+      this.router.navigate(['/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/sales-hub']);
+      this.router.navigate(['/sales-hub']);
     }
   }
 

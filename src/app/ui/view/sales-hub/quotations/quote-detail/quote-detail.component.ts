@@ -315,9 +315,9 @@ export class QuoteDetailComponent implements OnInit {
           next: (createdTx) => {
             const uuid = this.route.snapshot.paramMap.get('uuid');
             if (uuid) {
-              this.router.navigate(['/admin/sales/orders', createdTx.id, uuid]);
+              this.router.navigate(['/orders', createdTx.id, uuid]);
             } else {
-              this.router.navigate(['/admin/sales/orders', createdTx.id]);
+              this.router.navigate(['/orders', createdTx.id]);
             }
           },
           error: (orderErr: any) => {
@@ -383,9 +383,9 @@ export class QuoteDetailComponent implements OnInit {
 
       const uuid = this.route.snapshot.paramMap.get('uuid');
       if (uuid) {
-        this.router.navigate(['/admin/sales/sales-hub', uuid]);
+        this.router.navigate(['/sales-hub', uuid]);
       } else {
-        this.router.navigate(['/admin/sales/sales-hub']);
+        this.router.navigate(['/sales-hub']);
       }
     }
   }
@@ -397,9 +397,9 @@ export class QuoteDetailComponent implements OnInit {
 
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/sales-hub', uuid]);
+      this.router.navigate(['/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/sales-hub']);
+      this.router.navigate(['/sales-hub']);
     }
   }
 
@@ -409,9 +409,9 @@ export class QuoteDetailComponent implements OnInit {
     } else {
       const uuid = this.route.snapshot.paramMap.get('uuid');
       if (uuid) {
-        this.router.navigate(['/admin/sales/quotes', String(this.quote!.id), 'edit', uuid]);
+        this.router.navigate(['/quotes', String(this.quote!.id), 'edit', uuid]);
       } else {
-        this.router.navigate(['/admin/sales/quotes', String(this.quote!.id), 'edit']);
+        this.router.navigate(['/quotes', String(this.quote!.id), 'edit']);
       }
     }
   }
@@ -432,9 +432,9 @@ export class QuoteDetailComponent implements OnInit {
 
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/customers', id, uuid]);
+      this.router.navigate(['/customers', id, uuid]);
     } else {
-      this.router.navigate(['/admin/sales/customers', id]);
+      this.router.navigate(['/customers', id]);
     }
   }
 

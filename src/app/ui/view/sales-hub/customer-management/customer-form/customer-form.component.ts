@@ -181,9 +181,9 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
           uuid = null;
         }
         if (uuid) {
-          this.router.navigate(['/admin/sales/sales-hub', uuid]);
+          this.router.navigate(['/sales-hub', uuid]);
         } else {
-          this.router.navigate(['/admin/sales/customers']);
+          this.router.navigate(['/customers']);
         }
       },
       error: (error: any) => {
@@ -200,9 +200,9 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       uuid = null;
     }
     if (uuid) {
-      this.router.navigate(['/admin/sales/sales-hub', uuid]);
+      this.router.navigate(['/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/sales-hub']);
+      this.router.navigate(['/sales-hub']);
     }
   }
 

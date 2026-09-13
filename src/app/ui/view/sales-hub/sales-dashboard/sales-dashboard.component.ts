@@ -253,7 +253,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     // Must match the [cacheKey] passed to <app-nav-tab> in sales-hub.component.html.
     sessionStorage.setItem('sales-hub', tabName);
     const uuid = this.route.snapshot.paramMap.get('uuid');
-    const path = uuid ? ['/admin/sales/sales-hub', uuid] : ['/admin/sales/sales-hub'];
+    const path = uuid ? ['/sales-hub', uuid] : ['/sales-hub'];
     this.router.navigate(path).then(() => {
       window.location.reload();
     });
@@ -262,36 +262,36 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   navigateToNewQuote(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/quotes/new', uuid]);
+      this.router.navigate(['/quotes/new', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/quotes/new']);
+      this.router.navigate(['/quotes/new']);
     }
   }
 
   navigateToNewInvoice(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/invoices/new', uuid]);
+      this.router.navigate(['/invoices/new', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/invoices/new']);
+      this.router.navigate(['/invoices/new']);
     }
   }
 
   navigateToNewCustomer(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/customers/new', uuid]);
+      this.router.navigate(['/customers/new', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/customers/new']);
+      this.router.navigate(['/customers/new']);
     }
   }
 
   navigateToNewProduct(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/products/new', uuid]);
+      this.router.navigate(['/products/new', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/products/new']);
+      this.router.navigate(['/products/new']);
     }
   }
 
@@ -314,18 +314,18 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   navigateToQuoteDetail(quoteId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/quotes', quoteId, uuid]);
+      this.router.navigate(['/quotes', quoteId, uuid]);
     } else {
-      this.router.navigate(['/admin/sales/quotes', quoteId]);
+      this.router.navigate(['/quotes', quoteId]);
     }
   }
 
   navigateToInvoiceDetail(invoiceId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/invoices', invoiceId, uuid]);
+      this.router.navigate(['/invoices', invoiceId, uuid]);
     } else {
-      this.router.navigate(['/admin/sales/invoices', invoiceId]);
+      this.router.navigate(['/invoices', invoiceId]);
     }
   }
 

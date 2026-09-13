@@ -1445,9 +1445,9 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   private navigateAfterSubmit(response: Quote): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/quotes', response.id, uuid]);
+      this.router.navigate(['/quotes', response.id, uuid]);
     } else {
-      this.router.navigate(['/admin/sales/quotes', response.id]);
+      this.router.navigate(['/quotes', response.id]);
     }
   }
 
@@ -1682,9 +1682,9 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   cancel(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/sales-hub', uuid]);
+      this.router.navigate(['/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/sales-hub']);
+      this.router.navigate(['/sales-hub']);
     }
   }
 

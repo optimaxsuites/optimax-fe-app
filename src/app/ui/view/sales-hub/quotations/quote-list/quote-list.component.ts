@@ -40,9 +40,9 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   openNewQuoteModal(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/quotes/new', uuid]);
+      this.router.navigate(['/quotes/new', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/quotes/new']);
+      this.router.navigate(['/quotes/new']);
     }
   }
 
@@ -50,9 +50,9 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     const quoteIdStr = String(quoteId);
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/quotes', quoteIdStr, 'edit', uuid]);
+      this.router.navigate(['/quotes', quoteIdStr, 'edit', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/quotes', quoteIdStr, 'edit']);
+      this.router.navigate(['/quotes', quoteIdStr, 'edit']);
     }
   }
 
@@ -60,9 +60,9 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     const quoteIdStr = String(quoteId);
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/quotes', quoteIdStr, uuid]);
+      this.router.navigate(['/quotes', quoteIdStr, uuid]);
     } else {
-      this.router.navigate(['/admin/sales/quotes', quoteIdStr]);
+      this.router.navigate(['/quotes', quoteIdStr]);
     }
   }
 
@@ -86,7 +86,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   openInvoiceModal(quoteId: string | number): void {
     const quoteIdStr = String(quoteId);
     const uuid = this.route.snapshot.paramMap.get('uuid');
-    const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
+    const path = uuid ? ['/invoices/new', uuid] : ['/invoices/new'];
     this.router.navigate(path, { queryParams: { quoteId: quoteIdStr } });
   }
 
@@ -98,7 +98,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   duplicateQuote(quote: Quote): void {
     const quoteIdStr = String(quote.id);
     const uuid = this.route.snapshot.paramMap.get('uuid');
-    const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
+    const path = uuid ? ['/quotes/new', uuid] : ['/quotes/new'];
     // Hand the already-loaded quote straight to the form via navigation state so it
     // doesn't have to make a fresh round-trip to re-fetch data we already have.
     this.router.navigate(path, { queryParams: { duplicateId: quoteIdStr }, state: { duplicateSource: quote } });
