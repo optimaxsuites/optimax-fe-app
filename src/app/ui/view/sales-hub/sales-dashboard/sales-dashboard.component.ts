@@ -2,8 +2,9 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../service/sales/sales.service';
+import { Quote, Invoice } from '../../../domain/sales/sales.dto';
 
 import { SharedOverlayModule } from '../../../../shared-overlay.module';
 import { QuoteFormComponent } from '../quotations/quote-form/quote-form.component';
@@ -11,7 +12,7 @@ import { InvoiceFormComponent } from '../invoices/invoice-form/invoice-form.comp
 import { CustomerFormComponent } from '../customer-management/customer-form/customer-form.component';
 import { QuoteDetailComponent } from '../quotations/quote-detail/quote-detail.component';
 import { InvoiceDetailComponent } from '../invoices/invoice-detail/invoice-detail.component';
-import { formatApiDate } from '../../../service/sales/date.util';
+import { formatApiDate, parseApiDate } from '../../../service/sales/date.util';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 
@@ -118,41 +119,121 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     return Math.max(...this.revenueData.map(d => d.amount));
   }
 
+  /**
+   * There's no real backend endpoint behind dashboard-stats/dashboard-revenue (they were
+   * always stubs — see the old comment on this file), so the date-range selector (Week/
+   * Month/Quarter/Year) had nothing to actually filter: it just re-requested the same stub.
+   * Instead, this pulls a full batch of quotes/invoices/customers from the real endpoints
+   * and computes the stats and the revenue chart client-side, scoped to the selected range.
+   */
   private loadDashboardData(): void {
     this.isLoading = true;
     this.error = null;
 
-    this.salesService.getDashboardStats(this.dateRange).subscribe({
-      next: (stats: any) => { this.stats = stats; },
+    forkJoin({
+      quotes: this.salesService.getQuotes({ size: 1000 }),
+      invoices: this.salesService.getInvoices({ size: 1000 }),
+      customers: this.salesService.getCustomers({ page: 0, size: 1000 })
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: ({ quotes, invoices, customers }) => {
+        const cutoff = this.getDateRangeCutoff(this.dateRange);
+        const quotesInRange = quotes.data.filter(q => this.isOnOrAfter(q.createdAt, cutoff));
+        const invoicesInRange = invoices.data.filter(i => this.isOnOrAfter(i.issueDate, cutoff));
+
+        this.stats = this.computeStats(quotesInRange, invoicesInRange, customers.total);
+        this.revenueData = this.buildRevenueSeries(invoicesInRange, this.dateRange);
+        // Already sorted newest-first by the service — "recent" is just the top of each list.
+        this.recentQuotes = quotes.data.slice(0, 3);
+        this.recentInvoices = invoices.data.slice(0, 3);
+        this.isLoading = false;
+      },
       error: (error: any) => {
-        console.error('Error loading stats:', error);
+        console.error('Error loading sales dashboard:', error);
         this.error = 'Failed to load sales dashboard data';
+        this.isLoading = false;
       }
-    });
-
-    this.salesService.getRecentQuotes(3).subscribe({
-      next: (quotes: any[]) => { this.recentQuotes = quotes.slice(0, 3); },
-      error: (error: any) => { console.error('Error loading quotes:', error); }
-    });
-
-    this.salesService.getRecentInvoices(3).subscribe({
-      next: (invoices: any[]) => { this.recentInvoices = invoices.slice(0, 3); },
-      error: (error: any) => { console.error('Error loading invoices:', error); }
     });
 
     this.salesService.getTopProducts(3).subscribe({
       next: (products: any[]) => { this.topProducts = products.slice(0, 3); },
       error: (error: any) => { console.error('Error loading products:', error); }
     });
+  }
 
-    this.salesService.getRevenueChart(this.dateRange).subscribe({
-      next: (data: any[]) => { this.revenueData = data; this.isLoading = false; },
-      error: (error: any) => {
-        console.error('Error loading chart:', error);
-        this.error = 'Failed to load sales dashboard data';
-        this.isLoading = false;
+  private getDateRangeCutoff(range: string): Date {
+    const cutoff = new Date();
+    switch (range) {
+      case 'week': cutoff.setDate(cutoff.getDate() - 7); break;
+      case 'quarter': cutoff.setDate(cutoff.getDate() - 90); break;
+      case 'year': cutoff.setDate(cutoff.getDate() - 365); break;
+      case 'month':
+      default: cutoff.setDate(cutoff.getDate() - 30); break;
+    }
+    cutoff.setHours(0, 0, 0, 0);
+    return cutoff;
+  }
+
+  private isOnOrAfter(date: unknown, cutoff: Date): boolean {
+    const d = parseApiDate(date);
+    return !!d && d >= cutoff;
+  }
+
+  private isOverdue(dueDate: unknown): boolean {
+    const due = parseApiDate(dueDate);
+    if (!due) return false;
+    const now = new Date();
+    return due < now && due.toDateString() !== now.toDateString();
+  }
+
+  private computeStats(quotesInRange: Quote[], invoicesInRange: Invoice[], totalCustomers: number) {
+    const validInvoices = invoicesInRange.filter(i => i.status !== 'CANCELLED');
+    return {
+      totalRevenue: validInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0),
+      totalQuotes: quotesInRange.length,
+      pendingQuotes: quotesInRange.filter(q => q.status === 'SENT').length,
+      acceptedQuotes: quotesInRange.filter(q => q.status === 'ACCEPTED' || (q.status as string) === 'CONVERTED').length,
+      totalInvoices: invoicesInRange.length,
+      paidInvoices: invoicesInRange.filter(i => !!i.paidAt).length,
+      overdueInvoices: invoicesInRange.filter(i => !i.paidAt && this.isOverdue(i.dueDate)).length,
+      // Not date-scoped — "Total Customers" means the whole book, not new signups this period.
+      totalCustomers
+    };
+  }
+
+  /** Buckets invoice totals into a handful of periods appropriate to the selected range. */
+  private buildRevenueSeries(invoicesInRange: Invoice[], range: string): { month: string; amount: number }[] {
+    const validInvoices = invoicesInRange.filter(i => i.status !== 'CANCELLED');
+    const now = new Date();
+    const buckets: { label: string; start: Date; end: Date }[] = [];
+
+    if (range === 'week') {
+      for (let i = 6; i >= 0; i--) {
+        const start = new Date(now); start.setDate(now.getDate() - i); start.setHours(0, 0, 0, 0);
+        const end = new Date(start); end.setHours(23, 59, 59, 999);
+        buckets.push({ label: start.toLocaleDateString('en-GB', { weekday: 'short' }), start, end });
       }
-    });
+    } else if (range === 'month') {
+      for (let i = 3; i >= 0; i--) {
+        const end = new Date(now); end.setDate(now.getDate() - i * 7); end.setHours(23, 59, 59, 999);
+        const start = new Date(end); start.setDate(end.getDate() - 6); start.setHours(0, 0, 0, 0);
+        buckets.push({ label: `Wk ${4 - i}`, start, end });
+      }
+    } else {
+      const months = range === 'year' ? 11 : 2;
+      for (let i = months; i >= 0; i--) {
+        const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+        buckets.push({ label: start.toLocaleDateString('en-GB', { month: 'short' }), start, end });
+      }
+    }
+
+    return buckets.map(b => ({
+      month: b.label,
+      amount: validInvoices.reduce((sum, inv) => {
+        const d = parseApiDate(inv.issueDate);
+        return (d && d >= b.start && d <= b.end) ? sum + (inv.totalAmount || 0) : sum;
+      }, 0)
+    }));
   }
 
   refreshData(): void {

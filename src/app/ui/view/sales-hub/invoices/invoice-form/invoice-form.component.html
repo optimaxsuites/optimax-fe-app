@@ -324,7 +324,12 @@
             </div>
           </div>
           <div class="if-doc-party">
-            <div class="if-doc-section-label">PREPARED BY</div>
+            <div class="if-doc-section-label">
+              PREPARED BY
+              <button type="button" class="if-doc-edit-link" (click)="editBilledBy()" title="Edit sender details">
+                <i class="fas fa-pen"></i> Edit
+              </button>
+            </div>
             <div class="if-doc-billto">
               <strong>{{ billedBy.name || billedByDraft.name || 'Your Company' }}</strong>
               <span *ngIf="billedBy.address || billedByDraft.address" class="if-doc-party-addr">{{ billedBy.address || billedByDraft.address }}</span>
@@ -576,9 +581,63 @@
       </div>
     </div>
     <div class="if-modal-foot">
-      <button type="button" class="if-btn if-btn--ghost" (click)="showNewCustomerModal = false">Cancel</button>
-      <button type="button" class="if-btn if-btn--primary" (click)="onQuickCustomerSubmit()">
-        <i class="fas fa-user-plus"></i> Add Client
+      <button type="button" class="if-btn if-btn--ghost" [disabled]="isSavingCustomer" (click)="showNewCustomerModal = false">Cancel</button>
+      <button type="button" class="if-btn if-btn--primary" [disabled]="isSavingCustomer" (click)="onQuickCustomerSubmit()">
+        <i class="fas fa-spinner fa-spin" *ngIf="isSavingCustomer"></i>
+        <i class="fas fa-user-plus" *ngIf="!isSavingCustomer"></i>
+        {{ isSavingCustomer ? 'Saving…' : 'Add Client' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EDIT SENDER (PREPARED BY) MODAL ══════════════════════════════════ -->
+<div class="if-modal-backdrop" *ngIf="showBilledByModal" (click)="$event.target === $event.currentTarget && cancelBilledByEdit()">
+  <div class="if-modal" style="max-width:480px">
+    <div class="if-modal-head">
+      <span><i class="fas fa-building"></i> Sender Details</span>
+      <button type="button" class="if-modal-close" (click)="cancelBilledByEdit()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="if-modal-body">
+      <div class="if-field">
+        <label class="if-label">Company Name <span class="if-req">*</span></label>
+        <input class="if-input" [(ngModel)]="billedByDraft.name" [ngModelOptions]="{standalone:true}" placeholder="e.g. Optimax Suites Ltd">
+      </div>
+      <div class="if-field">
+        <label class="if-label">Address</label>
+        <textarea class="if-textarea" rows="2" [(ngModel)]="billedByDraft.address" [ngModelOptions]="{standalone:true}" placeholder="Company address"></textarea>
+      </div>
+      <div class="if-grid-2">
+        <div class="if-field">
+          <label class="if-label">Email</label>
+          <input type="email" class="if-input" [(ngModel)]="billedByDraft.email" [ngModelOptions]="{standalone:true}" placeholder="company@example.com">
+        </div>
+        <div class="if-field">
+          <label class="if-label">Phone</label>
+          <input class="if-input" [(ngModel)]="billedByDraft.phone" [ngModelOptions]="{standalone:true}" placeholder="+234…">
+        </div>
+      </div>
+      <div class="if-field">
+        <label class="if-label">Bank Name</label>
+        <input class="if-input" [(ngModel)]="billedByDraft.bankName" [ngModelOptions]="{standalone:true}" placeholder="e.g. First Bank">
+      </div>
+      <div class="if-grid-2">
+        <div class="if-field">
+          <label class="if-label">Account Name</label>
+          <input class="if-input" [(ngModel)]="billedByDraft.accountName" [ngModelOptions]="{standalone:true}">
+        </div>
+        <div class="if-field">
+          <label class="if-label">Account Number</label>
+          <input class="if-input" [(ngModel)]="billedByDraft.accountNumber" [ngModelOptions]="{standalone:true}">
+        </div>
+      </div>
+    </div>
+    <div class="if-modal-foot">
+      <button type="button" class="if-btn if-btn--ghost" [disabled]="isSavingBilledBy" (click)="cancelBilledByEdit()">Cancel</button>
+      <button type="button" class="if-btn if-btn--primary" [disabled]="isSavingBilledBy" (click)="saveBilledBy()">
+        <i class="fas fa-spinner fa-spin" *ngIf="isSavingBilledBy"></i>
+        <i class="fas fa-check" *ngIf="!isSavingBilledBy"></i>
+        {{ isSavingBilledBy ? 'Saving…' : 'Save' }}
       </button>
     </div>
   </div>

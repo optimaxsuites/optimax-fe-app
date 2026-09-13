@@ -343,6 +343,7 @@ export interface MerchantBankDetails {
 
 export interface MerchantInfo {
   id: number;
+  tenantId?: string;
   merchantId: string;
   name: string;
   companyName: string;
@@ -353,6 +354,9 @@ export interface MerchantInfo {
   taxId: string;
   website?: string;
   logoUrl?: string[];
+  createdBy?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 
