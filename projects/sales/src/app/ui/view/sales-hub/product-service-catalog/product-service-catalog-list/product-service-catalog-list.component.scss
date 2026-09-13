@@ -414,10 +414,16 @@
   flex-shrink: 0;
   overflow: hidden;
 
+  // A photo needs a neutral backdrop to letterbox against — the gradient is only
+  // right for the fallback initial (no image on file for this product).
+  &--photo {
+    background: var(--bg);
+  }
+
   .il-product-image {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
   }
 }
 
@@ -760,10 +766,16 @@
   overflow: hidden;
   flex-shrink: 0;
 
+  // A photo needs a neutral backdrop to letterbox against — the gradient is only
+  // right for the fallback initial (no image on file for this product).
+  &--photo {
+    background: var(--bg);
+  }
+
   .il-grid-product-image {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
   }
 
   span {

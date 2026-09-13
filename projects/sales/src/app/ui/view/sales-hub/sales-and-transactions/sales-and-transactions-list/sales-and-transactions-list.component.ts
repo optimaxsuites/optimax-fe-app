@@ -118,9 +118,12 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
 
   loadTransactions(): void {
     this.isLoading = true;
+    // This component does its own search/status/date-range filtering and pagination over the
+    // full set below (applyFilters()), so it needs everything up front rather than a capped
+    // page — a small size here would silently hide anything past the cap from search/filters.
     forkJoin({
-      transactions: this.salesService.getSalesandTransactions({ size: 100 }),
-      customers: this.salesService.getCustomers({ page: 0, size: 200 })
+      transactions: this.salesService.getSalesandTransactions({ size: 1000 }),
+      customers: this.salesService.getCustomers({ page: 0, size: 1000 })
     }).pipe(takeUntil(this.destroy$))
       .subscribe({
         next: ({ transactions, customers }: any) => {

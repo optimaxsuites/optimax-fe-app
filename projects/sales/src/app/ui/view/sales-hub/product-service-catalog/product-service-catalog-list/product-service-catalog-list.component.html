@@ -192,7 +192,7 @@
 
             <td>
               <div class="il-product-info">
-                <div class="il-product-avatar">
+                <div class="il-product-avatar" [class.il-product-avatar--photo]="product.images && product.images.length > 0">
                   <img *ngIf="product.images && product.images.length > 0; else listNoImage"
                        [src]="product.images[0]"
                        [alt]="product.name"
@@ -265,7 +265,7 @@
             <span class="il-grid-number">#{{ getProductIndex(product) }}</span>
           </div>
 
-          <div class="il-grid-card-image">
+          <div class="il-grid-card-image" [class.il-grid-card-image--photo]="product.images && product.images.length > 0">
             <img *ngIf="product.images && product.images.length > 0; else gridNoImage"
                  [src]="product.images[0]"
                  [alt]="product.name"
@@ -536,7 +536,7 @@
 
             <td>
               <div class="il-product-info">
-                <div class="il-product-avatar">
+                <div class="il-product-avatar" [class.il-product-avatar--photo]="product.images && product.images.length > 0">
                   <img *ngIf="product.images && product.images.length > 0; else listNoImage"
                        [src]="product.images[0]"
                        [alt]="product.name"
@@ -609,7 +609,7 @@
             <span class="il-grid-number">#{{ getProductIndex(product) }}</span>
           </div>
 
-          <div class="il-grid-card-image">
+          <div class="il-grid-card-image" [class.il-grid-card-image--photo]="product.images && product.images.length > 0">
             <img *ngIf="product.images && product.images.length > 0; else gridNoImage"
                  [src]="product.images[0]"
                  [alt]="product.name"

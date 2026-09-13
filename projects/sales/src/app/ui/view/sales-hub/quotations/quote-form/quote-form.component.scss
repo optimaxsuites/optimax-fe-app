@@ -42,7 +42,8 @@
 .qf-doc-meta { display:grid; grid-template-columns:1fr 1fr; gap:6px 16px; margin-bottom:14px; font-size:11px; > div { display:flex; flex-direction:column; } }
 .qf-doc-meta-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-bottom:2px; }
 .qf-doc-section { margin-bottom:14px; }
-.qf-doc-section-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); border-bottom:1px solid var(--border); padding-bottom:4px; margin-bottom:7px; }
+.qf-doc-section-label { display:flex; justify-content:space-between; align-items:center; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); border-bottom:1px solid var(--border); padding-bottom:4px; margin-bottom:7px; }
+.qf-doc-edit-link { display:inline-flex; align-items:center; gap:3px; background:none; border:none; padding:0; font-size:9px; font-weight:700; text-transform:none; letter-spacing:normal; color:var(--p); cursor:pointer; font-family:inherit; &:hover { text-decoration:underline; } }
 .qf-doc-billto { font-size:12px; strong { color:var(--text); } }
 .qf-doc-table { width:100%; border-collapse:collapse; font-size:11px; th { background:#f0f4f3; padding:5px 7px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); } td { padding:5px 7px; border-bottom:1px solid #edf1f0; } .qf-doc-th-r,.qf-doc-td-r { text-align:right; } .qf-doc-empty { text-align:center; color:var(--muted); font-style:italic; padding:12px; } }
 .qf-doc-totals { margin-top:10px; border-top:1px solid var(--border); padding-top:8px; }

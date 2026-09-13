@@ -7,7 +7,7 @@ import { SalesService } from '../../../../service/sales/sales.service';
 import { PdfGenerationService } from '../../../../service/procurement/pdf-generation.service';
 import { SalesEmailService } from '../../../../service/sales/sales-email.service';
 import { lastValueFrom } from 'rxjs';
-import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails, InvoiceAttachments, SendSalesEmailRequest, SalesEmailAttachment } from '../../../../domain/sales/sales.dto';
+import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails, InvoiceAttachments, SendSalesEmailRequest, SalesEmailAttachment, MerchantInfo } from '../../../../domain/sales/sales.dto';
 import { toDateInputValue, formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
@@ -190,6 +190,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   // UI State
   showNewCustomerModal = false;
+  isSavingCustomer = false;
   showProductModal = false;
   searchProductTerm = '';
   currentItemIndex = 0;
@@ -201,8 +202,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   newProductError = '';
   newProduct = { name: '', description: '', unitPrice: 0, taxRate: 0 };
 
-  // Billed By (Invoice From) editable data
+  // Billed By (Invoice From) editable data — persisted via the merchant-info endpoint.
   showBilledByModal = false;
+  isSavingBilledBy = false;
+  /** Set once we know a merchant-info record exists, so Save updates it instead of creating a new one. */
+  merchantInfoId: number | null = null;
   billedBy = {
     name: '',
     email: '',
@@ -293,7 +297,32 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
     this.setupFormListeners();
 
-    // Load company profile for logo/name/bank embed in document
+    // Load the tenant's own merchant info ("Prepared By") — falls back to the generic
+    // company profile below if none has been set up yet via the Sender Details modal.
+    if (!this.isEditMode) {
+      this.salesService.getMyMerchantInfo().pipe(takeUntil(this.destroy$)).subscribe(merchant => {
+        if (!merchant) return;
+        this.merchantInfoId = merchant.id;
+        this.billedBy = {
+          name: merchant.companyName || merchant.name || '',
+          email: merchant.email || '',
+          phone: merchant.phone || '',
+          address: Array.isArray(merchant.address) ? merchant.address.join(', ') : (merchant.address || ''),
+          bankName: merchant.bankDetails?.bankName || '',
+          accountName: merchant.bankDetails?.accountName || '',
+          accountNumber: merchant.bankDetails?.accountNumber || '',
+          routingNumber: merchant.website || ''
+        };
+        this.billedByDraft = { ...this.billedBy };
+        this.companyName = this.billedBy.name;
+        if (merchant.logoUrl?.[0]) {
+          this.logoUrl = merchant.logoUrl[0];
+          this.logoFileName = 'Company Logo';
+        }
+      });
+    }
+
+    // Fallback: fill in anything merchant info didn't have, from the generic company profile.
     this.companyProfileService.companyProfile$.pipe(takeUntil(this.destroy$)).subscribe(profile => {
       if (profile) {
         if (profile.logoUrl && !this.isEditMode) {
@@ -1268,21 +1297,56 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   saveBilledBy(): void {
+    if (this.isSavingBilledBy) return;
     if (!this.billedByDraft.name || this.billedByDraft.name.trim().length === 0) {
       this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Name is required for the sender.' });
       return;
     }
-    this.billedBy = { ...this.billedByDraft };
-    this.showBilledByModal = false;
-    this.companyProfileService.updateBankDetails({
-      bankName: this.billedBy.bankName,
-      bankAccountName: this.billedBy.accountName,
-      bankAccountNumber: this.billedBy.accountNumber
-    });
-    this.companyProfileService.updateContactDetails({
-      email: this.billedBy.email,
-      phone: this.billedBy.phone,
-      address: this.billedBy.address
+
+    this.isSavingBilledBy = true;
+    const draft = this.billedByDraft;
+    const payload: Partial<MerchantInfo> = {
+      name: draft.name,
+      companyName: draft.name,
+      email: draft.email,
+      phone: draft.phone,
+      address: draft.address ? [draft.address] : [],
+      bankDetails: {
+        bankName: draft.bankName,
+        accountName: draft.accountName,
+        accountNumber: draft.accountNumber
+      },
+      website: draft.routingNumber || undefined,
+      logoUrl: this.logoUrl ? [this.logoUrl] : undefined
+    };
+
+    const req = this.merchantInfoId
+      ? this.salesService.updateMerchantInfo(this.merchantInfoId, payload)
+      : this.salesService.createMerchantInfo({ ...payload, createdBy: Number(sessionStorage.getItem('userid')) || undefined });
+
+    req.subscribe({
+      next: (saved) => {
+        this.merchantInfoId = saved.id;
+        this.billedBy = { ...draft };
+        this.isSavingBilledBy = false;
+        this.showBilledByModal = false;
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Sender details updated.' });
+        this.companyProfileService.updateBankDetails({
+          bankName: this.billedBy.bankName,
+          bankAccountName: this.billedBy.accountName,
+          bankAccountNumber: this.billedBy.accountNumber
+        });
+        this.companyProfileService.updateContactDetails({
+          email: this.billedBy.email,
+          phone: this.billedBy.phone,
+          address: this.billedBy.address
+        });
+      },
+      error: (err) => {
+        console.error('Error saving merchant info:', err);
+        this.isSavingBilledBy = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save sender details. Please try again.' });
+      }
     });
   }
 
@@ -1856,12 +1920,17 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   onQuickCustomerSubmit(): void {
+    // Guards against duplicate customers being created when the request is slow and
+    // the user clicks "Save Client" more than once before it resolves.
+    if (this.isSavingCustomer) return;
+
     if (this.quickCustomerForm.invalid) {
       this.quickCustomerForm.markAllAsTouched();
       this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please fill in all required fields in the quick-add client form' });
       return;
     }
 
+    this.isSavingCustomer = true;
     const val = this.quickCustomerForm.value;
     const newCust: any = {
       name: val.name,
@@ -1880,11 +1949,13 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       this.salesService.createCustomer(newCust).subscribe({
         next: (savedCust) => {
           this.customers = [...this.customers, savedCust];
+          this.isSavingCustomer = false;
           this.showNewCustomerModal = false;
           this.quickCustomerForm.reset({ savePermanently: true });
           while (this.quickCustomerBankAccounts.length) {
             this.quickCustomerBankAccounts.removeAt(0);
           }
+          this.messageService.add({ severity: 'success', summary: 'Client Created', detail: `"${savedCust.name}" has been added to your customers.` });
           setTimeout(() => {
             this.invoiceForm.patchValue({ customerId: savedCust.customerId || String(savedCust.id) });
             this.onCustomerSelect(savedCust.customerId || String(savedCust.id));
@@ -1892,6 +1963,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error saving client permanently:', err);
+          this.isSavingCustomer = false;
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save client permanently. Please try again.' });
         }
       });
@@ -1904,11 +1976,13 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         customerId: tempId
       } as any;
       this.customers = [...this.customers, tempCust];
+      this.isSavingCustomer = false;
       this.showNewCustomerModal = false;
       this.quickCustomerForm.reset({ savePermanently: true });
       while (this.quickCustomerBankAccounts.length) {
         this.quickCustomerBankAccounts.removeAt(0);
       }
+      this.messageService.add({ severity: 'success', summary: 'Client Added', detail: `"${tempCust.name}" added for this invoice.` });
       setTimeout(() => {
         this.invoiceForm.patchValue({ customerId: tempId });
         this.onCustomerSelect(tempId);

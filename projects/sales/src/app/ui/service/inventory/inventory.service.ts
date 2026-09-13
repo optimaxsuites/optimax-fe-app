@@ -4,7 +4,7 @@
 // ============================================================
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
+import { Observable, BehaviorSubject, of, throwError, forkJoin } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../shared-component/service/environments/environment';
 import {
@@ -1816,16 +1816,31 @@ export class InventoryService {
     };
   }
 
-  /** GET /products — falls back to the local mock/localStorage copy if the API is unavailable. */
+  /**
+   * GET /products — falls back to the local mock/localStorage copy if the API is unavailable.
+   *
+   * Also fetches categories/units/suppliers alongside the products (rather than relying on
+   * some other component having already called loadCategories()/loadUnits()/loadSuppliers()
+   * first) — productFromApi() resolves each product's display fields against whatever's
+   * currently in LOCAL_KEYS.CATEGORIES/MEASUREMENT_UNITS/SUPPLIERS, and callers that fetch
+   * products without having loaded those first hit a race: if that localStorage cache is
+   * still empty/stale when this runs, every product's `category` resolves to '', which
+   * silently breaks the category filter (an empty string never matches a real category name).
+   */
   getProducts(filters?: ProductFilters): Observable<PaginatedResponse<Product>> {
     this.loadingSubject.next(true);
     const cached = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
     const existingById = new Map(cached.map(p => [p.id, p]));
 
-    return this.http.get<any[]>(`${this.baseUrl}/products`, {
-      params: new HttpParams().set('tenantId', this.tenantId)
+    return forkJoin({
+      products: this.http.get<any[]>(`${this.baseUrl}/products`, {
+        params: new HttpParams().set('tenantId', this.tenantId)
+      }),
+      categories: this.getCategories(),
+      units: this.getMeasurementUnits(),
+      suppliers: this.getSuppliers()
     }).pipe(
-      map(res => (Array.isArray(res) ? res : []).map(raw => this.productFromApi(raw, existingById.get(raw.id)))),
+      map(({ products }) => (Array.isArray(products) ? products : []).map(raw => this.productFromApi(raw, existingById.get(raw.id)))),
       tap(products => localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products))),
       catchError(() => of(cached)),
       map(products => this.paginateProducts(products, filters)),
@@ -2118,7 +2133,9 @@ export class InventoryService {
         const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
         const product = products.find(p => p.id === numericId);
         if (product) {
-          product.images = [...(product.images || []), imageUrl];
+          product.images = product.images?.includes(imageUrl)
+            ? product.images
+            : [...(product.images || []), imageUrl];
           localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
           this.productsSubject.next(products);
         }

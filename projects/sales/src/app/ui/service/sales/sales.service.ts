@@ -123,11 +123,41 @@ export class SalesService {
   // QUOTES
   // ============================================
 
-  getQuotes(filters: any): Observable<{ data: Quote[]; total: number }> {
-    let params = new HttpParams().set('tenantId', this.tenantId).set('sort', 'createdAt,desc');
+  /** Pulls a display name off a Quote/Invoice's customerName, whether it's an embedded object or a raw string. */
+  private resolveEntityCustomerName(entity: { customerName?: any }): string {
+    const cn = entity.customerName;
+    return (typeof cn === 'object' ? cn?.name : cn) || '';
+  }
 
-    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
-    if (filters?.size !== undefined) params = params.set('size', String(filters.size));
+  /** Inclusive day-range check against `dateField`, using parseApiDate so timestamp format quirks don't matter. */
+  private matchesDateRange<T>(item: T, dateField: keyof T, dateFrom?: string, dateTo?: string): boolean {
+    if (!dateFrom && !dateTo) return true;
+    const value = parseApiDate(item[dateField] as any);
+    if (!value) return false;
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      from.setHours(0, 0, 0, 0);
+      if (value < from) return false;
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      if (value > to) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Fetches a large batch and does search/date-range/sort/paginate entirely client-side,
+   * rather than trusting the backend's own query params. That combination previously caused
+   * two separate problems: newly created quotes going missing (page 1 — what the UI always
+   * requests first — isn't guaranteed to be the backend's most-recent page unless it actually
+   * honors `sort`), and the search box / date range fields silently doing nothing (the `search`
+   * query param and `dateFrom`/`dateTo` were either never sent or aren't supported server-side).
+   */
+  getQuotes(filters: any): Observable<{ data: Quote[]; total: number }> {
+    let params = new HttpParams().set('tenantId', this.tenantId).set('page', '1').set('size', '1000');
+
     if (filters?.searchTerm) params = params.set('search', filters.searchTerm);
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
     if (filters?.customerId) params = params.set('customerId', filters.customerId);
@@ -135,10 +165,28 @@ export class SalesService {
     return this.http.get<any>(`${this.base}/quotes`, { params }).pipe(
       map(res => {
         const arr: Quote[] = Array.isArray(res) ? res : (res?.data ?? []);
-        // Belt-and-braces: re-sort whatever page came back, in case the backend
-        // ignores the `sort` param or has its own default ordering.
-        const sorted = this.sortNewestFirst(arr, 'createdAt');
-        return { data: sorted, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+        let result = this.sortNewestFirst(arr, 'createdAt');
+
+        if (filters?.status && filters.status !== 'ALL') {
+          result = result.filter(q => q.status === filters.status);
+        }
+
+        const term = String(filters?.searchTerm ?? '').trim().toLowerCase();
+        if (term) {
+          result = result.filter(q =>
+            (q.quoteNumber || '').toLowerCase().includes(term) ||
+            this.resolveEntityCustomerName(q).toLowerCase().includes(term)
+          );
+        }
+
+        if (filters?.dateFrom || filters?.dateTo) {
+          result = result.filter(q => this.matchesDateRange(q, 'createdAt', filters.dateFrom, filters.dateTo));
+        }
+
+        const page = filters?.page ?? 0;
+        const size = filters?.size ?? (result.length || 1);
+        const start = page * size;
+        return { data: result.slice(start, start + size), total: result.length };
       }),
       catchError(() => of({ data: [], total: 0 }))
     );
@@ -179,11 +227,10 @@ export class SalesService {
   // INVOICES
   // ============================================
 
+  /** See getQuotes() — same fetch-big-batch, search/date-range/sort/paginate-client-side strategy, for the same reasons. */
   getInvoices(filters: any): Observable<{ data: Invoice[]; total: number }> {
-    let params = new HttpParams().set('tenantId', this.tenantId).set('sort', 'issueDate,desc');
+    let params = new HttpParams().set('tenantId', this.tenantId).set('page', '1').set('size', '1000');
 
-    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
-    if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.searchTerm) params = params.set('search', filters.searchTerm);
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
     if (filters?.customerId) params = params.set('customerId', filters.customerId);
@@ -191,10 +238,28 @@ export class SalesService {
     return this.http.get<any>(`${this.base}/invoices`, { params }).pipe(
       map(res => {
         const arr: Invoice[] = Array.isArray(res) ? res : (res?.data ?? []);
-        // Belt-and-braces: re-sort whatever page came back, in case the backend
-        // ignores the `sort` param or has its own default ordering.
-        const sorted = this.sortNewestFirst(arr, 'issueDate');
-        return { data: sorted, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+        let result = this.sortNewestFirst(arr, 'issueDate');
+
+        if (filters?.status && filters.status !== 'ALL') {
+          result = result.filter(inv => inv.status === filters.status);
+        }
+
+        const term = String(filters?.searchTerm ?? '').trim().toLowerCase();
+        if (term) {
+          result = result.filter(inv =>
+            (inv.invoiceNumber || '').toLowerCase().includes(term) ||
+            this.resolveEntityCustomerName(inv).toLowerCase().includes(term)
+          );
+        }
+
+        if (filters?.dateFrom || filters?.dateTo) {
+          result = result.filter(inv => this.matchesDateRange(inv, 'issueDate', filters.dateFrom, filters.dateTo));
+        }
+
+        const page = filters?.page ?? 0;
+        const size = filters?.size ?? (result.length || 1);
+        const start = page * size;
+        return { data: result.slice(start, start + size), total: result.length };
       }),
       catchError(() => of({ data: [], total: 0 }))
     );
@@ -242,10 +307,11 @@ export class SalesService {
     totalInactive?: number;
     totalBlacklisted?: number;
   }> {
-    let params = new HttpParams().set('tenantId', this.tenantId).set('sort', 'createdAt,desc');
+    // See getQuotes() — fetch a big batch and paginate client-side rather than trusting
+    // the backend's own pagination/sort, which caused newly created records to land on
+    // a page the UI never visits.
+    let params = new HttpParams().set('tenantId', this.tenantId).set('page', '1').set('size', '1000');
 
-    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
-    if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.searchTerm) params = params.set('search', filters.searchTerm);
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
 
@@ -258,13 +324,34 @@ export class SalesService {
           address: c.address ? [c.address] : [],
           deliverAddress: Array.isArray(c.deliverAddress) ? c.deliverAddress : (c.deliverAddress ? [c.deliverAddress] : [])
         }));
-        // Belt-and-braces: re-sort whatever page came back, in case the backend
-        // ignores the `sort` param or has its own default ordering.
-        const sorted = this.sortNewestFirst(arr, 'createdAt');
-        const total = Array.isArray(res) ? res.length : (res?.totalSize ?? res?.totalElements ?? arr.length);
+        let result = this.sortNewestFirst(arr, 'createdAt');
+
+        // Client-side fallback for status/search/date-range — see getQuotes() for why: none
+        // of these query params are confirmed to be honored server-side, and dateFrom/dateTo
+        // were never sent at all.
+        if (filters?.status && filters.status !== 'ALL') {
+          result = result.filter(c => c.status === filters.status);
+        }
+
+        const term = String(filters?.searchTerm ?? '').trim().toLowerCase();
+        if (term) {
+          result = result.filter(c =>
+            (c.name || '').toLowerCase().includes(term) ||
+            (c.email || '').toLowerCase().includes(term) ||
+            (c.phone || '').toLowerCase().includes(term)
+          );
+        }
+
+        if (filters?.dateFrom || filters?.dateTo) {
+          result = result.filter(c => this.matchesDateRange(c, 'createdAt', filters.dateFrom, filters.dateTo));
+        }
+
+        const page = filters?.page ?? 0;
+        const size = filters?.size ?? (result.length || 1);
+        const start = page * size;
         return {
-          data: sorted,
-          total,
+          data: result.slice(start, start + size),
+          total: result.length,
           totalActive: res?.totalActive ?? 0,
           totalInactive: res?.totalInactive ?? 0,
           totalBlacklisted: res?.totalBlacklisted ?? 0
@@ -305,6 +392,46 @@ export class SalesService {
 
   deleteCustomer(id: string | number): Observable<boolean> {
     return this.http.delete<any>(`${this.base}/customers/${id}`).pipe(
+      map(() => true),
+      catchError(() => of(false))
+    );
+  }
+
+  // ============================================
+  // MERCHANT INFO — the seller's own company details ("Prepared By" on
+  // quotes/invoices: name, address, bank account, logo).
+  // ============================================
+
+  getMerchantInfoList(): Observable<MerchantInfo[]> {
+    return this.http.get<any>(`${this.base}/merchant-info`).pipe(
+      map(res => Array.isArray(res) ? res : (res?.data ?? [])),
+      catchError(() => of([]))
+    );
+  }
+
+  /** The current tenant's own merchant info, if one has been set up yet. */
+  getMyMerchantInfo(): Observable<MerchantInfo | null> {
+    return this.http.get<MerchantInfo>(`${this.base}/merchant-info/my`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  getMerchantInfoById(id: string | number): Observable<MerchantInfo | null> {
+    return this.http.get<MerchantInfo>(`${this.base}/merchant-info/${id}`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  createMerchantInfo(data: Partial<MerchantInfo>): Observable<MerchantInfo> {
+    return this.http.post<MerchantInfo>(`${this.base}/merchant-info`, data);
+  }
+
+  updateMerchantInfo(id: string | number, data: Partial<MerchantInfo>): Observable<MerchantInfo> {
+    return this.http.put<MerchantInfo>(`${this.base}/merchant-info/${id}`, data);
+  }
+
+  deleteMerchantInfo(id: string | number): Observable<boolean> {
+    return this.http.delete<any>(`${this.base}/merchant-info/${id}`).pipe(
       map(() => true),
       catchError(() => of(false))
     );
@@ -393,11 +520,10 @@ export class SalesService {
   // SALES ORDERS (getSalesandTransactions)
   // ============================================
 
+  /** See getQuotes() — same fetch-big-batch-and-paginate-client-side strategy, for the same reason. */
   getSalesandTransactions(filters: any): Observable<{ data: SalesandTransactions[]; total: number }> {
-    let params = new HttpParams().set('tenantId', this.tenantId).set('sort', 'orderDate,desc');
+    let params = new HttpParams().set('tenantId', this.tenantId).set('page', '1').set('size', '1000');
 
-    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
-    if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
     if (filters?.customerId) params = params.set('customerId', filters.customerId);
     if (filters?.searchTerm) params = params.set('search', filters.searchTerm);
@@ -405,10 +531,24 @@ export class SalesService {
     return this.http.get<any>(`${this.base}/sales-orders`, { params }).pipe(
       map(res => {
         const arr: SalesandTransactions[] = Array.isArray(res) ? res : (res?.data ?? []);
-        // Belt-and-braces: re-sort whatever page came back, in case the backend
-        // ignores the `sort` param or has its own default ordering.
-        const sorted = this.sortNewestFirst(arr, 'orderDate');
-        return { data: sorted, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+        let result = this.sortNewestFirst(arr, 'orderDate');
+
+        if (filters?.status && filters.status !== 'ALL') {
+          result = result.filter(tx => tx.status === filters.status);
+        }
+        const term = String(filters?.searchTerm ?? '').trim().toLowerCase();
+        if (term) {
+          result = result.filter(tx =>
+            (tx.orderId || '').toLowerCase().includes(term) ||
+            (tx.reference || '').toLowerCase().includes(term) ||
+            this.resolveEntityCustomerName(tx).toLowerCase().includes(term)
+          );
+        }
+
+        const page = filters?.page ?? 0;
+        const size = filters?.size ?? (result.length || 1);
+        const start = page * size;
+        return { data: result.slice(start, start + size), total: result.length };
       }),
       catchError(() => of({ data: [], total: 0 }))
     );
