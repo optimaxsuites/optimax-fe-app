@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { map, catchError, switchMap } from 'rxjs/operators';
+import { map, catchError, switchMap, tap } from 'rxjs/operators';
 import {
   SalesSummary,
   RevenueChartData,
@@ -204,6 +204,63 @@ export class SalesService {
       switchMap(res => {
         const id = typeof res === 'object' ? (res.id ?? res) : res;
         return this.getQuoteById(id).pipe(map(q => q as Quote));
+      }),
+      // Every quote should show up on the Sales & Transactions lifecycle tracker from the
+      // moment it exists, not only once someone later clicks "Accept Quote" — otherwise the
+      // tab silently misses any quote that's still draft/sent/declined. Fire-and-forget: a
+      // failure here shouldn't block the quote itself from being created.
+      tap(quote => this.trackNewQuote(quote))
+    );
+  }
+
+  private trackNewQuote(quote: Quote): void {
+    if (!quote) return;
+    const addOpts = Array.isArray(quote.additionalOptions) ? quote.additionalOptions[0] : (quote.additionalOptions as any);
+    this.upsertTransactionForQuote(quote.id, {
+      quoteId: quote,
+      customerId: quote.customerId,
+      customerName: quote.customerName,
+      items: quote,
+      subtotal: quote.subtotal,
+      taxAmount: quote.taxAmount,
+      discountAmount: quote.discountAmount,
+      totalAmount: quote.totalAmount,
+      currency: quote.currency,
+      status: 'QUOTE_SENT',
+      quoteSentDate: new Date(),
+      customerNotes: addOpts?.notes || '',
+      billingAddress: addOpts?.address || '',
+      shippingAddress: addOpts?.address || ''
+    }).subscribe({
+      error: (err) => console.error('Failed to auto-track new quote in Sales & Transactions:', err)
+    });
+  }
+
+  /**
+   * Finds the sales-transaction record already tracking a given quote's lifecycle (created
+   * automatically when the quote itself was created — see trackNewQuote()) and merges `patch`
+   * into it, advancing its status/fields. Falls back to creating one if none exists yet, e.g.
+   * for quotes created before this auto-tracking existed.
+   */
+  upsertTransactionForQuote(quoteId: number | string, patch: Partial<SalesandTransactions>): Observable<SalesandTransactions> {
+    return this.getSalesandTransactions({ quoteId, size: 1000 }).pipe(
+      switchMap(res => {
+        const existing = res.data?.[0];
+        return existing
+          ? this.updateSalesandTransactions(existing.id, patch)
+          : this.createSalesandTransactions({ orderDate: new Date(), ...patch });
+      })
+    );
+  }
+
+  /** Same as upsertTransactionForQuote(), keyed on invoiceId instead. */
+  upsertTransactionForInvoice(invoiceId: number | string, patch: Partial<SalesandTransactions>): Observable<SalesandTransactions> {
+    return this.getSalesandTransactions({ invoiceId, size: 1000 }).pipe(
+      switchMap(res => {
+        const existing = res.data?.[0];
+        return existing
+          ? this.updateSalesandTransactions(existing.id, patch)
+          : this.createSalesandTransactions({ orderDate: new Date(), ...patch });
       })
     );
   }
@@ -277,8 +334,33 @@ export class SalesService {
       switchMap(res => {
         const id = typeof res === 'object' ? (res.id ?? res) : res;
         return this.getInvoiceById(id).pipe(map(inv => inv as Invoice));
-      })
+      }),
+      tap(invoice => this.trackNewInvoice(invoice))
     );
+  }
+
+  private trackNewInvoice(invoice: Invoice): void {
+    if (!invoice) return;
+    const patch: Partial<SalesandTransactions> = {
+      invoiceId: invoice,
+      customerId: invoice.customerId,
+      customerName: invoice.customerName,
+      totalAmount: invoice.totalAmount,
+      currency: invoice.currency,
+      status: 'INVOICE_SENT',
+      invoiceSentDate: new Date(),
+      balanceDue: invoice.totalAmount
+    };
+    const quoteIdValue = (invoice as any).quoteId;
+    // If this invoice was generated from a quote, that quote already has a transaction
+    // tracking it (see trackNewQuote()) — attach the invoice there and advance its status,
+    // instead of spawning a second, duplicate transaction for the same underlying order.
+    const upsert$ = quoteIdValue
+      ? this.upsertTransactionForQuote(quoteIdValue, patch)
+      : this.upsertTransactionForInvoice(invoice.id, patch);
+    upsert$.subscribe({
+      error: (err) => console.error('Failed to auto-track new invoice in Sales & Transactions:', err)
+    });
   }
 
   updateInvoice(id: string | number, data: Partial<Invoice>): Observable<Invoice> {
@@ -545,6 +627,21 @@ export class SalesService {
           );
         }
 
+        // quoteId/invoiceId come back nested (tx.quoteId is the whole Quote object, not a
+        // bare id — see the SalesandTransactions DTO), so match against the nested .id.
+        if (filters?.quoteId != null) {
+          result = result.filter(tx => {
+            const qid = tx.quoteId && typeof tx.quoteId === 'object' ? (tx.quoteId as any).id : tx.quoteId;
+            return String(qid) === String(filters.quoteId);
+          });
+        }
+        if (filters?.invoiceId != null) {
+          result = result.filter(tx => {
+            const iid = tx.invoiceId && typeof tx.invoiceId === 'object' ? (tx.invoiceId as any).id : tx.invoiceId;
+            return String(iid) === String(filters.invoiceId);
+          });
+        }
+
         const page = filters?.page ?? 0;
         const size = filters?.size ?? (result.length || 1);
         const start = page * size;
@@ -560,14 +657,68 @@ export class SalesService {
     );
   }
 
+  private idOf(v: any): any {
+    return v && typeof v === 'object' ? v.id : v;
+  }
+
+  /**
+   * The sales-order DTO's GET shape nests related records (quote/customer/invoice as full
+   * objects) but its write shape wants bare foreign-key ids — sending a nested object for
+   * quoteId/customerId/invoiceId 500s with "Cannot deserialize value of type java.lang.Long
+   * from Object value". Callers throughout this codebase (quote-detail, invoice-detail, the
+   * transactions list, and the auto-tracking above) build these payloads by copying whole
+   * Quote/Invoice/Customer objects onto these fields for convenience — flatten them here,
+   * once, at the boundary, rather than fixing every call site.
+   */
+  private flattenTransaction(data: Partial<SalesandTransactions>): any {
+    const d: any = { ...data, tenantId: this.tenantId };
+
+    if ('quoteId' in d) d.quoteId = this.idOf(d.quoteId);
+    if ('invoiceId' in d) d.invoiceId = this.idOf(d.invoiceId);
+    if ('customerId' in d) d.customerId = this.idOf(d.customerId);
+
+    // customerName is a plain string column on this entity, not a nested customer object.
+    if (d.customerName && typeof d.customerName === 'object') {
+      d.customerName = d.customerName.name || '';
+    }
+
+    // "items" here must be actual sales-order line items, never the whole Quote/Invoice
+    // object some callers pass in as shorthand for "copy this document's items over".
+    if (d.items && !Array.isArray(d.items)) {
+      const src = d.items;
+      d.items = Array.isArray(src.items) ? src.items.map((it: any) => ({
+        productId: it.productId ?? null,
+        productName: it.productName || '',
+        description: it.description || '',
+        quantity: it.quantity || 1,
+        unitPrice: it.unitPrice || 0,
+        discount: it.discount || 0,
+        total: it.total || 0
+      })) : undefined;
+    }
+
+    // PaymentTerms nests customerId/customerName the same way as the outer object.
+    if (d.PaymentTerms && typeof d.PaymentTerms === 'object') {
+      d.PaymentTerms = {
+        ...d.PaymentTerms,
+        customerId: this.idOf(d.PaymentTerms.customerId),
+        customerName: d.PaymentTerms.customerName && typeof d.PaymentTerms.customerName === 'object'
+          ? (d.PaymentTerms.customerName.name || '')
+          : d.PaymentTerms.customerName
+      };
+    }
+
+    return d;
+  }
+
   createSalesandTransactions(data: Partial<SalesandTransactions>): Observable<SalesandTransactions> {
     const d = data as any;
     const orderNumber = d.orderNumber || `SO-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
-    return this.http.post<SalesandTransactions>(`${this.base}/sales-orders`, { ...data, orderNumber, tenantId: this.tenantId });
+    return this.http.post<SalesandTransactions>(`${this.base}/sales-orders`, { ...this.flattenTransaction(data), orderNumber });
   }
 
   updateSalesandTransactions(id: string | number, data: Partial<SalesandTransactions>): Observable<SalesandTransactions> {
-    return this.http.put<SalesandTransactions>(`${this.base}/sales-orders/${id}`, { ...data, tenantId: this.tenantId });
+    return this.http.put<SalesandTransactions>(`${this.base}/sales-orders/${id}`, this.flattenTransaction(data));
   }
 
   updateSalesOrderStatus(id: string | number, status: string): Observable<SalesandTransactions> {

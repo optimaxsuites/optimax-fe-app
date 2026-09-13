@@ -337,7 +337,10 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
 
   formatStatusLabel(status: SaleLifecycleStatus | string): string {
     if (!status) return 'DRAFT';
-    return status.replace(/_/g, ' ');
+    return status
+      .replace(/[_-]+/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, character => character.toUpperCase());
   }
 
   formatCurrency(amount: number, currency: string = 'NGN'): string {

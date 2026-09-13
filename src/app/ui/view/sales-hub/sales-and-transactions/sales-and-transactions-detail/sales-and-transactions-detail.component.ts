@@ -137,7 +137,25 @@ export class SalesAndTransactionsDetailComponent implements OnInit {
 
   formatStatusLabel(status: SaleLifecycleStatus | string | undefined): string {
     if (!status) return 'DRAFT';
-    return status.replace(/_/g, ' ');
+    return this.formatDisplayLabel(status);
+  }
+
+  formatPaymentMethodLabel(paymentMethod: string | undefined): string {
+    return this.formatDisplayLabel(paymentMethod || 'BANK_TRANSFER');
+  }
+
+  formatPaymentModeLabel(paymentMode: string | undefined): string {
+    const normalizedMode = (paymentMode || 'ONE-OFF').replace(/_/g, '-');
+    return normalizedMode.toUpperCase() === 'ONE-OFF'
+      ? 'One-Off'
+      : this.formatDisplayLabel(normalizedMode);
+  }
+
+  private formatDisplayLabel(value: string): string {
+    return value
+      .replace(/[_-]+/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, character => character.toUpperCase());
   }
 
   formatCurrency(amount: number | undefined, currency: string = 'NGN'): string {

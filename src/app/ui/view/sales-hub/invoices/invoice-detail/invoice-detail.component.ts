@@ -138,7 +138,8 @@ export class InvoiceDetailComponent implements OnInit {
     }
 
     this.isSavingPayment = true;
-    
+
+    const newBalanceDue = Math.max(0, balanceDue - this.paymentAmount);
     const payload: Partial<SalesandTransactions> = {
       invoiceId: this.invoice,
       customerId: this.invoice.customerId,
@@ -148,13 +149,19 @@ export class InvoiceDetailComponent implements OnInit {
       currency: this.invoice.currency,
       paymentMethod: this.paymentMethod,
       reference: this.paymentReference.trim() || `REF-${Math.floor(100000 + Math.random() * 900000)}`,
-      status: 'PAYMENT_COMPLETED',
+      // A payment that doesn't clear the full balance is still in progress, not completed —
+      // mislabeling every partial payment as PAYMENT_COMPLETED would make the lifecycle
+      // tracker lie about outstanding balances.
+      status: newBalanceDue === 0 ? 'PAYMENT_COMPLETED' : 'PAYMENT_IN_PROGRESS',
       orderDate: new Date(this.paymentDate),
       transactionNotes: this.paymentNotes.trim(),
-      balanceDue: Math.max(0, balanceDue - this.paymentAmount)
+      balanceDue: newBalanceDue
     };
 
-    this.salesService.createSalesandTransactions(payload).subscribe({
+    // This invoice already has a transaction tracking it since it was created (see
+    // SalesService.trackNewInvoice()) — advance that same record rather than creating a
+    // second, duplicate one every time a payment is recorded.
+    this.salesService.upsertTransactionForInvoice(this.invoice.id, payload).subscribe({
       next: (res) => {
         this.isSavingPayment = false;
         this.showPaymentModal = false;
