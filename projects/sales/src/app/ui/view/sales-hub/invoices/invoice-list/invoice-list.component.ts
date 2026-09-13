@@ -48,27 +48,27 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
   openNewInvoiceModal(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/invoices/new', uuid]);
+      this.router.navigate(['/invoices/new', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/invoices/new']);
+      this.router.navigate(['/invoices/new']);
     }
   }
 
   openEditInvoiceModal(invoiceId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/invoices', invoiceId, 'edit', uuid]);
+      this.router.navigate(['/invoices', invoiceId, 'edit', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/invoices', invoiceId, 'edit']);
+      this.router.navigate(['/invoices', invoiceId, 'edit']);
     }
   }
 
   openInvoiceDetail(invoiceId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/invoices', invoiceId, uuid]);
+      this.router.navigate(['/invoices', invoiceId, uuid]);
     } else {
-      this.router.navigate(['/admin/sales/invoices', invoiceId]);
+      this.router.navigate(['/invoices', invoiceId]);
     }
   }
 
@@ -79,7 +79,7 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
 
   duplicateInvoice(invoice: Invoice): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
-    const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
+    const path = uuid ? ['/invoices/new', uuid] : ['/invoices/new'];
     // Hand the already-loaded invoice straight to the form via navigation state so it
     // doesn't have to make a fresh round-trip to re-fetch data we already have.
     this.router.navigate(path, { queryParams: { duplicateId: String(invoice.id) }, state: { duplicateSource: invoice } });

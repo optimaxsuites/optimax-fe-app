@@ -183,9 +183,9 @@ export class SalesAndTransactionsDetailComponent implements OnInit {
 
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/admin/sales/sales-hub', uuid]);
+      this.router.navigate(['/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/admin/sales/sales-hub']);
+      this.router.navigate(['/sales-hub']);
     }
   }
 
