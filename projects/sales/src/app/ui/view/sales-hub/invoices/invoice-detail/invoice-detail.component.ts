@@ -356,13 +356,16 @@ export class InvoiceDetailComponent implements OnInit {
 
   confirmCancelInvoice(): void {
     if (!this.invoice) return;
+    const invoiceNumber = this.invoice.invoiceNumber;
     this.showCancelInvoiceModal = false;
     this.salesService.updateInvoice(this.invoice.id, { status: 'CANCELLED' }).subscribe({
       next: (updated: Invoice) => {
         this.invoice = updated;
+        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Invoice ${invoiceNumber} deleted successfully` });
       },
       error: (err: any) => {
         console.error('Error cancelling invoice:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete invoice. Please try again.' });
       }
     });
   }

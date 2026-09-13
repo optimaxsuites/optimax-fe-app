@@ -180,7 +180,13 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
         if (uuid === 'edit') {
           uuid = null;
         }
-        if (uuid) {
+        if (this.isEditMode) {
+          const savedCustomerId = response?.id ?? this.customerId;
+          const detailPath = uuid
+            ? ['/customers', String(savedCustomerId), uuid]
+            : ['/customers', String(savedCustomerId)];
+          this.router.navigate(detailPath);
+        } else if (uuid) {
           this.router.navigate(['/sales-hub', uuid]);
         } else {
           this.router.navigate(['/customers']);

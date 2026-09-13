@@ -362,13 +362,16 @@ export class QuoteDetailComponent implements OnInit {
 
   confirmDeleteQuote(): void {
     if (!this.quote) return;
+    const quoteNumber = this.quote.quoteNumber;
     this.showDeleteQuoteModal = false;
     this.salesService.updateQuote(String(this.quote.id), { status: 'EXPIRED' }).subscribe({
       next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Quote ${quoteNumber} deleted successfully` });
         this.goBack();
       },
       error: (err: any) => {
         console.error('Error deleting quote:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete quote. Please try again.' });
       }
     });
   }
