@@ -1433,11 +1433,11 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   private navigateAfterSubmit(response: Quote): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
-    if (uuid) {
-      this.router.navigate(['/quotes', response.id, uuid]);
-    } else {
-      this.router.navigate(['/quotes', response.id]);
-    }
+    const path = uuid ? ['/admin/sales/quotes', response.id, uuid] : ['/admin/sales/quotes', response.id];
+    // On create, replace this form's history entry with the new quote's detail page —
+    // otherwise Back from there lands on the (now stale) empty creation form instead of
+    // the quote list the user came from. Edits keep normal push navigation.
+    this.router.navigate(path, this.isEditMode ? {} : { replaceUrl: true });
   }
 
   // Generate PDF from live preview mockup
@@ -1671,9 +1671,9 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   cancel(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/sales-hub', uuid]);
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/sales-hub']);
+      this.router.navigate(['/admin/sales/sales-hub']);
     }
   }
 

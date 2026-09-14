@@ -88,9 +88,9 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
       uuid = null;
     }
     if (uuid) {
-      this.router.navigate(['/customers', this.customerId, 'edit', uuid]);
+      this.router.navigate(['/admin/sales/customers', this.customerId, 'edit', uuid]);
     } else {
-      this.router.navigate(['/customers', this.customerId, 'edit']);
+      this.router.navigate(['/admin/sales/customers', this.customerId, 'edit']);
     }
   }
 
@@ -99,7 +99,7 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
     if (uuid === 'edit') {
       uuid = null;
     }
-    const path = uuid ? ['/quotes/new', uuid] : ['/quotes/new'];
+    const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
     this.router.navigate(path, { queryParams: { customerId: this.customerId } });
   }
 
@@ -108,7 +108,7 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
     if (uuid === 'edit') {
       uuid = null;
     }
-    const path = uuid ? ['/invoices/new', uuid] : ['/invoices/new'];
+    const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
     this.router.navigate(path, { queryParams: { customerId: this.customerId } });
   }
 
@@ -123,9 +123,9 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
         this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${customerName} deleted successfully` });
         const uuid = this.route.snapshot.paramMap.get('uuid') === 'edit' ? null : this.route.snapshot.paramMap.get('uuid');
         if (uuid) {
-          this.router.navigate(['/sales-hub', uuid]);
+          this.router.navigate(['/admin/sales/sales-hub', uuid]);
         } else {
-          this.router.navigate(['/sales-hub']);
+          this.router.navigate(['/admin/sales/sales-hub']);
         }
       },
       error: (err: any) => {
@@ -141,9 +141,9 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
       uuid = null;
     }
     if (uuid) {
-      this.router.navigate(['/orders', orderId, uuid]);
+      this.router.navigate(['/admin/sales/orders', orderId, uuid]);
     } else {
-      this.router.navigate(['/orders', orderId]);
+      this.router.navigate(['/admin/sales/orders', orderId]);
     }
   }
 
@@ -153,9 +153,9 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
       uuid = null;
     }
     if (uuid) {
-      this.router.navigate(['/sales-hub', uuid]);
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/sales-hub']);
+      this.router.navigate(['/admin/sales/sales-hub']);
     }
   }
 
@@ -235,9 +235,9 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   viewOrderHistory(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/sales-hub', uuid]);
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/sales-hub']);
+      this.router.navigate(['/admin/sales/sales-hub']);
     }
   }
 

@@ -309,9 +309,9 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const txIdStr = String(tx.id);
     if (uuid) {
-      this.router.navigate(['/sales-and-transactions', txIdStr, uuid]);
+      this.router.navigate(['/admin/sales/sales-and-transactions', txIdStr, uuid]);
     } else {
-      this.router.navigate(['/sales-and-transactions', txIdStr]);
+      this.router.navigate(['/admin/sales/sales-and-transactions', txIdStr]);
     }
   }
 

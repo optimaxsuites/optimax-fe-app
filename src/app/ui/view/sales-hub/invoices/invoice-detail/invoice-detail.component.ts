@@ -387,9 +387,9 @@ export class InvoiceDetailComponent implements OnInit {
 
       const uuid = this.route.snapshot.paramMap.get('uuid');
       if (uuid) {
-        this.router.navigate(['/sales-hub', uuid]);
+        this.router.navigate(['/admin/sales/sales-hub', uuid]);
       } else {
-        this.router.navigate(['/sales-hub']);
+        this.router.navigate(['/admin/sales/sales-hub']);
       }
     }
   }
@@ -401,9 +401,9 @@ export class InvoiceDetailComponent implements OnInit {
 
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/sales-hub', uuid]);
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/sales-hub']);
+      this.router.navigate(['/admin/sales/sales-hub']);
     }
   }
 
@@ -413,9 +413,9 @@ export class InvoiceDetailComponent implements OnInit {
     } else {
       const uuid = this.route.snapshot.paramMap.get('uuid');
       if (uuid) {
-        this.router.navigate(['/invoices', this.invoice!.id, 'edit', uuid]);
+        this.router.navigate(['/admin/sales/invoices', this.invoice!.id, 'edit', uuid]);
       } else {
-        this.router.navigate(['/invoices', this.invoice!.id, 'edit']);
+        this.router.navigate(['/admin/sales/invoices', this.invoice!.id, 'edit']);
       }
     }
   }
@@ -424,9 +424,9 @@ export class InvoiceDetailComponent implements OnInit {
     if (this.invoice && this.invoice.customerId) {
       const uuid = this.route.snapshot.paramMap.get('uuid');
       if (uuid) {
-        this.router.navigate(['/customers', this.invoice.customerId, uuid]);
+        this.router.navigate(['/admin/sales/customers', this.invoice.customerId, uuid]);
       } else {
-        this.router.navigate(['/customers', this.invoice.customerId]);
+        this.router.navigate(['/admin/sales/customers', this.invoice.customerId]);
       }
     }
   }

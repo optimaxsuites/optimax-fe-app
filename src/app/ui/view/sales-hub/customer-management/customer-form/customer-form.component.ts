@@ -189,13 +189,18 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
         }
         // Land on the customer's own detail page either way — there's no bare 'customers'
         // list route registered (only 'customers/:id', 'customers/new', etc.), so navigating
-        // to just ['/customers'] here used to match the app's catch-all single-segment
+        // to just ['/admin/sales/customers'] here used to match the app's catch-all single-segment
         // ':uuid' route and get redirected to /commerce/requests instead.
         const savedCustomerId = response?.id ?? this.customerId;
         const detailPath = uuid
-          ? ['/customers', String(savedCustomerId), uuid]
-          : ['/customers', String(savedCustomerId)];
-        this.router.navigate(detailPath);
+          ? ['/admin/sales/customers', String(savedCustomerId), uuid]
+          : ['/admin/sales/customers', String(savedCustomerId)];
+        // On create, replace this form's history entry with the detail page instead of
+        // pushing a new one — otherwise the browser Back button from the new customer's
+        // detail page lands back on the (now stale) empty creation form instead of the
+        // customer list the user came from. Edits keep normal push navigation since
+        // "back" from an edited record's detail page reasonably returns to that edit.
+        this.router.navigate(detailPath, this.isEditMode ? {} : { replaceUrl: true });
       },
       error: (error: any) => {
         console.error('Error saving customer:', error);
@@ -211,9 +216,9 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       uuid = null;
     }
     if (uuid) {
-      this.router.navigate(['/sales-hub', uuid]);
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/sales-hub']);
+      this.router.navigate(['/admin/sales/sales-hub']);
     }
   }
 

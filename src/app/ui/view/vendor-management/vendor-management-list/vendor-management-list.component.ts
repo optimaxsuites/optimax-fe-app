@@ -652,21 +652,21 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   private readonly VM_TAB_KEY = 'dashboard-vendor global registry-vendor directory';
 
   goBack(): void {
-    this.router.navigate(['/commerce/manage-vendors']);
+    this.router.navigate(['/admin/sales/commerce/manage-vendors']);
   }
 
   navigateToApprovalQueue(): void {
     sessionStorage.setItem(this.VM_TAB_KEY, 'Vendor Global Registry');
-    this.router.navigate(['/commerce/manage-vendors']);
+    this.router.navigate(['/admin/sales/commerce/manage-vendors']);
   }
 
   navigateToDashboard(): void {
     sessionStorage.setItem(this.VM_TAB_KEY, 'Dashboard');
-    this.router.navigate(['/commerce/manage-vendors']);
+    this.router.navigate(['/admin/sales/commerce/manage-vendors']);
   }
 
   navigateToVendor(id: string): void {
-    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], {
       queryParams: { returnTo: 'directory' }
     });
   }
@@ -674,7 +674,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
 
 
   navigateToVendorDetail(id: string): void {
-    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], {
       queryParams: { returnTo: 'directory' }
     });
   }
@@ -687,7 +687,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
    * View vendor details - navigates to profile page
    */
   viewVendor(id: number): void {
-    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], {
       queryParams: { returnTo: 'directory' }
     });
   }
@@ -712,7 +712,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
    * View performance - navigates to profile with performance tab
    */
   viewPerformance(id: string): void {
-    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], {
       queryParams: { tab: 'performance', returnTo: 'directory' }
     });
   }
@@ -721,7 +721,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
    * View risk - navigates to profile with risk tab
    */
   viewRisk(id: string): void {
-    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], {
       queryParams: { tab: 'risk', returnTo: 'directory' }
     });
   }
@@ -730,7 +730,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
    * View documents - navigates to profile with documents tab
    */
   viewDocuments(id: string): void {
-    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], {
       queryParams: { tab: 'documents', returnTo: 'directory' }
     });
   }

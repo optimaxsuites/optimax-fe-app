@@ -290,7 +290,7 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
   }
 
   navigateToVendor(id: string): void {
-    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], {
       queryParams: { returnTo: 'dashboard' }
     });
   }
@@ -306,7 +306,7 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
   }
 
   navigateToDocuments(id: string): void {
-    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], {
       queryParams: { returnTo: 'dashboard' }
     });
   }

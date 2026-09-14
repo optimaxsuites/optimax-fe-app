@@ -1724,8 +1724,16 @@ export class InventoryService {
     // would silently fail to match, leaving `category` as '' and breaking the category
     // filter for every product (see resolveProductCategoryName below, which already does
     // this correctly for the same reason).
+    //
+    // The `|| c.categoryId === raw.categoryId` clause this used to have was wrong: a
+    // Category's own `categoryId` field is an unused legacy property that's always null on
+    // every category — not the category's identifier. Since a product with no category set
+    // also has `raw.categoryId == null`, that clause matched `null === null` and silently
+    // resolved EVERY uncategorized product (and any with a genuinely unmatched categoryId)
+    // to whichever category happened to be first in the list, which is exactly what made the
+    // Category filter look broken: most products all displayed the same wrong category.
     const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string || '[]') as Category[];
-    const category = categories.find(c => String(c.id) === String(raw.categoryId) || c.categoryId === raw.categoryId);
+    const category = raw.categoryId != null ? categories.find(c => String(c.id) === String(raw.categoryId)) : undefined;
 
     const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string || '[]') as MeasurementUnit[];
     const unit = units.find(u => String(u.id) === String(raw.measurementUnitId));
@@ -1742,7 +1750,13 @@ export class InventoryService {
       name: raw.name,
       description: raw.description,
       categoryId: raw.categoryId,
-      category: category?.name || existing?.category || '',
+      // Only fall back to a previously-cached `category` name when this product genuinely
+      // HAS a categoryId that just failed to resolve this round (e.g. categories hadn't
+      // loaded yet) — not when categoryId is null. Falling back unconditionally let category
+      // names bleed in from the constructor's one-time MOCK_PRODUCTS localStorage seed (mock
+      // ids happen to collide with real product ids) and then persist forever, since every
+      // subsequent fetch would keep "preserving" that same wrong value.
+      category: category?.name || (raw.categoryId != null ? existing?.category : '') || '',
       measurementUnitId: raw.measurementUnitId,
       unitOfMeasure: (unitCode as Product['unitOfMeasure']) || existing?.unitOfMeasure || 'EACH',
       costPrice: raw.costPrice,
@@ -3391,7 +3405,11 @@ export class InventoryService {
     }
     const raw = product.category ?? (product as any).categoryId;
     if (typeof raw === 'string') {
-      const byId = categories.find(c => String(c.id) === String(raw) || c.categoryId === raw);
+      // No `|| c.categoryId === raw` clause here (unlike the old productFromApi bug this
+      // mirrored) — a Category's own `categoryId` field is an unused legacy property, always
+      // null, and comparing it against `raw` (already a resolved name/id string) is never
+      // meaningful.
+      const byId = categories.find(c => String(c.id) === String(raw));
       return byId?.name || raw;
     }
     return '';

@@ -170,7 +170,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
           ? 'Dashboard'
           : 'Vendor Global Registry';
       sessionStorage.setItem('dashboard-vendor global registry-vendor directory', tabName);
-      this.router.navigate(['/commerce/manage-vendors']);
+      this.router.navigate(['/admin/sales/commerce/manage-vendors']);
     }
   }
 
