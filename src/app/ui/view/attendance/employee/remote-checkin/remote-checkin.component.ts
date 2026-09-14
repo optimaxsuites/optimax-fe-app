@@ -113,8 +113,8 @@ export class RemoteCheckinComponent implements OnInit, OnDestroy {
 
     if (!this.currentLocation) return warnings;
 
-    if (this.currentLocation.approximateAccuracy && this.currentLocation.approximateAccuracy > 100) {
-      warnings.push('⚠️ Location accuracy is low (±' + Math.round(this.currentLocation.approximateAccuracy) + 'm)');
+    if (this.currentLocation.accuracy && this.currentLocation.accuracy > 100) {
+      warnings.push('⚠️ Location accuracy is low (±' + Math.round(this.currentLocation.accuracy) + 'm)');
     }
 
     return warnings;

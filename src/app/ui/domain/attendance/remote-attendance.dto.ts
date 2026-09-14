@@ -4,14 +4,19 @@
  */
 
 export interface RemoteAttendanceMetadata {
-  // Location data
   gpsCoordinates?: {
-    lat: number; // Latitude
-    lng: number; // Longitude
+    lat: number;
+    lng: number;
   };
   geoAddress?: string; // Human-readable address
-  approximateAccuracy: number; // GPS accuracy in meters
+  accuracy: number; // GPS accuracy in meters (matches backend RemoteAttendanceEventDTO.accuracy)
 
-  // Timestamp
-  timestamp: Date; // Timestamp of event
+  // Fraud/VPN detection data (required by backend for remote check-in validation)
+  userAgent?: string;
+  ipAddress?: string;
+  networkType?: string; // e.g. 'wifi', 'cellular', 'vpn'
+  vpnDetected?: boolean;
+
+  timestamp: Date;
 }
+

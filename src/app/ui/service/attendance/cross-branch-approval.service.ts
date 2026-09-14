@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { AttendanceTableRecord } from '../../domain/attendance/attendancetable.dto';
+import { CorrectionType } from '../../domain/attendance/correctionrequest.dto';
 
 export interface CrossBranchApprovalSubmission {
   employeeId: number;
@@ -91,7 +92,7 @@ export class CrossBranchApprovalService {
       // Add correction request-like tracking
       record.correctionRequest = {
         ...record.correctionRequest,
-        type: 'LOCATION_CORRECTION',
+        type: 'OTHER',
         reason: `Cross-branch attendance approved: ${record.homeBranchName} → ${record.checkedInBranchName}`,
         status: 'APPROVED',
         requestedAt: record.date || new Date(),
@@ -118,7 +119,7 @@ export class CrossBranchApprovalService {
       // Mark as rejected with reason
       record.correctionRequest = {
         ...record.correctionRequest,
-        type: 'LOCATION_CORRECTION',
+        type: 'OTHER',
         reason: `Unauthorized cross-branch attendance: ${record.homeBranchName} → ${record.checkedInBranchName}`,
         status: 'REJECTED',
         requestedAt: record.date || new Date(),

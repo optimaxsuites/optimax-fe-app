@@ -71,12 +71,22 @@ export class AttendanceRecordService {
 
   /**
    * Get all records for employee
+   * NOTE: Maps backend attendanceStatus (or calculates from isLate/isAbsent) to frontend status.
+   * Normalizes recordStatus for the workflow approval state.
    */
   getRecordsByEmployee(employeeId: number): Observable<AttendanceRecordDTO[]> {
     return this.http.get<any>(
       `${this.BASE}/attendance-records/employee/${employeeId}`
     ).pipe(
-      map(res => Array.isArray(res) ? res : (res?.records ?? [])),
+      map(res => {
+        const recs = Array.isArray(res) ? res : (res?.records ?? []);
+        // Normalize: backend sends both attendanceStatus and recordStatus
+        return recs.map(r => ({
+          ...r,
+          recordStatus: r.recordStatus ?? r.status,
+          status: undefined // Clear legacy status field
+        }));
+      }),
       tap(records => {
         const current = this.recordsSubject.value;
         const filtered = current.filter(r => r.employeeId !== employeeId);
@@ -88,6 +98,7 @@ export class AttendanceRecordService {
 
   /**
    * Get records for date range
+   * NOTE: Normalizes status -> recordStatus for the workflow approval state.
    */
   getRecordsByDateRange(
     employeeId: number,
@@ -97,7 +108,15 @@ export class AttendanceRecordService {
     return this.http.get<any>(
       `${this.BASE}/attendance-records/employee/${employeeId}?startDate=${startDate}&endDate=${endDate}`
     ).pipe(
-      map(res => Array.isArray(res) ? res : (res?.records ?? [])),
+      map(res => {
+        const recs = Array.isArray(res) ? res : (res?.records ?? []);
+        // Normalize legacy 'status' field to 'recordStatus'
+        return recs.map(r => ({
+          ...r,
+          recordStatus: r.recordStatus ?? r.status,
+          status: undefined // Clear legacy status field
+        }));
+      }),
       catchError(() => of([]))
     );
   }
@@ -109,12 +128,12 @@ export class AttendanceRecordService {
     record: AttendanceRecordDTO,
     shift: ShiftDTO
   ): Partial<AttendanceRecordDTO> {
-    if (!record.clockInTime || !record.clockOutTime) {
+    if (!record.checkIn || !record.checkOut) {
       return { isAbsent: true };
     }
 
-    const clockIn = new Date(record.clockInTime);
-    const clockOut = new Date(record.clockOutTime);
+    const clockIn = new Date(record.checkIn);
+    const clockOut = new Date(record.checkOut);
     // Convert Date to ISO string format (YYYY-MM-DD) for parseTimeToDate
     const workDateStr = record.workDate.toISOString().split('T')[0];
     const shiftStart = this.parseTimeToDate(workDateStr, shift.startTime);

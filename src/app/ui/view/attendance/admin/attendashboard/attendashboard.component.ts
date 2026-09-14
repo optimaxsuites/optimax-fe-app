@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, inject, ViewChild } from '@angular/core';
 import { AttendashboardService } from '../../../../service/attendance/attendashboard.service';
 import { AttendanceTableRecord } from '../../../../domain/attendance/attendancetable.dto';
+import { CorrectionRequest } from '../../../../domain/attendance/correctionrequest.dto';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
 import { AdminCorrectionApprovalService } from '../../../../service/attendance/admin-correction-approval.service';
 import { interval, Subject } from 'rxjs';
@@ -31,7 +32,7 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
   lateCount = 0;
   absentCount = 0;
   pendingCorrectionsCount = 0;
-  pendingCorrectionRequests: AttendanceTableRecord[] = [];
+  pendingCorrectionRequests: CorrectionRequest[] = [];
   pendingApprovalsCount = 0;
   crossBranchCount = 0;
   correctionRequestsCount = 0;
@@ -63,7 +64,6 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
   const pendingModifications = data.filter(r => r.overriddenBy).length;
   const pendingCorrections = data.filter(r => r.correctionRequest?.status === 'PENDING').length;
   this.pendingCorrectionsCount = pendingModifications + pendingCorrections;
-  this.pendingCorrectionRequests = data.filter(r => r.correctionRequest?.status === 'PENDING');
 
   // Count cross-branch and correction requests needing approval
   const crossBranch = data.filter(r => r.isCrossBranchAttendance ||
@@ -115,7 +115,7 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
       .subscribe({
         next: (corrections) => {
           if (corrections.length > 0) {
-            this.pendingCorrectionRequests = corrections.filter(r => r.correctionRequest?.status === 'PENDING');
+            this.pendingCorrectionRequests = corrections.filter(r => r.status === 'PENDING');
             const pendingModifications = this.filteredAttendance.filter(r => r.overriddenBy).length;
             const pendingCorrections = this.pendingCorrectionRequests.length;
             this.pendingCorrectionsCount = pendingModifications + pendingCorrections;

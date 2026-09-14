@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { take } from 'rxjs/operators';
-import { CorrectionRequest } from '../../../../domain/attendance/correctionrequest.dto';
+import { CorrectionRequest, IssueToCorrectionType } from '../../../../domain/attendance/correctionrequest.dto';
 import { EmployeeCorrectionService } from '../../../../service/attendance/employee-correction.service';
 import { AdminCorrectionApprovalService } from '../../../../service/attendance/admin-correction-approval.service';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
@@ -125,7 +125,7 @@ export class CorrectionrequestComponent  implements OnInit{
             employeeId: todayRecord.employeeId!,
             employeeName: todayRecord.employee || employeeName,
             recordId: todayRecord.id,
-            type: request.issueType === 'MISSED_CLOCK' ? 'STATUS_CORRECTION' : 'TIME_CORRECTION',
+            type: this.issueToCorrectionType(request.issueType),
             reason: request.description ?? '',
             currentStatus: todayRecord.status,
             requestedAt: new Date().toISOString()
@@ -202,4 +202,7 @@ export class CorrectionrequestComponent  implements OnInit{
 
     this.toastService.success(`🗑️ Correction request deleted`);
   }
-}
+  /**
+   * Convert employee form issue type to backend correction type
+   */
+  private issueToCorrectionType = IssueToCorrectionType;}

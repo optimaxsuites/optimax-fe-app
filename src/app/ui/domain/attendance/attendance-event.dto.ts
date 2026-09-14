@@ -19,99 +19,106 @@ export interface ProcessingResult {
 }
 
 export interface AttendanceEventDTO {
-  // System-generated fields
-  id?: number; // Unique event identifier
-  createdAt?: Date; // Local datetime - Event creation timestamp
+  id?: number;
+  createdAt?: Date;
 
   // Event source and type
-  source: EventSource; // Source of the attendance event (BIOMETRIC|REMOTE)
-  eventType: EventType; // Check-in or Check-out event (IN|OUT)
+  source: EventSource;
+  eventType: EventType; // Check-in or check-out
 
-  // Employee identification
-  employeeId: string; // Employee unique identifier (database ID)
-  employeeCode?: string; // Employee code for deduplication / lookup
+  employeeId: string; // Database ID, not employeeCode
+  employeeCode?: string; // For deduplication / lookup
   fraudFlags?: FraudFlagCode[];
 
-  // Location information
-  branchCode: string; // Branch where event occurred
+  branchCode: string;
   isCrossBranch: boolean; // Whether check-in is at non-home branch
-  homeBranchCode?: string; // Employee's primary branch
+  homeBranchCode?: string;
 
-  // Event details
-  eventTime: Date; // Local datetime - When the check-in/out occurred
+  eventTime: Date; // When the check-in/out occurred
 
   // Device information (for BIOMETRIC source)
-  deviceId?: string; // ID of biometric device used
+  deviceId?: string;
   rawTemplateHash?: string; // Biometric template hash for verification
-  deviceIpAddress?: string; // IP address of the biometric device
+  deviceIpAddress?: string;
 
   // Remote check-in data (for REMOTE source - web button)
-  connectionIpAddress?: string; // IP address of the user's browser
-  deviceFingerprint?: string; // Browser fingerprint
+  connectionIpAddress?: string;
+  deviceFingerprint?: string;
+  userAgent?: string; // Fraud/VPN detection
+  networkType?: string; // e.g. 'wifi', 'cellular', 'vpn' — fraud/VPN detection
+  vpnDetected?: boolean;
 
-  // Location tracking
-  gpsLatitude?: number; // GPS latitude
-  gpsLongitude?: number; // GPS longitude
+  gpsLatitude?: number;
+  gpsLongitude?: number;
+  geoAddress?: string; // Human-readable address
+  accuracy?: number; // GPS accuracy in meters
 
-  // Processing status
-  processed: boolean; // Whether event has been processed into record
+  processed: boolean;
 }
 
 export interface AttendanceRecordDTO {
-  // System-generated identifiers
-  id?: number; // Unique attendance record identifier
+  id?: number;
 
-  // Employee & branch information
-  employeeId: string; // Employee unique identifier (database ID)
-  branchCode: string; // Branch where attendance is recorded
+  employeeId: string; // Database ID, not employeeCode
+  branchCode: string;
 
-  // Date & shift information
-  workDate: Date; // Date of attendance
-  shiftId?: number; // Assigned shift for this date
+  workDate: Date;
+  shiftId?: number;
 
-  // Clock times (local time)
-  clockInTime?: Date; // Check-in time
-  clockOutTime?: Date; // Check-out time
+  // Strict contract: use checkIn/checkOut only
+  checkIn?: Date | string;
+  checkOut?: Date | string;
 
-  // Clock-in source
-  clockInSource?: EventSource; // How they clocked in (BIOMETRIC|REMOTE)
-  clockOutSource?: EventSource; // How they clocked out (BIOMETRIC|REMOTE)
+  // Required for geofence validation and location display
+  checkInLocation?: { address: string; lat: number; lng: number } | null;
+  checkOutLocation?: { address: string; lat: number; lng: number } | null;
 
-  // Hours calculations
-  totalHours?: number; // Total hours worked
-  overtimeHours?: number; // Hours beyond shift
-  undertimeHours?: number; // Hours short of shift
+  clockInSource?: EventSource;
+  clockOutSource?: EventSource;
 
-  // Late arrival tracking
-  isLate?: boolean; // Whether employee clocked in after shift start
-  lateMinutes?: number; // Minutes late
+  totalHours?: number;
+  overtimeHours?: number;
+  undertimeHours?: number;
 
-  // Absence tracking
-  isAbsent?: boolean; // Whether employee did not show up
+  isLate?: boolean;
+  lateMinutes?: number;
+  isAbsent?: boolean;
 
-  // Multi-location tracking
-  isCrossBranch?: boolean; // Whether work was at different branch
+  // Backend MUST send this explicitly — frontend uses this, not isLate/isAbsent
+  attendanceStatus?: 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE' | 'OVERTIME';
 
-  // Approval workflow
-  status: RecordStatus; // Record approval status (DRAFT|SUBMITTED|IN_APPROVAL|APPROVED|REJECTED|LOCKED)
-  approvedBy?: number; // ID of approver
-  approvedAt?: Date; // Approval timestamp
+  isCrossBranch?: boolean; // Whether work was at a different branch
 
-  // Modification tracking
-  modifiedAt?: Date; // When record was last modified
-  modifiedBy?: number; // User ID who modified the record
-  modificationReason?: string; // Reason for modification (correction)
+  // Workflow state, not attendance presence
+  recordStatus: RecordStatus;
+  // Legacy alias for backward compatibility — use recordStatus instead
+  status?: RecordStatus;
+  approvedBy?: number;
+  approvedAt?: Date;
 
-  // Approval for modifications and cross-branch
+  modifiedAt?: Date;
+  modifiedBy?: number;
+  modificationReason?: string;
+
   requiresApproval: boolean; // Whether record needs approval (correction or cross-branch)
-  approvalStatus?: ApprovalStatus; // Approval status (PENDING|APPROVED|REJECTED)
-  flagType?: FlagType; // Type of flag (CORRECTION|CROSS_BRANCH_BIOMETRIC)
-  approverNotes?: string; // HR/Manager notes during approval
+  approvalStatus?: ApprovalStatus;
+  flagType?: FlagType;
+  approverNotes?: string;
 
-  // Payroll locking
-  lockedAt?: Date; // Lock date (frozen for payroll)
+  // Snapshot of the schedule active when this record was created (not in PDF)
+  appliedScheduleType?: 'OFFICE_HOURS' | 'SHIFT';
+  appliedScheduleId?: string;
+  appliedExpectedStart?: string; // HH:mm
+  appliedExpectedEnd?: string; // HH:mm
+  appliedShiftName?: string;
 
-  // Timestamps
-  createdAt?: Date; // Record creation timestamp
-  updatedAt?: Date; // Last update timestamp
+  // No backend model currently — POST /attendance-records/{id}/override-open
+  overrideOpen?: boolean;
+  overrideReason?: string;
+  overrideBy?: { hrEmployeeId: number; fullname: string };
+
+  lockedAt?: Date; // Frozen for payroll
+
+  createdAt?: Date;
+  updatedAt?: Date;
 }

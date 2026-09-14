@@ -155,15 +155,27 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
       }
 
       // Subscribe to correction requests and merge with attendance
-      this.correctionRequestService.correctionRequests$.subscribe(correctionRecords => {
-        // Merge correction records with existing attendance
-        correctionRecords.forEach(corrRecord => {
-          const index = this.attendance.findIndex(a => a.id === corrRecord.id);
+      this.correctionRequestService.correctionRequests$.subscribe(correctionRequests => {
+        // Merge correction requests with existing attendance records
+        correctionRequests.forEach(corrReq => {
+          // Find attendance record by employeeId and date
+          const index = this.attendance.findIndex(a =>
+            a.employeeId === corrReq.employeeId && 
+            a.date?.toDateString() === corrReq.date?.toDateString()
+          );
+          
           if (index > -1) {
-            // Update the existing record with correction info
+            // Map CorrectionRequest to correctionRequest nested object
             this.attendance[index] = {
               ...this.attendance[index],
-              correctionRequest: corrRecord.correctionRequest
+              correctionRequest: {
+                id: parseInt(corrReq.id),
+                type: corrReq.correctionType,
+                reason: corrReq.description || '',
+                status: corrReq.status as 'PENDING' | 'APPROVED' | 'REJECTED',
+                requestedAt: corrReq.date,
+                requestedBy: corrReq.employeeName
+              }
             };
           }
         });

@@ -27,7 +27,7 @@ export class RemoteAttendanceService {
   async getCurrentLocation(): Promise<RemoteAttendanceMetadata> {
     let gpsCoordinates = undefined;
     let geoAddress = undefined;
-    let approximateAccuracy = 0;
+    let accuracy = 0;
 
     if (await this.checkLocationPermission()) {
       try {
@@ -36,7 +36,7 @@ export class RemoteAttendanceService {
           lat: position.coords.latitude,
           lng: position.coords.longitude
         };
-        approximateAccuracy = position.coords.accuracy;
+        accuracy = position.coords.accuracy;
         geoAddress = await this.getAddressFromCoordinates(
           position.coords.latitude,
           position.coords.longitude
@@ -49,7 +49,8 @@ export class RemoteAttendanceService {
     return {
       gpsCoordinates,
       geoAddress,
-      approximateAccuracy,
+      accuracy,
+      userAgent: navigator.userAgent,
       timestamp: new Date()
     };
   }

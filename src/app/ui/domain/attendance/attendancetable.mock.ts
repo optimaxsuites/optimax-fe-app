@@ -72,7 +72,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     isCrossBranchAttendance: false,
     correctionRequest: {
       id: 201,
-      type: 'TIME_CORRECTION',
+      type: 'OTHER',
       reason: 'Traffic delay due to accident on Lagos expressway.',
       status: 'PENDING',
       requestedAt: new Date(),
@@ -302,7 +302,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     isCrossBranchAttendance: false,
     correctionRequest: {
       id: 202,
-      type: 'STATUS_CORRECTION',
+      type: 'OTHER',
       reason: 'Was working from home for a client meeting.',
       status: 'PENDING',
       requestedAt: new Date(),

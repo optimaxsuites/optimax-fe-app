@@ -48,13 +48,13 @@ const STORAGE_KEYS = {
 };
 
 const API_ENDPOINTS = {
-  ALL_RECORDS: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords`,
-  RECORDS_BY_RANGE: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/dateRange`,
-  RECORD_BY_ID: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${id}`,
-  RECORD_BY_EMPLOYEE: (id: string) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/employee/${id}`,
-  CLOCK_IN: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockIn`,
-  CLOCK_OUT: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockOut`,
-  OVERRIDE_OPEN: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${id}/override/open`,
+  ALL_RECORDS: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records`,
+  RECORDS_BY_RANGE: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/date-range`,
+  RECORD_BY_ID: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/${id}`,
+  RECORD_BY_EMPLOYEE: (id: string) => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/employee/${id}`,
+  CLOCK_IN: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/clock-in`,
+  CLOCK_OUT: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/clock-out`,
+  OVERRIDE_OPEN: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/${id}/override/open`,
   EMPLOYEES: () => `${environment.apiBaseUrl}/x/api/v2/hr/employees?page=1&size=100`
 };
 
@@ -473,7 +473,14 @@ export class AttendancetableService implements OnDestroy {
       employeeId,
       now.toISOString(),
       metadata?.geoAddress || 'Remote',
-      distanceFromOffice
+      distanceFromOffice,
+      {
+        userAgent: metadata?.userAgent,
+        networkType: metadata?.networkType,
+        vpnDetected: metadata?.vpnDetected,
+        geoAddress: metadata?.geoAddress,
+        accuracy: metadata?.accuracy
+      }
     );
     const returnedId = response?.id ?? response?.attendanceId ?? response?.recordId;
     if (returnedId) {
@@ -797,8 +804,9 @@ export class AttendancetableService implements OnDestroy {
       checkOut: this.toTimeOnly(api.checkOut),
       checkInLocation: this.toLocation(api.checkInLocation),
       checkOutLocation: this.toLocation(api.checkOutLocation),
-      status: api.status ?? 'ABSENT',
-      hours: api.hours ?? 0,
+      status: api.attendanceStatus ?? (api.checkIn ? (api.checkOut ? 'PRESENT' : 'PRESENT') : 'ABSENT'),
+      recordStatus: api.recordStatus ?? api.status,
+      hours: api.totalHours ?? 0,
       overrideOpen: api.overrideOpen ?? false,
       overrideReason: api.overrideReason ?? '',
       overriddenBy: api.overrideBy
@@ -1211,7 +1219,8 @@ export class AttendancetableService implements OnDestroy {
     employeeId: string,
     checkIn: string,
     checkInLocation: string,
-    checkInDistance: number
+    checkInDistance: number,
+    remoteMetadata?: { userAgent?: string; networkType?: string; vpnDetected?: boolean; geoAddress?: string; accuracy?: number }
   ): Promise<any> {
     if (USE_MOCK_DATA_ONLY) {
       return Promise.resolve(null);
@@ -1222,7 +1231,8 @@ export class AttendancetableService implements OnDestroy {
       attendanceDate: toLocalDateString(new Date()),
       checkIn,
       checkInLocation,
-      checkInDistance
+      checkInDistance,
+      ...remoteMetadata
     };
 
     return firstValueFrom(this.http.post<any>(API_ENDPOINTS.CLOCK_IN(), body));
