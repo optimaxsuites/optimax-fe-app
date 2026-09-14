@@ -432,7 +432,21 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   }
 
   getStatusClass(status: string): string {
-    return status ? status.toLowerCase() : 'draft';
+    const normalizedStatus = this.normalizeStatus(status);
+    const classes: Record<string, string> = {
+      DRAFT: 'draft',
+      SENT: 'sent',
+      ACCEPTED: 'accepted',
+      DECLINED: 'declined',
+      EXPIRED: 'expired',
+      PAID: 'paid',
+      UNPAID: 'unpaid',
+      OVERDUE: 'overdue',
+      PENDING: 'pending',
+      COMPLETED: 'completed',
+      CANCELLED: 'cancelled'
+    };
+    return classes[normalizedStatus] || 'draft';
   }
 
   getStatusBadgeClass(status: string): string {
@@ -452,34 +466,49 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   }
 
   getStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      'DRAFT': 'Draft',
-      'SENT': 'Sent',
-      'ACCEPTED': 'Accepted',
-      'DECLINED': 'Declined',
-      'EXPIRED': 'Expired',
-      'PAID': 'Paid',
-      'UNPAID': 'Unpaid',
-      'OVERDUE': 'Overdue',
-      'PENDING': 'Pending',
-      'COMPLETED': 'Completed'
-    };
-    return labels[status] || status;
+    return this.formatDisplayStatus(status);
   }
 
   // Sales & Transactions statuses (SaleLifecycleStatus, e.g. 'QUOTE_SENT', 'PAYMENT_COMPLETED')
   // don't fit the fixed quote/invoice status map above — title-case them generically instead,
   // matching the label formatting already used on the Sales & Transactions tab itself.
   formatTransactionStatusLabel(status: string): string {
+    return this.formatDisplayStatus(status);
+  }
+
+  getTransactionStatusClass(status: string): string {
+    const statusClasses: Record<string, string> = {
+      QUOTE_SENT: 'sent',
+      QUOTE_ACCEPTED: 'accepted',
+      QUOTE_CONVERTED: 'converted',
+      QUOTE_REJECTED: 'declined',
+      INVOICE_SENT: 'sent',
+      INVOICE_CANCELLED: 'cancelled',
+      PAYMENT_PENDING: 'pending',
+      PAYMENT_IN_PROGRESS: 'pending',
+      PAYMENT_COMPLETED: 'completed',
+      PAYMENT_FAILED: 'declined',
+      PAYMENT_REFUNDED: 'refunded',
+      RECEIPT_GENERATED: 'completed',
+      DELIVERY_PENDING: 'pending',
+      DISPATCHED: 'sent',
+      IN_TRANSIT: 'sent',
+      DELIVERED: 'completed',
+      RETURNED: 'declined'
+    };
+    return statusClasses[this.normalizeStatus(status)] || 'draft';
+  }
+
+  private normalizeStatus(status: string | undefined): string {
+    return String(status || '').trim().toUpperCase().replace(/[-\s]+/g, '_');
+  }
+
+  private formatDisplayStatus(status: string | undefined): string {
     if (!status) return 'Draft';
     return status
       .replace(/[_-]+/g, ' ')
       .toLowerCase()
       .replace(/\b\w/g, character => character.toUpperCase());
-  }
-
-  getTransactionStatusClass(status: string): string {
-    return status ? status.toLowerCase().replace(/_/g, '-') : 'draft';
   }
 
   // ============================================
