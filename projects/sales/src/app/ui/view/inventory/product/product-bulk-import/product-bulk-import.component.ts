@@ -567,7 +567,14 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
       name: row.name,
       sku: row.sku,
       description: row.description || '',
-      category: category?.id || formValue.defaultCategory || undefined,
+      // categoryId is what InventoryService.productToApiPayload() actually sends to the
+      // backend — this used to be set on a field literally named `category` (holding the
+      // category's numeric id), which productToApiPayload() then tried to resolve as if it
+      // were a category NAME, never matched, and silently dropped. Every bulk-imported
+      // product saved with no category at all, whether it came from the row's own Category
+      // column or the "Default Category" picker.
+      category: category?.name,
+      categoryId: category?.id ?? (formValue.defaultCategory ? Number(formValue.defaultCategory) : undefined),
       unitOfMeasure: (unit?.id || 'EACH') as any,
       sellingPrice: parseFloat(row.sellingprice) || 0,
       costPrice: parseFloat(row.costprice) || 0,

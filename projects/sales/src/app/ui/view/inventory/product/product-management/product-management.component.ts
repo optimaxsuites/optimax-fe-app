@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, debounceTime, switchMap } from 'rxjs';
 import { Product, Category, MeasurementUnit, Supplier } from '../../../../domain/inventory/inventory.dto';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import { MessageService } from 'primeng/api';
@@ -96,6 +96,10 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   ];
 
   private destroy$ = new Subject<void>();
+  // Every filter change (status click, category select, Min/Max keystroke) calls
+  // loadProducts() — see setupProductLoading() for why this is debounced + switchMap'd
+  // rather than fetched directly.
+  private loadProducts$ = new Subject<void>();
 
   constructor(
     private messageService: MessageService,
@@ -105,10 +109,45 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    this.setupProductLoading();
     this.loadCategories();
     this.loadUnits();
     this.loadSuppliers();
     this.loadProducts();
+  }
+
+  /**
+   * Debounced + switchMap'd so rapid filter changes — most notably typing into the Min/Max
+   * price inputs, which fire on every keystroke — don't spam overlapping network requests
+   * whose responses can arrive out of order. That race is exactly what made Min/Max look
+   * broken: typing "100000" fires 6 separate fetches (one per digit), and without
+   * cancellation, an earlier and more permissive one (e.g. min="1") resolving after the
+   * final min="100000" request would silently overwrite the correctly filtered list with
+   * one containing prices below the min you actually set. switchMap cancels every in-flight
+   * request but the newest; debounceTime avoids firing 6 requests in the first place.
+   */
+  private setupProductLoading(): void {
+    this.loadProducts$.pipe(
+      debounceTime(300),
+      switchMap(() => {
+        this.isLoading = true;
+        return this.inventoryService.getProducts(this.filters as any);
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (response: any) => {
+        this.products = response.data;
+        this.totalElements = response.total;
+        this.totalPages = Math.ceil(response.total / this.filters.size);
+        this.calculateStats();
+        this.isLoading = false;
+      },
+      error: (error: any) => {
+        console.error('Error loading products:', error);
+        this.calculateStats();
+        this.isLoading = false;
+      }
+    });
   }
 
   loadCategories(): void {
@@ -517,22 +556,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   }
 
   loadProducts(): void {
-    this.isLoading = true;
-
-    this.inventoryService.getProducts(this.filters as any).pipe(takeUntil(this.destroy$)).subscribe({
-      next: (response: any) => {
-        this.products = response.data;
-        this.totalElements = response.total;
-        this.totalPages = Math.ceil(response.total / this.filters.size);
-        this.calculateStats();
-        this.isLoading = false;
-      },
-      error: (error: any) => {
-        console.error('Error loading products:', error);
-        this.calculateStats();
-        this.isLoading = false;
-      }
-    });
+    this.loadProducts$.next();
   }
 
   private calculateStats(): void {
