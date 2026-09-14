@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../shared-component/service/environments/environment';
 
@@ -34,15 +34,23 @@ export class PdfGenerationService {
   }
 
   /**
-   * Requests PDF generation from the backend. Falls back to browser print if API unavailable.
+   * Requests PDF generation from the backend. On success this emits the raw Blob directly
+   * (the `PdfGenerationResult` return type is aspirational, not what the server actually
+   * returns with `responseType: 'blob'`). On failure this now re-throws instead of quietly
+   * emitting a `{success:false}` placeholder object through `next()` — every caller's
+   * `.subscribe({next, error})` treats whatever `next` receives as a real Blob and hands it
+   * straight to `downloadBlob()`, which calls `URL.createObjectURL()` on it; a placeholder
+   * object there throws "Overload resolution failed" and silently kills the download with no
+   * user-facing feedback. Re-throwing lets callers' existing `error:` handlers do what they
+   * already correctly attempt: fall back to client-side PDF generation.
    */
   generatePdf(req: PdfGenerationRequest): Observable<PdfGenerationResult> {
     return this.http.post<any>(`${this.baseUrl}/documents/generate-pdf`, {
       ...req, tenantId: this.tenantId
     }, { responseType: 'blob' as any }).pipe(
       catchError(err => {
-        console.warn('[PdfGenerationService] Server PDF generation unavailable, using browser print:', err);
-        return of({ success: false, message: 'Using browser print fallback' } as PdfGenerationResult);
+        console.warn('[PdfGenerationService] Server PDF generation unavailable, falling back to client-side generation:', err);
+        return throwError(() => err);
       })
     );
   }

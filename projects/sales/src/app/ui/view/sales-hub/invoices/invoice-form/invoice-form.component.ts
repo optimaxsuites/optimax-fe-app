@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
@@ -253,6 +253,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     private companyProfileService: CompanyProfileService,
     private pdfGenerationService: PdfGenerationService,
     private salesEmailService: SalesEmailService,
+    private cdr: ChangeDetectorRef,
     router: Router
   ) {
     this.router = router;
@@ -1629,26 +1630,40 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   // ============ DELIVERY ACTIONS ============
   // ============ DELIVERY ACTIONS ============
+  /**
+   * Tries the server PDF endpoint, falls back to client-side generation on failure, and
+   * downloads whichever succeeds. Never throws — a PDF failure shouldn't block email
+   * sending or navigation.
+   */
+  private async downloadInvoicePdf(invoice: Invoice): Promise<void> {
+    try {
+      const blob = await lastValueFrom(this.pdfGenerationService.generatePdf({
+        documentType: 'INVOICE',
+        documentId: String(invoice.id),
+        documentNumber: invoice.invoiceNumber,
+        tenantId: 'optimax',
+        data: invoice
+      }));
+      this.pdfGenerationService.downloadBlob(blob as any, `Invoice-${invoice.invoiceNumber}.pdf`);
+    } catch (err) {
+      console.warn('[InvoiceFormComponent] Server PDF failed, using client fallback:', err);
+      try {
+        const clientBlob = await this.generateInvoicePDF(invoice);
+        this.pdfGenerationService.downloadBlob(clientBlob, `Invoice-${invoice.invoiceNumber}.pdf`);
+      } catch (e) {
+        console.error('Client PDF generation failed:', e);
+      }
+    }
+  }
+
   private async handleDeliveryAction(invoice: Invoice, action: 'pdf' | 'email' | 'both'): Promise<void> {
     try {
+      // Awaited in sequence, not fired-and-forgotten: the caller navigates away as soon as
+      // this promise resolves, which tears down this component (and the step-1 preview
+      // element the client-side PDF fallback needs) — racing ahead of the PDF silently
+      // killed it whenever the server PDF call failed during "PDF + Email".
       if (action === 'pdf' || action === 'both') {
-        this.pdfGenerationService.generatePdf({
-          documentType: 'INVOICE',
-          documentId: String(invoice.id),
-          documentNumber: invoice.invoiceNumber,
-          tenantId: 'optimax',
-          data: invoice
-        }).subscribe({
-          next: (blob: any) => {
-            this.pdfGenerationService.downloadBlob(blob, `Invoice-${invoice.invoiceNumber}.pdf`);
-          },
-          error: (err) => {
-            console.warn('[InvoiceFormComponent] Server PDF failed, using client fallback:', err);
-            this.generateInvoicePDF(invoice).then(clientBlob => {
-              this.pdfGenerationService.downloadBlob(clientBlob, `Invoice-${invoice.invoiceNumber}.pdf`);
-            }).catch(e => console.error('Client PDF generation failed:', e));
-          }
-        });
+        await this.downloadInvoicePdf(invoice);
       }
 
       if (action === 'email' || action === 'both') {
@@ -1663,11 +1678,21 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   private async generateInvoicePDF(invoice: Invoice): Promise<Blob> {
     this.generatedInvoiceNumber = invoice.invoiceNumber;
 
+    // The preview element lives only on step 1 — switch there if needed. Submission happens
+    // on step 4, so without this the element is never in the DOM and this always throws.
+    const prevStep = this.currentStep;
+    if (this.currentStep !== 1) {
+      this.currentStep = 1;
+      this.cdr.detectChanges();
+    }
+
     // Allow small delay for Angular to bind the new invoice number to the DOM
     await new Promise(resolve => setTimeout(resolve, 100));
 
     const element = document.getElementById('invoice-preview-document');
     if (!element) {
+      this.currentStep = prevStep;
+      this.generatedInvoiceNumber = '';
       throw new Error('Preview document element not found');
     }
 
@@ -1699,7 +1724,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       document.body.removeChild(clone);
     }
 
+    this.currentStep = prevStep;
     this.generatedInvoiceNumber = '';
+    this.cdr.detectChanges();
 
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');

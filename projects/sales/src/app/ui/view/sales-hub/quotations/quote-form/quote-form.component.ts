@@ -1370,31 +1370,40 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   private pendingDeliveryQuote: Quote | null = null;
 
   // Handle delivery actions
+  /**
+   * Tries the server PDF endpoint, falls back to client-side generation on failure, and
+   * downloads whichever succeeds. Never throws — a PDF failure shouldn't block email
+   * sending or navigation. Awaited by both delivery paths below so that, in the "PDF +
+   * Email" case, download/generation genuinely finishes before the caller navigates away —
+   * navigating away tears down this component (and the step-1 preview element the client
+   * fallback needs), so racing ahead of it silently kills the PDF with no user feedback.
+   */
+  private async downloadQuotePdf(quote: Quote): Promise<void> {
+    try {
+      const blob = await lastValueFrom(this.pdfGenerationService.generatePdf({
+        documentType: 'QUOTATION',
+        documentId: String(quote.id),
+        documentNumber: quote.quoteNumber,
+        tenantId: 'optimax',
+        data: quote
+      }));
+      this.pdfGenerationService.downloadBlob(blob as any, `Quote-${quote.quoteNumber}.pdf`);
+    } catch (err) {
+      console.warn('[QuoteFormComponent] Server PDF failed, using client fallback:', err);
+      try {
+        const clientBlob = await this.generateQuotePDF(quote);
+        this.pdfGenerationService.downloadBlob(clientBlob, `Quote-${quote.quoteNumber}.pdf`);
+      } catch (e) {
+        console.error('Client PDF generation failed:', e);
+      }
+    }
+  }
+
   private async handleDeliveryAction(quote: Quote, action: 'pdf' | 'email' | 'both'): Promise<void> {
     try {
       if (action === 'pdf') {
-        this.pdfGenerationService.generatePdf({
-          documentType: 'QUOTATION',
-          documentId: String(quote.id),
-          documentNumber: quote.quoteNumber,
-          tenantId: 'optimax',
-          data: quote
-        }).subscribe({
-          next: (blob: any) => {
-            this.pdfGenerationService.downloadBlob(blob, `Quote-${quote.quoteNumber}.pdf`);
-            this.navigateAfterSubmit(quote);
-          },
-          error: (err) => {
-            console.warn('[QuoteFormComponent] Server PDF failed, using client fallback:', err);
-            this.generateQuotePDF(quote).then(clientBlob => {
-              this.pdfGenerationService.downloadBlob(clientBlob, `Quote-${quote.quoteNumber}.pdf`);
-              this.navigateAfterSubmit(quote);
-            }).catch(e => {
-              console.error('Client PDF generation failed:', e);
-              this.navigateAfterSubmit(quote);
-            });
-          }
-        });
+        await this.downloadQuotePdf(quote);
+        this.navigateAfterSubmit(quote);
       } else {
         // 'email' or 'both' -> Trigger custom Send Quote modal popup
         this.pendingDeliveryQuote = quote;
@@ -1415,27 +1424,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     this.showSendQuoteModal = false;
 
     if (this.selectedAction === 'both') {
-      try {
-        this.pdfGenerationService.generatePdf({
-          documentType: 'QUOTATION',
-          documentId: String(quote.id),
-          documentNumber: quote.quoteNumber,
-          tenantId: 'optimax',
-          data: quote
-        }).subscribe({
-          next: (blob: any) => {
-            this.pdfGenerationService.downloadBlob(blob, `Quote-${quote.quoteNumber}.pdf`);
-          },
-          error: (err) => {
-            console.warn('[QuoteFormComponent] Server PDF failed on confirm, using client fallback:', err);
-            this.generateQuotePDF(quote).then(clientBlob => {
-              this.pdfGenerationService.downloadBlob(clientBlob, `Quote-${quote.quoteNumber}.pdf`);
-            }).catch(e => console.error('Client PDF failed:', e));
-          }
-        });
-      } catch (e) {
-        console.error('Error generating PDF during delivery:', e);
-      }
+      await this.downloadQuotePdf(quote);
     }
 
     await this.sendQuoteEmail(quote);

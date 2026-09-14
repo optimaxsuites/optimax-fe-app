@@ -54,7 +54,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   // Recent Data
   recentQuotes: any[] = [];
   recentInvoices: any[] = [];
-  topProducts: any[] = [];
+  recentTransactions: any[] = [];
 
   // Chart Data
   revenueData: { month: string; amount: number }[] = [];
@@ -76,7 +76,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   showCustomizationModal = false;
   customization = {
     showRevenueChart: true,
-    showTopProducts: true,
+    showRecentTransactions: true,
     showRecentQuotes: true,
     showRecentInvoices: true,
     chartType: 'bar' // 'bar' | 'line' | 'pie' | 'doughnut'
@@ -133,9 +133,10 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     forkJoin({
       quotes: this.salesService.getQuotes({ size: 1000 }),
       invoices: this.salesService.getInvoices({ size: 1000 }),
-      customers: this.salesService.getCustomers({ page: 0, size: 1000 })
+      customers: this.salesService.getCustomers({ page: 0, size: 1000 }),
+      transactions: this.salesService.getSalesandTransactions({ size: 1000 })
     }).pipe(takeUntil(this.destroy$)).subscribe({
-      next: ({ quotes, invoices, customers }) => {
+      next: ({ quotes, invoices, customers, transactions }) => {
         const cutoff = this.getDateRangeCutoff(this.dateRange);
         const quotesInRange = quotes.data.filter(q => this.isOnOrAfter(q.createdAt, cutoff));
         const invoicesInRange = invoices.data.filter(i => this.isOnOrAfter(i.issueDate, cutoff));
@@ -145,6 +146,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
         // Already sorted newest-first by the service — "recent" is just the top of each list.
         this.recentQuotes = quotes.data.slice(0, 3);
         this.recentInvoices = invoices.data.slice(0, 3);
+        this.recentTransactions = transactions.data.slice(0, 3);
         this.isLoading = false;
       },
       error: (error: any) => {
@@ -152,11 +154,6 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
         this.error = 'Failed to load sales dashboard data';
         this.isLoading = false;
       }
-    });
-
-    this.salesService.getTopProducts(3).subscribe({
-      next: (products: any[]) => { this.topProducts = products.slice(0, 3); },
-      error: (error: any) => { console.error('Error loading products:', error); }
     });
   }
 
@@ -329,6 +326,19 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  navigateToTransactionsList(): void {
+    this.switchToTab('Sales & Transactions');
+  }
+
+  navigateToTransactionDetail(transactionId: string): void {
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/sales-and-transactions', transactionId, uuid]);
+    } else {
+      this.router.navigate(['/sales-and-transactions', transactionId]);
+    }
+  }
+
   openEditInvoiceModal(id: string): void {
     this.selectedItemId = id;
     this.showInvoiceModal = true;
@@ -455,6 +465,21 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
       'COMPLETED': 'Completed'
     };
     return labels[status] || status;
+  }
+
+  // Sales & Transactions statuses (SaleLifecycleStatus, e.g. 'QUOTE_SENT', 'PAYMENT_COMPLETED')
+  // don't fit the fixed quote/invoice status map above — title-case them generically instead,
+  // matching the label formatting already used on the Sales & Transactions tab itself.
+  formatTransactionStatusLabel(status: string): string {
+    if (!status) return 'Draft';
+    return status
+      .replace(/[_-]+/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, character => character.toUpperCase());
+  }
+
+  getTransactionStatusClass(status: string): string {
+    return status ? status.toLowerCase().replace(/_/g, '-') : 'draft';
   }
 
   // ============================================

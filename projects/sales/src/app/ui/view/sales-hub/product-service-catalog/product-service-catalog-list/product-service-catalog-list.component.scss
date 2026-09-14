@@ -708,8 +708,8 @@
 /* ============ GRID VIEW ============ */
 .il-grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
 }
 
 .il-product-grid-card {
@@ -761,7 +761,7 @@
 
 .il-grid-card-image {
   width: 100%;
-  height: 170px;
+  height: 130px;
   background: linear-gradient(135deg, var(--p) 0%, var(--p-lt) 100%);
   display: flex;
   align-items: center;
@@ -778,7 +778,7 @@
   .il-grid-product-image {
     width: 100%;
     height: 100%;
-    padding: 8px;
+    padding: 6px;
     box-sizing: border-box;
     object-fit: contain;
     object-position: center;
@@ -879,7 +879,7 @@
   }
 
   .il-grid-container {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
 
   .il-pagination {

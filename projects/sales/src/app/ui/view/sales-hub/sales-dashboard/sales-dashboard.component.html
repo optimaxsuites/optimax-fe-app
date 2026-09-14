@@ -338,39 +338,35 @@
         </div>
       </div>
 
-      <!-- Top Products -->
+      <!-- Recent Sales & Transactions -->
       <div class="ql-info-card">
         <div class="ql-card-header">
-          <h3 class="ql-info-title"><i class="fas fa-trophy"></i> Top Products</h3>
-          <button class="ql-card-action" (click)="navigateToProductList()">
+          <h3 class="ql-info-title"><i class="fas fa-receipt"></i> Recent Sales & Transactions</h3>
+          <button class="ql-card-action" (click)="navigateToTransactionsList()">
             View All <i class="fas fa-arrow-right"></i>
           </button>
         </div>
-        <div class="ql-performers-list">
-          <div *ngFor="let product of topProducts; let i = index" class="ql-performer-item">
-            <div class="ql-performer-rank" [class.ql-performer-rank--gold]="i === 0"
-                [class.ql-performer-rank--silver]="i === 1"
-                [class.ql-performer-rank--bronze]="i === 2">
-              <span *ngIf="i === 0">🥇</span>
-              <span *ngIf="i === 1">🥈</span>
-              <span *ngIf="i === 2">🥉</span>
-              <span *ngIf="i > 2">#{{ i + 1 }}</span>
+        <div class="ql-activity-list">
+          <div *ngFor="let tx of recentTransactions" class="ql-activity-item">
+            <div class="ql-activity-icon" style="background: #18444020; color: #184440;">
+              <i class="fas fa-receipt"></i>
             </div>
-            <div class="ql-performer-info">
-              <span class="ql-performer-name">{{ product.productName || product.name }}</span>
-              <span class="ql-performer-tier">{{ product.category || 'General' }}</span>
+            <div class="ql-activity-content">
+              <span class="ql-activity-title">#{{ tx.orderNumber || tx.orderId || tx.id }}</span>
+              <span class="ql-activity-desc">{{ getCustomerName(tx) }}</span>
+              <span class="ql-activity-time">{{ formatDate(tx.orderDate) }}</span>
             </div>
-            <div class="ql-performer-score">
-              <span class="ql-score-value">{{ product.quantitySold || product.quantity || 0 }} units</span>
-              <div class="ql-score-bar">
-                <div class="ql-score-fill" [style.width.%]="(product.revenue / topProducts[0]?.revenue) * 100" style="background: #184440;"></div>
-              </div>
-            </div>
-            <div class="ql-product-revenue">{{ formatCurrency(product.revenue) }}</div>
+            <div class="ql-activity-amount">{{ formatCurrency(tx.totalAmount) }}</div>
+            <span class="ql-status-badge" [class]="'ql-status-badge--' + getTransactionStatusClass(tx.status)">
+              {{ formatTransactionStatusLabel(tx.status) }}
+            </span>
+            <button class="ql-activity-action" (click)="navigateToTransactionDetail(tx.id)">
+              <i class="fas fa-chevron-right"></i>
+            </button>
           </div>
-          <div *ngIf="topProducts.length === 0" class="ql-empty-small">
+          <div *ngIf="recentTransactions.length === 0" class="ql-empty-small">
             <i class="fas fa-inbox"></i>
-            <span>No top products yet</span>
+            <span>No recent transactions</span>
           </div>
         </div>
       </div>
