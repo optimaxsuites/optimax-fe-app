@@ -1765,9 +1765,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       </div>
     `;
 
-    // Carry over any files already attached to the invoice (Additional Options →
-    // Attachments) — they already have a hosted fileUrl, so there's no need to
-    // re-upload the client-generated PDF just to email it.
+    // Carry over any files already attached to the invoice (Additional Options → Attachments).
     const attachments: SalesEmailAttachment[] = (addOpts?.attachments || [])
       .filter((a: InvoiceAttachments) => !!a.fileUrl)
       .map((a: InvoiceAttachments) => ({
@@ -1776,6 +1774,20 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         size: a.size || 0,
         type: a.type || 'application/pdf'
       }));
+
+    // Generate the invoice document as a PDF and attach it to the email.
+    try {
+      const pdfBlob = await this.generateInvoicePDF(invoice);
+      const base64 = await this.blobToBase64(pdfBlob);
+      attachments.push({
+        fileName: `Invoice-${invoice.invoiceNumber}.pdf`,
+        base64Content: base64,
+        contentType: 'application/pdf',
+        type: 'application/pdf'
+      });
+    } catch (pdfErr) {
+      console.warn('[InvoiceFormComponent] PDF attachment generation failed, sending without attachment:', pdfErr);
+    }
 
     const payload: SendSalesEmailRequest = {
       documentType: 'INVOICE',
@@ -1806,6 +1818,18 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       console.error('[InvoiceFormComponent] Failed to send invoice email:', err);
       this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send invoice email.' });
     }
+  }
+
+  private blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        resolve(dataUrl.replace(/^data:[^;]+;base64,/, ''));
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   }
 
   getProductSku(productId: string): string {

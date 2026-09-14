@@ -379,9 +379,12 @@ export type SalesEmailStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BO
 
 export interface SalesEmailAttachment {
   fileName: string;
-  fileUrl: string;
-  size: number;
-  type: string;
+  fileUrl?: string;
+  size?: number;
+  type?: string;
+  /** Base64-encoded file content sent to the notification service for SMTP attachment. */
+  base64Content?: string;
+  contentType?: string;
 }
 
 /** Request body for POST /sales/email/send. */
