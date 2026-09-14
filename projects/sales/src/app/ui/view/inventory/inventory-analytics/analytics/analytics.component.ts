@@ -67,7 +67,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         next: (response) => {
           this.products = response.data;
           if (!this.selectedProductId && this.products.length > 0) {
-            this.selectedProductId = this.products[0].id;
+            this.selectedProductId = String(this.products[0].id);
           }
           this.isLoadingProducts = false;
         },

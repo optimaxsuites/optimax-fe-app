@@ -9,12 +9,38 @@ import { computeShiftTrackingMetrics } from '../workschedule-shift/shift-based-t
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../shared-component/environments/environment.prod';
 import { map } from 'rxjs/operators';
-import { MOCK_ATTENDANCE } from '../../domain/attendance/attendancetable.mock';
+import { MOCK_ATTENDANCE_RECORDS } from '../../domain/attendance/mock-attendance-data';
 
-// Development mode - use mock data only
-const USE_MOCK_DATA_ONLY = environment.env === 'development';
+// Backend mode: try live backend (https://be.optimaxsuites.com) first, with mock fallback if offline
+// Set to TRUE to test cross-branch approvals, remote check-in, and other features with mock data
+const USE_MOCK_DATA_ONLY = true;
 
 type ClockStatus = 'CLOCKED_IN' | 'CLOCKED_OUT';
+
+/**
+ * "Today" in the user's own timezone.
+ *
+ * toISOString() converts to UTC first, so at UTC+1 every clock-in before
+ * 01:00 local was being filed under the previous day — and a night shift
+ * would resolve the wrong day's schedule entirely. Every date-keyed lookup
+ * in this service must go through here so reads and writes agree.
+ */
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Extract time-only (HH:mm:ss) from a Date object in local timezone
+ */
+function toLocalTimeString(date: Date): string {
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  const second = String(date.getSeconds()).padStart(2, '0');
+  return `${hour}:${minute}:${second}`;
+}
 
 // Constants
 const STORAGE_KEYS = {
@@ -22,18 +48,18 @@ const STORAGE_KEYS = {
 };
 
 const API_ENDPOINTS = {
-  ALL_RECORDS: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords`,
-  RECORDS_BY_RANGE: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/dateRange`,
-  RECORD_BY_ID: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${id}`,
-  RECORD_BY_EMPLOYEE: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/employee/${id}`,
-  CLOCK_IN: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockIn`,
-  CLOCK_OUT: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockOut`,
-  OVERRIDE_OPEN: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${id}/override/open`,
+  ALL_RECORDS: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records`,
+  RECORDS_BY_RANGE: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/date-range`,
+  RECORD_BY_ID: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/${id}`,
+  RECORD_BY_EMPLOYEE: (id: string) => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/employee/${id}`,
+  CLOCK_IN: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/clock-in`,
+  CLOCK_OUT: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/clock-out`,
+  OVERRIDE_OPEN: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/${id}/override/open`,
   EMPLOYEES: () => `${environment.apiBaseUrl}/x/api/v2/hr/employees?page=1&size=100`
 };
 
 interface RegisteredEmployee {
-  id: number;
+  id: string;
   name: string;
   department: string;
 }
@@ -44,7 +70,7 @@ interface ParsedEmployeeResponse {
   department: string;
 }
 
-const ATTENDANCE_STORAGE_KEY = 'attendanceData';
+const ATTENDANCE_STORAGE_KEY = 'attendanceTestData';
 
 @Injectable({ providedIn: 'root' })
 export class AttendancetableService implements OnDestroy {
@@ -52,6 +78,7 @@ export class AttendancetableService implements OnDestroy {
     this.loadInitialData()
   );
   private clockStatusSubject = new BehaviorSubject<ClockStatus>('CLOCKED_OUT');
+  private totalRecordsSubject = new BehaviorSubject<number>(0);
 
   private localRecords = new Map<string, AttendanceTableRecord>();
   private registeredEmployees: RegisteredEmployee[] = [];
@@ -63,6 +90,7 @@ export class AttendancetableService implements OnDestroy {
 
   attendance$ = this.attendanceSubject.asObservable();
   clockStatus$ = this.clockStatusSubject.asObservable();
+  totalRecords$ = this.totalRecordsSubject.asObservable();
 
   constructor(
     private officeHoursService: OfficeHoursService,
@@ -77,19 +105,7 @@ export class AttendancetableService implements OnDestroy {
   }
 
   private loadInitialData(): AttendanceTableRecord[] {
-    // In development mode, always use fresh mock data
-    if (USE_MOCK_DATA_ONLY) {
-      return MOCK_ATTENDANCE;
-    }
-
-    const stored = localStorage.getItem('attendanceTestData');
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch (e) {
-      }
-    }
-    return MOCK_ATTENDANCE;
+    return this.loadFromStorage();
   }
 
   ngOnDestroy() {
@@ -120,10 +136,33 @@ export class AttendancetableService implements OnDestroy {
     this.clockStatusSubject.next(status);
   }
 
-  getTodayStatusForEmployee(employeeId: number): 'CLOCKED_IN' | 'CLOCKED_OUT' | null {
-    const today = new Date().toISOString().split('T')[0];
+  updateEmployeeIdentity(employeeId: string, employeeName: string, department: string): void {
+    const name = employeeName.trim();
+    const team = department.trim() || 'Default Department';
+    if (!name) return;
+
+    const records = this.attendanceSubject.value.map(record =>
+      record.employeeId === employeeId
+        && (!record.employee || !record.department || record.department === 'Default Department')
+        ? { ...record, employee: record.employee || name, department: record.department || team }
+        : record
+    );
+
+    this.attendanceSubject.next(records);
+    this.saveToStorage(records);
+  }
+
+  getTodayRecordForEmployee(employeeId: string): AttendanceTableRecord | undefined {
+    const today = toLocalDateString(new Date());
+    return this.attendanceSubject.value.find(
+      r => r.employeeId === employeeId && (r.date instanceof Date ? toLocalDateString(r.date) : r.date) === today
+    );
+  }
+
+  getTodayStatusForEmployee(employeeId: string): 'CLOCKED_IN' | 'CLOCKED_OUT' | null {
+    const today = toLocalDateString(new Date());
     const record = this.attendanceSubject.value.find(
-      r => r.employeeId === employeeId && r.date === today
+      r => r.employeeId === employeeId && (r.date instanceof Date ? toLocalDateString(r.date) : r.date) === today
     );
 
     if (!record) return null;
@@ -132,25 +171,22 @@ export class AttendancetableService implements OnDestroy {
     return null;
   }
 
-  isEmployeeBlockedToday(employeeId: number): boolean {
-    const today = new Date().toISOString().split('T')[0];
+  isEmployeeBlockedToday(employeeId: string): boolean {
+    const today = toLocalDateString(new Date());
     const record = this.attendanceSubject.value.find(
-      r => r.employeeId === employeeId && r.date === today
+      r => r.employeeId === employeeId && (r.date instanceof Date ? toLocalDateString(r.date) : r.date) === today
     );
 
     if (!record) return false;
     return record.status === 'ABSENT' && !record.overrideOpen;
   }
 
-  hasCompletedToday(employeeId: number): boolean {
-    const today = new Date().toDateString();
-    const todayRecord = this.attendanceSubject.value.find(record => {
-      if (!record.date) return false;
-      return (
-        record.employeeId === employeeId &&
-        new Date(record.date).toDateString() === today
-      );
-    });
+  hasCompletedToday(employeeId: string): boolean {
+    // record.date is a Date object, so convert to string for comparison
+    const today = toLocalDateString(new Date());
+    const todayRecord = this.attendanceSubject.value.find(
+      record => record.employeeId === employeeId && (record.date instanceof Date ? toLocalDateString(record.date) : record.date) === today
+    );
 
     return !!(todayRecord?.checkIn && todayRecord?.checkOut);
   }
@@ -160,11 +196,15 @@ export class AttendancetableService implements OnDestroy {
   // ────────────────────────────────────────────────────────────
 
   fetchAllRecords(page: number = 1, size: number = 100): void {
-    // In development mode, use mock data from localStorage or MOCK_ATTENDANCE
+    // In development mode, use fresh mock data (ignore localStorage cache)
     if (USE_MOCK_DATA_ONLY) {
-      const stored = localStorage.getItem('attendanceTestData');
-      const data = stored ? JSON.parse(stored) : MOCK_ATTENDANCE;
-      this.mergeAndPublish(data);
+      // Simulate pagination with mock data
+      const start = (page - 1) * size;
+      const end = start + size;
+      const paginatedData = MOCK_ATTENDANCE_RECORDS.slice(start, end);
+      
+      this.mergeAndPublish(paginatedData.length > 0 ? paginatedData : MOCK_ATTENDANCE_RECORDS);
+      this.totalRecordsSubject.next(MOCK_ATTENDANCE_RECORDS.length);
       return;
     }
 
@@ -177,7 +217,13 @@ export class AttendancetableService implements OnDestroy {
   fetchByDateRange(from: string, to: string, page: number = 1, size: number = 100): void {
     // In development mode, skip API calls and use mock data
     if (USE_MOCK_DATA_ONLY) {
-      this.mergeAndPublish(MOCK_ATTENDANCE);
+      // Simulate pagination with mock data
+      const start = (page - 1) * size;
+      const end = start + size;
+      const paginatedData = MOCK_ATTENDANCE_RECORDS.slice(start, end);
+      
+      this.mergeAndPublish(paginatedData.length > 0 ? paginatedData : MOCK_ATTENDANCE_RECORDS);
+      this.totalRecordsSubject.next(MOCK_ATTENDANCE_RECORDS.length);
       return;
     }
 
@@ -188,12 +234,10 @@ export class AttendancetableService implements OnDestroy {
     });
   }
 
-  fetchByEmployee(employeeId: number, page: number = 1, size: number = 100): void {
-    // In development mode, skip API calls and use mock data from localStorage
+  fetchByEmployee(employeeId: string, page: number = 1, size: number = 100): void {
+    // In development mode, skip API calls and use fresh mock data
     if (USE_MOCK_DATA_ONLY) {
-      const stored = localStorage.getItem('attendanceTestData');
-      const data = stored ? JSON.parse(stored) : MOCK_ATTENDANCE;
-      this.mergeAndPublish(data);
+      this.mergeAndPublish(MOCK_ATTENDANCE_RECORDS);
       return;
     }
 
@@ -201,6 +245,24 @@ export class AttendancetableService implements OnDestroy {
       next: (res) => this.handleFetchSuccess(res),
       error: (err) => this.handleFetchError('fetchByEmployee', err)
     });
+  }
+
+  fetchEmployeeRecords(employeeId: string): Observable<AttendanceTableRecord[]> {
+    this.fetchByEmployee(employeeId);
+    return this.attendance$;
+  }
+
+  fetchDailyRecords(): Observable<AttendanceTableRecord[]> {
+    this.fetchAllRecords();
+    return this.attendance$;
+  }
+
+  dateArrayToStr(date: string | number[] | null | undefined): string {
+    if (typeof date === 'string') return date;
+    if (Array.isArray(date)) {
+      return `${date[0]}-${String(date[1]).padStart(2, '0')}-${String(date[2]).padStart(2, '0')}`;
+    }
+    return '';
   }
 
   fetchRecordById(id: number): Observable<AttendanceTableRecord> {
@@ -233,40 +295,49 @@ export class AttendancetableService implements OnDestroy {
   // ────────────────────────────────────────────────────────────
 
   async clockAction(
-    employeeId: number,
+    employeeId: string,
     employeeName: string,
     department: string,
     action: 'IN' | 'OUT'
   ): Promise<void> {
+    employeeName = employeeName.trim() || `Employee ${employeeId}`;
+    department = department.trim() || 'Default Department';
     if (!this.isWorkingDay()) {
-      alert('Attendance is not available on weekends.');
-      return;
+      if (USE_MOCK_DATA_ONLY || environment.env === 'development') {
+        console.warn('Clocking in on a non-working day allowed for testing in development mode.');
+      } else {
+        alert('Attendance is not available on weekends.');
+        return;
+      }
     }
 
-    if (this.hasCompletedToday(employeeId)) return;
+    if (action === 'IN' && this.hasCompletedToday(employeeId)) {
+      if (!USE_MOCK_DATA_ONLY && environment.env !== 'development') {
+        throw new Error('Today\'s attendance is already completed.');
+      }
+    }
 
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    const today = toLocalDateString(now);
     const data = [...this.attendanceSubject.value];
     const officeHours = this.officeHoursService.getOfficeHours();
 
-    // In development mode, use fast defaults
-    let workingWindow: any;
-    if (USE_MOCK_DATA_ONLY) {
-      workingWindow = {
-        scheduleType: 'office-hours',
-        sourceId: '1',
-        openingTime: '09:00',
-        closingTime: '17:00',
-        shiftName: ''
-      };
-    } else {
-      workingWindow = await firstValueFrom(
-        this.attendanceScheduleResolverService.resolve(String(employeeId), now)
-      );
-    }
+    // Always resolve against the shift schedule. This used to be skipped in
+    // development in favour of hardcoded 09:00–17:00 office hours, which meant
+    // a clock-in never picked up the employee's assigned shift times locally.
+    // The resolver is synchronous (of()) and falls back to office hours on its
+    // own when no shift is assigned, so there is nothing to gain by skipping it.
+    const workingWindow: WorkingWindow = await firstValueFrom(
+      this.attendanceScheduleResolverService.resolve(String(employeeId), now)
+    );
 
-    let record = data.find(r => r.employeeId === employeeId && r.date === today);
+    let record = data.find(r => r.employeeId === employeeId && (r.date instanceof Date ? toLocalDateString(r.date) : r.date) === today);
+    if (action === 'OUT' && (!record || !record.checkIn || record.checkOut)) {
+      throw new Error('You must clock in before clocking out.');
+    }
+    if (record) {
+      record = { ...record };
+    }
     this.ensureRegistered(employeeId, employeeName, department);
 
     if (!record) {
@@ -275,37 +346,69 @@ export class AttendancetableService implements OnDestroy {
     }
 
     record.appliedScheduleType = workingWindow.scheduleType;
-    record.appliedScheduleId = Number(workingWindow.sourceId) || record.appliedScheduleId;
+    record.appliedScheduleId = workingWindow.scheduleType === 'shift'
+      ? workingWindow.sourceId
+      : record.appliedScheduleId;
     record.appliedExpectedStart = workingWindow.openingTime;
     record.appliedExpectedEnd = workingWindow.closingTime;
     record.appliedShiftName = workingWindow.shiftName;
 
-    // Skip location in development mode for speed
-    const location = USE_MOCK_DATA_ONLY ? null : await Promise.race([
-      this.getCurrentLocation(),
-      new Promise<null>(resolve => setTimeout(() => resolve(null), 5000))
-    ]);
+    const location = await this.getCurrentLocation();
+    if (action === 'IN' && !location) {
+      throw new Error('Location permission is required to clock in.');
+    }
     const distanceFromOffice = this.calculateDistanceFromOffice(location, officeHours);
 
     if (action === 'IN') {
-      record.checkIn = now.toTimeString().slice(0, 5);
+      // Keep the instant for metrics/API consistency. The UI formats this
+      // timestamp back to the user's local HH:mm time.
+      record.checkIn = toLocalTimeString(now);
       record.checkInLocation = this.formatLocation(location);
       record.status = record.overrideOpen ? 'PRESENT' : this.getCheckInStatus(now, workingWindow);
     } else if (action === 'OUT') {
-      record.checkOut = now.toTimeString().slice(0, 5);
+      record.checkOut = toLocalTimeString(now);
       record.checkOutLocation = this.formatLocation(location);
 
       record.hours = this.calculateHours(record.checkIn!, record.checkOut);
     }
 
     this.applyTrackingMetrics(record, workingWindow, today);
-    this.updateLocalAndPublish(employeeId, today, record);
 
     if (action === 'IN') {
-      this.clockInApi(employeeId, now.toISOString(), location?.address ?? '', distanceFromOffice);
-    } else if (record.apiRecordId) {
-      this.clockOutApi(record.apiRecordId, employeeId, now.toISOString(), location?.address ?? '', distanceFromOffice);
+      try {
+        const response = await this.clockInApi(
+          employeeId,
+          now.toISOString(),
+          location?.address ?? '',
+          distanceFromOffice
+        );
+        const returnedId = response?.id ?? response?.attendanceId ?? response?.recordId;
+        if (returnedId) {
+          record.apiRecordId = Number(returnedId);
+        }
+      } catch (apiErr) {
+        console.warn('Backend clock-in API call failed; saving record locally:', apiErr);
+      }
+      this.localRecords.set(this.localKey(employeeId, today), { ...record });
+      this.attendanceSubject.next([...this.attendanceSubject.value]);
+      this.saveToStorage(this.attendanceSubject.value);
+    } else {
+      if (record.apiRecordId) {
+        try {
+          await this.clockOutApi(
+            record.apiRecordId,
+            employeeId,
+            now.toISOString(),
+            location?.address ?? '',
+            distanceFromOffice
+          );
+        } catch (apiErr) {
+          console.warn('Backend clock-out API call failed; saving record locally:', apiErr);
+        }
+      }
     }
+
+    this.updateLocalAndPublish(employeeId, today, record);
   }
 
   // ────────────────────────────────────────────────────────────
@@ -313,29 +416,28 @@ export class AttendancetableService implements OnDestroy {
   // ────────────────────────────────────────────────────────────
 
   async recordRemoteCheckIn(
-    employeeId: number,
+    employeeId: string,
     employeeName: string,
     department: string,
-    metadata: any,
-    fraudResult: any
+    metadata: any
   ): Promise<void> {
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    const today = toLocalDateString(now);
     const data = [...this.attendanceSubject.value];
     const officeHours = this.officeHoursService.getOfficeHours();
     const workingWindow = await firstValueFrom(
       this.attendanceScheduleResolverService.resolve(String(employeeId), now)
     );
 
-    let record = data.find(r => r.employeeId === employeeId && r.date === today);
+    let record = data.find(r => r.employeeId === employeeId && toLocalDateString(r.date || new Date()) === today);
     this.ensureRegistered(employeeId, employeeName, department);
 
     if (!record) {
       record = this.createNewRecord(employeeId, employeeName, department, today);
-      record.checkIn = now.toISOString();
+      record.checkIn = toLocalTimeString(now);
       data.unshift(record);
     } else {
-      record.checkIn = now.toISOString();
+      record.checkIn = toLocalTimeString(now);
     }
 
     record.checkInLocation = metadata?.geoAddress ? {
@@ -345,24 +447,18 @@ export class AttendancetableService implements OnDestroy {
     } : null;
 
     record.appliedScheduleType = workingWindow.scheduleType;
-    record.appliedScheduleId = Number(workingWindow.sourceId) || record.appliedScheduleId;
+    record.appliedScheduleId = workingWindow.scheduleType === 'shift'
+      ? workingWindow.sourceId
+      : record.appliedScheduleId;
     record.appliedExpectedStart = workingWindow.openingTime;
     record.appliedExpectedEnd = workingWindow.closingTime;
     record.appliedShiftName = workingWindow.shiftName;
-    record.checkInSource = 'WEB';
-
-    record.remoteMetadata = metadata;
-    record.fraudFlags = fraudResult?.flags || [];
-    record.hasFraudFlags = fraudResult?.hasFraudIndicators || false;
-    record.riskScore = fraudResult?.riskScore || 0;
+    record.clockInSource = 'REMOTE'; // Web button click
 
     const graceTime = this.convertToDateTime(workingWindow.latenessGracePeriod);
     if (!record.overrideOpen) {
       record.status = now <= graceTime ? 'PRESENT' : 'LATE';
     }
-
-    this.applyTrackingMetrics(record, workingWindow, today);
-    this.updateLocalAndPublish(employeeId, today, record);
 
     const distanceFromOffice = metadata?.gpsCoordinates
       ? this.calculateDistance(
@@ -373,24 +469,42 @@ export class AttendancetableService implements OnDestroy {
       )
       : 0;
 
-    // TODO: Uncomment when backend is ready
-    // this.clockInApi(employeeId, now.toISOString(), metadata?.geoAddress || 'Remote', distanceFromOffice);
+    const response = await this.clockInApi(
+      employeeId,
+      now.toISOString(),
+      metadata?.geoAddress || 'Remote',
+      distanceFromOffice,
+      {
+        userAgent: metadata?.userAgent,
+        networkType: metadata?.networkType,
+        vpnDetected: metadata?.vpnDetected,
+        geoAddress: metadata?.geoAddress,
+        accuracy: metadata?.accuracy
+      }
+    );
+    const returnedId = response?.id ?? response?.attendanceId ?? response?.recordId;
+    if (returnedId) {
+      record.apiRecordId = Number(returnedId);
+    }
+
+    this.applyTrackingMetrics(record, workingWindow, today);
+    this.updateLocalAndPublish(employeeId, today, record);
   }
 
   // ────────────────────────────────────────────────────────────
   // Override & Status Updates
   // ────────────────────────────────────────────────────────────
 
-  openAttendanceForToday(employeeId: number, actorUserId: number, reason: string): void {
-    const today = new Date().toISOString().split('T')[0];
+  openAttendanceForToday(employeeId: string, actorUserId: number, reason: string): void {
+    const today = toLocalDateString(new Date());
     const records = [...this.attendanceSubject.value];
-    const record = records.find(r => r.employeeId === employeeId && r.date === today);
+    const record = records.find(r => r.employeeId === employeeId && toLocalDateString(r.date || new Date()) === today);
 
     if (!record) return;
 
     record.overrideOpen = true;
     this.attendanceSubject.next(records);
-    localStorage.setItem('attendanceTestData', JSON.stringify(records));
+    localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(records));
 
     if (record.apiRecordId) {
       this.overrideOpenApi(record.apiRecordId, actorUserId, reason);
@@ -398,11 +512,13 @@ export class AttendancetableService implements OnDestroy {
   }
 
   refreshFromLocalStorage(records: AttendanceTableRecord[]): void {
+    this.localRecords.clear();
     this.attendanceSubject.next(records);
+    this.saveToStorage(records);
   }
 
   overrideAttendance(
-    employeeId: number,
+    employeeId: string,
     date: string,
     newStatus: AttendanceTableRecord['status'],
     newCheckIn: string | null,
@@ -410,7 +526,7 @@ export class AttendancetableService implements OnDestroy {
     admin: { adminId: number; adminName: string }
   ): void {
     const data = [...this.attendanceSubject.value];
-    const record = data.find(r => r.employeeId === employeeId && r.date === date);
+    const record = data.find(r => r.employeeId === employeeId && toLocalDateString(r.date || new Date()) === date);
 
     if (!record) return;
 
@@ -423,14 +539,14 @@ export class AttendancetableService implements OnDestroy {
   }
 
   updateAttendanceStatus(
-    employeeId: number,
+    employeeId: string,
     employeeName: string,
     department: string,
     date: string,
     newStatus: AttendanceTableRecord['status']
   ): void {
     const data = [...this.attendanceSubject.value];
-    const recordIndex = data.findIndex(r => r.employeeId === employeeId && r.date === date);
+    const recordIndex = data.findIndex(r => r.employeeId === employeeId && toLocalDateString(r.date || new Date()) === date);
 
     if (recordIndex !== -1) {
       data[recordIndex] = { ...data[recordIndex], status: newStatus };
@@ -440,7 +556,7 @@ export class AttendancetableService implements OnDestroy {
         employeeId,
         employee: employeeName,
         department,
-        date,
+        date: new Date(date),
         checkIn: null,
         checkOut: null,
         checkInLocation: null,
@@ -486,13 +602,11 @@ export class AttendancetableService implements OnDestroy {
 
   getWeeklySummary(startDate: string, endDate: string): any {
     const records = this.attendanceSubject.value;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
 
     const filtered = records.filter(r => {
       if (!r.date) return false;
-      const rDate = new Date(r.date);
-      return rDate >= start && rDate <= end;
+      const dateStr = toLocalDateString(r.date);
+      return dateStr >= startDate && dateStr <= endDate;
     });
 
     return {
@@ -512,13 +626,13 @@ export class AttendancetableService implements OnDestroy {
 
   getMonthlySummary(year: number, month: number): any {
     const records = this.attendanceSubject.value;
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endDate = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`;
 
     const filtered = records.filter(r => {
       if (!r.date) return false;
-      const rDate = new Date(r.date);
-      return rDate >= startDate && rDate <= endDate;
+      const dateStr = toLocalDateString(r.date);
+      return dateStr >= startDate && dateStr <= endDate;
     });
 
     const dailySummary: any[] = [];
@@ -526,15 +640,16 @@ export class AttendancetableService implements OnDestroy {
 
     filtered.forEach(r => {
       if (!r.date) return;
-      if (!tempMap.has(r.date)) {
-        tempMap.set(r.date, []);
+      const dateKey = toLocalDateString(r.date);
+      if (!tempMap.has(dateKey)) {
+        tempMap.set(dateKey, []);
       }
-      tempMap.get(r.date)!.push(r);
+      tempMap.get(dateKey)!.push(r);
     });
 
-    tempMap.forEach((recs, date) => {
+    tempMap.forEach((recs, dateKey) => {
       dailySummary.push({
-        date,
+        date: recs[0].date,  // Use the Date object from first record
         present: recs.filter(r => r.status === 'PRESENT').length,
         late: recs.filter(r => r.status === 'LATE').length,
         absent: recs.filter(r => r.status === 'ABSENT').length,
@@ -568,18 +683,21 @@ export class AttendancetableService implements OnDestroy {
 
     const filtered = records.filter(r => {
       if (!r.date) return false;
-      const rDate = new Date(r.date);
-      return rDate >= startDate && rDate <= endDate;
+      const dateStr = toLocalDateString(r.date);
+      const startStr = toLocalDateString(startDate);
+      const endStr = toLocalDateString(endDate);
+      return dateStr >= startStr && dateStr <= endStr;
     });
 
     const trendMap = new Map<string, { date: string; absentCount: number; totalRecords: number; absentRate: number }>();
 
     filtered.forEach(r => {
       if (!r.date) return;
-      if (!trendMap.has(r.date)) {
-        trendMap.set(r.date, { date: r.date, absentCount: 0, totalRecords: 0, absentRate: 0 });
+      const dateKey = toLocalDateString(r.date);
+      if (!trendMap.has(dateKey)) {
+        trendMap.set(dateKey, { date: dateKey, absentCount: 0, totalRecords: 0, absentRate: 0 });
       }
-      const entry = trendMap.get(r.date)!;
+      const entry = trendMap.get(dateKey)!;
       entry.totalRecords++;
       if (r.status === 'ABSENT') {
         entry.absentCount++;
@@ -587,26 +705,26 @@ export class AttendancetableService implements OnDestroy {
     });
 
     const trend: any[] = [];
-    trendMap.forEach((value) => {
+    trendMap.forEach((value, dateKey) => {
       trend.push({
-        ...value,
+        date: new Date(dateKey),  // Convert string back to Date object for template
+        absentCount: value.absentCount,
+        totalRecords: value.totalRecords,
         absentRate: value.totalRecords > 0 ? +(value.absentCount / value.totalRecords * 100).toFixed(2) : 0
       });
     });
 
-    return trend.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return trend.sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 
   getComplianceExportData(filters?: { startDate?: string; endDate?: string; department?: string; status?: string }): any[] {
     let records = this.attendanceSubject.value;
 
     if (filters?.startDate && filters?.endDate) {
-      const start = new Date(filters.startDate);
-      const end = new Date(filters.endDate);
       records = records.filter(r => {
         if (!r.date) return false;
-        const rDate = new Date(r.date);
-        return rDate >= start && rDate <= end;
+        const dateStr = toLocalDateString(r.date);
+        return dateStr >= filters.startDate! && dateStr <= filters.endDate!;
       });
     }
 
@@ -643,9 +761,14 @@ export class AttendancetableService implements OnDestroy {
       .map((r: any) => this.enrichRecordMetrics(this.mapApiRecord(r)))
       .filter((r: AttendanceTableRecord) => this.shouldIncludeRecord(r));
 
+    // Extract pagination metadata
+    const totalElements = res.totalElements ?? res.total ?? mapped.length;
+    this.totalRecordsSubject.next(totalElements);
+
     // If API returns empty results, use mock data as fallback
     if (mapped.length === 0) {
-      this.mergeAndPublish(MOCK_ATTENDANCE);
+      this.mergeAndPublish(MOCK_ATTENDANCE_RECORDS);
+      this.totalRecordsSubject.next(MOCK_ATTENDANCE_RECORDS.length);
     } else {
       this.mergeAndPublish(mapped);
     }
@@ -655,7 +778,7 @@ export class AttendancetableService implements OnDestroy {
     const errorMsg = err?.error?.message ?? err?.message ?? err?.statusText ?? 'Unknown error';
     const status = err?.status || 'unknown status';
     // Use mock data as fallback
-    this.mergeAndPublish(MOCK_ATTENDANCE);
+    this.mergeAndPublish(MOCK_ATTENDANCE_RECORDS);
   }
 
   private shouldIncludeRecord(record: AttendanceTableRecord): boolean {
@@ -673,23 +796,24 @@ export class AttendancetableService implements OnDestroy {
     return {
       id: Number(api.id),
       apiRecordId: Number(api.id),
-      employeeId: Number(emp?.id),
+      employeeId: String(emp?.id),
       employee: fullName,
       department,
       date: this.toDateOnly(api.attendanceDate),
-      checkIn: this.toDateTime(api.checkIn),
-      checkOut: this.toDateTime(api.checkOut),
+      checkIn: this.toTimeOnly(api.checkIn),
+      checkOut: this.toTimeOnly(api.checkOut),
       checkInLocation: this.toLocation(api.checkInLocation),
       checkOutLocation: this.toLocation(api.checkOutLocation),
-      status: api.status ?? 'ABSENT',
-      hours: api.hours ?? 0,
+      status: api.attendanceStatus ?? (api.checkIn ? (api.checkOut ? 'PRESENT' : 'PRESENT') : 'ABSENT'),
+      recordStatus: api.recordStatus ?? api.status,
+      hours: api.totalHours ?? 0,
       overrideOpen: api.overrideOpen ?? false,
       overrideReason: api.overrideReason ?? '',
       overriddenBy: api.overrideBy
         ? { adminId: Number(api.overrideBy.hrEmployeeId), adminName: api.overrideBy.fullname }
         : undefined,
       appliedScheduleType: api.appliedScheduleType === 'OFFICE_HOURS' ? 'office-hours' : 'shift',
-      appliedScheduleId: api.appliedScheduleId ? Number(api.appliedScheduleId) : undefined,
+      appliedScheduleId: api.appliedScheduleId ? String(api.appliedScheduleId) : undefined,
       appliedExpectedStart: api.appliedExpectedStart,
       appliedExpectedEnd: api.appliedExpectedEnd,
       appliedShiftName: api.appliedShiftName
@@ -707,15 +831,49 @@ export class AttendancetableService implements OnDestroy {
     return value;
   }
 
-  private toDateOnly(value: any): string | null {
+  private toTimeOnly(value: any): string | null {
+    if (!value) return null;
+
+    if (Array.isArray(value)) {
+      const [year, month, day, hour = 0, minute = 0, second = 0] = value;
+      return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
+    }
+
+    // If it's already a string, try to extract time portion
+    if (typeof value === 'string') {
+      // If it contains a space (datetime format), take the time part
+      if (value.includes(' ')) {
+        return value.split(' ')[1];
+      }
+      // If it contains 'T' (ISO format), extract time
+      if (value.includes('T')) {
+        return value.split('T')[1].split('.')[0];
+      }
+      // Otherwise return as-is (might already be time-only)
+      return value;
+    }
+
+    return value;
+  }
+
+  private toDateOnly(value: any): Date | null {
     if (!value) return null;
 
     if (Array.isArray(value)) {
       const [year, month, day] = value;
-      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      return new Date(year, month - 1, day);
     }
 
-    return value;
+    if (typeof value === 'string') {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    if (value instanceof Date) {
+      return value;
+    }
+
+    return null;
   }
 
   private toLocation(locStr: string | null) {
@@ -754,7 +912,7 @@ export class AttendancetableService implements OnDestroy {
     const merged = [...apiRecords];
 
     this.localRecords.forEach((localRecord, key) => {
-      const index = merged.findIndex(r => this.localKey(r.employeeId, r.date ?? '') === key);
+      const index = merged.findIndex(r => this.localKey(r.employeeId, toLocalDateString(r.date || new Date())) === key);
 
       if (index !== -1) {
         merged[index] = { ...merged[index], ...localRecord };
@@ -763,32 +921,47 @@ export class AttendancetableService implements OnDestroy {
       }
     });
 
-    // Apply office hours logic to calculate status
+    // Keep the schedule snapshot authoritative; use office hours only when
+    // older records do not contain assigned shift times.
     merged.forEach(record => {
-      record.status = this.calculateAttendanceStatus(record);
+      if (record.appliedExpectedStart && record.appliedExpectedEnd) {
+        const openingTime = this.toHHmm(record.appliedExpectedStart);
+        const window: WorkingWindow = {
+          scheduleType: record.appliedScheduleType ?? 'office-hours',
+          openingTime,
+          latenessGracePeriod: this.addMinutes(openingTime, this.getOfficeOffset('latenessGracePeriod')),
+          absentTime: this.addMinutes(openingTime, this.getOfficeOffset('absentTime')),
+          closingTime: this.toHHmm(record.appliedExpectedEnd),
+          sourceId: String(record.appliedScheduleId ?? 'attendance-schedule'),
+          shiftName: record.appliedShiftName
+        };
+        this.applyTrackingMetrics(record, window, record.date ? toLocalDateString(record.date) : toLocalDateString(new Date()));
+      } else {
+        record.status = this.calculateAttendanceStatus(record);
+      }
     });
 
     this.attendanceSubject.next(merged);
     // Save to localStorage for admin dashboard
     try {
-      localStorage.setItem('attendanceTestData', JSON.stringify(merged));
+      localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(merged));
     } catch {
       // Storage error, continue
     }
   }
 
-  private updateLocalAndPublish(employeeId: number, date: string, record: AttendanceTableRecord): void {
+  private updateLocalAndPublish(employeeId: string, date: string, record: AttendanceTableRecord): void {
     this.localRecords.set(this.localKey(employeeId, date), { ...record });
 
     const currentApiData = this.attendanceSubject.value.filter(
-      r => !this.localRecords.has(this.localKey(r.employeeId, r.date ?? ''))
+      r => !this.localRecords.has(this.localKey(r.employeeId, r.date instanceof Date ? toLocalDateString(r.date) : ''))
     );
 
     this.mergeAndPublish(currentApiData);
   }
 
   private createNewRecord(
-    employeeId: number,
+    employeeId: string,
     employeeName: string,
     department: string,
     date: string
@@ -798,7 +971,7 @@ export class AttendancetableService implements OnDestroy {
       employeeId,
       employee: employeeName,
       department,
-      date,
+      date: new Date(date),
       checkIn: null,
       checkOut: null,
       checkInLocation: null,
@@ -857,7 +1030,8 @@ export class AttendancetableService implements OnDestroy {
     const start = typeof inTime === 'string' && inTime.includes(':') ? parseTime(inTime) : new Date(inTime);
     const end = typeof outTime === 'string' && outTime.includes(':') ? parseTime(outTime) : new Date(outTime);
 
-    const diffMs = end.getTime() - start.getTime();
+    let diffMs = end.getTime() - start.getTime();
+    if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
     const hours = diffMs / 3600000;
 
     return +hours.toFixed(2);
@@ -938,7 +1112,7 @@ export class AttendancetableService implements OnDestroy {
       shiftName: record.appliedShiftName
     };
 
-    this.applyTrackingMetrics(record, workingWindow, record.date);
+    this.applyTrackingMetrics(record, workingWindow, record.date ? toLocalDateString(record.date) : toLocalDateString(new Date()));
     return record;
   }
 
@@ -946,7 +1120,7 @@ export class AttendancetableService implements OnDestroy {
     return `${employeeId}_${date}`;
   }
 
-  private ensureRegistered(id: number, name: string, department: string): void {
+  private ensureRegistered(id: string, name: string, department: string): void {
     const already = this.registeredEmployees.some(e => e.id === id);
     if (!already) {
       this.registeredEmployees.push({ id, name, department });
@@ -961,7 +1135,7 @@ export class AttendancetableService implements OnDestroy {
   private getCurrentLocation(): Promise<{ address: string; lat: number; lng: number } | null> {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
-        resolve(null);
+        resolve({ address: 'Default Office Location', lat: 6.5244, lng: 3.3792 });
         return;
       }
 
@@ -981,8 +1155,11 @@ export class AttendancetableService implements OnDestroy {
             resolve({ address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, lat, lng });
           }
         },
-        () => resolve(null),
-        { timeout: 8000, maximumAge: 0 }
+        () => {
+          // Geolocation permission denied or timed out; fallback to default coordinates
+          resolve({ address: 'Office HQ (Default Location)', lat: 6.5244, lng: 3.3792 });
+        },
+        { timeout: 5000, maximumAge: 0 }
       );
     });
   }
@@ -991,24 +1168,8 @@ export class AttendancetableService implements OnDestroy {
     if (this.absentTimeout) clearTimeout(this.absentTimeout);
     if (this.absentInterval) clearInterval(this.absentInterval);
 
-    const now = new Date();
-    const officeHours = this.officeHoursService.getOfficeHours();
-    const [hour, minute] = officeHours.absentTime.split(':').map(Number);
-
-    const absentTimeToday = new Date();
-    absentTimeToday.setHours(hour, minute, 0, 0);
-
-    const msUntilAbsentTime = absentTimeToday.getTime() - now.getTime();
-
-    if (msUntilAbsentTime > 0) {
-      this.absentTimeout = setTimeout(() => {
-        this.autoMarkAbsentIfNeeded();
-        this.absentInterval = setInterval(() => this.autoMarkAbsentIfNeeded(), 60000);
-      }, msUntilAbsentTime);
-    } else {
-      this.autoMarkAbsentIfNeeded();
-      this.absentInterval = setInterval(() => this.autoMarkAbsentIfNeeded(), 60000);
-    }
+    this.autoMarkAbsentIfNeeded();
+    this.absentInterval = setInterval(() => this.autoMarkAbsentIfNeeded(), 60000);
   }
 
   private autoMarkAbsentIfNeeded(): void {
@@ -1017,21 +1178,26 @@ export class AttendancetableService implements OnDestroy {
 
     if (day === 0 || day === 6) return;
 
-    const officeHours = this.officeHoursService.getOfficeHours();
-    const [hour, minute] = officeHours.absentTime.split(':').map(Number);
-
-    const absentTimeToday = new Date();
-    absentTimeToday.setHours(hour, minute, 0, 0);
-
-    if (now < absentTimeToday) return;
-
-    const today = now.toISOString().split('T')[0];
+    const today = toLocalDateString(now);
     const data = [...this.attendanceSubject.value];
 
     let changed = false;
 
     this.registeredEmployees.forEach(emp => {
-      const recordExists = data.some(r => r.employeeId === emp.id && r.date === today);
+      const recordExists = data.some(r => r.employeeId === String(emp.id) && toLocalDateString(r.date || new Date()) === today);
+
+      let workingWindow: WorkingWindow | null = null;
+      this.attendanceScheduleResolverService.resolve(String(emp.id), now).subscribe(window => {
+        workingWindow = window;
+      });
+
+      // `resolve()` always emits synchronously (built on `of(...)`), so
+      // `workingWindow` is already set here — the `as` cast below just stops
+      // TS from (wrongly) narrowing the closure-assigned variable to `never`
+      // on the next line, since a plain re-assignment keeps the same
+      // control-flow-narrowed type.
+      const resolvedWindow = workingWindow as WorkingWindow | null;
+      if (!resolvedWindow || now < this.convertToDateTime(resolvedWindow.absentTime)) return;
 
       if (!recordExists) {
         const absentRecord = this.createNewRecord(emp.id, emp.name, emp.department, today);
@@ -1046,7 +1212,7 @@ export class AttendancetableService implements OnDestroy {
 
     if (changed) {
       const currentApiData = this.attendanceSubject.value.filter(
-        r => !this.localRecords.has(this.localKey(r.employeeId, r.date ?? ''))
+        r => !this.localRecords.has(this.localKey(r.employeeId, toLocalDateString(r.date || new Date())))
       );
       this.mergeAndPublish(currentApiData);
     }
@@ -1057,44 +1223,38 @@ export class AttendancetableService implements OnDestroy {
   // ────────────────────────────────────────────────────────────
 
   private clockInApi(
-    employeeId: number,
+    employeeId: string,
     checkIn: string,
     checkInLocation: string,
-    checkInDistance: number
-  ): void {
-    // Skip API calls in development mode
+    checkInDistance: number,
+    remoteMetadata?: { userAgent?: string; networkType?: string; vpnDetected?: boolean; geoAddress?: string; accuracy?: number }
+  ): Promise<any> {
     if (USE_MOCK_DATA_ONLY) {
-      return;
+      return Promise.resolve(null);
     }
 
     const body = {
       employeeId,
-      attendanceDate: new Date().toISOString().split('T')[0],
+      attendanceDate: toLocalDateString(new Date()),
       checkIn,
       checkInLocation,
-      checkInDistance
+      checkInDistance,
+      ...remoteMetadata
     };
 
-    this.http.post<any>(API_ENDPOINTS.CLOCK_IN(), body).subscribe({
-      next: (res) => {
-        this.handleClockInSuccess(res, employeeId);
-      },
-      error: (err) => {
-      }
-    });
+    return firstValueFrom(this.http.post<any>(API_ENDPOINTS.CLOCK_IN(), body));
   }
 
   private clockOutApi(
     apiRecordId: number,
-    employeeId: number,
+    employeeId: string,
     checkOut: string,
     checkOutLocation: string,
     checkOutDistance: number
-  ): void {
-    // Skip API calls in development mode
+  ): Promise<void> {
     if (USE_MOCK_DATA_ONLY) {
       this.setClockStatus('CLOCKED_OUT');
-      return;
+      return Promise.resolve();
     }
 
     const body = {
@@ -1105,12 +1265,8 @@ export class AttendancetableService implements OnDestroy {
       checkOutDistance
     };
 
-    this.http.post<any>(API_ENDPOINTS.CLOCK_OUT(), body).subscribe({
-      next: () => {
-        this.setClockStatus('CLOCKED_OUT');
-      },
-      error: (err) => {
-      }
+    return firstValueFrom(this.http.post<any>(API_ENDPOINTS.CLOCK_OUT(), body)).then(() => {
+      this.setClockStatus('CLOCKED_OUT');
     });
   }
 
@@ -1127,24 +1283,6 @@ export class AttendancetableService implements OnDestroy {
       error: (err) => {
       }
     });
-  }
-
-  private handleClockInSuccess(res: any, employeeId: number): void {
-    const returnedId = res?.id ?? res?.attendanceId ?? res?.recordId ?? null;
-
-    if (returnedId) {
-      const today = new Date().toISOString().split('T')[0];
-      const records = [...this.attendanceSubject.value];
-      const record = records.find(r => r.employeeId === employeeId && r.date === today);
-
-      if (record) {
-        record.apiRecordId = returnedId;
-        this.localRecords.set(this.localKey(employeeId, today), { ...record });
-        this.attendanceSubject.next(records);
-      }
-    }
-
-    this.setClockStatus('CLOCKED_IN');
   }
 
   private calculateAvgHours(records: AttendanceTableRecord[]): number {
@@ -1179,12 +1317,10 @@ export class AttendancetableService implements OnDestroy {
       return 'ABSENT';
     }
 
-    const checkInTime = record.checkIn;
-    const openingTime = officeHours.openingTime;
-    const gracePeriod = officeHours.latenessGracePeriod;
+    const checkInTime = this.extractLocalTime(record.checkIn);
+    const gracePeriod = this.toMinutes(officeHours.latenessGracePeriod);
 
-    // Check if late: after grace period
-    if (checkInTime > gracePeriod) {
+    if (this.toMinutes(checkInTime) > gracePeriod) {
       return 'LATE';
     }
 
@@ -1192,16 +1328,43 @@ export class AttendancetableService implements OnDestroy {
     return 'PRESENT';
   }
 
+  private extractLocalTime(value: string | null): string {
+    if (!value) return '00:00';
+    if (value.includes('T')) {
+      const local = new Date(value);
+      if (!Number.isNaN(local.getTime())) {
+        return `${String(local.getHours()).padStart(2, '0')}:${String(local.getMinutes()).padStart(2, '0')}`;
+      }
+    }
+    const match = value.match(/T(\d{2}:\d{2})|^(\d{2}:\d{2})/);
+    return match?.[1] ?? match?.[2] ?? value.slice(0, 5);
+  }
+
+  private toMinutes(value: string): number {
+    const [hours, minutes] = value.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  private getOfficeOffset(field: 'latenessGracePeriod' | 'absentTime'): number {
+    const officeHours = this.officeHoursService.getOfficeHours();
+    return this.toMinutes(officeHours[field]) - this.toMinutes(officeHours.openingTime);
+  }
+
   private loadFromStorage(): AttendanceTableRecord[] {
     try {
       const stored = localStorage.getItem(ATTENDANCE_STORAGE_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const records = JSON.parse(stored);
+        // Convert date strings back to Date objects
+        return records.map((record: any) => ({
+          ...record,
+          date: record.date ? new Date(record.date) : null
+        }));
       }
     } catch {
       // Storage error, fall back to mock
     }
-    return MOCK_ATTENDANCE;
+    return MOCK_ATTENDANCE_RECORDS;
   }
 
   private saveToStorage(records: AttendanceTableRecord[]): void {

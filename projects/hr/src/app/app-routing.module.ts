@@ -43,7 +43,6 @@ import { CooperativeLoanGroupsComponent } from './ui/view/loan-management/cooper
 import { CooperativeGroupJoinHistoryComponent } from './ui/view/loan-management/cooperative-group-join-history/cooperative-group-join-history.component';
 import { CooperativeGracePeriodRequestsManagementComponent } from './ui/view/loan-management/cooperative-grace-period-requests-management/cooperative-grace-period-requests-management.component';
 import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
-import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
 import { ShiftAssignmentComponent } from './ui/view/workschedule-shifts/shift-assignment/shift-assignment.component';
 import { ShiftCalendarComponent } from './ui/view/workschedule-shifts/shift-calendar/shift-calendar.component';
 import { ShiftFormComponent } from './ui/view/workschedule-shifts/shift-form/shift-form.component';
@@ -92,12 +91,6 @@ const routes: Routes = [
   {
     path: 'attendance/:uuid',
     component: AttendanceComponent,
-  },
-
-  // Workschedule Routes
-  {
-    path: 'workschedule-shifts/:uuid',
-    component: WorkscheduleShiftsComponent,
   },
 
   // Onboarding Routes
@@ -190,22 +183,22 @@ const routes: Routes = [
     path: 'loan-management/loan-disbursement/:uuid',
     component: LoanDisbursementUiComponent,
   },
-    {
-      path: 'loan-management/loan-purposes/:uuid',
-      component: LoanPurposeManagementComponent,
-    },
-    {
+  {
+    path: 'loan-management/loan-purposes/:uuid',
+    component: LoanPurposeManagementComponent,
+  },
+  {
     path: 'admin/hr/loan-management/loan-purposes/:uuid',
     component: LoanPurposeManagementComponent,
   },
-    {
-      path: 'cooperative/loan-purposes/:uuid',
-      component: CooperativeLoanPurposeManagementComponent,
-    },
-    {
-      path: 'admin/hr/cooperative/loan-purposes/:uuid',
-      component: CooperativeLoanPurposeManagementComponent,
-    },
+  {
+    path: 'cooperative/loan-purposes/:uuid',
+    component: CooperativeLoanPurposeManagementComponent,
+  },
+  {
+    path: 'admin/hr/cooperative/loan-purposes/:uuid',
+    component: CooperativeLoanPurposeManagementComponent,
+  },
   {
     path: 'admin/hr/loan-management/loan-disbursement/:uuid',
     component: LoanDisbursementUiComponent,
@@ -479,10 +472,6 @@ const routes: Routes = [
     component: ProjectComponent,
   },
   {
-    path: 'admin/hr/workschedule-shifts/:uuid',
-    component: SchedulingComponent,
-  },
-  {
     path: 'profile-change-requests/:uuid',
     component: ProfileChangeRequestsComponent,
   },
@@ -497,6 +486,10 @@ const routes: Routes = [
   {
     path: 'analytics/:uuid',
     component: HrAnalyticsDashboardComponent,
+  },
+  {
+    path: 'work-schedule/:uuid',
+    component: SchedulingComponent,
   },
   {
     path: 'overtime/:uuid',
@@ -523,26 +516,50 @@ const routes: Routes = [
     component: EmployeeUpdateFormComponent,
   },
   // admin/hr/ prefixed mirrors — navigation links generate these full paths
-  { path: 'admin/hr/me/:uuid',                   component: EmployeeProfileDashboardComponent },
-  { path: 'admin/hr/employee-management/:uuid',   component: EmployeeManagementComponent },
-  { path: 'admin/hr/recruitment/:uuid',           component: RecruitmentComponent },
-  { path: 'admin/hr/leave/:uuid',                 component: LeaveComponent },
-  { path: 'admin/hr/attendance/:uuid',            component: AttendanceComponent },
-  { path: 'admin/hr/payroll-dashboard/:uuid',     component: PayrollDashboardComponent },
-  { path: 'admin/hr/payroll-operations/:uuid',    component: PayrolExtrasComponent },
-  { path: 'admin/hr/performance/:uuid',           component: ProductivityWorkspaceComponent },
-  { path: 'admin/hr/project/:uuid',               component: ProjectComponent },
-  { path: 'admin/hr/work-schedule/:uuid',         component: SchedulingComponent },
-  { path: 'admin/hr/analytics/:uuid',             component: HrAnalyticsDashboardComponent },
-  { path: 'admin/hr/overtime/:uuid',              component: OvertimeManagementComponent },
-  { path: 'admin/hr/org-chart/:uuid',             component: OrgChartComponent },
-  { path: 'admin/hr/reports/:uuid',               component: HrReportsComponent },
-  { path: 'admin/hr/pre-onboarding-form/:uuid',   component: PreOnboardingFormComponent },
+  { path: 'admin/hr/me/:uuid', component: EmployeeProfileDashboardComponent },
+  {
+    path: 'admin/hr/employee-management/:uuid',
+    component: EmployeeManagementComponent,
+  },
+  { path: 'admin/hr/recruitment/:uuid', component: RecruitmentComponent },
+  { path: 'admin/hr/leave/:uuid', component: LeaveComponent },
+  { path: 'admin/hr/attendance/:uuid', component: AttendanceComponent },
+  {
+    path: 'admin/hr/payroll-dashboard/:uuid',
+    component: PayrollDashboardComponent,
+  },
+  {
+    path: 'admin/hr/payroll-operations/:uuid',
+    component: PayrolExtrasComponent,
+  },
+  {
+    path: 'admin/hr/performance/:uuid',
+    component: ProductivityWorkspaceComponent,
+  },
+  { path: 'admin/hr/project/:uuid', component: ProjectComponent },
+  {
+    path: 'admin/hr/work-schedule',
+    redirectTo: 'admin/hr/work-schedule/uu',
+    pathMatch: 'full',
+  },
+  { path: 'admin/hr/work-schedule/:uuid', component: SchedulingComponent },
+  {
+    path: 'admin/hr/analytics/:uuid',
+    component: HrAnalyticsDashboardComponent,
+  },
+  { path: 'admin/hr/overtime/:uuid', component: OvertimeManagementComponent },
+  { path: 'admin/hr/org-chart/:uuid', component: OrgChartComponent },
+  { path: 'admin/hr/reports/:uuid', component: HrReportsComponent },
+  {
+    path: 'admin/hr/pre-onboarding-form/:uuid',
+    component: PreOnboardingFormComponent,
+  },
   {
     path: '**',
     redirectTo: DEFAULT_LOAN_ROUTE,
   },
 ];
+
 @NgModule({
   imports: [RouterModule.forChild(routes)],
   exports: [RouterModule],

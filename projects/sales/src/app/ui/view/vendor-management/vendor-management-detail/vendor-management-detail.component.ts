@@ -108,6 +108,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
 
   // Private
   private destroy$ = new Subject<void>();
+  private returnTo: 'registry' | 'directory' | 'dashboard' = 'registry';
 
   // ============================================================
   // CONSTRUCTOR
@@ -163,6 +164,12 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     if (this.close.observed) {
       this.close.emit();
     } else {
+      const tabName = this.returnTo === 'directory'
+        ? 'Vendor Directory'
+        : this.returnTo === 'dashboard'
+          ? 'Dashboard'
+          : 'Vendor Global Registry';
+      sessionStorage.setItem('dashboard-vendor global registry-vendor directory', tabName);
       this.router.navigate(['/admin/sales/commerce/manage-vendors']);
     }
   }
@@ -171,6 +178,9 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     // Check for tab from URL
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       const tab = params['tab'];
+      if (params['returnTo'] === 'directory' || params['returnTo'] === 'dashboard' || params['returnTo'] === 'registry') {
+        this.returnTo = params['returnTo'];
+      }
       if (tab && this.tabLabels[tab as keyof typeof this.tabLabels]) {
         this.activeTab = tab as typeof this.activeTab;
       }
@@ -342,7 +352,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
         {
           label: 'Overall Score',
           data: this.performance.trendData.map(d => d.score),
-          color: '#2E6276'
+          color: '#184440'
         },
         {
           label: 'On-Time Delivery',
@@ -745,7 +755,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   getLifecycleEventColor(event: string): string {
     const map: Record<string, string> = {
       'APPLIED': '#F5A623',
-      'DOCUMENTS_SUBMITTED': '#2E6276',
+      'DOCUMENTS_SUBMITTED': '#184440',
       'UNDER_REVIEW': '#F97316',
       'APPROVED': '#2EB270',
       'REJECTED': '#DC2626',

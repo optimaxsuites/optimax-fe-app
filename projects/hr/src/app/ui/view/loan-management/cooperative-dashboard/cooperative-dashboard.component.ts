@@ -1037,12 +1037,13 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     ];
   }
 
-  formatPreviewDate(dateValue?: string): string {
+  formatPreviewDate(dateValue?: string | Date): string {
     if (!dateValue) {
       return 'N/A';
     }
 
-    return new Date(dateValue).toLocaleDateString('en-NG', {
+    const dateObj = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
+    return dateObj.toLocaleDateString('en-NG', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'

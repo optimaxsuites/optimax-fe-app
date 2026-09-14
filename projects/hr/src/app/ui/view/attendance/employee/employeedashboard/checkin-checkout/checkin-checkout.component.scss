@@ -104,6 +104,27 @@ $gap-card: 1.5rem;
   }
 }
 
+.location-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 10px;
+  background-color: #f3f4f6;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #4b5563;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  i {
+    color: #0f766e;
+    font-size: 12px;
+  }
+}
+
 .actions {
   display: flex;
   flex-direction: column;

@@ -1,176 +1,124 @@
 /**
- * ⚠️ UPDATED (2026-07-14) - Added missing fields: source, eventType, employeeCode, processed, homeBranchCode
- * This file has been completed with all required fields from specification
+ * ⚠️ UPDATED (2026-08-28) - Simplified: Removed fraud detection, using local time
+ * Clock-in sources: BIOMETRIC (fingerprint scanner) or REMOTE (web button)
+ * See EMPLOYEE_ID_PATTERNS.md for employee identification patterns
  */
 
 export type EventSource = 'BIOMETRIC' | 'REMOTE' | 'MANUAL';
 export type EventType = 'IN' | 'OUT';
 export type RecordStatus = 'DRAFT' | 'SUBMITTED' | 'IN_APPROVAL' | 'APPROVED' | 'REJECTED' | 'LOCKED';
-export type FraudFlagCode = 'SUSPICIOUS_LOCATION' | 'VPN_DETECTED' | 'RAPID_LOCATION_CHANGE' | 'NEW_DEVICE' | 'DEVICE_CLONING' | 'LOCATION_SPOOFING';
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type FlagType = 'CORRECTION' | 'CROSS_BRANCH_BIOMETRIC';
-
-export interface AttendanceEventDTO {
-  // System-generated fields
-  id?: number; // Unique event identifier
-  createdAt?: string; // ISO timestamp - Event creation timestamp
-
-  // Event source and type
-  source: EventSource; // Source of the attendance event (BIOMETRIC|REMOTE|MANUAL)
-  eventType: EventType; // Check-in or Check-out event (IN|OUT)
-
-  // Employee identification
-  employeeCode: string; // Employee code/ID (human-readable, e.g., EMP-001)
-  employeeId: number; // Employee unique identifier (database ID)
-
-  // Location information
-  branchCode: string; // Branch where event occurred
-  isCrossBranch: boolean; // Whether check-in is at non-home branch
-  homeBranchCode?: string; // Employee's primary branch
-
-  // Event details
-  eventTime: string; // ISO timestamp - When the check-in/out occurred
-
-  // Device information
-  deviceId?: string; // ID of biometric device used
-  rawTemplateHash?: string; // Biometric template hash for verification
-
-  // Remote check-in data
-  deviceIpAddress?: string; // IP address of the biometric device
-  connectionIpAddress?: string; // IP address of the user/connection making the request
-  deviceFingerprint?: string; // Device fingerprint for remote check-in
-
-  // Location tracking
-  gpsLatitude?: number; // GPS latitude for location verification
-  gpsLongitude?: number; // GPS longitude for location verification
-
-  // Fraud detection
-  fraudFlags?: FraudFlagCode[]; // Fraud detection flags
-
-  // Processing status
-  processed: boolean; // Whether event has been processed into record
-}
-
-export interface AttendanceRecordDTO {
-  // System-generated identifiers
-  id?: number; // Unique attendance record identifier
-
-  // Employee & branch information
-  employeeId: number; // Employee unique identifier
-  branchCode: string; // Branch where attendance is recorded
-
-  // Date & shift information
-  workDate: string; // ISO date - Date of attendance (YYYY-MM-DD)
-  shiftId?: number; // Assigned shift for this date
-
-  // Clock times
-  clockInTime?: string; // ISO timestamp - Check-in timestamp
-  clockOutTime?: string; // ISO timestamp - Check-out timestamp
-
-  // Hours calculations
-  totalHours?: number; // Total hours worked
-  overtimeHours?: number; // Hours beyond shift
-  undertimeHours?: number; // Hours short of shift
-
-  // Late arrival tracking
-  isLate?: boolean; // Whether employee clocked in after shift start
-  lateMinutes?: number; // Minutes late
-
-  // Absence tracking
-  isAbsent?: boolean; // Whether employee did not show up
-
-  // Multi-location tracking
-  isCrossBranch?: boolean; // Whether work was at different branch
-
-  // Approval workflow
-  status: RecordStatus; // Record approval status (DRAFT|SUBMITTED|IN_APPROVAL|APPROVED|REJECTED|LOCKED)
-  approvedBy?: number; // ID of approver
-  approvedAt?: string; // ISO timestamp - Approval timestamp
-
-  // Modification tracking
-  modifiedAt?: string; // ISO timestamp - When record was last modified
-  modifiedBy?: number; // User ID who modified the record
-  modificationReason?: string; // Reason for modification (correction)
-
-  // Approval for modifications and cross-branch
-  requiresApproval: boolean; // Whether record needs approval (correction or cross-branch)
-  approvalStatus?: ApprovalStatus; // Approval status (PENDING|APPROVED|REJECTED)
-  flagType?: FlagType; // Type of flag (CORRECTION|CROSS_BRANCH_BIOMETRIC)
-  approverNotes?: string; // HR/Manager notes during approval
-
-  // Fraud detection
-  fraudFlags?: FraudFlagCode[]; // Detected fraud indicators
-
-  // Payroll locking
-  lockedAt?: string; // ISO timestamp - Lock timestamp (frozen for payroll)
-
-  // Timestamps
-  createdAt?: string; // ISO timestamp - Record creation timestamp
-  updatedAt?: string; // ISO timestamp - Last update timestamp
-}
-
-export interface ShiftDTO {
-  id?: number;
-  name: string;
-  description?: string;
-  branchCode?: string;
-  timezone?: string;
-  startTime: string; // HH:mm format
-  endTime: string; // HH:mm format
-  isOvernight?: boolean;
-  graceMinutes?: number;
-  otThresholdMinutes?: number;
-  daysOfWeek: number[]; // 1=Monday, 7=Sunday (ISO 8601)
-  active: boolean;
-  createdBy?: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface ScheduleDTO {
-  id?: number;
-  employeeId: number;
-  shiftId: number;
-  startDate: string; // ISO date
-  endDate?: string; // ISO date, null = open-ended
-  notes?: string;
-  createdBy?: number;
-  createdAt?: string;
-}
-
-export interface BiometricDeviceDTO {
-  id?: number;
-  deviceId: string;
-  name?: string;
-  branchCode: string;
-  model?: string;
-  apiKeyHash: string;
-  lastSyncAt?: string;
-  status?: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
-  registeredAt?: string;
-  registeredBy?: number;
-}
-
-export interface CorrectionRequestDTO {
-  id?: number;
-  attendanceRecordId: number;
-  requestedBy: number;
-  correctType?: 'MISSING_IN' | 'MISSING_OUT' | 'WRONG_TIME' | 'OTHER';
-  originalTime?: string;
-  requestedTime?: string;
-  reason: string;
-  supportingDocs?: string[];
-  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
-  reviewedBy?: number;
-  reviewedAt?: string;
-  reviewerNotes?: string;
-  createdAt?: string;
-}
+export type FraudFlagCode = 'DUPLICATE' | 'GEO_MISMATCH' | 'UNUSUAL_HOURS' | 'UNKNOWN_DEVICE';
 
 export interface ProcessingResult {
   eventId: number;
-  recordId?: number;
-  status: 'PROCESSED' | 'DUPLICATE' | 'FRAUD_FLAGGED' | 'ERROR';
+  status: 'SUCCESS' | 'DUPLICATE' | 'REJECTED' | 'ERROR';
   message: string;
+  fraudFlags: FraudFlagCode[];
+}
+
+export interface AttendanceEventDTO {
+  id?: number;
+  createdAt?: Date;
+
+  // Event source and type
+  source: EventSource;
+  eventType: EventType; // Check-in or check-out
+
+  employeeId: string; // Database ID, not employeeCode
+  employeeCode?: string; // For deduplication / lookup
   fraudFlags?: FraudFlagCode[];
+
+  branchCode: string;
+  isCrossBranch: boolean; // Whether check-in is at non-home branch
+  homeBranchCode?: string;
+
+  eventTime: Date; // When the check-in/out occurred
+
+  // Device information (for BIOMETRIC source)
+  deviceId?: string;
+  rawTemplateHash?: string; // Biometric template hash for verification
+  deviceIpAddress?: string;
+
+  // Remote check-in data (for REMOTE source - web button)
+  connectionIpAddress?: string;
+  deviceFingerprint?: string;
+  userAgent?: string; // Fraud/VPN detection
+  networkType?: string; // e.g. 'wifi', 'cellular', 'vpn' — fraud/VPN detection
+  vpnDetected?: boolean;
+
+  gpsLatitude?: number;
+  gpsLongitude?: number;
+  geoAddress?: string; // Human-readable address
+  accuracy?: number; // GPS accuracy in meters
+
+  processed: boolean;
+}
+
+export interface AttendanceRecordDTO {
+  id?: number;
+
+  employeeId: string; // Database ID, not employeeCode
+  branchCode: string;
+
+  workDate: Date;
+  shiftId?: number;
+
+  // Strict contract: use checkIn/checkOut only
+  checkIn?: Date | string;
+  checkOut?: Date | string;
+
+  // Required for geofence validation and location display
+  checkInLocation?: { address: string; lat: number; lng: number } | null;
+  checkOutLocation?: { address: string; lat: number; lng: number } | null;
+
+  clockInSource?: EventSource;
+  clockOutSource?: EventSource;
+
+  totalHours?: number;
+  overtimeHours?: number;
+  undertimeHours?: number;
+
+  isLate?: boolean;
+  lateMinutes?: number;
+  isAbsent?: boolean;
+
+  // Backend MUST send this explicitly — frontend uses this, not isLate/isAbsent
+  attendanceStatus?: 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE' | 'OVERTIME';
+
+  isCrossBranch?: boolean; // Whether work was at a different branch
+
+  // Workflow state, not attendance presence
+  recordStatus: RecordStatus;
+  // Legacy alias for backward compatibility — use recordStatus instead
+  status?: RecordStatus;
+  approvedBy?: number;
+  approvedAt?: Date;
+
+  modifiedAt?: Date;
+  modifiedBy?: number;
+  modificationReason?: string;
+
+  requiresApproval: boolean; // Whether record needs approval (correction or cross-branch)
+  approvalStatus?: ApprovalStatus;
+  flagType?: FlagType;
+  approverNotes?: string;
+
+  // Snapshot of the schedule active when this record was created (not in PDF)
+  appliedScheduleType?: 'OFFICE_HOURS' | 'SHIFT';
+  appliedScheduleId?: string;
+  appliedExpectedStart?: string; // HH:mm
+  appliedExpectedEnd?: string; // HH:mm
+  appliedShiftName?: string;
+
+  // No backend model currently — POST /attendance-records/{id}/override-open
+  overrideOpen?: boolean;
+  overrideReason?: string;
+  overrideBy?: { hrEmployeeId: number; fullname: string };
+
+  lockedAt?: Date; // Frozen for payroll
+
+  createdAt?: Date;
+  updatedAt?: Date;
 }

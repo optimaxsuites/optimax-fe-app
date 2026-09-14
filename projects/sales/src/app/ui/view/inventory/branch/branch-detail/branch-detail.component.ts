@@ -364,7 +364,7 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   /** Opens the dedicated branch form (same one used for "New Branch") pre-filled with this
    *  branch's current details, so editing actually has real input fields to change. */
   navigateToEdit(): void {
-    this.router.navigate(['/commerce/inventory/branches', this.branchId, 'edit']);
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', this.branchId, 'edit']);
   }
 
   // ============================================================

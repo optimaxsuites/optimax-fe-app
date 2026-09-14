@@ -167,6 +167,11 @@ export class EmployeeService {
     const userId = sessionStorage.getItem('userid');
     
     if (!userId) {
+      // In development mode or missing session, fallback to default user/employee ID (1)
+      if (environment.env === 'development') {
+        console.warn('No user ID found in session; using fallback employee ID (1) for development.');
+        return of(1);
+      }
       return throwError(() => new Error('No user ID found in session'));
     }
     
@@ -246,7 +251,12 @@ export class EmployeeService {
           sessionStorage.setItem('employeeUserId', String(userId));
           return of(fallbackEmployeeId);
         }
-        
+
+        if (environment.env === 'development') {
+          console.warn(`Could not determine employee ID for user ${userId}; falling back to ID 1 in dev mode.`);
+          return of(1);
+        }
+
         return throwError(() => new Error(`Could not determine employee ID for user ${userId}`));
       })
     );

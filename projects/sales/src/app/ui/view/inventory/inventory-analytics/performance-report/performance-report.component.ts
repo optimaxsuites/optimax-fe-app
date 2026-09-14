@@ -8,6 +8,10 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, of, takeUntil, forkJoin, debounceTime, distinctUntilChanged } from 'rxjs';
+import { MessageService } from 'primeng/api';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import * as XLSX from 'xlsx';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   Product,
@@ -114,7 +118,8 @@ export interface ReportChart {
 @Component({
   selector: 'app-performance-report',
   templateUrl: './performance-report.component.html',
-  styleUrls: ['./performance-report.component.scss']
+  styleUrls: ['./performance-report.component.scss'],
+  providers: [MessageService]
 })
 export class PerformanceReportComponent implements OnInit, OnDestroy {
 
@@ -150,6 +155,8 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
   showScheduleModal: boolean = false;
   selectedReportId: string = '';
   isEditing: boolean = false;
+  exportFormat: 'PDF' | 'EXCEL' | 'CSV' = 'PDF';
+  isExporting: boolean = false;
 
   // Form
   reportForm: FormGroup;
@@ -187,7 +194,8 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private location: Location,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private messageService: MessageService
   ) {
     this.reportForm = this.buildReportForm();
     this.scheduleForm = this.buildScheduleForm();
@@ -434,7 +442,7 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
     if (selectedCategories.length > 0) {
       const productIds = this.products
         .filter(p => selectedCategories.includes(typeof p.category === 'string' ? p.category : (p.category as any)?.name))
-        .map(p => p.id);
+        .map(p => String(p.id));
       filteredInventory = filteredInventory.filter(i => productIds.includes(i.productId));
       filteredPerformance = filteredPerformance.filter(p => productIds.includes(p.productId));
     }
@@ -824,22 +832,158 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
   // ============================================================
 
   exportReport(): void {
+    this.exportFormat = this.reportForm.get('format')?.value || 'PDF';
     this.showExportModal = true;
   }
 
   closeExportModal(): void {
+    if (this.isExporting) return;
     this.showExportModal = false;
   }
 
-  confirmExport(): void {
-    const format = this.reportForm.get('format')?.value || 'PDF';
-    console.log(`Exporting report as ${format}...`);
+  selectExportFormat(format: 'PDF' | 'EXCEL' | 'CSV'): void {
+    this.exportFormat = format;
+  }
 
-    // In real implementation, generate and download file
-    setTimeout(() => {
-      this.closeExportModal();
-      // Show success message
-    }, 1000);
+  confirmExport(): void {
+    if (!this.reportData || this.isExporting) return;
+
+    this.isExporting = true;
+
+    try {
+      switch (this.exportFormat) {
+        case 'EXCEL':
+          this.exportAsExcel(this.reportData);
+          this.onExportComplete();
+          break;
+        case 'CSV':
+          this.exportAsCsv(this.reportData);
+          this.onExportComplete();
+          break;
+        default:
+          // PDF capture is async (html2canvas) — it completes itself.
+          this.exportAsPdf(this.reportData);
+      }
+    } catch (err) {
+      console.error('Failed to export report:', err);
+      this.isExporting = false;
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Export Failed',
+        detail: 'Could not export the report. Please try again.'
+      });
+    }
+  }
+
+  private onExportComplete(): void {
+    this.isExporting = false;
+    this.showExportModal = false;
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Export Complete',
+      detail: `Report downloaded as ${this.exportFormat}.`
+    });
+  }
+
+  private exportAsPdf(data: ReportData): void {
+    const element = document.getElementById('report-preview-sheet');
+    if (!element) {
+      this.isExporting = false;
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Export Failed',
+        detail: 'Nothing to export — open the report preview first.'
+      });
+      return;
+    }
+
+    html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' })
+      .then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210; // A4 width in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save(`${this.sanitizeFileName(data.config.name)}.pdf`);
+        this.onExportComplete();
+      })
+      .catch(err => {
+        console.error('Failed to generate PDF:', err);
+        this.isExporting = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Export Failed',
+          detail: 'Could not generate the PDF.'
+        });
+      });
+  }
+
+  private exportAsExcel(data: ReportData): void {
+    const summaryRows: (string | number)[][] = [
+      ['Report', data.config.name],
+      ['Type', this.getReportTypeLabel(data.config.type)],
+      ['Generated', this.formatDateTime(data.generatedAt)],
+      ['Period', `${this.formatDate(data.config.dateRange.start)} - ${this.formatDate(data.config.dateRange.end)}`],
+      [],
+      ['Total Revenue', data.summary.totalRevenue],
+      ['Total Profit', data.summary.totalProfit],
+      ['Units Sold', data.summary.totalUnitsSold],
+      ['Average Order Value', data.summary.averageOrderValue],
+      ['Stock Turnover', data.summary.stockTurnover],
+      ['Inventory Value', data.summary.inventoryValue],
+      ['Low Stock Count', data.summary.lowStockCount],
+      ['Out of Stock Count', data.summary.outOfStockCount],
+      ['High Performing Products', data.summary.highPerformingCount],
+      ['Low Performing Products', data.summary.lowPerformingCount]
+    ];
+
+    const productHeader = ['Product', 'SKU', 'Category', 'Units Sold', 'Revenue', 'Profit', 'Performance Score'];
+    const productRows = data.performanceData.map(p => [
+      p.productName, p.sku, p.category, p.totalSold, p.totalRevenue, p.totalProfit, p.performanceScore
+    ]);
+
+    const branches = this.getUniqueBranches();
+    const branchHeader = ['Branch', 'Products', 'Units', 'Stock Value', 'Low Stock', 'Out of Stock'];
+    const branchRows = branches.map(b => [
+      b.name,
+      this.getBranchProductCount(b.id),
+      this.getBranchTotalUnits(b.id),
+      this.getBranchStockValue(b.id),
+      this.getBranchLowStockCount(b.id),
+      this.getBranchOutOfStockCount(b.id)
+    ]);
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(summaryRows), 'Summary');
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([productHeader, ...productRows]), 'Products');
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([branchHeader, ...branchRows]), 'Branches');
+    XLSX.writeFile(workbook, `${this.sanitizeFileName(data.config.name)}.xlsx`);
+  }
+
+  private exportAsCsv(data: ReportData): void {
+    const header = ['Product', 'SKU', 'Category', 'Units Sold', 'Revenue', 'Profit', 'Performance Score'];
+    const rows = data.performanceData.map(p => [
+      p.productName, p.sku, p.category, p.totalSold, p.totalRevenue, p.totalProfit, p.performanceScore
+    ]);
+
+    const escapeCsvCell = (value: string | number): string => {
+      const str = String(value ?? '');
+      return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+    };
+    const csvContent = [header, ...rows].map(row => row.map(escapeCsvCell).join(',')).join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${this.sanitizeFileName(data.config.name)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  private sanitizeFileName(name: string): string {
+    return (name || 'Report').replace(/[\\/:*?"<>|]/g, '-').trim() || 'Report';
   }
 
   // ============================================================

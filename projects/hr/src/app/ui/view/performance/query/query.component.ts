@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TableAction, TableColumn } from '../../shared-component/view/table/table.component';
+import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 
 type QueryStatus = 'Open' | 'Responded' | 'Verdict Passed';
 type QueryVerdict = 'Approved' | 'Rejected' | 'Pending';

@@ -1,67 +1,94 @@
-<div class="shift-container">
+<div class="shift-catalogue">
 
-  <!-- HEADER -->
-  <div class="header">
-    <div>
-      <h2>Shifts</h2>
-      <p class="shift-count">{{ shifts.length }} shifts</p>
+  <!-- ══ Header ═══════════════════════════════════════════════════════════ -->
+  <header class="catalogue-head">
+    <div class="catalogue-head__title">
+      <span class="panel__label">Shifts</span>
+      <span class="panel__count">{{ shifts.length }}</span>
     </div>
-    <button class="add-btn" (click)="createShift()">
-      <i class="fa-solid fa-plus"></i> Create Shift
+
+    <div class="catalogue-head__actions">
+      <button type="button" class="btn btn--sm btn--primary" (click)="createShift()">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+        New shift
+      </button>
+      <button
+        *ngIf="dismissable"
+        type="button"
+        class="btn btn--sm btn--icon"
+        (click)="dismiss.emit()"
+        aria-label="Close">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ══ Filters ══════════════════════════════════════════════════════════ -->
+  <div class="filters">
+    <label class="field field--grow">
+      <span class="field__label">Search</span>
+      <input
+        type="text"
+        class="field__input"
+        [(ngModel)]="searchText"
+        (ngModelChange)="applyFilter()"
+        placeholder="Shift name" />
+    </label>
+
+    <label class="field">
+      <span class="field__label">Type</span>
+      <select class="field__input" [(ngModel)]="shiftTypeFilter" (ngModelChange)="applyFilter()">
+        <option value="">All types</option>
+        <option *ngFor="let type of shiftTypes" [value]="type">{{ type | titlecase }}</option>
+      </select>
+    </label>
+
+    <button type="button" class="btn" (click)="resetFilter()" [disabled]="!hasActiveFilters">
+      Reset
     </button>
   </div>
 
-  <!-- FILTER BAR -->
-  <div class="filter-card">
-    <input
-      type="text"
-      placeholder="Search shift..."
-      [(ngModel)]="searchText"
-    />
-    <select [(ngModel)]="shiftTypeFilter">
-      <option value="">All Types</option>
-      <option value="morning">Morning</option>
-      <option value="evening">Evening</option>
-      <option value="night">Night</option>
-    </select>
-    <button class="apply-btn" (click)="applyFilter()">Apply</button>
-    <button class="reset-btn" (click)="resetFilter()">Reset</button>
-  </div>
+  <!-- ══ List ═════════════════════════════════════════════════════════════ -->
+  <p class="panel__empty" *ngIf="filteredShifts.length === 0">
+    {{ hasActiveFilters ? 'No shifts match those filters.' : 'No shifts defined yet.' }}
+  </p>
 
-  <!-- SHIFT TABLE -->
-  <div class="table-card">
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Time</th>
-          <th>Description</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let shift of filteredShifts">
-          <td>
-            <span class="color-dot" [style.background]="shift.color"></span>
-            {{ shift.name }}
-          </td>
-          <td>
-            <span class="shift-type" [ngClass]="shift.type">{{ shift.type }}</span>
-          </td>
-          <td>{{ shift.startTime }} - {{ shift.endTime }}</td>
-          <td>{{ shift.description }}</td>
-          <td class="actions">
-            <button class="edit" (click)="editShift(shift)">Edit</button>
-            <button class="delete" (click)="deleteShift(shift.id)">Delete</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <ul class="shift-defs" *ngIf="filteredShifts.length > 0">
+    <li class="shift-def" *ngFor="let shift of filteredShifts">
+      <span class="shift-def__swatch" [style.background]="shift.color"></span>
+
+      <div class="shift-def__body">
+        <div class="shift-def__line">
+          <span class="shift-def__name">{{ shift.name }}</span>
+          <span class="type-tag" [ngClass]="'type-tag--' + shift.type">{{ shift.type }}</span>
+        </div>
+
+        <div class="shift-def__meta">
+          <span class="shift-def__time">{{ shift.startTime }}–{{ shift.endTime }}</span>
+          <span class="shift-def__sep">·</span>
+          <span>{{ duration(shift) }}</span>
+        </div>
+
+        <p class="shift-def__note" *ngIf="shift.description">{{ shift.description }}</p>
+      </div>
+
+      <div class="shift-def__actions">
+        <button type="button" class="btn btn--sm btn--accent" (click)="editShift(shift)">
+          <i class="fa-solid fa-pen" aria-hidden="true"></i>
+          Edit
+        </button>
+        <button type="button" class="btn btn--sm btn--danger" (click)="deleteShift(shift)">
+          <i class="fa-solid fa-trash" aria-hidden="true"></i>
+          Delete
+        </button>
+      </div>
+    </li>
+  </ul>
+
   <app-shift-form
-  *ngIf="showForm"
-  [shift]="selectedShift"
-  (closeForm)="closeForm()">
-</app-shift-form>
+    *ngIf="showForm"
+    [shift]="selectedShift"
+    (closeForm)="closeForm()">
+  </app-shift-form>
+
 </div>

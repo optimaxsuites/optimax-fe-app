@@ -211,10 +211,26 @@ export class LeavePlanComponent implements OnInit, OnDestroy {
     .subscribe({
       next: ({ planRecords, leaveTypes, policies }) => {
 
-        // Filter to current user's records only
-        const myRecords: LeavePlanRecord[] = (planRecords as LeavePlanRecord[]).filter(
-          (r) => (r.createdBy?.userId || (r.createdBy as any)?.id) === this.currentUserId,
-        );
+        // Filter to current user's records — but don't silently drop records
+        // whose ownership can't be determined. The backend currently returns
+        // createdBy: null on every plan record, which the service normalizes
+        // to { userId: null, ... }. If we strictly required userId to match,
+        // every record would vanish even though it's real data. Instead:
+        // include a record if it's confirmed to belong to the user OR if
+        // ownership is simply unknown (createdBy missing) — only exclude
+        // records we can positively confirm belong to someone else.
+        const allRecords = planRecords as LeavePlanRecord[];
+        const myRecords: LeavePlanRecord[] = allRecords.filter((r) => {
+          const ownerId = r.createdBy?.userId;
+          const ownerKnown = ownerId !== null && ownerId !== undefined;
+          return !ownerKnown || ownerId === this.currentUserId;
+        });
+
+        if (allRecords.length > 0 && allRecords.every((r) => !r.createdBy?.userId)) {
+          console.warn(
+            '⚠️ createdBy is missing on all leave-plan-records — showing all records unfiltered since ownership cannot be verified. This needs a backend fix (createdBy is not being persisted).',
+          );
+        }
 
         this.checkForStatusChanges(myRecords);
         this.leavePlanRecords = myRecords;

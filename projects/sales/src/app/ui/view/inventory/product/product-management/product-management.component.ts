@@ -661,7 +661,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
     if (uuid) {
       this.router.navigate(['/admin/sales/commerce/inventory/products/new', uuid]);
     } else {
-      this.router.navigate(['/admin/sals/commerce/inventory/products/new']);
+      this.router.navigate(['/admin/sales/commerce/inventory/products/new']);
     }
   }
 

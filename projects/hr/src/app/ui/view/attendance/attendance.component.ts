@@ -7,7 +7,6 @@ import { CorrectionrequestComponent } from './employee/correctionrequest/correct
 import { ReportsComponent } from './admin/reports/reports.component';
 import { RemoteCheckinComponent } from './employee/remote-checkin/remote-checkin.component';
 import { BiometricEnrollmentComponent } from '../biometric/biometric-enrollment/biometric-enrollment.component';
-import { CrossBranchRequestComponent } from './employee/cross-branch/cross-branch-request.component';
 import { SupervisorApprovalQueueComponent } from './admin/supervisor-approval-queue/supervisor-approval-queue.component';
 
 @Component({

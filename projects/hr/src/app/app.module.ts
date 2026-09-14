@@ -1,3 +1,5 @@
+import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
 import { UserProfileComponent } from './ui/view/user-profile/user-profile.component';
 import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-dashboard.component';
@@ -66,11 +68,6 @@ import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { DragDropModule } from '@angular/cdk/drag-drop';
-// BrowserModule and BrowserAnimationsModule must NOT be imported here — the root
-// app already imports them. Duplicating either causes multiple change detection
-// instances, which manifests as ngFor loops rendering cards repeatedly.
-// import { BrowserModule } from '@angular/platform-browser';
-// import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppHrRoutingModule } from './app-routing.module';
 import { AppHrComponent } from './app.component';
 import { CommonModule } from '@angular/common';
@@ -91,6 +88,7 @@ import { ButtonComponent } from './ui/shared-component/view/button/button.compon
 import { CareerJobPostingComponent } from './ui/shared-component/view/career-job-posting/career-job-posting.component';
 import { DashboardFooterComponent } from './ui/shared-component/view/dashboard-footer/dashboard-footer.component';
 import { TableComponent } from './ui/shared-component/view/table/table.component';
+import { TableBodyDirective } from './ui/shared-component/view/table/table-body.directive';
 import { CooperativeLoanReportsComponent } from './ui/view/loan-management/cooperative-loan-reports/cooperative-loan-reports.component';
 import { InterviewInviteComponent } from './ui/view/recruitment/interview-invite/interview-invite.component';
 import { InterviewResponseComponent } from './ui/view/recruitment/candidate/interview-response.component';
@@ -142,6 +140,7 @@ import { EditableLabelComponent } from './ui/shared-component/view/editable-labe
 import { DropdownComponent } from './ui/shared-component/view/dropdown/dropdown.component';
 import { AuthInterceptor } from './ui/shared-component/service/auth-service/auth.interceptor.service';
 import { ErrorToastInterceptor } from './ui/shared-component/service/error-message/error-toast.interceptor';
+import { DateConversionInterceptor } from './ui/service/date-conversion.interceptor';
 import { MasterComponent } from './master.component';
 import { RouterModule } from '@angular/router';
 import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
@@ -149,7 +148,6 @@ import { AppraisalComponent } from './ui/view/performance/appraisal/appraisal.co
 import { LeavePolicyComponent } from './ui/view/leave/leave-policy/leave-policy.component';
 import { AttendashboardComponent } from './ui/view/attendance/admin/attendashboard/attendashboard.component';
 import { StatsCardsComponent } from './ui/view/attendance/admin/attendashboard/stats-cards/stats-cards.component';
-import { HeatmapComponent } from './ui/view/attendance/admin/attendashboard/heatmap/heatmap.component';
 import { LateArrivalsComponent } from './ui/view/attendance/admin/attendashboard/late-arrivals/late-arrivals.component';
 //import { AttendancetableComponent } from './ui/view/attendance/admin/attendashboard/attendancetable/attendancetable.component';
 //import { AttendancefilterComponent } from './ui/view/attendance/admin/attendashboard/attendancetable/attendancefilter/attendancefilter.component';
@@ -167,7 +165,6 @@ import { AdminCorrectionsComponent } from './ui/view/attendance/admin/admin-corr
 import { AttendanceReportsComponent } from './ui/view/attendance/admin/attendance-reports/attendance-reports.component';
 import { BiometricEnrollmentComponent } from './ui/view/biometric/biometric-enrollment/biometric-enrollment.component';
 import { RemoteCheckinComponent } from './ui/view/attendance/employee/remote-checkin/remote-checkin.component';
-import { CrossBranchRequestComponent } from './ui/view/attendance/employee/cross-branch/cross-branch-request.component';
 import { SupervisorApprovalQueueComponent } from './ui/view/attendance/admin/supervisor-approval-queue/supervisor-approval-queue.component';
 import { CalendarModule } from 'primeng/calendar';
 import { AttendanceDetailsComponent } from './ui/view/attendance/attendance-details/attendance-details.component';
@@ -227,7 +224,6 @@ import { ShiftAssignmentComponent } from './ui/view/workschedule-shifts/shift-as
 import { ShiftCalendarComponent } from './ui/view/workschedule-shifts/shift-calendar/shift-calendar.component';
 import { ShiftFormComponent } from './ui/view/workschedule-shifts/shift-form/shift-form.component';
 import { ShiftListComponent } from './ui/view/workschedule-shifts/shift-list/shift-list.component';
-import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
 import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-cooperative-group/join-cooperative-group.component';
 import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-management/cooperative-membership-applications/cooperative-membership-applications.component';
 import { LoanPurposeManagementComponent } from './ui/view/loan-management/loan-purpose-management/loan-purpose-management.component';
@@ -258,6 +254,7 @@ import { NokChangeRequestComponent } from './ui/view/profile-change-requests/nok
 import { EmployeeChangeRequestsDashboardComponent } from './ui/view/profile-change-requests/employee-change-requests-dashboard/employee-change-requests-dashboard.component';
 import { EmployeeChangeRequestsSummaryComponent } from './ui/view/employee-dashboard/employee-change-requests-summary/employee-change-requests-summary.component';
 import { GuarantorChangeRequestComponent } from './ui/view/profile-change-requests/guarantor-change-request/guarantor-change-request.component';
+
 // import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
 import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-letters.component';
 import { TimeFormatPipe } from './ui/shared-component/pipes/time-format.pipe';
@@ -333,7 +330,6 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     LeavePolicyComponent,
     AttendashboardComponent,
     StatsCardsComponent,
-    HeatmapComponent,
     LateArrivalsComponent,
     AttendanceDetailsComponent,
     AttendanceSheetsComponent,
@@ -347,7 +343,6 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     AttendanceReportsComponent,
     BiometricEnrollmentComponent,
     RemoteCheckinComponent,
-    CrossBranchRequestComponent,
     SupervisorApprovalQueueComponent,
     ProjectComponent,
     ProjectDetailComponent,
@@ -398,7 +393,6 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     AttendancefilterComponent,
     AttendancesummaryComponent,
     JopOpeningsComponent,
-    WorkscheduleShiftsComponent,
     ShiftListComponent,
     ShiftFormComponent,
     ShiftAssignmentComponent,
@@ -451,6 +445,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     LargeSideModalComponent,
     FormsModule,
     ReactiveFormsModule,
+    TableComponent,
     HttpClientModule,
     TableModule,
     // RouterModule.forChild([], {
@@ -509,7 +504,11 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     EmployeeRelativesWidgetComponent,
     TimeFormatPipe,
     ToastComponent,
+    // Standalone. Without these two here <app-table> resolves to an unknown
+    // element and NO_ERRORS_SCHEMA swallows the error, so the table silently
+    // renders nothing.
     TableComponent,
+    TableBodyDirective,
   ],
   schemas: [NO_ERRORS_SCHEMA],
   providers: [
@@ -521,6 +520,11 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     {
       provide: HTTP_INTERCEPTORS,
       useClass: ErrorToastInterceptor,
+      multi: true,
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: DateConversionInterceptor,
       multi: true,
     },
     {

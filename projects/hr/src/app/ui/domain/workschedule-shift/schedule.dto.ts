@@ -1,4 +1,4 @@
-export interface ScheduleDTO {
+export interface ShiftScheduleDTO {
   id: string;
   assignmentGroupId?: string;
   employeeId: string;

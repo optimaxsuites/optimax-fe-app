@@ -20,6 +20,7 @@ describe('CooperativeMemberLoansComponent', () => {
 
     cooperativeServiceSpy.getMemberById.and.returnValue({
       id: 1,
+      employeeId: 1,
       memberId: 1,
       fullName: 'Test User',
       email: 'test@example.com',
@@ -31,7 +32,7 @@ describe('CooperativeMemberLoansComponent', () => {
       updatedAt: new Date().toISOString()
     });
 
-    cooperativeServiceSpy.getLoansByMember.and.returnValue(of([]));
+    cooperativeServiceSpy.getLoansByMember.and.returnValue([]);
     cooperativeServiceSpy.formatCurrency.and.callFake((amount: number) => `₦${amount}`);
 
     await TestBed.configureTestingModule({

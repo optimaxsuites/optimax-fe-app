@@ -98,18 +98,22 @@ export class LeaveTimelineComponent implements OnInit, OnDestroy {
 
   // ==================== LOAD CURRENT ADMIN USER ====================
 
+  /**
+   * Resolves the acting user's ID directly from session (set at login),
+   * rather than via an Employee-record lookup. The previous approach
+   * required a populated employee.user relation, which silently failed
+   * (no error, no log) whenever the Employee record existed but had
+   * `user: null`, permanently blocking approve/reject for that account.
+   * decisionBy is an audit field, not an authorization check, so this
+   * only needs the session userId, which is always available once logged in.
+   */
   loadCurrentAdminUser() {
-    this.apiService.getCurrentEmployee().subscribe({
-      next: (employee) => {
-        if (employee && employee.user) {
-          this.currentAdminUserId = employee.user.userId;
-          console.log('✅ Current admin user ID:', this.currentAdminUserId);
-        }
-      },
-      error: (err) => {
-        console.error('❌ Failed to load current admin user:', err);
-      },
-    });
+    this.currentAdminUserId = this.apiService.getCurrentUserIdAsNumber();
+    if (this.currentAdminUserId) {
+      console.log('✅ Current admin user ID:', this.currentAdminUserId);
+    } else {
+      console.warn('⚠️ No userId found in session — decisionBy will be unavailable until re-login.');
+    }
   }
 
   checkScreenSize() {
@@ -690,9 +694,12 @@ export class LeaveTimelineComponent implements OnInit, OnDestroy {
   // ==================== APPROVE / REJECT ====================
 
   approveLeave() {
-    if (!this.selectedLeave || !this.currentAdminUserId) {
-      console.error('❌ Cannot approve: missing leave or admin user ID');
+    if (!this.selectedLeave) {
+      console.error('❌ Cannot approve: no leave plan selected');
       return;
+    }
+    if (!this.currentAdminUserId) {
+      console.warn('⚠️ No admin user ID in session — proceeding, but decisionBy will be recorded as unknown.');
     }
 
     // Build update payload
@@ -787,9 +794,12 @@ export class LeaveTimelineComponent implements OnInit, OnDestroy {
   }
 
   confirmReject() {
-    if (!this.selectedLeave || !this.currentAdminUserId) {
-      console.error('❌ Cannot reject: missing leave or admin user ID');
+    if (!this.selectedLeave) {
+      console.error('❌ Cannot reject: no leave plan selected');
       return;
+    }
+    if (!this.currentAdminUserId) {
+      console.warn('⚠️ No admin user ID in session — proceeding, but decisionBy will be recorded as unknown.');
     }
     const payload = {
       id: this.selectedLeave.id,

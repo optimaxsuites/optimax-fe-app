@@ -149,7 +149,7 @@ export class ActivityComponent implements OnInit, OnDestroy {
 
     const map: Record<string, { icon: string; color: string; typeLabel: string; category: ActivityEvent['category'] }> = {
       'APPLIED': { icon: 'fa-user-plus', color: '#F5A623', typeLabel: 'Application Submitted', category: 'onboarding' },
-      'DOCUMENTS_SUBMITTED': { icon: 'fa-file-upload', color: '#2E6276', typeLabel: 'Documents Submitted', category: 'documents' },
+      'DOCUMENTS_SUBMITTED': { icon: 'fa-file-upload', color: '#184440', typeLabel: 'Documents Submitted', category: 'documents' },
       'UNDER_REVIEW': { icon: 'fa-search', color: '#F97316', typeLabel: 'Under Review', category: 'onboarding' },
       'APPROVED': { icon: 'fa-check-circle', color: '#2EB270', typeLabel: 'Approved', category: 'onboarding' },
       'REJECTED': { icon: 'fa-times-circle', color: '#DC2626', typeLabel: 'Rejected', category: 'onboarding' },
@@ -157,12 +157,12 @@ export class ActivityComponent implements OnInit, OnDestroy {
       'SUSPENDED': { icon: 'fa-pause-circle', color: '#DC2626', typeLabel: 'Suspended', category: 'status' },
       'REINSTATED': { icon: 'fa-undo', color: '#2EB270', typeLabel: 'Reinstated', category: 'status' },
       'OFFBOARDED': { icon: 'fa-stop-circle', color: '#6B7280', typeLabel: 'Offboarded', category: 'status' },
-      'PERFORMANCE_UPDATE': { icon: 'fa-chart-line', color: '#2E6276', typeLabel: 'Performance Update', category: 'performance' },
+      'PERFORMANCE_UPDATE': { icon: 'fa-chart-line', color: '#184440', typeLabel: 'Performance Update', category: 'performance' },
       'RISK_ALERT': { icon: 'fa-exclamation-triangle', color: '#F59E0B', typeLabel: 'Risk Alert', category: 'risk' },
       'DOCUMENT_VERIFIED': { icon: 'fa-file-check', color: '#2EB270', typeLabel: 'Document Verified', category: 'documents' },
       'DOCUMENT_EXPIRED': { icon: 'fa-file-exclamation', color: '#DC2626', typeLabel: 'Document Expired', category: 'documents' },
-      'CONTRACT_SIGNED': { icon: 'fa-file-signature', color: '#2E6276', typeLabel: 'Contract Signed', category: 'general' },
-      'CONTRACT_RENEWED': { icon: 'fa-sync-alt', color: '#2E6276', typeLabel: 'Contract Renewed', category: 'general' },
+      'CONTRACT_SIGNED': { icon: 'fa-file-signature', color: '#184440', typeLabel: 'Contract Signed', category: 'general' },
+      'CONTRACT_RENEWED': { icon: 'fa-sync-alt', color: '#184440', typeLabel: 'Contract Renewed', category: 'general' },
       'TIER_CHANGED': { icon: 'fa-trophy', color: '#F5A623', typeLabel: 'Tier Changed', category: 'performance' },
       'GENERAL': { icon: 'fa-circle', color: '#6B7280', typeLabel: 'General Event', category: 'general' }
     };

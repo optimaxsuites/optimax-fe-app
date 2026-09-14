@@ -250,7 +250,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
           
           // Auto-select request if ID provided
           if (this.requestId && this.autoSelect) {
-            this.selectedRequest = this.requests.find(r => r.id === this.requestId) || null;
+            this.selectedRequest = this.requests.find(r => String(r.id) === this.requestId) || null;
             if (this.selectedRequest) {
               this.generateApprovalLevelsForRequest(this.selectedRequest);
             }
@@ -359,7 +359,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
       filtered = filtered.filter(r =>
         r.productName?.toLowerCase().includes(term) ||
         r.sku?.toLowerCase().includes(term) ||
-        r.id?.toLowerCase().includes(term) ||
+        String(r.id ?? '').toLowerCase().includes(term) ||
         r.branchName?.toLowerCase().includes(term)
       );
     }
@@ -436,8 +436,8 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   // SELECTION
   // ============================================================
 
-  selectRequest(requestId: string): void {
-    this.selectedRequest = this.requests.find(r => r.id === requestId) || null;
+  selectRequest(requestId: string | number): void {
+    this.selectedRequest = this.requests.find(r => String(r.id) === String(requestId)) || null;
     if (this.selectedRequest) {
       this.generateApprovalLevelsForRequest(this.selectedRequest);
       // Reset forms
@@ -512,7 +512,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
         
         // Emit event
         this.approvalComplete.emit({
-          requestId: this.selectedRequest.id,
+          requestId: String(this.selectedRequest.id),
           action: 'APPROVE',
           comments: formValue.comments
         });
@@ -587,7 +587,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
         
         // Emit event
         this.approvalComplete.emit({
-          requestId: this.selectedRequest.id,
+          requestId: String(this.selectedRequest.id),
           action: 'REJECT',
           comments: formValue.reason
         });
@@ -646,7 +646,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
         
         // Emit event
         this.approvalComplete.emit({
-          requestId: this.selectedRequest.id,
+          requestId: String(this.selectedRequest.id),
           action: 'ORDER',
           comments: `PO Created: ${this.selectedRequest.purchaseOrderId}`
         });
@@ -838,7 +838,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   }
 
   getProductName(productId: string): string {
-    const product = this.products.find(p => p.id === productId);
+    const product = this.products.find(p => String(p.id) === productId);
     return product?.name || productId;
   }
 

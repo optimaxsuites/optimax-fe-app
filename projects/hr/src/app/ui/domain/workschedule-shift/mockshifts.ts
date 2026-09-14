@@ -1,8 +1,8 @@
-import { ShiftDTO } from "./shift.dto";
+import { WorkShiftDTO } from "./shift.dto";
 
-export const MOCK_SHIFTS: ShiftDTO[] = [
+export const MOCK_SHIFTS: WorkShiftDTO[] = [
   {
-    id: '1',
+    id: 'shift-1',
     name: 'Morning Shift',
     type: 'morning',
     startTime: '08:00',
@@ -12,7 +12,7 @@ export const MOCK_SHIFTS: ShiftDTO[] = [
     color: '#4CAF50'
   },
   {
-    id: '2',
+    id: 'shift-2',
     name: 'Evening Shift',
     type: 'evening',
     startTime: '16:00',

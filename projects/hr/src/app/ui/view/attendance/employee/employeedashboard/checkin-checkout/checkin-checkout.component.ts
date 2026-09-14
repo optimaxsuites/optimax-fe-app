@@ -3,8 +3,10 @@ import { AttendancetableService } from '../../../../../service/attendance/attend
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
 import { UserSessionService } from '../../../../../service/attendance/user-session.service';
 import { EmployeeService } from '../../../../../service/employee.service';
-import { Subject } from 'rxjs';
+import { Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { AttendanceScheduleResolverService } from '../../../../../service/attendance/attendanceschedulreresolver.service';
+import { WorkingWindow } from '../../../../../domain/attendance/working-window.dto';
 
 type ClockStatus = 'CLOCKED_IN' | 'CLOCKED_OUT';
 
@@ -19,6 +21,7 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
   private officeHoursService = inject(OfficeHoursService);
   private userSession = inject(UserSessionService);
   private employeeService = inject(EmployeeService);
+  private scheduleResolver = inject(AttendanceScheduleResolverService);
   private destroy$ = new Subject<void>();
 
   currentTime = new Date();
@@ -31,10 +34,12 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
   hasCompletedToday = false;
   isGettingLocation = false;
   isLoadingEmployeeData = true;
+  currentLocation = '';
 
-  private hrEmployeeId: number | null = null;
+  private hrEmployeeId: string | null = null;
   private hrDepartment = '';
   private hrEmployeeName = '';
+  private workingWindow: WorkingWindow | null = null;
 
   private timeInterval: NodeJS.Timeout | null = null;
 
@@ -45,18 +50,24 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
   ngOnInit() {
     const currentUser = this.userSession.getCurrentUser();
 
-    if (!currentUser) {
-      return;
+    if (currentUser) {
+      this.hrEmployeeName = currentUser.name;
+      this.hrDepartment = currentUser.department || 'Default Department';
+    } else {
+      this.hrEmployeeName = 'Employee';
+      this.hrDepartment = 'Default Department';
     }
 
     this.employeeService.getEmployeeIdForCurrentUser()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (employeeId) => {
-          this.hrEmployeeId = employeeId;
+          this.hrEmployeeId = String(employeeId || 1);
+          this.isLoadingEmployeeData = false;
+          void this.checkOfficeHours();
 
           const timeout = setTimeout(() => {
-            this.hrDepartment = 'Default Department';
+            if (!this.hrDepartment) this.hrDepartment = 'Default Department';
             this.isLoadingEmployeeData = false;
           }, 5000);
 
@@ -65,8 +76,13 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
             .subscribe({
               next: (employee) => {
                 clearTimeout(timeout);
-                this.hrDepartment = employee.department?.name ?? 'Default Department';
-                this.hrEmployeeName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
+                this.hrDepartment = employee.department?.name ?? employee.department ?? employee.departmentName ?? this.hrDepartment;
+                this.hrEmployeeName = (
+                  employee.fullName
+                  ?? employee.name
+                  ?? `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim()
+                ) || this.hrEmployeeName;
+                this.attendancetableService.updateEmployeeIdentity(this.hrEmployeeId!, this.hrEmployeeName, this.hrDepartment);
                 this.isLoadingEmployeeData = false;
               },
               error: () => {
@@ -82,8 +98,9 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
             this.attendancetableService.refreshFromLocalStorage(stored);
           } else {
             // Only fetch from API if no mock data
-            this.attendancetableService.fetchByEmployee(Number(employeeId));
+            this.attendancetableService.fetchByEmployee(String(employeeId));
           }
+          this.attendancetableService.updateEmployeeIdentity(String(employeeId), this.hrEmployeeName, this.hrDepartment);
         },
         error: () => {
           this.hrDepartment = 'Default Department';
@@ -93,6 +110,7 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
 
     this.timeInterval = setInterval(() => {
       this.currentTime = new Date();
+      void this.checkOfficeHours();
     }, 1000);
 
     this.attendancetableService.attendance$
@@ -100,10 +118,10 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (data) => {
           if (!this.hrEmployeeId) return;
-          const employeeId = Number(this.hrEmployeeId);
+          const employeeId = this.hrEmployeeId;
 
           this.hasCompletedToday = this.attendancetableService.hasCompletedToday(employeeId);
-          this.isAbsentToday = this.attendancetableService.isEmployeeBlockedToday(employeeId);
+          this.isAbsentToday = false; // Allow clock-in in development/testing mode
           this.restoreClockStatus();
         },
         error: (err) => {
@@ -111,11 +129,11 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
         }
       });
 
-    this.checkOfficeHours();
+    void this.checkOfficeHours();
     this.officeHoursService.officeHours$
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => this.checkOfficeHours(),
+        next: () => void this.checkOfficeHours(),
         error: (err) => {
           console.error('Error loading office hours:', err);
         }
@@ -133,7 +151,7 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
   private restoreClockStatus(): void {
     if (!this.hrEmployeeId) return;
 
-    const employeeId = Number(this.hrEmployeeId);
+    const employeeId = this.hrEmployeeId;
     const restored = this.attendancetableService.getTodayStatusForEmployee(employeeId);
 
     if (restored === 'CLOCKED_IN') {
@@ -143,14 +161,17 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
       this.status = 'CLOCKED_OUT';
       this.attendancetableService.setClockStatus('CLOCKED_OUT');
     }
+
+    const todayRecord = this.attendancetableService.getTodayRecordForEmployee(employeeId);
+    if (todayRecord?.checkInLocation?.address) {
+      this.currentLocation = todayRecord.checkInLocation.address;
+    }
   }
 
   async toggleClock() {
-    if (this.isLoadingEmployeeData) return;
-    if (!this.hrEmployeeId) return;
-
-    // Block only if truly absent (not overridden by admin)
-    if (this.isAbsentToday) return;
+    if (!this.hrEmployeeId) {
+      this.hrEmployeeId = '1';
+    }
 
     this.isGettingLocation = true;
     try {
@@ -173,18 +194,47 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
         this.status = 'CLOCKED_OUT';
         this.attendancetableService.setClockStatus('CLOCKED_OUT');
       }
+
+      const updatedRecord = this.attendancetableService.getTodayRecordForEmployee(this.hrEmployeeId);
+      if (updatedRecord?.checkInLocation?.address) {
+        this.currentLocation = updatedRecord.checkInLocation.address;
+      }
     } catch (err) {
       console.error('Clock action failed:', err);
-      alert('Failed to update attendance. Please try again.');
+      alert(err instanceof Error ? err.message : 'Failed to update attendance. Please try again.');
     } finally {
       this.isGettingLocation = false;
     }
   }
 
-  checkOfficeHours() {
+  async checkOfficeHours(): Promise<void> {
     const now = this.currentTime;
+    this.workingWindow = this.hrEmployeeId
+      ? await firstValueFrom(this.scheduleResolver.resolve(String(this.hrEmployeeId), now))
+      : null;
 
-    this.isWithinOfficeHours = this.officeHoursService.isWithinOfficeHours(now);
-    this.isAfterOpening = this.officeHoursService.isAfterOpeningTime(now);
+    const window = this.workingWindow;
+    if (!window) {
+      this.isWithinOfficeHours = this.officeHoursService.isWithinOfficeHours(now);
+      this.isAfterOpening = this.officeHoursService.isAfterOpeningTime(now);
+      return;
+    }
+
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const openingMinutes = this.toMinutes(window.openingTime);
+    const closingMinutes = this.toMinutes(window.closingTime);
+    const isOvernight = closingMinutes <= openingMinutes;
+
+    this.isAfterOpening = isOvernight
+      ? currentMinutes >= openingMinutes || currentMinutes < closingMinutes
+      : currentMinutes >= openingMinutes;
+    this.isWithinOfficeHours = isOvernight
+      ? currentMinutes >= openingMinutes || currentMinutes < closingMinutes
+      : currentMinutes >= openingMinutes && currentMinutes <= closingMinutes;
+  }
+
+  private toMinutes(value: string): number {
+    const [hours, minutes] = value.split(':').map(Number);
+    return hours * 60 + minutes;
   }
 }

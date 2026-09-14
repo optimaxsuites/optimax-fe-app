@@ -231,7 +231,7 @@ export class RestockSuggestionComponent implements OnInit, OnDestroy {
     const suggestions: RestockSuggestion[] = [];
     const productMap = new Map<string, Product>();
 
-    this.products.forEach(p => productMap.set(p.id, p));
+    this.products.forEach(p => productMap.set(String(p.id), p));
 
     this.branchInventory.forEach(item => {
       const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);

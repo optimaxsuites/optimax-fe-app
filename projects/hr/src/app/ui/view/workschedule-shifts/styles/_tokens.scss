@@ -1,0 +1,180 @@
+// ============================================================
+// Work Schedule & Shifts — design tokens
+// ============================================================
+// Colour comes from the shared brand palette so this module stays in
+// step with the attendance modules. Everything below that is layout:
+// one spacing scale, one radius scale, one type scale, one duration.
+//
+// Components in this module must not declare their own hex values —
+// if a colour is missing here, add it here.
+
+@import '../../attendance/styles/brand-colors';
+
+// ── Surfaces ──
+$surface:        #ffffff;
+$surface-sunken: #fafbfc;
+$surface-hover:  #f5f7f8;
+
+// ── Hairlines ──
+$line:        #ebedf0;
+$line-strong: #dbe0e5;
+
+// ── Ink ──
+$ink:   #15242b; // headings, table values
+$ink-2: #5b6b73; // labels, secondary copy
+$ink-3: #97a4ab; // meta, placeholders, disabled
+
+// ── Accent (brand) ──
+$accent:       $primary-blue-green; // #2E6276
+$accent-hover: $btn-primary-hover;  // #1f4252
+$accent-tint:  rgba(46, 98, 118, 0.07);
+$accent-line:  rgba(46, 98, 118, 0.28);
+
+// ── Status ──
+$positive:      $primary-celadon-green; // #2EB270
+$positive-tint: rgba(46, 178, 112, 0.10);
+$caution:       #a67c00;
+$caution-tint:  rgba(166, 124, 0, 0.10);
+$critical:      $status-rejected;       // #b30000
+$critical-tint: rgba(179, 0, 0, 0.06);
+
+// ── Space (4px base) ──
+$s1: 4px;
+$s2: 8px;
+$s3: 12px;
+$s4: 16px;
+$s5: 24px;
+$s6: 32px;
+
+// ── Radius ──
+$r1: 4px;
+$r2: 6px;
+$r3: 10px;
+$r4: 12px; // page banner
+
+// ── Page banner ──
+// Deliberately mirrors the attendance dashboard header so the two
+// modules read as one product. The only gradient in this module.
+$banner-from:   #0f766e;
+$banner-to:     #0d5e59;
+$banner-shadow: rgba(15, 118, 110, 0.15);
+$on-banner:     rgba(255, 255, 255, 0.9);
+
+// ── Type ──
+$fz-micro: 11px; // uppercase section labels
+$fz-sm:    12px; // meta, table cells
+$fz-md:    13px; // body, controls
+$fz-lg:    15px; // panel and page titles
+
+// ── Motion ──
+$motion: 130ms ease;
+
+// ── Elevation — exactly one, for things that genuinely float ──
+$pop: 0 6px 20px rgba(21, 36, 43, 0.10);
+
+// ── Layout ──
+$rail-width: 304px;
+$stack-at:   1120px; // below this the right rail stacks under the main column
+
+// ============================================================
+// Mixins
+// ============================================================
+
+@mixin section-label {
+  font-size: $fz-micro;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: $ink-3;
+}
+
+@mixin card {
+  background: $surface;
+  border: 1px solid $line;
+  border-radius: $r3;
+}
+
+@mixin control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $s2;
+  height: 32px;
+  padding: 0 $s3;
+  border: 1px solid $line-strong;
+  border-radius: $r2;
+  background: $surface;
+  color: $ink-2;
+  font-family: inherit;
+  font-size: $fz-md;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color $motion, border-color $motion, background $motion;
+
+  &:hover:not(:disabled) {
+    color: $accent;
+    border-color: $accent-line;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $accent-line;
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    color: $ink-3;
+    background: $surface-sunken;
+    cursor: not-allowed;
+  }
+}
+
+@mixin control-primary {
+  @include control;
+  background: $accent;
+  border-color: $accent;
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: $accent-hover;
+    border-color: $accent-hover;
+    color: #fff;
+  }
+
+  &:disabled {
+    background: $surface-sunken;
+    border-color: $line-strong;
+    color: $ink-3;
+  }
+}
+
+// Field inputs — selects, text inputs, date inputs all read the same.
+@mixin field {
+  height: 32px;
+  padding: 0 $s3;
+  border: 1px solid $line-strong;
+  border-radius: $r2;
+  background: $surface;
+  color: $ink;
+  font-family: inherit;
+  font-size: $fz-md;
+  transition: border-color $motion;
+
+  &::placeholder { color: $ink-3; }
+
+  &:focus {
+    outline: none;
+    border-color: $accent-line;
+  }
+}
+
+// Status marker: a 6px dot plus a label. Colour carries meaning only.
+@mixin status-dot($colour) {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: $colour;
+  flex-shrink: 0;
+}

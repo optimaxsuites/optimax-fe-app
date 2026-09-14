@@ -2,7 +2,8 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl, ValidatorFn } from '@angular/forms';
-import { Subject, forkJoin, of } from 'rxjs';
+import { Observable, Subject, forkJoin, of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import { catchError } from 'rxjs/operators';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import { Product, MeasurementUnit, Supplier, Category } from '../../../../domain/inventory/inventory.dto';
@@ -125,6 +126,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
   attachmentFileName: string = '';
 
   images: string[] = [];
+  private originalImages: string[] = [];
   demoImages = [
     { name: 'Laptop', url: 'https://images.unsplash.com/photo-1496181130204-755241544e35?auto=format&fit=crop&w=400&q=80' },
     { name: 'Office Chair', url: 'https://images.unsplash.com/photo-1505797149-43b0069ec26b?auto=format&fit=crop&w=400&q=80' },
@@ -300,6 +302,7 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
             weight: product.weight || 0
           });
           this.images = (product.images || []).filter((img: string) => !img.includes('localhost') && !img.includes('127.0.0.1'));
+          this.originalImages = [...this.images];
           this.showComboOptions = product.isComboProduct || false;
 
           this.variantsArray.clear();
@@ -375,7 +378,9 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       ? this.inventoryService.updateProduct(this.productId, productData)
       : this.inventoryService.createProduct(productData);
 
-    action.subscribe({
+    action.pipe(
+      switchMap(savedProduct => this.persistNewImages(savedProduct))
+    ).subscribe({
       next: () => {
         this.isSubmitting = false;
         this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product ${this.isEditMode ? 'updated' : 'created'} successfully!` });
@@ -394,6 +399,17 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: this.error });
       }
     });
+  }
+
+  private persistNewImages(product: Product): Observable<Product> {
+    const newImages = this.images.filter(image => !this.originalImages.includes(image));
+    if (!newImages.length || product.id == null) {
+      return of(product);
+    }
+
+    return forkJoin(newImages.map((image, index) =>
+      this.inventoryService.addProductImage(product.id, image, this.originalImages.length + index)
+    )).pipe(map(() => ({ ...product, images: [...this.images] })));
   }
 
   extractTaxRate(tax: string): number {

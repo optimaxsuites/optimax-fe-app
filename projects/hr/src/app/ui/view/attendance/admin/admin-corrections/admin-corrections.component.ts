@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CorrectionrequestService } from '../../../../service/attendance/correctionrequest.service';
+import { EmployeeCorrectionService } from '../../../../service/attendance/employee-correction.service';
 import { CorrectionRequest } from '../../../../domain/attendance/correctionrequest.dto';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
 
@@ -15,7 +15,7 @@ export class AdminCorrectionsComponent implements OnInit {
   activeRejectId: string | null = null;
 
   constructor(
-    private correctionService: CorrectionrequestService,
+    private correctionService: EmployeeCorrectionService,
     private attendanceService: AttendancetableService
   ) {}
 
@@ -35,9 +35,9 @@ export class AdminCorrectionsComponent implements OnInit {
       return;
     }
 
-    const employeeId = Number(req.employeeId);
-    if (Number.isNaN(employeeId)) {
-      alert('Attendance correction requires a numeric employee ID.');
+    const employeeId = req.employeeId;
+    if (!employeeId) {
+      alert('Attendance correction requires an employee ID.');
       return;
     }
 
@@ -45,7 +45,7 @@ export class AdminCorrectionsComponent implements OnInit {
       employeeId,
       req.employeeName ?? '',
       req.department,
-      req.date,
+      typeof req.date === 'string' ? req.date : (req.date ? new Date(req.date).toISOString().split('T')[0] : ''),
       'PRESENT'
     );
 

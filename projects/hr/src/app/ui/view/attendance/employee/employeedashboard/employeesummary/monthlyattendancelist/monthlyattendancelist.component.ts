@@ -6,6 +6,7 @@ import { EmployeeService } from '../../../../../../service/employee.service';
 import { MessageService } from 'primeng/api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-monthlyattendancelist',
@@ -49,11 +50,11 @@ export class MonthlyattendancelistComponent implements OnInit {
 
     this.employeeService.getEmployeeIdForCurrentUser().subscribe({
       next: (hrEmployeeId) => {
-        this.attendancetableService.fetchByEmployee(Number(hrEmployeeId));
+        this.attendancetableService.fetchByEmployee(String(hrEmployeeId));
 
         this.attendancetableService.attendance$.subscribe(data => {
           this.attendanceData = data.filter(
-            r => Number(r.employeeId) === Number(hrEmployeeId)
+            r => r.employeeId === String(hrEmployeeId)
           );
 
           this.applyMonthFilter();
@@ -72,8 +73,11 @@ export class MonthlyattendancelistComponent implements OnInit {
 
     this.filteredData = this.attendanceData.filter(record => {
       if (!record.date) return false;
-      const d = new Date(record.date);
-      return d.getFullYear() === year && d.getMonth() + 1 === month;
+      const parts = String(record.date).split('-').map(Number);
+      if (parts.length < 2) return false;
+      const rYear = parts[0];
+      const rMonth = parts[1];
+      return rYear === year && rMonth === month;
     });
 
     this.filteredDataChange.emit(this.filteredData);
@@ -91,8 +95,8 @@ export class MonthlyattendancelistComponent implements OnInit {
       // Set default date range (last 30 days)
       const today = new Date();
       const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-      this.endDate = today.toISOString().split('T')[0];
-      this.startDate = thirtyDaysAgo.toISOString().split('T')[0];
+      this.endDate = this.formatDateLocal(today);
+      this.startDate = this.formatDateLocal(thirtyDaysAgo);
     }
   }
 
@@ -118,7 +122,8 @@ export class MonthlyattendancelistComponent implements OnInit {
 
     this.filteredData = this.attendanceData.filter(record => {
       if (!record.date) return false;
-      return record.date >= this.startDate && record.date <= this.endDate;
+      const recordDateStr = this.formatDateLocal(record.date);
+      return recordDateStr >= this.startDate && recordDateStr <= this.endDate;
     });
 
     this.filteredDataChange.emit(this.filteredData);
@@ -192,6 +197,44 @@ export class MonthlyattendancelistComponent implements OnInit {
     });
   }
 
+  exportToExcel(): void {
+    this.closeExportMenu();
+
+    if (this.filteredData.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No Records',
+        detail: 'No attendance records to export',
+        key: 'tl',
+        life: 3000
+      });
+      return;
+    }
+
+    const worksheetData = this.filteredData.map(record => ({
+      'Date': record.date ? (record.date instanceof Date ? record.date.toLocaleDateString('en-CA') : record.date) : '-',
+      'Clock In': record.checkIn || '-',
+      'Clock Out': record.checkOut || '-',
+      'Hours': record.hours || '-',
+      'Status': record.status || '-'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'My Attendance');
+    
+    const filename = `my-attendance-${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Export Successful',
+      detail: `Exported ${this.filteredData.length} records as Excel`,
+      key: 'tl',
+      life: 3000
+    });
+  }
+
   exportToPDF(): void {
     this.closeExportMenu();
 
@@ -221,9 +264,9 @@ export class MonthlyattendancelistComponent implements OnInit {
     doc.text(dateInfo, pageWidth / 2, 25, { align: 'center' });
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, 32, { align: 'center' });
 
-    // Prepare table data
+    // Prepare table data - convert Date objects to strings
     const tableData = this.filteredData.map(record => [
-      record.date || '-',
+      record.date instanceof Date ? record.date.toISOString().split('T')[0] : (record.date || '-'),
       record.checkIn || '-',
       record.checkOut || '-',
       record.hours || '-',
@@ -274,6 +317,12 @@ export class MonthlyattendancelistComponent implements OnInit {
       key: 'tl',
       life: 3000
     });
+  }
+
+  private formatDateLocal(date: Date): string {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
   }
 
 }

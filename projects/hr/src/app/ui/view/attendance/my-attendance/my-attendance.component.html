@@ -245,7 +245,7 @@
           </thead>
           <tbody class="attendance-table__body">
             <tr *ngFor="let rec of filteredHistory" class="attendance-table__row">
-              <td class="attendance-table__cell">{{ rec.date }}</td>
+              <td class="attendance-table__cell">{{ rec.date | date:'yyyy-MM-dd' }}</td>
               <td class="attendance-table__cell">{{ rec.clockIn || '—' }}</td>
               <td class="attendance-table__cell">{{ rec.clockOut || '—' }}</td>
               <td class="attendance-table__cell">{{ rec.duration || '—' }}</td>

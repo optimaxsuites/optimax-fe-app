@@ -101,18 +101,23 @@ export class LeaveRequestComponent implements OnInit {
 
   // ==================== LOAD CURRENT ADMIN USER ====================
 
+  /**
+   * Resolves the acting user's ID directly from session (set at login),
+   * rather than via an Employee-record lookup. The previous approach
+   * required a successful GET to /employees/employee/by/userId/{id} AND
+   * a populated employee.user relation — which silently failed (no error,
+   * no log) whenever the Employee record existed but had `user: null`,
+   * permanently blocking approve/reject for that account. decisionBy is
+   * an audit field, not an authorization check, so this only needs the
+   * session userId, which is always available once logged in.
+   */
   loadCurrentAdminUser() {
-    this.apiService.getCurrentEmployee().subscribe({
-      next: (employee) => {
-        if (employee && employee.user) {
-          this.currentAdminUserId = employee.user.id || employee.user.userId;
-          console.log('✅ Current admin user ID:', this.currentAdminUserId);
-        }
-      },
-      error: (err) => {
-        console.error('❌ Failed to load current admin user:', err);
-      },
-    });
+    this.currentAdminUserId = this.apiService.getCurrentUserIdAsNumber();
+    if (this.currentAdminUserId) {
+      console.log('✅ Current admin user ID:', this.currentAdminUserId);
+    } else {
+      console.warn('⚠️ No userId found in session — decisionBy will be unavailable until re-login.');
+    }
   }
 
   // ==================== LOAD DATA ====================
@@ -234,9 +239,37 @@ export class LeaveRequestComponent implements OnInit {
     this.applyFilters();
   }
 
-  extractDate(dateString: string): string {
-    if (!dateString) return '';
-    return dateString.split('T')[0];
+  // ==================== DATE HELPERS ====================
+
+  /**
+   * API serializes LocalDateTime as arrays, e.g. [2026,3,24,13,38,52]
+   * (year, month 1-based, day, hour, minute, second[, nano]) instead of an
+   * ISO string. Passing that straight to .split('T') or `new Date(...)`
+   * throws, which previously happened synchronously inside buildDisplayData()
+   * before isLoading was set to false — leaving the screen stuck on
+   * "Loading leave requests..." even though the data had already arrived.
+   */
+  private toDate(value: any): Date {
+    if (Array.isArray(value)) {
+      const [year, month, day, hour = 0, minute = 0, second = 0] = value;
+      return new Date(year, (month || 1) - 1, day || 1, hour, minute, second);
+    }
+    if (value instanceof Date) return value;
+    if (!value) return new Date(NaN);
+    return new Date(value);
+  }
+
+  private isValidDate(d: Date): boolean {
+    return d instanceof Date && !isNaN(d.getTime());
+  }
+
+  extractDate(dateValue: any): string {
+    const d = this.toDate(dateValue);
+    if (!this.isValidDate(d)) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   // ==================== FILTERS ====================
@@ -320,8 +353,8 @@ export class LeaveRequestComponent implements OnInit {
   // ==================== APPROVE LOGIC ====================
 
   approveLeave() {
-    if (!this.selectedRequest || !this.currentAdminUserId) {
-      console.error('❌ Cannot approve: missing request or admin user ID');
+    if (!this.selectedRequest) {
+      console.error('❌ Cannot approve: no leave request selected');
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -329,6 +362,9 @@ export class LeaveRequestComponent implements OnInit {
         key: 'tl',
       });
       return;
+    }
+    if (!this.currentAdminUserId) {
+      console.warn('⚠️ No admin user ID in session — proceeding, but decisionBy will be recorded as unknown.');
     }
 
     const request = this.selectedRequest;
@@ -520,8 +556,8 @@ export class LeaveRequestComponent implements OnInit {
   // ==================== REJECT LOGIC ====================
 
   rejectLeave() {
-    if (!this.selectedRequest || !this.currentAdminUserId) {
-      console.error('❌ Cannot reject: missing request or admin user ID');
+    if (!this.selectedRequest) {
+      console.error('❌ Cannot reject: no leave request selected');
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -529,6 +565,9 @@ export class LeaveRequestComponent implements OnInit {
         key: 'tl',
       });
       return;
+    }
+    if (!this.currentAdminUserId) {
+      console.warn('⚠️ No admin user ID in session — proceeding, but decisionBy will be recorded as unknown.');
     }
 
     const request = this.selectedRequest;
@@ -629,18 +668,22 @@ export class LeaveRequestComponent implements OnInit {
 
   // ==================== HELPERS ====================
 
-  formatDate(dateString: string): string {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
+  formatDate(dateValue: any): string {
+    if (!dateValue) return 'N/A';
+    const d = this.toDate(dateValue);
+    if (!this.isValidDate(d)) return 'N/A';
+    return d.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     });
   }
 
-  formatDateTime(dateString: string): string {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString('en-US', {
+  formatDateTime(dateValue: any): string {
+    if (!dateValue) return 'N/A';
+    const d = this.toDate(dateValue);
+    if (!this.isValidDate(d)) return 'N/A';
+    return d.toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

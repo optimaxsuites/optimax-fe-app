@@ -138,7 +138,8 @@ export class InvoiceDetailComponent implements OnInit {
     }
 
     this.isSavingPayment = true;
-    
+
+    const newBalanceDue = Math.max(0, balanceDue - this.paymentAmount);
     const payload: Partial<SalesandTransactions> = {
       invoiceId: this.invoice,
       customerId: this.invoice.customerId,
@@ -148,13 +149,19 @@ export class InvoiceDetailComponent implements OnInit {
       currency: this.invoice.currency,
       paymentMethod: this.paymentMethod,
       reference: this.paymentReference.trim() || `REF-${Math.floor(100000 + Math.random() * 900000)}`,
-      status: 'PAYMENT_COMPLETED',
+      // A payment that doesn't clear the full balance is still in progress, not completed —
+      // mislabeling every partial payment as PAYMENT_COMPLETED would make the lifecycle
+      // tracker lie about outstanding balances.
+      status: newBalanceDue === 0 ? 'PAYMENT_COMPLETED' : 'PAYMENT_IN_PROGRESS',
       orderDate: new Date(this.paymentDate),
       transactionNotes: this.paymentNotes.trim(),
-      balanceDue: Math.max(0, balanceDue - this.paymentAmount)
+      balanceDue: newBalanceDue
     };
 
-    this.salesService.createSalesandTransactions(payload).subscribe({
+    // This invoice already has a transaction tracking it since it was created (see
+    // SalesService.trackNewInvoice()) — advance that same record rather than creating a
+    // second, duplicate one every time a payment is recorded.
+    this.salesService.upsertTransactionForInvoice(this.invoice.id, payload).subscribe({
       next: (res) => {
         this.isSavingPayment = false;
         this.showPaymentModal = false;
@@ -356,13 +363,16 @@ export class InvoiceDetailComponent implements OnInit {
 
   confirmCancelInvoice(): void {
     if (!this.invoice) return;
+    const invoiceNumber = this.invoice.invoiceNumber;
     this.showCancelInvoiceModal = false;
     this.salesService.updateInvoice(this.invoice.id, { status: 'CANCELLED' }).subscribe({
       next: (updated: Invoice) => {
         this.invoice = updated;
+        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Invoice ${invoiceNumber} deleted successfully` });
       },
       error: (err: any) => {
         console.error('Error cancelling invoice:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete invoice. Please try again.' });
       }
     });
   }
@@ -371,7 +381,8 @@ export class InvoiceDetailComponent implements OnInit {
     if (this.closed.observed) {
       this.closed.emit();
     } else {
-      const sessionStorageKey = 'dashboard-catalog-quotes-invoices-orders-customers-transactions';
+      // Must match the [cacheKey] passed to <app-nav-tab> in sales-hub.component.html.
+      const sessionStorageKey = 'sales-hub';
       sessionStorage.setItem(sessionStorageKey, 'Invoices');
 
       const uuid = this.route.snapshot.paramMap.get('uuid');
@@ -384,7 +395,8 @@ export class InvoiceDetailComponent implements OnInit {
   }
 
   goToInvoicesList(): void {
-    const sessionStorageKey = 'dashboard-catalog-quotes-invoices-orders-customers-transactions';
+    // Must match the [cacheKey] passed to <app-nav-tab> in sales-hub.component.html.
+    const sessionStorageKey = 'sales-hub';
     sessionStorage.setItem(sessionStorageKey, 'Invoices');
 
     const uuid = this.route.snapshot.paramMap.get('uuid');

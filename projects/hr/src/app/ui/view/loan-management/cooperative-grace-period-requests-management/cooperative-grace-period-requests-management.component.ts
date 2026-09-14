@@ -67,9 +67,10 @@ export class CooperativeGracePeriodRequestsManagementComponent implements OnInit
       next: (requests) => {
         this.requests = requests.map((request) => ({
           ...request,
-          requestedAt: this.normalizeDateValue(request.requestedAt),
-          reviewedAt: request.reviewedAt ? this.normalizeDateValue(request.reviewedAt) : undefined,
-          newDueDate: request.newDueDate ? this.normalizeDateValue(request.newDueDate) : undefined
+          requestedAt: request.requestedAt instanceof Date ? request.requestedAt : new Date(request.requestedAt),
+          reviewedAt: request.reviewedAt 
+            ? (request.reviewedAt instanceof Date ? request.reviewedAt : new Date(request.reviewedAt))
+            : undefined
         }));
         this.applyFilters();
         this.isLoading = false;
@@ -318,9 +319,9 @@ export class CooperativeGracePeriodRequestsManagementComponent implements OnInit
     return value || 'N/A';
   }
 
-  private normalizeDateValue(value: string | undefined | null): string {
+  private normalizeDateValue(value: string | Date | undefined | null): string {
     if (!value) return '';
-    const parsed = new Date(value);
+    const parsed = value instanceof Date ? value : new Date(value);
     return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
   }
 

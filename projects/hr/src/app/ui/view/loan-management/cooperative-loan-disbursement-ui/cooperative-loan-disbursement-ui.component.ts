@@ -367,7 +367,7 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
     }
     
     this.disbursementInstructionReference = loan.disbursementInstructionLoanReference || this.generateDisbursementReference(loan);
-    this.disbursementInitiatedAt = loan.disbursementInitiatedAt || '';
+    this.disbursementInitiatedAt = loan.disbursementInitiatedAt ? (typeof loan.disbursementInitiatedAt === 'string' ? loan.disbursementInitiatedAt : loan.disbursementInitiatedAt.toISOString()) : '';
     this.disbursementInitiatedBy = this.getAuditUserLabel(loan.disbursementInitiatedBy);
     this.loadEmployeeDetails(loan);
   }
@@ -659,7 +659,16 @@ sendToAccounting(): void {
   }
 
   getReadyDate(loan: CooperativeLoan): string {
-    return loan.disbursementInitiatedAt || loan.approvedDate || loan.requestDate || loan.applicationDate || '';
+    const dateValue = loan.disbursementInitiatedAt || loan.approvedDate || loan.requestDate || loan.applicationDate || '';
+    return this.dateToString(dateValue);
+  }
+
+  private dateToString(value: string | Date | undefined): string {
+    if (!value) return '';
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+    return value;
   }
 
   private matchesSearch(loan: CooperativeLoan, term: string): boolean {

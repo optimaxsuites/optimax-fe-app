@@ -533,8 +533,41 @@ export type GrnItemCondition =
   | 'SHORT_SUPPLY'       // Fewer units than ordered
   | 'EXCESS_SUPPLY';     // More units than ordered
 
+export function getGrnStatusLabel(status: GrnStatus): string {
+  const map: Record<GrnStatus, string> = {
+    DRAFT:     'Draft',
+    SUBMITTED: 'Submitted — Awaiting Approval',
+    APPROVED:  'Approved',
+    DISPUTED:  'Disputed',
+    CANCELLED: 'Cancelled'
+  };
+  return map[status] ?? status;
+}
+
+export function getGrnStatusSeverity(status: GrnStatus): 'info' | 'warning' | 'success' | 'danger' {
+  const map: Record<GrnStatus, 'info' | 'warning' | 'success' | 'danger'> = {
+    DRAFT:     'info',
+    SUBMITTED: 'warning',
+    APPROVED:  'success',
+    DISPUTED:  'danger',
+    CANCELLED: 'danger'
+  };
+  return map[status] ?? 'info';
+}
+
+export function getGrnStatusColor(status: GrnStatus): string {
+  const map: Record<GrnStatus, string> = {
+    DRAFT:     '#64748b',
+    SUBMITTED: '#d97706',
+    APPROVED:  '#16a34a',
+    DISPUTED:  '#dc2626',
+    CANCELLED: '#94a3b8'
+  };
+  return map[status] ?? '#64748b';
+}
+
 export interface GrnLineItem {
-  id: string;
+  id: number;
   lpoItemId: string;
   name: string;
   description: string;
@@ -554,9 +587,9 @@ export interface GrnLineItem {
 }
 
 export interface GoodsReceivedNote {
-  id: string;
+  id: number;
   grnNumber: string;             // e.g., GRN-2026-001
-  lpoId: string;
+  lpoId: number;
   lpoNumber: string;
   procurementRequestId: number;
   vendorId: string;
@@ -631,7 +664,7 @@ export type PaymentVoucherStatus =
   | 'REVERSED';
 
 export interface PaymentVoucher {
-  id: string;
+  id: number;
   voucherNumber: string;         // e.g., PV-2026-0042
   grnId: string;
   grnNumber: string;
@@ -647,7 +680,7 @@ export interface PaymentVoucher {
   vendorAccountName: string;
   amount: number;
   currency: string;
-  paymentMethod: 'BANK_TRANSFER' | 'CHEQUE' | 'ONLINE';
+  paymentMethod: 'BANK_TRANSFER' | 'CHEQUE' | 'CASH' | 'ONLINE' | 'MOBILE_MONEY';
   narration: string;             // e.g., "Payment for LPO-2026-4821 — Office Furniture"
   status: PaymentVoucherStatus;
   requestedBy: string;
@@ -682,7 +715,7 @@ export type NotificationChannel = 'EMAIL' | 'IN_APP' | 'SMS' | 'PUSH';
 export type NotificationStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
 
 export interface ProcurementNotification {
-  id: string;
+  id: number;
   type: NotificationType;
   channel: NotificationChannel;
   recipientId: string;

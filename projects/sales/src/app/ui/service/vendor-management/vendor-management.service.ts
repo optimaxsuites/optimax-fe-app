@@ -5,7 +5,7 @@
 
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
+import { Observable, BehaviorSubject, of, throwError, forkJoin } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
 import {
   Vendor,
@@ -77,9 +77,9 @@ const MOCK_SENTINEL_INSIGHTS: SentinelInsight[] = [
     reason: 'On-time delivery rate fell from 94% to 79% across the last three fulfilled RFQs, with two consecutive late shipments flagged in the last 21 days.',
     evidence: ['RFQ-2291: delivered 4 days late', 'RFQ-2305: delivered 2 days late', 'RFQ-2318: delivered on time but partial shipment'],
     suggestedActions: [
-      { label: 'Review', action: 'review', style: 'primary' },
-      { label: 'Message Vendor', action: 'message', style: 'secondary' },
-      { label: 'Dismiss', action: 'dismiss', style: 'secondary' }
+      { label: 'Review', action: 'REVIEW', style: 'PRIMARY' },
+      { label: 'Message Vendor', action: 'MESSAGE', style: 'SECONDARY' },
+      { label: 'Dismiss', action: 'DISMISS', style: 'SECONDARY' }
     ],
     status: InsightActionStatus.OPEN,
     detectedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
@@ -95,9 +95,9 @@ const MOCK_SENTINEL_INSIGHTS: SentinelInsight[] = [
     reason: 'Bank account number and account name were updated 2 days prior to submission of a ₦4.2M invoice, a pattern statistically associated with payment redirection fraud.',
     evidence: ['Bank details modified: 26 Jul 2026, 11:42 PM', 'Invoice INV-88213 submitted: 28 Jul 2026, 09:10 AM', 'New account name partially mismatches registered company name'],
     suggestedActions: [
-      { label: 'Investigate', action: 'investigate', style: 'primary' },
-      { label: 'Approve', action: 'approve', style: 'secondary' },
-      { label: 'Escalate', action: 'escalate', style: 'danger' }
+      { label: 'Investigate', action: 'INVESTIGATE', style: 'PRIMARY' },
+      { label: 'Approve', action: 'APPROVE', style: 'SECONDARY' },
+      { label: 'Escalate', action: 'ESCALATE', style: 'DANGER' }
     ],
     status: InsightActionStatus.OPEN,
     detectedAt: new Date(Date.now() - 45 * 60 * 1000),
@@ -113,8 +113,8 @@ const MOCK_SENTINEL_INSIGHTS: SentinelInsight[] = [
     reason: 'Overall performance score has remained above 95% for 6 consecutive months, with zero compliance flags and a 98% on-time delivery rate, qualifying it for the Preferred tier upgrade criteria.',
     evidence: ['Feb–Jul 2026: performance score 95.1%–98.4%', 'Zero compliance flags in 6 months', 'On-time delivery steady at 98%'],
     suggestedActions: [
-      { label: 'Approve', action: 'approve', style: 'primary' },
-      { label: 'Review', action: 'review', style: 'secondary' }
+      { label: 'Approve', action: 'APPROVE', style: 'PRIMARY' },
+      { label: 'Review', action: 'REVIEW', style: 'SECONDARY' }
     ],
     status: InsightActionStatus.OPEN,
     detectedAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
@@ -130,9 +130,9 @@ const MOCK_SENTINEL_INSIGHTS: SentinelInsight[] = [
     reason: 'Public liability insurance policy expires in 9 days. No renewal document has been submitted and two automated reminders have gone unanswered.',
     evidence: ['Policy expiry: 06 Aug 2026', 'Reminder sent 14 Jul 2026 — no response', 'Reminder sent 21 Jul 2026 — no response'],
     suggestedActions: [
-      { label: 'Message Vendor', action: 'message', style: 'primary' },
-      { label: 'Review', action: 'review', style: 'secondary' },
-      { label: 'Dismiss', action: 'dismiss', style: 'secondary' }
+      { label: 'Message Vendor', action: 'MESSAGE', style: 'PRIMARY' },
+      { label: 'Review', action: 'REVIEW', style: 'SECONDARY' },
+      { label: 'Dismiss', action: 'DISMISS', style: 'SECONDARY' }
     ],
     status: InsightActionStatus.OPEN,
     detectedAt: new Date(Date.now() - 20 * 60 * 60 * 1000),
@@ -148,9 +148,9 @@ const MOCK_SENTINEL_INSIGHTS: SentinelInsight[] = [
     reason: '3 new disputes opened in the last 90 days versus an average of 1 per quarter historically, two of which cite short-delivery of goods.',
     evidence: ['Dispute #D-4021: short delivery', 'Dispute #D-4058: invoice mismatch', 'Dispute #D-4090: short delivery'],
     suggestedActions: [
-      { label: 'Review', action: 'review', style: 'primary' },
-      { label: 'Message Vendor', action: 'message', style: 'secondary' },
-      { label: 'Dismiss', action: 'dismiss', style: 'secondary' }
+      { label: 'Review', action: 'REVIEW', style: 'PRIMARY' },
+      { label: 'Message Vendor', action: 'MESSAGE', style: 'SECONDARY' },
+      { label: 'Dismiss', action: 'DISMISS', style: 'SECONDARY' }
     ],
     status: InsightActionStatus.OPEN,
     detectedAt: new Date(Date.now() - 30 * 60 * 60 * 1000),
@@ -167,9 +167,9 @@ const MOCK_RISK_TRAJECTORIES: VendorRiskTrajectory[] = [
     confidence: 84,
     reason: 'Declining delivery trend combined with a recent dispute and no compensating quality improvement.',
     drivers: [
-      { label: 'Delivery trend', impact: 'negative', weight: 45 },
-      { label: 'Dispute frequency', impact: 'negative', weight: 25 },
-      { label: 'Document renewals current', impact: 'positive', weight: 10 }
+      { label: 'Delivery trend', impact: 'NEGATIVE', weight: 45 },
+      { label: 'Dispute frequency', impact: 'NEGATIVE', weight: 25 },
+      { label: 'Document renewals current', impact: 'POSITIVE', weight: 10 }
     ],
     projections: [
       { horizonDays: 30, projectedRiskScore: 52, confidence: 88 },
@@ -186,8 +186,8 @@ const MOCK_RISK_TRAJECTORIES: VendorRiskTrajectory[] = [
     confidence: 90,
     reason: 'Unresolved fraud flag on bank details plus a prior late compliance renewal.',
     drivers: [
-      { label: 'Fraud flag pending', impact: 'negative', weight: 55 },
-      { label: 'Compliance history', impact: 'negative', weight: 15 }
+      { label: 'Fraud flag pending', impact: 'NEGATIVE', weight: 55 },
+      { label: 'Compliance history', impact: 'NEGATIVE', weight: 15 }
     ],
     projections: [
       { horizonDays: 30, projectedRiskScore: 66, confidence: 90 },
@@ -204,9 +204,9 @@ const MOCK_RISK_TRAJECTORIES: VendorRiskTrajectory[] = [
     confidence: 93,
     reason: 'Sustained high performance, zero disputes, and all documents current with early renewals.',
     drivers: [
-      { label: 'Performance trend', impact: 'positive', weight: 50 },
-      { label: 'Document renewals', impact: 'positive', weight: 20 },
-      { label: 'Dispute frequency', impact: 'positive', weight: 15 }
+      { label: 'Performance trend', impact: 'POSITIVE', weight: 50 },
+      { label: 'Document renewals', impact: 'POSITIVE', weight: 20 },
+      { label: 'Dispute frequency', impact: 'POSITIVE', weight: 15 }
     ],
     projections: [
       { horizonDays: 30, projectedRiskScore: 8, confidence: 94 },
@@ -223,8 +223,8 @@ const MOCK_RISK_TRAJECTORIES: VendorRiskTrajectory[] = [
     confidence: 72,
     reason: 'Solid delivery record offset by an unresolved insurance renewal lapse risk.',
     drivers: [
-      { label: 'Delivery trend', impact: 'positive', weight: 30 },
-      { label: 'Document renewal lapse risk', impact: 'negative', weight: 30 }
+      { label: 'Delivery trend', impact: 'POSITIVE', weight: 30 },
+      { label: 'Document renewal lapse risk', impact: 'NEGATIVE', weight: 30 }
     ],
     projections: [
       { horizonDays: 30, projectedRiskScore: 28, confidence: 75 },
@@ -241,8 +241,8 @@ const MOCK_RISK_TRAJECTORIES: VendorRiskTrajectory[] = [
     confidence: 79,
     reason: 'Tripling dispute frequency is the dominant signal, with delivery metrics still nominally acceptable.',
     drivers: [
-      { label: 'Dispute frequency', impact: 'negative', weight: 60 },
-      { label: 'Delivery trend', impact: 'positive', weight: 10 }
+      { label: 'Dispute frequency', impact: 'NEGATIVE', weight: 60 },
+      { label: 'Delivery trend', impact: 'POSITIVE', weight: 10 }
     ],
     projections: [
       { horizonDays: 30, projectedRiskScore: 48, confidence: 82 },
@@ -1094,7 +1094,7 @@ export class VendorService {
     this.loadingSubject.next(true);
     this.errorSubject.next(null);
 
-    return this.http.get<VendorDashboardStats>(`${this.baseUrl}/vendor-dashboard/stats`)
+    return this.http.get<VendorDashboardStats>(`${this.baseUrl}/vendor-management/dashboard/stats`)
       .pipe(
         tap(stats => {
           this.dashboardStatsSubject.next(stats);
@@ -1216,7 +1216,7 @@ export class VendorService {
 
     console.log('[VendorService] getVendors request params:', params.toString(), 'Filters:', filters);
 
-    return this.http.get<any>(`${this.baseUrl}/vendors`, { params })
+    return this.http.get<any>(`${this.baseUrl}/vendor-management/vendors`, { params })
       .pipe(
         map(res => {
           console.log('[VendorService] getVendors raw response:', res);
@@ -1375,7 +1375,7 @@ export class VendorService {
       return of(cachedVendor);
     }
 
-    return this.http.get<Vendor>(`${this.baseUrl}/vendors/${id}`)
+    return this.http.get<Vendor>(`${this.baseUrl}/vendor-management/vendors/${id}`)
       .pipe(
         tap(vendor => {
           this.selectedVendorSubject.next(vendor);
@@ -1538,7 +1538,7 @@ export class VendorService {
     // for the HTTP URL and the tenant-approval store, which is keyed by string.
     const numericId = Number(id);
 
-    return this.http.patch<Vendor>(`${this.baseUrl}/vendors/${id}/review`, { status })
+    return this.http.patch<Vendor>(`${this.baseUrl}/vendor-management/vendors/${id}/status`, { status })
       .pipe(
         map(raw => this.mapVendor(raw)),
         tap(vendor => {
@@ -1576,13 +1576,46 @@ export class VendorService {
   // PERFORMANCE
   // ============================================================
 
+  /**
+   * The real performance endpoint returns VendorPerformanceMetrics directly —
+   * kpis/ranking aren't part of the API contract, so they're derived here
+   * client-side (kpis purely for display, ranking as a best-effort estimate
+   * since the backend doesn't expose a vendor's rank among peers).
+   */
+  private buildPerformanceResponse(metrics: VendorPerformanceMetrics, vendorId: string): VendorPerformanceResponse {
+    return {
+      metrics,
+      kpis: [
+        { label: 'Overall Score', value: metrics.overallScore, unit: '%', color: '#2EB270', icon: 'fa-chart-line', trend: 'up', percentChange: 3.2 },
+        { label: 'On-Time Delivery', value: metrics.onTimeDeliveryRate, unit: '%', color: '#2EB270', icon: 'fa-clock', trend: 'up', percentChange: 1.5 },
+        { label: 'Quality Score', value: metrics.qualityScore, unit: '%', color: '#F5A623', icon: 'fa-star', trend: 'up', percentChange: 2.1 },
+        { label: 'Cost Competitiveness', value: metrics.costCompetitiveness, unit: '%', color: '#F97316', icon: 'fa-tags', trend: 'stable', percentChange: 0.5 },
+        { label: 'Compliance Score', value: metrics.complianceScore, unit: '%', color: '#2EB270', icon: 'fa-shield-alt', trend: 'up', percentChange: 4.8 },
+        { label: 'Rating Score', value: metrics.ratingScore, unit: '/5', color: '#8B5CF6', icon: 'fa-star-half-alt', trend: 'up', percentChange: 2.3 },
+        { label: 'Win Rate', value: metrics.winRate, unit: '%', color: '#2E6276', icon: 'fa-trophy', trend: 'up', percentChange: 5.0 },
+        { label: 'Total Projects', value: metrics.totalProjects, unit: '', color: '#6B7280', icon: 'fa-project-diagram', trend: 'up', percentChange: 12.0 }
+      ],
+      ranking: {
+        vendorId,
+        rank: 0, // Not provided by the backend — no cross-vendor ranking endpoint exists
+        score: metrics.overallScore,
+        factors: {
+          price: metrics.costCompetitiveness,
+          delivery: metrics.onTimeDeliveryRate,
+          performance: metrics.overallScore,
+          compliance: metrics.complianceScore
+        },
+        recommendation: metrics.overallScore >= 85 ? 'STRONG' : metrics.overallScore >= 70 ? 'MODERATE' : 'WEAK'
+      }
+    };
+  }
+
   getVendorPerformance(vendorId: string): Observable<VendorPerformanceResponse> {
     this.loadingSubject.next(true);
 
-    const params = new HttpParams().set('vendorId', vendorId);
-
-    return this.http.get<VendorPerformanceResponse>(`${this.baseUrl}/vendor-dashboard/performance`, { params })
+    return this.http.get<VendorPerformanceMetrics>(`${this.baseUrl}/vendor-management/vendors/${vendorId}/performance`)
       .pipe(
+        map(metrics => this.buildPerformanceResponse(metrics, vendorId)),
         tap(() => this.loadingSubject.next(false)),
         catchError((err) => {
           console.warn('Performance API failed, using mock data for vendor:', vendorId);
@@ -1590,97 +1623,7 @@ export class VendorService {
 
           // Create a copy of the mock metrics with the vendor ID
           const metrics = { ...this.MOCK_PERFORMANCE_METRICS };
-
-          const mockResponse: VendorPerformanceResponse = {
-            metrics: metrics,
-            kpis: [
-              {
-                label: 'Overall Score',
-                value: metrics.overallScore,
-                unit: '%',
-                color: '#2EB270',
-                icon: 'fa-chart-line',
-                trend: 'up',
-                percentChange: 3.2
-              },
-              {
-                label: 'On-Time Delivery',
-                value: metrics.onTimeDeliveryRate,
-                unit: '%',
-                color: '#2EB270',
-                icon: 'fa-clock',
-                trend: 'up',
-                percentChange: 1.5
-              },
-              {
-                label: 'Quality Score',
-                value: metrics.qualityScore,
-                unit: '%',
-                color: '#F5A623',
-                icon: 'fa-star',
-                trend: 'up',
-                percentChange: 2.1
-              },
-              {
-                label: 'Cost Competitiveness',
-                value: metrics.costCompetitiveness,
-                unit: '%',
-                color: '#F97316',
-                icon: 'fa-tags',
-                trend: 'stable',
-                percentChange: 0.5
-              },
-              {
-                label: 'Compliance Score',
-                value: metrics.complianceScore,
-                unit: '%',
-                color: '#2EB270',
-                icon: 'fa-shield-alt',
-                trend: 'up',
-                percentChange: 4.8
-              },
-              {
-                label: 'Rating Score',
-                value: metrics.ratingScore,
-                unit: '/5',
-                color: '#8B5CF6',
-                icon: 'fa-star-half-alt',
-                trend: 'up',
-                percentChange: 2.3
-              },
-              {
-                label: 'Win Rate',
-                value: metrics.winRate,
-                unit: '%',
-                color: '#2E6276',
-                icon: 'fa-trophy',
-                trend: 'up',
-                percentChange: 5.0
-              },
-              {
-                label: 'Total Projects',
-                value: metrics.totalProjects,
-                unit: '',
-                color: '#6B7280',
-                icon: 'fa-project-diagram',
-                trend: 'up',
-                percentChange: 12.0
-              }
-            ],
-            ranking: {
-              vendorId: vendorId,
-              rank: 5,
-              score: 87.5,
-              factors: {
-                price: 85,
-                delivery: 92,
-                performance: 87,
-                compliance: 94
-              },
-              recommendation: 'STRONG'
-            }
-          };
-          return of(mockResponse);
+          return of(this.buildPerformanceResponse(metrics, vendorId));
         })
       );
   }
@@ -1705,35 +1648,38 @@ export class VendorService {
     return of({} as any);
   }
 
-  getRiskAlerts(vendorId?: string): Observable<RiskAlert[]> {
-    console.log('getRiskAlerts called with vendorId:', vendorId);
+  private mockRiskAlertsFor(vendorId?: string): RiskAlert[] {
+    if (!vendorId) return this.MOCK_RISK_ALERTS;
 
-    // If vendorId is provided, filter alerts for that vendor
-    if (vendorId) {
-      const filtered = this.MOCK_RISK_ALERTS.filter(a => a.vendorId === vendorId);
-      console.log('Filtered alerts count:', filtered.length);
-      // If no alerts found for this vendor, return some default ones
-      if (filtered.length === 0) {
-        console.log('No alerts found for vendor, returning default info alert');
-        return of([
-          {
-            id: 0,
-            vendorId: vendorId,
-            severity: AlertSeverity.INFO,
-            type: 'GENERAL',
-            title: 'No specific alerts for this vendor',
-            description: 'All compliance checks are up to date.',
-            detectedAt: new Date(),
-            status: 'RESOLVED',
-            actionRequired: false
-          }
-        ]);
+    const filtered = this.MOCK_RISK_ALERTS.filter(a => a.vendorId === vendorId);
+    if (filtered.length > 0) return filtered;
+
+    // No alerts found for this vendor — return a default "all clear" entry.
+    return [
+      {
+        id: 0,
+        vendorId: vendorId,
+        severity: AlertSeverity.INFO,
+        type: 'GENERAL',
+        title: 'No specific alerts for this vendor',
+        description: 'All compliance checks are up to date.',
+        detectedAt: new Date(),
+        status: 'RESOLVED',
+        actionRequired: false
       }
-      return of(filtered);
+    ];
+  }
+
+  getRiskAlerts(vendorId?: string): Observable<RiskAlert[]> {
+    if (!vendorId) {
+      return of(this.MOCK_RISK_ALERTS);
     }
 
-    console.log('Returning all alerts:', this.MOCK_RISK_ALERTS.length);
-    return of(this.MOCK_RISK_ALERTS);
+    return this.http.get<RiskAlert[]>(`${this.baseUrl}/vendor-management/vendors/${vendorId}/risk-alerts`)
+      .pipe(
+        map(res => Array.isArray(res) ? res : []),
+        catchError(() => of(this.mockRiskAlertsFor(vendorId)))
+      );
   }
 
 
@@ -1764,6 +1710,72 @@ export class VendorService {
     return null;
   }
 
+  /** Normalises a raw compliance/documents API record onto the VendorDocument shape. */
+  private mapComplianceDocument(raw: any, fallbackVendorId?: string): VendorDocument {
+    const expDate = parseSafeDate(raw.expiryDate);
+    const uploadedAtDate = parseSafeDate(raw.uploadedAt || raw.uploadedDate || raw.createdAt);
+    const timeDiff = expDate.getTime() - new Date().getTime();
+    const computedDaysUntilExpiry = Math.max(0, Math.ceil(timeDiff / (1000 * 3600 * 24)));
+
+    let docStatus = DocumentStatus.PENDING_VERIFICATION;
+    const statusUpper = String(raw.status || '').toUpperCase();
+    if (statusUpper === 'ACTIVE' || statusUpper === 'APPROVED') {
+      docStatus = DocumentStatus.ACTIVE;
+    } else if (statusUpper === 'EXPIRED') {
+      docStatus = DocumentStatus.EXPIRED;
+    } else if (statusUpper === 'EXPIRING_SOON') {
+      docStatus = DocumentStatus.EXPIRING_SOON;
+    } else if (statusUpper === 'REJECTED') {
+      docStatus = DocumentStatus.REJECTED;
+    } else if (statusUpper === 'PENDING' || statusUpper === 'PENDING_VERIFICATION') {
+      docStatus = DocumentStatus.PENDING_VERIFICATION;
+    }
+
+    let category = DocumentCategory.REGISTRATION;
+    const categoryUpper = String(raw.category || '').toUpperCase();
+    if (categoryUpper === 'REGISTRATION') {
+      category = DocumentCategory.REGISTRATION;
+    } else if (categoryUpper === 'TAX') {
+      category = DocumentCategory.TAX;
+    } else if (categoryUpper === 'LICENCE' || categoryUpper === 'LICENSE') {
+      category = DocumentCategory.LICENCE;
+    } else if (categoryUpper === 'INSURANCE') {
+      category = DocumentCategory.INSURANCE;
+    } else if (categoryUpper === 'CERTIFICATION') {
+      category = DocumentCategory.CERTIFICATION;
+    }
+
+    return {
+      id: Number(raw.id),
+      vendorId: String(raw.vendorId ?? fallbackVendorId ?? ''),
+      vendorName: raw.vendorName || undefined,
+      category,
+      name: raw.name || raw.label || raw.fileName || 'Unnamed Document',
+      fileName: raw.fileName || '',
+      fileUrl: raw.fileUrl || '',
+      fileSize: Number(raw.fileSize || 0),
+      fileType: raw.fileType || (raw.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/png'),
+      issueDate: parseSafeDate(raw.issueDate || raw.createdAt || uploadedAtDate),
+      expiryDate: expDate,
+      status: docStatus,
+      isRequired: !!raw.isRequired,
+      verifiedBy: raw.verifiedBy || undefined,
+      verifiedDate: raw.verifiedDate ? parseSafeDate(raw.verifiedDate) : undefined,
+      verificationNotes: raw.verificationNotes || undefined,
+      daysUntilExpiry: raw.daysUntilExpiry ?? computedDaysUntilExpiry,
+      uploadedAt: uploadedAtDate,
+      uploadedBy: raw.uploadedBy || 'Vendor User'
+    } as VendorDocument;
+  }
+
+  /** All compliance documents across every vendor. */
+  getComplianceDocuments(): Observable<VendorDocument[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/vendor-management/compliance/documents`)
+      .pipe(
+        map(res => (Array.isArray(res) ? res : []).map(raw => this.mapComplianceDocument(raw)))
+      );
+  }
+
   getVendorDocuments(vendorId: string): Observable<VendorDocument[]> {
     this.loadingSubject.next(true);
 
@@ -1773,65 +1785,9 @@ export class VendorService {
       return of(ownDocs ?? []);
     }
 
-    const params = new HttpParams().set('tenantId', this.tenantId);
-
-    return this.http.get<any[]>(`${this.baseUrl}/vendors/${vendorId}/documents`, { params })
+    return this.getComplianceDocuments()
       .pipe(
-        map(res => {
-          const rawDocs = Array.isArray(res) ? res : [];
-          return rawDocs.map((raw: any) => {
-            const expDate = parseSafeDate(raw.expiryDate);
-            const uploadedAtDate = parseSafeDate(raw.uploadedAt || raw.uploadedDate || raw.createdAt);
-            const timeDiff = expDate.getTime() - new Date().getTime();
-            const daysUntilExpiry = Math.max(0, Math.ceil(timeDiff / (1000 * 3600 * 24)));
-
-            let docStatus = DocumentStatus.PENDING_VERIFICATION;
-            const statusUpper = String(raw.status || '').toUpperCase();
-            if (statusUpper === 'ACTIVE' || statusUpper === 'APPROVED') {
-              docStatus = DocumentStatus.ACTIVE;
-            } else if (statusUpper === 'EXPIRED') {
-              docStatus = DocumentStatus.EXPIRED;
-            } else if (statusUpper === 'EXPIRING_SOON') {
-              docStatus = DocumentStatus.EXPIRING_SOON;
-            } else if (statusUpper === 'REJECTED') {
-              docStatus = DocumentStatus.REJECTED;
-            } else if (statusUpper === 'PENDING') {
-              docStatus = DocumentStatus.PENDING_VERIFICATION;
-            }
-
-            let category = DocumentCategory.REGISTRATION;
-            const categoryUpper = String(raw.category || '').toUpperCase();
-            if (categoryUpper === 'REGISTRATION') {
-              category = DocumentCategory.REGISTRATION;
-            } else if (categoryUpper === 'TAX') {
-              category = DocumentCategory.TAX;
-            } else if (categoryUpper === 'LICENCE' || categoryUpper === 'LICENSE') {
-              category = DocumentCategory.LICENCE;
-            } else if (categoryUpper === 'INSURANCE') {
-              category = DocumentCategory.INSURANCE;
-            } else if (categoryUpper === 'CERTIFICATION') {
-              category = DocumentCategory.CERTIFICATION;
-            }
-
-            return {
-              id: Number(raw.id),
-              vendorId: String(raw.vendorId || vendorId),
-              category: category,
-              name: raw.label || raw.name || raw.fileName || 'Unnamed Document',
-              fileName: raw.fileName || '',
-              fileUrl: raw.fileUrl || '',
-              fileSize: Number(raw.fileSize || 0),
-              fileType: raw.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/png',
-              issueDate: parseSafeDate(raw.issueDate || raw.createdAt || uploadedAtDate),
-              expiryDate: expDate,
-              status: docStatus,
-              isRequired: !!raw.isRequired,
-              daysUntilExpiry: daysUntilExpiry,
-              uploadedAt: uploadedAtDate,
-              uploadedBy: raw.uploadedBy || 'Vendor User'
-            } as VendorDocument;
-          });
-        }),
+        map(docs => docs.filter(d => d.vendorId === vendorId)),
         tap(() => this.loadingSubject.next(false)),
         catchError(err => {
           this.loadingSubject.next(false);
@@ -1987,7 +1943,7 @@ export class VendorService {
   getLifecycleHistory(vendorId: string): Observable<VendorLifecycleHistory[]> {
     this.loadingSubject.next(true);
 
-    return this.http.get<VendorLifecycleHistory[]>(`${this.baseUrl}/vendors/${vendorId}/lifecycle`)
+    return this.http.get<VendorLifecycleHistory[]>(`${this.baseUrl}/vendor-management/vendors/${vendorId}/lifecycle-history`)
       .pipe(
         tap(() => this.loadingSubject.next(false)),
         catchError(err => {
@@ -2043,8 +1999,19 @@ export class VendorService {
   // CONTRACTS
   // ============================================================
 
+  /** All contracts across every vendor. */
+  getContracts(): Observable<VendorContract[]> {
+    return this.http.get<VendorContract[]>(`${this.baseUrl}/vendor-management/contracts`)
+      .pipe(
+        map(res => Array.isArray(res) ? res : []),
+        catchError(() => of([]))
+      );
+  }
+
   getVendorContracts(vendorId: string): Observable<VendorContract[]> {
-    return of([] as any);
+    return this.getContracts().pipe(
+      map(contracts => contracts.filter(c => String(c.vendorId) === vendorId))
+    );
   }
 
   createContract(vendorId: string, contract: Partial<VendorContract>): Observable<VendorContract> {
@@ -2126,7 +2093,7 @@ export class VendorService {
   fraudFlags$ = this.fraudFlagsSubject.asObservable();
 
   getSentinelInsights(): Observable<SentinelInsight[]> {
-    return this.http.get<SentinelInsight[]>(`${API_BASE}/ai/sentinel/insights`)
+    return this.http.get<SentinelInsight[]>(`${this.baseUrl}/vendor-management/sentinel/insights`)
       .pipe(
         tap(data => this.sentinelInsightsSubject.next(data)),
         catchError(() => {
@@ -2143,9 +2110,10 @@ export class VendorService {
 
     const updated = current.map(insight => {
       if (insight.id !== insightId) return insight;
-      const status: InsightActionStatus = action === 'dismiss'
+      const normalizedAction = action.toUpperCase();
+      const status: InsightActionStatus = normalizedAction === 'DISMISS'
         ? InsightActionStatus.DISMISSED
-        : action === 'review' || action === 'investigate'
+        : normalizedAction === 'REVIEW' || normalizedAction === 'INVESTIGATE'
           ? InsightActionStatus.REVIEWED
           : InsightActionStatus.ACTIONED;
       return { ...insight, status };
@@ -2161,15 +2129,33 @@ export class VendorService {
       );
   }
 
-  getRiskTrajectories(): Observable<VendorRiskTrajectory[]> {
-    return this.http.get<VendorRiskTrajectory[]>(`${API_BASE}/ai/sentinel/risk-trajectories`)
+  /** A single vendor's AI-projected risk trend — the only shape the real API exposes. */
+  getVendorRiskTrajectory(vendorId: string): Observable<VendorRiskTrajectory> {
+    return this.http.get<VendorRiskTrajectory>(`${this.baseUrl}/vendor-management/vendors/${vendorId}/risk-trajectory`)
       .pipe(
-        catchError(() => of(MOCK_RISK_TRAJECTORIES))
+        catchError(() => of(
+          MOCK_RISK_TRAJECTORIES.find(t => t.vendorId === vendorId) || MOCK_RISK_TRAJECTORIES[0]
+        ))
       );
   }
 
+  /**
+   * Trajectories for a set of vendors, fanned out over the per-vendor endpoint
+   * (there's no bulk trajectory endpoint). Without `vendorIds` this just returns
+   * the mock set, for callers that haven't been updated to pass a vendor list.
+   */
+  getRiskTrajectories(vendorIds?: string[]): Observable<VendorRiskTrajectory[]> {
+    if (vendorIds === undefined) {
+      return of(MOCK_RISK_TRAJECTORIES);
+    }
+    if (vendorIds.length === 0) {
+      return of([]);
+    }
+    return forkJoin(vendorIds.map(id => this.getVendorRiskTrajectory(id)));
+  }
+
   getFraudFlags(): Observable<FraudFlag[]> {
-    return this.http.get<FraudFlag[]>(`${API_BASE}/ai/sentinel/fraud-flags`)
+    return this.http.get<FraudFlag[]>(`${this.baseUrl}/vendor-management/fraud-flags`)
       .pipe(
         tap(data => this.fraudFlagsSubject.next(data)),
         catchError(() => {
@@ -2194,11 +2180,12 @@ export class VendorService {
   }
 
   getOnboardingCopilotSession(vendorId?: string): Observable<OnboardingCopilotSession> {
-    const url = vendorId
-      ? `${API_BASE}/ai/sentinel/onboarding-copilot/${vendorId}`
-      : `${API_BASE}/ai/sentinel/onboarding-copilot`;
+    // The real endpoint is always scoped to a vendor — fall straight to mock without it.
+    if (!vendorId) {
+      return of(MOCK_ONBOARDING_COPILOT);
+    }
 
-    return this.http.get<OnboardingCopilotSession>(url)
+    return this.http.get<OnboardingCopilotSession>(`${this.baseUrl}/vendor-management/onboarding-copilot/${vendorId}`)
       .pipe(
         catchError(() => of(MOCK_ONBOARDING_COPILOT))
       );
@@ -2217,7 +2204,7 @@ export class VendorService {
   }
 
   getSentinelSummaryStats(): Observable<SentinelSummaryStats> {
-    return this.http.get<SentinelSummaryStats>(`${API_BASE}/ai/sentinel/summary`)
+    return this.http.get<SentinelSummaryStats>(`${this.baseUrl}/vendor-management/sentinel/stats`)
       .pipe(
         catchError(() => of({
           activeInsights: MOCK_SENTINEL_INSIGHTS.filter(i => i.status === InsightActionStatus.OPEN).length,

@@ -2,8 +2,9 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../service/sales/sales.service';
+import { Quote, Invoice } from '../../../domain/sales/sales.dto';
 
 import { SharedOverlayModule } from '../../../../shared-overlay.module';
 import { QuoteFormComponent } from '../quotations/quote-form/quote-form.component';
@@ -11,8 +12,9 @@ import { InvoiceFormComponent } from '../invoices/invoice-form/invoice-form.comp
 import { CustomerFormComponent } from '../customer-management/customer-form/customer-form.component';
 import { QuoteDetailComponent } from '../quotations/quote-detail/quote-detail.component';
 import { InvoiceDetailComponent } from '../invoices/invoice-detail/invoice-detail.component';
-import { formatApiDate } from '../../../service/sales/date.util';
+import { formatApiDate, parseApiDate } from '../../../service/sales/date.util';
 import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-sales-dashboard',
@@ -26,8 +28,10 @@ import { MessageService } from 'primeng/api';
     InvoiceFormComponent,
     CustomerFormComponent,
     QuoteDetailComponent,
-    InvoiceDetailComponent
+    InvoiceDetailComponent,
+    ToastModule
   ],
+  providers: [MessageService],
   templateUrl: './sales-dashboard.component.html',
   styleUrls: ['./sales-dashboard.component.scss']
 })
@@ -50,7 +54,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   // Recent Data
   recentQuotes: any[] = [];
   recentInvoices: any[] = [];
-  topProducts: any[] = [];
+  recentTransactions: any[] = [];
 
   // Chart Data
   revenueData: { month: string; amount: number }[] = [];
@@ -58,6 +62,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   // Filters
   dateRange = 'month';
   isLoading = true;
+  error: string | null = null;
 
   showQuoteModal = false;
   showInvoiceModal = false;
@@ -71,7 +76,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   showCustomizationModal = false;
   customization = {
     showRevenueChart: true,
-    showTopProducts: true,
+    showRecentTransactions: true,
     showRecentQuotes: true,
     showRecentInvoices: true,
     chartType: 'bar' // 'bar' | 'line' | 'pie' | 'doughnut'
@@ -114,33 +119,122 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     return Math.max(...this.revenueData.map(d => d.amount));
   }
 
+  /**
+   * There's no real backend endpoint behind dashboard-stats/dashboard-revenue (they were
+   * always stubs — see the old comment on this file), so the date-range selector (Week/
+   * Month/Quarter/Year) had nothing to actually filter: it just re-requested the same stub.
+   * Instead, this pulls a full batch of quotes/invoices/customers from the real endpoints
+   * and computes the stats and the revenue chart client-side, scoped to the selected range.
+   */
   private loadDashboardData(): void {
     this.isLoading = true;
+    this.error = null;
 
-    this.salesService.getDashboardStats(this.dateRange).subscribe({
-      next: (stats: any) => { this.stats = stats; },
-      error: (error: any) => { console.error('Error loading stats:', error); }
-    });
+    forkJoin({
+      quotes: this.salesService.getQuotes({ size: 1000 }),
+      invoices: this.salesService.getInvoices({ size: 1000 }),
+      customers: this.salesService.getCustomers({ page: 0, size: 1000 }),
+      transactions: this.salesService.getSalesandTransactions({ size: 1000 })
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: ({ quotes, invoices, customers, transactions }) => {
+        const cutoff = this.getDateRangeCutoff(this.dateRange);
+        const quotesInRange = quotes.data.filter(q => this.isOnOrAfter(q.createdAt, cutoff));
+        const invoicesInRange = invoices.data.filter(i => this.isOnOrAfter(i.issueDate, cutoff));
 
-    this.salesService.getRecentQuotes(3).subscribe({
-      next: (quotes: any[]) => { this.recentQuotes = quotes.slice(0, 3); },
-      error: (error: any) => { console.error('Error loading quotes:', error); }
+        this.stats = this.computeStats(quotesInRange, invoicesInRange, customers.total);
+        this.revenueData = this.buildRevenueSeries(invoicesInRange, this.dateRange);
+        // Already sorted newest-first by the service — "recent" is just the top of each list.
+        this.recentQuotes = quotes.data.slice(0, 3);
+        this.recentInvoices = invoices.data.slice(0, 3);
+        this.recentTransactions = transactions.data.slice(0, 3);
+        this.isLoading = false;
+      },
+      error: (error: any) => {
+        console.error('Error loading sales dashboard:', error);
+        this.error = 'Failed to load sales dashboard data';
+        this.isLoading = false;
+      }
     });
+  }
 
-    this.salesService.getRecentInvoices(3).subscribe({
-      next: (invoices: any[]) => { this.recentInvoices = invoices.slice(0, 3); },
-      error: (error: any) => { console.error('Error loading invoices:', error); }
-    });
+  private getDateRangeCutoff(range: string): Date {
+    const cutoff = new Date();
+    switch (range) {
+      case 'week': cutoff.setDate(cutoff.getDate() - 7); break;
+      case 'quarter': cutoff.setDate(cutoff.getDate() - 90); break;
+      case 'year': cutoff.setDate(cutoff.getDate() - 365); break;
+      case 'month':
+      default: cutoff.setDate(cutoff.getDate() - 30); break;
+    }
+    cutoff.setHours(0, 0, 0, 0);
+    return cutoff;
+  }
 
-    this.salesService.getTopProducts(3).subscribe({
-      next: (products: any[]) => { this.topProducts = products.slice(0, 3); },
-      error: (error: any) => { console.error('Error loading products:', error); }
-    });
+  private isOnOrAfter(date: unknown, cutoff: Date): boolean {
+    const d = parseApiDate(date);
+    return !!d && d >= cutoff;
+  }
 
-    this.salesService.getRevenueChart(this.dateRange).subscribe({
-      next: (data: any[]) => { this.revenueData = data; this.isLoading = false; },
-      error: (error: any) => { console.error('Error loading chart:', error); this.isLoading = false; }
-    });
+  private isOverdue(dueDate: unknown): boolean {
+    const due = parseApiDate(dueDate);
+    if (!due) return false;
+    const now = new Date();
+    return due < now && due.toDateString() !== now.toDateString();
+  }
+
+  private computeStats(quotesInRange: Quote[], invoicesInRange: Invoice[], totalCustomers: number) {
+    const validInvoices = invoicesInRange.filter(i => i.status !== 'CANCELLED');
+    return {
+      totalRevenue: validInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0),
+      totalQuotes: quotesInRange.length,
+      pendingQuotes: quotesInRange.filter(q => q.status === 'SENT').length,
+      acceptedQuotes: quotesInRange.filter(q => q.status === 'ACCEPTED' || (q.status as string) === 'CONVERTED').length,
+      totalInvoices: invoicesInRange.length,
+      paidInvoices: invoicesInRange.filter(i => !!i.paidAt).length,
+      overdueInvoices: invoicesInRange.filter(i => !i.paidAt && this.isOverdue(i.dueDate)).length,
+      // Not date-scoped — "Total Customers" means the whole book, not new signups this period.
+      totalCustomers
+    };
+  }
+
+  /** Buckets invoice totals into a handful of periods appropriate to the selected range. */
+  private buildRevenueSeries(invoicesInRange: Invoice[], range: string): { month: string; amount: number }[] {
+    const validInvoices = invoicesInRange.filter(i => i.status !== 'CANCELLED');
+    const now = new Date();
+    const buckets: { label: string; start: Date; end: Date }[] = [];
+
+    if (range === 'week') {
+      for (let i = 6; i >= 0; i--) {
+        const start = new Date(now); start.setDate(now.getDate() - i); start.setHours(0, 0, 0, 0);
+        const end = new Date(start); end.setHours(23, 59, 59, 999);
+        buckets.push({ label: start.toLocaleDateString('en-GB', { weekday: 'short' }), start, end });
+      }
+    } else if (range === 'month') {
+      for (let i = 3; i >= 0; i--) {
+        const end = new Date(now); end.setDate(now.getDate() - i * 7); end.setHours(23, 59, 59, 999);
+        const start = new Date(end); start.setDate(end.getDate() - 6); start.setHours(0, 0, 0, 0);
+        buckets.push({ label: `Wk ${4 - i}`, start, end });
+      }
+    } else {
+      const months = range === 'year' ? 11 : 2;
+      for (let i = months; i >= 0; i--) {
+        const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+        buckets.push({ label: start.toLocaleDateString('en-GB', { month: 'short' }), start, end });
+      }
+    }
+
+    return buckets.map(b => ({
+      month: b.label,
+      amount: validInvoices.reduce((sum, inv) => {
+        const d = parseApiDate(inv.issueDate);
+        return (d && d >= b.start && d <= b.end) ? sum + (inv.totalAmount || 0) : sum;
+      }, 0)
+    }));
+  }
+
+  refreshData(): void {
+    this.loadDashboardData();
   }
 
   changeDateRange(range: string): void {
@@ -153,7 +247,8 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   // ============================================
 
   private switchToTab(tabName: string): void {
-    sessionStorage.setItem('dashboard-catalog-quotes-invoices-orders-customers', tabName);
+    // Must match the [cacheKey] passed to <app-nav-tab> in sales-hub.component.html.
+    sessionStorage.setItem('sales-hub', tabName);
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/sales-hub', uuid] : ['/admin/sales/sales-hub'];
     this.router.navigate(path).then(() => {
@@ -228,6 +323,19 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
       this.router.navigate(['/admin/sales/invoices', invoiceId, uuid]);
     } else {
       this.router.navigate(['/admin/sales/invoices', invoiceId]);
+    }
+  }
+
+  navigateToTransactionsList(): void {
+    this.switchToTab('Sales & Transactions');
+  }
+
+  navigateToTransactionDetail(transactionId: string): void {
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/sales-and-transactions', transactionId, uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/sales-and-transactions', transactionId]);
     }
   }
 
@@ -324,7 +432,21 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   }
 
   getStatusClass(status: string): string {
-    return status ? status.toLowerCase() : 'draft';
+    const normalizedStatus = this.normalizeStatus(status);
+    const classes: Record<string, string> = {
+      DRAFT: 'draft',
+      SENT: 'sent',
+      ACCEPTED: 'accepted',
+      DECLINED: 'declined',
+      EXPIRED: 'expired',
+      PAID: 'paid',
+      UNPAID: 'unpaid',
+      OVERDUE: 'overdue',
+      PENDING: 'pending',
+      COMPLETED: 'completed',
+      CANCELLED: 'cancelled'
+    };
+    return classes[normalizedStatus] || 'draft';
   }
 
   getStatusBadgeClass(status: string): string {
@@ -344,19 +466,49 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   }
 
   getStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      'DRAFT': 'Draft',
-      'SENT': 'Sent',
-      'ACCEPTED': 'Accepted',
-      'DECLINED': 'Declined',
-      'EXPIRED': 'Expired',
-      'PAID': 'Paid',
-      'UNPAID': 'Unpaid',
-      'OVERDUE': 'Overdue',
-      'PENDING': 'Pending',
-      'COMPLETED': 'Completed'
+    return this.formatDisplayStatus(status);
+  }
+
+  // Sales & Transactions statuses (SaleLifecycleStatus, e.g. 'QUOTE_SENT', 'PAYMENT_COMPLETED')
+  // don't fit the fixed quote/invoice status map above — title-case them generically instead,
+  // matching the label formatting already used on the Sales & Transactions tab itself.
+  formatTransactionStatusLabel(status: string): string {
+    return this.formatDisplayStatus(status);
+  }
+
+  getTransactionStatusClass(status: string): string {
+    const statusClasses: Record<string, string> = {
+      QUOTE_SENT: 'sent',
+      QUOTE_ACCEPTED: 'accepted',
+      QUOTE_CONVERTED: 'converted',
+      QUOTE_REJECTED: 'declined',
+      INVOICE_SENT: 'sent',
+      INVOICE_CANCELLED: 'cancelled',
+      PAYMENT_PENDING: 'pending',
+      PAYMENT_IN_PROGRESS: 'pending',
+      PAYMENT_COMPLETED: 'completed',
+      PAYMENT_FAILED: 'declined',
+      PAYMENT_REFUNDED: 'refunded',
+      RECEIPT_GENERATED: 'completed',
+      DELIVERY_PENDING: 'pending',
+      DISPATCHED: 'sent',
+      IN_TRANSIT: 'sent',
+      DELIVERED: 'completed',
+      RETURNED: 'declined'
     };
-    return labels[status] || status;
+    return statusClasses[this.normalizeStatus(status)] || 'draft';
+  }
+
+  private normalizeStatus(status: string | undefined): string {
+    return String(status || '').trim().toUpperCase().replace(/[-\s]+/g, '_');
+  }
+
+  private formatDisplayStatus(status: string | undefined): string {
+    if (!status) return 'Draft';
+    return status
+      .replace(/[_-]+/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, character => character.toUpperCase());
   }
 
   // ============================================
@@ -434,6 +586,22 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     return colors[idx % colors.length];
   }
 
+  getBarColor(idx: number): string {
+    return this.getConicLegendColor(idx);
+  }
+
+  /** Resolves a display name off a quote/invoice's customerName/customerId, whichever is populated. */
+  getCustomerName(item: any): string {
+    if (!item) return 'N/A';
+    if (typeof item.customerName === 'object' && item.customerName?.name) {
+      return item.customerName.name;
+    }
+    if (typeof item.customerId === 'object' && item.customerId?.name) {
+      return item.customerId.name;
+    }
+    return String(item.customerName || item.customerId || 'N/A');
+  }
+
   getConicPercent(amount: number): string {
     const total = this.revenueData.reduce((sum, d) => sum + d.amount, 0) || 1;
     return ((amount / total) * 100).toFixed(1) + '%';
@@ -507,50 +675,75 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     const total = this.revenueData.reduce((sum, d) => sum + d.amount, 0) || 1;
     let accumulatedPercent = 0;
     const colors = ['#2E6276', '#3a8fa8', '#2EB270', '#fbbf24', '#f97316', '#4f46e5'];
-    
+
     const cx = 290;
     const cy = 180;
     const R = 125; // Chart radius matches 250px width/height circle
     const d1 = 20; // Length of diagonal extension
-    
-    return this.revenueData.map((d, i) => {
+
+    const raw = this.revenueData.map((d, i) => {
       const percent = (d.amount / total) * 100;
       const startPercent = accumulatedPercent;
       accumulatedPercent += percent;
       const endPercent = accumulatedPercent;
-      
+
       const midPercent = (startPercent + endPercent) / 2;
       const midAngleRad = (midPercent / 100) * 2 * Math.PI - Math.PI / 2;
-      
+
       const cos = Math.cos(midAngleRad);
       const sin = Math.sin(midAngleRad);
-      
+
       // Start point at circle outer boundary
       const x0 = cx + R * cos;
       const y0 = cy + R * sin;
-      
-      // Bend point (diagonal pointer extension)
+
+      // Bend point (diagonal pointer extension) — this is also the label's initial,
+      // un-collision-adjusted Y. Several thin slices (e.g. three ~1-3% weeks) can land
+      // at nearly the same angle and thus nearly the same y here.
       const x1 = cx + (R + d1) * cos;
       const y1 = cy + (R + d1) * sin;
-      
-      // Horizontal connector end
+
       const isRight = cos >= 0;
       const x2 = isRight ? x1 + 25 : x1 - 25;
-      const y2 = y1;
-      
-      const linePath = `M ${x0.toFixed(1)},${y0.toFixed(1)} L ${x1.toFixed(1)},${y1.toFixed(1)} H ${x2.toFixed(1)}`;
+
+      return { d, i, x0, y0, x1, y1, y2: y1, isRight, x2, cos, colorIdx: i };
+    });
+
+    // Spread out labels that would otherwise overlap. Small adjacent slices push their
+    // callouts to nearly the same angle/Y, which used to render as an illegible pile of
+    // stacked text (see the bunched "Wk 2/Wk 3/Wk 4" labels this was written to fix) —
+    // walk each side (left/right of the circle) top-to-bottom and push any label down far
+    // enough to clear the one above it.
+    const MIN_GAP = 34;
+    for (const side of [true, false]) {
+      const group = raw.filter(c => c.isRight === side).sort((a, b) => a.y1 - b.y1);
+      for (let j = 1; j < group.length; j++) {
+        const minY = group[j - 1].y2 + MIN_GAP;
+        if (group[j].y2 < minY) {
+          group[j].y2 = minY;
+        }
+      }
+    }
+
+    return raw.map(c => {
+      const { d, x0, y0, x1, y1, y2, isRight, x2, colorIdx } = c;
+      // Elbow connector: slice edge -> polar bend point -> (adjusted) label row -> label.
+      // The middle vertical segment only shows up when collision avoidance actually moved
+      // this label away from its natural polar position.
+      const linePath = Math.abs(y2 - y1) > 0.5
+        ? `M ${x0.toFixed(1)},${y0.toFixed(1)} L ${x1.toFixed(1)},${y1.toFixed(1)} L ${x1.toFixed(1)},${y2.toFixed(1)} H ${x2.toFixed(1)}`
+        : `M ${x0.toFixed(1)},${y0.toFixed(1)} L ${x1.toFixed(1)},${y1.toFixed(1)} H ${x2.toFixed(1)}`;
       const textX = isRight ? x2 + 6 : x2 - 6;
-      const textY = y2;
-      
+
       return {
         linePath,
         textX,
-        textY,
+        textY: y2,
         textAnchor: isRight ? 'start' : 'end',
         label: d.month,
         amount: this.formatCurrency(d.amount).replace('NGN', '₦'),
         percent: ((d.amount / total) * 100).toFixed(1) + '%',
-        color: colors[i % colors.length]
+        color: colors[colorIdx % colors.length]
       };
     });
   }

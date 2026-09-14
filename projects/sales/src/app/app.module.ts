@@ -86,6 +86,8 @@ import { VendorSelectionComponent } from './ui/view/request-management/vendor-se
 import { SmartVendorSelectionComponent } from './ui/view/request-management/smart-vendor-selection/smart-vendor-selection.component';
 import { DeliveryTrackingComponent } from './ui/view/request-management/delivery-tracking/delivery-tracking.component';
 import { PaymentVoucherComponent } from './ui/view/request-management/payment-voucher/payment-voucher.component';
+import { GrnListComponent } from './ui/view/request-management/grn-list/grn-list.component';
+import { GrnDetailComponent } from './ui/view/request-management/grn-detail/grn-detail.component';
 import { NotificationPanelComponent } from './ui/view/request-management/notification-panel/notification-panel.component';
 import { ReceiptPreviewComponent } from './ui/view/request-management/receipt-preview/receipt-preview.component';
 import { RequestForQuotationDetailComponent } from './ui/view/request-management/request-for-quotation-detail/request-for-quotation-detail.component';
@@ -185,6 +187,7 @@ import { RouteBuilderComponent } from './ui/view/logistics/route-builder/route-b
 import { StopChecklistComponent } from './ui/view/logistics/stop-checklist/stop-checklist.component';
 import { LocationPickerComponent } from './ui/view/logistics/location-picker/location-picker.component';
 import { RouteBuilderMapComponent } from './ui/view/logistics/route-builder-map/route-builder-map.component';
+import {PoolOrderDetailDrawerComponent} from './ui/view/logistics/pool-order-detail-drawer/pool-order-detail-drawer.component';
 import { BranchSelectorComponent } from './ui/shared-component/branch-selector/branch-selector.component';
 import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-summary/branch-stock-summary.component';
 
@@ -237,6 +240,8 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
     SmartVendorSelectionComponent,
     DeliveryTrackingComponent,
     PaymentVoucherComponent,
+    GrnListComponent,
+    GrnDetailComponent,
     NotificationPanelComponent,
     ReceiptPreviewComponent,
     RequestForQuotationDetailComponent,
@@ -291,6 +296,7 @@ import { BranchStockSummaryComponent } from './ui/shared-component/branch-stock-
     StopChecklistComponent,
     LocationPickerComponent,
     RouteBuilderMapComponent,
+    PoolOrderDetailDrawerComponent,
   ],
   imports: [
     // BrowserModule,

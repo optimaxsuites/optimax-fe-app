@@ -62,13 +62,15 @@ exportCSV() {
   const headers = Object.keys(this.data[0]).join(',');
 
   const rows = this.data.map(record =>
-    Object.values(record)
-      .map(value => `"${value ?? ''}"`)
-      .join(',')
-  );
+    Object.entries(record).map(([key, value]) => {
+      if (key === 'date' && value instanceof Date) {
+        return `"${new Date(value).toISOString().split('T')[0]}"`;
+      }
+      return `"${value ?? ''}"`;  
+    }).join(',')
+  ).join('\n');
 
-  const csvContent = [headers, ...rows].join('\n');
-
+  const csvContent = `${headers}\n${rows}`;
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
 
   const link = document.createElement('a');
@@ -102,7 +104,7 @@ exportPDF() {
   const tableData = this.data.map(record => [
     record.employee || '-',
     record.department || '-',
-    record.date || '-',
+    record.date ? (typeof record.date === 'string' ? record.date : new Date(record.date).toISOString().split('T')[0]) : '-',
     record.checkIn || '-',
     record.checkOut || '-',
     record.status || '-',
@@ -262,10 +264,10 @@ importNow() {
       .filter((row: any) => row.ID && row.Employee && row.Date)
       .map((row: any) => ({
         id: 0, //attendancerecordID not provided in Excel
-        employeeId:Number(row.ID),
+        employeeId: String(row.ID),
         employee: row.Employee,
         department: row.Department,
-        date: this.normalizeDate(row.Date),
+        date: typeof row.Date === 'string' ? row.Date : this.normalizeDate(row.Date),
         checkIn: this.normalizeTime(row.In),
         checkOut: this.normalizeTime(row.Out),
         checkInLocation: row.InLocation

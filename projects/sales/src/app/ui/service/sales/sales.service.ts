@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { map, catchError, switchMap } from 'rxjs/operators';
+import { map, catchError, switchMap, tap } from 'rxjs/operators';
 import {
   SalesSummary,
   RevenueChartData,
@@ -27,6 +27,7 @@ import {
   Supplier
 } from '../../domain/sales/sales.dto';
 import { environment } from '../../shared-component/service/environments/environment';
+import { parseApiDate } from './date.util';
 
 export const defaultMerchantInfo: MerchantInfo = {
   id: 0,
@@ -54,6 +55,20 @@ export class SalesService {
   }
 
   constructor(private http: HttpClient) {}
+
+  /**
+   * Most-recent-first. Sorts on `dateField` (falling back to `id` when the
+   * date is missing/unparseable or two records tie) rather than trusting
+   * the backend's own ordering, which isn't guaranteed to be chronological.
+   */
+  private sortNewestFirst<T extends { id: number }>(arr: T[], dateField: keyof T): T[] {
+    return [...arr].sort((a, b) => {
+      const aTime = parseApiDate(a[dateField] as any)?.getTime();
+      const bTime = parseApiDate(b[dateField] as any)?.getTime();
+      if (aTime != null && bTime != null && aTime !== bTime) return bTime - aTime;
+      return b.id - a.id;
+    });
+  }
 
   // ============================================
   // DASHBOARD — no dedicated endpoint, return stubs
@@ -108,11 +123,41 @@ export class SalesService {
   // QUOTES
   // ============================================
 
-  getQuotes(filters: any): Observable<{ data: Quote[]; total: number }> {
-    let params = new HttpParams().set('tenantId', this.tenantId);
+  /** Pulls a display name off a Quote/Invoice's customerName, whether it's an embedded object or a raw string. */
+  private resolveEntityCustomerName(entity: { customerName?: any }): string {
+    const cn = entity.customerName;
+    return (typeof cn === 'object' ? cn?.name : cn) || '';
+  }
 
-    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
-    if (filters?.size !== undefined) params = params.set('size', String(filters.size));
+  /** Inclusive day-range check against `dateField`, using parseApiDate so timestamp format quirks don't matter. */
+  private matchesDateRange<T>(item: T, dateField: keyof T, dateFrom?: string, dateTo?: string): boolean {
+    if (!dateFrom && !dateTo) return true;
+    const value = parseApiDate(item[dateField] as any);
+    if (!value) return false;
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      from.setHours(0, 0, 0, 0);
+      if (value < from) return false;
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      if (value > to) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Fetches a large batch and does search/date-range/sort/paginate entirely client-side,
+   * rather than trusting the backend's own query params. That combination previously caused
+   * two separate problems: newly created quotes going missing (page 1 — what the UI always
+   * requests first — isn't guaranteed to be the backend's most-recent page unless it actually
+   * honors `sort`), and the search box / date range fields silently doing nothing (the `search`
+   * query param and `dateFrom`/`dateTo` were either never sent or aren't supported server-side).
+   */
+  getQuotes(filters: any): Observable<{ data: Quote[]; total: number }> {
+    let params = new HttpParams().set('tenantId', this.tenantId).set('page', '1').set('size', '1000');
+
     if (filters?.searchTerm) params = params.set('search', filters.searchTerm);
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
     if (filters?.customerId) params = params.set('customerId', filters.customerId);
@@ -120,7 +165,28 @@ export class SalesService {
     return this.http.get<any>(`${this.base}/quotes`, { params }).pipe(
       map(res => {
         const arr: Quote[] = Array.isArray(res) ? res : (res?.data ?? []);
-        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+        let result = this.sortNewestFirst(arr, 'createdAt');
+
+        if (filters?.status && filters.status !== 'ALL') {
+          result = result.filter(q => q.status === filters.status);
+        }
+
+        const term = String(filters?.searchTerm ?? '').trim().toLowerCase();
+        if (term) {
+          result = result.filter(q =>
+            (q.quoteNumber || '').toLowerCase().includes(term) ||
+            this.resolveEntityCustomerName(q).toLowerCase().includes(term)
+          );
+        }
+
+        if (filters?.dateFrom || filters?.dateTo) {
+          result = result.filter(q => this.matchesDateRange(q, 'createdAt', filters.dateFrom, filters.dateTo));
+        }
+
+        const page = filters?.page ?? 0;
+        const size = filters?.size ?? (result.length || 1);
+        const start = page * size;
+        return { data: result.slice(start, start + size), total: result.length };
       }),
       catchError(() => of({ data: [], total: 0 }))
     );
@@ -138,6 +204,63 @@ export class SalesService {
       switchMap(res => {
         const id = typeof res === 'object' ? (res.id ?? res) : res;
         return this.getQuoteById(id).pipe(map(q => q as Quote));
+      }),
+      // Every quote should show up on the Sales & Transactions lifecycle tracker from the
+      // moment it exists, not only once someone later clicks "Accept Quote" — otherwise the
+      // tab silently misses any quote that's still draft/sent/declined. Fire-and-forget: a
+      // failure here shouldn't block the quote itself from being created.
+      tap(quote => this.trackNewQuote(quote))
+    );
+  }
+
+  private trackNewQuote(quote: Quote): void {
+    if (!quote) return;
+    const addOpts = Array.isArray(quote.additionalOptions) ? quote.additionalOptions[0] : (quote.additionalOptions as any);
+    this.upsertTransactionForQuote(quote.id, {
+      quoteId: quote,
+      customerId: quote.customerId,
+      customerName: quote.customerName,
+      items: quote,
+      subtotal: quote.subtotal,
+      taxAmount: quote.taxAmount,
+      discountAmount: quote.discountAmount,
+      totalAmount: quote.totalAmount,
+      currency: quote.currency,
+      status: 'QUOTE_SENT',
+      quoteSentDate: new Date(),
+      customerNotes: addOpts?.notes || '',
+      billingAddress: addOpts?.address || '',
+      shippingAddress: addOpts?.address || ''
+    }).subscribe({
+      error: (err) => console.error('Failed to auto-track new quote in Sales & Transactions:', err)
+    });
+  }
+
+  /**
+   * Finds the sales-transaction record already tracking a given quote's lifecycle (created
+   * automatically when the quote itself was created — see trackNewQuote()) and merges `patch`
+   * into it, advancing its status/fields. Falls back to creating one if none exists yet, e.g.
+   * for quotes created before this auto-tracking existed.
+   */
+  upsertTransactionForQuote(quoteId: number | string, patch: Partial<SalesandTransactions>): Observable<SalesandTransactions> {
+    return this.getSalesandTransactions({ quoteId, size: 1000 }).pipe(
+      switchMap(res => {
+        const existing = res.data?.[0];
+        return existing
+          ? this.updateSalesandTransactions(existing.id, patch)
+          : this.createSalesandTransactions({ orderDate: new Date(), ...patch });
+      })
+    );
+  }
+
+  /** Same as upsertTransactionForQuote(), keyed on invoiceId instead. */
+  upsertTransactionForInvoice(invoiceId: number | string, patch: Partial<SalesandTransactions>): Observable<SalesandTransactions> {
+    return this.getSalesandTransactions({ invoiceId, size: 1000 }).pipe(
+      switchMap(res => {
+        const existing = res.data?.[0];
+        return existing
+          ? this.updateSalesandTransactions(existing.id, patch)
+          : this.createSalesandTransactions({ orderDate: new Date(), ...patch });
       })
     );
   }
@@ -161,11 +284,10 @@ export class SalesService {
   // INVOICES
   // ============================================
 
+  /** See getQuotes() — same fetch-big-batch, search/date-range/sort/paginate-client-side strategy, for the same reasons. */
   getInvoices(filters: any): Observable<{ data: Invoice[]; total: number }> {
-    let params = new HttpParams().set('tenantId', this.tenantId);
+    let params = new HttpParams().set('tenantId', this.tenantId).set('page', '1').set('size', '1000');
 
-    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
-    if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.searchTerm) params = params.set('search', filters.searchTerm);
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
     if (filters?.customerId) params = params.set('customerId', filters.customerId);
@@ -173,7 +295,28 @@ export class SalesService {
     return this.http.get<any>(`${this.base}/invoices`, { params }).pipe(
       map(res => {
         const arr: Invoice[] = Array.isArray(res) ? res : (res?.data ?? []);
-        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+        let result = this.sortNewestFirst(arr, 'issueDate');
+
+        if (filters?.status && filters.status !== 'ALL') {
+          result = result.filter(inv => inv.status === filters.status);
+        }
+
+        const term = String(filters?.searchTerm ?? '').trim().toLowerCase();
+        if (term) {
+          result = result.filter(inv =>
+            (inv.invoiceNumber || '').toLowerCase().includes(term) ||
+            this.resolveEntityCustomerName(inv).toLowerCase().includes(term)
+          );
+        }
+
+        if (filters?.dateFrom || filters?.dateTo) {
+          result = result.filter(inv => this.matchesDateRange(inv, 'issueDate', filters.dateFrom, filters.dateTo));
+        }
+
+        const page = filters?.page ?? 0;
+        const size = filters?.size ?? (result.length || 1);
+        const start = page * size;
+        return { data: result.slice(start, start + size), total: result.length };
       }),
       catchError(() => of({ data: [], total: 0 }))
     );
@@ -191,8 +334,33 @@ export class SalesService {
       switchMap(res => {
         const id = typeof res === 'object' ? (res.id ?? res) : res;
         return this.getInvoiceById(id).pipe(map(inv => inv as Invoice));
-      })
+      }),
+      tap(invoice => this.trackNewInvoice(invoice))
     );
+  }
+
+  private trackNewInvoice(invoice: Invoice): void {
+    if (!invoice) return;
+    const patch: Partial<SalesandTransactions> = {
+      invoiceId: invoice,
+      customerId: invoice.customerId,
+      customerName: invoice.customerName,
+      totalAmount: invoice.totalAmount,
+      currency: invoice.currency,
+      status: 'INVOICE_SENT',
+      invoiceSentDate: new Date(),
+      balanceDue: invoice.totalAmount
+    };
+    const quoteIdValue = (invoice as any).quoteId;
+    // If this invoice was generated from a quote, that quote already has a transaction
+    // tracking it (see trackNewQuote()) — attach the invoice there and advance its status,
+    // instead of spawning a second, duplicate transaction for the same underlying order.
+    const upsert$ = quoteIdValue
+      ? this.upsertTransactionForQuote(quoteIdValue, patch)
+      : this.upsertTransactionForInvoice(invoice.id, patch);
+    upsert$.subscribe({
+      error: (err) => console.error('Failed to auto-track new invoice in Sales & Transactions:', err)
+    });
   }
 
   updateInvoice(id: string | number, data: Partial<Invoice>): Observable<Invoice> {
@@ -214,11 +382,18 @@ export class SalesService {
   // CUSTOMERS
   // ============================================
 
-  getCustomers(filters: any): Observable<{ data: Customer[]; total: number }> {
-    let params = new HttpParams().set('tenantId', this.tenantId);
+  getCustomers(filters: any): Observable<{
+    data: Customer[];
+    total: number;
+    totalActive?: number;
+    totalInactive?: number;
+    totalBlacklisted?: number;
+  }> {
+    // See getQuotes() — fetch a big batch and paginate client-side rather than trusting
+    // the backend's own pagination/sort, which caused newly created records to land on
+    // a page the UI never visits.
+    let params = new HttpParams().set('tenantId', this.tenantId).set('page', '1').set('size', '1000');
 
-    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
-    if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.searchTerm) params = params.set('search', filters.searchTerm);
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
 
@@ -231,10 +406,34 @@ export class SalesService {
           address: c.address ? [c.address] : [],
           deliverAddress: Array.isArray(c.deliverAddress) ? c.deliverAddress : (c.deliverAddress ? [c.deliverAddress] : [])
         }));
-        const total = Array.isArray(res) ? res.length : (res?.totalSize ?? res?.totalElements ?? arr.length);
+        let result = this.sortNewestFirst(arr, 'createdAt');
+
+        // Client-side fallback for status/search/date-range — see getQuotes() for why: none
+        // of these query params are confirmed to be honored server-side, and dateFrom/dateTo
+        // were never sent at all.
+        if (filters?.status && filters.status !== 'ALL') {
+          result = result.filter(c => c.status === filters.status);
+        }
+
+        const term = String(filters?.searchTerm ?? '').trim().toLowerCase();
+        if (term) {
+          result = result.filter(c =>
+            (c.name || '').toLowerCase().includes(term) ||
+            (c.email || '').toLowerCase().includes(term) ||
+            (c.phone || '').toLowerCase().includes(term)
+          );
+        }
+
+        if (filters?.dateFrom || filters?.dateTo) {
+          result = result.filter(c => this.matchesDateRange(c, 'createdAt', filters.dateFrom, filters.dateTo));
+        }
+
+        const page = filters?.page ?? 0;
+        const size = filters?.size ?? (result.length || 1);
+        const start = page * size;
         return {
-          data: arr,
-          total,
+          data: result.slice(start, start + size),
+          total: result.length,
           totalActive: res?.totalActive ?? 0,
           totalInactive: res?.totalInactive ?? 0,
           totalBlacklisted: res?.totalBlacklisted ?? 0
@@ -275,6 +474,46 @@ export class SalesService {
 
   deleteCustomer(id: string | number): Observable<boolean> {
     return this.http.delete<any>(`${this.base}/customers/${id}`).pipe(
+      map(() => true),
+      catchError(() => of(false))
+    );
+  }
+
+  // ============================================
+  // MERCHANT INFO — the seller's own company details ("Prepared By" on
+  // quotes/invoices: name, address, bank account, logo).
+  // ============================================
+
+  getMerchantInfoList(): Observable<MerchantInfo[]> {
+    return this.http.get<any>(`${this.base}/merchant-info`).pipe(
+      map(res => Array.isArray(res) ? res : (res?.data ?? [])),
+      catchError(() => of([]))
+    );
+  }
+
+  /** The current tenant's own merchant info, if one has been set up yet. */
+  getMyMerchantInfo(): Observable<MerchantInfo | null> {
+    return this.http.get<MerchantInfo>(`${this.base}/merchant-info/my`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  getMerchantInfoById(id: string | number): Observable<MerchantInfo | null> {
+    return this.http.get<MerchantInfo>(`${this.base}/merchant-info/${id}`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  createMerchantInfo(data: Partial<MerchantInfo>): Observable<MerchantInfo> {
+    return this.http.post<MerchantInfo>(`${this.base}/merchant-info`, data);
+  }
+
+  updateMerchantInfo(id: string | number, data: Partial<MerchantInfo>): Observable<MerchantInfo> {
+    return this.http.put<MerchantInfo>(`${this.base}/merchant-info/${id}`, data);
+  }
+
+  deleteMerchantInfo(id: string | number): Observable<boolean> {
+    return this.http.delete<any>(`${this.base}/merchant-info/${id}`).pipe(
       map(() => true),
       catchError(() => of(false))
     );
@@ -363,11 +602,10 @@ export class SalesService {
   // SALES ORDERS (getSalesandTransactions)
   // ============================================
 
+  /** See getQuotes() — same fetch-big-batch-and-paginate-client-side strategy, for the same reason. */
   getSalesandTransactions(filters: any): Observable<{ data: SalesandTransactions[]; total: number }> {
-    let params = new HttpParams().set('tenantId', this.tenantId);
+    let params = new HttpParams().set('tenantId', this.tenantId).set('page', '1').set('size', '1000');
 
-    if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
-    if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
     if (filters?.customerId) params = params.set('customerId', filters.customerId);
     if (filters?.searchTerm) params = params.set('search', filters.searchTerm);
@@ -375,7 +613,39 @@ export class SalesService {
     return this.http.get<any>(`${this.base}/sales-orders`, { params }).pipe(
       map(res => {
         const arr: SalesandTransactions[] = Array.isArray(res) ? res : (res?.data ?? []);
-        return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
+        let result = this.sortNewestFirst(arr, 'orderDate');
+
+        if (filters?.status && filters.status !== 'ALL') {
+          result = result.filter(tx => tx.status === filters.status);
+        }
+        const term = String(filters?.searchTerm ?? '').trim().toLowerCase();
+        if (term) {
+          result = result.filter(tx =>
+            (tx.orderId || '').toLowerCase().includes(term) ||
+            (tx.reference || '').toLowerCase().includes(term) ||
+            this.resolveEntityCustomerName(tx).toLowerCase().includes(term)
+          );
+        }
+
+        // quoteId/invoiceId come back nested (tx.quoteId is the whole Quote object, not a
+        // bare id — see the SalesandTransactions DTO), so match against the nested .id.
+        if (filters?.quoteId != null) {
+          result = result.filter(tx => {
+            const qid = tx.quoteId && typeof tx.quoteId === 'object' ? (tx.quoteId as any).id : tx.quoteId;
+            return String(qid) === String(filters.quoteId);
+          });
+        }
+        if (filters?.invoiceId != null) {
+          result = result.filter(tx => {
+            const iid = tx.invoiceId && typeof tx.invoiceId === 'object' ? (tx.invoiceId as any).id : tx.invoiceId;
+            return String(iid) === String(filters.invoiceId);
+          });
+        }
+
+        const page = filters?.page ?? 0;
+        const size = filters?.size ?? (result.length || 1);
+        const start = page * size;
+        return { data: result.slice(start, start + size), total: result.length };
       }),
       catchError(() => of({ data: [], total: 0 }))
     );
@@ -387,14 +657,68 @@ export class SalesService {
     );
   }
 
+  private idOf(v: any): any {
+    return v && typeof v === 'object' ? v.id : v;
+  }
+
+  /**
+   * The sales-order DTO's GET shape nests related records (quote/customer/invoice as full
+   * objects) but its write shape wants bare foreign-key ids — sending a nested object for
+   * quoteId/customerId/invoiceId 500s with "Cannot deserialize value of type java.lang.Long
+   * from Object value". Callers throughout this codebase (quote-detail, invoice-detail, the
+   * transactions list, and the auto-tracking above) build these payloads by copying whole
+   * Quote/Invoice/Customer objects onto these fields for convenience — flatten them here,
+   * once, at the boundary, rather than fixing every call site.
+   */
+  private flattenTransaction(data: Partial<SalesandTransactions>): any {
+    const d: any = { ...data, tenantId: this.tenantId };
+
+    if ('quoteId' in d) d.quoteId = this.idOf(d.quoteId);
+    if ('invoiceId' in d) d.invoiceId = this.idOf(d.invoiceId);
+    if ('customerId' in d) d.customerId = this.idOf(d.customerId);
+
+    // customerName is a plain string column on this entity, not a nested customer object.
+    if (d.customerName && typeof d.customerName === 'object') {
+      d.customerName = d.customerName.name || '';
+    }
+
+    // "items" here must be actual sales-order line items, never the whole Quote/Invoice
+    // object some callers pass in as shorthand for "copy this document's items over".
+    if (d.items && !Array.isArray(d.items)) {
+      const src = d.items;
+      d.items = Array.isArray(src.items) ? src.items.map((it: any) => ({
+        productId: it.productId ?? null,
+        productName: it.productName || '',
+        description: it.description || '',
+        quantity: it.quantity || 1,
+        unitPrice: it.unitPrice || 0,
+        discount: it.discount || 0,
+        total: it.total || 0
+      })) : undefined;
+    }
+
+    // PaymentTerms nests customerId/customerName the same way as the outer object.
+    if (d.PaymentTerms && typeof d.PaymentTerms === 'object') {
+      d.PaymentTerms = {
+        ...d.PaymentTerms,
+        customerId: this.idOf(d.PaymentTerms.customerId),
+        customerName: d.PaymentTerms.customerName && typeof d.PaymentTerms.customerName === 'object'
+          ? (d.PaymentTerms.customerName.name || '')
+          : d.PaymentTerms.customerName
+      };
+    }
+
+    return d;
+  }
+
   createSalesandTransactions(data: Partial<SalesandTransactions>): Observable<SalesandTransactions> {
     const d = data as any;
     const orderNumber = d.orderNumber || `SO-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
-    return this.http.post<SalesandTransactions>(`${this.base}/sales-orders`, { ...data, orderNumber, tenantId: this.tenantId });
+    return this.http.post<SalesandTransactions>(`${this.base}/sales-orders`, { ...this.flattenTransaction(data), orderNumber });
   }
 
   updateSalesandTransactions(id: string | number, data: Partial<SalesandTransactions>): Observable<SalesandTransactions> {
-    return this.http.put<SalesandTransactions>(`${this.base}/sales-orders/${id}`, { ...data, tenantId: this.tenantId });
+    return this.http.put<SalesandTransactions>(`${this.base}/sales-orders/${id}`, this.flattenTransaction(data));
   }
 
   updateSalesOrderStatus(id: string | number, status: string): Observable<SalesandTransactions> {

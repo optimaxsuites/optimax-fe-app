@@ -2,10 +2,9 @@
 // ============================================================
 // IMPORTS
 // ============================================================
-
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
+import { Observable, BehaviorSubject, of, throwError, forkJoin } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../shared-component/service/environments/environment';
 import {
@@ -15,6 +14,7 @@ import {
   Branch,
   InventoryDashboardData,
   InventoryDashboardStats,
+  TopSellingProduct,
   QuickAction,
   ProductFilters,
   MovementFilters,
@@ -38,6 +38,7 @@ import {
   Supplier,
   Category,
   MeasurementUnit,
+  ProductImage,
   InventoryNotification,
   TriggerInventoryAlertRequest,
   InventoryAlertFilters
@@ -60,7 +61,8 @@ const LOCAL_KEYS = {
   MOVEMENT_TYPES: 'inventory_movement_types',
   LOCATION_TYPES: 'inventory_location_types',
   GENERIC_LOCATIONS: 'inventory_generic_locations',
-  NOTIFICATIONS: 'inventory_notifications'
+  NOTIFICATIONS: 'inventory_notifications',
+  PRODUCT_PERFORMANCE_FALLBACK: 'inventory_product_performance_fallback'
 };
 
 const MOCK_BRANCH_TYPES: string[] = ['STANDARD', 'FLAGSHIP', 'MINI'];
@@ -177,7 +179,7 @@ const MOCK_ALERTS: StockAlert[] = [
     id: 1,
     type: StockAlertType.OUT_OF_STOCK,
     severity: StockAlertSeverity.CRITICAL,
-    productId: 'prod-1',
+    productId: '1',
     productName: 'Cement Dangote Grade 42.5R',
     sku: 'CEM-DG-425',
     branchId: '1',
@@ -193,7 +195,7 @@ const MOCK_ALERTS: StockAlert[] = [
     id: 2,
     type: StockAlertType.LOW_STOCK,
     severity: StockAlertSeverity.WARNING,
-    productId: 'prod-2',
+    productId: '2',
     productName: 'Iron Rod 16mm (Per Ton)',
     sku: 'IRN-16MM-TON',
     branchId: '2',
@@ -209,7 +211,7 @@ const MOCK_ALERTS: StockAlert[] = [
     id: 3,
     type: StockAlertType.EXPIRING,
     severity: StockAlertSeverity.INFO,
-    productId: 'prod-3',
+    productId: '3',
     productName: 'Wall Paint White Satin 20L',
     sku: 'PNT-WS-20L',
     branchId: '3',
@@ -226,7 +228,7 @@ const MOCK_ALERTS: StockAlert[] = [
 const MOCK_MOVEMENTS: StockMovement[] = [
   {
     id: 1,
-    productId: 'prod-1',
+    productId: '1',
     productName: 'Cement Dangote Grade 42.5R',
     sku: 'CEM-DG-425',
     fromLocation: { type: 'SUPPLIER', id: '1', name: 'Dangote Cement Factory' },
@@ -249,7 +251,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 2,
-    productId: 'prod-2',
+    productId: '2',
     productName: 'Iron Rod 16mm (Per Ton)',
     sku: 'IRN-16MM-TON',
     fromLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
@@ -272,7 +274,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 3,
-    productId: 'prod-3',
+    productId: '3',
     productName: 'Wall Paint White Satin 20L',
     sku: 'PNT-WS-20L',
     fromLocation: { type: 'BRANCH', id: '3', name: 'Port Harcourt Store' },
@@ -295,7 +297,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 4,
-    productId: 'prod-4',
+    productId: '4',
     productName: 'PVC Pipes 4-inch (Length 6m)',
     sku: 'PVC-4IN-6M',
     fromLocation: { type: 'SUPPLIER', id: '2', name: 'Niger Delta Plastics Ltd' },
@@ -318,7 +320,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 5,
-    productId: 'prod-5',
+    productId: '5',
     productName: 'Floor Tiles 60x60cm (Box)',
     sku: 'TIL-FLR-6060',
     fromLocation: { type: 'BRANCH', id: '2', name: 'Abuja Distribution Hub' },
@@ -341,7 +343,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 6,
-    productId: 'prod-1',
+    productId: '1',
     productName: 'Cement Dangote Grade 42.5R',
     sku: 'CEM-DG-425',
     fromLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
@@ -364,7 +366,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 7,
-    productId: 'prod-6',
+    productId: '6',
     productName: 'Electrical Cable 1.5mm (100m Roll)',
     sku: 'ELC-CBL-15-100',
     fromLocation: { type: 'SUPPLIER', id: '3', name: 'Coleman Cables Nigeria' },
@@ -387,7 +389,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 8,
-    productId: 'prod-7',
+    productId: '7',
     productName: 'Roofing Sheet Long Span (Per Meter)',
     sku: 'ROF-LS-MTR',
     fromLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
@@ -410,7 +412,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 9,
-    productId: 'prod-3',
+    productId: '3',
     productName: 'Wall Paint White Satin 20L',
     sku: 'PNT-WS-20L',
     fromLocation: { type: 'BRANCH', id: '2', name: 'Abuja Distribution Hub' },
@@ -433,7 +435,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 10,
-    productId: 'prod-2',
+    productId: '2',
     productName: 'Iron Rod 16mm (Per Ton)',
     sku: 'IRN-16MM-TON',
     fromLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
@@ -456,7 +458,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 11,
-    productId: 'prod-8',
+    productId: '8',
     productName: 'Plywood Sheet 18mm (4x8ft)',
     sku: 'PLY-18MM-4X8',
     fromLocation: { type: 'SUPPLIER', id: '4', name: 'Tropical Timber Mills' },
@@ -479,7 +481,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 12,
-    productId: 'prod-4',
+    productId: '4',
     productName: 'PVC Pipes 4-inch (Length 6m)',
     sku: 'PVC-4IN-6M',
     fromLocation: { type: 'BRANCH', id: '3', name: 'Port Harcourt Store' },
@@ -502,7 +504,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 13,
-    productId: 'prod-5',
+    productId: '5',
     productName: 'Floor Tiles 60x60cm (Box)',
     sku: 'TIL-FLR-6060',
     fromLocation: { type: 'SUPPLIER', id: '5', name: 'Porcelain Palace Lagos' },
@@ -525,7 +527,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 14,
-    productId: 'prod-6',
+    productId: '6',
     productName: 'Electrical Cable 1.5mm (100m Roll)',
     sku: 'ELC-CBL-15-100',
     fromLocation: { type: 'WAREHOUSE', id: '1', name: 'Lagos Main Warehouse' },
@@ -548,7 +550,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 15,
-    productId: 'prod-7',
+    productId: '7',
     productName: 'Roofing Sheet Long Span (Per Meter)',
     sku: 'ROF-LS-MTR',
     fromLocation: { type: 'BRANCH', id: '4', name: 'Kano Outlet' },
@@ -571,7 +573,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 16,
-    productId: 'prod-8',
+    productId: '8',
     productName: 'Plywood Sheet 18mm (4x8ft)',
     sku: 'PLY-18MM-4X8',
     fromLocation: { type: 'BRANCH', id: '2', name: 'Abuja Distribution Hub' },
@@ -594,7 +596,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 17,
-    productId: 'prod-9',
+    productId: '9',
     productName: 'Sanitary Ware — WC Suite Set',
     sku: 'SAN-WC-SUITE',
     fromLocation: { type: 'SUPPLIER', id: '6', name: 'Roca Sanitaryware Nigeria' },
@@ -617,7 +619,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 18,
-    productId: 'prod-2',
+    productId: '2',
     productName: 'Iron Rod 16mm (Per Ton)',
     sku: 'IRN-16MM-TON',
     fromLocation: { type: 'SUPPLIER', id: '7', name: 'Delta Steel Company' },
@@ -640,7 +642,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 19,
-    productId: 'prod-3',
+    productId: '3',
     productName: 'Wall Paint White Satin 20L',
     sku: 'PNT-WS-20L',
     fromLocation: { type: 'BRANCH', id: '1', name: 'Lagos Main Warehouse' },
@@ -663,7 +665,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   },
   {
     id: 20,
-    productId: 'prod-9',
+    productId: '9',
     productName: 'Sanitary Ware — WC Suite Set',
     sku: 'SAN-WC-SUITE',
     fromLocation: { type: 'BRANCH', id: '3', name: 'Port Harcourt Store' },
@@ -688,7 +690,7 @@ const MOCK_MOVEMENTS: StockMovement[] = [
 
 const MOCK_TOP_PRODUCTS: ProductPerformance[] = [
   {
-    productId: 'prod-1',
+    productId: '1',
     productName: 'Cement Dangote Grade 42.5R',
     sku: 'CEM-DG-425',
     category: 'Building Materials',
@@ -704,7 +706,7 @@ const MOCK_TOP_PRODUCTS: ProductPerformance[] = [
     period: { start: new Date(), end: new Date() }
   },
   {
-    productId: 'prod-2',
+    productId: '2',
     productName: 'Iron Rod 16mm (Per Ton)',
     sku: 'IRN-16MM-TON',
     category: 'Metal & Steel',
@@ -720,7 +722,7 @@ const MOCK_TOP_PRODUCTS: ProductPerformance[] = [
     period: { start: new Date(), end: new Date() }
   },
   {
-    productId: 'prod-4',
+    productId: '4',
     productName: 'PVC Pipes 4-inch (Length 6m)',
     sku: 'PVC-4IN-6M',
     category: 'Plumbing & Pipes',
@@ -736,7 +738,7 @@ const MOCK_TOP_PRODUCTS: ProductPerformance[] = [
     period: { start: new Date(), end: new Date() }
   },
   {
-    productId: 'prod-3',
+    productId: '3',
     productName: 'Wall Paint White Satin 20L',
     sku: 'PNT-WS-20L',
     category: 'Paints & Finishes',
@@ -763,11 +765,11 @@ const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
     lowStockCount: 4,
     outOfStockCount: 1,
     topSellingProducts: [
-      { productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', quantity: 4800, revenue: 33600000 },
-      { productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', quantity: 3200, revenue: 27200000 },
-      { productId: 'prod-6', productName: 'Electrical Cable 1.5mm (100m Roll)', quantity: 2100, revenue: 15750000 },
-      { productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', quantity: 85, revenue: 29750000 },
-      { productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', quantity: 1200, revenue: 9000000 }
+      { productId: '1', productName: 'Cement Dangote Grade 42.5R', quantity: 4800, revenue: 33600000 },
+      { productId: '7', productName: 'Roofing Sheet Long Span (Per Meter)', quantity: 3200, revenue: 27200000 },
+      { productId: '6', productName: 'Electrical Cable 1.5mm (100m Roll)', quantity: 2100, revenue: 15750000 },
+      { productId: '2', productName: 'Iron Rod 16mm (Per Ton)', quantity: 85, revenue: 29750000 },
+      { productId: '5', productName: 'Floor Tiles 60x60cm (Box)', quantity: 1200, revenue: 9000000 }
     ]
   },
   {
@@ -779,11 +781,11 @@ const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
     lowStockCount: 6,
     outOfStockCount: 2,
     topSellingProducts: [
-      { productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', quantity: 1800, revenue: 13500000 },
-      { productId: 'prod-8', productName: 'Plywood Sheet 18mm (4x8ft)', quantity: 420, revenue: 12600000 },
-      { productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', quantity: 2100, revenue: 14700000 },
-      { productId: 'prod-3', productName: 'Wall Paint White Satin 20L', quantity: 650, revenue: 15600000 },
-      { productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', quantity: 40, revenue: 14000000 }
+      { productId: '5', productName: 'Floor Tiles 60x60cm (Box)', quantity: 1800, revenue: 13500000 },
+      { productId: '8', productName: 'Plywood Sheet 18mm (4x8ft)', quantity: 420, revenue: 12600000 },
+      { productId: '1', productName: 'Cement Dangote Grade 42.5R', quantity: 2100, revenue: 14700000 },
+      { productId: '3', productName: 'Wall Paint White Satin 20L', quantity: 650, revenue: 15600000 },
+      { productId: '2', productName: 'Iron Rod 16mm (Per Ton)', quantity: 40, revenue: 14000000 }
     ]
   },
   {
@@ -795,11 +797,11 @@ const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
     lowStockCount: 2,
     outOfStockCount: 0,
     topSellingProducts: [
-      { productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', quantity: 2400, revenue: 16800000 },
-      { productId: 'prod-9', productName: 'Sanitary Ware — WC Suite Set', quantity: 32, revenue: 8320000 },
-      { productId: 'prod-3', productName: 'Wall Paint White Satin 20L', quantity: 520, revenue: 12480000 },
-      { productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', quantity: 900, revenue: 7650000 },
-      { productId: 'prod-6', productName: 'Electrical Cable 1.5mm (100m Roll)', quantity: 380, revenue: 2850000 }
+      { productId: '4', productName: 'PVC Pipes 4-inch (Length 6m)', quantity: 2400, revenue: 16800000 },
+      { productId: '9', productName: 'Sanitary Ware — WC Suite Set', quantity: 32, revenue: 8320000 },
+      { productId: '3', productName: 'Wall Paint White Satin 20L', quantity: 520, revenue: 12480000 },
+      { productId: '7', productName: 'Roofing Sheet Long Span (Per Meter)', quantity: 900, revenue: 7650000 },
+      { productId: '6', productName: 'Electrical Cable 1.5mm (100m Roll)', quantity: 380, revenue: 2850000 }
     ]
   },
   {
@@ -811,11 +813,11 @@ const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
     lowStockCount: 2,
     outOfStockCount: 0,
     topSellingProducts: [
-      { productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', quantity: 1600, revenue: 11200000 },
-      { productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', quantity: 700, revenue: 5950000 },
-      { productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', quantity: 18, revenue: 6300000 },
-      { productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', quantity: 800, revenue: 5600000 },
-      { productId: 'prod-3', productName: 'Wall Paint White Satin 20L', quantity: 210, revenue: 5040000 }
+      { productId: '1', productName: 'Cement Dangote Grade 42.5R', quantity: 1600, revenue: 11200000 },
+      { productId: '7', productName: 'Roofing Sheet Long Span (Per Meter)', quantity: 700, revenue: 5950000 },
+      { productId: '2', productName: 'Iron Rod 16mm (Per Ton)', quantity: 18, revenue: 6300000 },
+      { productId: '4', productName: 'PVC Pipes 4-inch (Length 6m)', quantity: 800, revenue: 5600000 },
+      { productId: '3', productName: 'Wall Paint White Satin 20L', quantity: 210, revenue: 5040000 }
     ]
   },
   {
@@ -827,11 +829,11 @@ const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
     lowStockCount: 3,
     outOfStockCount: 1,
     topSellingProducts: [
-      { productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', quantity: 2200, revenue: 15400000 },
-      { productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', quantity: 700, revenue: 5250000 },
-      { productId: 'prod-6', productName: 'Electrical Cable 1.5mm (100m Roll)', quantity: 410, revenue: 3075000 },
-      { productId: 'prod-8', productName: 'Plywood Sheet 18mm (4x8ft)', quantity: 180, revenue: 5400000 },
-      { productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', quantity: 620, revenue: 4340000 }
+      { productId: '1', productName: 'Cement Dangote Grade 42.5R', quantity: 2200, revenue: 15400000 },
+      { productId: '5', productName: 'Floor Tiles 60x60cm (Box)', quantity: 700, revenue: 5250000 },
+      { productId: '6', productName: 'Electrical Cable 1.5mm (100m Roll)', quantity: 410, revenue: 3075000 },
+      { productId: '8', productName: 'Plywood Sheet 18mm (4x8ft)', quantity: 180, revenue: 5400000 },
+      { productId: '4', productName: 'PVC Pipes 4-inch (Length 6m)', quantity: 620, revenue: 4340000 }
     ]
   },
   {
@@ -843,55 +845,55 @@ const MOCK_BRANCH_SUMMARIES: BranchStockSummary[] = [
     lowStockCount: 1,
     outOfStockCount: 0,
     topSellingProducts: [
-      { productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', quantity: 1900, revenue: 13300000 },
-      { productId: 'prod-3', productName: 'Wall Paint White Satin 20L', quantity: 310, revenue: 7440000 },
-      { productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', quantity: 480, revenue: 3360000 },
-      { productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', quantity: 550, revenue: 4675000 },
-      { productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', quantity: 12, revenue: 4200000 }
+      { productId: '1', productName: 'Cement Dangote Grade 42.5R', quantity: 1900, revenue: 13300000 },
+      { productId: '3', productName: 'Wall Paint White Satin 20L', quantity: 310, revenue: 7440000 },
+      { productId: '4', productName: 'PVC Pipes 4-inch (Length 6m)', quantity: 480, revenue: 3360000 },
+      { productId: '7', productName: 'Roofing Sheet Long Span (Per Meter)', quantity: 550, revenue: 4675000 },
+      { productId: '2', productName: 'Iron Rod 16mm (Per Ton)', quantity: 12, revenue: 4200000 }
     ]
   }
 ];
 
 const MOCK_BRANCH_INVENTORY: BranchInventory[] = [
   // ── Lagos Main Warehouse (br-1) ─────────────────────────────
-  { id: 1, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 1200, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 7000, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 2, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 85, reorderPoint: 50, reorderQuantity: 100, safetyStock: 20, sellingPrice: 350000, costPrice: 300000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 3, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 420, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 24000, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 4, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 1800, reorderPoint: 400, reorderQuantity: 800, safetyStock: 200, sellingPrice: 7500, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 5, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-6', productName: 'Electrical Cable 1.5mm (100m Roll)', sku: 'ELC-CBL-15-100', quantity: 640, reorderPoint: 150, reorderQuantity: 300, safetyStock: 60, sellingPrice: 15000, costPrice: 11000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 6, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 4200, reorderPoint: 800, reorderQuantity: 1500, safetyStock: 400, sellingPrice: 8500, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 7, branchId: '1', branchName: 'Lagos Main Warehouse', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 2100, reorderPoint: 500, reorderQuantity: 1000, safetyStock: 200, sellingPrice: 7000, costPrice: 5000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 1, branchId: '1', branchName: 'Lagos Main Warehouse', productId: '1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 1200, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 7000, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 2, branchId: '1', branchName: 'Lagos Main Warehouse', productId: '2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 85, reorderPoint: 50, reorderQuantity: 100, safetyStock: 20, sellingPrice: 350000, costPrice: 300000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 3, branchId: '1', branchName: 'Lagos Main Warehouse', productId: '3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 420, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 24000, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 4, branchId: '1', branchName: 'Lagos Main Warehouse', productId: '5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 1800, reorderPoint: 400, reorderQuantity: 800, safetyStock: 200, sellingPrice: 7500, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 5, branchId: '1', branchName: 'Lagos Main Warehouse', productId: '6', productName: 'Electrical Cable 1.5mm (100m Roll)', sku: 'ELC-CBL-15-100', quantity: 640, reorderPoint: 150, reorderQuantity: 300, safetyStock: 60, sellingPrice: 15000, costPrice: 11000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 6, branchId: '1', branchName: 'Lagos Main Warehouse', productId: '7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 4200, reorderPoint: 800, reorderQuantity: 1500, safetyStock: 400, sellingPrice: 8500, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 7, branchId: '1', branchName: 'Lagos Main Warehouse', productId: '4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 2100, reorderPoint: 500, reorderQuantity: 1000, safetyStock: 200, sellingPrice: 7000, costPrice: 5000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
   // ── Abuja Distribution Hub (br-2) ───────────────────────────
-  { id: 8, branchId: '2', branchName: 'Abuja Distribution Hub', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 800, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 7200, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 9, branchId: '2', branchName: 'Abuja Distribution Hub', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 12, reorderPoint: 50, reorderQuantity: 80, safetyStock: 20, sellingPrice: 360000, costPrice: 300000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 10, branchId: '2', branchName: 'Abuja Distribution Hub', productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 950, reorderPoint: 200, reorderQuantity: 500, safetyStock: 100, sellingPrice: 7800, costPrice: 5000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 11, branchId: '2', branchName: 'Abuja Distribution Hub', productId: 'prod-8', productName: 'Plywood Sheet 18mm (4x8ft)', sku: 'PLY-18MM-4X8', quantity: 380, reorderPoint: 80, reorderQuantity: 200, safetyStock: 40, sellingPrice: 30000, costPrice: 22000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 12, branchId: '2', branchName: 'Abuja Distribution Hub', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 0, reorderPoint: 80, reorderQuantity: 200, safetyStock: 40, sellingPrice: 25000, costPrice: 18000, lastUpdated: new Date(Date.now() - 4 * 86400000) },
-  { id: 13, branchId: '2', branchName: 'Abuja Distribution Hub', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 1100, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 8800, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 8, branchId: '2', branchName: 'Abuja Distribution Hub', productId: '1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 800, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 7200, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 9, branchId: '2', branchName: 'Abuja Distribution Hub', productId: '2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 12, reorderPoint: 50, reorderQuantity: 80, safetyStock: 20, sellingPrice: 360000, costPrice: 300000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 10, branchId: '2', branchName: 'Abuja Distribution Hub', productId: '5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 950, reorderPoint: 200, reorderQuantity: 500, safetyStock: 100, sellingPrice: 7800, costPrice: 5000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 11, branchId: '2', branchName: 'Abuja Distribution Hub', productId: '8', productName: 'Plywood Sheet 18mm (4x8ft)', sku: 'PLY-18MM-4X8', quantity: 380, reorderPoint: 80, reorderQuantity: 200, safetyStock: 40, sellingPrice: 30000, costPrice: 22000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 12, branchId: '2', branchName: 'Abuja Distribution Hub', productId: '3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 0, reorderPoint: 80, reorderQuantity: 200, safetyStock: 40, sellingPrice: 25000, costPrice: 18000, lastUpdated: new Date(Date.now() - 4 * 86400000) },
+  { id: 13, branchId: '2', branchName: 'Abuja Distribution Hub', productId: '7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 1100, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 8800, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
   // ── Port Harcourt Store (br-3) ───────────────────────────────
-  { id: 14, branchId: '3', branchName: 'Port Harcourt Store', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 1600, reorderPoint: 400, reorderQuantity: 800, safetyStock: 200, sellingPrice: 7200, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 15, branchId: '3', branchName: 'Port Harcourt Store', productId: 'prod-9', productName: 'Sanitary Ware — WC Suite Set', sku: 'SAN-WC-SUITE', quantity: 28, reorderPoint: 10, reorderQuantity: 20, safetyStock: 5, sellingPrice: 260000, costPrice: 200000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 16, branchId: '3', branchName: 'Port Harcourt Store', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 85, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 24500, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 17, branchId: '3', branchName: 'Port Harcourt Store', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 700, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 8700, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 18, branchId: '3', branchName: 'Port Harcourt Store', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 550, reorderPoint: 150, reorderQuantity: 300, safetyStock: 80, sellingPrice: 7100, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 14, branchId: '3', branchName: 'Port Harcourt Store', productId: '4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 1600, reorderPoint: 400, reorderQuantity: 800, safetyStock: 200, sellingPrice: 7200, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 15, branchId: '3', branchName: 'Port Harcourt Store', productId: '9', productName: 'Sanitary Ware — WC Suite Set', sku: 'SAN-WC-SUITE', quantity: 28, reorderPoint: 10, reorderQuantity: 20, safetyStock: 5, sellingPrice: 260000, costPrice: 200000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 16, branchId: '3', branchName: 'Port Harcourt Store', productId: '3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 85, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 24500, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 17, branchId: '3', branchName: 'Port Harcourt Store', productId: '7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 700, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 8700, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 18, branchId: '3', branchName: 'Port Harcourt Store', productId: '1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 550, reorderPoint: 150, reorderQuantity: 300, safetyStock: 80, sellingPrice: 7100, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
   // ── Kano Outlet (br-4) ──────────────────────────────────────
-  { id: 19, branchId: '4', branchName: 'Kano Outlet', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 600, reorderPoint: 150, reorderQuantity: 300, safetyStock: 80, sellingPrice: 7100, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 20, branchId: '4', branchName: 'Kano Outlet', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 1200, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 8600, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 21, branchId: '4', branchName: 'Kano Outlet', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 22, reorderPoint: 20, reorderQuantity: 40, safetyStock: 10, sellingPrice: 355000, costPrice: 300000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 22, branchId: '4', branchName: 'Kano Outlet', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 480, reorderPoint: 120, reorderQuantity: 250, safetyStock: 60, sellingPrice: 7300, costPrice: 5000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 23, branchId: '4', branchName: 'Kano Outlet', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 140, reorderPoint: 60, reorderQuantity: 120, safetyStock: 30, sellingPrice: 24000, costPrice: 18000, lastUpdated: new Date(Date.now() - 4 * 86400000) },
+  { id: 19, branchId: '4', branchName: 'Kano Outlet', productId: '1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 600, reorderPoint: 150, reorderQuantity: 300, safetyStock: 80, sellingPrice: 7100, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 20, branchId: '4', branchName: 'Kano Outlet', productId: '7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 1200, reorderPoint: 300, reorderQuantity: 600, safetyStock: 150, sellingPrice: 8600, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 21, branchId: '4', branchName: 'Kano Outlet', productId: '2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 22, reorderPoint: 20, reorderQuantity: 40, safetyStock: 10, sellingPrice: 355000, costPrice: 300000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 22, branchId: '4', branchName: 'Kano Outlet', productId: '4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 480, reorderPoint: 120, reorderQuantity: 250, safetyStock: 60, sellingPrice: 7300, costPrice: 5000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 23, branchId: '4', branchName: 'Kano Outlet', productId: '3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 140, reorderPoint: 60, reorderQuantity: 120, safetyStock: 30, sellingPrice: 24000, costPrice: 18000, lastUpdated: new Date(Date.now() - 4 * 86400000) },
   // ── Ibadan Regional Store (br-5) ────────────────────────────
-  { id: 24, branchId: '5', branchName: 'Ibadan Regional Store', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 900, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 7050, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 25, branchId: '5', branchName: 'Ibadan Regional Store', productId: 'prod-5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 620, reorderPoint: 150, reorderQuantity: 300, safetyStock: 70, sellingPrice: 7600, costPrice: 5000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 26, branchId: '5', branchName: 'Ibadan Regional Store', productId: 'prod-6', productName: 'Electrical Cable 1.5mm (100m Roll)', sku: 'ELC-CBL-15-100', quantity: 25, reorderPoint: 80, reorderQuantity: 150, safetyStock: 40, sellingPrice: 15500, costPrice: 11000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 27, branchId: '5', branchName: 'Ibadan Regional Store', productId: 'prod-8', productName: 'Plywood Sheet 18mm (4x8ft)', sku: 'PLY-18MM-4X8', quantity: 190, reorderPoint: 50, reorderQuantity: 120, safetyStock: 25, sellingPrice: 31000, costPrice: 22000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 28, branchId: '5', branchName: 'Ibadan Regional Store', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 0, reorderPoint: 100, reorderQuantity: 250, safetyStock: 50, sellingPrice: 7100, costPrice: 5000, lastUpdated: new Date(Date.now() - 5 * 86400000) },
+  { id: 24, branchId: '5', branchName: 'Ibadan Regional Store', productId: '1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 900, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 7050, costPrice: 6000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 25, branchId: '5', branchName: 'Ibadan Regional Store', productId: '5', productName: 'Floor Tiles 60x60cm (Box)', sku: 'TIL-FLR-6060', quantity: 620, reorderPoint: 150, reorderQuantity: 300, safetyStock: 70, sellingPrice: 7600, costPrice: 5000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 26, branchId: '5', branchName: 'Ibadan Regional Store', productId: '6', productName: 'Electrical Cable 1.5mm (100m Roll)', sku: 'ELC-CBL-15-100', quantity: 25, reorderPoint: 80, reorderQuantity: 150, safetyStock: 40, sellingPrice: 15500, costPrice: 11000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 27, branchId: '5', branchName: 'Ibadan Regional Store', productId: '8', productName: 'Plywood Sheet 18mm (4x8ft)', sku: 'PLY-18MM-4X8', quantity: 190, reorderPoint: 50, reorderQuantity: 120, safetyStock: 25, sellingPrice: 31000, costPrice: 22000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 28, branchId: '5', branchName: 'Ibadan Regional Store', productId: '4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 0, reorderPoint: 100, reorderQuantity: 250, safetyStock: 50, sellingPrice: 7100, costPrice: 5000, lastUpdated: new Date(Date.now() - 5 * 86400000) },
   // ── Enugu Express Depot (br-6) ──────────────────────────────
-  { id: 29, branchId: '6', branchName: 'Enugu Express Depot', productId: 'prod-1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 750, reorderPoint: 180, reorderQuantity: 350, safetyStock: 90, sellingPrice: 7080, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 30, branchId: '6', branchName: 'Enugu Express Depot', productId: 'prod-3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 280, reorderPoint: 70, reorderQuantity: 140, safetyStock: 35, sellingPrice: 24200, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
-  { id: 31, branchId: '6', branchName: 'Enugu Express Depot', productId: 'prod-4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 360, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 7050, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
-  { id: 32, branchId: '6', branchName: 'Enugu Express Depot', productId: 'prod-7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 820, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 8550, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
-  { id: 33, branchId: '6', branchName: 'Enugu Express Depot', productId: 'prod-2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 8, reorderPoint: 15, reorderQuantity: 30, safetyStock: 8, sellingPrice: 352000, costPrice: 300000, lastUpdated: new Date(Date.now() - 4 * 86400000) }
+  { id: 29, branchId: '6', branchName: 'Enugu Express Depot', productId: '1', productName: 'Cement Dangote Grade 42.5R', sku: 'CEM-DG-425', quantity: 750, reorderPoint: 180, reorderQuantity: 350, safetyStock: 90, sellingPrice: 7080, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 30, branchId: '6', branchName: 'Enugu Express Depot', productId: '3', productName: 'Wall Paint White Satin 20L', sku: 'PNT-WS-20L', quantity: 280, reorderPoint: 70, reorderQuantity: 140, safetyStock: 35, sellingPrice: 24200, costPrice: 18000, lastUpdated: new Date(Date.now() - 3 * 86400000) },
+  { id: 31, branchId: '6', branchName: 'Enugu Express Depot', productId: '4', productName: 'PVC Pipes 4-inch (Length 6m)', sku: 'PVC-4IN-6M', quantity: 360, reorderPoint: 100, reorderQuantity: 200, safetyStock: 50, sellingPrice: 7050, costPrice: 5000, lastUpdated: new Date(Date.now() - 1 * 86400000) },
+  { id: 32, branchId: '6', branchName: 'Enugu Express Depot', productId: '7', productName: 'Roofing Sheet Long Span (Per Meter)', sku: 'ROF-LS-MTR', quantity: 820, reorderPoint: 200, reorderQuantity: 400, safetyStock: 100, sellingPrice: 8550, costPrice: 6000, lastUpdated: new Date(Date.now() - 2 * 86400000) },
+  { id: 33, branchId: '6', branchName: 'Enugu Express Depot', productId: '2', productName: 'Iron Rod 16mm (Per Ton)', sku: 'IRN-16MM-TON', quantity: 8, reorderPoint: 15, reorderQuantity: 30, safetyStock: 8, sellingPrice: 352000, costPrice: 300000, lastUpdated: new Date(Date.now() - 4 * 86400000) }
 ];
 
 const MOCK_CATEGORIES: Category[] = [
@@ -931,19 +933,19 @@ const MOCK_SUPPLIERS: Supplier[] = [
 ];
 
 const MOCK_PRODUCTS: Product[] = [
-  { id: 'prod-1', sku: 'CEM-DG-425', name: 'Cement Dangote Grade 42.5R', description: 'High-strength Portland-limestone cement, 50kg bag, ideal for all structural applications.', category: 'Building Materials', subCategory: 'Cement', brand: 'Dangote', unitOfMeasure: 'EACH', costPrice: 6000, sellingPrice: 7000, stockQuantity: 4800, weight: 50, dimensions: { length: 60, width: 40, height: 10 }, images: [], tags: ['cement', 'bestseller'], status: ProductStatus.ACTIVE, supplierIds: ['1'], createdAt: new Date('2023-01-15'), updatedAt: new Date('2026-08-01') },
-  { id: 'prod-2', sku: 'IRN-16MM-TON', name: 'Iron Rod 16mm (Per Ton)', description: 'High-tensile deformed steel reinforcement bar, 16mm diameter, sold per metric ton.', category: 'Metal & Steel', subCategory: 'Rebar', brand: 'Delta Steel', unitOfMeasure: 'KG', costPrice: 300000, sellingPrice: 350000, stockQuantity: 127, weight: 1000, dimensions: { length: 1200, width: 1.6, height: 1.6 }, images: [], tags: ['steel', 'rebar'], status: ProductStatus.ACTIVE, supplierIds: ['7'], createdAt: new Date('2023-01-20'), updatedAt: new Date('2026-08-01') },
-  { id: 'prod-3', sku: 'PNT-WS-20L', name: 'Wall Paint White Satin 20L', description: 'Premium washable satin-finish emulsion paint, 20-litre pail, interior and exterior use.', category: 'Paints & Finishes', subCategory: 'Emulsion', brand: 'Dulux', unitOfMeasure: 'LITER', costPrice: 18000, sellingPrice: 24000, stockQuantity: 925, weight: 22, dimensions: { length: 30, width: 30, height: 35 }, images: [], tags: ['paint', 'interior'], status: ProductStatus.ACTIVE, supplierIds: [], createdAt: new Date('2023-02-01'), updatedAt: new Date('2026-07-15') },
-  { id: 'prod-4', sku: 'PVC-4IN-6M', name: 'PVC Pipes 4-inch (Length 6m)', description: 'Schedule-40 uPVC drainage pipe, 4-inch diameter, 6-metre length, solvent-weld ends.', category: 'Plumbing & Pipes', subCategory: 'Pipes', brand: 'Niger Delta Plastics', unitOfMeasure: 'EACH', costPrice: 5000, sellingPrice: 7000, stockQuantity: 4540, weight: 8, dimensions: { length: 600, width: 10, height: 10 }, images: [], tags: ['plumbing', 'pvc'], status: ProductStatus.ACTIVE, supplierIds: ['2'], createdAt: new Date('2023-02-10'), updatedAt: new Date('2026-07-20') },
-  { id: 'prod-5', sku: 'TIL-FLR-6060', name: 'Floor Tiles 60x60cm (Box)', description: 'Polished porcelain floor tiles, 60x60cm, 4 pieces per box (1.44sqm coverage).', category: 'Tiles & Flooring', subCategory: 'Floor Tiles', brand: 'Porcelain Palace', unitOfMeasure: 'BOX', costPrice: 5000, sellingPrice: 7500, stockQuantity: 3370, weight: 32, dimensions: { length: 62, width: 62, height: 8 }, images: [], tags: ['tiles', 'flooring'], status: ProductStatus.ACTIVE, supplierIds: ['5'], createdAt: new Date('2023-02-20'), updatedAt: new Date('2026-06-30') },
-  { id: 'prod-6', sku: 'ELC-CBL-15-100', name: 'Electrical Cable 1.5mm (100m Roll)', description: 'Single-core PVC-insulated copper wiring cable, 1.5mm², 100-metre roll.', category: 'Electrical', subCategory: 'Cables', brand: 'Coleman', unitOfMeasure: 'EACH', costPrice: 11000, sellingPrice: 15000, stockQuantity: 665, weight: 12, dimensions: { length: 40, width: 40, height: 15 }, images: [], tags: ['electrical', 'cable'], status: ProductStatus.ACTIVE, supplierIds: ['3'], createdAt: new Date('2023-03-01'), updatedAt: new Date('2026-05-20') },
-  { id: 'prod-7', sku: 'ROF-LS-MTR', name: 'Roofing Sheet Long Span (Per Meter)', description: 'Pre-painted aluminium long-span roofing sheet, 0.45mm gauge, sold per linear metre.', category: 'Roofing', subCategory: 'Roofing Sheets', brand: 'Colorbond', unitOfMeasure: 'METER', costPrice: 6000, sellingPrice: 8500, stockQuantity: 8020, weight: 3.5, dimensions: { length: 100, width: 90, height: 1 }, images: [], tags: ['roofing', 'aluminium'], status: ProductStatus.ACTIVE, supplierIds: [], createdAt: new Date('2023-03-10'), updatedAt: new Date('2026-08-01') },
-  { id: 'prod-8', sku: 'PLY-18MM-4X8', name: 'Plywood Sheet 18mm (4x8ft)', description: 'Marine-grade plywood sheet, 18mm thickness, 4ft x 8ft panel.', category: 'Wood & Timber', subCategory: 'Plywood', brand: 'Tropical Timber', unitOfMeasure: 'EACH', costPrice: 22000, sellingPrice: 30000, stockQuantity: 570, weight: 28, dimensions: { length: 244, width: 122, height: 1.8 }, images: [], tags: ['wood', 'plywood'], status: ProductStatus.ACTIVE, supplierIds: ['4'], createdAt: new Date('2023-03-20'), updatedAt: new Date('2026-07-01') },
-  { id: 'prod-9', sku: 'SAN-WC-SUITE', name: 'Sanitary Ware — WC Suite Set', description: 'Close-coupled ceramic WC suite with cistern, seat and fittings included.', category: 'Sanitary Ware', subCategory: 'WC Suites', brand: 'Roca', unitOfMeasure: 'EACH', costPrice: 200000, sellingPrice: 260000, stockQuantity: 28, weight: 35, dimensions: { length: 70, width: 40, height: 75 }, images: [], tags: ['sanitary', 'bathroom'], status: ProductStatus.ACTIVE, supplierIds: ['6'], createdAt: new Date('2023-04-01'), updatedAt: new Date('2026-06-15') },
-  { id: 'prod-10', sku: 'SAN-WB-SET', name: 'Ceramic Wash Basin Set', description: 'Pedestal-mounted ceramic wash basin with tap and waste fittings — currently out of stock.', category: 'Sanitary Ware', subCategory: 'Wash Basins', brand: 'Roca', unitOfMeasure: 'EACH', costPrice: 45000, sellingPrice: 60000, stockQuantity: 0, weight: 18, dimensions: { length: 55, width: 45, height: 85 }, images: [], tags: ['sanitary', 'basin'], status: ProductStatus.OUT_OF_STOCK, supplierIds: ['6'], createdAt: new Date('2023-05-05'), updatedAt: new Date('2026-08-10') },
-  { id: 'prod-11', sku: 'HDW-SCR-200', name: 'Wood Screws Assorted Box (200pc)', description: 'Mixed-size zinc-plated wood screws, 200 pieces per box, for general carpentry.', category: 'Hardware & Fasteners', subCategory: 'Screws & Fasteners', brand: 'Ace Hardware', unitOfMeasure: 'BOX', costPrice: 3500, sellingPrice: 5000, stockQuantity: 340, weight: 2.5, dimensions: { length: 20, width: 15, height: 8 }, images: [], tags: ['hardware', 'fasteners'], status: ProductStatus.ACTIVE, supplierIds: ['8'], createdAt: new Date('2023-05-15'), updatedAt: new Date('2026-07-05') },
-  { id: 'prod-12', sku: 'ELC-FAN-56W', name: 'Ceiling Fan 56-inch White', description: 'Three-blade ceiling fan with light kit, 56-inch sweep, remote control included.', category: 'Electrical', subCategory: 'Fans & Lighting', brand: 'Binatone', unitOfMeasure: 'EACH', costPrice: 18000, sellingPrice: 25000, stockQuantity: 210, weight: 6, dimensions: { length: 142, width: 142, height: 40 }, images: [], tags: ['electrical', 'fan'], status: ProductStatus.ACTIVE, supplierIds: ['3'], createdAt: new Date('2023-06-01'), updatedAt: new Date('2026-06-20') },
-  { id: 'prod-13', sku: 'ELC-WH-30L-OLD', name: 'Water Heater 30L (Old Model)', description: 'Discontinued 30-litre electric storage water heater, replaced by newer energy-efficient model.', category: 'Electrical', subCategory: 'Water Heaters', brand: 'Binatone', unitOfMeasure: 'EACH', costPrice: 35000, sellingPrice: 48000, stockQuantity: 15, weight: 14, dimensions: { length: 45, width: 45, height: 60 }, images: [], tags: ['electrical', 'discontinued'], status: ProductStatus.DISCONTINUED, supplierIds: ['3'], createdAt: new Date('2022-11-10'), updatedAt: new Date('2026-01-05') }
+  { id: 1, sku: 'CEM-DG-425', name: 'Cement Dangote Grade 42.5R', description: 'High-strength Portland-limestone cement, 50kg bag, ideal for all structural applications.', category: 'Building Materials', subCategory: 'Cement', brand: 'Dangote', unitOfMeasure: 'EACH', costPrice: 6000, sellingPrice: 7000, stockQuantity: 4800, weight: 50, dimensions: { length: 60, width: 40, height: 10 }, images: [], tags: ['cement', 'bestseller'], status: ProductStatus.ACTIVE, supplierIds: ['1'], createdAt: new Date('2023-01-15'), updatedAt: new Date('2026-08-01') },
+  { id: 2, sku: 'IRN-16MM-TON', name: 'Iron Rod 16mm (Per Ton)', description: 'High-tensile deformed steel reinforcement bar, 16mm diameter, sold per metric ton.', category: 'Metal & Steel', subCategory: 'Rebar', brand: 'Delta Steel', unitOfMeasure: 'KG', costPrice: 300000, sellingPrice: 350000, stockQuantity: 127, weight: 1000, dimensions: { length: 1200, width: 1.6, height: 1.6 }, images: [], tags: ['steel', 'rebar'], status: ProductStatus.ACTIVE, supplierIds: ['7'], createdAt: new Date('2023-01-20'), updatedAt: new Date('2026-08-01') },
+  { id: 3, sku: 'PNT-WS-20L', name: 'Wall Paint White Satin 20L', description: 'Premium washable satin-finish emulsion paint, 20-litre pail, interior and exterior use.', category: 'Paints & Finishes', subCategory: 'Emulsion', brand: 'Dulux', unitOfMeasure: 'LITER', costPrice: 18000, sellingPrice: 24000, stockQuantity: 925, weight: 22, dimensions: { length: 30, width: 30, height: 35 }, images: [], tags: ['paint', 'interior'], status: ProductStatus.ACTIVE, supplierIds: [], createdAt: new Date('2023-02-01'), updatedAt: new Date('2026-07-15') },
+  { id: 4, sku: 'PVC-4IN-6M', name: 'PVC Pipes 4-inch (Length 6m)', description: 'Schedule-40 uPVC drainage pipe, 4-inch diameter, 6-metre length, solvent-weld ends.', category: 'Plumbing & Pipes', subCategory: 'Pipes', brand: 'Niger Delta Plastics', unitOfMeasure: 'EACH', costPrice: 5000, sellingPrice: 7000, stockQuantity: 4540, weight: 8, dimensions: { length: 600, width: 10, height: 10 }, images: [], tags: ['plumbing', 'pvc'], status: ProductStatus.ACTIVE, supplierIds: ['2'], createdAt: new Date('2023-02-10'), updatedAt: new Date('2026-07-20') },
+  { id: 5, sku: 'TIL-FLR-6060', name: 'Floor Tiles 60x60cm (Box)', description: 'Polished porcelain floor tiles, 60x60cm, 4 pieces per box (1.44sqm coverage).', category: 'Tiles & Flooring', subCategory: 'Floor Tiles', brand: 'Porcelain Palace', unitOfMeasure: 'BOX', costPrice: 5000, sellingPrice: 7500, stockQuantity: 3370, weight: 32, dimensions: { length: 62, width: 62, height: 8 }, images: [], tags: ['tiles', 'flooring'], status: ProductStatus.ACTIVE, supplierIds: ['5'], createdAt: new Date('2023-02-20'), updatedAt: new Date('2026-06-30') },
+  { id: 6, sku: 'ELC-CBL-15-100', name: 'Electrical Cable 1.5mm (100m Roll)', description: 'Single-core PVC-insulated copper wiring cable, 1.5mm², 100-metre roll.', category: 'Electrical', subCategory: 'Cables', brand: 'Coleman', unitOfMeasure: 'EACH', costPrice: 11000, sellingPrice: 15000, stockQuantity: 665, weight: 12, dimensions: { length: 40, width: 40, height: 15 }, images: [], tags: ['electrical', 'cable'], status: ProductStatus.ACTIVE, supplierIds: ['3'], createdAt: new Date('2023-03-01'), updatedAt: new Date('2026-05-20') },
+  { id: 7, sku: 'ROF-LS-MTR', name: 'Roofing Sheet Long Span (Per Meter)', description: 'Pre-painted aluminium long-span roofing sheet, 0.45mm gauge, sold per linear metre.', category: 'Roofing', subCategory: 'Roofing Sheets', brand: 'Colorbond', unitOfMeasure: 'METER', costPrice: 6000, sellingPrice: 8500, stockQuantity: 8020, weight: 3.5, dimensions: { length: 100, width: 90, height: 1 }, images: [], tags: ['roofing', 'aluminium'], status: ProductStatus.ACTIVE, supplierIds: [], createdAt: new Date('2023-03-10'), updatedAt: new Date('2026-08-01') },
+  { id: 8, sku: 'PLY-18MM-4X8', name: 'Plywood Sheet 18mm (4x8ft)', description: 'Marine-grade plywood sheet, 18mm thickness, 4ft x 8ft panel.', category: 'Wood & Timber', subCategory: 'Plywood', brand: 'Tropical Timber', unitOfMeasure: 'EACH', costPrice: 22000, sellingPrice: 30000, stockQuantity: 570, weight: 28, dimensions: { length: 244, width: 122, height: 1.8 }, images: [], tags: ['wood', 'plywood'], status: ProductStatus.ACTIVE, supplierIds: ['4'], createdAt: new Date('2023-03-20'), updatedAt: new Date('2026-07-01') },
+  { id: 9, sku: 'SAN-WC-SUITE', name: 'Sanitary Ware — WC Suite Set', description: 'Close-coupled ceramic WC suite with cistern, seat and fittings included.', category: 'Sanitary Ware', subCategory: 'WC Suites', brand: 'Roca', unitOfMeasure: 'EACH', costPrice: 200000, sellingPrice: 260000, stockQuantity: 28, weight: 35, dimensions: { length: 70, width: 40, height: 75 }, images: [], tags: ['sanitary', 'bathroom'], status: ProductStatus.ACTIVE, supplierIds: ['6'], createdAt: new Date('2023-04-01'), updatedAt: new Date('2026-06-15') },
+  { id: 10, sku: 'SAN-WB-SET', name: 'Ceramic Wash Basin Set', description: 'Pedestal-mounted ceramic wash basin with tap and waste fittings — currently out of stock.', category: 'Sanitary Ware', subCategory: 'Wash Basins', brand: 'Roca', unitOfMeasure: 'EACH', costPrice: 45000, sellingPrice: 60000, stockQuantity: 0, weight: 18, dimensions: { length: 55, width: 45, height: 85 }, images: [], tags: ['sanitary', 'basin'], status: ProductStatus.OUT_OF_STOCK, supplierIds: ['6'], createdAt: new Date('2023-05-05'), updatedAt: new Date('2026-08-10') },
+  { id: 11, sku: 'HDW-SCR-200', name: 'Wood Screws Assorted Box (200pc)', description: 'Mixed-size zinc-plated wood screws, 200 pieces per box, for general carpentry.', category: 'Hardware & Fasteners', subCategory: 'Screws & Fasteners', brand: 'Ace Hardware', unitOfMeasure: 'BOX', costPrice: 3500, sellingPrice: 5000, stockQuantity: 340, weight: 2.5, dimensions: { length: 20, width: 15, height: 8 }, images: [], tags: ['hardware', 'fasteners'], status: ProductStatus.ACTIVE, supplierIds: ['8'], createdAt: new Date('2023-05-15'), updatedAt: new Date('2026-07-05') },
+  { id: 12, sku: 'ELC-FAN-56W', name: 'Ceiling Fan 56-inch White', description: 'Three-blade ceiling fan with light kit, 56-inch sweep, remote control included.', category: 'Electrical', subCategory: 'Fans & Lighting', brand: 'Binatone', unitOfMeasure: 'EACH', costPrice: 18000, sellingPrice: 25000, stockQuantity: 210, weight: 6, dimensions: { length: 142, width: 142, height: 40 }, images: [], tags: ['electrical', 'fan'], status: ProductStatus.ACTIVE, supplierIds: ['3'], createdAt: new Date('2023-06-01'), updatedAt: new Date('2026-06-20') },
+  { id: 13, sku: 'ELC-WH-30L-OLD', name: 'Water Heater 30L (Old Model)', description: 'Discontinued 30-litre electric storage water heater, replaced by newer energy-efficient model.', category: 'Electrical', subCategory: 'Water Heaters', brand: 'Binatone', unitOfMeasure: 'EACH', costPrice: 35000, sellingPrice: 48000, stockQuantity: 15, weight: 14, dimensions: { length: 45, width: 45, height: 60 }, images: [], tags: ['electrical', 'discontinued'], status: ProductStatus.DISCONTINUED, supplierIds: ['3'], createdAt: new Date('2022-11-10'), updatedAt: new Date('2026-01-05') }
 ];
 
 const MOCK_DASHBOARD_DATA: InventoryDashboardData = {
@@ -1012,8 +1014,8 @@ export class InventoryService {
     // Generate mock data
     const mockRequests: RestockRequest[] = [
       {
-        id: 'rr-1',
-        productId: 'prod-1',
+        id: 1,
+        productId: '1',
         productName: 'Cement Dangote Grade 42.5R',
         sku: 'CEM-DG-425',
         branchId: '2',
@@ -1037,8 +1039,8 @@ export class InventoryService {
         purchaseOrderId: ''
       },
       {
-        id: 'rr-2',
-        productId: 'prod-2',
+        id: 2,
+        productId: '2',
         productName: 'Iron Rod 16mm (Per Ton)',
         sku: 'IRN-16MM-TON',
         branchId: '5',
@@ -1062,8 +1064,8 @@ export class InventoryService {
         purchaseOrderId: ''
       },
       {
-        id: 'rr-3',
-        productId: 'prod-3',
+        id: 3,
+        productId: '3',
         productName: 'Wall Paint White Satin 20L',
         sku: 'PNT-WS-20L',
         branchId: '2',
@@ -1087,8 +1089,8 @@ export class InventoryService {
         purchaseOrderId: ''
       },
       {
-        id: 'rr-4',
-        productId: 'prod-4',
+        id: 4,
+        productId: '4',
         productName: 'PVC Pipes 4-inch (Length 6m)',
         sku: 'PVC-4IN-6M',
         branchId: '6',
@@ -1112,8 +1114,8 @@ export class InventoryService {
         purchaseOrderId: 'PO-9001'
       },
       {
-        id: 'rr-5',
-        productId: 'prod-7',
+        id: 5,
+        productId: '7',
         productName: 'Roofing Sheet Long Span (Per Meter)',
         sku: 'ROF-LS-MTR',
         branchId: '4',
@@ -1137,8 +1139,8 @@ export class InventoryService {
         purchaseOrderId: 'PO-9002'
       },
       {
-        id: 'rr-6',
-        productId: 'prod-1',
+        id: 6,
+        productId: '1',
         productName: 'Cement Dangote Grade 42.5R',
         sku: 'CEM-DG-425',
         branchId: '3',
@@ -1162,8 +1164,8 @@ export class InventoryService {
         purchaseOrderId: ''
       },
       {
-        id: 'rr-7',
-        productId: 'prod-5',
+        id: 7,
+        productId: '5',
         productName: 'Floor Tiles 60x60cm (Box)',
         sku: 'TIL-FLR-6060',
         branchId: '2',
@@ -1187,8 +1189,8 @@ export class InventoryService {
         purchaseOrderId: ''
       },
       {
-        id: 'rr-8',
-        productId: 'prod-9',
+        id: 8,
+        productId: '9',
         productName: 'Sanitary Ware — WC Suite Set',
         sku: 'SAN-WC-SUITE',
         branchId: '3',
@@ -1212,8 +1214,8 @@ export class InventoryService {
         purchaseOrderId: 'PO-9003'
       },
       {
-        id: 'rr-9',
-        productId: 'prod-6',
+        id: 9,
+        productId: '6',
         productName: 'Electrical Cable 1.5mm (100m Roll)',
         sku: 'ELC-CBL-15-100',
         branchId: '5',
@@ -1237,8 +1239,8 @@ export class InventoryService {
         purchaseOrderId: ''
       },
       {
-        id: 'rr-10',
-        productId: 'prod-8',
+        id: 10,
+        productId: '8',
         productName: 'Plywood Sheet 18mm (4x8ft)',
         sku: 'PLY-18MM-4X8',
         branchId: '1',
@@ -1375,18 +1377,41 @@ export class InventoryService {
   // ----------------------------------------------------
   /** Get full dashboard data */
   /**
-   * The API's recentMovements entries carry flat `fromLocation`/`toLocation` strings and
-   * `createdById`/`approvedById`, but the rest of this app (movement forms/detail/approval)
-   * works off StockMovement.fromLocation/toLocation {type,id,name} and createdBy/approvedBy.
-   * This is a read-only reconstruction for dashboard display only — the movements create/edit
-   * endpoints haven't been connected yet, so there's no matching write-side flattener, and the
-   * `type` on each location is a guess (WAREHOUSE) since a bare string doesn't carry it.
+   * Resolves a from/toLocation id (that's what's actually sent on the wire now — see
+   * stockMovementToApiPayload()) back into a {type,id,name} object, using whatever
+   * branches/suppliers we already have cached locally (populated by getBranches()/
+   * getSuppliers(), which most screens that show movements call anyway). If the id doesn't
+   * match either — a WAREHOUSE or CUSTOMER location, which this app has never had a real
+   * lookup table for — it falls back to showing the raw id as the name too. Either way `id`
+   * itself is always exactly what the backend sent, never guessed, which is what
+   * applyTransferStockAdjustment() actually depends on for correct stock math.
+   */
+  private resolveMovementLocation(rawId: string, fallbackType: 'WAREHOUSE' | 'BRANCH' | 'SUPPLIER' | 'CUSTOMER'): { type: any; id: string; name: string } {
+    const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
+    const branchMatch = branches.find(b => String(b.id) === rawId);
+    if (branchMatch) return { type: 'BRANCH', id: rawId, name: branchMatch.name };
+
+    const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[];
+    const supplierMatch = suppliers.find(s => String(s.id) === rawId);
+    if (supplierMatch) return { type: 'SUPPLIER', id: rawId, name: supplierMatch.name };
+
+    return { type: fallbackType, id: rawId, name: rawId };
+  }
+
+  /**
+   * The /inventory/movements API carries flat `fromLocation`/`toLocation` strings and
+   * `createdById`/`approvedById`, but the rest of this app (movement forms/detail/approval,
+   * the transfer wizard, applyTransferStockAdjustment()) works off StockMovement.fromLocation/
+   * toLocation {type,id,name} and createdBy/approvedBy. Translate at the boundary rather than
+   * gut that model — same approach as Branch's location/contact, but here the wire value is the
+   * real id (see stockMovementToApiPayload()), so resolveMovementLocation() can recover a real
+   * name for branches/suppliers instead of just echoing the raw value back as both id and name.
    */
   private stockMovementFromApi(raw: any): StockMovement {
     return {
       ...raw,
-      fromLocation: { type: 'WAREHOUSE', id: raw.fromLocation, name: raw.fromLocation },
-      toLocation: { type: 'WAREHOUSE', id: raw.toLocation, name: raw.toLocation },
+      fromLocation: this.resolveMovementLocation(raw.fromLocation, 'WAREHOUSE'),
+      toLocation: this.resolveMovementLocation(raw.toLocation, 'CUSTOMER'),
       createdBy: raw.createdById,
       approvedBy: raw.approvedById,
       expiryDate: new Date(raw.expiryDate),
@@ -1395,6 +1420,40 @@ export class InventoryService {
       completedAt: raw.completedAt ? new Date(raw.completedAt) : raw.completedAt,
       updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : raw.updatedAt,
       scheduledDate: raw.scheduledDate ? new Date(raw.scheduledDate) : raw.scheduledDate
+    };
+  }
+
+  /**
+   * Flattens a StockMovement for POST/PUT/PATCH. Sends `.id` (not `.name`) for from/toLocation —
+   * the wire format is a single free-text string, so it can only ever carry one of the two.
+   * Sending the id keeps this app's own stock math (applyTransferStockAdjustment()) and the
+   * backend's correct, since a bare display name gives neither side anything to actually look
+   * the location up by. The cost: anything that reads this field directly (a backend report, an
+   * admin screen not going through resolveMovementLocation() above) sees an id/code, not a
+   * friendly name, unless it does its own lookup. That's a real limitation of the contract only
+   * fixable by the backend adding separate id/type fields — flag it to that team if a clean name
+   * needs to show up somewhere this app doesn't control.
+   */
+  private stockMovementToApiPayload(m: Partial<StockMovement>) {
+    return {
+      productId: m.productId,
+      productName: m.productName,
+      sku: m.sku,
+      fromLocation: m.fromLocation?.id || '',
+      toLocation: m.toLocation?.id || '',
+      quantity: m.quantity,
+      movementType: m.movementType,
+      status: m.status,
+      cost: m.cost,
+      sellingPrice: m.sellingPrice,
+      batchNumber: m.batchNumber,
+      expiryDate: m.expiryDate,
+      notes: m.notes,
+      createdById: m.createdBy,
+      createdByName: m.createdByName,
+      approvedById: m.approvedBy,
+      approvedByName: m.approvedByName,
+      scheduledDate: m.scheduledDate
     };
   }
 
@@ -1437,10 +1496,16 @@ export class InventoryService {
     );
   }
 
-  /** Get only stats */
+  /** GET /inventory/dashboard/stats — falls back to the local dashboard snapshot's stats. */
   getDashboardStats(): Observable<InventoryDashboardStats> {
-    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-    return of(dash.stats);
+    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
+
+    return this.http.get<InventoryDashboardStats>(`${this.baseUrl}/inventory/dashboard/stats`, {
+      params: new HttpParams().set('tenantId', this.tenantId)
+    }).pipe(
+      map(stats => ({ ...stats, lastUpdated: new Date(stats.lastUpdated) })),
+      catchError(() => of(dash?.stats ?? MOCK_STATS))
+    );
   }
 
   /** Get alerts */
@@ -1455,10 +1520,47 @@ export class InventoryService {
     return of(dash.recentMovements.slice(0, limit));
   }
 
-  /** Top products (limit optional) */
+  /** Normalises a raw /inventory/dashboard/product-performance record onto ProductPerformance. */
+  private mapProductPerformance(raw: any): ProductPerformance {
+    return {
+      ...raw,
+      period: {
+        start: new Date(raw.startDate ?? raw.period?.start),
+        end: new Date(raw.endDate ?? raw.period?.end)
+      }
+    } as ProductPerformance;
+  }
+
+  /**
+   * GET /inventory/dashboard/product-performance — falls back to the local dashboard
+   * snapshot's topProducts if the API is unavailable.
+   */
   getTopProducts(limit: number = 5): Observable<ProductPerformance[]> {
-    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-    return of(dash.topProducts.slice(0, limit));
+    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
+
+    return this.http.get<any[]>(`${this.baseUrl}/inventory/dashboard/product-performance`, {
+      params: new HttpParams().set('tenantId', this.tenantId)
+    }).pipe(
+      map(res => (Array.isArray(res) ? res : []).map(raw => this.mapProductPerformance(raw)).slice(0, limit)),
+      catchError(() => of((dash?.topProducts ?? MOCK_TOP_PRODUCTS).slice(0, limit)))
+    );
+  }
+
+  /** GET /inventory/dashboard/top-selling — falls back to a slimmed-down view of getTopProducts(). */
+  getTopSellingProducts(limit: number = 5): Observable<TopSellingProduct[]> {
+    return this.http.get<TopSellingProduct[]>(`${this.baseUrl}/inventory/dashboard/top-selling`, {
+      params: new HttpParams().set('tenantId', this.tenantId)
+    }).pipe(
+      map(res => (Array.isArray(res) ? res : []).slice(0, limit)),
+      catchError(() => this.getTopProducts(limit).pipe(
+        map(products => products.map(p => ({
+          productId: p.productId,
+          productName: p.productName,
+          quantitySold: p.totalSold,
+          revenue: p.totalRevenue
+        })))
+      ))
+    );
   }
 
   /**
@@ -1506,26 +1608,250 @@ export class InventoryService {
     };
   }
 
-  /** Resolve an alert – marks it resolved in storage */
+  // ----------------------------------------------------
+  // STOCK ALERTS CRUD
+  // ----------------------------------------------------
+
+  /** GET /inventory/alerts — falls back to the dashboard snapshot's alerts if the API is unavailable. */
+  getAlerts(): Observable<StockAlert[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/inventory/alerts`, {
+      params: new HttpParams().set('tenantId', this.tenantId)
+    }).pipe(
+      map(res => (Array.isArray(res) ? res : []).map(a => ({
+        ...a,
+        createdAt: new Date(a.createdAt),
+        resolvedAt: a.resolvedAt ? new Date(a.resolvedAt) : a.resolvedAt
+      }))),
+      catchError(() => {
+        const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
+        return of(dash?.alerts || []);
+      })
+    );
+  }
+
+  /** GET /inventory/alerts/{id} */
+  getAlertById(id: number): Observable<StockAlert> {
+    return this.http.get<any>(`${this.baseUrl}/inventory/alerts/${id}`).pipe(
+      map(a => ({ ...a, createdAt: new Date(a.createdAt), resolvedAt: a.resolvedAt ? new Date(a.resolvedAt) : a.resolvedAt }))
+    );
+  }
+
+  /** POST /inventory/alerts — e.g. to manually raise an alert rather than wait for the system to detect it. */
+  createAlert(alert: Partial<StockAlert>): Observable<StockAlert> {
+    const payload = {
+      type: alert.type,
+      severity: alert.severity,
+      productId: alert.productId,
+      productName: alert.productName,
+      sku: alert.sku,
+      branchId: alert.branchId,
+      branchName: alert.branchName,
+      currentStock: alert.currentStock,
+      threshold: alert.threshold,
+      message: alert.message,
+      isResolved: alert.isResolved ?? false
+    };
+    return this.http.post<any>(`${this.baseUrl}/inventory/alerts`, payload).pipe(
+      map(a => ({ ...a, createdAt: new Date(a.createdAt), resolvedAt: a.resolvedAt ? new Date(a.resolvedAt) : a.resolvedAt }))
+    );
+  }
+
+  /** DELETE /inventory/alerts/{id} */
+  deleteAlert(id: string | number): Observable<void> {
+    const numericId = Number(id);
+    return this.http.delete<void>(`${this.baseUrl}/inventory/alerts/${numericId}`).pipe(
+      tap(() => {
+        const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
+        if (dash) {
+          dash.alerts = dash.alerts.filter(a => a.id !== numericId);
+          localStorage.setItem(LOCAL_KEYS.DASHBOARD, JSON.stringify(dash));
+        }
+      }),
+      catchError(err => {
+        console.error('[InventoryService] deleteAlert failed:', err);
+        return of(void 0);
+      })
+    );
+  }
+
+  /**
+   * PATCH /inventory/alerts/{id}/resolve — marks an alert resolved. Falls back to updating the
+   * local dashboard snapshot if the API is unavailable.
+   */
   resolveAlert(alertId: string | number): Observable<void> {
-    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-    const alert = dash.alerts.find(a => a.id === Number(alertId));
-    if (alert) {
-      alert.isResolved = true;
-      localStorage.setItem(LOCAL_KEYS.DASHBOARD, JSON.stringify(dash));
-    }
-    return of(undefined);
+    const numericId = Number(alertId);
+    return this.http.patch<any>(`${this.baseUrl}/inventory/alerts/${numericId}/resolve`, {}).pipe(
+      map(() => undefined),
+      tap(() => {
+        const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
+        const alert = dash?.alerts.find(a => a.id === numericId);
+        if (alert && dash) {
+          alert.isResolved = true;
+          alert.resolvedAt = new Date();
+          localStorage.setItem(LOCAL_KEYS.DASHBOARD, JSON.stringify(dash));
+        }
+      }),
+      catchError(err => {
+        console.error('[InventoryService] resolveAlert failed, using local fallback:', err);
+        const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
+        const alert = dash?.alerts.find(a => a.id === numericId);
+        if (alert && dash) {
+          alert.isResolved = true;
+          alert.resolvedAt = new Date();
+          localStorage.setItem(LOCAL_KEYS.DASHBOARD, JSON.stringify(dash));
+        }
+        return of(undefined);
+      })
+    );
   }
 
   // ----------------------------------------------------
   // PRODUCTS
   // ----------------------------------------------------
-  /** Get all products (filters ignored for local mode) */
+
+  /**
+   * Reconstructs a Product's category/unitOfMeasure/supplierIds display fields from the wire's
+   * categoryId/measurementUnitId/supplierId FKs, resolved against whatever Categories/
+   * MeasurementUnits/Suppliers are already cached locally (all three are already connected).
+   * subCategory/brand/weight/dimensions/tags/variants/images have no field in the /products API
+   * at all — see the Product interface's own comments — so they're carried over from `existing`
+   * (the same local record, if we already had one) rather than being blanked on every read.
+   */
+  private productFromApi(raw: any, existing?: Product): Product {
+    // Compare FKs with String() coercion, not strict `===` — the API's categoryId/
+    // measurementUnitId/supplierId can come back as a numeric string (e.g. "2") while the
+    // cached Category/MeasurementUnit/Supplier records use a numeric `id`. A strict `===`
+    // would silently fail to match, leaving `category` as '' and breaking the category
+    // filter for every product (see resolveProductCategoryName below, which already does
+    // this correctly for the same reason).
+    const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string || '[]') as Category[];
+    const category = categories.find(c => String(c.id) === String(raw.categoryId) || c.categoryId === raw.categoryId);
+
+    const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string || '[]') as MeasurementUnit[];
+    const unit = units.find(u => String(u.id) === String(raw.measurementUnitId));
+    const unitCode = unit?.code === 'PCS' ? 'EACH' : unit?.code;
+
+    const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[];
+    const supplier = suppliers.find(s => String(s.id) === String(raw.supplierId));
+
+    return {
+      id: raw.id,
+      tenantId: raw.tenantId,
+      productId: existing?.productId,
+      sku: raw.sku,
+      name: raw.name,
+      description: raw.description,
+      categoryId: raw.categoryId,
+      category: category?.name || existing?.category || '',
+      measurementUnitId: raw.measurementUnitId,
+      unitOfMeasure: (unitCode as Product['unitOfMeasure']) || existing?.unitOfMeasure || 'EACH',
+      costPrice: raw.costPrice,
+      sellingPrice: raw.unitPrice,
+      unitPrice: raw.unitPrice,
+      price: raw.unitPrice,
+      currency: raw.currency,
+      taxRate: raw.taxRate,
+      stockQuantity: raw.stockQuantity,
+      status: raw.status,
+      supplierId: raw.supplierId,
+      supplierIds: supplier ? [String(supplier.id)] : (existing?.supplierIds || []),
+      isComboProduct: raw.isComboProduct,
+      createdAt: new Date(raw.createdAt),
+      updatedAt: new Date(raw.updatedAt),
+      // No wire field for any of these — carried over from the local record so a product's
+      // local-only detail survives a refresh instead of being wiped by every API read.
+      subCategory: existing?.subCategory || '',
+      brand: existing?.brand || '',
+      weight: existing?.weight ?? 0,
+      dimensions: existing?.dimensions || { length: 0, width: 0, height: 0 },
+      images: existing?.images || [],
+      tags: existing?.tags || [],
+      variants: existing?.variants
+    };
+  }
+
+  /**
+   * Flattens a Product for POST/PUT. subCategory/brand/weight/dimensions/tags/variants/images
+   * have nowhere to go on the wire, so they're simply not sent — they stay exactly as they are
+   * in the local copy regardless of what the API returns. categoryId/measurementUnitId/
+   * supplierId are resolved from the display fields if not already set directly.
+   */
+  private productToApiPayload(p: Partial<Product>): any {
+    const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string || '[]') as Category[];
+    let categoryId = p.categoryId;
+    if (categoryId == null && p.category) {
+      const catName = typeof p.category === 'object' ? (p.category as Category).name : p.category;
+      categoryId = categories.find(c => c.name === catName || c.categoryId === catName)?.id;
+    }
+
+    const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string || '[]') as MeasurementUnit[];
+    let measurementUnitId = p.measurementUnitId;
+    if (measurementUnitId == null && p.unitOfMeasure) {
+      const wantedCode = p.unitOfMeasure === 'EACH' ? 'PCS' : p.unitOfMeasure;
+      measurementUnitId = units.find(u => u.code === wantedCode || u.unitId === p.unitOfMeasure)?.id;
+    }
+
+    // The API only supports one supplier — supplierIds (plural) is kept for the existing
+    // multi-supplier UI, but only the first one round-trips through the real backend.
+    let supplierId = p.supplierId;
+    if (supplierId == null && p.supplierIds?.length) {
+      supplierId = Number(p.supplierIds[0]);
+    }
+
+    return {
+      tenantId: this.tenantId,
+      name: p.name,
+      sku: p.sku,
+      description: p.description,
+      unitPrice: p.unitPrice ?? p.sellingPrice ?? p.price ?? 0,
+      costPrice: p.costPrice,
+      currency: p.currency || 'NGN',
+      stockQuantity: p.stockQuantity,
+      categoryId,
+      measurementUnitId,
+      supplierId,
+      taxRate: p.taxRate ?? 0,
+      status: p.status,
+      isComboProduct: p.isComboProduct ?? false
+    };
+  }
+
+  /**
+   * GET /products — falls back to the local mock/localStorage copy if the API is unavailable.
+   *
+   * Also fetches categories/units/suppliers alongside the products (rather than relying on
+   * some other component having already called loadCategories()/loadUnits()/loadSuppliers()
+   * first) — productFromApi() resolves each product's display fields against whatever's
+   * currently in LOCAL_KEYS.CATEGORIES/MEASUREMENT_UNITS/SUPPLIERS, and callers that fetch
+   * products without having loaded those first hit a race: if that localStorage cache is
+   * still empty/stale when this runs, every product's `category` resolves to '', which
+   * silently breaks the category filter (an empty string never matches a real category name).
+   */
   getProducts(filters?: ProductFilters): Observable<PaginatedResponse<Product>> {
     this.loadingSubject.next(true);
-    let products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
+    const cached = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
+    const existingById = new Map(cached.map(p => [p.id, p]));
 
-    // Apply filters if provided
+    return forkJoin({
+      products: this.http.get<any[]>(`${this.baseUrl}/products`, {
+        params: new HttpParams().set('tenantId', this.tenantId)
+      }),
+      categories: this.getCategories(),
+      units: this.getMeasurementUnits(),
+      suppliers: this.getSuppliers()
+    }).pipe(
+      map(({ products }) => (Array.isArray(products) ? products : []).map(raw => this.productFromApi(raw, existingById.get(raw.id)))),
+      tap(products => localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products))),
+      catchError(() => of(cached)),
+      map(products => this.paginateProducts(products, filters)),
+      tap(() => this.loadingSubject.next(false))
+    );
+  }
+
+  /** Shared client-side filter/sort/paginate, used for both the live response and the fallback. */
+  private paginateProducts(allProducts: Product[], filters?: ProductFilters): PaginatedResponse<Product> {
+    let products = allProducts;
+
     if (filters) {
       // Status filter (ignore 'ALL')
       if (filters.status && filters.status !== 'ALL') {
@@ -1533,7 +1859,7 @@ export class InventoryService {
       }
       // Category filter (ignore 'ALL')
       if (filters.category && filters.category !== 'ALL') {
-        const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string) as Category[];
+        const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string || '[]') as Category[];
         products = products.filter(p =>
           this.resolveProductCategoryName(p, categories) === filters.category
         );
@@ -1561,8 +1887,8 @@ export class InventoryService {
       // Restricts to a specific set of product ids — used to scope Product Management
       // down to just what's stocked at a Branch Manager's own branch.
       if (filters.productIds) {
-        const idSet = new Set(filters.productIds);
-        products = products.filter(p => idSet.has(p.id));
+        const idSet = new Set(filters.productIds.map(String));
+        products = products.filter(p => idSet.has(String(p.id)));
       }
     }
 
@@ -1573,127 +1899,277 @@ export class InventoryService {
     const page = filters?.page ?? 0;
     const limit = filters?.limit ?? filters?.size ?? 10; // size used by component
     const start = page * limit;
-    const end = start + limit;
-    const pagedData = products.slice(start, end);
+    const pagedData = products.slice(start, start + limit);
 
-    const response: PaginatedResponse<Product> = {
+    this.productsSubject.next(products);
+
+    return {
       data: pagedData,
       total: products.length,
       page: page + 1,
-      limit: limit,
-      totalPages: Math.ceil(products.length / limit)
+      limit,
+      totalPages: Math.ceil(products.length / limit) || 1
     };
-    this.productsSubject.next(products);
-    this.loadingSubject.next(false);
-    return of(response);
   }
 
-  /** Single product by id */
-  getProduct(id: string): Observable<Product> {
+  /** GET /products/{id} — falls back to the local mock/localStorage copy if the API is unavailable. */
+  getProduct(id: string | number): Observable<Product> {
     this.loadingSubject.next(true);
-    const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
-    const product = products.find(p => p.id === id);
-    this.loadingSubject.next(false);
-    return product ? of(product) : throwError(() => new Error('Product not found'));
+    const numericId = Number(id);
+    const cached = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
+    const existing = cached.find(p => p.id === numericId);
+
+    return this.http.get<any>(`${this.baseUrl}/products/${numericId}`).pipe(
+      map(raw => this.productFromApi(raw, existing)),
+      tap(() => this.loadingSubject.next(false)),
+      catchError(() => {
+        this.loadingSubject.next(false);
+        return existing ? of(existing) : throwError(() => new Error('Product not found'));
+      })
+    );
   }
 
-  /** Get performance data for a specific product */
+  /**
+   * Get performance data for a specific product. The real API only exposes performance as a
+   * flat list (GET /inventory/dashboard/product-performance, no per-product endpoint), so this
+   * fetches that list and filters client-side. Falls back to the local dashboard snapshot, and
+   * finally to synthetic Math.random() numbers built from the product record if nothing else
+   * has data for this product.
+   */
   getProductPerformance(productId: string): Observable<ProductPerformance> {
     this.loadingSubject.next(true);
-    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-    const performance = dash.topProducts.find(p => p.productId === productId);
-    this.loadingSubject.next(false);
 
-    if (performance) {
-      return of(performance);
-    }
+    return this.getTopProducts(1000).pipe(
+      map(products => {
+        const performance = products.find(p => p.productId === productId);
+        if (!performance) {
+          throw new Error('Product performance not found in list');
+        }
+        return performance;
+      }),
+      tap(() => this.loadingSubject.next(false)),
+      catchError(() => {
+        this.loadingSubject.next(false);
 
-    // Fallback: build synthetic performance data from the product record itself
-    const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
-    const product = products.find(p => p.id === productId);
-    if (!product) {
-      return throwError(() => new Error('Product not found'));
-    }
+        const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
+        const cached = dash?.topProducts.find(p => p.productId === productId);
+        if (cached) {
+          return of(cached);
+        }
 
-    const totalSold = Math.floor(50 + Math.random() * 500);
-    const totalRevenue = totalSold * product.sellingPrice;
-    const totalProfit = totalSold * (product.sellingPrice - product.costPrice);
-    const fallback: ProductPerformance = {
-      productId: product.id,
-      productName: product.name,
-      sku: product.sku,
-      category: typeof product.category === 'string' ? product.category : product.category.name,
-      totalSold,
-      totalRevenue,
-      totalProfit,
-      averagePrice: product.sellingPrice,
-      sellThroughRate: Math.floor(40 + Math.random() * 50),
-      stockTurnover: +(1 + Math.random() * 7).toFixed(1),
-      daysOfInventory: Math.floor(10 + Math.random() * 40),
-      performanceScore: Math.floor(40 + Math.random() * 50),
-      trend: (['UP', 'DOWN', 'STABLE'] as const)[Math.floor(Math.random() * 3)],
-      period: { start: new Date(), end: new Date() }
-    };
-    return of(fallback);
+        // Fallback: synthetic performance data built from the product record itself.
+        // Generated once per product and cached — regenerating fresh Math.random()
+        // numbers on every call made the analytics cards' values jump around every
+        // time the user refreshed, even though nothing had actually changed.
+        const fallbackCache = JSON.parse(
+          localStorage.getItem(LOCAL_KEYS.PRODUCT_PERFORMANCE_FALLBACK) as string || '{}'
+        ) as Record<string, ProductPerformance>;
+
+        const cachedFallback = fallbackCache[productId];
+        if (cachedFallback) {
+          return of({
+            ...cachedFallback,
+            period: {
+              start: new Date(cachedFallback.period.start),
+              end: new Date(cachedFallback.period.end)
+            }
+          });
+        }
+
+        const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
+        const product = products.find(p => String(p.id) === productId);
+        if (!product) {
+          return throwError(() => new Error('Product not found'));
+        }
+
+        const price = product.unitPrice ?? product.sellingPrice;
+        const totalSold = Math.floor(50 + Math.random() * 500);
+        const totalRevenue = totalSold * price;
+        const totalProfit = totalSold * (price - product.costPrice);
+        const fallback: ProductPerformance = {
+          productId: String(product.id),
+          productName: product.name,
+          sku: product.sku,
+          category: typeof product.category === 'string' ? product.category : product.category.name,
+          totalSold,
+          totalRevenue,
+          totalProfit,
+          averagePrice: price,
+          sellThroughRate: Math.floor(40 + Math.random() * 50),
+          stockTurnover: +(1 + Math.random() * 7).toFixed(1),
+          daysOfInventory: Math.floor(10 + Math.random() * 40),
+          performanceScore: Math.floor(40 + Math.random() * 50),
+          trend: (['UP', 'DOWN', 'STABLE'] as const)[Math.floor(Math.random() * 3)],
+          period: { start: new Date(), end: new Date() }
+        };
+
+        fallbackCache[productId] = fallback;
+        try {
+          localStorage.setItem(LOCAL_KEYS.PRODUCT_PERFORMANCE_FALLBACK, JSON.stringify(fallbackCache));
+        } catch { /* storage limit reached — in-memory value is still returned below */ }
+
+        return of(fallback);
+      })
+    );
   }
 
-  /** Create product – generates a simple temporary id */
+  /** POST /products — falls back to a local-only record if the API is unavailable. */
   createProduct(product: Partial<Product>): Observable<Product> {
     this.loadingSubject.next(true);
-    const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
-    const newProduct: Product = {
-      ...(product as Product),
-      // Random suffix guards against id collisions when several products are created back-to-back
-      // in the same millisecond (e.g. a bulk import loop), which Date.now() alone can't tell apart.
-      id: 'prod-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    } as Product;
-    products.push(newProduct);
-    try {
-      localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
-    } catch (e) {
-      this.loadingSubject.next(false);
-      // Most commonly a QuotaExceededError from large (e.g. photo) image data URLs.
-      return throwError(() => new Error('Failed to save product — storage limit reached. Try a smaller image.'));
-    }
-    this.productsSubject.next(products);
-    this.loadingSubject.next(false);
-    return of(newProduct);
+    const payload = this.productToApiPayload(product);
+
+    return this.http.post<any>(`${this.baseUrl}/products`, payload).pipe(
+      map(raw => this.productFromApi(raw, product as Product)),
+      tap(newProduct => {
+        const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
+        products.push(newProduct);
+        try {
+          localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+        } catch { /* storage limit reached — in-memory state is still updated */ }
+        this.productsSubject.next(products);
+        this.loadingSubject.next(false);
+      }),
+      catchError(err => {
+        console.error('[InventoryService] createProduct failed, using local fallback:', err);
+        const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
+        const newProduct: Product = {
+          ...(product as Product),
+          // Random suffix guards against id collisions when several products are created
+          // back-to-back in the same millisecond (e.g. a bulk import loop).
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        products.push(newProduct);
+        try {
+          localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+        } catch {
+          this.loadingSubject.next(false);
+          return throwError(() => new Error('Failed to save product — storage limit reached. Try a smaller image.'));
+        }
+        this.productsSubject.next(products);
+        this.loadingSubject.next(false);
+        return of(newProduct);
+      })
+    );
   }
 
-  /** Update existing product */
-  updateProduct(id: string, product: Partial<Product>): Observable<Product> {
+  /** PUT /products/{id} — falls back to updating the local copy if the API is unavailable. */
+  updateProduct(id: string | number, product: Partial<Product>): Observable<Product> {
     this.loadingSubject.next(true);
-    const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
-    const index = products.findIndex(p => p.id === id);
+    const numericId = Number(id);
+    const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
+    const index = products.findIndex(p => p.id === numericId);
     if (index === -1) {
       this.loadingSubject.next(false);
       return throwError(() => new Error('Product not found'));
     }
-    const updated = { ...products[index], ...product, updatedAt: new Date() } as Product;
-    products[index] = updated;
-    try {
-      localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
-    } catch (e) {
-      this.loadingSubject.next(false);
-      // Most commonly a QuotaExceededError from large (e.g. photo) image data URLs.
-      return throwError(() => new Error('Failed to save product — storage limit reached. Try a smaller image.'));
-    }
-    this.productsSubject.next(products);
-    this.loadingSubject.next(false);
-    return of(updated);
+    const merged = { ...products[index], ...product } as Product;
+    const payload = this.productToApiPayload(merged);
+
+    return this.http.put<any>(`${this.baseUrl}/products/${numericId}`, payload).pipe(
+      map(raw => this.productFromApi(raw, merged)),
+      tap(updated => {
+        products[index] = updated;
+        try {
+          localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+        } catch { /* storage limit reached — in-memory state is still updated */ }
+        this.productsSubject.next(products);
+        this.loadingSubject.next(false);
+      }),
+      catchError(err => {
+        console.error('[InventoryService] updateProduct failed, using local fallback:', err);
+        const fallback = { ...merged, updatedAt: new Date() };
+        products[index] = fallback;
+        try {
+          localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+        } catch {
+          this.loadingSubject.next(false);
+          return throwError(() => new Error('Failed to save product — storage limit reached. Try a smaller image.'));
+        }
+        this.productsSubject.next(products);
+        this.loadingSubject.next(false);
+        return of(fallback);
+      })
+    );
   }
 
-  /** Delete product */
-  deleteProduct(id: string): Observable<void> {
+  /** DELETE /products/{id} — falls back to removing from the local copy if the API is unavailable. */
+  deleteProduct(id: string | number): Observable<void> {
     this.loadingSubject.next(true);
-    let products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string) as Product[];
-    products = products.filter(p => p.id !== id);
-    localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
-    this.productsSubject.next(products);
-    this.loadingSubject.next(false);
-    return of(undefined);
+    const numericId = Number(id);
+    return this.http.delete<void>(`${this.baseUrl}/products/${numericId}`).pipe(
+      tap(() => {
+        const products = (JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[])
+          .filter(p => p.id !== numericId);
+        localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+        this.productsSubject.next(products);
+        this.loadingSubject.next(false);
+      }),
+      catchError(err => {
+        console.error('[InventoryService] deleteProduct failed, using local fallback:', err);
+        const products = (JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[])
+          .filter(p => p.id !== numericId);
+        localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+        this.productsSubject.next(products);
+        this.loadingSubject.next(false);
+        return of(void 0);
+      })
+    );
+  }
+
+  /**
+   * POST /products/{id}/images. NOTE: the given endpoints have no GET to list a product's
+   * images — only this and deleteProductImage() below — so there's no way to reload a product's
+   * image list from the server; this app keeps tracking Product.images as a local string[] and
+   * updates it optimistically alongside this call.
+   */
+  addProductImage(productId: string | number, imageUrl: string, displayOrder: number = 0): Observable<ProductImage> {
+    const numericId = Number(productId);
+    const payload = { productId: numericId, imageUrl, displayOrder };
+
+    return this.http.post<ProductImage>(`${this.baseUrl}/products/${numericId}/images`, payload).pipe(
+      tap(() => {
+        const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
+        const product = products.find(p => p.id === numericId);
+        if (product) {
+          product.images = product.images?.includes(imageUrl)
+            ? product.images
+            : [...(product.images || []), imageUrl];
+          localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+          this.productsSubject.next(products);
+        }
+      }),
+      catchError(err => {
+        console.error('[InventoryService] addProductImage failed:', err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  /**
+   * DELETE /products/images/{imageId}. `productId`/`imageUrl` are optional and only used to keep
+   * the local Product.images list in sync — pass them when the caller has them (e.g. right after
+   * addProductImage()'s response gave back the real imageId).
+   */
+  deleteProductImage(imageId: string | number, productId?: string | number, imageUrl?: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/products/images/${imageId}`).pipe(
+      tap(() => {
+        if (productId == null || !imageUrl) return;
+        const numericId = Number(productId);
+        const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
+        const product = products.find(p => p.id === numericId);
+        if (product) {
+          product.images = (product.images || []).filter(u => u !== imageUrl);
+          localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(products));
+          this.productsSubject.next(products);
+        }
+      }),
+      catchError(err => {
+        console.error('[InventoryService] deleteProductImage failed:', err);
+        return throwError(() => err);
+      })
+    );
   }
 
   // ----------------------------------------------------
@@ -1976,7 +2452,7 @@ export class InventoryService {
     const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
 
     const branch = branches.find(b => String(b.id) === data.branchId);
-    const product = products.find(p => p.id === data.productId);
+    const product = products.find(p => String(p.id) === data.productId);
 
     if (!product) {
       this.loadingSubject.next(false);
@@ -2049,21 +2525,37 @@ export class InventoryService {
   // STOCK MOVEMENTS
   // ----------------------------------------------------
   /** Get stock movements (filters applied) */
+  /** GET /inventory/movements — falls back to the local mock/localStorage copy if the API is unavailable. */
   getMovements(filters?: MovementFilters): Observable<PaginatedResponse<StockMovement>> {
     this.loadingSubject.next(true);
-    const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
+
+    let params = new HttpParams().set('tenantId', this.tenantId);
+    if (filters?.type) params = params.set('type', filters.type);
+    if (filters?.status) params = params.set('status', filters.status);
+    if (filters?.branchId) params = params.set('branchId', filters.branchId);
+    if (filters?.productId) params = params.set('productId', filters.productId);
+
+    return this.http.get<any[]>(`${this.baseUrl}/inventory/movements`, { params }).pipe(
+      map(res => (Array.isArray(res) ? res : []).map(raw => this.stockMovementFromApi(raw))),
+      tap(movements => localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements))),
+      catchError(() => of(JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string || '[]') as StockMovement[])),
+      map(movements => this.paginateMovements(movements, filters)),
+      tap(() => this.loadingSubject.next(false))
+    );
+  }
+
+  /** Shared client-side filter/sort/paginate, used for both the live response and the fallback. */
+  private paginateMovements(movements: StockMovement[], filters?: MovementFilters): PaginatedResponse<StockMovement> {
     let filtered = [...movements];
 
-    // Apply type filter
     if (filters?.type) {
       filtered = filtered.filter(m => m.movementType === filters.type);
     }
-    // Apply status filter
     if (filters?.status) {
       filtered = filtered.filter(m => m.status === filters.status);
     }
-    // Apply search filter (product name or SKU) — done server-side so it's applied before
-    // pagination, unlike a client-side filter which could only ever search within one page.
+    // Search (product name or SKU) — applied before pagination, unlike a client-side filter
+    // which could only ever search within one page.
     if (filters?.search) {
       const term = filters.search.trim().toLowerCase();
       if (term) {
@@ -2073,7 +2565,6 @@ export class InventoryService {
         );
       }
     }
-    // Apply date range filters
     if (filters?.dateFrom) {
       const from = new Date(filters.dateFrom);
       filtered = filtered.filter(m => new Date(m.createdAt) >= from);
@@ -2095,74 +2586,120 @@ export class InventoryService {
     const start = page * limit;
     const pagedData = filtered.slice(start, start + limit);
 
-    const response: PaginatedResponse<StockMovement> = {
-      data: pagedData,
-      total: total,
-      page: page,
-      limit: limit,
-      totalPages: totalPages
-    };
     this.movementsSubject.next(movements);
-    this.loadingSubject.next(false);
-    return of(response);
+
+    return { data: pagedData, total, page, limit, totalPages };
   }
 
-  /** Create a movement (transfer / adjustment / etc.) */
+  /** POST /inventory/movements — falls back to a local-only record if the API is unavailable. */
   createMovement(movement: Partial<StockMovement>): Observable<StockMovement> {
     this.loadingSubject.next(true);
-    const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
-    const newMovement: StockMovement = {
-      ...(movement as StockMovement),
-      id: Date.now(),
-      createdAt: new Date(),
-      status: MovementStatus.PENDING
-    } as StockMovement;
-    movements.push(newMovement);
-    localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
-    this.movementsSubject.next(movements);
-    this.loadingSubject.next(false);
-    return of(newMovement);
+    const payload = this.stockMovementToApiPayload({ status: MovementStatus.PENDING, ...movement });
+
+    return this.http.post<any>(`${this.baseUrl}/inventory/movements`, payload).pipe(
+      map(raw => this.stockMovementFromApi(raw)),
+      tap(newMovement => {
+        const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string || '[]') as StockMovement[];
+        movements.push(newMovement);
+        localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
+        this.movementsSubject.next(movements);
+        this.loadingSubject.next(false);
+      }),
+      catchError(err => {
+        console.error('[InventoryService] createMovement failed, using local fallback:', err);
+        const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string || '[]') as StockMovement[];
+        const newMovement: StockMovement = {
+          ...(movement as StockMovement),
+          id: Date.now(),
+          createdAt: new Date(),
+          status: MovementStatus.PENDING
+        };
+        movements.push(newMovement);
+        localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
+        this.movementsSubject.next(movements);
+        this.loadingSubject.next(false);
+        return of(newMovement);
+      })
+    );
   }
 
-  /** Update a movement */
+  /**
+   * Update a movement. Status transitions (approve/reject/complete — anything setting `status`)
+   * go through PATCH .../status, since that's the endpoint that actually accepts approvedBy/
+   * approvedByName/completedAt; a plain field edit (product/quantity/locations/notes/etc. with
+   * no status change) goes through PUT .../{id}. Falls back to updating the local copy if the
+   * API is unavailable.
+   */
   updateMovement(id: string | number, movement: Partial<StockMovement>): Observable<StockMovement> {
     this.loadingSubject.next(true);
-    const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
-    const index = movements.findIndex(m => m.id === Number(id));
+    const numericId = Number(id);
+    const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string || '[]') as StockMovement[];
+    const index = movements.findIndex(m => m.id === numericId);
     if (index === -1) {
       this.loadingSubject.next(false);
       return throwError(() => new Error('Movement not found'));
     }
     const previous = movements[index];
-    const updated = { ...previous, ...movement, updatedAt: new Date() } as StockMovement;
+    const merged = { ...previous, ...movement } as StockMovement;
+    const payload = this.stockMovementToApiPayload(merged);
 
-    // If this update is transitioning a TRANSFER movement to COMPLETED for the first time,
-    // actually move the stock (see applyTransferStockAdjustment() below) — so a transfer's
-    // stock moves exactly once no matter which UI path (Movement Approvals page, or a manual
-    // status edit on the movement's own detail page) completes it. Transfers are created PENDING
-    // and never touch stock until this happens.
+    const request$ = movement.status
+      ? this.http.patch<any>(`${this.baseUrl}/inventory/movements/${numericId}/status`, payload)
+      : this.http.put<any>(`${this.baseUrl}/inventory/movements/${numericId}`, payload);
+
+    return request$.pipe(
+      map(raw => this.stockMovementFromApi(raw)),
+      tap(updated => {
+        this.finishMovementUpdate(movements, index, previous, updated);
+        this.loadingSubject.next(false);
+      }),
+      catchError(err => {
+        console.error('[InventoryService] updateMovement failed, using local fallback:', err);
+        const fallback = { ...merged, updatedAt: new Date() };
+        this.finishMovementUpdate(movements, index, previous, fallback);
+        this.loadingSubject.next(false);
+        return of(fallback);
+      })
+    );
+  }
+
+  /** Shared post-update bookkeeping: persist, broadcast, and run the transfer stock adjustment
+   *  exactly once when a movement first reaches COMPLETED (see applyTransferStockAdjustment()'s
+   *  own caveat about why this only reliably fires for movements created in this session). */
+  private finishMovementUpdate(movements: StockMovement[], index: number, previous: StockMovement, updated: StockMovement): void {
     if (updated.status === MovementStatus.COMPLETED && previous.status !== MovementStatus.COMPLETED) {
       this.applyTransferStockAdjustment(updated);
-      (updated as any).completedAt = (updated as any).completedAt || new Date();
+      updated.completedAt = updated.completedAt || new Date();
     }
-
     movements[index] = updated;
     localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
     this.movementsSubject.next(movements);
-    this.loadingSubject.next(false);
-    return of(updated);
   }
 
   /** Delete a movement. Only meant for PENDING movements (nothing has moved yet) — the calling
-   *  component is responsible for that check, same as deleteProduct()'s convention. */
+   *  component is responsible for that check, same as deleteProduct()'s convention. Falls back
+   *  to removing from the local copy if the API is unavailable. */
   deleteMovement(id: string | number): Observable<void> {
     this.loadingSubject.next(true);
-    let movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
-    movements = movements.filter(m => m.id !== Number(id));
-    localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
-    this.movementsSubject.next(movements);
-    this.loadingSubject.next(false);
-    return of(undefined);
+    const numericId = Number(id);
+    return this.http.delete<void>(`${this.baseUrl}/inventory/movements/${numericId}`).pipe(
+      tap(() => {
+        const movements = (JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string || '[]') as StockMovement[])
+          .filter(m => m.id !== numericId);
+        localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
+        this.movementsSubject.next(movements);
+        this.loadingSubject.next(false);
+      }),
+      catchError(err => {
+        console.error('[InventoryService] deleteMovement failed, using local fallback:', err);
+        const movements = (JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string || '[]') as StockMovement[])
+          .filter(m => m.id !== numericId);
+        localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
+        this.movementsSubject.next(movements);
+        this.loadingSubject.next(false);
+        return of(void 0);
+      })
+    );
   }
 
   /** Moves real stock for a branch-to-branch TRANSFER movement: decrements the source branch's
@@ -2528,10 +3065,17 @@ export class InventoryService {
   // ----------------------------------------------------
   // SINGLE MOVEMENT FETCH
   // ----------------------------------------------------
+  /** GET /inventory/movements/{id} — falls back to the local mock/localStorage copy if the API is unavailable. */
   getMovement(id: string | number): Observable<StockMovement> {
-    const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string) as StockMovement[];
-    const mov = movements.find(m => m.id === Number(id));
-    return mov ? of(mov) : throwError(() => new Error('Movement not found'));
+    const numericId = Number(id);
+    return this.http.get<any>(`${this.baseUrl}/inventory/movements/${numericId}`).pipe(
+      map(raw => this.stockMovementFromApi(raw)),
+      catchError(() => {
+        const movements = JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENTS) as string || '[]') as StockMovement[];
+        const mov = movements.find(m => m.id === numericId);
+        return mov ? of(mov) : throwError(() => new Error('Movement not found'));
+      })
+    );
   }
 
   // ----------------------------------------------------
@@ -2553,148 +3097,209 @@ export class InventoryService {
   // RESTOCK REQUESTS - ADD THESE METHODS
   // ============================================================
 
+  // The /inventory/restock-requests API names the audit fields createdById/approvedById —
+  // this app has always called them createdBy/approvedBy, so map at the boundary rather than
+  // renaming the field everywhere it's already used (forms, approval queue, restock list).
+
+  private restockRequestFromApi(raw: any): RestockRequest {
+    return {
+      ...raw,
+      createdBy: raw.createdById,
+      approvedBy: raw.approvedById,
+      createdAt: raw.createdAt ? new Date(raw.createdAt) : raw.createdAt,
+      approvedAt: raw.approvedAt ? new Date(raw.approvedAt) : raw.approvedAt
+    };
+  }
+
+  private restockRequestToApiPayload(r: Partial<RestockRequest>) {
+    return {
+      productId: r.productId,
+      productName: r.productName,
+      sku: r.sku,
+      branchId: r.branchId,
+      branchName: r.branchName,
+      currentStock: r.currentStock,
+      reorderPoint: r.reorderPoint,
+      safetyStock: r.safetyStock,
+      requestedQuantity: r.requestedQuantity,
+      approvedQuantity: r.approvedQuantity,
+      preferredSupplier: r.preferredSupplier,
+      costEstimate: r.costEstimate,
+      urgency: r.urgency,
+      status: r.status,
+      notes: r.notes,
+      createdById: r.createdBy,
+      createdByName: r.createdByName,
+      approvedById: r.approvedBy,
+      approvedByName: r.approvedByName,
+      purchaseOrderId: r.purchaseOrderId
+    };
+  }
+
   /**
-   * Get restock requests with filters
+   * GET /inventory/restock-requests — falls back to the local mock/localStorage copy if the API
+   * is unavailable. The endpoint returns a flat array (not pre-paginated), so filtering/paging
+   * is applied client-side either way — passed as query params too, in case the API starts
+   * honoring them server-side.
    */
   getRestockRequests(filters?: RestockFilters): Observable<PaginatedResponse<RestockRequest>> {
     this.loadingSubject.next(true);
 
-    // Get all restock requests from localStorage (or your data source)
-    // For now, we'll use mock data
-    const requests = this.getMockRestockRequests();
+    let params = new HttpParams().set('tenantId', this.tenantId);
+    if (filters?.status) params = params.set('status', filters.status);
+    if (filters?.urgency) params = params.set('urgency', filters.urgency);
+    if (filters?.branchId) params = params.set('branchId', filters.branchId);
+    if (filters?.productId) params = params.set('productId', filters.productId);
 
-    // Apply filters and sort by most recent first
-    let filtered = requests.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-    if (filters) {
-      if (filters.status) {
-        filtered = filtered.filter(r => r.status === filters.status);
-      }
-      if (filters.urgency) {
-        filtered = filtered.filter(r => r.urgency === filters.urgency);
-      }
-      if (filters.branchId) {
-        filtered = filtered.filter(r => r.branchId === filters.branchId);
-      }
-      // Apply pagination
-      const page = filters.page || 0;
-      const limit = filters.limit || 20;
-      const start = page * limit;
-      const end = start + limit;
-      const paginatedData = filtered.slice(start, end);
-
-      const response: PaginatedResponse<RestockRequest> = {
-        data: paginatedData,
-        total: filtered.length,
-        page: page,
-        limit: limit,
-        totalPages: Math.ceil(filtered.length / limit)
-      };
-
-      this.loadingSubject.next(false);
-      return of(response);
-    }
-
-    const response: PaginatedResponse<RestockRequest> = {
-      data: filtered,
-      total: filtered.length,
-      page: 0,
-      limit: filtered.length,
-      totalPages: 1
-    };
-
-    this.loadingSubject.next(false);
-    return of(response);
+    return this.http.get<any[]>(`${this.baseUrl}/inventory/restock-requests`, { params }).pipe(
+      map(res => (Array.isArray(res) ? res : []).map(raw => this.restockRequestFromApi(raw))),
+      tap(requests => localStorage.setItem('restock_requests', JSON.stringify(requests))),
+      catchError(() => of(this.getMockRestockRequests())),
+      map(requests => this.paginateRestockRequests(requests, filters)),
+      tap(() => this.loadingSubject.next(false))
+    );
   }
 
-  /**
-   * Create a restock request
-   */
+  /** Shared client-side filter/sort/paginate, used for both the live response and the fallback. */
+  private paginateRestockRequests(requests: RestockRequest[], filters?: RestockFilters): PaginatedResponse<RestockRequest> {
+    let filtered = requests.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    if (filters?.status) filtered = filtered.filter(r => r.status === filters.status);
+    if (filters?.urgency) filtered = filtered.filter(r => r.urgency === filters.urgency);
+    if (filters?.branchId) filtered = filtered.filter(r => r.branchId === filters.branchId);
+    if (filters?.productId) filtered = filtered.filter(r => r.productId === filters.productId);
+
+    const page = filters?.page || 0;
+    const limit = filters?.limit || filtered.length || 1;
+    const start = page * limit;
+    const paginatedData = filters ? filtered.slice(start, start + limit) : filtered;
+
+    return {
+      data: paginatedData,
+      total: filtered.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filtered.length / limit) || 1
+    };
+  }
+
+  /** POST /inventory/restock-requests — falls back to a local-only record if the API is unavailable. */
   createRestockRequest(request: Partial<RestockRequest>): Observable<RestockRequest> {
     this.loadingSubject.next(true);
-
-    const newRequest: RestockRequest = {
-      ...(request as RestockRequest),
-      id: 'rr-' + Date.now(),
+    const payload = this.restockRequestToApiPayload({
       status: RestockStatus.PENDING,
-      createdAt: new Date(),
-      approvedAt: new Date(),
       createdBy: 'usr-1',
-      createdByName: 'Current User'
-    } as RestockRequest;
+      createdByName: 'Current User',
+      ...request
+    });
 
-    // Store in localStorage
-    const requests = this.getMockRestockRequests();
-    requests.push(newRequest);
-    localStorage.setItem('restock_requests', JSON.stringify(requests));
-
-    this.loadingSubject.next(false);
-    return of(newRequest);
+    return this.http.post<any>(`${this.baseUrl}/inventory/restock-requests`, payload).pipe(
+      map(raw => this.restockRequestFromApi(raw)),
+      tap(newRequest => {
+        const requests = this.getMockRestockRequests();
+        requests.push(newRequest);
+        localStorage.setItem('restock_requests', JSON.stringify(requests));
+        this.loadingSubject.next(false);
+      }),
+      catchError(err => {
+        console.error('[InventoryService] createRestockRequest failed, using local fallback:', err);
+        const newRequest: RestockRequest = {
+          ...(request as RestockRequest),
+          id: Date.now(),
+          status: RestockStatus.PENDING,
+          createdAt: new Date(),
+          approvedAt: new Date(),
+          createdBy: 'usr-1',
+          createdByName: 'Current User'
+        };
+        const requests = this.getMockRestockRequests();
+        requests.push(newRequest);
+        localStorage.setItem('restock_requests', JSON.stringify(requests));
+        this.loadingSubject.next(false);
+        return of(newRequest);
+      })
+    );
   }
 
-  /**
-   * Approve a restock request
-   */
-  approveRestockRequest(id: string, notes: string): Observable<void> {
+  /** PATCH /inventory/restock-requests/{id}/status — shared by approve/reject below. */
+  private updateRestockRequestStatus(id: string | number, changes: Partial<RestockRequest>): Observable<RestockRequest | null> {
+    const numericId = Number(id);
+    const requests = this.getMockRestockRequests();
+    const index = requests.findIndex(r => r.id === numericId);
+    const merged = index > -1 ? { ...requests[index], ...changes } : (changes as RestockRequest);
+
+    return this.http.patch<any>(`${this.baseUrl}/inventory/restock-requests/${numericId}/status`, this.restockRequestToApiPayload(merged)).pipe(
+      map(raw => this.restockRequestFromApi(raw)),
+      tap(updated => {
+        if (index > -1) requests[index] = updated; else requests.push(updated);
+        localStorage.setItem('restock_requests', JSON.stringify(requests));
+      }),
+      catchError(err => {
+        console.error('[InventoryService] updateRestockRequestStatus failed, using local fallback:', err);
+        if (index === -1) return of(null);
+        requests[index] = merged;
+        localStorage.setItem('restock_requests', JSON.stringify(requests));
+        return of(merged);
+      })
+    );
+  }
+
+  /** Approve a restock request. */
+  approveRestockRequest(id: string | number, notes: string): Observable<void> {
     this.loadingSubject.next(true);
-
-    const requests = this.getMockRestockRequests();
-    const request = requests.find(r => r.id === id);
-    if (request) {
-      request.status = RestockStatus.APPROVED;
-      request.approvedBy = 'usr-2';
-      request.approvedByName = 'Jane Smith';
-      request.approvedAt = new Date();
-      request.notes = notes || request.notes;
-      localStorage.setItem('restock_requests', JSON.stringify(requests));
-    }
-
-    this.loadingSubject.next(false);
-    return of(undefined);
+    return this.updateRestockRequestStatus(id, {
+      status: RestockStatus.APPROVED,
+      approvedBy: 'usr-2',
+      approvedByName: 'Jane Smith',
+      approvedAt: new Date(),
+      ...(notes ? { notes } : {})
+    }).pipe(
+      map(() => undefined),
+      tap(() => this.loadingSubject.next(false))
+    );
   }
 
-  /**
-   * Reject a restock request
-   */
-  rejectRestockRequest(id: string, reason: string): Observable<void> {
+  /** Reject a restock request. */
+  rejectRestockRequest(id: string | number, reason: string): Observable<void> {
     this.loadingSubject.next(true);
+    return this.updateRestockRequestStatus(id, {
+      status: RestockStatus.REJECTED,
+      approvedBy: 'usr-2',
+      approvedByName: 'Jane Smith',
+      approvedAt: new Date(),
+      ...(reason ? { notes: reason } : {})
+    }).pipe(
+      map(() => undefined),
+      tap(() => this.loadingSubject.next(false))
+    );
+  }
 
-    const requests = this.getMockRestockRequests();
-    const request = requests.find(r => r.id === id);
-    if (request) {
-      request.status = RestockStatus.REJECTED;
-      request.approvedBy = 'usr-2';
-      request.approvedByName = 'Jane Smith';
-      request.approvedAt = new Date();
-      request.notes = reason || request.notes;
-      localStorage.setItem('restock_requests', JSON.stringify(requests));
-    }
-
-    this.loadingSubject.next(false);
-    return of(undefined);
+  /** GET /inventory/restock-requests/{id} — falls back to the local mock/localStorage copy if the API is unavailable. */
+  getRestockRequest(id: string | number): Observable<RestockRequest> {
+    const numericId = Number(id);
+    return this.http.get<any>(`${this.baseUrl}/inventory/restock-requests/${numericId}`).pipe(
+      map(raw => this.restockRequestFromApi(raw)),
+      catchError(() => {
+        const requests = this.getMockRestockRequests();
+        const request = requests.find(r => r.id === numericId);
+        return request ? of(request) : throwError(() => new Error('Restock request not found'));
+      })
+    );
   }
 
   /**
-   * Get a single restock request
-   */
-  getRestockRequest(id: string): Observable<RestockRequest> {
-    const requests = this.getMockRestockRequests();
-    const request = requests.find(r => r.id === id);
-    return request ? of(request) : throwError(() => new Error('Restock request not found'));
-  }
-
-  /**
- * Get restock suggestions for a branch
+ * Get restock suggestions for a branch — purely a client-side computation over branch
+ * inventory already loaded (which item is below its reorder point), not backed by an endpoint.
  */
   getRestockSuggestions(branchId: string): Observable<RestockRequest[]> {
     const inventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string) as BranchInventory[];
     const branchItems = inventory.filter(i => i.branchId === branchId);
 
     const suggestions: RestockRequest[] = [];
-    branchItems.forEach(item => {
+    branchItems.forEach((item, index) => {
       const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);
       if (status === 'CRITICAL' || status === 'LOW') {
         suggestions.push({
-          id: 'sug-' + Date.now() + '-' + item.productId,
+          id: Date.now() + index,
           productId: item.productId,
           productName: item.productName,
           sku: item.sku,
@@ -2724,27 +3329,50 @@ export class InventoryService {
     return of(suggestions);
   }
 
-  // inventory.service.ts - Add this method
-
-  /**
-   * Update an existing restock request
-   */
-  updateRestockRequest(id: string, request: Partial<RestockRequest>): Observable<RestockRequest> {
+  /** PUT /inventory/restock-requests/{id} — falls back to updating the local copy if the API is unavailable. */
+  updateRestockRequest(id: string | number, request: Partial<RestockRequest>): Observable<RestockRequest> {
     this.loadingSubject.next(true);
-
+    const numericId = Number(id);
     const requests = this.getMockRestockRequests();
-    const index = requests.findIndex(r => r.id === id);
+    const index = requests.findIndex(r => r.id === numericId);
     if (index === -1) {
       this.loadingSubject.next(false);
       return throwError(() => new Error('Restock request not found'));
     }
+    const merged = { ...requests[index], ...request };
 
-    const updated = { ...requests[index], ...request, updatedAt: new Date() } as RestockRequest;
-    requests[index] = updated;
-    localStorage.setItem('restock_requests', JSON.stringify(requests));
+    return this.http.put<any>(`${this.baseUrl}/inventory/restock-requests/${numericId}`, this.restockRequestToApiPayload(merged)).pipe(
+      map(raw => this.restockRequestFromApi(raw)),
+      tap(updated => {
+        requests[index] = updated;
+        localStorage.setItem('restock_requests', JSON.stringify(requests));
+        this.loadingSubject.next(false);
+      }),
+      catchError(err => {
+        console.error('[InventoryService] updateRestockRequest failed, using local fallback:', err);
+        requests[index] = merged;
+        localStorage.setItem('restock_requests', JSON.stringify(requests));
+        this.loadingSubject.next(false);
+        return of(merged);
+      })
+    );
+  }
 
-    this.loadingSubject.next(false);
-    return of(updated);
+  /** DELETE /inventory/restock-requests/{id} — falls back to removing from the local copy if the API is unavailable. */
+  deleteRestockRequest(id: string | number): Observable<void> {
+    const numericId = Number(id);
+    return this.http.delete<void>(`${this.baseUrl}/inventory/restock-requests/${numericId}`).pipe(
+      tap(() => {
+        const requests = this.getMockRestockRequests().filter(r => r.id !== numericId);
+        localStorage.setItem('restock_requests', JSON.stringify(requests));
+      }),
+      catchError(err => {
+        console.error('[InventoryService] deleteRestockRequest failed, using local fallback:', err);
+        const requests = this.getMockRestockRequests().filter(r => r.id !== numericId);
+        localStorage.setItem('restock_requests', JSON.stringify(requests));
+        return of(void 0);
+      })
+    );
   }
 
   /**

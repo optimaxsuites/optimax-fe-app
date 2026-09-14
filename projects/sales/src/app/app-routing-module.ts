@@ -38,6 +38,8 @@ import { VendorManagementDetailComponent } from './ui/view/vendor-management/ven
 import { DeliveryTrackingComponent } from './ui/view/request-management/delivery-tracking/delivery-tracking.component';
 import { PaymentVoucherComponent } from './ui/view/request-management/payment-voucher/payment-voucher.component';
 import { ReceiptPreviewComponent } from './ui/view/request-management/receipt-preview/receipt-preview.component';
+import { GrnListComponent } from './ui/view/request-management/grn-list/grn-list.component';
+import { GrnDetailComponent } from './ui/view/request-management/grn-detail/grn-detail.component';
 import { InventoryComponent } from './ui/view/inventory/inventory.component';
 import { LogisticsComponent } from './ui/view/logistics/logistics.component';
 import { ProductManagementFormComponent } from './ui/view/inventory/product/product-management-form/product-management-form.component';
@@ -61,13 +63,19 @@ import { BranchInventoryComponent } from './ui/view/inventory/branch/branch-inve
 
 
 export const routes: Routes = [
+  // {
+  //   path: "",
+  //   redirectTo: 'commerce/inventory',
+  //   pathMatch: 'full'
+  // },
+
+
+
   {
     path: "",
-    redirectTo: 'commerce/inventory',
+    redirectTo: 'sales-hub',
     pathMatch: 'full'
   },
-
-
 
   // ==================================================================================================================
   //                                                INVENTORY ROUTES
@@ -528,6 +536,17 @@ export const routes: Routes = [
   {
     path: 'commerce/payment-vouchers/:id/:uuid',
     component: PaymentVoucherComponent
+  },
+
+
+  // -------------------------------------- Goods Received Notes --------------------------------------------
+  {
+    path: 'commerce/goods-received-notes',
+    component: GrnListComponent
+  },
+  {
+    path: 'commerce/goods-received-notes/:id',
+    component: GrnDetailComponent
   },
 
 

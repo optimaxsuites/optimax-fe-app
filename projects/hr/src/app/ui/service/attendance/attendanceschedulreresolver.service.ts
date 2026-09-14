@@ -5,7 +5,7 @@ import { WorkingWindow } from '../../domain/attendance/working-window.dto';
 import { OfficeHoursService } from './office-hours.service';
 import { ScheduleserviceService } from '../workschedule-shift/scheduleservice.service';
 import { ShiftserviceService } from '../workschedule-shift/shiftservice.service';
-import { ShiftDTO } from '../../domain/workschedule-shift/shift.dto';
+import { WorkShiftDTO } from '../../domain/workschedule-shift/shift.dto';
 
 @Injectable({ providedIn: 'root' })
 export class AttendanceScheduleResolverService {
@@ -25,17 +25,21 @@ export class AttendanceScheduleResolverService {
     }*/
 
     // For 'shift' or 'mixed': use ScheduleserviceService to find
-    // if this employee has a shift assigned on this date
-    const dateString = date.toISOString().split('T')[0];
+    // if this employee has a shift assigned on this date.
+    //
+    // The date must be local. ScheduleDTO.date is a plain local YYYY-MM-DD
+    // written by the shift calendar, so deriving this from toISOString() —
+    // which converts to UTC first — resolved the wrong day either side of
+    // midnight and silently fell back to office hours.
+    const dateString = this.toLocalDateString(date);
 
-    // Step 1: get all schedules for this employee
-    const employeeSchedules = this.scheduleserviceService.getSchedulesByEmployee(employeeId);
-
-    // Step 2: find one that matches today's date
-    const todaySchedule = employeeSchedules.find(s => s.date === dateString);
+    // Filter by date first, then match the employee on either id scheme —
+    // see employeeMatches for why an exact comparison is not enough yet.
+    const todaySchedule = this.scheduleserviceService
+      .getSchedulesByDate(dateString)
+      .find(s => this.employeeMatches(s.employeeId, employeeId));
 
     if (todaySchedule) {
-      // Step 3: get the actual shift definition by its ID
       const shift = this.shiftserviceService.getShiftById(todaySchedule.shiftId);
 
       if (shift) {
@@ -56,6 +60,37 @@ export class AttendanceScheduleResolverService {
     return of(this.buildOfficeHoursWindow());
   }
 
+  // --- Identity ---
+
+  /**
+   * Bridges the two employee-id schemes either side of this boundary.
+   *
+   * Attendance identifies an employee by their numeric database id, while the
+   * shift module still stores the mock `emp-1` keys from its hardcoded roster.
+   * A plain `===` therefore never matched, so every clock-in fell through to
+   * office hours no matter what shift was assigned.
+   *
+   * Matching on the digits is the bridge, not the destination: once the shift
+   * module stores real employee ids, delete this and compare directly.
+   */
+  private employeeMatches(scheduleEmployeeId: string, employeeId: string): boolean {
+    if (scheduleEmployeeId === employeeId) return true;
+
+    const digitsOf = (value: string) => (value ?? '').replace(/\D/g, '');
+    const scheduleDigits = digitsOf(scheduleEmployeeId);
+    const employeeDigits = digitsOf(employeeId);
+
+    return !!scheduleDigits && scheduleDigits === employeeDigits;
+  }
+
+  /** Local calendar date — never toISOString(), which shifts to UTC first. */
+  private toLocalDateString(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   // --- Private builders ---
 
   private buildOfficeHoursWindow(): WorkingWindow {
@@ -70,10 +105,10 @@ export class AttendanceScheduleResolverService {
     };
   }
 
-  private buildShiftWindow(shift: ShiftDTO, scheduleId: string): WorkingWindow {
+  private buildShiftWindow(shift: WorkShiftDTO, scheduleId: string): WorkingWindow {
     const oh = this.officeHoursService.getOfficeHours();
 
-    // ShiftDTO has startTime and endTime but no grace/absent fields —
+    // WorkShiftDTO has startTime and endTime but no grace/absent fields —
     // so we derive sensible defaults relative to the shift's own start time,
     // using the same offsets that are configured in office hours.
     const graceOffsetMinutes = this.getOffsetMinutes(

@@ -13,6 +13,7 @@ import {
   StockAlert,
   StockMovement,
   ProductPerformance,
+  TopSellingProduct,
   BranchStockSummary,
   QuickAction,
   Branch,
@@ -58,6 +59,11 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
   branchSummaries: BranchStockSummary[] = [];
   quickActions: QuickAction[] = [];
 
+  // Top Selling widget — loaded independently from the rest of the dashboard
+  // (GET /inventory/dashboard/top-selling has no branch scoping of its own).
+  topSellingProducts: TopSellingProduct[] = [];
+  isLoadingTopSelling: boolean = true;
+
   // UI Helpers
   Math = Math;
 
@@ -81,6 +87,7 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadBranches();
     this.loadDashboardData();
+    this.loadTopSellingProducts();
     this.startAutoRefresh();
   }
 
@@ -123,6 +130,22 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (branches) => { this.branches = branches; },
         error: (err) => console.error('Failed to load branches:', err)
+      });
+  }
+
+  loadTopSellingProducts(): void {
+    this.isLoadingTopSelling = true;
+    this.inventoryService.getTopSellingProducts(5)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (products) => {
+          this.topSellingProducts = products;
+          this.isLoadingTopSelling = false;
+        },
+        error: (err) => {
+          console.error('Failed to load top selling products:', err);
+          this.isLoadingTopSelling = false;
+        }
       });
   }
 
@@ -182,6 +205,7 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
       .pipe(takeWhile(() => true))
       .subscribe(() => {
         this.loadDashboardData();
+        this.loadTopSellingProducts();
       });
   }
 
@@ -351,5 +375,6 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
 
   refresh(): void {
     this.loadDashboardData();
+    this.loadTopSellingProducts();
   }
 }

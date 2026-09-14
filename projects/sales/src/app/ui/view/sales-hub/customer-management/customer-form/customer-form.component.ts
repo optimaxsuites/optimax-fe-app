@@ -115,11 +115,18 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
   }
 
   private populateForm(customer: Customer): void {
+    // customer.address comes back from the API as a string[] (getCustomerById wraps it),
+    // but the "address" control here is a plain text input backed by string-length
+    // validators (minLength/maxLength). Patching the raw array in left the control's
+    // *value* an array whose .length is the element count (usually 1), which always
+    // failed minLength(5) even though the input displayed real text - silently blocking
+    // every save with a spurious "Please fill in all required fields" warning.
+    const addressValue = Array.isArray(customer.address) ? customer.address.join(', ') : (customer.address || '');
     this.customerForm.patchValue({
       name: customer.name,
       email: customer.email,
       phone: customer.phone,
-      address: customer.address,
+      address: addressValue,
       taxId: customer.taxId || '',
       status: customer.status,
       notes: customer.notes || ''
@@ -180,11 +187,15 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
         if (uuid === 'edit') {
           uuid = null;
         }
-        if (uuid) {
-          this.router.navigate(['/admin/sales/sales-hub', uuid]);
-        } else {
-          this.router.navigate(['/admin/sales/customers']);
-        }
+        // Land on the customer's own detail page either way — there's no bare 'customers'
+        // list route registered (only 'customers/:id', 'customers/new', etc.), so navigating
+        // to just ['/admin/sales/customers'] here used to match the app's catch-all single-segment
+        // ':uuid' route and get redirected to /commerce/requests instead.
+        const savedCustomerId = response?.id ?? this.customerId;
+        const detailPath = uuid
+          ? ['/admin/sales/customers', String(savedCustomerId), uuid]
+          : ['/admin/sales/customers', String(savedCustomerId)];
+        this.router.navigate(detailPath);
       },
       error: (error: any) => {
         console.error('Error saving customer:', error);
@@ -208,6 +219,15 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
 
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+  }
+
+  getStatusClass(status: string): string {
+    const classes: Record<string, string> = {
+      'ACTIVE': 'active',
+      'INACTIVE': 'inactive',
+      'BLACKLISTED': 'blacklisted'
+    };
+    return classes[status] || 'active';
   }
 
   formatDate(date?: Date | string): string {

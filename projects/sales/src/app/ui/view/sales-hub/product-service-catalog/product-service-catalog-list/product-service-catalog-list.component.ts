@@ -35,6 +35,9 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   isLoading = true;
   selectedProductIds: any[] = [];
 
+  // AI insight banner
+  aiDismissed = false;
+
   setViewMode(mode: 'list' | 'icon'): void {
     this.viewMode = mode;
   }
@@ -185,6 +188,11 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
 
   isAllSelected(): boolean {
     return this.products.length > 0 && this.selectedProductIds.length === this.products.length;
+  }
+
+  /** Grid view's "#N" badge — a global row number, since `products` only holds the current page. */
+  getProductIndex(product: any): number {
+    return this.currentPage * this.pageSize + this.products.indexOf(product) + 1;
   }
 
   getStatusBadgeClass(status: string): string {

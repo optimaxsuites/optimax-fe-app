@@ -10,7 +10,8 @@ import { UserSessionService } from '../../../../../service/attendance/user-sessi
 import { ApprovalStatus, FlagType } from '../../../../../domain/attendance/attendance-event.dto';
 import { TableColumn, TableAction } from '../../../../../shared-component/view/table/table.component';
 import { ToastService } from '../../../../../shared-component/service/toast/toast.service';
-import { CorrectionRequestService } from '../../../../../service/attendance/correction-request.service';
+import { AdminCorrectionApprovalService } from '../../../../../service/attendance/admin-correction-approval.service';
+import { CrossBranchApprovalService } from '../../../../../service/attendance/cross-branch-approval.service';
 import { environment } from '../../../../../shared-component/environments/environment.prod';
 
 @Component({
@@ -23,7 +24,8 @@ export class AttendancetableComponent implements OnInit, OnChanges {
   private attendancetableService = inject(AttendancetableService);
   private userSession = inject(UserSessionService);
   private toastService = inject(ToastService);
-  private correctionRequestService = inject(CorrectionRequestService);
+  private correctionRequestService = inject(AdminCorrectionApprovalService);
+  private crossBranchApprovalService = inject(CrossBranchApprovalService);
   private cdr = inject(ChangeDetectorRef);
   private router = inject(Router);
 
@@ -36,6 +38,7 @@ export class AttendancetableComponent implements OnInit, OnChanges {
 
   openActionMenu: number | null = null;
   selectedRecords: Set<number> = new Set();
+  showMassApproveConfirm = false;
 
   toggleActionMenu(recordId: number): void {
     this.openActionMenu = this.openActionMenu === recordId ? null : recordId;
@@ -116,6 +119,12 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
         filters: this.filters
       });
 
+      // Subscribe to total records count
+      this.attendancetableService.totalRecords$.subscribe(total => {
+        this.totalRecords = total;
+        this.cdr.detectChanges();
+      });
+
       // Subscribe to real-time updates from service
       this.attendancetableService.attendance$.subscribe(data => {
         this.attendance = data;
@@ -146,15 +155,27 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
       }
 
       // Subscribe to correction requests and merge with attendance
-      this.correctionRequestService.correctionRequests$.subscribe(correctionRecords => {
-        // Merge correction records with existing attendance
-        correctionRecords.forEach(corrRecord => {
-          const index = this.attendance.findIndex(a => a.id === corrRecord.id);
+      this.correctionRequestService.correctionRequests$.subscribe(correctionRequests => {
+        // Merge correction requests with existing attendance records
+        correctionRequests.forEach(corrReq => {
+          // Find attendance record by employeeId and date
+          const index = this.attendance.findIndex(a =>
+            a.employeeId === corrReq.employeeId && 
+            a.date?.toDateString() === corrReq.date?.toDateString()
+          );
+          
           if (index > -1) {
-            // Update the existing record with correction info
+            // Map CorrectionRequest to correctionRequest nested object
             this.attendance[index] = {
               ...this.attendance[index],
-              correctionRequest: corrRecord.correctionRequest
+              correctionRequest: {
+                id: parseInt(corrReq.id),
+                type: corrReq.correctionType,
+                reason: corrReq.description || '',
+                status: corrReq.status as 'PENDING' | 'APPROVED' | 'REJECTED',
+                requestedAt: corrReq.date,
+                requestedBy: corrReq.employeeName
+              }
             };
           }
         });
@@ -191,7 +212,7 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
 isToday(date: string | null): boolean {
   if (!date) return false;
   
-  const today = new Date().toISOString().split('T')[0];
+  const today = this.formatDateLocal(new Date());
   return date === today;
 }
 
@@ -221,7 +242,7 @@ openAttendance(record: AttendanceTableRecord) {
   record.overrideOpen = true;
   const actorUserId = parseInt(sessionStorage.getItem('userid') ?? '0')
   this.attendancetableService.openAttendanceForToday(
-    record.id,
+    record.employeeId ?? '',
     actorUserId,
   //parseInt(sessionStorage.getItem('userid') ?? '0'), //userid from session
 'Attendance opened by admin' //reason
@@ -350,21 +371,30 @@ filters: any = {
     correctionStatus: ''
   };
 
+  // Pagination
+  currentPage = 1;
+  pageSize = 10;
+  totalRecords = 0;
+  pageSizeOptions = [10, 25, 50, 100];
+
 onFiltersChange(filters: any) {
   this.filters = { ...this.filters, ...filters };
+
+  // Reset to first page when filters change
+  this.currentPage = 1;
 
   const hasDateRange = filters.dateFrom && filters.dateTo;
   const hasOtherFilters = filters.id || filters.employee || filters.department || filters.status;
 
   if (!filters.dateFrom && !filters.dateTo && !hasOtherFilters) {
-    // No filters at all — reload fresh from API
-    this.attendancetableService.fetchAllRecords();
+    // No filters at all — reload fresh from API with pagination
+    this.attendancetableService.fetchAllRecords(this.currentPage, this.pageSize);
     return;
   }
 
   if (hasDateRange) {
-    // Use the date range API endpoint, then apply remaining filters client-side
-    this.attendancetableService.fetchByDateRange(filters.dateFrom, filters.dateTo);
+    // Use the date range API endpoint with pagination, then apply remaining filters client-side
+    this.attendancetableService.fetchByDateRange(filters.dateFrom, filters.dateTo, this.currentPage, this.pageSize);
     // applyFilters() will be triggered automatically by the attendance$ subscription
   } else {
     // No date range — filter client-side only
@@ -387,9 +417,9 @@ onFiltersChange(filters: any) {
 }
 
 resetToToday() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = this.formatDateLocal(new Date());
 
-  const todayRecords = this.attendance.filter(record => record.date === today);
+  const todayRecords = this.attendance.filter(record => record.date ? this.formatDateLocal(record.date) === today : false);
 
   // If no records for today, show all records
   this.filteredAttendance = todayRecords.length > 0 ? todayRecords : this.attendance;
@@ -402,6 +432,74 @@ resetToToday() {
     data: this.filteredAttendance,
   filters: this.filters
 });
+}
+
+  // Pagination Methods
+  onPageChange(event: any): void {
+    this.currentPage = event.pageIndex + 1; // Angular Material paginator is 0-indexed
+    this.pageSize = event.pageSize;
+    this.loadPageData();
+  }
+
+  onPageSizeChange(newSize: number): void {
+    this.pageSize = newSize;
+    this.currentPage = 1; // Reset to first page
+    this.loadPageData();
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.getTotalPages()) {
+      this.currentPage = page;
+      this.loadPageData();
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.getTotalPages()) {
+      this.currentPage++;
+      this.loadPageData();
+    }
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.loadPageData();
+    }
+  }
+
+  getTotalPages(): number {
+    return Math.ceil(this.totalRecords / this.pageSize);
+  }
+
+  getStartRecord(): number {
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  getEndRecord(): number {
+    const end = this.currentPage * this.pageSize;
+    return end > this.totalRecords ? this.totalRecords : end;
+  }
+
+  private loadPageData(): void {
+    const hasDateRange = this.filters.dateFrom && this.filters.dateTo;
+
+    if (hasDateRange) {
+      this.attendancetableService.fetchByDateRange(
+        this.filters.dateFrom,
+        this.filters.dateTo,
+        this.currentPage,
+        this.pageSize
+      );
+    } else {
+      this.attendancetableService.fetchAllRecords(this.currentPage, this.pageSize);
+    }
+  }
+
+private formatDateLocal(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 applyFilters() {
@@ -532,9 +630,18 @@ saveModification() {
     adminName: currentUser.name
   };
 
+  // `editingRecord.date` is `Date | null` — pulled into a local so the
+  // ternary narrows cleanly. (A trailing `!` here instead of `?? ''` trips
+  // a TS narrowing quirk: it recomputes from the declared `Date | null`
+  // type rather than the narrowed `null`, resurrecting `Date` in the
+  // union and failing the `string` param below.)
+  const editingDate = this.editingRecord.date;
+
   this.attendancetableService.overrideAttendance(
-    this.editingRecord.id,
-    this.editingRecord.date!,
+    this.editingRecord.employeeId ?? '',
+    editingDate instanceof Date
+      ? editingDate.toISOString().split('T')[0]
+      : editingDate ?? '',
     this.editStatus,
     this.editCheckIn,
     this.editReason,
@@ -707,6 +814,72 @@ rejectCorrectionRequest(recordId: number, reason: string = ''): void {
   this.toastService.warning(`❌ Rejected! ${attendanceRecord?.employee} status remains ${attendanceRecord?.status}`);
 }
 
+// ── STEP 6: Cross-Branch Approval Workflow ────────────────────────────────
+approveCrossBranch(recordId: number): void {
+  const adminName = sessionStorage.getItem('fullname') || 'Admin';
+
+  // Find record in both arrays
+  const attendanceRecord = this.attendance.find(r => r.id === recordId);
+  const filteredRecord = this.filteredAttendance.find(r => r.id === recordId);
+
+  if (attendanceRecord && attendanceRecord.isCrossBranchAttendance) {
+    // Mark as approved
+    attendanceRecord.crossBranchApprovalStatus = 'APPROVED';
+    attendanceRecord.status = 'PRESENT'; // Confirm attendance is valid
+  }
+
+  if (filteredRecord && filteredRecord.isCrossBranchAttendance) {
+    filteredRecord.crossBranchApprovalStatus = 'APPROVED';
+    filteredRecord.status = 'PRESENT';
+  }
+
+  // Update in service
+  this.crossBranchApprovalService.approveCrossBranch(recordId, adminName);
+
+  // Close drawer
+  this.detailsRecord = null;
+
+  // Refresh
+  this.applyFilters();
+
+  this.toastService.success(
+    `✅ Approved! ${attendanceRecord?.employee} cross-branch: ${attendanceRecord?.homeBranchName} → ${attendanceRecord?.checkedInBranchName}`
+  );
+}
+
+rejectCrossBranch(recordId: number, reason: string = ''): void {
+  const rejectionReason = reason || 'Unauthorized cross-branch attendance';
+
+  // Find record in both arrays
+  const attendanceRecord = this.attendance.find(r => r.id === recordId);
+  const filteredRecord = this.filteredAttendance.find(r => r.id === recordId);
+
+  if (attendanceRecord && attendanceRecord.isCrossBranchAttendance) {
+    // Mark as rejected
+    attendanceRecord.crossBranchApprovalStatus = 'REJECTED';
+    // Optionally mark attendance as ABSENT
+    attendanceRecord.status = 'ABSENT';
+  }
+
+  if (filteredRecord && filteredRecord.isCrossBranchAttendance) {
+    filteredRecord.crossBranchApprovalStatus = 'REJECTED';
+    filteredRecord.status = 'ABSENT';
+  }
+
+  // Update in service
+  this.crossBranchApprovalService.rejectCrossBranch(recordId, 'Admin', rejectionReason);
+
+  // Close drawer
+  this.detailsRecord = null;
+
+  // Refresh
+  this.applyFilters();
+
+  this.toastService.warning(
+    `❌ Rejected! ${attendanceRecord?.employee} cross-branch attendance marked invalid`
+  );
+}
+
 // Helper: Get flag indicator for table
 getFlagIndicator(recordId: number): { icon: string; label: string; color: string } | null {
   const flag = this.modificationFlags.get(recordId);
@@ -829,7 +1002,12 @@ getCrossBranchBranchNames(record: AttendanceTableRecord): string {
 getFieldValue(record: AttendanceTableRecord, field: string): any {
   if (!field) return '';
   if (!field.includes('.')) {
-    return record[field as keyof AttendanceTableRecord] || '';
+    const value = record[field as keyof AttendanceTableRecord];
+    // Format date fields
+    if (field === 'date' && value instanceof Date) {
+      return value.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+    }
+    return value || '';
   }
   const parts = field.split('.');
   let value: any = record;
@@ -851,35 +1029,66 @@ isRecordSelected(recordId: number): boolean {
   return this.selectedRecords.has(recordId);
 }
 
-selectAllWithPendingCorrections(): void {
-  const pendingRecords = this.filteredAttendance.filter(r => r.correctionRequest?.status === 'PENDING');
-  if (pendingRecords.length === 0) {
-    this.toastService.warning('No pending correction requests to select');
+openMassApproveConfirm(): void {
+  const recordsToApprove = Array.from(this.selectedRecords).filter(id => {
+    const record = this.filteredAttendance.find(r => r.id === id);
+    return record?.correctionRequest?.status === 'PENDING' ||
+           (record?.isCrossBranchAttendance && record?.crossBranchApprovalStatus === 'PENDING');
+  });
+
+  if (recordsToApprove.length === 0) {
+    this.toastService.warning('No pending corrections or cross-branch selected');
     return;
   }
-  pendingRecords.forEach(r => this.selectedRecords.add(r.id));
-  this.toastService.info(`✅ Selected ${pendingRecords.length} records with pending corrections`);
+
+  this.showMassApproveConfirm = true;
+}
+
+cancelMassApprove(): void {
+  this.showMassApproveConfirm = false;
 }
 
 massApproveCorrectionRequests(): void {
   const recordsToApprove = Array.from(this.selectedRecords).filter(id => {
     const record = this.filteredAttendance.find(r => r.id === id);
-    return record?.correctionRequest?.status === 'PENDING';
+    return record?.correctionRequest?.status === 'PENDING' || 
+           (record?.isCrossBranchAttendance && record?.crossBranchApprovalStatus === 'PENDING');
   });
 
   if (recordsToApprove.length === 0) {
-    this.toastService.warning('No pending corrections selected');
+    this.toastService.warning('No pending corrections or cross-branch selected');
+    this.showMassApproveConfirm = false;
     return;
   }
 
   const adminName = sessionStorage.getItem('fullname') || 'Admin';
+  let correctionCount = 0;
+  let crossBranchCount = 0;
 
   recordsToApprove.forEach(recordId => {
-    this.approveCorrectionRequest(recordId);
+    const record = this.filteredAttendance.find(r => r.id === recordId);
+    
+    // Approve correction if pending
+    if (record?.correctionRequest?.status === 'PENDING') {
+      this.approveCorrectionRequest(recordId);
+      correctionCount++;
+    }
+    
+    // Approve cross-branch if pending
+    if (record?.isCrossBranchAttendance && record?.crossBranchApprovalStatus === 'PENDING') {
+      this.approveCrossBranch(recordId);
+      crossBranchCount++;
+    }
   });
 
   this.selectedRecords.clear();
-  this.toastService.success(`✅ Approved ${recordsToApprove.length} correction requests`);
+  this.showMassApproveConfirm = false;
+  
+  const messages = [];
+  if (correctionCount > 0) messages.push(`${correctionCount} correction(s)`);
+  if (crossBranchCount > 0) messages.push(`${crossBranchCount} cross-branch`);
+  
+  this.toastService.success(`✅ Approved ${messages.join(' and ')}`);
 }
 
 clearSelection(): void {
@@ -894,12 +1103,40 @@ getPendingCorrectionCount(): number {
   return this.filteredAttendance.filter(r => r.correctionRequest?.status === 'PENDING').length;
 }
 
+getPendingCrossBranchCount(): number {
+  return this.filteredAttendance.filter(r => 
+    r.isCrossBranchAttendance && r.crossBranchApprovalStatus === 'PENDING'
+  ).length;
+}
+
+getTotalPendingCount(): number {
+  return this.getPendingCorrectionCount() + this.getPendingCrossBranchCount();
+}
+
 
 
 areAllPendingSelected(): boolean {
-  const pendingRecords = this.filteredAttendance.filter(r => r.correctionRequest?.status === 'PENDING');
+  const pendingRecords = this.filteredAttendance.filter(r => 
+    r.correctionRequest?.status === 'PENDING' ||
+    (r.isCrossBranchAttendance && r.crossBranchApprovalStatus === 'PENDING')
+  );
   if (pendingRecords.length === 0) return false;
   return pendingRecords.every(r => this.selectedRecords.has(r.id));
+}
+
+selectAllWithPendingCorrections(): void {
+  const pendingRecords = this.filteredAttendance.filter(r => 
+    r.correctionRequest?.status === 'PENDING' ||
+    (r.isCrossBranchAttendance && r.crossBranchApprovalStatus === 'PENDING')
+  );
+  
+  if (this.areAllPendingSelected()) {
+    // Deselect all
+    pendingRecords.forEach(r => this.selectedRecords.delete(r.id));
+  } else {
+    // Select all pending
+    pendingRecords.forEach(r => this.selectedRecords.add(r.id));
+  }
 }
 
 }

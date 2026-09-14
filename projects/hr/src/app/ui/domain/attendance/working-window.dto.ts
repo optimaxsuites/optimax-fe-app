@@ -1,4 +1,7 @@
-// domain/attendance/working-window.model.ts
+/**
+ * Working Window Model - Defines the active work schedule window for an employee
+ * Used for attendance validation, lateness calculation, and shift tracking
+ */
 
 //export type ScheduleMode = 'office-hours' | 'shift' | 'mixed';
 

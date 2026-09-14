@@ -49,6 +49,7 @@ export class NavigationLinksService {
     this.links['payroll'] = '/admin/hr/payroll-dashboard/' + uuidV4();
     this.links['allPayslip'] = 'employee-payslip'
     this.links['performanceLink'] = '/admin/hr/performance/' +uuidV4();
+    this.links['workScheduleLink'] = '/admin/hr/work-schedule/' +uuidV4();
 
 
 

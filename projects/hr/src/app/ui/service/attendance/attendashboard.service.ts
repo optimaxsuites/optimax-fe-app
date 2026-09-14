@@ -3,6 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment.prod';
+import {
+  AttendanceSummaryDTO,
+  LateArrivalDTO,
+  AbsentEmployeeDTO,
+  MarkAttendanceResponseDTO
+} from '../../domain/attendance/attendance-summary.dto';
 
 @Injectable({
   providedIn: 'root'
@@ -12,9 +18,9 @@ export class AttendashboardService {
 
   constructor(private http: HttpClient) { }
 
-  getTodayStats(): Observable<any> {
-    return this.http.get<any>(
-      `${this.apiUrl}/attendance/stats/today`
+  getTodayStats(): Observable<AttendanceSummaryDTO | null> {
+    return this.http.get<AttendanceSummaryDTO>(
+      `${this.apiUrl}/attendance-records/stats/today`
     ).pipe(
       catchError(error => {
         console.error('Failed to get today stats:', error);
@@ -23,20 +29,9 @@ export class AttendashboardService {
     );
   }
 
-  getDepartmentHeatmap(): Observable<any[]> {
-    return this.http.get<any[]>(
-      `${this.apiUrl}/attendance/departments/heatmap`
-    ).pipe(
-      catchError(error => {
-        console.error('Failed to get department heatmap:', error);
-        return of([]);
-      })
-    );
-  }
-
-  getLateArrivals(): Observable<any[]> {
-    return this.http.get<any[]>(
-      `${this.apiUrl}/attendance/late/today`
+  getLateArrivals(): Observable<LateArrivalDTO[]> {
+    return this.http.get<LateArrivalDTO[]>(
+      `${this.apiUrl}/attendance-records/late/today`
     ).pipe(
       catchError(error => {
         console.error('Failed to get late arrivals:', error);
@@ -45,9 +40,9 @@ export class AttendashboardService {
     );
   }
 
-  getAbsentees(): Observable<any[]> {
-    return this.http.get<any[]>(
-      `${this.apiUrl}/attendance/absent/today`
+  getAbsentees(): Observable<AbsentEmployeeDTO[]> {
+    return this.http.get<AbsentEmployeeDTO[]>(
+      `${this.apiUrl}/attendance-records/absent/today`
     ).pipe(
       catchError(error => {
         console.error('Failed to get absentees:', error);
@@ -56,9 +51,9 @@ export class AttendashboardService {
     );
   }
 
-  markAttendance(): Observable<any> {
-    return this.http.post<any>(
-      `${this.apiUrl}/attendance/mark`,
+  markAttendance(): Observable<MarkAttendanceResponseDTO | null> {
+    return this.http.post<MarkAttendanceResponseDTO>(
+      `${this.apiUrl}/attendance-records/mark`,
       {}
     ).pipe(
       catchError(error => {
@@ -68,3 +63,4 @@ export class AttendashboardService {
     );
   }
 }
+

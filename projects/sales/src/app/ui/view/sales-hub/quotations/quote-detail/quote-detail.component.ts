@@ -261,6 +261,9 @@ export class QuoteDetailComponent implements OnInit {
     this.salesService.updateQuote(String(this.quote.id), { status: 'SENT' }).subscribe({
       next: (updated: Quote) => {
         this.quote = updated;
+        this.salesService.upsertTransactionForQuote(updated.id, { status: 'QUOTE_SENT', quoteSentDate: new Date() }).subscribe({
+          error: (err) => console.error('Failed to sync quote-sent status to Sales & Transactions:', err)
+        });
       },
       error: (err: any) => {
         console.error('Error sending quote:', err);
@@ -295,7 +298,7 @@ export class QuoteDetailComponent implements OnInit {
           totalAmount: updated.totalAmount,
           currency: updated.currency,
           status: 'QUOTE_ACCEPTED',
-          orderDate: new Date(),
+          quoteAcceptedOrRejectedDate: new Date(),
           customerNotes: addOpts?.notes || '',
           billingAddress: addOpts?.address || '',
           shippingAddress: addOpts?.address || '',
@@ -311,17 +314,20 @@ export class QuoteDetailComponent implements OnInit {
           }
         };
 
-        this.salesService.createSalesandTransactions(orderData).subscribe({
-          next: (createdTx) => {
+        // This quote already has a transaction tracking its lifecycle since it was created
+        // (see SalesService.trackNewQuote()) — advance that same record rather than creating
+        // a second, duplicate one now that it's been accepted.
+        this.salesService.upsertTransactionForQuote(updated.id, orderData).subscribe({
+          next: (tx) => {
             const uuid = this.route.snapshot.paramMap.get('uuid');
             if (uuid) {
-              this.router.navigate(['/admin/sales/orders', createdTx.id, uuid]);
+              this.router.navigate(['/admin/sales/orders', tx.id, uuid]);
             } else {
-              this.router.navigate(['/admin/sales/orders', createdTx.id]);
+              this.router.navigate(['/admin/sales/orders', tx.id]);
             }
           },
           error: (orderErr: any) => {
-            console.error('Error creating sales order from quote:', orderErr);
+            console.error('Error updating sales order from quote:', orderErr);
           }
         });
       },
@@ -345,6 +351,9 @@ export class QuoteDetailComponent implements OnInit {
     this.salesService.updateQuote(String(this.quote.id), { status: 'DECLINED' }).subscribe({
       next: (updated: Quote) => {
         this.quote = updated;
+        this.salesService.upsertTransactionForQuote(updated.id, { status: 'QUOTE_REJECTED', quoteAcceptedOrRejectedDate: new Date() }).subscribe({
+          error: (err) => console.error('Failed to sync quote-declined status to Sales & Transactions:', err)
+        });
       },
       error: (err: any) => {
         console.error('Error declining quote:', err);
@@ -362,13 +371,16 @@ export class QuoteDetailComponent implements OnInit {
 
   confirmDeleteQuote(): void {
     if (!this.quote) return;
+    const quoteNumber = this.quote.quoteNumber;
     this.showDeleteQuoteModal = false;
     this.salesService.updateQuote(String(this.quote.id), { status: 'EXPIRED' }).subscribe({
       next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Quote ${quoteNumber} deleted successfully` });
         this.goBack();
       },
       error: (err: any) => {
         console.error('Error deleting quote:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete quote. Please try again.' });
       }
     });
   }
@@ -377,7 +389,8 @@ export class QuoteDetailComponent implements OnInit {
     if (this.closed.observed) {
       this.closed.emit();
     } else {
-      const sessionStorageKey = 'dashboard-catalog-quotes-invoices-orders-customers-transactions';
+      // Must match the [cacheKey] passed to <app-nav-tab> in sales-hub.component.html.
+      const sessionStorageKey = 'sales-hub';
       sessionStorage.setItem(sessionStorageKey, 'Quotes');
 
       const uuid = this.route.snapshot.paramMap.get('uuid');
@@ -390,7 +403,8 @@ export class QuoteDetailComponent implements OnInit {
   }
 
   goToQuotesList(): void {
-    const sessionStorageKey = 'dashboard-catalog-quotes-invoices-orders-customers-transactions';
+    // Must match the [cacheKey] passed to <app-nav-tab> in sales-hub.component.html.
+    const sessionStorageKey = 'sales-hub';
     sessionStorage.setItem(sessionStorageKey, 'Quotes');
 
     const uuid = this.route.snapshot.paramMap.get('uuid');

@@ -2,8 +2,8 @@ import { Component, OnInit, Output, EventEmitter, HostListener, Input } from '@a
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ShiftserviceService } from '../../../service/workschedule-shift/shiftservice.service';
 import { ScheduleserviceService } from '../../../service/workschedule-shift/scheduleservice.service';
-import { ShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
-import { ScheduleDTO } from '../../../domain/workschedule-shift/schedule.dto';
+import { WorkShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
+import { ShiftScheduleDTO } from '../../../domain/workschedule-shift/schedule.dto';
 import { debounceTime } from 'rxjs';
 
 export interface Department {
@@ -26,7 +26,7 @@ export interface Employee {
 
 export class ShiftAssignmentComponent implements OnInit {
   assignmentForm!: FormGroup;
-  shifts: ShiftDTO[] = [];
+  shifts: WorkShiftDTO[] = [];
   conflictMessage: string[] = [];
   existingAssignments: any[] = [];
 
@@ -79,7 +79,7 @@ export class ShiftAssignmentComponent implements OnInit {
 
   @Input() preselectedDate!: string;
   @Input() preselectedEndDate!: string;
-  @Input() scheduleToEdit: ScheduleDTO | null = null;
+  @Input() scheduleToEdit: ShiftScheduleDTO | null = null;
   @Output() closeModal = new EventEmitter<void>();
 
   constructor(
@@ -205,7 +205,7 @@ export class ShiftAssignmentComponent implements OnInit {
         employeeId: empId,
         shiftId: values.shiftId,
         date: values.date
-      } as ScheduleDTO,
+      } as ShiftScheduleDTO,
       this.scheduleToEdit?.id
     );
 
@@ -297,7 +297,7 @@ export class ShiftAssignmentComponent implements OnInit {
   }
 
    // ── Form helpers ───────────────
-  get selectedShift(): ShiftDTO | undefined {
+  get selectedShift(): WorkShiftDTO | undefined {
     return this.shifts.find(s => s.id === this.assignmentForm.value.shiftId);
   }
 
@@ -315,7 +315,7 @@ export class ShiftAssignmentComponent implements OnInit {
   assignShift() {
     if (this.isEditMode) {
       const form = this.assignmentForm.value;
-      const updatedSchedule: ScheduleDTO = {
+      const updatedSchedule: ShiftScheduleDTO = {
         ...this.scheduleToEdit!,
         shiftId: form.shiftId,
         date: form.date,

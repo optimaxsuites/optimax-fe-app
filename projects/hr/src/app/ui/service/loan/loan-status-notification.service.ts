@@ -618,23 +618,32 @@ export class LoanStatusNotificationService {
       .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime());
 
     return this.formatDate(
-      matchingStatusEntries[0]?.changedAt ||
-      loan.updatedAt ||
-      loan.completedDate ||
-      loan.disbursedDate ||
-      loan.approvedDate ||
-      loan.rejectedDate ||
-      loan.requestDate ||
-      loan.applicationDate
+      this.dateToString(matchingStatusEntries[0]?.changedAt) ||
+      this.dateToString(loan.updatedAt) ||
+      this.dateToString(loan.completedDate) ||
+      this.dateToString(loan.disbursedDate) ||
+      this.dateToString(loan.approvedDate) ||
+      this.dateToString(loan.rejectedDate) ||
+      this.dateToString(loan.requestDate) ||
+      this.dateToString(loan.applicationDate) ||
+      null
     );
   }
 
-  private getFriendlyLabel(value?: string | null): string {
-    return String(value || '').replace(/_/g, ' ').trim();
+  private dateToString(value?: string | Date | null): string | null {
+    if (!value) return null;
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+    return value;
   }
 
   private getStatusRecipientEmail(resolvedEmail?: string | null): string {
     return String(this.forcedStatusRecipientEmail || resolvedEmail || '').trim();
+  }
+
+  private getFriendlyLabel(value?: string | null): string {
+    return String(value || '').replace(/_/g, ' ').trim();
   }
 
   private formatCurrency(amount: number): string {

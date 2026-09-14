@@ -1,132 +1,162 @@
-import { Component, OnInit, ViewChild, HostListener } from '@angular/core';
-import { ScheduleserviceService } from '../../../service/workschedule-shift/scheduleservice.service';
-import { ShiftserviceService } from '../../../service/workschedule-shift/shiftservice.service';
-import { ScheduleDTO } from '../../../domain/workschedule-shift/schedule.dto';
-import { ShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
-import { CalendarOptions } from '@fullcalendar/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { CalendarOptions, EventInput } from '@fullcalendar/core';
+import { FullCalendarComponent } from '@fullcalendar/angular';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 
+import { ScheduleserviceService } from '../../../service/workschedule-shift/scheduleservice.service';
+import { ShiftserviceService } from '../../../service/workschedule-shift/shiftservice.service';
+import { ShiftScheduleDTO } from '../../../domain/workschedule-shift/schedule.dto';
+import { WorkShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
+import { TableColumn } from '../../../shared-component/view/table/table.component';
+
 interface DayShiftGroup {
-  shift: ShiftDTO;
-  schedule: ScheduleDTO;
+  shift: WorkShiftDTO;
+  schedule: ShiftScheduleDTO;
   employees: { id: string; name: string }[];
 }
+
+interface GanttBar {
+  schedule: ShiftScheduleDTO;
+  shift: WorkShiftDTO | undefined;
+  left: number;
+  width: number;
+  color: string;
+  isSelected: boolean;
+}
+
+interface GanttRow {
+  employeeId: string;
+  employeeName: string;
+  bars: GanttBar[];
+}
+
+interface ScheduleConflict {
+  employeeName: string | undefined;
+  message: string;
+}
+
+/**
+ * Flat row for the shared <app-table>. Projecting the joins up front lets the
+ * table sort on any column by field name without reaching back into the
+ * services.
+ */
+interface ShiftTableRow {
+  employee: string;
+  shiftName: string;
+  time: string;
+  project: string;
+  status: string;
+  color: string;
+}
+
+type ShiftViewMode = 'calendar' | 'table' | 'gantt';
+
+/** Fallback when a shift carries no colour of its own. Mirrors $accent. */
+const DEFAULT_SHIFT_COLOR = '#2E6276';
 
 @Component({
   selector: 'app-shift-calendar',
   templateUrl: './shift-calendar.component.html',
   styleUrl: './shift-calendar.component.scss'
 })
-export class ShiftCalendarComponent implements OnInit {
+export class ShiftCalendarComponent implements OnInit, OnDestroy {
+
+  @ViewChild(FullCalendarComponent) private calendarRef?: FullCalendarComponent;
 
   showAssignment = false;
-  schedules: ScheduleDTO[] = [];
-  currentDate = new Date();
-  currentPage = 1;
-  pageSize = 5;
+  schedules: ShiftScheduleDTO[] = [];
   selectedDate: string = this.formatDateLocal(new Date());
   isAdmin = false;
 
-  viewMode: 'calendar' | 'table' | 'summary' | 'gantt' = 'calendar';
-  batchSelected: Set<string> = new Set();
+  viewMode: ShiftViewMode = 'calendar';
+  batchSelected = new Set<string>();
 
   // Filters
   selectedShiftType: string | null = null;
   selectedEmployee: string | null = null;
-  searchQuery: string = '';
+  searchQuery = '';
   shiftTypes: string[] = [];
 
   // FullCalendar
   calendarOptions!: CalendarOptions;
 
-  // Gantt View
-  ganttRows: any[] = [];
+  // Table view
+  readonly tableColumns: TableColumn<ShiftTableRow>[] = [
+    { header: 'Employee', field: 'employee', sortable: true },
+    { header: 'Shift', field: 'shiftName', sortable: true },
+    { header: 'Time', field: 'time' },
+    { header: 'Project', field: 'project', sortable: true },
+    { header: 'Status', field: 'status' }
+  ];
+  tableRows: ShiftTableRow[] = [];
+
+  // Timeline (gantt) view
+  ganttRows: GanttRow[] = [];
   ganttStartDate = new Date();
   ganttEndDate = new Date();
   pixelsPerDay = 60;
   ganttTimelineWidth = 1200;
 
-  // Summary metrics
-  totalShifts = 0;
-  totalEmployees = 0;
-  totalOpenSlots = 0;
-
   // Drag-to-select
-  dragStartDate: string | null = null;
-  dragEndDate: string | null = null;
   isDragging = false;
-  selectedDatesRange: Set<string> = new Set();
-  dateMap: Map<string, HTMLElement> = new Map();
   dragRangeStart: string | null = null;
   dragRangeEnd: string | null = null;
+  private dragAnchor: string | null = null;
+  private lastDragHover: string | null = null;
+  private selectedDatesRange = new Set<string>();
 
-  selectedSummaryDate: string | null = null;
   showDateWarning = false;
+  editingSchedule: ShiftScheduleDTO | null = null;
 
-  editingSchedule: ScheduleDTO | null = null;
+  /**
+   * The shift catalogue opens in a side drawer rather than taking a view slot
+   * of its own — it is reference data you dip into, not a place you work, so it
+   * should cost no permanent layout space.
+   */
+  showShiftList = false;
 
   employees = [
     { id: 'emp-1', name: 'Afolabi Daniels' },
     { id: 'emp-2', name: 'David Okpabio' },
     { id: 'emp-3', name: 'Ngozi Ezer' }
   ];
-  readonly weekdays = ['Sun', 'Mon', 'Tues', 'Wed', 'Thur', 'Fri', 'Sat'];
+
+  private scheduleSub?: Subscription;
+  /** Dates that carry at least one schedule — drives the day-cell marker. */
+  private scheduledDates = new Set<string>();
+  private conflictCache: { source: ShiftScheduleDTO[]; date: string; value: ScheduleConflict[] } | null = null;
 
   constructor(
     private scheduleService: ScheduleserviceService,
-    private shiftService: ShiftserviceService
+    public shiftService: ShiftserviceService,
+    private host: ElementRef<HTMLElement>
   ) {}
 
   ngOnInit(): void {
-    const role = sessionStorage.getItem('role');
-    this.isAdmin = role === 'ADMIN';
+    this.isAdmin = sessionStorage.getItem('role') === 'ADMIN';
 
     this.initializeCalendarOptions();
-    this.scheduleService.schedules$.subscribe(data => {
+    this.setGanttDateRange();
+
+    this.scheduleSub = this.scheduleService.schedules$.subscribe(data => {
       this.schedules = data;
+      this.scheduledDates = new Set(data.map(s => s.date));
       this.extractShiftTypes();
-
-      // Log filtered data for each view
-      const filtered = this.getFilteredSchedules();
-
-      // Update all views
-      this.updateCalendarEvents();
-      this.updateSummaryMetrics();
-      this.buildGanttView();
-
-    });
-
-    const today = this.formatDateLocal(new Date());
-    this.selectedSummaryDate = today;
-
-    // Add global mouse tracking for drag-to-select
-    this.addGlobalMouseTracking();
-  }
-
-  private addGlobalMouseTracking(): void {
-    document.addEventListener('mousemove', (e: MouseEvent) => {
-      if (!this.isDragging) return;
-
-      const element = document.elementFromPoint(e.clientX, e.clientY);
-      const dateCell = element?.closest('[data-date]') as HTMLElement;
-
-      if (dateCell) {
-        const dateStr = dateCell.getAttribute('data-date');
-        if (dateStr) {
-          this.continueDateDrag(dateStr);
-        }
-      }
-    });
-
-    document.addEventListener('mouseup', () => {
-      if (this.isDragging) {
-        this.endDateDrag();
-      }
+      this.refreshViews();
     });
   }
 
-  initializeCalendarOptions(): void {
+  ngOnDestroy(): void {
+    this.scheduleSub?.unsubscribe();
+  }
+
+  // ============================================================
+  // Calendar
+  // ============================================================
+
+  private initializeCalendarOptions(): void {
     this.calendarOptions = {
       plugins: [dayGridPlugin, interactionPlugin],
       initialView: 'dayGridMonth',
@@ -135,136 +165,252 @@ export class ShiftCalendarComponent implements OnInit {
         center: 'title',
         right: 'dayGridMonth,dayGridWeek'
       },
+      buttonText: { today: 'Today', month: 'Month', week: 'Week' },
+      titleFormat: { year: 'numeric', month: 'long' },
+      fixedWeekCount: false,
+      showNonCurrentDates: true,
+      dayMaxEventRows: 3,
       height: 'auto',
       events: [],
-      eventClick: (arg: any) => this.onEventClick(arg),
       eventDisplay: 'block',
       displayEventTime: true,
-      eventTimeFormat: {
-        hour: '2-digit',
-        minute: '2-digit',
-        meridiem: 'short'
+      eventTimeFormat: { hour: '2-digit', minute: '2-digit', meridiem: 'short' },
+      eventClick: arg => this.onEventClick(arg),
+      // The event chip is drawn entirely in SCSS off --shift-colour. Setting it
+      // here rather than binding in the template keeps it a real DOM property
+      // call, which Angular's [style.--x] binding does not reliably produce.
+      eventDidMount: arg => {
+        arg.el.style.setProperty('--shift-colour', arg.event.extendedProps['color'] || DEFAULT_SHIFT_COLOR);
+        // The chip ellipses at cell width, so keep the full label on hover.
+        arg.el.setAttribute('title', arg.event.title);
       },
-      dayCellDidMount: (arg: any) => this.onDayCellDidMount(arg)
+      // Static per-day state. Live drag feedback is applied imperatively in
+      // applyDayCellStates() because FullCalendar does not re-render on
+      // mousemove.
+      dayCellClassNames: arg => {
+        const date = this.formatDateLocal(arg.date);
+        return this.scheduledDates.has(date) ? ['day--scheduled'] : [];
+      }
     };
   }
 
-  updateCalendarEvents(): void {
-    const filtered = this.getFilteredSchedules();
-    const events = filtered.map(schedule => {
+  /**
+   * Rebuilds the event list and pushes it into the live calendar.
+   *
+   * `calendarOptions.events` is also kept current: the <full-calendar> element
+   * sits inside an *ngIf, so it is destroyed and recreated whenever the user
+   * leaves and re-enters the calendar view, and reads the options fresh on
+   * construction. Mutating the options alone is not enough while the calendar
+   * is already alive — [options] is an @Input, so a nested mutation raises no
+   * ngOnChanges and nothing re-renders. Hence the API call as well.
+   */
+  private renderCalendarEvents(): void {
+    const events = this.buildCalendarEvents();
+    this.calendarOptions.events = events;
+
+    const api = this.calendarRef?.getApi();
+    if (!api) return;
+
+    api.removeAllEvents();
+    events.forEach(event => api.addEvent(event));
+  }
+
+  private buildCalendarEvents(): EventInput[] {
+    return this.getFilteredSchedules().map(schedule => {
       const shift = this.shiftService.getShiftById(schedule.shiftId);
-      const emp = this.employees.find(e => e.id === schedule.employeeId);
+      const employee = this.employees.find(e => e.id === schedule.employeeId);
+      const color = shift?.color || DEFAULT_SHIFT_COLOR;
 
       return {
         id: schedule.id,
-        title: `${shift?.name || 'Shift'} - ${emp?.name || 'N/A'}`,
+        title: `${shift?.name || 'Shift'} · ${employee?.name || 'Unassigned'}`,
         date: schedule.date,
-        backgroundColor: shift?.color || '#3b82f6',
-        borderColor: this.batchSelected.has(schedule.id) ? '#fbbf24' : (shift?.color || '#3b82f6'),
+        // The chip is drawn in SCSS off --shift-colour so the palette stays in
+        // the stylesheet; FullCalendar's own fills are switched off.
+        backgroundColor: 'transparent',
+        borderColor: 'transparent',
+        textColor: 'inherit',
+        classNames: this.batchSelected.has(schedule.id) ? ['is-selected'] : [],
         extendedProps: {
           scheduleId: schedule.id,
-          shiftId: schedule.shiftId,
-          employeeId: schedule.employeeId,
-          schedule: schedule,
-          shift: shift,
-          employee: emp
+          color,
+          schedule,
+          shift,
+          employee
         }
       };
     });
-
-    if (this.calendarOptions.events) {
-      this.calendarOptions.events = events;
-    }
-  }
-
-  onDayCellDidMount(arg: any): void {
-    const dateStr = this.formatDateLocal(arg.date);
-    const hasSchedules = this.schedules.some(s => s.date === dateStr);
-
-    // Store date on the element for drag selection
-    arg.el.setAttribute('data-date', dateStr);
-    this.dateMap.set(dateStr, arg.el);
-
-    // Add background color for scheduled dates
-    if (hasSchedules) {
-      arg.el.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
-      arg.el.style.borderLeft = '4px solid #3b82f6';
-    }
-
-    // Add mousedown listener for drag start
-    arg.el.addEventListener('mousedown', (e: MouseEvent) => {
-      // Ignore if clicking on an event
-      if ((e.target as HTMLElement).closest('.fc-event')) {
-        return;
-      }
-      this.startDateDrag(dateStr);
-    });
-
-    // Update drag range styling
-    if (this.isDateInDragRange(dateStr)) {
-      arg.el.style.backgroundColor = '#dbeafe';
-      arg.el.style.borderLeft = '3px solid #60a5fa';
-    }
   }
 
   onEventClick(arg: any): void {
-    const scheduleId = arg.event.extendedProps['scheduleId'];
-    this.toggleBatchSelect(scheduleId);
-    this.updateCalendarEvents();
+    this.toggleBatchSelect(arg.event.extendedProps['scheduleId']);
+    this.renderCalendarEvents();
   }
 
-  updateSummaryMetrics(): void {
-    this.totalShifts = this.schedules.length;
-    this.totalEmployees = new Set(this.schedules.map(s => s.employeeId)).size;
+  /** Colour key for the calendar — one entry per shift type actually on screen. */
+  get shiftLegend(): { name: string; color: string }[] {
+    const byName = new Map<string, string>();
 
-    // Log all schedules with their dates
-    if (this.schedules.length > 0) {
-      this.schedules.forEach(s => {
-        const emp = this.employees.find(e => e.id === s.employeeId);
-        const shift = this.shiftService.getShiftById(s.shiftId);
-      });
+    for (const schedule of this.getFilteredSchedules()) {
+      const shift = this.shiftService.getShiftById(schedule.shiftId);
+      if (shift && !byName.has(shift.name)) {
+        byName.set(shift.name, shift.color || DEFAULT_SHIFT_COLOR);
+      }
     }
 
-    const requiredDailySlots = 10;
-    this.totalOpenSlots = Math.max(0, requiredDailySlots - this.schedules.length);
+    return Array.from(byName, ([name, color]) => ({ name, color }));
   }
 
-  extractShiftTypes(): void {
+  // ============================================================
+  // Drag-to-select
+  // ============================================================
+
+  /**
+   * One delegated listener on the calendar surface, rather than a listener per
+   * day cell — day cells are recreated on every month change.
+   */
+  onSurfaceMouseDown(event: MouseEvent): void {
+    if (!this.isAdmin) return;
+
+    const target = event.target as HTMLElement;
+    if (target.closest('.fc-event')) return;
+
+    // Scoped to day cells — in week view the column headers also carry
+    // data-date, and pressing one should not start a selection.
+    const date = target.closest('.fc-daygrid-day[data-date]')?.getAttribute('data-date');
+    if (date) this.startDateDrag(date);
+  }
+
+  // document: listeners registered through @HostListener are torn down with the
+  // component, so navigating away from the tab cannot leak them.
+  @HostListener('document:mousemove', ['$event'])
+  onDocumentMouseMove(event: MouseEvent): void {
+    if (!this.isDragging) return;
+
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const date = element?.closest('[data-date]')?.getAttribute('data-date');
+    if (date) this.continueDateDrag(date);
+  }
+
+  @HostListener('document:mouseup')
+  onDocumentMouseUp(): void {
+    this.endDateDrag();
+  }
+
+  private startDateDrag(date: string): void {
+    this.isDragging = true;
+    this.dragAnchor = date;
+    this.lastDragHover = date;
+    this.dragRangeStart = date;
+    this.dragRangeEnd = date;
+    this.selectedDatesRange = new Set([date]);
+    this.applyDayCellStates();
+  }
+
+  private continueDateDrag(date: string): void {
+    if (!this.isDragging || !this.dragAnchor) return;
+    // mousemove fires far more often than the pointer changes cell.
+    if (date === this.lastDragHover) return;
+    this.lastDragHover = date;
+
+    const [start, end] = this.dragAnchor <= date
+      ? [this.dragAnchor, date]
+      : [date, this.dragAnchor];
+
+    this.dragRangeStart = start;
+    this.dragRangeEnd = end;
+    this.selectDateRange(start, end);
+    this.applyDayCellStates();
+  }
+
+  private endDateDrag(): void {
+    if (!this.isDragging) return;
+
+    this.isDragging = false;
+    this.applyDayCellStates();
+
+    if (this.selectedDatesRange.size === 0) return;
+
+    this.selectedDate = this.dragRangeEnd ?? this.selectedDate;
+    this.openAssignment();
+  }
+
+  private selectDateRange(startDate: string, endDate: string): void {
+    const range = new Set<string>();
+    const cursor = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T00:00:00');
+
+    while (cursor <= end) {
+      range.add(this.formatDateLocal(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    this.selectedDatesRange = range;
+  }
+
+  private isDateInDragRange(date: string): boolean {
+    return this.isDragging && this.selectedDatesRange.has(date);
+  }
+
+  /**
+   * Toggles classes on the day cells so all colour lives in SCSS. Scoped to
+   * this component's own element — a document-wide query would also restyle any
+   * other calendar on the page.
+   */
+  private applyDayCellStates(): void {
+    const cells = this.host.nativeElement.querySelectorAll<HTMLElement>('.fc-daygrid-day[data-date]');
+
+    cells.forEach(cell => {
+      const date = cell.getAttribute('data-date') ?? '';
+      cell.classList.toggle('day--in-range', this.isDateInDragRange(date));
+      cell.classList.toggle('day--scheduled', this.scheduledDates.has(date));
+    });
+  }
+
+  private clearDragSelection(): void {
+    this.selectedDatesRange.clear();
+    this.dragAnchor = null;
+    this.lastDragHover = null;
+    this.dragRangeStart = null;
+    this.dragRangeEnd = null;
+    this.applyDayCellStates();
+  }
+
+  // ============================================================
+  // Filters
+  // ============================================================
+
+  private extractShiftTypes(): void {
     const types = new Set<string>();
-    this.schedules.forEach(s => {
-      const shift = this.shiftService.getShiftById(s.shiftId);
+
+    this.schedules.forEach(schedule => {
+      const shift = this.shiftService.getShiftById(schedule.shiftId);
       if (shift) types.add(shift.name);
     });
+
     this.shiftTypes = Array.from(types).sort();
   }
 
   applyFilters(): void {
-    const filtered = this.getFilteredSchedules();
-    this.updateCalendarEvents();
-    this.buildGanttView();
-    this.updateSummaryMetrics();
+    this.refreshViews();
   }
 
   clearFilters(): void {
     this.selectedShiftType = null;
     this.selectedEmployee = null;
     this.searchQuery = '';
-
-    const filtered = this.getFilteredSchedules();
-
-    this.updateCalendarEvents();
-    this.buildGanttView();
-    this.updateSummaryMetrics();
+    this.refreshViews();
   }
 
-  getFilteredSchedules(): ScheduleDTO[] {
+  get hasActiveFilters(): boolean {
+    return !!(this.selectedShiftType || this.selectedEmployee || this.searchQuery);
+  }
+
+  getFilteredSchedules(): ShiftScheduleDTO[] {
     let filtered = this.schedules;
 
     if (this.selectedShiftType) {
-      filtered = filtered.filter(s => {
-        const shift = this.shiftService.getShiftById(s.shiftId);
-        return shift?.name === this.selectedShiftType;
-      });
+      filtered = filtered.filter(s => this.shiftService.getShiftById(s.shiftId)?.name === this.selectedShiftType);
     }
 
     if (this.selectedEmployee) {
@@ -273,202 +419,138 @@ export class ShiftCalendarComponent implements OnInit {
 
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
-      filtered = filtered.filter(s => {
-        const emp = this.employees.find(e => e.id === s.employeeId);
-        return emp?.name.toLowerCase().includes(query) || false;
-      });
+      filtered = filtered.filter(s =>
+        this.employees.find(e => e.id === s.employeeId)?.name.toLowerCase().includes(query) ?? false
+      );
     }
 
     return filtered;
   }
 
-  getSchedulesForDate(date: string): ScheduleDTO[] {
+  getSchedulesForDate(date: string): ShiftScheduleDTO[] {
     return this.getFilteredSchedules().filter(s => s.date === date);
   }
 
-  // Drag-to-select logic
-  @HostListener('document:mouseup', ['$event'])
-  onMouseUp(): void {
-    this.endDateDrag();
+  private refreshViews(): void {
+    this.renderCalendarEvents();
+    // dayCellClassNames only runs on a grid re-render, which pushing events
+    // through the API deliberately avoids — so re-apply the markers by hand.
+    this.applyDayCellStates();
+    this.buildGanttView();
+    this.rebuildTableRows();
   }
 
-  startDateDrag(dateStr: string): void {
-    this.isDragging = true;
-    this.dragStartDate = dateStr;
-    this.dragEndDate = dateStr;
-    this.dragRangeStart = dateStr;
-    this.dragRangeEnd = dateStr;
-    this.selectDateRange(new Date(dateStr + 'T00:00:00'), new Date(dateStr + 'T00:00:00'));
-    this.updateDragRangeStyling();
-  }
+  /**
+   * Held in a field rather than a getter: <app-table>'s [rows] is an @Input, so
+   * handing it a freshly-built array on every change-detection pass would make
+   * PrimeNG re-run its own change handling each cycle.
+   */
+  private rebuildTableRows(): void {
+    this.tableRows = this.getSchedulesForDate(this.selectedDate).map(schedule => {
+      const shift = this.shiftFor(schedule);
 
-  continueDateDrag(dateStr: string): void {
-    if (!this.isDragging || !this.dragStartDate) return;
-    this.dragEndDate = dateStr;
-    const start = new Date(this.dragStartDate + 'T00:00:00');
-    const end = new Date(dateStr + 'T00:00:00');
-    const sortedStart = start > end ? end : start;
-    const sortedEnd = start > end ? start : end;
-    this.dragRangeStart = this.formatDateLocal(sortedStart);
-    this.dragRangeEnd = this.formatDateLocal(sortedEnd);
-    this.selectDateRange(sortedStart, sortedEnd);
-    this.updateDragRangeStyling();
-  }
-
-  endDateDrag(): void {
-    if (this.isDragging && this.selectedDatesRange.size > 0) {
-      this.selectedDate = this.formatDateLocal(new Date(this.dragEndDate + 'T00:00:00'));
-      this.isDragging = false;
-      this.openAssignment();
-    } else {
-      this.isDragging = false;
-    }
-  }
-
-  selectDateRange(start: Date, end: Date): void {
-    this.selectedDatesRange.clear();
-    const current = new Date(start);
-    while (current <= end) {
-      this.selectedDatesRange.add(this.formatDateLocal(current));
-      current.setDate(current.getDate() + 1);
-    }
-  }
-
-  isDateInDragRange(dateStr: string): boolean {
-    return this.isDragging && this.selectedDatesRange.has(dateStr);
-  }
-
-  updateDragRangeStyling(): void {
-    const cells = document.querySelectorAll('[data-date]');
-    cells.forEach((cell: any) => {
-      const dateStr = cell.getAttribute('data-date');
-      const hasSchedules = this.schedules.some(s => s.date === dateStr);
-
-      if (this.isDateInDragRange(dateStr)) {
-        cell.style.backgroundColor = '#dbeafe';
-        cell.style.borderLeft = '3px solid #60a5fa';
-      } else if (hasSchedules) {
-        cell.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
-        cell.style.borderLeft = '4px solid #3b82f6';
-      } else {
-        cell.style.backgroundColor = '';
-        cell.style.borderLeft = '';
-      }
+      return {
+        employee: this.getEmployeeNameById(schedule.employeeId) ?? '—',
+        shiftName: shift?.name ?? '—',
+        time: shift ? `${shift.startTime}–${shift.endTime}` : '—',
+        project: schedule.project || '—',
+        status: 'Scheduled',
+        color: this.shiftColor(schedule)
+      };
     });
   }
 
-  setView(mode: 'calendar' | 'table' | 'summary' | 'gantt') {
+  // ============================================================
+  // Batch selection
+  // ============================================================
+
+  setView(mode: ShiftViewMode): void {
     this.viewMode = mode;
   }
 
-  toggleBatchSelect(scheduleId: string) {
+  toggleBatchSelect(scheduleId: string): void {
     if (this.batchSelected.has(scheduleId)) {
       this.batchSelected.delete(scheduleId);
     } else {
       this.batchSelected.add(scheduleId);
     }
+    this.buildGanttView();
   }
 
   isBatchSelected(scheduleId: string): boolean {
     return this.batchSelected.has(scheduleId);
   }
 
-  clearBatchSelection() {
+  clearBatchSelection(): void {
     this.batchSelected.clear();
+    this.refreshViews();
   }
 
-  bulkAssignShift(shiftId: string) {
-    const selectedSchedules = this.schedules.filter(s => this.batchSelected.has(s.id));
-    this.batchSelected.clear();
-  }
-
-  bulkDeleteSchedules() {
+  bulkDeleteSchedules(): void {
     if (this.batchSelected.size === 0) return;
-    const confirmed = confirm(`Delete ${this.batchSelected.size} schedule(s)?`);
-    if (!confirmed) return;
+    if (!confirm(`Delete ${this.batchSelected.size} schedule(s)?`)) return;
 
-    this.batchSelected.forEach(scheduleId => {
-      const schedule = this.schedules.find(s => s.id === scheduleId);
-      if (schedule) {
-        this.scheduleService.deleteSchedule(scheduleId);
-      }
-    });
+    this.batchSelected.forEach(id => this.scheduleService.deleteSchedule(id));
     this.batchSelected.clear();
   }
 
-  // Gantt view methods
+  // ============================================================
+  // Timeline (gantt)
+  // ============================================================
+
   buildGanttView(): void {
     const filtered = this.getFilteredSchedules();
+    const seen = new Map<string, { id: string; name: string }>();
 
-    const uniqueEmployees = new Map<string, { id: string; name: string }>();
-
-    filtered.forEach(s => {
-      const emp = this.employees.find(e => e.id === s.employeeId);
-      if (emp && !uniqueEmployees.has(s.employeeId)) {
-        uniqueEmployees.set(s.employeeId, emp);
-      }
+    filtered.forEach(schedule => {
+      if (seen.has(schedule.employeeId)) return;
+      const employee = this.employees.find(e => e.id === schedule.employeeId);
+      if (employee) seen.set(schedule.employeeId, employee);
     });
 
-    this.ganttRows = Array.from(uniqueEmployees.values()).map(emp => ({
-      employeeName: emp.name,
-      employeeId: emp.id,
-      bars: this.getEmployeeGanttBars(emp.id, filtered)
+    this.ganttRows = Array.from(seen.values()).map(employee => ({
+      employeeId: employee.id,
+      employeeName: employee.name,
+      bars: this.getEmployeeGanttBars(employee.id, filtered)
     }));
-
-    this.ganttRows.forEach(row => {
-    });
-
-    this.setGanttDateRange();
   }
 
-  getEmployeeGanttBars(employeeId: string, schedules: ScheduleDTO[]): any[] {
-    const employeeSchedules = schedules.filter(s => s.employeeId === employeeId);
-    const bars = employeeSchedules.map(schedule => {
-      const shift = this.shiftService.getShiftById(schedule.shiftId);
-      const scheduleDate = new Date(schedule.date + 'T00:00:00');
-      const daysFromStart = Math.floor((scheduleDate.getTime() - this.ganttStartDate.getTime()) / (1000 * 60 * 60 * 24));
+  private getEmployeeGanttBars(employeeId: string, schedules: ShiftScheduleDTO[]): GanttBar[] {
+    return schedules
+      .filter(s => s.employeeId === employeeId)
+      .map(schedule => {
+        const shift = this.shiftService.getShiftById(schedule.shiftId);
+        const date = new Date(schedule.date + 'T00:00:00');
+        const daysFromStart = Math.floor((date.getTime() - this.ganttStartDate.getTime()) / 86_400_000);
 
-      const bar = {
-        schedule,
-        shift,
-        left: daysFromStart * this.pixelsPerDay,
-        width: this.pixelsPerDay - 4,
-        color: shift?.color || '#3b82f6',
-        isSelected: this.batchSelected.has(schedule.id)
-      };
-
-      return bar;
-    });
-
-    return bars;
+        return {
+          schedule,
+          shift,
+          left: daysFromStart * this.pixelsPerDay,
+          width: this.pixelsPerDay - 4,
+          color: shift?.color || DEFAULT_SHIFT_COLOR,
+          isSelected: this.batchSelected.has(schedule.id)
+        };
+      });
   }
 
-  setGanttDateRange(): void {
+  private setGanttDateRange(): void {
     const today = new Date();
-    // Set start to beginning of current month
     this.ganttStartDate = new Date(today.getFullYear(), today.getMonth(), 1);
-    // Set end to end of next month to ensure we show future shifts
     this.ganttEndDate = new Date(today.getFullYear(), today.getMonth() + 2, 0);
-
-
-    // Log if there are schedules outside this range
-    const outsideRange = this.schedules.filter(s => {
-      const d = new Date(s.date + 'T00:00:00');
-      return d < this.ganttStartDate || d > this.ganttEndDate;
-    });
-    if (outsideRange.length > 0) {
-    }
   }
 
   ganttPrevWeek(): void {
-    this.ganttStartDate = new Date(this.ganttStartDate.getFullYear(), this.ganttStartDate.getMonth(), this.ganttStartDate.getDate() - 7);
-    this.ganttEndDate = new Date(this.ganttEndDate.getFullYear(), this.ganttEndDate.getMonth(), this.ganttEndDate.getDate() - 7);
-    this.buildGanttView();
+    this.shiftGanttRange(-7);
   }
 
   ganttNextWeek(): void {
-    this.ganttStartDate = new Date(this.ganttStartDate.getFullYear(), this.ganttStartDate.getMonth(), this.ganttStartDate.getDate() + 7);
-    this.ganttEndDate = new Date(this.ganttEndDate.getFullYear(), this.ganttEndDate.getMonth(), this.ganttEndDate.getDate() + 7);
+    this.shiftGanttRange(7);
+  }
+
+  private shiftGanttRange(days: number): void {
+    this.ganttStartDate = new Date(this.ganttStartDate.getFullYear(), this.ganttStartDate.getMonth(), this.ganttStartDate.getDate() + days);
+    this.ganttEndDate = new Date(this.ganttEndDate.getFullYear(), this.ganttEndDate.getMonth(), this.ganttEndDate.getDate() + days);
     this.buildGanttView();
   }
 
@@ -478,98 +560,145 @@ export class ShiftCalendarComponent implements OnInit {
   }
 
   ganttZoomIn(): void {
-    if (this.pixelsPerDay < 120) {
-      this.pixelsPerDay += 10;
-      this.ganttTimelineWidth = this.pixelsPerDay * 30;
-      this.buildGanttView();
-    }
+    if (this.pixelsPerDay >= 120) return;
+    this.setPixelsPerDay(this.pixelsPerDay + 10);
   }
 
   ganttZoomOut(): void {
-    if (this.pixelsPerDay > 20) {
-      this.pixelsPerDay -= 10;
-      this.ganttTimelineWidth = this.pixelsPerDay * 30;
-      this.buildGanttView();
-    }
+    if (this.pixelsPerDay <= 20) return;
+    this.setPixelsPerDay(this.pixelsPerDay - 10);
+  }
+
+  private setPixelsPerDay(value: number): void {
+    this.pixelsPerDay = value;
+    this.ganttTimelineWidth = value * 30;
+    this.buildGanttView();
   }
 
   getGanttDayArray(): number[] {
-    const days = Math.ceil((this.ganttEndDate.getTime() - this.ganttStartDate.getTime()) / (1000 * 60 * 60 * 24));
+    const days = Math.ceil((this.ganttEndDate.getTime() - this.ganttStartDate.getTime()) / 86_400_000);
     return Array.from({ length: days + 1 }, (_, i) => i);
   }
 
-  getGanttDateLabel(dayIndex: number): string {
+  private ganttDate(dayIndex: number): Date {
     const date = new Date(this.ganttStartDate);
     date.setDate(date.getDate() + dayIndex);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return date;
+  }
+
+  getGanttDateLabel(dayIndex: number): string {
+    return this.ganttDate(dayIndex).toLocaleDateString('en-US', { day: 'numeric' });
   }
 
   getGanttDayOfWeek(dayIndex: number): string {
-    const date = new Date(this.ganttStartDate);
-    date.setDate(date.getDate() + dayIndex);
-    return date.toLocaleDateString('en-US', { weekday: 'short' });
+    return this.ganttDate(dayIndex).toLocaleDateString('en-US', { weekday: 'narrow' });
   }
+
+  isGanttWeekend(dayIndex: number): boolean {
+    const day = this.ganttDate(dayIndex).getDay();
+    return day === 0 || day === 6;
+  }
+
+  // ============================================================
+  // Selected day
+  // ============================================================
 
   get selectedDateLabel(): string {
     return new Date(this.selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
     });
   }
 
-  get monthLabel(): string {
-    return this.currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  }
-
-  getDateOfWeek(dateStr: string): string {
-    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
-  }
-
-  hasSchedules(date: Date): boolean {
-    const d = this.formatDateLocal(date);
-    return this.schedules.some(s => s.date === d);
+  get totalSchedules(): number {
+    return this.schedules.length;
   }
 
   get dayShiftGroups(): DayShiftGroup[] {
-    const daySchedules = this.schedules.filter(s => s.date === this.selectedDate);
     const groups = new Map<string, DayShiftGroup>();
 
-    daySchedules.forEach(schedule => {
-      const shift = this.shiftService.getShiftById(schedule.shiftId);
-      if (!shift) return;
+    this.schedules
+      .filter(s => s.date === this.selectedDate)
+      .forEach(schedule => {
+        const shift = this.shiftService.getShiftById(schedule.shiftId);
+        if (!shift) return;
 
-      if (!groups.has(schedule.shiftId)) {
-        groups.set(schedule.shiftId, { shift, schedule, employees: [] });
-      }
+        if (!groups.has(schedule.shiftId)) {
+          groups.set(schedule.shiftId, { shift, schedule, employees: [] });
+        }
 
-      const emp = this.employees.find(e => e.id === schedule.employeeId);
-      if (emp) {
-        groups.get(schedule.shiftId)!.employees.push(emp);
-      }
-    });
+        const employee = this.employees.find(e => e.id === schedule.employeeId);
+        if (employee) groups.get(schedule.shiftId)!.employees.push(employee);
+      });
 
     return Array.from(groups.values());
   }
 
+  /** Shifts cannot be assigned in the past, so today counts as locked. */
   get isSelectedDateLocked(): boolean {
-    const today = this.formatDateLocal(new Date());
-    return this.selectedDate <= today;
+    return this.selectedDate <= this.formatDateLocal(new Date());
   }
 
-  isPastOrToday(date: Date): boolean {
-    const today = new Date();
-    const d = this.formatDateLocal(date);
-    const t = this.formatDateLocal(today);
-    return d <= t;
+  /**
+   * Read from the template several times per change-detection pass, and each
+   * miss walks every schedule on the date through the conflict engine. Cached
+   * against the schedule array's identity — the service hands out a new array
+   * on every change — so a repeat read is free and the same reference comes
+   * back, which keeps *ngFor from re-rendering the list.
+   */
+  get conflicts(): ScheduleConflict[] {
+    if (this.conflictCache?.source === this.schedules && this.conflictCache.date === this.selectedDate) {
+      return this.conflictCache.value;
+    }
+
+    const value = this.schedules
+      .filter(s => s.date === this.selectedDate)
+      .flatMap(schedule => {
+        const result = this.scheduleService.checkConflict(schedule);
+        if (!result) return [];
+
+        return [{
+          employeeName: this.employees.find(e => e.id === schedule.employeeId)?.name,
+          message: result.message
+        }];
+      });
+
+    this.conflictCache = { source: this.schedules, date: this.selectedDate, value };
+    return value;
   }
 
-  editSchedule(schedule: ScheduleDTO): void {
+  shiftFor(schedule: ShiftScheduleDTO): WorkShiftDTO | undefined {
+    return this.shiftService.getShiftById(schedule.shiftId);
+  }
+
+  shiftColor(schedule: ShiftScheduleDTO): string {
+    return this.shiftFor(schedule)?.color || DEFAULT_SHIFT_COLOR;
+  }
+
+  getEmployeeNameById(employeeId: string | null): string | undefined {
+    if (!employeeId) return undefined;
+    return this.employees.find(e => e.id === employeeId)?.name;
+  }
+
+  onTableDateChange(event: Event): void {
+    this.selectedDate = (event.target as HTMLInputElement).value;
+    this.rebuildTableRows();
+  }
+
+  // ============================================================
+  // Assignment
+  // ============================================================
+
+  editSchedule(schedule: ShiftScheduleDTO): void {
     this.editingSchedule = schedule;
     this.showAssignment = true;
   }
 
-  deleteSchedule(schedule: ScheduleDTO): void {
+  deleteSchedule(schedule: ShiftScheduleDTO): void {
     if (schedule.assignmentGroupId) {
-      const deleteSeries = confirm('Delete entire recurring series?\n\nPress OK for entire series.\nPress Cancel for single occurrence.');
+      const deleteSeries = confirm(
+        'Delete entire recurring series?\n\nPress OK for the entire series.\nPress Cancel for this occurrence only.'
+      );
+
       if (deleteSeries) {
         this.scheduleService.deleteScheduleSeries(schedule.assignmentGroupId);
       } else {
@@ -578,196 +707,44 @@ export class ShiftCalendarComponent implements OnInit {
       return;
     }
 
-    const confirmed = confirm('Delete this schedule?');
-    if (!confirmed) return;
+    if (!confirm('Delete this schedule?')) return;
     this.scheduleService.deleteSchedule(schedule.id);
   }
 
-  onTableDateChange(event: any) {
-    this.selectedDate = event.target.value;
-    this.currentPage = 1;
-  }
-
-  get flattenedTableData() {
-    const rows: any[] = [];
-    this.dayShiftGroups.forEach(group => {
-      group.employees.forEach(emp => {
-        rows.push({
-          shiftName: group.shift.name,
-          project: group.schedule.project,
-          employee: emp.name,
-          time: `${group.shift.startTime} – ${group.shift.endTime}`,
-          status: 'Scheduled'
-        });
-      });
-    });
-    return rows;
-  }
-
-  get totalSchedules(): number {
-    return this.schedules.length;
-  }
-
-  selectSummaryDate(date: string): void {
-    this.selectedSummaryDate = date;
-  }
-
-  get uniqueEmployees(): number {
-    return new Set(this.schedules.map(s => s.employeeId)).size;
-  }
-
-  get openSlots(): number {
-    const requiredDailySlots = 10;
-    return Math.max(0, requiredDailySlots - this.schedules.length);
-  }
-
-  getDayShiftColors(date: Date): string[] {
-    const day = this.formatDateLocal(date);
-    const daySchedules = this.schedules.filter(s => s.date === day);
-    const uniqueAssignments = new Map<string, string>();
-
-    daySchedules.forEach(schedule => {
-      const key = schedule.assignmentGroupId ?? schedule.id;
-      if (!uniqueAssignments.has(key)) {
-        const shift = this.shiftService.getShiftById(schedule.shiftId);
-        uniqueAssignments.set(key, shift?.color || '#9ca3af');
-      }
-    });
-
-    return Array.from(uniqueAssignments.values()).slice(0, 10);
-  }
-
-  get employeeSummary() {
-    const selectedDate = this.selectedSummaryDate;
-    return this.employees.map(emp => {
-      const schedules = this.schedules.filter(
-        s => s.employeeId === emp.id && (!selectedDate || s.date === selectedDate)
-      );
-      return {
-        employee: emp.name,
-        shifts: schedules.length
-      };
-    });
-  }
-
-  get weeklySummary() {
-    const result: { date: string; shifts: number }[] = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() + i);
-      const formatted = this.formatDateLocal(date);
-      result.push({
-        date: formatted,
-        shifts: this.schedules.filter(s => s.date === formatted).length
-      });
-    }
-    return result;
-  }
-
-  get paginatedData() {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.flattenedTableData.slice(start, start + this.pageSize);
-  }
-
-  get totalPages() {
-    return Math.ceil(this.flattenedTableData.length / this.pageSize);
-  }
-
-  nextPage() {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-    }
-  }
-
-  prevPage() {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-    }
-  }
-
-  openAssignment() {
-    const selected = new Date(this.selectedDate);
+  openAssignment(): void {
     if (this.isSelectedDateLocked) {
       this.showDateWarning = true;
-      setTimeout(() => {
-        this.showDateWarning = false;
-      }, 3000);
+      setTimeout(() => (this.showDateWarning = false), 3000);
+      this.clearDragSelection();
       return;
     }
+
     this.showAssignment = true;
   }
 
-  closeAssignment() {
+  /**
+   * The modal already fans the assignment across [preselectedDate,
+   * preselectedEndDate] itself, so there is nothing to copy here — the old
+   * bulk-copy pass re-submitted every row a second time and relied on the
+   * service's duplicate check to swallow them. It also fired on cancel.
+   */
+  closeAssignment(): void {
     this.showAssignment = false;
     this.editingSchedule = null;
-
-
-    // Handle bulk assignment for multiple selected dates
-    if (this.selectedDatesRange.size > 1) {
-      setTimeout(() => {
-        this.bulkAssignToSelectedDates();
-        this.selectedDatesRange.clear();
-        this.dragRangeStart = null;
-        this.dragRangeEnd = null;
-        // Update all views after bulk assignment
-        this.updateCalendarEvents();
-        this.updateSummaryMetrics();
-        this.buildGanttView();
-        this.updateDragRangeStyling();
-      }, 500);
-    } else {
-      this.selectedDatesRange.clear();
-      this.dragRangeStart = null;
-      this.dragRangeEnd = null;
-      // Update all views after single assignment
-      this.updateCalendarEvents();
-      this.updateSummaryMetrics();
-      this.buildGanttView();
-      this.updateDragRangeStyling();
-    }
+    this.clearDragSelection();
+    this.refreshViews();
   }
 
-  private bulkAssignToSelectedDates(): void {
-    // Get all schedules created for the selected date (could be multiple employees)
-    const recentSchedules = this.schedules.filter(s => s.date === this.selectedDate);
-    if (recentSchedules.length === 0) {
-      return;
-    }
-
-
-    // Get all other dates in the selection
-    const datesArray = Array.from(this.selectedDatesRange);
-
-    // For each recently created schedule (one per assigned employee)
-    recentSchedules.forEach(recentSchedule => {
-      // Copy this schedule to all other dates
-      datesArray.forEach(dateStr => {
-        // Skip the original date
-        if (dateStr === this.selectedDate) return;
-
-        // Create a new schedule for this date with the same shift, employee, and other details
-        const newSchedule: ScheduleDTO = {
-          id: crypto.randomUUID(),
-          employeeId: recentSchedule.employeeId,
-          shiftId: recentSchedule.shiftId,
-          date: dateStr,
-          project: recentSchedule.project,
-          location: recentSchedule.location,
-          description: recentSchedule.description,
-          recurrence: recentSchedule.recurrence,
-          customDays: recentSchedule.customDays,
-          customInterval: recentSchedule.customInterval,
-          repeatCount: recentSchedule.repeatCount,
-          assignmentGroupId: recentSchedule.assignmentGroupId,
-          status: recentSchedule.status
-        };
-
-        // Use the proper service method to create the schedule
-        const result = this.scheduleService.assignShift(newSchedule);
-        if (!result.success) {
-        }
-      });
-    });
+  /**
+   * A non-empty endDate makes the modal treat the assignment as a literal
+   * day-by-day range and ignore the recurrence fields. Only hand it one when
+   * the user actually dragged across more than a single day, so recurrence
+   * still works for a plain click.
+   */
+  get assignmentEndDate(): string | null {
+    return this.dragRangeEnd && this.dragRangeEnd !== this.dragRangeStart
+      ? this.dragRangeEnd
+      : null;
   }
 
   formatDateLocal(date: Date): string {
@@ -775,28 +752,5 @@ export class ShiftCalendarComponent implements OnInit {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  }
-
-  getEmployeeNameById(employeeId: string | null): string | undefined {
-    if (!employeeId) return undefined;
-    return this.employees.find(e => e.id === employeeId)?.name;
-  }
-
-  get conflicts() {
-    const conflicts: any[] = [];
-    const daySchedules = this.schedules.filter(s => s.date === this.selectedDate);
-
-    for (const schedule of daySchedules) {
-      const result = this.scheduleService.checkConflict(schedule);
-      if (result) {
-        const emp = this.employees.find(e => e.id === schedule.employeeId);
-        conflicts.push({
-          employeeName: emp?.name,
-          message: result.message
-        });
-      }
-    }
-
-    return conflicts;
   }
 }

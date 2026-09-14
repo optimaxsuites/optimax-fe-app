@@ -1,54 +1,109 @@
-import { Component, OnInit } from '@angular/core';
-import { ScheduleserviceService } from '../../../service/workschedule-shift/scheduleservice.service';
-import { ShiftserviceService } from '../../../service/workschedule-shift/shiftservice.service';
-import { ScheduleDTO } from '../../../domain/workschedule-shift/schedule.dto';
-import { ShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
-import { CalendarOptions } from '@fullcalendar/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { CalendarOptions, EventInput } from '@fullcalendar/core';
+import { FullCalendarComponent } from '@fullcalendar/angular';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+
+import { ScheduleserviceService } from '../../../service/workschedule-shift/scheduleservice.service';
+import { ShiftserviceService } from '../../../service/workschedule-shift/shiftservice.service';
+import { UserSessionService } from '../../../service/attendance/user-session.service';
+import { ShiftScheduleDTO } from '../../../domain/workschedule-shift/schedule.dto';
+import { WorkShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
+import { TableColumn } from '../../../shared-component/view/table/table.component';
+
+type MyScheduleViewMode = 'calendar' | 'table' | 'list';
+
+/** Flat row for the shared <app-table>, so it can sort by field name. */
+interface MyShiftTableRow {
+  shiftName: string;
+  time: string;
+  project: string;
+  location: string;
+  status: string;
+  color: string;
+  /** Kept so the row's info button can open the full record. */
+  schedule: ShiftScheduleDTO;
+}
+
+type ScheduledShift = ShiftScheduleDTO & { shift: WorkShiftDTO | undefined };
+
+/** Fallback when a shift carries no colour of its own. Mirrors $accent. */
+const DEFAULT_SHIFT_COLOR = '#2E6276';
 
 @Component({
   selector: 'app-my-schedule',
   templateUrl: './my-schedule.component.html',
   styleUrl: './my-schedule.component.scss'
 })
-export class MyScheduleComponent implements OnInit{
-  currentEmployeeId: string = 'emp-1';
-  schedules: ScheduleDTO[] = [];
-  currentDate = new Date();
+export class MyScheduleComponent implements OnInit, OnDestroy {
+
+  @ViewChild(FullCalendarComponent) private calendarRef?: FullCalendarComponent;
+
+  currentEmployeeId = '';
+  schedules: ShiftScheduleDTO[] = [];
   selectedDate: string = this.formatDateLocal(new Date());
 
-  viewMode: 'calendar' | 'table' | 'list' = 'calendar';
-  batchSelected: Set<string> = new Set();
+  viewMode: MyScheduleViewMode = 'calendar';
+  batchSelected = new Set<string>();
 
-  // FullCalendar
   calendarOptions!: CalendarOptions;
 
+  // Day table
+  readonly tableColumns: TableColumn<MyShiftTableRow>[] = [
+    { header: 'Shift', field: 'shiftName', sortable: true },
+    { header: 'Time', field: 'time' },
+    { header: 'Project', field: 'project', sortable: true },
+    { header: 'Location', field: 'location' },
+    { header: 'Status', field: 'status' },
+    { header: '', align: 'right' }
+  ];
+  tableRows: MyShiftTableRow[] = [];
 
-  // Drag-to-select
-  dragStartDate: string | null = null;
-  dragEndDate: string | null = null;
-  isDragging = false;
-  selectedDates: Set<string> = new Set();
+  /** The shift whose full record is open in the details modal. */
+  detailShift: ScheduledShift | null = null;
+
+  private scheduleSub?: Subscription;
+  private scheduledDates = new Set<string>();
 
   constructor(
     private scheduleService: ScheduleserviceService,
-    public shiftService: ShiftserviceService
+    public shiftService: ShiftserviceService,
+    private host: ElementRef<HTMLElement>,
+    private userSession: UserSessionService
   ) {}
 
   ngOnInit(): void {
+    const currentUser = this.userSession.getCurrentUser();
+    this.currentEmployeeId = currentUser ? String(currentUser.id) : '';
     this.initializeCalendarOptions();
 
-    this.scheduleService.schedules$
-        .subscribe(data => {
-          this.schedules = data.filter(
-            s => s.employeeId === this.currentEmployeeId
-          );
-          this.updateCalendarEvents();
-        });
+    this.scheduleSub = this.scheduleService.schedules$.subscribe(data => {
+      this.schedules = data
+        .filter(s => this.sameEmployee(s.employeeId, this.currentEmployeeId))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      this.scheduledDates = new Set(this.schedules.map(s => s.date));
+      this.renderCalendarEvents();
+      this.rebuildTableRows();
+    });
   }
 
-  initializeCalendarOptions(): void {
+  ngOnDestroy(): void {
+    this.scheduleSub?.unsubscribe();
+  }
+
+  private sameEmployee(scheduleEmployeeId: string, employeeId: string): boolean {
+    if (!employeeId) return false;
+    return scheduleEmployeeId === employeeId
+      || scheduleEmployeeId.replace(/\D/g, '') === employeeId.replace(/\D/g, '');
+  }
+
+  // ============================================================
+  // Calendar
+  // ============================================================
+
+  private initializeCalendarOptions(): void {
     this.calendarOptions = {
       plugins: [dayGridPlugin, interactionPlugin],
       initialView: 'dayGridMonth',
@@ -57,108 +112,124 @@ export class MyScheduleComponent implements OnInit{
         center: 'title',
         right: 'dayGridMonth,dayGridWeek'
       },
+      buttonText: { today: 'Today', month: 'Month', week: 'Week' },
+      titleFormat: { year: 'numeric', month: 'long' },
+      fixedWeekCount: false,
+      showNonCurrentDates: true,
+      dayMaxEventRows: 3,
       height: 'auto',
       events: [],
-      dateClick: (arg: any) => this.onDateClick(arg),
-      eventClick: (arg: any) => this.onEventClick(arg),
       eventDisplay: 'block',
       displayEventTime: true,
-      eventTimeFormat: {
-        hour: '2-digit',
-        minute: '2-digit',
-        meridiem: 'short'
+      eventTimeFormat: { hour: '2-digit', minute: '2-digit', meridiem: 'short' },
+      dateClick: arg => this.onDateClick(arg),
+      eventClick: arg => this.onEventClick(arg),
+      eventDidMount: arg => {
+        arg.el.style.setProperty('--shift-colour', arg.event.extendedProps['color'] || DEFAULT_SHIFT_COLOR);
+        // The chip ellipses at cell width, so keep the full label on hover.
+        arg.el.setAttribute('title', arg.event.title);
+      },
+      dayCellClassNames: arg => {
+        const date = this.formatDateLocal(arg.date);
+        const classes: string[] = [];
+
+        if (this.scheduledDates.has(date)) classes.push('day--scheduled');
+        if (this.hasConflict(date)) classes.push('day--conflict');
+
+        return classes;
       }
     };
   }
 
-  updateCalendarEvents(): void {
-    const events = this.schedules.map(schedule => {
+  /**
+   * See the note in ShiftCalendarComponent: mutating calendarOptions.events
+   * keeps the *ngIf recreation path correct, and the API call is what actually
+   * refreshes a calendar that is already on screen.
+   */
+  private renderCalendarEvents(): void {
+    const events = this.buildCalendarEvents();
+    this.calendarOptions.events = events;
+
+    const api = this.calendarRef?.getApi();
+    if (!api) return;
+
+    api.removeAllEvents();
+    events.forEach(event => api.addEvent(event));
+    this.applyDayCellStates();
+  }
+
+  private buildCalendarEvents(): EventInput[] {
+    return this.schedules.map(schedule => {
       const shift = this.shiftService.getShiftById(schedule.shiftId);
 
       return {
         id: schedule.id,
         title: shift?.name || 'Shift',
         date: schedule.date,
-        backgroundColor: shift?.color || '#3b82f6',
-        borderColor: this.batchSelected.has(schedule.id) ? '#fbbf24' : (shift?.color || '#3b82f6'),
+        backgroundColor: 'transparent',
+        borderColor: 'transparent',
+        textColor: 'inherit',
+        classNames: this.batchSelected.has(schedule.id) ? ['is-selected'] : [],
         extendedProps: {
           scheduleId: schedule.id,
-          shiftId: schedule.shiftId,
-          schedule: schedule,
-          shift: shift
+          color: shift?.color || DEFAULT_SHIFT_COLOR,
+          schedule,
+          shift
         }
       };
     });
-
-    if (this.calendarOptions.events) {
-      this.calendarOptions.events = events;
-    }
   }
 
   onDateClick(arg: any): void {
     this.selectedDate = this.formatDateLocal(arg.date);
-    this.selectedDates.clear();
-    this.selectedDates.add(this.selectedDate);
+    this.applyDayCellStates();
+    this.rebuildTableRows();
   }
 
   onEventClick(arg: any): void {
-    const scheduleId = arg.event.extendedProps['scheduleId'];
-    this.toggleBatchSelect(scheduleId);
-    this.updateCalendarEvents();
+    this.toggleBatchSelect(arg.event.extendedProps['scheduleId']);
+    this.renderCalendarEvents();
   }
 
-  // Drag-to-select logic
-  startDateDrag(dateStr: string): void {
-    this.isDragging = true;
-    this.dragStartDate = dateStr;
-    this.dragEndDate = dateStr;
-    this.selectDateRange(new Date(dateStr + 'T00:00:00'), new Date(dateStr + 'T00:00:00'));
+  /**
+   * Day-cell state is applied imperatively because FullCalendar recomputes
+   * dayCellClassNames only on a grid re-render — not on a date click, and not
+   * when events are pushed through the API.
+   */
+  private applyDayCellStates(): void {
+    const cells = this.host.nativeElement.querySelectorAll<HTMLElement>('.fc-daygrid-day[data-date]');
+
+    cells.forEach(cell => {
+      const date = cell.getAttribute('data-date') ?? '';
+      cell.classList.toggle('day--picked', date === this.selectedDate);
+      cell.classList.toggle('day--scheduled', this.scheduledDates.has(date));
+      cell.classList.toggle('day--conflict', this.scheduledDates.has(date) && this.hasConflict(date));
+    });
   }
 
-  continueDateDrag(dateStr: string): void {
-    if (!this.isDragging || !this.dragStartDate) return;
-    this.dragEndDate = dateStr;
-    const start = new Date(this.dragStartDate + 'T00:00:00');
-    const end = new Date(this.dragEndDate + 'T00:00:00');
-    this.selectDateRange(
-      start > end ? end : start,
-      start > end ? start : end
-    );
-  }
+  /** Colour key for the calendar — one entry per shift type on screen. */
+  get shiftLegend(): { name: string; color: string }[] {
+    const byName = new Map<string, string>();
 
-  endDateDrag(): void {
-    if (this.isDragging && this.selectedDates.size > 0) {
-      // Selection persists, user can see what they selected
-      this.isDragging = false;
-    } else {
-      this.isDragging = false;
+    for (const schedule of this.schedules) {
+      const shift = this.shiftService.getShiftById(schedule.shiftId);
+      if (shift && !byName.has(shift.name)) {
+        byName.set(shift.name, shift.color || DEFAULT_SHIFT_COLOR);
+      }
     }
+
+    return Array.from(byName, ([name, color]) => ({ name, color }));
   }
 
-  selectDateRange(start: Date, end: Date): void {
-    this.selectedDates.clear();
-    const current = new Date(start);
-    while (current <= end) {
-      this.selectedDates.add(this.formatDateLocal(current));
-      current.setDate(current.getDate() + 1);
-    }
-  }
+  // ============================================================
+  // Selection
+  // ============================================================
 
-  isDateInSelection(dateStr: string): boolean {
-    return this.selectedDates.has(dateStr);
-  }
-
-  onDateChange(event: Event) {
-  const target = event.target as HTMLInputElement;
-  this.selectedDate = target.value;
-}
-
-  setView(mode: 'calendar' | 'table' | 'list') {
+  setView(mode: MyScheduleViewMode): void {
     this.viewMode = mode;
   }
 
-
-  toggleBatchSelect(scheduleId: string) {
+  toggleBatchSelect(scheduleId: string): void {
     if (this.batchSelected.has(scheduleId)) {
       this.batchSelected.delete(scheduleId);
     } else {
@@ -170,119 +241,147 @@ export class MyScheduleComponent implements OnInit{
     return this.batchSelected.has(scheduleId);
   }
 
-  clearBatchSelection() {
+  clearBatchSelection(): void {
     this.batchSelected.clear();
+    this.renderCalendarEvents();
   }
 
-  formatDateLocal(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+  // ============================================================
+  // Selected day
+  // ============================================================
+
+  onDateChange(event: Event): void {
+    this.selectedDate = (event.target as HTMLInputElement).value;
+    this.rebuildTableRows();
   }
 
+  /**
+   * Held in a field rather than a getter — <app-table>'s [rows] is an @Input,
+   * and a new array each change-detection pass would make PrimeNG re-run its
+   * own change handling every cycle.
+   */
+  private rebuildTableRows(): void {
+    this.tableRows = this.shiftsForSelectedDate.map(item => ({
+      shiftName: item.shift?.name ?? '—',
+      time: item.shift ? `${item.shift.startTime}–${item.shift.endTime}` : '—',
+      project: item.project || '—',
+      location: item.location || '—',
+      status: 'Scheduled',
+      color: item.shift?.color || DEFAULT_SHIFT_COLOR,
+      schedule: item
+    }));
+  }
 
-  get monthLabel(): string {
-    return this.currentDate.toLocaleDateString('en-US', {
-      month: 'long',
-      year: 'numeric'
+  // ============================================================
+  // Details
+  // ============================================================
+
+  openDetails(schedule: ShiftScheduleDTO): void {
+    this.detailShift = { ...schedule, shift: this.shiftFor(schedule) };
+  }
+
+  closeDetails(): void {
+    this.detailShift = null;
+  }
+
+  /** Long-form date for a schedule, e.g. "Tuesday, August 25, 2026". */
+  dateLabel(date: string): string {
+    return new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
     });
+  }
+
+  shiftDuration(shift: WorkShiftDTO | undefined): string {
+    if (!shift) return '—';
+
+    let span = this.toMinutes(shift.endTime) - this.toMinutes(shift.startTime);
+    if (span <= 0) span += 24 * 60; // overnight shift
+
+    const hours = Math.floor(span / 60);
+    const minutes = span % 60;
+    return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
+
+  /** Spells out the repeat rule, including the custom-days detail. */
+  recurrenceLabel(schedule: ShiftScheduleDTO): string {
+    const recurrence = schedule.recurrence;
+    if (!recurrence || recurrence === 'none') return 'Does not repeat';
+
+    if (recurrence === 'custom') {
+      const days = schedule.customDays?.length ? schedule.customDays.join(', ') : 'selected days';
+      return `Custom · ${days}`;
+    }
+
+    const count = schedule.repeatCount;
+    const label = recurrence === 'daily' ? 'Daily' : 'Weekly';
+    return count && count > 1 ? `${label} · ${count} occurrences` : label;
   }
 
   get selectedDateLabel(): string {
-    return new Date(this.selectedDate + 'T00:00:00')
-      .toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+    return new Date(this.selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+    });
   }
 
-  get shiftsForSelectedDate() {
-    return this.schedules.map(s => {
-      const shift = this.shiftService.getShiftById(s.shiftId);
-      return {
-        ...s,
-        shift
-      };
-    }).filter(s => s.date === this.selectedDate);
+  get shiftsForSelectedDate(): (ShiftScheduleDTO & { shift: WorkShiftDTO | undefined })[] {
+    return this.schedules
+      .filter(s => s.date === this.selectedDate)
+      .map(s => ({ ...s, shift: this.shiftService.getShiftById(s.shiftId) }));
   }
 
-  get conflictingShiftPairs(): { a: ShiftDTO; b: ShiftDTO }[] {
-    const pairs: { a: ShiftDTO; b: ShiftDTO }[] = [];
-    const daySchedules = this.schedules.filter(s => s.date === this.selectedDate);
+  shiftFor(schedule: ShiftScheduleDTO): WorkShiftDTO | undefined {
+    return this.shiftService.getShiftById(schedule.shiftId);
+  }
 
-    for (let i = 0; i < daySchedules.length; i++) {
-      for (let j = i + 1; j < daySchedules.length; j++) {
-        const a = this.shiftService.getShiftById(daySchedules[i].shiftId);
-        const b = this.shiftService.getShiftById(daySchedules[j].shiftId);
-        if (!a || !b) continue;
-        if (this.isOverlapping(a.startTime, a.endTime, b.startTime, b.endTime)) {
-          pairs.push({ a, b });
+  shiftColor(schedule: ShiftScheduleDTO): string {
+    return this.shiftFor(schedule)?.color || DEFAULT_SHIFT_COLOR;
+  }
+
+  // ============================================================
+  // Conflict detection — overlapping shifts on the same day
+  // ============================================================
+
+  hasConflict(date: string): boolean {
+    return this.overlappingPairsOn(date).length > 0;
+  }
+
+  get conflictingShiftPairs(): { a: WorkShiftDTO; b: WorkShiftDTO }[] {
+    return this.overlappingPairsOn(this.selectedDate);
+  }
+
+  private overlappingPairsOn(date: string): { a: WorkShiftDTO; b: WorkShiftDTO }[] {
+    const shifts = this.schedules
+      .filter(s => s.date === date)
+      .map(s => this.shiftService.getShiftById(s.shiftId))
+      .filter((shift): shift is WorkShiftDTO => !!shift);
+
+    const pairs: { a: WorkShiftDTO; b: WorkShiftDTO }[] = [];
+
+    for (let i = 0; i < shifts.length; i++) {
+      for (let j = i + 1; j < shifts.length; j++) {
+        if (this.isOverlapping(shifts[i], shifts[j])) {
+          pairs.push({ a: shifts[i], b: shifts[j] });
         }
       }
     }
+
     return pairs;
   }
 
-  hasSchedule(date: Date): boolean {
-    const d = this.formatDateLocal(date);
-    return this.schedules.some(s => s.date === d);
+  private toMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
   }
 
-  //  Conflict detection
-  hasConflict(date: string): boolean {
-    const daySchedules = this.schedules.filter(s => s.date === date);
-
-    for (let i = 0; i < daySchedules.length; i++) {
-      for (let j = i + 1; j < daySchedules.length; j++) {
-
-        const a = this.shiftService.getShiftById(daySchedules[i].shiftId);
-        const b = this.shiftService.getShiftById(daySchedules[j].shiftId);
-
-        if (!a || !b) continue;
-
-        if (this.isOverlapping(a.startTime, a.endTime, b.startTime, b.endTime)) {
-          return true;
-        }
-      }
-    }
-
-    return false;
+  private isOverlapping(a: WorkShiftDTO, b: WorkShiftDTO): boolean {
+    return this.toMinutes(a.startTime) < this.toMinutes(b.endTime)
+        && this.toMinutes(a.endTime) > this.toMinutes(b.startTime);
   }
 
-getDayShiftColors(date: Date): string[] {
-
-  const day = this.formatDateLocal(date);
-
-  const uniqueSchedules = Array.from(
-    new Map(
-      this.schedules
-        .filter(s => s.date === day)
-        .map(s => [s.assignmentGroupId, s])
-    ).values()
-  );
-
-  return uniqueSchedules
-    .slice(0, 10)
-    .map(schedule => {
-
-      const shift = this.shiftService.getShiftById(
-        schedule.shiftId
-      );
-
-      return shift?.color || '#9ca3af';
-    });
-}
-
-  private isOverlapping(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
-    const toMin = (t: string) => {
-      const [h, m] = t.split(':').map(Number);
-      return h * 60 + m;
-    };
-
-    return toMin(aStart) < toMin(bEnd) && toMin(aEnd) > toMin(bStart);
+  formatDateLocal(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
-
 }

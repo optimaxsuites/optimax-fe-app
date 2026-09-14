@@ -124,7 +124,7 @@ export class SupervisorApprovalQueueComponent implements OnInit, OnDestroy {
   }
 
   getApprovalTypeLabel(approvalType: string): string {
-    return approvalType === 'PRE_APPROVAL' ? 'Pre-Approval' : 'Retrospective';
+    return 'Auto-Created (Retrospective)'; // All cross-branch requests are auto-created after check-in
   }
 
   clearSelection(): void {

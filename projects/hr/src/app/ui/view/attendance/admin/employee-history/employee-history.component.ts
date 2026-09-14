@@ -21,6 +21,7 @@ export class EmployeeHistoryComponent implements OnInit {
   private toastService = inject(ToastService);
 
   employeeName: string = '';
+  employeeId: string | null = null;
   employeeRecords: AttendanceTableRecord[] = [];
   filteredRecords: AttendanceTableRecord[] = [];
   isLoading = true;
@@ -38,7 +39,9 @@ export class EmployeeHistoryComponent implements OnInit {
 
   ngOnInit(): void {
     this.employeeName = this.route.snapshot.queryParamMap.get('name') || '';
-    if (!this.employeeName) {
+    const idParam = this.route.snapshot.queryParamMap.get('id');
+    this.employeeId = idParam && Number(idParam) > 0 ? idParam : null;
+    if (!this.employeeName && this.employeeId === null) {
       this.toastService.error('Employee name not provided');
       this.router.navigate(['/attendance/admin']);
       return;
@@ -50,7 +53,9 @@ export class EmployeeHistoryComponent implements OnInit {
   loadEmployeeHistory(): void {
     this.isLoading = true;
     this.attendanceService.attendance$.subscribe(data => {
-      this.employeeRecords = data.filter(r => r.employee === this.employeeName);
+      this.employeeRecords = data.filter(r => this.employeeId !== null
+        ? r.employeeId === this.employeeId
+        : r.employee === this.employeeName);
       this.applyFilters();
       this.isLoading = false;
     });

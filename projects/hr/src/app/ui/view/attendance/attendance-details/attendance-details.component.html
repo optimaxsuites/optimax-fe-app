@@ -63,7 +63,7 @@
             *ngFor="let record of records"
             class="border-t hover:bg-gray-50"
           >
-            <td class="p-3">{{ record.date }}</td>
+            <td class="p-3">{{ record.date | date:'yyyy-MM-dd' }}</td>
             <td class="p-3">{{ record.clockIn || '-' }}</td>
             <td class="p-3">{{ record.clockOut || '-' }}</td>
             <td class="p-3">

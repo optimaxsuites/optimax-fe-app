@@ -29,8 +29,11 @@ export class AppHrComponent {
 
     // Development mode: set hardcoded authentication and navigate
     if (environment.env === 'development') {
-      console.log('🔧 [Development Mode] Setting hardcoded authentication for eseose');
-      const devToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlc2Vvc2UiLCJ1c2VybmFtZSI6ImVzZW9zZSIsImVtYWlsIjoiZXNlb3NlQG9wdGltYXguY29tIiwibmFtZSI6IkVzZW9zZSIsInJvbGVzIjpbIkFETUluIl0sInRlbmFudCI6Im9wdGltYXgiLCJleHAiOjk5OTk5OTk5OTksImlhdCI6MTcwMDAwMDAwMH0.eseose_dev_token';
+      console.log(
+        '🔧 [Development Mode] Setting hardcoded authentication for eseose',
+      );
+      const devToken =
+        'eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoia2luZG5lc3MiLCJpYXQiOjE3ODg4NjA1MzksImV4cCI6MTc4ODk0NjkzOX0.4MPk5QBmjQXMDsnGdB59a9TUfmfngQ_myNZxSFQ-bpk';
       const devUUID = '1';
       sessionStorage.setItem('Token', devToken);
       localStorage.setItem('Token', devToken);
@@ -41,21 +44,24 @@ export class AppHrComponent {
       sessionStorage.setItem('fullname', 'Eseose Developer');
       sessionStorage.setItem('email', 'eseose@optimax.com');
       sessionStorage.setItem('role', 'ADMIN');
-      sessionStorage.setItem('userRegData', JSON.stringify({
-        id: 1,
-        userId: 1,
-        username: 'eseose',
-        fullname: 'Eseose Developer',
-        email: 'eseose@optimax.com',
-        role: 'ADMIN'
-      }));
+      sessionStorage.setItem(
+        'userRegData',
+        JSON.stringify({
+          id: 1,
+          userId: 1,
+          username: 'eseose',
+          fullname: 'Eseose Developer',
+          email: 'eseose@optimax.com',
+          role: 'ADMIN',
+        }),
+      );
       this.metadataService.fetchMetaData(true);
     } else if (this.authenticationService.isAuthenticated()) {
       this.metadataService.fetchMetaData(true);
     } else {
       this.userLoginAction();
     }
-    this.exposeGlobalHelpers(); // Added by Eseto expose helper functions for console testing
+    this.exposeGlobalHelpers();
 
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
@@ -74,8 +80,8 @@ export class AppHrComponent {
   }
 
   async userLoginAction(): Promise<void> {
-    console.log("Signing in user with hardcoded credentials for testing...");
-    
+    console.log('Signing in user with hardcoded credentials for testing...');
+
     const loginDetails = {
       // username: 'Ayaobasheba',
       // username: 'developer',
@@ -84,7 +90,7 @@ export class AppHrComponent {
       password: 'soyBTY86b*rC',
       project: 'ERP',
       clientId: 'optimax-erp-web',
-      appVersion: '2026.05.30'
+      appVersion: '2026.05.30',
     };
 
     if (!loginDetails.username || !loginDetails.password) {
@@ -107,7 +113,6 @@ export class AppHrComponent {
 
       this.loadInitParam(data);
       this.metadataService.fetchMetaData(true);
-
     } catch (error) {
       this.authenticationService.logout();
     }
@@ -116,7 +121,8 @@ export class AppHrComponent {
   loadInitParam(data: any) {
     const role = data.roles;
     const username = data.username;
-    const fullname = data.fullname || data.fullName || data.name || data.username;
+    const fullname =
+      data.fullname || data.fullName || data.name || data.username;
     const email = data.email;
     const userId = data.id ?? data.userId;
 
@@ -133,7 +139,10 @@ export class AppHrComponent {
       localStorage.setItem('email', email);
       localStorage.setItem('userid', userId);
     } catch (e) {
-      console.warn('localStorage quota exceeded or disabled, proceeding with sessionStorage only', e);
+      console.warn(
+        'localStorage quota exceeded or disabled, proceeding with sessionStorage only',
+        e,
+      );
     }
 
     const token = this.extractToken(data.accessToken);
@@ -154,7 +163,10 @@ export class AppHrComponent {
       localStorage.setItem('accessToken2', data.accessToken);
       localStorage.setItem('userRegData', JSON.stringify(data));
     } catch (e) {
-      console.warn('localStorage quota exceeded or disabled, proceeding with sessionStorage only', e);
+      console.warn(
+        'localStorage quota exceeded or disabled, proceeding with sessionStorage only',
+        e,
+      );
     }
   }
 
@@ -198,7 +210,7 @@ export class AppHrComponent {
    */
   async switchToAdmin(): Promise<void> {
     console.log('Switching to admin account...');
-    
+
     const loginDetails = {
       username: 'damilola',
       password: 'Damilolar@123',
@@ -207,8 +219,10 @@ export class AppHrComponent {
     };
 
     try {
-      const data = await this.authenticationService.userLogin(loginDetails).toPromise();
-      
+      const data = await this.authenticationService
+        .userLogin(loginDetails)
+        .toPromise();
+
       if (data) {
         this.loadInitParam(data);
         this.metadataService.fetchMetaData(true);
@@ -226,7 +240,7 @@ export class AppHrComponent {
    */
   async switchToUser(): Promise<void> {
     console.log('Switching to user account...');
-    
+
     const loginDetails = {
       // username: 'developer',
       // password: '123456',
@@ -235,12 +249,14 @@ export class AppHrComponent {
       project: 'ERP',
       apiKey: environment.apiKey,
     };
-    
+
     // eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoiZXNlb3NlIiwiaWF0IjoxNzgwNTY0OTY2LCJleHAiOjE3ODA2NTEzNjZ9.3ioaIPHGekrrS676pesQ27yDg25QP9Gpk_KMXWO9SOc
-    
+
     try {
-      const data = await this.authenticationService.userLogin(loginDetails).toPromise();
-      
+      const data = await this.authenticationService
+        .userLogin(loginDetails)
+        .toPromise();
+
       if (data) {
         this.loadInitParam(data);
         this.metadataService.fetchMetaData(true);
@@ -266,21 +282,21 @@ export class AppHrComponent {
   /**
    * Get current user information from session
    */
-  getCurrentUserInfo(): { 
-    username: string | null; 
-    role: string | null; 
-    userId: string | null; 
-    isAdmin: boolean 
+  getCurrentUserInfo(): {
+    username: string | null;
+    role: string | null;
+    userId: string | null;
+    isAdmin: boolean;
   } {
     const username = sessionStorage.getItem('username');
     const role = sessionStorage.getItem('role');
     const userId = sessionStorage.getItem('userid');
-    
+
     return {
       username,
       role,
       userId,
-      isAdmin: role === 'ROLE_ADMIN'
+      isAdmin: role === 'ROLE_ADMIN',
     };
   }
 
@@ -292,7 +308,9 @@ export class AppHrComponent {
     (window as any).switchToUser = () => this.switchToUser();
     (window as any).logout = () => this.logout();
     (window as any).getCurrentUser = () => this.getCurrentUserInfo();
-    
-    console.log('Console helpers available: switchToAdmin(), switchToUser(), logout(), getCurrentUser()');
+
+    console.log(
+      'Console helpers available: switchToAdmin(), switchToUser(), logout(), getCurrentUser()',
+    );
   }
 }

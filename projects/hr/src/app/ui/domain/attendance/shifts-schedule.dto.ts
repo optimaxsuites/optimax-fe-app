@@ -6,7 +6,7 @@
 export interface ShiftDTO {
   // System-generated fields
   id?: number; // Unique shift identifier
-  createdAt?: string; // ISO timestamp - Creation timestamp
+  createdAt?: Date; // Creation timestamp
 
   // Shift identification
   name: string; // Shift name (e.g., "Morning Shift", "Night Shift")
@@ -31,18 +31,18 @@ export interface ShiftDTO {
 export interface ScheduleDTO {
   // System-generated fields
   id?: number; // Unique schedule identifier
-  createdAt?: string; // ISO timestamp - Creation timestamp
+  createdAt?: Date; // Creation timestamp
   createdBy?: number; // Admin who created this schedule
 
   // Employee assignment
-  employeeId: number; // Employee assigned to this schedule
+  employeeId: string; // Employee unique identifier (database ID)
 
   // Shift assignment
   shiftId: number; // Shift template to use
 
   // Schedule period
-  startDate: string; // ISO date - Schedule start date (YYYY-MM-DD)
-  endDate?: string; // ISO date - Schedule end date (null = open-ended)
+  startDate: Date; // Schedule start date
+  endDate?: Date; // Schedule end date (null = open-ended)
 
   // Notes
   notes?: string; // Notes about this schedule
@@ -51,7 +51,7 @@ export interface ScheduleDTO {
 export interface ShiftAssignmentResponse {
   // Response data after creating/updating assignment
   scheduleId: number; // Created/updated schedule ID
-  employeeId: number; // Employee ID
+  employeeId: string; // Employee unique identifier (database ID)
   shiftName: string; // Name of assigned shift
   startDate: string; // When assignment starts
   endDate?: string; // When assignment ends

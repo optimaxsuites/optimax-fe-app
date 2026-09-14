@@ -9,6 +9,10 @@ import { formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { MessageService } from 'primeng/api';
 
+// No local ToastModule/providers/<p-toast> here on purpose: this component navigates away
+// right after a successful delete, so a locally-scoped MessageService (with its own <p-toast>)
+// would be torn down before the toast could render. Leaving MessageService un-shadowed lets it
+// resolve to the app-root singleton instead, whose <p-toast> in app.html outlives the navigation.
 @Component({
   selector: 'app-customer-detail',
   standalone: true,
@@ -113,8 +117,10 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   }
 
   confirmDelete(): void {
+    const customerName = this.customer?.name || 'Customer';
     this.salesService.deleteCustomer(this.customer!.id).subscribe({
       next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${customerName} deleted successfully` });
         const uuid = this.route.snapshot.paramMap.get('uuid') === 'edit' ? null : this.route.snapshot.paramMap.get('uuid');
         if (uuid) {
           this.router.navigate(['/admin/sales/sales-hub', uuid]);
@@ -124,6 +130,7 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
       },
       error: (err: any) => {
         console.error('Failed to delete customer:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete customer. Please try again.' });
       }
     });
   }

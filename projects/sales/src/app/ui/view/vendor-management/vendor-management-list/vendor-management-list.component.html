@@ -1,458 +1,372 @@
 <!-- vendor-list.component.html -->
-<div class="vendor-list">
-    <div class="list-wrapper">
+<div class="ql-layout">
 
-        <!-- ============================================================
-        HEADER - Dark Blue Premium Card
-        ============================================================ -->
-        <div class="dashboard-header">
-            <div class="header-left">
-                <div class="header-badge">
-                    <span class="pulse-dot"></span>
-                    Live Directory
-                </div>
-                <h1 class="page-title">Vendor Directory</h1>
-                <p class="page-subtitle">Manage and monitor all vendors across the marketplace</p>
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Vendor Directory</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="ql-filter-section" *ngIf="!isLoading">
+            <div class="ql-filter-heading">Overview</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Total Vendors</span>
+                <span class="ql-sidebar-stat-value">{{ stats.total }}</span>
             </div>
-            <div class="header-actions">
-                <button class="btn-secondary-glow" (click)="refresh()" [disabled]="isLoading">
-                    <i class="fas fa-sync-alt" [class.spinning]="isLoading"></i>
-                    Refresh
-                </button>
-                <button class="btn-secondary-glow" (click)="exportAll()" [disabled]="isExporting">
-                    <i class="fas fa-file-export"></i>
-                    {{ isExporting ? 'Exporting...' : 'Export All' }}
-                </button>
-
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label" style="color: #2EB270;">Active</span>
+                <span class="ql-sidebar-stat-value" style="color: #2EB270;">{{ stats.active }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label" style="color: #F5A623;">⭐ Preferred</span>
+                <span class="ql-sidebar-stat-value" style="color: #F5A623;">{{ stats.preferred }}</span>
+            </div>
+            <div class="ql-sidebar-stat" style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;">
+                <span class="ql-sidebar-stat-label" style="color: #DC2626;">⚠️ High Risk</span>
+                <span class="ql-sidebar-stat-value" style="color: #DC2626;">{{ stats.highRisk }}</span>
+            </div>
+            <div class="ql-sidebar-stat" *ngIf="getSelectedCount() > 0">
+                <span class="ql-sidebar-stat-label">Selected</span>
+                <span class="ql-sidebar-stat-value" style="color: #184440;">{{ getSelectedCount() }}</span>
             </div>
         </div>
 
-        <!-- ============================================================
-        STATS BAR
-        ============================================================ -->
-        <div class="stats-bar" *ngIf="!isLoading">
-            <div class="stat-item">
-                <span class="stat-value">{{ stats.total }}</span>
-                <span class="stat-label">Total Vendors</span>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item">
-                <span class="stat-value" style="color: #2EB270">{{ stats.active }}</span>
-                <span class="stat-label">Active</span>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item">
-                <span class="stat-value" style="color: #F5A623">{{ stats.preferred }}</span>
-                <span class="stat-label">⭐ Preferred</span>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item">
-                <span class="stat-value" style="color: #DC2626">{{ stats.highRisk }}</span>
-                <span class="stat-label">⚠️ High Risk</span>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item" *ngIf="getSelectedCount() > 0">
-                <span class="stat-value" style="color: #2E6276">{{ getSelectedCount() }}</span>
-                <span class="stat-label">Selected</span>
-            </div>
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Actions</div>
+            <button class="ql-sidebar-action" (click)="refresh()" [disabled]="isLoading">
+                <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i>
+                {{ isLoading ? 'Loading...' : 'Refresh' }}
+            </button>
+            <button class="ql-sidebar-action" (click)="exportAll()" [disabled]="isExporting">
+                <i class="fas fa-file-export"></i>
+                {{ isExporting ? 'Exporting...' : 'Export All' }}
+            </button>
+            <button class="ql-sidebar-action" (click)="navigateToApprovalQueue()">
+                <i class="fas fa-clipboard-list"></i> Approval Queue
+            </button>
+            <button class="ql-sidebar-action" (click)="navigateToDashboard()">
+                <i class="fas fa-chart-pie"></i> Dashboard
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading vendors...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="refresh()"><i class="fas fa-sync-alt"></i> Retry</button>
         </div>
 
         <!-- ============================================================
-        TOOLBAR
+        CONTENT
         ============================================================ -->
-        <div class="toolbar">
-            <div class="toolbar-left">
-                <!-- Search -->
-                <div class="search-wrapper">
-                    <i class="fas fa-search search-icon"></i>
-                    <input #searchInput type="text" class="search-input"
-                        placeholder="Search vendors by name, email, or ID..." (input)="onSearchInput($event)"
-                        [value]="filterForm.get('search')?.value || ''" />
-                    <button class="search-clear" *ngIf="filterForm.get('search')?.value" (click)="clearSearch()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                    <span class="search-shortcut">⌘F</span>
+        <ng-container *ngIf="!isLoading">
+
+            <!-- Top bar -->
+            <div class="ql-top-bar">
+                <div class="ql-top-bar-left">
+                    <h1 class="ql-title">Vendor Directory</h1>
+                    <span class="ql-total-badge">Live</span>
+                    <span class="ql-vendor-badge" style="background: #18444020; color: #184440;">
+                        <i class="fas fa-store"></i>
+                        {{ stats.total }} vendors
+                    </span>
                 </div>
-
-                <!-- Filter Button -->
-                <button class="btn-filter" (click)="showFilterDrawer = !showFilterDrawer"
-                    [class.active]="getActiveFilterCount() > 0">
-                    <i class="fas fa-sliders-h"></i>
-                    Filters
-                    <span class="filter-count" *ngIf="getActiveFilterCount() > 0">{{ getActiveFilterCount() }}</span>
-                </button>
-
-                <!-- Filter Summary -->
-                <span class="filter-summary" *ngIf="getActiveFilterCount() > 0">
-                    {{ getFilterSummary() }}
-                    <button class="clear-filters-btn" (click)="clearFilters()">
-                        <i class="fas fa-times"></i>
+                <div class="ql-top-bar-right">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
+                        <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i>
+                        {{ isLoading ? 'Loading...' : 'Refresh' }}
                     </button>
-                </span>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="exportAll()" [disabled]="isExporting">
+                        <i class="fas fa-file-export"></i>
+                        {{ isExporting ? 'Exporting...' : 'Export All' }}
+                    </button>
+                </div>
             </div>
 
-            <div class="toolbar-right">
-                <!-- Bulk Actions -->
-                <div class="bulk-actions" *ngIf="getSelectedCount() > 0">
-                    <span class="bulk-count">{{ getSelectedCount() }} selected</span>
-                    <div class="bulk-dropdown">
-                        <button class="btn-bulk" (click)="bulkAction('activate')">
-                            <i class="fas fa-check-circle"></i> Activate
-                        </button>
-                        <button class="btn-bulk" (click)="bulkAction('suspend')">
-                            <i class="fas fa-pause-circle"></i> Suspend
-                        </button>
-                        <button class="btn-bulk danger" (click)="bulkAction('delete')">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                        <button class="btn-bulk" (click)="bulkAction('export')">
-                            <i class="fas fa-file-export"></i> Export
-                        </button>
-                    </div>
+            <!-- Stats Cards -->
+            <div class="ql-stats-row">
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value">{{ stats.total }}</span>
+                    <span class="ql-stat-mini-label">Total Vendors</span>
                 </div>
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value" style="color: #2EB270;">{{ stats.active }}</span>
+                    <span class="ql-stat-mini-label">Active</span>
+                </div>
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value" style="color: #F5A623;">{{ stats.preferred }}</span>
+                    <span class="ql-stat-mini-label">⭐ Preferred</span>
+                </div>
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value" style="color: #DC2626;">{{ stats.highRisk }}</span>
+                    <span class="ql-stat-mini-label">⚠️ High Risk</span>
+                </div>
+                <div class="ql-stat-mini" *ngIf="getSelectedCount() > 0">
+                    <span class="ql-stat-mini-value" style="color: #184440;">{{ getSelectedCount() }}</span>
+                    <span class="ql-stat-mini-label">Selected</span>
+                </div>
+            </div>
 
-                <!-- Column Visibility -->
-                <div class="column-dropdown">
-                    <button class="btn-columns" (click)="showColumnMenu = !showColumnMenu">
-                        <i class="fas fa-columns"></i>
+            <!-- Filters Bar -->
+            <div class="ql-filters-bar">
+                <div class="ql-filter-group">
+                    <input type="text" class="ql-search-input" 
+                           placeholder="Search vendors by name, email, or ID..."
+                           (input)="onSearchInput($event)"
+                           [value]="filterForm.get('search')?.value || ''">
+                    <i class="fas fa-search ql-search-icon"></i>
+                    <button class="ql-search-clear" *ngIf="filterForm.get('search')?.value" (click)="clearSearch()">
+                        <i class="fas fa-times"></i>
                     </button>
-                    <div class="dropdown-menu" *ngIf="showColumnMenu" (click)="$event.stopPropagation()">
-                        <div class="dropdown-header">
-                            <span>Columns</span>
-                            <button class="reset-btn" (click)="resetColumns()">Reset</button>
-                        </div>
-                        <div class="dropdown-item" *ngFor="let col of columnConfigs">
-                            <label>
-                                <input type="checkbox" [checked]="col.visible" (change)="toggleColumn(col.key)" />
-                                <span>{{ col.label || col.key }}</span>
-                            </label>
-                        </div>
-                    </div>
                 </div>
-
-                <!-- Page Size -->
-                <div class="page-size-selector">
-                    <select (change)="onPageSizeChange($event)" [value]="pageSize">
-                        <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }} per page</option>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" name="status" (change)="onFilterChange($event)" [value]="filterForm.get('status')?.value || ''">
+                        <option value="">All Statuses</option>
+                        <option *ngFor="let status of VendorStatus | keyvalue" [value]="status.value">
+                            {{ getStatusLabel(status.value) }}
+                        </option>
                     </select>
                 </div>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" name="tier" (change)="onFilterChange($event)" [value]="filterForm.get('tier')?.value || ''">
+                        <option value="">All Tiers</option>
+                        <option *ngFor="let tier of VendorTier | keyvalue" [value]="tier.value">
+                            {{ getTierLabel(tier.value) }}
+                        </option>
+                    </select>
+                </div>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" name="riskLevel" (change)="onFilterChange($event)" [value]="filterForm.get('riskLevel')?.value || ''">
+                        <option value="">All Risks</option>
+                        <option *ngFor="let risk of RiskLevel | keyvalue" [value]="risk.value">
+                            {{ risk.value }}
+                        </option>
+                    </select>
+                </div>
+                <button class="ql-clear-filters" (click)="clearFilters()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
             </div>
-        </div>
 
-        <!-- ============================================================
-        FILTER DRAWER
-        ============================================================ -->
-        <div class="filter-drawer" [class.open]="showFilterDrawer">
-            <div class="filter-drawer-content" [formGroup]="filterForm">
-                <div class="filter-drawer-header">
-                    <h3><i class="fas fa-sliders-h"></i> Advanced Filters</h3>
-                    <button class="close-btn" (click)="showFilterDrawer = false">
-                        <i class="fas fa-times"></i>
+            <!-- Bulk Actions -->
+            <div class="ql-bulk-bar" *ngIf="getSelectedCount() > 0">
+                <span class="ql-bulk-count">{{ getSelectedCount() }} selected</span>
+                <button class="ql-bulk-btn ql-bulk-btn--activate" (click)="bulkAction('activate')">
+                    <i class="fas fa-check-circle"></i> Activate
+                </button>
+                <button class="ql-bulk-btn ql-bulk-btn--suspend" (click)="bulkAction('suspend')">
+                    <i class="fas fa-pause-circle"></i> Suspend
+                </button>
+                <button class="ql-bulk-btn ql-bulk-btn--delete" (click)="bulkAction('delete')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+                <button class="ql-bulk-btn ql-bulk-btn--export" (click)="bulkAction('export')">
+                    <i class="fas fa-file-export"></i> Export
+                </button>
+                <button class="ql-bulk-btn ql-bulk-btn--clear" (click)="clearSelection()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+
+            <!-- Table -->
+            <div class="ql-table-wrap">
+                    <table class="ql-table">
+                        <thead>
+                            <tr>
+                                <th class="ql-th-chk">
+                                    <input type="checkbox" [checked]="selectAll && filteredVendors.length > 0" 
+                                           (change)="toggleSelectAll()" 
+                                           [disabled]="filteredVendors.length === 0">
+                                </th>
+                                <th class="ql-td-num" (click)="toggleSort('rank')">
+                                    # <i class="fas" [class]="getSortIcon('rank')"></i>
+                                </th>
+                                <th (click)="toggleSort('companyName')">
+                                    Company <i class="fas" [class]="getSortIcon('companyName')"></i>
+                                </th>
+                                <th (click)="toggleSort('tier')">
+                                    Tier <i class="fas" [class]="getSortIcon('tier')"></i>
+                                </th>
+                                <th (click)="toggleSort('status')">
+                                    Status <i class="fas" [class]="getSortIcon('status')"></i>
+                                </th>
+                                <th (click)="toggleSort('riskLevel')">
+                                    Risk <i class="fas" [class]="getSortIcon('riskLevel')"></i>
+                                </th>
+                                <th (click)="toggleSort('performanceScore')">
+                                    Performance <i class="fas" [class]="getSortIcon('performanceScore')"></i>
+                                </th>
+                                <th (click)="toggleSort('totalProjects')">
+                                    Projects <i class="fas" [class]="getSortIcon('totalProjects')"></i>
+                                </th>
+                                <th (click)="toggleSort('totalRevenue')">
+                                    Revenue <i class="fas" [class]="getSortIcon('totalRevenue')"></i>
+                                </th>
+                                <th>Docs</th>
+                                <th (click)="toggleSort('joinedDate')">
+                                    Joined <i class="fas" [class]="getSortIcon('joinedDate')"></i>
+                                </th>
+                                <th class="ql-th-actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Loading State -->
+                            <tr *ngIf="isLoading">
+                                <td colspan="12" class="ql-empty-cell">
+                                    <div class="ql-spinner-small"></div>
+                                    <span>Loading vendors...</span>
+                                </td>
+                            </tr>
+
+                            <!-- No Results -->
+                            <tr *ngIf="!isLoading && filteredVendors.length === 0">
+                                <td colspan="12" class="ql-empty-cell">
+                                    <i class="fas fa-store" style="color: var(--border); font-size: 32px;"></i>
+                                    <h4>No vendors found</h4>
+                                    <p>Try adjusting your filters or search terms</p>
+                                    <button class="ql-btn ql-btn--primary" (click)="clearFilters()">Clear Filters</button>
+                                </td>
+                            </tr>
+
+                            <!-- Vendor Rows -->
+                            <tr *ngFor="let vendor of filteredVendors; let i = index"
+                                [class.ql-row--selected]="isSelected(vendor.id)"
+                                (click)="viewVendor(vendor.id)">
+                                <td class="ql-td-chk" (click)="$event.stopPropagation()">
+                                    <input type="checkbox" [checked]="isSelected(vendor.id)"
+                                           (change)="toggleSelectVendor(vendor.id)">
+                                </td>
+                                <td class="ql-td-num">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+                                <td>
+                                    <div class="ql-company-info">
+                                        <div class="ql-company-avatar">
+                                            {{ vendor.companyName.charAt(0) || '?' }}
+                                        </div>
+                                        <div>
+                                            <div class="ql-company-name">{{ vendor.companyName }}</div>
+                                            <div class="ql-company-email">{{ vendor.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="ql-tier-badge" 
+                                          [class.ql-tier-badge--preferred]="vendor.tier === VendorTier.PREFERRED"
+                                          [class.ql-tier-badge--approved]="vendor.tier === VendorTier.APPROVED"
+                                          [class.ql-tier-badge--conditional]="vendor.tier === VendorTier.CONDITIONAL">
+                                        {{ getVendorTierLabel(vendor.tier) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="ql-status-badge" 
+                                          [class.ql-status-badge--active]="vendor.status === VendorStatus.ACTIVE"
+                                          [class.ql-status-badge--suspended]="vendor.status === VendorStatus.SUSPENDED || vendor.status === VendorStatus.OFFBOARDED"
+                                          [class.ql-status-badge--pending]="vendor.status === VendorStatus.PENDING_ONBOARDING || vendor.status === VendorStatus.UNDER_REVIEW">
+                                        <span class="ql-status-dot"></span>
+                                        {{ getStatusLabel(vendor.status) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="ql-risk-badge" 
+                                          [class.ql-risk-badge--high]="vendor.riskLevel === RiskLevel.HIGH"
+                                          [class.ql-risk-badge--medium]="vendor.riskLevel === RiskLevel.MEDIUM"
+                                          [class.ql-risk-badge--low]="vendor.riskLevel === RiskLevel.LOW">
+                                        <i class="fas" [class.fa-exclamation-triangle]="vendor.riskLevel === RiskLevel.HIGH"
+                                                      [class.fa-exclamation-circle]="vendor.riskLevel === RiskLevel.MEDIUM"
+                                                      [class.fa-check-circle]="vendor.riskLevel === RiskLevel.LOW"></i>
+                                        {{ vendor.riskLevel }}
+                                    </span>
+                                    <ng-container *ngIf="getRiskTrajectory(vendor.id) as trajectory">
+                                        <i class="fas" [class]="getRiskTrajectoryIcon(trajectory.direction)"
+                                           [style.color]="getRiskTrajectoryColor(trajectory.direction)"
+                                           style="margin-left: 6px;"
+                                           [title]="'AI risk trend: ' + trajectory.direction + ' (' + trajectory.confidence + '% confidence)'">
+                                        </i>
+                                    </ng-container>
+                                    <i *ngIf="hasActiveFraudFlag(vendor.id)" class="fas fa-triangle-exclamation"
+                                       style="margin-left: 6px; color: #DC2626;"
+                                       title="AI fraud watch: an active flag needs review">
+                                    </i>
+                                </td>
+                                <td>
+                                    <div class="ql-performance-cell">
+                                        <div class="ql-performance-bar">
+                                            <div class="ql-performance-fill" [style.width.%]="vendor.performanceScore"></div>
+                                        </div>
+                                        <span class="ql-performance-score">
+                                            {{ vendor.performanceScore.toFixed(0) }}%
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>{{ formatNumber(vendor.totalProjects || vendor.performanceMetrics.totalProjects || 0) }}</td>
+                                <td>{{ formatCurrency(vendor.performanceMetrics.totalRevenue || 0) }}</td>
+                                <td>
+                                    <div class="ql-doc-status-summary" *ngIf="getDocumentStatusCount(vendor) as docStats">
+                                        <span class="ql-doc-dot ql-doc-dot--valid" *ngIf="docStats.valid > 0"
+                                              title="{{ docStats.valid }} valid"></span>
+                                        <span class="ql-doc-dot ql-doc-dot--expiring" *ngIf="docStats.expiring > 0"
+                                              title="{{ docStats.expiring }} expiring"></span>
+                                        <span class="ql-doc-dot ql-doc-dot--expired" *ngIf="docStats.expired > 0"
+                                              title="{{ docStats.expired }} expired"></span>
+                                        <span class="ql-doc-count" *ngIf="docStats.total === 0">—</span>
+                                    </div>
+                                </td>
+                                <td>{{ formatDate(vendor.joinedDate) }}</td>
+                                <td class="ql-td-actions" (click)="$event.stopPropagation()">
+                                    <div class="ql-row-actions">
+                                        <button class="ql-action-btn ql-action-btn--view" (click)="viewVendor(vendor.id)" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="ql-action-btn ql-action-btn--danger" (click)="deleteVendor(vendor)" title="Delete">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="ql-pagination-bar" *ngIf="filteredVendors.length > 0">
+                <div class="ql-pagination-info">
+                    Showing {{ (currentPage - 1) * pageSize + 1 }} to
+                    {{ Math.min(currentPage * pageSize, totalVendors) }} of
+                    {{ totalVendors }} vendors
+                </div>
+                <div class="ql-pagination-controls">
+                    <button class="ql-page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="ql-page-btn" *ngFor="let page of getPageNumbers()" 
+                            [class.ql-page-btn--active]="page === currentPage"
+                            [class.ql-page-btn--ellipsis]="page === '...'"
+                            (click)="page !== '...' && goToPage(page)">
+                        {{ page }}
+                    </button>
+                    <button class="ql-page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+                        <i class="fas fa-chevron-right"></i>
                     </button>
                 </div>
-
-                <div class="filter-grid">
-                    <div class="filter-group">
-                        <label>Vendor Status</label>
-                        <select formControlName="status" class="filter-select">
-                            <option value="">All Statuses</option>
-                            <option *ngFor="let status of VendorStatus | keyvalue" [value]="status.value">
-                                {{ getStatusLabel(status.value) }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label>Vendor Tier</label>
-                        <select formControlName="tier" class="filter-select">
-                            <option value="">All Tiers</option>
-                            <option *ngFor="let tier of VendorTier | keyvalue" [value]="tier.value">
-                                {{ getTierLabel(tier.value) }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label>Risk Level</label>
-                        <select formControlName="riskLevel" class="filter-select">
-                            <option value="">All Risks</option>
-                            <option *ngFor="let risk of RiskLevel | keyvalue" [value]="risk.value">
-                                {{ risk.value }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label>Category</label>
-                        <input type="text" formControlName="category" class="filter-input"
-                            placeholder="e.g., Electronics, Office" />
-                    </div>
-
-                    <div class="filter-group">
-                        <label>Min Performance Score</label>
-                        <input type="number" formControlName="minPerformance" class="filter-input" placeholder="0"
-                            min="0" max="100" />
-                    </div>
-
-                    <div class="filter-group">
-                        <label>Max Performance Score</label>
-                        <input type="number" formControlName="maxPerformance" class="filter-input" placeholder="100"
-                            min="0" max="100" />
-                    </div>
-
-                    <div class="filter-group">
-                        <label>Joined From</label>
-                        <input type="date" formControlName="dateFrom" class="filter-input" />
-                    </div>
-
-                    <div class="filter-group">
-                        <label>Joined To</label>
-                        <input type="date" formControlName="dateTo" class="filter-input" />
-                    </div>
-                </div>
-
-                <div class="filter-drawer-footer">
-                    <button class="btn-secondary" (click)="clearFilters()">Clear All</button>
-                    <button class="btn-primary" (click)="applyFilters()">Apply Filters</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================================
-        TABLE
-        ============================================================ -->
-        <div class="table-container" #tableContainer>
-            <div class="table-wrapper">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <!-- Select -->
-                            <th *ngIf="visibleColumns.select" class="checkbox-col">
-                                <input type="checkbox" [checked]="selectAll" (change)="toggleSelectAll()" />
-                            </th>
-
-                            <!-- Rank -->
-                            <th *ngIf="visibleColumns.rank" class="sn-col" (click)="toggleSort('rank')">
-                                # <i class="fas" [class]="getSortIcon('rank')"></i>
-                            </th>
-
-                            <!-- Company -->
-                            <th *ngIf="visibleColumns.company" (click)="toggleSort('companyName')">
-                                Company <i class="fas" [class]="getSortIcon('companyName')"></i>
-                            </th>
-
-                            <!-- Tier -->
-                            <th *ngIf="visibleColumns.tier" (click)="toggleSort('tier')">
-                                Tier <i class="fas" [class]="getSortIcon('tier')"></i>
-                            </th>
-
-                            <!-- Status -->
-                            <th *ngIf="visibleColumns.status" (click)="toggleSort('status')">
-                                Status <i class="fas" [class]="getSortIcon('status')"></i>
-                            </th>
-
-                            <!-- Risk -->
-                            <th *ngIf="visibleColumns.risk" (click)="toggleSort('riskLevel')">
-                                Risk <i class="fas" [class]="getSortIcon('riskLevel')"></i>
-                            </th>
-
-                            <!-- Performance -->
-                            <th *ngIf="visibleColumns.performance" (click)="toggleSort('performanceScore')">
-                                Performance <i class="fas" [class]="getSortIcon('performanceScore')"></i>
-                            </th>
-
-                            <!-- Projects -->
-                            <th *ngIf="visibleColumns.projects" (click)="toggleSort('totalProjects')">
-                                Projects <i class="fas" [class]="getSortIcon('totalProjects')"></i>
-                            </th>
-
-                            <!-- Revenue -->
-                            <th *ngIf="visibleColumns.revenue" (click)="toggleSort('totalRevenue')">
-                                Revenue <i class="fas" [class]="getSortIcon('totalRevenue')"></i>
-                            </th>
-
-                            <!-- Documents -->
-                            <th *ngIf="visibleColumns.documents">
-                                Docs
-                            </th>
-
-                            <!-- Joined -->
-                            <th *ngIf="visibleColumns.joined" (click)="toggleSort('joinedDate')">
-                                Joined <i class="fas" [class]="getSortIcon('joinedDate')"></i>
-                            </th>
-
-                            <!-- Actions -->
-                            <th *ngIf="visibleColumns.actions" class="actions-heading">Actions</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        <!-- Loading State -->
-                        <tr *ngIf="isLoading">
-                            <td [attr.colspan]="getVisibleColumnCount()" class="loading-cell">
-                                <div class="loading-spinner"></div>
-                                <p>Loading vendors...</p>
-                            </td>
-                        </tr>
-
-                        <!-- No Results -->
-                        <tr *ngIf="!isLoading && filteredVendors.length === 0">
-                            <td [attr.colspan]="getVisibleColumnCount()" class="empty-cell">
-                                <div class="empty-state">
-                                    <i class="fas fa-store"></i>
-                                    <h3>No vendors found</h3>
-                                    <p>Try adjusting your filters or search terms</p>
-                                    <button class="btn-primary" (click)="clearFilters()">Clear Filters</button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <!-- Vendor Rows - Removed row click -->
-                        <tr *ngFor="let vendor of filteredVendors; let i = index"
-                            [class.selected]="isSelected(vendor.id)"
-                            class="clickable-row"
-                            (click)="viewVendor(vendor.id)">
-                            <td *ngIf="visibleColumns.select" class="checkbox-col" (click)="$event.stopPropagation()">
-                                <input type="checkbox" [checked]="isSelected(vendor.id)"
-                                    (change)="toggleSelectVendor(vendor.id)" />
-                            </td>
-
-                            <td *ngIf="visibleColumns.rank" class="sn-col">
-                                {{ (currentPage - 1) * pageSize + i + 1 }}
-                            </td>
-
-                            <td *ngIf="visibleColumns.company">
-                                <div class="company-info">
-                                    <div class="company-avatar">
-                                        {{ vendor.companyName.charAt(0) }}
-                                    </div>
-                                    <div>
-                                        <div class="company-name">{{ vendor.companyName }}</div>
-                                        <div class="company-email">{{ vendor.email }}</div>
-                                    </div>
-                                </div>
-                            </td>
-
-                            <td *ngIf="visibleColumns.tier">
-                                <span class="tier-badge" [class.tier-preferred]="vendor.tier === VendorTier.PREFERRED"
-                                    [class.tier-approved]="vendor.tier === VendorTier.APPROVED"
-                                    [class.tier-conditional]="vendor.tier === VendorTier.CONDITIONAL">
-                                    {{ getVendorTierLabel(vendor.tier) }}
-                                </span>
-                            </td>
-
-                            <td *ngIf="visibleColumns.status">
-                                <span class="status-badge" [class.status-active]="vendor.status === VendorStatus.ACTIVE"
-                                    [class.status-suspended]="vendor.status === VendorStatus.SUSPENDED || vendor.status === VendorStatus.OFFBOARDED"
-                                    [class.status-pending]="vendor.status === VendorStatus.PENDING_ONBOARDING || vendor.status === VendorStatus.UNDER_REVIEW">
-                                    <span class="status-dot"></span>
-                                    {{ getStatusLabel(vendor.status) }}
-                                </span>
-                            </td>
-
-                            <td *ngIf="visibleColumns.risk">
-                                <span class="risk-badge" [class.risk-high]="vendor.riskLevel === RiskLevel.HIGH"
-                                    [class.risk-medium]="vendor.riskLevel === RiskLevel.MEDIUM"
-                                    [class.risk-low]="vendor.riskLevel === RiskLevel.LOW">
-                                    <i class="fas" [class.fa-exclamation-triangle]="vendor.riskLevel === RiskLevel.HIGH"
-                                        [class.fa-exclamation-circle]="vendor.riskLevel === RiskLevel.MEDIUM"
-                                        [class.fa-check-circle]="vendor.riskLevel === RiskLevel.LOW"></i>
-                                    {{ vendor.riskLevel }}
-                                </span>
-                                <ng-container *ngIf="getRiskTrajectory(vendor.id) as trajectory">
-                                    <i class="fas" [class]="getRiskTrajectoryIcon(trajectory.direction)"
-                                        [style.color]="getRiskTrajectoryColor(trajectory.direction)"
-                                        style="margin-left: 6px;"
-                                        [title]="'AI risk trend: ' + trajectory.direction + ' (' + trajectory.confidence + '% confidence) — ' + trajectory.reason">
-                                    </i>
-                                </ng-container>
-                                <i *ngIf="hasActiveFraudFlag(vendor.id)" class="fas fa-triangle-exclamation"
-                                    style="margin-left: 6px; color: #DC2626;"
-                                    title="AI fraud watch: an active flag needs review">
-                                </i>
-                            </td>
-
-                            <td *ngIf="visibleColumns.performance">
-                                <div class="performance-cell">
-                                    <div class="performance-bar">
-                                        <div class="performance-fill" [style.width.%]="vendor.performanceScore"></div>
-                                    </div>
-                                    <span class="performance-score">
-                                        {{ vendor.performanceScore.toFixed(0) }}%
-                                    </span>
-                                </div>
-                            </td>
-
-                            <td *ngIf="visibleColumns.projects">
-                                {{ formatNumber(vendor.totalProjects || vendor.performanceMetrics?.totalProjects || 0)
-                                }}
-                            </td>
-
-                            <td *ngIf="visibleColumns.revenue">
-                                {{ formatCurrency(vendor.performanceMetrics?.totalRevenue || 0) }}
-                            </td>
-
-                            <td *ngIf="visibleColumns.documents">
-                                <div class="doc-status-summary" *ngIf="getDocumentStatusCount(vendor) as docStats">
-                                    <span class="doc-dot valid" *ngIf="docStats.valid > 0"
-                                        title="{{ docStats.valid }} valid"></span>
-                                    <span class="doc-dot expiring" *ngIf="docStats.expiring > 0"
-                                        title="{{ docStats.expiring }} expiring"></span>
-                                    <span class="doc-dot expired" *ngIf="docStats.expired > 0"
-                                        title="{{ docStats.expired }} expired"></span>
-                                    <span class="doc-count" *ngIf="docStats.total === 0">—</span>
-                                </div>
-                            </td>
-
-                            <td *ngIf="visibleColumns.joined">
-                                {{ formatDate(vendor.joinedDate) }}
-                            </td>
-
-                            <!-- Actions - Updated with correct navigation -->
-                            <td *ngIf="visibleColumns.actions" class="actions-col" (click)="$event.stopPropagation()">
-                                <div class="actions-wrapper">
-                                    <button class="action-btn view-btn" (click)="viewVendor(vendor.id)"
-                                        title="View Details">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-
-                                    <button class="action-btn delete-btn" (click)="deleteVendor(vendor)"
-                                        title="Delete Vendor">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ============================================================
-        PAGINATION
-        ============================================================ -->
-        <div class="pagination-bar" *ngIf="!isLoading && filteredVendors.length > 0">
-            <div class="pagination-info">
-                Showing {{ (currentPage - 1) * pageSize + 1 }} to
-                {{ Math.min(currentPage * pageSize, totalVendors) }} of
-                {{ totalVendors }} vendors
             </div>
 
-            <div class="pagination-controls">
-                <button class="page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
+        </ng-container>
 
-                <button class="page-btn" *ngFor="let page of getPageNumbers()" [class.active]="page === currentPage"
-                    [class.ellipsis]="page === '...'" (click)="page !== '...' && goToPage(page)">
-                    {{ page }}
-                </button>
-
-                <button class="page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-        </div>
-
-    </div>
+    </main>
 </div>

@@ -2,7 +2,6 @@
   <!-- Navigation Header Bar -->
   <div class="top-nav-bar">
     <app-back-button (click)="goBack()"></app-back-button>
-    <span class="nav-back-link" (click)="goBack()"><i class="fas fa-arrow-left"></i> Back to Sales & Transactions</span>
   </div>
 
   <!-- Loading State -->
@@ -130,11 +129,11 @@
         <h4 class="card-section-title"><i class="fas fa-credit-card"></i> Payment & Shipping Summary</h4>
         <div class="info-group">
           <label>Payment Method:</label>
-          <span><i class="fas fa-university"></i> {{ transaction.paymentMethod || 'BANK_TRANSFER' }}</span>
+          <span><i class="fas fa-university"></i> {{ formatPaymentMethodLabel(transaction.paymentMethod) }}</span>
         </div>
         <div class="info-group">
           <label>Payment Mode:</label>
-          <span>{{ transaction.PaymentMode || 'ONE-OFF' }}</span>
+          <span>{{ formatPaymentModeLabel(transaction.PaymentMode) }}</span>
         </div>
         <div class="info-group">
           <label>Transaction Reference:</label>

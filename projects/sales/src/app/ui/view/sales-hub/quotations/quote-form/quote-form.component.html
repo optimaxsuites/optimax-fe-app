@@ -286,7 +286,12 @@
             </div>
           </div>
           <div class="qf-doc-party">
-            <div class="qf-doc-section-label">PREPARED BY</div>
+            <div class="qf-doc-section-label">
+              PREPARED BY
+              <button type="button" class="qf-doc-edit-link" (click)="editBilledBy()" title="Edit sender details">
+                <i class="fas fa-pen"></i> Edit
+              </button>
+            </div>
             <div class="qf-doc-billto">
               <strong>{{ billedBy.name || billedByDraft.name || 'Your Company' }}</strong>
               <span *ngIf="billedBy.address || billedByDraft.address" class="qf-doc-party-addr">{{ billedBy.address || billedByDraft.address }}</span>
@@ -475,9 +480,11 @@
       </button>
     </div>
     <div class="qf-modal-foot">
-      <button type="button" class="qf-btn qf-btn--ghost" (click)="closeNewCustomerModal()">Cancel</button>
-      <button type="button" class="qf-btn qf-btn--primary" (click)="onQuickCustomerSubmit()">
-        <i class="fas fa-save"></i> Save Client
+      <button type="button" class="qf-btn qf-btn--ghost" [disabled]="isSavingCustomer" (click)="closeNewCustomerModal()">Cancel</button>
+      <button type="button" class="qf-btn qf-btn--primary" [disabled]="isSavingCustomer" (click)="onQuickCustomerSubmit()">
+        <i class="fas fa-spinner fa-spin" *ngIf="isSavingCustomer"></i>
+        <i class="fas fa-save" *ngIf="!isSavingCustomer"></i>
+        {{ isSavingCustomer ? 'Saving…' : 'Save Client' }}
       </button>
     </div>
   </div>
@@ -590,6 +597,66 @@
         <i class="fas fa-spinner fa-spin" *ngIf="isSavingProduct"></i>
         <i class="fas fa-check" *ngIf="!isSavingProduct"></i>
         {{ isSavingProduct ? 'Saving…' : 'Create & Select' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EDIT SENDER (PREPARED BY) MODAL ══════════════════════════════════ -->
+<div class="qf-modal-backdrop" *ngIf="showBilledByModal" (click)="cancelBilledByEdit()">
+  <div class="qf-modal" (click)="$event.stopPropagation()" style="max-width:480px">
+    <div class="qf-modal-head">
+      <span><i class="fas fa-building"></i> Sender Details</span>
+      <button type="button" class="qf-modal-close" (click)="cancelBilledByEdit()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="qf-modal-body">
+      <p class="qf-modal-hint">This is who the quote is "Prepared By" — shown on the document and remembered for next time.</p>
+      <div class="qf-charge-list" style="gap:.75rem">
+        <div class="qf-field-row">
+          <label class="qf-field-label">Company Name <span style="color:#dc2626">*</span></label>
+          <input class="qf-input qf-input--grow" [(ngModel)]="billedByDraft.name" [ngModelOptions]="{standalone:true}"
+                 placeholder="e.g. Optimax Suites Ltd" />
+        </div>
+        <div class="qf-field-row">
+          <label class="qf-field-label">Address</label>
+          <textarea class="qf-input qf-input--grow" rows="2" [(ngModel)]="billedByDraft.address" [ngModelOptions]="{standalone:true}"
+                    placeholder="Company address"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+          <div class="qf-field-row">
+            <label class="qf-field-label">Email</label>
+            <input class="qf-input qf-input--grow" type="email" [(ngModel)]="billedByDraft.email" [ngModelOptions]="{standalone:true}"
+                   placeholder="company@example.com" />
+          </div>
+          <div class="qf-field-row">
+            <label class="qf-field-label">Phone</label>
+            <input class="qf-input qf-input--grow" [(ngModel)]="billedByDraft.phone" [ngModelOptions]="{standalone:true}"
+                   placeholder="+234…" />
+          </div>
+        </div>
+        <div class="qf-field-row">
+          <label class="qf-field-label">Bank Name</label>
+          <input class="qf-input qf-input--grow" [(ngModel)]="billedByDraft.bankName" [ngModelOptions]="{standalone:true}"
+                 placeholder="e.g. First Bank" />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+          <div class="qf-field-row">
+            <label class="qf-field-label">Account Name</label>
+            <input class="qf-input qf-input--grow" [(ngModel)]="billedByDraft.accountName" [ngModelOptions]="{standalone:true}" />
+          </div>
+          <div class="qf-field-row">
+            <label class="qf-field-label">Account Number</label>
+            <input class="qf-input qf-input--grow" [(ngModel)]="billedByDraft.accountNumber" [ngModelOptions]="{standalone:true}" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="qf-modal-foot">
+      <button type="button" class="qf-btn qf-btn--ghost" [disabled]="isSavingBilledBy" (click)="cancelBilledByEdit()">Cancel</button>
+      <button type="button" class="qf-btn qf-btn--primary" [disabled]="isSavingBilledBy" (click)="saveBilledBy()">
+        <i class="fas fa-spinner fa-spin" *ngIf="isSavingBilledBy"></i>
+        <i class="fas fa-check" *ngIf="!isSavingBilledBy"></i>
+        {{ isSavingBilledBy ? 'Saving…' : 'Save' }}
       </button>
     </div>
   </div>

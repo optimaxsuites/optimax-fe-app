@@ -80,6 +80,9 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
   // UI Helpers
   Math = Math;
 
+  // Error state
+  error: string | null = null;
+
   // Subscriptions
   private subscriptions: Subscription[] = [];
   private autoRefreshSubscription?: Subscription;
@@ -278,24 +281,34 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
   // NAVIGATION - FIXED
   // ============================================================
 
+  // Tab sessionStorage key used by NavTabComponent for the vendor management shell
+  private readonly VM_TAB_KEY = 'dashboard-vendor global registry-vendor directory';
+
   navigateToVendors(): void {
+    sessionStorage.setItem(this.VM_TAB_KEY, 'Vendor Directory');
     this.router.navigate(['/admin/sales/commerce/manage-vendors']);
   }
 
   navigateToVendor(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], {
+      queryParams: { returnTo: 'dashboard' }
+    });
   }
 
   navigateToPerformance(): void {
+    sessionStorage.setItem(this.VM_TAB_KEY, 'Vendor Directory');
     this.router.navigate(['/admin/sales/commerce/manage-vendors']);
   }
 
   navigateToRisk(): void {
+    sessionStorage.setItem(this.VM_TAB_KEY, 'Vendor Directory');
     this.router.navigate(['/admin/sales/commerce/manage-vendors']);
   }
 
   navigateToDocuments(id: string): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile']);
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], {
+      queryParams: { returnTo: 'dashboard' }
+    });
   }
 
   // ============================================================
@@ -568,5 +581,22 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
         percent: this.stats.highRiskVendors > 5 ? 5.2 : 2.8
       }
     ];
+  }
+
+  // Navigation - Global Registry (Vendor Approval Queue tab)
+  navigateToApprovalQueue(): void {
+    sessionStorage.setItem(this.VM_TAB_KEY, 'Vendor Global Registry');
+    this.router.navigate(['/admin/sales/commerce/manage-vendors']);
+  }
+
+  // Refresh
+  refreshData(): void {
+    this.error = null;
+    this.loadDashboardData();
+  }
+
+  // Export
+  exportReport(): void {
+    console.log('Exporting vendor report...');
   }
 }

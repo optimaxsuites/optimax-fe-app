@@ -201,10 +201,14 @@ export class LeaveUsageComponent implements OnInit {
 
         this.leaveTypes = data.leaveTypes || [];
 
-        // Filter leave plans for current user (PENDING or APPROVED only)
+        // Filter leave plans for current user (PENDING or APPROVED only).
+        // Don't silently drop records with unknown ownership (createdBy null
+        // from the backend) — only exclude ones we can positively confirm
+        // belong to a different user.
         this.leavePlans = (data.leavePlans || []).filter((plan: any) => {
-          const planUserId = plan.createdBy?.userId || plan.createdBy?.id;
-          const isMyPlan = planUserId === this.currentUserId;
+          const ownerId = plan.createdBy?.userId;
+          const ownerKnown = ownerId !== null && ownerId !== undefined;
+          const isMyPlan = !ownerKnown || ownerId === this.currentUserId;
           const isValidStatus =
             plan.status === 'PENDING' || plan.status === 'APPROVED';
           return isMyPlan && isValidStatus;
@@ -215,11 +219,14 @@ export class LeaveUsageComponent implements OnInit {
         // Calculate allowed date ranges from approved plans
         this.calculateAllowedDateRanges();
 
-        // Filter leave requests for current user
+        // Filter leave requests for current user — again, don't drop records
+        // with unknown ownership (createdBy null); only exclude ones we can
+        // confirm belong to a different user.
         this.leaveRequests = (data.leaveRequests || []).filter(
           (request: any) => {
-            const requestUserId = request.createdBy?.userId || request.createdBy?.id;
-            return requestUserId === this.currentUserId;
+            const requestUserId = request.createdBy?.userId;
+            const ownerKnown = requestUserId !== null && requestUserId !== undefined;
+            return !ownerKnown || requestUserId === this.currentUserId;
           },
         );
 

@@ -40,8 +40,8 @@
     "pushInventoryManagement": "git subtree push --prefix=projects/inventory-management https://gitlab.com/queensheba/inventory-mgmt.git main",
     "pullProductivity": "git subtree pull --prefix=projects/productivity https://gitlab.com/queensheba/erp-productivity.git master --squash",
     "pushProductivity": "git subtree push --prefix=projects/productivity https://gitlab.com/queensheba/erp-productivity.git master",
-    "pullSales": "git subtree pull --prefix=projects/sales https://gitlab.com/queensheba/erp-sales.git master --squash",
-    "pushSales": "git subtree push --prefix=projects/sales https://gitlab.com/queensheba/erp-sales.git master"
+    "pullSales": "git subtree pull --prefix=projects/sales https://gitlab.com/j2yemi/erp-sales.git master --squash",
+    "pushSales": "git subtree push --prefix=projects/sales https://gitlab.com/j2yemi/erp-sales.git master"
   },
   "private": true,
   "dependencies": {

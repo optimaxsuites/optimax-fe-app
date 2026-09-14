@@ -17,7 +17,7 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   notifications: ProcurementNotification[] = [];
   isLoading = false;
-  retryingId: string | null = null;
+  retryingId: number | null = null;
 
   constructor(private notificationService: NotificationService) {}
 
