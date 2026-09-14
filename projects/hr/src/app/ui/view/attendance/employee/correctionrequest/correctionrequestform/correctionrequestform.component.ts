@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { CorrectionRequest } from '../../../../../domain/attendance/correctionrequest.dto';
+import { CorrectionRequest, IssueToCorrectionType } from '../../../../../domain/attendance/correctionrequest.dto';
 import { v4 as uuidv4 } from 'uuid';
 
 @Component({
@@ -22,7 +22,8 @@ export class CorrectionrequestformComponent {
   };
 
   issueTypes = [
-    { value: 'MISSED_CLOCK', label: 'Missed Clock' },
+    { value: 'MISSING_IN', label: 'Forgot to Clock In' },
+    { value: 'MISSING_OUT', label: 'Forgot to Clock Out' },
     { value: 'WRONG_TIME', label: 'Wrong Time' },
     { value: 'OTHER', label: 'Other' }
   ];
@@ -76,6 +77,7 @@ export class CorrectionrequestformComponent {
       department: this.currentUser.department,
       date: this.form.value.date,
       issueType: this.form.value.issueType,
+      correctionType: IssueToCorrectionType(this.form.value.issueType),
       description: this.form.value.description,
       evidence: this.form.value.evidence,
       status: 'PENDING',

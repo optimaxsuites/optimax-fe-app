@@ -154,7 +154,7 @@ export const MOCK_ATTENDANCE_RECORDS: AttendanceTableRecord[] = [
     isCrossBranchAttendance: true,
     crossBranchApprovalStatus: 'PENDING',
     correctionRequest: {
-      type: 'TIME_CORRECTION',
+      type: 'WRONG_TIME',
       reason: 'Forgot to clock out, actual time was 17:00',
       status: 'PENDING',
       requestedAt: new Date('2026-08-26T18:30:00'),

@@ -1,4 +1,6 @@
 import { ShiftTrackingMetrics } from './shift-tracking-metrics.dto';
+import { RecordStatus } from './attendance-event.dto';
+import { CorrectionType } from './correctionrequest.dto';
 
 export interface AttendanceTableRecord {
   id: number; //attendance record id from backend
@@ -19,7 +21,10 @@ export interface AttendanceTableRecord {
     lat: number;
     lng: number;
   } | null;
+  // --- ATTENDANCE PRESENCE STATUS ---
   status: 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE' | 'OVERTIME';
+  // --- WORKFLOW APPROVAL STATUS (from backend) ---
+  recordStatus?: RecordStatus; // DRAFT|SUBMITTED|IN_APPROVAL|APPROVED|REJECTED|LOCKED
   hours?: number;
   lateMinutes?: number;
   overtime?: number;
@@ -60,7 +65,7 @@ export interface AttendanceTableRecord {
   // --- CORRECTION REQUESTS FROM EMPLOYEES ---
   correctionRequest?: {
     id?: number;
-    type: 'TIME_CORRECTION' | 'STATUS_CORRECTION' | 'LOCATION_CORRECTION';
+    type: CorrectionType; // MISSING_IN | MISSING_OUT | WRONG_TIME | OTHER
     reason: string;
     status: 'PENDING' | 'APPROVED' | 'REJECTED';
     requestedAt: Date;

@@ -1,10 +1,13 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import {
   CorrectionRequest,
   CorrectionRequestHistory,
   CorrectionStatus
 } from '../../domain/attendance/correctionrequest.dto';
+import { CorrectionRequestApiService } from './correction-request-api.service';
 
 @Injectable({
   providedIn: 'root'
@@ -18,7 +21,7 @@ export class EmployeeCorrectionService {
     return this.requestsSubject.value;
   }
 
-  constructor() {}
+  constructor(private correctionApi: CorrectionRequestApiService) {}
 
   initialize() {
     if (this.initialized) return;
@@ -42,7 +45,7 @@ export class EmployeeCorrectionService {
     this.requestsSubject.next(normalized);
   }
 
-  addRequest(request: CorrectionRequest) {
+  addRequest(request: CorrectionRequest): Observable<CorrectionRequest> {
     const now = new Date();
     const preparedRequest: CorrectionRequest = {
       ...request,
@@ -57,8 +60,21 @@ export class EmployeeCorrectionService {
       updatedAt: now
     };
 
-    this.requestsSubject.next([preparedRequest, ...this.requests]);
-    this.persistRequests();
+    // Submit to backend API
+    return this.correctionApi.submitCorrectionRequest(preparedRequest).pipe(
+      tap(created => {
+        // Update local state with API response
+        this.requestsSubject.next([created, ...this.requests]);
+        this.persistRequests();
+      }),
+      catchError(error => {
+        console.error('Failed to submit correction request:', error);
+        // Fall back to local storage only
+        this.requestsSubject.next([preparedRequest, ...this.requests]);
+        this.persistRequests();
+        throw error;
+      })
+    );
   }
 
   startReview(id: string, supervisorName = 'Supervisor') {
@@ -77,67 +93,49 @@ export class EmployeeCorrectionService {
     });
   }
 
-  approveRequest(id: string, supervisorName = 'Supervisor', comment?: string) {
-    this.transitionRequest(id, request => {
-      if (request.locked || (request.status !== 'UNDER_REVIEW' && request.status !== 'PENDING')) {
-        return request;
-      }
-
-      return {
-        ...this.withTransition(
-          request,
-          'SUBMITTED',
-          supervisorName,
-          comment || 'Correction approved and attendance record updated.',
-          'Employee notified: correction request approved and submitted.'
-        ),
-        locked: true
-      };
-    });
+  approveRequest(id: string, supervisorName = 'Supervisor', comment?: string): Observable<CorrectionRequest> {
+    return this.correctionApi.approveCorrectionRequest(id, supervisorName, comment).pipe(
+      tap(approved => {
+        // Update local state with approved request
+        const updated = this.requests.map(r => r.id === id ? approved : r);
+        this.requestsSubject.next(updated);
+        this.persistRequests();
+      }),
+      catchError(error => {
+        console.error('Failed to approve correction request:', error);
+        throw error;
+      })
+    );
   }
 
-  rejectRequest(id: string, supervisorName: string, reason: string) {
-    this.transitionRequest(id, request => {
-      if (request.locked || (request.status !== 'UNDER_REVIEW' && request.status !== 'PENDING')) {
-        return request;
-      }
-
-      return {
-        ...this.withTransition(
-          request,
-          'REJECTED',
-          supervisorName,
-          reason,
-          'Employee notified: correction request rejected. More evidence may be submitted.'
-        ),
-        rejectionReason: reason,
-        locked: false
-      };
-    });
+  rejectRequest(id: string, supervisorName: string, reason: string): Observable<CorrectionRequest> {
+    return this.correctionApi.rejectCorrectionRequest(id, supervisorName, reason).pipe(
+      tap(rejected => {
+        // Update local state with rejected request
+        const updated = this.requests.map(r => r.id === id ? rejected : r);
+        this.requestsSubject.next(updated);
+        this.persistRequests();
+      }),
+      catchError(error => {
+        console.error('Failed to reject correction request:', error);
+        throw error;
+      })
+    );
   }
 
-  resubmitRequest(id: string, evidence: string) {
-    this.transitionRequest(id, request => {
-      if (request.locked || request.status !== 'REJECTED') {
-        return request;
-      }
-
-      const mergedEvidence = (request.evidence ? request.evidence + '\n\n' : '') +
-        'Resubmission evidence:\n' + evidence;
-
-      return {
-        ...this.withTransition(
-          request,
-          'PENDING',
-          'Employee',
-          'Correction request resubmitted with additional evidence.',
-          'Supervisor notified of resubmitted correction request.'
-        ),
-        evidence: mergedEvidence,
-        rejectionReason: undefined,
-        locked: false
-      };
-    });
+  resubmitRequest(id: string, evidence: string): Observable<CorrectionRequest> {
+    return this.correctionApi.resubmitCorrectionRequest(id, evidence).pipe(
+      tap(resubmitted => {
+        // Update local state with resubmitted request
+        const updated = this.requests.map(r => r.id === id ? resubmitted : r);
+        this.requestsSubject.next(updated);
+        this.persistRequests();
+      }),
+      catchError(error => {
+        console.error('Failed to resubmit correction request:', error);
+        throw error;
+      })
+    );
   }
 
   updateRequest(id: string, changes: Partial<CorrectionRequest>) {

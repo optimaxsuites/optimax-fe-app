@@ -9,50 +9,46 @@ export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type AuditAction = 'AUTO_CREATED' | 'APPROVED' | 'REJECTED' | 'OVERRIDDEN';
 
 export interface AuditLogEntryDTO {
-  id: string; // Unique log entry ID
+  id: string;
   actor: {
-    id: number; // User ID
-    name: string; // User name
-    role: string; // User role
+    id: number;
+    name: string;
+    role: string;
   };
-  action: AuditAction; // Action performed
-  timestamp: Date; // When action occurred
-  details: string; // Action details
-  ipAddress: string; // Source IP address
-  userAgent: string; // Browser/app user agent
+  action: AuditAction;
+  timestamp: Date;
+  details: string;
+  ipAddress: string;
+  userAgent: string;
 }
 
 export interface CrossBranchCheckInRequest {
-  // System-generated fields
-  id: string; // Unique request identifier
-  createdAt: Date; // Request creation timestamp
-  updatedAt?: Date; // Last update timestamp
+  id: string;
+  createdAt: Date;
+  updatedAt?: Date;
 
-  // Employee information
-  employeeId: string; // Employee unique identifier (database ID)
+  employeeId: string; // Database ID
 
-  // Branch information
-  requestedBranchId: number; // Branch where work will occur
-  requestedBranchName?: string; // Requested branch name (optional)
+  // Branch information (backend contract uses branch codes, not numeric IDs)
+  homeBranchCode: string;
+  homeBranchName?: string;
+  requestedBranchCode: string;
+  requestedBranchName?: string;
 
-  // Request timing
   requestDate: Date; // When check-in occurred (auto-created)
   workDate: Date; // When work at other branch occurred
 
-  // Request details
   reason: string; // Auto-populated: "Employee checked in at different branch"
 
-  // Approval information
   approvalRequired: boolean; // Always true for cross-branch
   approvalType: ApprovalType; // Always RETROSPECTIVE (auto-created after check-in)
-  supervisorId?: number; // Supervisor ID
-  supervisorName?: string; // Supervisor name (optional)
-  supervisorApprovalStatus: ApprovalStatus; // Supervisor approval status
-  supervisorNote?: string; // Supervisor comments
-  approvalTimestamp?: Date; // When approved
+  supervisorId?: number;
+  supervisorName?: string;
+  supervisorApprovalStatus: ApprovalStatus;
+  supervisorNote?: string;
+  approvalTimestamp?: Date;
 
-  // Audit trail
-  auditLog: AuditLogEntryDTO[]; // Complete action history
+  auditLog: AuditLogEntryDTO[];
 }
 
 export interface CrossBranchApprovalRequest {

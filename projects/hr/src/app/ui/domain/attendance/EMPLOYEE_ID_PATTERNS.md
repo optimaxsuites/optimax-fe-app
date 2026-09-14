@@ -181,8 +181,10 @@ interface CrossBranchCheckInRequest {
   employeeId: number;        // For: Database tracking
   employee: employeeDTO;     // For: Display, notifications, home branch
   
-  // Branch info
-  requestedBranchId: number; // Where they checked in
+  // Branch info (backend uses branch codes, not numeric IDs)
+  homeBranchCode: string;
+  homeBranchName?: string;
+  requestedBranchCode: string; // Where they checked in
   requestedBranchName?: string;
   
   // Request details
@@ -197,7 +199,7 @@ interface CrossBranchCheckInRequest {
 **Usage Example:**
 ```typescript
 // Check if cross-branch
-const isCrossBranch = request.employee?.primaryBranchId !== request.requestedBranchId;
+const isCrossBranch = request.homeBranchCode !== request.requestedBranchCode;
 
 // Log audit trail
 const auditEntry = {

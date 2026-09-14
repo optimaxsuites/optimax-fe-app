@@ -10,8 +10,9 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 /**
- * HTTP Interceptor that automatically converts ISO date strings to Date objects
- * Handles fields ending with 'At' or 'Time' (e.g., createdAt, clockInTime, eventTime)
+ * HTTP Interceptor that automatically converts ISO date strings to Date objects.
+ * The attendance contract uses checkIn/checkOut, so only those names are treated
+ * as time-bearing fields for conversion.
  */
 @Injectable()
 export class DateConversionInterceptor implements HttpInterceptor {
@@ -74,9 +75,10 @@ export class DateConversionInterceptor implements HttpInterceptor {
       return false;
     }
 
-    // Convert fields ending with 'At' or 'Time'
-    const isDateField = key.endsWith('At') || key.endsWith('Time');
-    
+    // Convert known date fields, including legacy field names only if needed.
+    const isLegacyTimeField = key === 'clockInTime' || key === 'clockOutTime';
+    const isDateField = key.endsWith('At') || key.endsWith('Time') || isLegacyTimeField;
+
     // Must match ISO date pattern
     const isISODate = this.isoDatePattern.test(value);
 

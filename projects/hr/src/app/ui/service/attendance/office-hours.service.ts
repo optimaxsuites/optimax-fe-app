@@ -1,6 +1,6 @@
 ﻿import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { OfficeHours } from '../../domain/attendance/office-hours.dto';
+import { OfficeHours, OfficeHoursRequest } from '../../domain/attendance/office-hours.dto';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../shared-component/environments/environment';
 
@@ -10,10 +10,6 @@ const DEFAULT_OFFICE_HOURS: OfficeHours = {
   absentTime: '10:00',
   latenessGracePeriod: '09:15'
 };
-
-
-
-/*export type ScheduleMode = 'office-hours' | 'shift' | 'mixed';*/
 
 @Injectable({ providedIn: 'root' })
 export class OfficeHoursService {
@@ -48,6 +44,7 @@ export class OfficeHoursService {
 
   private normalizeOfficeHours(data: any): OfficeHours {
     return {
+      id: this.toNumber(data?.id),
       openingTime: this.normalizeTime(data?.openingTime ?? data?.opening_time, DEFAULT_OFFICE_HOURS.openingTime),
       closingTime: this.normalizeTime(data?.closingTime ?? data?.closing_time, DEFAULT_OFFICE_HOURS.closingTime),
       absentTime: this.normalizeTime(data?.absentTime ?? data?.absent_time, DEFAULT_OFFICE_HOURS.absentTime),
@@ -88,14 +85,9 @@ export class OfficeHoursService {
     return this.officeHoursSubject.value;
   }
 
-  /*updateOfficeHours(hours: OfficeHours) {
-    localStorage.setItem('officeHours', JSON.stringify(hours));
-    this.officeHoursSubject.next(hours);
-  }*/
-
   updateOfficeHours(hours: OfficeHours) {
 
-  const body = {
+  const body: OfficeHoursRequest = {
     id: this.officeHoursId ?? 0,
 
     openingTime: hours.openingTime,
@@ -111,21 +103,21 @@ export class OfficeHoursService {
     companyLongitude: hours.companyLongitude?.toString() ?? ''
   };// UPDATE existing
   if (this.officeHoursId) {this.http.put<any>(
-      `${environment.apiBaseUrl}/x/api/v2/hr/officeHours/${this.officeHoursId}`,
+      `${environment.apiBaseUrl}/x/api/v2/hr/office-hours/${this.officeHoursId}`,
       body
     ).subscribe({
       next: (res) => {localStorage.setItem('officeHours', JSON.stringify(hours));
 
         this.officeHoursSubject.next(hours);
       },
-      error: (err) => { /* Error updating office hours */ }
+      error: (err) => { }
     });
 
   }
 
   // CREATE new
   else {this.http.post<any>(
-      `${environment.apiBaseUrl}/x/api/v2/hr/officeHours`,
+      `${environment.apiBaseUrl}/x/api/v2/hr/office-hours`,
       body
     ).subscribe({
       next: (res) => {this.officeHoursId = res.id;
@@ -134,7 +126,7 @@ export class OfficeHoursService {
 
         this.officeHoursSubject.next(hours);
       },
-      error: (err) => { /* Error updating office hours */ }
+      error: (err) => { }
     });
 
   }
@@ -176,50 +168,27 @@ export class OfficeHoursService {
   return current >= openDate;
 }
 
-// Inside the class:
-/*private scheduleMode: ScheduleMode = 'office-hours'; // default
-
-getScheduleMode(): ScheduleMode {
-  return 'mixed'; 
-}*/
-
 getScheduleMode() {
-  return 'mixed' as const; //fixed at mixed scheduleMode
+  return 'mixed' as const;
 }
-
-/*setScheduleMode(mode: ScheduleMode): void {
-  this.scheduleMode = mode;
-}*/
-
-
-/*private toBackendTime(time: string) {
-  const [hour, minute] = time.split(':').map(Number);
-
-  return {
-    hour,
-    minute,
-    second: 0,
-    nano: 0
-  };
-}*/
 
 createOfficeHours(payload: any) {
   return this.http.post(
-    `${environment.apiBaseUrl}/x/api/v2/hr/officeHours`,
+    `${environment.apiBaseUrl}/x/api/v2/hr/office-hours`,
     payload
   );
 }
 
 updateOfficeHoursApi(id: number, payload: any) {
   return this.http.put(
-    `${environment.apiBaseUrl}/x/api/v2/hr/officeHours/${id}`,
+    `${environment.apiBaseUrl}/x/api/v2/hr/office-hours/${id}`,
     payload
   );
 }
 
 fetchCurrentOfficeHours() {
   return this.http.get<any>(
-    `${environment.apiBaseUrl}/x/api/v2/hr/officeHours/current`
+    `${environment.apiBaseUrl}/x/api/v2/hr/office-hours/current`
   );
 }
 

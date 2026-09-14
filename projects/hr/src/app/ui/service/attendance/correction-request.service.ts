@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { AttendanceTableRecord } from '../../domain/attendance/attendancetable.dto';
+import { CorrectionType } from '../../domain/attendance/correctionrequest.dto';
 
 export interface CorrectionRequestSubmission {
   employeeId: number;
   employeeName: string;
   recordId: number;
-  type: 'TIME_CORRECTION' | 'STATUS_CORRECTION' | 'LOCATION_CORRECTION';
+  type: CorrectionType;
   reason: string;
   currentStatus: string;
   requestedAt: string;

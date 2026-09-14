@@ -37,8 +37,8 @@ export interface EmployeeAttendanceStatusDTO {
   employeeName: string;
   employeeCode: string;
   status: 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE';
-  clockInTime?: Date;
-  clockOutTime?: Date;
+  checkIn?: Date;
+  checkOut?: Date;
   lateMinutes?: number;
   department?: string;
   shiftName?: string;
@@ -71,8 +71,8 @@ export interface DailyRecordSummaryDTO {
   date: string; // ISO date
   dayOfWeek: string; // Monday, Tuesday, etc.
   status: 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE';
-  clockInTime?: string;
-  clockOutTime?: string;
+  checkIn?: string;
+  checkOut?: string;
   hoursWorked?: number;
   overtimeHours?: number;
   undertimeHours?: number;
