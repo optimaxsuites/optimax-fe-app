@@ -488,6 +488,10 @@ const routes: Routes = [
     component: HrAnalyticsDashboardComponent,
   },
   {
+    path: 'work-schedule/:uuid',
+    component: SchedulingComponent,
+  },
+  {
     path: 'overtime/:uuid',
     component: OvertimeManagementComponent,
   },
