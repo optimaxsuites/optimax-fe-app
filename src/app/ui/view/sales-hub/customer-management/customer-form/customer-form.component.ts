@@ -187,17 +187,15 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
         if (uuid === 'edit') {
           uuid = null;
         }
-        if (this.isEditMode) {
-          const savedCustomerId = response?.id ?? this.customerId;
-          const detailPath = uuid
-            ? ['/customers', String(savedCustomerId), uuid]
-            : ['/customers', String(savedCustomerId)];
-          this.router.navigate(detailPath);
-        } else if (uuid) {
-          this.router.navigate(['/sales-hub', uuid]);
-        } else {
-          this.router.navigate(['/customers']);
-        }
+        // Land on the customer's own detail page either way — there's no bare 'customers'
+        // list route registered (only 'customers/:id', 'customers/new', etc.), so navigating
+        // to just ['/customers'] here used to match the app's catch-all single-segment
+        // ':uuid' route and get redirected to /commerce/requests instead.
+        const savedCustomerId = response?.id ?? this.customerId;
+        const detailPath = uuid
+          ? ['/customers', String(savedCustomerId), uuid]
+          : ['/customers', String(savedCustomerId)];
+        this.router.navigate(detailPath);
       },
       error: (error: any) => {
         console.error('Error saving customer:', error);
