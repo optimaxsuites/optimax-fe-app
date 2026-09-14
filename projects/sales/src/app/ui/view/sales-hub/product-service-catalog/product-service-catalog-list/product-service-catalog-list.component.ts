@@ -253,9 +253,9 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   viewProduct(productId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/products', productId, uuid]);
+      this.router.navigate(['/admin/sales/products', productId, uuid]);
     } else {
-      this.router.navigate(['/products', productId]);
+      this.router.navigate(['/admin/sales/products', productId]);
     }
   }
 
@@ -264,13 +264,13 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
    *  wouldn't necessarily resolve there otherwise. */
   generateQuoteFromProduct(product: any): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
-    const path = uuid ? ['/quotes/new', uuid] : ['/quotes/new'];
+    const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
     this.router.navigate(path, { queryParams: this.productQueryParams(product) });
   }
 
   createInvoiceFromProduct(product: any): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
-    const path = uuid ? ['/invoices/new', uuid] : ['/invoices/new'];
+    const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
     this.router.navigate(path, { queryParams: this.productQueryParams(product) });
   }
 

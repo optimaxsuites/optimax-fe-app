@@ -1054,9 +1054,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         this.messageService.add({ severity: 'success', summary: 'Success', detail: this.isEditMode ? 'Invoice updated successfully!' : 'Invoice created successfully!' });
         const uuid = this.route.snapshot.paramMap.get('uuid');
         if (uuid) {
-          this.router.navigate(['/invoices', response.id, uuid]);
+          this.router.navigate(['/admin/sales/invoices', response.id, uuid]);
         } else {
-          this.router.navigate(['/invoices', response.id]);
+          this.router.navigate(['/admin/sales/invoices', response.id]);
         }
       },
       error: (error: any) => {
@@ -1141,14 +1141,14 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   cancel(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/sales-hub', uuid]);
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/sales-hub']);
+      this.router.navigate(['/admin/sales/sales-hub']);
     }
   }
 
   navigateToInvoices(): void {
-    this.router.navigate(['/sales-hub']);
+    this.router.navigate(['/admin/sales/sales-hub']);
   }
 
   // Helper methods

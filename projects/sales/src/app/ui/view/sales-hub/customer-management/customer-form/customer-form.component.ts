@@ -189,12 +189,12 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
         }
         // Land on the customer's own detail page either way — there's no bare 'customers'
         // list route registered (only 'customers/:id', 'customers/new', etc.), so navigating
-        // to just ['/customers'] here used to match the app's catch-all single-segment
+        // to just ['/admin/sales/customers'] here used to match the app's catch-all single-segment
         // ':uuid' route and get redirected to /commerce/requests instead.
         const savedCustomerId = response?.id ?? this.customerId;
         const detailPath = uuid
-          ? ['/customers', String(savedCustomerId), uuid]
-          : ['/customers', String(savedCustomerId)];
+          ? ['/admin/sales/customers', String(savedCustomerId), uuid]
+          : ['/admin/sales/customers', String(savedCustomerId)];
         this.router.navigate(detailPath);
       },
       error: (error: any) => {
@@ -211,9 +211,9 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       uuid = null;
     }
     if (uuid) {
-      this.router.navigate(['/sales-hub', uuid]);
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/sales-hub']);
+      this.router.navigate(['/admin/sales/sales-hub']);
     }
   }
 

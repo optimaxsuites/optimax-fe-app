@@ -660,13 +660,13 @@ export class VendorApprovalQueueComponent implements OnInit, OnDestroy, AfterVie
   // ============================================================
 
   viewVendor(id: number): void {
-    this.router.navigate(['/commerce/manage-vendors', String(id), 'profile'], {
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', String(id), 'profile'], {
       queryParams: { returnTo: 'registry' }
     });
   }
 
   viewDocuments(id: number): void {
-    this.router.navigate(['/commerce/manage-vendors', id, 'profile'], {
+    this.router.navigate(['/admin/sales/commerce/manage-vendors', id, 'profile'], {
       queryParams: { tab: 'documents', returnTo: 'registry' }
     });
   }

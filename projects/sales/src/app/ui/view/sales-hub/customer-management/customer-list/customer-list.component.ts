@@ -57,15 +57,15 @@ export class CustomerListComponent implements OnInit, OnDestroy {
     }
     if (customer) {
       if (uuid) {
-        this.router.navigate(['/customers', customer.id, 'edit', uuid]);
+        this.router.navigate(['/admin/sales/customers', customer.id, 'edit', uuid]);
       } else {
-        this.router.navigate(['/customers', customer.id, 'edit']);
+        this.router.navigate(['/admin/sales/customers', customer.id, 'edit']);
       }
     } else {
       if (uuid) {
-        this.router.navigate(['/customers/new', uuid]);
+        this.router.navigate(['/admin/sales/customers/new', uuid]);
       } else {
-        this.router.navigate(['/customers/new']);
+        this.router.navigate(['/admin/sales/customers/new']);
       }
     }
   }
@@ -81,9 +81,9 @@ export class CustomerListComponent implements OnInit, OnDestroy {
       uuid = null;
     }
     if (uuid) {
-      this.router.navigate(['/customers', customer.id, uuid]);
+      this.router.navigate(['/admin/sales/customers', customer.id, uuid]);
     } else {
-      this.router.navigate(['/customers', customer.id]);
+      this.router.navigate(['/admin/sales/customers', customer.id]);
     }
   }
 
@@ -314,7 +314,7 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   // Removed UUID and buildLink
   createQuote(customer: Customer): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
-    const path = uuid ? ['/quotes/new', uuid] : ['/quotes/new'];
+    const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
     this.router.navigate(path, { queryParams: { customerId: customer.id } });
   }
 

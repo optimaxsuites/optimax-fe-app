@@ -321,9 +321,9 @@ export class QuoteDetailComponent implements OnInit {
           next: (tx) => {
             const uuid = this.route.snapshot.paramMap.get('uuid');
             if (uuid) {
-              this.router.navigate(['/orders', tx.id, uuid]);
+              this.router.navigate(['/admin/sales/orders', tx.id, uuid]);
             } else {
-              this.router.navigate(['/orders', tx.id]);
+              this.router.navigate(['/admin/sales/orders', tx.id]);
             }
           },
           error: (orderErr: any) => {
@@ -395,9 +395,9 @@ export class QuoteDetailComponent implements OnInit {
 
       const uuid = this.route.snapshot.paramMap.get('uuid');
       if (uuid) {
-        this.router.navigate(['/sales-hub', uuid]);
+        this.router.navigate(['/admin/sales/sales-hub', uuid]);
       } else {
-        this.router.navigate(['/sales-hub']);
+        this.router.navigate(['/admin/sales/sales-hub']);
       }
     }
   }
@@ -409,9 +409,9 @@ export class QuoteDetailComponent implements OnInit {
 
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/sales-hub', uuid]);
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/sales-hub']);
+      this.router.navigate(['/admin/sales/sales-hub']);
     }
   }
 
@@ -421,9 +421,9 @@ export class QuoteDetailComponent implements OnInit {
     } else {
       const uuid = this.route.snapshot.paramMap.get('uuid');
       if (uuid) {
-        this.router.navigate(['/quotes', String(this.quote!.id), 'edit', uuid]);
+        this.router.navigate(['/admin/sales/quotes', String(this.quote!.id), 'edit', uuid]);
       } else {
-        this.router.navigate(['/quotes', String(this.quote!.id), 'edit']);
+        this.router.navigate(['/admin/sales/quotes', String(this.quote!.id), 'edit']);
       }
     }
   }
@@ -444,9 +444,9 @@ export class QuoteDetailComponent implements OnInit {
 
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
-      this.router.navigate(['/customers', id, uuid]);
+      this.router.navigate(['/admin/sales/customers', id, uuid]);
     } else {
-      this.router.navigate(['/customers', id]);
+      this.router.navigate(['/admin/sales/customers', id]);
     }
   }
 
