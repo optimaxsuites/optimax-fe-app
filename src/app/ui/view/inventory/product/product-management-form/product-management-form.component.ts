@@ -283,7 +283,12 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
     this.inventoryService.getProduct(this.productId).subscribe({
       next: (product: any) => {
         if (product) {
-          const categoryName = this.rawCategories.find(c => c.id === product.category)?.name || '';
+          // getProduct()/getProducts() already resolve `category` to its display name (see
+          // InventoryService.productFromApi()) — it's never a raw id here. Treating it as one
+          // (`c.id === product.category`, comparing a number against a name string) never
+          // matched, so the Category dropdown always came up blank when editing an existing
+          // product — and re-saving from there would have wiped the category entirely.
+          const categoryName = product.category || '';
           const unitName = this.measurementUnits.find(u => u.id === product.unitOfMeasure)?.name || 'pcs';
           const supplierName = this.suppliers.find(s => s.id === (product.supplierIds && product.supplierIds[0]))?.name || '';
 
@@ -366,7 +371,13 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       costPrice: formData.costPrice,
       stockQuantity: formData.quantity,
       images: this.images,
-      category: foundCategory ? String(foundCategory.id) : undefined,
+      // categoryId is what InventoryService.productToApiPayload() actually sends to the
+      // backend — it previously only got `category` here, set to the category's id
+      // STRINGIFIED (e.g. "1"), which productToApiPayload() then tried to look up as if it
+      // were a category NAME (`c.name === "1"`), never matched, and silently dropped. Every
+      // product created or edited through this form saved with no category at all.
+      category: foundCategory?.name,
+      categoryId: foundCategory?.id,
       unitOfMeasure: (foundUnit?.unitId || 'EACH') as 'EACH' | 'BOX' | 'KG' | 'LITER' | 'METER',
       supplierIds: foundSupplier ? [String(foundSupplier.id)] : [],
       status: (formData.quantity ?? 0) > 0 ? 'ACTIVE' as any : 'OUT_OF_STOCK' as any,
