@@ -675,50 +675,75 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     const total = this.revenueData.reduce((sum, d) => sum + d.amount, 0) || 1;
     let accumulatedPercent = 0;
     const colors = ['#2E6276', '#3a8fa8', '#2EB270', '#fbbf24', '#f97316', '#4f46e5'];
-    
+
     const cx = 290;
     const cy = 180;
     const R = 125; // Chart radius matches 250px width/height circle
     const d1 = 20; // Length of diagonal extension
-    
-    return this.revenueData.map((d, i) => {
+
+    const raw = this.revenueData.map((d, i) => {
       const percent = (d.amount / total) * 100;
       const startPercent = accumulatedPercent;
       accumulatedPercent += percent;
       const endPercent = accumulatedPercent;
-      
+
       const midPercent = (startPercent + endPercent) / 2;
       const midAngleRad = (midPercent / 100) * 2 * Math.PI - Math.PI / 2;
-      
+
       const cos = Math.cos(midAngleRad);
       const sin = Math.sin(midAngleRad);
-      
+
       // Start point at circle outer boundary
       const x0 = cx + R * cos;
       const y0 = cy + R * sin;
-      
-      // Bend point (diagonal pointer extension)
+
+      // Bend point (diagonal pointer extension) — this is also the label's initial,
+      // un-collision-adjusted Y. Several thin slices (e.g. three ~1-3% weeks) can land
+      // at nearly the same angle and thus nearly the same y here.
       const x1 = cx + (R + d1) * cos;
       const y1 = cy + (R + d1) * sin;
-      
-      // Horizontal connector end
+
       const isRight = cos >= 0;
       const x2 = isRight ? x1 + 25 : x1 - 25;
-      const y2 = y1;
-      
-      const linePath = `M ${x0.toFixed(1)},${y0.toFixed(1)} L ${x1.toFixed(1)},${y1.toFixed(1)} H ${x2.toFixed(1)}`;
+
+      return { d, i, x0, y0, x1, y1, y2: y1, isRight, x2, cos, colorIdx: i };
+    });
+
+    // Spread out labels that would otherwise overlap. Small adjacent slices push their
+    // callouts to nearly the same angle/Y, which used to render as an illegible pile of
+    // stacked text (see the bunched "Wk 2/Wk 3/Wk 4" labels this was written to fix) —
+    // walk each side (left/right of the circle) top-to-bottom and push any label down far
+    // enough to clear the one above it.
+    const MIN_GAP = 34;
+    for (const side of [true, false]) {
+      const group = raw.filter(c => c.isRight === side).sort((a, b) => a.y1 - b.y1);
+      for (let j = 1; j < group.length; j++) {
+        const minY = group[j - 1].y2 + MIN_GAP;
+        if (group[j].y2 < minY) {
+          group[j].y2 = minY;
+        }
+      }
+    }
+
+    return raw.map(c => {
+      const { d, x0, y0, x1, y1, y2, isRight, x2, colorIdx } = c;
+      // Elbow connector: slice edge -> polar bend point -> (adjusted) label row -> label.
+      // The middle vertical segment only shows up when collision avoidance actually moved
+      // this label away from its natural polar position.
+      const linePath = Math.abs(y2 - y1) > 0.5
+        ? `M ${x0.toFixed(1)},${y0.toFixed(1)} L ${x1.toFixed(1)},${y1.toFixed(1)} L ${x1.toFixed(1)},${y2.toFixed(1)} H ${x2.toFixed(1)}`
+        : `M ${x0.toFixed(1)},${y0.toFixed(1)} L ${x1.toFixed(1)},${y1.toFixed(1)} H ${x2.toFixed(1)}`;
       const textX = isRight ? x2 + 6 : x2 - 6;
-      const textY = y2;
-      
+
       return {
         linePath,
         textX,
-        textY,
+        textY: y2,
         textAnchor: isRight ? 'start' : 'end',
         label: d.month,
         amount: this.formatCurrency(d.amount).replace('NGN', '₦'),
         percent: ((d.amount / total) * 100).toFixed(1) + '%',
-        color: colors[i % colors.length]
+        color: colors[colorIdx % colors.length]
       };
     });
   }
