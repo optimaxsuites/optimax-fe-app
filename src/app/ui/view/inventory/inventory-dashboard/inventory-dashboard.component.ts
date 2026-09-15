@@ -223,9 +223,27 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
     const path = route.split('?')[0];
     const realRoutes: Record<string, string> = {
       '/inventory/products/new': '/admin/sales/commerce/inventory/products/new',
-      '/inventory/movements/transfer': '/admin/sales/commerce/inventory/movements/transfer'
+      '/inventory/movements/transfer': '/admin/sales/commerce/inventory/movements/transfer',
+      '/inventory/movements/adjustment': '/admin/sales/commerce/inventory/movements/new?type=ADJUSTMENT',
+      '/inventory/movements/new': '/admin/sales/commerce/inventory/movements/new'
     };
-    this.router.navigateByUrl(realRoutes[path] || '/admin/sales/commerce/inventory');
+    let target = realRoutes[path];
+    if (target) {
+      if (path === '/inventory/movements/adjustment' && this.selectedBranchId) {
+        target += `&branchId=${this.selectedBranchId}`;
+      }
+      this.router.navigateByUrl(target);
+      return;
+    }
+    this.router.navigateByUrl('/admin/sales/commerce/inventory');
+  }
+
+  createStockCount(): void {
+    const queryParams: any = { type: 'ADJUSTMENT' };
+    if (this.selectedBranchId) {
+      queryParams.branchId = this.selectedBranchId;
+    }
+    this.router.navigate(['/admin/sales/commerce/inventory/movements/new'], { queryParams });
   }
 
   navigateToProduct(productId: string): void {

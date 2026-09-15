@@ -127,12 +127,23 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
       });
     }
 
+    // Check if routed directly via /adjustment
+    if (this.router.url.includes('/movements/adjustment')) {
+      if (!this.prefillData) {
+        this.prefillData = {};
+      }
+      this.prefillData.movementType = 'ADJUSTMENT';
+    }
+
     // Get prefill data from query params
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
-      if (params['productId'] || params['branchId']) {
+      if (params['productId'] || params['branchId'] || params['type'] || params['movementType'] || params['ids']) {
         this.prefillData = {
+          ...this.prefillData,
           productId: params['productId'],
-          branchId: params['branchId']
+          branchId: params['branchId'],
+          movementType: params['movementType'] || params['type'] || this.prefillData?.movementType,
+          ids: params['ids']
         };
       }
     });
@@ -221,6 +232,9 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
           this.products = response.data;
           this.filteredProducts = response.data;
           this.isLoading = false;
+          if (this.prefillData && this.items.length === 0 && (this.prefillData.productId || this.prefillData.ids)) {
+            this.applyPrefill();
+          }
         },
         error: (err: any) => {
           console.error('Failed to load products:', err);
@@ -288,8 +302,31 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
   }
 
   private applyPrefill(): void {
-    if (this.prefillData?.productId) {
-      const product = this.products.find(p => p.id === this.prefillData.productId);
+    if (this.prefillData?.movementType) {
+      const type = this.prefillData.movementType.toUpperCase();
+      this.movementForm.patchValue({ movementType: type });
+      if (type === 'ADJUSTMENT' && this.prefillData?.branchId) {
+        this.movementForm.patchValue({
+          fromLocationType: 'BRANCH',
+          fromLocationId: this.prefillData.branchId,
+          toLocationType: 'BRANCH',
+          toLocationId: this.prefillData.branchId
+        });
+        this.loadLocationOptions('from', 'BRANCH');
+        this.loadLocationOptions('to', 'BRANCH');
+      }
+    }
+
+    if (this.prefillData?.branchId && (!this.prefillData?.movementType || this.prefillData.movementType.toUpperCase() !== 'ADJUSTMENT')) {
+      this.movementForm.patchValue({
+        fromLocationType: 'BRANCH',
+        fromLocationId: this.prefillData.branchId
+      });
+      this.loadLocationOptions('from', 'BRANCH');
+    }
+
+    if (this.prefillData?.productId && this.items.length === 0) {
+      const product = this.products.find(p => String(p.id) === String(this.prefillData.productId));
       if (product) {
         const item = this.createItemForm();
         item.patchValue({
@@ -302,12 +339,21 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
       }
     }
 
-    if (this.prefillData?.branchId) {
-      this.movementForm.patchValue({
-        fromLocationType: 'BRANCH',
-        fromLocationId: this.prefillData.branchId
-      });
-      this.loadLocationOptions('from', 'BRANCH');
+    if (this.prefillData?.ids && this.items.length === 0) {
+      const idList = String(this.prefillData.ids).split(',').map(s => s.trim());
+      for (const id of idList) {
+        const product = this.products.find(p => String(p.id) === id);
+        if (product) {
+          const item = this.createItemForm();
+          item.patchValue({
+            productId: product.id,
+            productName: product.name,
+            sku: product.sku,
+            quantity: 1
+          });
+          this.items.push(item);
+        }
+      }
     }
   }
 

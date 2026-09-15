@@ -1054,10 +1054,10 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         this.messageService.add({ severity: 'success', summary: 'Success', detail: this.isEditMode ? 'Invoice updated successfully!' : 'Invoice created successfully!' });
         const uuid = this.route.snapshot.paramMap.get('uuid');
         const path = uuid ? ['/admin/sales/invoices', response.id, uuid] : ['/admin/sales/invoices', response.id];
-        // On create, replace this form's history entry with the new invoice's detail page —
-        // otherwise Back from there lands on the (now stale) empty creation form instead of
-        // the invoice list the user came from. Edits keep normal push navigation.
-        this.router.navigate(path, this.isEditMode ? {} : { replaceUrl: true });
+        // Replace this form's history entry with the invoice's detail page, for both create
+        // and edit — otherwise Back from there lands on the (stale, already-submitted) form
+        // instead of the invoice list the user actually came from.
+        this.router.navigate(path, { replaceUrl: true });
       },
       error: (error: any) => {
         console.error('Error saving invoice:', error);

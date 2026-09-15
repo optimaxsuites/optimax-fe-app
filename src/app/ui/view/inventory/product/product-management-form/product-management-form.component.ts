@@ -395,10 +395,14 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       next: () => {
         this.isSubmitting = false;
         this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product ${this.isEditMode ? 'updated' : 'created'} successfully!` });
-        // After editing, land on the product's details page so the change is visible immediately.
-        // After creating, there's no existing detail context to return to, so keep the prior behavior.
+        // After editing, land on the product's details page so the change is visible
+        // immediately. replaceUrl swaps this edit form's history entry for the detail page
+        // instead of pushing a new one — otherwise Back from there lands back on the (stale,
+        // already-submitted) edit form instead of the product list the user actually came
+        // from. After creating, there's no existing detail context to return to, so keep the
+        // prior behavior of going straight back to the list.
         if (this.isEditMode) {
-          this.router.navigate(['/admin/sales/commerce/inventory/products', this.productId]);
+          this.router.navigate(['/admin/sales/commerce/inventory/products', this.productId], { replaceUrl: true });
         } else {
           this.goBack();
         }

@@ -1434,10 +1434,10 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   private navigateAfterSubmit(response: Quote): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/quotes', response.id, uuid] : ['/admin/sales/quotes', response.id];
-    // On create, replace this form's history entry with the new quote's detail page —
-    // otherwise Back from there lands on the (now stale) empty creation form instead of
-    // the quote list the user came from. Edits keep normal push navigation.
-    this.router.navigate(path, this.isEditMode ? {} : { replaceUrl: true });
+    // Replace this form's history entry with the quote's detail page, for both create and
+    // edit — otherwise Back from there lands on the (stale, already-submitted) form instead
+    // of the quote list the user actually came from.
+    this.router.navigate(path, { replaceUrl: true });
   }
 
   // Generate PDF from live preview mockup
