@@ -205,7 +205,7 @@ export class LeaveTimelineComponent implements OnInit, OnDestroy {
         console.log('👥 Employee user IDs:');
         this.allEmployees.forEach((emp) => {
           console.log(
-            `  - ${emp.firstName} ${emp.lastName}: user.userId=${emp.user?.userId}, user.id=${emp.user?.id}`,
+            `  - ${emp.firstName} ${emp.lastName}: userId=${emp.userId}, user.userId=${emp.user?.userId}, user.id=${emp.user?.id}`,
           );
         });
 
@@ -214,8 +214,8 @@ export class LeaveTimelineComponent implements OnInit, OnDestroy {
           const leaveUserId = leave.createdBy?.userId || leave.createdBy?.id;
 
           const employee = this.allEmployees.find((emp) => {
-            const empUserId = emp.user?.userId || emp.user?.id || emp.userId;
-            return String(empUserId) === String(leaveUserId);
+            const empUserId = emp.userId || emp.user?.userId || emp.user?.id;
+            return empUserId === leaveUserId;
           });
 
           if (!employee) {
@@ -349,18 +349,17 @@ export class LeaveTimelineComponent implements OnInit, OnDestroy {
 
       const employeeRows: EmployeeRow[] = deptEmployees.map((employee) => {
         // Find leaves for this employee using multiple matching strategies
-        const empUserId = employee.user?.userId;
+        const empUserId = employee.userId || employee.user?.userId || employee.user?.id;
         const empId = employee.id;
 
         const employeeLeaves = this.allLeaves.filter((leave) => {
           const leaveUserId = leave.createdBy?.userId || leave.createdBy?.id;
-          const leaveCreatorId = leave.createdBy?.id;
 
-          // Try multiple matching strategies
-          const matchByUserId = leaveUserId === empUserId;
-          const matchByEmployeeId = leaveCreatorId === empId;
-
-          return matchByUserId || matchByEmployeeId;
+          // leave.createdBy.userId identifies the *user account*, so it must
+          // only be compared against the employee's user account id
+          // (empUserId), never against empId (the employee record's own
+          // primary key) — those are different id spaces.
+          return leaveUserId === empUserId;
         });
 
         console.log(
@@ -671,7 +670,9 @@ export class LeaveTimelineComponent implements OnInit, OnDestroy {
     // Find employee using linking logic
     const leaveUserId = leave.createdBy?.userId || leave.createdBy?.id;
     this.selectedEmployee =
-      this.allEmployees.find((emp) => String(emp.user?.userId || emp.user?.id || emp.userId) === String(leaveUserId)) || null;
+      this.allEmployees.find(
+        (emp) => (emp.userId || emp.user?.userId || emp.user?.id) === leaveUserId,
+      ) || null;
 
     this.showLeaveModal = true;
     this.rejectionReason = '';
@@ -733,7 +734,7 @@ export class LeaveTimelineComponent implements OnInit, OnDestroy {
           const mailEmployeeId = payload.createdBy;
           const mailEmployee = this.allEmployees.find(
             (emp) =>
-              emp.user?.userId === mailEmployeeId || emp.id === mailEmployeeId,
+              emp.userId === mailEmployeeId || emp.user?.userId === mailEmployeeId,
           );
           const mailBody = {
             name:
@@ -831,7 +832,7 @@ export class LeaveTimelineComponent implements OnInit, OnDestroy {
           const mailEmployeeId = payload.createdBy;
           const mailEmployee = this.allEmployees.find(
             (emp) =>
-              emp.user?.userId === mailEmployeeId || emp.id === mailEmployeeId,
+              emp.userId === mailEmployeeId || emp.user?.userId === mailEmployeeId,
           );
           const mailBody = {
             name:
