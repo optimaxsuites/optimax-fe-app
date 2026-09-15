@@ -243,10 +243,12 @@ export class BranchFormComponent implements OnInit, OnDestroy {
   /** Lands on the saved branch's own detail page so the change (or new branch) is visible
    *  immediately, instead of relying on browser history — location.back() has no page to return
    *  to (and lands on about:blank) whenever this form was opened as the first page in a tab, e.g.
-   *  a bookmark, a direct link, or a fresh tab. */
+   *  a bookmark, a direct link, or a fresh tab. replaceUrl swaps this form's history entry for
+   *  the detail page instead of pushing a new one, so Back from there goes to the branch list
+   *  the user actually came from rather than back onto the (stale, already-submitted) form. */
   private navigateToBranchDetail(branchId: string): void {
     if (this.saved.observed) return;
-    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
+    this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId], { replaceUrl: true });
   }
 
   goBack(): void {

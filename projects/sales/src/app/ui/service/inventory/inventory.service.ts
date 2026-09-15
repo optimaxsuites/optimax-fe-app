@@ -2086,6 +2086,24 @@ export class InventoryService {
       return throwError(() => new Error('Product not found'));
     }
     const merged = { ...products[index], ...product } as Product;
+    // Several fields share the same broken shape: the edit form only ever writes a
+    // "display" field (sellingPrice, unitOfMeasure, supplierIds) and never the separate raw
+    // backend-id field productToApiPayload() actually prefers (unitPrice, measurementUnitId,
+    // supplierId). The spread above leaves each stale id field untouched by a partial update
+    // that didn't mention it, so productToApiPayload()'s own "prefer the id field, fall back
+    // to resolving the display field" logic kept picking the OLD id over a genuinely-changed
+    // display field — edits to price, unit, or supplier were silently discarded on save.
+    // Clear the stale id whenever its display field was actually part of this update, so
+    // productToApiPayload() is forced to re-resolve it from the new value instead.
+    if (product.sellingPrice != null || product.price != null) {
+      merged.unitPrice = product.sellingPrice ?? product.price;
+    }
+    if (product.unitOfMeasure != null) {
+      merged.measurementUnitId = undefined;
+    }
+    if (product.supplierIds != null) {
+      merged.supplierId = undefined;
+    }
     const payload = this.productToApiPayload(merged);
 
     return this.http.put<any>(`${this.baseUrl}/products/${numericId}`, payload).pipe(

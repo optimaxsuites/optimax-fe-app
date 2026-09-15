@@ -345,7 +345,7 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
 
   createStockCount(): void {
     this.router.navigate(['/admin/sales/commerce/inventory/movements/new'], {
-      queryParams: { branchId: this.branchId }
+      queryParams: { branchId: this.branchId, type: 'ADJUSTMENT' }
     });
   }
 

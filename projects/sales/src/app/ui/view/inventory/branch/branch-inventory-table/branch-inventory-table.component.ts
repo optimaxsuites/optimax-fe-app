@@ -353,7 +353,8 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
     this.router.navigate(['/admin/sales/commerce/inventory/movements/new'], {
       queryParams: {
         ids: ids.join(','),
-        branchId: this.branchId
+        branchId: this.branchId,
+        type: 'ADJUSTMENT'
       }
     });
     this.selectedItems.clear();

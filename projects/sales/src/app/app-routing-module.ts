@@ -147,6 +147,10 @@ export const routes: Routes = [
     component: StockMovementFormComponent
   },
   {
+    path: 'commerce/inventory/movements/adjustment',
+    component: StockMovementFormComponent
+  },
+  {
     path: 'commerce/inventory/movements/transfer',
     component: TransferWizardComponent
   },
