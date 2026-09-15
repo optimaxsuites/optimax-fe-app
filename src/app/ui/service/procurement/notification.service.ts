@@ -88,6 +88,7 @@ export class NotificationService {
     body: string;
     html: boolean;
     tenant: string;
+    attachments?: Array<{ fileName: string; base64Content: string; contentType: string }>;
   }): Observable<any> {
     const url = `${environment.apiBaseUrl}/x/api/v2/notification/send-email`;
     return this.http.post<any>(url, payload);
