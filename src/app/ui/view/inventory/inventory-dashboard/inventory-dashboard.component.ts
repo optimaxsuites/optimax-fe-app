@@ -216,9 +216,21 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
   /**
    * Product Management, Stock Movements, Branch Directory, and Analytics are tabs inside the
    * Inventory shell (/commerce/inventory) rather than standalone routes, so most of these targets
-   * can't be deep-linked to directly. Only the routes below actually exist on their own; anything
-   * else falls back to the shell itself instead of hitting a dead route.
+   * can't be deep-linked to via a plain URL. Only the entries in realRoutes have their own actual
+   * route; everything else is one of those tabs, and gets there by pre-selecting it in the shell's
+   * <app-nav-tab> session-storage cache (cacheKey 'inventory' — see inventory.component.html)
+   * before navigating, the same way SalesHubComponent's switchToTab() pre-selects its own tabs.
+   * Falling through to the bare shell without doing this (the previous behaviour) is why every
+   * button on this dashboard except the 3 in realRoutes silently landed back on this same page.
    */
+  private static readonly TAB_CACHE_KEY = 'inventory';
+  private static readonly TAB_ROUTES: Record<string, string> = {
+    '/inventory/products': 'Product Management',
+    '/inventory/branches': 'Branch Inventory',
+    '/inventory/movements': 'Stock Movement',
+    '/inventory/analytics/products': 'Analytics'
+  };
+
   navigateTo(route: string): void {
     const path = route.split('?')[0];
     const realRoutes: Record<string, string> = {
@@ -234,6 +246,11 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
       }
       this.router.navigateByUrl(target);
       return;
+    }
+
+    const tabName = InventoryDashboardComponent.TAB_ROUTES[path];
+    if (tabName) {
+      sessionStorage.setItem(InventoryDashboardComponent.TAB_CACHE_KEY, tabName);
     }
     this.router.navigateByUrl('/admin/sales/commerce/inventory');
   }

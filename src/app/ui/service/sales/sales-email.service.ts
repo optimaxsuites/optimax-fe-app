@@ -23,7 +23,14 @@ export class SalesEmailService {
 
   constructor(private http: HttpClient) {}
 
-  /** POST /sales/email/send — emails a quote or invoice to a customer. */
+  /**
+   * POST /sales/email/send — emails a quote or invoice to a customer.
+   * The API docs describe this as renamed to POST /sales/email/document, but as of writing
+   * that path 401s with "Invalid url/endpoint" against the real backend (a routing 401, not
+   * an auth one — other authenticated calls succeed fine) while /send still works normally.
+   * Switch this back to /document once the backend actually has it deployed — verify with a
+   * live POST first, the same way this was caught, rather than trusting the docs alone.
+   */
   send(payload: SendSalesEmailRequest): Observable<SalesEmailNotification> {
     return this.http.post<SalesEmailNotification>(`${this.baseUrl}/send`, payload);
   }

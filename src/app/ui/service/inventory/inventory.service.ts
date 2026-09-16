@@ -24,6 +24,7 @@ import {
   getStockStatusColor,
   ProductStatus,
   StockMovement,
+  ApprovalHistoryEntry,
   RestockRequest,
   StockAlert,
   BranchStockSummary,
@@ -43,6 +44,11 @@ import {
   TriggerInventoryAlertRequest,
   InventoryAlertFilters
 } from '../../domain/inventory/inventory.dto';
+// The /inventory API is just as inconsistent about date shape (ISO string, ms epoch, or a
+// *seconds* epoch) as the commerce API this util was written for — see date.util.ts's own
+// header comment. Reusing it here instead of raw `new Date(raw.x)` is what actually fixes
+// dates rendering as "21 Jan 1970" (a seconds epoch read as milliseconds).
+import { parseApiDate } from '../sales/date.util';
 
 // ============================================================
 // LOCAL STORAGE KEYS & MOCK DATA
@@ -62,7 +68,8 @@ const LOCAL_KEYS = {
   LOCATION_TYPES: 'inventory_location_types',
   GENERIC_LOCATIONS: 'inventory_generic_locations',
   NOTIFICATIONS: 'inventory_notifications',
-  PRODUCT_PERFORMANCE_FALLBACK: 'inventory_product_performance_fallback'
+  PRODUCT_PERFORMANCE_FALLBACK: 'inventory_product_performance_fallback',
+  MOVEMENT_APPROVAL_HISTORY: 'inventory_movement_approval_history'
 };
 
 const MOCK_BRANCH_TYPES: string[] = ['STANDARD', 'FLAGSHIP', 'MINI'];
@@ -1414,12 +1421,12 @@ export class InventoryService {
       toLocation: this.resolveMovementLocation(raw.toLocation, 'CUSTOMER'),
       createdBy: raw.createdById,
       approvedBy: raw.approvedById,
-      expiryDate: new Date(raw.expiryDate),
-      createdAt: new Date(raw.createdAt),
-      approvedAt: raw.approvedAt ? new Date(raw.approvedAt) : raw.approvedAt,
-      completedAt: raw.completedAt ? new Date(raw.completedAt) : raw.completedAt,
-      updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : raw.updatedAt,
-      scheduledDate: raw.scheduledDate ? new Date(raw.scheduledDate) : raw.scheduledDate
+      expiryDate: parseApiDate(raw.expiryDate) as Date,
+      createdAt: parseApiDate(raw.createdAt) as Date,
+      approvedAt: parseApiDate(raw.approvedAt),
+      completedAt: parseApiDate(raw.completedAt),
+      updatedAt: parseApiDate(raw.updatedAt),
+      scheduledDate: parseApiDate(raw.scheduledDate)
     };
   }
 
@@ -1470,11 +1477,11 @@ export class InventoryService {
       params: new HttpParams().set('tenantId', this.tenantId)
     }).pipe(
       map(raw => ({
-        stats: { ...raw.stats, lastUpdated: new Date(raw.stats.lastUpdated) },
+        stats: { ...raw.stats, lastUpdated: parseApiDate(raw.stats.lastUpdated) },
         alerts: (raw.alerts || []).map((a: any) => ({
           ...a,
-          createdAt: new Date(a.createdAt),
-          resolvedAt: a.resolvedAt ? new Date(a.resolvedAt) : a.resolvedAt
+          createdAt: parseApiDate(a.createdAt),
+          resolvedAt: parseApiDate(a.resolvedAt)
         })),
         recentMovements: (raw.recentMovements || []).map((m: any) => this.stockMovementFromApi(m)),
         branchSummaries: raw.branchSummaries || [],
@@ -1503,7 +1510,7 @@ export class InventoryService {
     return this.http.get<InventoryDashboardStats>(`${this.baseUrl}/inventory/dashboard/stats`, {
       params: new HttpParams().set('tenantId', this.tenantId)
     }).pipe(
-      map(stats => ({ ...stats, lastUpdated: new Date(stats.lastUpdated) })),
+      map(stats => ({ ...stats, lastUpdated: parseApiDate(stats.lastUpdated) as Date })),
       catchError(() => of(dash?.stats ?? MOCK_STATS))
     );
   }
@@ -1525,8 +1532,8 @@ export class InventoryService {
     return {
       ...raw,
       period: {
-        start: new Date(raw.startDate ?? raw.period?.start),
-        end: new Date(raw.endDate ?? raw.period?.end)
+        start: parseApiDate(raw.startDate ?? raw.period?.start) as Date,
+        end: parseApiDate(raw.endDate ?? raw.period?.end) as Date
       }
     } as ProductPerformance;
   }
@@ -1619,8 +1626,8 @@ export class InventoryService {
     }).pipe(
       map(res => (Array.isArray(res) ? res : []).map(a => ({
         ...a,
-        createdAt: new Date(a.createdAt),
-        resolvedAt: a.resolvedAt ? new Date(a.resolvedAt) : a.resolvedAt
+        createdAt: parseApiDate(a.createdAt),
+        resolvedAt: parseApiDate(a.resolvedAt)
       }))),
       catchError(() => {
         const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
@@ -1632,7 +1639,7 @@ export class InventoryService {
   /** GET /inventory/alerts/{id} */
   getAlertById(id: number): Observable<StockAlert> {
     return this.http.get<any>(`${this.baseUrl}/inventory/alerts/${id}`).pipe(
-      map(a => ({ ...a, createdAt: new Date(a.createdAt), resolvedAt: a.resolvedAt ? new Date(a.resolvedAt) : a.resolvedAt }))
+      map(a => ({ ...a, createdAt: parseApiDate(a.createdAt), resolvedAt: parseApiDate(a.resolvedAt) }))
     );
   }
 
@@ -1652,7 +1659,7 @@ export class InventoryService {
       isResolved: alert.isResolved ?? false
     };
     return this.http.post<any>(`${this.baseUrl}/inventory/alerts`, payload).pipe(
-      map(a => ({ ...a, createdAt: new Date(a.createdAt), resolvedAt: a.resolvedAt ? new Date(a.resolvedAt) : a.resolvedAt }))
+      map(a => ({ ...a, createdAt: parseApiDate(a.createdAt), resolvedAt: parseApiDate(a.resolvedAt) }))
     );
   }
 
@@ -1770,8 +1777,8 @@ export class InventoryService {
       supplierId: raw.supplierId,
       supplierIds: supplier ? [String(supplier.id)] : (existing?.supplierIds || []),
       isComboProduct: raw.isComboProduct,
-      createdAt: new Date(raw.createdAt),
-      updatedAt: new Date(raw.updatedAt),
+      createdAt: parseApiDate(raw.createdAt) as Date,
+      updatedAt: parseApiDate(raw.updatedAt) as Date,
       // No wire field for any of these — carried over from the local record so a product's
       // local-only detail survives a refresh instead of being wiped by every API read.
       subCategory: existing?.subCategory || '',
@@ -2265,8 +2272,8 @@ export class InventoryService {
         email: ''
       },
       status: raw.status,
-      createdAt: new Date(raw.createdAt),
-      updatedAt: new Date(raw.updatedAt)
+      createdAt: parseApiDate(raw.createdAt) as Date,
+      updatedAt: parseApiDate(raw.updatedAt) as Date
     };
   }
 
@@ -2708,6 +2715,28 @@ export class InventoryService {
     this.movementsSubject.next(movements);
   }
 
+  // ----------------------------------------------------
+  // MOVEMENT APPROVAL HISTORY
+  // ----------------------------------------------------
+  // There's no /inventory/movements/approval-history endpoint on the backend yet, so — same
+  // localStorage-backed approach as everything else in this service — MovementApprovalComponent
+  // persists each approve/reject/request-changes action here instead of holding it only in
+  // component state. Without this, the "history" list and the stats derived from it reset to
+  // nothing (or, before this, silently reset to 3 hardcoded mock entries) on every reload or
+  // tab revisit, which is what made both look like they weren't tracking anything at all.
+
+  /** All persisted approval actions, most recent first. */
+  getApprovalHistory(): ApprovalHistoryEntry[] {
+    return JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENT_APPROVAL_HISTORY) as string || '[]') as ApprovalHistoryEntry[];
+  }
+
+  /** Records one approval action and returns the updated (most-recent-first) history. */
+  recordApprovalAction(action: ApprovalHistoryEntry): ApprovalHistoryEntry[] {
+    const history = [action, ...this.getApprovalHistory()];
+    localStorage.setItem(LOCAL_KEYS.MOVEMENT_APPROVAL_HISTORY, JSON.stringify(history));
+    return history;
+  }
+
   /** Delete a movement. Only meant for PENDING movements (nothing has moved yet) — the calling
    *  component is responsible for that check, same as deleteProduct()'s convention. Falls back
    *  to removing from the local copy if the API is unavailable. */
@@ -3138,8 +3167,8 @@ export class InventoryService {
       ...raw,
       createdBy: raw.createdById,
       approvedBy: raw.approvedById,
-      createdAt: raw.createdAt ? new Date(raw.createdAt) : raw.createdAt,
-      approvedAt: raw.approvedAt ? new Date(raw.approvedAt) : raw.approvedAt
+      createdAt: parseApiDate(raw.createdAt),
+      approvedAt: parseApiDate(raw.approvedAt)
     };
   }
 

@@ -596,3 +596,89 @@ $radius-sm: var(--radius-sm);
         }
     }
 }
+
+/* ============================================================
+   RESPONSIVE — this page had no breakpoints at all: .ql-sidebar is a fixed
+   220px column and .ql-top-bar-right packs 7 buttons/controls into one
+   non-wrapping flex row, both of which just overflowed/got clipped below
+   tablet width. Same breakpoints and sidebar-collapse convention already
+   used by the other ql-layout pages in this module (e.g.
+   restock-management.component.scss) for consistency.
+   ============================================================ */
+
+@media (max-width: 992px) {
+  .ql-sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .ql-main {
+    padding: 12px;
+  }
+
+  .ql-top-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ql-top-bar-right {
+    flex-wrap: wrap;
+  }
+
+  .ql-bulk-bar {
+    flex-wrap: wrap;
+  }
+
+  .ql-grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
+  .ql-row-actions {
+    opacity: 1;
+  }
+
+  .category-side-modal .modal-header {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .category-side-modal .modal-body {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .ql-main {
+    padding: 8px;
+  }
+
+  .ql-top-bar-right {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ql-view-switcher,
+  .ql-page-size-wrap {
+    justify-content: center;
+  }
+
+  .ql-btn {
+    justify-content: center;
+  }
+
+  .ql-grid-container {
+    grid-template-columns: 1fr;
+  }
+
+  .ql-confirm-modal {
+    padding: 20px;
+  }
+
+  .category-side-modal .modal-panel {
+    max-width: 100%;
+  }
+
+  .category-side-modal .action-buttons-row {
+    flex-direction: column;
+  }
+}
