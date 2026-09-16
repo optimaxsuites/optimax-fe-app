@@ -1372,13 +1372,17 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   // Handle delivery actions
   /**
    * Tries the server PDF endpoint, falls back to client-side generation on failure, and
-   * downloads whichever succeeds. Never throws — a PDF failure shouldn't block email
-   * sending or navigation. Awaited by both delivery paths below so that, in the "PDF +
-   * Email" case, download/generation genuinely finishes before the caller navigates away —
-   * navigating away tears down this component (and the step-1 preview element the client
-   * fallback needs), so racing ahead of it silently kills the PDF with no user feedback.
+   * downloads whichever succeeds, and returns that blob so a caller doing "PDF + Email" can
+   * reuse it as the email attachment instead of rendering the same document a second time
+   * (the client-side fallback runs a ~1-2s html2canvas capture — doing it twice back to back
+   * was the extra pause between submitting and landing on the quote's detail page). Never
+   * throws — a PDF failure shouldn't block email sending or navigation. Awaited by both
+   * delivery paths below so that, in the "PDF + Email" case, download/generation genuinely
+   * finishes before the caller navigates away — navigating away tears down this component
+   * (and the step-1 preview element the client fallback needs), so racing ahead of it
+   * silently kills the PDF with no user feedback.
    */
-  private async downloadQuotePdf(quote: Quote): Promise<void> {
+  private async downloadQuotePdf(quote: Quote): Promise<Blob | null> {
     try {
       const blob = await lastValueFrom(this.pdfGenerationService.generatePdf({
         documentType: 'QUOTATION',
@@ -1388,13 +1392,16 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         data: quote
       }));
       this.pdfGenerationService.downloadBlob(blob as any, `Quote-${quote.quoteNumber}.pdf`);
+      return blob as any;
     } catch (err) {
       console.warn('[QuoteFormComponent] Server PDF failed, using client fallback:', err);
       try {
         const clientBlob = await this.generateQuotePDF(quote);
         this.pdfGenerationService.downloadBlob(clientBlob, `Quote-${quote.quoteNumber}.pdf`);
+        return clientBlob;
       } catch (e) {
         console.error('Client PDF generation failed:', e);
+        return null;
       }
     }
   }
@@ -1423,11 +1430,14 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     const quote = this.pendingDeliveryQuote;
     this.showSendQuoteModal = false;
 
+    // "Both" downloads a PDF and emails one — reuse the same rendered blob for
+    // the email attachment instead of running the (slow) html2canvas capture twice.
+    let pdfBlob: Blob | null = null;
     if (this.selectedAction === 'both') {
-      await this.downloadQuotePdf(quote);
+      pdfBlob = await this.downloadQuotePdf(quote);
     }
 
-    await this.sendQuoteEmail(quote);
+    await this.sendQuoteEmail(quote, pdfBlob);
     this.navigateAfterSubmit(quote);
   }
 
@@ -1517,7 +1527,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   }
 
   // Send email via SalesEmailService
-  private async sendQuoteEmail(quote: Quote): Promise<void> {
+  private async sendQuoteEmail(quote: Quote, pdfBlob?: Blob | null): Promise<void> {
     const customerId = this.quoteForm.get('customerId')?.value;
     const customerObj = this.customers.find(c =>
       c.customerId === customerId || String(c.id) === String(customerId)
@@ -1635,10 +1645,10 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         type: a.type || 'application/pdf'
       }));
 
-    // Generate the quote document as a PDF and attach it to the email.
+    // Reuse a PDF already generated (e.g. by the "PDF + Email" flow) instead of re-rendering it.
     try {
-      const pdfBlob = await this.generateQuotePDF(quote);
-      const base64 = await this.blobToBase64(pdfBlob);
+      const attachmentBlob = pdfBlob ?? await this.generateQuotePDF(quote);
+      const base64 = await this.blobToBase64(attachmentBlob);
       attachments.push({
         fileName: `Quote-${quote.quoteNumber}.pdf`,
         base64Content: base64,

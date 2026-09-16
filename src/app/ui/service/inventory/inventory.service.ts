@@ -1386,12 +1386,15 @@ export class InventoryService {
   /**
    * Resolves a from/toLocation id (that's what's actually sent on the wire now — see
    * stockMovementToApiPayload()) back into a {type,id,name} object, using whatever
-   * branches/suppliers we already have cached locally (populated by getBranches()/
-   * getSuppliers(), which most screens that show movements call anyway). If the id doesn't
-   * match either — a WAREHOUSE or CUSTOMER location, which this app has never had a real
-   * lookup table for — it falls back to showing the raw id as the name too. Either way `id`
-   * itself is always exactly what the backend sent, never guessed, which is what
-   * applyTransferStockAdjustment() actually depends on for correct stock math.
+   * branches/suppliers/generic locations we already have cached locally (populated by
+   * getBranches()/getSuppliers()/getLocations(), which most screens that show movements call
+   * anyway). WAREHOUSE and CUSTOMER ids live in the GENERIC_LOCATIONS table (see
+   * MOCK_GENERIC_LOCATIONS/createGenericLocation()) rather than a dedicated collection, so
+   * that's checked too — this used to be skipped, which left warehouse locations showing their
+   * raw id (e.g. "loc-wh-4") instead of a real name. If nothing matches, it falls back to
+   * showing the raw id as the name. Either way `id` itself is always exactly what the backend
+   * sent, never guessed, which is what applyTransferStockAdjustment() actually depends on for
+   * correct stock math.
    */
   private resolveMovementLocation(rawId: string, fallbackType: 'WAREHOUSE' | 'BRANCH' | 'SUPPLIER' | 'CUSTOMER'): { type: any; id: string; name: string } {
     const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
@@ -1401,6 +1404,10 @@ export class InventoryService {
     const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[];
     const supplierMatch = suppliers.find(s => String(s.id) === rawId);
     if (supplierMatch) return { type: 'SUPPLIER', id: rawId, name: supplierMatch.name };
+
+    const generic = JSON.parse(localStorage.getItem(LOCAL_KEYS.GENERIC_LOCATIONS) as string || '[]') as { id: string; type: string; name: string }[];
+    const genericMatch = generic.find(l => l.id === rawId);
+    if (genericMatch) return { type: genericMatch.type, id: rawId, name: genericMatch.name };
 
     return { type: fallbackType, id: rawId, name: rawId };
   }
@@ -2481,6 +2488,7 @@ export class InventoryService {
     productId: string;
     quantity: number;
     reorderPoint: number;
+    reorderQuantity?: number;
     safetyStock: number;
     sellingPrice: number;
     costPrice?: number;
@@ -2509,10 +2517,14 @@ export class InventoryService {
       sku: product.sku,
       quantity: data.quantity,
       reorderPoint: data.reorderPoint,
-      // This form only ever collects a single "reorder point" value — there's no separate
-      // reorder-quantity input — so preserve whatever an existing record already had instead of
-      // clobbering it every time stock is merely adjusted (e.g. by a transfer).
-      reorderQuantity: existingRecord ? existingRecord.reorderQuantity : data.reorderPoint,
+      // Most callers (e.g. the branch-inventory form) only ever collect a single "reorder
+      // point" value — there's no separate reorder-quantity input there — so preserve whatever
+      // an existing record already had instead of clobbering it every time stock is merely
+      // adjusted (e.g. by a transfer). Threshold Management does have its own reorderQuantity
+      // field though, so use it when a caller actually passes one.
+      reorderQuantity: data.reorderQuantity != null
+        ? data.reorderQuantity
+        : (existingRecord ? existingRecord.reorderQuantity : data.reorderPoint),
       safetyStock: data.safetyStock,
       sellingPrice: data.sellingPrice,
       costPrice: data.costPrice || 0
@@ -3246,10 +3258,12 @@ export class InventoryService {
   /** POST /inventory/restock-requests — falls back to a local-only record if the API is unavailable. */
   createRestockRequest(request: Partial<RestockRequest>): Observable<RestockRequest> {
     this.loadingSubject.next(true);
+    // Fallback only — callers (restock-request-form) pass the real signed-in user explicitly,
+    // but default to the session's own values here too rather than a hardcoded fake identity.
     const payload = this.restockRequestToApiPayload({
       status: RestockStatus.PENDING,
-      createdBy: 'usr-1',
-      createdByName: 'Current User',
+      createdBy: sessionStorage.getItem('userid') || 'usr-1',
+      createdByName: sessionStorage.getItem('fullname') || 'Current User',
       ...request
     });
 
@@ -3269,8 +3283,11 @@ export class InventoryService {
           status: RestockStatus.PENDING,
           createdAt: new Date(),
           approvedAt: new Date(),
-          createdBy: 'usr-1',
-          createdByName: 'Current User'
+          // request.createdBy/createdByName (set by the caller, or the session-based default
+          // above) already carries the real signed-in user — this used to unconditionally
+          // stomp it with a hardcoded 'usr-1'/'Current User' even when the real value was there.
+          createdBy: request.createdBy || sessionStorage.getItem('userid') || 'usr-1',
+          createdByName: request.createdByName || sessionStorage.getItem('fullname') || 'Current User'
         };
         const requests = this.getMockRestockRequests();
         requests.push(newRequest);

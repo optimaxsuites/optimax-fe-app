@@ -47,13 +47,10 @@
                 <i class="fas fa-sync-alt" [class.ql-spinning]="isRefreshing"></i>
                 {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
             </button>
-            <button class="ql-sidebar-action" (click)="approveAll()" 
+            <button class="ql-sidebar-action" (click)="approveAll()"
                     [disabled]="isSubmitting || filteredMovements.length === 0">
                 <i class="fas fa-check-double"></i>
                 Approve All ({{ filteredMovements.length }})
-            </button>
-            <button class="ql-sidebar-action" (click)="exportReport()">
-                <i class="fas fa-file-export"></i> Export Report
             </button>
         </div>
 
@@ -312,7 +309,7 @@
                                         <span class="ql-timeline-date">{{ formatDateTime(action.timestamp) }}</span>
                                     </div>
                                     <div class="ql-timeline-body">
-                                        <span class="ql-timeline-movement">Movement #{{ action.movementId }}</span>
+                                        <span class="ql-timeline-movement">{{ getMovementLabel(action.movementId) }}</span>
                                         <span class="ql-timeline-by">by {{ action.approvedByName }}</span>
                                     </div>
                                     <div class="ql-timeline-comments" *ngIf="action.comments">
