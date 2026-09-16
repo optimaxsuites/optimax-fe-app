@@ -181,6 +181,17 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Every approve/reject/request-changes action below used to hardcode 'usr-1' / 'John Doe'
+  // instead of the person actually signed in, which is why the Approval History panel showed
+  // the wrong name. 'userid'/'fullname' are the session keys app.ts sets at login.
+  private getCurrentUserId(): string {
+    return sessionStorage.getItem('userid') || 'usr-1';
+  }
+
+  private getCurrentUserName(): string {
+    return sessionStorage.getItem('fullname') || 'Unknown User';
+  }
+
   // ============================================================
   // DATA LOADING
   // ============================================================
@@ -414,8 +425,8 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
       movementId,
       action: this.selectedAction,
       comments: 'Approved',
-      approvedBy: 'usr-1', // Current user ID
-      approvedByName: 'John Doe', // Current user name
+      approvedBy: this.getCurrentUserId(),
+      approvedByName: this.getCurrentUserName(),
       timestamp: new Date()
     };
 
@@ -466,8 +477,8 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
       movementId,
       action: 'REJECT',
       comments,
-      approvedBy: 'usr-1',
-      approvedByName: 'John Doe',
+      approvedBy: this.getCurrentUserId(),
+      approvedByName: this.getCurrentUserName(),
       timestamp: new Date()
     };
 
@@ -519,8 +530,8 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
       movementId,
       action: 'REQUEST_CHANGES',
       comments,
-      approvedBy: 'usr-1',
-      approvedByName: 'John Doe',
+      approvedBy: this.getCurrentUserId(),
+      approvedByName: this.getCurrentUserName(),
       timestamp: new Date(),
       changesRequested: changesRequested
     };
@@ -569,12 +580,14 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
 
     // updateMovement() is a localStorage-backed mock that resolves synchronously, so this plain
     // loop completes in one tick — no forkJoin needed.
+    const currentUserId = this.getCurrentUserId();
+    const currentUserName = this.getCurrentUserName();
     pending.forEach(m => {
       const approvedAt = new Date();
       this.inventoryService.updateMovement(m.id, {
         status: MovementStatus.IN_TRANSIT,
-        approvedBy: 'usr-1',
-        approvedByName: 'John Doe',
+        approvedBy: currentUserId,
+        approvedByName: currentUserName,
         approvedAt
       }).subscribe({
         next: (updated) => {
@@ -584,8 +597,8 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
             movementId: String(m.id),
             action: 'APPROVE',
             comments: 'Bulk approved',
-            approvedBy: 'usr-1',
-            approvedByName: 'John Doe',
+            approvedBy: currentUserId,
+            approvedByName: currentUserName,
             timestamp: approvedAt
           });
         },
@@ -624,15 +637,6 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
     if (productId) {
       this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
     }
-  }
-
-  // ============================================================
-  // EXPORT
-  // ============================================================
-
-  exportReport(): void {
-    console.log('Exporting approval report...');
-    // In real implementation, generate report
   }
 
   // ============================================================
@@ -728,6 +732,14 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
       'REQUEST_CHANGES': 'Changes Requested'
     };
     return map[action] || action;
+  }
+
+  // Approval History only ever stored the movement's id, so the timeline showed "Movement
+  // #mov-2" instead of what was actually moved. Resolve it against the already-loaded
+  // movements list instead, same lookup-by-id pattern as getBranchName() below.
+  getMovementLabel(movementId: string): string {
+    const movement = this.movements.find(m => String(m.id) === movementId);
+    return movement?.productName ? `${movement.productName} (${movement.sku})` : `Movement #${movementId}`;
   }
 
   getBranchName(branchId: string): string {

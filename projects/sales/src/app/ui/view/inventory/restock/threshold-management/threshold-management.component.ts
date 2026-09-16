@@ -181,6 +181,7 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           this.products = response.data;
+          this.mergeProductsIntoInventory();
         },
         error: (err) => console.error('Failed to load products:', err)
       });
@@ -193,8 +194,7 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (inventory) => {
           this.inventoryItems = inventory;
-          this.applyFilters();
-          this.calculateStats();
+          this.mergeProductsIntoInventory();
           this.isLoading = false;
         },
         error: (err) => {
@@ -203,6 +203,41 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
           this.isLoading = false;
         }
       });
+  }
+
+  // getBranchInventory() only returns products that already have a stock record at this
+  // branch, so any product created after that record never existed (e.g. anything added in
+  // Product Management, which never creates a branch-inventory row) was invisible here with
+  // no way to set a threshold for it. Fill in a zero-quantity/zero-threshold placeholder row
+  // for every catalog product missing from the branch's inventory — editing one for the first
+  // time creates its real record via saveBranchInventoryItem() in saveEdit() below.
+  private mergeProductsIntoInventory(): void {
+    if (!this.selectedBranch || this.products.length === 0) return;
+    const branchId = String(this.selectedBranch.id);
+    const existingProductIds = new Set(
+      this.inventoryItems.filter(i => i.branchId === branchId).map(i => i.productId)
+    );
+    const missing = this.products.filter(p => !existingProductIds.has(String(p.id)));
+    if (missing.length > 0) {
+      const placeholders: BranchInventory[] = missing.map(p => ({
+        id: 0,
+        branchId,
+        branchName: this.selectedBranch!.name,
+        productId: String(p.id),
+        productName: p.name,
+        sku: p.sku,
+        quantity: 0,
+        reorderPoint: 0,
+        reorderQuantity: 0,
+        safetyStock: 0,
+        sellingPrice: p.sellingPrice || p.unitPrice || p.price || 0,
+        costPrice: p.costPrice || 0,
+        lastUpdated: new Date()
+      }));
+      this.inventoryItems = [...this.inventoryItems, ...placeholders];
+    }
+    this.applyFilters();
+    this.calculateStats();
   }
 
   onBranchChange(branchId: string | number): void {
@@ -304,7 +339,7 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
   }
 
   saveEdit(): void {
-    if (this.editForm.invalid || !this.editingItem) {
+    if (this.editForm.invalid || !this.editingItem || !this.selectedBranch) {
       this.editForm.markAllAsTouched();
       return;
     }
@@ -314,52 +349,47 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
     this.success = null;
 
     const formValue = this.editForm.value;
-    const updates = {
+    const editingItem = this.editingItem;
+
+    // editingItem may be a placeholder (id: 0) for a product that's never had a branch-
+    // inventory record before — saveBranchInventoryItem() upserts by branchId+productId, so
+    // this both creates that record for the first time and updates an existing one.
+    this.inventoryService.saveBranchInventoryItem({
+      branchId: String(this.selectedBranch.id),
+      productId: editingItem.productId,
+      quantity: editingItem.quantity,
       reorderPoint: parseInt(formValue.reorderPoint),
+      reorderQuantity: parseInt(formValue.reorderQuantity),
       safetyStock: parseInt(formValue.safetyStock),
-      reorderQuantity: parseInt(formValue.reorderQuantity)
-    };
+      sellingPrice: editingItem.sellingPrice,
+      costPrice: editingItem.costPrice
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (saved) => {
+        const index = this.inventoryItems.findIndex(i =>
+          i.branchId === saved.branchId && i.productId === saved.productId
+        );
+        if (index !== -1) {
+          this.inventoryItems[index] = saved;
+        } else {
+          this.inventoryItems.push(saved);
+        }
+        this.applyFilters();
+        this.calculateStats();
 
-    // Update local data
-    const index = this.inventoryItems.findIndex(i => i.id === this.editingItem!.id);
-    if (index !== -1) {
-      this.inventoryItems[index] = {
-        ...this.inventoryItems[index],
-        reorderPoint: updates.reorderPoint,
-        safetyStock: updates.safetyStock,
-        reorderQuantity: updates.reorderQuantity
-      };
-      this.applyFilters();
-      this.calculateStats();
-    }
+        this.isSaving = false;
+        this.success = 'Thresholds updated successfully!';
+        this.thresholdsUpdated.emit();
 
-    // In a real implementation, this would call an API
-    // For now, we'll simulate saving to localStorage
-    this.saveToLocalStorage();
-
-    this.isSaving = false;
-    this.success = 'Thresholds updated successfully!';
-    this.thresholdsUpdated.emit();
-
-    setTimeout(() => {
-      this.closeEditModal();
-    }, 1500);
-  }
-
-  private saveToLocalStorage(): void {
-    try {
-      const existing = localStorage.getItem('inventory_branch_inventory');
-      if (existing) {
-        const allItems = JSON.parse(existing);
-        const updatedItems = allItems.map((item: any) => {
-          const updated = this.inventoryItems.find(i => i.id === item.id);
-          return updated || item;
-        });
-        localStorage.setItem('inventory_branch_inventory', JSON.stringify(updatedItems));
+        setTimeout(() => {
+          this.closeEditModal();
+        }, 1500);
+      },
+      error: (err) => {
+        console.error('Failed to save thresholds:', err);
+        this.error = 'Failed to update thresholds. Please try again.';
+        this.isSaving = false;
       }
-    } catch (e) {
-      console.error('Failed to save to localStorage:', e);
-    }
+    });
   }
 
   // ============================================================

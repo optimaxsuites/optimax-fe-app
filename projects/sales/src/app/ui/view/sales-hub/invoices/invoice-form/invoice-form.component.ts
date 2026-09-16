@@ -1629,13 +1629,15 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   // ============ DELIVERY ACTIONS ============
-  // ============ DELIVERY ACTIONS ============
   /**
    * Tries the server PDF endpoint, falls back to client-side generation on failure, and
-   * downloads whichever succeeds. Never throws — a PDF failure shouldn't block email
-   * sending or navigation.
+   * downloads whichever succeeds, and returns that blob so a caller doing "PDF + Email" can
+   * reuse it as the email attachment instead of rendering the same document a second time
+   * (the client-side fallback runs a ~1-2s html2canvas capture — doing it twice back to back
+   * was the extra pause between submitting and landing on the invoice's detail page). Never
+   * throws — a PDF failure shouldn't block email sending or navigation.
    */
-  private async downloadInvoicePdf(invoice: Invoice): Promise<void> {
+  private async downloadInvoicePdf(invoice: Invoice): Promise<Blob | null> {
     try {
       const blob = await lastValueFrom(this.pdfGenerationService.generatePdf({
         documentType: 'INVOICE',
@@ -1645,13 +1647,16 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         data: invoice
       }));
       this.pdfGenerationService.downloadBlob(blob as any, `Invoice-${invoice.invoiceNumber}.pdf`);
+      return blob as any;
     } catch (err) {
       console.warn('[InvoiceFormComponent] Server PDF failed, using client fallback:', err);
       try {
         const clientBlob = await this.generateInvoicePDF(invoice);
         this.pdfGenerationService.downloadBlob(clientBlob, `Invoice-${invoice.invoiceNumber}.pdf`);
+        return clientBlob;
       } catch (e) {
         console.error('Client PDF generation failed:', e);
+        return null;
       }
     }
   }
@@ -1662,12 +1667,13 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       // this promise resolves, which tears down this component (and the step-1 preview
       // element the client-side PDF fallback needs) — racing ahead of the PDF silently
       // killed it whenever the server PDF call failed during "PDF + Email".
+      let pdfBlob: Blob | null = null;
       if (action === 'pdf' || action === 'both') {
-        await this.downloadInvoicePdf(invoice);
+        pdfBlob = await this.downloadInvoicePdf(invoice);
       }
 
       if (action === 'email' || action === 'both') {
-        await this.sendInvoiceEmail(invoice);
+        await this.sendInvoiceEmail(invoice, pdfBlob);
       }
     } catch (error) {
       console.error('Error in delivery action:', error);
@@ -1747,7 +1753,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     return pdf.output('blob');
   }
 
-  private async sendInvoiceEmail(invoice: Invoice): Promise<void> {
+  private async sendInvoiceEmail(invoice: Invoice, pdfBlob?: Blob | null): Promise<void> {
     const customerId = this.invoiceForm.get('customerId')?.value;
     const customerObj = this.customers.find(c =>
       c.customerId === customerId || String(c.id) === String(customerId)
@@ -1866,10 +1872,10 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         type: a.type || 'application/pdf'
       }));
 
-    // Generate the invoice document as a PDF and attach it to the email.
+    // Reuse a PDF already generated (e.g. by the "PDF + Email" flow) instead of re-rendering it.
     try {
-      const pdfBlob = await this.generateInvoicePDF(invoice);
-      const base64 = await this.blobToBase64(pdfBlob);
+      const attachmentBlob = pdfBlob ?? await this.generateInvoicePDF(invoice);
+      const base64 = await this.blobToBase64(attachmentBlob);
       attachments.push({
         fileName: `Invoice-${invoice.invoiceNumber}.pdf`,
         base64Content: base64,

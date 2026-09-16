@@ -554,8 +554,17 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
           }
         });
     } else {
-      // Create new request
-      this.inventoryService.createRestockRequest(data)
+      // Create new request — pass the actual signed-in user rather than relying on
+      // createRestockRequest()'s hardcoded 'usr-1'/'Current User' fallback. Only set these
+      // when the session actually has them — an explicit `undefined` here would spread over
+      // (and defeat) that service-level fallback.
+      const currentUserId = sessionStorage.getItem('userid');
+      const currentUserName = sessionStorage.getItem('fullname');
+      this.inventoryService.createRestockRequest({
+        ...data,
+        ...(currentUserId ? { createdBy: currentUserId } : {}),
+        ...(currentUserName ? { createdByName: currentUserName } : {})
+      })
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (result) => {
