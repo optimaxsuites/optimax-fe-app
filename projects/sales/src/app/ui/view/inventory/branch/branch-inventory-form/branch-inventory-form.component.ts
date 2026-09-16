@@ -307,9 +307,11 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
     this.showProductDropdown = searchTerm.length > 0;
 
     if (searchTerm.length > 0) {
+      // Some products (e.g. certain bulk-imported/legacy rows) have a null sku — p.sku.toLowerCase()
+      // threw and broke the whole dropdown the moment one of those was in the list.
       this.filteredProducts = this.products.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+        (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
     } else {
       this.filteredProducts = this.products;

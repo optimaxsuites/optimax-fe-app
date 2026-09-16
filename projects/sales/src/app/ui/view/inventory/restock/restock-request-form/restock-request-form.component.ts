@@ -301,8 +301,8 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
     this.productSearchTerm = input.value;
     if (this.productSearchTerm.length > 0) {
       this.filteredProducts = this.products.filter(p =>
-        p.name.toLowerCase().includes(this.productSearchTerm.toLowerCase()) ||
-        p.sku.toLowerCase().includes(this.productSearchTerm.toLowerCase())
+        (p.name || '').toLowerCase().includes(this.productSearchTerm.toLowerCase()) ||
+        (p.sku || '').toLowerCase().includes(this.productSearchTerm.toLowerCase())
       );
     } else {
       this.filteredProducts = this.products;

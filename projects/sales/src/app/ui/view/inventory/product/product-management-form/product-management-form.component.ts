@@ -229,8 +229,14 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
     return this.fb.group({
       // General Information
       name: ['', [Validators.required, Validators.minLength(2)]],
-      description: ['', [Validators.required, Validators.minLength(10)]],
-      category: ['', Validators.required],
+      // Neither is actually required by the backend — bulk-imported products routinely have
+      // no description and no matched category (see product-bulk-import.component.ts), and
+      // both save/display fine. Requiring them here meant the WHOLE form was permanently
+      // invalid for any such product, so onSubmit() silently no-op'd on every edit — including
+      // ones that only touched an unrelated field like price — which looked like "editing does
+      // nothing, the old value keeps coming back" since nothing ever actually saved.
+      description: ['', [Validators.minLength(10)]],
+      category: [''],
 
       // Identifiers
       partNumber: [''],

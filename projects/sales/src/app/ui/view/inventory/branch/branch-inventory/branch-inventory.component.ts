@@ -168,9 +168,9 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
     this.filteredBranches = this.branches.filter(branch => {
       // Search filter
       const searchMatch = !this.filters.searchTerm ||
-        branch.name.toLowerCase().includes(this.filters.searchTerm.toLowerCase()) ||
-        branch.code.toLowerCase().includes(this.filters.searchTerm.toLowerCase()) ||
-        branch.location.city.toLowerCase().includes(this.filters.searchTerm.toLowerCase());
+        (branch.name || '').toLowerCase().includes(this.filters.searchTerm.toLowerCase()) ||
+        (branch.code || '').toLowerCase().includes(this.filters.searchTerm.toLowerCase()) ||
+        (branch.location?.city || '').toLowerCase().includes(this.filters.searchTerm.toLowerCase());
 
       // Status filter
       const statusMatch = this.filters.status === 'ALL' ||

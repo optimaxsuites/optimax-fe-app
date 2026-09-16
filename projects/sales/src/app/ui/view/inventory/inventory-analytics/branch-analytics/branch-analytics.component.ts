@@ -244,8 +244,8 @@ export class BranchAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
     } else {
       const search = this.productFilter.toLowerCase();
       this.filteredInventory = this.inventory.filter(item =>
-        item.productName.toLowerCase().includes(search) ||
-        item.sku.toLowerCase().includes(search)
+        (item.productName || '').toLowerCase().includes(search) ||
+        (item.sku || '').toLowerCase().includes(search)
       );
     }
   }

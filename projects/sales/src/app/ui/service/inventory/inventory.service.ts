@@ -2499,20 +2499,26 @@ export class InventoryService {
     const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
 
     const branch = branches.find(b => String(b.id) === data.branchId);
-    const product = products.find(p => String(p.id) === data.productId);
+    // data.productId is typed `string`, but callers (e.g. branch-inventory-form's product
+    // picker, which patches the form with the raw Product.id number) don't always coerce it —
+    // `String(p.id) === data.productId` then compares "5" to 5 and never matches, so a
+    // perfectly real product looked "not found" even while it was showing in the search
+    // dropdown right above the form. Normalize both sides instead of trusting the caller.
+    const productIdStr = String(data.productId);
+    const product = products.find(p => String(p.id) === productIdStr);
 
     if (!product) {
       this.loadingSubject.next(false);
       return throwError(() => new Error('Product not found'));
     }
 
-    const existingIndex = allInventory.findIndex(i => i.branchId === data.branchId && i.productId === data.productId);
+    const existingIndex = allInventory.findIndex(i => i.branchId === data.branchId && i.productId === productIdStr);
     const existingRecord = existingIndex > -1 ? allInventory[existingIndex] : undefined;
 
     const payload = {
       branchId: data.branchId,
       branchName: branch?.name || '',
-      productId: data.productId,
+      productId: productIdStr,
       productName: product.name,
       sku: product.sku,
       quantity: data.quantity,
