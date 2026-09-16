@@ -185,8 +185,8 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
     this.filteredItems = this.inventoryItems.filter(item => {
       // Search filter
       const searchMatch = !formValue.search ||
-        item.productName.toLowerCase().includes(formValue.search.toLowerCase()) ||
-        item.sku.toLowerCase().includes(formValue.search.toLowerCase());
+        (item.productName || '').toLowerCase().includes(formValue.search.toLowerCase()) ||
+        (item.sku || '').toLowerCase().includes(formValue.search.toLowerCase());
 
       // Stock status filter
       const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);

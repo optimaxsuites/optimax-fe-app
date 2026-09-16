@@ -258,8 +258,8 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
     this.filteredItems = this.inventoryItems.filter(item => {
       // Search filter
       const searchMatch = !formValue.search ||
-        item.productName.toLowerCase().includes(formValue.search.toLowerCase()) ||
-        item.sku.toLowerCase().includes(formValue.search.toLowerCase());
+        (item.productName || '').toLowerCase().includes(formValue.search.toLowerCase()) ||
+        (item.sku || '').toLowerCase().includes(formValue.search.toLowerCase());
 
       // Status filter
       const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);

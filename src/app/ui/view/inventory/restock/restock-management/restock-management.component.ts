@@ -186,9 +186,9 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
 
       // Search filter
       const searchMatch = !this.filterForm.search ||
-        request.productName.toLowerCase().includes(this.filterForm.search.toLowerCase()) ||
-        request.sku.toLowerCase().includes(this.filterForm.search.toLowerCase()) ||
-        request.branchName.toLowerCase().includes(this.filterForm.search.toLowerCase());
+        (request.productName || '').toLowerCase().includes(this.filterForm.search.toLowerCase()) ||
+        (request.sku || '').toLowerCase().includes(this.filterForm.search.toLowerCase()) ||
+        (request.branchName || '').toLowerCase().includes(this.filterForm.search.toLowerCase());
 
       return statusMatch && urgencyMatch && branchMatch && searchMatch;
     });

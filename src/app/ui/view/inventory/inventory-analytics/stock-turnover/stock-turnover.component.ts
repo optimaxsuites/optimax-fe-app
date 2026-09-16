@@ -411,9 +411,9 @@ export class StockTurnoverComponent implements OnInit, OnChanges, OnDestroy {
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase();
       data = data.filter(d =>
-        d.productName.toLowerCase().includes(term) ||
-        d.sku.toLowerCase().includes(term) ||
-        d.category.toLowerCase().includes(term)
+        (d.productName || '').toLowerCase().includes(term) ||
+        (d.sku || '').toLowerCase().includes(term) ||
+        (d.category || '').toLowerCase().includes(term)
       );
     }
 

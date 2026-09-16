@@ -242,8 +242,8 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   applyInventoryFilters(): void {
     this.filteredInventory = this.branchInventory.filter(item => {
       const searchMatch = !this.inventoryFilters.searchTerm ||
-        item.productName.toLowerCase().includes(this.inventoryFilters.searchTerm.toLowerCase()) ||
-        item.sku.toLowerCase().includes(this.inventoryFilters.searchTerm.toLowerCase());
+        (item.productName || '').toLowerCase().includes(this.inventoryFilters.searchTerm.toLowerCase()) ||
+        (item.sku || '').toLowerCase().includes(this.inventoryFilters.searchTerm.toLowerCase());
 
       const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);
       const statusMatch = this.inventoryFilters.stockStatus === 'ALL' ||

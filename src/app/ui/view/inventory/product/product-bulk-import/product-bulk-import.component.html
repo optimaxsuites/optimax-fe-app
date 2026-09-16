@@ -78,13 +78,17 @@
                 <button type="button" class="ql-btn ql-btn--ghost" (click)="goBack()">
                     <i class="fas fa-times"></i> Cancel
                 </button>
-                <button type="button" class="ql-btn ql-btn--primary" 
-                        (click)="nextStep()" 
+                <!-- Only step 1 (Upload -> Review) belongs here. Step 2 (Review -> Complete) has
+                     its own "Import Products" button below, which actually runs executeImport() —
+                     this generic Next used to also render on step 2 and just incremented
+                     currentStep to 3 without ever importing anything, showing a fake "Complete"
+                     screen with nothing actually saved. -->
+                <button type="button" class="ql-btn ql-btn--primary"
+                        (click)="nextStep()"
                         [disabled]="!isStepValid(currentStep) || isProcessing"
-                        *ngIf="currentStep < 3">
-                    <i class="fas" [class.fa-spinner]="isProcessing" [class.fa-chevron-right]="!isProcessing" 
-                       [class.ql-spinning]="isProcessing"></i>
-                    {{ isProcessing ? 'Processing...' : 'Next' }}
+                        *ngIf="currentStep === 1">
+                    <i class="fas fa-chevron-right"></i>
+                    Next
                 </button>
             </div>
         </div>
