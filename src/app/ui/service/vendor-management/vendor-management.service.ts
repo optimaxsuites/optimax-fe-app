@@ -1119,15 +1119,29 @@ export class VendorService {
   private mapVendor(raw: any): Vendor {
     const performanceScore = raw.performanceScore ?? raw.performance_score ?? raw.score ?? 0;
     const totalProjects = raw.totalProjects ?? raw.total_projects ?? raw.projectCount ?? 0;
+    // The backend sometimes echoes the raw 6-step registration payload
+    // (POST /vendors -> PUT .../step2..step6) instead of a flattened vendor
+    // summary. Fall back to those nested step fields so a vendor's name,
+    // contact and address info still show up on the list/detail pages.
+    const s1 = raw.step1 ?? {};
+    const s2 = raw.step2 ?? {};
+    const s3 = raw.step3 ?? {};
+    const s4 = raw.step4 ?? {};
     return {
       id: raw.id || raw._id || raw.vendorId || '',
-      companyName: raw.companyName || raw.company_name || raw.name || raw.company || `Pending Registration (ID: ${raw.id || 'N/A'})`,
-      registrationNumber: raw.registrationNumber || raw.registration_number || raw.regNumber || raw.rc_number || 'Pending',
-      taxId: raw.taxId || raw.tax_id || raw.tin || raw.taxNumber || 'Pending',
-      email: raw.email || raw.emailAddress || raw.email_address || 'Pending',
-      phone: raw.phone || raw.phoneNumber || raw.phone_number || raw.mobile || 'Pending',
-      website: raw.website || raw.websiteUrl || raw.web_site || undefined,
-      address: raw.address || { street: '', city: '', state: '', country: 'Nigeria', postalCode: '' },
+      companyName: raw.companyName || raw.company_name || raw.name || raw.company || s1.businessName || `Pending Registration (ID: ${raw.id || 'N/A'})`,
+      registrationNumber: raw.registrationNumber || raw.registration_number || raw.regNumber || raw.rc_number || s2.cacRegistrationNumber || 'Pending',
+      taxId: raw.taxId || raw.tax_id || raw.tin || raw.taxNumber || s2.tinNumber || 'Pending',
+      email: raw.email || raw.emailAddress || raw.email_address || s3.primaryContactEmail || 'Pending',
+      phone: raw.phone || raw.phoneNumber || raw.phone_number || raw.mobile || s3.primaryContactPhone || 'Pending',
+      website: raw.website || raw.websiteUrl || raw.web_site || s1.websiteUrl || undefined,
+      address: raw.address || (s3.registeredAddressLine1 ? {
+        street: s3.registeredAddressLine1 || '',
+        city: s3.registeredCity || '',
+        state: s3.registeredState || '',
+        country: s3.registeredCountry || 'Nigeria',
+        postalCode: s3.registeredPostalCode || ''
+      } : { street: '', city: '', state: '', country: 'Nigeria', postalCode: '' }),
       status: (() => {
         const s = raw.status || raw.vendorStatus;
         return (s === 'DRAFT' || !s) ? VendorStatus.PENDING_ONBOARDING : s as VendorStatus;
@@ -1142,10 +1156,27 @@ export class VendorService {
       lastActivityDate: parseSafeDate(raw.lastActivityDate || raw.updatedAt),
       categories: Array.isArray(raw.categories) ? raw.categories : [],
       logo: raw.logo || raw.logoUrl || undefined,
-      description: raw.description || '',
-      paymentTerms: raw.paymentTerms || raw.payment_terms || 'Net 30',
-      bankDetails: raw.bankDetails || raw.bank_details || undefined,
-      contacts: Array.isArray(raw.contacts) ? raw.contacts : [],
+      description: raw.description || s1.businessDescription || '',
+      paymentTerms: raw.paymentTerms || raw.payment_terms || s4.preferredPaymentTerms || 'Net 30',
+      bankDetails: raw.bankDetails || raw.bank_details || (s4.primaryBankName ? {
+        bankName: s4.primaryBankName || '',
+        accountNumber: s4.primaryAccountNumber || '',
+        accountName: s4.primaryAccountName || '',
+        accountType: s4.primaryAccountType || 'current',
+        sortCode: s4.primarySortCode || '',
+        swiftCode: s4.primarySwiftCode || '',
+        currency: s4.primaryCurrency || 'NGN',
+        bankBranch: s4.primaryBankBranch || '',
+        isPrimary: true
+      } : undefined),
+      contacts: Array.isArray(raw.contacts) ? raw.contacts : (s3.primaryContactName ? [{
+        id: `c-${raw.id}`,
+        name: s3.primaryContactName || '',
+        title: s3.primaryContactTitle || '',
+        email: s3.primaryContactEmail || '',
+        phone: s3.primaryContactPhone || '',
+        isPrimary: true
+      }] : []),
       documents: Array.isArray(raw.documents) ? raw.documents : [],
       complianceStatus: raw.complianceStatus || raw.compliance_status || {
         isCompliant: true, documentsVerified: 0, totalRequiredDocuments: 0,
