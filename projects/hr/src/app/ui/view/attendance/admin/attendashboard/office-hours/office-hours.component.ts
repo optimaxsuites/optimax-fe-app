@@ -58,7 +58,7 @@ export class OfficeHoursComponent implements OnInit{
   this.officeHoursService.fetchCurrentOfficeHours()
   .subscribe({
     next: (res) => {
-      this.officeHoursService.officeHoursId = res.id;
+      this.officeHoursService.officeHoursId = res.id ?? null;
 
       const formatTime = (time: any) => {
         if (!time) return '09:00';
