@@ -1,18 +1,36 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { ShiftScheduleDTO } from '../../domain/workschedule-shift/schedule.dto';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import {
+  ShiftScheduleDTO,
+  WorkScheduleApiDTO,
+  UpsertWorkScheduleRequest
+} from '../../domain/workschedule-shift/schedule.dto';
 import { ConflictDTO } from '../../domain/workschedule-shift/conflict.dto';
 import { ShiftserviceService } from './shiftservice.service';
+import { PagedResponse } from '../../domain/attendance/attendance-event.dto';
+import { getAppConfig } from '../../../config/app-config';
+import { environment } from '../../shared-component/environments/environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ScheduleserviceService {
+  private readonly BASE = `${environment.apiBaseUrl}/x/api/v2/hr/workSchedules`;
 
   private schedulesSubject = new BehaviorSubject<ShiftScheduleDTO[]>([]);
   schedules$ = this.schedulesSubject.asObservable();
 
-  constructor(private shiftserviceService: ShiftserviceService) { 
+  constructor(
+    private shiftserviceService: ShiftserviceService,
+    private http: HttpClient
+  ) {
+    if (!getAppConfig().features.useMockShiftData) {
+      this.refresh();
+      return;
+    }
+
     const scheduleDate = (daysFromToday: number): string => {
       const date = new Date();
       date.setDate(date.getDate() + daysFromToday);
@@ -60,7 +78,162 @@ export class ScheduleserviceService {
   ];
 
   this.schedulesSubject.next(mockSchedules);
-    
+
+  }
+
+  /** GET /workSchedules — refreshes the local cache from the backend. */
+  refresh(): void {
+    this.http.get<PagedResponse<WorkScheduleApiDTO>>(this.BASE).pipe(
+      map(res => (res.content || []).flatMap(dto => this.expandToUiRows(dto))),
+      catchError(error => {
+        console.error('Failed to load work schedules:', error);
+        return of([]);
+      })
+    ).subscribe(schedules => this.schedulesSubject.next(schedules));
+  }
+
+  /** GET /workSchedules/active */
+  getActiveSchedules(): Observable<ShiftScheduleDTO[]> {
+    return this.http.get<PagedResponse<WorkScheduleApiDTO>>(`${this.BASE}/active`).pipe(
+      map(res => (res.content || []).flatMap(dto => this.expandToUiRows(dto))),
+      catchError(error => {
+        console.error('Failed to load active work schedules:', error);
+        return of([]);
+      })
+    );
+  }
+
+  /** GET /workSchedules/dateRange */
+  getSchedulesInDateRange(startDate?: string, endDate?: string): Observable<ShiftScheduleDTO[]> {
+    let params = new HttpParams();
+    if (startDate) params = params.set('startDate', startDate);
+    if (endDate) params = params.set('endDate', endDate);
+
+    return this.http.get<PagedResponse<WorkScheduleApiDTO>>(`${this.BASE}/dateRange`, { params }).pipe(
+      map(res => (res.content || []).flatMap(dto => this.expandToUiRows(dto))),
+      catchError(error => {
+        console.error('Failed to load work schedules for date range:', error);
+        return of([]);
+      })
+    );
+  }
+
+  /** GET /workSchedules/department/{departmentId} */
+  getSchedulesByDepartmentApi(departmentId: number): Observable<ShiftScheduleDTO[]> {
+    return this.http.get<PagedResponse<WorkScheduleApiDTO>>(`${this.BASE}/department/${departmentId}`).pipe(
+      map(res => (res.content || []).flatMap(dto => this.expandToUiRows(dto))),
+      catchError(error => {
+        console.error(`Failed to load work schedules for department ${departmentId}:`, error);
+        return of([]);
+      })
+    );
+  }
+
+  /** GET /workSchedules/employee/{employeeId} */
+  getSchedulesByEmployeeApi(employeeId: number): Observable<ShiftScheduleDTO[]> {
+    return this.http.get<PagedResponse<WorkScheduleApiDTO>>(`${this.BASE}/employee/${employeeId}`).pipe(
+      map(res => (res.content || []).flatMap(dto => this.expandToUiRows(dto))),
+      catchError(error => {
+        console.error(`Failed to load work schedules for employee ${employeeId}:`, error);
+        return of([]);
+      })
+    );
+  }
+
+  /**
+   * The backend stores one row per employee+shift spanning startDate..endDate; the UI renders
+   * one row per calendar day, so a multi-day API row is expanded into several UI rows sharing
+   * a composite `${apiId}:${date}` id (not itself PUT/DELETE-able — see syncUpdate/syncDelete).
+   */
+  private expandToUiRows(dto: WorkScheduleApiDTO): ShiftScheduleDTO[] {
+    const dates = this.enumerateDates(dto.startDate, dto.endDate);
+
+    return dates.map(date => ({
+      id: dates.length > 1 ? `${dto.id}:${date}` : String(dto.id),
+      employeeId: dto.employeeId ? String(dto.employeeId.id) : '',
+      shiftId: dto.shiftId ? String(dto.shiftId.id) : '',
+      date,
+      status: this.toUiStatus(dto.status),
+      project: dto.projectId?.name,
+      projectId: dto.projectId?.id,
+      departmentId: dto.departmentId?.id,
+      location: dto.location,
+      recurrence: this.toUiRecurrence(dto.recurrence),
+      description: dto.description
+    }));
+  }
+
+  private enumerateDates(startDate: string, endDate: string): string[] {
+    if (!startDate) return [];
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : start;
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return [startDate];
+
+    const dates: string[] = [];
+    const current = new Date(start);
+    while (current <= end) {
+      dates.push(this.formatDateLocal(current));
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  }
+
+  private toApiWriteBody(schedule: ShiftScheduleDTO, id?: number): UpsertWorkScheduleRequest {
+    return {
+      id,
+      employeeId: Number(schedule.employeeId) || 0,
+      departmentId: schedule.departmentId ?? 0,
+      shiftId: Number(schedule.shiftId) || 0,
+      startDate: schedule.date,
+      endDate: schedule.date,
+      status: (schedule.status || 'scheduled').toUpperCase(),
+      projectId: schedule.projectId ?? 0,
+      location: schedule.location ?? '',
+      recurrence: (schedule.recurrence || 'none').toUpperCase(),
+      description: schedule.description ?? ''
+    };
+  }
+
+  private toUiStatus(status: string): ShiftScheduleDTO['status'] {
+    const lower = (status || '').toLowerCase();
+    return lower === 'completed' || lower === 'cancelled' ? lower : 'scheduled';
+  }
+
+  private toUiRecurrence(recurrence: string): ShiftScheduleDTO['recurrence'] {
+    const lower = (recurrence || '').toLowerCase();
+    return lower === 'daily' || lower === 'weekly' || lower === 'custom' ? lower : 'none';
+  }
+
+  /** A row is a single persisted API record only when its id is a bare number (not a composite `id:date`). */
+  private serverId(schedule: ShiftScheduleDTO): number | null {
+    return /^\d+$/.test(schedule.id) ? Number(schedule.id) : null;
+  }
+
+  /** Fire-and-forget POST /workSchedules — the UI already updated optimistically via local cache. */
+  private syncCreate(schedule: ShiftScheduleDTO): void {
+    this.http.post<WorkScheduleApiDTO>(this.BASE, this.toApiWriteBody(schedule)).subscribe({
+      error: err => console.error('Failed to persist work schedule assignment:', err)
+    });
+  }
+
+  /** Fire-and-forget PUT /workSchedules/{id} — no-op for rows not yet backed by a single server id. */
+  private syncUpdate(schedule: ShiftScheduleDTO): void {
+    const id = this.serverId(schedule);
+    if (id === null) return;
+
+    this.http.put<WorkScheduleApiDTO>(`${this.BASE}/${id}`, this.toApiWriteBody(schedule, id)).subscribe({
+      error: err => console.error('Failed to persist work schedule update:', err)
+    });
+  }
+
+  /** Fire-and-forget DELETE /workSchedules/{id} — no-op for rows not yet backed by a single server id. */
+  private syncDelete(schedule: ShiftScheduleDTO | undefined): void {
+    const id = schedule ? this.serverId(schedule) : null;
+    if (id === null) return;
+
+    this.http.delete<void>(`${this.BASE}/${id}`).subscribe({
+      error: err => console.error('Failed to persist work schedule deletion:', err)
+    });
   }
 
   private getHoursBetween(
@@ -236,16 +409,20 @@ private formatDateLocal(date: Date): string {
 
       console.log('ALL SCHEDULES', this.schedulesSubject.value);
 
+    this.syncCreate(schedule);
+
     return { success: true };
 
   }
 
   deleteSchedule(id: string): void {
+    const removed = this.schedulesSubject.value.find(s => s.id === id);
     const updated =
       this.schedulesSubject.value.filter(
         s => s.id !== id
       );
     this.schedulesSubject.next(updated);
+    this.syncDelete(removed);
   }
 
   updateSchedule(schedule: ShiftScheduleDTO): void {
@@ -256,6 +433,7 @@ private formatDateLocal(date: Date): string {
           : s
       );
     this.schedulesSubject.next(updated);
+    this.syncUpdate(schedule);
   }
 
   deleteScheduleSeries(
@@ -452,11 +630,13 @@ private formatDateLocal(date: Date): string {
   /* REMOVE ASSIGNMENT */
   removeAssignment(scheduleId: string): void {
 
+    const removed = this.schedulesSubject.value.find(s => s.id === scheduleId);
     const filtered = this.schedulesSubject.value.filter(
       s => s.id !== scheduleId
     );
 
     this.schedulesSubject.next(filtered);
+    this.syncDelete(removed);
 
   }
 

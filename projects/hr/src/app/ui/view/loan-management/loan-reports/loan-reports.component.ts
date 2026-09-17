@@ -76,7 +76,7 @@ export class LoanReportsComponent implements OnInit {
     { value: 'PENDING', label: 'Pending' },
     { value: 'APPROVED', label: 'Approved' },
     { value: 'REJECTED', label: 'Rejected' },
-    { value: 'READY_FOR_DISBURSEMENT', label: 'Ready for Disbursement' },
+    { value: 'READY_FOR_DISBURSEMENT', label: 'Disbursable' },
     { value: 'ACTIVE', label: 'Active' },
     { value: 'COMPLETED', label: 'Completed' },
     { value: 'SKIPPED', label: 'Skipped' },
@@ -543,6 +543,9 @@ export class LoanReportsComponent implements OnInit {
 
   getStatusLabel(status: string | undefined): string {
     if (!status) return '';
+    if (status.toUpperCase() === 'READY_FOR_DISBURSEMENT') {
+      return 'Disbursable';
+    }
     return String(status)
       .toLowerCase()
       .replace(/_/g, ' ')

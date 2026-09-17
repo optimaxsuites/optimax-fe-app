@@ -2,8 +2,9 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { AttendanceTableRecord } from '../../domain/attendance/attendancetable.dto';
-import { CorrectionRequest, CorrectionType } from '../../domain/attendance/correctionrequest.dto';
+import { CorrectionRequest, CorrectionType, CreateCorrectionRequestBody } from '../../domain/attendance/correctionrequest.dto';
 import { CorrectionRequestApiService } from './correction-request-api.service';
+import { UserSessionService } from './user-session.service';
 
 export interface CorrectionRequestSubmission {
   employeeId: string;
@@ -23,25 +24,30 @@ export class AdminCorrectionApprovalService {
   private correctionRequestsSubject = new BehaviorSubject<CorrectionRequest[]>([]);
   public correctionRequests$ = this.correctionRequestsSubject.asObservable();
 
-  constructor(private correctionApi: CorrectionRequestApiService) {
+  constructor(
+    private correctionApi: CorrectionRequestApiService,
+    private userSession: UserSessionService
+  ) {
+    this.loadFromStorage();
     this.loadPendingApprovals();
   }
 
   /**
-   * Load pending corrections from backend API
+   * Load all correction requests from the backend (no dedicated "pending" sub-route exists
+   * for this resource, so pending is derived client-side).
    */
   loadPendingApprovals(): void {
-    this.correctionApi.getPendingApprovals().subscribe(
-      (requests: CorrectionRequest[]) => {
+    this.correctionApi.getAllCorrectionRequests().subscribe({
+      next: (requests: CorrectionRequest[]) => {
         this.correctionRequestsSubject.next(requests);
         this.saveToStorage(requests);
       },
-      error => {
-        console.error('Failed to load pending approvals:', error);
+      error: error => {
+        console.error('Failed to load correction requests:', error);
         // Fall back to localStorage
         this.loadFromStorage();
       }
-    );
+    });
   }
 
   private loadFromStorage(): void {
@@ -82,25 +88,16 @@ export class AdminCorrectionApprovalService {
     submission: CorrectionRequestSubmission,
     attendanceRecord?: AttendanceTableRecord
   ): Observable<CorrectionRequest> {
-    // Build a CorrectionRequest from submission
-    const correctionRequest: CorrectionRequest = {
-      id: `${Date.now()}`,
-      employeeId: submission.employeeId,
-      employeeName: submission.employeeName,
-      department: attendanceRecord?.department || '',
-      date: attendanceRecord?.date || new Date(),
-      issueType: submission.type as any,
+    const body: CreateCorrectionRequestBody = {
+      employeeId: Number(submission.employeeId),
+      attendanceDate: (attendanceRecord?.date instanceof Date ? attendanceRecord.date : new Date()).toISOString(),
+      issueType: submission.type,
       correctionType: submission.type,
-      description: submission.reason,
-      status: 'PENDING',
-      locked: false,
-      history: [],
-      createdAt: new Date()
+      description: submission.reason
     };
 
-    return this.correctionApi.submitCorrectionRequest(correctionRequest).pipe(
+    return this.correctionApi.submitCorrectionRequest(body).pipe(
       tap((created) => {
-        // Add to local list
         const current = this.correctionRequestsSubject.value;
         this.correctionRequestsSubject.next([created, ...current]);
         this.saveToStorage();
@@ -121,10 +118,12 @@ export class AdminCorrectionApprovalService {
       return throwError(() => new Error('Correction request not found'));
     }
 
-    // Call API to approve
-    return this.correctionApi.approveCorrectionRequest(idStr, adminName).pipe(
+    return this.correctionApi.updateStatus(idStr, {
+      newStatus: 'SUBMITTED',
+      actorUserId: this.currentActorId(),
+      comments: `Approved by ${adminName}`
+    }).pipe(
       tap(approved => {
-        // Update local state
         const updated = [...requests];
         updated[requestIndex] = approved;
         this.correctionRequestsSubject.next(updated);
@@ -146,10 +145,12 @@ export class AdminCorrectionApprovalService {
       return throwError(() => new Error('Correction request not found'));
     }
 
-    // Call API to reject
-    return this.correctionApi.rejectCorrectionRequest(idStr, adminName, reason).pipe(
+    return this.correctionApi.updateStatus(idStr, {
+      newStatus: 'REJECTED',
+      actorUserId: this.currentActorId(),
+      comments: reason
+    }).pipe(
       tap(rejected => {
-        // Update local state
         const updated = [...requests];
         updated[requestIndex] = rejected;
         this.correctionRequestsSubject.next(updated);
@@ -162,12 +163,20 @@ export class AdminCorrectionApprovalService {
     );
   }
 
-  deleteCorrectionRequest(recordId: number | string): void {
-    const recordIdStr = recordId.toString();
-    const requests = this.correctionRequestsSubject.value;
-    const filtered = requests.filter(r => r.id !== recordIdStr);
-    this.correctionRequestsSubject.next(filtered);
-    this.saveToStorage();
+  deleteCorrectionRequest(recordId: number | string): Observable<void> {
+    const idStr = recordId.toString();
+    return this.correctionApi.withdrawCorrectionRequest(idStr).pipe(
+      tap(() => {
+        const requests = this.correctionRequestsSubject.value;
+        const filtered = requests.filter(r => r.id !== idStr);
+        this.correctionRequestsSubject.next(filtered);
+        this.saveToStorage();
+      }),
+      catchError(error => {
+        console.error('Failed to delete correction request:', error);
+        throw error;
+      })
+    );
   }
 
   getPendingRequests(): CorrectionRequest[] {
@@ -183,5 +192,9 @@ export class AdminCorrectionApprovalService {
   clearRequests(): void {
     this.correctionRequestsSubject.next([]);
     this.saveToStorage();
+  }
+
+  private currentActorId(): number {
+    return this.userSession.getCurrentUser()?.userId ?? 0;
   }
 }

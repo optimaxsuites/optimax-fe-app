@@ -5,7 +5,7 @@ import { forkJoin } from 'rxjs';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { CooperativeLoanGroup, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
-import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import { formatLoanPurposeDisplay, resolveLoanActorName } from '../../../service/loan/loan-display.util';
 import { EmployeeService } from '../../../service/employee.service';
 import { MailNotificationService } from '../../../service/mailNotification.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -255,7 +255,7 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   }
 
   getQueueStatusLabel(loan: CooperativeLoan): string {
-    if (loan.status === 'READY_FOR_DISBURSEMENT') return 'Ready For Disbursement';
+    if (loan.status === 'READY_FOR_DISBURSEMENT') return 'Disbursable';
     if (loan.status === 'APPROVED') return 'Approved';
     return String(loan.status || '')
       .toLowerCase()
@@ -537,7 +537,7 @@ sendToAccounting(): void {
             this.refreshSelectedLoanState(loan.id, {
               matchedStatus: 'READY_FOR_DISBURSEMENT',
               successSummary: 'Already Sent',
-              successDetail: (freshLoan: CooperativeLoan) => `Loan ${freshLoan.loanCode || freshLoan.id} is already READY_FOR_DISBURSEMENT. The queue has been refreshed.`,
+              successDetail: (freshLoan: CooperativeLoan) => `Loan ${freshLoan.loanCode || freshLoan.id} is already Disbursable. The queue has been refreshed.`,
               fallbackSummary: 'Workflow Skipped',
               fallbackDetail: 'Only approved cooperative loans can be sent to accounting.'
             });
@@ -552,7 +552,7 @@ sendToAccounting(): void {
                 this.batchLoanNotesMap.delete(freshLoan.id);
                 this.upsertLoan(freshLoan);
                 this.selectLoan(freshLoan);
-                this.showMessage('success', 'Ready for Disbursement', `Loan ${freshLoan.loanCode || freshLoan.id} has been moved to READY_FOR_DISBURSEMENT.`);
+                 this.showMessage('success', 'Disbursable', `Loan ${freshLoan.loanCode || freshLoan.id} has been moved to Disbursable.`);
               } else {
                 this.showMessage('warn', 'Loan Reload Failed', 'Loan status updated, but full details could not be reloaded.');
               }
@@ -714,10 +714,7 @@ sendToAccounting(): void {
     if (!value) {
       return '';
     }
-    if (typeof value === 'object') {
-      return String((value as { fullname?: string; username?: string }).fullname || (value as { username?: string }).username || '').trim();
-    }
-    return String(value);
+    return resolveLoanActorName(value as any);
   }
 
   private generateDisbursementReference(loan: CooperativeLoan, indexOffset = 0): string {

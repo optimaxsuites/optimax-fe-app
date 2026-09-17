@@ -71,7 +71,7 @@ export class SupervisorApprovalQueueComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (updatedRequest) => {
           this.isProcessing = false;
-          this.successMessage = `Request ${request.id.substring(0, 8)}... approved!`;
+          this.successMessage = `Request #${request.id} approved!`;
           this.outstandingRequests = this.outstandingRequests.filter(r => r.id !== request.id);
           this.selectedRequest = null;
           setTimeout(() => {
@@ -104,7 +104,7 @@ export class SupervisorApprovalQueueComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (updatedRequest) => {
           this.isProcessing = false;
-          this.successMessage = `Request ${request.id.substring(0, 8)}... rejected`;
+          this.successMessage = `Request #${request.id} rejected`;
           this.outstandingRequests = this.outstandingRequests.filter(r => r.id !== request.id);
           this.selectedRequest = null;
           setTimeout(() => {

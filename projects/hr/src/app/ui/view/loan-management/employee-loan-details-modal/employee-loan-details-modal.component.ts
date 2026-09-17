@@ -6,6 +6,7 @@ import { Component, EventEmitter, Input, Output, OnChanges, OnInit, SimpleChange
 import { LoanApplication, StatusChange, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
+import { LoanPurposeService, LoanPurposeData } from '../../../service/loan/loan-purpose.service';
 import {
   formatLoanRepaymentDayDisplay,
   formatLoanPaymentModeDisplay,
@@ -27,7 +28,7 @@ type LoanLifecycleStage = {
 const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
   { status: 'PENDING', label: 'Pending', notes: 'Loan application submitted', fieldLabel: 'Applied On' },
   { status: 'APPROVED', label: 'Approved', notes: 'Loan approved', fieldLabel: 'Approved On' },
-  { status: 'READY_FOR_DISBURSEMENT', label: 'Ready for Disbursement', notes: 'Loan is ready for disbursement', fieldLabel: 'Ready for Disbursement On' },
+  { status: 'READY_FOR_DISBURSEMENT', label: 'Disbursable', notes: 'Loan is disbursable', fieldLabel: 'Disbursable On' },
   { status: 'ACTIVE', label: 'Active', notes: 'Loan disbursed', fieldLabel: 'Disbursed On' },
   { status: 'SKIPPED', label: 'Skipped', notes: 'Repayment installment was skipped under an approved grace adjustment', fieldLabel: 'Skipped On' },
   { status: 'OVERDUE', label: 'Overdue', notes: 'Repayment has fallen behind schedule', fieldLabel: 'Overdue On' },
@@ -49,19 +50,46 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
   isDetailLoading = false;
   feedbackMessage = '';
   feedbackTone: 'success' | 'error' | 'info' = 'info';
+  loanPurposes: LoanPurposeData[] = [];
 
   constructor(
     private loanApplicationService: LoanApplicationService,
     private loanApprovalService: LoanApprovalService,
+    private loanPurposeService: LoanPurposeService
   ) {}
 
   ngOnInit(): void {
-    this.refreshLoanDetails();
+    this.loanPurposeService.getAllPurposes().subscribe({
+      next: (purposes) => {
+        this.loanPurposes = purposes;
+        this.resolveLoanPurposeCode(this.loan);
+        this.refreshLoanDetails();
+      },
+      error: (error) => {
+        console.error('Error loading loan purposes in modal:', error);
+        this.refreshLoanDetails();
+      }
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['loan']) {
+      this.resolveLoanPurposeCode(this.loan);
       this.refreshLoanDetails();
+    }
+  }
+
+  private resolveLoanPurposeCode(loan: LoanApplication | null): void {
+    if (!loan) return;
+    let code = (loan.purposeCode || '').trim().toUpperCase();
+    let name = (loan.purpose || '').trim().toLowerCase();
+    if (code === 'N/A' || code === '') {
+      if (name) {
+        const matchedPurpose = this.loanPurposes.find(p => (p.name || '').trim().toLowerCase() === name);
+        if (matchedPurpose) {
+          loan.purposeCode = matchedPurpose.code;
+        }
+      }
     }
   }
 
@@ -80,7 +108,6 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
     return this.loan ? this.resolveDisplayedStatus(this.loan, this.statusTimeline) : 'PENDING';
   }
 
-
   get hasLoanDetails(): boolean {
     return !!this.loan;
   }
@@ -97,7 +124,6 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
   requestClose(): void {
     this.close.emit();
   }
-
 
   private refreshLoanDetails(): void {
     if (!this.loan?.id) {
@@ -116,6 +142,7 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
             ...this.loan,
             ...latestLoan
           };
+          this.resolveLoanPurposeCode(this.loan);
         }
 
         this.isDetailLoading = false;
@@ -301,7 +328,7 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
         case 'AWAITING_INTEREST_ACCEPTANCE':
           return 'Awaiting Interest Acceptance';
         case 'READY_FOR_DISBURSEMENT':
-          return 'Ready for Disbursement';
+          return 'Disbursable';
         case 'SKIPPED':
           return 'Skipped';
         case 'OVERDUE':
@@ -342,7 +369,7 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
       return 'Disbursed';
     }
     if (this.loan.status === 'READY_FOR_DISBURSEMENT') {
-      return 'Ready for Disbursement';
+      return 'Disbursable';
     }
     if (this.loan.disbursementInitiatedAt) {
       return 'Initiated - Pending Confirmation';
@@ -382,13 +409,12 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
 
   getDisbursementInitiatedByName(): string {
     if (!this.loan?.disbursementInitiatedBy) return 'N/A';
-    
-    if (typeof this.loan.disbursementInitiatedBy === 'object') {
-      return (this.loan.disbursementInitiatedBy as any).fullname || 
-             (this.loan.disbursementInitiatedBy as any).username || 
-             'Admin';
-    }
-    return String(this.loan.disbursementInitiatedBy);
+    return resolveLoanActorName(this.loan.disbursementInitiatedBy);
+  }
+
+  getApprovedByName(): string {
+    if (!this.loan?.approvedBy) return '';
+    return resolveLoanActorName(this.loan.approvedBy);
   }
 
   private buildStatusTimeline(loan: LoanApplication): StatusChange[] {
@@ -487,6 +513,7 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
     const stageEntries: Array<StatusChange | null> = [
       this.buildLifecycleEntry('PENDING', this.loan?.requestDate || loan.requestDate, this.resolveEmployeeDisplayName(loan), 'Loan application submitted'),
       this.buildLifecycleEntry('APPROVED', loan.approvedDate, this.formatActor(loan.approvedBy), loan.adminComment || 'Loan approved'),
+      this.buildLifecycleEntry('READY_FOR_DISBURSEMENT', loan.disbursementInitiatedAt, this.formatActor(loan.disbursementInitiatedBy), 'Loan sent to accounting for disbursement'),
       this.buildLifecycleEntry('ACTIVE', loan.disbursedDate, this.formatActor(loan.disbursedBy), 'Loan disbursed'),
       this.buildLifecycleEntry('SKIPPED', getHistoryEntry('SKIPPED')?.changedAt, this.resolveCurrentStatusActor(loan), 'Repayment installment skipped after approved grace adjustment'),
       this.buildLifecycleEntry('OVERDUE', getHistoryEntry('OVERDUE')?.changedAt, this.resolveCurrentStatusActor(loan), 'Repayment has become overdue'),

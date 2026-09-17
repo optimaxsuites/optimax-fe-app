@@ -27,7 +27,9 @@ export class AdminCorrectionsComponent implements OnInit {
   }
 
   startReview(req: CorrectionRequest) {
-    this.correctionService.startReview(req.id);
+    this.correctionService.startReview(req.id).subscribe({
+      error: err => console.error('Failed to start review:', err)
+    });
   }
 
   approve(req: CorrectionRequest) {
@@ -53,7 +55,9 @@ export class AdminCorrectionsComponent implements OnInit {
       req.id,
       'Supervisor',
       this.approvalComment[req.id]
-    );
+    ).subscribe({
+      error: err => console.error('Failed to approve correction request:', err)
+    });
   }
 
   reject(req: CorrectionRequest) {
@@ -63,7 +67,9 @@ export class AdminCorrectionsComponent implements OnInit {
       return;
     }
 
-    this.correctionService.rejectRequest(req.id, 'Supervisor', reason);
+    this.correctionService.rejectRequest(req.id, 'Supervisor', reason).subscribe({
+      error: err => console.error('Failed to reject correction request:', err)
+    });
     this.activeRejectId = null;
   }
 

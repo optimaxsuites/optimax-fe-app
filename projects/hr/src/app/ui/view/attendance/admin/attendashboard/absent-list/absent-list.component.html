@@ -1,0 +1,14 @@
+<div class="absent-list">
+  <h3>Absent Today</h3>
+
+  <ng-container *ngIf="absentees.length > 0; else noData">
+    <div class="absent-item" *ngFor="let employee of absentees">
+      <span>{{ employee.employeeName }}</span>
+      <span>{{ employee.department }}</span>
+    </div>
+  </ng-container>
+
+  <ng-template #noData>
+    <p>No absentees for today</p>
+  </ng-template>
+</div>

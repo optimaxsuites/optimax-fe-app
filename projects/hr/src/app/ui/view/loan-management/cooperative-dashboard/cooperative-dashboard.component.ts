@@ -234,14 +234,14 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     this.selectedLevel = level;
   }
 
-  // Format status label for display (e.g., READY_FOR_DISBURSEMENT -> Ready for Disbursement)
+  // Format status label for display (e.g., READY_FOR_DISBURSEMENT -> Disbursable)
   formatStatusLabel(status: string | undefined): string {
     if (!status) return '';
     
     const statusMap: Record<string, string> = {
       'PENDING': 'Pending',
       'APPROVED': 'Approved',
-      'READY_FOR_DISBURSEMENT': 'Ready for Disbursement',
+      'READY_FOR_DISBURSEMENT': 'Disbursable',
       'ACTIVE': 'Active',
       'OVERDUE': 'Overdue',
       'SKIPPED': 'Skipped',

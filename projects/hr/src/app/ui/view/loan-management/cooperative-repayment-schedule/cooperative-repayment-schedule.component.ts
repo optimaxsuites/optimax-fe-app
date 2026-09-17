@@ -137,6 +137,9 @@ export class CooperativeRepaymentScheduleComponent implements OnInit, OnChanges 
   }
 
   getStatusDisplay(status: string): string {
+    if ((status || '').toUpperCase() === 'READY_FOR_DISBURSEMENT') {
+      return 'Disbursable';
+    }
     return (status || '')
       .toLowerCase()
       .replace(/_/g, ' ')

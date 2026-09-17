@@ -20,7 +20,7 @@ export class AttendashboardService {
 
   getTodayStats(): Observable<AttendanceSummaryDTO | null> {
     return this.http.get<AttendanceSummaryDTO>(
-      `${this.apiUrl}/attendance-records/stats/today`
+      `${this.apiUrl}/attendance/stats/today`
     ).pipe(
       catchError(error => {
         console.error('Failed to get today stats:', error);
@@ -31,7 +31,7 @@ export class AttendashboardService {
 
   getLateArrivals(): Observable<LateArrivalDTO[]> {
     return this.http.get<LateArrivalDTO[]>(
-      `${this.apiUrl}/attendance-records/late/today`
+      `${this.apiUrl}/attendance/late/today`
     ).pipe(
       catchError(error => {
         console.error('Failed to get late arrivals:', error);
@@ -42,7 +42,7 @@ export class AttendashboardService {
 
   getAbsentees(): Observable<AbsentEmployeeDTO[]> {
     return this.http.get<AbsentEmployeeDTO[]>(
-      `${this.apiUrl}/attendance-records/absent/today`
+      `${this.apiUrl}/attendance/absent/today`
     ).pipe(
       catchError(error => {
         console.error('Failed to get absentees:', error);
@@ -53,7 +53,7 @@ export class AttendashboardService {
 
   markAttendance(): Observable<MarkAttendanceResponseDTO | null> {
     return this.http.post<MarkAttendanceResponseDTO>(
-      `${this.apiUrl}/attendance-records/mark`,
+      `${this.apiUrl}/attendance/mark`,
       {}
     ).pipe(
       catchError(error => {

@@ -128,7 +128,7 @@ export class CooperativeLoanReportsComponent implements OnInit, OnDestroy {
   private readonly statusLabelMap: Record<string, string> = {
     PENDING: 'Pending',
     APPROVED: 'Approved',
-    READY_FOR_DISBURSEMENT: 'Ready For Disbursement',
+    READY_FOR_DISBURSEMENT: 'Disbursable',
     ACTIVE: 'Active',
     OVERDUE: 'Overdue',
     SKIPPED: 'Skipped',

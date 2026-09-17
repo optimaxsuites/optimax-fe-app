@@ -7,71 +7,37 @@
         <p>Monitor and manage employee attendance</p>
       </div>
       <div class="header-actions">
+        <button
+          class="mark-attendance-btn"
+          [disabled]="markingAttendance"
+          (click)="markAttendance()">
+          <i class="fa-solid fa-user-check"></i>
+          {{ markingAttendance ? 'Marking...' : 'Mark Attendance' }}
+        </button>
         <app-adminexport
           [data]="filteredAttendance"
           [filters]="currentFilters">
         </app-adminexport>
       </div>
     </div>
+    <p class="mark-attendance-message" *ngIf="markAttendanceMessage">{{ markAttendanceMessage }}</p>
   </div>
 
-  <!-- Summary Cards - Clickable Quick Filters -->
-  <div class="summary-cards">
-    <div class="summary-card present"
-      (click)="filterByStatus('PRESENT')"
-      [class.active]="activeCard === 'PRESENT'"
-      title="Click to filter by Present">
-      <div class="card-label">
-        <i class="fa-solid fa-check-circle"></i>
-        <span>Present</span>
-      </div>
-      <div class="card-value">{{ presentCount }}</div>
-    </div>
+  <!-- Summary Cards - Clickable Quick Filters, sourced from GET attendance/stats/today -->
+  <app-stats-cards
+    [stats]="todayStats"
+    [activeCard]="activeCard"
+    [pendingApprovals]="pendingApprovalsCount"
+    [crossBranchCount]="crossBranchCount"
+    [correctionRequestsCount]="correctionRequestsCount"
+    (statusClick)="filterByStatus($event)"
+    (pendingClick)="filterByPendingApproval()">
+  </app-stats-cards>
 
-    <div class="summary-card late"
-      (click)="filterByStatus('LATE')"
-      [class.active]="activeCard === 'LATE'"
-      title="Click to filter by Late">
-      <div class="card-label">
-        <i class="fa-solid fa-clock"></i>
-        <span>Late</span>
-      </div>
-      <div class="card-value">{{ lateCount }}</div>
-    </div>
-
-    <div class="summary-card absent"
-      (click)="filterByStatus('ABSENT')"
-      [class.active]="activeCard === 'ABSENT'"
-      title="Click to filter by Absent">
-      <div class="card-label">
-        <i class="fa-solid fa-user-slash"></i>
-        <span>Absent</span>
-      </div>
-      <div class="card-value">{{ absentCount }}</div>
-    </div>
-
-    <div class="summary-card pending"
-      [class.has-pending]="pendingApprovalsCount > 0"
-      [class.active]="activeCard === 'PENDING_APPROVAL'"
-      (click)="filterByPendingApproval()"
-      [style.cursor]="pendingApprovalsCount > 0 ? 'pointer' : 'default'"
-      [title]="pendingApprovalsCount > 0 ? 'Click to filter by Pending Approval' : 'No pending approvals'">
-      <div class="card-label">
-        <i class="fa-solid fa-hourglass-end"></i>
-        <span>Needs HR Approval</span>
-      </div>
-      <div class="card-value">{{ pendingApprovalsCount }}</div>
-      <div class="card-breakdown" *ngIf="pendingApprovalsCount > 0">
-        <div class="breakdown-item" *ngIf="crossBranchCount > 0">
-          <i class="fa-solid fa-code-branch"></i>
-          <span>{{ crossBranchCount }} Cross-Branch</span>
-        </div>
-        <div class="breakdown-item" *ngIf="correctionRequestsCount > 0">
-          <i class="fa-solid fa-pencil"></i>
-          <span>{{ correctionRequestsCount }} Corrections</span>
-        </div>
-      </div>
-    </div>
+  <!-- Live lists from GET attendance/late/today and GET attendance/absent/today -->
+  <div class="dashboard-lists">
+    <app-late-arrivals [lateArrivals]="lateArrivals"></app-late-arrivals>
+    <app-absent-list [absentees]="absentees"></app-absent-list>
   </div>
 
   <!-- Attendance Table -->
