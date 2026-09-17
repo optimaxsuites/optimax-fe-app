@@ -1,227 +1,403 @@
 <!-- src/app/ui/view/documentation-history/documentation-history.component.html -->
+<p-toast position="top-right"></p-toast>
 
-<div class="procurement-requests-container">
-  <div class="requests-wrapper">
+<div class="il-layout">
 
-    <!-- Header - Premium #184440 Card (Matches RFQ List) -->
-    <div class="dashboard-header">
-      <div class="header-left">
-        <div class="header-badge">
-          <span class="pulse-dot"></span>
-          Archive Center
+  <!-- ══ SIDEBAR FILTERS ═══════════════════════════════════════════════════ -->
+  <aside class="il-sidebar">
+
+    <div class="il-sidebar-title">
+      <span>Filters</span>
+      <button class="il-reset-link" (click)="resetFilters()" type="button">Reset</button>
+    </div>
+
+    <!-- Quick search -->
+    <div class="il-filter-section">
+      <div class="il-search-wrap">
+        <i class="fas fa-search il-search-icon"></i>
+        <input type="text" class="il-search-input" placeholder="Search by title or ID…"
+               [(ngModel)]="searchTerm" (input)="applyFilters()">
+      </div>
+    </div>
+
+    <!-- Status filters -->
+    <div class="il-filter-section">
+      <div class="il-filter-heading">Lifecycle Status</div>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filterStatus === 'ALL'"
+              (click)="filterStatus = 'ALL'; applyFilters()">
+        <i class="fas fa-layer-group"></i>
+        <span>All Requests</span>
+        <span class="il-count-pill">{{ requests.length }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filterStatus === 'PENDING'"
+              (click)="filterStatus = 'PENDING'; applyFilters()">
+        <i class="fas fa-clock"></i>
+        <span>Pending RFQ</span>
+        <span class="il-count-pill il-count-pill--orange">{{ getStatusCount('PENDING') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filterStatus === 'VENDORS_QUOTING'"
+              (click)="filterStatus = 'VENDORS_QUOTING'; applyFilters()">
+        <i class="fas fa-users"></i>
+        <span>Vendors Quoting</span>
+        <span class="il-count-pill il-count-pill--blue">{{ getStatusCount('VENDORS_QUOTING') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filterStatus === 'VENDOR_SELECTED'"
+              (click)="filterStatus = 'VENDOR_SELECTED'; applyFilters()">
+        <i class="fas fa-user-check"></i>
+        <span>Vendor Selected</span>
+        <span class="il-count-pill il-count-pill--green">{{ getStatusCount('VENDOR_SELECTED') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filterStatus === 'LPO_ISSUED'"
+              (click)="filterStatus = 'LPO_ISSUED'; applyFilters()">
+        <i class="fas fa-file-contract"></i>
+        <span>LPO Issued</span>
+        <span class="il-count-pill il-count-pill--blue">{{ getStatusCount('LPO_ISSUED') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filterStatus === 'PAYMENT_PENDING'"
+              (click)="filterStatus = 'PAYMENT_PENDING'; applyFilters()">
+        <i class="fas fa-credit-card"></i>
+        <span>Payment Pending</span>
+        <span class="il-count-pill il-count-pill--orange">{{ getStatusCount('PAYMENT_PENDING') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filterStatus === 'PAYMENT_CONFIRMED'"
+              (click)="filterStatus = 'PAYMENT_CONFIRMED'; applyFilters()">
+        <i class="fas fa-check-circle"></i>
+        <span>Payment Confirmed</span>
+        <span class="il-count-pill il-count-pill--green">{{ getStatusCount('PAYMENT_CONFIRMED') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filterStatus === 'DELIVERY_IN_PROGRESS'"
+              (click)="filterStatus = 'DELIVERY_IN_PROGRESS'; applyFilters()">
+        <i class="fas fa-truck"></i>
+        <span>Delivering</span>
+        <span class="il-count-pill il-count-pill--blue">{{ getStatusCount('DELIVERY_IN_PROGRESS') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filterStatus === 'DELIVERED'"
+              (click)="filterStatus = 'DELIVERED'; applyFilters()">
+        <i class="fas fa-check-double"></i>
+        <span>Delivered</span>
+        <span class="il-count-pill il-count-pill--green">{{ getStatusCount('DELIVERED') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filterStatus === 'CANCELLED'"
+              (click)="filterStatus = 'CANCELLED'; applyFilters()">
+        <i class="fas fa-ban"></i>
+        <span>Cancelled</span>
+        <span class="il-count-pill il-count-pill--red">{{ getStatusCount('CANCELLED') }}</span>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ══ MAIN AREA ══════════════════════════════════════════════════════════ -->
+  <main class="il-main">
+
+    <!-- Top bar -->
+    <div class="il-top-bar">
+      <div class="il-top-bar-left">
+        <h1 class="il-title">Documentation History</h1>
+        <span class="il-total-badge">{{ filteredRequests.length }} records</span>
+      </div>
+      <div class="il-top-bar-right">
+        <div class="il-page-size-wrap">
+          <span class="il-page-size-label">Per page</span>
+          <select class="il-page-size-select" [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)">
+            <option [value]="10">10</option>
+            <option [value]="25">25</option>
+            <option [value]="50">50</option>
+          </select>
         </div>
-        <h1 class="page-title">Documentation History</h1>
-        <p class="page-subtitle">Track the complete document lifecycle (RFQs, Quotations, LPOs, Invoices) for each order
-        </p>
+        <button type="button" class="il-btn il-btn--ghost" (click)="loadRequests()" [disabled]="isLoading">
+          <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
+          {{ isLoading ? 'Loading…' : 'Refresh' }}
+        </button>
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div class="loading-state" *ngIf="isLoading">
-      <div class="spinner-container">
-        <i class="fas fa-spinner fa-spin"></i>
-        <p>Loading documentation history...</p>
-      </div>
-    </div>
+    <!-- Table -->
+    <div class="il-table-wrap">
+      <table class="il-table">
+        <thead>
+          <tr>
+            <th class="il-th-chk">
+              <input type="checkbox" disabled>
+            </th>
+            <th>Order / Product</th>
+            <th>Order ID</th>
+            <th>Budget</th>
+            <th>Lifecycle Status</th>
+            <th>Documents</th>
+            <th class="il-th-actions">Actions</th>
+          </tr>
+        </thead>
 
-    <!-- Table Container (Matches RFQ List) -->
-    <div class="table-container" *ngIf="!isLoading && requests.length > 0">
-      <div class="table-wrapper">
-        <table class="advance-loans-table">
-          <thead>
-            <tr>
-              <th style="width: 4rem;" class="text-center">S/N</th>
-              <th class="sortable">Product / Order Name</th>
-              <th style="width: 12rem;" class="text-center">Current Lifecycle Status</th>
-              <th style="width: 12rem;" class="text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let request of requests; let i = index">
-              <td class="sn-cell text-center">{{ i + 1 }}</td>
-              <td class="employee-name-cell">
-                <div class="order-title">{{ request.title }}</div>
-                <div class="order-subtitle">ID: {{ request.id }} | Budget: {{ formatCurrency(request.totalBudget,
-                  request.currency) }}</div>
-              </td>
-              <td class="text-center">
-                <span class="status-badge" [ngClass]="getStatusBadgeClass(request.status)">
-                  {{ getStatusLabel(request.status) }}
+        <!-- Loading skeleton -->
+        <tbody *ngIf="isLoading">
+          <tr class="il-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
+            <td colspan="7"><div class="il-skeleton-bar"></div></td>
+          </tr>
+        </tbody>
+
+        <!-- Empty state -->
+        <tbody *ngIf="!isLoading && filteredRequests.length === 0">
+          <tr>
+            <td colspan="7">
+              <div class="il-empty">
+                <i class="fas fa-archive il-empty-icon"></i>
+                <p class="il-empty-title">No documentation records found</p>
+                <p class="il-empty-sub">Documents will appear here as procurement requests progress through the lifecycle</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+
+        <!-- Data rows -->
+        <tbody *ngIf="!isLoading && filteredRequests.length > 0">
+          <tr *ngFor="let request of filteredRequests"
+              [class.il-row--delivered]="request.status === 'DELIVERED'"
+              [class.il-row--cancelled]="request.status === 'CANCELLED'">
+
+            <td class="il-td-chk">
+              <input type="checkbox" disabled>
+            </td>
+
+            <td class="il-td-product">
+              <div class="il-doc-title">{{ request.title }}</div>
+            </td>
+
+            <td class="il-td-num">
+              <span class="il-doc-id">#{{ request.id }}</span>
+            </td>
+
+            <td class="il-td-amount">{{ formatCurrency(request.totalBudget, request.currency) }}</td>
+
+            <td>
+              <span class="il-status-badge" [ngClass]="getStatusBadgeClass(request.status)">
+                {{ getStatusLabel(request.status) }}
+              </span>
+            </td>
+
+            <td>
+              <div class="il-doc-badges">
+                <span class="il-doc-badge il-doc-badge--rfq" title="RFQ Document">
+                  <i class="fas fa-file-signature"></i> RFQ
                 </span>
-              </td>
-              <td class="text-center">
-                <button class="action-btn view-btn" (click)="openArchiveModal(request)" title="View Documents">
-                  <i class="fas fa-folder-open"></i> View Documents
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                <span class="il-doc-badge il-doc-badge--quote" 
+                      [class.il-doc-badge--locked]="!isUnlocked('quotation')"
+                      [title]="isUnlocked('quotation') ? 'Quotation Available' : 'Quotation Pending'">
+                  <i class="fas fa-comment-dollar"></i> Quote
+                </span>
+                <span class="il-doc-badge il-doc-badge--lpo" 
+                      [class.il-doc-badge--locked]="!isUnlocked('lpo')"
+                      [title]="isUnlocked('lpo') ? 'LPO Available' : 'LPO Pending'">
+                  <i class="fas fa-file-invoice"></i> LPO
+                </span>
+                <span class="il-doc-badge il-doc-badge--invoice" 
+                      [class.il-doc-badge--locked]="!isUnlocked('invoice')"
+                      [title]="isUnlocked('invoice') ? 'Invoice Available' : 'Invoice Pending'">
+                  <i class="fas fa-receipt"></i> Invoice
+                </span>
+              </div>
+            </td>
 
-      <!-- Empty State -->
-      <div class="empty-state" *ngIf="!isLoading && requests.length === 0">
-        <i class="fas fa-archive"></i>
-        <p>No archive records found. Documents will appear here as procurement requests progress through the lifecycle.
-        </p>
+            <td class="il-td-actions">
+              <div class="il-row-actions">
+                <button type="button" class="il-action-btn il-action-btn--view" (click)="openArchiveModal(request)" title="View Documents">
+                  <i class="fas fa-folder-open"></i> View
+                </button>
+              </div>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="il-pagination" *ngIf="filteredRequests.length > 0">
+      <span>
+        Showing {{ (currentPage * pageSize) + 1 }}–{{ Math.min((currentPage + 1) * pageSize, filteredRequests.length) }} of {{ filteredRequests.length }}
+      </span>
+      <div class="il-page-btns">
+        <button type="button" class="il-page-btn" [disabled]="currentPage === 0" (click)="onPageChange(currentPage - 1)">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button type="button" class="il-page-btn"
+                *ngFor="let p of getPageNumbers()"
+                [class.il-page-btn--active]="p === currentPage"
+                (click)="onPageChange(p)">{{ p + 1 }}</button>
+        <button type="button" class="il-page-btn" [disabled]="currentPage >= totalPages - 1" (click)="onPageChange(currentPage + 1)">
+          <i class="fas fa-chevron-right"></i>
+        </button>
       </div>
     </div>
-  </div>
+
+  </main>
 </div>
 
-<!-- Dynamic Side Modal (Same as Before - Kept the View Documents functionality) -->
-<app-side-modal *ngIf="showModal && selectedRequest" (close)="closeArchiveModal()">
-  <div class="modal-inner">
+<!-- ══ DOCUMENT ARCHIVE SIDE MODAL ══════════════════════════════════════════ -->
+<div class="il-confirm-backdrop il-doc-backdrop" *ngIf="showModal && selectedRequest" (click)="closeArchiveModal()">
+  <div class="il-doc-modal" (click)="$event.stopPropagation()">
 
     <!-- Modal Header -->
-    <div class="modal-header">
-      <div class="modal-title-group">
-        <span class="modal-subtitle">DOCUMENT HISTORY</span>
-        <h2 class="modal-title">{{ selectedRequest.title }}</h2>
-        <span class="modal-ref-id">Ref ID: {{ selectedRequest.id }}</span>
+    <div class="il-modal-header">
+      <div class="il-modal-header-left">
+        <i class="fas fa-folder-open" style="color:var(--p);font-size:1.1rem;"></i>
+        <div>
+          <span style="font-weight:700;font-size:15px;color:#1a2535;">Document History</span>
+          <span style="font-size:12px;color:var(--muted);display:block;">{{ selectedRequest.title }}</span>
+        </div>
       </div>
-      <button class="modal-close-btn" (click)="closeArchiveModal()">
-        <i class="fas fa-times"></i>
-      </button>
+      <button type="button" class="il-modal-close" (click)="closeArchiveModal()">&times;</button>
     </div>
 
-    <!-- Square Widget Buttons Grid (2x2) -->
-    <div class="widgets-grid">
-
-      <!-- RFQ Widget -->
-      <button class="widget-btn" [class.active]="selectedDocType === 'rfq'" [class.unlocked]="isUnlocked('rfq')"
-        [disabled]="!isUnlocked('rfq')" (click)="selectDocType('rfq')">
-        <div class="widget-icon-wrapper">
+    <!-- Doc Type Widgets -->
+    <div class="il-doc-widgets">
+      <button class="il-doc-widget" 
+              [class.il-doc-widget--active]="selectedDocType === 'rfq'"
+              [class.il-doc-widget--unlocked]="isUnlocked('rfq')"
+              [disabled]="!isUnlocked('rfq')"
+              (click)="selectDocType('rfq')">
+        <div class="il-doc-widget-icon">
           <i class="fas fa-file-signature"></i>
         </div>
-        <div class="widget-info">
-          <span class="widget-name">1. RFQ Document</span>
-          <span class="widget-status unlocked">Available</span>
+        <div class="il-doc-widget-info">
+          <span class="il-doc-widget-name">RFQ Document</span>
+          <span class="il-doc-widget-status il-doc-widget-status--unlocked">Available</span>
         </div>
       </button>
 
-      <!-- Quotation Widget -->
-      <button class="widget-btn" [class.active]="selectedDocType === 'quotation'"
-        [class.unlocked]="isUnlocked('quotation')" [class.locked]="!isUnlocked('quotation')"
-        [disabled]="!isUnlocked('quotation')" (click)="selectDocType('quotation')">
-        <div class="widget-icon-wrapper">
+      <button class="il-doc-widget" 
+              [class.il-doc-widget--active]="selectedDocType === 'quotation'"
+              [class.il-doc-widget--unlocked]="isUnlocked('quotation')"
+              [class.il-doc-widget--locked]="!isUnlocked('quotation')"
+              [disabled]="!isUnlocked('quotation')"
+              (click)="selectDocType('quotation')">
+        <div class="il-doc-widget-icon">
           <i class="fas fa-comment-dollar"></i>
-          <span class="lock-indicator" *ngIf="!isUnlocked('quotation')"><i class="fas fa-lock"></i></span>
+          <span class="il-doc-widget-lock" *ngIf="!isUnlocked('quotation')"><i class="fas fa-lock"></i></span>
         </div>
-        <div class="widget-info">
-          <span class="widget-name">2. Quotation Received</span>
-          <span class="widget-status" [class.unlocked]="isUnlocked('quotation')"
-            [class.locked]="!isUnlocked('quotation')">
-            {{ isUnlocked('quotation') ? 'Available' : 'Pending Receipt' }}
+        <div class="il-doc-widget-info">
+          <span class="il-doc-widget-name">Quotation Received</span>
+          <span class="il-doc-widget-status" 
+                [class.il-doc-widget-status--unlocked]="isUnlocked('quotation')"
+                [class.il-doc-widget-status--locked]="!isUnlocked('quotation')">
+            {{ isUnlocked('quotation') ? 'Available' : 'Pending' }}
           </span>
         </div>
       </button>
 
-      <!-- LPO Widget -->
-      <button class="widget-btn" [class.active]="selectedDocType === 'lpo'" [class.unlocked]="isUnlocked('lpo')"
-        [class.locked]="!isUnlocked('lpo')" [disabled]="!isUnlocked('lpo')" (click)="selectDocType('lpo')">
-        <div class="widget-icon-wrapper">
+      <button class="il-doc-widget" 
+              [class.il-doc-widget--active]="selectedDocType === 'lpo'"
+              [class.il-doc-widget--unlocked]="isUnlocked('lpo')"
+              [class.il-doc-widget--locked]="!isUnlocked('lpo')"
+              [disabled]="!isUnlocked('lpo')"
+              (click)="selectDocType('lpo')">
+        <div class="il-doc-widget-icon">
           <i class="fas fa-file-invoice"></i>
-          <span class="lock-indicator" *ngIf="!isUnlocked('lpo')"><i class="fas fa-lock"></i></span>
+          <span class="il-doc-widget-lock" *ngIf="!isUnlocked('lpo')"><i class="fas fa-lock"></i></span>
         </div>
-        <div class="widget-info">
-          <span class="widget-name">3. LPO Issued</span>
-          <span class="widget-status" [class.unlocked]="isUnlocked('lpo')" [class.locked]="!isUnlocked('lpo')">
-            {{ isUnlocked('lpo') ? 'Available' : 'Pending Order' }}
+        <div class="il-doc-widget-info">
+          <span class="il-doc-widget-name">LPO Issued</span>
+          <span class="il-doc-widget-status" 
+                [class.il-doc-widget-status--unlocked]="isUnlocked('lpo')"
+                [class.il-doc-widget-status--locked]="!isUnlocked('lpo')">
+            {{ isUnlocked('lpo') ? 'Available' : 'Pending' }}
           </span>
         </div>
       </button>
 
-      <!-- Invoice Widget -->
-      <button class="widget-btn" [class.active]="selectedDocType === 'invoice'" [class.unlocked]="isUnlocked('invoice')"
-        [class.locked]="!isUnlocked('invoice')" [disabled]="!isUnlocked('invoice')" (click)="selectDocType('invoice')">
-        <div class="widget-icon-wrapper">
+      <button class="il-doc-widget" 
+              [class.il-doc-widget--active]="selectedDocType === 'invoice'"
+              [class.il-doc-widget--unlocked]="isUnlocked('invoice')"
+              [class.il-doc-widget--locked]="!isUnlocked('invoice')"
+              [disabled]="!isUnlocked('invoice')"
+              (click)="selectDocType('invoice')">
+        <div class="il-doc-widget-icon">
           <i class="fas fa-receipt"></i>
-          <span class="lock-indicator" *ngIf="!isUnlocked('invoice')"><i class="fas fa-lock"></i></span>
+          <span class="il-doc-widget-lock" *ngIf="!isUnlocked('invoice')"><i class="fas fa-lock"></i></span>
         </div>
-        <div class="widget-info">
-          <span class="widget-name">4. Invoice Received</span>
-          <span class="widget-status" [class.unlocked]="isUnlocked('invoice')" [class.locked]="!isUnlocked('invoice')">
-            {{ isUnlocked('invoice') ? 'Available' : 'Pending Delivery' }}
+        <div class="il-doc-widget-info">
+          <span class="il-doc-widget-name">Invoice Received</span>
+          <span class="il-doc-widget-status" 
+                [class.il-doc-widget-status--unlocked]="isUnlocked('invoice')"
+                [class.il-doc-widget-status--locked]="!isUnlocked('invoice')">
+            {{ isUnlocked('invoice') ? 'Available' : 'Pending' }}
           </span>
         </div>
       </button>
-
     </div>
 
-    <!-- Document Detail Preview Section -->
-    <div class="preview-section">
-      <div class="preview-toolbar">
-        <h3 class="preview-doc-title">
-          <i class="fas" [class.fa-file-signature]="selectedDocType === 'rfq'"
-            [class.fa-comment-dollar]="selectedDocType === 'quotation'"
-            [class.fa-file-invoice]="selectedDocType === 'lpo'" [class.fa-receipt]="selectedDocType === 'invoice'"></i>
+    <!-- Document Preview Section -->
+    <div class="il-doc-preview-section">
+      <div class="il-doc-preview-toolbar">
+        <h3 class="il-doc-preview-title">
+          <i class="fas" 
+             [class.fa-file-signature]="selectedDocType === 'rfq'"
+             [class.fa-comment-dollar]="selectedDocType === 'quotation'"
+             [class.fa-file-invoice]="selectedDocType === 'lpo'"
+             [class.fa-receipt]="selectedDocType === 'invoice'"></i>
           {{ selectedDocType | uppercase }} Document Preview
         </h3>
-        <button class="btn-download-pdf" (click)="downloadCurrentDocPDF()" [disabled]="isDownloading">
-          <i class="fas" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"
-            [class.fa-file-pdf]="!isDownloading"></i>
-          {{ isDownloading ? 'Generating...' : 'Download PDF' }}
+        <button class="il-btn il-btn--primary" (click)="downloadCurrentDocPDF()" [disabled]="isDownloading">
+          <i class="fas" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading" [class.fa-file-pdf]="!isDownloading"></i>
+          {{ isDownloading ? 'Generating…' : 'Download PDF' }}
         </button>
       </div>
 
-      <!-- Preview Sheet Area -->
-      <div class="preview-container-box shadow-sm" id="preview-document-container">
+      <!-- Preview Container -->
+      <div class="il-doc-preview-container" id="preview-document-container">
 
-        <!-- ================== RFQ DETAILS PREVIEW ================== -->
-        <div class="doc-sheet rfq-sheet" *ngIf="selectedDocType === 'rfq'">
-          <div class="doc-header">
-            <div class="doc-logo-section">
-              <div class="app-logo-mark"><i class="fas fa-file-contract"></i></div>
+        <!-- RFQ PREVIEW -->
+        <div class="il-doc-sheet" *ngIf="selectedDocType === 'rfq'">
+          <div class="il-doc-header">
+            <div class="il-doc-logo-section">
+              <div class="il-doc-logo-mark"><i class="fas fa-file-contract"></i></div>
               <div>
                 <h2>REQUEST FOR QUOTATION</h2>
-                <p class="ref-num">Reference: #{{ selectedRequest.id }}</p>
+                <p class="il-doc-ref">Reference: #{{ selectedRequest.id }}</p>
               </div>
             </div>
-            <div class="doc-meta-section">
+            <div class="il-doc-meta-section">
               <p><strong>Date Created:</strong> {{ formatDate(selectedRequest.createdAt) }}</p>
               <p><strong>Expiry Deadline:</strong> {{ formatDate(selectedRequest.deliveryDeadline) }}</p>
               <p><strong>Currency:</strong> {{ selectedRequest.currency }}</p>
             </div>
           </div>
 
-          <hr class="doc-hr">
+          <hr class="il-doc-hr">
 
-          <div class="info-block">
+          <div class="il-doc-info-block">
             <h3>1. General Overview</h3>
-            <table class="flat-info-table">
-              <tr>
-                <td><strong>Request Title:</strong></td>
-                <td>{{ selectedRequest.title }}</td>
-              </tr>
-              <tr>
-                <td><strong>Procurement Type:</strong></td>
-                <td><span class="badge type">{{ selectedRequest.procurementType | titlecase }}</span></td>
-              </tr>
-              <tr>
-                <td><strong>Delivery Destination:</strong></td>
-                <td>{{ selectedRequest.deliveryLocation }}</td>
-              </tr>
-              <tr>
-                <td><strong>Total Budget:</strong></td>
-                <td><strong>{{ formatCurrency(selectedRequest.totalBudget, selectedRequest.currency) }}</strong></td>
-              </tr>
+            <table class="il-doc-flat-table">
+              <tr><td><strong>Request Title:</strong></td><td>{{ selectedRequest.title }}</td></tr>
+              <tr><td><strong>Procurement Type:</strong></td><td><span class="il-doc-badge-type">{{ selectedRequest.procurementType | titlecase }}</span></td></tr>
+              <tr><td><strong>Delivery Destination:</strong></td><td>{{ selectedRequest.deliveryLocation }}</td></tr>
+              <tr><td><strong>Total Budget:</strong></td><td><strong>{{ formatCurrency(selectedRequest.totalBudget, selectedRequest.currency) }}</strong></td></tr>
             </table>
 
-            <h4 class="section-subheading">Scope & Requirements Description</h4>
-            <p class="desc-text">{{ selectedRequest.description }}</p>
+            <h4 class="il-doc-subheading">Scope & Requirements Description</h4>
+            <p class="il-doc-desc">{{ selectedRequest.description }}</p>
           </div>
 
-          <div class="info-block">
+          <div class="il-doc-info-block">
             <h3>2. Requested Items List</h3>
-            <table class="doc-data-table">
+            <table class="il-doc-data-table">
               <thead>
                 <tr>
                   <th>Item Name</th>
                   <th>Specifications</th>
                   <th class="text-right">Qty</th>
                   <th class="text-right">Unit</th>
-                  <th class="text-right">Estimated Budget</th>
+                  <th class="text-right">Est. Budget</th>
                 </tr>
               </thead>
               <tbody>
@@ -237,50 +413,38 @@
           </div>
         </div>
 
-        <!-- ================== QUOTATION DETAILS PREVIEW ================== -->
-        <div class="doc-sheet quotation-sheet" *ngIf="selectedDocType === 'quotation' && quotationDoc">
-          <div class="doc-header">
-            <div class="doc-logo-section">
-              <div class="app-logo-mark vendor"><i class="fas fa-comment-dollar"></i></div>
+        <!-- QUOTATION PREVIEW -->
+        <div class="il-doc-sheet" *ngIf="selectedDocType === 'quotation' && quotationDoc">
+          <div class="il-doc-header">
+            <div class="il-doc-logo-section">
+              <div class="il-doc-logo-mark il-doc-logo-mark--vendor"><i class="fas fa-comment-dollar"></i></div>
               <div>
                 <h2>VENDOR QUOTATION</h2>
-                <p class="ref-num">Quote Reference: #{{ quotationDoc.id }}</p>
+                <p class="il-doc-ref">Quote Reference: #{{ quotationDoc.id }}</p>
               </div>
             </div>
-            <div class="doc-meta-section">
+            <div class="il-doc-meta-section">
               <p><strong>Vendor Name:</strong> {{ quotationDoc.vendorName }}</p>
               <p><strong>Code:</strong> {{ quotationDoc.vendorCode }}</p>
               <p><strong>Rating:</strong> ★ {{ quotationDoc.vendorRating }} / 5.0</p>
             </div>
           </div>
 
-          <hr class="doc-hr">
+          <hr class="il-doc-hr">
 
-          <div class="info-block">
+          <div class="il-doc-info-block">
             <h3>1. Contact & Terms</h3>
-            <table class="flat-info-table">
-              <tr>
-                <td><strong>Email Address:</strong></td>
-                <td>{{ quotationDoc.vendorEmail }}</td>
-              </tr>
-              <tr>
-                <td><strong>Phone Number:</strong></td>
-                <td>{{ quotationDoc.vendorPhone }}</td>
-              </tr>
-              <tr>
-                <td><strong>Validity Period:</strong></td>
-                <td>{{ quotationDoc.validityDays }} Days</td>
-              </tr>
-              <tr>
-                <td><strong>Estimated Delivery:</strong></td>
-                <td>{{ quotationDoc.deliveryTimeline }}</td>
-              </tr>
+            <table class="il-doc-flat-table">
+              <tr><td><strong>Email Address:</strong></td><td>{{ quotationDoc.vendorEmail }}</td></tr>
+              <tr><td><strong>Phone Number:</strong></td><td>{{ quotationDoc.vendorPhone }}</td></tr>
+              <tr><td><strong>Validity Period:</strong></td><td>{{ quotationDoc.validityDays }} Days</td></tr>
+              <tr><td><strong>Estimated Delivery:</strong></td><td>{{ quotationDoc.deliveryTimeline }}</td></tr>
             </table>
           </div>
 
-          <div class="info-block">
+          <div class="il-doc-info-block">
             <h3>2. Priced Quotation Breakdown</h3>
-            <table class="doc-data-table">
+            <table class="il-doc-data-table">
               <thead>
                 <tr>
                   <th>Item Name</th>
@@ -296,74 +460,72 @@
                   <td>{{ item.description }}</td>
                   <td class="text-right">{{ item.quantity }}</td>
                   <td class="text-right">{{ formatCurrency(item.unitPrice, quotationDoc.currency) }}</td>
-                  <td class="text-right font-semibold">{{ formatCurrency(item.totalPrice, quotationDoc.currency) }}
-                  </td>
+                  <td class="text-right font-semibold">{{ formatCurrency(item.totalPrice, quotationDoc.currency) }}</td>
                 </tr>
               </tbody>
               <tfoot>
-                <tr class="grand-total-row">
+                <tr class="il-doc-grand-total">
                   <td colspan="4" class="text-right font-bold">GRAND TOTAL AMOUNT:</td>
-                  <td class="text-right font-bold text-lg text-teal-700">{{ formatCurrency(quotationDoc.totalAmount,
-                    quotationDoc.currency) }}</td>
+                  <td class="text-right font-bold">{{ formatCurrency(quotationDoc.totalAmount, quotationDoc.currency) }}</td>
                 </tr>
               </tfoot>
             </table>
-            <div class="notes-footer">
+            <div class="il-doc-notes">
               <strong>Notes:</strong> {{ quotationDoc.notes }}
             </div>
           </div>
         </div>
 
-        <!-- ================== LPO DETAILS PREVIEW ================== -->
-        <div class="doc-sheet lpo-sheet" *ngIf="selectedDocType === 'lpo' && lpoDoc">
-          <div class="doc-header">
-            <div class="doc-logo-section">
-              <div class="app-logo-mark lpo"><i class="fas fa-file-invoice"></i></div>
+        <!-- LPO PREVIEW -->
+        <div class="il-doc-sheet" *ngIf="selectedDocType === 'lpo' && lpoDoc">
+          <div class="il-doc-header">
+            <div class="il-doc-logo-section">
+              <div class="il-doc-logo-mark il-doc-logo-mark--lpo"><i class="fas fa-file-invoice"></i></div>
               <div>
                 <h2>LOCAL PURCHASE ORDER</h2>
-                <p class="ref-num">LPO Number: {{ lpoDoc.lpoNumber }}</p>
+                <p class="il-doc-ref">LPO Number: {{ lpoDoc.lpoNumber }}</p>
               </div>
             </div>
-            <div class="doc-meta-section">
+            <div class="il-doc-meta-section">
               <p><strong>Date Issued:</strong> {{ formatDate(lpoDoc.orderDate) }}</p>
               <p><strong>RFQ Reference:</strong> #{{ selectedRequest.id }}</p>
             </div>
           </div>
 
-          <hr class="doc-hr">
+          <hr class="il-doc-hr">
 
-          <div class="parties-grid">
-            <div class="party-card">
+          <div class="il-doc-parties-grid">
+            <div class="il-doc-party-card">
               <h4>BUYER DETAILS</h4>
-              <strong class="party-name">Queendom Procurement Corp.</strong>
+              <strong class="il-doc-party-name">Queendom Procurement Corp.</strong>
               <p>Plot 12, Corporate Avenue,<br>Victoria Island, Lagos,<br>Nigeria</p>
-              <p class="contact-line"><i class="fas fa-envelope"></i> orders&#64;queensheba.example</p>
+              <p class="il-doc-contact-line"><i class="fas fa-envelope"></i> orders&#64;queensheba.example</p>
             </div>
-            <div class="party-card">
+            <div class="il-doc-party-card">
               <h4>VENDOR DETAILS</h4>
-              <strong class="party-name">{{ lpoDoc.vendorName }}</strong>
+              <strong class="il-doc-party-name">{{ lpoDoc.vendorName }}</strong>
               <p>Vendor Code: {{ lpoDoc.vendorCode }}</p>
-              <p class="contact-line"><i class="fas fa-envelope"></i> {{ lpoDoc.vendorEmail }}</p>
-              <p class="contact-line"><i class="fas fa-phone"></i> {{ lpoDoc.vendorPhone }}</p>
+              <p class="il-doc-contact-line"><i class="fas fa-envelope"></i> {{ lpoDoc.vendorEmail }}</p>
+              <p class="il-doc-contact-line"><i class="fas fa-phone"></i> {{ lpoDoc.vendorPhone }}</p>
             </div>
           </div>
 
-          <div class="info-block">
+          <div class="il-doc-info-block">
             <h3>Ordered Items Breakdown</h3>
-            <table class="doc-data-table">
+            <table class="il-doc-data-table">
               <thead>
                 <tr>
                   <th>Item Name / Description</th>
-                  <th class="text-right" style="width: 5rem;">Qty</th>
-                  <th class="text-right" style="width: 8rem;">Unit Price</th>
-                  <th class="text-right" style="width: 10rem;">Total Value</th>
+                  <th class="text-right" style="width:5rem;">Qty</th>
+                  <th class="text-right" style="width:8rem;">Unit Price</th>
+                  <th class="text-right" style="width:10rem;">Total Value</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let item of lpoDoc.items">
                   <td>
                     <strong>{{ item.name }}</strong>
-                    <div class="item-desc">{{ item.description }}</div>
+                    <div class="il-doc-item-desc">{{ item.description }}</div>
                   </td>
                   <td class="text-right">{{ item.quantity }}</td>
                   <td class="text-right">{{ formatCurrency(item.unitPrice, lpoDoc.currency) }}</td>
@@ -371,16 +533,15 @@
                 </tr>
               </tbody>
               <tfoot>
-                <tr class="grand-total-row">
+                <tr class="il-doc-grand-total">
                   <td colspan="3" class="text-right font-bold">GRAND TOTAL VALUE:</td>
-                  <td class="text-right font-bold text-teal-800">{{ formatCurrency(lpoDoc.totalAmount,
-                    lpoDoc.currency) }}</td>
+                  <td class="text-right font-bold">{{ formatCurrency(lpoDoc.totalAmount, lpoDoc.currency) }}</td>
                 </tr>
               </tfoot>
             </table>
           </div>
 
-          <div class="lpo-terms-section">
+          <div class="il-doc-lpo-terms">
             <h4>LPO Terms & Conditions</h4>
             <ol>
               <li>Delivery timeline must be within {{ lpoDoc.deliveryTimeline }} of LPO issue date.</li>
@@ -390,13 +551,13 @@
             </ol>
           </div>
 
-          <div class="signatures-grid">
-            <div class="sig-line">
+          <div class="il-doc-signatures">
+            <div class="il-doc-sig-line">
               <div class="line"></div>
               <strong>Authorized Signatory</strong>
               <p>Queendom Procurement Corp</p>
             </div>
-            <div class="sig-line">
+            <div class="il-doc-sig-line">
               <div class="line"></div>
               <strong>Authorized Vendor Signatory</strong>
               <p>{{ lpoDoc.vendorName }}</p>
@@ -404,11 +565,11 @@
           </div>
         </div>
 
-        <!-- ================== INVOICE DETAILS PREVIEW ================== -->
+        <!-- INVOICE PREVIEW -->
         <app-invoices *ngIf="selectedDocType === 'invoice'" [request]="selectedRequest" [invoice]="invoiceDoc"></app-invoices>
 
       </div>
     </div>
 
   </div>
-</app-side-modal>
+</div>
