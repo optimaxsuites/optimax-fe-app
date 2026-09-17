@@ -26,6 +26,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
   selectedRfqGroup: RFQGroup | null = null;
   showVendorSummaryModal = false;
   isLoading = false;
+  aiDismissed = false;
 
   selectedStatus: string = 'ALL';
   searchTerm: string = '';
@@ -323,6 +324,22 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
       'REVIEW_REQUESTED': 'Review Requested'
     };
     return labels[status] || status;
+  }
+
+  getStatusCount(status: string): number {
+    return this.quotations.filter(q => q.status === status).length;
+  }
+
+  hasExpiredQuotes(group: RFQGroup): boolean {
+    return group.quotes.some(q => q.status === 'EXPIRED' || (q.status === 'PENDING' && this.isExpired(q.expiresAt)));
+  }
+
+  hasAcceptedQuote(group: RFQGroup): boolean {
+    return group.quotes.some(q => q.status === 'ACCEPTED' || q.status === 'LPO_GENERATED' || q.status === 'LPO_SENT');
+  }
+
+  getProgressPercent(group: RFQGroup): number {
+    return group.totalCount > 0 ? Math.round((group.receivedCount / group.totalCount) * 100) : 0;
   }
 
   getStatusIcon(status: string): string {
