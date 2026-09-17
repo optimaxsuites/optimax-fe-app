@@ -483,14 +483,6 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // EXPORT
-  // ============================================================
-
-  exportReport(): void {
-    console.log('Exporting restock approval report...');
-  }
-
-  // ============================================================
   // UI HELPERS
   // ============================================================
 

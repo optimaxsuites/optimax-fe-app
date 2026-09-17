@@ -186,6 +186,10 @@
                                         </span>
                                     </div>
                                     <div class="ql-movement-meta">
+                                        <span class="ql-movement-requester">
+                                            <i class="fas fa-user"></i>
+                                            {{ movement.createdByName || 'Unknown' }}
+                                        </span>
                                         <span class="ql-movement-date">{{ getTimeAgo(movement.createdAt) }}</span>
                                         <span class="ql-movement-priority" [style.color]="getPriorityColor(movement)">
                                             <i class="fas" [class]="getPriorityIcon(movement)"></i>

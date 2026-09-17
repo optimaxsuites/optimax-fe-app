@@ -2651,7 +2651,15 @@ export class InventoryService {
   /** POST /inventory/movements — falls back to a local-only record if the API is unavailable. */
   createMovement(movement: Partial<StockMovement>): Observable<StockMovement> {
     this.loadingSubject.next(true);
-    const payload = this.stockMovementToApiPayload({ status: MovementStatus.PENDING, ...movement });
+    // Fallback only — callers (e.g. TransferWizardComponent) pass the real signed-in user
+    // explicitly, but default to the session's own values here too rather than leaving
+    // Movement Approvals showing "Requested By: Unknown" for anything that doesn't.
+    const payload = this.stockMovementToApiPayload({
+      status: MovementStatus.PENDING,
+      createdBy: sessionStorage.getItem('userid') || undefined,
+      createdByName: sessionStorage.getItem('fullname') || undefined,
+      ...movement
+    });
 
     return this.http.post<any>(`${this.baseUrl}/inventory/movements`, payload).pipe(
       map(raw => this.stockMovementFromApi(raw)),
@@ -2669,7 +2677,9 @@ export class InventoryService {
           ...(movement as StockMovement),
           id: Date.now(),
           createdAt: new Date(),
-          status: MovementStatus.PENDING
+          status: MovementStatus.PENDING,
+          createdBy: movement.createdBy || sessionStorage.getItem('userid') || '',
+          createdByName: movement.createdByName || sessionStorage.getItem('fullname') || ''
         };
         movements.push(newMovement);
         localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));

@@ -255,14 +255,6 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
     this.router.navigateByUrl('/admin/sales/commerce/inventory');
   }
 
-  createStockCount(): void {
-    const queryParams: any = {};
-    if (this.selectedBranchId) {
-      queryParams.branchId = this.selectedBranchId;
-    }
-    this.router.navigate(['/admin/sales/commerce/inventory/movements/adjustment'], { queryParams });
-  }
-
   navigateToProduct(productId: string): void {
     this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
   }

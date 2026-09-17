@@ -53,9 +53,6 @@
             <button class="ql-sidebar-action" (click)="viewBranch()" *ngIf="branchId">
                 <i class="fas fa-store"></i> View Branch
             </button>
-            <button class="ql-sidebar-action" (click)="exportReport()" *ngIf="prediction">
-                <i class="fas fa-file-export"></i> Export Report
-            </button>
         </div>
 
     </aside>
@@ -168,9 +165,6 @@
                             [disabled]="isPredicting">
                             <i class="fas fa-sync-alt" [class.ql-spinning]="isPredicting"></i>
                             {{ isPredicting ? 'Calculating...' : 'Recalculate' }}
-                        </button>
-                        <button type="button" class="ql-btn ql-btn--primary" (click)="exportReport()">
-                            <i class="fas fa-file-export"></i> Export
                         </button>
                     </div>
                 </div>
@@ -467,45 +461,6 @@
             </ng-container>
 
         </ng-container>
-
-        <!-- ============================================================
-        EXPORT MODAL
-        ============================================================ -->
-        <div class="ql-modal-backdrop" *ngIf="showExportModal"
-            (click)="$event.target === $event.currentTarget && closeExportModal()">
-            <div class="ql-modal ql-modal--small">
-                <div class="ql-modal-header">
-                    <h3><i class="fas fa-file-export"></i> Export Report</h3>
-                    <button class="ql-modal-close" (click)="closeExportModal()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="ql-modal-body">
-                    <p>Export sell likelihood report for <strong>{{ prediction?.productName }}</strong> at <strong>{{
-                            prediction?.branchName }}</strong></p>
-                    <div class="ql-export-options">
-                        <label class="ql-export-option">
-                            <input type="radio" name="format" value="pdf" checked>
-                            <span>PDF Report</span>
-                        </label>
-                        <label class="ql-export-option">
-                            <input type="radio" name="format" value="excel">
-                            <span>Excel Spreadsheet</span>
-                        </label>
-                        <label class="ql-export-option">
-                            <input type="radio" name="format" value="csv">
-                            <span>CSV Data</span>
-                        </label>
-                    </div>
-                </div>
-                <div class="ql-modal-footer">
-                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeExportModal()">Cancel</button>
-                    <button type="button" class="ql-btn ql-btn--primary" (click)="confirmExport()">
-                        <i class="fas fa-download"></i> Export
-                    </button>
-                </div>
-            </div>
-        </div>
 
     </main>
 </div>
