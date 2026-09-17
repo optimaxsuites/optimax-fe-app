@@ -208,9 +208,9 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
   // getBranchInventory() only returns products that already have a stock record at this
   // branch, so any product created after that record never existed (e.g. anything added in
   // Product Management, which never creates a branch-inventory row) was invisible here with
-  // no way to set a threshold for it. Fill in a zero-quantity/zero-threshold placeholder row
-  // for every catalog product missing from the branch's inventory — editing one for the first
-  // time creates its real record via saveBranchInventoryItem() in saveEdit() below.
+  // no way to set a threshold for it. Fill in a placeholder row for every catalog product
+  // missing from the branch's inventory — editing one for the first time creates its real
+  // record via saveBranchInventoryItem() in saveEdit() below.
   private mergeProductsIntoInventory(): void {
     if (!this.selectedBranch || this.products.length === 0) return;
     const branchId = String(this.selectedBranch.id);
@@ -226,7 +226,10 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
         productId: String(p.id),
         productName: p.name,
         sku: p.sku,
-        quantity: 0,
+        // Product Management's stockQuantity is the only stock figure this product has
+        // anywhere until a real per-branch record exists — showing 0 here instead
+        // contradicted what the user had just seen on the product's own page.
+        quantity: p.stockQuantity || 0,
         reorderPoint: 0,
         reorderQuantity: 0,
         safetyStock: 0,

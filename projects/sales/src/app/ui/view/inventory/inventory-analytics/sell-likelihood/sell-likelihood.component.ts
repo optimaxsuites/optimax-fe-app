@@ -79,7 +79,6 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   // UI
   Math = Math;
   activeTab: 'overview' | 'factors' | 'recommendations' | 'history' = 'overview';
-  showExportModal: boolean = false;
 
   // Form
   predictionForm: FormGroup;
@@ -368,23 +367,6 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
     if (this.branchId) {
       this.router.navigate(['/admin/sales/commerce/inventory/branches', this.branchId]);
     }
-  }
-
-  // ============================================================
-  // EXPORT
-  // ============================================================
-
-  exportReport(): void {
-    this.showExportModal = true;
-  }
-
-  closeExportModal(): void {
-    this.showExportModal = false;
-  }
-
-  confirmExport(): void {
-    console.log('Exporting prediction report...');
-    this.closeExportModal();
   }
 
   // ============================================================

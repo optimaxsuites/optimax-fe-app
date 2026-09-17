@@ -638,22 +638,31 @@
                 </div>
                 <div class="ql-modal-body">
                     <p>Export <strong>{{ reportData?.config?.name }}</strong> as {{ exportFormat }}</p>
+                    <!-- A native <input type="radio"> here never toggled on click — neither a
+                         real mouse click, Playwright's own page.check(), nor a raw native
+                         .click() call changed its checked state, in this environment. Rather
+                         than depend on native radio semantics at all, this is a plain clickable
+                         option list (same approach as the PDF/Email/Both picker in the sales-hub
+                         quote/invoice forms), selection tracked entirely in exportFormat. -->
                     <div class="ql-export-options">
-                        <label class="ql-export-option">
-                            <input type="radio" name="format" value="PDF"
-                                [checked]="exportFormat === 'PDF'" (change)="selectExportFormat('PDF')">
+                        <div class="ql-export-option" [class.ql-export-option--selected]="exportFormat === 'PDF'"
+                            (click)="selectExportFormat('PDF')">
+                            <i class="fas" [class.fa-circle]="exportFormat !== 'PDF'"
+                                [class.fa-dot-circle]="exportFormat === 'PDF'"></i>
                             <span>PDF Report</span>
-                        </label>
-                        <label class="ql-export-option">
-                            <input type="radio" name="format" value="EXCEL"
-                                [checked]="exportFormat === 'EXCEL'" (change)="selectExportFormat('EXCEL')">
+                        </div>
+                        <div class="ql-export-option" [class.ql-export-option--selected]="exportFormat === 'EXCEL'"
+                            (click)="selectExportFormat('EXCEL')">
+                            <i class="fas" [class.fa-circle]="exportFormat !== 'EXCEL'"
+                                [class.fa-dot-circle]="exportFormat === 'EXCEL'"></i>
                             <span>Excel Spreadsheet</span>
-                        </label>
-                        <label class="ql-export-option">
-                            <input type="radio" name="format" value="CSV"
-                                [checked]="exportFormat === 'CSV'" (change)="selectExportFormat('CSV')">
+                        </div>
+                        <div class="ql-export-option" [class.ql-export-option--selected]="exportFormat === 'CSV'"
+                            (click)="selectExportFormat('CSV')">
+                            <i class="fas" [class.fa-circle]="exportFormat !== 'CSV'"
+                                [class.fa-dot-circle]="exportFormat === 'CSV'"></i>
                             <span>CSV Data</span>
-                        </label>
+                        </div>
                     </div>
                 </div>
                 <div class="ql-modal-footer">

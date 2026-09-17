@@ -53,7 +53,6 @@ export class ProductAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
   Math = Math;
   activeTab: 'overview' | 'sales' | 'inventory' | 'trends' = 'overview';
   dateRange: 'week' | 'month' | 'quarter' | 'year' = 'month';
-  showExportModal: boolean = false;
 
   // Computed
   totalStock: number = 0;
@@ -236,24 +235,6 @@ export class ProductAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
     if (this.product) {
       this.router.navigate(['/admin/sales/commerce/inventory/products', this.product.id]);
     }
-  }
-
-  // ============================================================
-  // EXPORT
-  // ============================================================
-
-  exportReport(): void {
-    this.showExportModal = true;
-  }
-
-  closeExportModal(): void {
-    this.showExportModal = false;
-  }
-
-  confirmExport(): void {
-    // In real implementation, this would generate and download a report
-    console.log('Exporting report...');
-    this.closeExportModal();
   }
 
   // ============================================================
