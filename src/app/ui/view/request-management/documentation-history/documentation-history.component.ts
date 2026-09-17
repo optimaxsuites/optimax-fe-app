@@ -26,6 +26,15 @@ export class DocumentationHistoryComponent implements OnInit {
   lpoDoc: any = null;
   invoiceDoc: any = null;
 
+  // Add these properties
+  Math = Math;
+  searchTerm = '';
+  filterStatus: string = 'ALL';
+  currentPage = 0;
+  pageSize = 10;
+  totalPages = 0;
+  filteredRequests: ProcurementRequest[] = [];
+
   constructor(
     private procurementService: ProcurementRequestService,
     private quotationService: QuotationManagementService,
@@ -199,4 +208,67 @@ export class DocumentationHistoryComponent implements OnInit {
       day: 'numeric'
     });
   }
+
+  // Add getter for filtered requests
+get filteredRequestsList(): ProcurementRequest[] {
+  let list = [...this.requests];
+  if (this.filterStatus !== 'ALL') {
+    list = list.filter(r => r.status === this.filterStatus);
+  }
+  if (this.searchTerm.trim()) {
+    const q = this.searchTerm.toLowerCase();
+    list = list.filter(r =>
+      r.title?.toLowerCase().includes(q) ||
+      String(r.id).includes(q)
+    );
+  }
+  return list;
+}
+
+// Add methods
+getStatusCount(status: string): number {
+  return this.requests.filter(r => r.status === status).length;
+}
+
+applyFilters(): void {
+  this.currentPage = 0;
+  this.updatePagination();
+}
+
+resetFilters(): void {
+  this.searchTerm = '';
+  this.filterStatus = 'ALL';
+  this.applyFilters();
+}
+
+updatePagination(): void {
+  const list = this.filteredRequestsList;
+  this.filteredRequests = list;
+  this.totalPages = Math.ceil(list.length / this.pageSize);
+  const start = this.currentPage * this.pageSize;
+  this.filteredRequests = list.slice(start, start + this.pageSize);
+}
+
+onPageChange(page: number): void {
+  this.currentPage = page;
+  this.updatePagination();
+}
+
+onPageSizeChange(size: number): void {
+  this.pageSize = size;
+  this.currentPage = 0;
+  this.updatePagination();
+}
+
+getPageNumbers(): number[] {
+  const maxVisible = 5;
+  let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
+  let end = Math.min(this.totalPages, start + maxVisible);
+
+  if (end - start < maxVisible) {
+    start = Math.max(0, end - maxVisible);
+  }
+
+  return Array.from({ length: end - start }, (_, i) => start + i);
+}
 }
