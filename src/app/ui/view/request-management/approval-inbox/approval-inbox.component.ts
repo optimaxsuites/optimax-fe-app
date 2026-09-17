@@ -295,4 +295,16 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
     }
     return { roleCode, roleId };
   }
+
+  // Add this method
+getTypeCount(type: string): number {
+  return this.requests.filter(r => r.procurementType === type).length;
+}
+
+// Add resetFilters method
+resetFilters(): void {
+  this.searchTerm = '';
+  this.filterType = 'ALL';
+  this.applyFilters();
+}
 }
