@@ -1,30 +1,42 @@
 /**
- * Admin "today" dashboard endpoints — PDF has AttendanceSummaryDTO but no endpoint spec.
- * GET /attendance-records/stats/today, GET /attendance-records/late/today,
- * GET /attendance-records/absent/today, POST /attendance-records/mark
+ * Admin "today" dashboard endpoints.
+ * GET /x/api/v2/hr/attendance/stats/today, GET /x/api/v2/hr/attendance/late/today,
+ * GET /x/api/v2/hr/attendance/absent/today, POST /x/api/v2/hr/attendance/mark
  */
+export interface DepartmentAttendanceDTO {
+  departmentId: number;
+  departmentName: string;
+  presentCount: number;
+  absentCount: number;
+  totalEmployees: number;
+  attendancePercentage: number;
+}
+
 export interface AttendanceSummaryDTO {
-  presentCount: number; // PDF field name — do NOT read as `present`
-  absentCount: number; // PDF field name — do NOT read as `absent`
-  lateCount: number; // PDF field name — do NOT read as `late`
-  onLeaveCount?: number;
-  totalCount?: number;
+  present: number;
+  absent: number;
+  late: number;
+  onLeave: number;
+  total: number;
+  departmentBreakdown?: DepartmentAttendanceDTO[];
 }
 
 export interface LateArrivalDTO {
-  employeeId: string;
+  id: number;
   employeeName: string;
   checkIn: string;
-  lateMinutes?: number;
+  department: string;
+  lateMinutes: number;
 }
 
 export interface AbsentEmployeeDTO {
   employeeId: string;
   employeeName: string;
-  department?: string;
+  department: string;
 }
 
 export interface MarkAttendanceResponseDTO {
   success: boolean;
-  message?: string;
+  message: string;
+  count: number;
 }

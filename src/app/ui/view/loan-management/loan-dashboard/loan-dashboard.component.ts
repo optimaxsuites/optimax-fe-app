@@ -60,7 +60,7 @@ type LoanLifecycleStage = {
 const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
   { status: 'PENDING', fieldLabel: 'Applied On' },
   { status: 'APPROVED', fieldLabel: 'Approved On' },
-  { status: 'READY_FOR_DISBURSEMENT', fieldLabel: 'Ready for Disbursement On' },
+  { status: 'READY_FOR_DISBURSEMENT', fieldLabel: 'Disbursable On' },
   { status: 'ACTIVE', fieldLabel: 'Disbursed On' },
   { status: 'SKIPPED', fieldLabel: 'Skipped On' },
   { status: 'OVERDUE', fieldLabel: 'Overdue On' },
@@ -76,7 +76,7 @@ const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
   encapsulation: ViewEncapsulation.None
 })
 export class LoanDashboardComponent implements OnInit, OnDestroy {
-  readonly recentLoanLimit = 5;
+  readonly recentLoanLimit = 9;
   readonly dashboardTableRowsPerPage = 10;
   private hasInitializedLoanSubscription = false;
   isLoading = false;
@@ -397,7 +397,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     ).length;
     
     this.dashboardStats.totalBalance = this.allLoans
-      .filter((loan) => ['ACTIVE', 'OVERDUE', 'PAUSED'].includes(loan.status))
+      .filter((loan) => loan.status === 'ACTIVE')
       .reduce((total, loan) => total + resolveLoanOutstandingExposure(loan), 0);
   }
 
@@ -572,6 +572,9 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
 
   getStatusDisplay(status: LoanApplication['status'] | undefined): string {
     if (!status) return '';
+    if (status === 'READY_FOR_DISBURSEMENT') {
+      return 'Disbursable';
+    }
     return String(status)
       .toLowerCase()
       .replace(/_/g, ' ')

@@ -101,6 +101,10 @@
               <span class="row-label">Total Repayable</span>
               <span class="row-value money">{{ formatCurrency(getTotalRepayableAmount()) }}</span>
             </div>
+            <div class="info-row" *ngIf="loan.approvedBy">
+              <span class="row-label">Approved By</span>
+              <span class="row-value">{{ getApprovedByName() }}</span>
+            </div>
             <div class="info-row" *ngIf="hasBeenDisbursed()">
               <span class="row-label">Current Balance</span>
               <span class="row-value money warning">{{ formatCurrency(loan.currentBalance) }}</span>

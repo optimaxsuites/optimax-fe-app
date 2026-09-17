@@ -778,7 +778,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
       case 'APPROVED':
         return 'Approved';
       case 'READY_FOR_DISBURSEMENT':
-        return 'Ready For Disbursement';
+        return 'Disbursable';
       case 'ACTIVE':
         return 'Active';
       case 'SKIPPED':
@@ -1100,7 +1100,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   get statusDisplayLabel(): string {
-    return String(this.loan?.status || '').replace(/_/g, ' ');
+    return this.getStatusLabel(this.loan?.status || '');
   }
 
   private seedPaymentDefaults(): void {

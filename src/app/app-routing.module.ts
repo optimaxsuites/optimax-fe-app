@@ -488,6 +488,10 @@ const routes: Routes = [
     component: HrAnalyticsDashboardComponent,
   },
   {
+    path: 'work-schedule/:uuid',
+    component: SchedulingComponent,
+  },
+  {
     path: 'overtime/:uuid',
     component: OvertimeManagementComponent,
   },
@@ -557,7 +561,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule],
 })
 export class AppHrRoutingModule {}

@@ -112,8 +112,4 @@ QuestionItemDTO {
     requestDate: string; 
     criteria?: QuestionDTO;
     totalScore?: number | null;
-<<<<<<< HEAD
   }
-=======
-  }
->>>>>>> 234142a4416011f732b4f2547cb8de4405873e1f

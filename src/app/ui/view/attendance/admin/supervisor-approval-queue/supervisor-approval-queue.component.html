@@ -44,7 +44,7 @@
            (click)="selectRequest(request)">
         <div class="request-header">
           <div class="employee-info">
-            <strong>{{ request.employeeName }}</strong>
+            <strong>{{ request.employeeId?.firstName }} {{ request.employeeId?.lastName }}</strong>
             <span class="time-ago">{{ request.requestDate }}</span>
           </div>
           <span class="approval-type badge bg-warning">
@@ -75,11 +75,11 @@
         <h5>Employee Information</h5>
         <div class="detail-item">
           <span class="label">Name:</span>
-          <span class="value">{{ selectedRequest.employeeName }}</span>
+          <span class="value">{{ selectedRequest.employeeId?.firstName }} {{ selectedRequest.employeeId?.lastName }}</span>
         </div>
         <div class="detail-item">
           <span class="label">Employee ID:</span>
-          <span class="value">{{ selectedRequest.employeeId }}</span>
+          <span class="value">{{ selectedRequest.employeeId?.id }}</span>
         </div>
       </div>
 

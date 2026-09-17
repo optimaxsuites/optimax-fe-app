@@ -2,6 +2,11 @@ import { Component, OnInit, OnDestroy, inject, ViewChild } from '@angular/core';
 import { AttendashboardService } from '../../../../service/attendance/attendashboard.service';
 import { AttendanceTableRecord } from '../../../../domain/attendance/attendancetable.dto';
 import { CorrectionRequest } from '../../../../domain/attendance/correctionrequest.dto';
+import {
+  AttendanceSummaryDTO,
+  LateArrivalDTO,
+  AbsentEmployeeDTO
+} from '../../../../domain/attendance/attendance-summary.dto';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
 import { AdminCorrectionApprovalService } from '../../../../service/attendance/admin-correction-approval.service';
 import { interval, Subject } from 'rxjs';
@@ -19,18 +24,18 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
   private correctionRequestService = inject(AdminCorrectionApprovalService);
   private destroy$ = new Subject<void>();
 
-  stats$ = this.attendashboardService.getTodayStats();
-  lateArrivals$ = this.attendashboardService.getLateArrivals();
-  statsData: any;
-  lateArrivalsData: any[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
   attendance: AttendanceTableRecord[] = [];
   currentFilters: any = {};
 
-  // Summary cards data
-  presentCount = 0;
-  lateCount = 0;
-  absentCount = 0;
+  // Live dashboard data (from the attendance/* "today" endpoints)
+  todayStats: AttendanceSummaryDTO | null = null;
+  lateArrivals: LateArrivalDTO[] = [];
+  absentees: AbsentEmployeeDTO[] = [];
+
+  markingAttendance = false;
+  markAttendanceMessage: string | null = null;
+
   pendingCorrectionsCount = 0;
   pendingCorrectionRequests: CorrectionRequest[] = [];
   pendingApprovalsCount = 0;
@@ -46,53 +51,25 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
     this.calculateDashboardData();
   }
 
-  calculateDashboardData() {const data = this.filteredAttendance;
+  calculateDashboardData() {
+    const data = this.filteredAttendance;
 
-  const total = data.length;
+    // Count pending items: modifications + correction requests
+    const pendingModifications = data.filter(r => r.overriddenBy).length;
+    const pendingCorrections = data.filter(r => r.correctionRequest?.status === 'PENDING').length;
+    this.pendingCorrectionsCount = pendingModifications + pendingCorrections;
 
-  const present = data.filter(r => r.status === 'PRESENT').length;
-  const absent = data.filter(r => r.status === 'ABSENT').length;
-  const late = data.filter(r => r.status === 'LATE').length;
-  const onLeave = data.filter(r => r.status === 'ON_LEAVE').length;
-
-  // Summary cards
-  this.presentCount = present;
-  this.lateCount = late;
-  this.absentCount = absent;
-
-  // Count pending items: modifications + correction requests
-  const pendingModifications = data.filter(r => r.overriddenBy).length;
-  const pendingCorrections = data.filter(r => r.correctionRequest?.status === 'PENDING').length;
-  this.pendingCorrectionsCount = pendingModifications + pendingCorrections;
-
-  // Count cross-branch and correction requests needing approval
-  const crossBranch = data.filter(r => r.isCrossBranchAttendance ||
-    (r.checkedInBranchId && r.homeBranchId && r.checkedInBranchId !== r.homeBranchId)).length;
-  const correctionReqs = data.filter(r => r.correctionRequest?.status === 'PENDING').length;
-  this.crossBranchCount = crossBranch;
-  this.correctionRequestsCount = correctionReqs;
-  this.pendingApprovalsCount = crossBranch + correctionReqs;
-
-  //stats - handle zero total to avoid NaN
-  const safeTotal = total > 0 ? total : 1;
-  this.statsData = {
-    present: ((present / safeTotal) * 100).toFixed(1),
-    absent: ((absent / safeTotal) * 100).toFixed(1),
-    late: ((late / safeTotal) * 100).toFixed(1),
-    onLeave: ((onLeave / safeTotal) * 100).toFixed(1)
-  };
-
- //latearrivals
-  this.lateArrivalsData = data
-    .filter(r => r.status === 'LATE')
-    .map(r => ({
-      id: r.id,
-      name: r.employee,
-      time: r.checkIn
-    }));
-}
+    // Count cross-branch and correction requests needing approval
+    const crossBranch = data.filter(r => r.isCrossBranchAttendance ||
+      (r.checkedInBranchId && r.homeBranchId && r.checkedInBranchId !== r.homeBranchId)).length;
+    const correctionReqs = data.filter(r => r.correctionRequest?.status === 'PENDING').length;
+    this.crossBranchCount = crossBranch;
+    this.correctionRequestsCount = correctionReqs;
+    this.pendingApprovalsCount = crossBranch + correctionReqs;
+  }
 
   ngOnInit(): void {
+    this.loadDashboardData();
     this.attendanceService.fetchAllRecords();
 
     this.attendanceService.attendance$
@@ -131,6 +108,7 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
       .subscribe({
         next: () => {
           this.attendanceService.fetchAllRecords();
+          this.loadDashboardData();
         },
         error: (err) => {
           console.error('Error in auto-refresh interval:', err);
@@ -138,6 +116,38 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
       });
   }
 
+  loadDashboardData(): void {
+    this.attendashboardService.getTodayStats()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(stats => this.todayStats = stats);
+
+    this.attendashboardService.getLateArrivals()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(lateArrivals => this.lateArrivals = lateArrivals);
+
+    this.attendashboardService.getAbsentees()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(absentees => this.absentees = absentees);
+  }
+
+  markAttendance(): void {
+    this.markingAttendance = true;
+    this.markAttendanceMessage = null;
+
+    this.attendashboardService.markAttendance()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(result => {
+        this.markingAttendance = false;
+        this.markAttendanceMessage = result
+          ? (result.message || `Marked ${result.count} record(s)`)
+          : 'Failed to mark attendance';
+
+        if (result?.success) {
+          this.loadDashboardData();
+          this.attendanceService.fetchAllRecords();
+        }
+      });
+  }
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -146,6 +156,7 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
 
   refreshData(): void {
     this.attendanceService.fetchAllRecords();
+    this.loadDashboardData();
   }
 
   filterByStatus(status: 'PRESENT' | 'LATE' | 'ABSENT'): void {

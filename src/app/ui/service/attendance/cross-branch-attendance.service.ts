@@ -1,36 +1,23 @@
-﻿import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { map, catchError, tap } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment.prod';
 import {
   CrossBranchCheckInRequest,
+  CreateCrossBranchRequestBody,
   CrossBranchApprovalRequest,
   CrossBranchAdminOverride,
-  AuditLogEntryDTO
+  PagedResponse
 } from '../../domain/attendance/cross-branch-request.dto';
-import { v4 as uuidv4 } from 'uuid';
 
-const API_ENDPOINTS = {
-  REQUESTS: () => `${environment.apiBaseUrl}/x/api/v2/hr/cross-branch-requests`,
-  REQUEST_APPROVE: (id: string) => `${environment.apiBaseUrl}/x/api/v2/hr/cross-branch-requests/${id}/approve`,
-  REQUEST_REJECT: (id: string) => `${environment.apiBaseUrl}/x/api/v2/hr/cross-branch-requests/${id}/reject`,
-  REQUEST_OVERRIDE: (id: string) => `${environment.apiBaseUrl}/x/api/v2/hr/cross-branch-requests/${id}/override`,
-  VALIDATE_PROXIMITY: (branchId: number) => `${environment.apiBaseUrl}/x/api/v2/hr/cross-branch-requests/validate-proximity/${branchId}`,
-  AUDIT_LOG: () => `${environment.apiBaseUrl}/x/api/v2/hr/audit-log/cross-branch`,
-  COMPLIANCE_REPORT: () => `${environment.apiBaseUrl}/x/api/v2/hr/cross-branch-reports`
-};
-
-let cachedIpAddress: string | null = null;
+const EMPTY_PAGE: PagedResponse<CrossBranchCheckInRequest> = { content: [], totalSize: 0, page: 0, size: 0 };
 
 @Injectable({ providedIn: 'root' })
 export class CrossBranchAttendanceService {
-  private readonly BASE = `${environment.apiBaseUrl}/x/api/v2/hr`;
+  private readonly BASE = `${environment.apiBaseUrl}/x/api/v2/hr/cross-branch-requests`;
   private requestsSubject = new BehaviorSubject<CrossBranchCheckInRequest[]>([]);
-  private auditLogSubject = new BehaviorSubject<AuditLogEntryDTO[]>([]);
-
   requests$ = this.requestsSubject.asObservable();
-  auditLog$ = this.auditLogSubject.asObservable();
 
   constructor(private http: HttpClient) {}
 
@@ -38,209 +25,127 @@ export class CrossBranchAttendanceService {
     return this.requestsSubject.value;
   }
 
-  /**
-   * ⚠️ NOTE: Manual employee requests removed (2026-08-31)
-   * Cross-branch requests are now AUTO-CREATED by backend when employee checks in at different branch
-   * Requests are flagged for supervisor/admin approval after the fact (RETROSPECTIVE only)
-   */
+  /** GET /cross-branch-requests */
+  getAllRequests(page?: number, size?: number): Observable<CrossBranchCheckInRequest[]> {
+    let params = new HttpParams();
+    if (page !== undefined) params = params.set('page', page);
+    if (size !== undefined) params = params.set('size', size);
 
+    return this.http.get<PagedResponse<CrossBranchCheckInRequest>>(this.BASE, { params }).pipe(
+      catchError(error => {
+        console.error('Failed to get cross-branch requests:', error);
+        return of(EMPTY_PAGE);
+      }),
+      map(res => res.content || []),
+      tap(requests => this.requestsSubject.next(requests))
+    );
+  }
+
+  /** GET /cross-branch-requests/{id} */
+  getRequest(id: number): Observable<CrossBranchCheckInRequest | null> {
+    return this.http.get<CrossBranchCheckInRequest>(`${this.BASE}/${id}`).pipe(
+      catchError(error => {
+        console.error(`Failed to get cross-branch request ${id}:`, error);
+        return of(null);
+      })
+    );
+  }
+
+  /** POST /cross-branch-requests */
+  createRequest(body: CreateCrossBranchRequestBody): Observable<CrossBranchCheckInRequest> {
+    return this.http.post<CrossBranchCheckInRequest>(this.BASE, body);
+  }
+
+  /** DELETE /cross-branch-requests/{id} */
+  deleteRequest(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.BASE}/${id}`);
+  }
+
+  /** GET /cross-branch-requests/employee/{employeeId} */
+  getRequestsByEmployee(employeeId: number): Observable<CrossBranchCheckInRequest[]> {
+    return this.http.get<PagedResponse<CrossBranchCheckInRequest>>(`${this.BASE}/employee/${employeeId}`).pipe(
+      catchError(error => {
+        console.error(`Failed to get cross-branch requests for employee ${employeeId}:`, error);
+        return of(EMPTY_PAGE);
+      }),
+      map(res => res.content || [])
+    );
+  }
+
+  /** GET /cross-branch-requests/pending */
+  getOutstandingRequests(supervisorId?: number): Observable<CrossBranchCheckInRequest[]> {
+    return this.http.get<PagedResponse<CrossBranchCheckInRequest>>(`${this.BASE}/pending`).pipe(
+      catchError(error => {
+        console.error('Failed to get pending cross-branch requests:', error);
+        return of(EMPTY_PAGE);
+      }),
+      map(res => res.content || []),
+      tap(requests => this.requestsSubject.next(requests))
+    );
+  }
+
+  /** PUT /cross-branch-requests/{id}/approve */
   approveCrossBranchRequest(
-    requestId: string,
+    id: number,
     supervisorId: number,
     supervisorName: string,
     note?: string
   ): Observable<CrossBranchCheckInRequest> {
-    const approvalRequest: CrossBranchApprovalRequest = {
-      requestId,
-      supervisorId,
-      action: 'APPROVE',
-      note,
-      ipAddress: cachedIpAddress || 'Unknown',
-      userAgent: navigator.userAgent
-    };
-
-    this.fetchIpAddressIfNeeded();
-
-    return this.http.put<CrossBranchCheckInRequest>(API_ENDPOINTS.REQUEST_APPROVE(requestId), approvalRequest).pipe(
-      tap(updatedRequest => {
-        const requests = this.requestsSubject.value.map(r => r.id === requestId ? updatedRequest : r);
-        this.requestsSubject.next(requests);
-
-        const auditEntry: AuditLogEntryDTO = {
-          id: uuidv4(),
-          actor: { id: supervisorId, name: supervisorName, role: 'SUPERVISOR' },
-          action: 'APPROVED',
-          timestamp: new Date(),
-          details: `Supervisor approved cross-branch check-in request. Note: ${note || 'None'}`,
-          ipAddress: cachedIpAddress || 'Unknown',
-          userAgent: navigator.userAgent
-        };
-        this.addAuditLogEntry(auditEntry);
-      }),
-      catchError(err => { throw err; })
-    );
+    return this.putApproval(id, { supervisorId, action: 'APPROVE', note });
   }
 
+  /** PUT /cross-branch-requests/{id}/approve */
   rejectCrossBranchRequest(
-    requestId: string,
+    id: number,
     supervisorId: number,
     supervisorName: string,
     reason: string
   ): Observable<CrossBranchCheckInRequest> {
-    const rejectionRequest: CrossBranchApprovalRequest = {
-      requestId,
-      supervisorId,
-      action: 'REJECT',
-      note: reason,
-      ipAddress: cachedIpAddress || 'Unknown',
-      userAgent: navigator.userAgent
-    };
+    return this.putApproval(id, { supervisorId, action: 'REJECT', note: reason });
+  }
 
-    this.fetchIpAddressIfNeeded();
-
-    return this.http.put<CrossBranchCheckInRequest>(API_ENDPOINTS.REQUEST_REJECT(requestId), rejectionRequest).pipe(
-      tap(updatedRequest => {
-        const requests = this.requestsSubject.value.map(r => r.id === requestId ? updatedRequest : r);
-        this.requestsSubject.next(requests);
-
-        const auditEntry: AuditLogEntryDTO = {
-          id: uuidv4(),
-          actor: { id: supervisorId, name: supervisorName, role: 'SUPERVISOR' },
-          action: 'REJECTED',
-          timestamp: new Date(),
-          details: `Supervisor rejected cross-branch check-in request. Reason: ${reason}`,
-          ipAddress: cachedIpAddress || 'Unknown',
-          userAgent: navigator.userAgent
-        };
-        this.addAuditLogEntry(auditEntry);
-      }),
+  /** PUT /cross-branch-requests/{id}/override — supervisor-initiated override (same body shape as approve) */
+  performSupervisorOverride(
+    id: number,
+    supervisorId: number,
+    action: 'APPROVE' | 'REJECT',
+    note?: string
+  ): Observable<CrossBranchCheckInRequest> {
+    const request: CrossBranchApprovalRequest = { supervisorId, action, note };
+    return this.http.put<CrossBranchCheckInRequest>(`${this.BASE}/${id}/override`, request).pipe(
+      tap(updated => this.applyUpdate(updated)),
       catchError(err => { throw err; })
     );
   }
 
-  getOutstandingRequests(supervisorId: number): Observable<CrossBranchCheckInRequest[]> {
-    const url = `${API_ENDPOINTS.REQUESTS()}?supervisorId=${supervisorId}&status=PENDING`;
-    return this.http.get<any>(url).pipe(
-      map(res => Array.isArray(res) ? res : (res?.requests ?? [])),
-      catchError(() => of([]))
-    );
-  }
-
-  getEmployeeAuditTrail(
-    employeeId: number,
-    startDate?: string,
-    endDate?: string
-  ): Observable<AuditLogEntryDTO[]> {
-    let url = `${API_ENDPOINTS.AUDIT_LOG()}?employeeId=${employeeId}`;
-    if (startDate) url += `&startDate=${startDate}`;
-    if (endDate) url += `&endDate=${endDate}`;
-
-    return this.http.get<any>(url).pipe(
-      map(res => Array.isArray(res) ? res : (res?.auditLog ?? [])),
-      tap(entries => this.auditLogSubject.next(entries)),
-      catchError(() => of([]))
-    );
-  }
-
+  /** POST /cross-branch-requests/{id}/override — admin override */
   performAdminOverride(
-    requestId: string,
+    id: number,
     adminId: number,
     adminName: string,
     action: string,
     reason: string
   ): Observable<CrossBranchCheckInRequest> {
-    const overrideRequest: CrossBranchAdminOverride = {
-      requestId,
-      adminId,
-      action,
-      reason,
-      ipAddress: cachedIpAddress || 'Unknown',
-      userAgent: navigator.userAgent
-    };
-
-    this.fetchIpAddressIfNeeded();
-
-    return this.http.post<CrossBranchCheckInRequest>(API_ENDPOINTS.REQUEST_OVERRIDE(requestId), overrideRequest).pipe(
-      tap(updatedRequest => {
-        const requests = this.requestsSubject.value.map(r => r.id === requestId ? updatedRequest : r);
-        this.requestsSubject.next(requests);
-
-        const auditEntry: AuditLogEntryDTO = {
-          id: uuidv4(),
-          actor: { id: adminId, name: adminName, role: 'ADMIN' },
-          action: 'OVERRIDDEN',
-          timestamp: new Date(),
-          details: `Admin override on cross-branch request. Action: ${action}. Reason: ${reason}`,
-          ipAddress: cachedIpAddress || 'Unknown',
-          userAgent: navigator.userAgent
-        };
-        this.addAuditLogEntry(auditEntry);
-      }),
+    const request: CrossBranchAdminOverride = { adminId, action, reason };
+    return this.http.post<CrossBranchCheckInRequest>(`${this.BASE}/${id}/override`, request).pipe(
+      tap(updated => this.applyUpdate(updated)),
       catchError(err => { throw err; })
     );
   }
 
-  validateBranchProximity(
-    employeeId: number,
-    targetBranchId: number,
-    lat: number,
-    lng: number,
-    maxDistanceKm: number = 10
-  ): Observable<{ isWithinRadius: boolean; distance: number }> {
-    const body = { lat, lng, maxDistanceKm };
-    return this.http.post<any>(API_ENDPOINTS.VALIDATE_PROXIMITY(targetBranchId), body).pipe(
-      catchError(() => of({ isWithinRadius: false, distance: 999999 }))
+  isApprovalRequired(homeBranchCode: string, requestedBranchCode: string): boolean {
+    return homeBranchCode !== requestedBranchCode;
+  }
+
+  private putApproval(id: number, request: CrossBranchApprovalRequest): Observable<CrossBranchCheckInRequest> {
+    return this.http.put<CrossBranchCheckInRequest>(`${this.BASE}/${id}/approve`, request).pipe(
+      tap(updated => this.applyUpdate(updated)),
+      catchError(err => { throw err; })
     );
   }
 
-  getRequestsByBranch(
-    branchId: number,
-    startDate?: string,
-    endDate?: string
-  ): Observable<CrossBranchCheckInRequest[]> {
-    let url = `${API_ENDPOINTS.REQUESTS()}?branchId=${branchId}`;
-    if (startDate) url += `&startDate=${startDate}`;
-    if (endDate) url += `&endDate=${endDate}`;
-
-    return this.http.get<any>(url).pipe(
-      map(res => Array.isArray(res) ? res : (res?.requests ?? [])),
-      catchError(() => of([]))
-    );
-  }
-
-  generateComplianceReport(startDate: string, endDate: string): Observable<any> {
-    const url = `${API_ENDPOINTS.COMPLIANCE_REPORT()}?startDate=${startDate}&endDate=${endDate}`;
-    return this.http.get<any>(url).pipe(
-      catchError(() => of({ summary: {}, details: [] }))
-    );
-  }
-
-  private addAuditLogEntry(entry: AuditLogEntryDTO): void {
-    const current = this.auditLogSubject.value;
-    this.auditLogSubject.next([...current, entry]);
-  }
-
-  private fetchIpAddressIfNeeded(): void {
-    if (!cachedIpAddress) {
-      fetch('https://api.ipify.org?format=json')
-        .then(res => res.json())
-        .then(data => { cachedIpAddress = data.ip || 'Unknown'; })
-        .catch(() => { cachedIpAddress = 'Unknown'; });
-    }
-  }
-
-  isApprovalRequired(homeBranchId: number, requestedBranchId: number): boolean {
-    return homeBranchId !== requestedBranchId;
-  }
-
-  getRequestStatus(requestId: string): Observable<string> {
-    return this.requests$
-      .pipe(
-        map(requests => {
-          const request = requests.find(r => r.id === requestId);
-          return request?.supervisorApprovalStatus || 'UNKNOWN';
-        })
-      );
+  private applyUpdate(updated: CrossBranchCheckInRequest): void {
+    const requests = this.requestsSubject.value.map(r => r.id === updated.id ? updated : r);
+    this.requestsSubject.next(requests);
   }
 }
-

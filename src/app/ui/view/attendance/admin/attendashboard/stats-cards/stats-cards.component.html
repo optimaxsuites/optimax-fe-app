@@ -1,54 +1,26 @@
+<div class="stats-grid" *ngIf="stats; else noData">
 
-
-<!--<p>stats-cards works!</p>-->
-<!--<div class="stats-grid" *ngIf="stats">
-  <div class="stat-card present">
+  <div class="stat-card present" [class.active]="activeCard === 'PRESENT'" (click)="statusClick.emit('PRESENT')">
     <h3>Present</h3>
     <p>{{ stats.present }}</p>
   </div>
 
-  <div class="stat-card absent">
+  <div class="stat-card absent" [class.active]="activeCard === 'ABSENT'" (click)="statusClick.emit('ABSENT')">
     <h3>Absent</h3>
     <p>{{ stats.absent }}</p>
   </div>
 
-  <div class="stat-card late">
+  <div class="stat-card late" [class.active]="activeCard === 'LATE'" (click)="statusClick.emit('LATE')">
     <h3>Late</h3>
     <p>{{ stats.late }}</p>
-  </div>
-</div>
-<div class="stats-grid" *ngIf="stats.length">
-
-  <div class="stat-card" *ngFor="let dept of stats">
-    <h3>{{ dept.department }}</h3>
-    <p>{{ dept.rate }}%</p>
-  </div>
-
-</div>-->
-
-<div class="stats-grid" *ngIf="stats; else noData">
-
-  <div class="stat-card present">
-    <h3>Present</h3>
-    <p>{{ stats.present }}%</p>
-  </div>
-
-  <div class="stat-card absent">
-    <h3>Absent</h3>
-    <p>{{ stats.absent }}%</p>
-  </div>
-
-  <div class="stat-card late">
-    <h3>Late</h3>
-    <p>{{ stats.late }}%</p>
   </div>
 
   <div class="stat-card leave">
     <h3>On Leave</h3>
-    <p>{{ stats.onLeave }}%</p>
+    <p>{{ stats.onLeave }}</p>
   </div>
 
-  <div class="stat-card pending-approvals" [class.has-pending]="pendingApprovals > 0">
+  <div class="stat-card pending-approvals" [class.has-pending]="pendingApprovals > 0" (click)="pendingApprovals > 0 && pendingClick.emit()">
     <h3>Pending Review</h3>
     <p>{{ pendingApprovals }}</p>
     <div class="approval-breakdown" *ngIf="pendingApprovals > 0">
@@ -62,8 +34,19 @@
   </div>
 
 </div>
+
+<div class="department-grid" *ngIf="stats?.departmentBreakdown?.length">
+  <div class="dept-card" *ngFor="let dept of stats?.departmentBreakdown">
+    <h4>{{ dept.departmentName }}</h4>
+    <p class="dept-rate">{{ dept.attendancePercentage }}%</p>
+    <div class="dept-detail">
+      <span>{{ dept.presentCount }} present</span>
+      <span>{{ dept.absentCount }} absent</span>
+      <span>of {{ dept.totalEmployees }}</span>
+    </div>
+  </div>
+</div>
+
 <ng-template #noData>
   <p>No data for selected period :P</p>
 </ng-template>
-
-

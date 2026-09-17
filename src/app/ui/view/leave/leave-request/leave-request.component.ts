@@ -139,26 +139,46 @@ export class LeaveRequestComponent implements OnInit {
         .pipe(catchError(() => of([]))),
     }).subscribe({
       next: (data) => {
-        this.allEmployees = data.employees || [];
-        this.allLeaveRequests = data.leaveRequests || [];
-        this.leaveBalances = data.leaveBalances || [];
-        this.leaveTypes = data.leaveTypes || [];
+        try {
+          const rawEmployees = data.employees;
+          this.allEmployees = Array.isArray(rawEmployees)
+            ? rawEmployees
+            : (rawEmployees?.data || rawEmployees?.content || []);
 
-        console.log('📊 Leave Requests:', this.allLeaveRequests);
-        console.log('👥 Employees:', this.allEmployees.length);
-        console.log('💰 Leave Balances:', this.leaveBalances.length);
+          const rawRequests: any = data.leaveRequests;
+          this.allLeaveRequests = Array.isArray(rawRequests)
+            ? rawRequests
+            : (rawRequests?.data || rawRequests?.content || []);
 
-        // Link each request to its employee
-        this.allLeaveRequests = this.allLeaveRequests.map((request) => {
-          const employee = this.findEmployeeForRequest(request);
-          return {
-            ...request,
-            _linkedEmployee: employee,
-          };
-        });
+          const rawBalances = data.leaveBalances;
+          this.leaveBalances = Array.isArray(rawBalances)
+            ? rawBalances
+            : (rawBalances?.data || rawBalances?.content || []);
 
-        this.buildDisplayData();
-        this.isLoading = false;
+          const rawTypes = data.leaveTypes;
+          this.leaveTypes = Array.isArray(rawTypes)
+            ? rawTypes
+            : (rawTypes?.data || rawTypes?.content || []);
+
+          console.log('👥 Employees:', this.allEmployees.length);
+          console.log('📋 Leave Requests:', this.allLeaveRequests.length);
+          console.log('💰 Leave Balances:', this.leaveBalances.length);
+
+          // Link each request to its employee
+          this.allLeaveRequests = this.allLeaveRequests.map((request) => {
+            const employee = this.findEmployeeForRequest(request);
+            return {
+              ...request,
+              _linkedEmployee: employee,
+            };
+          });
+
+          this.buildDisplayData();
+        } catch (e) {
+          console.error('❌ Error processing leave request data:', e);
+        } finally {
+          this.isLoading = false;
+        }
       },
       error: (err) => {
         console.error('❌ Failed to load data:', err);
@@ -174,20 +194,26 @@ export class LeaveRequestComponent implements OnInit {
   }
 
   findEmployeeForRequest(request: any): any | null {
-    const requestUserId = request.createdBy?.userId || request.createdBy?.id;
-
-    const employee = this.allEmployees.find((emp) => {
-      const empUserId = emp.user?.userId || emp.user?.id;
-      return empUserId === requestUserId;
-    });
-
-    if (!employee) {
-      console.warn(
-        `⚠️ Request #${request.id} has no matching employee (userId: ${requestUserId})`,
-      );
+    const requestUserId = request.createdBy?.userId || request.createdBy?.id || request.employeeId;
+    if (requestUserId != null) {
+      const byUserId = this.allEmployees.find((emp) => {
+        const empUserId = emp.user?.userId || emp.user?.id || emp.userId || emp.id;
+        return String(empUserId) === String(requestUserId);
+      });
+      if (byUserId) return byUserId;
     }
 
-    return employee || null;
+    // Fallback: match by name if userId is missing
+    const fullName = request.createdBy?.fullname || request.createdBy?.name;
+    if (fullName) {
+      const byName = this.allEmployees.find((emp) => {
+        const empName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+        return empName.toLowerCase() === fullName.toLowerCase();
+      });
+      if (byName) return byName;
+    }
+
+    return null;
   }
 
   // ==================== BUILD DISPLAY DATA ====================

@@ -96,7 +96,12 @@ export class CorrectionrequestComponent  implements OnInit{
 
   addRequest(request: CorrectionRequest) {
     // Add to employee's own list
-    this.correctionService.addRequest(request);
+    this.correctionService.addRequest(request).subscribe({
+      error: err => {
+        console.error('Failed to submit correction request:', err);
+        this.toastService.error('❌ Failed to submit correction request');
+      }
+    });
 
     // Also submit to admin dashboard in real-time
     const employeeName = sessionStorage.getItem('fullname') || 'Employee';
@@ -116,7 +121,7 @@ export class CorrectionrequestComponent  implements OnInit{
 
       const todayRecord = records.find(r =>
         r.employee?.toLowerCase().includes(employeeName.toLowerCase()) &&
-        r.date.toISOString().split('T')[0] === today
+        r.date?.toISOString().split('T')[0] === today
       );
 
       if (todayRecord) {
@@ -152,7 +157,9 @@ export class CorrectionrequestComponent  implements OnInit{
       return;
     }
 
-    this.correctionService.resubmitRequest(request.id, evidence);
+    this.correctionService.resubmitRequest(request.id, evidence).subscribe({
+      error: err => console.error('Failed to resubmit correction request:', err)
+    });
     this.resubmissionEvidence[request.id] = '';
   }
 
@@ -185,7 +192,9 @@ export class CorrectionrequestComponent  implements OnInit{
     }
 
     // Delete from employee's own list
-    this.correctionService.deleteRequest(request.id);
+    this.correctionService.deleteRequest(request.id).subscribe({
+      error: err => console.error('Failed to delete correction request:', err)
+    });
 
     // Also delete from admin dashboard
     // Find the record by employee name and date
@@ -196,7 +205,9 @@ export class CorrectionrequestComponent  implements OnInit{
         r.date === request.date
       );
       if (record && record.correctionRequest) {
-        this.adminCorrectionRequestService.deleteCorrectionRequest(record.id);
+        this.adminCorrectionRequestService.deleteCorrectionRequest(record.id).subscribe({
+          error: err => console.error('Failed to delete correction request from admin dashboard:', err)
+        });
       }
     });
 

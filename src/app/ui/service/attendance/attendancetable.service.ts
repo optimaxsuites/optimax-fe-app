@@ -1190,7 +1190,14 @@ export class AttendancetableService implements OnDestroy {
       this.attendanceScheduleResolverService.resolve(String(emp.id), now).subscribe(window => {
         workingWindow = window;
       });
-      if (!workingWindow || now < this.convertToDateTime(workingWindow.absentTime)) return;
+
+      // `resolve()` always emits synchronously (built on `of(...)`), so
+      // `workingWindow` is already set here — the `as` cast below just stops
+      // TS from (wrongly) narrowing the closure-assigned variable to `never`
+      // on the next line, since a plain re-assignment keeps the same
+      // control-flow-narrowed type.
+      const resolvedWindow = workingWindow as WorkingWindow | null;
+      if (!resolvedWindow || now < this.convertToDateTime(resolvedWindow.absentTime)) return;
 
       if (!recordExists) {
         const absentRecord = this.createNewRecord(emp.id, emp.name, emp.department, today);

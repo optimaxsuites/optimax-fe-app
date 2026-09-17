@@ -271,8 +271,8 @@ export class LeavePlanningDashboardComponent implements OnInit {
     const planUserId = plan.createdBy?.userId || plan.createdBy?.id;
 
     const employee = this.allEmployees.find((emp) => {
-      const empUserId = emp.user?.userId || emp.user?.id;
-      return empUserId === planUserId;
+      const empUserId = emp.user?.userId || emp.user?.id || emp.userId;
+      return String(empUserId) === String(planUserId);
     });
 
     if (!employee) {
