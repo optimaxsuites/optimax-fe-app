@@ -308,6 +308,19 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     if (formValue.dateFrom) filters.dateFrom = formValue.dateFrom;
     if (formValue.dateTo) filters.dateTo = formValue.dateTo;
 
+    // The Directory only shows vendors that have cleared the approval queue.
+    // Vendors still awaiting a decision live in the Vendor Global Registry
+    // (vendor-approval-queue) until an admin approves or rejects them.
+    if (!formValue.status) {
+      filters.statuses = [
+        VendorStatus.ACTIVE,
+        VendorStatus.CONDITIONAL,
+        VendorStatus.SUSPENDED,
+        VendorStatus.OFFBOARDED,
+        VendorStatus.INACTIVE
+      ];
+    }
+
     return filters;
   }
 
