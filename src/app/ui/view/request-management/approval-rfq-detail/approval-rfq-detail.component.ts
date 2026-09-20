@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
+import { MessageService } from 'primeng/api';
 import { ApprovalService } from '../../../service/approval-inbox/approval.service';
 import { WorkflowInstance } from '../../../domain/approval-inbox/approval-request.dto';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
@@ -28,7 +29,8 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private approvalService: ApprovalService,
-    private procurementService: ProcurementRequestService
+    private procurementService: ProcurementRequestService,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
@@ -57,11 +59,18 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
               .pipe(takeUntil(this.destroy$))
               .subscribe({
                 next: (inst) => { this.workflowInstance = inst; },
-                error: () => {}
+                error: (err) => {
+                  console.error('Failed to load approval workflow', err);
+                  this.messageService.add({ severity: 'warn', summary: 'Approval Workflow Unavailable', detail: 'Could not load the approval workflow for this request.' });
+                }
               });
           }
         },
-        error: () => { this.isLoading = false; }
+        error: (err) => {
+          console.error('Failed to load request', err);
+          this.isLoading = false;
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load this request. Please try again.' });
+        }
       });
   }
 
@@ -96,6 +105,7 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Failed to approve', err);
           this.isActioning = false;
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || err?.error?.detail || 'Could not approve. Please try again.' });
         }
       });
   }
@@ -115,7 +125,11 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
           this.isActioning = false;
           this.router.navigate(['/admin/sales/commerce/requests']);
         },
-        error: () => { this.isActioning = false; }
+        error: (err) => {
+          console.error('Failed to reject', err);
+          this.isActioning = false;
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || err?.error?.detail || 'Could not reject. Please try again.' });
+        }
       });
   }
 

@@ -39,7 +39,6 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
   procurementCategories: ProcurementCategory[] = [];
   isEditMode = false;
   requestId: string | null = null;
-  isLookingUp: { [key: number]: boolean } = {};
 
   // Custom Category and Unit Modal States
   showAddCategoryModal = false;
@@ -181,7 +180,6 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
                 name: item.name,
                 description: item.description,
                 categoryId: (item as any).categoryId || item.category?.categoryId || '',
-                partNumber: (item as any).partNumber || '',
                 quantity: item.quantity,
                 unit: item.unit,
                 estimatedBudget: item.estimatedBudget,
@@ -241,7 +239,6 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       name: ['', [Validators.required, Validators.minLength(3)]],
       description: ['', Validators.required],
       categoryId: ['', Validators.required],
-      partNumber: [''],
       quantity: [1, [Validators.required, Validators.min(1)]],
       unit: ['', Validators.required],
       estimatedBudget: [null, [Validators.required, Validators.min(0.01)]],
@@ -577,50 +574,6 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(size) / Math.log(k));
     return parseFloat((size / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  lookupProductByPartNumber(index: number): void {
-    const item = this.items.at(index);
-    const partNumber = item.get('partNumber')?.value;
-    if (!partNumber || !partNumber.trim()) {
-      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a part or serial number to look up.' });
-      return;
-    }
-
-    this.isLookingUp[index] = true;
-
-    this.salesService.getProducts({ sku: partNumber.trim(), page: 0, size: 1 }).subscribe({
-      next: (result) => {
-        this.isLookingUp[index] = false;
-        const product = result.data && result.data[0];
-        if (!product) {
-          this.messageService.add({ severity: 'info', summary: 'Notice', detail: `No product found for part number: "${partNumber}"` });
-          return;
-        }
-        const specs = (product as any).specifications || {};
-        item.patchValue({
-          name: product.name,
-          description: product.description,
-          unit: product.measurementUnit?.name || 'Pieces',
-          estimatedBudget: product.unitPrice || 0,
-          unitPrice: product.unitPrice || 0,
-          specifications: {
-            brand: specs.brand || '',
-            model: specs.model || product.code || '',
-            color: specs.color || '',
-            size: specs.size || '',
-            material: specs.material || '',
-            warranty: specs.warranty || ''
-          }
-        });
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product details successfully retrieved for: "${partNumber}"` });
-      },
-      error: (err) => {
-        this.isLookingUp[index] = false;
-        console.error('Error looking up product by part number:', err);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not retrieve product details. Please fill in the fields manually.' });
-      }
-    });
   }
 
   onCategoryChange(event: Event, index: number): void {
