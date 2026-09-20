@@ -97,10 +97,6 @@ export class RfqTemplateSelectorComponent implements OnInit {
   ) {
     this.templateForm = this.fb.group({
       templateId: ['', Validators.required],
-      includeHeader: [true],
-      includeItems: [true],
-      includeTerms: [true],
-      includeFooter: [true],
       customMessage: ['']
     });
   }
@@ -132,7 +128,7 @@ export class RfqTemplateSelectorComponent implements OnInit {
           const extReq = req as ExtendedProcurementRequest;
           if (extReq?.rfqTemplateId) {
             this.selectedTemplateId = extReq.rfqTemplateId;
-            this.templateForm.patchValue({ templateId: extReq.rfqTemplateId, customMessage: extReq.rfqTitle || '' });
+            this.templateForm.patchValue({ templateId: extReq.rfqTemplateId, customMessage: extReq.specialInstructions || '' });
           } else {
             this.selectDefaultTemplate();
           }
@@ -170,9 +166,14 @@ export class RfqTemplateSelectorComponent implements OnInit {
     const navigate = () => this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid, 'vendors']);
 
     if (uuid) {
+      // "Custom Message to Vendors" used to be saved as rfqTitle — the RFQ's actual displayed
+      // name (rendered as the "Product / Order" column and page heading on the quotations
+      // dashboard) — silently replacing it with whatever the user typed here. specialInstructions
+      // is the field already mapped to the vendor-visible clientInstructions shown in the vendor
+      // portal (see rfq-quotation-bridge.util.ts's mapRequestToRfq), so it's the correct target.
       this.procurementService.updateRequest(parseIdToNumber(uuid), {
         rfqTemplateId: this.selectedTemplateId,
-        rfqTitle: this.templateForm.get('customMessage')?.value || ''
+        specialInstructions: this.templateForm.get('customMessage')?.value || ''
       } as any).subscribe({
         next: navigate,
         error: (err) => {

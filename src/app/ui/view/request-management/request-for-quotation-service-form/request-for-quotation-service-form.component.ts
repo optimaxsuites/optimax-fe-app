@@ -212,7 +212,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
   }
 
   createItemForm(): FormGroup {
-    return this.fb.group({
+    const group = this.fb.group({
       id: [this.generateId()],
       name: ['', [Validators.required, Validators.minLength(3)]],
       description: ['', Validators.required],
@@ -231,6 +231,17 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       requiredQualifications: this.fb.array([]),
       attachments: this.fb.array([])
     });
+
+    // dateAfterValidator('serviceStartDate') only re-runs when serviceEndDate itself changes —
+    // Angular doesn't re-validate a control just because a sibling it depends on changed. Without
+    // this, setting a valid start/end pair and then moving the start date later left the form
+    // "valid" with an end date that's actually now before the start date, letting onNext()/
+    // saveDraft() submit it.
+    group.get('serviceStartDate')?.valueChanges.subscribe(() => {
+      group.get('serviceEndDate')?.updateValueAndValidity();
+    });
+
+    return group;
   }
 
   addItem(): void {
@@ -278,11 +289,38 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
     attachments.removeAt(attachmentIndex);
   }
 
+  /** The request's single currency — onNext()/saveDraft() save the first item's currency as `currency`. */
+  private get requestCurrency(): string {
+    return this.items.at(0)?.get('currency')?.value || 'NGN';
+  }
+
+  /**
+   * Persisted as the request's totalBudget, which is a single number in the single `requestCurrency`.
+   * Previously this added every item's raw amount regardless of currency (1,000 USD + 500,000 NGN
+   * showed up as 501,000), so only items in the request's currency are summed here; the on-screen
+   * summary (getBudgetSummary) shows every currency's subtotal separately.
+   */
   getTotalBudget(): number {
+    const currency = this.requestCurrency;
     return this.items.controls.reduce((total, item) => {
-      const budget = item.get('estimatedBudget')?.value || 0;
-      return total + budget;
+      if ((item.get('currency')?.value || 'NGN') !== currency) return total;
+      return total + (item.get('estimatedBudget')?.value || 0);
     }, 0);
+  }
+
+  getBudgetByCurrency(): { currency: string; total: number }[] {
+    const totals = new Map<string, number>();
+    this.items.controls.forEach(item => {
+      const currency = item.get('currency')?.value || 'NGN';
+      totals.set(currency, (totals.get(currency) || 0) + (item.get('estimatedBudget')?.value || 0));
+    });
+    return Array.from(totals, ([currency, total]) => ({ currency, total }));
+  }
+
+  getBudgetSummary(): string {
+    const parts = this.getBudgetByCurrency();
+    if (!parts.length) return this.formatCurrency(0, this.requestCurrency);
+    return parts.map(p => this.formatCurrency(p.total, p.currency)).join(' + ');
   }
 
   private generateId(): string {
@@ -303,8 +341,11 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       formValue.procurementType = 'SERVICE';
 
       if (formValue.items && Array.isArray(formValue.items)) {
+        // Attachments are still raw browser File objects plus session-only blob: URLs here,
+        // neither of which survives JSON serialization — dropped and uploaded separately via
+        // uploadPendingAttachments() once a server-assigned request id exists.
         formValue.items = formValue.items.map((it: any) => {
-          const { category, ...rest } = it;
+          const { category, attachments, ...rest } = it;
           return {
             ...rest,
             deliveryDeadline: it.deliveryDeadline ? new Date(it.deliveryDeadline).toISOString() : null
@@ -325,6 +366,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
           next: (req: any) => {
             const savedId = req?.id || this.requestId;
             this.requestId = String(savedId);
+            this.uploadPendingAttachments(String(savedId));
             this.router.navigate(['/admin/sales/commerce/requests/new/service', savedId, 'template']);
           },
           error: (err) => {
@@ -337,6 +379,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
             const savedId = req?.id;
             this.requestId = String(savedId);
             this.isEditMode = true;
+            this.uploadPendingAttachments(String(savedId));
             this.router.navigate(['/admin/sales/commerce/requests/new/service', savedId, 'template']);
           },
           error: (err) => {
@@ -358,7 +401,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
 
     if (formValue.items && Array.isArray(formValue.items)) {
       formValue.items = formValue.items.map((it: any) => {
-        const { category, ...rest } = it;
+        const { category, attachments, ...rest } = it;
         return {
           ...rest,
           deliveryDeadline: it.deliveryDeadline ? new Date(it.deliveryDeadline).toISOString() : null
@@ -379,8 +422,12 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
     }
 
     if (this.isEditMode && this.requestId) {
-      this.procurementRequestService.updateRequest(parseIdToNumber(this.requestId), formValue).subscribe({
-        next: () => { this.router.navigate(['/admin/sales/commerce/requests']); },
+      const requestId = this.requestId;
+      this.procurementRequestService.updateRequest(parseIdToNumber(requestId), formValue).subscribe({
+        next: () => {
+          this.uploadPendingAttachments(requestId);
+          this.router.navigate(['/admin/sales/commerce/requests']);
+        },
         error: (err) => {
           console.error('Failed to update request draft', err);
           this.router.navigate(['/admin/sales/commerce/requests']);
@@ -389,7 +436,11 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
     } else {
       this.procurementRequestService.createRequest({ ...formValue, status: 'DRAFT' }).subscribe({
         next: (req: any) => {
-          if (req?.id) { this.requestId = String(req.id); this.isEditMode = true; }
+          if (req?.id) {
+            this.requestId = String(req.id);
+            this.isEditMode = true;
+            this.uploadPendingAttachments(this.requestId);
+          }
           this.router.navigate(['/admin/sales/commerce/requests']);
         },
         error: (err) => {
@@ -398,6 +449,35 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
         }
       });
     }
+  }
+
+  /**
+   * Attachments picked via onFileUpload() only exist as an in-memory browser File plus a
+   * session-only blob: URL — neither survives JSON serialization, so they were previously
+   * dropped from the create/update payload entirely and never reached the backend (the file
+   * vanished on reload with only its name/size surviving in local state). Now that a real
+   * request id exists, actually persist each pending file via the dedicated attachment upload
+   * endpoint, and swap the local placeholder for the server-returned id/url.
+   */
+  private uploadPendingAttachments(requestId: string): void {
+    if (!requestId) return;
+    this.items.controls.forEach(itemGroup => {
+      const attachments = itemGroup.get('attachments') as FormArray;
+      attachments.controls.forEach(attachmentGroup => {
+        const file = attachmentGroup.get('file')?.value as File | null;
+        if (!file) return; // already uploaded (or loaded from a saved request) — nothing pending
+        this.procurementRequestService.uploadAttachment(requestId, file).subscribe({
+          next: (res) => {
+            attachmentGroup.patchValue({
+              id: res.attachmentId,
+              fileUrl: res.url,
+              file: null
+            });
+          },
+          error: (err) => console.error('Failed to upload attachment', file.name, err)
+        });
+      });
+    });
   }
 
   getFormValidationErrors(): any {
@@ -467,11 +547,10 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
     return '';
   }
 
-  formatCurrency(value: number): string {
-    const currency = this.serviceForm.get('currency')?.value || 'NGN';
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: currency 
+  formatCurrency(value: number, currency: string = this.requestCurrency): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency
     }).format(value || 0);
   }
 

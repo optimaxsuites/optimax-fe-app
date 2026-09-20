@@ -319,7 +319,8 @@ export class ProcurementRequestService {
           isRecommended: matches && matchScore >= 70,
           reason: matches && matchedCategory
             ? `Preferred match for ${matchedCategory} category · ${this.tierLabel(v.tier)} tier`
-            : `Approved ${this.tierLabel(v.tier)} tier vendor`
+            : `Approved ${this.tierLabel(v.tier)} tier vendor`,
+          tier: v.tier
         } as VendorSuggestion;
       })
       .sort((a, b) => b.matchScore - a.matchScore)

@@ -52,11 +52,17 @@ export class FinanceBridgeService {
    * Returns the journal entry reference for tracking.
    */
   postGrnToFinance(grn: GoodsReceivedNote, invoice: Partial<ProcurementInvoice>): Observable<FinanceBridgeResult> {
+    // Book only the value of goods actually accepted — grn.totalReceivedValue is
+    // quantity-received based and doesn't subtract rejected/damaged units (see
+    // delivery-tracking's computedReceivedValue), so using it here would recognize a
+    // Purchases/Accounts-Payable liability for stock that was rejected. Matches the same
+    // acceptedQuantity-based total used by payment-voucher and grn-detail's getLineTotal.
+    const acceptedValue = (grn.items || []).reduce((sum, item) => sum + (item.acceptedQuantity || 0) * (item.unitPrice || 0), 0);
     const entry: FinanceJournalEntry = {
       reference: `GRN-${grn.grnNumber}-${Date.now()}`,
       description: `Goods received for LPO ${grn.lpoNumber} from ${grn.vendorName}`,
       date: new Date().toISOString().split('T')[0],
-      amount: grn.totalReceivedValue,
+      amount: acceptedValue,
       currency: (invoice as any)?.currency ?? 'NGN',
       debitAccount: '5000',
       creditAccount: '2100',

@@ -104,7 +104,7 @@
     <div class="il-top-bar">
       <div class="il-top-bar-left">
         <h1 class="il-title">Documentation History</h1>
-        <span class="il-total-badge">{{ filteredRequests.length }} records</span>
+        <span class="il-total-badge">{{ totalFilteredCount }} records</span>
       </div>
       <div class="il-top-bar-right">
         <div class="il-page-size-wrap">
@@ -224,7 +224,7 @@
     <!-- Pagination -->
     <div class="il-pagination" *ngIf="filteredRequests.length > 0">
       <span>
-        Showing {{ (currentPage * pageSize) + 1 }}–{{ Math.min((currentPage + 1) * pageSize, filteredRequests.length) }} of {{ filteredRequests.length }}
+        Showing {{ (currentPage * pageSize) + 1 }}–{{ Math.min((currentPage + 1) * pageSize, totalFilteredCount) }} of {{ totalFilteredCount }}
       </span>
       <div class="il-page-btns">
         <button type="button" class="il-page-btn" [disabled]="currentPage === 0" (click)="onPageChange(currentPage - 1)">

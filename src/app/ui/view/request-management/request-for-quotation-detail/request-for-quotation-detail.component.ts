@@ -62,9 +62,11 @@ export class RequestForQuotationDetailComponent implements OnInit {
   loadVendorSuggestions(requestId: string): void {
     this.procurementService.getVendorSuggestions(parseIdToNumber(requestId)).subscribe({
       next: (suggestions) => {
-        if (this.request?.selectedVendors && this.request.selectedVendors.length > 0) {
-          this.vendors = suggestions.filter(v => 
-            this.request?.selectedVendors?.includes(v.vendorId)
+        // vendorsToNotify is the field vendor-selection actually persists the user's picks
+        // under (selectedVendors is never written anywhere) — see vendor-selection.component.ts.
+        if (this.request?.vendorsToNotify && this.request.vendorsToNotify.length > 0) {
+          this.vendors = suggestions.filter(v =>
+            this.request?.vendorsToNotify?.includes(v.vendorId)
           );
         } else {
           this.vendors = suggestions.slice(0, 3);

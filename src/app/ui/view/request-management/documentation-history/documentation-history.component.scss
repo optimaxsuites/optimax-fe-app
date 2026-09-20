@@ -456,6 +456,14 @@
     background: #fee2e2;
     color: #991b1b;
   }
+  &.status-draft {
+    background: #f1f5f9;
+    color: #475569;
+  }
+  &.status-approved {
+    background: #dbeafe;
+    color: #1e40af;
+  }
 }
 
 /* ============================================================

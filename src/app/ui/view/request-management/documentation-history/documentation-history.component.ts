@@ -34,6 +34,8 @@ export class DocumentationHistoryComponent implements OnInit {
   pageSize = 10;
   totalPages = 0;
   filteredRequests: ProcurementRequest[] = [];
+  /** Count of all filter-matching records, before pagination slices filteredRequests down to one page. */
+  totalFilteredCount = 0;
 
   constructor(
     private procurementService: ProcurementRequestService,
@@ -146,7 +148,13 @@ export class DocumentationHistoryComponent implements OnInit {
       'PAYMENT_CONFIRMED': 'status-payment-confirmed',
       'DELIVERY_IN_PROGRESS': 'status-delivering',
       'DELIVERED': 'status-delivered',
-      'CANCELLED': 'status-cancelled'
+      'CANCELLED': 'status-cancelled',
+      'DRAFT': 'status-draft',
+      'PENDING_APPROVAL': 'status-pending',
+      'APPROVED': 'status-approved',
+      'REJECTED': 'status-cancelled',
+      'PENDING_VENDOR_QUOTES': 'status-quoting',
+      'COMPLETED': 'status-delivered'
     };
     return classes[status] || 'status-pending';
   }
@@ -161,7 +169,13 @@ export class DocumentationHistoryComponent implements OnInit {
       'PAYMENT_CONFIRMED': 'Payment Confirmed',
       'DELIVERY_IN_PROGRESS': 'Delivery In Progress',
       'DELIVERED': 'Delivered',
-      'CANCELLED': 'Cancelled'
+      'CANCELLED': 'Cancelled',
+      'DRAFT': 'Draft',
+      'PENDING_APPROVAL': 'Pending Approval',
+      'APPROVED': 'Approved',
+      'REJECTED': 'Rejected',
+      'PENDING_VENDOR_QUOTES': 'Awaiting Vendor Quotes',
+      'COMPLETED': 'Completed'
     };
     return labels[status] || status;
   }
@@ -243,7 +257,7 @@ resetFilters(): void {
 
 updatePagination(): void {
   const list = this.filteredRequestsList;
-  this.filteredRequests = list;
+  this.totalFilteredCount = list.length;
   this.totalPages = Math.ceil(list.length / this.pageSize);
   const start = this.currentPage * this.pageSize;
   this.filteredRequests = list.slice(start, start + this.pageSize);

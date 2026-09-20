@@ -2,8 +2,8 @@
 
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, throwError, EMPTY } from 'rxjs';
+import { map, expand, reduce } from 'rxjs/operators';
 import {
   VendorQuotation,
   RFQWithQuotations,
@@ -44,10 +44,10 @@ export class QuotationManagementService {
     return this.http.get<VendorQuotation>(`${this.baseUrl}/vendor-quotations/${id}`);
   }
 
-  getAllQuotations(filters?: any): Observable<VendorQuotation[]> {
+  private fetchQuotationsPage(page: number, size: number, filters?: any): Observable<VendorQuotation[]> {
     let params = new HttpParams()
-      .set('page', String((filters?.page || 0) + 1))
-      .set('size', String(filters?.size || 50));
+      .set('page', String(page))
+      .set('size', String(size));
 
     if (filters?.rfqId) { params = params.set('rfqId', filters.rfqId); }
     if (filters?.vendorId) { params = params.set('vendorId', filters.vendorId); }
@@ -55,6 +55,28 @@ export class QuotationManagementService {
 
     return this.http.get<any>(`${this.baseUrl}/vendor-quotations/`, { params }).pipe(
       map(res => Array.isArray(res) ? res : (res?.data ?? res ?? []))
+    );
+  }
+
+  /**
+   * When the caller asks for a specific page (filters.page set), returns just that page —
+   * unchanged behavior. When no page is specified, the caller wants the complete dataset (e.g.
+   * the dashboard's client-side grouping/stats/filtering need every quotation), so this now
+   * auto-paginates through the backend's fixed page size and accumulates every record instead of
+   * silently returning only the first `size` (previously defaulted to 50) and undercounting
+   * everything past it with no indication anything was missing.
+   */
+  getAllQuotations(filters?: any): Observable<VendorQuotation[]> {
+    const size = filters?.size || 100;
+
+    if (filters?.page !== undefined) {
+      return this.fetchQuotationsPage(filters.page + 1, size, filters);
+    }
+
+    const MAX_PAGES = 50; // safety cap (5,000 records at size=100) against a runaway loop
+    return this.fetchQuotationsPage(1, size, filters).pipe(
+      expand((batch, i) => (batch.length === size && i + 1 < MAX_PAGES) ? this.fetchQuotationsPage(i + 2, size, filters) : EMPTY),
+      reduce((all, batch) => [...all, ...batch], [] as VendorQuotation[])
     );
   }
 
@@ -179,13 +201,6 @@ export class QuotationManagementService {
 
   // ── Status & history helpers ─────────────────────────────────────────────────
 
-  updateQuotationStatus(quotationId: string | number, status: VendorQuotationStatus): Observable<{ message: string }> {
-    return this.http.patch<{ message: string }>(
-      `${this.baseUrl}/vendor-quotations/${quotationId}/decline`,
-      { status }
-    );
-  }
-
   getQuotationHistory(quotationId: string | number): Observable<QuotationHistoryEntry[]> {
     return this.getQuotation(quotationId).pipe(
       map(q => q.history ?? [])
@@ -214,13 +229,6 @@ export class QuotationManagementService {
     // Vendor resubmission originates from the vendor portal; nothing to do here.
     return new Observable(observer => {
       observer.next({ message: 'Vendor resubmission must come from the vendor portal.' });
-      observer.complete();
-    });
-  }
-
-  cancelPendingQuotation(_rfqId: string, _vendorId: string): Observable<{ message: string }> {
-    return new Observable(observer => {
-      observer.next({ message: 'Use the decline endpoint to withdraw a pending quotation.' });
       observer.complete();
     });
   }

@@ -306,6 +306,10 @@ export interface VendorSuggestion {
   matchScore: number;
   isRecommended: boolean;
   reason: string;
+  /** The vendor's real tier (e.g. 'PREFERRED' | 'APPROVED' | 'CONDITIONAL') — use this for tier
+   *  filtering, not `reason`, which is free-text narrative that can contain other tier names too
+   *  (e.g. "Preferred match for X category · Approved tier" contains both words). */
+  tier: string;
 }
 
 

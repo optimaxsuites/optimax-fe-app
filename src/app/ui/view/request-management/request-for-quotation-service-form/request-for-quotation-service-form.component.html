@@ -385,7 +385,7 @@
           </div>
           <div class="summary-content">
             <span class="summary-label">Total Estimated Budget</span>
-            <span class="summary-value">{{ formatCurrency(getTotalBudget()) }}</span>
+            <span class="summary-value">{{ getBudgetSummary() }}</span>
           </div>
           <div class="budget-items-count">
             <span>{{ items.length }} service{{ items.length !== 1 ? 's' : '' }}</span>

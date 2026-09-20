@@ -27,7 +27,6 @@ export class VendorSelectionComponent implements OnInit {
   comparisonVendors: VendorSuggestion[] = [];
   showAiBanner = true;
   shakeVendorId: string | null = null;
-  vendorNotifCounts: Map<string, number> = new Map();
 
   get categories(): string[] {
     const allCategories = this.vendors.flatMap(v => v.categories);
@@ -55,8 +54,7 @@ export class VendorSelectionComponent implements OnInit {
     }
 
     if (this.filterTier !== 'ALL') {
-      const tier = this.filterTier;
-      filtered = filtered.filter(v => v.reason.toUpperCase().includes(tier));
+      filtered = filtered.filter(v => v.tier === this.filterTier);
     }
 
     return filtered;
@@ -86,13 +84,13 @@ export class VendorSelectionComponent implements OnInit {
           this.procurementService.getVendorSuggestions(parseIdToNumber(this.requestId)).subscribe({
             next: (suggestions) => {
               this.vendors = suggestions;
-              this.vendorNotifCounts.clear();
-              this.vendors.forEach(v => {
-                this.vendorNotifCounts.set(v.vendorId, Math.floor(Math.random() * 3));
-              });
               this.selectedVendors.clear();
-              if (extendedReq && extendedReq.selectedVendors && extendedReq.selectedVendors.length > 0) {
-                extendedReq.selectedVendors.forEach((vId: any) => this.selectedVendors.add(vId));
+              // onNext() below persists picks under vendorsToNotify (the real field on
+              // ProcurementRequest) — selectedVendors on ExtendedProcurementRequest is never
+              // written anywhere, so reading it here always missed a prior save and silently
+              // re-defaulted to the AI top-3, discarding the user's actual selection.
+              if (extendedReq && extendedReq.vendorsToNotify && extendedReq.vendorsToNotify.length > 0) {
+                extendedReq.vendorsToNotify.forEach((vId: any) => this.selectedVendors.add(vId));
               } else {
                 const recommended = this.vendors.filter(v => v.isRecommended).slice(0, 3);
                 recommended.forEach(v => this.selectedVendors.add(v.vendorId));
@@ -185,10 +183,6 @@ export class VendorSelectionComponent implements OnInit {
     if (score >= 75) return 'GOLD';
     if (score >= 60) return 'SILVER';
     return 'STANDARD';
-  }
-
-  getNotifCount(vendorId: string): number {
-    return this.vendorNotifCounts.get(vendorId) ?? 0;
   }
 
   getMatchColor(score: number): string {

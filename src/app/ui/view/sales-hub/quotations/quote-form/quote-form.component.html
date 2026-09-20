@@ -255,11 +255,11 @@
         </label>
       </div>
 
-      <div class="qf-doc-card" id="quote-preview-document">
+      <div class="qf-doc-card" id="quote-preview-document" [style.--p]="templateAccentColor">
         <!-- Doc header -->
         <div class="qf-doc-header">
           <div class="qf-doc-brand">
-            <img *ngIf="logoUrl" [src]="logoUrl" class="qf-doc-logo" alt="logo">
+            <img *ngIf="logoUrl && showSection('showCompanyLogo')" [src]="logoUrl" class="qf-doc-logo" alt="logo">
             <span class="qf-doc-company-name">{{ billedBy.name || billedByDraft.name || 'Your Company' }}</span>
             <span class="qf-doc-company-sub" *ngIf="billedBy.address || billedByDraft.address">{{ billedBy.address || billedByDraft.address }}</span>
           </div>
@@ -335,7 +335,7 @@
             <span>{{ charge.label }}</span>
             <span>{{ formatCurrency(charge.amount) }}</span>
           </div>
-          <div class="qf-doc-totals-row" *ngIf="totalTax > 0"><span>Tax</span><span>{{ formatCurrency(totalTax) }}</span></div>
+          <div class="qf-doc-totals-row" *ngIf="totalTax > 0 && showSection('showTaxBreakdown')"><span>Tax</span><span>{{ formatCurrency(totalTax) }}</span></div>
           <div class="qf-doc-totals-row qf-doc-totals-grand">
             <span>TOTAL ({{ quoteForm.get('currency')?.value }})</span>
             <span>{{ formatCurrency(grandTotal) }}</span>
@@ -343,7 +343,7 @@
         </div>
 
         <!-- Payment Details (company bank account) -->
-        <div class="qf-doc-section" *ngIf="billedBy.bankName || billedBy.accountNumber">
+        <div class="qf-doc-section" *ngIf="(billedBy.bankName || billedBy.accountNumber) && showSection('showPaymentTerms')">
           <div class="qf-doc-section-label">PAYMENT DETAILS</div>
           <div class="qf-doc-bank">
             <div class="qf-doc-bank-row" *ngIf="billedBy.bankName">
@@ -362,13 +362,13 @@
         </div>
 
         <!-- Notes preview -->
-        <div class="qf-doc-notes" *ngIf="quoteForm.get('notes')?.value">
+        <div class="qf-doc-notes" *ngIf="quoteForm.get('notes')?.value && showSection('showNotes')">
           <div class="qf-doc-section-label">NOTES</div>
           <p style="white-space:pre-line">{{ quoteForm.get('notes')?.value }}</p>
         </div>
 
         <!-- Terms & Conditions preview -->
-        <div class="qf-doc-notes" *ngIf="quoteForm.get('terms')?.value">
+        <div class="qf-doc-notes" *ngIf="quoteForm.get('terms')?.value && showSection('showTermsConditions')">
           <div class="qf-doc-section-label">TERMS &amp; CONDITIONS</div>
           <p style="white-space:pre-line">{{ quoteForm.get('terms')?.value }}</p>
         </div>

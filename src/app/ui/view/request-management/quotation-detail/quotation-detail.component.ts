@@ -191,22 +191,9 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
         this.loadQuotationDetail(); // Refresh
       },
       error: (err) => {
-        // Fallback mock update
         this.isProcessing = false;
-        this.closeAcceptModal();
-        this.successMessage = 'Quotation successfully accepted.';
-        
-        if (this.quotation) {
-          this.quotation.status = 'ACCEPTED';
-          this.allQuotationsForRfq.forEach(q => {
-            if (q.id !== this.quotation?.id && (q.status === 'SUBMITTED' || q.status === 'PENDING')) {
-              q.status = 'DECLINED';
-              q.declineReason = 'Another quotation was accepted for this RFQ';
-            }
-          });
-        }
-        
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Quotation successfully accepted. LPO has been generated.` });
+        console.error('Error accepting quotation:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to accept the quotation. Please try again.' });
       }
     });
   }

@@ -4,7 +4,7 @@
     <!-- Header Section -->
     <div class="preview-header">
       <div class="header-back-title-group">
-        <app-back-button (click)="goBack()"></app-back-button>
+        <app-back-button (close)="goBack()"></app-back-button>
         <div class="header-content">
           <div class="header-badge">
             <i class="fas fa-file-invoice"></i>
@@ -84,15 +84,13 @@
           <h4
             style="margin: 0 0 0.75rem 0; color: #184440; font-weight: 700; font-size: 1rem; border-bottom: 1px dashed #cbd5e1; padding-bottom: 0.5rem;">
             BUYER DETAILS</h4>
-          <strong style="color: #0f172a; display: block; font-size: 1.05rem;">Queendom Procurement Corp.</strong>
+          <strong style="color: #0f172a; display: block; font-size: 1.05rem;">{{ buyer.name || '—' }}</strong>
           <span style="color: #475569; display: block; margin-top: 0.25rem; line-height: 1.5;">
-            Plot 12, Corporate Avenue,<br>
-            Victoria Island, Lagos,<br>
-            Nigeria
+            {{ buyer.address || '—' }}
           </span>
           <span style="color: #475569; display: block; margin-top: 0.5rem; font-size: 0.9rem;">
-            <i class="fas fa-envelope"></i> orders&#64;queensheba.example<br>
-            <i class="fas fa-phone"></i> +234 1 888 0100
+            <i class="fas fa-envelope"></i> {{ buyer.email || 'N/A' }}<br>
+            <i class="fas fa-phone"></i> {{ buyer.phone || 'N/A' }}
           </span>
         </div>
 

@@ -256,24 +256,6 @@
         <h3 class="panel-title">Customise Your RFQ</h3>
       </div>
       <form [formGroup]="templateForm" class="config-form">
-        <div class="toggle-grid">
-          <label class="toggle-item">
-            <span class="toggle-label">Include Header</span>
-            <label class="switch"><input type="checkbox" formControlName="includeHeader"><span class="slider"></span></label>
-          </label>
-          <label class="toggle-item">
-            <span class="toggle-label">Include Items Table</span>
-            <label class="switch"><input type="checkbox" formControlName="includeItems"><span class="slider"></span></label>
-          </label>
-          <label class="toggle-item">
-            <span class="toggle-label">Include Terms &amp; Conditions</span>
-            <label class="switch"><input type="checkbox" formControlName="includeTerms"><span class="slider"></span></label>
-          </label>
-          <label class="toggle-item">
-            <span class="toggle-label">Include Footer</span>
-            <label class="switch"><input type="checkbox" formControlName="includeFooter"><span class="slider"></span></label>
-          </label>
-        </div>
         <div class="field-group">
           <label>Custom Message to Vendors <span class="optional">(optional)</span></label>
           <textarea formControlName="customMessage" rows="3"
