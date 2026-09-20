@@ -86,6 +86,24 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   selectedTemplate: QuoteTemplate | null = null;
   selectedAction: 'pdf' | 'email' | 'both' = 'pdf';
 
+  // Same mapping used by the Step 3 template gallery (see TemplateTypesComponent.getTemplateColor)
+  // so the live preview / downloaded PDF / emailed copy carry the same accent color the user saw
+  // when picking a template there.
+  private readonly templateAccentColors: Record<string, string> = {
+    standard: '#1a2d4a', minimal: '#4a5a6e', detailed: '#2a4a6a', compact: '#3a6a8a',
+    'custom-client': '#2EB270', emirates: '#A32638', 'emirates-custbank': '#A32638', thcomms: '#1B365D'
+  };
+
+  get templateAccentColor(): string {
+    if (!this.selectedTemplate) return '#1e3a5f';
+    return this.templateAccentColors[this.selectedTemplate.id] || '#1e3a5f';
+  }
+
+  /** Whether a given Step 3 template section should render — defaults to visible until a template is picked. */
+  showSection(key: keyof QuoteTemplate['sections']): boolean {
+    return !this.selectedTemplate || !!this.selectedTemplate.sections[key];
+  }
+
   get invoiceDataForTemplate(): any {
     return {
       customerId: this.invoiceForm.get('customerId')?.value,
@@ -1644,7 +1662,14 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         documentId: String(invoice.id),
         documentNumber: invoice.invoiceNumber,
         tenantId: 'optimax',
-        data: invoice
+        data: {
+          ...invoice,
+          // Best-effort: lets a backend that understands templates render the
+          // matching layout/branding instead of always using its own default.
+          templateId: this.selectedTemplate?.id,
+          templateColorTheme: this.selectedTemplate?.colorTheme,
+          templateSections: this.selectedTemplate?.sections
+        }
       }));
       this.pdfGenerationService.downloadBlob(blob as any, `Invoice-${invoice.invoiceNumber}.pdf`);
       return blob as any;
@@ -1789,24 +1814,35 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
             <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(amount)}</td>
           </tr>`).join('');
 
-    const termsAndConditions = addOpts?.terms
+    // Match the same accent color and section visibility the customer saw on the Step 3
+    // template screen, so the emailed copy doesn't look like a different document.
+    const accent = this.templateAccentColor;
+
+    const termsAndConditions = (addOpts?.terms && this.showSection('showTermsConditions'))
       ? `<div style="margin-top: 20px;">
-           <h3 style="font-size: 14px; color: #1a2d4a; margin-bottom: 6px;">Terms &amp; Conditions</h3>
+           <h3 style="font-size: 14px; color: ${accent}; margin-bottom: 6px;">Terms &amp; Conditions</h3>
            <p style="font-size: 13px; color: #374151; white-space: pre-line;">${addOpts.terms}</p>
          </div>`
       : '';
 
     const invoiceNotes = invoice.notes || addOpts?.notes;
-    const notesSection = invoiceNotes
+    const notesSection = (invoiceNotes && this.showSection('showNotes'))
       ? `<div style="margin-top: 12px;">
-           <h3 style="font-size: 14px; color: #1a2d4a; margin-bottom: 6px;">Notes</h3>
+           <h3 style="font-size: 14px; color: ${accent}; margin-bottom: 6px;">Notes</h3>
            <p style="font-size: 13px; color: #374151; white-space: pre-line;">${invoiceNotes}</p>
          </div>`
       : '';
 
+    const taxRow = this.showSection('showTaxBreakdown')
+      ? `<tr>
+            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Tax:</td>
+            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(invoice.taxAmount)}</td>
+          </tr>`
+      : '';
+
     const htmlBody = `
       <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
-        <h2 style="color: #1a2d4a; margin-top: 0;">Invoice Details</h2>
+        <h2 style="color: ${accent}; margin-top: 0;">Invoice Details</h2>
         <p>Dear ${name},</p>
         <p>Please find the details of your invoice below:</p>
         <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
@@ -1842,14 +1878,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
             <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Discount:</td>
             <td style="padding: 4px 8px; text-align: right;">-${currency} ${fmt(invoice.discountAmount)}</td>
           </tr>` : ''}
-          <tr>
-            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Tax:</td>
-            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(invoice.taxAmount)}</td>
-          </tr>
+          ${taxRow}
           ${additionalChargeRows}
           <tr>
-            <td colspan="4" style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid #1a2d4a;">Total Amount:</td>
-            <td style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid #1a2d4a; color: #2EB270;">${currency} ${fmt(invoice.totalAmount)}</td>
+            <td colspan="4" style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid ${accent};">Total Amount:</td>
+            <td style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid ${accent}; color: ${accent};">${currency} ${fmt(invoice.totalAmount)}</td>
           </tr>
         </table>
 

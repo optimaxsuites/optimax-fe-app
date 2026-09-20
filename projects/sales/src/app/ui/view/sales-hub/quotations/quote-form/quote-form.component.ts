@@ -158,6 +158,24 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   logoFileName = '';
   logoUrl = '';
 
+  // Same mapping used by the Step 3 template gallery (see TemplateTypesComponent.getTemplateColor)
+  // so the live preview / downloaded PDF / emailed copy carry the same accent color the user saw
+  // when picking a template there.
+  private readonly templateAccentColors: Record<string, string> = {
+    standard: '#1a2d4a', minimal: '#4a5a6e', detailed: '#2a4a6a', compact: '#3a6a8a',
+    'custom-client': '#2EB270', emirates: '#A32638', 'emirates-custbank': '#A32638', thcomms: '#1B365D'
+  };
+
+  get templateAccentColor(): string {
+    if (!this.selectedTemplate) return '#184440';
+    return this.templateAccentColors[this.selectedTemplate.id] || '#184440';
+  }
+
+  /** Whether a given Step 3 template section should render — defaults to visible until a template is picked. */
+  showSection(key: keyof QuoteTemplate['sections']): boolean {
+    return !this.selectedTemplate || !!this.selectedTemplate.sections[key];
+  }
+
   selectedCustomerBankAccounts: CustomerBankDetails[] = [];
   loadedQuoteSelectedCustomerBank?: CustomerBankDetails;
   quickCustomerForm!: FormGroup;
@@ -1389,7 +1407,14 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         documentId: String(quote.id),
         documentNumber: quote.quoteNumber,
         tenantId: 'optimax',
-        data: quote
+        data: {
+          ...quote,
+          // Best-effort: lets a backend that understands templates render the
+          // matching layout/branding instead of always using its own default.
+          templateId: this.selectedTemplate?.id,
+          templateColorTheme: this.selectedTemplate?.colorTheme,
+          templateSections: this.selectedTemplate?.sections
+        }
       }));
       this.pdfGenerationService.downloadBlob(blob as any, `Quote-${quote.quoteNumber}.pdf`);
       return blob as any;
@@ -1563,23 +1588,34 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
             <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(amount)}</td>
           </tr>`).join('');
 
-    const termsAndConditions = addOpts?.terms
+    // Match the same accent color and section visibility the customer saw on the Step 3
+    // template screen, so the emailed copy doesn't look like a different document.
+    const accent = this.templateAccentColor;
+
+    const termsAndConditions = (addOpts?.terms && this.showSection('showTermsConditions'))
       ? `<div style="margin-top: 20px;">
-           <h3 style="font-size: 14px; color: #1a2d4a; margin-bottom: 6px;">Terms &amp; Conditions</h3>
+           <h3 style="font-size: 14px; color: ${accent}; margin-bottom: 6px;">Terms &amp; Conditions</h3>
            <p style="font-size: 13px; color: #374151; white-space: pre-line;">${addOpts.terms}</p>
          </div>`
       : '';
 
-    const notesSection = addOpts?.notes
+    const notesSection = (addOpts?.notes && this.showSection('showNotes'))
       ? `<div style="margin-top: 12px;">
-           <h3 style="font-size: 14px; color: #1a2d4a; margin-bottom: 6px;">Notes</h3>
+           <h3 style="font-size: 14px; color: ${accent}; margin-bottom: 6px;">Notes</h3>
            <p style="font-size: 13px; color: #374151; white-space: pre-line;">${addOpts.notes}</p>
          </div>`
       : '';
 
+    const taxRow = this.showSection('showTaxBreakdown')
+      ? `<tr>
+            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Tax:</td>
+            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(quote.taxAmount)}</td>
+          </tr>`
+      : '';
+
     const htmlBody = `
       <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
-        <h2 style="color: #1a2d4a; margin-top: 0;">Quotation Details</h2>
+        <h2 style="color: ${accent}; margin-top: 0;">Quotation Details</h2>
         <p>Dear ${name},</p>
         <p>Please find the details of your quotation below:</p>
         <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
@@ -1615,14 +1651,11 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
             <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Discount:</td>
             <td style="padding: 4px 8px; text-align: right;">-${currency} ${fmt(quote.discountAmount)}</td>
           </tr>` : ''}
-          <tr>
-            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Tax:</td>
-            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(quote.taxAmount)}</td>
-          </tr>
+          ${taxRow}
           ${additionalChargeRows}
           <tr>
-            <td colspan="4" style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid #1a2d4a;">Total Amount:</td>
-            <td style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid #1a2d4a; color: #2EB270;">${currency} ${fmt(quote.totalAmount)}</td>
+            <td colspan="4" style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid ${accent};">Total Amount:</td>
+            <td style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid ${accent}; color: ${accent};">${currency} ${fmt(quote.totalAmount)}</td>
           </tr>
         </table>
 

@@ -26,13 +26,15 @@
   <div class="address-split">
     <div class="address-block">
       <h5>BILL TO (CLIENT)</h5>
-      <h4>{{ request.customerName || 'Optimax Industries' }}</h4>
-      <p>{{ request.deliveryLocation || 'Corporate Headquarters, Lagos, Nigeria' }}</p>
+      <h4>{{ request.customerName || '—' }}</h4>
+      <p>{{ request.deliveryLocation || '—' }}</p>
     </div>
     <div class="address-block">
       <h5>BILL FROM (VENDOR)</h5>
-      <h4>{{ request.selectedVendorName || invoice?.clientName || invoice?.vendorName || 'Apex Sourcing Solutions Ltd' }}</h4>
-      <p>sales&#64;apexsourcing.com | +234-809-123-4567</p>
+      <h4>{{ request.selectedVendorName || invoice?.clientName || invoice?.vendorName || '—' }}</h4>
+      <p *ngIf="invoice?.vendorEmail || invoice?.vendorPhone">
+        {{ invoice?.vendorEmail }}<ng-container *ngIf="invoice?.vendorEmail && invoice?.vendorPhone"> | </ng-container>{{ invoice?.vendorPhone }}
+      </p>
     </div>
   </div>
 

@@ -8,6 +8,7 @@ import { parseIdToNumber } from '../../../service/procurement/rfq-quotation-brid
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { MessageService } from 'primeng/api';
+import { CompanyProfileService } from '../../../shared-component/service/company-profile/company-profile.service';
 
 @Component({
   selector: 'app-lpo-preview',
@@ -32,8 +33,16 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private quotationService: QuotationManagementService,
-    private procurementService: ProcurementRequestService
+    private procurementService: ProcurementRequestService,
+    private companyProfileService: CompanyProfileService
   ) {}
+
+  /** The issuing company's real details — the buyer block was hardcoded to a placeholder company. */
+  get buyer(): { name: string; address: string; email: string; phone: string } {
+    const p = this.companyProfileService.get();
+    const address = p ? ([p.address, p.city, p.state, p.country].filter(Boolean).join(', ')) : '';
+    return { name: p?.companyName || '', address, email: p?.email || '', phone: p?.phone || '' };
+  }
 
   ngOnInit(): void {
     this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
@@ -113,39 +122,30 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * The actual server-side quotation status transition already happens via
+   * ensureLpoAssigned()/generateLpo() (for LPO_GENERATED) and sendLpoToVendor()
+   * (for LPO_SENT) — both hit the correct /generate-lpo endpoint. This method
+   * used to *also* call QuotationManagementService.updateQuotationStatus(), which
+   * unconditionally PATCHes .../decline regardless of the status passed in —
+   * silently flipping the quotation to DECLINED every time an LPO was generated
+   * or sent. That call has been removed; this now only applies the local
+   * optimistic update and the LPO_ISSUED side effect on the procurement request.
+   */
   updateStatus(status: 'LPO_GENERATED' | 'LPO_SENT'): void {
     if (!this.quotation) return;
-    
+
     this.quotation.status = status;
-    this.quotationService.updateQuotationStatus(this.quotation.id, status).subscribe({
-      next: () => {
-        console.log(`Quotation status updated successfully to ${status}`);
-        if (status === 'LPO_SENT') {
-          this.procurementService.updateRequest(parseIdToNumber(this.quotation!.rfqId), {
-            status: 'LPO_ISSUED',
-            selectedLpoId: this.lpoId,
-            selectedLpoNumber: this.lpoNumber
-          } as any).subscribe({
-            next: () => console.log(`Procurement request ${this.quotation!.rfqId} status updated to LPO_ISSUED`),
-            error: (err) => console.error('Failed to update procurement request status:', err)
-          });
-        }
-      },
-      error: () => {
-        // Mock fallback: do nothing, we already set it locally
-        console.log(`Mock fallback: status updated locally to ${status}`);
-        if (status === 'LPO_SENT') {
-          this.procurementService.updateRequest(parseIdToNumber(this.quotation!.rfqId), {
-            status: 'LPO_ISSUED',
-            selectedLpoId: this.lpoId,
-            selectedLpoNumber: this.lpoNumber
-          } as any).subscribe({
-            next: () => console.log(`Procurement request ${this.quotation!.rfqId} status updated to LPO_ISSUED`),
-            error: (err) => console.error('Failed to update procurement request status:', err)
-          });
-        }
-      }
-    });
+    if (status === 'LPO_SENT') {
+      this.procurementService.updateRequest(parseIdToNumber(this.quotation.rfqId), {
+        status: 'LPO_ISSUED',
+        selectedLpoId: this.lpoId,
+        selectedLpoNumber: this.lpoNumber
+      } as any).subscribe({
+        next: () => console.log(`Procurement request ${this.quotation!.rfqId} status updated to LPO_ISSUED`),
+        error: (err) => console.error('Failed to update procurement request status:', err)
+      });
+    }
   }
 
   downloadLpoPDF(): void {
@@ -185,11 +185,10 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
         this.successMessage = 'LPO has been successfully sent to the vendor.';
         this.messageService.add({ severity: 'success', summary: 'Success', detail: response.message || `LPO successfully sent to ${this.quotation?.vendorName}.` });
       },
-      error: () => {
+      error: (err) => {
         this.isProcessing = false;
-        this.updateStatus('LPO_SENT');
-        this.successMessage = 'LPO has been successfully sent to the vendor.';
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: `LPO successfully sent to ${this.quotation?.vendorName}.` });
+        console.error('Failed to send LPO to vendor:', err);
+        this.messageService.add({ severity: 'error', summary: 'Send Failed', detail: `Could not send the LPO to ${this.quotation?.vendorName}. Please try again.` });
       }
     });
   }

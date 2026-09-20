@@ -130,10 +130,13 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
     }
   }
 
-  cancelPendingVendor(rfqId: number, vendorId: string, vendorName: string): void {
+  cancelPendingVendor(quotationId: string | number, vendorName: string): void {
     if (confirm(`Are you sure you want to cancel the RFQ sent to ${vendorName}? This action cannot be undone.`)) {
       this.isProcessing = true;
-      this.quotationService.cancelPendingQuotation(String(rfqId), vendorId).subscribe({
+      // QuotationManagementService had no real "cancel pending" endpoint — it was a stub that
+      // always reported success without contacting the backend. Withdrawing a pending vendor
+      // quotation is the same operation as declining it, so route through the real endpoint.
+      this.quotationService.declineQuotation(quotationId, 'Cancelled by buyer before vendor response').subscribe({
         next: () => {
           this.isProcessing = false;
           this.loadRFQDetails(); // Refresh data
@@ -215,6 +218,6 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
     const now = new Date();
     const expiry = new Date(expiresAt);
     const diff = expiry.getTime() - now.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }
 }

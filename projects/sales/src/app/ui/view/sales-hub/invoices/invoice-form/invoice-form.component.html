@@ -277,11 +277,11 @@
         </button>
       </div>
 
-      <div class="if-doc-card" id="invoice-preview-document">
+      <div class="if-doc-card" id="invoice-preview-document" [style.--p]="templateAccentColor">
         <!-- Document Header -->
         <div class="if-doc-header">
           <div class="if-doc-brand">
-            <img *ngIf="logoUrl" [src]="logoUrl" class="if-doc-logo" alt="logo">
+            <img *ngIf="logoUrl && showSection('showCompanyLogo')" [src]="logoUrl" class="if-doc-logo" alt="logo">
             <span class="if-doc-company-name">{{ billedBy.name || billedByDraft.name || 'Your Company' }}</span>
             <span class="if-doc-company-sub" *ngIf="billedBy.address || billedByDraft.address">{{ billedBy.address || billedByDraft.address }}</span>
           </div>
@@ -309,7 +309,7 @@
             <span class="if-doc-meta-label">Currency</span>
             {{ invoiceForm.get('currency')?.value }}
           </div>
-          <div>
+          <div *ngIf="showSection('showPaymentTerms')">
             <span class="if-doc-meta-label">Payment Terms</span>
             {{ invoiceForm.get('paymentTerms')?.value || '—' }}
           </div>
@@ -375,7 +375,7 @@
           <div class="if-doc-totals-row" *ngFor="let charge of additionalChargeItems">
             <span>{{ charge.label }}</span><span>{{ formatCurrency(charge.amount) }}</span>
           </div>
-          <div class="if-doc-totals-row" *ngIf="(taxAmount || totalTax) > 0">
+          <div class="if-doc-totals-row" *ngIf="(taxAmount || totalTax) > 0 && showSection('showTaxBreakdown')">
             <span>Tax</span><span>{{ formatCurrency(taxAmount || totalTax) }}</span>
           </div>
           <div class="if-doc-totals-row if-doc-totals-grand">
@@ -384,7 +384,7 @@
         </div>
 
         <!-- Payment Details -->
-        <div class="if-doc-section" *ngIf="billedBy.bankName || billedBy.accountNumber">
+        <div class="if-doc-section" *ngIf="(billedBy.bankName || billedBy.accountNumber) && showSection('showPaymentTerms')">
           <div class="if-doc-section-label">PAYMENT DETAILS</div>
           <div class="if-doc-bank">
             <div class="if-doc-bank-row" *ngIf="billedBy.bankName">
@@ -403,13 +403,13 @@
         </div>
 
         <!-- Notes -->
-        <div class="if-doc-notes" *ngIf="invoiceForm.get('notes')?.value">
+        <div class="if-doc-notes" *ngIf="invoiceForm.get('notes')?.value && showSection('showNotes')">
           <div class="if-doc-section-label">NOTES</div>
           <p style="white-space:pre-line">{{ invoiceForm.get('notes')?.value }}</p>
         </div>
 
         <!-- Terms & Conditions -->
-        <div class="if-doc-notes" *ngIf="invoiceForm.get('terms')?.value">
+        <div class="if-doc-notes" *ngIf="invoiceForm.get('terms')?.value && showSection('showTermsConditions')">
           <div class="if-doc-section-label">TERMS &amp; CONDITIONS</div>
           <p style="white-space:pre-line">{{ invoiceForm.get('terms')?.value }}</p>
         </div>

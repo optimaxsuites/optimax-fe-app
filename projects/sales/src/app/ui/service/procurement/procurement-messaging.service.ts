@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../shared-component/service/environments/environment';
 
@@ -74,6 +74,11 @@ export class ProcurementMessagingService {
       senderRole
     };
 
+    // A failed send used to be swallowed and turned into a fabricated local "sent" message —
+    // the caller had no way to tell it wasn't real, so it rendered as delivered, then silently
+    // disappeared the next time pollMessages() replaced the list with the server's real one
+    // (which never contained it). Re-throw instead so the caller can show a real error and keep
+    // the user's draft instead of a false success.
     return this.http.post<any>(`${this.baseUrl}/rfq-messages`, payload).pipe(
       map((res: any) => ({
         ...res,
@@ -81,18 +86,7 @@ export class ProcurementMessagingService {
       }) as ProcurementMessage),
       catchError(err => {
         console.error('[ProcurementMessaging] Failed to send message:', err);
-        const fallback: ProcurementMessage = {
-          id: `local-${Date.now()}`,
-          rfqId,
-          senderId: 'local',
-          senderName: senderRole === 'REQUESTER' ? 'Procurement Team' : 'Vendor',
-          senderRole,
-          content,
-          isRead: true,
-          createdAt: new Date(),
-          messageType: type
-        };
-        return of(fallback);
+        return throwError(() => err);
       })
     );
   }

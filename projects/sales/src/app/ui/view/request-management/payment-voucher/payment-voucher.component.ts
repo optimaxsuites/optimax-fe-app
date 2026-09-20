@@ -6,6 +6,7 @@ import { MessageService } from 'primeng/api';
 import { SupplyChainService } from '../../../service/procurement/supply-chain.service';
 import { FinanceBridgeService, FinanceBridgeResult } from '../../../service/procurement/finance-bridge.service';
 import { NotificationService } from '../../../service/procurement/notification.service';
+import { CompanyProfileService } from '../../../shared-component/service/company-profile/company-profile.service';
 import { PaymentVoucher, GoodsReceivedNote } from '../../../domain/procurement-request/procurement.dto';
 
 @Component({
@@ -45,8 +46,16 @@ export class PaymentVoucherComponent implements OnInit, OnDestroy {
     private supplyChainService: SupplyChainService,
     private financeBridge: FinanceBridgeService,
     private notificationService: NotificationService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private companyProfileService: CompanyProfileService
   ) {}
+
+  /** The paying organization's real name/address for the receipt's FROM block (was a "Your Organization" placeholder). */
+  get payer(): { name: string; address: string } {
+    const p = this.companyProfileService.get();
+    const address = p ? ([p.address, p.city, p.state, p.country].filter(Boolean).join(', ')) : '';
+    return { name: p?.companyName || '', address };
+  }
 
   ngOnInit(): void {
     this.buildForm();
@@ -75,7 +84,7 @@ export class PaymentVoucherComponent implements OnInit, OnDestroy {
 
   private loadExistingVoucher(): void {
     if (!this.grn?.id) return;
-    this.supplyChainService.getPaymentVouchers({ lpoId: String(this.grn.lpoId) }).pipe(
+    this.supplyChainService.getPaymentVouchers({ lpoId: String(this.grn.lpoId), grnId: String(this.grn.id) }).pipe(
       takeUntil(this.destroy$)
     ).subscribe(vouchers => {
       this.existingVoucher = vouchers[0] ?? null;
@@ -94,8 +103,17 @@ export class PaymentVoucherComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Vendors are paid only for goods actually accepted, not everything delivered — rejected/damaged
+   * units must not be paid for. `grn.totalReceivedValue` is quantity-received based (see
+   * delivery-tracking's computedReceivedValue), so it isn't usable here; sum acceptedQuantity per
+   * line instead, matching grn-detail's getLineTotal.
+   */
   get totalAmount(): number {
-    return this.grn?.totalReceivedValue ?? this.invoice?.totalAmount ?? 0;
+    if (this.grn?.items?.length) {
+      return this.grn.items.reduce((sum, item) => sum + (item.acceptedQuantity || 0) * (item.unitPrice || 0), 0);
+    }
+    return this.invoice?.totalAmount ?? 0;
   }
 
   get currency(): string {

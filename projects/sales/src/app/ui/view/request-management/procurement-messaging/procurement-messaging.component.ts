@@ -7,6 +7,7 @@ import {
   ElementRef,
   ChangeDetectorRef
 } from '@angular/core';
+import { MessageService } from 'primeng/api';
 import {
   ProcurementMessagingService,
   ProcurementMessage
@@ -46,6 +47,7 @@ export class ProcurementMessagingComponent implements OnInit, OnDestroy {
 
   constructor(
     private messagingService: ProcurementMessagingService,
+    private messageService: MessageService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -167,7 +169,9 @@ export class ProcurementMessagingComponent implements OnInit, OnDestroy {
         this.scrollToBottom();
       },
       error: () => {
+        // Keep the draft in newMessage (don't clear it) so the user doesn't lose what they typed.
         this.isSending = false;
+        this.messageService.add({ severity: 'error', summary: 'Message Not Sent', detail: 'Could not send your message. Please try again.' });
       }
     });
   }

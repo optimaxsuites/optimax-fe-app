@@ -78,11 +78,11 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
   confirmApprove(): void {
     if (!this.workflowInstance) return;
     this.isActioning = true;
-    const userId = Number(sessionStorage.getItem('userId') || 0);
-    const roleCode = sessionStorage.getItem('role');
+    const { userId, roleCode, roleId } = this.approvalService.getCurrentActor();
     const payload = new FormData();
     payload.append('actorUserId', String(userId));
     if (roleCode) payload.append('actorRoleCode', roleCode);
+    if (roleId) payload.append('actorRoleId', String(roleId));
     payload.append('comment', this.commentsText.trim());
 
     this.approvalService.approveWorkflowInstance(this.workflowInstance.id, payload)
@@ -93,16 +93,19 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
           this.isActioning = false;
           if (this.requestId) this.loadDetails(this.requestId);
         },
-        error: () => { this.isActioning = false; }
+        error: (err) => {
+          console.error('Failed to approve', err);
+          this.isActioning = false;
+        }
       });
   }
 
   confirmReject(): void {
     if (!this.workflowInstance || !this.commentsText.trim()) return;
     this.isActioning = true;
-    const userId = Number(sessionStorage.getItem('userId') || 0);
-    const roleCode = sessionStorage.getItem('role');
+    const { userId, roleCode, roleId } = this.approvalService.getCurrentActor();
     const payload: any = { actorUserId: userId, actorRoleCode: roleCode, comment: this.commentsText.trim() };
+    if (roleId) payload.actorRoleId = roleId;
 
     this.approvalService.rejectWorkflowInstance(this.workflowInstance.id, payload)
       .pipe(takeUntil(this.destroy$))
