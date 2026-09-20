@@ -111,6 +111,21 @@
 
 
 
+              <!-- Optional catalogue lookup: fills name/description/unit/price/specs from a matching product SKU -->
+              <div class="field-row">
+                <div class="field-group full">
+                  <label>Part / SKU Number <span class="optional">(optional)</span></label>
+                  <div class="input-with-btn">
+                    <input type="text" formControlName="partNumber" placeholder="Enter a part or SKU number to auto-fill from your catalogue"
+                      class="field-input" (keydown.enter)="$event.preventDefault(); lookupProductByPartNumber(i)">
+                    <button type="button" class="btn-action-add" (click)="lookupProductByPartNumber(i)"
+                      [disabled]="isLookingUp[i]" title="Look up product details">
+                      <i class="fas" [ngClass]="isLookingUp[i] ? 'fa-spinner fa-spin' : 'fa-search'"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <!-- Core Fields -->
               <div class="field-row cols-2">
                 <div class="field-group">
@@ -149,7 +164,8 @@
                 <div class="field-group">
                   <label>Unit <span class="req">*</span></label>
                   <div class="input-with-btn">
-                    <select formControlName="unit" class="field-input">
+                    <select formControlName="unit" class="field-input"
+                      [class.is-error]="item.get('unit')?.invalid && item.get('unit')?.touched">
                       <option value="" disabled>Select Unit</option>
                       <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
                     </select>
@@ -157,6 +173,9 @@
                       <i class="fas fa-plus"></i>
                     </button>
                   </div>
+                  <span class="err-msg" *ngIf="item.get('unit')?.invalid && item.get('unit')?.touched">
+                    {{ getItemErrorMessage(i, 'unit') }}
+                  </span>
                 </div>
               </div>
 

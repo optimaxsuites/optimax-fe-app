@@ -369,7 +369,7 @@
 
     <button
       class="vs-btn-next"
-      [disabled]="getSelectedCount() === 0"
+      [disabled]="getSelectedCount() === 0 || isSaving"
       (click)="onNext()"
     >
       Continue <i class="fas fa-arrow-right"></i>

@@ -19,6 +19,7 @@ export class VendorSelectionComponent implements OnInit {
   vendors: VendorSuggestion[] = [];
   selectedVendors: Set<string> = new Set();
   isLoading = false;
+  isSaving = false;
   searchTerm = '';
   filterCategory = '';
   filterTier: 'ALL' | 'PREFERRED' | 'APPROVED' = 'ALL';
@@ -257,6 +258,7 @@ export class VendorSelectionComponent implements OnInit {
   }
 
   onNext(): void {
+    if (this.isSaving) return;
     if (this.selectedVendors.size === 0) {
       this.messageService.add({ severity: 'warn', summary: 'No Vendor Selected', detail: 'Please select at least one vendor to continue.' });
       return;
@@ -264,14 +266,17 @@ export class VendorSelectionComponent implements OnInit {
     const uuid = this.route.snapshot.paramMap.get('uuid') || this.requestId;
     if (!uuid) return;
 
+    this.isSaving = true;
     this.procurementService.updateRequest(parseIdToNumber(uuid), {
       vendorsToNotify: Array.from(this.selectedVendors)
     } as any).subscribe({
       next: () => {
+        this.isSaving = false;
         const typePath = this.router.url.includes('/service') ? 'service' : 'product';
         this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid, 'preview']);
       },
       error: (err) => {
+        this.isSaving = false;
         console.error('Failed to save selected vendors', err);
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save your vendor selection. Please try again.' });
       }
@@ -292,6 +297,9 @@ export class VendorSelectionComponent implements OnInit {
     if (!this.selectedVendors.has(vendorId)) {
       if (this.selectedVendors.size < 3) {
         this.selectedVendors.add(vendorId);
+      } else {
+        // Same feedback as toggleVendor() — this used to close the panel with no indication the pick wasn't applied.
+        this.messageService.add({ severity: 'warn', summary: 'Selection Full', detail: 'You can select a maximum of 3 vendors.' });
       }
     }
     this.showSmartPanel = false;
