@@ -740,6 +740,7 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
     this._audioBlobUrls.clear();
     clearTimeout(this._msgHoverTimer);
     this._closeReactionPicker();
+    this._revokeViewerBlob();
   }
 
   chatMediaGridClass(imageCount: number): string {
@@ -803,8 +804,20 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
 
     if (this.isPdfAttachment(attachment)) {
       this.documentViewerType = 'pdf';
-      this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl);
       this.documentViewerOpen = true;
+      this.officePreviewLoading = true;
+      this.cdr.markForCheck();
+      try {
+        const blobUrl = await this._fetchBlobUrl(rawUrl);
+        this._revokeViewerBlob();
+        this._viewerBlobUrl = blobUrl;
+        this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(blobUrl);
+      } catch {
+        this.officePreviewError = 'failed';
+      } finally {
+        this.officePreviewLoading = false;
+        this.cdr.markForCheck();
+      }
       return;
     }
 
@@ -879,12 +892,27 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
   }
 
   documentViewerRawUrl = '';
+  private _viewerBlobUrl: string | null = null;
   officePreviewLoading = false;
   officePreviewHtml: SafeHtml = '';
   officePreviewError = '';
   officeSheetNames: string[] = [];
   officeActiveSheet = 0;
   private _officeWorkbook: any = null;
+
+  private _revokeViewerBlob(): void {
+    if (this._viewerBlobUrl) {
+      URL.revokeObjectURL(this._viewerBlobUrl);
+      this._viewerBlobUrl = null;
+    }
+  }
+
+  async downloadViewerFile(event: Event): Promise<void> {
+    await this.downloadAttachment(
+      { downloadUrl: this.documentViewerRawUrl, name: this.documentViewerTitle },
+      event,
+    );
+  }
 
   closeDocumentViewer(): void {
     this.documentViewerOpen = false;
@@ -898,6 +926,7 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
     this.officeSheetNames = [];
     this.officeActiveSheet = 0;
     this._officeWorkbook = null;
+    this._revokeViewerBlob();
   }
 
   messageImageItems(msg: Message): Array<{ url: string; label: string }> {
