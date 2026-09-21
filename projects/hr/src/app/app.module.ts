@@ -14,6 +14,8 @@ import { ProductivityWorkspaceComponent } from './ui/view/productivity/productiv
 import { BonusDisbursementComponent } from './ui/view/payroll/bonus-disbursement/bonus-disbursement.component';
 import { EmployeeRelativesWidgetComponent } from './ui/shared-component/employee-relatives-widget/employee-relatives-widget.component';
 import { NgModule, NO_ERRORS_SCHEMA } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 
