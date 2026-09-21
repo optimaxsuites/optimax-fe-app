@@ -145,11 +145,6 @@
         {{ getMatchTier(vendor.matchScore) }}
       </div>
 
-      <!-- Notification dot -->
-      <div class="vs-notif-dot" *ngIf="getNotifCount(vendor.vendorId) > 0" [title]="getNotifCount(vendor.vendorId) + ' new updates'">
-        {{ getNotifCount(vendor.vendorId) }}
-      </div>
-
       <!-- Card top: avatar + score ring -->
       <div class="vs-card-top">
         <div class="vs-avatar" [style.background]="getAvatarGradient(vendor.vendorName)">
@@ -374,7 +369,7 @@
 
     <button
       class="vs-btn-next"
-      [disabled]="getSelectedCount() === 0"
+      [disabled]="getSelectedCount() === 0 || isSaving"
       (click)="onNext()"
     >
       Continue <i class="fas fa-arrow-right"></i>

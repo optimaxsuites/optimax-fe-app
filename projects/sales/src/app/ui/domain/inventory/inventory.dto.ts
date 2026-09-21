@@ -238,6 +238,22 @@ export interface StockMovement {
     updatedAt?: Date;
 }
 
+/** One approve/reject/request-changes decision on a StockMovement, as persisted by
+ *  InventoryService.recordApprovalAction() for MovementApprovalComponent's history/stats tabs. */
+export interface ApprovalHistoryEntry {
+    movementId: string;
+    action: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES';
+    comments: string;
+    approvedBy: string;
+    approvedByName: string;
+    timestamp: Date;
+    changesRequested?: {
+        field: string;
+        currentValue: any;
+        suggestedValue: any;
+    }[];
+}
+
 export interface RestockRequest {
     id: number;
     tenantId?: string;

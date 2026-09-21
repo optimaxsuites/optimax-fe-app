@@ -258,6 +258,18 @@ export class StockTurnoverComponent implements OnInit, OnChanges, OnDestroy {
     const productDetails = new Map<string, Product>();
     this.products.forEach(p => productDetails.set(String(p.id), p));
 
+    // productMap only ever had an entry for products with an existing branch-inventory record —
+    // anything created in Product Management that's never been stocked into a branch (which
+    // doesn't happen automatically — see saveBranchInventoryItem()) was silently skipped below
+    // entirely, which is what made a real, correctly-categorized product look "missing from its
+    // category" here. Seed a zero-stock entry for every catalog product that's still absent.
+    this.products.forEach(p => {
+      const id = String(p.id);
+      if (!productMap.has(id)) {
+        productMap.set(id, { total: p.stockQuantity || 0, branches: [] });
+      }
+    });
+
     // Get performance data
     const perfMap = new Map<string, ProductPerformance>();
     this.performanceData.forEach(p => perfMap.set(p.productId, p));
@@ -411,9 +423,9 @@ export class StockTurnoverComponent implements OnInit, OnChanges, OnDestroy {
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase();
       data = data.filter(d =>
-        d.productName.toLowerCase().includes(term) ||
-        d.sku.toLowerCase().includes(term) ||
-        d.category.toLowerCase().includes(term)
+        (d.productName || '').toLowerCase().includes(term) ||
+        (d.sku || '').toLowerCase().includes(term) ||
+        (d.category || '').toLowerCase().includes(term)
       );
     }
 

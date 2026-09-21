@@ -1,58 +1,68 @@
 /**
- * ⚠️ UPDATED (2026-08-31) - Simplified to RETROSPECTIVE only
- * Cross-branch requests are AUTO-CREATED when employee checks in at non-home branch
- * Supervisor/admin approves after the fact
+ * Cross-Branch Request Resource: /x/api/v2/hr/cross-branch-requests
+ * Cross-branch requests are AUTO-CREATED when an employee checks in at a non-home branch;
+ * a supervisor/admin approves after the fact (RETROSPECTIVE only).
  */
+import { EmployeeDetailDTO, PagedResponse } from './attendance-event.dto';
 
-export type ApprovalType = 'RETROSPECTIVE'; // Auto-created after check-in (removed PRE_APPROVAL)
+export type ApprovalType = 'RETROSPECTIVE';
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type AuditAction = 'AUTO_CREATED' | 'APPROVED' | 'REJECTED' | 'OVERRIDDEN';
 
 export interface AuditLogEntryDTO {
-  id: string;
-  actor: {
-    id: number;
-    name: string;
-    role: string;
-  };
+  actor: number;
   action: AuditAction;
-  timestamp: Date;
+  timestamp: string;
   details: string;
   ipAddress: string;
   userAgent: string;
 }
 
+/** GET /cross-branch-requests, GET /cross-branch-requests/{id}, GET .../pending, GET .../employee/{id} */
 export interface CrossBranchCheckInRequest {
-  id: string;
-  createdAt: Date;
-  updatedAt?: Date;
+  id: number;
+  employeeId: EmployeeDetailDTO;
 
-  employeeId: string; // Database ID
-
-  // Branch information (backend contract uses branch codes, not numeric IDs)
   homeBranchCode: string;
   homeBranchName?: string;
   requestedBranchCode: string;
   requestedBranchName?: string;
 
-  requestDate: Date; // When check-in occurred (auto-created)
-  workDate: Date; // When work at other branch occurred
+  requestDate: string; // when check-in occurred (auto-created)
+  workDate: string; // when work at the other branch occurred
 
-  reason: string; // Auto-populated: "Employee checked in at different branch"
+  reason: string;
 
-  approvalRequired: boolean; // Always true for cross-branch
-  approvalType: ApprovalType; // Always RETROSPECTIVE (auto-created after check-in)
+  approvalRequired: boolean;
+  approvalType: ApprovalType;
   supervisorId?: number;
   supervisorName?: string;
   supervisorApprovalStatus: ApprovalStatus;
   supervisorNote?: string;
-  approvalTimestamp?: Date;
+  approvalTimestamp?: string;
 
   auditLog: AuditLogEntryDTO[];
+
+  createdAt: string;
+  updatedAt?: string;
 }
 
+/** POST /cross-branch-requests — request body (FK ids, not embedded objects) */
+export interface CreateCrossBranchRequestBody {
+  employeeId: number;
+  homeBranchCode: string;
+  homeBranchName?: string;
+  requestedBranchCode: string;
+  requestedBranchName?: string;
+  requestDate: string;
+  workDate: string;
+  reason: string;
+  approvalRequired?: boolean;
+  approvalType?: ApprovalType;
+}
+
+/** PUT /cross-branch-requests/{id}/approve, PUT /cross-branch-requests/{id}/override */
 export interface CrossBranchApprovalRequest {
-  requestId: string;
   supervisorId: number;
   action: 'APPROVE' | 'REJECT';
   note?: string;
@@ -60,11 +70,13 @@ export interface CrossBranchApprovalRequest {
   userAgent?: string;
 }
 
+/** POST /cross-branch-requests/{id}/override */
 export interface CrossBranchAdminOverride {
-  requestId: string;
   adminId: number;
   action: string;
   reason: string;
   ipAddress?: string;
   userAgent?: string;
 }
+
+export type { PagedResponse };

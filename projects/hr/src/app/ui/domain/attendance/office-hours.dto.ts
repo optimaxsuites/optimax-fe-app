@@ -1,7 +1,8 @@
-/**
- * Office Hours configuration — entirely absent from the backend API spec (PDF).
- * Endpoints in use: GET /office-hours/current, POST /office-hours, PUT /office-hours/{id}
- */
+import { LocalTimeDTO, PagedResponse } from './attendance-event.dto';
+
+export type { PagedResponse };
+
+/** UI-facing model used by the office-hours form (times as HH:mm strings). */
 export interface OfficeHours {
   id?: number; // Record ID (absent until first created)
   openingTime: string; // HH:mm format
@@ -13,14 +14,17 @@ export interface OfficeHours {
   companyName?: string;
 }
 
-/** Request body for POST /office-hours and PUT /office-hours/{id} (coordinates sent as strings) */
-export interface OfficeHoursRequest {
-  id: number; // 0 when creating a new record
-  openingTime: string;
-  closingTime: string;
-  absentTime: string;
-  latenessGracePeriod: string;
+/**
+ * Raw API shape for GET/POST/PUT /officeHours — times are LocalTime objects, coordinates are strings.
+ * Identical shape for request and response bodies.
+ */
+export interface OfficeHoursApiDTO {
+  id: number;
+  openingTime: LocalTimeDTO;
+  closingTime: LocalTimeDTO;
+  absentTime: LocalTimeDTO;
+  latenessGracePeriod: LocalTimeDTO;
   companyLatitude: string;
   companyLongitude: string;
+  companyName: string;
 }
-

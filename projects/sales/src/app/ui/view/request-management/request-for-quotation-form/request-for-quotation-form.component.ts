@@ -39,7 +39,6 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
   procurementCategories: ProcurementCategory[] = [];
   isEditMode = false;
   requestId: string | null = null;
-  isLookingUp: { [key: number]: boolean } = {};
 
   // Custom Category and Unit Modal States
   showAddCategoryModal = false;
@@ -150,7 +149,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
               if (specs?.customFields) {
                 specs.customFields.forEach((field: any) => {
                   customFields.push(this.fb.group({
-                    label: [field.label, Validators.required],
+                    key: [field.key, Validators.required],
                     value: [field.value, Validators.required]
                   }));
                 });
@@ -181,7 +180,6 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
                 name: item.name,
                 description: item.description,
                 categoryId: (item as any).categoryId || item.category?.categoryId || '',
-                partNumber: (item as any).partNumber || '',
                 quantity: item.quantity,
                 unit: item.unit,
                 estimatedBudget: item.estimatedBudget,
@@ -241,7 +239,6 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       name: ['', [Validators.required, Validators.minLength(3)]],
       description: ['', Validators.required],
       categoryId: ['', Validators.required],
-      partNumber: [''],
       quantity: [1, [Validators.required, Validators.min(1)]],
       unit: ['', Validators.required],
       estimatedBudget: [null, [Validators.required, Validators.min(0.01)]],
@@ -311,11 +308,38 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     attachments.removeAt(attachmentIndex);
   }
 
+  /** The request's single currency — onNext()/saveDraft() save the first item's currency as `currency`. */
+  private get requestCurrency(): string {
+    return this.items.at(0)?.get('currency')?.value || 'NGN';
+  }
+
+  /**
+   * Persisted as the request's totalBudget, which is a single number in the single `requestCurrency`.
+   * Previously this added every item's raw amount regardless of currency (1,000 USD + 500,000 NGN
+   * showed up as 501,000), so only items in the request's currency are summed here; the on-screen
+   * summary (getBudgetSummary) shows every currency's subtotal separately.
+   */
   getTotalBudget(): number {
+    const currency = this.requestCurrency;
     return this.items.controls.reduce((total, item) => {
-      const budget = item.get('estimatedBudget')?.value || 0;
-      return total + budget;
+      if ((item.get('currency')?.value || 'NGN') !== currency) return total;
+      return total + (item.get('estimatedBudget')?.value || 0);
     }, 0);
+  }
+
+  getBudgetByCurrency(): { currency: string; total: number }[] {
+    const totals = new Map<string, number>();
+    this.items.controls.forEach(item => {
+      const currency = item.get('currency')?.value || 'NGN';
+      totals.set(currency, (totals.get(currency) || 0) + (item.get('estimatedBudget')?.value || 0));
+    });
+    return Array.from(totals, ([currency, total]) => ({ currency, total }));
+  }
+
+  getBudgetSummary(): string {
+    const parts = this.getBudgetByCurrency();
+    if (!parts.length) return this.formatCurrency(0, this.requestCurrency);
+    return parts.map(p => this.formatCurrency(p.total, p.currency)).join(' + ');
   }
 
   private generateId(): string {
@@ -340,8 +364,13 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
         // not a nested category object (that shape crashes deserialization).
         // The readable name is looked up locally via procurementCategories when
         // it's needed for display (e.g. vendor-suggestion matching).
+        // Attachments are dropped here too: at this point they're still raw
+        // browser File objects plus session-only blob: URLs, neither of which
+        // survive JSON serialization — a `File` value serializes to `{}`. The
+        // real files are uploaded separately via uploadPendingAttachments()
+        // once we have a server-assigned request id to attach them to.
         formValue.items = formValue.items.map((it: any) => {
-          const { category, ...rest } = it;
+          const { category, attachments, ...rest } = it;
           return {
             ...rest,
             deliveryDeadline: it.deliveryDeadline ? new Date(it.deliveryDeadline).toISOString() : null
@@ -362,6 +391,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
           next: (req: any) => {
             const savedId = req?.id || this.requestId;
             this.requestId = String(savedId);
+            this.uploadPendingAttachments(String(savedId));
             this.router.navigate(['/admin/sales/commerce/requests/new/product', savedId, 'template']);
           },
           error: (err) => {
@@ -375,6 +405,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
             const savedId = req?.id;
             this.requestId = String(savedId);
             this.isEditMode = true;
+            this.uploadPendingAttachments(String(savedId));
             this.router.navigate(['/admin/sales/commerce/requests/new/product', savedId, 'template']);
           },
           error: (err) => {
@@ -395,9 +426,10 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     formValue.status = 'DRAFT';
 
     if (formValue.items && Array.isArray(formValue.items)) {
-      // See onNext() — the backend rejects a nested category object, categoryId alone is enough.
+      // See onNext() — the backend rejects a nested category object, categoryId alone is enough,
+      // and raw File attachments can't be JSON-serialized (uploaded separately, post-save).
       formValue.items = formValue.items.map((it: any) => {
-        const { category, ...rest } = it;
+        const { category, attachments, ...rest } = it;
         return {
           ...rest,
           deliveryDeadline: it.deliveryDeadline ? new Date(it.deliveryDeadline).toISOString() : null
@@ -418,8 +450,12 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     }
 
     if (this.isEditMode && this.requestId) {
-      this.procurementRequestService.updateRequest(parseIdToNumber(this.requestId), formValue).subscribe({
-        next: () => { this.router.navigate(['/admin/sales/commerce/requests']); },
+      const requestId = this.requestId;
+      this.procurementRequestService.updateRequest(parseIdToNumber(requestId), formValue).subscribe({
+        next: () => {
+          this.uploadPendingAttachments(requestId);
+          this.router.navigate(['/admin/sales/commerce/requests']);
+        },
         error: (err) => {
           console.error('Failed to update request draft', err);
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save draft. Please try again.' });
@@ -428,7 +464,11 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     } else {
       this.procurementRequestService.createRequest({ ...formValue, status: 'DRAFT' }).subscribe({
         next: (req: any) => {
-          if (req?.id) { this.requestId = String(req.id); this.isEditMode = true; }
+          if (req?.id) {
+            this.requestId = String(req.id);
+            this.isEditMode = true;
+            this.uploadPendingAttachments(this.requestId);
+          }
           this.router.navigate(['/admin/sales/commerce/requests']);
         },
         error: (err) => {
@@ -437,6 +477,38 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
         }
       });
     }
+  }
+
+  /**
+   * Attachments picked via onFileUpload() only exist as an in-memory browser File plus a
+   * session-only blob: URL — neither survives JSON serialization, so they were previously
+   * dropped from the create/update payload entirely and never reached the backend at all
+   * (the file vanished on reload with only its name/size surviving in local state). Now that
+   * a real request id exists, actually persist each pending file via the dedicated attachment
+   * upload endpoint, and swap the local placeholder for the server-returned id/url.
+   */
+  private uploadPendingAttachments(requestId: string): void {
+    if (!requestId) return;
+    this.items.controls.forEach(itemGroup => {
+      const attachments = itemGroup.get('attachments') as FormArray;
+      attachments.controls.forEach(attachmentGroup => {
+        const file = attachmentGroup.get('file')?.value as File | null;
+        if (!file) return; // already uploaded (or loaded from a saved request) — nothing pending
+        this.procurementRequestService.uploadAttachment(requestId, file).subscribe({
+          next: (res) => {
+            attachmentGroup.patchValue({
+              id: res.attachmentId,
+              fileUrl: res.url,
+              file: null
+            });
+          },
+          error: (err) => {
+            console.error('Failed to upload attachment', file.name, err);
+            this.messageService.add({ severity: 'warn', summary: 'Attachment Upload Failed', detail: `"${file.name}" could not be uploaded. Please attach it again.` });
+          }
+        });
+      });
+    });
   }
 
   onBack(): void {
@@ -480,8 +552,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     return '';
   }
 
-  formatCurrency(value: number): string {
-    const currency = this.productForm.get('currency')?.value || 'NGN';
+  formatCurrency(value: number, currency: string = this.requestCurrency): string {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency
@@ -503,50 +574,6 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(size) / Math.log(k));
     return parseFloat((size / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  lookupProductByPartNumber(index: number): void {
-    const item = this.items.at(index);
-    const partNumber = item.get('partNumber')?.value;
-    if (!partNumber || !partNumber.trim()) {
-      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a part or serial number to look up.' });
-      return;
-    }
-
-    this.isLookingUp[index] = true;
-
-    this.salesService.getProducts({ sku: partNumber.trim(), page: 0, size: 1 }).subscribe({
-      next: (result) => {
-        this.isLookingUp[index] = false;
-        const product = result.data && result.data[0];
-        if (!product) {
-          this.messageService.add({ severity: 'info', summary: 'Notice', detail: `No product found for part number: "${partNumber}"` });
-          return;
-        }
-        const specs = (product as any).specifications || {};
-        item.patchValue({
-          name: product.name,
-          description: product.description,
-          unit: product.measurementUnit?.name || 'Pieces',
-          estimatedBudget: product.unitPrice || 0,
-          unitPrice: product.unitPrice || 0,
-          specifications: {
-            brand: specs.brand || '',
-            model: specs.model || product.code || '',
-            color: specs.color || '',
-            size: specs.size || '',
-            material: specs.material || '',
-            warranty: specs.warranty || ''
-          }
-        });
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product details successfully retrieved for: "${partNumber}"` });
-      },
-      error: (err) => {
-        this.isLookingUp[index] = false;
-        console.error('Error looking up product by part number:', err);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not retrieve product details. Please fill in the fields manually.' });
-      }
-    });
   }
 
   onCategoryChange(event: Event, index: number): void {

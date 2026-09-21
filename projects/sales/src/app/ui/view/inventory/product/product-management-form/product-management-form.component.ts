@@ -229,8 +229,14 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
     return this.fb.group({
       // General Information
       name: ['', [Validators.required, Validators.minLength(2)]],
-      description: ['', [Validators.required, Validators.minLength(10)]],
-      category: ['', Validators.required],
+      // Neither is actually required by the backend — bulk-imported products routinely have
+      // no description and no matched category (see product-bulk-import.component.ts), and
+      // both save/display fine. Requiring them here meant the WHOLE form was permanently
+      // invalid for any such product, so onSubmit() silently no-op'd on every edit — including
+      // ones that only touched an unrelated field like price — which looked like "editing does
+      // nothing, the old value keeps coming back" since nothing ever actually saved.
+      description: ['', [Validators.minLength(10)]],
+      category: [''],
 
       // Identifiers
       partNumber: [''],
@@ -283,7 +289,12 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
     this.inventoryService.getProduct(this.productId).subscribe({
       next: (product: any) => {
         if (product) {
-          const categoryName = this.rawCategories.find(c => c.id === product.category)?.name || '';
+          // getProduct()/getProducts() already resolve `category` to its display name (see
+          // InventoryService.productFromApi()) — it's never a raw id here. Treating it as one
+          // (`c.id === product.category`, comparing a number against a name string) never
+          // matched, so the Category dropdown always came up blank when editing an existing
+          // product — and re-saving from there would have wiped the category entirely.
+          const categoryName = product.category || '';
           const unitName = this.measurementUnits.find(u => u.id === product.unitOfMeasure)?.name || 'pcs';
           const supplierName = this.suppliers.find(s => s.id === (product.supplierIds && product.supplierIds[0]))?.name || '';
 
@@ -366,7 +377,13 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       costPrice: formData.costPrice,
       stockQuantity: formData.quantity,
       images: this.images,
-      category: foundCategory ? String(foundCategory.id) : undefined,
+      // categoryId is what InventoryService.productToApiPayload() actually sends to the
+      // backend — it previously only got `category` here, set to the category's id
+      // STRINGIFIED (e.g. "1"), which productToApiPayload() then tried to look up as if it
+      // were a category NAME (`c.name === "1"`), never matched, and silently dropped. Every
+      // product created or edited through this form saved with no category at all.
+      category: foundCategory?.name,
+      categoryId: foundCategory?.id,
       unitOfMeasure: (foundUnit?.unitId || 'EACH') as 'EACH' | 'BOX' | 'KG' | 'LITER' | 'METER',
       supplierIds: foundSupplier ? [String(foundSupplier.id)] : [],
       status: (formData.quantity ?? 0) > 0 ? 'ACTIVE' as any : 'OUT_OF_STOCK' as any,
@@ -384,10 +401,14 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       next: () => {
         this.isSubmitting = false;
         this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product ${this.isEditMode ? 'updated' : 'created'} successfully!` });
-        // After editing, land on the product's details page so the change is visible immediately.
-        // After creating, there's no existing detail context to return to, so keep the prior behavior.
+        // After editing, land on the product's details page so the change is visible
+        // immediately. replaceUrl swaps this edit form's history entry for the detail page
+        // instead of pushing a new one — otherwise Back from there lands back on the (stale,
+        // already-submitted) edit form instead of the product list the user actually came
+        // from. After creating, there's no existing detail context to return to, so keep the
+        // prior behavior of going straight back to the list.
         if (this.isEditMode) {
-          this.router.navigate(['/admin/sales/commerce/inventory/products', this.productId]);
+          this.router.navigate(['/admin/sales/commerce/inventory/products', this.productId], { replaceUrl: true });
         } else {
           this.goBack();
         }

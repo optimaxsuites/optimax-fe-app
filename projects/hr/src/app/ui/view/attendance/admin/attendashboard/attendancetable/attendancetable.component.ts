@@ -772,7 +772,9 @@ approveCorrectionRequest(recordId: number): void {
   }
 
   // Update in service
-  this.correctionRequestService.approveCorrectionRequest(recordId, adminName);
+  this.correctionRequestService.approveCorrectionRequest(recordId, adminName).subscribe({
+    error: err => console.error('Failed to approve correction request:', err)
+  });
 
   // Close drawer to prevent stale data
   this.detailsRecord = null;
@@ -803,7 +805,9 @@ rejectCorrectionRequest(recordId: number, reason: string = ''): void {
   }
 
   // Update in service
-  this.correctionRequestService.rejectCorrectionRequest(recordId, rejectionReason);
+  this.correctionRequestService.rejectCorrectionRequest(recordId, rejectionReason).subscribe({
+    error: err => console.error('Failed to reject correction request:', err)
+  });
 
   // Close drawer to prevent stale data
   this.detailsRecord = null;

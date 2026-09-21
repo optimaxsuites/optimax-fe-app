@@ -15,6 +15,7 @@ import {
   MovementType,
   Branch,
   Product,
+  ApprovalHistoryEntry,
   hasUnresolvedChangeRequest,
   getMovementTypeLabel,
   getMovementTypeIcon,
@@ -25,19 +26,9 @@ import {
 // INTERFACES
 // ============================================================
 
-export interface ApprovalAction {
-  movementId: string;
-  action: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES';
-  comments: string;
-  approvedBy: string;
-  approvedByName: string;
-  timestamp: Date;
-  changesRequested?: {
-    field: string;
-    currentValue: any;
-    suggestedValue: any;
-  }[];
-}
+// Persisted via InventoryService.getApprovalHistory()/recordApprovalAction() — see the
+// ApprovalHistoryEntry doc comment in inventory.dto.ts for why this isn't just component state.
+export type ApprovalAction = ApprovalHistoryEntry;
 
 export interface ApprovalStats {
   totalPending: number;
@@ -88,7 +79,10 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
 
   // UI
   activeTab: 'pending' | 'history' | 'stats' = 'pending';
-  selectedFilter: 'ALL' | 'PENDING' | 'URGENT' | 'HIGH_VALUE' = 'ALL';
+  // Defaults to 'PENDING' (not 'ALL') so the Pending tab still opens showing only actionable
+  // movements now that loadData() fetches every status instead of a server-side PENDING-only
+  // filter — 'ALL' remains a real option in the filter dropdown, it just isn't the default.
+  selectedFilter: 'ALL' | 'PENDING' | 'URGENT' | 'HIGH_VALUE' = 'PENDING';
   selectedTypeFilter: 'ALL' | MovementType = 'ALL';
   showCommentsModal: boolean = false;
   showChangesModal: boolean = false;
@@ -187,6 +181,17 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Every approve/reject/request-changes action below used to hardcode 'usr-1' / 'John Doe'
+  // instead of the person actually signed in, which is why the Approval History panel showed
+  // the wrong name. 'userid'/'fullname' are the session keys app.ts sets at login.
+  private getCurrentUserId(): string {
+    return sessionStorage.getItem('userid') || 'usr-1';
+  }
+
+  private getCurrentUserName(): string {
+    return sessionStorage.getItem('fullname') || 'Unknown User';
+  }
+
   // ============================================================
   // DATA LOADING
   // ============================================================
@@ -196,7 +201,13 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
     this.error = null;
 
     forkJoin({
-      movements: this.inventoryService.getMovements({ limit: 200, status: MovementStatus.PENDING }),
+      // No status filter here: this.movements backs both the "ALL" filter (see
+      // filterMovements()) and the Statistics tab's approved/rejected counts, so restricting
+      // this fetch to PENDING made "ALL" silently behave like "PENDING" and made
+      // totalApproved/totalRejected always read 0 no matter how many movements had actually
+      // been decided. The Pending tab's own filter (setFilter('PENDING')) narrows it back down
+      // client-side.
+      movements: this.inventoryService.getMovements({ limit: 200 }),
       branches: this.inventoryService.getBranches(),
       products: this.inventoryService.getProducts({ limit: 500 })
     }).pipe(takeUntil(this.destroy$))
@@ -236,40 +247,10 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
   }
 
   private loadApprovalHistory(): void {
-    // Mock approval history
-    this.approvalHistory = [
-      {
-        movementId: 'mov-1',
-        action: 'APPROVE',
-        comments: 'Approved - stock transfer confirmed',
-        approvedBy: 'usr-2',
-        approvedByName: 'Jane Smith',
-        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-      },
-      {
-        movementId: 'mov-2',
-        action: 'REJECT',
-        comments: 'Insufficient stock at source location',
-        approvedBy: 'usr-2',
-        approvedByName: 'Jane Smith',
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
-      },
-      {
-        movementId: 'mov-3',
-        action: 'REQUEST_CHANGES',
-        comments: 'Please review quantity - seems too high',
-        approvedBy: 'usr-2',
-        approvedByName: 'Jane Smith',
-        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        changesRequested: [
-          {
-            field: 'quantity',
-            currentValue: 600,
-            suggestedValue: 400
-          }
-        ]
-      }
-    ];
+    // Real, persisted actions taken in this tab (approve/reject/request-changes), most recent
+    // first — see InventoryService.getApprovalHistory(). Previously this was 3 hardcoded mock
+    // entries reset on every load, which is why history/stats looked frozen and untracked.
+    this.approvalHistory = this.inventoryService.getApprovalHistory();
   }
 
   // ============================================================
@@ -348,14 +329,25 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
 
   private calculateStats(): void {
     const pending = this.movements.filter(m => m.status === MovementStatus.PENDING);
-    const approved = this.movements.filter(m => m.status === MovementStatus.COMPLETED);
+    // Approving a movement moves it to IN_TRANSIT, not straight to COMPLETED (see
+    // confirmApproval()'s comment) — COMPLETED only fires later, once the transfer is actually
+    // received. Counting COMPLETED alone here undercounted every movement still in transit as
+    // if it had never been approved.
+    const approved = this.movements.filter(m => m.status === MovementStatus.IN_TRANSIT || m.status === MovementStatus.COMPLETED);
     const rejected = this.movements.filter(m => m.status === MovementStatus.CANCELLED);
     const requestedChanges = this.movements.filter(m => m.notes?.toLowerCase().includes('changes requested'));
 
-    // Calculate average approval time (mock)
-    const avgApprovalTime = pending.length > 0 ? 4.5 : 0;
+    // Real average, computed from each approved movement's actual createdAt -> approvedAt gap,
+    // rather than a hardcoded placeholder that never reflected what was actually happening.
+    const approvalTimesHours = approved
+      .filter(m => m.createdAt && m.approvedAt)
+      .map(m => (new Date(m.approvedAt).getTime() - new Date(m.createdAt).getTime()) / (1000 * 60 * 60))
+      .filter(hours => isFinite(hours) && hours >= 0);
+    const avgApprovalTime = approvalTimesHours.length > 0
+      ? approvalTimesHours.reduce((sum, hours) => sum + hours, 0) / approvalTimesHours.length
+      : 0;
 
-    const urgent = pending.filter(m => 
+    const urgent = pending.filter(m =>
       m.notes?.toLowerCase().includes('urgent') || 
       m.cost > 5000000
     );
@@ -433,8 +425,8 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
       movementId,
       action: this.selectedAction,
       comments: 'Approved',
-      approvedBy: 'usr-1', // Current user ID
-      approvedByName: 'John Doe', // Current user name
+      approvedBy: this.getCurrentUserId(),
+      approvedByName: this.getCurrentUserName(),
       timestamp: new Date()
     };
 
@@ -457,7 +449,7 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
 
         this.calculateStats();
         this.filterMovements();
-        this.approvalHistory.unshift(action);
+        this.approvalHistory = this.inventoryService.recordApprovalAction(action);
         this.approvalComplete.emit(action);
 
         this.isSubmitting = false;
@@ -485,8 +477,8 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
       movementId,
       action: 'REJECT',
       comments,
-      approvedBy: 'usr-1',
-      approvedByName: 'John Doe',
+      approvedBy: this.getCurrentUserId(),
+      approvedByName: this.getCurrentUserName(),
       timestamp: new Date()
     };
 
@@ -503,7 +495,7 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
 
         this.calculateStats();
         this.filterMovements();
-        this.approvalHistory.unshift(action);
+        this.approvalHistory = this.inventoryService.recordApprovalAction(action);
         this.approvalComplete.emit(action);
 
         this.isSubmitting = false;
@@ -538,8 +530,8 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
       movementId,
       action: 'REQUEST_CHANGES',
       comments,
-      approvedBy: 'usr-1',
-      approvedByName: 'John Doe',
+      approvedBy: this.getCurrentUserId(),
+      approvedByName: this.getCurrentUserName(),
       timestamp: new Date(),
       changesRequested: changesRequested
     };
@@ -557,7 +549,7 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
 
         this.calculateStats();
         this.filterMovements();
-        this.approvalHistory.unshift(action);
+        this.approvalHistory = this.inventoryService.recordApprovalAction(action);
         this.approvalComplete.emit(action);
 
         this.isSubmitting = false;
@@ -588,23 +580,25 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
 
     // updateMovement() is a localStorage-backed mock that resolves synchronously, so this plain
     // loop completes in one tick — no forkJoin needed.
+    const currentUserId = this.getCurrentUserId();
+    const currentUserName = this.getCurrentUserName();
     pending.forEach(m => {
       const approvedAt = new Date();
       this.inventoryService.updateMovement(m.id, {
         status: MovementStatus.IN_TRANSIT,
-        approvedBy: 'usr-1',
-        approvedByName: 'John Doe',
+        approvedBy: currentUserId,
+        approvedByName: currentUserName,
         approvedAt
       }).subscribe({
         next: (updated) => {
           const idx = this.movements.findIndex(mv => mv.id === m.id);
           if (idx > -1) this.movements[idx] = updated;
-          this.approvalHistory.unshift({
+          this.approvalHistory = this.inventoryService.recordApprovalAction({
             movementId: String(m.id),
             action: 'APPROVE',
             comments: 'Bulk approved',
-            approvedBy: 'usr-1',
-            approvedByName: 'John Doe',
+            approvedBy: currentUserId,
+            approvedByName: currentUserName,
             timestamp: approvedAt
           });
         },
@@ -643,15 +637,6 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
     if (productId) {
       this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
     }
-  }
-
-  // ============================================================
-  // EXPORT
-  // ============================================================
-
-  exportReport(): void {
-    console.log('Exporting approval report...');
-    // In real implementation, generate report
   }
 
   // ============================================================
@@ -747,6 +732,14 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
       'REQUEST_CHANGES': 'Changes Requested'
     };
     return map[action] || action;
+  }
+
+  // Approval History only ever stored the movement's id, so the timeline showed "Movement
+  // #mov-2" instead of what was actually moved. Resolve it against the already-loaded
+  // movements list instead, same lookup-by-id pattern as getBranchName() below.
+  getMovementLabel(movementId: string): string {
+    const movement = this.movements.find(m => String(m.id) === movementId);
+    return movement?.productName ? `${movement.productName} (${movement.sku})` : `Movement #${movementId}`;
   }
 
   getBranchName(branchId: string): string {

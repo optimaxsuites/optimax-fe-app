@@ -94,7 +94,7 @@ export class CooperativeLoansComponent implements OnInit {
   statusOptions: Array<{ label: string; value: 'PENDING' | 'APPROVED' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'SKIPPED' | 'OVERDUE' | 'PAUSED' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED' }> = [
     { label: 'Pending', value: 'PENDING' },
     { label: 'Approved', value: 'APPROVED' },
-    { label: 'Ready for Disbursement', value: 'READY_FOR_DISBURSEMENT' },
+    { label: 'Disbursable', value: 'READY_FOR_DISBURSEMENT' },
     { label: 'Active', value: 'ACTIVE' },
     { label: 'Skipped', value: 'SKIPPED' },
     { label: 'Overdue', value: 'OVERDUE' },
@@ -453,6 +453,9 @@ export class CooperativeLoansComponent implements OnInit {
   }
 
   getStatusLabel(status: string | undefined): string {
+    if (status === 'READY_FOR_DISBURSEMENT') {
+      return 'Disbursable';
+    }
     return String(status || '').replace(/_/g, ' ');
   }
 
@@ -522,7 +525,7 @@ export class CooperativeLoansComponent implements OnInit {
 
   getStageLabel(loan: CooperativeLoan): string {
     if (loan.status === 'READY_FOR_DISBURSEMENT') {
-      return 'Ready For Disbursement';
+      return 'Disbursable';
     }
 
     if (loan.status === 'APPROVED') {
@@ -859,7 +862,7 @@ export class CooperativeLoansComponent implements OnInit {
       body: `
         <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #333;">
           <p>Dear Accounting Team,</p>
-          <p>A cooperative loan has been approved and is ready for disbursement processing.</p>
+          <p>A cooperative loan has been approved and is disbursable.</p>
           <ul>
             <li><strong>Loan ID:</strong> ${loanId}</li>
             <li><strong>Member:</strong> ${memberName}</li>

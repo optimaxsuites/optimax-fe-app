@@ -37,7 +37,7 @@ type LoanLifecycleStage = {
 const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
   { status: 'PENDING', label: 'Pending', color: '#ffc107', notes: 'Loan application submitted', fieldLabel: 'Applied On' },
   { status: 'APPROVED', label: 'Approved', color: '#4f7cff', notes: 'Loan approved', fieldLabel: 'Approved On' },
-  { status: 'READY_FOR_DISBURSEMENT', label: 'Ready for Disbursement', color: '#0284c7', notes: 'Loan is ready for disbursement', fieldLabel: 'Ready for Disbursement On' },
+  { status: 'READY_FOR_DISBURSEMENT', label: 'Disbursable', color: '#0284c7', notes: 'Loan is disbursable', fieldLabel: 'Disbursable On' },
   { status: 'ACTIVE', label: 'Active', color: '#17a2b8', notes: 'Loan disbursed', fieldLabel: 'Disbursed On' },
   { status: 'SKIPPED', label: 'Skipped', color: '#8b5cf6', notes: 'Grace period approved for the current installment', fieldLabel: 'Grace Period Approved On' },
   { status: 'OVERDUE', label: 'Overdue', color: '#ef4444', notes: 'Repayment is overdue', fieldLabel: 'Overdue Since' },
@@ -654,6 +654,11 @@ formatDepartmentDisplay(department?: unknown): string {
     }
   }
 
+  getApprovedByName(): string {
+    if (!this.loan?.approvedBy) return '';
+    return resolveLoanActorName(this.loan.approvedBy);
+  }
+
   getPurposeCodeDisplay(purposeCode?: string | null, purposeName?: string | null): string {
     // Robustly resolve code from name if needed, using loaded purposes
     let code = purposeCode || '';
@@ -757,6 +762,7 @@ formatDepartmentDisplay(department?: unknown): string {
       includeApprovedEntry
         ? this.buildLifecycleEntry('APPROVED', loan.approvedDate, this.formatHistoryActor(loan.approvedBy), loan.adminComment || 'Loan approved')
         : null,
+      this.buildLifecycleEntry('READY_FOR_DISBURSEMENT', loan.disbursementInitiatedAt, this.formatHistoryActor(loan.disbursementInitiatedBy), 'Loan sent to accounting for disbursement'),
       this.buildLifecycleEntry('ACTIVE', loan.disbursedDate, this.formatHistoryActor(loan.disbursedBy), 'Loan disbursed'),
       this.buildLifecycleEntry('COMPLETED', loan.completedDate, resolveCompletedLoanActor(loan), 'Loan completed'),
       this.buildLifecycleEntry('REJECTED', loan.rejectedDate, this.formatHistoryActor(loan.rejectedBy), loan.adminComment || 'Loan rejected')

@@ -35,7 +35,7 @@ app-employee-history {
 
       p {
         color: #2E6276;
-        font-size: 0.9rem;
+        font-size: 1.0rem;
       }
     }
 
@@ -86,7 +86,7 @@ app-employee-history {
           padding: 4px 12px;
           background: rgba(46, 98, 118, 0.08);
           border-radius: 20px;
-          font-size: 0.75rem;
+          font-size: 0.85rem;
           font-weight: 600;
           color: #2E6276;
         }
@@ -317,7 +317,7 @@ app-employee-history {
 
           .stat-label {
             display: block;
-            font-size: 0.75rem;
+            font-size: 0.9rem;
             text-transform: uppercase;
             color: #8aadba;
             letter-spacing: 0.08em;
@@ -357,7 +357,7 @@ app-employee-history {
           label {
             font-weight: 600;
             color: #1a4b5c;
-            font-size: 0.7rem;
+            font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
@@ -367,7 +367,7 @@ app-employee-history {
             padding: 10px 12px;
             border: 1px solid #d7e7ec;
             border-radius: 10px;
-            font-size: 0.85rem;
+            font-size: 0.95rem;
             background: white;
 
             &:focus {
@@ -386,7 +386,7 @@ app-employee-history {
             background: white;
             color: #2E6276;
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -448,7 +448,7 @@ app-employee-history {
         background: #f8fcfd;
         color: #1a4b5c;
         font-weight: 700;
-        font-size: 0.7rem;
+        font-size: 0.9rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         text-align: center;
@@ -469,7 +469,7 @@ app-employee-history {
             top: 50%;
             transform: translateY(-50%);
             color: #8aadba;
-            font-size: 0.65rem;
+            font-size: 0.75rem;
           }
         }
       }
@@ -477,7 +477,7 @@ app-employee-history {
       td {
         text-align: center;
         color: #2c5a6a;
-        font-size: 0.75rem;
+        font-size: 0.95rem;
       }
 
       tr:hover {
@@ -503,7 +503,7 @@ app-employee-history {
         justify-content: center;
         padding: 4px 10px;
         border-radius: 999px;
-        font-size: 0.65rem;
+        font-size: 0.85rem;
         font-weight: 700;
 
         &.status-pending {
@@ -514,7 +514,7 @@ app-employee-history {
           border-radius: 999px !important;
           background: rgba(245, 158, 11, 0.12) !important;
           color: #b45309 !important;
-          font-size: 0.78rem !important;
+          font-size: 0.85rem !important;
           font-weight: 700 !important;
           text-transform: none !important;
         }
@@ -526,7 +526,7 @@ app-employee-history {
           border-radius: 999px !important;
           background: rgba(59, 130, 246, 0.12) !important;
           color: #1e40af !important;
-          font-size: 0.78rem !important;
+          font-size: 0.85rem !important;
           font-weight: 700 !important;
           text-transform: none !important;
         }
@@ -538,7 +538,7 @@ app-employee-history {
           border-radius: 999px !important;
           background: rgba(46, 178, 112, 0.12) !important;
           color: #1e7e4a !important;
-          font-size: 0.78rem !important;
+          font-size: 0.85rem !important;
           font-weight: 700 !important;
           text-transform: none !important;
         }
@@ -560,7 +560,7 @@ app-employee-history {
           border-radius: 999px !important;
           background: rgba(220, 38, 38, 0.12) !important;
           color: #991b1b !important;
-          font-size: 0.78rem !important;
+          font-size: 0.85rem !important;
           font-weight: 700 !important;
           text-transform: none !important;
         }
@@ -662,7 +662,7 @@ app-employee-history {
         background: white;
         color: #2E6276;
         font-weight: 600;
-        font-size: 0.8rem;
+        font-size: 0.9rem;
         cursor: pointer;
 
         &:hover {
@@ -683,7 +683,7 @@ app-employee-history {
 
       .pagination-btn {
         padding: 6px 16px;
-        font-size: 0.85rem;
+        font-size: 0.95rem;
         font-weight: 600;
         border: 1px solid #d7e7ec;
         background: white;

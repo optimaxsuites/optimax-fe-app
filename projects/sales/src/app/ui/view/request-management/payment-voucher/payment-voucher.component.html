@@ -351,8 +351,8 @@
       <div class="receipt-parties">
         <div class="party-block">
           <h5>FROM</h5>
-          <h4>Your Organization</h4>
-          <p>Procurement Department<br />Lagos, Nigeria</p>
+          <h4>{{ payer.name || '—' }}</h4>
+          <p>Procurement Department<br />{{ payer.address || '—' }}</p>
         </div>
         <div class="party-arrow"><i class="fas fa-arrow-right"></i></div>
         <div class="party-block">

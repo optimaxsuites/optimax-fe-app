@@ -610,7 +610,18 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 8px;
             font-size: 11px;
+
+            .ql-movement-requester {
+                color: var(--muted);
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
 
             .ql-movement-date {
                 color: var(--muted);
@@ -622,6 +633,7 @@
                 align-items: center;
                 gap: 4px;
                 font-size: 11px;
+                flex-shrink: 0;
             }
         }
     }

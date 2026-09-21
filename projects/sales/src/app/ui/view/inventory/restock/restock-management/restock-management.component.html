@@ -205,6 +205,7 @@
                     <tr>
                         <th>Product</th>
                         <th>Branch</th>
+                        <th>Requested By</th>
                         <th>Current Stock</th>
                         <th>Requested</th>
                         <th>Urgency</th>
@@ -217,7 +218,7 @@
                 <!-- Empty state -->
                 <tbody *ngIf="filteredRequests.length === 0">
                     <tr>
-                        <td colspan="8">
+                        <td colspan="9">
                             <div class="ql-empty">
                                 <i class="fas fa-truck-loading ql-empty-icon"></i>
                                 <p class="ql-empty-title">No restock requests found</p>
@@ -247,6 +248,10 @@
                                 <i class="fas fa-store"></i>
                                 <span>{{ getBranchName(request.branchId) }}</span>
                             </div>
+                        </td>
+
+                        <td class="ql-td-requested-by">
+                            <span>{{ request.createdByName || 'Unknown' }}</span>
                         </td>
 
                         <td class="ql-td-stock">

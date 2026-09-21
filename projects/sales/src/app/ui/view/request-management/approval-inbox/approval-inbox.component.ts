@@ -56,7 +56,17 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
           this.isLoading = false;
           if (this.selected) {
             const refreshed = this.requests.find(r => r.id === this.selected!.id);
-            if (refreshed) this.select(refreshed);
+            if (refreshed) {
+              this.select(refreshed);
+            } else {
+              // The selected request left the pending queue (e.g. the final approval stage
+              // cleared it) — confirmApprove() already clears this on its own path, but a
+              // background/manual refresh via load() was leaving the previous selection and its
+              // Approve/Reject buttons visible and active against a workflow instance that may
+              // already be finalized server-side.
+              this.selected = null;
+              this.workflowInstance = null;
+            }
           }
         },
         error: () => { this.isLoading = false; }
@@ -87,7 +97,7 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
       this.approvalService.getWorkflowInstance(Number(instanceId))
         .pipe(takeUntil(this.destroy$))
         .subscribe({
-          next: (inst) => { this.workflowInstance = inst; this.isLoadingInstance = false; },
+          next: (inst) => this.applyWorkflowInstance(req, inst),
           error: () => this.lookupByReference(req)
         });
     } else {
@@ -95,11 +105,30 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Every async step below (getWorkflowInstance / lookupByReference / retriggerThenFetch) is
+   * kicked off from select(req) but resolves later, with no cancellation of the previous
+   * request's in-flight call. Clicking request A then quickly clicking request B could let A's
+   * response land after B's and overwrite `workflowInstance` with A's data while `selected`
+   * shows B — so Approve/Reject would act on the wrong workflow instance. Guard every place
+   * that writes `workflowInstance` by re-checking `selected` is still the request this chain
+   * started for; a stale response is just dropped.
+   */
+  private isStillSelected(req: ProcurementRequest): boolean {
+    return this.selected?.id === req.id;
+  }
+
+  private applyWorkflowInstance(req: ProcurementRequest, inst: WorkflowInstance): void {
+    if (!this.isStillSelected(req)) return;
+    this.workflowInstance = inst;
+    this.isLoadingInstance = false;
+  }
+
   private lookupByReference(req: ProcurementRequest): void {
     this.approvalService.lookupWorkflowInstance('PROCUREMENT_REQUEST', String(req.id))
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (inst) => { this.workflowInstance = inst; this.isLoadingInstance = false; },
+        next: (inst) => this.applyWorkflowInstance(req, inst),
         error: () => this.retriggerThenFetch(req)
       });
   }
@@ -109,13 +138,14 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (updated: any) => {
+          if (!this.isStillSelected(req)) return;
           const instanceId = updated?.approvalInstanceId;
           if (instanceId) {
             this.approvalService.getWorkflowInstance(Number(instanceId))
               .pipe(takeUntil(this.destroy$))
               .subscribe({
-                next: (inst) => { this.workflowInstance = inst; this.isLoadingInstance = false; },
-                error: () => { this.isLoadingInstance = false; }
+                next: (inst) => this.applyWorkflowInstance(req, inst),
+                error: () => { if (this.isStillSelected(req)) this.isLoadingInstance = false; }
               });
           } else {
             this.isLoadingInstance = false;
@@ -126,7 +156,7 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
             });
           }
         },
-        error: () => { this.isLoadingInstance = false; }
+        error: () => { if (this.isStillSelected(req)) this.isLoadingInstance = false; }
       });
   }
 
@@ -278,21 +308,23 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
   // ── Session helpers ─────────────────────────────────────
 
   private getCurrentUserId(): number {
-    return Number(sessionStorage.getItem('userId') || sessionStorage.getItem('id') || 0);
+    return this.approvalService.getCurrentActor().userId;
   }
 
   private getCurrentRole(): { roleCode: string | null; roleId: number | null } {
-    let roleCode: string | null = sessionStorage.getItem('role') || null;
-    let roleId: number | null = null;
-    const raw = sessionStorage.getItem('userApplicationRole');
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        roleCode = parsed?.appRole?.code || parsed?.appRole?.roleCode || parsed?.appRole?.name || roleCode;
-        const rid = Number(parsed?.appRole?.id ?? parsed?.appRole?.roleId ?? 0);
-        roleId = Number.isFinite(rid) && rid > 0 ? rid : null;
-      } catch { /* ignore */ }
-    }
+    const { roleCode, roleId } = this.approvalService.getCurrentActor();
     return { roleCode, roleId };
   }
+
+  // Add this method
+getTypeCount(type: string): number {
+  return this.requests.filter(r => r.procurementType === type).length;
+}
+
+// Add resetFilters method
+resetFilters(): void {
+  this.searchTerm = '';
+  this.filterType = 'ALL';
+  this.applyFilters();
+}
 }

@@ -181,10 +181,10 @@ export class BranchTransferHistoryComponent implements OnInit, OnDestroy {
     this.filteredMovements = this.movements.filter(m => {
       // Search filter
       const searchMatch = !formValue.search ||
-        m.productName.toLowerCase().includes(formValue.search.toLowerCase()) ||
-        m.sku.toLowerCase().includes(formValue.search.toLowerCase()) ||
-        m.fromLocation.name.toLowerCase().includes(formValue.search.toLowerCase()) ||
-        m.toLocation.name.toLowerCase().includes(formValue.search.toLowerCase());
+        (m.productName || '').toLowerCase().includes(formValue.search.toLowerCase()) ||
+        (m.sku || '').toLowerCase().includes(formValue.search.toLowerCase()) ||
+        (m.fromLocation?.name || '').toLowerCase().includes(formValue.search.toLowerCase()) ||
+        (m.toLocation?.name || '').toLowerCase().includes(formValue.search.toLowerCase());
 
       // Type filter
       const typeMatch = formValue.type === 'ALL' ||

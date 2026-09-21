@@ -46,7 +46,7 @@ export class CooperativeMemberLoanHistoryComponent implements OnInit {
     { label: 'Pending', value: 'PENDING' },
     { label: 'Approved', value: 'APPROVED' },
     { label: 'Rejected', value: 'REJECTED' },
-    { label: 'Ready for Disbursement', value: 'READY_FOR_DISBURSEMENT' },
+    { label: 'Disbursable', value: 'READY_FOR_DISBURSEMENT' },
     { label: 'Active', value: 'ACTIVE' },
     { label: 'Completed', value: 'COMPLETED' },
     { label: 'Skipped', value: 'SKIPPED' },
@@ -264,7 +264,7 @@ export class CooperativeMemberLoanHistoryComponent implements OnInit {
     const map: Record<string, string> = {
       'PENDING': 'Pending',
       'APPROVED': 'Approved',
-      'READY_FOR_DISBURSEMENT': 'Ready For Disbursement',
+      'READY_FOR_DISBURSEMENT': 'Disbursable',
       'ACTIVE': 'Active',
       'COMPLETED': 'Completed',
       'REJECTED': 'Rejected',

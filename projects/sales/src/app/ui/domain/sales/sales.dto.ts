@@ -391,7 +391,7 @@ export interface SalesEmailAttachment {
   contentType?: string;
 }
 
-/** Request body for POST /sales/email/send. */
+/** Request body for POST /sales/email/send (see SalesEmailService.send() for why not /document yet). */
 export interface SendSalesEmailRequest {
   documentType: SalesEmailDocumentType;
   documentId: number;

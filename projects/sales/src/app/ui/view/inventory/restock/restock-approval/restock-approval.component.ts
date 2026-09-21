@@ -25,19 +25,6 @@ import {
 // INTERFACES
 // ============================================================
 
-export interface ApprovalLevel {
-  id: string;
-  name: string;
-  role: string;
-  order: number;
-  required: boolean;
-  approverId?: string;
-  approverName?: string;
-  approvedAt?: Date;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SKIPPED';
-  comments?: string;
-}
-
 export interface ApprovalStats {
   totalPending: number;
   totalApproved: number;
@@ -68,7 +55,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   @Input() requestId: string = '';
   @Input() autoSelect: boolean = true;
   @Output() close = new EventEmitter<void>();
-  @Output() approvalComplete = new EventEmitter<{ requestId: string; action: 'APPROVE' | 'REJECT' | 'ORDER'; comments?: string }>();
+  @Output() approvalComplete = new EventEmitter<{ requestId: string; action: 'APPROVE' | 'REJECT'; comments?: string }>();
 
   // ============================================================
   // STATE
@@ -81,7 +68,6 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   branches: Branch[] = [];
   products: Product[] = [];
   branchInventory: BranchInventory[] = [];
-  approvalLevels: ApprovalLevel[] = [];
   approvalStats: ApprovalStats | null = null;
   approvalHistory: any[] = [];
   isLoading: boolean = true;
@@ -95,17 +81,12 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   selectedUrgencyFilter: 'ALL' | RestockUrgency = 'ALL';
   showApproveModal: boolean = false;
   showRejectModal: boolean = false;
-  showOrderModal: boolean = false;
-  showLevelModal: boolean = false;
   searchTerm: string = '';
-  selectedAction: 'APPROVE' | 'REJECT' | 'ORDER' | null = null;
-  selectedLevelId: string = '';
+  selectedAction: 'APPROVE' | 'REJECT' | null = null;
 
   // Form
   approveForm: FormGroup;
   rejectForm: FormGroup;
-  orderForm: FormGroup;
-  levelForm: FormGroup;
   searchSubject = new Subject<string>();
 
   // Private
@@ -126,21 +107,6 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
     RestockUrgency.CRITICAL
   ];
 
-  // Mock approval levels
-  private approvalLevelsConfig = [
-    { id: 'lvl-1', name: 'Branch Manager', role: 'BRANCH_MANAGER', order: 1, required: true },
-    { id: 'lvl-2', name: 'Procurement Officer', role: 'PROCUREMENT', order: 2, required: true },
-    { id: 'lvl-3', name: 'Budget Holder', role: 'BUDGET_HOLDER', order: 3, required: false }
-  ];
-
-  // Mock users for approval — must be public: it's bound directly in the "Assign Approver"
-  // modal's *ngFor, and Angular templates cannot read a component's private members.
-  approvers = [
-    { id: 'usr-1', name: 'John Doe', role: 'BRANCH_MANAGER' },
-    { id: 'usr-2', name: 'Jane Smith', role: 'PROCUREMENT' },
-    { id: 'usr-3', name: 'Emeka Obi', role: 'BUDGET_HOLDER' }
-  ];
-
   // ============================================================
   // CONSTRUCTOR
   // ============================================================
@@ -154,8 +120,6 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   ) {
     this.approveForm = this.buildApproveForm();
     this.rejectForm = this.buildRejectForm();
-    this.orderForm = this.buildOrderForm();
-    this.levelForm = this.buildLevelForm();
   }
 
   // ============================================================
@@ -190,7 +154,6 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   private buildApproveForm(): FormGroup {
     return this.fb.group({
       comments: ['', [Validators.maxLength(500)]],
-      approveAllLevels: [false],
       notifyRequester: [true]
     });
   }
@@ -199,24 +162,6 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
     return this.fb.group({
       reason: ['', [Validators.required, Validators.maxLength(500)]],
       notifyRequester: [true]
-    });
-  }
-
-  private buildOrderForm(): FormGroup {
-    return this.fb.group({
-      supplier: ['', Validators.required],
-      expectedDelivery: ['', Validators.required],
-      quantity: ['', [Validators.required, Validators.min(1)]],
-      unitPrice: ['', [Validators.required, Validators.min(0)]],
-      notes: ['', Validators.maxLength(500)]
-    });
-  }
-
-  private buildLevelForm(): FormGroup {
-    return this.fb.group({
-      levelId: ['', Validators.required],
-      approverId: ['', Validators.required],
-      comments: ['', Validators.maxLength(300)]
     });
   }
 
@@ -246,19 +191,14 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
           this.branchInventory = inventory || [];
           this.filterRequests();
           this.calculateStats();
-          this.generateApprovalLevels();
-          
+
           // Auto-select request if ID provided
           if (this.requestId && this.autoSelect) {
             this.selectedRequest = this.requests.find(r => String(r.id) === this.requestId) || null;
-            if (this.selectedRequest) {
-              this.generateApprovalLevelsForRequest(this.selectedRequest);
-            }
           } else if (this.requests.length > 0 && !this.selectedRequest) {
             this.selectedRequest = this.requests[0];
-            this.generateApprovalLevelsForRequest(this.selectedRequest);
           }
-          
+
           this.isLoading = false;
         },
         error: (err) => {
@@ -276,58 +216,6 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.isRefreshing = false;
     }, 500);
-  }
-
-  // ============================================================
-  // APPROVAL LEVELS
-  // ============================================================
-
-  private generateApprovalLevels(): void {
-    // Generate approval levels based on request status
-    this.approvalLevels = this.approvalLevelsConfig.map(config => {
-      const approver = this.approvers.find(a => a.role === config.role);
-      return {
-        ...config,
-        status: 'PENDING' as const,
-        approverId: approver?.id,
-        approverName: approver?.name
-      };
-    });
-  }
-
-  private generateApprovalLevelsForRequest(request: RestockRequest): void {
-    // Map request status to approval levels
-    const levels = this.approvalLevelsConfig.map((config, index) => {
-      let status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SKIPPED' = 'PENDING';
-      
-      // If request is approved, mark all levels as approved
-      if (request.status === RestockStatus.APPROVED || 
-          request.status === RestockStatus.ORDERED || 
-          request.status === RestockStatus.RECEIVED) {
-        status = 'APPROVED';
-      } else if (request.status === RestockStatus.REJECTED) {
-        status = 'REJECTED';
-      } else if (request.status === RestockStatus.PENDING) {
-        // First level is pending, others are skipped
-        if (index === 0) {
-          status = 'PENDING';
-        } else {
-          status = 'SKIPPED';
-        }
-      }
-
-      const approver = this.approvers.find(a => a.role === config.role);
-      return {
-        ...config,
-        status,
-        approverId: approver?.id,
-        approverName: approver?.name,
-        approvedAt: status === 'APPROVED' ? new Date() : undefined,
-        comments: status === 'APPROVED' ? 'Approved' : undefined
-      };
-    });
-
-    this.approvalLevels = levels;
   }
 
   // ============================================================
@@ -439,17 +327,12 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   selectRequest(requestId: string | number): void {
     this.selectedRequest = this.requests.find(r => String(r.id) === String(requestId)) || null;
     if (this.selectedRequest) {
-      this.generateApprovalLevelsForRequest(this.selectedRequest);
       // Reset forms
       this.approveForm.reset();
       this.rejectForm.reset();
-      this.orderForm.reset();
-      this.levelForm.reset();
       this.selectedAction = null;
       this.showApproveModal = false;
       this.showRejectModal = false;
-      this.showOrderModal = false;
-      this.showLevelModal = false;
     }
   }
 
@@ -462,7 +345,6 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
     this.selectedAction = 'APPROVE';
     this.approveForm.patchValue({
       comments: '',
-      approveAllLevels: false,
       notifyRequester: true
     });
     this.showApproveModal = true;
@@ -480,28 +362,13 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
     this.isSubmitting = true;
     const formValue = this.approveForm.value;
 
-    // Update request status
-    const action = formValue.approveAllLevels ? this.updateAllApprovalLevels() : this.updateNextApprovalLevel();
-
     setTimeout(() => {
       if (this.selectedRequest) {
-        // Update request status
-        if (formValue.approveAllLevels) {
-          this.selectedRequest.status = RestockStatus.APPROVED;
-          this.selectedRequest.approvedBy = 'usr-2';
-          this.selectedRequest.approvedByName = 'Jane Smith';
-          this.selectedRequest.approvedAt = new Date();
-        } else {
-          // Check if all levels approved
-          const allApproved = this.approvalLevels.every(l => l.status === 'APPROVED' || l.status === 'SKIPPED');
-          if (allApproved) {
-            this.selectedRequest.status = RestockStatus.APPROVED;
-            this.selectedRequest.approvedBy = 'usr-2';
-            this.selectedRequest.approvedByName = 'Jane Smith';
-            this.selectedRequest.approvedAt = new Date();
-          }
-        }
-        
+        this.selectedRequest.status = RestockStatus.APPROVED;
+        this.selectedRequest.approvedBy = this.getCurrentUserId();
+        this.selectedRequest.approvedByName = this.getCurrentUserName();
+        this.selectedRequest.approvedAt = new Date();
+
         // Add comments if provided
         if (formValue.comments) {
           this.selectedRequest.notes = (this.selectedRequest.notes || '') + `\nApproval comment: ${formValue.comments}`;
@@ -509,7 +376,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
 
         // Save to service
         this.inventoryService.updateRestockRequest(this.selectedRequest.id, this.selectedRequest).subscribe();
-        
+
         // Emit event
         this.approvalComplete.emit({
           requestId: String(this.selectedRequest.id),
@@ -520,29 +387,9 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
 
       this.calculateStats();
       this.filterRequests();
-      this.generateApprovalLevelsForRequest(this.selectedRequest!);
       this.isSubmitting = false;
       this.showApproveModal = false;
     }, 1000);
-  }
-
-  private updateNextApprovalLevel(): void {
-    const nextLevel = this.approvalLevels.find(l => l.status === 'PENDING');
-    if (nextLevel) {
-      nextLevel.status = 'APPROVED';
-      nextLevel.approvedAt = new Date();
-      nextLevel.comments = this.approveForm.get('comments')?.value || 'Approved';
-    }
-  }
-
-  private updateAllApprovalLevels(): void {
-    this.approvalLevels.forEach(level => {
-      if (level.status === 'PENDING') {
-        level.status = 'APPROVED';
-        level.approvedAt = new Date();
-        level.comments = this.approveForm.get('comments')?.value || 'Approved';
-      }
-    });
   }
 
   // ============================================================
@@ -577,14 +424,14 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       if (this.selectedRequest) {
         this.selectedRequest.status = RestockStatus.REJECTED;
-        this.selectedRequest.approvedBy = 'usr-2';
-        this.selectedRequest.approvedByName = 'Jane Smith';
+        this.selectedRequest.approvedBy = this.getCurrentUserId();
+        this.selectedRequest.approvedByName = this.getCurrentUserName();
         this.selectedRequest.approvedAt = new Date();
         this.selectedRequest.notes = (this.selectedRequest.notes || '') + `\nRejection reason: ${formValue.reason}`;
 
         // Save to service
         this.inventoryService.updateRestockRequest(this.selectedRequest.id, this.selectedRequest).subscribe();
-        
+
         // Emit event
         this.approvalComplete.emit({
           requestId: String(this.selectedRequest.id),
@@ -595,109 +442,20 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
 
       this.calculateStats();
       this.filterRequests();
-      this.generateApprovalLevelsForRequest(this.selectedRequest!);
       this.isSubmitting = false;
       this.showRejectModal = false;
     }, 1000);
   }
 
-  // ============================================================
-  // ORDER ACTIONS
-  // ============================================================
-
-  openOrderModal(): void {
-    if (!this.selectedRequest) return;
-    this.selectedAction = 'ORDER';
-    this.orderForm.patchValue({
-      supplier: this.selectedRequest.preferredSupplier || '',
-      expectedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-      quantity: this.selectedRequest.requestedQuantity,
-      unitPrice: Math.round((this.selectedRequest.costEstimate || 0) / (this.selectedRequest.requestedQuantity || 1)),
-      notes: ''
-    });
-    this.showOrderModal = true;
+  // Every approve/reject action above used to hardcode 'usr-2' / 'Jane Smith' instead of the
+  // person actually signed in. 'userid'/'fullname' are the session keys app.ts sets at login —
+  // same pattern used for stock movement approvals (see MovementApprovalComponent).
+  private getCurrentUserId(): string {
+    return sessionStorage.getItem('userid') || 'usr-1';
   }
 
-  closeOrderModal(): void {
-    this.showOrderModal = false;
-    this.selectedAction = null;
-    this.orderForm.reset();
-  }
-
-  submitOrder(): void {
-    if (this.orderForm.invalid || !this.selectedRequest) {
-      this.orderForm.markAllAsTouched();
-      return;
-    }
-
-    this.isSubmitting = true;
-    const formValue = this.orderForm.value;
-
-    setTimeout(() => {
-      if (this.selectedRequest) {
-        this.selectedRequest.status = RestockStatus.ORDERED;
-        this.selectedRequest.purchaseOrderId = `PO-${Date.now()}`;
-        this.selectedRequest.requestedQuantity = formValue.quantity;
-        this.selectedRequest.preferredSupplier = formValue.supplier;
-        this.selectedRequest.notes = (this.selectedRequest.notes || '') + `\nPO Notes: ${formValue.notes}`;
-
-        // Save to service
-        this.inventoryService.updateRestockRequest(this.selectedRequest.id, this.selectedRequest).subscribe();
-        
-        // Emit event
-        this.approvalComplete.emit({
-          requestId: String(this.selectedRequest.id),
-          action: 'ORDER',
-          comments: `PO Created: ${this.selectedRequest.purchaseOrderId}`
-        });
-      }
-
-      this.calculateStats();
-      this.filterRequests();
-      this.generateApprovalLevelsForRequest(this.selectedRequest!);
-      this.isSubmitting = false;
-      this.showOrderModal = false;
-    }, 1000);
-  }
-
-  // ============================================================
-  // LEVEL MANAGEMENT
-  // ============================================================
-
-  openLevelModal(levelId: string): void {
-    this.selectedLevelId = levelId;
-    const level = this.approvalLevels.find(l => l.id === levelId);
-    if (!level) return;
-
-    this.levelForm.patchValue({
-      levelId: levelId,
-      approverId: level.approverId || '',
-      comments: ''
-    });
-    this.showLevelModal = true;
-  }
-
-  closeLevelModal(): void {
-    this.showLevelModal = false;
-    this.levelForm.reset();
-  }
-
-  assignApprover(): void {
-    if (this.levelForm.invalid) {
-      this.levelForm.markAllAsTouched();
-      return;
-    }
-
-    const formValue = this.levelForm.value;
-    const level = this.approvalLevels.find(l => l.id === formValue.levelId);
-    if (level) {
-      const approver = this.approvers.find(a => a.id === formValue.approverId);
-      level.approverId = formValue.approverId;
-      level.approverName = approver?.name || '';
-      level.comments = formValue.comments || level.comments;
-    }
-
-    this.showLevelModal = false;
+  private getCurrentUserName(): string {
+    return sessionStorage.getItem('fullname') || 'Unknown User';
   }
 
   // ============================================================
@@ -722,14 +480,6 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
     if (branchId) {
       this.router.navigate(['/admin/sales/commerce/inventory/branches', branchId]);
     }
-  }
-
-  // ============================================================
-  // EXPORT
-  // ============================================================
-
-  exportReport(): void {
-    console.log('Exporting restock approval report...');
   }
 
   // ============================================================
@@ -800,36 +550,6 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
       'RECEIVED': 'fa-check-double'
     };
     return map[status] || 'fa-circle';
-  }
-
-  getLevelStatusColor(status: string): string {
-    const map: Record<string, string> = {
-      'PENDING': '#F5A623',
-      'APPROVED': '#2EB270',
-      'REJECTED': '#DC2626',
-      'SKIPPED': '#6B7280'
-    };
-    return map[status] || '#6B7280';
-  }
-
-  getLevelStatusIcon(status: string): string {
-    const map: Record<string, string> = {
-      'PENDING': 'fa-clock',
-      'APPROVED': 'fa-check-circle',
-      'REJECTED': 'fa-times-circle',
-      'SKIPPED': 'fa-arrow-right'
-    };
-    return map[status] || 'fa-circle';
-  }
-
-  getLevelStatusLabel(status: string): string {
-    const map: Record<string, string> = {
-      'PENDING': 'Awaiting Approval',
-      'APPROVED': 'Approved',
-      'REJECTED': 'Rejected',
-      'SKIPPED': 'Skipped'
-    };
-    return map[status] || status;
   }
 
   getBranchName(branchId: string): string {

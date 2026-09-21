@@ -185,8 +185,8 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
     this.filteredItems = this.inventoryItems.filter(item => {
       // Search filter
       const searchMatch = !formValue.search ||
-        item.productName.toLowerCase().includes(formValue.search.toLowerCase()) ||
-        item.sku.toLowerCase().includes(formValue.search.toLowerCase());
+        (item.productName || '').toLowerCase().includes(formValue.search.toLowerCase()) ||
+        (item.sku || '').toLowerCase().includes(formValue.search.toLowerCase());
 
       // Stock status filter
       const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);
@@ -353,7 +353,8 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
     this.router.navigate(['/admin/sales/commerce/inventory/movements/new'], {
       queryParams: {
         ids: ids.join(','),
-        branchId: this.branchId
+        branchId: this.branchId,
+        type: 'ADJUSTMENT'
       }
     });
     this.selectedItems.clear();

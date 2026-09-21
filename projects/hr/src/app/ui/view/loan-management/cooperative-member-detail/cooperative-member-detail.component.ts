@@ -84,7 +84,7 @@ export class CooperativeMemberDetailComponent implements OnInit {
     SKIPPED: 'Skipped',
     DEFAULTED: 'Defaulted',
     COMPLETED: 'Completed',
-    READY_FOR_DISBURSEMENT: 'Ready For Disbursement',
+    READY_FOR_DISBURSEMENT: 'Disbursable',
     INACTIVE: 'Inactive',
     SUSPENDED: 'Suspended',
     PAID: 'Paid',

@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { LateArrival } from '../../../../../domain/attendance/attendashboard.dto';
+import { LateArrivalDTO } from '../../../../../domain/attendance/attendance-summary.dto';
 
 @Component({
   selector: 'app-late-arrivals',
@@ -7,10 +7,5 @@ import { LateArrival } from '../../../../../domain/attendance/attendashboard.dto
   styleUrl: './late-arrivals.component.scss'
 })
 export class LateArrivalsComponent {
-  @Input() lateArrivals: LateArrival[] = [];
-  /*lateArrivals = [
-  { name: 'Kingsley Kings', time: '09:32 AM' },
-  { name: 'Davidson Davids', time: '09:41 AM' }
-];*/
-
+  @Input() lateArrivals: LateArrivalDTO[] = [];
 }

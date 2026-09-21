@@ -26,6 +26,17 @@ export class DocumentationHistoryComponent implements OnInit {
   lpoDoc: any = null;
   invoiceDoc: any = null;
 
+  // Add these properties
+  Math = Math;
+  searchTerm = '';
+  filterStatus: string = 'ALL';
+  currentPage = 0;
+  pageSize = 10;
+  totalPages = 0;
+  filteredRequests: ProcurementRequest[] = [];
+  /** Count of all filter-matching records, before pagination slices filteredRequests down to one page. */
+  totalFilteredCount = 0;
+
   constructor(
     private procurementService: ProcurementRequestService,
     private quotationService: QuotationManagementService,
@@ -137,7 +148,13 @@ export class DocumentationHistoryComponent implements OnInit {
       'PAYMENT_CONFIRMED': 'status-payment-confirmed',
       'DELIVERY_IN_PROGRESS': 'status-delivering',
       'DELIVERED': 'status-delivered',
-      'CANCELLED': 'status-cancelled'
+      'CANCELLED': 'status-cancelled',
+      'DRAFT': 'status-draft',
+      'PENDING_APPROVAL': 'status-pending',
+      'APPROVED': 'status-approved',
+      'REJECTED': 'status-cancelled',
+      'PENDING_VENDOR_QUOTES': 'status-quoting',
+      'COMPLETED': 'status-delivered'
     };
     return classes[status] || 'status-pending';
   }
@@ -152,7 +169,13 @@ export class DocumentationHistoryComponent implements OnInit {
       'PAYMENT_CONFIRMED': 'Payment Confirmed',
       'DELIVERY_IN_PROGRESS': 'Delivery In Progress',
       'DELIVERED': 'Delivered',
-      'CANCELLED': 'Cancelled'
+      'CANCELLED': 'Cancelled',
+      'DRAFT': 'Draft',
+      'PENDING_APPROVAL': 'Pending Approval',
+      'APPROVED': 'Approved',
+      'REJECTED': 'Rejected',
+      'PENDING_VENDOR_QUOTES': 'Awaiting Vendor Quotes',
+      'COMPLETED': 'Completed'
     };
     return labels[status] || status;
   }
@@ -199,4 +222,67 @@ export class DocumentationHistoryComponent implements OnInit {
       day: 'numeric'
     });
   }
+
+  // Add getter for filtered requests
+get filteredRequestsList(): ProcurementRequest[] {
+  let list = [...this.requests];
+  if (this.filterStatus !== 'ALL') {
+    list = list.filter(r => r.status === this.filterStatus);
+  }
+  if (this.searchTerm.trim()) {
+    const q = this.searchTerm.toLowerCase();
+    list = list.filter(r =>
+      r.title?.toLowerCase().includes(q) ||
+      String(r.id).includes(q)
+    );
+  }
+  return list;
+}
+
+// Add methods
+getStatusCount(status: string): number {
+  return this.requests.filter(r => r.status === status).length;
+}
+
+applyFilters(): void {
+  this.currentPage = 0;
+  this.updatePagination();
+}
+
+resetFilters(): void {
+  this.searchTerm = '';
+  this.filterStatus = 'ALL';
+  this.applyFilters();
+}
+
+updatePagination(): void {
+  const list = this.filteredRequestsList;
+  this.totalFilteredCount = list.length;
+  this.totalPages = Math.ceil(list.length / this.pageSize);
+  const start = this.currentPage * this.pageSize;
+  this.filteredRequests = list.slice(start, start + this.pageSize);
+}
+
+onPageChange(page: number): void {
+  this.currentPage = page;
+  this.updatePagination();
+}
+
+onPageSizeChange(size: number): void {
+  this.pageSize = size;
+  this.currentPage = 0;
+  this.updatePagination();
+}
+
+getPageNumbers(): number[] {
+  const maxVisible = 5;
+  let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
+  let end = Math.min(this.totalPages, start + maxVisible);
+
+  if (end - start < maxVisible) {
+    start = Math.max(0, end - maxVisible);
+  }
+
+  return Array.from({ length: end - start }, (_, i) => start + i);
+}
 }

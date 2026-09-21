@@ -827,6 +827,9 @@ private refreshDisplayedLoanRows(): void {
  */
 public getStatusDisplay(status: string | undefined | null): string {
   if (!status) return '';
+  if (String(status).toUpperCase() === 'READY_FOR_DISBURSEMENT') {
+    return 'Disbursable';
+  }
   // Convert status to Title Case with spaces
   const normalized = String(status).replace(/_/g, ' ').toLowerCase();
   return normalized.replace(/\b\w/g, c => c.toUpperCase());
@@ -834,6 +837,9 @@ public getStatusDisplay(status: string | undefined | null): string {
 
 public toTitleCase(value: string | undefined | null): string {
   if (!value) return '';
+  if (String(value).toUpperCase() === 'READY_FOR_DISBURSEMENT') {
+    return 'Disbursable';
+  }
   const normalized = String(value).replace(/_/g, ' ').toLowerCase();
   return normalized.replace(/\b\w/g, c => c.toUpperCase());
 }
@@ -1282,7 +1288,7 @@ public toTitleCase(value: string | undefined | null): string {
     }
 
     if (loan.disbursementInitiatedAt || loan.status === 'READY_FOR_DISBURSEMENT') {
-      return 'Ready For Disbursement';
+      return 'Disbursable';
     }
 
     return 'Not Disbursed';
@@ -1293,7 +1299,7 @@ public toTitleCase(value: string | undefined | null): string {
     if (status === 'Disbursed') {
       return 'status-active';
     }
-    if (status === 'Confirmed' || status === 'Ready For Disbursement') {
+    if (status === 'Confirmed' || status === 'Disbursable') {
       return 'status-ready_for_disbursement';
     }
     return 'status-pending';

@@ -19,6 +19,7 @@ export class VendorSelectionComponent implements OnInit {
   vendors: VendorSuggestion[] = [];
   selectedVendors: Set<string> = new Set();
   isLoading = false;
+  isSaving = false;
   searchTerm = '';
   filterCategory = '';
   filterTier: 'ALL' | 'PREFERRED' | 'APPROVED' = 'ALL';
@@ -27,7 +28,6 @@ export class VendorSelectionComponent implements OnInit {
   comparisonVendors: VendorSuggestion[] = [];
   showAiBanner = true;
   shakeVendorId: string | null = null;
-  vendorNotifCounts: Map<string, number> = new Map();
 
   get categories(): string[] {
     const allCategories = this.vendors.flatMap(v => v.categories);
@@ -55,8 +55,7 @@ export class VendorSelectionComponent implements OnInit {
     }
 
     if (this.filterTier !== 'ALL') {
-      const tier = this.filterTier;
-      filtered = filtered.filter(v => v.reason.toUpperCase().includes(tier));
+      filtered = filtered.filter(v => v.tier === this.filterTier);
     }
 
     return filtered;
@@ -86,13 +85,13 @@ export class VendorSelectionComponent implements OnInit {
           this.procurementService.getVendorSuggestions(parseIdToNumber(this.requestId)).subscribe({
             next: (suggestions) => {
               this.vendors = suggestions;
-              this.vendorNotifCounts.clear();
-              this.vendors.forEach(v => {
-                this.vendorNotifCounts.set(v.vendorId, Math.floor(Math.random() * 3));
-              });
               this.selectedVendors.clear();
-              if (extendedReq && extendedReq.selectedVendors && extendedReq.selectedVendors.length > 0) {
-                extendedReq.selectedVendors.forEach((vId: any) => this.selectedVendors.add(vId));
+              // onNext() below persists picks under vendorsToNotify (the real field on
+              // ProcurementRequest) — selectedVendors on ExtendedProcurementRequest is never
+              // written anywhere, so reading it here always missed a prior save and silently
+              // re-defaulted to the AI top-3, discarding the user's actual selection.
+              if (extendedReq && extendedReq.vendorsToNotify && extendedReq.vendorsToNotify.length > 0) {
+                extendedReq.vendorsToNotify.forEach((vId: any) => this.selectedVendors.add(vId));
               } else {
                 const recommended = this.vendors.filter(v => v.isRecommended).slice(0, 3);
                 recommended.forEach(v => this.selectedVendors.add(v.vendorId));
@@ -187,10 +186,6 @@ export class VendorSelectionComponent implements OnInit {
     return 'STANDARD';
   }
 
-  getNotifCount(vendorId: string): number {
-    return this.vendorNotifCounts.get(vendorId) ?? 0;
-  }
-
   getMatchColor(score: number): string {
     if (score >= 90) return '#7c3aed';
     if (score >= 75) return '#184440';
@@ -263,6 +258,7 @@ export class VendorSelectionComponent implements OnInit {
   }
 
   onNext(): void {
+    if (this.isSaving) return;
     if (this.selectedVendors.size === 0) {
       this.messageService.add({ severity: 'warn', summary: 'No Vendor Selected', detail: 'Please select at least one vendor to continue.' });
       return;
@@ -270,14 +266,17 @@ export class VendorSelectionComponent implements OnInit {
     const uuid = this.route.snapshot.paramMap.get('uuid') || this.requestId;
     if (!uuid) return;
 
+    this.isSaving = true;
     this.procurementService.updateRequest(parseIdToNumber(uuid), {
       vendorsToNotify: Array.from(this.selectedVendors)
     } as any).subscribe({
       next: () => {
+        this.isSaving = false;
         const typePath = this.router.url.includes('/service') ? 'service' : 'product';
         this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid, 'preview']);
       },
       error: (err) => {
+        this.isSaving = false;
         console.error('Failed to save selected vendors', err);
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save your vendor selection. Please try again.' });
       }
@@ -298,6 +297,9 @@ export class VendorSelectionComponent implements OnInit {
     if (!this.selectedVendors.has(vendorId)) {
       if (this.selectedVendors.size < 3) {
         this.selectedVendors.add(vendorId);
+      } else {
+        // Same feedback as toggleVendor() — this used to close the panel with no indication the pick wasn't applied.
+        this.messageService.add({ severity: 'warn', summary: 'Selection Full', detail: 'You can select a maximum of 3 vendors.' });
       }
     }
     this.showSmartPanel = false;

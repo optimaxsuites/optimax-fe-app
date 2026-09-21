@@ -20,6 +20,28 @@ export class ApprovalService {
 
   constructor(private http: HttpClient) {}
 
+  /**
+   * The acting user's id/role for approve/reject calls. Shared by every approval screen so they
+   * send the same actor payload — approval-rfq-detail used to send only actorRoleCode from
+   * sessionStorage 'role' and never actorRoleId, unlike approval-inbox, so a multi-role user acting
+   * from that screen gave the backend nothing to tell which role/stage they were approving as.
+   */
+  getCurrentActor(): { userId: number; roleCode: string | null; roleId: number | null } {
+    const userId = Number(sessionStorage.getItem('userId') || sessionStorage.getItem('id') || 0);
+    let roleCode: string | null = sessionStorage.getItem('role') || null;
+    let roleId: number | null = null;
+    const raw = sessionStorage.getItem('userApplicationRole');
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        roleCode = parsed?.appRole?.code || parsed?.appRole?.roleCode || parsed?.appRole?.name || roleCode;
+        const rid = Number(parsed?.appRole?.id ?? parsed?.appRole?.roleId ?? 0);
+        roleId = Number.isFinite(rid) && rid > 0 ? rid : null;
+      } catch { /* ignore */ }
+    }
+    return { userId, roleCode, roleId };
+  }
+
   private get tenantId(): string {
     const h = window.location.hostname;
     return (h.includes('localhost') || h.includes('127.0.0.1')) ? 'optimax' : h.split('.')[0] || 'optimax';

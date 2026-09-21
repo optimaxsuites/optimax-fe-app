@@ -1,11 +1,12 @@
 // rfq-preview.component.ts
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProcurementRequest, RFQTemplate, VendorSuggestion } from '../../../domain/procurement-request/procurement.dto';
 import { ExtendedProcurementRequest, parseIdToNumber } from '../../../service/procurement/rfq-quotation-bridge.util';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 import { MessageService } from 'primeng/api';
+import { Subject, takeUntil } from 'rxjs';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -14,7 +15,7 @@ import html2canvas from 'html2canvas';
   templateUrl: './rfq-preview.component.html',
   styleUrls: ['./rfq-preview.component.scss']
 })
-export class RfqPreviewComponent implements OnInit {
+export class RfqPreviewComponent implements OnInit, OnDestroy {
   request: ExtendedProcurementRequest | null = null;
   template: RFQTemplate | null = null;
   vendors: VendorSuggestion[] = [];
@@ -23,6 +24,8 @@ export class RfqPreviewComponent implements OnInit {
   isSubmitting = false;
   requestId: string | null = null;
 
+  private destroy$ = new Subject<void>();
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -30,17 +33,31 @@ export class RfqPreviewComponent implements OnInit {
     private messageService: MessageService
   ) {}
 
+  // Subscribed rather than read once from the snapshot: if the router reuses this component
+  // instance when only the :uuid changes, a one-time snapshot read would keep showing the
+  // previous request's data.
   ngOnInit(): void {
-    this.requestId = this.route.snapshot.paramMap.get('uuid');
-    if (this.requestId) {
-      this.loadRequestDetails(this.requestId);
-    }
+    this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      this.requestId = params.get('uuid');
+      this.request = null;
+      this.template = null;
+      this.vendors = [];
+      if (this.requestId) {
+        this.loadRequestDetails(this.requestId);
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadRequestDetails(id: string): void {
     this.isLoading = true;
-    this.procurementService.getRequest(parseIdToNumber(id)).subscribe({
+    this.procurementService.getRequest(parseIdToNumber(id)).pipe(takeUntil(this.destroy$)).subscribe({
       next: (req) => {
+        if (this.requestId !== id) return; // a newer navigation superseded this response
         this.request = req as ExtendedProcurementRequest;
         this.isLoading = false;
         if (this.request?.rfqTemplateId) {
@@ -52,7 +69,7 @@ export class RfqPreviewComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading request details:', err);
-        this.isLoading = false;
+        if (this.requestId === id) this.isLoading = false;
       }
     });
   }

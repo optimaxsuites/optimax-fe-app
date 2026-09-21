@@ -258,8 +258,8 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
     this.productSearchTerm = searchTerm;
     if (searchTerm.length > 0) {
       this.filteredProducts = this.products.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+        (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
     } else {
       this.filteredProducts = this.products;

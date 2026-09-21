@@ -551,3 +551,23 @@
         cursor: not-allowed;
     }
 }
+
+// ============================================================
+// RESPONSIVE
+// ============================================================
+
+@media (max-width: 480px) {
+    .ql-transfer-history {
+        padding: 12px;
+    }
+
+    .ql-transfer-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .ql-transfer-header-right {
+        align-self: flex-end;
+    }
+}

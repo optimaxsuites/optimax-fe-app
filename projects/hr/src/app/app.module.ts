@@ -1,5 +1,3 @@
-import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
 import { UserProfileComponent } from './ui/view/user-profile/user-profile.component';
 import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-dashboard.component';
@@ -149,6 +147,7 @@ import { LeavePolicyComponent } from './ui/view/leave/leave-policy/leave-policy.
 import { AttendashboardComponent } from './ui/view/attendance/admin/attendashboard/attendashboard.component';
 import { StatsCardsComponent } from './ui/view/attendance/admin/attendashboard/stats-cards/stats-cards.component';
 import { LateArrivalsComponent } from './ui/view/attendance/admin/attendashboard/late-arrivals/late-arrivals.component';
+import { AbsentListComponent } from './ui/view/attendance/admin/attendashboard/absent-list/absent-list.component';
 //import { AttendancetableComponent } from './ui/view/attendance/admin/attendashboard/attendancetable/attendancetable.component';
 //import { AttendancefilterComponent } from './ui/view/attendance/admin/attendashboard/attendancetable/attendancefilter/attendancefilter.component';
 //import { AttendancesummaryComponent } from './ui/view/attendance/admin/attendashboard/attendancesummary/attendancesummary.component';
@@ -331,6 +330,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     AttendashboardComponent,
     StatsCardsComponent,
     LateArrivalsComponent,
+    AbsentListComponent,
     AttendanceDetailsComponent,
     AttendanceSheetsComponent,
     OfficeHoursComponent,

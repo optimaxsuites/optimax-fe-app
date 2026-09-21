@@ -377,7 +377,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   private refreshRecentLoanRows(): void {
     const sortedLoans = this.sortHistoryLoans(this.allLoans);
-    this.recentLoanRows = sortedLoans.slice(0, 5).map((loan) => ({
+    this.recentLoanRows = sortedLoans.slice(0, 9).map((loan) => ({
       loan,
       displayId: this.getShortAdvanceLoanDisplayId(loan),
       purposeDisplay: this.formatPurposeDisplay(loan.purpose),
@@ -654,6 +654,9 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   getStatusDisplay(status: string): string {
     if (!status) return '';
+    if (status.toUpperCase() === 'READY_FOR_DISBURSEMENT') {
+      return 'Disbursable';
+    }
     return String(status)
       .toLowerCase()
       .replace(/_/g, ' ')

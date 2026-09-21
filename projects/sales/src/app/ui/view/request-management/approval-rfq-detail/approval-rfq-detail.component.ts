@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
+import { MessageService } from 'primeng/api';
 import { ApprovalService } from '../../../service/approval-inbox/approval.service';
 import { WorkflowInstance } from '../../../domain/approval-inbox/approval-request.dto';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
@@ -28,7 +29,8 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private approvalService: ApprovalService,
-    private procurementService: ProcurementRequestService
+    private procurementService: ProcurementRequestService,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
@@ -57,11 +59,18 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
               .pipe(takeUntil(this.destroy$))
               .subscribe({
                 next: (inst) => { this.workflowInstance = inst; },
-                error: () => {}
+                error: (err) => {
+                  console.error('Failed to load approval workflow', err);
+                  this.messageService.add({ severity: 'warn', summary: 'Approval Workflow Unavailable', detail: 'Could not load the approval workflow for this request.' });
+                }
               });
           }
         },
-        error: () => { this.isLoading = false; }
+        error: (err) => {
+          console.error('Failed to load request', err);
+          this.isLoading = false;
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load this request. Please try again.' });
+        }
       });
   }
 
@@ -78,11 +87,11 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
   confirmApprove(): void {
     if (!this.workflowInstance) return;
     this.isActioning = true;
-    const userId = Number(sessionStorage.getItem('userId') || 0);
-    const roleCode = sessionStorage.getItem('role');
+    const { userId, roleCode, roleId } = this.approvalService.getCurrentActor();
     const payload = new FormData();
     payload.append('actorUserId', String(userId));
     if (roleCode) payload.append('actorRoleCode', roleCode);
+    if (roleId) payload.append('actorRoleId', String(roleId));
     payload.append('comment', this.commentsText.trim());
 
     this.approvalService.approveWorkflowInstance(this.workflowInstance.id, payload)
@@ -93,16 +102,20 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
           this.isActioning = false;
           if (this.requestId) this.loadDetails(this.requestId);
         },
-        error: () => { this.isActioning = false; }
+        error: (err) => {
+          console.error('Failed to approve', err);
+          this.isActioning = false;
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || err?.error?.detail || 'Could not approve. Please try again.' });
+        }
       });
   }
 
   confirmReject(): void {
     if (!this.workflowInstance || !this.commentsText.trim()) return;
     this.isActioning = true;
-    const userId = Number(sessionStorage.getItem('userId') || 0);
-    const roleCode = sessionStorage.getItem('role');
+    const { userId, roleCode, roleId } = this.approvalService.getCurrentActor();
     const payload: any = { actorUserId: userId, actorRoleCode: roleCode, comment: this.commentsText.trim() };
+    if (roleId) payload.actorRoleId = roleId;
 
     this.approvalService.rejectWorkflowInstance(this.workflowInstance.id, payload)
       .pipe(takeUntil(this.destroy$))
@@ -112,7 +125,11 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
           this.isActioning = false;
           this.router.navigate(['/admin/sales/commerce/requests']);
         },
-        error: () => { this.isActioning = false; }
+        error: (err) => {
+          console.error('Failed to reject', err);
+          this.isActioning = false;
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || err?.error?.detail || 'Could not reject. Please try again.' });
+        }
       });
   }
 

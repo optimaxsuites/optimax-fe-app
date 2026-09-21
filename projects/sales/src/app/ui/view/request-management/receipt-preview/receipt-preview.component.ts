@@ -1,6 +1,9 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { PdfGenerationService } from '../../../service/procurement/pdf-generation.service';
 import { MessageService } from 'primeng/api';
+import { CompanyProfileService } from '../../../shared-component/service/company-profile/company-profile.service';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import {
   GoodsReceivedNote, PaymentVoucher, ProcurementInvoice, ProcurementLpo
 } from '../../../domain/procurement-request/procurement.dto';
@@ -74,22 +77,65 @@ export class ReceiptPreviewComponent implements OnInit {
 
   constructor(
     private pdfService: PdfGenerationService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private companyProfileService: CompanyProfileService
   ) {}
 
-  ngOnInit(): void {}
+  private readonly defaults = {
+    companyName: this.companyName,
+    companyAddress: this.companyAddress,
+    companyPhone: this.companyPhone,
+    companyEmail: this.companyEmail
+  };
+
+  /**
+   * The company* inputs default to one hardcoded organization's details, which would print on every
+   * tenant's receipts. If the caller left an input at that default, use the tenant's real company
+   * profile instead (an explicitly passed value always wins).
+   */
+  ngOnInit(): void {
+    const p = this.companyProfileService.get();
+    if (!p) return;
+    if (this.companyName === this.defaults.companyName && p.companyName) this.companyName = p.companyName;
+    if (this.companyAddress === this.defaults.companyAddress) {
+      const addr = [p.address, p.city, p.state, p.country].filter(Boolean).join(', ');
+      if (addr) this.companyAddress = addr;
+    }
+    if (this.companyPhone === this.defaults.companyPhone && p.phone) this.companyPhone = p.phone;
+    if (this.companyEmail === this.defaults.companyEmail && p.email) this.companyEmail = p.email;
+  }
 
   print(): void {
     this.pdfService.printDocument('receipt-document');
   }
 
+  /**
+   * The server request used to send only {documentType, documentId, documentNumber, tenantId} —
+   * no `data` at all — so the backend had nothing but a document number to re-derive the receipt
+   * from. Anything only known client-side (a locally-computed variance, an unsaved/pending
+   * voucher, the @Input company name/address/phone/email overrides) could never show up in the
+   * downloaded PDF since the server never received it. Now sends the actual document data, and —
+   * matching the pattern already used by lpo-preview/rfq-preview — falls back to an html2canvas
+   * capture of the on-screen #receipt-document element on failure, so the download is guaranteed
+   * to match what's actually shown instead of depending on the backend re-deriving it correctly.
+   */
   download(): void {
     this.isGenerating = true;
     this.pdfService.generatePdf({
       documentType: this.documentType,
       documentId: this.documentNumber,
       documentNumber: this.documentNumber,
-      tenantId: 'optimax'
+      tenantId: 'optimax',
+      data: {
+        grn: this.grn,
+        voucher: this.voucher,
+        invoice: this.invoice,
+        lpo: this.lpo,
+        companyName: this.companyName,
+        companyAddress: this.companyAddress,
+        companyPhone: this.companyPhone,
+        companyEmail: this.companyEmail
+      }
     }).subscribe({
       next: (result) => {
         this.isGenerating = false;
@@ -98,14 +144,35 @@ export class ReceiptPreviewComponent implements OnInit {
         } else if (result.url) {
           this.pdfService.downloadFile(result.url, `${this.documentType}-${this.documentNumber}.pdf`);
         } else {
-          this.print();
-          this.messageService.add({ severity: 'info', summary: 'Print Mode', detail: 'PDF generated via browser print.' });
+          this.downloadClientSide();
         }
       },
       error: () => {
         this.isGenerating = false;
-        this.print();
+        this.downloadClientSide();
       }
+    });
+  }
+
+  private downloadClientSide(): void {
+    const element = document.getElementById('receipt-document');
+    if (!element) {
+      this.print();
+      return;
+    }
+    this.isGenerating = true;
+    html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`${this.documentType}-${this.documentNumber}.pdf`);
+      this.isGenerating = false;
+    }).catch(() => {
+      this.isGenerating = false;
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate PDF. Printing window instead.' });
+      this.print();
     });
   }
 

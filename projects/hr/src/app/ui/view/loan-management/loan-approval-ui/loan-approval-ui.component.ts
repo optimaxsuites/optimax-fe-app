@@ -16,7 +16,8 @@ import {
   formatLoanDepartmentDisplay,
   formatLoanPurposeDisplay,
   resolveLoanTotalRepayableAmount,
-  formatAdvancedLoanCode
+  formatAdvancedLoanCode,
+  resolveLoanOutstandingExposure
 } from '../../../service/loan/loan-display.util';
 
 interface LoanApprovalRow {
@@ -437,6 +438,9 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   getStatusLabel(status: string | undefined): string {
     // Convert status to Title Case for display
     if (!status) return '';
+    if (status.toUpperCase() === 'READY_FOR_DISBURSEMENT') {
+      return 'Disbursable';
+    }
     const titleCase = (str: string) =>
       str
         .toLowerCase()
@@ -752,9 +756,9 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   get totalActiveLoanBalance(): number {
-  return this.loanApplications
-    .filter(loan => loan.status === 'ACTIVE')
-    .reduce((sum, loan) => sum + (loan.amount || 0), 0);
+    return this.loanApplications
+      .filter(loan => loan.status === 'ACTIVE')
+      .reduce((sum, loan) => sum + resolveLoanOutstandingExposure(loan), 0);
   }
 
   goBack(): void {

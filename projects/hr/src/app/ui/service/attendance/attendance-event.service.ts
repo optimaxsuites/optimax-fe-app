@@ -1,285 +1,125 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, of } from 'rxjs';
-import { map, catchError, tap } from 'rxjs/operators';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment.prod';
 import {
   AttendanceEventDTO,
-  ProcessingResult,
-  EventSource,
+  CreateAttendanceEventRequest,
   EventType,
-  FraudFlagCode
+  PagedResponse
 } from '../../domain/attendance/attendance-event.dto';
+
+const EMPTY_PAGE: PagedResponse<AttendanceEventDTO> = { content: [], totalSize: 0, page: 0, size: 0 };
 
 @Injectable({ providedIn: 'root' })
 export class AttendanceEventService {
-  private readonly BASE = `${environment.apiBaseUrl}/x/api/v2/hr`;
-  private eventsSubject = new BehaviorSubject<AttendanceEventDTO[]>([]);
-  private recentEventsCache = new Map<string, { timestamp: number; event: AttendanceEventDTO }>();
+  private readonly BASE = `${environment.apiBaseUrl}/x/api/v2/hr/attendance-events`;
 
-  events$ = this.eventsSubject.asObservable();
+  /** In-memory suppression of duplicate taps: same employee + eventType within the window is ignored. */
   readonly DEDUP_WINDOW_MS = 90000; // 90 seconds
+  private recentEventsCache = new Map<string, number>();
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Submit an attendance event (biometric, remote, or manual)
-   * Includes deduplication check: events within 90 seconds with same
-   * employeeCode and eventType are suppressed
-   */
-  submitEvent(
-    source: EventSource,
-    employeeCode: string,
-    employeeId: number,
-    branchCode: string,
-    eventType: EventType,
-    options?: {
-      deviceId?: string;
-      rawTemplateHash?: string;
-      deviceIpAddress?: string;
-      connectionIpAddress?: string;
-      deviceFingerprint?: string;
-      gpsLatitude?: number;
-      gpsLongitude?: number;
-      isCrossBranch?: boolean;
-      homeBranchCode?: string;
-    }
-  ): Observable<ProcessingResult> {
-    const dedup_key = `${employeeCode}:${eventType}`;
+  getEvents(page?: number, size?: number): Observable<PagedResponse<AttendanceEventDTO>> {
+    let params = new HttpParams();
+    if (page !== undefined) params = params.set('page', page);
+    if (size !== undefined) params = params.set('size', size);
 
-    // Check deduplication window
-    const cached = this.recentEventsCache.get(dedup_key);
-    if (cached && Date.now() - cached.timestamp < this.DEDUP_WINDOW_MS) {
-      return of({
-        eventId: cached.event.id || 0,
-        status: 'DUPLICATE',
-        message: `Duplicate event suppressed. Previous event within ${this.DEDUP_WINDOW_MS / 1000}s window.`,
-        fraudFlags: []
-      });
-    }
+    return this.http.get<PagedResponse<AttendanceEventDTO>>(this.BASE, { params }).pipe(
+      catchError(error => {
+        console.error('Failed to get attendance events:', error);
+        return of(EMPTY_PAGE);
+      })
+    );
+  }
 
-    const event: AttendanceEventDTO = {
-      source,
-      employeeCode,
-      employeeId,
-      branchCode,
-      deviceId: options?.deviceId,
-      eventTime: new Date(),
-      eventType,
-      rawTemplateHash: options?.rawTemplateHash,
-      deviceIpAddress: options?.deviceIpAddress,
-      connectionIpAddress: options?.connectionIpAddress,
-      deviceFingerprint: options?.deviceFingerprint,
-      gpsLatitude: options?.gpsLatitude,
-      gpsLongitude: options?.gpsLongitude,
-      fraudFlags: [],
-      isCrossBranch: options?.isCrossBranch || false,
-      homeBranchCode: options?.homeBranchCode,
-      processed: false
-    };
+  getEvent(id: number): Observable<AttendanceEventDTO | null> {
+    return this.http.get<AttendanceEventDTO>(`${this.BASE}/${id}`).pipe(
+      catchError(error => {
+        console.error(`Failed to get attendance event ${id}:`, error);
+        return of(null);
+      })
+    );
+  }
 
-    return this.http.post<ProcessingResult>(
-      `${this.BASE}/attendance-events`,
-      event
-    ).pipe(
-      tap(result => {
-        // Cache the event for deduplication
-        this.recentEventsCache.set(dedup_key, {
-          timestamp: Date.now(),
-          event
-        });
+  createEvent(event: CreateAttendanceEventRequest): Observable<AttendanceEventDTO> {
+    return this.http.post<AttendanceEventDTO>(this.BASE, event);
+  }
 
-        // Add to local events list
-        const events = this.eventsSubject.value;
-        this.eventsSubject.next([...events, event]);
+  deleteEvent(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.BASE}/${id}`);
+  }
 
-        // Cleanup old cache entries
-        this.cleanupDedupCache();
-      }),
-      catchError((err) => {
-        throw err;
+  markProcessed(id: number): Observable<AttendanceEventDTO> {
+    return this.http.post<AttendanceEventDTO>(`${this.BASE}/${id}/mark-processed`, {});
+  }
+
+  getEventsByEmployee(employeeId: number): Observable<PagedResponse<AttendanceEventDTO>> {
+    return this.http.get<PagedResponse<AttendanceEventDTO>>(`${this.BASE}/employee/${employeeId}`).pipe(
+      catchError(error => {
+        console.error(`Failed to get events for employee ${employeeId}:`, error);
+        return of(EMPTY_PAGE);
+      })
+    );
+  }
+
+  getUnprocessedEvents(): Observable<PagedResponse<AttendanceEventDTO>> {
+    return this.http.get<PagedResponse<AttendanceEventDTO>>(`${this.BASE}/unprocessed`).pipe(
+      catchError(error => {
+        console.error('Failed to get unprocessed events:', error);
+        return of(EMPTY_PAGE);
       })
     );
   }
 
   /**
-   * Biometric event with template hash and device info
+   * Submit a biometric/remote/manual event, suppressing duplicate taps: an event with the same
+   * employee + eventType within DEDUP_WINDOW_MS of the last one is not sent to the backend.
    */
-  submitBiometricEvent(
-    employeeCode: string,
-    employeeId: number,
-    branchCode: string,
-    deviceId: string,
-    templateHash: string,
-    eventType: EventType,
-    deviceIpAddress?: string,
-    isCrossBranch?: boolean,
-    homeBranchCode?: string
-  ): Observable<ProcessingResult> {
-    return this.submitEvent(
-      'BIOMETRIC',
-      employeeCode,
-      employeeId,
-      branchCode,
-      eventType,
-      {
-        deviceId,
-        rawTemplateHash: templateHash,
-        deviceIpAddress,
-        isCrossBranch,
-        homeBranchCode
-      }
-    );
-  }
-
-  /**
-   * Remote (web/mobile) event with IP, device fingerprint, and optional GPS
-   */
-  submitRemoteEvent(
-    employeeCode: string,
-    employeeId: number,
-    branchCode: string,
-    eventType: EventType,
-    connectionIpAddress: string,
-    deviceFingerprint: string,
-    gpsLatitude?: number,
-    gpsLongitude?: number,
-    isCrossBranch?: boolean,
-    homeBranchCode?: string
-  ): Observable<ProcessingResult> {
-    return this.submitEvent(
-      'REMOTE',
-      employeeCode,
-      employeeId,
-      branchCode,
-      eventType,
-      {
-        connectionIpAddress,
-        deviceFingerprint,
-        gpsLatitude,
-        gpsLongitude,
-        isCrossBranch,
-        homeBranchCode
-      }
-    );
-  }
-
-  /**
-   * Manual event (correction, admin entry)
-   */
-  submitManualEvent(
-    employeeCode: string,
-    employeeId: number,
-    branchCode: string,
-    eventType: EventType
-  ): Observable<ProcessingResult> {
-    return this.submitEvent(
-      'MANUAL',
-      employeeCode,
-      employeeId,
-      branchCode,
-      eventType,
-      {}
-    );
-  }
-
-  /**
-   * Fetch unprocessed events (for batch processing)
-   */
-  getUnprocessedEvents(limit: number = 100): Observable<AttendanceEventDTO[]> {
-    return this.http.get<any>(
-      `${this.BASE}/attendance-events/unprocessed?limit=${limit}`
-    ).pipe(
-      map(res => Array.isArray(res) ? res : (res?.events ?? [])),
-      catchError(() => of([]))
-    );
-  }
-
-  /**
-   * Fetch events for a specific employee on a date
-   */
-  getEventsByEmployeeAndDate(
-    employeeId: number,
-    date: string
-  ): Observable<AttendanceEventDTO[]> {
-    return this.http.get<any>(
-      `${this.BASE}/attendance-events/employee/${employeeId}?date=${date}`
-    ).pipe(
-      map(res => Array.isArray(res) ? res : (res?.events ?? [])),
-      catchError(() => of([]))
-    );
-  }
-
-  /**
-   * Get recent events with fraud flags
-   */
-  getFlaggedEvents(
-    startDate?: string,
-    endDate?: string,
-    fraudFlagType?: string
-  ): Observable<AttendanceEventDTO[]> {
-    let url = `${this.BASE}/attendance-events/flagged`;
-    const params = [];
-
-    if (startDate) params.push(`startDate=${startDate}`);
-    if (endDate) params.push(`endDate=${endDate}`);
-    if (fraudFlagType) params.push(`flagType=${fraudFlagType}`);
-
-    if (params.length > 0) {
-      url += '?' + params.join('&');
+  submitEvent(event: CreateAttendanceEventRequest): Observable<AttendanceEventDTO | null> {
+    const dedupKey = `${event.employeeId}:${event.eventType}`;
+    const lastSeen = this.recentEventsCache.get(dedupKey);
+    if (lastSeen && Date.now() - lastSeen < this.DEDUP_WINDOW_MS) {
+      return of(null);
     }
 
-    return this.http.get<any>(url)
-      .pipe(
-        map(res => Array.isArray(res) ? res : (res?.events ?? [])),
-        catchError(() => of([]))
-      );
+    return this.createEvent(event).pipe(
+      tap(() => {
+        this.recentEventsCache.set(dedupKey, Date.now());
+        this.cleanupDedupCache();
+      }),
+      catchError(error => {
+        console.error('Failed to submit attendance event:', error);
+        throw error;
+      })
+    );
   }
 
-  /**
-   * Check if event would be deduplicated
-   */
-  wouldBeDuplicated(employeeCode: string, eventType: EventType): boolean {
-    const dedup_key = `${employeeCode}:${eventType}`;
-    const cached = this.recentEventsCache.get(dedup_key);
-    return cached ? Date.now() - cached.timestamp < this.DEDUP_WINDOW_MS : false;
+  wouldBeDuplicated(employeeId: number, eventType: EventType): boolean {
+    const dedupKey = `${employeeId}:${eventType}`;
+    const lastSeen = this.recentEventsCache.get(dedupKey);
+    return lastSeen ? Date.now() - lastSeen < this.DEDUP_WINDOW_MS : false;
   }
 
-  /**
-   * Get time until next event is allowed (for duplicate prevention)
-   */
-  getTimeUntilNextEvent(employeeCode: string, eventType: EventType): number {
-    const dedup_key = `${employeeCode}:${eventType}`;
-    const cached = this.recentEventsCache.get(dedup_key);
-    if (!cached) return 0;
-
-    const elapsed = Date.now() - cached.timestamp;
-    return Math.max(0, this.DEDUP_WINDOW_MS - elapsed);
+  getTimeUntilNextEvent(employeeId: number, eventType: EventType): number {
+    const dedupKey = `${employeeId}:${eventType}`;
+    const lastSeen = this.recentEventsCache.get(dedupKey);
+    if (!lastSeen) return 0;
+    return Math.max(0, this.DEDUP_WINDOW_MS - (Date.now() - lastSeen));
   }
 
-  /**
-   * Clean up old cache entries (older than dedup window)
-   */
-  private cleanupDedupCache(): void {
-    const now = Date.now();
-    for (const [key, value] of this.recentEventsCache.entries()) {
-      if (now - value.timestamp > this.DEDUP_WINDOW_MS) {
-        this.recentEventsCache.delete(key);
-      }
-    }
-  }
-
-  /**
-   * Clear cache (for testing)
-   */
   clearDedupCache(): void {
     this.recentEventsCache.clear();
   }
 
-  /**
-   * Get current dedup cache state
-   */
-  getDedupCacheState(): Map<string, { timestamp: number; event: AttendanceEventDTO }> {
-    return new Map(this.recentEventsCache);
+  private cleanupDedupCache(): void {
+    const now = Date.now();
+    for (const [key, timestamp] of this.recentEventsCache.entries()) {
+      if (now - timestamp > this.DEDUP_WINDOW_MS) {
+        this.recentEventsCache.delete(key);
+      }
+    }
   }
 }

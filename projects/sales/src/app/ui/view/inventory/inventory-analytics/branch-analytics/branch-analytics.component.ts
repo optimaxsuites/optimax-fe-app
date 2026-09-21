@@ -12,6 +12,7 @@ import {
   Branch,
   BranchInventory,
   BranchStockSummary,
+  Product,
   ProductPerformance,
   getStockStatus,
   getStockStatusLabel,
@@ -44,6 +45,7 @@ export class BranchAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
   branch: Branch | null = null;
   summary: BranchStockSummary | null = null;
   inventory: BranchInventory[] = [];
+  products: Product[] = [];
   topProducts: ProductPerformance[] = [];
   isLoading: boolean = true;
   error: string | null = null;
@@ -52,7 +54,6 @@ export class BranchAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
   Math = Math;
   activeTab: 'overview' | 'inventory' | 'performance' | 'trends' = 'overview';
   dateRange: 'week' | 'month' | 'quarter' | 'year' = 'month';
-  showExportModal: boolean = false;
 
   // Filters
   productFilter: string = '';
@@ -124,14 +125,16 @@ export class BranchAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
     forkJoin({
       branch: this.inventoryService.getBranch(this.branchId),
       summary: this.inventoryService.getBranchAnalytics(this.branchId),
-      inventory: this.inventoryService.getBranchInventory(this.branchId)
+      inventory: this.inventoryService.getBranchInventory(this.branchId),
+      products: this.inventoryService.getProducts({ limit: 500 })
     }).pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ({ branch, summary, inventory }) => {
+        next: ({ branch, summary, inventory, products }) => {
           this.branch = branch;
           this.summary = summary;
           this.inventory = inventory;
           this.filteredInventory = inventory;
+          this.products = products.data || [];
           this.calculateStats();
           this.prepareChartData();
           this.loadTopProducts();
@@ -190,10 +193,14 @@ export class BranchAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
   // ============================================================
 
   prepareChartData(): void {
-    // Category distribution (mock)
+    // Category distribution — this used to guess a "category" by taking the first word of the
+    // product's NAME (so "HP Laptop 15s" landed under "HP", not any real category at all).
+    // Resolve it from the actual product record instead.
     const categoryMap = new Map<string, number>();
     this.inventory.forEach(item => {
-      const category = item.productName.split(' ')[0] || 'Other';
+      const product = this.products.find(p => String(p.id) === item.productId);
+      const category = (typeof product?.category === 'string' ? product.category : (product?.category as any)?.name)
+        || 'Uncategorized';
       categoryMap.set(category, (categoryMap.get(category) || 0) + item.quantity);
     });
 
@@ -244,8 +251,8 @@ export class BranchAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
     } else {
       const search = this.productFilter.toLowerCase();
       this.filteredInventory = this.inventory.filter(item =>
-        item.productName.toLowerCase().includes(search) ||
-        item.sku.toLowerCase().includes(search)
+        (item.productName || '').toLowerCase().includes(search) ||
+        (item.sku || '').toLowerCase().includes(search)
       );
     }
   }
@@ -292,23 +299,6 @@ export class BranchAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
 
   viewProduct(productId: string): void {
     this.router.navigate(['/admin/sales/commerce/inventory/products', productId]);
-  }
-
-  // ============================================================
-  // EXPORT
-  // ============================================================
-
-  exportReport(): void {
-    this.showExportModal = true;
-  }
-
-  closeExportModal(): void {
-    this.showExportModal = false;
-  }
-
-  confirmExport(): void {
-    console.log('Exporting report...');
-    this.closeExportModal();
   }
 
   // ============================================================

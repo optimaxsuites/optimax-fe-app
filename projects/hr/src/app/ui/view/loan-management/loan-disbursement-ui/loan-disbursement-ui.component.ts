@@ -9,7 +9,7 @@ import { LoanApplicationService } from '../../../service/loan/loan-application.s
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
 import { AdvanceDisbursementConfirmationService, CreateDisbursementPayload } from '../../../service/loan/loan-disbursement-confirmation.service';
-import { resolveLoanTotalRepayableAmount, formatAdvancedLoanCode } from '../../../service/loan/loan-display.util';
+import { resolveLoanTotalRepayableAmount, formatAdvancedLoanCode, resolveLoanActorName } from '../../../service/loan/loan-display.util';
 import { environment } from '../../../shared-component/environments/environment';
 
 type QueueSortKey = 'loanId' | 'employee' | 'department' | 'amount' | 'approvedDate' | 'readyDate' | 'status';
@@ -744,7 +744,7 @@ export class LoanDisbursementUiComponent implements OnInit {
         this.messages = [{
           severity: 'error',
           summary: 'Update Failed',
-          detail: 'The request was prepared, but the loan status could not be moved to ready for disbursement.'
+          detail: 'The request was prepared, but the loan status could not be moved to disbursable.'
         }];
         this.isSubmittingDisbursement = false;
         this.submissionProgress = 0;
@@ -1028,6 +1028,9 @@ export class LoanDisbursementUiComponent implements OnInit {
 
   getQueueStatusLabel(loan: LoanApplication): string {
     if (!loan.status) return '';
+    if (loan.status === 'READY_FOR_DISBURSEMENT') {
+      return 'Disbursable';
+    }
     return String(loan.status)
       .toLowerCase()
       .replace(/_/g, ' ')
@@ -1358,9 +1361,7 @@ export class LoanDisbursementUiComponent implements OnInit {
     const storedReference = this.getStoredLoanReference(loan);
 
     if (readyEntry) {
-      this.disbursementInitiatedBy = typeof readyEntry.changedBy === 'string'
-        ? readyEntry.changedBy
-        : '';
+      this.disbursementInitiatedBy = resolveLoanActorName(readyEntry.changedBy);
       const referenceMatch = String(readyEntry.notes || '').match(/Reference:\s*([^\.]+)/i);
       this.disbursementInstructionReference = storedReference || referenceMatch?.[1]?.trim() || '';
     } else {

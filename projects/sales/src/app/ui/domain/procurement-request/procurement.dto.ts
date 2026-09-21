@@ -306,6 +306,10 @@ export interface VendorSuggestion {
   matchScore: number;
   isRecommended: boolean;
   reason: string;
+  /** The vendor's real tier (e.g. 'PREFERRED' | 'APPROVED' | 'CONDITIONAL') — use this for tier
+   *  filtering, not `reason`, which is free-text narrative that can contain other tier names too
+   *  (e.g. "Preferred match for X category · Approved tier" contains both words). */
+  tier: string;
 }
 
 
@@ -456,13 +460,14 @@ export interface ProcurementInvoiceItem {
 export interface ProcurementInvoice {
   id: string;
   invoiceNumber: string;           // Vendor's invoice reference number
-  procurementRequestId: ProcurementRequest;    // Parent ProcurementRequest
-  lpoId: ProcurementLpo;                   // The LPO this invoice is billed against
-  lpoNumber: ProcurementLpo;               // LPO reference for display
-  quotationId?: VendorQuotation;            // Original accepted quotation
+  procurementRequestId: number;    // Parent ProcurementRequest's id (matches GoodsReceivedNote.procurementRequestId)
+  lpoId: string;                   // The LPO this invoice is billed against (matches PaymentVoucher.lpoId)
+  lpoNumber: string;               // LPO reference for display
+  quotationId?: string;            // Original accepted quotation (matches ProcurementLpo.quotationId)
   vendorId: string;
   vendorName: string;
   vendorEmail?: string;
+  vendorPhone?: string;
   status: ProcurementInvoiceStatus;
   items: ProcurementInvoiceItem[];
   subtotal: number;

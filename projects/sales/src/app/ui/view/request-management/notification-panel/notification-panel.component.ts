@@ -23,8 +23,20 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (this.entityId) this.loadNotifications();
+    // The service's stream is shared app-wide and holds whichever entity was fetched/triggered last,
+    // so a panel scoped to an entity must only take that entity's items (and merge, not replace —
+    // replacing let one panel show another entity's notifications and could never clear back to empty).
     this.notificationService.notifications$.pipe(takeUntil(this.destroy$)).subscribe(list => {
-      if (list.length) this.notifications = list;
+      if (!this.entityId) {
+        if (list.length) this.notifications = list;
+        return;
+      }
+      const mine = list.filter(n =>
+        String(n.relatedEntityId) === this.entityId && n.relatedEntityType === this.entityType
+      );
+      const known = new Set(this.notifications.map(n => n.id));
+      const fresh = mine.filter(n => !known.has(n.id));
+      if (fresh.length) this.notifications = [...fresh, ...this.notifications];
     });
   }
 

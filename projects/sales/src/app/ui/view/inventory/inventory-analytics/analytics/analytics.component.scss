@@ -69,6 +69,15 @@
     padding: 4px;
     flex-shrink: 0;
     width: fit-content;
+    max-width: 100%;
+    // 6 text+icon tabs in one row don't fit a phone width — scroll horizontally (same
+    // hidden-scrollbar pattern as the shared nav-tab bar) instead of overflowing the page.
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
 }
 
 .ql-tab {
@@ -85,6 +94,8 @@
     align-items: center;
     gap: 6px;
     font-family: inherit;
+    white-space: nowrap;
+    flex-shrink: 0;
 
     &:hover {
         background: var(--bg);
@@ -263,5 +274,16 @@ app-performance-report {
 
     .ql-entity-select {
         max-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .ql-analytics-shell {
+        padding: 8px;
+    }
+
+    .ql-tab {
+        padding: 8px 12px;
+        font-size: 12px;
     }
 }

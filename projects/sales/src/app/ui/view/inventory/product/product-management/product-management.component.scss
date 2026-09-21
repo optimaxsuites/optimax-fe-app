@@ -259,6 +259,75 @@ $radius-sm: var(--radius-sm);
         gap: 2rem;
     }
 
+    // Category/Unit/Supplier "view details" card — was previously ~30 lines of inline
+    // style="..." per field, hardcoded to a blue accent (#3b82f6) that didn't match this
+    // module's own teal palette ($primary-mid). Consolidated here, on-palette.
+    .view-category-details-card {
+        background: var(--p-lt);
+        border: 1.5px solid $border-color;
+        border-radius: $radius-md;
+        padding: 1.25rem;
+        position: relative;
+        margin-bottom: 1rem;
+
+        .detail-close-btn {
+            position: absolute;
+            right: 0.75rem;
+            top: 0.75rem;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            font-size: 1.1rem;
+            color: $text-muted;
+            cursor: pointer;
+
+            &:hover { color: $text-primary; }
+        }
+
+        .detail-title {
+            margin: 0 0 1rem;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: $text-primary;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            i { color: $primary-mid; }
+        }
+
+        .detail-field {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 0.75rem;
+
+            &:last-child { margin-bottom: 0; }
+        }
+
+        .detail-field-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: $text-muted;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-field-value {
+            font-size: 0.95rem;
+            color: $text-primary;
+            margin-top: 0.15rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+
+            &--strong { font-weight: 700; }
+            &--mono { font-family: monospace; }
+        }
+    }
+
     .create-category-card {
         background: #f8fafc;
         border: 1px solid $border-color;
@@ -278,16 +347,32 @@ $radius-sm: var(--radius-sm);
         .form-control {
             width: 100%;
             padding: 0.75rem 1rem;
+            margin-bottom: 0.75rem;
             border: 2px solid $border-color;
             border-radius: $radius-sm;
             font-size: 0.95rem;
             outline: none;
             transition: all 0.3s ease;
 
+            // rgba(26,45,74,...) was the same off-palette navy (#1a2d4a) the submit button
+            // used to hardcode — replaced with the module's actual primary teal.
             &:focus {
                 border-color: $primary-mid;
-                box-shadow: 0 0 0 3px rgba(26, 45, 74, 0.08);
+                box-shadow: 0 0 0 3px rgba(24, 68, 64, 0.08);
             }
+
+            &.textarea {
+                min-height: 80px;
+                resize: vertical;
+                font-family: inherit;
+            }
+
+            &:last-of-type { margin-bottom: 1rem; }
+        }
+
+        .action-buttons-row {
+            display: flex;
+            gap: 0.5rem;
         }
 
         .btn-submit-category {
@@ -304,10 +389,31 @@ $radius-sm: var(--radius-sm);
             gap: 0.4rem;
             transition: all 0.25s ease;
 
+            // Editing an existing record swaps to the same green used for "active" rows
+            // elsewhere in this modal — was previously an inline [style.background] binding
+            // hardcoding '#1a2d4a' for the non-editing state instead of the real primary teal.
+            &.editing {
+                background: #10b981;
+                &:hover { background: #0d9668; }
+            }
+
             &:hover {
                 background: $primary-dark;
                 transform: translateY(-1px);
             }
+        }
+
+        .btn-cancel-edit {
+            padding: 0.75rem 1.25rem;
+            background: $text-muted;
+            color: white;
+            border: none;
+            border-radius: $radius-sm;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+
+            &:hover { background: $text-secondary; }
         }
     }
 
@@ -365,12 +471,6 @@ $radius-sm: var(--radius-sm);
             border-color: #10b981;
             background: rgba(16, 185, 129, 0.02);
         }
-
-        textarea.textarea {
-            min-height: 80px;
-            resize: vertical;
-            font-family: inherit;
-        }
     }
 
     .category-list-item {
@@ -380,6 +480,8 @@ $radius-sm: var(--radius-sm);
         padding: 0.75rem 1.25rem;
         border: 1.5px solid $border-light;
         border-radius: $radius-sm;
+        cursor: pointer;
+        position: relative;
         transition: all 0.25s ease;
 
         &:hover {
@@ -401,7 +503,8 @@ $radius-sm: var(--radius-sm);
         .item-icon-wrapper {
             width: 2.25rem;
             height: 2.25rem;
-            background: rgba(26, 45, 74, 0.05);
+            // Was rgba(26,45,74,...) — the same off-palette navy, now the module's teal.
+            background: rgba(24, 68, 64, 0.05);
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -418,9 +521,16 @@ $radius-sm: var(--radius-sm);
         .item-name {
             font-size: 0.95rem;
             font-weight: 700;
-            color: #0f1a2e !important;
+            color: $text-primary;
             display: block;
             margin-bottom: 0.15rem;
+        }
+
+        .item-code {
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: $text-muted;
+            margin-left: 0.25rem;
         }
 
         .item-desc {
@@ -430,19 +540,42 @@ $radius-sm: var(--radius-sm);
             line-height: 1.3;
         }
 
-        .btn-view-cat:hover {
-            background: rgba(100, 116, 139, 0.1) !important;
-            transform: scale(1.1);
+        .item-actions-row {
+            display: flex;
+            gap: 0.25rem;
         }
 
-        .btn-edit-cat:hover {
-            background: rgba(59, 130, 246, 0.1) !important;
-            transform: scale(1.1);
+        // Shared base for the three row-action icon buttons — view/edit/delete each keep a
+        // distinct semantic accent color on hover (neutral/blue/red, a standard UI convention
+        // rather than an off-palette clash), but now share one real base style instead of each
+        // being fully inline.
+        .btn-view-cat, .btn-edit-cat, .btn-delete-cat {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            border-radius: 50%;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .btn-delete-cat:hover {
-            background: rgba(239, 68, 68, 0.1) !important;
-            transform: scale(1.1);
+        .btn-view-cat {
+            color: $text-muted;
+            &:hover { background: rgba(100, 116, 139, 0.1); transform: scale(1.1); }
+        }
+
+        .btn-edit-cat {
+            color: #3b82f6;
+            &:hover { background: rgba(59, 130, 246, 0.1); transform: scale(1.1); }
+        }
+
+        .btn-delete-cat {
+            color: #ef4444;
+            &:hover { background: rgba(239, 68, 68, 0.1); transform: scale(1.1); }
         }
     }
 
@@ -462,4 +595,90 @@ $radius-sm: var(--radius-sm);
             font-size: 0.9rem;
         }
     }
+}
+
+/* ============================================================
+   RESPONSIVE — this page had no breakpoints at all: .ql-sidebar is a fixed
+   220px column and .ql-top-bar-right packs 7 buttons/controls into one
+   non-wrapping flex row, both of which just overflowed/got clipped below
+   tablet width. Same breakpoints and sidebar-collapse convention already
+   used by the other ql-layout pages in this module (e.g.
+   restock-management.component.scss) for consistency.
+   ============================================================ */
+
+@media (max-width: 992px) {
+  .ql-sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .ql-main {
+    padding: 12px;
+  }
+
+  .ql-top-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ql-top-bar-right {
+    flex-wrap: wrap;
+  }
+
+  .ql-bulk-bar {
+    flex-wrap: wrap;
+  }
+
+  .ql-grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
+  .ql-row-actions {
+    opacity: 1;
+  }
+
+  .category-side-modal .modal-header {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .category-side-modal .modal-body {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .ql-main {
+    padding: 8px;
+  }
+
+  .ql-top-bar-right {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ql-view-switcher,
+  .ql-page-size-wrap {
+    justify-content: center;
+  }
+
+  .ql-btn {
+    justify-content: center;
+  }
+
+  .ql-grid-container {
+    grid-template-columns: 1fr;
+  }
+
+  .ql-confirm-modal {
+    padding: 20px;
+  }
+
+  .category-side-modal .modal-panel {
+    max-width: 100%;
+  }
+
+  .category-side-modal .action-buttons-row {
+    flex-direction: column;
+  }
 }

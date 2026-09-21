@@ -11,10 +11,6 @@
         <!-- Quick Stats -->
         <div class="ql-filter-section">
             <div class="ql-filter-heading">Quick Stats</div>
-            <div class="ql-sidebar-stat" (click)="navigateTo('/inventory/products')">
-                <span class="ql-sidebar-stat-label">Total SKUs</span>
-                <span class="ql-sidebar-stat-value">{{ stats?.totalSkus || 0 }}</span>
-            </div>
             <div class="ql-sidebar-stat" (click)="navigateTo('/inventory/products?status=LOW_STOCK')">
                 <span class="ql-sidebar-stat-label">Low Stock</span>
                 <span class="ql-sidebar-stat-value ql-sidebar-stat--warning">{{ stats?.lowStockItems || 0 }}</span>
@@ -39,7 +35,7 @@
                 <i class="fas fa-exchange-alt"></i> Create Transfer
             </button>
             <button class="ql-sidebar-action" (click)="navigateTo('/inventory/movements/adjustment')">
-                <i class="fas fa-clipboard-list"></i> Stock Count
+                <i class="fas fa-sliders-h"></i> Stock Adjustment
             </button>
         </div>
 

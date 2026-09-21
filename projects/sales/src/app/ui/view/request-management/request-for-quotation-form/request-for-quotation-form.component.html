@@ -149,7 +149,8 @@
                 <div class="field-group">
                   <label>Unit <span class="req">*</span></label>
                   <div class="input-with-btn">
-                    <select formControlName="unit" class="field-input">
+                    <select formControlName="unit" class="field-input"
+                      [class.is-error]="item.get('unit')?.invalid && item.get('unit')?.touched">
                       <option value="" disabled>Select Unit</option>
                       <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
                     </select>
@@ -157,6 +158,9 @@
                       <i class="fas fa-plus"></i>
                     </button>
                   </div>
+                  <span class="err-msg" *ngIf="item.get('unit')?.invalid && item.get('unit')?.touched">
+                    {{ getItemErrorMessage(i, 'unit') }}
+                  </span>
                 </div>
               </div>
 
@@ -344,7 +348,7 @@
           <div class="budget-icon"><i class="fas fa-calculator"></i></div>
           <div class="budget-info">
             <span class="budget-label">Total Estimated Budget</span>
-            <span class="budget-value">{{ formatCurrency(getTotalBudget()) }}</span>
+            <span class="budget-value">{{ getBudgetSummary() }}</span>
           </div>
           <div class="budget-count">
             <span class="count-pill">{{ items.length }} item{{ items.length !== 1 ? 's' : '' }}</span>

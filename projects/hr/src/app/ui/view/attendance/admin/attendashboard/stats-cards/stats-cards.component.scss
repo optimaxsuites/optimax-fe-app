@@ -11,15 +11,22 @@
   border-radius: 12px;
   background: $bg-white;
   box-shadow: 0 4px 12px rgba(0,0,0,.05);
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
 
   p {
     font-size: 2rem;
     font-weight: 600;
   }
 
+  &.active {
+    box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  }
+
   &.present { border-left: 6px solid $success; }
   &.absent  { border-left: 6px solid $danger; }
   &.late    { border-left: 6px solid $warning; }
+  &.leave   { border-left: 6px solid #6366f1; cursor: default; }
 
   &.pending-approvals {
     border-left: 6px solid #d97706;
@@ -58,5 +65,39 @@
         }
       }
     }
+  }
+}
+
+.department-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.dept-card {
+  padding: 1rem;
+  border-radius: 12px;
+  background: $bg-white;
+  box-shadow: 0 4px 12px rgba(0,0,0,.05);
+
+  h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .dept-rate {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .dept-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.8rem;
+    color: #6b7280;
   }
 }

@@ -158,6 +158,24 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   logoFileName = '';
   logoUrl = '';
 
+  // Same mapping used by the Step 3 template gallery (see TemplateTypesComponent.getTemplateColor)
+  // so the live preview / downloaded PDF / emailed copy carry the same accent color the user saw
+  // when picking a template there.
+  private readonly templateAccentColors: Record<string, string> = {
+    standard: '#1a2d4a', minimal: '#4a5a6e', detailed: '#2a4a6a', compact: '#3a6a8a',
+    'custom-client': '#2EB270', emirates: '#A32638', 'emirates-custbank': '#A32638', thcomms: '#1B365D'
+  };
+
+  get templateAccentColor(): string {
+    if (!this.selectedTemplate) return '#184440';
+    return this.templateAccentColors[this.selectedTemplate.id] || '#184440';
+  }
+
+  /** Whether a given Step 3 template section should render — defaults to visible until a template is picked. */
+  showSection(key: keyof QuoteTemplate['sections']): boolean {
+    return !this.selectedTemplate || !!this.selectedTemplate.sections[key];
+  }
+
   selectedCustomerBankAccounts: CustomerBankDetails[] = [];
   loadedQuoteSelectedCustomerBank?: CustomerBankDetails;
   quickCustomerForm!: FormGroup;
@@ -1372,29 +1390,43 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   // Handle delivery actions
   /**
    * Tries the server PDF endpoint, falls back to client-side generation on failure, and
-   * downloads whichever succeeds. Never throws — a PDF failure shouldn't block email
-   * sending or navigation. Awaited by both delivery paths below so that, in the "PDF +
-   * Email" case, download/generation genuinely finishes before the caller navigates away —
-   * navigating away tears down this component (and the step-1 preview element the client
-   * fallback needs), so racing ahead of it silently kills the PDF with no user feedback.
+   * downloads whichever succeeds, and returns that blob so a caller doing "PDF + Email" can
+   * reuse it as the email attachment instead of rendering the same document a second time
+   * (the client-side fallback runs a ~1-2s html2canvas capture — doing it twice back to back
+   * was the extra pause between submitting and landing on the quote's detail page). Never
+   * throws — a PDF failure shouldn't block email sending or navigation. Awaited by both
+   * delivery paths below so that, in the "PDF + Email" case, download/generation genuinely
+   * finishes before the caller navigates away — navigating away tears down this component
+   * (and the step-1 preview element the client fallback needs), so racing ahead of it
+   * silently kills the PDF with no user feedback.
    */
-  private async downloadQuotePdf(quote: Quote): Promise<void> {
+  private async downloadQuotePdf(quote: Quote): Promise<Blob | null> {
     try {
       const blob = await lastValueFrom(this.pdfGenerationService.generatePdf({
         documentType: 'QUOTATION',
         documentId: String(quote.id),
         documentNumber: quote.quoteNumber,
         tenantId: 'optimax',
-        data: quote
+        data: {
+          ...quote,
+          // Best-effort: lets a backend that understands templates render the
+          // matching layout/branding instead of always using its own default.
+          templateId: this.selectedTemplate?.id,
+          templateColorTheme: this.selectedTemplate?.colorTheme,
+          templateSections: this.selectedTemplate?.sections
+        }
       }));
       this.pdfGenerationService.downloadBlob(blob as any, `Quote-${quote.quoteNumber}.pdf`);
+      return blob as any;
     } catch (err) {
       console.warn('[QuoteFormComponent] Server PDF failed, using client fallback:', err);
       try {
         const clientBlob = await this.generateQuotePDF(quote);
         this.pdfGenerationService.downloadBlob(clientBlob, `Quote-${quote.quoteNumber}.pdf`);
+        return clientBlob;
       } catch (e) {
         console.error('Client PDF generation failed:', e);
+        return null;
       }
     }
   }
@@ -1423,21 +1455,24 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     const quote = this.pendingDeliveryQuote;
     this.showSendQuoteModal = false;
 
+    // "Both" downloads a PDF and emails one — reuse the same rendered blob for
+    // the email attachment instead of running the (slow) html2canvas capture twice.
+    let pdfBlob: Blob | null = null;
     if (this.selectedAction === 'both') {
-      await this.downloadQuotePdf(quote);
+      pdfBlob = await this.downloadQuotePdf(quote);
     }
 
-    await this.sendQuoteEmail(quote);
+    await this.sendQuoteEmail(quote, pdfBlob);
     this.navigateAfterSubmit(quote);
   }
 
   private navigateAfterSubmit(response: Quote): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
-    if (uuid) {
-      this.router.navigate(['/admin/sales/quotes', response.id, uuid]);
-    } else {
-      this.router.navigate(['/admin/sales/quotes', response.id]);
-    }
+    const path = uuid ? ['/admin/sales/quotes', response.id, uuid] : ['/admin/sales/quotes', response.id];
+    // Replace this form's history entry with the quote's detail page, for both create and
+    // edit — otherwise Back from there lands on the (stale, already-submitted) form instead
+    // of the quote list the user actually came from.
+    this.router.navigate(path, { replaceUrl: true });
   }
 
   // Generate PDF from live preview mockup
@@ -1517,7 +1552,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   }
 
   // Send email via SalesEmailService
-  private async sendQuoteEmail(quote: Quote): Promise<void> {
+  private async sendQuoteEmail(quote: Quote, pdfBlob?: Blob | null): Promise<void> {
     const customerId = this.quoteForm.get('customerId')?.value;
     const customerObj = this.customers.find(c =>
       c.customerId === customerId || String(c.id) === String(customerId)
@@ -1553,23 +1588,34 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
             <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(amount)}</td>
           </tr>`).join('');
 
-    const termsAndConditions = addOpts?.terms
+    // Match the same accent color and section visibility the customer saw on the Step 3
+    // template screen, so the emailed copy doesn't look like a different document.
+    const accent = this.templateAccentColor;
+
+    const termsAndConditions = (addOpts?.terms && this.showSection('showTermsConditions'))
       ? `<div style="margin-top: 20px;">
-           <h3 style="font-size: 14px; color: #1a2d4a; margin-bottom: 6px;">Terms &amp; Conditions</h3>
+           <h3 style="font-size: 14px; color: ${accent}; margin-bottom: 6px;">Terms &amp; Conditions</h3>
            <p style="font-size: 13px; color: #374151; white-space: pre-line;">${addOpts.terms}</p>
          </div>`
       : '';
 
-    const notesSection = addOpts?.notes
+    const notesSection = (addOpts?.notes && this.showSection('showNotes'))
       ? `<div style="margin-top: 12px;">
-           <h3 style="font-size: 14px; color: #1a2d4a; margin-bottom: 6px;">Notes</h3>
+           <h3 style="font-size: 14px; color: ${accent}; margin-bottom: 6px;">Notes</h3>
            <p style="font-size: 13px; color: #374151; white-space: pre-line;">${addOpts.notes}</p>
          </div>`
       : '';
 
+    const taxRow = this.showSection('showTaxBreakdown')
+      ? `<tr>
+            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Tax:</td>
+            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(quote.taxAmount)}</td>
+          </tr>`
+      : '';
+
     const htmlBody = `
       <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
-        <h2 style="color: #1a2d4a; margin-top: 0;">Quotation Details</h2>
+        <h2 style="color: ${accent}; margin-top: 0;">Quotation Details</h2>
         <p>Dear ${name},</p>
         <p>Please find the details of your quotation below:</p>
         <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
@@ -1605,14 +1651,11 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
             <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Discount:</td>
             <td style="padding: 4px 8px; text-align: right;">-${currency} ${fmt(quote.discountAmount)}</td>
           </tr>` : ''}
-          <tr>
-            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Tax:</td>
-            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(quote.taxAmount)}</td>
-          </tr>
+          ${taxRow}
           ${additionalChargeRows}
           <tr>
-            <td colspan="4" style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid #1a2d4a;">Total Amount:</td>
-            <td style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid #1a2d4a; color: #2EB270;">${currency} ${fmt(quote.totalAmount)}</td>
+            <td colspan="4" style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid ${accent};">Total Amount:</td>
+            <td style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid ${accent}; color: ${accent};">${currency} ${fmt(quote.totalAmount)}</td>
           </tr>
         </table>
 
@@ -1635,10 +1678,10 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         type: a.type || 'application/pdf'
       }));
 
-    // Generate the quote document as a PDF and attach it to the email.
+    // Reuse a PDF already generated (e.g. by the "PDF + Email" flow) instead of re-rendering it.
     try {
-      const pdfBlob = await this.generateQuotePDF(quote);
-      const base64 = await this.blobToBase64(pdfBlob);
+      const attachmentBlob = pdfBlob ?? await this.generateQuotePDF(quote);
+      const base64 = await this.blobToBase64(attachmentBlob);
       attachments.push({
         fileName: `Quote-${quote.quoteNumber}.pdf`,
         base64Content: base64,

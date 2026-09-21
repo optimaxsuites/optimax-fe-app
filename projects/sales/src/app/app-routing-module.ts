@@ -63,14 +63,6 @@ import { BranchInventoryComponent } from './ui/view/inventory/branch/branch-inve
 
 
 export const routes: Routes = [
-  // {
-  //   path: "",
-  //   redirectTo: 'commerce/inventory',
-  //   pathMatch: 'full'
-  // },
-
-
-
   {
     path: "",
     redirectTo: 'sales-hub',
@@ -144,6 +136,10 @@ export const routes: Routes = [
   // --------------------------------------------- Stock Movements ---------------------------------------------------
   {
     path: 'commerce/inventory/movements/new',
+    component: StockMovementFormComponent
+  },
+  {
+    path: 'commerce/inventory/movements/adjustment',
     component: StockMovementFormComponent
   },
   {

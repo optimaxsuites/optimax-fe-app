@@ -51,9 +51,6 @@
                 <i class="fas fa-sync-alt" [class.ql-spinning]="isRefreshing"></i>
                 {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
             </button>
-            <button class="ql-sidebar-action" (click)="exportReport()">
-                <i class="fas fa-file-export"></i> Export Report
-            </button>
         </div>
 
     </aside>
@@ -282,48 +279,13 @@
                                 </div>
                             </div>
 
-                            <!-- Approval Levels -->
-                            <div class="ql-approval-levels">
-                                <h4>Approval Workflow</h4>
-                                <div *ngFor="let level of approvalLevels" class="ql-level-item">
-                                    <div class="ql-level-icon" [style.background]="getLevelStatusColor(level.status) + '20'"
-                                                           [style.color]="getLevelStatusColor(level.status)">
-                                        <i class="fas" [class]="getLevelStatusIcon(level.status)"></i>
-                                    </div>
-                                    <div class="ql-level-info">
-                                        <span class="ql-level-name">{{ level.name }}</span>
-                                        <span class="ql-level-role">{{ level.role }}</span>
-                                    </div>
-                                    <div class="ql-level-status" [style.color]="getLevelStatusColor(level.status)">
-                                        {{ getLevelStatusLabel(level.status) }}
-                                    </div>
-                                    <div class="ql-level-approver" *ngIf="level.approverName">
-                                        <i class="fas fa-user"></i>
-                                        {{ level.approverName }}
-                                    </div>
-                                    <button class="ql-level-assign" (click)="openLevelModal(level.id)" 
-                                            *ngIf="level.status === 'PENDING'">
-                                        <i class="fas fa-user-plus"></i>
-                                    </button>
-                                </div>
-                            </div>
-
                             <!-- Approval Actions -->
                             <div class="ql-approval-actions" *ngIf="selectedRequest.status === 'PENDING'">
                                 <button class="ql-action-btn ql-action-btn--approve" (click)="openApproveModal()" [disabled]="isSubmitting">
                                     <i class="fas fa-check"></i> Approve
                                 </button>
-                                <button class="ql-action-btn ql-action-btn--order" (click)="openOrderModal()" [disabled]="isSubmitting">
-                                    <i class="fas fa-truck"></i> Create PO
-                                </button>
                                 <button class="ql-action-btn ql-action-btn--reject" (click)="openRejectModal()" [disabled]="isSubmitting">
                                     <i class="fas fa-times"></i> Reject
-                                </button>
-                            </div>
-
-                            <div class="ql-approval-actions" *ngIf="selectedRequest.status === 'APPROVED'">
-                                <button class="ql-action-btn ql-action-btn--order" (click)="openOrderModal()" [disabled]="isSubmitting">
-                                    <i class="fas fa-truck"></i> Create PO
                                 </button>
                             </div>
                         </div>
@@ -564,12 +526,6 @@
                     </div>
                     <form [formGroup]="approveForm">
                         <div class="ql-field">
-                            <label class="ql-flabel">
-                                <input type="checkbox" formControlName="approveAllLevels">
-                                Approve all approval levels
-                            </label>
-                        </div>
-                        <div class="ql-field">
                             <label class="ql-flabel">Comments</label>
                             <textarea class="ql-input" formControlName="comments" rows="3" 
                                       placeholder="Add any comments..."></textarea>
@@ -630,113 +586,6 @@
                         <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-times]="!isSubmitting" 
                            [class.ql-spinning]="isSubmitting"></i>
                         {{ isSubmitting ? 'Processing...' : 'Confirm Rejection' }}
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================================
-        ORDER MODAL - CREATE PO
-        ============================================================ -->
-        <div class="ql-modal-backdrop" *ngIf="showOrderModal"
-             (click)="$event.target === $event.currentTarget && closeOrderModal()">
-            <div class="ql-modal">
-                <div class="ql-modal-header">
-                    <h3><i class="fas fa-truck" style="color: #8B5CF6;"></i> Create Purchase Order</h3>
-                    <button class="ql-modal-close" (click)="closeOrderModal()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="ql-modal-body">
-                    <p>Create purchase order for <strong>{{ selectedRequest?.productName }}</strong></p>
-                    <form [formGroup]="orderForm">
-                        <div class="ql-field">
-                            <label class="ql-flabel">Supplier <span class="ql-required">*</span></label>
-                            <input type="text" class="ql-input" formControlName="supplier" placeholder="Supplier name">
-                            <span class="ql-field-error" *ngIf="orderForm.get('supplier')?.invalid && orderForm.get('supplier')?.touched">
-                                Supplier is required
-                            </span>
-                        </div>
-                        <div class="ql-field">
-                            <label class="ql-flabel">Quantity <span class="ql-required">*</span></label>
-                            <input type="number" class="ql-input" formControlName="quantity" placeholder="Quantity to order">
-                            <span class="ql-field-error" *ngIf="orderForm.get('quantity')?.invalid && orderForm.get('quantity')?.touched">
-                                Valid quantity is required
-                            </span>
-                        </div>
-                        <div class="ql-field">
-                            <label class="ql-flabel">Unit Price <span class="ql-required">*</span></label>
-                            <input type="number" class="ql-input" formControlName="unitPrice" placeholder="Cost per unit">
-                            <span class="ql-field-error" *ngIf="orderForm.get('unitPrice')?.invalid && orderForm.get('unitPrice')?.touched">
-                                Valid unit price is required
-                            </span>
-                        </div>
-                        <div class="ql-field">
-                            <label class="ql-flabel">Expected Delivery <span class="ql-required">*</span></label>
-                            <input type="date" class="ql-input" formControlName="expectedDelivery">
-                            <span class="ql-field-error" *ngIf="orderForm.get('expectedDelivery')?.invalid && orderForm.get('expectedDelivery')?.touched">
-                                Expected delivery date is required
-                            </span>
-                        </div>
-                        <div class="ql-field">
-                            <label class="ql-flabel">Notes</label>
-                            <textarea class="ql-input" formControlName="notes" rows="3" 
-                                      placeholder="Additional order notes..."></textarea>
-                        </div>
-                    </form>
-                    <div class="ql-order-summary">
-                        <span class="ql-order-total">Total: {{ formatCurrency((orderForm.get('quantity')?.value || 0) * (orderForm.get('unitPrice')?.value || 0)) }}</span>
-                    </div>
-                </div>
-                <div class="ql-modal-footer">
-                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeOrderModal()">Cancel</button>
-                    <button type="button" class="ql-btn ql-btn--primary" (click)="submitOrder()" [disabled]="isSubmitting || orderForm.invalid">
-                        <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-file-invoice]="!isSubmitting" 
-                           [class.ql-spinning]="isSubmitting"></i>
-                        {{ isSubmitting ? 'Creating...' : 'Create Purchase Order' }}
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================================
-        ASSIGN APPROVER MODAL
-        ============================================================ -->
-        <div class="ql-modal-backdrop" *ngIf="showLevelModal"
-             (click)="$event.target === $event.currentTarget && closeLevelModal()">
-            <div class="ql-modal ql-modal--small">
-                <div class="ql-modal-header">
-                    <h3><i class="fas fa-user-plus" style="color: #3B82F6;"></i> Assign Approver</h3>
-                    <button class="ql-modal-close" (click)="closeLevelModal()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="ql-modal-body">
-                    <p>Assign an approver for this approval level</p>
-                    <form [formGroup]="levelForm">
-                        <div class="ql-field">
-                            <label class="ql-flabel">Approver <span class="ql-required">*</span></label>
-                            <select class="ql-input" formControlName="approverId">
-                                <option value="">Select Approver</option>
-                                <option *ngFor="let approver of approvers" [value]="approver.id">
-                                    {{ approver.name }} - {{ approver.role }}
-                                </option>
-                            </select>
-                            <span class="ql-field-error" *ngIf="levelForm.get('approverId')?.invalid && levelForm.get('approverId')?.touched">
-                                Please select an approver
-                            </span>
-                        </div>
-                        <div class="ql-field">
-                            <label class="ql-flabel">Comments</label>
-                            <textarea class="ql-input" formControlName="comments" rows="3" 
-                                      placeholder="Add any comments..."></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="ql-modal-footer">
-                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeLevelModal()">Cancel</button>
-                    <button type="button" class="ql-btn ql-btn--primary" (click)="assignApprover()" [disabled]="levelForm.invalid">
-                        <i class="fas fa-user-check"></i> Assign
                     </button>
                 </div>
             </div>

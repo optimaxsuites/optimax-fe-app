@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { SupplyChainService } from '../../../service/procurement/supply-chain.service';
+import { FinanceBridgeService } from '../../../service/procurement/finance-bridge.service';
 import {
   GoodsReceivedNote,
   GrnStatus,
@@ -39,6 +40,7 @@ export class GrnDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private supplyChainService: SupplyChainService,
+    private financeBridge: FinanceBridgeService,
     private messageService: MessageService
   ) {}
 
@@ -154,10 +156,35 @@ export class GrnDetailComponent implements OnInit, OnDestroy {
         this.grn = updated;
         this.isUpdatingStatus = false;
         this.messageService.add({ severity: 'success', summary: 'Updated', detail: successMessage });
+        if (status === 'APPROVED') {
+          this.postGrnToFinance(updated);
+        }
       },
       error: () => {
         this.isUpdatingStatus = false;
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update GRN status. Please try again.' });
+      }
+    });
+  }
+
+  /**
+   * Despite doc comments elsewhere claiming this happens automatically ("Called automatically
+   * when a GRN is approved" / "Finance approved, triggers payment"), nothing in the app ever
+   * called FinanceBridgeService.postGrnToFinance() — approving a GRN updated its status and
+   * nothing else; the Debit-Purchases/Credit-AP journal entry for goods received was never
+   * created. Wired in here so approval actually posts to Finance.
+   */
+  private postGrnToFinance(grn: GoodsReceivedNote): void {
+    this.financeBridge.postGrnToFinance(grn, {}).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (result) => {
+        if (result.success) {
+          this.messageService.add({ severity: 'success', summary: 'Posted to Finance', detail: result.message });
+        } else {
+          this.messageService.add({ severity: 'warn', summary: 'Finance Posting Issue', detail: result.message });
+        }
+      },
+      error: () => {
+        this.messageService.add({ severity: 'warn', summary: 'Finance Posting Issue', detail: 'GRN approved, but posting to Finance failed. It may need to be posted manually.' });
       }
     });
   }

@@ -79,7 +79,6 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   // UI
   Math = Math;
   activeTab: 'overview' | 'factors' | 'recommendations' | 'history' = 'overview';
-  showExportModal: boolean = false;
 
   // Form
   predictionForm: FormGroup;
@@ -371,23 +370,6 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // EXPORT
-  // ============================================================
-
-  exportReport(): void {
-    this.showExportModal = true;
-  }
-
-  closeExportModal(): void {
-    this.showExportModal = false;
-  }
-
-  confirmExport(): void {
-    console.log('Exporting prediction report...');
-    this.closeExportModal();
-  }
-
-  // ============================================================
   // UI HELPERS
   // ============================================================
 
@@ -415,8 +397,8 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
     this.productSearchTerm = target.value;
     if (this.productSearchTerm.length > 0) {
       this.filteredProducts = this.products.filter(p =>
-        p.name.toLowerCase().includes(this.productSearchTerm.toLowerCase()) ||
-        p.sku.toLowerCase().includes(this.productSearchTerm.toLowerCase())
+        (p.name || '').toLowerCase().includes(this.productSearchTerm.toLowerCase()) ||
+        (p.sku || '').toLowerCase().includes(this.productSearchTerm.toLowerCase())
       );
     } else {
       this.filteredProducts = this.products;

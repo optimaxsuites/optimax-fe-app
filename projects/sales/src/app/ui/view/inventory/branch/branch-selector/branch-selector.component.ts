@@ -169,9 +169,9 @@ export class BranchSelectorComponent implements OnInit, OnDestroy, ControlValueA
     }
 
     this.filteredBranches = this.branches.filter(branch =>
-      branch.name.toLowerCase().includes(term) ||
-      branch.code.toLowerCase().includes(term) ||
-      branch.location.city.toLowerCase().includes(term)
+      (branch.name || '').toLowerCase().includes(term) ||
+      (branch.code || '').toLowerCase().includes(term) ||
+      (branch.location?.city || '').toLowerCase().includes(term)
     );
   }
 

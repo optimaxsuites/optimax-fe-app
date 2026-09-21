@@ -1,12 +1,12 @@
-<!--<p>late-arrivals works!</p>-->
 <div class="late-list">
   <h3>Late Arrivals</h3>
 
   <ng-container *ngIf="lateArrivals.length > 0; else noData">
-    <div class="late-item" *ngFor="let user of lateArrivals">
-      <span>{{ user.id }}</span>
-      <span>{{ user.name }}</span>
-      <span>{{ user.time }}</span>
+    <div class="late-item" *ngFor="let arrival of lateArrivals">
+      <span>{{ arrival.employeeName }}</span>
+      <span>{{ arrival.department }}</span>
+      <span>{{ arrival.checkIn | date:'shortTime' }}</span>
+      <span>{{ arrival.lateMinutes }}m late</span>
     </div>
   </ng-container>
 

@@ -1,5 +1,4 @@
 import { AttendanceTableRecord } from './attendancetable.dto';
-import { AttendanceEventDTO } from './attendance-event.dto';
 
 /**
  * Mock Attendance Data for Testing
@@ -203,49 +202,6 @@ export const MOCK_ATTENDANCE_RECORDS: AttendanceTableRecord[] = [
     checkedInBranchId: 1,
     checkedInBranchName: 'Main Office - Lagos',
     isCrossBranchAttendance: false,
-  },
-];
-
-// Mock attendance events for event-based testing
-export const MOCK_ATTENDANCE_EVENTS: AttendanceEventDTO[] = [
-  {
-    id: 2001,
-    employeeId: '101',
-    eventType: 'IN',
-    source: 'BIOMETRIC',
-    eventTime: new Date('2026-08-28T08:15:00'),
-    branchCode: 'MAIN-LAGOS',
-    isCrossBranch: false,
-    homeBranchCode: 'MAIN-LAGOS',
-    deviceId: 'BIOMETRIC_SCANNER_01',
-    processed: true,
-  },
-  {
-    id: 2002,
-    employeeId: '102',
-    eventType: 'IN',
-    source: 'BIOMETRIC',
-    eventTime: new Date('2026-08-28T09:00:00'),
-    branchCode: 'BRANCH-ABUJA', // Cross-branch
-    isCrossBranch: true,
-    homeBranchCode: 'MAIN-LAGOS',
-    deviceId: 'BIOMETRIC_SCANNER_02',
-    processed: false,
-  },
-  {
-    id: 2003,
-    employeeId: '103',
-    eventType: 'IN',
-    source: 'REMOTE',
-    eventTime: new Date('2026-08-28T09:15:00'),
-    branchCode: 'MAIN-LAGOS',
-    isCrossBranch: true,
-    homeBranchCode: 'BRANCH-ABUJA',
-    connectionIpAddress: '192.168.1.100',
-    deviceFingerprint: 'Mozilla/5.0 Chrome...',
-    gpsLatitude: 6.5244,
-    gpsLongitude: 3.3792,
-    processed: true,
   },
 ];
 

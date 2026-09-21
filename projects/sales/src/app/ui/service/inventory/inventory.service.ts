@@ -24,6 +24,7 @@ import {
   getStockStatusColor,
   ProductStatus,
   StockMovement,
+  ApprovalHistoryEntry,
   RestockRequest,
   StockAlert,
   BranchStockSummary,
@@ -43,6 +44,11 @@ import {
   TriggerInventoryAlertRequest,
   InventoryAlertFilters
 } from '../../domain/inventory/inventory.dto';
+// The /inventory API is just as inconsistent about date shape (ISO string, ms epoch, or a
+// *seconds* epoch) as the commerce API this util was written for — see date.util.ts's own
+// header comment. Reusing it here instead of raw `new Date(raw.x)` is what actually fixes
+// dates rendering as "21 Jan 1970" (a seconds epoch read as milliseconds).
+import { parseApiDate } from '../sales/date.util';
 
 // ============================================================
 // LOCAL STORAGE KEYS & MOCK DATA
@@ -62,7 +68,8 @@ const LOCAL_KEYS = {
   LOCATION_TYPES: 'inventory_location_types',
   GENERIC_LOCATIONS: 'inventory_generic_locations',
   NOTIFICATIONS: 'inventory_notifications',
-  PRODUCT_PERFORMANCE_FALLBACK: 'inventory_product_performance_fallback'
+  PRODUCT_PERFORMANCE_FALLBACK: 'inventory_product_performance_fallback',
+  MOVEMENT_APPROVAL_HISTORY: 'inventory_movement_approval_history'
 };
 
 const MOCK_BRANCH_TYPES: string[] = ['STANDARD', 'FLAGSHIP', 'MINI'];
@@ -1379,12 +1386,15 @@ export class InventoryService {
   /**
    * Resolves a from/toLocation id (that's what's actually sent on the wire now — see
    * stockMovementToApiPayload()) back into a {type,id,name} object, using whatever
-   * branches/suppliers we already have cached locally (populated by getBranches()/
-   * getSuppliers(), which most screens that show movements call anyway). If the id doesn't
-   * match either — a WAREHOUSE or CUSTOMER location, which this app has never had a real
-   * lookup table for — it falls back to showing the raw id as the name too. Either way `id`
-   * itself is always exactly what the backend sent, never guessed, which is what
-   * applyTransferStockAdjustment() actually depends on for correct stock math.
+   * branches/suppliers/generic locations we already have cached locally (populated by
+   * getBranches()/getSuppliers()/getLocations(), which most screens that show movements call
+   * anyway). WAREHOUSE and CUSTOMER ids live in the GENERIC_LOCATIONS table (see
+   * MOCK_GENERIC_LOCATIONS/createGenericLocation()) rather than a dedicated collection, so
+   * that's checked too — this used to be skipped, which left warehouse locations showing their
+   * raw id (e.g. "loc-wh-4") instead of a real name. If nothing matches, it falls back to
+   * showing the raw id as the name. Either way `id` itself is always exactly what the backend
+   * sent, never guessed, which is what applyTransferStockAdjustment() actually depends on for
+   * correct stock math.
    */
   private resolveMovementLocation(rawId: string, fallbackType: 'WAREHOUSE' | 'BRANCH' | 'SUPPLIER' | 'CUSTOMER'): { type: any; id: string; name: string } {
     const branches = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCHES) as string || '[]') as Branch[];
@@ -1394,6 +1404,10 @@ export class InventoryService {
     const suppliers = JSON.parse(localStorage.getItem(LOCAL_KEYS.SUPPLIERS) as string || '[]') as Supplier[];
     const supplierMatch = suppliers.find(s => String(s.id) === rawId);
     if (supplierMatch) return { type: 'SUPPLIER', id: rawId, name: supplierMatch.name };
+
+    const generic = JSON.parse(localStorage.getItem(LOCAL_KEYS.GENERIC_LOCATIONS) as string || '[]') as { id: string; type: string; name: string }[];
+    const genericMatch = generic.find(l => l.id === rawId);
+    if (genericMatch) return { type: genericMatch.type, id: rawId, name: genericMatch.name };
 
     return { type: fallbackType, id: rawId, name: rawId };
   }
@@ -1414,12 +1428,12 @@ export class InventoryService {
       toLocation: this.resolveMovementLocation(raw.toLocation, 'CUSTOMER'),
       createdBy: raw.createdById,
       approvedBy: raw.approvedById,
-      expiryDate: new Date(raw.expiryDate),
-      createdAt: new Date(raw.createdAt),
-      approvedAt: raw.approvedAt ? new Date(raw.approvedAt) : raw.approvedAt,
-      completedAt: raw.completedAt ? new Date(raw.completedAt) : raw.completedAt,
-      updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : raw.updatedAt,
-      scheduledDate: raw.scheduledDate ? new Date(raw.scheduledDate) : raw.scheduledDate
+      expiryDate: parseApiDate(raw.expiryDate) as Date,
+      createdAt: parseApiDate(raw.createdAt) as Date,
+      approvedAt: parseApiDate(raw.approvedAt),
+      completedAt: parseApiDate(raw.completedAt),
+      updatedAt: parseApiDate(raw.updatedAt),
+      scheduledDate: parseApiDate(raw.scheduledDate)
     };
   }
 
@@ -1470,11 +1484,11 @@ export class InventoryService {
       params: new HttpParams().set('tenantId', this.tenantId)
     }).pipe(
       map(raw => ({
-        stats: { ...raw.stats, lastUpdated: new Date(raw.stats.lastUpdated) },
+        stats: { ...raw.stats, lastUpdated: parseApiDate(raw.stats.lastUpdated) },
         alerts: (raw.alerts || []).map((a: any) => ({
           ...a,
-          createdAt: new Date(a.createdAt),
-          resolvedAt: a.resolvedAt ? new Date(a.resolvedAt) : a.resolvedAt
+          createdAt: parseApiDate(a.createdAt),
+          resolvedAt: parseApiDate(a.resolvedAt)
         })),
         recentMovements: (raw.recentMovements || []).map((m: any) => this.stockMovementFromApi(m)),
         branchSummaries: raw.branchSummaries || [],
@@ -1503,7 +1517,7 @@ export class InventoryService {
     return this.http.get<InventoryDashboardStats>(`${this.baseUrl}/inventory/dashboard/stats`, {
       params: new HttpParams().set('tenantId', this.tenantId)
     }).pipe(
-      map(stats => ({ ...stats, lastUpdated: new Date(stats.lastUpdated) })),
+      map(stats => ({ ...stats, lastUpdated: parseApiDate(stats.lastUpdated) as Date })),
       catchError(() => of(dash?.stats ?? MOCK_STATS))
     );
   }
@@ -1525,8 +1539,8 @@ export class InventoryService {
     return {
       ...raw,
       period: {
-        start: new Date(raw.startDate ?? raw.period?.start),
-        end: new Date(raw.endDate ?? raw.period?.end)
+        start: parseApiDate(raw.startDate ?? raw.period?.start) as Date,
+        end: parseApiDate(raw.endDate ?? raw.period?.end) as Date
       }
     } as ProductPerformance;
   }
@@ -1619,8 +1633,8 @@ export class InventoryService {
     }).pipe(
       map(res => (Array.isArray(res) ? res : []).map(a => ({
         ...a,
-        createdAt: new Date(a.createdAt),
-        resolvedAt: a.resolvedAt ? new Date(a.resolvedAt) : a.resolvedAt
+        createdAt: parseApiDate(a.createdAt),
+        resolvedAt: parseApiDate(a.resolvedAt)
       }))),
       catchError(() => {
         const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
@@ -1632,7 +1646,7 @@ export class InventoryService {
   /** GET /inventory/alerts/{id} */
   getAlertById(id: number): Observable<StockAlert> {
     return this.http.get<any>(`${this.baseUrl}/inventory/alerts/${id}`).pipe(
-      map(a => ({ ...a, createdAt: new Date(a.createdAt), resolvedAt: a.resolvedAt ? new Date(a.resolvedAt) : a.resolvedAt }))
+      map(a => ({ ...a, createdAt: parseApiDate(a.createdAt), resolvedAt: parseApiDate(a.resolvedAt) }))
     );
   }
 
@@ -1652,7 +1666,7 @@ export class InventoryService {
       isResolved: alert.isResolved ?? false
     };
     return this.http.post<any>(`${this.baseUrl}/inventory/alerts`, payload).pipe(
-      map(a => ({ ...a, createdAt: new Date(a.createdAt), resolvedAt: a.resolvedAt ? new Date(a.resolvedAt) : a.resolvedAt }))
+      map(a => ({ ...a, createdAt: parseApiDate(a.createdAt), resolvedAt: parseApiDate(a.resolvedAt) }))
     );
   }
 
@@ -1724,8 +1738,16 @@ export class InventoryService {
     // would silently fail to match, leaving `category` as '' and breaking the category
     // filter for every product (see resolveProductCategoryName below, which already does
     // this correctly for the same reason).
+    //
+    // The `|| c.categoryId === raw.categoryId` clause this used to have was wrong: a
+    // Category's own `categoryId` field is an unused legacy property that's always null on
+    // every category — not the category's identifier. Since a product with no category set
+    // also has `raw.categoryId == null`, that clause matched `null === null` and silently
+    // resolved EVERY uncategorized product (and any with a genuinely unmatched categoryId)
+    // to whichever category happened to be first in the list, which is exactly what made the
+    // Category filter look broken: most products all displayed the same wrong category.
     const categories = JSON.parse(localStorage.getItem(LOCAL_KEYS.CATEGORIES) as string || '[]') as Category[];
-    const category = categories.find(c => String(c.id) === String(raw.categoryId) || c.categoryId === raw.categoryId);
+    const category = raw.categoryId != null ? categories.find(c => String(c.id) === String(raw.categoryId)) : undefined;
 
     const units = JSON.parse(localStorage.getItem(LOCAL_KEYS.MEASUREMENT_UNITS) as string || '[]') as MeasurementUnit[];
     const unit = units.find(u => String(u.id) === String(raw.measurementUnitId));
@@ -1742,7 +1764,13 @@ export class InventoryService {
       name: raw.name,
       description: raw.description,
       categoryId: raw.categoryId,
-      category: category?.name || existing?.category || '',
+      // Only fall back to a previously-cached `category` name when this product genuinely
+      // HAS a categoryId that just failed to resolve this round (e.g. categories hadn't
+      // loaded yet) — not when categoryId is null. Falling back unconditionally let category
+      // names bleed in from the constructor's one-time MOCK_PRODUCTS localStorage seed (mock
+      // ids happen to collide with real product ids) and then persist forever, since every
+      // subsequent fetch would keep "preserving" that same wrong value.
+      category: category?.name || (raw.categoryId != null ? existing?.category : '') || '',
       measurementUnitId: raw.measurementUnitId,
       unitOfMeasure: (unitCode as Product['unitOfMeasure']) || existing?.unitOfMeasure || 'EACH',
       costPrice: raw.costPrice,
@@ -1756,8 +1784,8 @@ export class InventoryService {
       supplierId: raw.supplierId,
       supplierIds: supplier ? [String(supplier.id)] : (existing?.supplierIds || []),
       isComboProduct: raw.isComboProduct,
-      createdAt: new Date(raw.createdAt),
-      updatedAt: new Date(raw.updatedAt),
+      createdAt: parseApiDate(raw.createdAt) as Date,
+      updatedAt: parseApiDate(raw.updatedAt) as Date,
       // No wire field for any of these — carried over from the local record so a product's
       // local-only detail survives a refresh instead of being wiped by every API read.
       subCategory: existing?.subCategory || '',
@@ -2065,6 +2093,24 @@ export class InventoryService {
       return throwError(() => new Error('Product not found'));
     }
     const merged = { ...products[index], ...product } as Product;
+    // Several fields share the same broken shape: the edit form only ever writes a
+    // "display" field (sellingPrice, unitOfMeasure, supplierIds) and never the separate raw
+    // backend-id field productToApiPayload() actually prefers (unitPrice, measurementUnitId,
+    // supplierId). The spread above leaves each stale id field untouched by a partial update
+    // that didn't mention it, so productToApiPayload()'s own "prefer the id field, fall back
+    // to resolving the display field" logic kept picking the OLD id over a genuinely-changed
+    // display field — edits to price, unit, or supplier were silently discarded on save.
+    // Clear the stale id whenever its display field was actually part of this update, so
+    // productToApiPayload() is forced to re-resolve it from the new value instead.
+    if (product.sellingPrice != null || product.price != null) {
+      merged.unitPrice = product.sellingPrice ?? product.price;
+    }
+    if (product.unitOfMeasure != null) {
+      merged.measurementUnitId = undefined;
+    }
+    if (product.supplierIds != null) {
+      merged.supplierId = undefined;
+    }
     const payload = this.productToApiPayload(merged);
 
     return this.http.put<any>(`${this.baseUrl}/products/${numericId}`, payload).pipe(
@@ -2233,8 +2279,8 @@ export class InventoryService {
         email: ''
       },
       status: raw.status,
-      createdAt: new Date(raw.createdAt),
-      updatedAt: new Date(raw.updatedAt)
+      createdAt: parseApiDate(raw.createdAt) as Date,
+      updatedAt: parseApiDate(raw.updatedAt) as Date
     };
   }
 
@@ -2442,6 +2488,7 @@ export class InventoryService {
     productId: string;
     quantity: number;
     reorderPoint: number;
+    reorderQuantity?: number;
     safetyStock: number;
     sellingPrice: number;
     costPrice?: number;
@@ -2452,28 +2499,38 @@ export class InventoryService {
     const products = JSON.parse(localStorage.getItem(LOCAL_KEYS.PRODUCTS) as string || '[]') as Product[];
 
     const branch = branches.find(b => String(b.id) === data.branchId);
-    const product = products.find(p => String(p.id) === data.productId);
+    // data.productId is typed `string`, but callers (e.g. branch-inventory-form's product
+    // picker, which patches the form with the raw Product.id number) don't always coerce it —
+    // `String(p.id) === data.productId` then compares "5" to 5 and never matches, so a
+    // perfectly real product looked "not found" even while it was showing in the search
+    // dropdown right above the form. Normalize both sides instead of trusting the caller.
+    const productIdStr = String(data.productId);
+    const product = products.find(p => String(p.id) === productIdStr);
 
     if (!product) {
       this.loadingSubject.next(false);
       return throwError(() => new Error('Product not found'));
     }
 
-    const existingIndex = allInventory.findIndex(i => i.branchId === data.branchId && i.productId === data.productId);
+    const existingIndex = allInventory.findIndex(i => i.branchId === data.branchId && i.productId === productIdStr);
     const existingRecord = existingIndex > -1 ? allInventory[existingIndex] : undefined;
 
     const payload = {
       branchId: data.branchId,
       branchName: branch?.name || '',
-      productId: data.productId,
+      productId: productIdStr,
       productName: product.name,
       sku: product.sku,
       quantity: data.quantity,
       reorderPoint: data.reorderPoint,
-      // This form only ever collects a single "reorder point" value — there's no separate
-      // reorder-quantity input — so preserve whatever an existing record already had instead of
-      // clobbering it every time stock is merely adjusted (e.g. by a transfer).
-      reorderQuantity: existingRecord ? existingRecord.reorderQuantity : data.reorderPoint,
+      // Most callers (e.g. the branch-inventory form) only ever collect a single "reorder
+      // point" value — there's no separate reorder-quantity input there — so preserve whatever
+      // an existing record already had instead of clobbering it every time stock is merely
+      // adjusted (e.g. by a transfer). Threshold Management does have its own reorderQuantity
+      // field though, so use it when a caller actually passes one.
+      reorderQuantity: data.reorderQuantity != null
+        ? data.reorderQuantity
+        : (existingRecord ? existingRecord.reorderQuantity : data.reorderPoint),
       safetyStock: data.safetyStock,
       sellingPrice: data.sellingPrice,
       costPrice: data.costPrice || 0
@@ -2594,7 +2651,15 @@ export class InventoryService {
   /** POST /inventory/movements — falls back to a local-only record if the API is unavailable. */
   createMovement(movement: Partial<StockMovement>): Observable<StockMovement> {
     this.loadingSubject.next(true);
-    const payload = this.stockMovementToApiPayload({ status: MovementStatus.PENDING, ...movement });
+    // Fallback only — callers (e.g. TransferWizardComponent) pass the real signed-in user
+    // explicitly, but default to the session's own values here too rather than leaving
+    // Movement Approvals showing "Requested By: Unknown" for anything that doesn't.
+    const payload = this.stockMovementToApiPayload({
+      status: MovementStatus.PENDING,
+      createdBy: sessionStorage.getItem('userid') || undefined,
+      createdByName: sessionStorage.getItem('fullname') || undefined,
+      ...movement
+    });
 
     return this.http.post<any>(`${this.baseUrl}/inventory/movements`, payload).pipe(
       map(raw => this.stockMovementFromApi(raw)),
@@ -2612,7 +2677,9 @@ export class InventoryService {
           ...(movement as StockMovement),
           id: Date.now(),
           createdAt: new Date(),
-          status: MovementStatus.PENDING
+          status: MovementStatus.PENDING,
+          createdBy: movement.createdBy || sessionStorage.getItem('userid') || '',
+          createdByName: movement.createdByName || sessionStorage.getItem('fullname') || ''
         };
         movements.push(newMovement);
         localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
@@ -2674,6 +2741,28 @@ export class InventoryService {
     movements[index] = updated;
     localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
     this.movementsSubject.next(movements);
+  }
+
+  // ----------------------------------------------------
+  // MOVEMENT APPROVAL HISTORY
+  // ----------------------------------------------------
+  // There's no /inventory/movements/approval-history endpoint on the backend yet, so — same
+  // localStorage-backed approach as everything else in this service — MovementApprovalComponent
+  // persists each approve/reject/request-changes action here instead of holding it only in
+  // component state. Without this, the "history" list and the stats derived from it reset to
+  // nothing (or, before this, silently reset to 3 hardcoded mock entries) on every reload or
+  // tab revisit, which is what made both look like they weren't tracking anything at all.
+
+  /** All persisted approval actions, most recent first. */
+  getApprovalHistory(): ApprovalHistoryEntry[] {
+    return JSON.parse(localStorage.getItem(LOCAL_KEYS.MOVEMENT_APPROVAL_HISTORY) as string || '[]') as ApprovalHistoryEntry[];
+  }
+
+  /** Records one approval action and returns the updated (most-recent-first) history. */
+  recordApprovalAction(action: ApprovalHistoryEntry): ApprovalHistoryEntry[] {
+    const history = [action, ...this.getApprovalHistory()];
+    localStorage.setItem(LOCAL_KEYS.MOVEMENT_APPROVAL_HISTORY, JSON.stringify(history));
+    return history;
   }
 
   /** Delete a movement. Only meant for PENDING movements (nothing has moved yet) — the calling
@@ -3106,8 +3195,8 @@ export class InventoryService {
       ...raw,
       createdBy: raw.createdById,
       approvedBy: raw.approvedById,
-      createdAt: raw.createdAt ? new Date(raw.createdAt) : raw.createdAt,
-      approvedAt: raw.approvedAt ? new Date(raw.approvedAt) : raw.approvedAt
+      createdAt: parseApiDate(raw.createdAt),
+      approvedAt: parseApiDate(raw.approvedAt)
     };
   }
 
@@ -3185,10 +3274,12 @@ export class InventoryService {
   /** POST /inventory/restock-requests — falls back to a local-only record if the API is unavailable. */
   createRestockRequest(request: Partial<RestockRequest>): Observable<RestockRequest> {
     this.loadingSubject.next(true);
+    // Fallback only — callers (restock-request-form) pass the real signed-in user explicitly,
+    // but default to the session's own values here too rather than a hardcoded fake identity.
     const payload = this.restockRequestToApiPayload({
       status: RestockStatus.PENDING,
-      createdBy: 'usr-1',
-      createdByName: 'Current User',
+      createdBy: sessionStorage.getItem('userid') || 'usr-1',
+      createdByName: sessionStorage.getItem('fullname') || 'Current User',
       ...request
     });
 
@@ -3208,8 +3299,11 @@ export class InventoryService {
           status: RestockStatus.PENDING,
           createdAt: new Date(),
           approvedAt: new Date(),
-          createdBy: 'usr-1',
-          createdByName: 'Current User'
+          // request.createdBy/createdByName (set by the caller, or the session-based default
+          // above) already carries the real signed-in user — this used to unconditionally
+          // stomp it with a hardcoded 'usr-1'/'Current User' even when the real value was there.
+          createdBy: request.createdBy || sessionStorage.getItem('userid') || 'usr-1',
+          createdByName: request.createdByName || sessionStorage.getItem('fullname') || 'Current User'
         };
         const requests = this.getMockRestockRequests();
         requests.push(newRequest);
@@ -3391,7 +3485,11 @@ export class InventoryService {
     }
     const raw = product.category ?? (product as any).categoryId;
     if (typeof raw === 'string') {
-      const byId = categories.find(c => String(c.id) === String(raw) || c.categoryId === raw);
+      // No `|| c.categoryId === raw` clause here (unlike the old productFromApi bug this
+      // mirrored) — a Category's own `categoryId` field is an unused legacy property, always
+      // null, and comparing it against `raw` (already a resolved name/id string) is never
+      // meaningful.
+      const byId = categories.find(c => String(c.id) === String(raw));
       return byId?.name || raw;
     }
     return '';

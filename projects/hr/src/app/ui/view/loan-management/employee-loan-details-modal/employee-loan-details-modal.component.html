@@ -213,6 +213,10 @@
           <span class="row-label">Current Status</span>
           <span class="status-pill inline-pill" [ngClass]="getStatusClass(displayedStatus)">{{ getStatusDisplay(displayedStatus) }}</span>
         </div>
+        <div class="detail-row" *ngIf="loan.approvedBy">
+          <span class="row-label">Approved By</span>
+          <span class="row-value">{{ getApprovedByName() }}</span>
+        </div>
         <div class="detail-row">
           <span class="row-label">Interest Rate</span>
           <span class="row-value strong">{{ getDisplayedInterestRate() }}%</span>

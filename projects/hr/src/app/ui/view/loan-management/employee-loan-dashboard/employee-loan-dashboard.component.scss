@@ -174,11 +174,14 @@ app-employee-dashboard {
           font-weight: 700;
           color: #1a4b5c;
           
-          .employee-name {
-            background: linear-gradient(135deg, #2E6276, #4291b1);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+          .lm-dashboard-emp-name {
+            background: linear-gradient(135deg, #2E6276, #4291b1) !important;
+            -webkit-background-clip: text !important;
+            background-clip: text !important;
+            color: transparent !important;
+            font-size: inherit !important;
+            font-weight: inherit !important;
+            display: inline !important;
           }
         }
         

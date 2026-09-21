@@ -74,6 +74,9 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
 
   getStatusDisplay(status: string | undefined): string {
     if (!status) return '';
+    if (status.toUpperCase() === 'READY_FOR_DISBURSEMENT') {
+      return 'Disbursable';
+    }
     return String(status)
       .toLowerCase()
       .replace(/_/g, ' ')

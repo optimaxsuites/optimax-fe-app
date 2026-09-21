@@ -6,7 +6,7 @@
 import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, lastValueFrom } from 'rxjs';
 import * as XLSX from 'xlsx';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import { Product, Category, MeasurementUnit, Supplier } from '../../../../domain/inventory/inventory.dto';
@@ -472,7 +472,7 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
   // IMPORT EXECUTION
   // ============================================================
 
-  executeImport(): void {
+  async executeImport(): Promise<void> {
     this.isProcessing = true;
     this.error = null;
 
@@ -493,10 +493,11 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // NOTE: InventoryService's createProduct/updateProduct are a localStorage-backed mock and
-    // resolve synchronously (via `of(...)`), so this plain for-loop completes in one tick — no
-    // recursion/concatMap needed. If the service is ever swapped for real HTTP calls, this loop
-    // will need to become a proper async sequence (e.g. concatMap) instead.
+    // createProduct()/updateProduct() are real HTTP calls now, not the synchronous localStorage
+    // mock this loop was originally written for — subscribing without awaiting meant this whole
+    // function (and the successful/failed counts it reported) finished BEFORE any request had
+    // actually resolved, so the results screen always showed "0 successful" regardless of what
+    // really happened on the backend. Await each row in turn instead.
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index];
       const rowNumber = index + 2; // +1 for the header row, +1 for 1-based row numbering
@@ -510,26 +511,16 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
         ? this.inventoryService.updateProduct(existing.id, productData)
         : this.inventoryService.createProduct(productData);
 
-      let rowFailed = false;
-      let rowErrorMessage = '';
-
-      action.subscribe({
-        next: (saved) => {
-          successful++;
-          this.createdProducts.push(saved);
-          if (!existing) {
-            this.existingProducts.push(saved);
-          }
-        },
-        error: (err) => {
-          rowFailed = true;
-          rowErrorMessage = err?.message || 'Failed to save product';
+      try {
+        const saved = await lastValueFrom(action);
+        successful++;
+        this.createdProducts.push(saved);
+        if (!existing) {
+          this.existingProducts.push(saved);
         }
-      });
-
-      if (rowFailed) {
+      } catch (err: any) {
         failed++;
-        errors.push({ row: rowNumber, message: rowErrorMessage });
+        errors.push({ row: rowNumber, message: err?.message || 'Failed to save product' });
         if (!formValue.skipErrors) {
           const remaining = rows.length - (index + 1);
           if (remaining > 0) {
@@ -567,8 +558,21 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
       name: row.name,
       sku: row.sku,
       description: row.description || '',
-      category: category?.id || formValue.defaultCategory || undefined,
-      unitOfMeasure: (unit?.id || 'EACH') as any,
+      // categoryId is what InventoryService.productToApiPayload() actually sends to the
+      // backend — this used to be set on a field literally named `category` (holding the
+      // category's numeric id), which productToApiPayload() then tried to resolve as if it
+      // were a category NAME, never matched, and silently dropped. Every bulk-imported
+      // product saved with no category at all, whether it came from the row's own Category
+      // column or the "Default Category" picker.
+      category: category?.name,
+      categoryId: category?.id ?? (formValue.defaultCategory ? Number(formValue.defaultCategory) : undefined),
+      // Same bug as category above: this used to be the unit's raw numeric `id`, but
+      // unitOfMeasure is supposed to hold the unit's CODE (e.g. 'KG', 'EACH') — productToApiPayload()
+      // resolves measurementUnitId by matching that code, so every bulk-imported row silently
+      // saved with no measurement unit at all. Setting measurementUnitId directly here too,
+      // same as categoryId, so the resolution doesn't depend on the code round-trip succeeding.
+      measurementUnitId: unit?.id,
+      unitOfMeasure: (unit?.unitId || 'EACH') as any,
       sellingPrice: parseFloat(row.sellingprice) || 0,
       costPrice: parseFloat(row.costprice) || 0,
       stockQuantity: quantity,

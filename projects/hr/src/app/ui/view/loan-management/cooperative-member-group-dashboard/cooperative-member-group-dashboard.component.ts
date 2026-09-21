@@ -100,6 +100,9 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
   // Convert status to Title Case
   public toTitleCase(status: string): string {
     if (!status) return '';
+    if (status.toUpperCase() === 'READY_FOR_DISBURSEMENT') {
+      return 'Disbursable';
+    }
     return status.toLowerCase().replace(/(^|\s|_)[a-z]/g, (match) => match.toUpperCase()).replace(/_/g, ' ');
   }
 
@@ -164,7 +167,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
 
   // Helper to normalize status label for display
   getStatusLabel(status: string): string {
-    return status === 'READY_FOR_DISBURSEMENT' ? 'READY FOR DISBURSEMENT' : status;
+    return status === 'READY_FOR_DISBURSEMENT' ? 'Disbursable' : status;
   }
   groupMemberRosterRows: GroupMemberRosterRow[] = [];
   selectedContributionMonth = '';

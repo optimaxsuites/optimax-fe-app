@@ -66,9 +66,6 @@
                 *ngIf="selectedBranchData">
                 <i class="fas fa-store"></i> View Branch
             </button>
-            <button class="ql-sidebar-action" (click)="exportReport()" *ngIf="selectedBranchData">
-                <i class="fas fa-file-export"></i> Export Report
-            </button>
         </div>
 
     </aside>
@@ -115,9 +112,6 @@
                         [disabled]="isRefreshing">
                         <i class="fas fa-sync-alt" [class.ql-spinning]="isRefreshing"></i>
                         {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
-                    </button>
-                    <button type="button" class="ql-btn ql-btn--primary" (click)="exportReport()">
-                        <i class="fas fa-file-export"></i> Export
                     </button>
                 </div>
             </div>

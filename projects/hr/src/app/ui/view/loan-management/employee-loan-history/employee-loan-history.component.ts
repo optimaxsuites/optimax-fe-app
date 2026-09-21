@@ -84,7 +84,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     { label: 'Pending', value: 'PENDING' },
     { label: 'Approved', value: 'APPROVED' },
     { label: 'Rejected', value: 'REJECTED' },
-    { label: 'Ready for Disbursement', value: 'READY_FOR_DISBURSEMENT' },
+    { label: 'Disbursable', value: 'READY_FOR_DISBURSEMENT' },
     { label: 'Active', value: 'ACTIVE' },
     { label: 'Completed', value: 'COMPLETED' },
     { label: 'Skipped', value: 'SKIPPED' },
@@ -456,6 +456,9 @@ export class EmployeeLoanHistoryComponent implements OnInit {
 
   getStatusLabel(status: string | undefined): string {
     if (!status) return '';
+    if (status.toUpperCase() === 'READY_FOR_DISBURSEMENT') {
+      return 'Disbursable';
+    }
     return status.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 

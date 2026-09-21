@@ -195,7 +195,11 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
         const detailPath = uuid
           ? ['/admin/sales/customers', String(savedCustomerId), uuid]
           : ['/admin/sales/customers', String(savedCustomerId)];
-        this.router.navigate(detailPath);
+        // Replace this form's history entry with the detail page instead of pushing a new
+        // one, for both create and edit — otherwise the browser Back button from the
+        // customer's detail page lands back on the (stale, already-submitted) form instead
+        // of the customer list the user actually came from.
+        this.router.navigate(detailPath, { replaceUrl: true });
       },
       error: (error: any) => {
         console.error('Error saving customer:', error);

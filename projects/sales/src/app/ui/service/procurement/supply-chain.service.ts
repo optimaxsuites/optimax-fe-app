@@ -157,14 +157,15 @@ export class SupplyChainService {
     );
   }
 
-  /** All payment vouchers. The real API has no lpoId/invoiceId query params, so those filters (when given) are applied client-side. */
-  getPaymentVouchers(filters?: { lpoId?: string; invoiceId?: string }): Observable<PaymentVoucher[]> {
+  /** All payment vouchers. The real API has no lpoId/invoiceId/grnId query params, so those filters (when given) are applied client-side. */
+  getPaymentVouchers(filters?: { lpoId?: string; invoiceId?: string; grnId?: string }): Observable<PaymentVoucher[]> {
     const params = new HttpParams().set('tenantId', this.tenantId);
     return this.http.get<any>(`${this.baseUrl}/payment-vouchers/`, { params }).pipe(
       map(res => Array.isArray(res) ? res : (res?.data ?? [])),
       map((list: PaymentVoucher[]) => list.filter(v =>
         (!filters?.lpoId || v.lpoId === filters.lpoId) &&
-        (!filters?.invoiceId || v.invoiceId === filters.invoiceId)
+        (!filters?.invoiceId || v.invoiceId === filters.invoiceId) &&
+        (!filters?.grnId || v.grnId === filters.grnId)
       )),
       tap(list => this.vouchers$$.next(list)),
       catchError(() => of([]))

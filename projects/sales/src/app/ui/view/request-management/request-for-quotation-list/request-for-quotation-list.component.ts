@@ -1,6 +1,6 @@
 import { RequestForQuotationFormComponent } from './../request-for-quotation-form/request-for-quotation-form.component';
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { Router, NavigationEnd } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil, forkJoin, filter } from 'rxjs';
@@ -63,6 +63,9 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   recentRequests: ExtendedProcurementRequest[] = [];
   topProducts: any[] = [];
   cancellationAvatars: string[] = ['JD', 'AK', 'ML', 'TN'];
+
+  // Add these properties to the component
+  aiDismissed = false;
 
   formatBudget(row: any): string {
     return `${row.currency} ${Number(row.totalBudget || 0).toLocaleString()}`;
@@ -191,6 +194,9 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   totalPages = 0;
 
   filterForm: FormGroup;
+  searchTermControl: FormControl;
+  dateFromControl: FormControl;
+  dateToControl: FormControl;
   statusOptions: { value: RequestStatus | 'ALL'; label: string }[] = [
     { value: 'ALL', label: 'All Requests' },
     { value: 'PENDING_APPROVAL', label: 'Pending Approval' },
@@ -220,6 +226,9 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
       dateFrom: [''],
       dateTo: ['']
     });
+    this.searchTermControl = this.filterForm.get('searchTerm') as FormControl;
+    this.dateFromControl = this.filterForm.get('dateFrom') as FormControl;
+    this.dateToControl = this.filterForm.get('dateTo') as FormControl;
 
     this.tableColumns = [
       { header: 'Request ID', field: 'id', sortable: true, className: 'col-id' },
@@ -447,25 +456,25 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
     return labels[status] || status;
   }
 
-  getStatusBadgeClass(status: RequestStatus): string {
-    const classes: Partial<Record<RequestStatus, string>> = {
-      'DRAFT': 'px-2 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-800',
-      'PENDING_APPROVAL': 'px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800',
-      'REJECTED': 'px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800',
-      'PENDING': 'px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800',
-      'VENDORS_QUOTING': 'px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800',
-      'VENDOR_SELECTED': 'px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800',
-      'LPO_ISSUED': 'px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800',
-      'PAYMENT_PENDING': 'px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800',
-      'PAYMENT_CONFIRMED': 'px-2 py-1 text-xs font-medium rounded-full bg-teal-100 text-teal-800',
-      'DELIVERY_IN_PROGRESS': 'px-2 py-1 text-xs font-medium rounded-full bg-cyan-100 text-cyan-800',
-      'DELIVERED': 'px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800',
-      'COMPLETED': 'px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800',
-      'CANCELLED': 'px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800',
-      'APPROVED': 'px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800'
-    };
-    return classes[status] || classes['PENDING'] || 'px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800';
-  }
+  // getStatusBadgeClass(status: RequestStatus): string {
+  //   const classes: Partial<Record<RequestStatus, string>> = {
+  //     'DRAFT': 'px-2 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-800',
+  //     'PENDING_APPROVAL': 'px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800',
+  //     'REJECTED': 'px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800',
+  //     'PENDING': 'px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800',
+  //     'VENDORS_QUOTING': 'px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800',
+  //     'VENDOR_SELECTED': 'px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800',
+  //     'LPO_ISSUED': 'px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800',
+  //     'PAYMENT_PENDING': 'px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800',
+  //     'PAYMENT_CONFIRMED': 'px-2 py-1 text-xs font-medium rounded-full bg-teal-100 text-teal-800',
+  //     'DELIVERY_IN_PROGRESS': 'px-2 py-1 text-xs font-medium rounded-full bg-cyan-100 text-cyan-800',
+  //     'DELIVERED': 'px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800',
+  //     'COMPLETED': 'px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800',
+  //     'CANCELLED': 'px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800',
+  //     'APPROVED': 'px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800'
+  //   };
+  //   return classes[status] || classes['PENDING'] || 'px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800';
+  // }
 
   formatCurrency(amount: number, currency: string): string {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency }).format(amount);
@@ -755,4 +764,30 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
     };
     return classes[status] || 'pending';
   }
+
+  // Add this method to count requests by status
+getStatusCount(status: string): number {
+  return this.requests.filter(r => r.status === status).length;
+}
+
+// Update the getStatusBadgeClass method to return the il- prefixed classes
+getStatusBadgeClass(status: RequestStatus): string {
+  const classes: Partial<Record<RequestStatus, string>> = {
+    'DRAFT': 'status-draft',
+    'PENDING_APPROVAL': 'status-pending-approval',
+    'REJECTED': 'status-rejected',
+    'PENDING': 'status-pending',
+    'VENDORS_QUOTING': 'status-quoting',
+    'VENDOR_SELECTED': 'status-selected',
+    'LPO_ISSUED': 'status-lpo',
+    'PAYMENT_PENDING': 'status-payment-pending',
+    'PAYMENT_CONFIRMED': 'status-payment-confirmed',
+    'DELIVERY_IN_PROGRESS': 'status-delivery',
+    'DELIVERED': 'status-delivered',
+    'COMPLETED': 'status-completed',
+    'CANCELLED': 'status-cancelled',
+    'APPROVED': 'status-approved'
+  };
+  return classes[status] || 'status-pending';
+}
 }

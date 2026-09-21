@@ -1,6 +1,6 @@
 /**
- * ⚠️ UPDATED (2026-08-28) - Simplified: Removed fraud detection, using local time
- * Clock-in sources: BIOMETRIC (fingerprint scanner) or REMOTE (web button)
+ * Attendance Event Resource: /x/api/v2/hr/attendance-events
+ * Attendance Record Resource: /x/api/v2/hr/attendanceRecords
  * See EMPLOYEE_ID_PATTERNS.md for employee identification patterns
  */
 
@@ -9,116 +9,310 @@ export type EventType = 'IN' | 'OUT';
 export type RecordStatus = 'DRAFT' | 'SUBMITTED' | 'IN_APPROVAL' | 'APPROVED' | 'REJECTED' | 'LOCKED';
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type FlagType = 'CORRECTION' | 'CROSS_BRANCH_BIOMETRIC';
-export type FraudFlagCode = 'DUPLICATE' | 'GEO_MISMATCH' | 'UNUSUAL_HOURS' | 'UNKNOWN_DEVICE';
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE' | 'OVERTIME';
+export type AppliedScheduleType = 'OFFICE_HOURS' | 'SHIFT';
 
-export interface ProcessingResult {
-  eventId: number;
-  status: 'SUCCESS' | 'DUPLICATE' | 'REJECTED' | 'ERROR';
-  message: string;
-  fraudFlags: FraudFlagCode[];
+/** Generic {id, name, code, description} reference used for gender, religion, department, jobType, etc. */
+export interface LookupRefDTO {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
 }
 
+export interface EmployeeLevelDTO extends LookupRefDTO {
+  grade: string;
+  position: string;
+}
+
+export interface EmployeeMediaDTO {
+  id: number;
+  name: string;
+  mediaNo: string;
+}
+
+/** User account snapshot embedded for overrideBy/approvedBy/modifiedBy and employee.user */
+export interface UserAccountDTO {
+  id: number;
+  fullname: string;
+  userId: number;
+  email: string;
+  phoneNumber: string;
+  username: string;
+  clientType: string;
+  gender: string;
+  accountId: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+}
+
+/** Full employee snapshot embedded in attendance-event/attendanceRecord GET responses */
+export interface EmployeeDetailDTO {
+  id: number;
+  firstName: string;
+  lastName: string;
+  dob: string; // date
+  email: string;
+  workEmail: string;
+  phone: string;
+  address: string;
+  jobTitle: string;
+  supervisor: string;
+  bankName: string;
+  accountNumber: string;
+  nin: string;
+  bvn: string;
+  employeeStatus: string; // e.g. 'JOINING'
+  employementStartDate: string; // date-time (backend spelling)
+  employmentEndDate: string; // date-time
+  exitReason?: string;
+  exitReasonBy?: string;
+  exitReasonAt?: string;
+  onProbation: boolean;
+  probationStartDate: string;
+  probationEndDate: string;
+  appraisalDueDate: string;
+  userId: number;
+  gender: LookupRefDTO;
+  relationship: LookupRefDTO;
+  religion: LookupRefDTO;
+  maritalStatus: LookupRefDTO;
+  department: LookupRefDTO;
+  employeeMedia: EmployeeMediaDTO;
+  jobType: LookupRefDTO;
+  level: EmployeeLevelDTO;
+  user: UserAccountDTO;
+}
+
+export interface PagedResponse<T> {
+  content: T[];
+  totalSize: number;
+  page: number;
+  size: number;
+}
+
+/* ---------------------------- Attendance Events --------------------------- */
+
+/** GET /attendance-events, GET /attendance-events/{id} — response shape (employee is embedded) */
 export interface AttendanceEventDTO {
-  id?: number;
-  createdAt?: Date;
-
-  // Event source and type
+  id: number;
+  employeeId: EmployeeDetailDTO;
   source: EventSource;
-  eventType: EventType; // Check-in or check-out
-
-  employeeId: string; // Database ID, not employeeCode
-  employeeCode?: string; // For deduplication / lookup
-  fraudFlags?: FraudFlagCode[];
-
+  eventType: EventType;
+  employeeCode: string;
   branchCode: string;
-  isCrossBranch: boolean; // Whether check-in is at non-home branch
-  homeBranchCode?: string;
-
-  eventTime: Date; // When the check-in/out occurred
-
-  // Device information (for BIOMETRIC source)
+  eventTime: string; // date-time
   deviceId?: string;
-  rawTemplateHash?: string; // Biometric template hash for verification
+  rawTemplateHash?: string;
   deviceIpAddress?: string;
-
-  // Remote check-in data (for REMOTE source - web button)
   connectionIpAddress?: string;
   deviceFingerprint?: string;
-  userAgent?: string; // Fraud/VPN detection
-  networkType?: string; // e.g. 'wifi', 'cellular', 'vpn' — fraud/VPN detection
+  userAgent?: string;
+  networkType?: string;
   vpnDetected?: boolean;
-
   gpsLatitude?: number;
   gpsLongitude?: number;
-  geoAddress?: string; // Human-readable address
-  accuracy?: number; // GPS accuracy in meters
-
+  geoAddress?: string;
+  accuracy?: number;
+  isCrossBranch: boolean;
+  homeBranchCode?: string;
   processed: boolean;
+  createdAt: string;
 }
 
-export interface AttendanceRecordDTO {
-  id?: number;
-
-  employeeId: string; // Database ID, not employeeCode
+/** POST /attendance-events — request body (employeeId is the raw FK) */
+export interface CreateAttendanceEventRequest {
+  employeeId: number;
+  source: EventSource;
+  eventType: EventType;
+  employeeCode: string;
   branchCode: string;
+  eventTime: string; // date-time
+  deviceId?: string;
+  rawTemplateHash?: string;
+  deviceIpAddress?: string;
+  connectionIpAddress?: string;
+  deviceFingerprint?: string;
+  userAgent?: string;
+  networkType?: string;
+  vpnDetected?: boolean;
+  gpsLatitude?: number;
+  gpsLongitude?: number;
+  geoAddress?: string;
+  accuracy?: number;
+  isCrossBranch?: boolean;
+  homeBranchCode?: string;
+  processed?: boolean;
+}
 
-  workDate: Date;
-  shiftId?: number;
+/* --------------------------- Attendance Records ---------------------------- */
 
-  // Strict contract: use checkIn/checkOut only
-  checkIn?: Date | string;
-  checkOut?: Date | string;
+export interface LocalTimeDTO {
+  hour: number;
+  minute: number;
+  second: number;
+  nano: number;
+}
 
-  // Required for geofence validation and location display
-  checkInLocation?: { address: string; lat: number; lng: number } | null;
-  checkOutLocation?: { address: string; lat: number; lng: number } | null;
+/** Shift snapshot embedded inside an applied-schedule snapshot */
+export interface ShiftSnapshotDTO {
+  id: number;
+  name: string;
+  type: string; // e.g. 'MORNING'
+  startTime: LocalTimeDTO;
+  endTime: LocalTimeDTO;
+  description: string;
+  color: string;
+}
 
+/** Snapshot of the schedule active when the attendance record was created (appliedScheduleId on GET responses) */
+export interface AppliedScheduleSnapshotDTO {
+  id: number;
+  employeeId: EmployeeDetailDTO;
+  departmentId: LookupRefDTO;
+  shiftId: ShiftSnapshotDTO;
+  startDate: string; // date
+  endDate: string; // date
+  status: string; // e.g. 'SCHEDULED'
+  projectId: LookupRefDTO;
+  location: string;
+  recurrence: string; // e.g. 'NONE'
+  description: string;
+}
+
+/** GET /attendanceRecords, GET /attendanceRecords/{id}, GET /attendanceRecords/dateRange — response shape */
+export interface AttendanceRecordDTO {
+  id: number;
+  employeeId: EmployeeDetailDTO;
+  attendanceDate: string; // date
+  branchCode: string;
+  checkIn?: string; // date-time
+  checkOut?: string; // date-time
+  checkInLocation?: string;
+  checkOutLocation?: string;
+  checkInDistance?: number;
+  checkOutDistance?: number;
   clockInSource?: EventSource;
   clockOutSource?: EventSource;
-
-  totalHours?: number;
+  status: AttendanceStatus;
+  recordStatus: RecordStatus;
+  hours?: number;
   overtimeHours?: number;
   undertimeHours?: number;
-
-  isLate?: boolean;
   lateMinutes?: number;
+  isLate?: boolean;
   isAbsent?: boolean;
-
-  // Backend MUST send this explicitly — frontend uses this, not isLate/isAbsent
-  attendanceStatus?: 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE' | 'OVERTIME';
-
-  isCrossBranch?: boolean; // Whether work was at a different branch
-
-  // Workflow state, not attendance presence
-  recordStatus: RecordStatus;
-  // Legacy alias for backward compatibility — use recordStatus instead
-  status?: RecordStatus;
-  approvedBy?: number;
-  approvedAt?: Date;
-
-  modifiedAt?: Date;
-  modifiedBy?: number;
-  modificationReason?: string;
-
-  requiresApproval: boolean; // Whether record needs approval (correction or cross-branch)
+  isCrossBranch?: boolean;
+  overrideOpen?: boolean;
+  overrideBy?: UserAccountDTO;
+  overrideReason?: string;
+  statusBeforeOverride?: AttendanceStatus;
+  appliedScheduleType?: AppliedScheduleType;
+  appliedScheduleId?: AppliedScheduleSnapshotDTO;
+  appliedExpectedStart?: string; // date-time
+  appliedExpectedEnd?: string; // date-time
+  appliedShiftName?: string;
+  requiresApproval?: boolean;
   approvalStatus?: ApprovalStatus;
   flagType?: FlagType;
   approverNotes?: string;
+  approvedBy?: UserAccountDTO;
+  approvedAt?: string; // date-time
+  modificationReason?: string;
+  modifiedBy?: UserAccountDTO;
+  modifiedAt?: string; // date-time
+  lockedAt?: string; // date-time
+  createdAt?: string; // date-time
+  updatedAt?: string; // date-time
+}
 
-  // Snapshot of the schedule active when this record was created (not in PDF)
-  appliedScheduleType?: 'OFFICE_HOURS' | 'SHIFT';
-  appliedScheduleId?: string;
-  appliedExpectedStart?: string; // HH:mm
-  appliedExpectedEnd?: string; // HH:mm
-  appliedShiftName?: string;
-
-  // No backend model currently — POST /attendance-records/{id}/override-open
+/** POST /attendanceRecords, PUT /attendanceRecords/{id} — request body (FKs are raw ids) */
+export interface UpsertAttendanceRecordRequest {
+  id?: number;
+  employeeId: number;
+  attendanceDate: string; // date
+  branchCode: string;
+  checkIn?: string;
+  checkOut?: string;
+  checkInLocation?: string;
+  checkOutLocation?: string;
+  checkInDistance?: number;
+  checkOutDistance?: number;
+  clockInSource?: EventSource;
+  clockOutSource?: EventSource;
+  status: AttendanceStatus;
+  recordStatus: RecordStatus;
+  hours?: number;
+  overtimeHours?: number;
+  undertimeHours?: number;
+  lateMinutes?: number;
+  isLate?: boolean;
+  isAbsent?: boolean;
+  isCrossBranch?: boolean;
   overrideOpen?: boolean;
+  overrideBy?: number;
   overrideReason?: string;
-  overrideBy?: { hrEmployeeId: number; fullname: string };
+  statusBeforeOverride?: AttendanceStatus;
+  appliedScheduleType?: AppliedScheduleType;
+  appliedScheduleId?: number;
+  appliedExpectedStart?: string;
+  appliedExpectedEnd?: string;
+  appliedShiftName?: string;
+  requiresApproval?: boolean;
+  approvalStatus?: ApprovalStatus;
+  flagType?: FlagType;
+  approverNotes?: string;
+  approvedBy?: number;
+  approvedAt?: string;
+  modificationReason?: string;
+  modifiedBy?: number;
+  modifiedAt?: string;
+  lockedAt?: string;
+}
 
-  lockedAt?: Date; // Frozen for payroll
+/** POST /attendanceRecords/{id}/override/open */
+export interface OpenOverrideRequest {
+  actorUserId: number;
+  reason: string;
+}
 
-  createdAt?: Date;
-  updatedAt?: Date;
+/** POST /attendanceRecords/clockIn */
+export interface ClockInRequest {
+  employeeId: number;
+  checkIn: string; // date-time
+  checkInLocation?: string;
+  checkInDistance?: number;
+  source: EventSource;
+  deviceId?: string;
+  deviceFingerprint?: string;
+  userAgent?: string;
+  networkType?: string;
+  vpnDetected?: boolean;
+  gpsLatitude?: number;
+  gpsLongitude?: number;
+  geoAddress?: string;
+  gpsAccuracy?: number;
+  isCrossBranch?: boolean;
+  branchCode: string;
+}
+
+/** POST /attendanceRecords/clockOut */
+export interface ClockOutRequest {
+  employeeId: number;
+  checkOut: string; // date-time
+  checkOutLocation?: string;
+  checkOutDistance?: number;
+  source: EventSource;
+  deviceId?: string;
+  deviceFingerprint?: string;
+  userAgent?: string;
+  networkType?: string;
+  vpnDetected?: boolean;
+  gpsLatitude?: number;
+  gpsLongitude?: number;
+  geoAddress?: string;
+  gpsAccuracy?: number;
+  branchCode: string;
 }
