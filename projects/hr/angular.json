@@ -33,25 +33,25 @@
             "assets": [
               {
                 "glob": "**/*",
-                "input": "public"
+                "input": "public",
+                "output": "/"
               },
               "src/favicon.ico",
               "src/assets"
             ],
             "styles": [
-              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "bootstrap/dist/css/bootstrap.min.css",
               "src/styles.scss",
-              "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
-              "node_modules/ngx-toastr/toastr.css",
-              "node_modules/primeng/resources/themes/saga-blue/theme.css",
-              "node_modules/primeng/resources/primeng.min.css",
-              "node_modules/primeicons/primeicons.css",
-              "node_modules/leaflet/dist/leaflet.css"
+              "@fortawesome/fontawesome-free/css/all.min.css",
+              "primeng/resources/themes/saga-blue/theme.css",
+              "primeng/resources/primeng.min.css",
+              "primeicons/primeicons.css",
+              "leaflet/dist/leaflet.css"
             ],
             "scripts": [
-              "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js",
-              "node_modules/apexcharts/dist/apexcharts.min.js",
-              "node_modules/leaflet/dist/leaflet.js"
+              "bootstrap/dist/js/bootstrap.bundle.min.js",
+              "apexcharts/dist/apexcharts.min.js",
+              "leaflet/dist/leaflet.js"
             ]
           },
           "configurations": {
@@ -102,7 +102,8 @@
             "assets": [
               {
                 "glob": "**/*",
-                "input": "public"
+                "input": "public",
+                "output": "/"
               }
             ],
             "styles": ["src/styles.scss"],

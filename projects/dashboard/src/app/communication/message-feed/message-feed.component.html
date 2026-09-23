@@ -636,11 +636,11 @@
                   <button type="button" class="attach-icon-btn" title="Preview" (click)="openDocumentViewer(attachment, $event)">
                     <i class="pi pi-eye"></i>
                   </button>
-                  <a *ngIf="attachment.downloadUrl" [href]="attachment.downloadUrl" download
+                  <button *ngIf="attachment.downloadUrl" type="button"
                      class="attach-icon-btn" title="Download"
-                     (click)="$event.stopPropagation()">
+                     (click)="downloadAttachment(attachment, $event)">
                     <i class="pi pi-download"></i>
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -663,11 +663,11 @@
                           (click)="openDocumentViewer(attachment, $event)">
                     <i class="pi pi-eye"></i>
                   </button>
-                  <a *ngIf="attachment.downloadUrl" [href]="attachment.downloadUrl" download
+                  <button *ngIf="attachment.downloadUrl" type="button"
                      class="attach-icon-btn" title="Download"
-                     (click)="$event.stopPropagation()">
+                     (click)="downloadAttachment(attachment, $event)">
                     <i class="pi pi-download"></i>
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -738,8 +738,20 @@
               </div>
               <div class="document-viewer-body">
                 <!-- PDF: native iframe render -->
+                <div *ngIf="documentViewerType === 'pdf' && officePreviewLoading" class="office-preview-loading">
+                  <div class="office-preview-spinner"></div>
+                  <span>Loading preview…</span>
+                </div>
+                <div *ngIf="documentViewerType === 'pdf' && officePreviewError" class="document-viewer-card">
+                  <span class="document-viewer-badge">PDF</span>
+                  <strong>{{ documentViewerTitle }}</strong>
+                  <p>Could not load preview. Download the file to view it.</p>
+                  <div class="document-viewer-actions">
+                    <button *ngIf="documentViewerRawUrl" type="button" (click)="downloadViewerFile($event)" class="toolbar-action primary">Download</button>
+                  </div>
+                </div>
                 <iframe
-                  *ngIf="documentViewerType === 'pdf' && documentViewerUrl"
+                  *ngIf="documentViewerType === 'pdf' && documentViewerUrl && !officePreviewLoading && !officePreviewError"
                   [src]="documentViewerUrl"
                   class="document-viewer-frame"
                   title="Document preview"
@@ -775,8 +787,7 @@
                     <p *ngIf="officePreviewError === 'pptx'">PowerPoint preview isn't supported in the browser. Download to view.</p>
                     <p *ngIf="officePreviewError && officePreviewError !== 'pptx'">Could not load preview. Download the file to view it.</p>
                     <div class="document-viewer-actions">
-                      <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" download class="toolbar-action primary">Download</a>
-                      <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" target="_blank" rel="noopener noreferrer" class="toolbar-action">Open in tab</a>
+                      <button *ngIf="documentViewerRawUrl" type="button" (click)="downloadViewerFile($event)" class="toolbar-action primary">Download</button>
                     </div>
                   </div>
                 </ng-container>
@@ -787,8 +798,7 @@
                   <strong>{{ documentViewerTitle }}</strong>
                   <p>Preview is not available for this file type.</p>
                   <div class="document-viewer-actions">
-                    <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" target="_blank" rel="noopener noreferrer" class="toolbar-action primary">Open file</a>
-                    <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" download class="toolbar-action">Download</a>
+                    <button *ngIf="documentViewerRawUrl" type="button" (click)="downloadViewerFile($event)" class="toolbar-action primary">Download</button>
                   </div>
                 </div>
               </div>
