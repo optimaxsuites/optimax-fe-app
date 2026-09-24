@@ -46,7 +46,24 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
   // ============================================================
 
   isLoading: boolean = true;
+  /** Set after the first load settles — see VendorManagementListComponent for why. The 60s
+   *  auto-refresh used to tear down and rebuild the entire dashboard on every tick (isLoading=true
+   *  hid the whole content container), causing a spinner flash and lost scroll position every
+   *  minute; now only the very first load does that. */
+  hasLoadedOnce = false;
   stats: VendorDashboardStats | null = null;
+  /**
+   * The dashboard used three different "Pending" numbers for what a user reasonably reads as the same
+   * thing: the sidebar and top-bar badge showed pendingOnboarding, while a stats card explicitly
+   * labelled "Pending Review" also showed pendingOnboarding (not pendingReview) — so "Pending Review"
+   * never actually reflected vendors under review. The Approval Queue (what "See Registry" links to)
+   * combines both PENDING_ONBOARDING and UNDER_REVIEW into one count; this matches that, so every
+   * "Pending" figure on this page agrees with what the queue itself shows.
+   */
+  get totalPendingQueue(): number {
+    return (this.stats?.pendingOnboarding ?? 0) + (this.stats?.pendingReview ?? 0);
+  }
+  insightMetrics: { label: string; value: string; color: string; trend?: 'up' | 'down'; percent?: number }[] = [];
   recentActivity: VendorRecentActivity[] = [];
   expiringDocuments: VendorDocument[] = [];
   topPerformers: Vendor[] = [];
@@ -132,26 +149,30 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
 
   loadDashboardData(): void {
     this.isLoading = true;
+    this.error = null;
 
     // Load dashboard stats
     this.vendorService.getDashboardStats().subscribe({
       next: (stats) => {
         this.stats = stats;
-        if (stats.recentActivity && stats.recentActivity.length > 0) {
-          this.recentActivity = stats.recentActivity;
-        }
-        if (stats.expiringDocumentsList && stats.expiringDocumentsList.length > 0) {
-          this.expiringDocuments = stats.expiringDocumentsList;
-        }
-        if (stats.topPerformers && stats.topPerformers.length > 0) {
-          this.topPerformers = stats.topPerformers;
-        }
+        // Assigned unconditionally: these were only updated when the new list was non-empty, so once
+        // every expiring document was renewed (or no one qualified as a top performer) the old
+        // entries stayed on screen forever.
+        this.recentActivity = stats.recentActivity ?? [];
+        this.expiringDocuments = stats.expiringDocumentsList ?? [];
+        this.topPerformers = stats.topPerformers ?? [];
+        this.insightMetrics = this.buildInsightMetrics(stats);
         this.prepareChartData(stats);
         this.isLoading = false;
+        this.hasLoadedOnce = true;
       },
       error: (err) => {
         console.error('Failed to load dashboard stats:', err);
+        // Shows the (previously dead) error banner with its Retry button. The service no longer
+        // substitutes mock stats, so a failure here is a real "couldn't load", not fake numbers.
+        this.error = 'Could not load the vendor dashboard. Please check your connection and try again.';
         this.isLoading = false;
+        this.hasLoadedOnce = true;
       }
     });
 
@@ -215,21 +236,30 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
   actOnInsight(insight: SentinelInsight, action: string): void {
     this.vendorService.actOnInsight(insight.id, action).subscribe({
       next: (updated) => { this.sentinelInsights = updated; },
-      error: (err) => console.error('Failed to act on insight:', err)
+      error: (err) => {
+        console.error('Failed to act on insight:', err);
+        this.error = 'Could not save that action. Please try again.';
+      }
     });
   }
 
   investigateFraudFlag(flag: FraudFlag): void {
     this.vendorService.updateFraudFlagStatus(flag.id, 'INVESTIGATING').subscribe({
       next: (updated) => { this.fraudFlags = updated; },
-      error: (err) => console.error('Failed to update fraud flag:', err)
+      error: (err) => {
+        console.error('Failed to update fraud flag:', err);
+        this.error = 'Could not update that fraud flag. Please try again.';
+      }
     });
   }
 
   clearFraudFlag(flag: FraudFlag): void {
     this.vendorService.updateFraudFlagStatus(flag.id, 'CLEARED').subscribe({
       next: (updated) => { this.fraudFlags = updated; },
-      error: (err) => console.error('Failed to update fraud flag:', err)
+      error: (err) => {
+        console.error('Failed to update fraud flag:', err);
+        this.error = 'Could not update that fraud flag. Please try again.';
+      }
     });
   }
 
@@ -239,16 +269,21 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
 
   prepareChartData(stats: VendorDashboardStats): void {
     // Vendor Tier Distribution
+    // Guarded: a response without vendorsByTier used to throw here, inside the success handler, so the
+    // loading spinner never cleared and no error was shown.
+    const tiers = stats.vendorsByTier ?? { preferred: 0, approved: 0, conditional: 0 };
     this.vendorTierData = [
-      { label: '⭐ Preferred', value: stats.vendorsByTier.preferred, color: '#2EB270' },
-      { label: '✓ Approved', value: stats.vendorsByTier.approved, color: '#2E6276' },
-      { label: '⚠️ Conditional', value: stats.vendorsByTier.conditional, color: '#F59E0B' }
+      { label: '⭐ Preferred', value: tiers.preferred ?? 0, color: '#2EB270' },
+      { label: '✓ Approved', value: tiers.approved ?? 0, color: '#2E6276' },
+      { label: '⚠️ Conditional', value: tiers.conditional ?? 0, color: '#F59E0B' }
     ].filter(item => item.value > 0);
 
     // Risk Distribution
+    const total = stats.totalVendors ?? 0;
+    const highRisk = stats.highRiskVendors ?? 0;
     this.riskDistributionData = [
-      { label: 'Low Risk', value: stats.totalVendors - stats.highRiskVendors, color: '#2EB270' },
-      { label: 'High Risk', value: stats.highRiskVendors, color: '#DC2626' }
+      { label: 'Low Risk', value: total - highRisk, color: '#2EB270' },
+      { label: 'High Risk', value: highRisk, color: '#DC2626' }
     ];
 
     this.performanceData = [];
@@ -385,6 +420,10 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
   }
 
   formatNumber(value: number): string {
+    // A missing/null value used to throw here (`undefined.toString()`), inside loadDashboardData()'s
+    // success handler — same "spinner stuck forever" failure mode as the averagePerformanceScore fix
+    // above, since a throw there happens before isLoading is ever reset to false.
+    if (value == null) return '0';
     if (value >= 1000000) {
       return (value / 1000000).toFixed(1) + 'M';
     }
@@ -399,6 +438,14 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
     const expiry = new Date(date);
     const diff = expiry.getTime() - now.getTime();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  }
+
+  /** A document already past its expiry showed as "-3 days" instead of saying it expired. */
+  getExpiryLabel(date: Date): string {
+    const days = this.getDaysUntilExpiry(date);
+    if (days < 0) return `Expired ${Math.abs(days)}d ago`;
+    if (days === 0) return 'Expires today';
+    return `${days} days`;
   }
 
   getStatusClass(status: string): string {
@@ -548,37 +595,45 @@ export class VendorManagementDashboardComponent implements OnInit, OnDestroy {
     return path + ` L${lastX},${this.getPointY(0)} L${firstX},${this.getPointY(0)} Z`;
   }
 
-  getInsightMetrics(): any[] {
-    if (!this.stats) return [];
+  /**
+   * The trend arrow/percentage on each of these cards used to be hard-coded (4.2%, 8.7%, 3.1%, and
+   * 5.2%-or-2.8% depending on a threshold) regardless of the real numbers — always "up" and "improving"
+   * no matter what the vendor base actually did. VendorDashboardStats only exposes ONE real trend figure
+   * (monthOverMonthGrowth, for the vendor base as a whole), so only the metric it actually describes —
+   * Active Vendors — gets a trend; the other three show no fabricated movement.
+   *
+   * Computed once per stats load (see loadDashboardData) and read from the `insightMetrics` field by
+   * the template, rather than called directly from *ngFor — that ran on every change-detection tick and
+   * returned a brand-new array of brand-new objects each time, so Angular tore down and rebuilt all
+   * four cards on every tick instead of only when the underlying stats actually changed.
+   */
+  private buildInsightMetrics(stats: VendorDashboardStats): { label: string; value: string; color: string; trend?: 'up' | 'down'; percent?: number }[] {
+    const growth = stats.monthOverMonthGrowth;
 
     return [
       {
         label: 'Avg Performance Score',
-        value: this.stats.averagePerformanceScore.toFixed(1) + '%',
-        color: '#2E6276',
-        trend: 'up',
-        percent: 4.2
+        // A response missing this field used to throw here (a direct .toFixed() call on undefined),
+        // which happens INSIDE the success handler — the catch never sees it, so isLoading is never
+        // reset and the page is stuck on the loading spinner forever.
+        value: (stats.averagePerformanceScore ?? 0).toFixed(1) + '%',
+        color: '#2E6276'
       },
       {
         label: 'Active Vendors',
-        value: this.formatNumber(this.stats.activeVendors),
+        value: this.formatNumber(stats.activeVendors),
         color: '#2EB270',
-        trend: 'up',
-        percent: 8.7
+        ...(growth != null ? { trend: growth >= 0 ? 'up' as const : 'down' as const, percent: Math.abs(growth) } : {})
       },
       {
         label: 'Pending Review',
-        value: this.formatNumber(this.stats.pendingReview),
-        color: '#F59E0B',
-        trend: 'down',
-        percent: 3.1
+        value: this.formatNumber(stats.pendingReview),
+        color: '#F59E0B'
       },
       {
         label: 'High Risk Vendors',
-        value: this.formatNumber(this.stats.highRiskVendors),
-        color: '#DC2626',
-        trend: this.stats.highRiskVendors > 5 ? 'down' : 'up',
-        percent: this.stats.highRiskVendors > 5 ? 5.2 : 2.8
+        value: this.formatNumber(stats.highRiskVendors),
+        color: '#DC2626'
       }
     ];
   }

@@ -5,7 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil, take } from 'rxjs/operators';
 
-import { VendorRegistrationService } from '../../../service/vendor-portal/vendor-registration.service';
+import { VendorRegistrationService, RegistrationSubmitError } from '../../../service/vendor-portal/vendor-registration.service';
 import {
   BusinessType, BusinessSize, OwnershipType, SupplyCategory,
   DeliveryRegion, AccountType, Currency, DocumentUploadType,
@@ -106,11 +106,24 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
     { value: 'bayelsa',     label: 'Bayelsa' },
     { value: 'imo',         label: 'Imo' },
     { value: 'abia',        label: 'Abia' },
+    { value: 'ebonyi',      label: 'Ebonyi' },
     { value: 'benue',       label: 'Benue' },
     { value: 'kogi',        label: 'Kogi' },
     { value: 'nasarawa',    label: 'Nasarawa' },
     { value: 'plateau',     label: 'Plateau' },
     { value: 'kaduna',      label: 'Kaduna' },
+    { value: 'sokoto',      label: 'Sokoto' },
+    { value: 'kebbi',       label: 'Kebbi' },
+    { value: 'zamfara',     label: 'Zamfara' },
+    { value: 'katsina',     label: 'Katsina' },
+    { value: 'jigawa',      label: 'Jigawa' },
+    { value: 'yobe',        label: 'Yobe' },
+    { value: 'borno',       label: 'Borno' },
+    { value: 'adamawa',     label: 'Adamawa' },
+    { value: 'taraba',      label: 'Taraba' },
+    { value: 'gombe',       label: 'Gombe' },
+    { value: 'bauchi',      label: 'Bauchi' },
+    { value: 'niger',       label: 'Niger' },
     { value: 'nationwide',  label: 'Nationwide (All States)' },
     { value: 'international', label: 'International' },
   ];
@@ -322,41 +335,60 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * A toggle turning off used to only clear its dependent fields' validators, not their
+   * values — so typing details, then switching the toggle off, still submitted the stale
+   * text/number to the backend even though the "No" answer said otherwise. Now the value
+   * itself is reset to null alongside the validators.
+   */
+  private wireToggle(form: FormGroup, toggleField: string, dependentFields: string[], requiredValidators: Record<string, any> = {}): void {
+    form.get(toggleField)?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(on => {
+      dependentFields.forEach(field => {
+        const c = form.get(field);
+        if (!c) return;
+        if (!on) {
+          c.reset(null);
+          c.clearValidators();
+        } else if (requiredValidators[field]) {
+          c.setValidators(requiredValidators[field]);
+        }
+        c.updateValueAndValidity();
+      });
+    });
+  }
+
   private watchConditionalFields(): void {
-    // VAT number required if VAT registered
-    this.form2.get('vatRegistered')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(v => {
-      const c = this.form2.get('vatNumber');
-      v ? c?.setValidators(Validators.required) : c?.clearValidators();
-      c?.updateValueAndValidity();
+    this.wireToggle(this.form2, 'vatRegistered', ['vatNumber'], { vatNumber: Validators.required });
+    this.wireToggle(this.form2, 'hasPublicLiabilityInsurance',
+      ['publicLiabilityInsurer', 'publicLiabilityPolicyNo', 'publicLiabilityExpiryDate']);
+    this.wireToggle(this.form2, 'hasProfessionalIndemnity',
+      ['professionalIndemnityInsurer', 'professionalIndemnityPolicyNo', 'professionalIndemnityExpiry']);
+    this.wireToggle(this.form2, 'hasBeenBlacklisted', ['blacklistedDetails'], { blacklistedDetails: Validators.required });
+    this.wireToggle(this.form2, 'hasLitigationPending', ['litigationDetails'], { litigationDetails: Validators.required });
+    this.wireToggle(this.form2, 'hasCriminalConviction', ['criminalDetails'], { criminalDetails: Validators.required });
+
+    this.wireToggle(this.form3, 'hasSecondaryContact',
+      ['secondaryContactName', 'secondaryContactTitle', 'secondaryContactEmail', 'secondaryContactPhone']);
+    this.wireToggle(this.form3, 'hasWarehouse',
+      ['warehouseAddressLine1', 'warehouseCity', 'warehouseState', 'warehouseCapacity']);
+    this.wireToggle(this.form3, 'hasOwnDeliveryFleet', ['fleetSize'], { fleetSize: [Validators.required, Validators.min(1)] });
+
+    // Inverted: the operating-address fields only matter once the vendor says the operating
+    // address is NOT the same as the registered one, so they're cleared when it IS the same.
+    this.form3.get('operatingAddressSameAsRegistered')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(same => {
+      ['operatingAddressLine1', 'operatingAddressLine2', 'operatingCity', 'operatingState'].forEach(field => {
+        const c = this.form3.get(field);
+        if (!c) return;
+        if (same) { c.reset(null); c.clearValidators(); c.updateValueAndValidity(); }
+      });
     });
 
-    // Blacklisted details required
-    this.form2.get('hasBeenBlacklisted')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(v => {
-      const c = this.form2.get('blacklistedDetails');
-      v ? c?.setValidators(Validators.required) : c?.clearValidators();
-      c?.updateValueAndValidity();
-    });
-
-    // Litigation details required
-    this.form2.get('hasLitigationPending')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(v => {
-      const c = this.form2.get('litigationDetails');
-      v ? c?.setValidators(Validators.required) : c?.clearValidators();
-      c?.updateValueAndValidity();
-    });
-
-    // Fleet size required if has fleet
-    this.form3.get('hasOwnDeliveryFleet')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(v => {
-      const c = this.form3.get('fleetSize');
-      v ? c?.setValidators([Validators.required, Validators.min(1)]) : c?.clearValidators();
-      c?.updateValueAndValidity();
-    });
-
-    // Advance payment percentage
-    this.form4.get('acceptsAdvancePayment')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(v => {
-      const c = this.form4.get('advancePaymentPercentage');
-      v ? c?.setValidators([Validators.required, Validators.min(1), Validators.max(100)]) : c?.clearValidators();
-      c?.updateValueAndValidity();
-    });
+    this.wireToggle(this.form4, 'hasSecondaryBankAccount',
+      ['secondaryBankName', 'secondaryAccountName', 'secondaryAccountNumber', 'secondaryAccountType', 'secondaryCurrency']);
+    this.wireToggle(this.form4, 'acceptsAdvancePayment', ['advancePaymentPercentage'],
+      { advancePaymentPercentage: [Validators.required, Validators.min(1), Validators.max(100)] });
+    this.wireToggle(this.form4, 'acceptsMobileMoney', ['mobileMoneyCurrency', 'mobileMoneyNumber']);
+    this.wireToggle(this.form4, 'annualAuditedAccounts', ['auditFirmName', 'lastAuditYear']);
   }
 
   private loadDraft(): void {
@@ -446,10 +478,10 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  private showStepError(message: string): void {
+  private showStepError(message: string, durationMs = 5000): void {
     this.stepError = message;
     clearTimeout(this.stepErrorTimer);
-    this.stepErrorTimer = setTimeout(() => (this.stepError = null), 5000);
+    this.stepErrorTimer = setTimeout(() => (this.stepError = null), durationMs);
     setTimeout(() => {
       document.querySelector('.vr-banner--error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 50);
@@ -465,6 +497,11 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
       case 6: this.regService.saveStep6({ ...this.form6.value, uploadedDocuments: this.uploadedDocuments }); break;
     }
     this.pulseSaveState();
+  }
+
+  /** The sidebar "Save Draft" button: stores the current step's answers right now. */
+  saveDraft(): void {
+    this.autoSaveStep();
   }
 
   private pulseSaveState(): void {
@@ -510,9 +547,17 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
         this.applicationNumber = res.applicationNumber;
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
-      error: () => {
+      error: (err) => {
         this.isSubmitting = false;
-        this.showStepError('Submission failed. Please check your connection and try again.');
+        // The service reports which stage failed (creating the record, saving details, uploading
+        // documents, or the final submit) — say so instead of a generic message. Nothing has been
+        // sent to the reviewers yet, and pressing Submit again continues the same application.
+        this.showStepError(
+          err instanceof RegistrationSubmitError
+            ? err.message
+            : 'Submission failed. Please check your connection and try again.',
+          12000
+        );
       },
     });
   }

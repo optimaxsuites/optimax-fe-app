@@ -53,6 +53,10 @@ export class DocumentationHistoryComponent implements OnInit {
       next: (response) => {
         this.requests = response.data || [];
         this.isLoading = false;
+        // The table renders filteredRequests, which is only populated by updatePagination().
+        // Without this the page stayed empty after a successful load until the user typed in
+        // search or clicked a status filter.
+        this.applyFilters();
       },
       error: (err) => {
         console.error('Error loading requests:', err);

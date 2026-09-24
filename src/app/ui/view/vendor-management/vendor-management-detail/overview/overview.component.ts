@@ -42,9 +42,6 @@ export class OverviewComponent {
   /** Emits when the user wants to navigate to the documents tab */
   @Output() navigateToDocuments = new EventEmitter<void>();
 
-  /** Emits when the user wants to navigate to the edit page */
-  @Output() navigateToEdit = new EventEmitter<void>();
-
   // ============================================================
   // ENUMS FOR TEMPLATE
   // ============================================================
@@ -111,6 +108,11 @@ export class OverviewComponent {
     }).format(value);
   }
 
+  /** 4.5 stars should render as 5 filled, not 4 (plain <= truncates instead of rounding). */
+  round(value: number): number {
+    return Math.round(value);
+  }
+
   getPerformanceColor(score: number): string {
     if (score >= 80) return '#2EB270';
     if (score >= 60) return '#F5A623';
@@ -134,7 +136,11 @@ export class OverviewComponent {
     this.navigateToDocuments.emit();
   }
 
-  onNavigateToEdit(): void {
-    this.navigateToEdit.emit();
+  /** Full account number is sensitive; only the last 4 digits are shown. */
+  maskAccountNumber(accountNumber: string | undefined | null): string {
+    if (!accountNumber) return '—';
+    const digits = String(accountNumber);
+    if (digits.length <= 4) return digits;
+    return `${'•'.repeat(digits.length - 4)}${digits.slice(-4)}`;
   }
 }

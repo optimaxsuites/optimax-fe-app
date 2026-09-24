@@ -98,6 +98,14 @@ export class VendorPerformanceComponent {
     return Math.ceil(max / 10) * 10 + 10;
   }
 
+  /** Evenly-spaced grid line y-positions in the same coordinate system as getPointY. */
+  getGridLineYs(): number[] {
+    const padding = 20;
+    const height = 260 - padding * 2;
+    const lines = 5;
+    return Array.from({ length: lines + 1 }, (_, i) => padding + (height / lines) * i);
+  }
+
   getPointX(index: number, total: number): number {
     const padding = 40;
     const width = 500 - padding * 2;
@@ -118,6 +126,14 @@ export class VendorPerformanceComponent {
       const y = this.getPointY(d, max);
       return (i === 0 ? 'M' : 'L') + `${x},${y}`;
     }).join(' ');
+  }
+
+  /** Label the trend chart with the actual span it covers, not a hardcoded "6 months". */
+  getTrendRangeLabel(): string {
+    const points = this.performance?.trendData;
+    if (!points || points.length === 0) return '';
+    if (points.length === 1) return points[0].period;
+    return `${points[0].period} – ${points[points.length - 1].period}`;
   }
 
   getPerformanceChartAreaPath(data: number[], max: number): string {

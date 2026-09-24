@@ -160,6 +160,11 @@ export interface VendorDocument {
     vendorName?: string;
 }
 
+/** Real upload progress from the HTTP request itself, not a simulated timer. */
+export type DocumentUploadEvent =
+    | { type: 'progress'; progress: number }
+    | { type: 'complete'; document: VendorDocument };
+
 export interface ComplianceStatus {
     isCompliant: boolean;
     documentsVerified: number;
@@ -374,26 +379,6 @@ export interface VendorRecentActivity {
     type: 'ONBOARDING' | 'PERFORMANCE' | 'RISK' | 'DOCUMENT' | 'ORDER' | 'GENERAL';
     icon: string;
     color: string;
-}
-
-// ============================================================
-// CONTRACT MODELS
-// ============================================================
-
-export interface VendorContract {
-    id: number;
-    vendorId: string;
-    title: string;
-    contractNumber: string;
-    startDate: Date;
-    endDate: Date;
-    renewalDate: Date;
-    status: 'ACTIVE' | 'EXPIRING' | 'EXPIRED' | 'TERMINATED';
-    value: number;
-    terms: string;
-    documentUrl?: string;
-    autoRenew: boolean;
-    renewalReminderSent: boolean;
 }
 
 // ============================================================
