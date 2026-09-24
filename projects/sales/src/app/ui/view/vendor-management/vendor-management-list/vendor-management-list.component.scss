@@ -790,6 +790,27 @@
             background: #F59E0B;
         }
     }
+
+    // CONDITIONAL and INACTIVE are both in the Directory's default status filter (a vendor lands here
+    // after approval), but had no modifier class at all — no background, no text color, no dot color —
+    // so a row in either status rendered as an unstyled, barely-visible pill.
+    &--conditional {
+        background: #fff7ed;
+        color: #9a3412;
+
+        .ql-status-dot {
+            background: #F97316;
+        }
+    }
+
+    &--inactive {
+        background: #f1f5f9;
+        color: #475569;
+
+        .ql-status-dot {
+            background: #94a3b8;
+        }
+    }
 }
 
 // ============================================================

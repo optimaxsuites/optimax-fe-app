@@ -246,6 +246,38 @@
                 </div>
             </div>
 
+            <!-- Other Alerts: a severity the six buckets above don't recognise (unexpected casing, or a
+                 value this frontend type doesn't know about) used to match none of them and be silently
+                 dropped from the page entirely, with no error and no visible trace it existed. -->
+            <div *ngIf="otherRiskAlerts.length > 0" class="alert-group">
+                <div class="alert-group-header info">
+                    <i class="fas fa-question-circle"></i>
+                    Other Alerts ({{ otherRiskAlerts.length }})
+                </div>
+                <div *ngFor="let alert of otherRiskAlerts"
+                     class="alert-item info"
+                     [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                    <div class="alert-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div class="alert-content">
+                        <span class="alert-title">{{ alert.title }}</span>
+                        <span class="alert-description">{{ alert.description }}</span>
+                        <div class="alert-meta">
+                            <span class="alert-date">
+                                <i class="fas fa-clock"></i> {{ formatDateTime(alert.detectedAt) }}
+                            </span>
+                            <span class="alert-status" [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                                {{ getStatusLabel(alert.status) }}
+                            </span>
+                            <span class="alert-assignee" *ngIf="alert.assignedTo">
+                                <i class="fas fa-user"></i> {{ alert.assignedTo }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- No Alerts -->
             <div *ngIf="riskAlerts.length === 0" class="no-alerts">
                 <i class="fas fa-check-circle"></i>

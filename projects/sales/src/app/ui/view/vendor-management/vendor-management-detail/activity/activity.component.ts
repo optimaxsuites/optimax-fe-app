@@ -3,7 +3,7 @@
 // IMPORTS
 // ============================================================
 
-import { Component, Input, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import {
@@ -34,7 +34,7 @@ export interface ActivityEvent extends VendorLifecycleHistory {
   templateUrl: './activity.component.html',
   styleUrls: ['./activity.component.scss']
 })
-export class ActivityComponent implements OnInit, OnDestroy {
+export class ActivityComponent implements OnInit, OnChanges, OnDestroy {
 
   // ============================================================
   // INPUTS
@@ -105,6 +105,18 @@ export class ActivityComponent implements OnInit, OnDestroy {
       });
   }
 
+  /**
+   * lifecycleHistory arrives from the parent's async lifecycle-history fetch, which can (and often
+   * does) resolve AFTER this tab has already been created with an empty array — ngOnInit only ran
+   * processEvents() once, so the tab permanently showed "No activity has been recorded" even once the
+   * real history landed a moment later. Re-processes whenever the input actually changes.
+   */
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['lifecycleHistory'] && !changes['lifecycleHistory'].firstChange) {
+      this.processEvents();
+    }
+  }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
@@ -167,13 +179,13 @@ export class ActivityComponent implements OnInit, OnDestroy {
       'GENERAL': { icon: 'fa-circle', color: '#6B7280', typeLabel: 'General Event', category: 'general' }
     };
 
-    // Try to find exact match, fallback to partial match or default
-    let mapping = map[eventType];
-    if (!mapping) {
-      // Try partial match
-      const key = Object.keys(map).find(k => eventType.includes(k));
-      mapping = key ? map[key] : map['GENERAL'];
-    }
+    // Exact match only. This used to fall back to "first key the event type merely CONTAINS as a
+    // substring", which is unsound for exactly the pattern this vocabulary has: 'DEACTIVATED' contains
+    // 'ACTIVATED', 'DOCUMENT_REJECTED' contains 'REJECTED', 'UNSUSPENDED' would contain 'SUSPENDED' —
+    // each showing the OPPOSITE of what the event meant, with no error, just the wrong icon/label. The
+    // map above already lists every event type this app produces; anything else falls back to General
+    // rather than guess.
+    const mapping = map[eventType] ?? map['GENERAL'];
 
     return mapping;
   }
@@ -213,8 +225,14 @@ export class ActivityComponent implements OnInit, OnDestroy {
       if (dateFrom && eventDate < dateFrom) {
         return false;
       }
-      if (dateTo && eventDate > dateTo) {
-        return false;
+      // dateTo as parsed is midnight (00:00:00) on the selected day, so events later that SAME day
+      // were being excluded by a "To" date that was supposed to include the whole day.
+      if (dateTo) {
+        const endOfDay = new Date(dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        if (eventDate > endOfDay) {
+          return false;
+        }
       }
 
       return true;

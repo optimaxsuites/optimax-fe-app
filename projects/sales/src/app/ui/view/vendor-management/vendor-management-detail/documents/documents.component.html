@@ -324,22 +324,22 @@
                     </div>
                 </div>
 
-                <div class="upload-progress" *ngIf="isUploading">
+                <div class="upload-progress" *ngIf="isUploadingDocument">
                     <div class="progress-bar">
                         <div class="progress-fill" [style.width.%]="uploadProgress"></div>
                     </div>
                     <span class="progress-text">{{ uploadProgress }}%</span>
                 </div>
 
-                <div class="error-message" *ngIf="uploadError">
-                    <i class="fas fa-exclamation-circle"></i> {{ uploadError }}
+                <div class="error-message" *ngIf="displayedUploadError">
+                    <i class="fas fa-exclamation-circle"></i> {{ displayedUploadError }}
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" (click)="closeUploadModal()">Cancel</button>
-                <button class="btn-primary" (click)="submitUpload()" [disabled]="!selectedFile || isUploading">
-                    <i class="fas" [class.fa-spinner]="isUploading" [class.fa-upload]="!isUploading" [class.fa-spin]="isUploading"></i>
-                    {{ isUploading ? 'Uploading...' : 'Upload Document' }}
+                <button class="btn-secondary" (click)="closeUploadModal()" [disabled]="isUploadingDocument">Cancel</button>
+                <button class="btn-primary" (click)="submitUpload()" [disabled]="!selectedFile || isUploadingDocument">
+                    <i class="fas" [class.fa-spinner]="isUploadingDocument" [class.fa-upload]="!isUploadingDocument" [class.fa-spin]="isUploadingDocument"></i>
+                    {{ isUploadingDocument ? 'Uploading... ' + uploadProgress + '%' : 'Upload Document' }}
                 </button>
             </div>
         </div>
@@ -369,8 +369,12 @@
 
                 <div class="form-group">
                     <label for="verify-notes">Verification Notes</label>
-                    <textarea id="verify-notes" [(ngModel)]="verificationNotes" 
+                    <textarea id="verify-notes" [(ngModel)]="verificationNotes"
                               placeholder="Add any notes about this document..." rows="3" class="form-textarea"></textarea>
+                </div>
+
+                <div class="error-message" *ngIf="verifyError">
+                    <i class="fas fa-exclamation-circle"></i> {{ verifyError }}
                 </div>
 
                 <div class="verify-actions">

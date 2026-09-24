@@ -23,8 +23,7 @@
       <strong>{{ applicationNumber }}</strong>
     </div>
     <p style="font-size: 11px; color: #94a3b8; margin-bottom: 24px">
-      A confirmation email has been sent to the address you provided. Keep this reference number for
-      tracking.
+      Keep this reference number for tracking.
     </p>
     <a
       routerLink="/vendor-portal"
@@ -57,7 +56,7 @@
         <span class="vr-autosave__spinner" *ngIf="saveState === 'saving'"></span>
         <svg *ngIf="saveState === 'saved'" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
         <span class="dot" *ngIf="saveState === 'idle'"></span>
-        <span>{{ saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Draft saved' }}</span>
+        <span>{{ saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Auto-saves as you go' }}</span>
       </div>
     </div>
   </header>
@@ -111,7 +110,7 @@
         </div>
       </div>
       <div class="vr-sidebar-footer">
-        <button class="vr-save-btn" type="button">
+        <button class="vr-save-btn" type="button" (click)="saveDraft()" title="Your progress is kept while this tab stays open">
           <svg
             width="12"
             height="12"
@@ -161,7 +160,7 @@
               </div>
               <div class="vr-logo-info">
                 <p>Company Logo</p>
-                <span>PNG, JPG or SVG · max 5 MB · Recommended 400×400px</span>
+                <span>Preview only — the logo is not submitted with this application yet.</span>
               </div>
               <input
                 type="file"

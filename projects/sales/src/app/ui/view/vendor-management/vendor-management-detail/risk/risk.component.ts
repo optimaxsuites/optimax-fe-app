@@ -99,41 +99,32 @@ export class RiskComponent {
     return this.riskAlerts ? this.riskAlerts.filter(a => a.status === 'OPEN' || a.status === 'IN_PROGRESS').length : 0;
   }
 
-  get criticalRiskAlerts(): RiskAlert[] {
-  return this.riskAlerts ? this.riskAlerts.filter(a => 
-    a.severity === AlertSeverity.CRITICAL
-  ) : [];
-}
+  /**
+   * `RiskAlert.severity` is typed as the 3-value AlertSeverity enum, but this tab already groups by
+   * six buckets (HIGH/MEDIUM/LOW aren't in that enum at all), which only makes sense if the real
+   * backend sends more values than the frontend type declares. Every bucket below now normalises
+   * case (`'critical'`/`'Critical'`/`'CRITICAL'` all match), and otherRiskAlerts catches anything that
+   * still doesn't match one of the six — previously such an alert matched NO bucket, so it simply
+   * never appeared anywhere on the page, with no error and no indication anything was hidden.
+   */
+  private static readonly KNOWN_SEVERITIES = new Set(['CRITICAL', 'WARNING', 'HIGH', 'MEDIUM', 'LOW', 'INFO']);
 
-  get warningRiskAlerts(): RiskAlert[] {
-  return this.riskAlerts ? this.riskAlerts.filter(a => 
-    a.severity === AlertSeverity.WARNING
-  ) : [];
-}
+  private bySeverity(severity: string): RiskAlert[] {
+    return this.riskAlerts ? this.riskAlerts.filter(a => String(a.severity ?? '').toUpperCase() === severity) : [];
+  }
 
-get infoRiskAlerts(): RiskAlert[] {
-  return this.riskAlerts ? this.riskAlerts.filter(a => 
-    a.severity === AlertSeverity.INFO
-  ) : [];
-}
+  get criticalRiskAlerts(): RiskAlert[] { return this.bySeverity('CRITICAL'); }
+  get warningRiskAlerts(): RiskAlert[] { return this.bySeverity('WARNING'); }
+  get infoRiskAlerts(): RiskAlert[] { return this.bySeverity('INFO'); }
+  get highRiskAlerts(): RiskAlert[] { return this.bySeverity('HIGH'); }
+  get mediumRiskAlerts(): RiskAlert[] { return this.bySeverity('MEDIUM'); }
+  get lowRiskAlerts(): RiskAlert[] { return this.bySeverity('LOW'); }
 
-get highRiskAlerts(): RiskAlert[] {
-  return this.riskAlerts ? this.riskAlerts.filter(a => 
-    (a.severity as string) === 'HIGH'
-  ) : [];
-}
-
-get mediumRiskAlerts(): RiskAlert[] {
-  return this.riskAlerts ? this.riskAlerts.filter(a => 
-    (a.severity as string) === 'MEDIUM'
-  ) : [];
-}
-
-get lowRiskAlerts(): RiskAlert[] {
-  return this.riskAlerts ? this.riskAlerts.filter(a => 
-    (a.severity as string) === 'LOW'
-  ) : [];
-}
+  get otherRiskAlerts(): RiskAlert[] {
+    return this.riskAlerts
+      ? this.riskAlerts.filter(a => !RiskComponent.KNOWN_SEVERITIES.has(String(a.severity ?? '').toUpperCase()))
+      : [];
+  }
 
   get openAlertsBySeverity(): { severity: string; count: number; color: string }[] {
     const openAlerts = this.riskAlerts.filter(a => a.status === 'OPEN' || a.status === 'IN_PROGRESS');

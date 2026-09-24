@@ -84,7 +84,9 @@
                                 <i class="fas fa-sync-alt"></i>
                             </button>
                             <div class="status-dropdown" (click)="$event.stopPropagation()">
-                                <button class="btn-status" (click)="showStatusDropdown = !showStatusDropdown">
+                                <button class="btn-status" (click)="showStatusDropdown = !showStatusDropdown"
+                                    [disabled]="isSaving || getStatusOptions().length === 0"
+                                    [title]="getStatusOptions().length === 0 ? 'No further status changes are available for this vendor' : 'Change status'">
                                     <i class="fas fa-ellipsis-v"></i>
                                     Status
                                     <i class="fas fa-chevron-down" [class.open]="showStatusDropdown"></i>
@@ -98,22 +100,22 @@
                                     </button>
                                 </div>
                             </div>
-                            <button class="btn-edit" (click)="toggleEdit()">
-                                <i class="fas" [class.fa-edit]="!isEditing" [class.fa-times]="isEditing"></i>
-                                {{ isEditing ? 'Cancel' : 'Edit' }}
-                            </button>
-                            <button class="btn-save" (click)="saveVendor()" [disabled]="!isEditing || isSaving">
-                                <i class="fas fa-save"></i>
-                                {{ isSaving ? 'Saving...' : 'Save' }}
-                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Edit Mode Indicator -->
-                <div class="edit-banner" *ngIf="isEditing">
-                    <i class="fas fa-pencil-alt"></i>
-                    You are editing vendor information. Changes will be saved when you click Save.
+                <!-- A failed action (e.g. status change): nothing was changed -->
+                <div class="edit-banner" *ngIf="actionError" role="alert" style="background:#fef2f2;color:#991b1b;border-color:#fecaca">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ actionError }}
+                </div>
+
+                <!-- Some tabs couldn't load: an empty tab below is "unavailable", not "no data" -->
+                <div class="edit-banner" *ngIf="failedSections.length" role="status" style="background:#fffbeb;color:#92400e;border-color:#fde68a">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Couldn't load: {{ failedSections.join(', ') }}.
+                    <button type="button" (click)="loadRelatedData()"
+                        style="margin-left:8px;background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer">Retry</button>
                 </div>
             </div>
 
@@ -122,12 +124,12 @@
             ========================================================== -->
             <div class="tabs-container" #tabsContainer>
                 <div class="tabs-scroll">
-                    <button *ngFor="let tab of (registration ? ['overview','registration','performance','risk','documents','contracts','activity'] : ['overview','performance','risk','documents','contracts','activity'])"
+                    <button *ngFor="let tab of (registration ? ['overview','registration','performance','risk','documents','activity'] : ['overview','performance','risk','documents','activity'])"
                         class="tab-btn" [class.active]="activeTab === tab" (click)="setActiveTab(tab)">
                         <i class="fas" [class.fa-home]="tab === 'overview'"
                             [class.fa-clipboard-list]="tab === 'registration'"
                             [class.fa-chart-line]="tab === 'performance'" [class.fa-shield-alt]="tab === 'risk'"
-                            [class.fa-file-alt]="tab === 'documents'" [class.fa-file-contract]="tab === 'contracts'"
+                            [class.fa-file-alt]="tab === 'documents'"
                             [class.fa-history]="tab === 'activity'"></i>
                         {{ getTabLabel(tab) }}
                         <span class="tab-badge"
@@ -155,8 +157,7 @@
                         [vendor]="vendor"
                         (navigateToPerformance)="setActiveTab('performance')"
                         (navigateToRisk)="setActiveTab('risk')"
-                        (navigateToDocuments)="setActiveTab('documents')"
-                        (navigateToEdit)="navigateToEdit()">
+                        (navigateToDocuments)="setActiveTab('documents')">
                     </app-overview>
                 </div>
 
@@ -191,7 +192,7 @@
                             <div class="info-item"><span class="info-label">CAC Registration No.</span><span class="info-value">{{ s2.cacRegistrationNumber || '—' }}</span></div>
                             <div class="info-item"><span class="info-label">CAC Registration Date</span><span class="info-value">{{ formatDate(s2.cacRegistrationDate) }}</span></div>
                             <div class="info-item"><span class="info-label">TIN</span><span class="info-value">{{ s2.tinNumber || '—' }}</span></div>
-                            <div class="info-item"><span class="info-label">VAT Registered</span><span class="info-value">{{ yesNo(s2.vatRegistered) }} {{ s2.vatNumber ? '(' + s2.vatNumber + ')' : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">VAT Registered</span><span class="info-value">{{ yesNo(s2.vatRegistered) }} {{ s2.vatRegistered && s2.vatNumber ? '(' + s2.vatNumber + ')' : '' }}</span></div>
                             <div class="info-item"><span class="info-label">Tax Clearance Expiry</span><span class="info-value">{{ formatDate(s2.taxClearanceExpiryDate) }}</span></div>
                             <div class="info-item"><span class="info-label">NAFDAC No.</span><span class="info-value">{{ s2.nafdacNumber || '—' }}</span></div>
                             <div class="info-item"><span class="info-label">DPR Licence No.</span><span class="info-value">{{ s2.dprLicenceNumber || '—' }}</span></div>
@@ -199,16 +200,16 @@
                             <div class="info-item"><span class="info-label">PENCOM No.</span><span class="info-value">{{ s2.pencomNumber || '—' }}</span></div>
                             <div class="info-item"><span class="info-label">NSC No.</span><span class="info-value">{{ s2.nscNumber || '—' }}</span></div>
                             <div class="info-item full-width" *ngIf="s2.otherLicences"><span class="info-label">Other Licences</span><span class="info-value">{{ s2.otherLicences }}</span></div>
-                            <div class="info-item"><span class="info-label">Public Liability Insurance</span><span class="info-value">{{ yesNo(s2.hasPublicLiabilityInsurance) }} {{ s2.publicLiabilityInsurer ? '— ' + s2.publicLiabilityInsurer : '' }}</span></div>
-                            <div class="info-item"><span class="info-label">Professional Indemnity</span><span class="info-value">{{ yesNo(s2.hasProfessionalIndemnity) }} {{ s2.professionalIndemnityInsurer ? '— ' + s2.professionalIndemnityInsurer : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Public Liability Insurance</span><span class="info-value">{{ yesNo(s2.hasPublicLiabilityInsurance) }} {{ s2.hasPublicLiabilityInsurance && s2.publicLiabilityInsurer ? '— ' + s2.publicLiabilityInsurer : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Professional Indemnity</span><span class="info-value">{{ yesNo(s2.hasProfessionalIndemnity) }} {{ s2.hasProfessionalIndemnity && s2.professionalIndemnityInsurer ? '— ' + s2.professionalIndemnityInsurer : '' }}</span></div>
                             <div class="info-item full-width" *ngIf="s2.isoStandards?.length"><span class="info-label">ISO Standards</span><span class="info-value">{{ s2.isoStandards.join(', ') }}</span></div>
                             <div class="info-item full-width" *ngIf="s2.otherCertifications"><span class="info-label">Other Certifications</span><span class="info-value">{{ s2.otherCertifications }}</span></div>
                             <div class="info-item"><span class="info-label">Previously Blacklisted</span><span class="info-value">{{ yesNo(s2.hasBeenBlacklisted) }}</span></div>
                             <div class="info-item"><span class="info-label">Pending Litigation</span><span class="info-value">{{ yesNo(s2.hasLitigationPending) }}</span></div>
                             <div class="info-item"><span class="info-label">Criminal Conviction</span><span class="info-value">{{ yesNo(s2.hasCriminalConviction) }}</span></div>
-                            <div class="info-item full-width" *ngIf="s2.blacklistedDetails"><span class="info-label">Blacklist Details</span><span class="info-value">{{ s2.blacklistedDetails }}</span></div>
-                            <div class="info-item full-width" *ngIf="s2.litigationDetails"><span class="info-label">Litigation Details</span><span class="info-value">{{ s2.litigationDetails }}</span></div>
-                            <div class="info-item full-width" *ngIf="s2.criminalDetails"><span class="info-label">Criminal Details</span><span class="info-value">{{ s2.criminalDetails }}</span></div>
+                            <div class="info-item full-width" *ngIf="s2.hasBeenBlacklisted && s2.blacklistedDetails"><span class="info-label">Blacklist Details</span><span class="info-value">{{ s2.blacklistedDetails }}</span></div>
+                            <div class="info-item full-width" *ngIf="s2.hasLitigationPending && s2.litigationDetails"><span class="info-label">Litigation Details</span><span class="info-value">{{ s2.litigationDetails }}</span></div>
+                            <div class="info-item full-width" *ngIf="s2.hasCriminalConviction && s2.criminalDetails"><span class="info-label">Criminal Details</span><span class="info-value">{{ s2.criminalDetails }}</span></div>
                         </div>
                     </div>
 
@@ -224,7 +225,7 @@
                             <div class="info-item full-width" *ngIf="!s3.operatingAddressSameAsRegistered"><span class="info-label">Operating Address</span><span class="info-value">{{ s3.operatingAddressLine1 }} {{ s3.operatingAddressLine2 }}, {{ s3.operatingCity }}, {{ s3.operatingState }} {{ s3.operatingPostalCode }}</span></div>
                             <div class="info-item full-width" *ngIf="s3.hasWarehouse"><span class="info-label">Warehouse</span><span class="info-value">{{ s3.warehouseAddressLine1 }}, {{ s3.warehouseCity }}, {{ s3.warehouseState }} — Capacity: {{ s3.warehouseCapacity || '—' }}</span></div>
                             <div class="info-item full-width"><span class="info-label">Delivery Regions</span><span class="info-value">{{ getDeliveryRegionLabels(s3.deliveryRegions) }}</span></div>
-                            <div class="info-item"><span class="info-label">Own Delivery Fleet</span><span class="info-value">{{ yesNo(s3.hasOwnDeliveryFleet) }} {{ s3.fleetSize ? '(' + s3.fleetSize + ' vehicles)' : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Own Delivery Fleet</span><span class="info-value">{{ yesNo(s3.hasOwnDeliveryFleet) }} {{ s3.hasOwnDeliveryFleet && s3.fleetSize ? '(' + s3.fleetSize + ' vehicles)' : '' }}</span></div>
                             <div class="info-item"><span class="info-label">Delivery Lead Time</span><span class="info-value">{{ s3.deliveryLeadTimeDays }} day(s)</span></div>
                             <div class="info-item"><span class="info-label">Nationwide Delivery</span><span class="info-value">{{ yesNo(s3.canDeliverNationwide) }}</span></div>
                             <div class="info-item"><span class="info-label">International Delivery</span><span class="info-value">{{ yesNo(s3.canDeliverInternationally) }}</span></div>
@@ -241,11 +242,11 @@
                             <div class="info-item"><span class="info-label">Sort / SWIFT / IBAN</span><span class="info-value">{{ s4.primarySortCode || '—' }} / {{ s4.primarySwiftCode || '—' }} / {{ s4.primaryIban || '—' }}</span></div>
                             <div class="info-item" *ngIf="s4.hasSecondaryBankAccount"><span class="info-label">Secondary Bank</span><span class="info-value">{{ s4.secondaryBankName }} — {{ s4.secondaryAccountName }} · {{ s4.secondaryAccountNumber }}</span></div>
                             <div class="info-item"><span class="info-label">Preferred Payment Terms</span><span class="info-value">{{ s4.preferredPaymentTerms || '—' }}</span></div>
-                            <div class="info-item"><span class="info-label">Advance Payment</span><span class="info-value">{{ yesNo(s4.acceptsAdvancePayment) }} {{ s4.advancePaymentPercentage ? '(' + s4.advancePaymentPercentage + '%)' : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Advance Payment</span><span class="info-value">{{ yesNo(s4.acceptsAdvancePayment) }} {{ s4.acceptsAdvancePayment && s4.advancePaymentPercentage ? '(' + s4.advancePaymentPercentage + '%)' : '' }}</span></div>
                             <div class="info-item"><span class="info-label">Letter of Credit</span><span class="info-value">{{ yesNo(s4.acceptsLetterOfCredit) }}</span></div>
-                            <div class="info-item"><span class="info-label">Mobile Money</span><span class="info-value">{{ yesNo(s4.acceptsMobileMoney) }} {{ s4.mobileMoneyNumber ? '— ' + s4.mobileMoneyNumber : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Mobile Money</span><span class="info-value">{{ yesNo(s4.acceptsMobileMoney) }} {{ s4.acceptsMobileMoney && s4.mobileMoneyNumber ? '— ' + s4.mobileMoneyNumber : '' }}</span></div>
                             <div class="info-item"><span class="info-label">Credit Rating</span><span class="info-value">{{ s4.creditRating || '—' }}</span></div>
-                            <div class="info-item"><span class="info-label">Audited Accounts</span><span class="info-value">{{ yesNo(s4.annualAuditedAccounts) }} {{ s4.auditFirmName ? '— ' + s4.auditFirmName : '' }} {{ s4.lastAuditYear || '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Audited Accounts</span><span class="info-value">{{ yesNo(s4.annualAuditedAccounts) }} {{ s4.annualAuditedAccounts && s4.auditFirmName ? '— ' + s4.auditFirmName : '' }} {{ s4.annualAuditedAccounts ? (s4.lastAuditYear || '') : '' }}</span></div>
                             <div class="info-item" *ngIf="s4.bankReference1Name"><span class="info-label">Bank Reference</span><span class="info-value">{{ s4.bankReference1Name }} — {{ s4.bankReference1Contact }}</span></div>
                             <div class="info-item" *ngIf="s4.tradeReference1Company"><span class="info-label">Trade Reference 1</span><span class="info-value">{{ s4.tradeReference1Company }} — {{ s4.tradeReference1Contact }} ({{ s4.tradeReference1Email }})</span></div>
                             <div class="info-item" *ngIf="s4.tradeReference2Company"><span class="info-label">Trade Reference 2</span><span class="info-value">{{ s4.tradeReference2Company }} — {{ s4.tradeReference2Contact }} ({{ s4.tradeReference2Email }})</span></div>
@@ -354,18 +355,14 @@
                         [documents]="documents"
                         [vendorId]="vendorId"
                         [isLoading]="isLoading"
+                        [isUploadingDocument]="isUploadingDocument"
+                        [uploadProgress]="uploadProgress"
+                        [uploadServerError]="uploadServerError"
                         (uploadDocument)="handleDocumentUpload($event)"
                         (deleteDocument)="handleDocumentDelete($event)"
                         (verifyDocument)="handleDocumentVerify($event)"
                         (refresh)="loadRelatedData()">
                     </app-vendor-documents>
-                </div>
-
-                <!-- ========================================================
-                CONTRACTS TAB
-                ======================================================== -->
-                <div *ngIf="activeTab === 'contracts'" class="tab-panel">
-                    <!-- Contracts content goes here -->
                 </div>
 
                 <!-- ========================================================
@@ -391,9 +388,15 @@
                     <h3>Confirm Action</h3>
                 </div>
                 <p>{{ confirmMessage }}</p>
+                <div *ngIf="confirmAction === 'status'" style="margin: 0 0 14px">
+                    <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px">Reason (required)</label>
+                    <textarea [(ngModel)]="statusReason" [attr.maxlength]="maxStatusReasonLength" rows="3"
+                        style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #d1d5db;border-radius:6px;font:inherit"
+                        placeholder="Why is this change being made?"></textarea>
+                </div>
                 <div class="confirm-actions">
                     <button class="btn-secondary" (click)="cancelDialog()">Cancel</button>
-                    <button class="btn-danger" (click)="confirmDialogAction()" [disabled]="isSaving">
+                    <button class="btn-danger" (click)="confirmDialogAction()" [disabled]="!canConfirmStatusChange">
                         {{ isSaving ? 'Processing...' : 'Confirm' }}
                     </button>
                 </div>

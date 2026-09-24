@@ -21,7 +21,7 @@
             </div>
             <div class="ql-sidebar-stat">
                 <span class="ql-sidebar-stat-label" style="color: #F59E0B;">Pending</span>
-                <span class="ql-sidebar-stat-value" style="color: #F59E0B;">{{ stats.pendingOnboarding }}</span>
+                <span class="ql-sidebar-stat-value" style="color: #F59E0B;">{{ totalPendingQueue }}</span>
             </div>
             <div class="ql-sidebar-stat"
                 style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;">
@@ -54,8 +54,9 @@
     <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
     <main class="ql-main">
 
-        <!-- Loading state -->
-        <div *ngIf="isLoading" class="ql-loading">
+        <!-- Loading state: only the very first load. The 60s auto-refresh (and manual Refresh) used to
+             tear this whole page down every time, flashing a spinner and losing scroll position. -->
+        <div *ngIf="isLoading && !hasLoadedOnce" class="ql-loading">
             <div class="ql-spinner"></div>
             <span>Loading vendor dashboard...</span>
         </div>
@@ -70,7 +71,7 @@
         <!-- ============================================================
         CONTENT
         ============================================================ -->
-        <ng-container *ngIf="!isLoading && stats">
+        <ng-container *ngIf="hasLoadedOnce && stats">
 
             <!-- Top bar -->
             <div class="ql-top-bar">
@@ -83,7 +84,7 @@
                     </span>
                     <span class="ql-pending-badge" style="background: #F59E0B20; color: #F59E0B;">
                         <i class="fas fa-clock"></i>
-                        {{ stats.pendingOnboarding }} pending
+                        {{ totalPendingQueue }} pending
                     </span>
                 </div>
                 <div class="ql-top-bar-right">
@@ -115,7 +116,7 @@
                     <span class="ql-stat-mini-label">Active</span>
                 </div>
                 <div class="ql-stat-mini" (click)="navigateToApprovalQueue()">
-                    <span class="ql-stat-mini-value" style="color: #F59E0B;">{{ stats.pendingOnboarding }}</span>
+                    <span class="ql-stat-mini-value" style="color: #F59E0B;">{{ stats.pendingReview }}</span>
                     <span class="ql-stat-mini-label">Pending Review</span>
                 </div>
                 <div class="ql-stat-mini" (click)="navigateToRisk()">
@@ -135,7 +136,7 @@
 
             <!-- Quick Insights Cards -->
             <div class="ql-insights-row">
-                <div class="ql-insight-card" *ngFor="let metric of getInsightMetrics()"
+                <div class="ql-insight-card" *ngFor="let metric of insightMetrics"
                     [style.border-left-color]="metric.color">
                     <div class="ql-insight-icon" [style.background]="metric.color + '15'" [style.color]="metric.color">
                         <i class="fas" [class.fa-chart-simple]="metric.label.includes('Performance')"
@@ -147,8 +148,8 @@
                         <span class="ql-insight-label">{{ metric.label }}</span>
                         <span class="ql-insight-value">{{ metric.value }}</span>
                     </div>
-                    <div class="ql-insight-trend" [style.color]="metric.trend === 'up' ? '#2EB270' : '#DC2626'">
-                        <i class="fas fa-arrow-{{ metric.trend === 'up' ? 'up' : 'down' }}"></i>
+                    <div class="ql-insight-trend" *ngIf="metric.trend as trend" [style.color]="trend === 'up' ? '#2EB270' : '#DC2626'">
+                        <i class="fas fa-arrow-{{ trend === 'up' ? 'up' : 'down' }}"></i>
                         {{ metric.percent }}%
                     </div>
                 </div>
@@ -267,7 +268,7 @@
                             <span class="ql-doc-days"
                                 [class.ql-doc-days--critical]="getDaysUntilExpiry(doc.expiryDate) < 7"
                                 [class.ql-doc-days--warning]="getDaysUntilExpiry(doc.expiryDate) < 30">
-                                {{ getDaysUntilExpiry(doc.expiryDate) }} days
+                                {{ getExpiryLabel(doc.expiryDate) }}
                             </span>
                             <span class="ql-doc-date">{{ formatDate(doc.expiryDate) }}</span>
                         </div>

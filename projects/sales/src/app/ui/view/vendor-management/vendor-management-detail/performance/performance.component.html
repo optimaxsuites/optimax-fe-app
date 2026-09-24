@@ -1,4 +1,8 @@
 <!-- vendor-performance.component.html -->
+<div *ngIf="!performance" style="padding:32px;text-align:center;color:#6b7280">
+    <i class="fas fa-chart-line" style="font-size:24px;margin-bottom:8px;display:block"></i>
+    No performance data is available for this vendor yet.
+</div>
 <div class="performance-container" *ngIf="performance">
 
     <!-- KPIs -->
@@ -26,7 +30,7 @@
     <div class="chart-card" *ngIf="performance.trendData && performance.trendData.length > 0">
         <div class="chart-header">
             <h3><i class="fas fa-chart-area"></i> Performance Trend</h3>
-            <span class="chart-subtitle">Last 6 months</span>
+            <span class="chart-subtitle">{{ getTrendRangeLabel() }}</span>
         </div>
         <div class="line-chart">
             <svg viewBox="0 0 500 280" preserveAspectRatio="xMidYMid meet">
@@ -37,19 +41,23 @@
                     </linearGradient>
                 </defs>
 
-                <!-- Grid lines -->
-                <line *ngFor="let i of [0, 50, 100, 150, 200, 250]" x1="20" [attr.y1]="20 + i"
-                    x2="480" [attr.y2]="20 + i" class="chart-grid" />
+                <!-- Grid lines: evenly spaced across the same y-range the data points and area
+                     path are plotted in (see getPointY) — the old fixed [0,50,...,250] steps
+                     didn't match that range, so the bottom line sat below the chart floor. -->
+                <line *ngFor="let y of getGridLineYs()" x1="20" [attr.y1]="y"
+                    x2="480" [attr.y2]="y" class="chart-grid" />
 
-                <!-- Area under line -->
-                <polygon
-                    [attr.points]="getPerformanceChartAreaPath(getPerformanceScores(), getMaxPerformance())"
+                <!-- Area under line: getPerformanceChartAreaPath()/getPerformanceChartPath() build SVG PATH
+                     syntax (M/L/Z commands) — bound as `points` on <polygon>/<polyline> (which expect a
+                     plain "x,y x,y" list, not path commands) this silently drew nothing. -->
+                <path
+                    [attr.d]="getPerformanceChartAreaPath(getPerformanceScores(), getMaxPerformance())"
                     class="chart-area" />
 
                 <!-- Main line -->
-                <polyline
-                    [attr.points]="getPerformanceChartPath(getPerformanceScores(), getMaxPerformance())"
-                    class="chart-line" />
+                <path
+                    [attr.d]="getPerformanceChartPath(getPerformanceScores(), getMaxPerformance())"
+                    class="chart-line" fill="none" />
 
                 <!-- Data points -->
                 <circle *ngFor="let d of performance.trendData; let idx = index"
