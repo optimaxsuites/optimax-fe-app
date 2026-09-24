@@ -3,7 +3,7 @@
 // IMPORTS
 // ============================================================
 
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges, SimpleChanges } from '@angular/core';
 import {
   VendorDocument,
   DocumentCategory,
@@ -20,7 +20,7 @@ import {
   templateUrl: './documents.component.html',
   styleUrls: ['./documents.component.scss']
 })
-export class VendorDocumentsComponent {
+export class VendorDocumentsComponent implements OnChanges {
 
   // ============================================================
   // INPUTS
@@ -34,6 +34,11 @@ export class VendorDocumentsComponent {
 
   /** Whether the component is in a loading state */
   @Input() isLoading: boolean = false;
+
+  /** Real upload state, driven by the parent's HTTP call — not simulated here. */
+  @Input() isUploadingDocument: boolean = false;
+  @Input() uploadProgress: number = 0;
+  @Input() uploadServerError: string | null = null;
 
   // ============================================================
   // OUTPUTS
@@ -76,13 +81,7 @@ export class VendorDocumentsComponent {
   /** Expiry date for the document (default 1 year from now) */
   expiryDate: string = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0];
 
-  /** Upload progress */
-  uploadProgress: number = 0;
-
-  /** Is upload in progress */
-  isUploading: boolean = false;
-
-  /** Upload error message */
+  /** Client-side validation error (checked before the upload is even started) */
   uploadError: string | null = null;
 
   /** Selected document for verification */
@@ -93,6 +92,9 @@ export class VendorDocumentsComponent {
 
   /** Verification notes */
   verificationNotes: string = '';
+
+  /** Verify modal error message */
+  verifyError: string | null = null;
 
   /** Selected document for viewing */
   selectedDocumentForView: VendorDocument | null = null;
@@ -117,8 +119,32 @@ export class VendorDocumentsComponent {
   DocumentStatus = DocumentStatus;
 
   // ============================================================
+  // LIFECYCLE
+  // ============================================================
+
+  /**
+   * The parent owns the actual upload call; when isUploadingDocument flips back to false, the
+   * upload finished one way or another. On success (no server error) the modal closes itself —
+   * on failure it stays open with the error already visible via displayedUploadError.
+   */
+  ngOnChanges(changes: SimpleChanges): void {
+    const uploadFinished = changes['isUploadingDocument'] &&
+      changes['isUploadingDocument'].previousValue === true &&
+      changes['isUploadingDocument'].currentValue === false;
+
+    if (uploadFinished && !this.uploadServerError) {
+      this.closeUploadModal();
+    }
+  }
+
+  // ============================================================
   // COMPUTED PROPERTIES
   // ============================================================
+
+  /** Whichever upload error applies right now — a client-side validation issue, or one from the server. */
+  get displayedUploadError(): string | null {
+    return this.uploadError || this.uploadServerError;
+  }
 
   /** Available document categories for upload */
   get documentCategories(): { value: DocumentCategory; label: string; required: boolean }[] {
@@ -310,40 +336,43 @@ export class VendorDocumentsComponent {
     input.value = '';
   }
 
-  /** Close upload modal */
+  /** Close upload modal — a no-op while a real upload is in flight; there's nothing to cancel it. */
   closeUploadModal(): void {
+    if (this.isUploadingDocument) return;
     this.showUploadModal = false;
     this.selectedFile = null;
     this.uploadError = null;
-    this.uploadProgress = 0;
   }
 
   /** Submit upload */
   submitUpload(): void {
     if (!this.selectedFile) return;
 
-    this.isUploading = true;
-    this.uploadProgress = 0;
-    this.uploadError = null;
+    // A cleared date input leaves issueDate/expiryDate as ''. new Date('') is an Invalid
+    // Date, and the service calls .toISOString() on it when building the request — an
+    // uncaught RangeError that used to leave isUploading stuck true (spinner forever).
+    const issue = new Date(this.issueDate);
+    const expiry = new Date(this.expiryDate);
+    if (!this.issueDate || !this.expiryDate || isNaN(issue.getTime()) || isNaN(expiry.getTime())) {
+      this.uploadError = 'Please provide both an issue date and an expiry date.';
+      return;
+    }
+    if (expiry.getTime() < issue.getTime()) {
+      this.uploadError = 'Expiry date cannot be before the issue date.';
+      return;
+    }
 
-    // Simulate progress (in real implementation, this would come from the upload)
-    const interval = setInterval(() => {
-      this.uploadProgress += 10;
-      if (this.uploadProgress >= 100) {
-        clearInterval(interval);
-        // Emit the upload event
-        this.uploadDocument.emit({
-          file: this.selectedFile!,
-          category: this.selectedCategory,
-          issueDate: new Date(this.issueDate),
-          expiryDate: new Date(this.expiryDate)
-        });
-        this.isUploading = false;
-        this.closeUploadModal();
-        // Refresh the list
-        this.refresh.emit();
-      }
-    }, 200);
+    this.uploadError = null;
+    // The parent owns the actual HTTP call and reports real progress back via isUploadingDocument/
+    // uploadProgress — this component no longer simulates progress with a timer. It also reloads
+    // the document list once the backend confirms the upload; emitting refresh here too would just
+    // re-fetch the stale pre-upload list a moment before that real reload lands.
+    this.uploadDocument.emit({
+      file: this.selectedFile,
+      category: this.selectedCategory,
+      issueDate: issue,
+      expiryDate: expiry
+    });
   }
 
   /** Update selected category */
@@ -368,6 +397,7 @@ export class VendorDocumentsComponent {
     if (!document) return;
     this.selectedDocForVerification = document;
     this.verificationNotes = '';
+    this.verifyError = null;
     this.showVerifyModal = true;
   }
 
@@ -376,11 +406,33 @@ export class VendorDocumentsComponent {
     this.showVerifyModal = false;
     this.selectedDocForVerification = null;
     this.verificationNotes = '';
+    this.verifyError = null;
+  }
+
+  /** Verification-notes are required when rejecting so the vendor knows what to fix. */
+  get verifyNotesRequired(): boolean {
+    return !this.verificationNotes.trim();
+  }
+
+  /** True when approving a document that has already expired. */
+  get verifyingExpiredDocument(): boolean {
+    if (!this.selectedDocForVerification?.expiryDate) return false;
+    return this.getDaysUntilExpiry(this.selectedDocForVerification.expiryDate) < 0;
   }
 
   /** Submit verification */
   submitVerification(verified: boolean): void {
     if (!this.selectedDocForVerification) return;
+
+    if (!verified && this.verifyNotesRequired) {
+      this.verifyError = 'Please explain why this document is being rejected.';
+      return;
+    }
+
+    if (verified && this.verifyingExpiredDocument &&
+      !confirm('This document has already expired. Approve it anyway?')) {
+      return;
+    }
 
     this.verifyDocument.emit({
       documentId: String(this.selectedDocForVerification.id),
@@ -389,8 +441,9 @@ export class VendorDocumentsComponent {
     });
 
     this.closeVerifyModal();
-    // Refresh the list
-    this.refresh.emit();
+    // The parent reloads the document list once the backend confirms the verification
+    // (see handleDocumentVerify); emitting refresh here too just re-fetched the
+    // stale pre-verification list a moment before that real reload landed.
   }
 
   /** Download document - FIXED to accept null */

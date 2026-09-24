@@ -3,10 +3,9 @@
 // IMPORTS
 // ============================================================
 
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import {
   VendorService
@@ -19,7 +18,6 @@ import {
   VendorDocument,
   VendorPerformanceMetrics,
   VendorLifecycleHistory,
-  VendorContract,
   RiskAlert,
   DocumentCategory,  // <-- ADD THIS
   getVendorStatusColor,
@@ -67,14 +65,13 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   error: string | null = null;
 
   // Tabs
-  activeTab: 'overview' | 'registration' | 'performance' | 'risk' | 'documents' | 'contracts' | 'activity' = 'overview';
+  activeTab: 'overview' | 'registration' | 'performance' | 'risk' | 'documents' | 'activity' = 'overview';
   tabLabels = {
     overview: 'Overview',
     registration: 'Registration',
     performance: 'Performance',
     risk: 'Risk & Compliance',
     documents: 'Documents',
-    contracts: 'Contracts',
     activity: 'Activity'
   };
 
@@ -82,20 +79,36 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   documents: VendorDocument[] = [];
   performance: VendorPerformanceMetrics | null = null;
   lifecycleHistory: VendorLifecycleHistory[] = [];
-  contracts: VendorContract[] = [];
   riskAlerts: RiskAlert[] = [];
 
-  // Edit Mode
-  isEditing: boolean = false;
-  editForm: FormGroup;
+  // Document upload — real progress from the HTTP request, driven down into app-vendor-documents.
+  isUploadingDocument = false;
+  uploadProgress = 0;
+  uploadServerError: string | null = null;
 
   // UI
   Math = Math;
   parseFloat = parseFloat;
   showConfirmDialog: boolean = false;
-  confirmAction: 'suspend' | 'activate' | 'offboard' | 'delete' | null = null;
+  confirmAction: 'status' | null = null;
+  /** The status the open confirm dialog will apply, and the admin's reason for it. */
+  pendingStatus: VendorStatus | null = null;
+  statusReason = '';
+  readonly maxStatusReasonLength = 500;
+  /** A failed action (e.g. status change) — the vendor was NOT changed. */
+  actionError: string | null = null;
+  /** Tabs whose data couldn't be loaded, so an empty tab isn't mistaken for "no data". */
+  failedSections: string[] = [];
   confirmMessage: string = '';
   showStatusDropdown: boolean = false;
+
+  // The dropdown's own wrapper stops click propagation (see the template), so any click that reaches
+  // here is necessarily OUTSIDE it. It previously only closed on picking an option or re-toggling the
+  // button — clicking anywhere else on the page left it open.
+  @HostListener('document:click')
+  closeStatusDropdownOnOutsideClick(): void {
+    this.showStatusDropdown = false;
+  }
 
   // Enums for template
   VendorStatus = VendorStatus;
@@ -118,11 +131,8 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     private route: ActivatedRoute,
     private router: Router,
     private location: Location,
-    private vendorService: VendorService,
-    private fb: FormBuilder
-  ) {
-    this.editForm = this.buildEditForm();
-  }
+    private vendorService: VendorService
+  ) {}
 
   // ============================================================
   // LIFECYCLE HOOKS
@@ -148,7 +158,6 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
       .subscribe(vendor => {
         if (vendor && String(vendor.id) === this.vendorId) {
           this.vendor = vendor;
-          this.updateEditForm(vendor);
           this.isLoading = false;
         }
       });
@@ -193,90 +202,42 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   }
 
   // ============================================================
-  // FORM
-  // ============================================================
-
-  private buildEditForm(): FormGroup {
-    return this.fb.group({
-      companyName: ['', Validators.required],
-      registrationNumber: ['', Validators.required],
-      taxId: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
-      phone: ['', Validators.required],
-      website: [''],
-      description: [''],
-      paymentTerms: [''],
-      tier: ['', Validators.required],
-      status: ['', Validators.required],
-      address: this.fb.group({
-        street: ['', Validators.required],
-        city: ['', Validators.required],
-        state: ['', Validators.required],
-        country: ['', Validators.required],
-        postalCode: ['', Validators.required]
-      }),
-      bankDetails: this.fb.group({
-        bankName: [''],
-        accountNumber: [''],
-        accountName: [''],
-        swiftCode: ['']
-      }),
-      contacts: this.fb.array([])
-    });
-  }
-
-  private updateEditForm(vendor: Vendor): void {
-    this.editForm.patchValue({
-      companyName: vendor.companyName,
-      registrationNumber: vendor.registrationNumber,
-      taxId: vendor.taxId,
-      email: vendor.email,
-      phone: vendor.phone,
-      website: vendor.website || '',
-      description: vendor.description || '',
-      paymentTerms: vendor.paymentTerms || '',
-      tier: vendor.tier,
-      status: vendor.status,
-      address: {
-        street: vendor.address.street,
-        city: vendor.address.city,
-        state: vendor.address.state,
-        country: vendor.address.country,
-        postalCode: vendor.address.postalCode
-      },
-      bankDetails: {
-        bankName: vendor.bankDetails?.bankName || '',
-        accountNumber: vendor.bankDetails?.accountNumber || '',
-        accountName: vendor.bankDetails?.accountName || '',
-        swiftCode: vendor.bankDetails?.swiftCode || ''
-      }
-    });
-  }
-
-  // ============================================================
   // DATA LOADING
   // ============================================================
+
+  /**
+   * Bumped by loadVendorData() (a full vendor switch) and by a standalone loadRelatedData() call (the
+   * "Retry" link for failed tabs). Every async callback below checks it's still the current request
+   * before applying anything — without this, switching from vendor A to vendor B quickly could let A's
+   * slower response land after B's and overwrite B's data (including B's route id) with A's.
+   */
+  private loadRequestId = 0;
 
   loadVendorData(): void {
     this.isLoading = true;
     this.error = null;
+    const requestId = ++this.loadRequestId;
 
     // Load vendor details
     this.vendorService.getVendorById(this.vendorId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (vendor) => {
+          if (requestId !== this.loadRequestId) return; // superseded by a newer vendor switch
           this.vendor = vendor;
           // Seed immediately from the vendor's own record — loadRelatedData()'s
           // dedicated documents call may fail/fall back before it resolves, and
           // this is the vendor's real registration data either way.
           this.documents = vendor.documents || [];
-          this.updateEditForm(vendor);
+          this.lifecycleHistory = vendor.lifecycleHistory || [];
+          this.riskAlerts = vendor.riskAlerts || [];
           this.isLoading = false;
-          // Load related data
-          this.loadRelatedData();
+          // Load related data, sharing this same request id so a stale documents/performance/etc.
+          // response for the PREVIOUS vendor can't land after this one and overwrite it either.
+          this.loadRelatedData(requestId);
         },
         error: (err) => {
+          if (requestId !== this.loadRequestId) return;
           console.error('Failed to load vendor:', err);
           this.error = 'Failed to load vendor details';
           this.isLoading = false;
@@ -284,58 +245,48 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
       });
   }
 
-  loadRelatedData(): void {
-    // Load documents
+  loadRelatedData(requestId: number = ++this.loadRequestId): void {
+    // Each call records its own failure. Errors used to be console-only while the service substituted
+    // mock documents / performance / alerts / history, so a failed load looked like real data; now a
+    // failed load leaves the tab empty AND says so (see failedSections / the notice under the header).
+    this.failedSections = [];
+    const stale = () => requestId !== this.loadRequestId;
+    const failed = (name: string) => (err: unknown) => {
+      if (stale()) return;
+      console.error(`Failed to load ${name}:`, err);
+      if (!this.failedSections.includes(name)) this.failedSections = [...this.failedSections, name];
+    };
+
     this.vendorService.getVendorDocuments(this.vendorId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (docs) => {
-          this.documents = docs;
-        },
-        error: (err) => console.error('Failed to load documents:', err)
+        next: (docs) => { if (!stale()) this.documents = docs; },
+        error: failed('documents')
       });
 
-    // Load performance
     this.vendorService.getVendorPerformance(this.vendorId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          console.log('Performance data received:', response);
+          if (stale()) return;
           this.performance = response.metrics;
           this.preparePerformanceChart();
         },
-        error: (err) => console.error('Failed to load performance:', err)
+        error: failed('performance')
       });
 
-    // Load lifecycle
     this.vendorService.getLifecycleHistory(this.vendorId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (history) => {
-          this.lifecycleHistory = history;
-        },
-        error: (err) => console.error('Failed to load lifecycle:', err)
+        next: (history) => { if (!stale()) this.lifecycleHistory = history; },
+        error: failed('activity history')
       });
 
-    // Load contracts
-    this.vendorService.getVendorContracts(this.vendorId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (contracts) => {
-          this.contracts = contracts;
-        },
-        error: (err) => console.error('Failed to load contracts:', err)
-      });
-
-    // Load risk alerts - FIXED: Pass vendorId
     this.vendorService.getRiskAlerts(this.vendorId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (alerts) => {
-          console.log('Risk alerts received:', alerts);
-          this.riskAlerts = alerts;
-        },
-        error: (err) => console.error('Failed to load risk alerts:', err)
+        next: (alerts) => { if (!stale()) this.riskAlerts = alerts; },
+        error: failed('risk alerts')
       });
   }
 
@@ -390,115 +341,105 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   // EDIT MODE
   // ============================================================
 
-  toggleEdit(): void {
-    if (this.isEditing) {
-      // Cancel editing
-      this.isEditing = false;
-      if (this.vendor) {
-        this.updateEditForm(this.vendor);
-      }
-    } else {
-      this.isEditing = true;
-    }
-  }
-
-  saveVendor(): void {
-    if (this.editForm.invalid) {
-      this.editForm.markAllAsTouched();
-      return;
-    }
-
-    this.isSaving = true;
-    const formValue = this.editForm.value;
-
-    this.vendorService.updateVendor(this.vendorId, formValue)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (updated) => {
-          this.vendor = updated;
-          this.isEditing = false;
-          this.isSaving = false;
-          console.log('Vendor updated successfully');
-        },
-        error: (err) => {
-          console.error('Failed to update vendor:', err);
-          this.isSaving = false;
-        }
-      });
-  }
-
   // ============================================================
   // STATUS MANAGEMENT
   // ============================================================
 
+  /**
+   * Which statuses a vendor can move to from each current status. The menu used to offer every status
+   * regardless, so a REJECTED or OFFBOARDED vendor could be set straight back to ACTIVE, and a vendor
+   * still awaiting review could be suspended — bypassing approval. OFFBOARDED is final.
+   */
+  private static readonly STATUS_TRANSITIONS: Record<VendorStatus, VendorStatus[]> = {
+    [VendorStatus.PENDING_ONBOARDING]: [VendorStatus.UNDER_REVIEW, VendorStatus.ACTIVE, VendorStatus.REJECTED],
+    [VendorStatus.UNDER_REVIEW]: [VendorStatus.ACTIVE, VendorStatus.REJECTED],
+    [VendorStatus.ACTIVE]: [VendorStatus.CONDITIONAL, VendorStatus.SUSPENDED, VendorStatus.INACTIVE, VendorStatus.OFFBOARDED],
+    [VendorStatus.CONDITIONAL]: [VendorStatus.ACTIVE, VendorStatus.SUSPENDED, VendorStatus.INACTIVE, VendorStatus.OFFBOARDED],
+    [VendorStatus.SUSPENDED]: [VendorStatus.ACTIVE, VendorStatus.INACTIVE, VendorStatus.OFFBOARDED],
+    [VendorStatus.INACTIVE]: [VendorStatus.ACTIVE, VendorStatus.OFFBOARDED],
+    [VendorStatus.OFFBOARDED]: [],
+    [VendorStatus.REJECTED]: [VendorStatus.UNDER_REVIEW]
+  };
+
+  /** Statuses that need a recorded reason (and a confirmation) before they're applied. */
+  private static readonly REASON_REQUIRED = new Set<VendorStatus>([
+    VendorStatus.SUSPENDED, VendorStatus.OFFBOARDED, VendorStatus.INACTIVE, VendorStatus.REJECTED
+  ]);
+
+  getStatusOptions(): VendorStatus[] {
+    return this.vendor ? (VendorManagementDetailComponent.STATUS_TRANSITIONS[this.vendor.status] ?? []) : [];
+  }
+
   changeStatus(status: VendorStatus): void {
     this.showStatusDropdown = false;
+    this.actionError = null;
+    if (!this.vendor || this.isSaving || status === this.vendor.status) return;
 
-    const statusLabels: Record<VendorStatus, string> = {
-      [VendorStatus.ACTIVE]: 'Activate',
-      [VendorStatus.INACTIVE]: 'Deactivate',
-      [VendorStatus.PENDING_ONBOARDING]: 'Set to Pending',
-      [VendorStatus.UNDER_REVIEW]: 'Set to Under Review',
-      [VendorStatus.SUSPENDED]: 'Suspend',
-      [VendorStatus.OFFBOARDED]: 'Offboard',
-      [VendorStatus.CONDITIONAL]: 'Set to Conditional',
-      [VendorStatus.REJECTED]: 'Reject'
-    };
-
-    if (status === VendorStatus.SUSPENDED) {
+    if (VendorManagementDetailComponent.REASON_REQUIRED.has(status)) {
+      const name = this.vendor.companyName;
+      const messages: Partial<Record<VendorStatus, string>> = {
+        [VendorStatus.SUSPENDED]: `Suspend ${name}? They will be unable to take part in new opportunities.`,
+        [VendorStatus.OFFBOARDED]: `Offboard ${name}? This is final — no further status changes will be possible.`,
+        [VendorStatus.INACTIVE]: `Deactivate ${name}?`,
+        [VendorStatus.REJECTED]: `Reject ${name}'s application?`
+      };
+      this.pendingStatus = status;
+      this.statusReason = '';
+      this.confirmAction = 'status';
+      this.confirmMessage = messages[status] ?? `Change ${name}'s status to ${this.getStatusLabel(status)}?`;
       this.showConfirmDialog = true;
-      this.confirmAction = 'suspend';
-      this.confirmMessage = `Are you sure you want to suspend ${this.vendor?.companyName}? This will prevent them from participating in new opportunities.`;
-    } else if (status === VendorStatus.OFFBOARDED) {
-      this.showConfirmDialog = true;
-      this.confirmAction = 'offboard';
-      this.confirmMessage = `Are you sure you want to offboard ${this.vendor?.companyName}? This will revoke all access and finalize all orders.`;
     } else {
       this.executeStatusChange(status);
     }
   }
 
-  executeStatusChange(status: VendorStatus): void {
-    if (!this.vendor) return;
+  executeStatusChange(status: VendorStatus, reason?: string): void {
+    if (!this.vendor || this.isSaving) return;
 
     this.isSaving = true;
-    this.vendorService.updateVendorStatus(this.vendorId, status)
+    this.actionError = null;
+    this.vendorService.updateVendorStatus(this.vendorId, status, reason)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (updated) => {
-          this.vendor = updated;
+        next: () => {
           this.isSaving = false;
-          this.showConfirmDialog = false;
-          this.confirmAction = null;
-          console.log(`Vendor status updated to ${status}`);
+          this.cancelDialog();
+          this.reloadAfterStatusChange();
         },
         error: (err) => {
           console.error('Failed to update status:', err);
           this.isSaving = false;
-          this.showConfirmDialog = false;
-          this.confirmAction = null;
+          this.cancelDialog();
+          // The vendor's status was NOT changed. (This used to persist the requested status locally and
+          // show it as done, so a failed suspend/approve looked successful and stuck across reloads.)
+          this.actionError = `Could not change the status to ${this.getStatusLabel(status)}. Nothing was changed — please try again.`;
         }
       });
   }
 
-  confirmDialogAction(): void {
-    if (!this.confirmAction) return;
+  /** Re-reads the vendor and its history from the backend so the page shows what was really saved. */
+  private reloadAfterStatusChange(): void {
+    this.vendorService.getVendorById(this.vendorId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (vendor) => { this.vendor = vendor; },
+        error: (err) => console.error('Failed to refresh vendor after status change:', err)
+      });
+    this.vendorService.getLifecycleHistory(this.vendorId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (history) => { this.lifecycleHistory = history; },
+        error: (err) => console.error('Failed to refresh history after status change:', err)
+      });
+  }
 
-    switch (this.confirmAction) {
-      case 'suspend':
-        this.executeStatusChange(VendorStatus.SUSPENDED);
-        break;
-      case 'activate':
-        this.executeStatusChange(VendorStatus.ACTIVE);
-        break;
-      case 'offboard':
-        this.executeStatusChange(VendorStatus.OFFBOARDED);
-        break;
-      case 'delete':
-        this.deleteVendor();
-        break;
-      default:
-        break;
+  get canConfirmStatusChange(): boolean {
+    return this.confirmAction === 'status' && !!this.pendingStatus && !!this.statusReason.trim() && !this.isSaving;
+  }
+
+  confirmDialogAction(): void {
+    if (this.confirmAction === 'status' && this.pendingStatus && this.statusReason.trim()) {
+      this.executeStatusChange(this.pendingStatus, this.statusReason.trim());
     }
   }
 
@@ -506,17 +447,8 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     this.showConfirmDialog = false;
     this.confirmAction = null;
     this.confirmMessage = '';
-  }
-
-  // ============================================================
-  // DELETE
-  // ============================================================
-
-  deleteVendor(): void {
-    console.log('Deleting vendor...');
-    this.showConfirmDialog = false;
-    this.confirmAction = null;
-    this.router.navigate(['/admin/sales/commerce/manage-vendors']);
+    this.pendingStatus = null;
+    this.statusReason = '';
   }
 
   // ============================================================
@@ -563,8 +495,11 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     return val ? 'Yes' : 'No';
   }
 
+  // Matches risk.component.ts's own definition of "open" — this badge used to count only OPEN while
+  // the Risk tab it links to counted OPEN + IN_PROGRESS, so a vendor with an alert being actively
+  // worked showed a badge of 0 (or no badge at all) on a tab that itself said "1 open".
   get openRiskAlertsCount(): number {
-    return this.riskAlerts ? this.riskAlerts.filter(a => a.status === 'OPEN').length : 0;
+    return this.riskAlerts ? this.riskAlerts.filter(a => a.status === 'OPEN' || a.status === 'IN_PROGRESS').length : 0;
   }
 
   get expiringOrExpiredDocsCount(): number {
@@ -583,10 +518,6 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   // ============================================================
   // NAVIGATION
   // ============================================================
-
-  navigateToEdit(): void {
-    this.router.navigate(['/admin/sales/commerce/manage-vendors', this.vendorId, 'edit']);
-  }
 
   navigateToPerformance(): void {
     this.setActiveTab('performance');
@@ -766,16 +697,6 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
     return map[event] || '#6B7280';
   }
 
-  getContractStatusClass(status: string): string {
-    const map: Record<string, string> = {
-      'ACTIVE': 'active',
-      'EXPIRING': 'expiring',
-      'EXPIRED': 'expired',
-      'TERMINATED': 'terminated'
-    };
-    return map[status] || 'active';
-  }
-
   getAlertSeverityClass(severity: string): string {
     const map: Record<string, string> = {
       'CRITICAL': 'critical',
@@ -783,18 +704,6 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
       'INFO': 'info'
     };
     return map[severity] || 'info';
-  }
-
-  getStatusOptions(): VendorStatus[] {
-    return [
-      VendorStatus.ACTIVE,
-      VendorStatus.INACTIVE,
-      VendorStatus.PENDING_ONBOARDING,
-      VendorStatus.UNDER_REVIEW,
-      VendorStatus.SUSPENDED,
-      VendorStatus.CONDITIONAL,
-      VendorStatus.OFFBOARDED
-    ];
   }
 
   // ============================================================
@@ -849,6 +758,10 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   // ============================================================
 
   handleDocumentUpload(event: { file: File; category: DocumentCategory; issueDate: Date; expiryDate: Date }): void {
+    this.isUploadingDocument = true;
+    this.uploadProgress = 0;
+    this.uploadServerError = null;
+
     this.vendorService.uploadDocument(
       this.vendorId,
       event.file,
@@ -857,11 +770,17 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
       event.expiryDate
     ).pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (doc) => {
-          console.log('Document uploaded:', doc);
+        next: (uploadEvent) => {
+          if (uploadEvent.type === 'progress') {
+            this.uploadProgress = uploadEvent.progress;
+            return;
+          }
+          this.isUploadingDocument = false;
           this.loadRelatedData();
         },
         error: (err) => {
+          this.isUploadingDocument = false;
+          this.uploadServerError = 'Upload failed — please try again.';
           console.error('Failed to upload document:', err);
         }
       });

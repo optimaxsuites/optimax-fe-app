@@ -6,7 +6,7 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { Observable, Subject, debounceTime, takeUntil, forkJoin, of, map, catchError } from 'rxjs';
 import {
   VendorService
 } from '../../../service/vendor-management/vendor-management.service';
@@ -57,6 +57,13 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   isLoading: boolean = false;
   isExporting: boolean = false;
   error: string | null = null;
+  /** Set after the first load settles (success or failure) — used so a later reload (search/filter/
+   *  refresh) shows the in-table spinner instead of tearing down and rebuilding the whole filter bar,
+   *  which used to drop focus and any keystrokes typed during the reload. */
+  hasLoadedOnce = false;
+  /** Bumped on every loadVendors() call; a response only applies if it's still the latest one — guards
+   *  against rapid filter/page changes resolving out of order and the older response winning. */
+  private loadRequestId = 0;
 
   // Pagination
   currentPage: number = 1;
@@ -148,20 +155,26 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
 
   ngOnInit(): void {
     this.loadVendors();
+    this.loadHeaderStats();
     this.setupSearch();
     this.checkScreenSize();
     this.loadColumnPreferences();
   }
 
+  /** Bound once so ngOnDestroy removes the SAME function reference ngAfterViewInit added — `.bind(this)`
+   *  creates a new function every time, so the old removeEventListener call never actually removed
+   *  anything and every visit to this page leaked another document-level keydown listener. */
+  private readonly boundKeyboardShortcuts = this.handleKeyboardShortcuts.bind(this);
+
   ngAfterViewInit(): void {
     // Focus search on keyboard shortcut
-    document.addEventListener('keydown', this.handleKeyboardShortcuts.bind(this));
+    document.addEventListener('keydown', this.boundKeyboardShortcuts);
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    document.removeEventListener('keydown', this.handleKeyboardShortcuts.bind(this));
+    document.removeEventListener('keydown', this.boundKeyboardShortcuts);
   }
 
   // ============================================================
@@ -183,9 +196,13 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   }
 
   private setupSearch(): void {
+    // No distinctUntilChanged: clearSearch()/clearFilters() reset the search term via a DIRECT
+    // loadVendors() call rather than through this subject, so the subject's own "last distinct
+    // value" memory was never reset by a Clear click. Retyping the exact same term right after
+    // clearing was then seen as a duplicate of what the subject last saw and silently swallowed —
+    // the search box looked unresponsive until a DIFFERENT term was typed.
     this.searchSubject.pipe(
       debounceTime(400),
-      distinctUntilChanged(),
       takeUntil(this.destroy$)
     ).subscribe(searchTerm => {
       this.filterForm.patchValue({ search: searchTerm });
@@ -232,8 +249,10 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   // DATA LOADING
   // ============================================================
 
-  loadVendors(): void {
+  loadVendors(preserveError = false): void {
     this.isLoading = true;
+    if (!preserveError) this.error = null;
+    const requestId = ++this.loadRequestId;
 
     const filters = this.buildFilters();
 
@@ -241,12 +260,26 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: VendorListResponse) => {
+          if (requestId !== this.loadRequestId) return; // superseded by a newer filter/page/refresh
+          // Deleting/suspending the last vendor on a later page leaves that page empty; step back
+          // instead of showing "No vendors found" (with pagination hidden) while vendors remain
+          // on earlier pages — same fix already applied to the approval queue.
+          if (response.vendors.length === 0 && response.total > 0 && this.currentPage > 1) {
+            this.currentPage = Math.max(1, Math.min(this.currentPage - 1, response.totalPages || 1));
+            this.loadVendors(preserveError);
+            return;
+          }
           this.vendors = response.vendors;
           this.filteredVendors = response.vendors;
+          // sortVendors() was only ever called from toggleSort() — a reload (search/filter/page/
+          // refresh) silently dropped back to server order while the header still showed the
+          // active sort icon. This only reorders the page just loaded (there's no confirmed
+          // server-side sort parameter to request a globally sorted result across pages).
+          if (this.sortField) this.sortVendors();
           this.totalVendors = response.total;
           this.totalPages = response.totalPages;
-          this.calculateStats();
           this.isLoading = false;
+          this.hasLoadedOnce = true;
           // Clear selection when data changes
           this.selectedVendors.clear();
           this.selectAll = false;
@@ -254,10 +287,34 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
           this.loadAiSignals(response.vendors.map(v => String(v.id)));
         },
         error: (err) => {
+          if (requestId !== this.loadRequestId) return;
           console.error('Failed to load vendors:', err);
+          // Previously only logged, so the (dead) error banner never showed and a failed load looked
+          // like an empty directory.
+          this.error = 'Could not load vendors. Please check your connection and try again.';
           this.isLoading = false;
+          this.hasLoadedOnce = true;
         }
       });
+  }
+
+  /**
+   * The header/sidebar stat cards used to be `this.vendors.filter(...)` counts — i.e. only the vendors
+   * on the CURRENT PAGE, while "Total Vendors" next to them was the real server-wide total. A filtered
+   * or paginated view therefore showed obviously-inconsistent numbers (e.g. "Total 200 / Active 14"
+   * when only 20 vendors were ever loaded). Pulled from the dashboard-stats endpoint instead, which
+   * reports real counts across the whole vendor base.
+   */
+  private loadHeaderStats(): void {
+    this.vendorService.getDashboardStats().pipe(takeUntil(this.destroy$)).subscribe({
+      next: (s) => {
+        this.stats.total = s.totalVendors;
+        this.stats.active = s.activeVendors;
+        this.stats.preferred = s.vendorsByTier?.preferred ?? 0;
+        this.stats.highRisk = s.highRiskVendors;
+      },
+      error: (err) => console.error('Failed to load vendor header stats:', err)
+    });
   }
 
   // ============================================================
@@ -322,13 +379,6 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     }
 
     return filters;
-  }
-
-  private calculateStats(): void {
-    this.stats.total = this.totalVendors;
-    this.stats.active = this.vendors.filter(v => v.status === VendorStatus.ACTIVE).length;
-    this.stats.preferred = this.vendors.filter(v => v.tier === VendorTier.PREFERRED).length;
-    this.stats.highRisk = this.vendors.filter(v => v.riskLevel === RiskLevel.HIGH).length;
   }
 
   // ============================================================
@@ -449,6 +499,14 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
       // Handle numbers
       if (typeof aVal === 'number' && typeof bVal === 'number') {
         return this.sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      // Handle dates — joinedDate (and any other Date field) matched neither branch above, so
+      // clicking "Joined" toggled the sort icon but never actually reordered anything.
+      if (aVal instanceof Date || bVal instanceof Date) {
+        const aTime = aVal instanceof Date ? aVal.getTime() : 0;
+        const bTime = bVal instanceof Date ? bVal.getTime() : 0;
+        return this.sortDirection === 'asc' ? aTime - bTime : bTime - aTime;
       }
 
       return 0;
@@ -593,24 +651,18 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   }
 
   private bulkUpdateStatus(status: VendorStatus): void {
-    if (!confirm(`Are you sure you want to ${status.toLowerCase()} ${this.selectedVendors.size} vendor(s)?`)) {
+    // status.toLowerCase() reads as a bare noun, not a verb — "you want to active 3 vendor(s)?"
+    const verbs: Partial<Record<VendorStatus, string>> = { [VendorStatus.ACTIVE]: 'activate', [VendorStatus.SUSPENDED]: 'suspend' };
+    const verb = verbs[status] ?? status.toLowerCase();
+    if (!confirm(`Are you sure you want to ${verb} ${this.selectedVendors.size} vendor(s)?`)) {
       return;
     }
 
-    const ids = Array.from(this.selectedVendors);
-    ids.forEach(id => {
-      this.vendorService.updateVendorStatus(String(id), status).subscribe({
-        next: () => {
-          const vendor = this.vendors.find(v => v.id === id);
-          if (vendor) vendor.status = status;
-        },
-        error: (err) => console.error('Failed to update vendor:', err)
-      });
-    });
-
-    this.selectedVendors.clear();
-    this.selectAll = false;
-    setTimeout(() => this.loadVendors(), 2000);
+    this.runBulk(
+      Array.from(this.selectedVendors),
+      id => this.vendorService.updateVendorStatus(String(id), status),
+      `updated to ${status.toLowerCase()}`
+    );
   }
 
   private bulkDelete(): void {
@@ -618,21 +670,41 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
       return;
     }
 
-    const ids = Array.from(this.selectedVendors);
-    ids.forEach(id => {
-      this.vendorService.deleteVendor(String(id)).subscribe({
-        next: () => {
-          // Remove from local list
-          this.vendors = this.vendors.filter(v => v.id !== id);
-          this.filteredVendors = this.filteredVendors.filter(v => v.id !== id);
-        },
-        error: (err) => console.error('Failed to delete vendor:', err)
-      });
-    });
+    this.runBulk(
+      Array.from(this.selectedVendors),
+      id => this.vendorService.deleteVendor(String(id)),
+      'deleted'
+    );
+  }
 
-    this.selectedVendors.clear();
-    this.selectAll = false;
-    setTimeout(() => this.loadVendors(), 2000);
+  /**
+   * Runs one request per selected vendor and waits for ALL of them before refreshing.
+   * Previously each request was fire-and-forget: the selection was cleared immediately, failures were
+   * only console.error'd, bulk delete removed rows locally on each success, and the list was reloaded
+   * on a blind 2-second timer — so a partial failure looked like full success and the user couldn't tell
+   * which vendors were affected.
+   */
+  private runBulk(ids: number[], op: (id: number) => Observable<unknown>, doneText: string): void {
+    if (ids.length === 0) return;
+    this.isLoading = true;
+    forkJoin(ids.map(id => op(id).pipe(
+      map(() => true),
+      catchError(err => {
+        console.error(`Bulk action failed for vendor ${id}:`, err);
+        return of(false);
+      })
+    ))).pipe(takeUntil(this.destroy$)).subscribe(results => {
+      const failed = results.filter(ok => !ok).length;
+      this.selectedVendors.clear();
+      this.selectAll = false;
+      this.loadVendors(true);
+      this.loadHeaderStats();
+      this.error = failed
+        ? (failed === results.length
+            ? `None of the ${results.length} selected vendor(s) could be ${doneText}.`
+            : `${failed} of ${results.length} selected vendor(s) could not be ${doneText}. The others were.`)
+        : null;
+    });
   }
 
   private exportSelected(): void {
@@ -716,7 +788,10 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
         next: () => {
           this.loadVendors();
         },
-        error: (err) => console.error('Failed to delete vendor:', err)
+        error: (err) => {
+          console.error('Failed to delete vendor:', err);
+          this.error = `Could not delete ${vendor.companyName}.`;
+        }
       });
     }
   }
@@ -906,5 +981,6 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
 
   refresh(): void {
     this.loadVendors();
+    this.loadHeaderStats();
   }
 }

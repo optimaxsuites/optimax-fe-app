@@ -12,7 +12,7 @@
         </div>
 
         <!-- Stats Summary -->
-        <div class="ql-filter-section" *ngIf="!isLoading">
+        <div class="ql-filter-section" *ngIf="hasLoadedOnce">
             <div class="ql-filter-heading">Overview</div>
             <div class="ql-sidebar-stat">
                 <span class="ql-sidebar-stat-label">Total Vendors</span>
@@ -60,8 +60,11 @@
     <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
     <main class="ql-main">
 
-        <!-- Loading state -->
-        <div *ngIf="isLoading" class="ql-loading">
+        <!-- Loading state: only the very first load, before there's anything to show yet.
+             A later reload (search/filter/page/refresh) uses the in-table spinner further down instead —
+             this used to gate the whole filter bar too, so typing in the search box tore down and
+             rebuilt the input on every debounced reload, dropping focus and any keys typed meanwhile. -->
+        <div *ngIf="isLoading && !hasLoadedOnce" class="ql-loading">
             <div class="ql-spinner"></div>
             <span>Loading vendors...</span>
         </div>
@@ -76,7 +79,7 @@
         <!-- ============================================================
         CONTENT
         ============================================================ -->
-        <ng-container *ngIf="!isLoading">
+        <ng-container *ngIf="hasLoadedOnce">
 
             <!-- Top bar -->
             <div class="ql-top-bar">
@@ -274,10 +277,12 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="ql-status-badge" 
+                                    <span class="ql-status-badge"
                                           [class.ql-status-badge--active]="vendor.status === VendorStatus.ACTIVE"
                                           [class.ql-status-badge--suspended]="vendor.status === VendorStatus.SUSPENDED || vendor.status === VendorStatus.OFFBOARDED"
-                                          [class.ql-status-badge--pending]="vendor.status === VendorStatus.PENDING_ONBOARDING || vendor.status === VendorStatus.UNDER_REVIEW">
+                                          [class.ql-status-badge--pending]="vendor.status === VendorStatus.PENDING_ONBOARDING || vendor.status === VendorStatus.UNDER_REVIEW"
+                                          [class.ql-status-badge--conditional]="vendor.status === VendorStatus.CONDITIONAL"
+                                          [class.ql-status-badge--inactive]="vendor.status === VendorStatus.INACTIVE">
                                         <span class="ql-status-dot"></span>
                                         {{ getStatusLabel(vendor.status) }}
                                     </span>

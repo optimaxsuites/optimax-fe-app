@@ -23,7 +23,7 @@
         <span class="stat-label">Rating</span>
         <span class="stat-sub">
             <i *ngFor="let star of [1,2,3,4,5]" class="fas fa-star"
-                [class.filled]="star <= (vendor.averageRating || 0)"></i>
+                [class.filled]="star <= round(vendor.averageRating || 0)"></i>
         </span>
     </div>
 </div>
@@ -123,7 +123,7 @@
                 </div>
                 <div class="info-item">
                     <span class="info-label">Account Number</span>
-                    <span class="info-value">{{ vendor.bankDetails.accountNumber || '—' }}</span>
+                    <span class="info-value">{{ maskAccountNumber(vendor.bankDetails.accountNumber) }}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Account Name</span>

@@ -3,7 +3,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError, EMPTY } from 'rxjs';
-import { map, expand, reduce } from 'rxjs/operators';
+import { map, expand, reduce, catchError } from 'rxjs/operators';
 import {
   VendorQuotation,
   RFQWithQuotations,
@@ -67,15 +67,26 @@ export class QuotationManagementService {
    * everything past it with no indication anything was missing.
    */
   getAllQuotations(filters?: any): Observable<VendorQuotation[]> {
-    const size = filters?.size || 100;
+    // 50 is the page size this unfiltered endpoint was already called with before auto-pagination
+    // existed, so the first request is identical to what is known to work.
+    const size = filters?.size || 50;
 
     if (filters?.page !== undefined) {
       return this.fetchQuotationsPage(filters.page + 1, size, filters);
     }
 
-    const MAX_PAGES = 50; // safety cap (5,000 records at size=100) against a runaway loop
+    const MAX_PAGES = 100; // safety cap (5,000 records at size=50) against a runaway loop
     return this.fetchQuotationsPage(1, size, filters).pipe(
-      expand((batch, i) => (batch.length === size && i + 1 < MAX_PAGES) ? this.fetchQuotationsPage(i + 2, size, filters) : EMPTY),
+      // A failure on a later page keeps the pages already loaded (with a warning) rather than
+      // discarding everything; a failure on the first page still propagates as an error.
+      expand((batch, i) => (batch.length === size && i + 1 < MAX_PAGES)
+        ? this.fetchQuotationsPage(i + 2, size, filters).pipe(
+            catchError(err => {
+              console.warn(`[QuotationManagementService] page ${i + 2} failed; showing ${(i + 1) * size} quotations loaded so far`, err);
+              return EMPTY;
+            })
+          )
+        : EMPTY),
       reduce((all, batch) => [...all, ...batch], [] as VendorQuotation[])
     );
   }
