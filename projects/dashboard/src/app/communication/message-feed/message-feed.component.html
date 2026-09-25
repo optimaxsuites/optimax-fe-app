@@ -724,87 +724,6 @@
             </div>
           </div>
 
-          <div
-            *ngIf="documentViewerOpen"
-            class="structured-output-viewer"
-            (click)="closeDocumentViewer()"
-          >
-            <div class="structured-output-viewer-shell doc-shell" (click)="$event.stopPropagation()">
-              <div class="structured-output-viewer-toolbar">
-                <strong>{{ documentViewerTitle }}</strong>
-                <button type="button" class="structured-output-viewer-close" (click)="closeDocumentViewer()">
-                  <i class="pi pi-times"></i>
-                </button>
-              </div>
-              <div class="document-viewer-body">
-                <!-- PDF: native iframe render -->
-                <div *ngIf="documentViewerType === 'pdf' && officePreviewLoading" class="office-preview-loading">
-                  <div class="office-preview-spinner"></div>
-                  <span>Loading preview…</span>
-                </div>
-                <div *ngIf="documentViewerType === 'pdf' && officePreviewError" class="document-viewer-card">
-                  <span class="document-viewer-badge">PDF</span>
-                  <strong>{{ documentViewerTitle }}</strong>
-                  <p>Could not load preview. Download the file to view it.</p>
-                  <div class="document-viewer-actions">
-                    <button *ngIf="documentViewerRawUrl" type="button" (click)="downloadViewerFile($event)" class="toolbar-action primary">Download</button>
-                  </div>
-                </div>
-                <iframe
-                  *ngIf="documentViewerType === 'pdf' && documentViewerUrl && !officePreviewLoading && !officePreviewError"
-                  [src]="documentViewerUrl"
-                  class="document-viewer-frame"
-                  title="Document preview"
-                ></iframe>
-
-                <!-- Office: client-side rendered via mammoth / SheetJS -->
-                <ng-container *ngIf="documentViewerType === 'office'">
-                  <!-- Loading -->
-                  <div *ngIf="officePreviewLoading" class="office-preview-loading">
-                    <div class="office-preview-spinner"></div>
-                    <span>Loading preview…</span>
-                  </div>
-                  <!-- Sheet tabs (Excel only) -->
-                  <div *ngIf="!officePreviewLoading && officeSheetNames.length > 1" class="office-sheet-tabs">
-                    <button
-                      *ngFor="let name of officeSheetNames; let idx = index"
-                      type="button"
-                      class="office-sheet-tab"
-                      [class.active]="officeActiveSheet === idx"
-                      (click)="switchOfficeSheet(idx)"
-                    >{{ name }}</button>
-                  </div>
-                  <!-- Rendered HTML (Word or Excel) -->
-                  <div
-                    *ngIf="!officePreviewLoading && !officePreviewError"
-                    class="office-preview-body"
-                    [innerHTML]="officePreviewHtml"
-                  ></div>
-                  <!-- PPTX or fetch error fallback -->
-                  <div *ngIf="!officePreviewLoading && officePreviewError" class="document-viewer-card">
-                    <span class="document-viewer-badge">{{ officePreviewError === 'pptx' ? 'PPTX' : 'FILE' }}</span>
-                    <strong>{{ documentViewerTitle }}</strong>
-                    <p *ngIf="officePreviewError === 'pptx'">PowerPoint preview isn't supported in the browser. Download to view.</p>
-                    <p *ngIf="officePreviewError && officePreviewError !== 'pptx'">Could not load preview. Download the file to view it.</p>
-                    <div class="document-viewer-actions">
-                      <button *ngIf="documentViewerRawUrl" type="button" (click)="downloadViewerFile($event)" class="toolbar-action primary">Download</button>
-                    </div>
-                  </div>
-                </ng-container>
-
-                <!-- Generic file fallback -->
-                <div *ngIf="documentViewerType === 'file'" class="document-viewer-card">
-                  <span class="document-viewer-badge">FILE</span>
-                  <strong>{{ documentViewerTitle }}</strong>
-                  <p>Preview is not available for this file type.</p>
-                  <div class="document-viewer-actions">
-                    <button *ngIf="documentViewerRawUrl" type="button" (click)="downloadViewerFile($event)" class="toolbar-action primary">Download</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           </ng-container><!-- end !isIssueCard -->
 
           <!-- Reaction pills (Slack-style, per reaction type) -->
@@ -882,6 +801,87 @@
     </div>
   </ng-container>
 </ng-container>
+
+<!-- Document viewer overlay — lives outside the messages ngFor so scrolling never destroys it -->
+<div
+  *ngIf="documentViewerOpen"
+  class="structured-output-viewer"
+  (click)="closeDocumentViewer()"
+>
+  <div class="structured-output-viewer-shell doc-shell" (click)="$event.stopPropagation()">
+    <div class="structured-output-viewer-toolbar">
+      <strong>{{ documentViewerTitle }}</strong>
+      <button type="button" class="structured-output-viewer-close" (click)="closeDocumentViewer()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+    <div class="document-viewer-body">
+      <!-- PDF / HTML: native iframe render -->
+      <div *ngIf="documentViewerType === 'pdf' && officePreviewLoading" class="office-preview-loading">
+        <div class="office-preview-spinner"></div>
+        <span>Loading preview…</span>
+      </div>
+      <div *ngIf="documentViewerType === 'pdf' && officePreviewError" class="document-viewer-card">
+        <span class="document-viewer-badge">PDF</span>
+        <strong>{{ documentViewerTitle }}</strong>
+        <p>Could not load preview. Download the file to view it.</p>
+        <div class="document-viewer-actions">
+          <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" target="_blank" rel="noopener noreferrer" class="toolbar-action">Open in tab</a>
+          <button *ngIf="documentViewerRawUrl" type="button" (click)="downloadViewerFile($event)" class="toolbar-action primary">Download</button>
+        </div>
+      </div>
+      <iframe
+        *ngIf="documentViewerType === 'pdf' && documentViewerUrl && !officePreviewLoading && !officePreviewError"
+        [src]="documentViewerUrl"
+        class="document-viewer-frame"
+        title="Document preview"
+      ></iframe>
+
+      <!-- Office: client-side rendered via mammoth / SheetJS -->
+      <ng-container *ngIf="documentViewerType === 'office'">
+        <div *ngIf="officePreviewLoading" class="office-preview-loading">
+          <div class="office-preview-spinner"></div>
+          <span>Loading preview…</span>
+        </div>
+        <div *ngIf="!officePreviewLoading && officeSheetNames.length > 1" class="office-sheet-tabs">
+          <button
+            *ngFor="let name of officeSheetNames; let idx = index"
+            type="button"
+            class="office-sheet-tab"
+            [class.active]="officeActiveSheet === idx"
+            (click)="switchOfficeSheet(idx)"
+          >{{ name }}</button>
+        </div>
+        <div
+          *ngIf="!officePreviewLoading && !officePreviewError"
+          class="office-preview-body"
+          [innerHTML]="officePreviewHtml"
+        ></div>
+        <div *ngIf="!officePreviewLoading && officePreviewError" class="document-viewer-card">
+          <span class="document-viewer-badge">{{ officePreviewError === 'pptx' ? 'PPTX' : 'FILE' }}</span>
+          <strong>{{ documentViewerTitle }}</strong>
+          <p *ngIf="officePreviewError === 'pptx'">PowerPoint preview isn't supported in the browser. Download to view.</p>
+          <p *ngIf="officePreviewError && officePreviewError !== 'pptx'">Could not load preview. Download the file to view it.</p>
+          <div class="document-viewer-actions">
+            <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" target="_blank" rel="noopener noreferrer" class="toolbar-action">Open in tab</a>
+            <button *ngIf="documentViewerRawUrl" type="button" (click)="downloadViewerFile($event)" class="toolbar-action primary">Download</button>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Generic file fallback -->
+      <div *ngIf="documentViewerType === 'file'" class="document-viewer-card">
+        <span class="document-viewer-badge">FILE</span>
+        <strong>{{ documentViewerTitle }}</strong>
+        <p>Preview is not available for this file type.</p>
+        <div class="document-viewer-actions">
+          <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" target="_blank" rel="noopener noreferrer" class="toolbar-action">Open in tab</a>
+          <button *ngIf="documentViewerRawUrl" type="button" (click)="downloadViewerFile($event)" class="toolbar-action primary">Download</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div
   *ngIf="activeMentionProfile && mentionCardPosition"

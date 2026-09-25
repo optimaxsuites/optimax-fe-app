@@ -488,6 +488,12 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
     );
   }
 
+  isHtmlAttachment(attachment: Message['attachment'] | undefined): boolean {
+    const fileRef = `${attachment?.name || ''} ${attachment?.downloadUrl || ''}`.toLowerCase();
+    const type = (attachment?.type || '').toLowerCase();
+    return /\.html?(\?|$)/i.test(fileRef) || type === 'text/html';
+  }
+
   attachmentBadge(attachment: Message['attachment'] | undefined): string {
     const fileRef = `${attachment?.name || ''}`.toLowerCase();
     if (fileRef.endsWith('.doc') || fileRef.endsWith('.docx')) return 'DOCX';
@@ -806,14 +812,25 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
       this.documentViewerType = 'pdf';
       this.documentViewerOpen = true;
       this.officePreviewLoading = true;
+      this.officePreviewError = '';
+      this.documentViewerUrl = '';
       this.cdr.markForCheck();
       try {
-        const blobUrl = await this._fetchBlobUrl(rawUrl);
-        this._revokeViewerBlob();
-        this._viewerBlobUrl = blobUrl;
+        let blobUrl: string;
+        if (rawUrl.startsWith('blob:')) {
+          // Already a pre-fetched blob URL — use directly, no HTTP request needed
+          blobUrl = rawUrl;
+        } else {
+          blobUrl = await this._fetchBlobUrl(rawUrl);
+          this._revokeViewerBlob();
+          this._viewerBlobUrl = blobUrl;
+        }
         this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(blobUrl);
       } catch {
-        this.officePreviewError = 'failed';
+        // Fallback to original server URL
+        this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
+          attachment!.downloadUrl || rawUrl
+        );
       } finally {
         this.officePreviewLoading = false;
         this.cdr.markForCheck();
@@ -835,9 +852,20 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
       const nameRef = `${attachment!.name || rawUrl}`.toLowerCase();
       const isDocx = /\.docx?(\?|$)/.test(nameRef);
       const isXlsx = /\.xlsx?(\?|$)/.test(nameRef);
+      // Use original server URL for external viewers — blob: URLs are browser-local
+      const serverUrl = attachment!.downloadUrl || rawUrl;
+
+      // PPTX (and any unrecognised type): skip client-side conversion — go straight to Office Online Viewer
+      if (!isDocx && !isXlsx) {
+        this._openWithOfficeOnlineViewer(serverUrl);
+        return;
+      }
 
       try {
-        const blob = await firstValueFrom(this.collabService.fetchChatAttachmentBlob(rawUrl));
+        // If parent pre-fetched a blob URL, read from it directly; otherwise fetch via API
+        const blob = rawUrl.startsWith('blob:')
+          ? await fetch(rawUrl).then(r => r.blob())
+          : await firstValueFrom(this.collabService.fetchChatAttachmentBlob(rawUrl));
         const arrayBuffer = await blob.arrayBuffer();
 
         if (isDocx) {
@@ -854,11 +882,38 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
           this.officePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(
             this._xlsxSheetToHtml(XLSXmod, workbook, 0)
           );
-        } else {
-          this.officePreviewError = 'pptx';
         }
-      } catch (e: any) {
-        this.officePreviewError = e?.message || 'Failed to load preview';
+      } catch {
+        // Blob conversion failed — fall back to Office Online Viewer with original server URL
+        this._openWithOfficeOnlineViewer(serverUrl);
+      } finally {
+        this.officePreviewLoading = false;
+        this.cdr.markForCheck();
+      }
+      return;
+    }
+
+    if (this.isHtmlAttachment(attachment)) {
+      this.documentViewerType = 'pdf';
+      this.documentViewerOpen = true;
+      this.officePreviewLoading = true;
+      this.officePreviewError = '';
+      this.documentViewerUrl = '';
+      this.cdr.markForCheck();
+      try {
+        let blobUrl: string;
+        if (rawUrl.startsWith('blob:')) {
+          blobUrl = rawUrl;
+        } else {
+          blobUrl = await this._fetchBlobUrl(rawUrl);
+          this._revokeViewerBlob();
+          this._viewerBlobUrl = blobUrl;
+        }
+        this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(blobUrl);
+      } catch {
+        this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
+          attachment!.downloadUrl || rawUrl
+        );
       } finally {
         this.officePreviewLoading = false;
         this.cdr.markForCheck();
@@ -905,6 +960,16 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
       URL.revokeObjectURL(this._viewerBlobUrl);
       this._viewerBlobUrl = null;
     }
+  }
+
+  private _openWithOfficeOnlineViewer(rawUrl: string): void {
+    const viewerUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(rawUrl)}`;
+    this._revokeViewerBlob();
+    this.documentViewerType = 'pdf';
+    this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(viewerUrl);
+    this.officePreviewLoading = false;
+    this.officePreviewError = '';
+    this.cdr.markForCheck();
   }
 
   async downloadViewerFile(event: Event): Promise<void> {
