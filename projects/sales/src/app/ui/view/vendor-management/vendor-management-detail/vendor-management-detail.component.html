@@ -83,7 +83,7 @@
                             <button class="btn-refresh" (click)="refresh()" title="Refresh">
                                 <i class="fas fa-sync-alt"></i>
                             </button>
-                            <div class="status-dropdown" (click)="$event.stopPropagation()">
+                            <div class="status-dropdown" *ngIf="!isCustomer" (click)="$event.stopPropagation()">
                                 <button class="btn-status" (click)="showStatusDropdown = !showStatusDropdown"
                                     [disabled]="isSaving || getStatusOptions().length === 0"
                                     [title]="getStatusOptions().length === 0 ? 'No further status changes are available for this vendor' : 'Change status'">
@@ -354,6 +354,7 @@
                     <app-vendor-documents
                         [documents]="documents"
                         [vendorId]="vendorId"
+                        [canManage]="!isCustomer"
                         [isLoading]="isLoading"
                         [isUploadingDocument]="isUploadingDocument"
                         [uploadProgress]="uploadProgress"

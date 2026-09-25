@@ -10,6 +10,7 @@ import { Subject, takeUntil } from 'rxjs';
 import {
   VendorService
 } from '../../../service/vendor-management/vendor-management.service';
+import { ApprovalService } from '../../../service/approval-inbox/approval.service';
 import {
   Vendor,
   VendorStatus,
@@ -127,11 +128,17 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   // CONSTRUCTOR
   // ============================================================
 
+  // A vendor's own profile and documents come from the vendor themself, via the Vendor Portal
+  // (see VendorService.mapVendor()'s `registration` field) — customers only ever get a read-only
+  // view of that data here, they never edit or upload on the vendor's behalf.
+  isCustomer: boolean = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private location: Location,
-    private vendorService: VendorService
+    private vendorService: VendorService,
+    private approvalService: ApprovalService
   ) {}
 
   // ============================================================
@@ -139,6 +146,8 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   // ============================================================
 
   ngOnInit(): void {
+    this.isCustomer = this.approvalService.getCurrentActor().roleCode === 'ROLE_USER';
+
     if (this.vendorId) {
       this.loadVendorData();
     } else {
@@ -373,7 +382,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   changeStatus(status: VendorStatus): void {
     this.showStatusDropdown = false;
     this.actionError = null;
-    if (!this.vendor || this.isSaving || status === this.vendor.status) return;
+    if (this.isCustomer || !this.vendor || this.isSaving || status === this.vendor.status) return;
 
     if (VendorManagementDetailComponent.REASON_REQUIRED.has(status)) {
       const name = this.vendor.companyName;
@@ -394,7 +403,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   }
 
   executeStatusChange(status: VendorStatus, reason?: string): void {
-    if (!this.vendor || this.isSaving) return;
+    if (this.isCustomer || !this.vendor || this.isSaving) return;
 
     this.isSaving = true;
     this.actionError = null;
@@ -758,6 +767,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   // ============================================================
 
   handleDocumentUpload(event: { file: File; category: DocumentCategory; issueDate: Date; expiryDate: Date }): void {
+    if (this.isCustomer) return;
     this.isUploadingDocument = true;
     this.uploadProgress = 0;
     this.uploadServerError = null;
@@ -787,6 +797,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   }
 
   handleDocumentDelete(documentId: string): void {
+    if (this.isCustomer) return;
     this.vendorService.deleteDocument(documentId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -801,6 +812,7 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   }
 
   handleDocumentVerify(event: { documentId: string; verified: boolean; notes?: string }): void {
+    if (this.isCustomer) return;
     this.vendorService.verifyDocument(event.documentId, event.verified, event.notes)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
