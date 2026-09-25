@@ -6,14 +6,17 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   OnDestroy,
+  OnInit,
   OnChanges,
   SimpleChanges,
 } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl, SafeHtml } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 import { Message } from '../communication.component';
 import { CollaborationService } from '../../../app/ui/services/collaboration.service';
+import { ReminderService } from 'src/app/ui/services/reminder.service';
 
 interface HoverPersonCard {
   name: string;
@@ -52,7 +55,7 @@ interface ChatReactionOption {
   styleUrls: ['./message-feed.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MessageFeedComponent implements OnDestroy, OnChanges {
+export class MessageFeedComponent implements OnInit, OnDestroy, OnChanges {
   private readonly urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
   private readonly mentionBoundaryAfterRegex = '(?=$|[\\s.,!?;:()\\[\\]{}"\'`])';
   imageViewerOpen = false;
@@ -68,7 +71,93 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
     private router: Router,
     private cdr: ChangeDetectorRef,
     private collabService: CollaborationService,
+    readonly reminderService: ReminderService,
   ) {}
+
+  // ── Reminder ─────────────────────────────────────────
+  reminderDialogMsg: Message | null = null;
+  reminderTimeString = '';
+  reminderLeadMinutes = 2;
+  reminderError = '';
+  reminderSaved = false;
+  /** Message IDs that have at least one active (non-fired) reminder. */
+  reminderMsgIds = new Set<string>();
+  private _reminderListSub?: Subscription;
+
+  hasTimeInMessage(msg: Message): boolean {
+    return !!ReminderService.extractTime(msg.content || '');
+  }
+
+  openReminderDialog(msg: Message, event: Event): void {
+    event.stopPropagation();
+    this.reminderDialogMsg = msg;
+    this.reminderError = '';
+    this.reminderSaved = false;
+    const extracted = ReminderService.extractTime(msg.content || '');
+    this.reminderTimeString = extracted ? this._formatTime(extracted) : '';
+    this.cdr.markForCheck();
+  }
+
+  closeReminderDialog(): void {
+    this.reminderDialogMsg = null;
+    this.cdr.markForCheck();
+  }
+
+  ngOnInit(): void {
+    this._reminderListSub = this.reminderService.list$.subscribe(list => {
+      this.reminderMsgIds = new Set(
+        list.filter(r => !r.fired && r.messageId).map(r => r.messageId!)
+      );
+      this.cdr.markForCheck();
+    });
+  }
+
+  confirmReminder(): void {
+    this.reminderError = '';
+    const target = this._parseReminderTime(this.reminderTimeString);
+    if (!target) { this.reminderError = 'Enter a valid time, e.g. 3:30 PM'; return; }
+    if (target.getTime() <= Date.now()) { this.reminderError = 'That time has already passed'; return; }
+    const alertAt = target.getTime() - this.reminderLeadMinutes * 60_000;
+    if (alertAt <= Date.now()) {
+      this.reminderError = `Meeting is less than ${this.reminderLeadMinutes} min away`;
+      return;
+    }
+    this.reminderService.add({
+      messageId: this.reminderDialogMsg!.id,
+      messageText: this.reminderDialogMsg!.content || '',
+      channel: (this.reminderDialogMsg as any)?.channelName || 'Chat',
+      targetTime: target.getTime(),
+      alertAt,
+      leadMinutes: this.reminderLeadMinutes,
+    });
+    this.reminderSaved = true;
+    this.cdr.markForCheck();
+    setTimeout(() => this.closeReminderDialog(), 1400);
+  }
+
+  private _parseReminderTime(raw: string): Date | null {
+    const m = raw.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i);
+    if (!m) return null;
+    let h = parseInt(m[1], 10);
+    const min = m[2] ? parseInt(m[2], 10) : 0;
+    const mer = (m[3] || '').toLowerCase();
+    if (mer === 'pm' && h < 12) h += 12;
+    if (mer === 'am' && h === 12) h = 0;
+    if (h > 23 || min > 59) return null;
+    const d = new Date();
+    d.setHours(h, min, 0, 0);
+    if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+    return d;
+  }
+
+  private _formatTime(d: Date): string {
+    let h = d.getHours();
+    const min = d.getMinutes().toString().padStart(2, '0');
+    const mer = h >= 12 ? 'PM' : 'AM';
+    if (h > 12) h -= 12;
+    if (h === 0) h = 12;
+    return `${h}:${min} ${mer}`;
+  }
   structuredViewerOpen = false;
   structuredViewerTitle = '';
   structuredViewerHtml = '';
@@ -381,18 +470,48 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
     this.retryMessage.emit(msg);
   }
 
-  onRenderedContentClick(event: Event): void {
+  onRenderedContentClick(event: Event, msg?: Message): void {
     const mention = this.findClosestAnchor(event, 'chat-mention');
-    if (!mention) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const userId = Number(mention.dataset['userId'] || 0);
-    if (userId > 0) {
-      if (typeof window !== 'undefined') {
-        window.location.hash = `dm-user-${userId}`;
+    if (mention) {
+      event.preventDefault();
+      event.stopPropagation();
+      const userId = Number(mention.dataset['userId'] || 0);
+      if (userId > 0) {
+        if (typeof window !== 'undefined') {
+          window.location.hash = `dm-user-${userId}`;
+        }
+        this.mentionActivated.emit(userId);
       }
-      this.mentionActivated.emit(userId);
+      return;
     }
+
+    if (msg) {
+      const timeToken = this._findClosestElement(event, '.msg-time-token');
+      if (timeToken) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.openReminderDialog(msg, event);
+        return;
+      }
+    }
+  }
+
+  private _findClosestElement(event: Event, selector: string): HTMLElement | null {
+    const path = typeof (event as any).composedPath === 'function'
+      ? ((event as any).composedPath() as EventTarget[])
+      : [];
+    for (const entry of path) {
+      if (entry instanceof HTMLElement) {
+        if (entry.matches?.(selector)) return entry;
+        const found = entry.closest?.(selector);
+        if (found instanceof HTMLElement) return found;
+      }
+    }
+    const rawTarget = event.target as Node | null;
+    const el = rawTarget instanceof HTMLElement
+      ? rawTarget
+      : (rawTarget as any)?.parentElement || null;
+    return el?.closest?.(selector) as HTMLElement | null ?? null;
   }
 
   onRenderedContentHover(event: MouseEvent): void {
@@ -747,6 +866,7 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
     clearTimeout(this._msgHoverTimer);
     this._closeReactionPicker();
     this._revokeViewerBlob();
+    this._reminderListSub?.unsubscribe();
   }
 
   chatMediaGridClass(imageCount: number): string {
@@ -1199,7 +1319,20 @@ export class MessageFeedComponent implements OnDestroy, OnChanges {
 
     const restored = withUrls.replace(/\x00MD(\d+)\x00/g, (_, idx) => mdPlaceholders[Number(idx)] ?? '');
 
-    return this.mentionifyHtml(restored.replace(/\n/g, '<br>'));
+    return this._wrapTimesInHtml(this.mentionifyHtml(restored.replace(/\n/g, '<br>')));
+  }
+
+  private _wrapTimesInHtml(html: string): string {
+    // Wrap explicit am/pm time tokens in text nodes so they become clickable.
+    // The (<[^>]*>) branch preserves tags untouched; ([^<]+) processes text content.
+    return html.replace(/(<[^>]*>)|([^<]+)/g, (_, tag, text) => {
+      if (tag) return tag;
+      if (!text) return '';
+      return text.replace(
+        /\b(\d{1,2}(?:[:.]\d{2})?)\s*(am|pm)\b/gi,
+        (t: string) => `<span class="msg-time-token" title="Click to set a reminder">${t}</span>`
+      );
+    });
   }
 
   messageLinkPreview(msg: Message): {
