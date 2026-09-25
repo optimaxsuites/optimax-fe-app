@@ -1,0 +1,58 @@
+<!-- ── Floating pill button — visible when reminders exist and nothing is ringing ── -->
+<ng-container *ngIf="upcomingCount > 0 && !reminder">
+  <!-- Backdrop to close panel -->
+  <div *ngIf="panelOpen" class="rb-backdrop" (click)="closePanel()"></div>
+
+  <!-- Reminders panel -->
+  <div *ngIf="panelOpen" class="rb-panel">
+    <div class="rb-panel-header">
+      <span class="rb-panel-title">Upcoming Reminders</span>
+      <button type="button" class="rb-panel-close" (click)="closePanel()">✕</button>
+    </div>
+
+    <ul class="rb-panel-list">
+      <li *ngFor="let r of allReminders" class="rb-panel-item">
+        <div class="rb-item-top">
+          <span class="rb-item-time">{{ formatAlertTime(r.targetTime) }}</span>
+          <span class="rb-item-lead">Alert {{ formatLeadLabel(r) }}</span>
+        </div>
+        <p class="rb-item-msg">{{ r.messageText | slice:0:100 }}{{ r.messageText.length > 100 ? '…' : '' }}</p>
+        <div class="rb-item-footer">
+          <span class="rb-item-channel">{{ r.channel }}</span>
+          <button type="button" class="rb-item-cancel" (click)="cancelReminder(r.id)">Cancel</button>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Pill trigger button -->
+  <button type="button" class="rb-pill" (click)="togglePanel()" [title]="upcomingCount + ' reminder(s) set'">
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+    </svg>
+    <span class="rb-pill-count">{{ upcomingCount }}</span>
+  </button>
+</ng-container>
+
+<!-- ── Ringing overlay — shown when a reminder fires ── -->
+<div *ngIf="reminder" class="reminder-overlay" [class.ringing]="ringing">
+  <div class="reminder-card">
+
+    <div class="reminder-icon-ring">
+      <span class="bell-icon">🔔</span>
+    </div>
+
+    <div class="reminder-content">
+      <p class="reminder-label">Meeting starts in {{ leadLabel }}</p>
+      <p class="reminder-message">{{ reminder.messageText }}</p>
+      <p class="reminder-channel">{{ reminder.channel }}</p>
+    </div>
+
+    <div class="reminder-actions">
+      <button type="button" class="btn-snooze" (click)="snooze(5)">Snooze 5 min</button>
+      <button type="button" class="btn-dismiss" (click)="dismiss()">Dismiss</button>
+    </div>
+
+  </div>
+</div>

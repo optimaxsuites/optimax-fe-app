@@ -321,6 +321,14 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
         </button>
+        <!-- Set Reminder — only shown on messages that contain a time -->
+        <button *ngIf="hasTimeInMessage(msg)" type="button" class="float-action-btn" title="Set reminder"
+                (click)="openReminderDialog(msg, $event)">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+        </button>
       </div>
 
       <!-- Delete confirm dialog — lives outside the float bar so hover state can't close it -->
@@ -384,6 +392,15 @@
             class="text-[12px] text-gray-400 cursor-default"
             [title]="msg.sentAtRaw ? parseServerDate(msg.sentAtRaw)?.toLocaleString() || msg.time : msg.time"
           >{{ msg.time }}</span>
+          <!-- Reminder badge — shown when this message has an active reminder -->
+          <span *ngIf="reminderMsgIds.has(msg.id)" class="msg-has-reminder"
+                title="Reminder set for this message"
+                (click)="openReminderDialog(msg, $event)">
+            <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+          </span>
           <button
             *ngIf="isOwnMessage(msg) && msg.deliveryState === 'FAILED'"
             type="button"
@@ -513,7 +530,7 @@
           <ng-template #plainMessageContent>
             <div
               class="text-[13px] text-gray-700 leading-relaxed break-words message-rich-html"
-              (click)="onRenderedContentClick($event)"
+              (click)="onRenderedContentClick($event, msg)"
               (mouseover)="onRenderedContentHover($event)"
               (mouseout)="onRenderedContentLeave($event)"
               [innerHTML]="messageHtml(msg.content)"
@@ -880,6 +897,50 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Reminder dialog — inline, lives outside the ngFor -->
+<div *ngIf="reminderDialogMsg" class="srd-backdrop" (click)="closeReminderDialog()">
+  <div class="srd-card" (click)="$event.stopPropagation()">
+
+    <div class="srd-header">
+      <span class="srd-title">🔔 Set Reminder</span>
+      <button type="button" class="srd-close" (click)="closeReminderDialog()">✕</button>
+    </div>
+
+    <p class="srd-preview">{{ reminderDialogMsg.content }}</p>
+
+    <div *ngIf="reminderSaved" class="srd-success">
+      ✅ Reminder set! We'll alert you {{ reminderLeadMinutes }} min before.
+    </div>
+
+    <ng-container *ngIf="!reminderSaved">
+      <div class="srd-field">
+        <label class="srd-label">Meeting time</label>
+        <input type="text" class="srd-input" [(ngModel)]="reminderTimeString"
+               placeholder="e.g. 3:30 PM" (keydown.enter)="confirmReminder()" />
+      </div>
+
+      <div class="srd-field">
+        <label class="srd-label">Notify me</label>
+        <div class="srd-lead-btns">
+          <button *ngFor="let m of [1, 2, 5, 10]" type="button"
+                  class="srd-lead-btn" [class.active]="reminderLeadMinutes === m"
+                  (click)="reminderLeadMinutes = m">
+            {{ m }} min before
+          </button>
+        </div>
+      </div>
+
+      <p *ngIf="reminderError" class="srd-error">{{ reminderError }}</p>
+
+      <div class="srd-footer">
+        <button type="button" class="srd-btn-cancel" (click)="closeReminderDialog()">Cancel</button>
+        <button type="button" class="srd-btn-confirm" (click)="confirmReminder()">Set Reminder</button>
+      </div>
+    </ng-container>
+
   </div>
 </div>
 

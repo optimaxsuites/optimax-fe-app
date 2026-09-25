@@ -2,6 +2,9 @@
 
 <p-confirmDialog key="sessionExpired" [style]="{width:'420px'}" [closable]="false"></p-confirmDialog>
 
+<!-- Global reminder bell — persists across all routes -->
+<app-reminder-bell></app-reminder-bell>
+
 <div *ngIf="isLoading" class="fixed inset-0 flex items-center justify-center bg-white z-50 pointer-events-none">
     <span class="text-[#2EB270] font-bold text-xl animate-pulse">Loading...</span>
   </div>
