@@ -1,4 +1,5 @@
 import { CUSTOM_ELEMENTS_SCHEMA, NgModule, isDevMode, APP_INITIALIZER } from '@angular/core';
+import { ReminderBellComponent } from './ui/components/reminder-bell/reminder-bell.component';
 import { BrowserModule } from '@angular/platform-browser';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -495,7 +496,8 @@ const dbConfig: DBConfig = {
     TenantsComponent,
     ModuleComponent,
     DeployErpComponent,
-    InterviewInviteComponent
+    InterviewInviteComponent,
+    ReminderBellComponent,
     //  EstimatedDeliveryPipe
 
   ],

@@ -363,7 +363,10 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   // ── Board ──────────────────────────────────────────────────────────────────
-  boardTasks: BoardTask[] = [];
+  private _boardTasks: BoardTask[] = [];
+  get boardTasks(): BoardTask[] { return this._boardTasks; }
+  private set boardTasks(v: BoardTask[]) { this._boardTasks = v; this.rebuildBoardMap(); }
+  columnTasksMap: Record<string, BoardTask[]> = {};
   filterStatus = '';
   filterPriority = '';
   filterAssignee = '';
@@ -599,6 +602,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           if (Array.isArray(stages) && stages.length > 0) {
             this.columns = stages;
             localStorage.setItem(ProductivityWorkspaceComponent.STAGE_STORAGE_KEY, JSON.stringify(stages));
+            this.rebuildBoardMap();
           }
         })
     );
@@ -609,6 +613,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     if (!name || this.columns.some(c => c.key.toLowerCase() === name.toLowerCase())) return;
     this.columns = [...this.columns, { key: name, label: name }];
     this.saveStages();
+    this.rebuildBoardMap();
     this.newStageName = '';
     this.showAddStage = false;
   }
@@ -618,6 +623,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     if (defaultKeys.includes(key)) return; // cannot remove core stages
     this.columns = this.columns.filter(c => c.key !== key);
     this.saveStages();
+    this.rebuildBoardMap();
   }
 
   isDefaultStage(key: string): boolean {
@@ -628,6 +634,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     moveItemInArray(this.columns, event.previousIndex, event.currentIndex);
     this.columns = [...this.columns];
     this.saveStages();
+    this.rebuildBoardMap();
   }
 
   // ── Role-based visibility ─────────────────────────────────────────────────
@@ -1717,6 +1724,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.taskViewMode = mode;
     if (mode !== prev && (mode === 'all' || prev === 'all')) {
       this.loadBoardFromApi();
+    } else {
+      this.rebuildBoardMap();
     }
   }
 
@@ -1865,7 +1874,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       };
       newTasks.push(task);
     });
-    this.boardTasks.push(...newTasks);
+    this.boardTasks = [...this.boardTasks, ...newTasks];
     this.save();
     // Sync each imported task to the backend so getTasksByAssignee picks them up on next load
     if (this.apiEnabled) {
@@ -2845,6 +2854,22 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return this.filteredBoard.filter(t => t.status === status && (!this.hideOverdue || !this.isTaskOverdue(t)));
   }
 
+  rebuildBoardMap(): void {
+    const filtered = this.filteredBoard;
+    const map: Record<string, BoardTask[]> = {};
+    for (const col of this.columns) {
+      map[col.key] = filtered.filter(
+        t => t.status === col.key && (!this.hideOverdue || !this.isTaskOverdue(t))
+      );
+    }
+    this.columnTasksMap = map;
+  }
+
+  toggleHideOverdue(show?: boolean): void {
+    this.hideOverdue = show !== undefined ? show : !this.hideOverdue;
+    this.rebuildBoardMap();
+  }
+
   get overdueTasks(): BoardTask[] {
     return this.filteredBoard.filter(t => this.isTaskOverdue(t));
   }
@@ -2867,6 +2892,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       }
     }
     this.save();
+    this.rebuildBoardMap();
   }
 
   openDetail(task: BoardTask): void {
@@ -3140,7 +3166,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     t.subtasks = [...(t.subtasks ?? []), ...manualSubtasks];
 
     const newBoard: BoardTask = { ...t, subtasks: t.subtasks ?? [], activity: [], followUps: [] };
-    this.boardTasks.unshift(newBoard);
+    this.boardTasks = [newBoard, ...this.boardTasks];
     this.save();
     this.showAddTask = false;
     this.initNewTask();
@@ -3186,6 +3212,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       this.showToast('Task closed and moved to archive', 'info');
     } else {
       this.save();
+      this.rebuildBoardMap();
       this.showToast('Task updated', 'success');
       if (this.apiEnabled) this.syncTaskToApi(t);
     }

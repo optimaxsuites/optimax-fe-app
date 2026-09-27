@@ -168,16 +168,16 @@
           <option value="priority">Group by Priority</option>
         </select>
 
-        <input type="text" class="pm-search" placeholder="🔍 Search tasks…" [(ngModel)]="searchText">
-        <select class="pm-select" [(ngModel)]="filterStatus">
+        <input type="text" class="pm-search" placeholder="🔍 Search tasks…" [(ngModel)]="searchText" (ngModelChange)="rebuildBoardMap()">
+        <select class="pm-select" [(ngModel)]="filterStatus" (ngModelChange)="rebuildBoardMap()">
           <option value="">All Statuses</option>
           <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
         </select>
-        <select class="pm-select" [(ngModel)]="filterPriority">
+        <select class="pm-select" [(ngModel)]="filterPriority" (ngModelChange)="rebuildBoardMap()">
           <option value="">All Priorities</option>
           <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
         </select>
-        <select class="pm-select" [(ngModel)]="filterAssignee">
+        <select class="pm-select" [(ngModel)]="filterAssignee" (ngModelChange)="rebuildBoardMap()">
           <option value="">All Assignees</option>
           <option *ngFor="let a of uniqueAssignees" [value]="a">{{ a }}</option>
         </select>
@@ -185,7 +185,7 @@
         <!-- Overdue filter toggle -->
         <button class="btn-outline" [class.active]="!hideOverdue"
                 style="white-space:nowrap;gap:4px"
-                (click)="hideOverdue = !hideOverdue"
+                (click)="toggleHideOverdue()"
                 [title]="hideOverdue ? 'Show overdue tasks on board' : 'Hide overdue tasks from board'">
           <i class="fas fa-clock" style="font-size:12px"></i>
           <span *ngIf="hideOverdue">Show Overdue <span *ngIf="overdueTasks.length" class="cnt" style="background:#dc2626;color:#fff;font-size:10px;padding:1px 5px;border-radius:8px;margin-left:2px">{{ overdueTasks.length }}</span></span>
@@ -230,7 +230,7 @@
             <div class="lane-drag-icon">⣿</div>
             <strong>{{ col.label }}</strong>
             <div class="lane-head-right">
-              <span class="cnt">{{ columnTasks(col.key).length }}</span>
+              <span class="cnt">{{ (columnTasksMap[col.key] || []).length }}</span>
               <button class="lane-rm-btn" *ngIf="!isDefaultStage(col.key)"
                       (click)="removeStage(col.key);$event.stopPropagation()" title="Remove stage">×</button>
             </div>
@@ -238,11 +238,11 @@
           <div class="lane-cards"
                [id]="colId(col.key)"
                cdkDropList
-               [cdkDropListData]="columnTasks(col.key)"
+               [cdkDropListData]="columnTasksMap[col.key] || []"
                [cdkDropListConnectedTo]="connectedTo(col.key)"
                (cdkDropListDropped)="drop($event, col.key)">
 
-          <div class="kcard" *ngFor="let task of columnTasks(col.key)"
+          <div class="kcard" *ngFor="let task of (columnTasksMap[col.key] || []); trackBy: trackTask"
                cdkDrag
                [class.overdue]="isTaskOverdue(task)"
                [class.review]="task.status === 'In Review'"
@@ -398,7 +398,7 @@
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <i class="fas fa-clock" style="color:#dc2626;font-size:14px"></i>
           <strong style="color:#dc2626;font-size:0.9rem">Overdue Tasks — Extension Required ({{ overdueTasks.length }})</strong>
-          <button class="btn-ghost" style="margin-left:auto;font-size:12px;padding:3px 10px" (click)="hideOverdue = false">Show on Board</button>
+          <button class="btn-ghost" style="margin-left:auto;font-size:12px;padding:3px 10px" (click)="toggleHideOverdue(false)">Show on Board</button>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:10px">
           <div *ngFor="let task of overdueTasks"
