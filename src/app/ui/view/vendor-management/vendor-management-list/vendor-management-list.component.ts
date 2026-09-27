@@ -93,6 +93,18 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   VendorTier = VendorTier;
   RiskLevel = RiskLevel;
 
+  // The Directory only ever shows vendors that have cleared the approval queue.
+  // Vendors still awaiting a decision live in the Vendor Global Registry
+  // (vendor-approval-queue) until an admin approves or rejects them, so this
+  // is both the default filter and the full set of choices offered here.
+  readonly directoryStatuses: VendorStatus[] = [
+    VendorStatus.ACTIVE,
+    VendorStatus.CONDITIONAL,
+    VendorStatus.SUSPENDED,
+    VendorStatus.OFFBOARDED,
+    VendorStatus.INACTIVE
+  ];
+
   // Column visibility
   visibleColumns = {
     select: true,
@@ -356,7 +368,6 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     const filters: any = {};
 
     if (formValue.search) filters.search = formValue.search;
-    if (formValue.status) filters.status = formValue.status;
     if (formValue.tier) filters.tier = formValue.tier;
     if (formValue.riskLevel) filters.riskLevel = formValue.riskLevel;
     if (formValue.category) filters.category = formValue.category;
@@ -367,15 +378,13 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
 
     // The Directory only shows vendors that have cleared the approval queue.
     // Vendors still awaiting a decision live in the Vendor Global Registry
-    // (vendor-approval-queue) until an admin approves or rejects them.
-    if (!formValue.status) {
-      filters.statuses = [
-        VendorStatus.ACTIVE,
-        VendorStatus.CONDITIONAL,
-        VendorStatus.SUSPENDED,
-        VendorStatus.OFFBOARDED,
-        VendorStatus.INACTIVE
-      ];
+    // (vendor-approval-queue) until an admin approves or rejects them. This
+    // applies even when a status is explicitly chosen, so picking e.g.
+    // "Pending Onboarding" here can't be used to see unapproved vendors.
+    if (formValue.status && this.directoryStatuses.includes(formValue.status)) {
+      filters.status = formValue.status;
+    } else {
+      filters.statuses = this.directoryStatuses;
     }
 
     return filters;

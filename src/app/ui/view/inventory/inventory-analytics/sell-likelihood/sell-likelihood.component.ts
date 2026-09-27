@@ -14,6 +14,8 @@ import {
   Branch,
   BranchInventory,
   ProductPerformance,
+  StockMovement,
+  MovementType,
   getStockStatus,
   getStockStatusLabel,
   getStockStatusColor
@@ -84,8 +86,8 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   predictionForm: FormGroup;
   searchSubject = new Subject<string>();
 
-  // History data (mock)
-  historyData: any[] = [];
+  // Real monthly sales history, built from actual SALE movements — see buildHistoryFromSales().
+  historyData: { month: string; score: number; sales: number; confidence: number }[] = [];
 
   // Private
   private destroy$ = new Subject<void>();
@@ -180,17 +182,46 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   }
 
   loadPrediction(): void {
+    if (this.predictionForm.invalid || !this.productId || !this.branchId) {
+      this.predictionForm.markAllAsTouched();
+      this.error = 'Select a product and a branch before generating a prediction.';
+      return;
+    }
+
     this.isPredicting = true;
     this.error = null;
 
-    // In real implementation, this would call an API
-    // For now, we'll generate mock prediction
-    setTimeout(() => {
-      this.prediction = this.generateMockPrediction();
-      this.generateHistoryData();
-      this.isPredicting = false;
-      this.isLoading = false;
-    }, 800);
+    // Built entirely from real backend data — product performance (sales/turnover/trend),
+    // this branch's current stock, and this product/branch's real SALE movement history.
+    // There is no prediction-model API in this app, so "score"/"likelihood" is a transparent,
+    // deterministic formula over real numbers, not a black-box ML output — and there is no
+    // real source at all for things like "competitor presence" or "marketing activity", so
+    // those factors are gone rather than faked with Math.random().
+    forkJoin({
+      performance: this.inventoryService.getProductPerformance(this.productId),
+      branchInventory: this.inventoryService.getBranchInventory(this.branchId),
+      salesHistory: this.inventoryService.getMovements({
+        productId: this.productId,
+        branchId: this.branchId,
+        type: MovementType.SALE,
+        limit: 1000
+      })
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: ({ performance, branchInventory, salesHistory }) => {
+        const branchStock = branchInventory.find(i => i.productId === this.productId);
+        const sales = salesHistory.data;
+        this.prediction = this.buildPrediction(performance, branchStock, sales);
+        this.historyData = this.buildHistoryFromSales(sales);
+        this.isPredicting = false;
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load sell-likelihood data:', err);
+        this.error = 'Failed to load performance data for this product/branch.';
+        this.isPredicting = false;
+        this.isLoading = false;
+      }
+    });
   }
 
   // ============================================================
@@ -226,104 +257,121 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   // PREDICTION GENERATION (Mock)
   // ============================================================
 
-  private generateMockPrediction(): SellLikelihoodPrediction {
+  private buildPrediction(
+    performance: ProductPerformance,
+    branchStock: BranchInventory | undefined,
+    salesHistory: StockMovement[]
+  ): SellLikelihoodPrediction {
     const product = this.products.find(p => String(p.id) === this.productId);
     const branch = this.branches.find(b => String(b.id) === this.branchId);
 
-    // Generate random factors
-    const factors = [
-      {
-        name: 'Historical Sales',
-        impact: 'POSITIVE' as const,
-        weight: 40,
-        value: `${Math.floor(50 + Math.random() * 150)} units/month`
-      },
-      {
-        name: 'Branch Demographics',
-        impact: Math.random() > 0.5 ? 'POSITIVE' as const : 'NEUTRAL' as const,
-        weight: 20,
-        value: Math.random() > 0.7 ? 'High Income Area' : 'Mixed Demographics'
-      },
-      {
-        name: 'Seasonality',
-        impact: Math.random() > 0.6 ? 'POSITIVE' as const : 'NEUTRAL' as const,
-        weight: 15,
-        value: Math.random() > 0.5 ? 'Peak Season' : 'Normal Season'
-      },
-      {
-        name: 'Price Sensitivity',
-        impact: Math.random() > 0.5 ? 'POSITIVE' as const : 'NEGATIVE' as const,
-        weight: 10,
-        value: Math.random() > 0.6 ? 'Low Sensitivity' : 'High Sensitivity'
-      },
-      {
-        name: 'Competitor Presence',
-        impact: Math.random() > 0.6 ? 'NEGATIVE' as const : 'NEUTRAL' as const,
-        weight: 10,
-        value: Math.random() > 0.6 ? 'Low Competition' : 'Moderate Competition'
-      },
-      {
-        name: 'Marketing Activity',
-        impact: 'POSITIVE' as const,
-        weight: 5,
-        value: 'Active Campaigns'
-      }
-    ];
+    const sellThroughScore = Math.min(Math.max(performance.sellThroughRate || 0, 0), 100);
+    const turnoverScore = Math.min(Math.max((performance.stockTurnover || 0) * 10, 0), 100);
+    const trendAdjustment = performance.trend === 'UP' ? 8 : performance.trend === 'DOWN' ? -8 : 0;
+    const score = Math.round(Math.min(Math.max(sellThroughScore * 0.55 + turnoverScore * 0.45 + trendAdjustment, 0), 100));
 
-    // Calculate score based on factors
-    let score = 0;
-    factors.forEach(f => {
-      const impactMultiplier = f.impact === 'POSITIVE' ? 1 : f.impact === 'NEGATIVE' ? -0.5 : 0;
-      score += (f.weight / 100) * (50 + Math.random() * 50) * (1 + impactMultiplier * 0.3);
-    });
-    score = Math.min(Math.max(Math.round(score), 0), 100);
-
-    // Determine likelihood
     let likelihood: 'HIGH' | 'MEDIUM' | 'LOW';
     if (score >= 70) likelihood = 'HIGH';
     else if (score >= 45) likelihood = 'MEDIUM';
     else likelihood = 'LOW';
 
-    // Generate recommendations
-    const recommendations = [];
+    const stockStatus = branchStock ? getStockStatus(branchStock.quantity, branchStock.reorderPoint, branchStock.safetyStock) : null;
+
+    // Only factors with a genuine backend data source behind them. There is no competitor,
+    // marketing, demographic or seasonality data anywhere in this app to compute the equivalents
+    // of the old mock factors from — faking those would be no more honest than Math.random().
+    const factors: SellLikelihoodPrediction['factors'] = [
+      {
+        name: 'Historical Sales',
+        impact: performance.totalSold > 0 ? 'POSITIVE' : 'NEUTRAL',
+        weight: 40,
+        value: `${performance.totalSold} unit(s) sold`
+      },
+      {
+        name: 'Sales Trend',
+        impact: performance.trend === 'UP' ? 'POSITIVE' : performance.trend === 'DOWN' ? 'NEGATIVE' : 'NEUTRAL',
+        weight: 25,
+        value: performance.trend === 'UP' ? 'Trending up' : performance.trend === 'DOWN' ? 'Trending down' : 'Stable'
+      },
+      {
+        name: 'Stock Turnover',
+        impact: performance.stockTurnover >= 1 ? 'POSITIVE' : 'NEUTRAL',
+        weight: 25,
+        value: `${(performance.stockTurnover || 0).toFixed(1)}x`
+      },
+      {
+        name: 'Current Branch Stock',
+        impact: stockStatus === 'CRITICAL' || stockStatus === 'LOW' ? 'NEGATIVE' : stockStatus === 'OVERSTOCK' ? 'NEUTRAL' : 'POSITIVE',
+        weight: 10,
+        value: branchStock ? `${branchStock.quantity} unit(s) in stock` : 'No stock record at this branch'
+      }
+    ];
+
+    const recommendations: string[] = [];
     if (likelihood === 'HIGH') {
-      recommendations.push('Increase stock levels by 30% for this branch');
-      recommendations.push('Run targeted promotion campaign');
-      recommendations.push('Train staff on premium features');
+      recommendations.push('Increase stock levels for this branch');
+      recommendations.push('Consider a targeted promotion to capitalize on demand');
     } else if (likelihood === 'MEDIUM') {
-      recommendations.push('Monitor sales velocity for 2 weeks');
-      recommendations.push('Test with small marketing campaign');
-      recommendations.push('Consider price adjustment');
+      recommendations.push('Monitor sales velocity before adjusting stock levels');
     } else {
       recommendations.push('Reduce stock allocation to this branch');
-      recommendations.push('Run survey to understand low demand');
-      recommendations.push('Consider product bundling');
+      recommendations.push('Investigate why demand is low before reordering more');
     }
+    if (stockStatus === 'CRITICAL' || stockStatus === 'LOW') {
+      recommendations.push('Current stock is low — check the Restock Suggestions page for this branch');
+    }
+
+    const periodMonths = Math.max(
+      1,
+      Math.round((new Date(performance.period.end).getTime() - new Date(performance.period.start).getTime()) / (30 * 86400000))
+    );
+    const monthlySales = Math.round(performance.totalSold / periodMonths);
 
     return {
       productId: this.productId,
-      productName: product?.name || 'Unknown Product',
-      sku: product?.sku || 'N/A',
+      productName: product?.name || performance.productName || 'Unknown Product',
+      sku: product?.sku || performance.sku || 'N/A',
       branchId: this.branchId,
       branchName: branch?.name || 'Unknown Branch',
-      likelihood: likelihood,
-      score: score,
-      confidence: 70 + Math.random() * 20,
-      factors: factors,
-      recommendations: recommendations,
-      predictedMonthlySales: Math.floor(20 + Math.random() * 150),
-      predictedQuarterlySales: Math.floor(60 + Math.random() * 450),
+      likelihood,
+      score,
+      // Reflects how much real sales history this was computed from, not a statistical model's
+      // margin of error — there is no ML model behind this feature. More recorded SALE movements
+      // for this product/branch means more data the score above was actually derived from.
+      confidence: Math.min(95, Math.max(40, 40 + salesHistory.length * 3)),
+      factors,
+      recommendations,
+      predictedMonthlySales: monthlySales,
+      predictedQuarterlySales: monthlySales * 3,
       lastCalculated: new Date()
     };
   }
 
-  private generateHistoryData(): void {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    this.historyData = months.map((month, i) => ({
-      month: month,
-      score: 40 + Math.random() * 50,
-      sales: Math.floor(10 + Math.random() * 100),
-      confidence: 60 + Math.random() * 30
+  /** Real monthly sales volume for this product/branch over the last 6 months, from actual SALE
+   *  movements — not a re-run of a predictive model (there's no historical stock snapshot to
+   *  recompute sell-through/turnover retroactively, so "score" here is each month's sales
+   *  relative to the busiest month in the window, a real ratio, not a fabricated number). */
+  private buildHistoryFromSales(salesHistory: StockMovement[]): { month: string; score: number; sales: number; confidence: number }[] {
+    const now = new Date();
+    const buckets: { key: string; label: string; sales: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      buckets.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleDateString('en-US', { month: 'short' }), sales: 0 });
+    }
+    salesHistory.forEach(m => {
+      const d = new Date(m.createdAt);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const bucket = buckets.find(b => b.key === key);
+      if (bucket) bucket.sales += (m.quantity || 0);
+    });
+
+    const maxSales = Math.max(...buckets.map(b => b.sales), 1);
+    const confidence = this.prediction?.confidence ?? 50;
+    return buckets.map(b => ({
+      month: b.label,
+      sales: b.sales,
+      score: Math.round((b.sales / maxSales) * 100),
+      confidence
     }));
   }
 

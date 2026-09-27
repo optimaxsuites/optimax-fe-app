@@ -594,7 +594,13 @@ export class ProductBulkImportComponent implements OnInit, OnDestroy {
   }
 
   finishImport(): void {
-    this.completed.emit(this.parsedData.map(row => this.mapRowToProduct(row, this.importForm.value)) as Product[]);
+    // This used to re-derive Partial<Product> objects from EVERY parsed row (including rows that
+    // failed to save) instead of emitting createdProducts — the real, successfully-saved records
+    // already tracked during executeImport(). A parent listening for "products that were actually
+    // created" would have gotten fabricated, ID-less data that included failed rows as if they'd
+    // succeeded. Currently unreachable (this component is only ever routed to directly), but
+    // wrong the moment anyone embeds it as intended.
+    this.completed.emit(this.createdProducts);
     if (!this.completed.observed) {
       this.navigateToProducts();
     }

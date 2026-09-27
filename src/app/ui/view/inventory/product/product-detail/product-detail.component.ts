@@ -145,6 +145,11 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   }
 
   loadBranchInventory(): void {
+    // branchInventory was never reset before repopulating — refresh() (wired to the sidebar and
+    // top-bar refresh buttons) calls loadProductData() -> loadBranchInventory() again on every
+    // click, so each refresh appended a second, third, etc. copy of every branch's row here,
+    // silently doubling/tripling the total-stock/total-value stats and the "Stock by Branch" list.
+    this.branchInventory = [];
     // Get inventory across all branches for this product
     // This would be a specific API call in production
     this.inventoryService.getBranches()

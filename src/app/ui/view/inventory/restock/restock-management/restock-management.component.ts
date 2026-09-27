@@ -291,11 +291,13 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
     this.selectedRequest = request;
     this.approvalAction = action;
     this.approvalNotes = '';
+    this.error = null;
     this.showApprovalModal = true;
   }
 
   closeApprovalModal(): void {
     this.showApprovalModal = false;
+    this.error = null;
     this.selectedRequest = null;
     this.approvalAction = null;
     this.approvalNotes = '';
@@ -303,6 +305,14 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
 
   submitApproval(): void {
     if (!this.selectedRequest || !this.approvalAction) return;
+
+    // The reject textarea is labeled "Rejection Reason (Required)" but nothing actually enforced
+    // that — a reviewer could reject with zero explanation. Movement/vendor rejection flows
+    // elsewhere in this app already require a reason; this one didn't.
+    if (this.approvalAction === 'reject' && !this.approvalNotes.trim()) {
+      this.error = 'Please provide a reason for rejecting this request.';
+      return;
+    }
 
     this.isProcessing = true;
 

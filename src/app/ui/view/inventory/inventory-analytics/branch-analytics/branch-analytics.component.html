@@ -469,27 +469,24 @@
                             </div>
                         </div>
 
-                        <!-- Stock Health Over Time (Mock) -->
+                        <!-- Stock Health Breakdown — real counts computed from current inventory
+                        (getStockStatus over this.inventory, same source as the Overview donut
+                        chart). There's no historical stock-status snapshot stored anywhere, so
+                        unlike the month-by-month chart this used to show, this is the current
+                        breakdown, not a fabricated trend over time. -->
                         <div class="ql-trend-chart">
-                            <h4>Stock Health Trend</h4>
+                            <h4>Stock Health Breakdown</h4>
                             <div class="ql-trend-bars">
-                                <div *ngFor="let month of ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']"
-                                    class="ql-trend-bar-group">
+                                <div *ngFor="let item of stockDistributionData" class="ql-trend-bar-group">
                                     <div class="ql-trend-bar-wrapper">
-                                        <div class="ql-trend-bar ql-trend-bar--healthy"
-                                            [style.height.%]="40 + Math.random() * 40"></div>
-                                        <div class="ql-trend-bar ql-trend-bar--low"
-                                            [style.height.%]="10 + Math.random() * 20"></div>
-                                        <div class="ql-trend-bar ql-trend-bar--critical"
-                                            [style.height.%]="5 + Math.random() * 15"></div>
+                                        <div class="ql-trend-bar" [style.height.%]="getStockHealthBarHeight(item.value)" [style.background]="
+                                                item.name === 'Critical' ? '#DC2626' :
+                                                item.name === 'Low' ? '#F59E0B' :
+                                                item.name === 'Normal' ? '#2EB270' : '#3B82F6'
+                                            "></div>
                                     </div>
-                                    <span class="ql-trend-label">{{ month }}</span>
+                                    <span class="ql-trend-label">{{ item.name }} ({{ item.value }})</span>
                                 </div>
-                            </div>
-                            <div class="ql-trend-legend">
-                                <span><span class="ql-legend-dot" style="background: #2EB270;"></span> Healthy</span>
-                                <span><span class="ql-legend-dot" style="background: #F59E0B;"></span> Low Stock</span>
-                                <span><span class="ql-legend-dot" style="background: #DC2626;"></span> Critical</span>
                             </div>
                         </div>
                     </div>

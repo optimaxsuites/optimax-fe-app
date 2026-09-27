@@ -97,6 +97,10 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
 
   // Private
   private destroy$ = new Subject<void>();
+  // Angular reuses this component instance across branch switches (only :branchId changes, no
+  // destroy/recreate) — a request-token guard so a slower response for a branch the user has
+  // since navigated away from can't overwrite what's now on screen for the current one.
+  private loadRequestId = 0;
 
   // ============================================================
   // CONSTRUCTOR
@@ -146,20 +150,23 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   loadBranchData(): void {
     this.isLoading = true;
     this.error = null;
+    const requestId = ++this.loadRequestId;
 
     // Load branch details
     this.inventoryService.getBranch(this.branchId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (branch) => {
+          if (requestId !== this.loadRequestId) return; // a newer branch switch has since started
           this.branch = branch;
-          this.loadBranchInventory();
-          this.loadBranchSummary();
-          this.loadBranchAlerts();
-          this.loadRecentMovements();
+          this.loadBranchInventory(requestId);
+          this.loadBranchSummary(requestId);
+          this.loadBranchAlerts(requestId);
+          this.loadRecentMovements(requestId);
           this.isLoading = false;
         },
         error: (err) => {
+          if (requestId !== this.loadRequestId) return;
           console.error('Failed to load branch:', err);
           this.error = 'Failed to load branch details. Please try again.';
           this.isLoading = false;
@@ -176,11 +183,12 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadBranchInventory(): void {
+  loadBranchInventory(requestId: number = ++this.loadRequestId): void {
     this.inventoryService.getBranchInventory(this.branchId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (inventory) => {
+          if (requestId !== this.loadRequestId) return;
           this.branchInventory = inventory;
           this.applyInventoryFilters();
           this.calculateStats();
@@ -192,11 +200,12 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadBranchSummary(): void {
+  loadBranchSummary(requestId: number = ++this.loadRequestId): void {
     this.inventoryService.getBranchAnalytics(this.branchId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (summary) => {
+          if (requestId !== this.loadRequestId) return;
           this.branchSummary = summary;
         },
         error: (err) => {
@@ -205,11 +214,12 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadBranchAlerts(): void {
+  loadBranchAlerts(requestId: number = ++this.loadRequestId): void {
     this.inventoryService.getDashboardAlerts()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (alerts) => {
+          if (requestId !== this.loadRequestId) return;
           this.alerts = alerts.filter(a => a.branchId === this.branchId);
         },
         error: (err) => {
@@ -218,11 +228,12 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadRecentMovements(): void {
+  loadRecentMovements(requestId: number = ++this.loadRequestId): void {
     this.inventoryService.getRecentMovements(20)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (movements) => {
+          if (requestId !== this.loadRequestId) return;
           this.recentMovements = movements.filter(m =>
             m.fromLocation.id === this.branchId ||
             m.toLocation.id === this.branchId

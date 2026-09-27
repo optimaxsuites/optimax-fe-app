@@ -407,11 +407,16 @@ APPROVAL MODAL
                 <i class="fas" [class.fa-info-circle]="approvalAction === 'approve'"
                     [class.fa-exclamation-triangle]="approvalAction === 'reject'"></i>
                 <span *ngIf="approvalAction === 'approve'">
-                    This will approve the restock request and move it to the ordered status.
+                    This will approve the restock request.
                 </span>
                 <span *ngIf="approvalAction === 'reject'">
                     This will reject the restock request. The branch will be notified and can re-submit.
                 </span>
+            </div>
+
+            <div class="ql-error-banner" *ngIf="error">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>{{ error }}</span>
             </div>
         </div>
 

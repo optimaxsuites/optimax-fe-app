@@ -7,11 +7,11 @@
             <h3><i class="fas fa-file-alt"></i> Vendor Documents</h3>
             <span class="document-count">{{ totalDocuments }} documents</span>
         </div>
-        <div class="header-actions">
+        <div class="header-actions" *ngIf="canManage">
             <button class="btn-upload" (click)="openFilePicker()" [disabled]="isLoading">
                 <i class="fas fa-upload"></i> Upload Document
             </button>
-            <input #fileInput type="file" (change)="onFileSelected($event)" 
+            <input #fileInput type="file" (change)="onFileSelected($event)"
                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display: none;" />
         </div>
     </div>
@@ -60,7 +60,7 @@
         </div>
         <h4>No Documents Uploaded</h4>
         <p>Upload documents to complete vendor verification and compliance checks.</p>
-        <button class="btn-primary-sm" (click)="openFilePicker()">
+        <button class="btn-primary-sm" *ngIf="canManage" (click)="openFilePicker()">
             <i class="fas fa-upload"></i> Upload First Document
         </button>
         <div class="empty-state-requirements">
@@ -106,10 +106,10 @@
                         <button class="action-btn" (click)="downloadDocument(doc)" title="Download">
                             <i class="fas fa-download"></i>
                         </button>
-                        <button class="action-btn" (click)="openVerifyModal(doc)" title="Review">
+                        <button class="action-btn" *ngIf="canManage" (click)="openVerifyModal(doc)" title="Review">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="action-btn danger" (click)="onDeleteDocument(doc.id)" title="Delete">
+                        <button class="action-btn danger" *ngIf="canManage" (click)="onDeleteDocument(doc.id)" title="Delete">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -148,10 +148,10 @@
                         <button class="action-btn" (click)="downloadDocument(doc)" title="Download">
                             <i class="fas fa-download"></i>
                         </button>
-                        <button class="action-btn" (click)="openVerifyModal(doc)" title="Verify">
+                        <button class="action-btn" *ngIf="canManage" (click)="openVerifyModal(doc)" title="Verify">
                             <i class="fas fa-check-circle"></i>
                         </button>
-                        <button class="action-btn danger" (click)="onDeleteDocument(doc.id)" title="Delete">
+                        <button class="action-btn danger" *ngIf="canManage" (click)="onDeleteDocument(doc.id)" title="Delete">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -190,10 +190,10 @@
                         <button class="action-btn" (click)="downloadDocument(doc)" title="Download">
                             <i class="fas fa-download"></i>
                         </button>
-                        <button class="action-btn" (click)="openVerifyModal(doc)" title="Verify">
+                        <button class="action-btn" *ngIf="canManage" (click)="openVerifyModal(doc)" title="Verify">
                             <i class="fas fa-check-circle"></i>
                         </button>
-                        <button class="action-btn danger" (click)="onDeleteDocument(doc.id)" title="Delete">
+                        <button class="action-btn danger" *ngIf="canManage" (click)="onDeleteDocument(doc.id)" title="Delete">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -232,10 +232,10 @@
                         <button class="action-btn" (click)="downloadDocument(doc)" title="Download">
                             <i class="fas fa-download"></i>
                         </button>
-                        <button class="action-btn" (click)="openVerifyModal(doc)" title="Verify">
+                        <button class="action-btn" *ngIf="canManage" (click)="openVerifyModal(doc)" title="Verify">
                             <i class="fas fa-check-circle"></i>
                         </button>
-                        <button class="action-btn danger" (click)="onDeleteDocument(doc.id)" title="Delete">
+                        <button class="action-btn danger" *ngIf="canManage" (click)="onDeleteDocument(doc.id)" title="Delete">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -274,10 +274,10 @@
                         <button class="action-btn" (click)="downloadDocument(doc)" title="Download">
                             <i class="fas fa-download"></i>
                         </button>
-                        <button class="action-btn primary" (click)="openVerifyModal(doc)" title="Verify">
+                        <button class="action-btn primary" *ngIf="canManage" (click)="openVerifyModal(doc)" title="Verify">
                             <i class="fas fa-check-circle"></i>
                         </button>
-                        <button class="action-btn danger" (click)="onDeleteDocument(doc.id)" title="Delete">
+                        <button class="action-btn danger" *ngIf="canManage" (click)="onDeleteDocument(doc.id)" title="Delete">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -514,7 +514,7 @@
                 <button class="btn-primary" (click)="downloadDocument(selectedDocumentForView)">
                     <i class="fas fa-download"></i> Download
                 </button>
-                <button class="btn-success" *ngIf="selectedDocumentForView?.status === DocumentStatus.PENDING_VERIFICATION" 
+                <button class="btn-success" *ngIf="canManage && selectedDocumentForView?.status === DocumentStatus.PENDING_VERIFICATION"
                         (click)="openVerifyModal(selectedDocumentForView); closeDocumentViewer()">
                     <i class="fas fa-check-circle"></i> Verify
                 </button>
