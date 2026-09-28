@@ -14,12 +14,7 @@ import {
   BranchInventory,
   BranchStockSummary,
   StockMovement,
-  StockAlert,
-  getStockStatus,
-  getStockStatusColor,
-  getStockStatusLabel,
-  MovementType,
-  MovementStatus
+  StockAlert
 } from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
@@ -49,35 +44,8 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   // Tabs
   activeTab: 'overview' | 'inventory' | 'movements' | 'alerts' | 'analytics' | 'restock' = 'overview';
 
-  // Inventory filters
-  inventoryFilters = {
-    searchTerm: '',
-    stockStatus: 'ALL',
-    category: 'ALL'
-  };
-
-  // Categories for filter
-  categories: string[] = ['ALL'];
-
-  // Stock movement filters
-  movementFilters = {
-    type: 'ALL',
-    status: 'ALL',
-    dateFrom: '',
-    dateTo: ''
-  };
-
   // UI
   Math = Math;
-
-  // Movement types for filter
-  movementTypes = ['ALL', 'PURCHASE', 'TRANSFER', 'SALE', 'RETURN', 'ADJUSTMENT', 'DAMAGED'];
-  movementStatuses = ['ALL', 'PENDING', 'IN_TRANSIT', 'COMPLETED', 'CANCELLED'];
-  stockStatuses = ['ALL', 'CRITICAL', 'LOW', 'NORMAL', 'OVERSTOCK'];
-
-  // Computed
-  filteredInventory: BranchInventory[] = [];
-  filteredMovements: StockMovement[] = [];
 
   // Statistics
   stats = {
@@ -97,6 +65,10 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
 
   // Private
   private destroy$ = new Subject<void>();
+  // Angular reuses this component instance across branch switches (only :branchId changes, no
+  // destroy/recreate) — a request-token guard so a slower response for a branch the user has
+  // since navigated away from can't overwrite what's now on screen for the current one.
+  private loadRequestId = 0;
 
   // ============================================================
   // CONSTRUCTOR
@@ -146,20 +118,23 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   loadBranchData(): void {
     this.isLoading = true;
     this.error = null;
+    const requestId = ++this.loadRequestId;
 
     // Load branch details
     this.inventoryService.getBranch(this.branchId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (branch) => {
+          if (requestId !== this.loadRequestId) return; // a newer branch switch has since started
           this.branch = branch;
-          this.loadBranchInventory();
-          this.loadBranchSummary();
-          this.loadBranchAlerts();
-          this.loadRecentMovements();
+          this.loadBranchInventory(requestId);
+          this.loadBranchSummary(requestId);
+          this.loadBranchAlerts(requestId);
+          this.loadRecentMovements(requestId);
           this.isLoading = false;
         },
         error: (err) => {
+          if (requestId !== this.loadRequestId) return;
           console.error('Failed to load branch:', err);
           this.error = 'Failed to load branch details. Please try again.';
           this.isLoading = false;
@@ -176,15 +151,14 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadBranchInventory(): void {
+  loadBranchInventory(requestId: number = ++this.loadRequestId): void {
     this.inventoryService.getBranchInventory(this.branchId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (inventory) => {
+          if (requestId !== this.loadRequestId) return;
           this.branchInventory = inventory;
-          this.applyInventoryFilters();
           this.calculateStats();
-          this.updateCategories();
         },
         error: (err) => {
           console.error('Failed to load branch inventory:', err);
@@ -192,11 +166,12 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadBranchSummary(): void {
+  loadBranchSummary(requestId: number = ++this.loadRequestId): void {
     this.inventoryService.getBranchAnalytics(this.branchId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (summary) => {
+          if (requestId !== this.loadRequestId) return;
           this.branchSummary = summary;
         },
         error: (err) => {
@@ -205,11 +180,12 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadBranchAlerts(): void {
+  loadBranchAlerts(requestId: number = ++this.loadRequestId): void {
     this.inventoryService.getDashboardAlerts()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (alerts) => {
+          if (requestId !== this.loadRequestId) return;
           this.alerts = alerts.filter(a => a.branchId === this.branchId);
         },
         error: (err) => {
@@ -218,55 +194,21 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadRecentMovements(): void {
+  loadRecentMovements(requestId: number = ++this.loadRequestId): void {
     this.inventoryService.getRecentMovements(20)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (movements) => {
+          if (requestId !== this.loadRequestId) return;
           this.recentMovements = movements.filter(m =>
             m.fromLocation.id === this.branchId ||
             m.toLocation.id === this.branchId
           );
-          this.applyMovementFilters();
         },
         error: (err) => {
           console.error('Failed to load movements:', err);
         }
       });
-  }
-
-  // ============================================================
-  // FILTERING
-  // ============================================================
-
-  applyInventoryFilters(): void {
-    this.filteredInventory = this.branchInventory.filter(item => {
-      const searchMatch = !this.inventoryFilters.searchTerm ||
-        (item.productName || '').toLowerCase().includes(this.inventoryFilters.searchTerm.toLowerCase()) ||
-        (item.sku || '').toLowerCase().includes(this.inventoryFilters.searchTerm.toLowerCase());
-
-      const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);
-      const statusMatch = this.inventoryFilters.stockStatus === 'ALL' ||
-        status === this.inventoryFilters.stockStatus;
-
-      return searchMatch && statusMatch;
-    });
-  }
-
-  applyMovementFilters(): void {
-    this.filteredMovements = this.recentMovements.filter(m => {
-      const typeMatch = this.movementFilters.type === 'ALL' ||
-        m.movementType === this.movementFilters.type;
-
-      const statusMatch = this.movementFilters.status === 'ALL' ||
-        m.status === this.movementFilters.status;
-
-      return typeMatch && statusMatch;
-    });
-  }
-
-  private updateCategories(): void {
-    this.categories = ['ALL', 'Electronics', 'Building Materials', 'Paints', 'Plumbing'];
   }
 
   // ============================================================
@@ -387,18 +329,6 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   // UTILITY HELPERS
   // ============================================================
 
-  getStockStatus(quantity: number, reorderPoint: number, safetyStock: number): 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK' {
-    return getStockStatus(quantity, reorderPoint, safetyStock);
-  }
-
-  getStockStatusColor(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK'): string {
-    return getStockStatusColor(status);
-  }
-
-  getStockStatusLabel(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK'): string {
-    return getStockStatusLabel(status);
-  }
-
   getBranchStatusColor(status: string): string {
     const map: Record<string, string> = {
       'ACTIVE': '#2EB270',
@@ -426,23 +356,6 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   }
 
   getStatusLabel(status: string): string {
-    return status.replace(/_/g, ' ').toLowerCase()
-      .replace(/\b\w/g, l => l.toUpperCase());
-  }
-
-  getMovementTypeLabel(type: string): string {
-    const map: Record<string, string> = {
-      'PURCHASE': 'Purchase',
-      'TRANSFER': 'Transfer',
-      'SALE': 'Sale',
-      'RETURN': 'Return',
-      'ADJUSTMENT': 'Adjustment',
-      'DAMAGED': 'Damaged'
-    };
-    return map[type] || type;
-  }
-
-  getMovementStatusLabel(status: string): string {
     return status.replace(/_/g, ' ').toLowerCase()
       .replace(/\b\w/g, l => l.toUpperCase());
   }

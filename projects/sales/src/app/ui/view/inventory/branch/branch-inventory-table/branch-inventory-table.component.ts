@@ -5,7 +5,7 @@
 
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
@@ -46,6 +46,7 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
   filteredItems: BranchInventory[] = [];
   isLoading: boolean = true;
   error: string | null = null;
+  editError: string | null = null;
 
   // Filters
   filterForm: FormGroup;
@@ -129,11 +130,14 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
   }
 
   private buildEditForm(): FormGroup {
+    // This had no validators at all — an admin could save a negative stock quantity, or clear a
+    // field entirely and have saveEdit()'s parseInt('') -> NaN sent straight to the backend as
+    // `quantity: null`. This is the actual branch stock/price data the module exists to manage.
     return this.fb.group({
-      quantity: [''],
-      reorderPoint: [''],
-      safetyStock: [''],
-      sellingPrice: ['']
+      quantity: ['', [Validators.required, Validators.min(0)]],
+      reorderPoint: ['', [Validators.required, Validators.min(0)]],
+      safetyStock: ['', [Validators.required, Validators.min(0)]],
+      sellingPrice: ['', [Validators.required, Validators.min(0)]]
     });
   }
 
@@ -252,6 +256,11 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
     this.sortItems();
   }
 
+  // Severity order for the Status column sort — BranchInventory has no `status` field (it's
+  // derived via getStockStatus()), so the generic (a as any)['status'] lookup below was always
+  // undefined for both sides and the sort icon flipped without the rows ever actually reordering.
+  private static readonly STATUS_RANK: Record<string, number> = { CRITICAL: 0, LOW: 1, NORMAL: 2, OVERSTOCK: 3 };
+
   private sortItems(): void {
     this.filteredItems.sort((a, b) => {
       let aVal: any = (a as any)[this.sortField];
@@ -261,6 +270,13 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
       if (this.sortField === 'productName') {
         aVal = a.productName;
         bVal = b.productName;
+      }
+
+      if (this.sortField === 'status') {
+        const aStatus = getStockStatus(a.quantity, a.reorderPoint, a.safetyStock);
+        const bStatus = getStockStatus(b.quantity, b.reorderPoint, b.safetyStock);
+        const comparison = BranchInventoryTableComponent.STATUS_RANK[aStatus] - BranchInventoryTableComponent.STATUS_RANK[bStatus];
+        return this.sortDirection === 'asc' ? comparison : -comparison;
       }
 
       // Handle strings
@@ -367,6 +383,7 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
 
   openEditModal(item: BranchInventory): void {
     this.editingItem = item;
+    this.editError = null;
     this.editForm.patchValue({
       quantity: item.quantity,
       reorderPoint: item.reorderPoint,
@@ -378,30 +395,28 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
 
   closeEditModal(): void {
     this.showEditModal = false;
+    this.editError = null;
     this.editingItem = null;
     this.editForm.reset();
   }
 
   saveEdit(): void {
-    if (!this.editingItem) return;
+    if (!this.editingItem || this.editForm.invalid) {
+      this.editForm.markAllAsTouched();
+      return;
+    }
 
     const formValue = this.editForm.value;
     const item = this.editingItem;
-    const updates = {
-      quantity: formValue.quantity !== undefined ? parseInt(formValue.quantity) : item.quantity,
-      reorderPoint: formValue.reorderPoint !== undefined ? parseInt(formValue.reorderPoint) : item.reorderPoint,
-      safetyStock: formValue.safetyStock !== undefined ? parseInt(formValue.safetyStock) : item.safetyStock,
-      sellingPrice: formValue.sellingPrice !== undefined ? parseFloat(formValue.sellingPrice) : item.sellingPrice
-    };
-
+    this.editError = null;
     this.isSaving = true;
     this.inventoryService.saveBranchInventoryItem({
       branchId: item.branchId,
       productId: item.productId,
-      quantity: updates.quantity,
-      reorderPoint: updates.reorderPoint,
-      safetyStock: updates.safetyStock,
-      sellingPrice: updates.sellingPrice,
+      quantity: parseInt(formValue.quantity, 10),
+      reorderPoint: parseInt(formValue.reorderPoint, 10),
+      safetyStock: parseInt(formValue.safetyStock, 10),
+      sellingPrice: parseFloat(formValue.sellingPrice),
       costPrice: item.costPrice
     }).subscribe({
       next: (saved) => {
@@ -417,6 +432,7 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
       },
       error: (err) => {
         console.error('Failed to update inventory item:', err);
+        this.editError = 'Failed to save changes. Please try again.';
         this.isSaving = false;
       }
     });

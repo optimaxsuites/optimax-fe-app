@@ -140,6 +140,14 @@
             </div>
         </div>
 
+        <!-- Error banner — `error` was already being set (load failures, single/bulk approve-
+        reject failures) but never actually rendered anywhere, so every failure here was silent. -->
+        <div class="ql-error-banner" *ngIf="error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button type="button" class="ql-error-dismiss" (click)="error = null"><i class="fas fa-times"></i></button>
+        </div>
+
         <!-- AI Insight Banner -->
         <div class="ql-ai-banner" *ngIf="!aiDismissed && (stats.pending > 3 || stats.critical > 0)">
             <div class="ql-ai-icon"><i class="fas fa-robot"></i></div>
@@ -368,7 +376,7 @@ APPROVAL MODAL
                 <i class="fas" [class.fa-info-circle]="approvalAction === 'approve'"
                     [class.fa-exclamation-triangle]="approvalAction === 'reject'"></i>
                 <span *ngIf="approvalAction === 'approve'">
-                    This will approve the restock request and move it to the ordered status.
+                    This will approve the restock request.
                 </span>
                 <span *ngIf="approvalAction === 'reject'">
                     This will reject the restock request. The branch will be notified.

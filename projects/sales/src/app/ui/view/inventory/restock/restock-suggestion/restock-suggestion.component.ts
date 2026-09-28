@@ -5,7 +5,8 @@
 
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subject, interval, takeUntil, takeWhile } from 'rxjs';
+import { Subject, forkJoin, of, interval, takeUntil, takeWhile } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   Branch,
@@ -14,7 +15,9 @@ import {
   getStockStatus,
   getStockStatusLabel,
   getStockStatusColor,
+  getSuggestedRestockQuantity,
   RestockUrgency,
+  RestockStatus,
   RestockRequest
 } from '../../../../domain/inventory/inventory.dto';
 
@@ -51,6 +54,7 @@ export class RestockSuggestionComponent implements OnInit, OnDestroy {
   products: Product[] = [];
   branchInventory: BranchInventory[] = [];
   isLoading: boolean = true;
+  isCreatingAll: boolean = false;
   error: string | null = null;
 
   // UI
@@ -144,7 +148,7 @@ export class RestockSuggestionComponent implements OnInit, OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (inventory) => {
-            this.branchInventory = this.injectFakeLowStock(inventory);
+            this.branchInventory = inventory;
             this.generateSuggestions();
             this.isLoading = false;
           },
@@ -173,7 +177,7 @@ export class RestockSuggestionComponent implements OnInit, OnDestroy {
               allInventory.push(...inventory);
               completed++;
               if (completed === branches.length) {
-                this.branchInventory = this.injectFakeLowStock(allInventory);
+                this.branchInventory = allInventory;
                 this.generateSuggestions();
                 this.isLoading = false;
               }
@@ -190,25 +194,6 @@ export class RestockSuggestionComponent implements OnInit, OnDestroy {
           });
       });
     }
-  }
-
-  private injectFakeLowStock(inventory: BranchInventory[]): BranchInventory[] {
-    return inventory.map((item, index) => {
-      // Force the first few items to have low stock for demonstration
-      if (index === 0) {
-        return { ...item, quantity: Math.floor(item.safetyStock * 0.5) }; // CRITICAL
-      }
-      if (index === 1) {
-        return { ...item, quantity: item.reorderPoint - 1 }; // LOW
-      }
-      if (index === 2) {
-        return { ...item, quantity: Math.floor(item.safetyStock * 0.8) }; // CRITICAL
-      }
-      if (index === 3) {
-        return { ...item, quantity: item.reorderPoint - 2 }; // LOW
-      }
-      return item;
-    });
   }
 
   // ============================================================
@@ -278,12 +263,7 @@ export class RestockSuggestionComponent implements OnInit, OnDestroy {
 
   private calculateSuggestedQuantity(item: BranchInventory): number {
     const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);
-    if (status === 'CRITICAL') {
-      // Critical: order enough to reach 3x reorder point
-      return Math.max(item.reorderPoint * 3 - item.quantity, item.reorderPoint);
-    }
-    // Low: order enough to reach 2x reorder point
-    return Math.max(item.reorderPoint * 2 - item.quantity, item.reorderPoint);
+    return getSuggestedRestockQuantity(item.quantity, item.reorderPoint, status);
   }
 
   private calculateStats(): void {
@@ -415,11 +395,54 @@ export class RestockSuggestionComponent implements OnInit, OnDestroy {
   // ============================================================
 
   createAllRequests(): void {
-    if (this.suggestions.length === 0) return;
+    if (this.suggestions.length === 0 || this.isCreatingAll) return;
     if (!confirm(`Create restock requests for all ${this.suggestions.length} suggested items?`)) return;
 
-    this.suggestions.forEach(suggestion => {
-      this.createRestockRequest(suggestion);
+    // This used to call createRestockRequest(suggestion) once per suggestion, but that method
+    // only navigates to the New Request form pre-filled for ONE item — it never actually creates
+    // anything itself. Firing N router.navigate() calls in a tight loop meant Angular cancelled
+    // every navigation but the last, so "Create All" only ever opened the form for the final
+    // suggestion, and the confirm dialog's promise of N requests was never kept. This now calls
+    // the real create endpoint directly for every suggestion and waits for all of them.
+    this.isCreatingAll = true;
+    this.error = null;
+    const currentUserId = sessionStorage.getItem('userid');
+    const currentUserName = sessionStorage.getItem('fullname');
+
+    const requests = this.suggestions.map(s => this.inventoryService.createRestockRequest({
+      branchId: s.branchId,
+      branchName: s.branchName,
+      productId: s.productId,
+      productName: s.productName,
+      sku: s.sku,
+      currentStock: s.currentStock,
+      reorderPoint: s.reorderPoint,
+      safetyStock: s.safetyStock,
+      requestedQuantity: s.suggestedQuantity,
+      urgency: s.urgency,
+      costEstimate: s.costEstimate || 0,
+      status: RestockStatus.PENDING,
+      ...(currentUserId ? { createdBy: currentUserId } : {}),
+      ...(currentUserName ? { createdByName: currentUserName } : {})
+    }).pipe(
+      map(() => ({ ok: true as const })),
+      catchError(err => of({ ok: false as const, productName: s.productName, message: err?.message as string | undefined }))
+    ));
+
+    forkJoin(requests).pipe(takeUntil(this.destroy$)).subscribe(results => {
+      this.isCreatingAll = false;
+      const failed = results.filter((r): r is { ok: false; productName: string; message: string | undefined } => !r.ok);
+
+      if (failed.length === 0) {
+        this.router.navigate(['/admin/sales/commerce/inventory/restock/requests']);
+        return;
+      }
+
+      this.error = failed.length === results.length
+        ? `Failed to create any restock requests. ${failed[0].productName}: ${failed[0].message || 'unknown error'}`
+        : `${results.length - failed.length} of ${results.length} restock requests were created; ${failed.length} failed (e.g. ${failed[0].productName}).`;
+      // Reload so the ones that succeeded drop out of the suggestions list.
+      this.refresh();
     });
   }
 }

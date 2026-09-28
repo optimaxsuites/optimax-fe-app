@@ -40,6 +40,13 @@ export class VendorDocumentsComponent implements OnChanges {
   @Input() uploadProgress: number = 0;
   @Input() uploadServerError: string | null = null;
 
+  /**
+   * Whether the current viewer may upload, delete or verify documents here. A vendor's documents
+   * come from the vendor themself via the Vendor Portal — customers viewing Vendor Management get
+   * a read-only view of them, never a way to add to or change a vendor's own document record.
+   */
+  @Input() canManage: boolean = true;
+
   // ============================================================
   // OUTPUTS
   // ============================================================
@@ -305,11 +312,13 @@ export class VendorDocumentsComponent implements OnChanges {
 
   /** Open file picker */
   openFilePicker(): void {
+    if (!this.canManage) return;
     this.fileInput?.nativeElement?.click();
   }
 
   /** Handle file selection */
   onFileSelected(event: Event): void {
+    if (!this.canManage) return;
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
 
@@ -346,7 +355,7 @@ export class VendorDocumentsComponent implements OnChanges {
 
   /** Submit upload */
   submitUpload(): void {
-    if (!this.selectedFile) return;
+    if (!this.canManage || !this.selectedFile) return;
 
     // A cleared date input leaves issueDate/expiryDate as ''. new Date('') is an Invalid
     // Date, and the service calls .toISOString() on it when building the request — an
@@ -387,6 +396,7 @@ export class VendorDocumentsComponent implements OnChanges {
 
   /** Delete a document */
   onDeleteDocument(documentId: number): void {
+    if (!this.canManage) return;
     if (confirm('Are you sure you want to delete this document?')) {
       this.deleteDocument.emit(String(documentId));
     }
@@ -394,7 +404,7 @@ export class VendorDocumentsComponent implements OnChanges {
 
   /** Open verify modal - FIXED to accept null */
   openVerifyModal(document: VendorDocument | null): void {
-    if (!document) return;
+    if (!this.canManage || !document) return;
     this.selectedDocForVerification = document;
     this.verificationNotes = '';
     this.verifyError = null;
@@ -422,7 +432,7 @@ export class VendorDocumentsComponent implements OnChanges {
 
   /** Submit verification */
   submitVerification(verified: boolean): void {
-    if (!this.selectedDocForVerification) return;
+    if (!this.canManage || !this.selectedDocForVerification) return;
 
     if (!verified && this.verifyNotesRequired) {
       this.verifyError = 'Please explain why this document is being rejected.';

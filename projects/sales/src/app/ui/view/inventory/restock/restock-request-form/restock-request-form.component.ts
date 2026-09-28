@@ -19,6 +19,7 @@ import {
   getStockStatus,
   getStockStatusLabel,
   getStockStatusColor,
+  getSuggestedRestockQuantity,
   getMovementTypeLabel,
   getMovementTypeIcon,
   MovementType,
@@ -372,13 +373,10 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
       safetyStock: inventory.safetyStock
     });
 
-    // Auto-suggest quantity based on stock status
-    let suggestedQty = 0;
-    if (status === 'CRITICAL' || status === 'LOW') {
-      suggestedQty = Math.max(inventory.reorderPoint * 2 - inventory.quantity, inventory.reorderPoint);
-    } else {
-      suggestedQty = inventory.reorderPoint;
-    }
+    // Auto-suggest quantity based on stock status — shared with restock-suggestion.component.ts's
+    // own formula (see getSuggestedRestockQuantity's doc comment) so the same item can't get a
+    // different suggested quantity depending on which screen it's requested from.
+    const suggestedQty = getSuggestedRestockQuantity(inventory.quantity, inventory.reorderPoint, status);
     this.requestForm.patchValue({ requestedQuantity: suggestedQty });
 
     // Auto-set urgency based on stock status
@@ -400,19 +398,20 @@ export class RestockRequestFormComponent implements OnInit, OnDestroy {
         return status === 'CRITICAL' || status === 'LOW';
       })
       .slice(0, 5)
-      .map(item => ({
-        productId: item.productId,
-        productName: item.productName,
-        sku: item.sku,
-        currentStock: item.quantity,
-        reorderPoint: item.reorderPoint,
-        safetyStock: item.safetyStock,
-        suggestedQuantity: Math.max(item.reorderPoint * 2 - item.quantity, item.reorderPoint),
-        urgency: getStockStatus(item.quantity, item.reorderPoint, item.safetyStock) === 'CRITICAL'
-          ? RestockUrgency.CRITICAL
-          : RestockUrgency.HIGH,
-        status: getStockStatus(item.quantity, item.reorderPoint, item.safetyStock)
-      }));
+      .map(item => {
+        const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);
+        return {
+          productId: item.productId,
+          productName: item.productName,
+          sku: item.sku,
+          currentStock: item.quantity,
+          reorderPoint: item.reorderPoint,
+          safetyStock: item.safetyStock,
+          suggestedQuantity: getSuggestedRestockQuantity(item.quantity, item.reorderPoint, status),
+          urgency: status === 'CRITICAL' ? RestockUrgency.CRITICAL : RestockUrgency.HIGH,
+          status
+        };
+      });
   }
 
   applySuggestion(suggestion: any): void {

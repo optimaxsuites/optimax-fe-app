@@ -7,7 +7,8 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angu
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Subject, takeUntil, forkJoin } from 'rxjs';
+import { Subject, takeUntil, forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   StockMovement,
@@ -340,7 +341,7 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
     // Real average, computed from each approved movement's actual createdAt -> approvedAt gap,
     // rather than a hardcoded placeholder that never reflected what was actually happening.
     const approvalTimesHours = approved
-      .filter(m => m.createdAt && m.approvedAt)
+      .filter((m): m is typeof m & { approvedAt: Date } => !!m.createdAt && !!m.approvedAt)
       .map(m => (new Date(m.approvedAt).getTime() - new Date(m.createdAt).getTime()) / (1000 * 60 * 60))
       .filter(hours => isFinite(hours) && hours >= 0);
     const avgApprovalTime = approvalTimesHours.length > 0
@@ -577,38 +578,57 @@ export class MovementApprovalComponent implements OnInit, OnDestroy {
     if (!confirmed) return;
 
     this.isSubmitting = true;
+    this.error = null;
 
-    // updateMovement() is a localStorage-backed mock that resolves synchronously, so this plain
-    // loop completes in one tick — no forkJoin needed.
+    // updateMovement() is a real HTTP call, not a synchronous mock — this used to recompute
+    // stats/re-filter and flip isSubmitting back to false immediately after firing all the
+    // requests, before any of them had resolved. The sidebar counts and the Pending tab kept
+    // showing the pre-approval state right after "Approve All" appeared to finish, with no
+    // signal that anything was still in flight or whether it had actually succeeded.
     const currentUserId = this.getCurrentUserId();
     const currentUserName = this.getCurrentUserName();
-    pending.forEach(m => {
+    const requests = pending.map(m => {
       const approvedAt = new Date();
-      this.inventoryService.updateMovement(m.id, {
+      return this.inventoryService.updateMovement(m.id, {
         status: MovementStatus.IN_TRANSIT,
         approvedBy: currentUserId,
         approvedByName: currentUserName,
         approvedAt
-      }).subscribe({
-        next: (updated) => {
-          const idx = this.movements.findIndex(mv => mv.id === m.id);
-          if (idx > -1) this.movements[idx] = updated;
-          this.approvalHistory = this.inventoryService.recordApprovalAction({
-            movementId: String(m.id),
-            action: 'APPROVE',
-            comments: 'Bulk approved',
-            approvedBy: currentUserId,
-            approvedByName: currentUserName,
-            timestamp: approvedAt
-          });
-        },
-        error: (err) => console.error(`Failed to approve movement ${m.id}:`, err)
-      });
+      }).pipe(
+        map(updated => ({ ok: true as const, id: m.id, updated, approvedAt })),
+        catchError(err => {
+          console.error(`Failed to approve movement ${m.id}:`, err);
+          return of({ ok: false as const, id: m.id });
+        })
+      );
     });
 
-    this.calculateStats();
-    this.filterMovements();
-    this.isSubmitting = false;
+    forkJoin(requests).pipe(takeUntil(this.destroy$)).subscribe(results => {
+      results.forEach(r => {
+        if (!r.ok) return;
+        const idx = this.movements.findIndex(mv => mv.id === r.id);
+        if (idx > -1) this.movements[idx] = r.updated;
+        this.approvalHistory = this.inventoryService.recordApprovalAction({
+          movementId: String(r.id),
+          action: 'APPROVE',
+          comments: 'Bulk approved',
+          approvedBy: currentUserId,
+          approvedByName: currentUserName,
+          timestamp: r.approvedAt
+        });
+      });
+
+      this.calculateStats();
+      this.filterMovements();
+      this.isSubmitting = false;
+
+      const failedCount = results.filter(r => !r.ok).length;
+      if (failedCount > 0) {
+        this.error = failedCount === results.length
+          ? 'Failed to approve any of the selected movements. Please try again.'
+          : `${results.length - failedCount} of ${results.length} movements were approved; ${failedCount} failed. Please retry the remaining ones.`;
+      }
+    });
   }
 
   // ============================================================

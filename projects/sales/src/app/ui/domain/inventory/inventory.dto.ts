@@ -228,13 +228,24 @@ export interface StockMovement {
     expiryDate: Date;
     notes: string;
     scheduledDate?: Date | string;
+    // Collected on every movement-creation form (stock-movement-form, bulk-transfer,
+    // transfer-wizard) but previously dropped by stockMovementToApiPayload() before the request
+    // was ever sent — added here so what the user actually picks is persisted instead of silently
+    // discarded. Note: MovementApprovalComponent's own "priority" badge is a separate, existing
+    // heuristic derived from notes/cost, not this field — left as-is, not in scope here.
+    priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+    unit?: string;
     createdBy: string;
     createdByName: string;
     approvedBy: string;
     approvedByName: string;
     createdAt: Date;
-    approvedAt: Date;
-    completedAt: Date;
+    // Optional: a still-PENDING movement has no real approver/completion date yet.
+    // movement-approval.component.ts computes "average approval time" by filtering on
+    // `m.approvedAt` being truthy, and stock-movement-detail.component.html gates its "Approved
+    // At" field the same way — both only make sense if this can genuinely be absent.
+    approvedAt?: Date;
+    completedAt?: Date;
     updatedAt?: Date;
 }
 
@@ -277,7 +288,10 @@ export interface RestockRequest {
     approvedBy: string;
     approvedByName: string;
     createdAt: Date;
-    approvedAt: Date;
+    // Optional: a request that's still PENDING has no approval date yet. Was declared required
+    // even though restock-approval.component.html's own `request.approvedAt || request.createdAt`
+    // fallback only makes sense if this can genuinely be absent.
+    approvedAt?: Date;
     purchaseOrderId: string;
 }
 
@@ -566,6 +580,55 @@ export function getStockStatusLabel(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVE
         'OVERSTOCK': 'Overstock'
     };
     return map[status];
+}
+
+/**
+ * Single source of truth for the "Affordability Score" shown on the Affordability dashboard and
+ * in Performance Reports. There's no backend endpoint for this — it's a heuristic over real branch
+ * inventory data (average price relative to the network-wide average, product volume, and total
+ * stock value), not a fabricated number. It used to be implemented independently in each of those
+ * two places, with different weights and even a different 0-50 vs 0-100 scale, so the same branch
+ * could get two disagreeing scores depending on which screen computed it. Both now call this.
+ *
+ * @param avgPrice        this branch's average selling price across its inventory
+ * @param globalAvgPrice  the average selling price across ALL branches' inventory
+ * @param totalProducts   total unit quantity in stock at this branch
+ * @param totalValue      total stock value (quantity * price) at this branch
+ */
+export function calculateAffordabilityScore(
+    avgPrice: number,
+    globalAvgPrice: number,
+    totalProducts: number,
+    totalValue: number
+): number {
+    const priceRatio = avgPrice > 0 ? globalAvgPrice / avgPrice : 1;
+    const priceScore = Math.min(Math.max(priceRatio * 50, 0), 50);
+    const volumeScore = Math.min(Math.max((totalProducts / 100) * 25, 0), 25);
+    const valueScore = Math.min(Math.max((totalValue / 1_000_000) * 25, 0), 25);
+    return Math.round(priceScore + volumeScore + valueScore);
+}
+
+export function getAffordabilityLevel(score: number): 'HIGH' | 'MEDIUM' | 'LOW' {
+    if (score >= 60) return 'HIGH';
+    if (score >= 35) return 'MEDIUM';
+    return 'LOW';
+}
+
+/**
+ * Suggested restock quantity for an item at a given stock status. Single source of truth for
+ * restock-suggestion.component.ts and restock-request-form.component.ts, which used to compute
+ * this independently — the request form always targeted 2x reorder point regardless of urgency,
+ * while the suggestions page targeted 3x for CRITICAL — so the same real CRITICAL item got a
+ * different suggested order quantity depending on which screen the admin used to request it.
+ */
+export function getSuggestedRestockQuantity(quantity: number, reorderPoint: number, status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK'): number {
+    if (status === 'CRITICAL') {
+        return Math.max(reorderPoint * 3 - quantity, reorderPoint);
+    }
+    if (status === 'LOW') {
+        return Math.max(reorderPoint * 2 - quantity, reorderPoint);
+    }
+    return reorderPoint;
 }
 
 /** True while a movement has an admin "Request Changes" note that hasn't been addressed yet —

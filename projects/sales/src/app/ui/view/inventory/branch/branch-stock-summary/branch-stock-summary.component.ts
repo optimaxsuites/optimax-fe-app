@@ -3,7 +3,8 @@
 // IMPORTS
 // ============================================================
 
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnDestroy, OnChanges, SimpleChanges, Input, Output, EventEmitter } from '@angular/core';
+import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import { BranchStockSummary } from '../../../../domain/inventory/inventory.dto';
@@ -17,7 +18,7 @@ import { BranchStockSummary } from '../../../../domain/inventory/inventory.dto';
   templateUrl: './branch-stock-summary.component.html',
   styleUrls: ['./branch-stock-summary.component.scss']
 })
-export class BranchStockSummaryComponent implements OnInit, OnDestroy {
+export class BranchStockSummaryComponent implements OnInit, OnChanges, OnDestroy {
 
   // ============================================================
   // INPUTS / OUTPUTS
@@ -50,7 +51,7 @@ export class BranchStockSummaryComponent implements OnInit, OnDestroy {
   // CONSTRUCTOR
   // ============================================================
 
-  constructor(private inventoryService: InventoryService) { }
+  constructor(private inventoryService: InventoryService, private router: Router) { }
 
   // ============================================================
   // LIFECYCLE HOOKS
@@ -59,6 +60,16 @@ export class BranchStockSummaryComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadSummary();
     this.startAutoRefresh();
+  }
+
+  // Without this, the widget only ever loaded once, on creation — inventory-dashboard.component
+  // uses `[branchId]="selectedBranchId"` on a persistent instance of this component, so switching
+  // branches elsewhere on that page left this showing the previous branch's stock summary for up
+  // to a minute, until the next auto-refresh tick happened to fire.
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['branchId'] && !changes['branchId'].firstChange) {
+      this.loadSummary();
+    }
   }
 
   ngOnDestroy(): void {
@@ -88,7 +99,9 @@ export class BranchStockSummaryComponent implements OnInit, OnDestroy {
           this.summary = summary;
           this.lastUpdated = new Date();
           this.isLoading = false;
-          this.summaryLoaded.emit(summary);
+          // getBranchAnalytics() can genuinely return null (e.g. branch not found) even though
+          // summaryLoaded is typed as EventEmitter<BranchStockSummary> — only emit a real value.
+          if (summary) this.summaryLoaded.emit(summary);
         },
         error: (err) => {
           console.error('Failed to load branch summary:', err);
@@ -214,16 +227,19 @@ export class BranchStockSummaryComponent implements OnInit, OnDestroy {
   // NAVIGATION
   // ============================================================
 
+  // These used to be empty stubs ("This would need to be handled by the parent component") even
+  // though the "View Branch"/"View Inventory" buttons that call them are real, visible buttons
+  // whenever showActions is true (the default, and what inventory-dashboard.component.html uses)
+  // — clicking them did nothing with no indication anything was wrong.
   navigateToBranch(): void {
     if (this.summary) {
-      // Navigate to branch detail
-      // This would need to be handled by the parent component
+      this.router.navigate(['/admin/sales/commerce/inventory/branches', this.summary.branchId]);
     }
   }
 
   navigateToInventory(): void {
     if (this.summary) {
-      // Navigate to branch inventory
+      this.router.navigate(['/admin/sales/commerce/inventory/branches', this.summary.branchId], { queryParams: { tab: 'inventory' } });
     }
   }
 }

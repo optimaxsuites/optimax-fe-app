@@ -287,6 +287,9 @@
                         <label for="edit-quantity">Stock Quantity</label>
                         <input type="number" id="edit-quantity" formControlName="quantity" class="form-control"
                             min="0" />
+                        <span class="field-error" *ngIf="editForm.get('quantity')?.invalid && editForm.get('quantity')?.touched">
+                            Stock quantity is required and cannot be negative.
+                        </span>
                     </div>
 
                     <div class="form-row">
@@ -294,11 +297,17 @@
                             <label for="edit-reorder">Reorder Point</label>
                             <input type="number" id="edit-reorder" formControlName="reorderPoint" class="form-control"
                                 min="0" />
+                            <span class="field-error" *ngIf="editForm.get('reorderPoint')?.invalid && editForm.get('reorderPoint')?.touched">
+                                Required, cannot be negative.
+                            </span>
                         </div>
                         <div class="form-group">
                             <label for="edit-safety">Safety Stock</label>
                             <input type="number" id="edit-safety" formControlName="safetyStock" class="form-control"
                                 min="0" />
+                            <span class="field-error" *ngIf="editForm.get('safetyStock')?.invalid && editForm.get('safetyStock')?.touched">
+                                Required, cannot be negative.
+                            </span>
                         </div>
                     </div>
 
@@ -306,8 +315,14 @@
                         <label for="edit-price">Selling Price (₦)</label>
                         <input type="number" id="edit-price" formControlName="sellingPrice" class="form-control" min="0"
                             step="0.01" />
+                        <span class="field-error" *ngIf="editForm.get('sellingPrice')?.invalid && editForm.get('sellingPrice')?.touched">
+                            Required, cannot be negative.
+                        </span>
                     </div>
                 </form>
+                <div class="edit-error-banner" *ngIf="editError">
+                    <i class="fas fa-exclamation-circle"></i> {{ editError }}
+                </div>
             </div>
 
             <div class="modal-footer">

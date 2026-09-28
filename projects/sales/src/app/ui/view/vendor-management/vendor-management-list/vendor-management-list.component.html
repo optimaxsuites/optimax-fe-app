@@ -142,8 +142,8 @@
                 <div class="ql-filter-group">
                     <select class="ql-filter-select" name="status" (change)="onFilterChange($event)" [value]="filterForm.get('status')?.value || ''">
                         <option value="">All Statuses</option>
-                        <option *ngFor="let status of VendorStatus | keyvalue" [value]="status.value">
-                            {{ getStatusLabel(status.value) }}
+                        <option *ngFor="let status of directoryStatuses" [value]="status">
+                            {{ getStatusLabel(status) }}
                         </option>
                     </select>
                 </div>

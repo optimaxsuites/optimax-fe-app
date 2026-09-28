@@ -9,10 +9,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   Branch,
-  BranchStockSummary,
-  getStockStatus,
-  getStockStatusColor,
-  getStockStatusLabel
+  BranchStockSummary
 } from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
@@ -55,8 +52,7 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
     inactive: 0,
     underConstruction: 0,
     totalProducts: 0,
-    totalStockValue: 0,
-    totalStockUnits: 0
+    totalStockValue: 0
   };
 
   // City options for filter
@@ -290,17 +286,14 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
   updateStatsWithSummaries(): void {
     let totalProducts = 0;
     let totalStockValue = 0;
-    let totalStockUnits = 0;
 
     this.branchSummaries.forEach(summary => {
       totalProducts += summary.totalProducts || 0;
       totalStockValue += summary.totalStockValue || 0;
-      totalStockUnits += summary.totalStockUnits || 0;
     });
 
     this.stats.totalProducts = totalProducts;
     this.stats.totalStockValue = totalStockValue;
-    this.stats.totalStockUnits = totalStockUnits;
   }
 
   // ============================================================
@@ -362,18 +355,6 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
       .replace(/\b\w/g, l => l.toUpperCase());
   }
 
-  getStockStatus(quantity: number, reorderPoint: number, safetyStock: number): 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK' {
-    return getStockStatus(quantity, reorderPoint, safetyStock);
-  }
-
-  getStockStatusColor(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK'): string {
-    return getStockStatusColor(status);
-  }
-
-  getStockStatusLabel(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK'): string {
-    return getStockStatusLabel(status);
-  }
-
   getBranchSummary(branchId: string | number): BranchStockSummary | undefined {
     return this.branchSummaries.find(s => s.branchId === String(branchId));
   }
@@ -388,24 +369,9 @@ export class BranchInventoryComponent implements OnInit, OnDestroy {
     }).format(value);
   }
 
-  formatNumber(value: number): string {
-    if (!value) return '0';
-    if (value >= 1000000) {
-      return (value / 1000000).toFixed(1) + 'M';
-    }
-    if (value >= 1000) {
-      return (value / 1000).toFixed(1) + 'K';
-    }
-    return value.toString();
-  }
-
   getInitials(name: string): string {
     if (!name) return '?';
     return name.charAt(0).toUpperCase();
-  }
-
-  getStatusClass(status: string): string {
-    return status.toLowerCase().replace(/_/g, '-');
   }
 
   getActiveFilterCount(): number {

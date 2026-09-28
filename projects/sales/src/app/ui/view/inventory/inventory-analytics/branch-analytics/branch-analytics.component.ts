@@ -416,6 +416,13 @@ export class BranchAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
     return (value / total) * 100;
   }
 
+  /** Bar height relative to the largest stock-health bucket, for the Trends tab breakdown. */
+  getStockHealthBarHeight(value: number): number {
+    if (!this.stockDistributionData || this.stockDistributionData.length === 0) return 0;
+    const max = Math.max(...this.stockDistributionData.map(d => d.value), 1);
+    return (value / max) * 100;
+  }
+
   getConicGradient(): string {
     if (!this.stockDistributionData || this.stockDistributionData.length === 0) {
       return '#e2e8f0';

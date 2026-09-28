@@ -2,7 +2,8 @@
 import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, forkJoin, of, takeUntil } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   Branch,
@@ -57,7 +58,11 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
   // Wizard
   currentStep: number = 1;
   totalSteps: number = 4;
-  stepTitles = ['Select Source', 'Select Products', 'Select Destination', 'Review & Confirm'];
+  // Step 3's own heading ("Confirm Transfer") already shows this isn't a destination-selection
+  // step — both source and destination are picked together in step 1. This label was stale
+  // relative to what the step actually displays (a review card), confusing for anyone following
+  // the stepper labels literally.
+  stepTitles = ['Select Source', 'Select Products', 'Confirm Details', 'Review & Confirm'];
 
   // Forms
   wizardForm!: FormGroup;
@@ -469,29 +474,30 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
     const sourceBranchName = this.getBranchName(sourceBranchId);
     const destinationBranchName = this.getBranchName(destinationBranchId);
 
-    let firstMovement: StockMovement | null = null;
-    let failedProductName: string | null = null;
-    let failureMessage = '';
+    // Checked up front, before any request is sent, so an insufficient-stock item blocks the
+    // whole batch instead of letting earlier items in the list already be created.
+    for (const item of items) {
+      const quantity = parseInt(item.quantity, 10) || 0;
+      const sourceItem = this.sourceInventory.find(i => i.productId === item.productId);
+      if (!sourceItem || sourceItem.quantity < quantity) {
+        this.isSubmitting = false;
+        this.error = `Insufficient stock for ${item.productName}. Available: ${sourceItem?.quantity || 0}`;
+        return;
+      }
+    }
 
     // Transfers only ever get recorded as PENDING here — stock does not move yet. A transfer
     // must be approved (via the Movement Approvals page, or a manual status update to COMPLETED)
     // before InventoryService actually adjusts branch inventory; see
     // InventoryService.applyTransferStockAdjustment().
     //
-    // NOTE: createMovement() is a localStorage-backed mock that resolves synchronously (via
-    // `of(...)`), so this plain for-loop completes in one tick — no concatMap needed.
-    for (const item of items) {
-      if (failedProductName) break;
-
+    // createMovement() is a real HTTP call, not a synchronous mock — this used to flip
+    // isSubmitting back to false and navigate away right after firing all the requests, before
+    // any of them had actually resolved. That let the button re-enable mid-batch (risking a
+    // duplicate submission) and emitted `completed` with `firstMovement` still null.
+    const requests = items.map(item => {
       const quantity = parseInt(item.quantity, 10) || 0;
-      const sourceItem = this.sourceInventory.find(i => i.productId === item.productId);
-      if (!sourceItem || sourceItem.quantity < quantity) {
-        failedProductName = item.productName;
-        failureMessage = `Insufficient stock for ${item.productName}. Available: ${sourceItem?.quantity || 0}`;
-        break;
-      }
-
-      this.inventoryService.createMovement({
+      return this.inventoryService.createMovement({
         productId: item.productId,
         productName: item.productName,
         sku: item.sku,
@@ -500,46 +506,52 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
         fromLocation: { type: 'BRANCH', id: sourceBranchId, name: sourceBranchName },
         toLocation: { type: 'BRANCH', id: destinationBranchId, name: destinationBranchName },
         notes: formValue.notes || '',
+        priority: formValue.priority,
         // Without this, Movement Approvals' "Requested By" showed "Unknown" for every
         // transfer — createMovement() never defaulted it the way createRestockRequest() does.
         createdBy: sessionStorage.getItem('userid') || undefined,
         createdByName: sessionStorage.getItem('fullname') || undefined
-      }).subscribe({
-        next: (movement) => {
-          if (!firstMovement) {
-            firstMovement = movement;
-          }
-        },
-        error: (err) => {
-          failedProductName = item.productName;
-          failureMessage = err?.message || `Failed to record movement for ${item.productName}`;
+      }).pipe(
+        map(movement => ({ ok: true as const, movement })),
+        catchError(err => of({ ok: false as const, productName: item.productName as string, message: err?.message as string | undefined }))
+      );
+    });
+
+    forkJoin(requests).pipe(takeUntil(this.destroy$)).subscribe(results => {
+      this.isSubmitting = false;
+
+      const created = results.filter((r): r is { ok: true; movement: StockMovement } => r.ok).map(r => r.movement);
+      const failed = results.filter((r): r is { ok: false; productName: string; message: string | undefined } => !r.ok);
+
+      if (failed.length > 0) {
+        // Remove the items that already succeeded, so a resubmit only retries the ones that
+        // actually failed instead of creating duplicate movements for the ones that didn't.
+        for (let i = results.length - 1; i >= 0; i--) {
+          if (results[i].ok) this.items.removeAt(i);
         }
-      });
-    }
+        this.error = failed.length === results.length
+          ? `Failed to create any transfers. ${failed[0].productName}: ${failed[0].message || 'unknown error'}`
+          : `${created.length} of ${results.length} transfers were created; ${failed.length} failed (e.g. ${failed[0].productName}). The successful ones were removed from this form — fix the remaining item(s) and submit again.`;
+        return;
+      }
 
-    this.isSubmitting = false;
+      if (created.length > 0) {
+        this.completed.emit(created[0]);
+      }
 
-    if (failedProductName) {
-      this.error = failureMessage;
-      return;
-    }
-
-    if (firstMovement) {
-      this.completed.emit(firstMovement);
-    }
-
-    // A Branch Manager (this form locked to their branch) goes back to their own dashboard,
-    // where the new transfer shows up as a pending request — not into the admin approval
-    // queue, which they have no reason to see. Everyone else still lands on Approvals.
-    //
-    // Routed to the tab shell itself (not the standalone /branch-manager route) so the
-    // nav-tab bar comes back too — the shell remembers "Branch Manager" was the last tab
-    // selected (that's how they got to this form in the first place) and restores it.
-    if (this.lockedBranchId) {
-      this.router.navigate(['/admin/sales/commerce/inventory']);
-    } else {
-      this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
-    }
+      // A Branch Manager (this form locked to their branch) goes back to their own dashboard,
+      // where the new transfer shows up as a pending request — not into the admin approval
+      // queue, which they have no reason to see. Everyone else still lands on Approvals.
+      //
+      // Routed to the tab shell itself (not the standalone /branch-manager route) so the
+      // nav-tab bar comes back too — the shell remembers "Branch Manager" was the last tab
+      // selected (that's how they got to this form in the first place) and restores it.
+      if (this.lockedBranchId) {
+        this.router.navigate(['/admin/sales/commerce/inventory']);
+      } else {
+        this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
+      }
+    });
   }
 
   // ============================================================

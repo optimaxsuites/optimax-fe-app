@@ -58,15 +58,36 @@ export class StockMovementDetailComponent implements OnInit, OnDestroy {
   MovementType = MovementType;
   MovementStatus = MovementStatus;
 
-  // Status options for update
-  statusOptions = [
+  // All possible statuses. Which ones are actually offered for a given movement is restricted
+  // by statusOptions() below — this used to offer all four unconditionally, so a still-PENDING
+  // movement (never approved via Movement Approvals) could be jumped straight to COMPLETED from
+  // here, which immediately executes the real stock adjustment (applyTransferStockAdjustment),
+  // completely bypassing the Approve/Reject gate enforced everywhere else in the app.
+  private static readonly ALL_STATUS_OPTIONS = [
     { value: MovementStatus.PENDING, label: 'Pending', color: '#F59E0B' },
     { value: MovementStatus.IN_TRANSIT, label: 'In Transit', color: '#3B82F6' },
     { value: MovementStatus.COMPLETED, label: 'Completed', color: '#2EB270' },
     { value: MovementStatus.CANCELLED, label: 'Cancelled', color: '#6B7280' }
   ];
 
-  // Movement timeline (mock data for now)
+  // Mirrors the real workflow enforced in Movement Approvals: PENDING must first be approved
+  // (-> IN_TRANSIT) or rejected (-> CANCELLED); only an already-approved, IN_TRANSIT movement can
+  // be marked COMPLETED. COMPLETED/CANCELLED are terminal.
+  private static readonly STATUS_TRANSITIONS: Record<string, MovementStatus[]> = {
+    [MovementStatus.PENDING]: [MovementStatus.IN_TRANSIT, MovementStatus.CANCELLED],
+    [MovementStatus.IN_TRANSIT]: [MovementStatus.COMPLETED, MovementStatus.CANCELLED],
+    [MovementStatus.COMPLETED]: [],
+    [MovementStatus.CANCELLED]: []
+  };
+
+  get statusOptions() {
+    const allowed = new Set(
+      this.movement ? StockMovementDetailComponent.STATUS_TRANSITIONS[this.movement.status] || [] : []
+    );
+    return StockMovementDetailComponent.ALL_STATUS_OPTIONS.filter(o => allowed.has(o.value));
+  }
+
+  // Movement timeline — built entirely from real movement fields, see generateTimeline().
   timeline: any[] = [];
 
   // Private
@@ -194,13 +215,29 @@ export class StockMovementDetailComponent implements OnInit, OnDestroy {
   updateStatus(): void {
     if (!this.movement || !this.selectedStatus) return;
 
+    // Defensive: statusOptions already filters the modal's choices to valid transitions, but
+    // guard here too in case selectStatus() is ever reachable with a stale/invalid value.
+    const allowed = StockMovementDetailComponent.STATUS_TRANSITIONS[this.movement.status] || [];
+    if (!allowed.includes(this.selectedStatus)) {
+      this.error = `Cannot move a ${this.movement.status} movement directly to ${this.selectedStatus}.`;
+      return;
+    }
+
     this.isUpdating = true;
     const newStatus = this.selectedStatus;
+
+    // The status-update modal's "Note (Optional)" textarea was bound to statusNote but never
+    // actually sent — appended to notes (not overwriting them) so it survives alongside whatever
+    // was already recorded on this movement.
+    const note = this.statusNote.trim();
+    const notes = note
+      ? `${this.movement.notes ? this.movement.notes + '\n' : ''}Status changed to ${newStatus}: ${note}`
+      : this.movement.notes;
 
     // Marking a TRANSFER movement COMPLETED here actually moves the stock — see
     // InventoryService.updateMovement()/applyTransferStockAdjustment() — so completing a
     // transfer works the same way whether it's done from here or from the Approvals page.
-    this.inventoryService.updateMovement(this.movement.id, { status: newStatus })
+    this.inventoryService.updateMovement(this.movement.id, { status: newStatus, notes })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (updated) => {
@@ -343,19 +380,17 @@ export class StockMovementDetailComponent implements OnInit, OnDestroy {
     }).format(value);
   }
 
-  formatNumber(value: number): string {
-    if (!value) return '0';
-    return value.toString();
-  }
-
   getInitials(name: string): string {
     if (!name) return '?';
     return name.charAt(0).toUpperCase();
   }
 
+  // Only a still-PENDING movement can be edited. It used to also allow editing an already-
+  // approved (IN_TRANSIT) movement, with no re-approval step and no re-validation on save — the
+  // quantity/locations of an approved transfer could be silently changed post-approval, so what
+  // eventually gets applied on COMPLETED could differ from what was actually approved.
   canEdit(): boolean {
-    return this.movement?.status !== MovementStatus.COMPLETED &&
-      this.movement?.status !== MovementStatus.CANCELLED;
+    return this.movement?.status === MovementStatus.PENDING;
   }
 
   canDelete(): boolean {

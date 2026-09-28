@@ -21,7 +21,9 @@ import {
   StockMovement,
   getStockStatus,
   getStockStatusLabel,
-  getStockStatusColor
+  getStockStatusColor,
+  calculateAffordabilityScore,
+  getAffordabilityLevel
 } from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
@@ -81,7 +83,12 @@ export interface ReportData {
     totalStockValue: number;
     averageTurnover: number;
     topPerformingProduct: string;
-    topPerformingBranch: string;
+    // Renamed from topPerformingBranch: the underlying calculation (getHighestStockValueBranch)
+    // sums current inventory.quantity * sellingPrice per branch — that's stock value, not any
+    // actual sales/revenue metric. ProductPerformance has no per-branch breakdown (no branchId),
+    // so there's no real per-branch sales figure available here to compute a true "top performer"
+    // from. Renaming honestly rather than mislabeling a stock-value figure as sales performance.
+    highestStockValueBranch: string;
     periodDays: number;
   };
 }
@@ -318,45 +325,29 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
       });
   }
 
+  // There's no backend endpoint for saved report configurations (this is a per-user UI
+  // preference, not inventory data) — genuinely persisted to localStorage instead, the same
+  // pattern this app already uses for other locally-owned state. This used to reseed 3
+  // hardcoded fake reports on every load, and saveReport()/deleteReport() only mutated the
+  // in-memory array, so a real save was silently lost on refresh and the same 3 fakes reappeared.
+  private static readonly SAVED_REPORTS_KEY = 'inventory_saved_reports';
+
   loadSavedReports(): void {
-    // Mock saved reports
-    this.savedReports = [
-      {
-        id: 'report-1',
-        name: 'Q4 Performance Report',
-        type: 'PERFORMANCE',
-        format: 'PDF',
-        dateRange: { start: new Date('2024-10-01'), end: new Date('2024-12-31') },
-        filters: {},
-        includeSections: { summary: true, charts: true, tables: true, recommendations: true, details: false },
-        createdAt: new Date('2025-01-15'),
-        createdBy: 'Admin',
-        lastRun: new Date('2025-01-20')
-      },
-      {
-        id: 'report-2',
-        name: 'Monthly Inventory Report',
-        type: 'INVENTORY',
-        format: 'EXCEL',
-        dateRange: { start: new Date('2025-01-01'), end: new Date('2025-01-31') },
-        filters: {},
-        includeSections: { summary: true, charts: true, tables: true, recommendations: false, details: false },
-        createdAt: new Date('2025-02-01'),
-        createdBy: 'Admin'
-      },
-      {
-        id: 'report-3',
-        name: 'Branch Affordability Analysis',
-        type: 'AFFORDABILITY',
-        format: 'PDF',
-        dateRange: { start: new Date('2025-01-01'), end: new Date('2025-02-28') },
-        filters: {},
-        includeSections: { summary: true, charts: true, tables: true, recommendations: true, details: true },
-        createdAt: new Date('2025-02-15'),
-        createdBy: 'Admin',
-        lastRun: new Date('2025-02-20')
-      }
-    ];
+    try {
+      const raw = JSON.parse(localStorage.getItem(PerformanceReportComponent.SAVED_REPORTS_KEY) || '[]') as ReportConfig[];
+      this.savedReports = raw.map(r => ({
+        ...r,
+        dateRange: { start: new Date(r.dateRange.start), end: new Date(r.dateRange.end) },
+        createdAt: new Date(r.createdAt),
+        lastRun: r.lastRun ? new Date(r.lastRun) : undefined
+      }));
+    } catch {
+      this.savedReports = [];
+    }
+  }
+
+  private persistSavedReports(): void {
+    localStorage.setItem(PerformanceReportComponent.SAVED_REPORTS_KEY, JSON.stringify(this.savedReports));
   }
 
   loadSavedReport(reportId: string): void {
@@ -467,7 +458,7 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
       ? filteredPerformance.sort((a, b) => b.performanceScore - a.performanceScore)[0]
       : null;
 
-    const topBranch = this.getTopPerformingBranch();
+    const topBranch = this.getHighestStockValueBranch();
 
     const summary: ReportSummary = {
       totalRevenue,
@@ -521,7 +512,10 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
         details: formValue.includeDetails
       },
       createdAt: new Date(),
-      createdBy: 'Admin'
+      // Every generated report used to be permanently attributed to a hardcoded 'Admin', same
+      // bug already fixed for restock/movement approvals — 'fullname' is the session key app.ts
+      // sets at login (see RestockApprovalComponent.getCurrentUserName()).
+      createdBy: sessionStorage.getItem('fullname') || 'Unknown User'
     };
 
     return {
@@ -541,7 +535,7 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
         totalStockValue: inventoryValue,
         averageTurnover: avgTurnover,
         topPerformingProduct: topPerformer?.productName || 'N/A',
-        topPerformingBranch: topBranch || 'N/A',
+        highestStockValueBranch: topBranch || 'N/A',
         periodDays
       }
     };
@@ -714,23 +708,23 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
       entry.prices.push(i.sellingPrice);
     });
 
+    // Computed once, from the full real inventory passed in — shared with the Affordability
+    // dashboard's own AffordabilityScore calculation via calculateAffordabilityScore(), so the
+    // two screens can't disagree about the same branch (this used to be a second, independent
+    // formula here that only factored in price and used a different 0-100 scale, so a branch
+    // could get two different affordability scores depending on which screen you checked).
+    const allRealPrices = inventory.map(i => i.sellingPrice).filter(p => p > 0);
+    const globalAvgPrice = allRealPrices.length > 0
+      ? allRealPrices.reduce((a, b) => a + b, 0) / allRealPrices.length
+      : 1;
+
     return Array.from(branchMap.entries()).map(([id, data]) => {
       const avgPrice = data.prices.length > 0
         ? data.prices.reduce((a, b) => a + b, 0) / data.prices.length
         : 0;
 
-      // Calculate affordability score (inverse of average price relative to all branches)
-      const allPrices = inventory.map(i => i.sellingPrice);
-      const globalAvg = allPrices.length > 0
-        ? allPrices.reduce((a, b) => a + b, 0) / allPrices.length
-        : 1;
-
-      const score = globalAvg > 0 ? Math.min(Math.max((globalAvg / avgPrice) * 50, 0), 100) : 50;
-
-      let level: 'HIGH' | 'MEDIUM' | 'LOW';
-      if (score >= 60) level = 'HIGH';
-      else if (score >= 35) level = 'MEDIUM';
-      else level = 'LOW';
+      const score = calculateAffordabilityScore(avgPrice, globalAvgPrice, data.count, data.total);
+      const level = getAffordabilityLevel(score);
 
       return {
         branchId: id,
@@ -744,7 +738,7 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
     });
   }
 
-  private getTopPerformingBranch(): string {
+  private getHighestStockValueBranch(): string {
     const branchMap = new Map<string, { revenue: number; count: number }>();
     this.performance.forEach(p => {
       // Find which branch has the most sales for this product
@@ -807,10 +801,9 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
         details: this.reportForm.get('includeDetails')?.value || false
       },
       createdAt: new Date(),
-      createdBy: 'Admin'
+      createdBy: sessionStorage.getItem('fullname') || 'Current User'
     };
 
-    // In real implementation, save to API
     setTimeout(() => {
       if (!this.isEditing) {
         this.savedReports.push(config);
@@ -820,10 +813,10 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
           this.savedReports[index] = config;
         }
       }
+      this.persistSavedReports();
       this.isSaving = false;
       this.isEditing = false;
       this.reportId = config.id;
-      // Show success message
     }, 500);
   }
 
@@ -1028,6 +1021,7 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
   deleteReport(reportId: string): void {
     if (confirm('Are you sure you want to delete this report?')) {
       this.savedReports = this.savedReports.filter(r => r.id !== reportId);
+      this.persistSavedReports();
       if (this.reportId === reportId) {
         this.reportData = null;
         this.reportId = '';

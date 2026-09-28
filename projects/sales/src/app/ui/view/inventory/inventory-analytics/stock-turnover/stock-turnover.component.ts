@@ -285,15 +285,22 @@ export class StockTurnoverComponent implements OnInit, OnChanges, OnDestroy {
       const totalSold = performance?.totalSold || 0;
       const totalStock = value.total;
 
-      // Calculate turnover rate (how many times stock is replaced)
-      const turnoverRate = totalStock > 0 ? totalSold / totalStock : 0;
+      // Calculate turnover rate (how many times stock is replaced). A product that's completely
+      // sold out (totalStock === 0) but has real sales history is the single most business-
+      // critical case here — the item a restocking manager should prioritize — but the old
+      // `totalStock > 0 ?` guard forced it to 0 ("no turnover"), the same value as a product that
+      // never sold anything at all. Use totalSold itself as the rate in that case: it still ranks
+      // higher for a bigger sell-out, and correctly lands in the HIGH velocity bucket below
+      // instead of being indistinguishable from a dead product.
+      const turnoverRate = totalStock > 0 ? totalSold / totalStock : (totalSold > 0 ? totalSold : 0);
 
       // Calculate days of inventory (how many days current stock will last)
       const dailySales = totalSold / 30; // Approximate monthly sales / 30
       const daysOfInventory = dailySales > 0 ? totalStock / dailySales : 0;
 
-      // Calculate sell-through rate (% of stock sold)
-      const sellThroughRate = totalStock > 0 ? (totalSold / (totalStock + totalSold)) * 100 : 0;
+      // Calculate sell-through rate (% of stock sold). Same fix: a fully sold-out product sold
+      // 100% of whatever stock it had, not 0%.
+      const sellThroughRate = totalStock > 0 ? (totalSold / (totalStock + totalSold)) * 100 : (totalSold > 0 ? 100 : 0);
 
       // Calculate stock-to-sales ratio
       const stockToSalesRatio = totalSold > 0 ? totalStock / totalSold : totalStock;
@@ -304,16 +311,12 @@ export class StockTurnoverComponent implements OnInit, OnChanges, OnDestroy {
       else if (turnoverRate >= 0.5) velocity = 'MEDIUM';
       else velocity = 'LOW';
 
-      // Determine trend
-      let trend: 'UP' | 'DOWN' | 'STABLE';
-      if (performance?.trend) {
-        trend = performance.trend;
-      } else {
-        const random = Math.random();
-        if (random > 0.6) trend = 'UP';
-        else if (random > 0.3) trend = 'DOWN';
-        else trend = 'STABLE';
-      }
+      // Determine trend. There's no real per-product trend data for anything outside the
+      // top-100 performance list this table is built from, and no bulk endpoint to compute one
+      // for a potentially large product list — this used to roll dice for a real-looking UP/DOWN
+      // arrow with no actual data behind it, rendered identically to genuine trend data. Default
+      // to STABLE (a real "no signal" state, not a fabricated direction) instead.
+      const trend: 'UP' | 'DOWN' | 'STABLE' = performance?.trend || 'STABLE';
 
       // Get branch info (use first branch with highest stock)
       const branchEntry = value.branches.sort((a, b) => b.quantity - a.quantity)[0];
@@ -548,7 +551,8 @@ export class StockTurnoverComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   confirmExport(): void {
-    console.log('Exporting turnover report...');
+    // TODO: no real export implementation exists yet (no confirmed file-generation/backend
+    // contract to build against) — this just closes the modal rather than pretending to succeed.
     this.closeExportModal();
   }
 

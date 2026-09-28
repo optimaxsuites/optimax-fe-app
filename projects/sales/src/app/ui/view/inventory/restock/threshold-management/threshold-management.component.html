@@ -130,8 +130,9 @@
                                 min="0.5">
                         </div>
                         <div class="ql-field" style="justify-content: flex-end;">
-                            <button class="ql-btn ql-btn--primary" (click)="applyBulkEdit()">
-                                <i class="fas fa-check"></i> Apply
+                            <button class="ql-btn ql-btn--primary" (click)="applyBulkEdit()" [disabled]="isBulkSaving || bulkForm.invalid">
+                                <i class="fas" [class.fa-spinner]="isBulkSaving" [class.ql-spinning]="isBulkSaving" [class.fa-check]="!isBulkSaving"></i>
+                                {{ isBulkSaving ? 'Applying...' : 'Apply' }}
                             </button>
                         </div>
                     </div>

@@ -118,8 +118,7 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
           
           // Load related data
           this.loadProductPerformance();
-          this.loadBranchInventory();
-          this.loadBranches();
+          this.loadBranchesAndInventory();
           this.loadCategories();
           this.loadSuppliers();
         },
@@ -144,13 +143,20 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadBranchInventory(): void {
-    // Get inventory across all branches for this product
-    // This would be a specific API call in production
+  loadBranchesAndInventory(): void {
+    // branchInventory was never reset before repopulating — refresh() (wired to the sidebar and
+    // top-bar refresh buttons) calls loadProductData() -> loadBranchesAndInventory() again on
+    // every click, so each refresh appended a second, third, etc. copy of every branch's row
+    // here, silently doubling/tripling the total-stock/total-value stats and the "Stock by
+    // Branch" list.
+    this.branchInventory = [];
+    // This used to call getBranches() twice (once for the branch list, once again just to loop
+    // over it for inventory) — one real fetch, reused for both.
     this.inventoryService.getBranches()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (branches) => {
+          this.branches = branches;
           // For each branch, get inventory and filter by product
           branches.forEach(branch => {
             this.inventoryService.getBranchInventory(String(branch.id))
@@ -163,17 +169,6 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
                 error: (err) => console.error('Failed to load branch inventory:', err)
               });
           });
-        },
-        error: (err) => console.error('Failed to load branches:', err)
-      });
-  }
-
-  loadBranches(): void {
-    this.inventoryService.getBranches()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (branches) => {
-          this.branches = branches;
         },
         error: (err) => console.error('Failed to load branches:', err)
       });

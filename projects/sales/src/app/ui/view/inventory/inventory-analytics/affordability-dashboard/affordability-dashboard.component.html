@@ -225,7 +225,7 @@
                                         <span class="ql-tier-label">Affordable</span>
                                         <div class="ql-tier-bar">
                                             <div class="ql-tier-fill"
-                                                [style.width.%]="(selectedBranchData.productsCount.affordable / selectedBranchData.totalProducts) * 100"
+                                                [style.width.%]="(selectedBranchData.productsCount.affordable / (selectedBranchData.totalProducts || 1)) * 100"
                                                 style="background: #2EB270;"></div>
                                         </div>
                                         <span class="ql-tier-count">{{ selectedBranchData.productsCount.affordable
@@ -235,7 +235,7 @@
                                         <span class="ql-tier-label">Moderate</span>
                                         <div class="ql-tier-bar">
                                             <div class="ql-tier-fill"
-                                                [style.width.%]="(selectedBranchData.productsCount.moderate / selectedBranchData.totalProducts) * 100"
+                                                [style.width.%]="(selectedBranchData.productsCount.moderate / (selectedBranchData.totalProducts || 1)) * 100"
                                                 style="background: #F5A623;"></div>
                                         </div>
                                         <span class="ql-tier-count">{{ selectedBranchData.productsCount.moderate
@@ -245,7 +245,7 @@
                                         <span class="ql-tier-label">Premium</span>
                                         <div class="ql-tier-bar">
                                             <div class="ql-tier-fill"
-                                                [style.width.%]="(selectedBranchData.productsCount.premium / selectedBranchData.totalProducts) * 100"
+                                                [style.width.%]="(selectedBranchData.productsCount.premium / (selectedBranchData.totalProducts || 1)) * 100"
                                                 style="background: #DC2626;"></div>
                                         </div>
                                         <span class="ql-tier-count">{{ selectedBranchData.productsCount.premium
@@ -420,7 +420,7 @@
                                         </td>
                                         <td>{{ formatCurrency(data.avgPrice) }}</td>
                                         <td>{{ formatCurrency(data.totalValue) }}</td>
-                                        <td>{{ formatNumber(data.totalValue / (data.avgPrice || 1)) }}</td>
+                                        <td>{{ formatNumber(data.totalProducts) }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -495,7 +495,7 @@
                                         </div>
                                         <div class="ql-tier-breakdown-bar">
                                             <div class="ql-tier-breakdown-fill"
-                                                [style.width.%]="(selectedBranchData.productsCount.affordable / selectedBranchData.totalProducts) * 100"
+                                                [style.width.%]="(selectedBranchData.productsCount.affordable / (selectedBranchData.totalProducts || 1)) * 100"
                                                 style="background: #2EB270;"></div>
                                         </div>
                                     </div>
@@ -507,7 +507,7 @@
                                         </div>
                                         <div class="ql-tier-breakdown-bar">
                                             <div class="ql-tier-breakdown-fill"
-                                                [style.width.%]="(selectedBranchData.productsCount.moderate / selectedBranchData.totalProducts) * 100"
+                                                [style.width.%]="(selectedBranchData.productsCount.moderate / (selectedBranchData.totalProducts || 1)) * 100"
                                                 style="background: #F5A623;"></div>
                                         </div>
                                     </div>
@@ -519,7 +519,7 @@
                                         </div>
                                         <div class="ql-tier-breakdown-bar">
                                             <div class="ql-tier-breakdown-fill"
-                                                [style.width.%]="(selectedBranchData.productsCount.premium / selectedBranchData.totalProducts) * 100"
+                                                [style.width.%]="(selectedBranchData.productsCount.premium / (selectedBranchData.totalProducts || 1)) * 100"
                                                 style="background: #DC2626;"></div>
                                         </div>
                                     </div>

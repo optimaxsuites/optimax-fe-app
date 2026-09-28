@@ -6,7 +6,7 @@
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, pairwise } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import { Branch } from '../../../../domain/inventory/inventory.dto';
 
@@ -44,6 +44,7 @@ export class BranchFormComponent implements OnInit, OnDestroy {
   branchTypes: string[] = [];
   showAddTypeModal: boolean = false;
   newBranchTypeName: string = '';
+  private previousBranchType: string = '';
 
   // Private
   private destroy$ = new Subject<void>();
@@ -74,6 +75,15 @@ export class BranchFormComponent implements OnInit, OnDestroy {
         this.loadBranchData();
       } else {
         this.mode = 'create';
+      }
+    });
+
+    // Remembers whatever real type was selected right before "+ Add Branch Type" was picked, so
+    // canceling that modal can restore it — it used to just leave Branch Type blank, which then
+    // blocked Save (a required field) until the user manually re-picked a type.
+    this.branchForm.get('type')?.valueChanges.pipe(pairwise(), takeUntil(this.destroy$)).subscribe(([prev, curr]) => {
+      if (curr === '__add_branch_type__') {
+        this.previousBranchType = prev;
       }
     });
   }
@@ -283,6 +293,11 @@ export class BranchFormComponent implements OnInit, OnDestroy {
 
   closeAddTypeModal(): void {
     this.showAddTypeModal = false;
+    // Restore whatever type was selected before "+ Add" was picked — otherwise Branch Type (a
+    // required field) is left blank and blocks Save until the user notices and re-picks it.
+    if (!this.branchForm.get('type')?.value) {
+      this.branchForm.get('type')?.setValue(this.previousBranchType);
+    }
   }
 
   saveCustomBranchType(): void {

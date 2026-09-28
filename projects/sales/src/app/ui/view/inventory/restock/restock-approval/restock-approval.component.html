@@ -537,6 +537,10 @@
                             </label>
                         </div>
                     </form>
+                    <div class="ql-error-banner" *ngIf="error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>{{ error }}</span>
+                    </div>
                 </div>
                 <div class="ql-modal-footer">
                     <button type="button" class="ql-btn ql-btn--ghost" (click)="closeApproveModal()">Cancel</button>
@@ -579,6 +583,10 @@
                             </label>
                         </div>
                     </form>
+                    <div class="ql-error-banner" *ngIf="error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>{{ error }}</span>
+                    </div>
                 </div>
                 <div class="ql-modal-footer">
                     <button type="button" class="ql-btn ql-btn--ghost" (click)="closeRejectModal()">Cancel</button>

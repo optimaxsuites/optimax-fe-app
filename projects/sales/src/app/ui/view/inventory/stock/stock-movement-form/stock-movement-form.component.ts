@@ -2,8 +2,8 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, OnChanges, S
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
-import { Subject, Observable, takeUntil } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Subject, Observable, forkJoin, of, takeUntil } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   StockMovement,
@@ -11,6 +11,7 @@ import {
   MovementStatus,
   Branch,
   Product,
+  BranchInventory,
   getMovementTypeLabel as getMovementTypeLabelFn,
   getMovementTypeIcon as getMovementTypeIconFn,
   hasUnresolvedChangeRequest
@@ -49,6 +50,11 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
   isLoading: boolean = true;
   isSaving: boolean = false;
   error: string | null = null;
+
+  // The "from" branch's current stock, loaded only when fromLocationType is BRANCH (a supplier/
+  // warehouse/customer source has no trackable inventory here) — used to stop a quantity from
+  // exceeding what's actually available, the same check bulk-transfer/transfer-wizard already do.
+  sourceInventory: BranchInventory[] = [];
 
   // Forms
   movementForm!: FormGroup;
@@ -289,6 +295,15 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
     this.loadLocationOptions('from', movement.fromLocation.type);
     this.loadLocationOptions('to', movement.toLocation.type);
 
+    if (movement.fromLocation.type === 'BRANCH' && movement.fromLocation.id) {
+      this.inventoryService.getBranchInventory(movement.fromLocation.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (inventory) => (this.sourceInventory = inventory),
+          error: (err) => console.error('Failed to load source branch inventory:', err)
+        });
+    }
+
     // Add items
     this.items.clear();
     const item = this.createItemForm();
@@ -470,6 +485,7 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
     // Clear the now-stale Location ID and load the options for the newly selected type.
     this.movementForm.patchValue({ [target === 'from' ? 'fromLocationId' : 'toLocationId']: '' });
     this.loadLocationOptions(target, value);
+    if (target === 'from') this.sourceInventory = [];
   }
 
   closeAddLocationTypeModal(): void {
@@ -525,7 +541,30 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
       this.addLocationTarget = target;
       this.newLocationName = '';
       this.showAddLocationModal = true;
+      return;
     }
+
+    if (target === 'from') {
+      const fromType = this.movementForm.get('fromLocationType')?.value;
+      if (fromType === 'BRANCH' && value) {
+        this.inventoryService.getBranchInventory(value)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: (inventory) => (this.sourceInventory = inventory),
+            error: (err) => console.error('Failed to load source branch inventory:', err)
+          });
+      } else {
+        this.sourceInventory = [];
+      }
+    }
+  }
+
+  /** Current stock of a product at the selected "from" branch, or null when the source isn't a
+   *  branch (nothing to check against) or its inventory hasn't loaded yet. */
+  getAvailableStock(productId: string): number | null {
+    if (this.movementForm.get('fromLocationType')?.value !== 'BRANCH') return null;
+    const item = this.sourceInventory.find(i => i.productId === productId);
+    return item ? item.quantity : 0;
   }
 
   /** 'BRANCH' locations are added via the dedicated Branch form, not inline here. */
@@ -610,10 +649,32 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
           !!this.movementForm.get('fromLocationId')?.valid &&
           !!this.movementForm.get('toLocationId')?.valid;
       case 2:
-        return this.items.length > 0 && this.items.valid;
+        return this.items.length > 0 && this.items.valid && this.checkStockAvailability();
       default:
         return true;
     }
+  }
+
+  /**
+   * This form had no stock-availability check at all — unlike bulk-transfer/transfer-wizard, it
+   * never fetched the source branch's inventory, so a user could enter a quantity far exceeding
+   * what's actually there with zero client-side pushback. Only applies when the source is a
+   * BRANCH (a supplier/warehouse/customer source has nothing to check here).
+   */
+  private checkStockAvailability(): boolean {
+    if (this.movementForm.get('fromLocationType')?.value !== 'BRANCH') return true;
+
+    for (const itemValue of this.items.value) {
+      const available = this.getAvailableStock(itemValue.productId);
+      if (available === null) continue;
+      const quantity = parseInt(itemValue.quantity, 10) || 0;
+      if (quantity > available) {
+        this.error = `Insufficient stock for ${itemValue.productName || itemValue.sku || 'this product'}. Available: ${available}`;
+        return false;
+      }
+    }
+    this.error = null;
+    return true;
   }
 
   // ============================================================
@@ -626,72 +687,90 @@ export class StockMovementFormComponent implements OnInit, OnDestroy, OnChanges 
       this.error = 'Please fix all validation errors';
       return;
     }
+    if (!this.checkStockAvailability()) {
+      return;
+    }
 
     this.isSaving = true;
     this.error = null;
 
     const formValue = this.movementForm.value;
-    const item = formValue.items[0] || {};
+    const items: any[] = formValue.items && formValue.items.length > 0 ? formValue.items : [{}];
 
-    const data: any = {
-      movementType: formValue.movementType,
-      fromLocation: {
-        type: formValue.fromLocationType,
-        id: formValue.fromLocationId,
-        name: this.getLocationName(formValue.fromLocationType, formValue.fromLocationId)
-      },
-      toLocation: {
-        type: formValue.toLocationType,
-        id: formValue.toLocationId,
-        name: this.getLocationName(formValue.toLocationType, formValue.toLocationId)
-      },
-      productId: item.productId,
-      productName: item.productName,
-      sku: item.sku,
-      quantity: parseInt(item.quantity),
-      notes: formValue.notes || '',
-      scheduledDate: formValue.scheduledDate || null
+    const buildData = (item: any): any => {
+      const data: any = {
+        movementType: formValue.movementType,
+        fromLocation: {
+          type: formValue.fromLocationType,
+          id: formValue.fromLocationId,
+          name: this.getLocationName(formValue.fromLocationType, formValue.fromLocationId)
+        },
+        toLocation: {
+          type: formValue.toLocationType,
+          id: formValue.toLocationId,
+          name: this.getLocationName(formValue.toLocationType, formValue.toLocationId)
+        },
+        productId: item.productId,
+        productName: item.productName,
+        sku: item.sku,
+        quantity: parseInt(item.quantity),
+        unit: item.unit,
+        priority: formValue.priority,
+        notes: formValue.notes || '',
+        scheduledDate: formValue.scheduledDate || null
+      };
+
+      // If admin had asked for changes and it's still outstanding, saving this edit is exactly
+      // that — resolve it so Approve/Reject/Request Changes reappear (see hasUnresolvedChangeRequest()).
+      if (this.mode === 'edit' && hasUnresolvedChangeRequest(this.movement)) {
+        data.notes = (data.notes || '') + '\nChanges made: transfer updated in response to the request';
+      }
+      return data;
     };
 
-    // If admin had asked for changes and it's still outstanding, saving this edit is exactly
-    // that — resolve it so Approve/Reject/Request Changes reappear (see hasUnresolvedChangeRequest()).
-    if (this.mode === 'edit' && hasUnresolvedChangeRequest(this.movement)) {
-      data.notes = (data.notes || '') + '\nChanges made: transfer updated in response to the request';
-    }
+    // This form's "Add Product" step lets a user attach more than one item to a single
+    // movement, but a StockMovement record is always exactly one product — it used to only ever
+    // read items[0] here, so every item after the first was silently dropped on save with no
+    // error. In edit mode the first item updates the existing record (that's what's actually
+    // being edited); any items added beyond it become new movements, mirroring how
+    // BulkTransferComponent/TransferWizardComponent already create one movement per item.
+    const isEdit = this.mode === 'edit' && !!this.movementId;
 
-    if (this.mode === 'edit' && this.movementId) {
-      // Update existing movement
-      this.inventoryService.updateMovement(this.movementId, data)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (result: StockMovement) => {
-            this.isSaving = false;
-            this.saved.emit(result);
-            this.navigateAway();
-          },
-          error: (err: any) => {
-            console.error('Failed to update movement:', err);
-            this.error = 'Failed to update movement. Please try again.';
-            this.isSaving = false;
-          }
-        });
-    } else {
-      // Create new movement
-      this.inventoryService.createMovement(data)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (result: StockMovement) => {
-            this.isSaving = false;
-            this.saved.emit(result);
-            this.navigateAway();
-          },
-          error: (err: any) => {
-            console.error('Failed to create movement:', err);
-            this.error = 'Failed to create movement. Please try again.';
-            this.isSaving = false;
-          }
-        });
-    }
+    const requests = items.map((item, index) => {
+      const data = buildData(item);
+      const call = (isEdit && index === 0)
+        ? this.inventoryService.updateMovement(this.movementId, data)
+        : this.inventoryService.createMovement(data);
+      return call.pipe(
+        map(movement => ({ ok: true as const, movement })),
+        catchError(err => of({ ok: false as const, productName: item.productName as string | undefined, message: err?.message as string | undefined }))
+      );
+    });
+
+    forkJoin(requests).pipe(takeUntil(this.destroy$)).subscribe(results => {
+      this.isSaving = false;
+
+      const succeeded = results.filter((r): r is { ok: true; movement: StockMovement } => r.ok);
+      const failed = results.filter((r): r is { ok: false; productName: string | undefined; message: string | undefined } => !r.ok);
+
+      if (failed.length === 0) {
+        this.saved.emit(succeeded[0].movement);
+        this.navigateAway();
+        return;
+      }
+
+      // Remove items that already saved so a resubmit only retries the ones that actually
+      // failed, instead of re-creating duplicate movements for the ones that already succeeded.
+      // Index 0 is never removed in edit mode — it's the record being edited, not a new item.
+      for (let i = results.length - 1; i >= 0; i--) {
+        if (results[i].ok && !(isEdit && i === 0)) this.items.removeAt(i);
+      }
+
+      this.error = failed.length === results.length
+        ? `Failed to ${isEdit ? 'update' : 'create'} the movement. Please try again.`
+        : `${succeeded.length} of ${results.length} item(s) were saved; ${failed.length} failed (e.g. ${failed[0].productName || 'unknown item'}). Fix the remaining item(s) and submit again.`;
+      console.error(`Failed to save ${failed.length} of ${results.length} movement item(s):`, failed);
+    });
   }
 
   // ============================================================

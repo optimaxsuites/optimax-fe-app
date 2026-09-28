@@ -266,7 +266,7 @@
                                         <span class="ql-velocity-label">High</span>
                                         <div class="ql-velocity-bar-wrapper">
                                             <div class="ql-velocity-bar-fill"
-                                                [style.width.%]="(summary.highVelocityCount / turnoverData.length) * 100"
+                                                [style.width.%]="(summary.highVelocityCount / (turnoverData.length || 1)) * 100"
                                                 style="background: #2EB270;"></div>
                                         </div>
                                         <span class="ql-velocity-count">{{ summary.highVelocityCount }}</span>
@@ -275,7 +275,7 @@
                                         <span class="ql-velocity-label">Medium</span>
                                         <div class="ql-velocity-bar-wrapper">
                                             <div class="ql-velocity-bar-fill"
-                                                [style.width.%]="(summary.mediumVelocityCount / turnoverData.length) * 100"
+                                                [style.width.%]="(summary.mediumVelocityCount / (turnoverData.length || 1)) * 100"
                                                 style="background: #F5A623;"></div>
                                         </div>
                                         <span class="ql-velocity-count">{{ summary.mediumVelocityCount }}</span>
@@ -284,7 +284,7 @@
                                         <span class="ql-velocity-label">Low</span>
                                         <div class="ql-velocity-bar-wrapper">
                                             <div class="ql-velocity-bar-fill"
-                                                [style.width.%]="(summary.lowVelocityCount / turnoverData.length) * 100"
+                                                [style.width.%]="(summary.lowVelocityCount / (turnoverData.length || 1)) * 100"
                                                 style="background: #DC2626;"></div>
                                         </div>
                                         <span class="ql-velocity-count">{{ summary.lowVelocityCount }}</span>

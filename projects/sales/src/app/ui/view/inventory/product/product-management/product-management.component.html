@@ -147,10 +147,11 @@
       <i class="fas fa-check-square"></i>
       <span><strong>{{ selectedProductIds.length }}</strong> product{{ selectedProductIds.length > 1 ? 's' : '' }}
         selected</span>
-      <button type="button" class="ql-btn ql-btn--danger-sm">
-        <i class="fas fa-trash"></i> Delete Selected
+      <button type="button" class="ql-btn ql-btn--danger-sm" (click)="bulkDeleteProducts()" [disabled]="isBulkDeleting">
+        <i class="fas" [class.fa-spinner]="isBulkDeleting" [class.ql-spinning]="isBulkDeleting" [class.fa-trash]="!isBulkDeleting"></i>
+        {{ isBulkDeleting ? 'Deleting...' : 'Delete Selected' }}
       </button>
-      <button type="button" class="ql-btn ql-btn--ghost-sm" (click)="selectedProductIds = []">
+      <button type="button" class="ql-btn ql-btn--ghost-sm" (click)="selectedProductIds = []" [disabled]="isBulkDeleting">
         Clear
       </button>
     </div>

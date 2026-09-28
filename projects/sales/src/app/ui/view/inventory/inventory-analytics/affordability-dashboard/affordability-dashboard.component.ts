@@ -6,16 +6,14 @@
 import { Component, OnInit, OnChanges, OnDestroy, Input, Output, EventEmitter, SimpleChanges } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
-import { FormBuilder, FormGroup } from '@angular/forms';
-import { Subject, takeUntil, forkJoin, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   Product,
   Branch,
   BranchInventory,
-  getStockStatus,
-  getStockStatusLabel,
-  getStockStatusColor
+  calculateAffordabilityScore,
+  getAffordabilityLevel
 } from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
@@ -62,6 +60,7 @@ export interface AffordabilityComparison {
   affordabilityLevel: 'HIGH' | 'MEDIUM' | 'LOW';
   avgPrice: number;
   totalValue: number;
+  totalProducts: number;
 }
 
 // ============================================================
@@ -101,10 +100,6 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
   showExportModal: boolean = false;
   selectedView: 'chart' | 'table' = 'chart';
 
-  // Form
-  filterForm: FormGroup;
-  searchSubject = new Subject<string>();
-
   // Private
   private destroy$ = new Subject<void>();
 
@@ -116,11 +111,8 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
     private inventoryService: InventoryService,
     private router: Router,
     private route: ActivatedRoute,
-    private location: Location,
-    private fb: FormBuilder
-  ) {
-    this.filterForm = this.buildForm();
-  }
+    private location: Location
+  ) { }
 
   // ============================================================
   // LIFECYCLE HOOKS
@@ -150,19 +142,6 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  // ============================================================
-  // FORM BUILDING
-  // ============================================================
-
-  private buildForm(): FormGroup {
-    return this.fb.group({
-      branchFilter: ['all'],
-      priceRange: ['all'],
-      categoryFilter: ['all'],
-      sortBy: ['affordability']
-    });
   }
 
   // ============================================================
@@ -232,6 +211,16 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
       branchMap.get(item.branchId)!.push(item);
     });
 
+    // Computed ONCE, upfront, from the full real inventory — this used to be recomputed inside
+    // the .map() below by reading `this.affordabilityData` (the very array being built), which
+    // was always empty/stale at that point due to closure timing, so every branch's score was
+    // silently based on incomplete price data after the very first load (e.g. any refreshData()
+    // call once the branch list had changed).
+    const allRealPrices = this.branchInventory.map(item => item.sellingPrice).filter(p => p > 0);
+    const globalAvgPrice = allRealPrices.length > 0
+      ? allRealPrices.reduce((a, b) => a + b, 0) / allRealPrices.length
+      : 1;
+
     // Generate affordability score for each branch
     this.affordabilityData = this.branches.map(branch => {
       const inventory = branchMap.get(String(branch.id)) || [];
@@ -246,29 +235,11 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
       const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
       const medianPrice = this.calculateMedian(sortedPrices);
 
-      // Calculate affordability score
-      // Factors: average price relative to all branches, product mix, total value
-      const allPrices = this.affordabilityData.length === 0 ?
-        this.branchInventory.map(item => item.sellingPrice).filter(p => p > 0) :
-        this.affordabilityData.flatMap(d =>
-          this.branchInventory.filter(i => i.branchId === d.branchId).map(i => i.sellingPrice)
-        ).filter(p => p > 0);
-
-      const globalAvgPrice = allPrices.length > 0 ? allPrices.reduce((a, b) => a + b, 0) / allPrices.length : 1;
-      const priceRatio = avgPrice > 0 ? globalAvgPrice / avgPrice : 1;
-
-      // Score components (0-100)
-      const priceScore = Math.min(Math.max((priceRatio) * 50, 0), 50);
-      const volumeScore = Math.min(Math.max((totalProducts / 100) * 25, 0), 25);
-      const valueScore = Math.min(Math.max((totalValue / 1000000) * 25, 0), 25);
-
-      const affordabilityScore = Math.round(priceScore + volumeScore + valueScore);
-
-      // Determine affordability level
-      let affordabilityLevel: 'HIGH' | 'MEDIUM' | 'LOW';
-      if (affordabilityScore >= 60) affordabilityLevel = 'HIGH';
-      else if (affordabilityScore >= 35) affordabilityLevel = 'MEDIUM';
-      else affordabilityLevel = 'LOW';
+      // Shared with performance-report.component.ts's own Affordability Report — see
+      // calculateAffordabilityScore()'s doc comment for why this must not be computed
+      // independently in more than one place.
+      const affordabilityScore = calculateAffordabilityScore(avgPrice, globalAvgPrice, totalProducts, totalValue);
+      const affordabilityLevel = getAffordabilityLevel(affordabilityScore);
 
       // Calculate product distribution by price tiers
       const twentyFifthPercentile = this.calculatePercentile(sortedPrices, 25);
@@ -341,7 +312,8 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
       affordabilityScore: d.affordabilityScore,
       affordabilityLevel: d.affordabilityLevel,
       avgPrice: d.averageProductPrice,
-      totalValue: d.totalStockValue
+      totalValue: d.totalStockValue,
+      totalProducts: d.totalProducts
     }));
   }
 
@@ -475,7 +447,8 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
   }
 
   confirmExport(): void {
-    console.log('Exporting affordability report...');
+    // TODO: no real export implementation exists yet (no confirmed file-generation/backend
+    // contract to build against) — this just closes the modal rather than pretending to succeed.
     this.closeExportModal();
   }
 
@@ -557,25 +530,4 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
     return colors[index % colors.length];
   }
 
-  getScoreBarWidth(score: number): number {
-    return Math.min(Math.max(score, 0), 100);
-  }
-
-  getBranchCount(): number {
-    return this.affordabilityData.length;
-  }
-
-  getAverageScore(): number {
-    if (this.affordabilityData.length === 0) return 0;
-    const sum = this.affordabilityData.reduce((acc, d) => acc + d.affordabilityScore, 0);
-    return Math.round(sum / this.affordabilityData.length);
-  }
-
-  getHighScoreBranches(): number {
-    return this.affordabilityData.filter(d => d.affordabilityLevel === 'HIGH').length;
-  }
-
-  getLowScoreBranches(): number {
-    return this.affordabilityData.filter(d => d.affordabilityLevel === 'LOW').length;
-  }
 }

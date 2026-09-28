@@ -25,19 +25,6 @@ export function futureDateValidator(): ValidatorFn {
   };
 }
 
-export function pastDateValidator(): ValidatorFn {
-  return (control: AbstractControl): { [key: string]: any } | null => {
-    if (!control.value) {
-      return null;
-    }
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const controlDate = new Date(control.value);
-    controlDate.setHours(0, 0, 0, 0);
-    return controlDate > today ? { 'futureDate': true } : null;
-  };
-}
-
 const MOCK_CATEGORIES: Category[] = [
   { id: 1, categoryId: 'cat-1', name: 'Electronics', description: 'Gadgets, appliances, laptops, phones', createdAt: new Date(), updatedAt: new Date() },
   { id: 2, categoryId: 'cat-2', name: 'Furniture', description: 'Chairs, desks, sofas, tables', createdAt: new Date(), updatedAt: new Date() },
@@ -253,12 +240,6 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       taxes: ['VAT 7.5%'],
       supplier: [''],
 
-      // Stock Movement
-      movementDate: [new Date().toISOString().split('T')[0], [pastDateValidator()]],
-      movementQuantity: [1, [Validators.min(1)]],
-      movementPurchasePrice: [0],
-      movementTax: [''],
-
       // Additional
       reference: [''],
       selectedSupplier: [''],
@@ -295,8 +276,16 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
           // matched, so the Category dropdown always came up blank when editing an existing
           // product — and re-saving from there would have wiped the category entirely.
           const categoryName = product.category || '';
-          const unitName = this.measurementUnits.find(u => u.id === product.unitOfMeasure)?.name || 'pcs';
-          const supplierName = this.suppliers.find(s => s.id === (product.supplierIds && product.supplierIds[0]))?.name || '';
+          // MeasurementUnit.id is a number; product.unitOfMeasure is a code string ('EACH'|'BOX'|
+          // 'KG'|...) — comparing them directly never matched, so the Unit dropdown always fell
+          // back to 'pcs' on edit. Mirrors the exact resolution productToApiPayload() already
+          // uses to go the other way (unitOfMeasure -> measurementUnitId) so both directions agree.
+          const wantedUnitCode = product.unitOfMeasure === 'EACH' ? 'PCS' : product.unitOfMeasure;
+          const unitName = this.measurementUnits.find(u => u.code === wantedUnitCode || u.unitId === product.unitOfMeasure)?.name || 'pcs';
+          // Supplier.id is a number; product.supplierIds is a string[] — same type-mismatch bug,
+          // and worse: since supplierName always came back blank, saving without touching the
+          // Supplier field re-resolved supplierIds to [] and wiped the product's real supplier.
+          const supplierName = this.suppliers.find(s => s.id === Number(product.supplierIds?.[0]))?.name || '';
 
           this.productForm.patchValue({
             name: product.name,
@@ -310,7 +299,12 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
             supplier: supplierName,
             selectedSupplier: supplierName,
             isComboProduct: product.isComboProduct || false,
-            weight: product.weight || 0
+            weight: product.weight || 0,
+            // Without this, the Tax(es) dropdown always reset to the default "VAT 7.5%" on edit
+            // regardless of the product's real taxRate — now that onSubmit() actually saves this
+            // field, leaving the load side unfixed would silently overwrite a real tax rate the
+            // moment someone edited and re-saved the product without touching this dropdown.
+            taxes: this.taxLabelForRate(product.taxRate)
           });
           this.images = (product.images || []).filter((img: string) => !img.includes('localhost') && !img.includes('127.0.0.1'));
           this.originalImages = [...this.images];
@@ -388,7 +382,11 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
       supplierIds: foundSupplier ? [String(foundSupplier.id)] : [],
       status: (formData.quantity ?? 0) > 0 ? 'ACTIVE' as any : 'OUT_OF_STOCK' as any,
       isComboProduct: formData.isComboProduct || false,
-      weight: Number(formData.weight) || 0
+      weight: Number(formData.weight) || 0,
+      // The Tax(es) dropdown was captured in the form but never actually included in the saved
+      // product — every product silently saved with whatever taxRate the backend defaults to
+      // (0), regardless of which VAT option was picked.
+      taxRate: this.extractTaxRate(formData.taxes || '')
     };
 
     const action = this.isEditMode
@@ -398,9 +396,20 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
     action.pipe(
       switchMap(savedProduct => this.persistNewImages(savedProduct))
     ).subscribe({
-      next: () => {
+      next: ({ imageUploadFailed }) => {
         this.isSubmitting = false;
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product ${this.isEditMode ? 'updated' : 'created'} successfully!` });
+        // The product record is already saved by this point regardless of imageUploadFailed —
+        // this used to report an image-upload failure as "Failed to save product", even though
+        // the save itself had already succeeded. A user who believed the whole thing failed and
+        // resubmitted would create a duplicate product with the same data.
+        if (imageUploadFailed) {
+          this.messageService.add({
+            severity: 'warn', summary: 'Product saved',
+            detail: `Product ${this.isEditMode ? 'updated' : 'created'}, but one or more images failed to upload. You can add them again from the product's edit page.`
+          });
+        } else {
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product ${this.isEditMode ? 'updated' : 'created'} successfully!` });
+        }
         // After editing, land on the product's details page so the change is visible
         // immediately. replaceUrl swaps this edit form's history entry for the detail page
         // instead of pushing a new one — otherwise Back from there lands back on the (stale,
@@ -422,20 +431,36 @@ export class ProductManagementFormComponent implements OnInit, OnDestroy {
     });
   }
 
-  private persistNewImages(product: Product): Observable<Product> {
+  private persistNewImages(product: Product): Observable<{ product: Product; imageUploadFailed: boolean }> {
     const newImages = this.images.filter(image => !this.originalImages.includes(image));
     if (!newImages.length || product.id == null) {
-      return of(product);
+      return of({ product, imageUploadFailed: false });
     }
 
     return forkJoin(newImages.map((image, index) =>
       this.inventoryService.addProductImage(product.id, image, this.originalImages.length + index)
-    )).pipe(map(() => ({ ...product, images: [...this.images] })));
+    )).pipe(
+      map(() => ({ product: { ...product, images: [...this.images] }, imageUploadFailed: false })),
+      catchError(err => {
+        console.error('Failed to upload one or more product images:', err);
+        return of({ product, imageUploadFailed: true });
+      })
+    );
   }
 
   extractTaxRate(tax: string): number {
     const match = tax.match(/(\d+\.?\d*)%/);
-    return match ? parseFloat(match[1]) : 7.5;
+    // "No Tax" (and anything else with no % in it) has no match — that's genuinely 0%, not the
+    // old fallback of 7.5, which silently taxed a product picked as "No Tax" anyway.
+    return match ? parseFloat(match[1]) : 0;
+  }
+
+  /** Reverses extractTaxRate() to restore the right dropdown option on edit. Falls back to the
+   *  first matching-rate option, or the default if the product has no real taxRate at all. */
+  taxLabelForRate(rate: number | undefined): string {
+    if (rate == null) return this.taxOptions[0];
+    const match = this.taxOptions.find(t => this.extractTaxRate(t) === rate);
+    return match || (rate === 0 ? 'No Tax' : this.taxOptions[0]);
   }
 
   markAllAsTouched(): void {

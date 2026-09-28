@@ -6,7 +6,8 @@
 import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, forkJoin, of, takeUntil } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   Branch,
@@ -138,9 +139,18 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
   // DATA LOADING
   // ============================================================
 
+  // Tracks whether each of the two loadData() requests has actually completed — checking
+  // branches.length > 0 && products.length > 0 used to mean a tenant with genuinely zero
+  // branches or zero products got stuck on the loading spinner forever, since that condition
+  // could never become true no matter how many times either request resolved.
+  private branchesLoaded = false;
+  private productsLoaded = false;
+
   loadData(): void {
     this.isLoading = true;
     this.error = null;
+    this.branchesLoaded = false;
+    this.productsLoaded = false;
 
     // Load branches
     this.inventoryService.getBranches()
@@ -148,6 +158,7 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (branches) => {
           this.branches = branches;
+          this.branchesLoaded = true;
           this.checkLoadingComplete();
         },
         error: (err) => {
@@ -164,6 +175,7 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
         next: (response) => {
           this.products = response.data;
           this.filteredProducts = response.data;
+          this.productsLoaded = true;
           this.checkLoadingComplete();
         },
         error: (err) => {
@@ -175,7 +187,7 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
   }
 
   private checkLoadingComplete(): void {
-    if (this.branches.length > 0 && this.products.length > 0) {
+    if (this.branchesLoaded && this.productsLoaded) {
       this.isLoading = false;
     }
   }
@@ -436,26 +448,28 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
     const sourceBranchName = this.getBranchName(sourceBranchId);
     const destinationBranchName = this.getBranchName(destinationBranchId);
 
-    const created: StockMovement[] = [];
-    let failedProductName: string | null = null;
-    let failureMessage = '';
-
-    // Recorded PENDING — stock doesn't move until the transfer is approved (Movement Approvals
-    // page or a manual status update to COMPLETED); see
-    // InventoryService.applyTransferStockAdjustment(). createMovement() is a localStorage-backed
-    // mock that resolves synchronously, so this plain for-loop completes in one tick.
+    // Checked up front, before any request is sent, so an insufficient-stock item blocks the
+    // whole batch instead of letting earlier items in the list already be created.
     for (const item of items) {
-      if (failedProductName) break;
-
       const quantity = parseInt(item.quantity, 10) || 0;
       const sourceStock = parseInt(item.sourceStock, 10) || 0;
       if (quantity > sourceStock) {
-        failedProductName = item.productName;
-        failureMessage = `Insufficient stock for ${item.productName}. Available: ${sourceStock}`;
-        break;
+        this.isSubmitting = false;
+        this.error = `Insufficient stock for ${item.productName}. Available: ${sourceStock}`;
+        return;
       }
+    }
 
-      this.inventoryService.createMovement({
+    // Recorded PENDING — stock doesn't move until the transfer is approved (Movement Approvals
+    // page or a manual status update to COMPLETED); see
+    // InventoryService.applyTransferStockAdjustment(). createMovement() is a real HTTP call, not
+    // a synchronous mock — this used to flip isSubmitting back to false and navigate away right
+    // after firing all the requests, before any of them had actually resolved. That let the
+    // button re-enable mid-batch (risking a duplicate submission) and reported success/failure
+    // based on state that hadn't been set yet.
+    const requests = items.map(item => {
+      const quantity = parseInt(item.quantity, 10) || 0;
+      return this.inventoryService.createMovement({
         productId: item.productId,
         productName: item.productName,
         sku: item.sku,
@@ -463,25 +477,39 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
         movementType: MovementType.TRANSFER,
         fromLocation: { type: 'BRANCH', id: sourceBranchId, name: sourceBranchName },
         toLocation: { type: 'BRANCH', id: destinationBranchId, name: destinationBranchName },
-        notes: formValue.notes || ''
-      }).subscribe({
-        next: (movement) => created.push(movement),
-        error: (err) => {
-          failedProductName = item.productName;
-          failureMessage = err?.message || `Failed to record movement for ${item.productName}`;
-        }
-      });
-    }
+        notes: formValue.notes || '',
+        priority: formValue.priority
+      }).pipe(
+        map(movement => ({ ok: true as const, movement })),
+        catchError(err => of({ ok: false as const, productName: item.productName as string, message: err?.message as string | undefined }))
+      );
+    });
 
-    this.isSubmitting = false;
+    forkJoin(requests).pipe(takeUntil(this.destroy$)).subscribe(results => {
+      this.isSubmitting = false;
 
-    if (failedProductName) {
-      this.error = failureMessage;
-      return;
-    }
+      const created = results.filter((r): r is { ok: true; movement: StockMovement } => r.ok).map(r => r.movement);
+      const failed = results.filter((r): r is { ok: false; productName: string; message: string | undefined } => !r.ok);
 
-    this.completed.emit(created);
-    this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
+      if (created.length > 0) {
+        this.completed.emit(created);
+      }
+
+      if (failed.length === 0) {
+        this.router.navigate(['/admin/sales/commerce/inventory/movements/approvals']);
+        return;
+      }
+
+      // Remove the items that already succeeded, so a resubmit only retries the ones that
+      // actually failed instead of creating duplicate movements for the ones that didn't.
+      for (let i = results.length - 1; i >= 0; i--) {
+        if (results[i].ok) this.items.removeAt(i);
+      }
+
+      this.error = failed.length === results.length
+        ? `Failed to create any transfers. ${failed[0].productName}: ${failed[0].message || 'unknown error'}`
+        : `${created.length} of ${results.length} transfers were created; ${failed.length} failed (e.g. ${failed[0].productName}). The successful ones were removed from this form — fix the remaining item(s) and submit again.`;
+    });
   }
 
   // ============================================================

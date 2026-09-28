@@ -389,14 +389,15 @@
                 this cancels it. It can't be approved after this.
             </div>
             <div class="ql-field" style="text-align:left; margin-bottom: 16px;">
-                <label class="ql-flabel">Reason (optional)</label>
+                <label class="ql-flabel">Reason <span class="ql-required">*</span></label>
                 <textarea class="ql-confirm-textarea" rows="3" placeholder="Why is this being rejected?"
                     [(ngModel)]="rejectReason" [ngModelOptions]="{standalone: true}"></textarea>
+                <span class="ql-field-error" *ngIf="!rejectReason.trim()">A reason is required to reject.</span>
             </div>
             <div class="ql-confirm-actions">
                 <button type="button" class="ql-btn ql-btn--ghost" [disabled]="isProcessingAction"
                     (click)="closeActionModals()">Cancel</button>
-                <button type="button" class="ql-btn ql-btn--danger" [disabled]="isProcessingAction"
+                <button type="button" class="ql-btn ql-btn--danger" [disabled]="isProcessingAction || !rejectReason.trim()"
                     (click)="confirmRejectMovement()">
                     <i class="fas" [class.fa-spinner]="isProcessingAction" [class.ql-spinning]="isProcessingAction"
                         [class.fa-times]="!isProcessingAction"></i>

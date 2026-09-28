@@ -44,6 +44,7 @@ import {
   SentinelSummaryStats,
   AlertSeverity
 } from '../../domain/vendor-management/vendor-management.dto';
+import { VendorRegistration } from '../../domain/vendor-portal/vendor-registration.dto';
 import { environment } from '../../shared-component/service/environments/environment';
 
 const API_BASE = environment.apiBaseUrl;
@@ -165,6 +166,7 @@ export class VendorService {
     const s3 = raw.step3 ?? {};
     const s4 = raw.step4 ?? {};
     const s5 = raw.step5 ?? {};
+    const s6 = raw.step6 ?? {};
 
     const status = (() => {
       const s = raw.status || raw.vendorStatus;
@@ -251,15 +253,214 @@ export class VendorService {
       updatedAt: parseSafeDate(raw.updatedAt),
       applicationNumber: raw.applicationNumber || raw.application_number || undefined,
       // The backend was originally POSTed the full 6-step registration payload
-      // (see VendorRegistrationService.submit) — preserve it here too if the
-      // GET response still carries it, under either shape.
-      registration: raw.registration || (raw.step1 ? {
-        id: raw.id, applicationNumber: raw.applicationNumber, status: raw.registrationStatus || raw.status,
-        submittedDate: raw.submittedDate, lastModified: raw.updatedAt,
-        step1: raw.step1, step2: raw.step2, step3: raw.step3,
-        step4: raw.step4, step5: raw.step5, step6: raw.step6,
-      } : undefined),
+      // (see VendorRegistrationService.submit) — preserve it here too, field by
+      // field, so the Registration tab still shows everything the vendor
+      // entered even when the GET response flattens the steps onto the vendor
+      // object instead of nesting them under step1..step6/registration (this
+      // previously required an exact raw.step1/raw.registration shape, so any
+      // other response shape silently dropped the entire tab and every field
+      // in it — VAT status, delivery regions, secondary bank, key personnel,
+      // the declaration, etc. — even though the vendor had genuinely submitted it).
+      registration: this.buildRegistration(raw, s1, s2, s3, s4, s5, s6),
     } as Vendor;
+  }
+
+  /**
+   * Reassembles the full 6-step vendor portal registration from whatever
+   * shape the backend returned it in: already-nested (raw.registration or
+   * raw.stepN), or flattened directly onto the vendor object using the same
+   * field names as VendorRegistration. Every field is looked up on the
+   * nested step first, then the flat raw field, so partial/mixed responses
+   * still produce a complete object instead of silently dropping fields.
+   * Returns undefined only when there is no registration data at all, so the
+   * Registration tab correctly stays hidden for vendors never onboarded
+   * through the vendor portal.
+   */
+  private buildRegistration(raw: any, s1: any, s2: any, s3: any, s4: any, s5: any, s6: any): VendorRegistration | undefined {
+    if (raw.registration) return raw.registration;
+
+    const hasSource = !!(
+      raw.step1 || raw.step2 || raw.step3 || raw.step4 || raw.step5 || raw.step6 ||
+      s1.businessName || s2.cacRegistrationNumber || s3.primaryContactName
+    );
+    if (!hasSource) return undefined;
+
+    return {
+      id: raw.id, applicationNumber: raw.applicationNumber, status: raw.registrationStatus || raw.status,
+      submittedDate: raw.submittedDate, lastModified: raw.updatedAt,
+      reviewedBy: raw.reviewedBy, rejectionReason: raw.rejectionReason,
+
+      step1: {
+        businessName: s1.businessName ?? raw.businessName,
+        tradingName: s1.tradingName ?? raw.tradingName,
+        businessType: s1.businessType ?? raw.businessType,
+        businessSize: s1.businessSize ?? raw.businessSize,
+        ownershipType: s1.ownershipType ?? raw.ownershipType,
+        yearEstablished: s1.yearEstablished ?? raw.yearEstablished,
+        numberOfEmployees: s1.numberOfEmployees ?? raw.numberOfEmployees,
+        annualTurnoverRange: s1.annualTurnoverRange ?? raw.annualTurnoverRange,
+        currency: s1.currency ?? raw.currency,
+        businessDescription: s1.businessDescription ?? raw.businessDescription ?? raw.description,
+        missionStatement: s1.missionStatement ?? raw.missionStatement,
+        websiteUrl: s1.websiteUrl ?? raw.websiteUrl ?? raw.website,
+        linkedinUrl: s1.linkedinUrl ?? raw.linkedinUrl,
+        logoFileUrl: s1.logoFileUrl ?? raw.logoFileUrl ?? raw.logo,
+      },
+
+      step2: {
+        cacRegistrationNumber: s2.cacRegistrationNumber ?? raw.cacRegistrationNumber ?? raw.registrationNumber,
+        cacRegistrationDate: s2.cacRegistrationDate ?? raw.cacRegistrationDate,
+        cacCertificateFileUrl: s2.cacCertificateFileUrl ?? raw.cacCertificateFileUrl,
+        tinNumber: s2.tinNumber ?? raw.tinNumber ?? raw.taxId,
+        vatRegistered: s2.vatRegistered ?? raw.vatRegistered ?? false,
+        vatNumber: s2.vatNumber ?? raw.vatNumber,
+        taxClearanceCertFileUrl: s2.taxClearanceCertFileUrl ?? raw.taxClearanceCertFileUrl,
+        taxClearanceExpiryDate: s2.taxClearanceExpiryDate ?? raw.taxClearanceExpiryDate,
+        nafdacNumber: s2.nafdacNumber ?? raw.nafdacNumber,
+        dprLicenceNumber: s2.dprLicenceNumber ?? raw.dprLicenceNumber,
+        sonCertificationNumber: s2.sonCertificationNumber ?? raw.sonCertificationNumber,
+        pencomNumber: s2.pencomNumber ?? raw.pencomNumber,
+        nscNumber: s2.nscNumber ?? raw.nscNumber,
+        otherLicences: s2.otherLicences ?? raw.otherLicences,
+        hasPublicLiabilityInsurance: s2.hasPublicLiabilityInsurance ?? raw.hasPublicLiabilityInsurance ?? false,
+        publicLiabilityInsurer: s2.publicLiabilityInsurer ?? raw.publicLiabilityInsurer,
+        publicLiabilityPolicyNo: s2.publicLiabilityPolicyNo ?? raw.publicLiabilityPolicyNo,
+        publicLiabilityExpiryDate: s2.publicLiabilityExpiryDate ?? raw.publicLiabilityExpiryDate,
+        publicLiabilityFileUrl: s2.publicLiabilityFileUrl ?? raw.publicLiabilityFileUrl,
+        hasProfessionalIndemnity: s2.hasProfessionalIndemnity ?? raw.hasProfessionalIndemnity ?? false,
+        professionalIndemnityInsurer: s2.professionalIndemnityInsurer ?? raw.professionalIndemnityInsurer,
+        professionalIndemnityPolicyNo: s2.professionalIndemnityPolicyNo ?? raw.professionalIndemnityPolicyNo,
+        professionalIndemnityExpiry: s2.professionalIndemnityExpiry ?? raw.professionalIndemnityExpiry,
+        isoStandards: s2.isoStandards ?? raw.isoStandards ?? [],
+        otherCertifications: s2.otherCertifications ?? raw.otherCertifications,
+        hasBeenBlacklisted: s2.hasBeenBlacklisted ?? raw.hasBeenBlacklisted ?? false,
+        blacklistedDetails: s2.blacklistedDetails ?? raw.blacklistedDetails,
+        hasLitigationPending: s2.hasLitigationPending ?? raw.hasLitigationPending ?? false,
+        litigationDetails: s2.litigationDetails ?? raw.litigationDetails,
+        hasCriminalConviction: s2.hasCriminalConviction ?? raw.hasCriminalConviction ?? false,
+        criminalDetails: s2.criminalDetails ?? raw.criminalDetails,
+      },
+
+      step3: {
+        primaryContactName: s3.primaryContactName ?? raw.primaryContactName,
+        primaryContactTitle: s3.primaryContactTitle ?? raw.primaryContactTitle,
+        primaryContactEmail: s3.primaryContactEmail ?? raw.primaryContactEmail ?? raw.email,
+        primaryContactPhone: s3.primaryContactPhone ?? raw.primaryContactPhone ?? raw.phone,
+        primaryContactPhone2: s3.primaryContactPhone2 ?? raw.primaryContactPhone2,
+        hasSecondaryContact: s3.hasSecondaryContact ?? !!raw.secondaryContactName,
+        secondaryContactName: s3.secondaryContactName ?? raw.secondaryContactName,
+        secondaryContactTitle: s3.secondaryContactTitle ?? raw.secondaryContactTitle,
+        secondaryContactEmail: s3.secondaryContactEmail ?? raw.secondaryContactEmail,
+        secondaryContactPhone: s3.secondaryContactPhone ?? raw.secondaryContactPhone,
+        registeredAddressLine1: s3.registeredAddressLine1 ?? raw.registeredAddressLine1 ?? raw.address?.street,
+        registeredAddressLine2: s3.registeredAddressLine2 ?? raw.registeredAddressLine2,
+        registeredCity: s3.registeredCity ?? raw.registeredCity ?? raw.address?.city,
+        registeredState: s3.registeredState ?? raw.registeredState ?? raw.address?.state,
+        registeredPostalCode: s3.registeredPostalCode ?? raw.registeredPostalCode ?? raw.address?.postalCode,
+        registeredCountry: s3.registeredCountry ?? raw.registeredCountry ?? raw.address?.country,
+        operatingAddressSameAsRegistered: s3.operatingAddressSameAsRegistered ?? true,
+        operatingAddressLine1: s3.operatingAddressLine1 ?? raw.operatingAddressLine1,
+        operatingAddressLine2: s3.operatingAddressLine2 ?? raw.operatingAddressLine2,
+        operatingCity: s3.operatingCity ?? raw.operatingCity,
+        operatingState: s3.operatingState ?? raw.operatingState,
+        operatingPostalCode: s3.operatingPostalCode ?? raw.operatingPostalCode,
+        operatingCountry: s3.operatingCountry ?? raw.operatingCountry,
+        hasWarehouse: s3.hasWarehouse ?? !!raw.warehouseAddressLine1,
+        warehouseAddressLine1: s3.warehouseAddressLine1 ?? raw.warehouseAddressLine1,
+        warehouseCity: s3.warehouseCity ?? raw.warehouseCity,
+        warehouseState: s3.warehouseState ?? raw.warehouseState,
+        warehouseCapacity: s3.warehouseCapacity ?? raw.warehouseCapacity,
+        deliveryRegions: s3.deliveryRegions ?? raw.deliveryRegions ?? [],
+        hasOwnDeliveryFleet: s3.hasOwnDeliveryFleet ?? raw.hasOwnDeliveryFleet ?? false,
+        fleetSize: s3.fleetSize ?? raw.fleetSize,
+        deliveryLeadTimeDays: s3.deliveryLeadTimeDays ?? raw.deliveryLeadTimeDays ?? 0,
+        canDeliverNationwide: s3.canDeliverNationwide ?? raw.canDeliverNationwide ?? false,
+        canDeliverInternationally: s3.canDeliverInternationally ?? raw.canDeliverInternationally ?? false,
+      },
+
+      step4: {
+        primaryBankName: s4.primaryBankName ?? raw.primaryBankName ?? raw.bankDetails?.bankName,
+        primaryBankBranch: s4.primaryBankBranch ?? raw.primaryBankBranch ?? raw.bankDetails?.bankBranch,
+        primaryAccountName: s4.primaryAccountName ?? raw.primaryAccountName ?? raw.bankDetails?.accountName,
+        primaryAccountNumber: s4.primaryAccountNumber ?? raw.primaryAccountNumber ?? raw.bankDetails?.accountNumber,
+        primaryAccountType: s4.primaryAccountType ?? raw.primaryAccountType ?? raw.bankDetails?.accountType,
+        primaryCurrency: s4.primaryCurrency ?? raw.primaryCurrency ?? raw.bankDetails?.currency,
+        primarySortCode: s4.primarySortCode ?? raw.primarySortCode ?? raw.bankDetails?.sortCode,
+        primaryIban: s4.primaryIban ?? raw.primaryIban,
+        primarySwiftCode: s4.primarySwiftCode ?? raw.primarySwiftCode ?? raw.bankDetails?.swiftCode,
+        hasSecondaryBankAccount: s4.hasSecondaryBankAccount ?? !!raw.secondaryBankName,
+        secondaryBankName: s4.secondaryBankName ?? raw.secondaryBankName,
+        secondaryAccountName: s4.secondaryAccountName ?? raw.secondaryAccountName,
+        secondaryAccountNumber: s4.secondaryAccountNumber ?? raw.secondaryAccountNumber,
+        secondaryAccountType: s4.secondaryAccountType ?? raw.secondaryAccountType,
+        secondaryCurrency: s4.secondaryCurrency ?? raw.secondaryCurrency,
+        preferredPaymentTerms: s4.preferredPaymentTerms ?? raw.preferredPaymentTerms ?? raw.paymentTerms,
+        acceptsAdvancePayment: s4.acceptsAdvancePayment ?? raw.acceptsAdvancePayment ?? false,
+        advancePaymentPercentage: s4.advancePaymentPercentage ?? raw.advancePaymentPercentage,
+        acceptsLetterOfCredit: s4.acceptsLetterOfCredit ?? raw.acceptsLetterOfCredit ?? false,
+        acceptsMobileMoney: s4.acceptsMobileMoney ?? raw.acceptsMobileMoney ?? false,
+        mobileMoneyCurrency: s4.mobileMoneyCurrency ?? raw.mobileMoneyCurrency,
+        mobileMoneyNumber: s4.mobileMoneyNumber ?? raw.mobileMoneyNumber,
+        creditRating: s4.creditRating ?? raw.creditRating,
+        annualAuditedAccounts: s4.annualAuditedAccounts ?? raw.annualAuditedAccounts ?? false,
+        auditFirmName: s4.auditFirmName ?? raw.auditFirmName,
+        lastAuditYear: s4.lastAuditYear ?? raw.lastAuditYear,
+        bankReference1Name: s4.bankReference1Name ?? raw.bankReference1Name,
+        bankReference1Contact: s4.bankReference1Contact ?? raw.bankReference1Contact,
+        tradeReference1Company: s4.tradeReference1Company ?? raw.tradeReference1Company,
+        tradeReference1Contact: s4.tradeReference1Contact ?? raw.tradeReference1Contact,
+        tradeReference1Email: s4.tradeReference1Email ?? raw.tradeReference1Email,
+        tradeReference2Company: s4.tradeReference2Company ?? raw.tradeReference2Company,
+        tradeReference2Contact: s4.tradeReference2Contact ?? raw.tradeReference2Contact,
+        tradeReference2Email: s4.tradeReference2Email ?? raw.tradeReference2Email,
+      },
+
+      step5: {
+        supplyCategories: s5.supplyCategories ?? raw.supplyCategories ?? raw.categories ?? [],
+        primaryCategory: s5.primaryCategory ?? raw.primaryCategory,
+        categoryDescription: s5.categoryDescription ?? raw.categoryDescription,
+        canHandleEmergencyOrders: s5.canHandleEmergencyOrders ?? raw.canHandleEmergencyOrders ?? false,
+        emergencyLeadTimeHours: s5.emergencyLeadTimeHours ?? raw.emergencyLeadTimeHours,
+        minimumOrderValue: s5.minimumOrderValue ?? raw.minimumOrderValue,
+        maximumOrderValue: s5.maximumOrderValue ?? raw.maximumOrderValue,
+        bulkDiscountAvailable: s5.bulkDiscountAvailable ?? raw.bulkDiscountAvailable ?? false,
+        bulkDiscountDetails: s5.bulkDiscountDetails ?? raw.bulkDiscountDetails,
+        hasQualityManagementSystem: s5.hasQualityManagementSystem ?? raw.hasQualityManagementSystem ?? false,
+        qmsStandard: s5.qmsStandard ?? raw.qmsStandard,
+        hasInspectionFacility: s5.hasInspectionFacility ?? raw.hasInspectionFacility ?? false,
+        testingEquipmentList: s5.testingEquipmentList ?? raw.testingEquipmentList,
+        isManufacturer: s5.isManufacturer ?? raw.isManufacturer ?? false,
+        isDistributor: s5.isDistributor ?? raw.isDistributor ?? false,
+        isServiceProvider: s5.isServiceProvider ?? raw.isServiceProvider ?? false,
+        isImporter: s5.isImporter ?? raw.isImporter ?? false,
+        primarySuppliersCountries: s5.primarySuppliersCountries ?? raw.primarySuppliersCountries,
+        majorClients: s5.majorClients ?? raw.majorClients ?? [],
+        completedProjectsCount: s5.completedProjectsCount ?? raw.completedProjectsCount ?? raw.totalProjects ?? 0,
+        averageProjectValue: s5.averageProjectValue ?? raw.averageProjectValue,
+        largestProjectValue: s5.largestProjectValue ?? raw.largestProjectValue,
+        largestProjectDescription: s5.largestProjectDescription ?? raw.largestProjectDescription,
+        technicalStaffCount: s5.technicalStaffCount ?? raw.technicalStaffCount,
+        keyPersonnelList: s5.keyPersonnelList ?? raw.keyPersonnelList ?? [],
+        industryAssociations: s5.industryAssociations ?? raw.industryAssociations,
+        professionalMemberships: s5.professionalMemberships ?? raw.professionalMemberships,
+        awardsRecognitions: s5.awardsRecognitions ?? raw.awardsRecognitions,
+      },
+
+      step6: {
+        uploadedDocuments: s6.uploadedDocuments ?? raw.uploadedDocuments ?? [],
+        declarantName: s6.declarantName ?? raw.declarantName,
+        declarantTitle: s6.declarantTitle ?? raw.declarantTitle,
+        declarantEmail: s6.declarantEmail ?? raw.declarantEmail,
+        declarantPhone: s6.declarantPhone ?? raw.declarantPhone,
+        declarationDate: s6.declarationDate ?? raw.declarationDate,
+        agreedToTerms: s6.agreedToTerms ?? raw.agreedToTerms ?? false,
+        agreedToPrivacyPolicy: s6.agreedToPrivacyPolicy ?? raw.agreedToPrivacyPolicy ?? false,
+        agreedToCodeOfConduct: s6.agreedToCodeOfConduct ?? raw.agreedToCodeOfConduct ?? false,
+        agreedToAntiCorruption: s6.agreedToAntiCorruption ?? raw.agreedToAntiCorruption ?? false,
+        confirmedAccuracy: s6.confirmedAccuracy ?? raw.confirmedAccuracy ?? false,
+        signatureFileUrl: s6.signatureFileUrl ?? raw.signatureFileUrl,
+      },
+    } as VendorRegistration;
   }
 
   // ============================================================
