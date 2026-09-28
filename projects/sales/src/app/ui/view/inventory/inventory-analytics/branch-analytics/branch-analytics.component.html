@@ -100,14 +100,14 @@
                 </div>
                 <div class="ql-top-bar-right">
                     <div class="ql-date-range-selector">
-                        <button class="ql-range-btn" [class.active]="dateRange === 'week'"
-                            (click)="changeDateRange('week')">Week</button>
+                        <button class="ql-range-btn" [class.active]="dateRange === 'week'" disabled
+                            title="Historical data not available yet">Week</button>
                         <button class="ql-range-btn" [class.active]="dateRange === 'month'"
                             (click)="changeDateRange('month')">Month</button>
-                        <button class="ql-range-btn" [class.active]="dateRange === 'quarter'"
-                            (click)="changeDateRange('quarter')">Quarter</button>
-                        <button class="ql-range-btn" [class.active]="dateRange === 'year'"
-                            (click)="changeDateRange('year')">Year</button>
+                        <button class="ql-range-btn" [class.active]="dateRange === 'quarter'" disabled
+                            title="Historical data not available yet">Quarter</button>
+                        <button class="ql-range-btn" [class.active]="dateRange === 'year'" disabled
+                            title="Historical data not available yet">Year</button>
                     </div>
                     <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()">
                         <i class="fas fa-sync-alt"></i> Refresh
