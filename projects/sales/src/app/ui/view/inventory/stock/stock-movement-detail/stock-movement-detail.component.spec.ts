@@ -1,3 +1,4 @@
+import { of } from 'rxjs';
 import { StockMovementDetailComponent } from './stock-movement-detail.component';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import { StockMovement, MovementStatus } from '../../../../domain/inventory/inventory.dto';
@@ -62,6 +63,46 @@ describe('StockMovementDetailComponent', () => {
 
       expect(inventoryService.updateMovement).not.toHaveBeenCalled();
       expect(component.error).toContain('Cannot move');
+    });
+  });
+
+  describe('updateStatus: the "Note (Optional)" textarea is actually sent', () => {
+    it('appends a typed note to the update payload instead of discarding it', () => {
+      component.movement = movement(MovementStatus.PENDING);
+      component.selectedStatus = MovementStatus.IN_TRANSIT;
+      component.statusNote = 'Approved by warehouse lead';
+      inventoryService.updateMovement.and.returnValue(of({ id: 1 } as any));
+
+      component.updateStatus();
+
+      expect(inventoryService.updateMovement).toHaveBeenCalledWith(1, jasmine.objectContaining({
+        status: MovementStatus.IN_TRANSIT,
+        notes: jasmine.stringContaining('Approved by warehouse lead')
+      }));
+    });
+
+    it('preserves the movement\'s existing notes rather than overwriting them with the new note', () => {
+      component.movement = { id: 1, status: MovementStatus.PENDING, notes: 'Original request notes' } as StockMovement;
+      component.selectedStatus = MovementStatus.IN_TRANSIT;
+      component.statusNote = 'Stock confirmed available';
+      inventoryService.updateMovement.and.returnValue(of({ id: 1 } as any));
+
+      component.updateStatus();
+
+      const payload = inventoryService.updateMovement.calls.mostRecent().args[1] as any;
+      expect(payload.notes).toContain('Original request notes');
+      expect(payload.notes).toContain('Stock confirmed available');
+    });
+
+    it('leaves notes untouched when no note was typed', () => {
+      component.movement = { id: 1, status: MovementStatus.PENDING, notes: 'Original request notes' } as StockMovement;
+      component.selectedStatus = MovementStatus.IN_TRANSIT;
+      component.statusNote = '';
+      inventoryService.updateMovement.and.returnValue(of({ id: 1 } as any));
+
+      component.updateStatus();
+
+      expect(inventoryService.updateMovement).toHaveBeenCalledWith(1, jasmine.objectContaining({ notes: 'Original request notes' }));
     });
   });
 });

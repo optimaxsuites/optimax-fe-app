@@ -68,4 +68,15 @@ describe('RestockRequestListComponent', () => {
       expect(component.error).toBeTruthy();
     });
   });
+
+  describe('clearFilters: no redundant reload', () => {
+    it('does not route the reset through searchSubject, avoiding a second loadRequests() call once the debounce elapses', () => {
+      const nextSpy = spyOn(component.searchSubject, 'next');
+
+      component.clearFilters();
+
+      expect(nextSpy).not.toHaveBeenCalled();
+      expect((component.loadRequests as any).calls.count()).toBe(1);
+    });
+  });
 });

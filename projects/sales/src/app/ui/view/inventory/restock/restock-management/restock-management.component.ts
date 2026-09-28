@@ -5,7 +5,7 @@
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subject, interval, takeUntil, takeWhile } from 'rxjs';
+import { Subject, interval, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   RestockRequest,
@@ -121,8 +121,15 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
   // DATA LOADING
   // ============================================================
 
-  loadDashboardData(): void {
-    this.isLoading = true;
+  /**
+   * `isBackgroundRefresh` is true for the silent 30s auto-refresh tick (see startAutoRefresh()).
+   * That used to behave exactly like the initial/manual load — blanking the whole table behind
+   * the loading spinner and, via applyFilters(), resetting the user back to page 1 — so anyone
+   * actively reading or paging through this table got a full loading flash and lost their place
+   * every 30 seconds. A background refresh now merges in quietly instead.
+   */
+  loadDashboardData(isBackgroundRefresh: boolean = false): void {
+    if (!isBackgroundRefresh) this.isLoading = true;
     this.error = null;
 
     // Load restock requests
@@ -131,7 +138,7 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           this.restockRequests = response.data;
-          this.applyFilters();
+          this.applyFilters(isBackgroundRefresh);
           this.calculateStats();
           this.isLoading = false;
         },
@@ -160,9 +167,8 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
 
   private startAutoRefresh(): void {
     this.autoRefreshSubscription = interval(30000)
-      .pipe(takeWhile(() => true))
       .subscribe(() => {
-        this.loadDashboardData();
+        this.loadDashboardData(true);
       });
   }
 
@@ -170,7 +176,7 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
   // FILTERING
   // ============================================================
 
-  applyFilters(): void {
+  applyFilters(isBackgroundRefresh: boolean = false): void {
     this.filteredRequests = this.restockRequests.filter(request => {
       // Status filter
       const statusMatch = this.filterForm.status === 'ALL' ||
@@ -193,7 +199,10 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
       return statusMatch && urgencyMatch && branchMatch && searchMatch;
     });
 
-    this.currentPage = 0;
+    // A background auto-refresh re-applying the same filters shouldn't bump an actively paging
+    // user back to page 1 — only a real filter change (the template's own call sites, all
+    // parameterless) should do that.
+    if (!isBackgroundRefresh) this.currentPage = 0;
   }
 
   // ============================================================
@@ -324,7 +333,6 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
             this.isProcessing = false;
             this.closeApprovalModal();
             this.loadDashboardData();
-            console.log('Restock request approved');
           },
           error: (err) => {
             console.error('Failed to approve request:', err);
@@ -340,7 +348,6 @@ export class RestockManagementComponent implements OnInit, OnDestroy {
             this.isProcessing = false;
             this.closeApprovalModal();
             this.loadDashboardData();
-            console.log('Restock request rejected');
           },
           error: (err) => {
             console.error('Failed to reject request:', err);

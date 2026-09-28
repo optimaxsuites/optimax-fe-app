@@ -228,6 +228,13 @@ export interface StockMovement {
     expiryDate: Date;
     notes: string;
     scheduledDate?: Date | string;
+    // Collected on every movement-creation form (stock-movement-form, bulk-transfer,
+    // transfer-wizard) but previously dropped by stockMovementToApiPayload() before the request
+    // was ever sent — added here so what the user actually picks is persisted instead of silently
+    // discarded. Note: MovementApprovalComponent's own "priority" badge is a separate, existing
+    // heuristic derived from notes/cost, not this field — left as-is, not in scope here.
+    priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+    unit?: string;
     createdBy: string;
     createdByName: string;
     approvedBy: string;

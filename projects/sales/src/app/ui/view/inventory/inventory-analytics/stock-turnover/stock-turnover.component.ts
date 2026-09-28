@@ -551,7 +551,8 @@ export class StockTurnoverComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   confirmExport(): void {
-    console.log('Exporting turnover report...');
+    // TODO: no real export implementation exists yet (no confirmed file-generation/backend
+    // contract to build against) — this just closes the modal rather than pretending to succeed.
     this.closeExportModal();
   }
 

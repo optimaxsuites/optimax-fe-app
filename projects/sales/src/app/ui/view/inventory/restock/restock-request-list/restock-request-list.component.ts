@@ -240,7 +240,9 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
       dateFrom: '',
       dateTo: ''
     });
-    this.searchSubject.next('');
+    // filterForm.reset() above already sets search to '' directly — routing that same reset
+    // through searchSubject.next('') too used to trigger a second, redundant loadRequests() call
+    // ~400ms later once setupSearch()'s debounce elapsed.
     this.currentPage = 0;
     this.loadRequests();
     this.showFilterDrawer = false;
@@ -499,8 +501,8 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
   // ============================================================
 
   exportRequests(): void {
-    // In real implementation, this would call an export API
-    console.log('Exporting restock requests...');
+    // TODO: no real export implementation exists yet (no confirmed file-generation/backend
+    // contract to build against) — this is a no-op rather than pretending to succeed.
   }
 
   // ============================================================

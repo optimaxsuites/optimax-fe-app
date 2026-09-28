@@ -87,7 +87,7 @@ export class StockMovementDetailComponent implements OnInit, OnDestroy {
     return StockMovementDetailComponent.ALL_STATUS_OPTIONS.filter(o => allowed.has(o.value));
   }
 
-  // Movement timeline (mock data for now)
+  // Movement timeline — built entirely from real movement fields, see generateTimeline().
   timeline: any[] = [];
 
   // Private
@@ -226,10 +226,18 @@ export class StockMovementDetailComponent implements OnInit, OnDestroy {
     this.isUpdating = true;
     const newStatus = this.selectedStatus;
 
+    // The status-update modal's "Note (Optional)" textarea was bound to statusNote but never
+    // actually sent — appended to notes (not overwriting them) so it survives alongside whatever
+    // was already recorded on this movement.
+    const note = this.statusNote.trim();
+    const notes = note
+      ? `${this.movement.notes ? this.movement.notes + '\n' : ''}Status changed to ${newStatus}: ${note}`
+      : this.movement.notes;
+
     // Marking a TRANSFER movement COMPLETED here actually moves the stock — see
     // InventoryService.updateMovement()/applyTransferStockAdjustment() — so completing a
     // transfer works the same way whether it's done from here or from the Approvals page.
-    this.inventoryService.updateMovement(this.movement.id, { status: newStatus })
+    this.inventoryService.updateMovement(this.movement.id, { status: newStatus, notes })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (updated) => {
@@ -370,11 +378,6 @@ export class StockMovementDetailComponent implements OnInit, OnDestroy {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(value);
-  }
-
-  formatNumber(value: number): string {
-    if (!value) return '0';
-    return value.toString();
   }
 
   getInitials(name: string): string {

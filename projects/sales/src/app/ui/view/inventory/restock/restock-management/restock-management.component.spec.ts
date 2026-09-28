@@ -9,7 +9,7 @@ describe('RestockManagementComponent', () => {
   let inventoryService: jasmine.SpyObj<InventoryService>;
 
   beforeEach(() => {
-    inventoryService = jasmine.createSpyObj<InventoryService>('InventoryService', ['approveRestockRequest', 'rejectRestockRequest']);
+    inventoryService = jasmine.createSpyObj<InventoryService>('InventoryService', ['approveRestockRequest', 'rejectRestockRequest', 'getRestockRequests', 'getBranches']);
     component = new RestockManagementComponent(inventoryService, { navigate: jasmine.createSpy('navigate') } as any);
     spyOn(component, 'loadDashboardData' as any);
     component.selectedRequest = { id: 1 } as RestockRequest;
@@ -44,6 +44,37 @@ describe('RestockManagementComponent', () => {
       component.submitApproval();
 
       expect(inventoryService.approveRestockRequest).toHaveBeenCalled();
+    });
+  });
+
+  describe('background auto-refresh does not disrupt an actively browsing user', () => {
+    it('applyFilters(true) — a background refresh — does not reset currentPage back to page 1', () => {
+      component.restockRequests = [];
+      component.currentPage = 3;
+
+      component.applyFilters(true);
+
+      expect(component.currentPage).toBe(3);
+    });
+
+    it('applyFilters() — a real filter change — does reset currentPage', () => {
+      component.restockRequests = [];
+      component.currentPage = 3;
+
+      component.applyFilters();
+
+      expect(component.currentPage).toBe(0);
+    });
+
+    it('loadDashboardData(true) does not flip isLoading true, so the table stays visible during a background tick', () => {
+      (component.loadDashboardData as any).and.callThrough();
+      inventoryService.getRestockRequests.and.returnValue(of({ data: [], total: 0, totalPages: 0 } as any));
+      inventoryService.getBranches.and.returnValue(of([]));
+      component.isLoading = false;
+
+      component.loadDashboardData(true);
+
+      expect(component.isLoading).toBeFalse();
     });
   });
 });

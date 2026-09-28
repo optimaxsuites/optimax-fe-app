@@ -563,22 +563,22 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
   // UTILITY HELPERS
   // ============================================================
 
-  getStockStatus(quantity: number, reorderPoint: number, safetyStock: number): string {
+  getStockStatus(quantity: number, reorderPoint: number, safetyStock: number): 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK' {
     return getStockStatus(quantity, reorderPoint, safetyStock);
   }
 
-  getStockStatusLabel(status: any): string {
+  getStockStatusLabel(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK'): string {
     return getStockStatusLabel(status);
   }
 
-  getStockStatusColor(status: any): string {
-    const map = {
+  getStockStatusColor(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK'): string {
+    const map: Record<'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK', string> = {
       'CRITICAL': '#DC2626',
       'LOW': '#F59E0B',
       'NORMAL': '#2EB270',
       'OVERSTOCK': '#3B82F6'
     };
-    return (map as any)[status] || '#6B7280';
+    return map[status] || '#6B7280';
   }
 
   formatCurrency(value: number): string {

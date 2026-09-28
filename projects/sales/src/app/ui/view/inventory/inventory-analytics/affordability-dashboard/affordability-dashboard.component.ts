@@ -6,16 +6,12 @@
 import { Component, OnInit, OnChanges, OnDestroy, Input, Output, EventEmitter, SimpleChanges } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
-import { FormBuilder, FormGroup } from '@angular/forms';
-import { Subject, takeUntil, forkJoin, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   Product,
   Branch,
   BranchInventory,
-  getStockStatus,
-  getStockStatusLabel,
-  getStockStatusColor,
   calculateAffordabilityScore,
   getAffordabilityLevel
 } from '../../../../domain/inventory/inventory.dto';
@@ -104,10 +100,6 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
   showExportModal: boolean = false;
   selectedView: 'chart' | 'table' = 'chart';
 
-  // Form
-  filterForm: FormGroup;
-  searchSubject = new Subject<string>();
-
   // Private
   private destroy$ = new Subject<void>();
 
@@ -119,11 +111,8 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
     private inventoryService: InventoryService,
     private router: Router,
     private route: ActivatedRoute,
-    private location: Location,
-    private fb: FormBuilder
-  ) {
-    this.filterForm = this.buildForm();
-  }
+    private location: Location
+  ) { }
 
   // ============================================================
   // LIFECYCLE HOOKS
@@ -153,19 +142,6 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  // ============================================================
-  // FORM BUILDING
-  // ============================================================
-
-  private buildForm(): FormGroup {
-    return this.fb.group({
-      branchFilter: ['all'],
-      priceRange: ['all'],
-      categoryFilter: ['all'],
-      sortBy: ['affordability']
-    });
   }
 
   // ============================================================
@@ -471,7 +447,8 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
   }
 
   confirmExport(): void {
-    console.log('Exporting affordability report...');
+    // TODO: no real export implementation exists yet (no confirmed file-generation/backend
+    // contract to build against) — this just closes the modal rather than pretending to succeed.
     this.closeExportModal();
   }
 
@@ -553,25 +530,4 @@ export class AffordabilityDashboardComponent implements OnInit, OnChanges, OnDes
     return colors[index % colors.length];
   }
 
-  getScoreBarWidth(score: number): number {
-    return Math.min(Math.max(score, 0), 100);
-  }
-
-  getBranchCount(): number {
-    return this.affordabilityData.length;
-  }
-
-  getAverageScore(): number {
-    if (this.affordabilityData.length === 0) return 0;
-    const sum = this.affordabilityData.reduce((acc, d) => acc + d.affordabilityScore, 0);
-    return Math.round(sum / this.affordabilityData.length);
-  }
-
-  getHighScoreBranches(): number {
-    return this.affordabilityData.filter(d => d.affordabilityLevel === 'HIGH').length;
-  }
-
-  getLowScoreBranches(): number {
-    return this.affordabilityData.filter(d => d.affordabilityLevel === 'LOW').length;
-  }
 }

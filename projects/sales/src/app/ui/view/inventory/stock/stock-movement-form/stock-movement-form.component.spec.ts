@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { FormBuilder } from '@angular/forms';
 
 import { StockMovementFormComponent } from './stock-movement-form.component';
@@ -14,7 +14,7 @@ describe('StockMovementFormComponent', () => {
   } as BranchInventory);
 
   beforeEach(() => {
-    inventoryService = jasmine.createSpyObj<InventoryService>('InventoryService', ['getBranchInventory', 'createMovement']);
+    inventoryService = jasmine.createSpyObj<InventoryService>('InventoryService', ['getBranchInventory', 'createMovement', 'updateMovement']);
     component = new StockMovementFormComponent(
       inventoryService,
       { navigate: jasmine.createSpy('navigate') } as any,
@@ -76,6 +76,55 @@ describe('StockMovementFormComponent', () => {
       component.save();
 
       expect(inventoryService.createMovement).toHaveBeenCalled();
+    });
+  });
+
+  describe('save(): multiple items', () => {
+    beforeEach(() => {
+      // The default beforeEach already pushed one item (p1); add a second so items.length === 2.
+      const item2 = (component as any).createItemForm();
+      item2.patchValue({ productId: 'p2', productName: 'Gadget', sku: 'G-1', quantity: 4 });
+      component.items.push(item2);
+      // fromLocationType is BRANCH (set in the outer beforeEach), so save() runs a real stock
+      // check against sourceInventory first — give both items enough stock to pass it.
+      component.sourceInventory = [stockItem({ productId: 'p1', quantity: 100 }), stockItem({ productId: 'p2', quantity: 100 })];
+    });
+
+    it('creates one movement per item instead of silently dropping every item after the first', () => {
+      inventoryService.createMovement.and.returnValue(of({ id: 1 } as any));
+
+      component.save();
+
+      expect(inventoryService.createMovement).toHaveBeenCalledTimes(2);
+      expect(inventoryService.createMovement).toHaveBeenCalledWith(jasmine.objectContaining({ productId: 'p1', quantity: 10 }));
+      expect(inventoryService.createMovement).toHaveBeenCalledWith(jasmine.objectContaining({ productId: 'p2', quantity: 4 }));
+    });
+
+    it('removes only the items that failed on a partial failure, so a resubmit does not duplicate the ones that already saved', () => {
+      let call = 0;
+      inventoryService.createMovement.and.callFake(() => {
+        call++;
+        return call === 1 ? of({ id: 1 } as any) : throwError(() => new Error('500'));
+      });
+
+      component.save();
+
+      expect(component.items.length).toBe(1);
+      expect(component.items.at(0).get('productId')?.value).toBe('p2');
+      expect(component.error).toContain('1 of 2');
+    });
+
+    it('in edit mode, updates the existing record for the first item and creates new movements for the rest', () => {
+      component.mode = 'edit';
+      component.movementId = '42';
+      component.movement = { id: 42, status: 'PENDING' } as any;
+      inventoryService.updateMovement.and.returnValue(of({ id: 42 } as any));
+      inventoryService.createMovement.and.returnValue(of({ id: 2 } as any));
+
+      component.save();
+
+      expect(inventoryService.updateMovement).toHaveBeenCalledWith('42', jasmine.objectContaining({ productId: 'p1' }));
+      expect(inventoryService.createMovement).toHaveBeenCalledWith(jasmine.objectContaining({ productId: 'p2' }));
     });
   });
 });
