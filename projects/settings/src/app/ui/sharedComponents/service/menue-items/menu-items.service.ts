@@ -371,6 +371,15 @@ export class MenuItemsService {
           description: 'Visual organisational chart — departments, reporting lines, and headcount.'
         },
 
+        {
+          label: 'Profile Change Requests',
+          code: 'HR_PROFILE_CHG',
+          route: this.navigationLink.getLink('profileChangeRequests'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'fas fa-exchange-alt',
+          description: 'Review and approve employee requests to update bank details, contact info, and other profile fields.'
+        },
+
         // ── Time & Attendance ─────────────────────────────────────────────────
         { label: 'Time & Attendance', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {

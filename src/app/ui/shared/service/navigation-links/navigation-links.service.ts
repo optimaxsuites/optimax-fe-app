@@ -61,6 +61,7 @@ export class NavigationLinksService {
     this.links['hrOvertime'] = '/admin/hr/overtime/' + uuidV4();
     this.links['hrAnalytics'] = '/admin/hr/analytics/' + uuidV4();
     this.links['hrReports'] = '/admin/hr/reports/' + uuidV4();
+    this.links['profileChangeRequests'] = '/admin/hr/profile-change-requests/' + uuidV4();
 
     this.links['allPayslip'] = '/admin/employee-payslip/' +uuidV4();
     this.links['performanceLink'] = '/admin/hr/performance/' +uuidV4();
