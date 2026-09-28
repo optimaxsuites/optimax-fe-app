@@ -10,7 +10,8 @@ import {
   hasUnresolvedChangeRequest,
   getMovementTypeLabel,
   getMovementTypeIcon,
-  MovementFilters
+  MovementFilters,
+  ApprovalHistoryEntry
 } from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
@@ -416,10 +417,23 @@ export class StockMovementComponent implements OnInit, OnDestroy {
     this.changesReason = '';
   }
 
+  // Mirrors movement-approval.component.ts's own fix for the same hardcoded-actor bug —
+  // 'userid'/'fullname' are the session keys app.ts sets at login.
+  private getCurrentUserId(): string {
+    return sessionStorage.getItem('userid') || 'usr-1';
+  }
+
+  private getCurrentUserName(): string {
+    return sessionStorage.getItem('fullname') || 'Unknown User';
+  }
+
   confirmApproveMovement(): void {
     if (!this.actionTargetMovement || this.isProcessingAction) return;
     this.isProcessingAction = true;
     const id = this.actionTargetMovement.id;
+    const approvedBy = this.getCurrentUserId();
+    const approvedByName = this.getCurrentUserName();
+    const approvedAt = new Date();
 
     // Approving moves a transfer to IN_TRANSIT, not straight to COMPLETED — stock only actually
     // moves once the movement is later marked COMPLETED (see InventoryService.updateMovement()/
@@ -427,11 +441,18 @@ export class StockMovementComponent implements OnInit, OnDestroy {
     // approval step in the same PENDING -> IN_TRANSIT -> COMPLETED lifecycle.
     this.inventoryService.updateMovement(id, {
       status: MovementStatus.IN_TRANSIT,
-      approvedBy: 'usr-1',
-      approvedByName: 'John Doe',
-      approvedAt: new Date()
+      approvedBy,
+      approvedByName,
+      approvedAt
     }).subscribe({
       next: () => {
+        // Approve/reject/request-changes done from Movement Approvals records itself in the
+        // shared approval-history log (there's no backend endpoint for it — see
+        // InventoryService.recordApprovalAction()'s doc comment). Row-level actions here used to
+        // skip this entirely, so they were invisible in that history tab and its derived stats.
+        this.inventoryService.recordApprovalAction({
+          movementId: String(id), action: 'APPROVE', comments: 'Approved', approvedBy, approvedByName, timestamp: approvedAt
+        });
         this.isProcessingAction = false;
         this.closeActionModals();
         this.loadMovements();
@@ -445,15 +466,27 @@ export class StockMovementComponent implements OnInit, OnDestroy {
 
   confirmRejectMovement(): void {
     if (!this.actionTargetMovement || this.isProcessingAction) return;
+    const reason = this.rejectReason.trim();
+    // Same irreversible action ("can't be approved after this") required a reason on Movement
+    // Approvals but not here — a reviewer could reject with zero explanation from this list.
+    if (!reason) return;
     this.isProcessingAction = true;
     const movement = this.actionTargetMovement;
-    const reason = this.rejectReason.trim();
+    const approvedBy = this.getCurrentUserId();
+    const approvedByName = this.getCurrentUserName();
+    const approvedAt = new Date();
 
     this.inventoryService.updateMovement(movement.id, {
       status: MovementStatus.CANCELLED,
+      approvedBy,
+      approvedByName,
+      approvedAt,
       notes: (movement.notes || '') + (reason ? `\nRejection reason: ${reason}` : '')
     }).subscribe({
       next: () => {
+        this.inventoryService.recordApprovalAction({
+          movementId: String(movement.id), action: 'REJECT', comments: reason || 'Rejected', approvedBy, approvedByName, timestamp: approvedAt
+        });
         this.isProcessingAction = false;
         this.closeActionModals();
         this.loadMovements();
@@ -471,6 +504,9 @@ export class StockMovementComponent implements OnInit, OnDestroy {
     if (!reason) return;
     this.isProcessingAction = true;
     const movement = this.actionTargetMovement;
+    const approvedBy = this.getCurrentUserId();
+    const approvedByName = this.getCurrentUserName();
+    const timestamp = new Date();
 
     // Status stays PENDING — requesting changes doesn't approve or reject, just leaves a note
     // (matches Movement Approvals' submitChanges()); the Branch Manager dashboard surfaces this
@@ -479,6 +515,9 @@ export class StockMovementComponent implements OnInit, OnDestroy {
       notes: (movement.notes || '') + `\nChanges requested: ${reason}`
     }).subscribe({
       next: () => {
+        this.inventoryService.recordApprovalAction({
+          movementId: String(movement.id), action: 'REQUEST_CHANGES', comments: reason, approvedBy, approvedByName, timestamp
+        });
         this.isProcessingAction = false;
         this.closeActionModals();
         this.loadMovements();

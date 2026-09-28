@@ -6,16 +6,32 @@
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
-import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, forkJoin, of, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   Branch,
   BranchInventory,
   Product,
-  getStockStatus,
+  getStockStatus as getStockStatusBase,
   getStockStatusLabel,
   getStockStatusColor
 } from '../../../../domain/inventory/inventory.dto';
+
+/**
+ * A placeholder row for a product that's never had real thresholds configured at this branch
+ * (see ThresholdManagementComponent.mergeProductsIntoInventory()) has reorderPoint AND
+ * safetyStock both hardcoded to 0. Fed through the shared formula, `quantity > reorderPoint * 3`
+ * is true for any quantity > 0, so every such product was always misreported as "Overstock" —
+ * exactly when the admin most needs an accurate signal to go set real thresholds, not a
+ * fabricated one. Every call site in this file already goes through this bare `getStockStatus`
+ * name, so overriding it here (rather than the shared dto function, which other modules use
+ * correctly) fixes every usage in this component at once.
+ */
+function getStockStatus(quantity: number, reorderPoint: number, safetyStock: number): 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK' {
+  if (reorderPoint === 0 && safetyStock === 0) return 'NORMAL';
+  return getStockStatusBase(quantity, reorderPoint, safetyStock);
+}
 
 // ============================================================
 // COMPONENT
@@ -47,6 +63,7 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
   products: Product[] = [];
   isLoading: boolean = true;
   isSaving: boolean = false;
+  isBulkSaving: boolean = false;
   error: string | null = null;
   success: string | null = null;
 
@@ -124,9 +141,11 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
   }
 
   private buildBulkForm(): FormGroup {
+    // Applies to whatever branch is currently selected on the page (this.selectedBranch) — there
+    // used to be a `branchId` control here too, required but with no matching field anywhere in
+    // the template, so the form could never actually become valid.
     return this.fb.group({
-      branchId: ['', Validators.required],
-      multiplier: ['1.5', Validators.required],
+      multiplier: ['1.5', [Validators.required, Validators.min(0.1)]],
       applyTo: ['ALL']
     });
   }
@@ -407,13 +426,75 @@ export class ThresholdManagementComponent implements OnInit, OnDestroy {
   }
 
   applyBulkEdit(): void {
-    // In a real implementation, this would apply bulk updates
-    // For now, we'll show a success message
-    this.success = 'Bulk update applied successfully!';
-    setTimeout(() => {
-      this.success = null;
-      this.showBulkEdit = false;
-    }, 2000);
+    // This used to just show a success toast with no service call, no mutation of
+    // inventoryItems, and no threshold actually changed anywhere — an admin bulk-adjusting
+    // reorder points/safety stock saw "success" for a change that never happened.
+    if (this.bulkForm.invalid || !this.selectedBranch || this.isBulkSaving) {
+      this.bulkForm.markAllAsTouched();
+      return;
+    }
+
+    const { multiplier, applyTo } = this.bulkForm.value;
+    const factor = parseFloat(multiplier);
+    if (!factor || factor <= 0) {
+      this.error = 'Enter a valid multiplier greater than 0.';
+      return;
+    }
+
+    const targets = this.inventoryItems.filter(item => {
+      if (applyTo === 'ALL') return true;
+      return getStockStatus(item.quantity, item.reorderPoint, item.safetyStock) === applyTo;
+    });
+
+    if (targets.length === 0) {
+      this.error = 'No items match the selected filter.';
+      return;
+    }
+
+    this.isBulkSaving = true;
+    this.error = null;
+    this.success = null;
+
+    const requests = targets.map(item => this.inventoryService.saveBranchInventoryItem({
+      branchId: item.branchId,
+      productId: item.productId,
+      quantity: item.quantity,
+      reorderPoint: Math.max(0, Math.round(item.reorderPoint * factor)),
+      reorderQuantity: item.reorderQuantity,
+      safetyStock: Math.max(0, Math.round(item.safetyStock * factor)),
+      sellingPrice: item.sellingPrice,
+      costPrice: item.costPrice
+    }).pipe(
+      map(saved => ({ ok: true as const, saved })),
+      catchError(() => of({ ok: false as const, productId: item.productId }))
+    ));
+
+    forkJoin(requests).pipe(takeUntil(this.destroy$)).subscribe(results => {
+      this.isBulkSaving = false;
+
+      results.forEach(r => {
+        if (!r.ok) return;
+        const index = this.inventoryItems.findIndex(i => i.branchId === r.saved.branchId && i.productId === r.saved.productId);
+        if (index !== -1) this.inventoryItems[index] = r.saved;
+      });
+      this.applyFilters();
+      this.calculateStats();
+
+      const failed = results.filter(r => !r.ok).length;
+      if (failed > 0) {
+        this.error = failed === results.length
+          ? 'Failed to update any thresholds. Please try again.'
+          : `${results.length - failed} of ${results.length} thresholds were updated; ${failed} failed.`;
+        return;
+      }
+
+      this.success = `Updated thresholds for ${results.length} item(s).`;
+      this.thresholdsUpdated.emit();
+      setTimeout(() => {
+        this.success = null;
+        this.showBulkEdit = false;
+      }, 2000);
+    });
   }
 
   // ============================================================

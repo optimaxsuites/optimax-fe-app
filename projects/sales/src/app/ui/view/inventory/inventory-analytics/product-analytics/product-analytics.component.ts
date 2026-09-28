@@ -14,6 +14,8 @@ import {
   BranchInventory,
   Branch,
   ProductStatus,
+  StockMovement,
+  MovementType,
   getStockStatus,
   getStockStatusLabel,
   getStockStatusColor
@@ -59,9 +61,12 @@ export class ProductAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
   totalValue: number = 0;
   branchCount: number = 0;
 
-  // Chart data (mock)
-  salesData: any[] = [];
-  inventoryData: any[] = [];
+  // Chart data — built from real SALE movements in buildSalesData(), not simulated.
+  salesData: { month: string; sales: number; revenue: number; profit: number }[] = [];
+
+  // Real SALE movement history for this product, refetched on load and re-bucketed (not
+  // re-fetched) when the date range changes.
+  private salesMovements: StockMovement[] = [];
 
   // Private
   private destroy$ = new Subject<void>();
@@ -118,16 +123,19 @@ export class ProductAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
     forkJoin({
       product: this.inventoryService.getProduct(this.productId),
       performance: this.inventoryService.getProductPerformance(this.productId),
-      branches: this.inventoryService.getBranches()
+      branches: this.inventoryService.getBranches(),
+      // Real sales history this product's charts are built from — see buildSalesData().
+      salesHistory: this.inventoryService.getMovements({ productId: this.productId, type: MovementType.SALE, limit: 2000 })
     }).pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ({ product, performance, branches }) => {
+        next: ({ product, performance, branches, salesHistory }) => {
           this.product = product;
           this.performance = performance;
           this.branches = branches;
+          this.salesMovements = salesHistory.data;
           this.loadBranchInventory();
           this.calculateStats();
-          this.generateChartData();
+          this.buildSalesData();
           this.isLoading = false;
         },
         error: (err) => {
@@ -184,21 +192,70 @@ export class ProductAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
   // CHART DATA
   // ============================================================
 
-  private generateChartData(): void {
-    // Mock sales data
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    this.salesData = months.map((month, i) => ({
-      month,
-      sales: Math.floor(100 + Math.random() * 300),
-      revenue: Math.floor(5000 + Math.random() * 15000),
-      profit: Math.floor(1000 + Math.random() * 5000)
-    }));
+  /**
+   * Builds the Monthly Sales / Sales Trend charts from this product's real SALE movement
+   * history — not Math.random(). Revenue/profit per bucket are derived from real quantities
+   * sold times this product's real average price / average margin (from getProductPerformance),
+   * since individual movement records don't carry their own price.
+   */
+  private buildSalesData(): void {
+    const buckets = this.buildTimeBuckets();
+    const avgPrice = this.performance?.averagePrice || 0;
+    const marginRatio = this.performance && this.performance.totalRevenue > 0
+      ? this.performance.totalProfit / this.performance.totalRevenue
+      : 0;
 
-    // Mock inventory distribution
-    this.inventoryData = this.branches.slice(0, 5).map((branch, i) => ({
-      branch: branch.name,
-      stock: Math.floor(10 + Math.random() * 100)
-    }));
+    this.salesMovements.forEach(m => {
+      const d = new Date(m.createdAt);
+      const bucket = buckets.find(b => d >= b.start && d < b.end);
+      if (bucket) bucket.sales += (m.quantity || 0);
+    });
+
+    this.salesData = buckets.map(b => {
+      const revenue = Math.round(b.sales * avgPrice);
+      return {
+        month: b.label,
+        sales: b.sales,
+        revenue,
+        profit: Math.round(revenue * marginRatio)
+      };
+    });
+  }
+
+  /** Time windows to bucket real sales movements into, based on the selected date range. */
+  private buildTimeBuckets(): { label: string; start: Date; end: Date; sales: number }[] {
+    const now = new Date();
+    const buckets: { label: string; start: Date; end: Date; sales: number }[] = [];
+
+    if (this.dateRange === 'week') {
+      for (let i = 6; i >= 0; i--) {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
+        buckets.push({ label: start.toLocaleDateString('en-US', { weekday: 'short' }), start, end, sales: 0 });
+      }
+    } else if (this.dateRange === 'quarter') {
+      for (let i = 5; i >= 0; i--) {
+        const q = new Date(now.getFullYear(), now.getMonth() - i * 3, 1);
+        const start = new Date(q.getFullYear(), Math.floor(q.getMonth() / 3) * 3, 1);
+        const end = new Date(start.getFullYear(), start.getMonth() + 3, 1);
+        buckets.push({ label: `Q${Math.floor(start.getMonth() / 3) + 1} ${start.getFullYear()}`, start, end, sales: 0 });
+      }
+    } else if (this.dateRange === 'year') {
+      for (let i = 4; i >= 0; i--) {
+        const start = new Date(now.getFullYear() - i, 0, 1);
+        const end = new Date(start.getFullYear() + 1, 0, 1);
+        buckets.push({ label: String(start.getFullYear()), start, end, sales: 0 });
+      }
+    } else {
+      // 'month' (default): last 6 months
+      for (let i = 5; i >= 0; i--) {
+        const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+        buckets.push({ label: start.toLocaleDateString('en-US', { month: 'short' }), start, end, sales: 0 });
+      }
+    }
+
+    return buckets;
   }
 
   // ============================================================
@@ -215,8 +272,10 @@ export class ProductAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
 
   changeDateRange(range: 'week' | 'month' | 'quarter' | 'year'): void {
     this.dateRange = range;
-    // In real implementation, this would re-fetch data
-    this.generateChartData();
+    // Re-buckets the already-fetched real sales movements at the new granularity — this used to
+    // just regenerate a fresh batch of random numbers, giving the illusion the filter was doing
+    // something when nothing about the underlying (fake) data ever changed.
+    this.buildSalesData();
   }
 
   // ============================================================
@@ -362,12 +421,6 @@ export class ProductAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
     if (!this.salesData || this.salesData.length === 0) return 10000;
     const max = Math.max(...this.salesData.map(d => d.revenue));
     return Math.ceil(max / 5000) * 5000 + 5000;
-  }
-
-  getMaxStock(): number {
-    if (!this.inventoryData || this.inventoryData.length === 0) return 100;
-    const max = Math.max(...this.inventoryData.map(d => d.stock));
-    return Math.ceil(max / 20) * 20 + 20;
   }
 
   getChartWidth(index: number, total: number): number {

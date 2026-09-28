@@ -6,7 +6,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { Subject, Observable, forkJoin, of, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   RestockRequest,
@@ -367,55 +368,47 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
 
   private bulkApprove(): void {
     if (!confirm(`Are you sure you want to approve ${this.selectedRequestIds.size} request(s)?`)) return;
-
-    this.isProcessing = true;
-    const ids = Array.from(this.selectedRequestIds);
-    let completed = 0;
-
-    ids.forEach(id => {
-      this.inventoryService.approveRestockRequest(id, 'Bulk approval')
-        .subscribe({
-          next: () => {
-            completed++;
-            if (completed === ids.length) {
-              this.isProcessing = false;
-              this.selectedRequestIds.clear();
-              this.selectAll = false;
-              this.loadRequests();
-            }
-          },
-          error: (err) => {
-            console.error('Failed to approve request:', err);
-            this.isProcessing = false;
-          }
-        });
-    });
+    this.runBulk(id => this.inventoryService.approveRestockRequest(id, 'Bulk approval'), 'approved');
   }
 
   private bulkReject(): void {
     if (!confirm(`Are you sure you want to reject ${this.selectedRequestIds.size} request(s)?`)) return;
+    this.runBulk(id => this.inventoryService.rejectRestockRequest(id, 'Bulk rejection'), 'rejected');
+  }
 
+  /**
+   * The old bulkApprove()/bulkReject() incremented a hand-rolled `completed` counter only in the
+   * `next` handler, never in `error` — so if any single request failed, `completed` never reached
+   * `ids.length`, and the success path (clearing isProcessing/selection, reloading the list) never
+   * ran at all. Already-approved/rejected items kept showing as PENDING, the selection was never
+   * cleared, and there was no user-facing error. This waits for every request (success or
+   * failure) and reports real partial-failure counts, the same pattern used elsewhere in this app.
+   */
+  private runBulk(action: (id: number) => Observable<void>, verb: string): void {
     this.isProcessing = true;
+    this.error = null;
     const ids = Array.from(this.selectedRequestIds);
-    let completed = 0;
 
-    ids.forEach(id => {
-      this.inventoryService.rejectRestockRequest(id, 'Bulk rejection')
-        .subscribe({
-          next: () => {
-            completed++;
-            if (completed === ids.length) {
-              this.isProcessing = false;
-              this.selectedRequestIds.clear();
-              this.selectAll = false;
-              this.loadRequests();
-            }
-          },
-          error: (err) => {
-            console.error('Failed to reject request:', err);
-            this.isProcessing = false;
-          }
-        });
+    const requests = ids.map(id => action(id).pipe(
+      map(() => ({ ok: true as const })),
+      catchError(err => {
+        console.error(`Failed to ${verb.replace('ed', '')} request ${id}:`, err);
+        return of({ ok: false as const });
+      })
+    ));
+
+    forkJoin(requests).pipe(takeUntil(this.destroy$)).subscribe(results => {
+      this.isProcessing = false;
+      this.selectedRequestIds.clear();
+      this.selectAll = false;
+      this.loadRequests();
+
+      const failed = results.filter(r => !r.ok).length;
+      if (failed > 0) {
+        this.error = failed === results.length
+          ? `Failed to ${verb.replace('ed', '')} any of the selected requests. Please try again.`
+          : `${results.length - failed} of ${results.length} requests were ${verb}; ${failed} failed.`;
+      }
     });
   }
 
@@ -427,11 +420,13 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
     this.selectedRequest = request;
     this.approvalAction = action;
     this.approvalNotes = '';
+    this.error = null;
     this.showApprovalModal = true;
   }
 
   closeApprovalModal(): void {
     this.showApprovalModal = false;
+    this.error = null;
     this.selectedRequest = null;
     this.approvalAction = null;
     this.approvalNotes = '';
@@ -440,7 +435,15 @@ export class RestockRequestListComponent implements OnInit, OnDestroy {
   submitApproval(): void {
     if (!this.selectedRequest || !this.approvalAction) return;
 
+    // Labeled "Rejection Reason (Required)" in the template, but nothing enforced that — a
+    // reviewer could reject with zero explanation.
+    if (this.approvalAction === 'reject' && !this.approvalNotes.trim()) {
+      this.error = 'Please provide a reason for rejecting this request.';
+      return;
+    }
+
     this.isProcessing = true;
+    this.error = null;
 
     if (this.approvalAction === 'approve') {
       this.inventoryService.approveRestockRequest(this.selectedRequest.id, this.approvalNotes)

@@ -695,6 +695,17 @@ const MOCK_MOVEMENTS: StockMovement[] = [
   }
 ];
 
+// A still-PENDING movement has no real approver/completion date — a couple of the records above
+// set approvedAt/completedAt to "now" anyway despite being PENDING with approvedBy: ''. That
+// fabricated timestamp made a still-pending movement show a fake "Approved At" on its detail page
+// and get incorrectly counted in Movement Approvals' "average time to approve" metric.
+MOCK_MOVEMENTS.forEach(m => {
+  if (m.status === MovementStatus.PENDING) {
+    delete m.approvedAt;
+    delete m.completedAt;
+  }
+});
+
 const MOCK_TOP_PRODUCTS: ProductPerformance[] = [
   {
     productId: '1',
@@ -1272,6 +1283,17 @@ export class InventoryService {
       }
     ];
 
+    // A still-PENDING request has no real approver or approval date — several of the records
+    // above set approvedAt to "now" anyway despite being PENDING with approvedBy: ''. That
+    // fabricated timestamp made restock-approval.component.html's own
+    // `request.approvedAt || request.createdAt` fallback never trigger for a genuinely pending
+    // request, showing a fake "approved" timestamp right next to its "Pending" status badge.
+    mockRequests.forEach(r => {
+      if (r.status === RestockStatus.PENDING) {
+        delete r.approvedAt;
+      }
+    });
+
     // Store in localStorage for persistence
     localStorage.setItem('restock_requests', JSON.stringify(mockRequests));
     return mockRequests;
@@ -1349,10 +1371,17 @@ export class InventoryService {
           localStorage.setItem(LOCAL_KEYS.GENERIC_LOCATIONS, JSON.stringify([...existingGenericLocations, ...missing]));
         }
       }
-      // Refresh dashboard branch summaries with richer data
+      // Backfill dashboard branch summaries/recent movements ONLY if genuinely missing — this
+      // used to overwrite them unconditionally on every app load, which meant real data synced
+      // from a previous session's successful getDashboardData() call was silently replaced with
+      // mock demo data on the very next page refresh, every time.
       const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-      dash.branchSummaries = MOCK_BRANCH_SUMMARIES;
-      dash.recentMovements = MOCK_MOVEMENTS.slice(0, 5);
+      if (!dash.branchSummaries || dash.branchSummaries.length === 0) {
+        dash.branchSummaries = MOCK_BRANCH_SUMMARIES;
+      }
+      if (!dash.recentMovements || dash.recentMovements.length === 0) {
+        dash.recentMovements = MOCK_MOVEMENTS.slice(0, 5);
+      }
       localStorage.setItem(LOCAL_KEYS.DASHBOARD, JSON.stringify(dash));
     }
     this.loadInitialState();
@@ -1473,17 +1502,24 @@ export class InventoryService {
 
   /**
    * GET /inventory/dashboard — falls back to the local mock/localStorage copy if the API is
-   * unavailable. Note: the API response has no `topProducts` field, so that part of the
-   * dashboard is merged in from the local copy regardless of whether the live call succeeds.
+   * unavailable. The dashboard response has no `topProducts` field, so that part is filled in
+   * from the real, separate getTopProducts() endpoint — this used to just carry over whatever
+   * was in the local cache forever, meaning the dashboard's "Top Products" widget could never
+   * reflect a product added or sold after the very first seed, for any tenant.
    */
   getDashboardData(): Observable<InventoryDashboardData> {
     this.loadingSubject.next(true);
     const cached = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string || 'null') as InventoryDashboardData | null;
 
-    return this.http.get<any>(`${this.baseUrl}/inventory/dashboard`, {
-      params: new HttpParams().set('tenantId', this.tenantId)
-    }).pipe(
-      map(raw => ({
+    return forkJoin([
+      this.http.get<any>(`${this.baseUrl}/inventory/dashboard`, {
+        params: new HttpParams().set('tenantId', this.tenantId)
+      }),
+      // getTopProducts() already has its own real GET + safe fallback, so it can't make this
+      // forkJoin fail on its own.
+      this.getTopProducts(5)
+    ]).pipe(
+      map(([raw, topProducts]) => ({
         stats: { ...raw.stats, lastUpdated: parseApiDate(raw.stats.lastUpdated) },
         alerts: (raw.alerts || []).map((a: any) => ({
           ...a,
@@ -1493,8 +1529,7 @@ export class InventoryService {
         recentMovements: (raw.recentMovements || []).map((m: any) => this.stockMovementFromApi(m)),
         branchSummaries: raw.branchSummaries || [],
         quickActions: raw.quickActions || [],
-        // Not part of this endpoint's response — carried over from whatever we already had.
-        topProducts: cached?.topProducts || []
+        topProducts
       } as InventoryDashboardData)),
       tap(data => {
         localStorage.setItem(LOCAL_KEYS.DASHBOARD, JSON.stringify(data));
@@ -1522,16 +1557,19 @@ export class InventoryService {
     );
   }
 
-  /** Get alerts */
+  /**
+   * Get alerts. This used to read straight from the dashboard's localStorage snapshot with no
+   * live call at all (so it only ever reflected however stale that cache was) and no null-guard
+   * (a fresh session with no cache yet threw a TypeError reading `.alerts` off `null`). getAlerts()
+   * already does the real GET with a safe fallback — reuse it instead of duplicating it worse.
+   */
   getDashboardAlerts(): Observable<StockAlert[]> {
-    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-    return of(dash.alerts);
+    return this.getAlerts();
   }
 
-  /** Recent movements (limit optional) */
+  /** Recent movements (limit optional) — a real live fetch via getMovements(), most-recent-first. */
   getRecentMovements(limit: number = 10): Observable<StockMovement[]> {
-    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-    return of(dash.recentMovements.slice(0, limit));
+    return this.getMovements({ page: 0, limit }).pipe(map(res => res.data));
   }
 
   /** Normalises a raw /inventory/dashboard/product-performance record onto ProductPerformance. */
@@ -2716,31 +2754,48 @@ export class InventoryService {
 
     return request$.pipe(
       map(raw => this.stockMovementFromApi(raw)),
-      tap(updated => {
-        this.finishMovementUpdate(movements, index, previous, updated);
+      map(updated => {
+        const result = this.finishMovementUpdate(movements, index, previous, updated);
         this.loadingSubject.next(false);
+        return result;
       }),
       catchError(err => {
         console.error('[InventoryService] updateMovement failed, using local fallback:', err);
-        const fallback = { ...merged, updatedAt: new Date() };
-        this.finishMovementUpdate(movements, index, previous, fallback);
-        this.loadingSubject.next(false);
-        return of(fallback);
+        try {
+          const fallback = { ...merged, updatedAt: new Date() };
+          const result = this.finishMovementUpdate(movements, index, previous, fallback);
+          this.loadingSubject.next(false);
+          return of(result);
+        } catch (adjustmentError) {
+          this.loadingSubject.next(false);
+          return throwError(() => adjustmentError);
+        }
       })
     );
   }
 
-  /** Shared post-update bookkeeping: persist, broadcast, and run the transfer stock adjustment
-   *  exactly once when a movement first reaches COMPLETED (see applyTransferStockAdjustment()'s
-   *  own caveat about why this only reliably fires for movements created in this session). */
-  private finishMovementUpdate(movements: StockMovement[], index: number, previous: StockMovement, updated: StockMovement): void {
+  /**
+   * Shared post-update bookkeeping: persist, broadcast, and run the transfer stock adjustment
+   * exactly once when a movement first reaches COMPLETED. If the adjustment can't actually be
+   * applied (the source branch no longer has enough of this product), this now THROWS instead of
+   * letting the movement silently show as Completed while nothing actually moved — that used to
+   * leave a movement permanently marked "Completed" with a real stock-count/movement-status
+   * mismatch and zero indication anywhere that it happened.
+   */
+  private finishMovementUpdate(movements: StockMovement[], index: number, previous: StockMovement, updated: StockMovement): StockMovement {
     if (updated.status === MovementStatus.COMPLETED && previous.status !== MovementStatus.COMPLETED) {
-      this.applyTransferStockAdjustment(updated);
+      if (!this.applyTransferStockAdjustment(updated)) {
+        throw new Error(
+          `Cannot mark this transfer Completed — the source branch no longer has ${updated.quantity} unit(s) ` +
+          `of this product available. Check current stock and try again.`
+        );
+      }
       updated.completedAt = updated.completedAt || new Date();
     }
     movements[index] = updated;
     localStorage.setItem(LOCAL_KEYS.MOVEMENTS, JSON.stringify(movements));
     this.movementsSubject.next(movements);
+    return updated;
   }
 
   // ----------------------------------------------------
@@ -2791,20 +2846,23 @@ export class InventoryService {
     );
   }
 
-  /** Moves real stock for a branch-to-branch TRANSFER movement: decrements the source branch's
-   *  inventory and increments the destination's. No-op for any other movement type/location
-   *  shape. Called exactly once per movement, from whichever path completes it. */
-  private applyTransferStockAdjustment(movement: StockMovement): void {
-    if (movement.movementType !== MovementType.TRANSFER) return;
-    if (movement.fromLocation?.type !== 'BRANCH' || movement.toLocation?.type !== 'BRANCH') return;
+  /**
+   * Moves real stock for a branch-to-branch TRANSFER movement: decrements the source branch's
+   * inventory and increments the destination's. Returns true when the movement isn't a
+   * branch-to-branch transfer at all (nothing to adjust, not a failure) or when the adjustment
+   * was applied; returns false only when the source branch doesn't have enough stock — the
+   * caller (finishMovementUpdate) refuses to let the movement show as Completed in that case,
+   * rather than silently completing it with no actual stock movement.
+   */
+  private applyTransferStockAdjustment(movement: StockMovement): boolean {
+    if (movement.movementType !== MovementType.TRANSFER) return true;
+    if (movement.fromLocation?.type !== 'BRANCH' || movement.toLocation?.type !== 'BRANCH') return true;
 
     const allInventory = JSON.parse(localStorage.getItem(LOCAL_KEYS.BRANCH_INVENTORY) as string || '[]') as BranchInventory[];
     const sourceItem = allInventory.find(i => i.branchId === movement.fromLocation.id && i.productId === movement.productId);
     if (!sourceItem || sourceItem.quantity < movement.quantity) {
-      // Stock may have changed since the transfer was requested — skip rather than risk going
-      // negative. The movement still gets marked completed/approved above; this is a data
-      // inconsistency for someone to follow up on, not a reason to block the approval itself.
-      return;
+      // Stock may have changed since the transfer was requested — stock may not go negative.
+      return false;
     }
     const destItem = allInventory.find(i => i.branchId === movement.toLocation.id && i.productId === movement.productId);
 
@@ -2827,14 +2885,19 @@ export class InventoryService {
       sellingPrice: destItem?.sellingPrice ?? sourceItem.sellingPrice,
       costPrice: destItem?.costPrice ?? sourceItem.costPrice
     }).subscribe();
+
+    return true;
   }
 
   // ----------------------------------------------------
   // QUICK ACTIONS (read from dashboard data)
   // ----------------------------------------------------
+  // There's no dedicated quick-actions endpoint — quickActions arrives as part of the real
+  // /inventory/dashboard response, mapped in by getDashboardData(). Read the reactive subject
+  // it already populates instead of re-parsing localStorage directly, which crashed on a fresh
+  // session with no dashboard cache yet (JSON.parse(null) then reading `.quickActions` off null).
   getQuickActions(): Observable<QuickAction[]> {
-    const dash = JSON.parse(localStorage.getItem(LOCAL_KEYS.DASHBOARD) as string) as InventoryDashboardData;
-    return of(dash.quickActions);
+    return of(this.dashboardDataSubject.value?.quickActions || []);
   }
 
   // ----------------------------------------------------
@@ -2856,7 +2919,10 @@ export class InventoryService {
 
   /** POST /categories — falls back to a local-only record if the API is unavailable. */
   createCategory(cat: Partial<Category>): Observable<Category[]> {
-    const payload = { name: cat.name, description: cat.description };
+    // Sibling CRUD (createMeasurementUnit/createSupplier) both send tenantId in the body; this
+    // one didn't, which is inconsistent even though categories may in practice be tenant-scoped
+    // via the auth context/query param alone — matching the established convention here.
+    const payload = { tenantId: this.tenantId, name: cat.name, description: cat.description };
 
     return this.http.post<Category>(`${this.baseUrl}/categories`, payload).pipe(
       map(saved => {
@@ -2878,7 +2944,7 @@ export class InventoryService {
 
   /** PUT /categories/{id} — falls back to updating the local copy if the API is unavailable. */
   updateCategory(id: number, cat: Partial<Category>): Observable<Category[]> {
-    const payload = { name: cat.name, description: cat.description };
+    const payload = { tenantId: this.tenantId, name: cat.name, description: cat.description };
 
     return this.http.put<Category>(`${this.baseUrl}/categories/${id}`, payload).pipe(
       map(saved => {
@@ -3340,10 +3406,14 @@ export class InventoryService {
   /** Approve a restock request. */
   approveRestockRequest(id: string | number, notes: string): Observable<void> {
     this.loadingSubject.next(true);
+    // Every approval done through this method (the Restock Requests list and the Restock
+    // Dashboard) used to be permanently attributed to a hardcoded 'usr-2'/'Jane Smith', regardless
+    // of who actually clicked Approve — falsifying the audit trail. restock-approval.component.ts
+    // was the only caller that ever got this right, by passing the real user itself.
     return this.updateRestockRequestStatus(id, {
       status: RestockStatus.APPROVED,
-      approvedBy: 'usr-2',
-      approvedByName: 'Jane Smith',
+      approvedBy: sessionStorage.getItem('userid') || 'usr-1',
+      approvedByName: sessionStorage.getItem('fullname') || 'Current User',
       approvedAt: new Date(),
       ...(notes ? { notes } : {})
     }).pipe(
@@ -3357,8 +3427,8 @@ export class InventoryService {
     this.loadingSubject.next(true);
     return this.updateRestockRequestStatus(id, {
       status: RestockStatus.REJECTED,
-      approvedBy: 'usr-2',
-      approvedByName: 'Jane Smith',
+      approvedBy: sessionStorage.getItem('userid') || 'usr-1',
+      approvedByName: sessionStorage.getItem('fullname') || 'Current User',
       approvedAt: new Date(),
       ...(reason ? { notes: reason } : {})
     }).pipe(
@@ -3414,7 +3484,6 @@ export class InventoryService {
           approvedBy: '',
           approvedByName: '',
           createdAt: new Date(),
-          approvedAt: new Date(),
           purchaseOrderId: ''
         });
       }

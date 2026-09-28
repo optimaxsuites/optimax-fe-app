@@ -82,7 +82,7 @@
                             </div>
 
                             <div class="ql-field">
-                                <label class="ql-flabel">Description <span class="ql-required">*</span></label>
+                                <label class="ql-flabel">Description</label>
                                 <textarea formControlName="description" class="ql-input ql-textarea" 
                                           placeholder="Enter product description" rows="3"
                                           [class.ql-input--error]="isFieldInvalid('description')"></textarea>
@@ -93,7 +93,7 @@
 
                             <div class="ql-form-row">
                                 <div class="ql-field">
-                                    <label class="ql-flabel">Category <span class="ql-required">*</span></label>
+                                    <label class="ql-flabel">Category</label>
                                     <select formControlName="category" class="ql-input"
                                             [class.ql-input--error]="isFieldInvalid('category')"
                                             (change)="onCategoryChange($event)">
@@ -273,52 +273,6 @@
                                         <span class="ql-checkbox-custom"></span>
                                         Is this a combo product?
                                     </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section: Stock Movement -->
-                    <div class="ql-form-card">
-                        <div class="ql-form-card-header">
-                            <div class="ql-form-card-icon">
-                                <i class="fas fa-exchange-alt"></i>
-                            </div>
-                            <h3>Stock Movement</h3>
-                        </div>
-                        <div class="ql-form-card-body">
-                            <div class="ql-form-row">
-                                <div class="ql-field">
-                                    <label class="ql-flabel">Movement Date</label>
-                                    <input type="date" formControlName="movementDate" class="ql-input" 
-                                           [max]="todayDateString"
-                                           [class.ql-input--error]="isFieldInvalid('movementDate')">
-                                    <span class="ql-field-error" *ngIf="isFieldInvalid('movementDate')">
-                                        {{ getFieldError('movementDate') }}
-                                    </span>
-                                </div>
-
-                                <div class="ql-field">
-                                    <label class="ql-flabel">Quantity</label>
-                                    <input type="number" formControlName="movementQuantity" class="ql-input" 
-                                           placeholder="1" min="1">
-                                </div>
-                            </div>
-
-                            <div class="ql-form-row">
-                                <div class="ql-field">
-                                    <label class="ql-flabel">Purchase Price</label>
-                                    <div class="ql-currency-input">
-                                        <span class="ql-currency-symbol">₦</span>
-                                        <input type="text" formControlName="movementPurchasePrice" class="ql-input" 
-                                               placeholder="N/A" readonly>
-                                    </div>
-                                </div>
-
-                                <div class="ql-field">
-                                    <label class="ql-flabel">Tax</label>
-                                    <input type="text" formControlName="movementTax" class="ql-input" 
-                                           placeholder="e.g. VAT 7.5%">
                                 </div>
                             </div>
                         </div>

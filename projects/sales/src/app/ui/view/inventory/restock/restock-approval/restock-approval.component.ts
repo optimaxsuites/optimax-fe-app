@@ -343,6 +343,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   openApproveModal(): void {
     if (!this.selectedRequest) return;
     this.selectedAction = 'APPROVE';
+    this.error = null;
     this.approveForm.patchValue({
       comments: '',
       notifyRequester: true
@@ -353,6 +354,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   closeApproveModal(): void {
     this.showApproveModal = false;
     this.selectedAction = null;
+    this.error = null;
     this.approveForm.reset();
   }
 
@@ -360,36 +362,45 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
     if (!this.selectedRequest) return;
 
     this.isSubmitting = true;
+    this.error = null;
     const formValue = this.approveForm.value;
+    const request = this.selectedRequest;
 
-    setTimeout(() => {
-      if (this.selectedRequest) {
-        this.selectedRequest.status = RestockStatus.APPROVED;
-        this.selectedRequest.approvedBy = this.getCurrentUserId();
-        this.selectedRequest.approvedByName = this.getCurrentUserName();
-        this.selectedRequest.approvedAt = new Date();
+    const updates: Partial<RestockRequest> = {
+      status: RestockStatus.APPROVED,
+      approvedBy: this.getCurrentUserId(),
+      approvedByName: this.getCurrentUserName(),
+      approvedAt: new Date(),
+      notes: formValue.comments
+        ? (request.notes || '') + `\nApproval comment: ${formValue.comments}`
+        : request.notes
+    };
 
-        // Add comments if provided
-        if (formValue.comments) {
-          this.selectedRequest.notes = (this.selectedRequest.notes || '') + `\nApproval comment: ${formValue.comments}`;
+    // This used to wrap the whole flow in a setTimeout purely for UX pacing, mutate the local
+    // object, and call updateRestockRequest().subscribe() with no next/error handler at all —
+    // so it reported "approved" and closed the modal regardless of whether the write actually
+    // reached the backend. Now it genuinely waits for the response before doing either.
+    this.inventoryService.updateRestockRequest(request.id, updates)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (updated) => {
+          Object.assign(request, updated);
+          this.approvalComplete.emit({
+            requestId: String(request.id),
+            action: 'APPROVE',
+            comments: formValue.comments
+          });
+          this.calculateStats();
+          this.filterRequests();
+          this.isSubmitting = false;
+          this.showApproveModal = false;
+        },
+        error: (err) => {
+          console.error('Failed to approve restock request:', err);
+          this.error = 'Failed to approve this request. Please try again.';
+          this.isSubmitting = false;
         }
-
-        // Save to service
-        this.inventoryService.updateRestockRequest(this.selectedRequest.id, this.selectedRequest).subscribe();
-
-        // Emit event
-        this.approvalComplete.emit({
-          requestId: String(this.selectedRequest.id),
-          action: 'APPROVE',
-          comments: formValue.comments
-        });
-      }
-
-      this.calculateStats();
-      this.filterRequests();
-      this.isSubmitting = false;
-      this.showApproveModal = false;
-    }, 1000);
+      });
   }
 
   // ============================================================
@@ -399,6 +410,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   openRejectModal(): void {
     if (!this.selectedRequest) return;
     this.selectedAction = 'REJECT';
+    this.error = null;
     this.rejectForm.patchValue({
       reason: '',
       notifyRequester: true
@@ -407,6 +419,7 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
   }
 
   closeRejectModal(): void {
+    this.error = null;
     this.showRejectModal = false;
     this.selectedAction = null;
     this.rejectForm.reset();
@@ -419,32 +432,41 @@ export class RestockApprovalComponent implements OnInit, OnDestroy {
     }
 
     this.isSubmitting = true;
+    this.error = null;
     const formValue = this.rejectForm.value;
+    const request = this.selectedRequest;
 
-    setTimeout(() => {
-      if (this.selectedRequest) {
-        this.selectedRequest.status = RestockStatus.REJECTED;
-        this.selectedRequest.approvedBy = this.getCurrentUserId();
-        this.selectedRequest.approvedByName = this.getCurrentUserName();
-        this.selectedRequest.approvedAt = new Date();
-        this.selectedRequest.notes = (this.selectedRequest.notes || '') + `\nRejection reason: ${formValue.reason}`;
+    const updates: Partial<RestockRequest> = {
+      status: RestockStatus.REJECTED,
+      approvedBy: this.getCurrentUserId(),
+      approvedByName: this.getCurrentUserName(),
+      approvedAt: new Date(),
+      notes: (request.notes || '') + `\nRejection reason: ${formValue.reason}`
+    };
 
-        // Save to service
-        this.inventoryService.updateRestockRequest(this.selectedRequest.id, this.selectedRequest).subscribe();
-
-        // Emit event
-        this.approvalComplete.emit({
-          requestId: String(this.selectedRequest.id),
-          action: 'REJECT',
-          comments: formValue.reason
-        });
-      }
-
-      this.calculateStats();
-      this.filterRequests();
-      this.isSubmitting = false;
-      this.showRejectModal = false;
-    }, 1000);
+    // Same fix as submitApproval(): genuinely wait for the write to resolve before reporting
+    // success, instead of a setTimeout + fire-and-forget subscribe() with no error handling.
+    this.inventoryService.updateRestockRequest(request.id, updates)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (updated) => {
+          Object.assign(request, updated);
+          this.approvalComplete.emit({
+            requestId: String(request.id),
+            action: 'REJECT',
+            comments: formValue.reason
+          });
+          this.calculateStats();
+          this.filterRequests();
+          this.isSubmitting = false;
+          this.showRejectModal = false;
+        },
+        error: (err) => {
+          console.error('Failed to reject restock request:', err);
+          this.error = 'Failed to reject this request. Please try again.';
+          this.isSubmitting = false;
+        }
+      });
   }
 
   // Every approve/reject action above used to hardcode 'usr-2' / 'Jane Smith' instead of the

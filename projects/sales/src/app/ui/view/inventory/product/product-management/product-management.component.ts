@@ -2,7 +2,8 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil, debounceTime, switchMap } from 'rxjs';
+import { Subject, forkJoin, of, takeUntil, debounceTime, switchMap } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { Product, Category, MeasurementUnit, Supplier } from '../../../../domain/inventory/inventory.dto';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import { MessageService } from 'primeng/api';
@@ -23,11 +24,12 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   viewMode: 'list' | 'icon' = 'list';
   products: any[] = [];
   isLoading = true;
-  selectedProductIds: any[] = [];
+  selectedProductIds: number[] = [];
   aiDismissed = false;
   showDeleteModal = false;
   pendingDeleteProductName = '';
   pendingDeleteProductObj: Product | null = null;
+  isBulkDeleting = false;
 
   setViewMode(mode: 'list' | 'icon'): void {
     this.viewMode = mode;
@@ -114,6 +116,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
     this.loadUnits();
     this.loadSuppliers();
     this.loadProducts();
+    this.loadHeaderStats();
   }
 
   /**
@@ -139,12 +142,10 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
         this.products = response.data;
         this.totalElements = response.total;
         this.totalPages = Math.ceil(response.total / this.filters.size);
-        this.calculateStats();
         this.isLoading = false;
       },
       error: (error: any) => {
         console.error('Error loading products:', error);
-        this.calculateStats();
         this.isLoading = false;
       }
     });
@@ -559,16 +560,36 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
     this.loadProducts$.next();
   }
 
-  private calculateStats(): void {
-    const totalValue = this.products.reduce((sum, p) => sum + ((p.unitPrice || p.sellingPrice || 0) * p.stockQuantity), 0);
-
-    this.stats = {
-      total: this.products.length,
-      active: this.products.filter(p => p.status === 'ACTIVE').length,
-      outOfStock: this.products.filter(p => p.status === 'OUT_OF_STOCK').length,
-      discontinued: this.products.filter(p => p.status === 'DISCONTINUED').length,
-      totalValue: totalValue
-    };
+  /**
+   * These are catalog-wide counts driving the sidebar status filters and the "N out of stock"
+   * AI banner — they used to be computed from `this.products`, which is only the current page
+   * (at most `filters.size` rows). With a catalog bigger than one page, this wildly undercounted
+   * (or entirely missed) real issues elsewhere in the catalog. Each status count now comes from
+   * a real, catalog-wide query (ignoring the currently applied search/category/price filters,
+   * since these are meant to answer "how many ACTIVE products exist at all", not "how many match
+   * what I've already filtered to"). There's no aggregate stats endpoint, so totalValue is a
+   * best-effort sum over a large-but-bounded fetch (same 1000-row ceiling this codebase already
+   * uses elsewhere — see InventoryService.getProductPerformance()'s getTopProducts(1000) — rather
+   * than an exact total for an arbitrarily large catalog.
+   */
+  private loadHeaderStats(): void {
+    forkJoin({
+      active: this.inventoryService.getProducts({ status: 'ACTIVE' as any, size: 1 }),
+      outOfStock: this.inventoryService.getProducts({ status: 'OUT_OF_STOCK' as any, size: 1 }),
+      discontinued: this.inventoryService.getProducts({ status: 'DISCONTINUED' as any, size: 1 }),
+      all: this.inventoryService.getProducts({ status: 'ALL' as any, size: 1000 })
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: ({ active, outOfStock, discontinued, all }) => {
+        this.stats = {
+          total: all.total,
+          active: active.total,
+          outOfStock: outOfStock.total,
+          discontinued: discontinued.total,
+          totalValue: all.data.reduce((sum, p) => sum + ((p.unitPrice || p.sellingPrice || 0) * p.stockQuantity), 0)
+        };
+      },
+      error: (err) => console.error('Failed to load product header stats:', err)
+    });
   }
 
   applyFilters(): void {
@@ -591,32 +612,45 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
 
   onPageChange(page: number): void {
     this.filters.page = page;
+    // This used to only update filters.page (which correctly drove the fetch) but never
+    // currentPage — the table's new page rendered fine, but row numbering, the "Showing X-Y of
+    // Z" footer, and the active-page highlight all stayed frozen on page 1 regardless.
+    this.currentPage = page;
     this.loadProducts();
   }
 
   onPageSizeChange(size: number): void {
     this.filters.size = size;
     this.filters.page = 0;
+    this.pageSize = size;
+    this.currentPage = 0;
     this.loadProducts();
   }
 
-  toggleSelection(productId: any, event: any): void {
+  // "Select All" used to populate selectedProductIds with `p.productId || String(p.id)` — a
+  // different (and usually string) value than what individual row checkboxes ever push
+  // (`product.id`, the raw number). Array.includes() uses strict equality, so after "Select All"
+  // no individual row checkbox ever showed as checked, even though the bulk-action bar correctly
+  // reported "N products selected". Both paths now consistently use the raw numeric id.
+  toggleSelection(productId: number, event: any): void {
     if (event.target.checked) {
-      this.selectedProductIds.push(productId);
+      if (!this.selectedProductIds.includes(productId)) {
+        this.selectedProductIds.push(productId);
+      }
     } else {
-      this.selectedProductIds = this.selectedProductIds.filter(id => String(id) !== String(productId));
+      this.selectedProductIds = this.selectedProductIds.filter(id => id !== productId);
     }
   }
 
   toggleSelectAll(event: any): void {
     if (event.target.checked) {
-      this.selectedProductIds = this.products.map(p => p.productId || String(p.id));
+      this.selectedProductIds = this.products.map(p => p.id);
     } else {
       this.selectedProductIds = [];
     }
   }
 
-  isSelected(productId: any): boolean {
+  isSelected(productId: number): boolean {
     return this.selectedProductIds.includes(productId);
   }
 
@@ -624,20 +658,12 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
     return this.products.length > 0 && this.selectedProductIds.length === this.products.length;
   }
 
-  getStatusBadgeClass(status: string): string {
-    const classes: Record<string, string> = {
-      'ACTIVE': 'status-active',
-      'OUT_OF_STOCK': 'status-out-of-stock',
-      'DISCONTINUED': 'status-discontinued'
-    };
-    return classes[status] || 'status-active';
-  }
-
   getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       'ACTIVE': 'Active',
       'OUT_OF_STOCK': 'Out of Stock',
-      'DISCONTINUED': 'Discontinued'
+      'DISCONTINUED': 'Discontinued',
+      'INACTIVE': 'Inactive'
     };
     return labels[status] || status;
   }
@@ -730,6 +756,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
     this.inventoryService.deleteProduct(productObj.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.loadProducts();
+        this.loadHeaderStats();
         this.showDeleteModal = false;
         this.pendingDeleteProductObj = null;
         this.messageService.add({ severity: 'success', summary: 'Success', detail: `Product ${productObj.name} deleted successfully` });
@@ -739,6 +766,40 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
         this.showDeleteModal = false;
         this.pendingDeleteProductObj = null;
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete product. Please try again.' });
+      }
+    });
+  }
+
+  /** "Delete Selected" had no click handler at all — selecting products and clicking it did
+   *  nothing, with no error and no method anywhere in this component to wire it to. */
+  bulkDeleteProducts(): void {
+    if (this.selectedProductIds.length === 0 || this.isBulkDeleting) return;
+    if (!confirm(`Are you sure you want to delete ${this.selectedProductIds.length} product(s)? This cannot be undone.`)) return;
+
+    this.isBulkDeleting = true;
+    const ids = [...this.selectedProductIds];
+    const requests = ids.map(id => this.inventoryService.deleteProduct(id).pipe(
+      map(() => ({ ok: true as const })),
+      catchError(err => {
+        console.error(`Failed to delete product ${id}:`, err);
+        return of({ ok: false as const });
+      })
+    ));
+
+    forkJoin(requests).pipe(takeUntil(this.destroy$)).subscribe(results => {
+      this.isBulkDeleting = false;
+      this.selectedProductIds = [];
+      this.loadProducts();
+      this.loadHeaderStats();
+
+      const failed = results.filter(r => !r.ok).length;
+      if (failed > 0) {
+        this.messageService.add({
+          severity: 'warn', summary: 'Partial failure',
+          detail: `${results.length - failed} of ${results.length} products were deleted; ${failed} failed.`
+        });
+      } else {
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `${results.length} product(s) deleted successfully` });
       }
     });
   }

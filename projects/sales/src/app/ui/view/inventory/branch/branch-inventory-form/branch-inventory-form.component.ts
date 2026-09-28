@@ -7,7 +7,8 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, OnChanges, S
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, forkJoin, of, takeUntil, Observable } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   Branch,
@@ -483,14 +484,13 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
     this.error = null;
 
     const items = this.batchItemsArray.value;
-    let savedFirst: BranchInventory | null = null;
-    let failedCount = 0;
-    let firstErrorMessage = '';
 
-    // The mock InventoryService's saveBranchInventoryItem resolves synchronously (via `of(...)`),
-    // so this plain for-loop completes in one tick.
-    for (const item of items) {
-      this.inventoryService.saveBranchInventoryItem({
+    // saveBranchInventoryItem() is a real HTTP call, not a synchronous mock — this used to flip
+    // isSaving back to false and navigate away right after firing all the requests, before any
+    // of them had actually resolved, silently losing any real per-item failure that happened
+    // after the component had already moved on.
+    const requests: Observable<{ ok: true; saved: BranchInventory } | { ok: false; message: string | undefined }>[] =
+      items.map((item: any) => this.inventoryService.saveBranchInventoryItem({
         branchId: this.branchId,
         productId: item.productId,
         quantity: parseInt(item.quantity, 10),
@@ -498,28 +498,27 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
         safetyStock: parseInt(item.safetyStock, 10),
         sellingPrice: parseFloat(item.sellingPrice),
         costPrice: parseFloat(item.costPrice || 0)
-      }).subscribe({
-        next: (saved) => {
-          if (!savedFirst) savedFirst = saved;
-        },
-        error: (err) => {
-          failedCount++;
-          firstErrorMessage = firstErrorMessage || err?.message || 'Failed to save an item';
-        }
-      });
-    }
+      }).pipe(
+        map(saved => ({ ok: true as const, saved })),
+        catchError(err => of({ ok: false as const, message: err?.message as string | undefined }))
+      ));
 
-    this.isSaving = false;
+    forkJoin(requests).pipe(takeUntil(this.destroy$)).subscribe(results => {
+      this.isSaving = false;
 
-    if (failedCount > 0) {
-      this.error = `${failedCount} of ${items.length} item(s) failed to save: ${firstErrorMessage}`;
-      return;
-    }
+      const succeeded = results.filter(r => r.ok);
+      const failed = results.filter(r => !r.ok);
 
-    if (savedFirst) {
-      this.saved.emit(savedFirst);
-    }
-    this.navigateAway();
+      if (failed.length > 0) {
+        this.error = `${failed.length} of ${items.length} item(s) failed to save: ${failed[0].message || 'unknown error'}`;
+        return;
+      }
+
+      if (succeeded.length > 0) {
+        this.saved.emit(succeeded[0].saved);
+      }
+      this.navigateAway();
+    });
   }
 
   // ============================================================

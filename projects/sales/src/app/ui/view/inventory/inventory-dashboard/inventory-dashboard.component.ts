@@ -41,6 +41,11 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
   // ============================================================
 
   isLoading: boolean = true;
+  // Distinguishes the very first load (full-page spinner is fine, there's nothing to show yet)
+  // from every subsequent auto-refresh — the 60s auto-refresh below used to gate the whole
+  // stats grid/two-column layout on `!isLoading`, so it tore the entire dashboard down into a
+  // spinner and rebuilt it from scratch every single tick, even though nothing had changed.
+  hasLoadedOnce: boolean = false;
   dashboardData: InventoryDashboardData | null = null;
   error: string | null = null;
 
@@ -115,6 +120,7 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
           this.applyBranchScope();
           this.inventoryService.getQuickActions().pipe(takeUntil(this.destroy$)).subscribe(actions => { this.quickActions = actions; });
           this.isLoading = false;
+          this.hasLoadedOnce = true;
         },
         error: (err) => {
           console.error('Failed to load dashboard:', err);
