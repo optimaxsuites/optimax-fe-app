@@ -52,6 +52,16 @@
     background: #fef2f2;
     color: #dc2626;
   }
+
+  &.float-locked {
+    cursor: default;
+    opacity: 0.4;
+
+    &:hover {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+  }
 }
 
 /* ── Voice note player ── */

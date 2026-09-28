@@ -101,6 +101,7 @@ export class NavigationLinksService {
     this.links['hrOvertime'] = '/admin/hr/overtime/' + uuidV4();
     this.links['hrOrgChart'] = '/admin/hr/org-chart/' + uuidV4();
     this.links['hrReports'] = '/admin/hr/reports/' + uuidV4();
+    this.links['profileChangeRequests'] = '/admin/hr/profile-change-requests/' + uuidV4();
     this.links['preOnboardingForm'] = '/admin/hr/pre-onboarding-form/' + uuidV4();
     this.links['employeeUpdateForm'] = '/admin/hr/employee-update-form/' + uuidV4();
     this.links['offboardingForm'] = '/admin/hr/offboarding-form/' + uuidV4();
