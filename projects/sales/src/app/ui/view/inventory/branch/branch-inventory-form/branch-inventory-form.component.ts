@@ -510,12 +510,12 @@ export class BranchInventoryFormComponent implements OnInit, OnDestroy, OnChange
       const failed = results.filter(r => !r.ok);
 
       if (failed.length > 0) {
-        this.error = `${failed.length} of ${items.length} item(s) failed to save: ${failed[0].message || 'unknown error'}`;
+        this.error = `${failed.length} of ${items.length} item(s) failed to save: ${(failed[0] as { ok: false; message?: string }).message || 'unknown error'}`;
         return;
       }
 
       if (succeeded.length > 0) {
-        this.saved.emit(succeeded[0].saved);
+        this.saved.emit((succeeded[0] as { ok: true; saved: BranchInventory }).saved);
       }
       this.navigateAway();
     });
