@@ -327,13 +327,15 @@
                                     </div>
                                     <div class="ql-review-item">
                                         <span class="ql-review-label">From</span>
-                                        <span class="ql-review-value">{{ movementForm.get('fromLocationId')?.value
-                                            }}</span>
+                                        <span class="ql-review-value">{{
+                                            getLocationName(movementForm.get('fromLocationType')?.value,
+                                            movementForm.get('fromLocationId')?.value) }}</span>
                                     </div>
                                     <div class="ql-review-item">
                                         <span class="ql-review-label">To</span>
-                                        <span class="ql-review-value">{{ movementForm.get('toLocationId')?.value
-                                            }}</span>
+                                        <span class="ql-review-value">{{
+                                            getLocationName(movementForm.get('toLocationType')?.value,
+                                            movementForm.get('toLocationId')?.value) }}</span>
                                     </div>
                                     <div class="ql-review-item">
                                         <span class="ql-review-label">Scheduled</span>

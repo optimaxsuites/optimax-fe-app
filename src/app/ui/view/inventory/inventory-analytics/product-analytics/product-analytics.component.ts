@@ -149,33 +149,33 @@ export class ProductAnalyticsComponent implements OnInit, OnChanges, OnDestroy {
   loadBranchInventory(): void {
     if (!this.productId) return;
 
-    // Get inventory across all branches
-    this.inventoryService.getBranches()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (branches) => {
-          let completed = 0;
-          const allInventory: BranchInventory[] = [];
+    // this.branches was already loaded by loadData()'s forkJoin a moment earlier — re-fetching
+    // it here duplicated a network call on every load/refresh/product-change for no reason.
+    const branches = this.branches;
+    let completed = 0;
+    const allInventory: BranchInventory[] = [];
 
-          branches.forEach(branch => {
-            this.inventoryService.getBranchInventory(String(branch.id))
-              .pipe(takeUntil(this.destroy$))
-              .subscribe({
-                next: (inventory) => {
-                  const items = inventory.filter(i => i.productId === this.productId);
-                  allInventory.push(...items);
-                  completed++;
-                  if (completed === branches.length) {
-                    this.branchInventory = allInventory;
-                    this.calculateStats();
-                  }
-                },
-                error: (err) => console.error('Failed to load branch inventory:', err)
-              });
-          });
-        },
-        error: (err) => console.error('Failed to load branches:', err)
-      });
+    if (branches.length === 0) {
+      this.branchInventory = allInventory;
+      return;
+    }
+
+    branches.forEach(branch => {
+      this.inventoryService.getBranchInventory(String(branch.id))
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (inventory) => {
+            const items = inventory.filter(i => i.productId === this.productId);
+            allInventory.push(...items);
+            completed++;
+            if (completed === branches.length) {
+              this.branchInventory = allInventory;
+              this.calculateStats();
+            }
+          },
+          error: (err) => console.error('Failed to load branch inventory:', err)
+        });
+    });
   }
 
   // ============================================================

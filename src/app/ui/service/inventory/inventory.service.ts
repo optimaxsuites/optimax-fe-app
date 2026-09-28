@@ -1496,7 +1496,9 @@ export class InventoryService {
       createdByName: m.createdByName,
       approvedById: m.approvedBy,
       approvedByName: m.approvedByName,
-      scheduledDate: m.scheduledDate
+      scheduledDate: m.scheduledDate,
+      priority: m.priority,
+      unit: m.unit
     };
   }
 

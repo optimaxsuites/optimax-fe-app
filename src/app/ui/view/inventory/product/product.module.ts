@@ -8,14 +8,12 @@ import { MessageService } from 'primeng/api';
 import { ProductDetailComponent } from './product-detail/product-detail.component';
 import { ProductBulkImportComponent } from './product-bulk-import/product-bulk-import.component';
 import { ProductManagementComponent } from './product-management/product-management.component';
-import { ProductManagementDetailComponent } from './product-management-detail/product-management-detail.component';
 import { ProductManagementFormComponent } from './product-management-form/product-management-form.component';
 
 @NgModule({
   declarations: [
     ProductDetailComponent,
-    ProductBulkImportComponent,
-    ProductManagementDetailComponent
+    ProductBulkImportComponent
   ],
   imports: [
     CommonModule,

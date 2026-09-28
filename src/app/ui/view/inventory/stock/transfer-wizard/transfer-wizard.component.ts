@@ -506,6 +506,7 @@ export class TransferWizardComponent implements OnInit, OnDestroy {
         fromLocation: { type: 'BRANCH', id: sourceBranchId, name: sourceBranchName },
         toLocation: { type: 'BRANCH', id: destinationBranchId, name: destinationBranchName },
         notes: formValue.notes || '',
+        priority: formValue.priority,
         // Without this, Movement Approvals' "Requested By" showed "Unknown" for every
         // transfer — createMovement() never defaulted it the way createRestockRequest() does.
         createdBy: sessionStorage.getItem('userid') || undefined,

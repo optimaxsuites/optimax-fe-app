@@ -14,12 +14,7 @@ import {
   BranchInventory,
   BranchStockSummary,
   StockMovement,
-  StockAlert,
-  getStockStatus,
-  getStockStatusColor,
-  getStockStatusLabel,
-  MovementType,
-  MovementStatus
+  StockAlert
 } from '../../../../domain/inventory/inventory.dto';
 
 // ============================================================
@@ -49,35 +44,8 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   // Tabs
   activeTab: 'overview' | 'inventory' | 'movements' | 'alerts' | 'analytics' | 'restock' = 'overview';
 
-  // Inventory filters
-  inventoryFilters = {
-    searchTerm: '',
-    stockStatus: 'ALL',
-    category: 'ALL'
-  };
-
-  // Categories for filter
-  categories: string[] = ['ALL'];
-
-  // Stock movement filters
-  movementFilters = {
-    type: 'ALL',
-    status: 'ALL',
-    dateFrom: '',
-    dateTo: ''
-  };
-
   // UI
   Math = Math;
-
-  // Movement types for filter
-  movementTypes = ['ALL', 'PURCHASE', 'TRANSFER', 'SALE', 'RETURN', 'ADJUSTMENT', 'DAMAGED'];
-  movementStatuses = ['ALL', 'PENDING', 'IN_TRANSIT', 'COMPLETED', 'CANCELLED'];
-  stockStatuses = ['ALL', 'CRITICAL', 'LOW', 'NORMAL', 'OVERSTOCK'];
-
-  // Computed
-  filteredInventory: BranchInventory[] = [];
-  filteredMovements: StockMovement[] = [];
 
   // Statistics
   stats = {
@@ -190,9 +158,7 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
         next: (inventory) => {
           if (requestId !== this.loadRequestId) return;
           this.branchInventory = inventory;
-          this.applyInventoryFilters();
           this.calculateStats();
-          this.updateCategories();
         },
         error: (err) => {
           console.error('Failed to load branch inventory:', err);
@@ -238,46 +204,11 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
             m.fromLocation.id === this.branchId ||
             m.toLocation.id === this.branchId
           );
-          this.applyMovementFilters();
         },
         error: (err) => {
           console.error('Failed to load movements:', err);
         }
       });
-  }
-
-  // ============================================================
-  // FILTERING
-  // ============================================================
-
-  applyInventoryFilters(): void {
-    this.filteredInventory = this.branchInventory.filter(item => {
-      const searchMatch = !this.inventoryFilters.searchTerm ||
-        (item.productName || '').toLowerCase().includes(this.inventoryFilters.searchTerm.toLowerCase()) ||
-        (item.sku || '').toLowerCase().includes(this.inventoryFilters.searchTerm.toLowerCase());
-
-      const status = getStockStatus(item.quantity, item.reorderPoint, item.safetyStock);
-      const statusMatch = this.inventoryFilters.stockStatus === 'ALL' ||
-        status === this.inventoryFilters.stockStatus;
-
-      return searchMatch && statusMatch;
-    });
-  }
-
-  applyMovementFilters(): void {
-    this.filteredMovements = this.recentMovements.filter(m => {
-      const typeMatch = this.movementFilters.type === 'ALL' ||
-        m.movementType === this.movementFilters.type;
-
-      const statusMatch = this.movementFilters.status === 'ALL' ||
-        m.status === this.movementFilters.status;
-
-      return typeMatch && statusMatch;
-    });
-  }
-
-  private updateCategories(): void {
-    this.categories = ['ALL', 'Electronics', 'Building Materials', 'Paints', 'Plumbing'];
   }
 
   // ============================================================
@@ -398,18 +329,6 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   // UTILITY HELPERS
   // ============================================================
 
-  getStockStatus(quantity: number, reorderPoint: number, safetyStock: number): 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK' {
-    return getStockStatus(quantity, reorderPoint, safetyStock);
-  }
-
-  getStockStatusColor(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK'): string {
-    return getStockStatusColor(status);
-  }
-
-  getStockStatusLabel(status: 'CRITICAL' | 'LOW' | 'NORMAL' | 'OVERSTOCK'): string {
-    return getStockStatusLabel(status);
-  }
-
   getBranchStatusColor(status: string): string {
     const map: Record<string, string> = {
       'ACTIVE': '#2EB270',
@@ -437,23 +356,6 @@ export class BranchDetailComponent implements OnInit, OnDestroy {
   }
 
   getStatusLabel(status: string): string {
-    return status.replace(/_/g, ' ').toLowerCase()
-      .replace(/\b\w/g, l => l.toUpperCase());
-  }
-
-  getMovementTypeLabel(type: string): string {
-    const map: Record<string, string> = {
-      'PURCHASE': 'Purchase',
-      'TRANSFER': 'Transfer',
-      'SALE': 'Sale',
-      'RETURN': 'Return',
-      'ADJUSTMENT': 'Adjustment',
-      'DAMAGED': 'Damaged'
-    };
-    return map[type] || type;
-  }
-
-  getMovementStatusLabel(status: string): string {
     return status.replace(/_/g, ' ').toLowerCase()
       .replace(/\b\w/g, l => l.toUpperCase());
   }

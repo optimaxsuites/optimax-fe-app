@@ -256,6 +256,11 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
     this.sortItems();
   }
 
+  // Severity order for the Status column sort — BranchInventory has no `status` field (it's
+  // derived via getStockStatus()), so the generic (a as any)['status'] lookup below was always
+  // undefined for both sides and the sort icon flipped without the rows ever actually reordering.
+  private static readonly STATUS_RANK: Record<string, number> = { CRITICAL: 0, LOW: 1, NORMAL: 2, OVERSTOCK: 3 };
+
   private sortItems(): void {
     this.filteredItems.sort((a, b) => {
       let aVal: any = (a as any)[this.sortField];
@@ -265,6 +270,13 @@ export class BranchInventoryTableComponent implements OnInit, OnDestroy, OnChang
       if (this.sortField === 'productName') {
         aVal = a.productName;
         bVal = b.productName;
+      }
+
+      if (this.sortField === 'status') {
+        const aStatus = getStockStatus(a.quantity, a.reorderPoint, a.safetyStock);
+        const bStatus = getStockStatus(b.quantity, b.reorderPoint, b.safetyStock);
+        const comparison = BranchInventoryTableComponent.STATUS_RANK[aStatus] - BranchInventoryTableComponent.STATUS_RANK[bStatus];
+        return this.sortDirection === 'asc' ? comparison : -comparison;
       }
 
       // Handle strings

@@ -226,8 +226,7 @@
                                         <span class="ql-summary-label">Current Stock</span>
                                     </div>
                                     <div class="ql-summary-item">
-                                        <span class="ql-summary-value">{{ performance?.averagePrice || 0 |
-                                            currency:'NGN':'symbol':'1.0-0' }}</span>
+                                        <span class="ql-summary-value">{{ formatCurrency(performance?.averagePrice || 0) }}</span>
                                         <span class="ql-summary-label">Avg Price</span>
                                     </div>
                                     <div class="ql-summary-item">

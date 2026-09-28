@@ -7,7 +7,7 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angu
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Subject, takeUntil, forkJoin, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
 import {
   Product,
@@ -84,7 +84,6 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
 
   // Form
   predictionForm: FormGroup;
-  searchSubject = new Subject<string>();
 
   // Real monthly sales history, built from actual SALE movements — see buildHistoryFromSales().
   historyData: { month: string; score: number; sales: number; confidence: number }[] = [];
@@ -121,15 +120,6 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
     } else {
       this.loadData();
     }
-
-    // Setup search for product selection
-    this.searchSubject.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(searchTerm => {
-      this.filterProducts(searchTerm);
-    });
   }
 
   ngOnDestroy(): void {
@@ -144,8 +134,7 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   private buildForm(): FormGroup {
     return this.fb.group({
       productId: ['', Validators.required],
-      branchId: ['', Validators.required],
-      timeframe: ['month']
+      branchId: ['', Validators.required]
     });
   }
 
@@ -227,18 +216,6 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   // ============================================================
   // PRODUCT SEARCH
   // ============================================================
-
-  onSearchInput(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    if (target) {
-      this.searchSubject.next(target.value);
-    }
-  }
-
-  filterProducts(searchTerm: string): void {
-    // This would be handled by the dropdown in the template
-    // We're using a separate method for the product dropdown
-  }
 
   selectProduct(product: Product): void {
     this.predictionForm.patchValue({ productId: String(product.id) });
@@ -425,13 +402,6 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
   productSearchTerm: string = '';
   filteredProducts: Product[] = [];
 
-  toggleProductDropdown(): void {
-    this.showProductDropdown = !this.showProductDropdown;
-    if (this.showProductDropdown) {
-      this.filteredProducts = this.products;
-    }
-  }
-
   /** Delay hiding the dropdown on blur so a (mousedown) on a dropdown option has a chance to
    *  register first — otherwise the blur fires and removes the options before the click lands. */
   onProductInputBlur(): void {
@@ -496,11 +466,6 @@ export class SellLikelihoodComponent implements OnInit, OnDestroy {
       'NEGATIVE': 'fa-arrow-down'
     };
     return map[impact] || 'fa-minus';
-  }
-
-  getProductName(productId: string): string {
-    const product = this.products.find(p => String(p.id) === productId);
-    return product?.name || productId;
   }
 
   getBranchName(branchId: string): string {

@@ -139,9 +139,18 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
   // DATA LOADING
   // ============================================================
 
+  // Tracks whether each of the two loadData() requests has actually completed — checking
+  // branches.length > 0 && products.length > 0 used to mean a tenant with genuinely zero
+  // branches or zero products got stuck on the loading spinner forever, since that condition
+  // could never become true no matter how many times either request resolved.
+  private branchesLoaded = false;
+  private productsLoaded = false;
+
   loadData(): void {
     this.isLoading = true;
     this.error = null;
+    this.branchesLoaded = false;
+    this.productsLoaded = false;
 
     // Load branches
     this.inventoryService.getBranches()
@@ -149,6 +158,7 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (branches) => {
           this.branches = branches;
+          this.branchesLoaded = true;
           this.checkLoadingComplete();
         },
         error: (err) => {
@@ -165,6 +175,7 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
         next: (response) => {
           this.products = response.data;
           this.filteredProducts = response.data;
+          this.productsLoaded = true;
           this.checkLoadingComplete();
         },
         error: (err) => {
@@ -176,7 +187,7 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
   }
 
   private checkLoadingComplete(): void {
-    if (this.branches.length > 0 && this.products.length > 0) {
+    if (this.branchesLoaded && this.productsLoaded) {
       this.isLoading = false;
     }
   }
@@ -466,7 +477,8 @@ export class BulkTransferComponent implements OnInit, OnDestroy {
         movementType: MovementType.TRANSFER,
         fromLocation: { type: 'BRANCH', id: sourceBranchId, name: sourceBranchName },
         toLocation: { type: 'BRANCH', id: destinationBranchId, name: destinationBranchName },
-        notes: formValue.notes || ''
+        notes: formValue.notes || '',
+        priority: formValue.priority
       }).pipe(
         map(movement => ({ ok: true as const, movement })),
         catchError(err => of({ ok: false as const, productName: item.productName as string, message: err?.message as string | undefined }))

@@ -16,7 +16,7 @@ describe('BulkTransferComponent', () => {
   };
 
   beforeEach(() => {
-    inventoryService = jasmine.createSpyObj<InventoryService>('InventoryService', ['createMovement']);
+    inventoryService = jasmine.createSpyObj<InventoryService>('InventoryService', ['createMovement', 'getBranches', 'getProducts']);
     component = new BulkTransferComponent(inventoryService, { navigate: jasmine.createSpy('navigate') } as any, new FormBuilder());
     component.bulkForm.patchValue({ sourceBranchId: 'b1', destinationBranchId: 'b2' });
     component.currentStep = 3;
@@ -70,5 +70,39 @@ describe('BulkTransferComponent', () => {
     expect(inventoryService.createMovement).not.toHaveBeenCalled();
     expect(component.error).toContain('Insufficient stock');
     expect(component.isSubmitting).toBeFalse();
+  });
+
+  it('includes the selected priority on each created movement instead of silently dropping it', () => {
+    inventoryService.createMovement.and.returnValue(of({ id: 1 } as any));
+    component.bulkForm.patchValue({ priority: 'URGENT' });
+    addItem('p1', 5, 10);
+
+    component.submitTransfer();
+
+    expect(inventoryService.createMovement).toHaveBeenCalledWith(jasmine.objectContaining({ priority: 'URGENT' }));
+  });
+
+  describe('loadData(): loading state for a genuinely empty tenant', () => {
+    it('stops loading even when both branches and products load as real, empty lists', () => {
+      const branches$ = new Subject<any[]>();
+      const products$ = new Subject<any>();
+      inventoryService.getBranches.and.returnValue(branches$.asObservable());
+      inventoryService.getProducts.and.returnValue(products$.asObservable());
+
+      component.loadData();
+      expect(component.isLoading).toBeTrue();
+
+      // Before the fix, checkLoadingComplete() only cleared isLoading when both arrays were
+      // non-empty — a tenant with 0 branches or 0 products could never satisfy that and stayed
+      // on the loading spinner forever, even though both requests genuinely completed.
+      branches$.next([]);
+      branches$.complete();
+      expect(component.isLoading).toBeTrue(); // still waiting on products
+
+      products$.next({ data: [] });
+      products$.complete();
+
+      expect(component.isLoading).toBeFalse();
+    });
   });
 });
