@@ -83,7 +83,12 @@ export interface ReportData {
     totalStockValue: number;
     averageTurnover: number;
     topPerformingProduct: string;
-    topPerformingBranch: string;
+    // Renamed from topPerformingBranch: the underlying calculation (getHighestStockValueBranch)
+    // sums current inventory.quantity * sellingPrice per branch — that's stock value, not any
+    // actual sales/revenue metric. ProductPerformance has no per-branch breakdown (no branchId),
+    // so there's no real per-branch sales figure available here to compute a true "top performer"
+    // from. Renaming honestly rather than mislabeling a stock-value figure as sales performance.
+    highestStockValueBranch: string;
     periodDays: number;
   };
 }
@@ -453,7 +458,7 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
       ? filteredPerformance.sort((a, b) => b.performanceScore - a.performanceScore)[0]
       : null;
 
-    const topBranch = this.getTopPerformingBranch();
+    const topBranch = this.getHighestStockValueBranch();
 
     const summary: ReportSummary = {
       totalRevenue,
@@ -507,7 +512,10 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
         details: formValue.includeDetails
       },
       createdAt: new Date(),
-      createdBy: 'Admin'
+      // Every generated report used to be permanently attributed to a hardcoded 'Admin', same
+      // bug already fixed for restock/movement approvals — 'fullname' is the session key app.ts
+      // sets at login (see RestockApprovalComponent.getCurrentUserName()).
+      createdBy: sessionStorage.getItem('fullname') || 'Unknown User'
     };
 
     return {
@@ -527,7 +535,7 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
         totalStockValue: inventoryValue,
         averageTurnover: avgTurnover,
         topPerformingProduct: topPerformer?.productName || 'N/A',
-        topPerformingBranch: topBranch || 'N/A',
+        highestStockValueBranch: topBranch || 'N/A',
         periodDays
       }
     };
@@ -730,7 +738,7 @@ export class PerformanceReportComponent implements OnInit, OnDestroy {
     });
   }
 
-  private getTopPerformingBranch(): string {
+  private getHighestStockValueBranch(): string {
     const branchMap = new Map<string, { revenue: number; count: number }>();
     this.performance.forEach(p => {
       // Find which branch has the most sales for this product

@@ -59,4 +59,15 @@ describe('ThresholdManagementComponent', () => {
     expect(component.error).toBeTruthy();
     expect(component.success).toBeNull();
   });
+
+  it('does not classify an unconfigured item (reorderPoint 0, safetyStock 0) as OVERSTOCK', () => {
+    // Before the fix, getStockStatus's quantity > reorderPoint * 3 check was true for any
+    // quantity > 0 when reorderPoint is 0 (unconfigured), mislabeling placeholder rows OVERSTOCK.
+    expect(component.getStockStatus(50, 0, 0)).toBe('NORMAL');
+    expect(component.getStockStatus(0, 0, 0)).toBe('NORMAL');
+  });
+
+  it('still classifies a genuinely overstocked, properly-configured item as OVERSTOCK', () => {
+    expect(component.getStockStatus(100, 10, 5)).toBe('OVERSTOCK');
+  });
 });

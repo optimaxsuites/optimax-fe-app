@@ -185,4 +185,31 @@ describe('InventoryService', () => {
       req.flush({ id: 1 });
     });
   });
+
+  describe('getRestockRequests / getMovements: mock fallback data is internally consistent', () => {
+    beforeEach(inject);
+
+    it('no PENDING mock restock request has a fabricated approvedAt', () => {
+      let result: any;
+      service.getRestockRequests().subscribe(r => (result = r));
+      http.expectOne(r => r.url === `${BASE}/inventory/restock-requests`).error(new ProgressEvent('error'));
+
+      const pending = result.data.filter((r: any) => r.status === 'PENDING');
+      expect(pending.length).toBeGreaterThan(0);
+      pending.forEach((r: any) => expect(r.approvedAt).toBeUndefined());
+    });
+
+    it('no PENDING mock movement has a fabricated approvedAt/completedAt', () => {
+      let result: any;
+      service.getMovements({ limit: 100 }).subscribe(r => (result = r));
+      http.expectOne(r => r.url === `${BASE}/inventory/movements`).error(new ProgressEvent('error'));
+
+      const pending = result.data.filter((m: any) => m.status === MovementStatus.PENDING);
+      expect(pending.length).toBeGreaterThan(0);
+      pending.forEach((m: any) => {
+        expect(m.approvedAt).toBeUndefined();
+        expect(m.completedAt).toBeUndefined();
+      });
+    });
+  });
 });

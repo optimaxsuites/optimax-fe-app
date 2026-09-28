@@ -248,13 +248,16 @@ private loadBranchData(): void {
           m.toLocation?.id === this.branchId
         );
 
-        // Find low stock items
-        this.lowStockItems = this.branchInventory.filter(item => 
-          item.quantity <= item.reorderPoint && item.quantity > 0
+        // Find low stock items — this used to ignore safetyStock entirely (item.quantity <=
+        // item.reorderPoint), so an item at or below safety stock showed here as merely "Low
+        // Stock" while every other screen in the app (branch-detail, branch-inventory-table,
+        // branch-inventory-form) calls the same item "Critical" via the shared getStockStatus().
+        this.lowStockItems = this.branchInventory.filter(item =>
+          getStockStatus(item.quantity, item.reorderPoint, item.safetyStock) === 'LOW'
         );
 
-        this.outOfStockItems = this.branchInventory.filter(item => 
-          item.quantity === 0
+        this.outOfStockItems = this.branchInventory.filter(item =>
+          getStockStatus(item.quantity, item.reorderPoint, item.safetyStock) === 'CRITICAL'
         );
 
         // Recent requests (pending)

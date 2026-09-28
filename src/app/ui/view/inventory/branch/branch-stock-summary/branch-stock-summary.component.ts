@@ -3,7 +3,7 @@
 // IMPORTS
 // ============================================================
 
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnDestroy, OnChanges, SimpleChanges, Input, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { InventoryService } from '../../../../service/inventory/inventory.service';
@@ -18,7 +18,7 @@ import { BranchStockSummary } from '../../../../domain/inventory/inventory.dto';
   templateUrl: './branch-stock-summary.component.html',
   styleUrls: ['./branch-stock-summary.component.scss']
 })
-export class BranchStockSummaryComponent implements OnInit, OnDestroy {
+export class BranchStockSummaryComponent implements OnInit, OnChanges, OnDestroy {
 
   // ============================================================
   // INPUTS / OUTPUTS
@@ -60,6 +60,16 @@ export class BranchStockSummaryComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadSummary();
     this.startAutoRefresh();
+  }
+
+  // Without this, the widget only ever loaded once, on creation — inventory-dashboard.component
+  // uses `[branchId]="selectedBranchId"` on a persistent instance of this component, so switching
+  // branches elsewhere on that page left this showing the previous branch's stock summary for up
+  // to a minute, until the next auto-refresh tick happened to fire.
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['branchId'] && !changes['branchId'].firstChange) {
+      this.loadSummary();
+    }
   }
 
   ngOnDestroy(): void {

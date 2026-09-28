@@ -12,7 +12,7 @@ describe('InventoryDashboardComponent', () => {
   } as any);
 
   beforeEach(() => {
-    inventoryService = jasmine.createSpyObj<InventoryService>('InventoryService', ['getDashboardData', 'getQuickActions']);
+    inventoryService = jasmine.createSpyObj<InventoryService>('InventoryService', ['getDashboardData', 'getQuickActions', 'resolveAlert']);
     inventoryService.getQuickActions.and.returnValue(of([]));
     component = new InventoryDashboardComponent(inventoryService, { navigate: jasmine.createSpy('navigate') } as any);
   });
@@ -35,5 +35,20 @@ describe('InventoryDashboardComponent', () => {
     component.loadDashboardData();
     expect(component.hasLoadedOnce).toBeFalse();
     expect(component.isLoading).toBeFalse();
+  });
+
+  it('resolveAlert recomputes lowStockItems and outOfStockItems independently instead of folding one into the other', () => {
+    inventoryService.resolveAlert.and.returnValue(of(undefined));
+    component.alerts = [
+      { id: 1, type: 'LOW_STOCK' } as any,
+      { id: 2, type: 'OUT_OF_STOCK' } as any,
+      { id: 3, type: 'OUT_OF_STOCK' } as any
+    ];
+    component.stats = { lowStockItems: 0, outOfStockItems: 0 } as any;
+
+    component.resolveAlert(1);
+
+    expect(component.stats!.lowStockItems).toBe(0);
+    expect(component.stats!.outOfStockItems).toBe(2);
   });
 });

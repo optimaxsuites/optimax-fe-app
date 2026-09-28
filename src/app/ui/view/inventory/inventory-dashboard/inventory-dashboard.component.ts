@@ -287,9 +287,12 @@ export class InventoryDashboardComponent implements OnInit, OnDestroy {
           // Remove the alert from the list
           this.alerts = this.alerts.filter(a => a.id !== Number(alertId));
           if (this.stats) {
-            this.stats.lowStockItems = this.alerts.filter(a =>
-              a.type === 'LOW_STOCK' || a.type === 'OUT_OF_STOCK'
-            ).length;
+            // This used to fold OUT_OF_STOCK alerts into lowStockItems and never touch
+            // outOfStockItems at all — after resolving even one unrelated alert, "Low Stock"
+            // became inflated with out-of-stock alerts and "Out of Stock" went stale, so the two
+            // stat cards on this same dashboard could disagree about the same alert list.
+            this.stats.lowStockItems = this.alerts.filter(a => a.type === 'LOW_STOCK').length;
+            this.stats.outOfStockItems = this.alerts.filter(a => a.type === 'OUT_OF_STOCK').length;
           }
         },
         error: (err) => {

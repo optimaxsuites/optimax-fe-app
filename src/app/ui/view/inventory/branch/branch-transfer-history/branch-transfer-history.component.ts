@@ -78,7 +78,8 @@ export class BranchTransferHistoryComponent implements OnInit, OnDestroy {
     outgoing: 0,
     completed: 0,
     pending: 0,
-    inTransit: 0
+    inTransit: 0,
+    cancelled: 0
   };
 
   // Private
@@ -179,6 +180,14 @@ export class BranchTransferHistoryComponent implements OnInit, OnDestroy {
     const formValue = this.filterForm.value;
 
     this.filteredMovements = this.movements.filter(m => {
+      // Defensive: getMovements() asks the backend to filter by branchId, but its fallback path
+      // (used if the API is unreachable) returns the full, unfiltered local movements list with
+      // no branch filtering applied anywhere in that path — re-check here too, the same way
+      // branch-detail.component.ts and branch-manager-dashboard.component.ts already do, so a
+      // backend outage can't leak another branch's movements into this branch's history.
+      const branchMatch = !this.branchId ||
+        m.fromLocation?.id === this.branchId || m.toLocation?.id === this.branchId;
+
       // Search filter
       const searchMatch = !formValue.search ||
         (m.productName || '').toLowerCase().includes(formValue.search.toLowerCase()) ||
@@ -197,7 +206,7 @@ export class BranchTransferHistoryComponent implements OnInit, OnDestroy {
       // Date range filters
       const dateMatch = this.filterByDate(m);
 
-      return searchMatch && typeMatch && statusMatch && dateMatch;
+      return branchMatch && searchMatch && typeMatch && statusMatch && dateMatch;
     });
 
     // Update pagination
@@ -255,12 +264,16 @@ export class BranchTransferHistoryComponent implements OnInit, OnDestroy {
   // ============================================================
 
   calculateStats(): void {
-    this.stats.total = this.movements.length;
-    this.stats.incoming = this.movements.filter(m => m.toLocation.id === this.branchId).length;
-    this.stats.outgoing = this.movements.filter(m => m.fromLocation.id === this.branchId).length;
+    // total/incoming/outgoing used to count every movement regardless of status, so a cancelled
+    // inbound transfer still inflated "Incoming"/"Total" as if it had actually happened.
+    const active = this.movements.filter(m => m.status !== MovementStatus.CANCELLED);
+    this.stats.total = active.length;
+    this.stats.incoming = active.filter(m => m.toLocation.id === this.branchId).length;
+    this.stats.outgoing = active.filter(m => m.fromLocation.id === this.branchId).length;
     this.stats.completed = this.movements.filter(m => m.status === MovementStatus.COMPLETED).length;
     this.stats.pending = this.movements.filter(m => m.status === MovementStatus.PENDING).length;
     this.stats.inTransit = this.movements.filter(m => m.status === MovementStatus.IN_TRANSIT).length;
+    this.stats.cancelled = this.movements.filter(m => m.status === MovementStatus.CANCELLED).length;
   }
 
   // ============================================================
