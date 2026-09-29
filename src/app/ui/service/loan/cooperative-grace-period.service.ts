@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment';
+import { getTokenFromStorage } from './cooperative-loan/token-util';
 
 export interface CooperativeGracePeriodRequest {
   id?: number;
@@ -40,14 +41,27 @@ export class CooperativeGracePeriodService {
 
   constructor(private http: HttpClient) {}
 
-  private getHeaders() {
-    const token = sessionStorage.getItem('token');
-    const tenantId = 'optimax';
-    return {
-      'Authorization': `Bearer ${token}`,
-      'X-Tenant-ID': tenantId,
+  private getHeaders(): Record<string, string> {
+    const token = getTokenFromStorage();
+    const headers: Record<string, string> = {
+      'X-Tenant-ID': this.getTenantId(),
       'Content-Type': 'application/json'
     };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return headers;
+  }
+
+  private getTenantId(): string {
+    const tenant = sessionStorage.getItem('tenantId')
+      || sessionStorage.getItem('tenant')
+      || localStorage.getItem('tenantId')
+      || localStorage.getItem('tenant')
+      || 'optimax';
+    return tenant && tenant !== 'undefined' && tenant !== 'null' ? tenant : 'optimax';
   }
 
   getAllRequests(params?: { page?: number; size?: number; loanId?: number; memberId?: number; status?: string }): Observable<CooperativeGracePeriodRequest[]> {

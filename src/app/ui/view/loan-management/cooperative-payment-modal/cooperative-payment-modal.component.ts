@@ -190,27 +190,38 @@ export class CooperativePaymentModalComponent implements OnInit, OnChanges {
       paymentReference: String(formValue.paymentReference || '').trim(),
       paidFromAccount: String(formValue.paidFromAccount || '').trim(),
       paidIntoAccount: this.selectedAccountDetails.accountNumber
-    }).subscribe((recorded) => {
-      this.isLoading = false;
-      if (!recorded) {
+    }).subscribe({
+      next: (recorded) => {
+        this.isLoading = false;
+        if (!recorded) {
+          this.messages = [{
+            severity: 'warn',
+            summary: 'Payment Not Recorded',
+            detail: 'Unable to record this cooperative payment. Check the selected payment type and outstanding amount.'
+          }];
+          return;
+        }
+
         this.messages = [{
-          severity: 'warn',
-          summary: 'Payment Not Recorded',
-          detail: 'Unable to record this cooperative payment. Check the selected payment type and outstanding amount.'
+          severity: 'success',
+          summary: 'Payment Recorded',
+          detail: `${this.selectedPaymentTypeLabel} of ${this.formatCurrency(Number(formValue.amount || this.selectedAmountDue))} has been recorded successfully.`
         }];
-        return;
+
+        setTimeout(() => {
+          this.paymentSuccess.emit();
+          this.close.emit();
+        }, 900);
+      },
+      error: (error) => {
+        this.isLoading = false;
+        console.error('Error recording cooperative payment:', error);
+        this.messages = [{
+          severity: 'error',
+          summary: 'Payment Failed',
+          detail: 'Failed to record payment. Please try again.'
+        }];
       }
-
-      this.messages = [{
-        severity: 'success',
-        summary: 'Payment Recorded',
-        detail: `${this.selectedPaymentTypeLabel} of ${this.formatCurrency(Number(formValue.amount || this.selectedAmountDue))} has been recorded successfully.`
-      }];
-
-      setTimeout(() => {
-        this.paymentSuccess.emit();
-        this.close.emit();
-      }, 900);
     });
   }
 

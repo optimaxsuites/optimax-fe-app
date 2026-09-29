@@ -4,6 +4,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../shared-component/service/environments/environment.prod';
 import { CooperativeContributionEntry, CooperativeGroupMembership, CooperativeLoanGroup, CooperativeMember } from './cooperative.types';
+import { getTokenFromStorage } from './token-util';
 
 export interface CooperativeGroupApiContributionHistory {
   id?: number;
@@ -117,12 +118,26 @@ export class CooperativeGroupService {
     }
 
     private getAuthHeaders(): HttpHeaders {
-      const token = sessionStorage.getItem('token') || sessionStorage.getItem('Token');
-      return new HttpHeaders({
-        'Authorization': `Bearer ${token}`,
-        'X-Tenant-ID': 'optimax',
+      const token = getTokenFromStorage();
+      const headers: Record<string, string> = {
+        'X-Tenant-ID': this.getTenantId(),
         'Content-Type': 'application/json'
-      });
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      return new HttpHeaders(headers);
+    }
+
+    private getTenantId(): string {
+      const tenant = sessionStorage.getItem('tenantId')
+        || sessionStorage.getItem('tenant')
+        || localStorage.getItem('tenantId')
+        || localStorage.getItem('tenant')
+        || 'optimax';
+      return tenant && tenant !== 'undefined' && tenant !== 'null' ? tenant : 'optimax';
     }
 
     getAllCooperativeGroups(): Observable<CooperativeGroupApiResponse[]> {
