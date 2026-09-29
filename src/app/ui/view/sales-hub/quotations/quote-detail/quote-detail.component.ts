@@ -1,5 +1,6 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote, Invoice, SalesandTransactions, AdditionalQuoteOptions } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
@@ -17,7 +18,7 @@ import { MessageService } from 'primeng/api';
   templateUrl: './quote-detail.component.html',
   styleUrls: ['./quote-detail.component.scss']
 })
-export class QuoteDetailComponent implements OnInit {
+export class QuoteDetailComponent implements OnInit, OnDestroy {
   @Input() detailId?: string;
   @Output() closed = new EventEmitter<void>();
   @Output() edit = new EventEmitter<string>();
@@ -25,6 +26,8 @@ export class QuoteDetailComponent implements OnInit {
   quote: Quote | null = null;
   isLoading = true;
   isDownloading = false;
+
+  private destroy$ = new Subject<void>();
 
   constructor(
     private messageService: MessageService,
@@ -38,13 +41,25 @@ export class QuoteDetailComponent implements OnInit {
     return Array.isArray(this.quote.additionalOptions) ? this.quote.additionalOptions[0] : (this.quote.additionalOptions as any);
   }
 
+  // Reading route.snapshot.paramMap once here meant navigating from one quote's detail URL
+  // straight to another's (e.g. browser Back/Forward between two previously visited quotes) kept
+  // showing the first quote — Angular's default RouteReuseStrategy reuses this component instance
+  // across same-route-pattern navigations, so ngOnInit never re-ran. Subscribing to the live
+  // paramMap instead re-loads whenever the :id actually changes.
   ngOnInit(): void {
-    const id = this.detailId || this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.loadQuote(id);
-    } else {
-      this.isLoading = false;
-    }
+    this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      const id = this.detailId || params.get('id');
+      if (id) {
+        this.loadQuote(id);
+      } else {
+        this.isLoading = false;
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadQuote(id: string): void {
@@ -361,26 +376,41 @@ export class QuoteDetailComponent implements OnInit {
     });
   }
 
+  /** Same rule as QuoteListComponent.canDeleteQuote(): once a quote is CONVERTED (or ACCEPTED, on
+   *  its way there) it already has a real SalesandTransactions order/invoice referencing it. */
+  canDeleteQuote(): boolean {
+    return !!this.quote && this.quote.status !== 'CONVERTED' && this.quote.status !== 'ACCEPTED';
+  }
+
   deleteQuote(): void {
     if (!this.quote) return;
+    if (!this.canDeleteQuote()) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Delete', detail: `Quote ${this.quote.quoteNumber} has already been converted to an order and can no longer be deleted.` });
+      return;
+    }
     const custName = (this.quote.customerName as any)?.name || this.quote.customerName || 'Customer';
     this.pendingQuoteNumber = this.quote.quoteNumber || '';
     this.pendingCustomerName = custName;
     this.showDeleteQuoteModal = true;
   }
 
+  // This doesn't actually delete the quote record — it marks it EXPIRED (a soft archive), the
+  // same as a quote that naturally passed its validUntil date without a response. It used to
+  // claim "deleted successfully" in the success toast while silently doing this instead, which
+  // is a different, misleading thing from what QuoteListComponent's real delete (a genuine
+  // DELETE call) does.
   confirmDeleteQuote(): void {
-    if (!this.quote) return;
+    if (!this.quote || !this.canDeleteQuote()) return;
     const quoteNumber = this.quote.quoteNumber;
     this.showDeleteQuoteModal = false;
     this.salesService.updateQuote(String(this.quote.id), { status: 'EXPIRED' }).subscribe({
       next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Quote ${quoteNumber} deleted successfully` });
+        this.messageService.add({ severity: 'success', summary: 'Archived', detail: `Quote ${quoteNumber} marked as expired.` });
         this.goBack();
       },
       error: (err: any) => {
-        console.error('Error deleting quote:', err);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete quote. Please try again.' });
+        console.error('Error archiving quote:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to archive quote. Please try again.' });
       }
     });
   }

@@ -113,12 +113,9 @@
                 <div class="form-group flex-1">
                   <label class="form-label">Code (UPC/Barcode)</label>
                   <div class="code-input-wrapper">
-                    <input type="text" formControlName="code" class="form-control" placeholder="Enter code (UPC for auto-fill)">
-                    <button type="button" class="btn-auto-fill" (click)="autoFillFromCode()" title="Auto-fill from code">
-                      <i class="fas fa-magic"></i>
-                    </button>
+                    <input type="text" formControlName="code" class="form-control" placeholder="Enter code">
                   </div>
-                  <small class="form-hint">Enter a product code (e.g., UPC/Barcode 12-13 digits) to auto-fill product information from online databases.</small>
+                  <small class="form-hint">Enter a product code (e.g., UPC/Barcode).</small>
                 </div>
                 <div class="form-group flex-1">
                   <label class="form-label">Reorder Threshold</label>

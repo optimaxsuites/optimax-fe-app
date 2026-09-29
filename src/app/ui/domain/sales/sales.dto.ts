@@ -369,6 +369,48 @@ export interface PaymentReceipt {
   issuedAt: Date;
 }
 
+// PENDING/DISPATCHED/DELIVERED/CANCELLED matches the dispatchedAt/deliveredAt timestamp fields
+// the backend record carries; PENDING is the only value the API docs actually show as a sample.
+export type DeliveryNoteStatus = 'PENDING' | 'DISPATCHED' | 'DELIVERED' | 'CANCELLED';
+
+/** Line item on a delivery note, matching GET/POST /commerce/delivery-notes exactly — no pricing
+ *  (that belongs on the Invoice) and no separate ordered/shipped split (the backend only tracks
+ *  one quantity per line). */
+export interface DeliveryNoteItem {
+  id?: number;
+  deliveryNoteId?: number;
+  productName: string;
+  quantity: number;
+  unit: string;
+}
+
+/**
+ * The Delivery Note record, matching the real backend contract for
+ * GET/POST /commerce/delivery-notes and PATCH /commerce/delivery-notes/{id}/status. salesOrderId
+ * and customerId are plain ids (not nested objects) — the backend has no by-id GET, so a single
+ * record is found by filtering the list from getDeliveryNotes(); there's also no separate
+ * full-edit endpoint, so SalesService.updateDeliveryNoteStatus() is the only mutation after
+ * create, and it's used for both status transitions and any other field edits.
+ */
+export interface DeliveryNote {
+  id?: number;
+  tenantId?: string;
+  deliveryNumber: string;
+  salesOrderId?: number;
+  customerId?: number;
+  customerAddress: string;
+  carrier?: string;
+  trackingNumber?: string;
+  status: DeliveryNoteStatus;
+  dispatchedAt?: Date | string;
+  deliveredAt?: Date | string;
+  signature?: string;
+  createdBy?: number;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  items: DeliveryNoteItem[];
+}
+
 // ------------------------------------------------------------------
 // Sales Document Email DTOs
 // Backs POST/GET /x/api/v2/commerce/sales/email(/send|/{id}) — emailing

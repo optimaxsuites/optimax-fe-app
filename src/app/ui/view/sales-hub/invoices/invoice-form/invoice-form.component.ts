@@ -1062,7 +1062,14 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         this.isSubmitting = false;
         await this.handleDeliveryAction(response, this.selectedAction);
 
-        if (response.status === 'SENT' && response.quoteId) {
+        // This used to only fire when response.status === 'SENT' — but onSubmit() always POSTs
+        // status: 'DRAFT' above (a real Send only happens later, from invoice-detail's own Send
+        // Invoice action, which already marks the quote CONVERTED there), so that check could
+        // never actually be true and this never ran. The real gap it left: a quote at SENT with
+        // a draft invoice already created from it still showed as convertible, letting a second
+        // invoice be created from the same quote. Mark it CONVERTED the moment any invoice is
+        // successfully created from it, not only once that invoice is later sent.
+        if (!this.isEditMode && response.quoteId) {
           this.salesService.updateQuote(response.quoteId, { status: 'CONVERTED' }).subscribe({
             next: () => console.log(`Quote ${response.quoteId} marked as CONVERTED`),
             error: (err) => console.error('Error converting quote:', err)
@@ -1891,7 +1898,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
         <p style="margin-top: 24px;">Thank you for your business!</p>
         <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-        <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from OptimaX.</p>
+        <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from ${this.billedBy.name || invoice.merchantDetails?.name || invoice.merchantDetails?.companyName || 'our company'}.</p>
       </div>
     `;
 
@@ -1926,7 +1933,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       to: email,
       cc: [],
       bcc: [],
-      subject: `Invoice ${invoice.invoiceNumber} from OptimaX`,
+      subject: `Invoice ${invoice.invoiceNumber} from ${this.billedBy.name || invoice.merchantDetails?.name || invoice.merchantDetails?.companyName || 'our company'}`,
       message: htmlBody,
       attachments,
       sentBy: invoice.merchantDetails?.email || 'system'

@@ -158,10 +158,6 @@
             <span class="ql-insight-label">{{ metric.label }}</span>
             <span class="ql-insight-value">{{ metric.value }}</span>
           </div>
-          <div class="ql-insight-trend" [style.color]="metric.trend === 'up' ? '#2EB270' : '#DC2626'">
-            <i class="fas fa-arrow-{{ metric.trend === 'up' ? 'up' : 'down' }}"></i>
-            {{ metric.percent }}%
-          </div>
         </div>
       </div>
 
@@ -258,11 +254,6 @@
               <div class="ql-insight-item-info">
                 <span class="ql-insight-item-label">{{ metric.label }}</span>
                 <span class="ql-insight-item-value">{{ metric.value }}</span>
-              </div>
-              <div class="ql-insight-item-trend" [style.color]="metric.trend === 'up' ? '#2EB270' : '#DC2626'">
-                <i class="fas fa-arrow-{{ metric.trend === 'up' ? 'up' : 'down' }}"></i>
-                {{ metric.percent }}%
-                <span class="ql-insight-period">vs last month</span>
               </div>
             </div>
           </div>

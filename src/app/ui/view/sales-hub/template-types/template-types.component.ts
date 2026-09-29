@@ -283,27 +283,13 @@ export class TemplateTypesComponent implements OnInit {
   selectedAction: 'pdf' | 'email' | 'both' = 'pdf';
   showActionSelection: boolean = false;
 
-  // Customer-specific template preferences (simulated - would come from API)
-  customerTemplatePreferences: { [customerId: string]: string } = {
-    'CUST-001': 'standard', // Mama Nkechi likes standard
-    'CUST-002': 'detailed', // Tech Solutions wants detailed
-    'CUST-003': 'minimal', // Global Services likes minimal
-    'CUST-004': 'compact', // Dangote wants compact
-    'CUST-005': 'standard' // Obinna uses standard
-  };
-
+  // A hardcoded customerTemplatePreferences map used to live here (5 fake customer IDs like
+  // 'CUST-001' mapped to made-up template preferences, "simulated - would come from API"). Real
+  // customer ids never match those literals, so it silently never fired for any actual customer
+  // — removed rather than kept as fake personalization.
   constructor(private messageService: MessageService) {}
 
   ngOnInit(): void {
-    // Auto-select template based on customer preference if available
-    if (this.quoteData?.customerId) {
-      const preferredId = this.customerTemplatePreferences[this.quoteData.customerId];
-      if (preferredId) {
-        this.selectedTemplateId = preferredId;
-        this.selectedTemplate = this.templates.find(t => t.id === preferredId) || null;
-      }
-    }
-
     // If no template selected, use first one
     if (!this.selectedTemplate && this.templates.length > 0) {
       this.selectedTemplate = this.templates[0];

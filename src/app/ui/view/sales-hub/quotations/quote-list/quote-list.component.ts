@@ -2,7 +2,8 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil, forkJoin } from 'rxjs';
+import { Subject, takeUntil, forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote, QuoteStatus } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
@@ -33,10 +34,6 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   isLoading = true;
   selectedQuoteIds: any[] = [];
 
-  showQuoteModal = false;
-  showQuoteDetail = false;
-  selectedQuoteId?: string;
-
   openNewQuoteModal(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
@@ -66,33 +63,11 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     }
   }
 
-  closeQuoteModal(): void {
-    this.showQuoteModal = false;
-    this.selectedQuoteId = undefined;
-  }
-
-  closeQuoteDetail(): void {
-    this.showQuoteDetail = false;
-    this.selectedQuoteId = undefined;
-  }
-
-  onQuoteSaved(): void {
-    this.closeQuoteModal();
-    this.loadQuotes();
-  }
-
-  showInvoiceModal = false;
-
   openInvoiceModal(quoteId: string | number): void {
     const quoteIdStr = String(quoteId);
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
     this.router.navigate(path, { queryParams: { quoteId: quoteIdStr } });
-  }
-
-  closeInvoiceModal(): void {
-    this.showInvoiceModal = false;
-    this.selectedQuoteId = undefined;
   }
 
   duplicateQuote(quote: Quote): void {
@@ -102,11 +77,6 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     // Hand the already-loaded quote straight to the form via navigation state so it
     // doesn't have to make a fresh round-trip to re-fetch data we already have.
     this.router.navigate(path, { queryParams: { duplicateId: quoteIdStr }, state: { duplicateSource: quote } });
-  }
-
-  onInvoiceSaved(): void {
-    this.closeInvoiceModal();
-    this.loadQuotes();
   }
 
   // Filters
@@ -377,15 +347,63 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   pendingDeleteCustomerName = '';
   aiDismissed = false;
 
+  /** A CONVERTED (or ACCEPTED, on its way there) quote already has a real SalesandTransactions
+   *  order/invoice referencing it — deleting it would orphan that record and destroy the quote's
+   *  audit trail with no way to recover it. Only quotes that never produced a downstream order
+   *  (DRAFT/SENT/DECLINED/EXPIRED) can be deleted. */
+  canDeleteQuote(quote: Quote | null): boolean {
+    return !!quote && quote.status !== 'CONVERTED' && quote.status !== 'ACCEPTED';
+  }
+
   deleteQuote(quote: Quote): void {
+    if (!this.canDeleteQuote(quote)) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Delete', detail: `Quote ${quote.quoteNumber} has already been converted to an order and can no longer be deleted.` });
+      return;
+    }
     this.pendingDeleteQuote = quote;
     this.pendingDeleteQuoteNumber = quote.quoteNumber;
     this.pendingDeleteCustomerName = this.getCustomerName((quote as any).customerId) || (quote.customerName as any)?.name || quote.customerName || 'Customer';
     this.showDeleteModal = true;
   }
 
+  isBulkDeleting = false;
+
+  bulkDeleteQuotes(): void {
+    if (this.selectedQuoteIds.length === 0 || this.isBulkDeleting) return;
+
+    const targets = this.quotes.filter(q => this.selectedQuoteIds.includes(q.id));
+    const deletable = targets.filter(q => this.canDeleteQuote(q));
+    const blocked = targets.length - deletable.length;
+
+    if (deletable.length === 0) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Delete', detail: 'All selected quotes have already been converted to an order and cannot be deleted.' });
+      return;
+    }
+    if (!confirm(`Delete ${deletable.length} quote(s)? This cannot be undone.${blocked > 0 ? ` (${blocked} selected quote(s) are already converted and will be skipped.)` : ''}`)) {
+      return;
+    }
+
+    this.isBulkDeleting = true;
+    const requests = deletable.map(q => this.salesService.deleteQuote(String(q.id)).pipe(
+      map(() => ({ ok: true as const })),
+      catchError(() => of({ ok: false as const }))
+    ));
+
+    forkJoin(requests).subscribe(results => {
+      this.isBulkDeleting = false;
+      this.selectedQuoteIds = [];
+      this.loadQuotes();
+      const failed = results.filter(r => !r.ok).length;
+      if (failed > 0) {
+        this.messageService.add({ severity: 'warn', summary: 'Partial failure', detail: `${results.length - failed} of ${results.length} quotes were deleted; ${failed} failed.` });
+      } else {
+        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${results.length} quote(s) deleted successfully${blocked > 0 ? ` (${blocked} skipped — already converted)` : ''}.` });
+      }
+    });
+  }
+
   confirmDeleteQuote(): void {
-    if (!this.pendingDeleteQuote) return;
+    if (!this.pendingDeleteQuote || !this.canDeleteQuote(this.pendingDeleteQuote)) return;
     const target = this.pendingDeleteQuote;
     this.showDeleteModal = false;
     this.salesService.deleteQuote(String(target.id)).subscribe({
