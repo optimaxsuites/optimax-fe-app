@@ -343,6 +343,14 @@ export class MessageFeedComponent implements OnInit, OnDestroy, OnChanges {
     return Number(msg.senderUserId) === Number(this.myUserId);
   }
 
+  private readonly EDIT_WINDOW_MS = 30 * 60 * 1000;
+
+  isWithinEditWindow(msg: Message): boolean {
+    const sent = this.parseServerDate(msg.sentAtRaw);
+    if (!sent) return false;
+    return Date.now() - sent.getTime() < this.EDIT_WINDOW_MS;
+  }
+
   getTopReplies(msg: Message): Message[] {
     return msg.replies.slice(0, 2);
   }

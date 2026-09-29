@@ -26,9 +26,12 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
   isDetailModalOpen = false;
   private destroy$ = new Subject<void>();
 
-  // Filter options
-  statusFilter: RequestStatus | null = null;
+  // Filter / search / pagination
+  statusFilter: RequestStatus | null = 'pending';
   fieldTypeFilter: FieldChangeType | null = null;
+  searchQuery = '';
+  currentPage = 1;
+  readonly pageSize = 10;
 
   statusOptions = [
     { label: 'All Statuses', value: null },
@@ -101,35 +104,44 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
             severity: 'error',
             summary: 'Load Failed',
             detail: 'Unable to load profile change requests',
-            key: 'global',
+            key: 'tl',
           });
           this.loading = false;
         },
       });
   }
 
- applyFilters(): void {
-  let filtered = [...(this.requests || [])];
+  applyFilters(): void {
+    let filtered = [...(this.requests || [])];
 
-  if (this.statusFilter) {
-    filtered = filtered.filter((r) => r?.status === this.statusFilter);
+    if (this.statusFilter) {
+      filtered = filtered.filter((r) => r?.status === this.statusFilter);
+    }
+
+    if (this.fieldTypeFilter) {
+      filtered = filtered.filter((r) => r?.fieldChangeType === this.fieldTypeFilter);
+    }
+
+    if (this.currentUserId && !this.userIsAdmin) {
+      filtered = filtered.filter((r) => {
+        if (!r?.employeeId) return false;
+        return String(r.employeeUserId) === String(this.currentUserId);
+      });
+    }
+
+    const q = this.searchQuery.trim().toLowerCase();
+    if (q) {
+      filtered = filtered.filter((r) =>
+        (r.employeeName || '').toLowerCase().includes(q) ||
+        (r.fieldChangeType || '').toLowerCase().includes(q) ||
+        (r.reason || '').toLowerCase().includes(q) ||
+        this.getFieldDisplayValue(r).toLowerCase().includes(q)
+      );
+    }
+
+    this.filteredRequests = filtered;
+    this.currentPage = 1;
   }
-
-  if (this.fieldTypeFilter) {
-    filtered = filtered.filter((r) => r?.fieldChangeType === this.fieldTypeFilter);
-  }
-
-  if (this.currentUserId && !this.userIsAdmin) {
-    console.log(this.currentUserId)
-    filtered = filtered.filter((r) => {
-      console.log(r)
-      if (!r?.employeeId) return false;
-      return String(r.employeeUserId) === String(this.currentUserId);
-    });
-  }
-
-  this.filteredRequests = filtered;
-}
 
   viewDetails(request: ProfileChangeRequestDTO): void {
     this.selectedRequest = request;
@@ -174,6 +186,37 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
             severity: 'error',
             summary: 'Approval Failed',
             detail: 'Unable to approve the request',
+            key: 'tl',
+          });
+          this.isProcessingRequest = false;
+        },
+      });
+  }
+
+  deleteRequest(request: ProfileChangeRequestDTO): void {
+    if (!confirm(`Delete this request from ${request.employeeName}? This cannot be undone.`)) return;
+    this.isProcessingRequest = true;
+    this.profileChangeRequestService.deleteProfileChangeRequest(request.id!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Deleted',
+            detail: `Request from ${request.employeeName} has been deleted.`,
+            key: 'tl',
+          });
+          this.requests = this.requests.filter(r => String(r.id) !== String(request.id));
+          this.applyFilters();
+          this.isDetailModalOpen = false;
+          this.isProcessingRequest = false;
+        },
+        error: (err) => {
+          console.error('Error deleting request:', err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Delete Failed',
+            detail: 'Unable to delete this request.',
             key: 'tl',
           });
           this.isProcessingRequest = false;
@@ -279,15 +322,68 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
   }
 
   get filteredChanges() {
-  return this.selectedRequest?.request?.filter(change => {
-    const isNotId = change.fieldName.toLowerCase() !== 'id';
-    
-    // Checks that value exists, is not null/undefined, and is not just whitespace
-    const hasNewValue = change.value !== null && 
-                        change.value !== undefined && 
-                        change.value.toString().trim() !== '';
+    return this.selectedRequest?.request?.filter(change => {
+      const isNotId = change.fieldName.toLowerCase() !== 'id';
+      const hasNewValue = change.value !== null &&
+                          change.value !== undefined &&
+                          change.value.toString().trim() !== '';
+      return isNotId && hasNewValue;
+    }) || [];
+  }
 
-    return isNotId && hasNewValue;
-  }) || [];
-}
+  get pendingCount(): number {
+    return this.requests.filter(r => r?.status === 'pending').length;
+  }
+
+  get approvedCount(): number {
+    return this.requests.filter(r => r?.status === 'approved').length;
+  }
+
+  get rejectedCount(): number {
+    return this.requests.filter(r => r?.status === 'rejected').length;
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.filteredRequests.length / this.pageSize) || 1;
+  }
+
+  get pagedRequests(): ProfileChangeRequestDTO[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredRequests.slice(start, start + this.pageSize);
+  }
+
+  get pageNumbers(): number[] {
+    const total = this.totalPages;
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: number[] = [1];
+    const lo = Math.max(2, this.currentPage - 1);
+    const hi = Math.min(total - 1, this.currentPage + 1);
+    if (lo > 2) pages.push(-1);
+    for (let i = lo; i <= hi; i++) pages.push(i);
+    if (hi < total - 1) pages.push(-1);
+    pages.push(total);
+    return pages;
+  }
+
+  goToPage(p: number): void {
+    if (p >= 1 && p <= this.totalPages) this.currentPage = p;
+  }
+
+  setStatusFilter(val: RequestStatus | null): void {
+    this.statusFilter = val;
+    this.applyFilters();
+  }
+
+  setFieldTypeFilter(val: FieldChangeType | null): void {
+    this.fieldTypeFilter = val;
+    this.applyFilters();
+  }
+
+  getInitials(name: string): string {
+    if (!name) return '?';
+    const parts = name.trim().split(' ');
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : parts[0].slice(0, 2).toUpperCase();
+  }
 }

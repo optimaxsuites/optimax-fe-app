@@ -91,6 +91,7 @@ this.links['userProfile'] = '/admin/hr/user-profile/' +uuidV4();
     this.links['hrOvertime'] = '/admin/hr/overtime/' +uuidV4();
     this.links['hrOrgChart'] = '/admin/hr/org-chart/' +uuidV4();
     this.links['hrReports'] = '/admin/hr/reports/' +uuidV4();
+    this.links['profileChangeRequests'] = '/admin/hr/profile-change-requests/' +uuidV4();
     this.links['preOnboardingForm'] = '/admin/hr/pre-onboarding-form/' +uuidV4();
 this.links['userRoles'] = '/admin/settings/user-roles/' +uuidV4();
 
