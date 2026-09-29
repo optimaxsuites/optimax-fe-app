@@ -257,7 +257,7 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
     return {
       status: this.loan.status,
       changedAt: this.getLatestStatusDate() || this.loan.requestDate,
-      changedBy: this.resolveCurrentStatusActor(this.loan),
+      changedBy: this.formatActor(this.loan.rejectedBy ?? this.loan.approvedBy ?? this.loan.disbursedBy),
       notes: this.loan.adminComment
     };
   }
@@ -457,11 +457,6 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
     return explicitStatus || latestTimelineStatus || 'PENDING';
   }
 
-  private resolveCurrentStatusActor(loan: LoanApplication): string {
-    // Implementation as needed or remove if not used
-    return '';
-  }
-
   private normalizeStatus(status: string | undefined): LoanApplication['status'] | null {
     const normalizedStatus = String(status || '').trim().toUpperCase();
     if (normalizedStatus === 'READY-FOR-DISBURSEMENT') {
@@ -515,10 +510,10 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
       this.buildLifecycleEntry('APPROVED', loan.approvedDate, this.formatActor(loan.approvedBy), loan.adminComment || 'Loan approved'),
       this.buildLifecycleEntry('READY_FOR_DISBURSEMENT', loan.disbursementInitiatedAt, this.formatActor(loan.disbursementInitiatedBy), 'Loan sent to accounting for disbursement'),
       this.buildLifecycleEntry('ACTIVE', loan.disbursedDate, this.formatActor(loan.disbursedBy), 'Loan disbursed'),
-      this.buildLifecycleEntry('SKIPPED', getHistoryEntry('SKIPPED')?.changedAt, this.resolveCurrentStatusActor(loan), 'Repayment installment skipped after approved grace adjustment'),
-      this.buildLifecycleEntry('OVERDUE', getHistoryEntry('OVERDUE')?.changedAt, this.resolveCurrentStatusActor(loan), 'Repayment has become overdue'),
-      this.buildLifecycleEntry('PAUSED', getHistoryEntry('PAUSED')?.changedAt, this.resolveCurrentStatusActor(loan), 'Loan paused by admin'),
-      this.buildLifecycleEntry('DEFAULTED', getHistoryEntry('DEFAULTED')?.changedAt, this.resolveCurrentStatusActor(loan), 'Loan defaulted after repeated overdue installments'),
+      this.buildLifecycleEntry('SKIPPED', getHistoryEntry('SKIPPED')?.changedAt, this.formatActor(getHistoryEntry('SKIPPED')?.changedBy), 'Repayment installment skipped after approved grace adjustment'),
+      this.buildLifecycleEntry('OVERDUE', getHistoryEntry('OVERDUE')?.changedAt, this.formatActor(getHistoryEntry('OVERDUE')?.changedBy), 'Repayment has become overdue'),
+      this.buildLifecycleEntry('PAUSED', getHistoryEntry('PAUSED')?.changedAt, this.formatActor(getHistoryEntry('PAUSED')?.changedBy), 'Loan paused by admin'),
+      this.buildLifecycleEntry('DEFAULTED', getHistoryEntry('DEFAULTED')?.changedAt, this.formatActor(getHistoryEntry('DEFAULTED')?.changedBy), 'Loan defaulted after repeated overdue installments'),
       this.buildLifecycleEntry('COMPLETED', loan.completedDate, resolveCompletedLoanActor(loan), 'Loan completed'),
       this.buildLifecycleEntry('REJECTED', loan.rejectedDate, this.formatActor(loan.rejectedBy), loan.adminComment || 'Loan rejected')
     ];

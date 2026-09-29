@@ -6,14 +6,6 @@ import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 
-interface RepaymentHistoryItem {
-  loanId: string;
-  paidAmount: number;
-  outstandingAmount: number;
-  lastPaymentDate: string;
-  status: 'PAID' | 'ONGOING' | 'PENDING';
-}
-
 @Component({
   selector: 'app-cooperative-member-detail',
   templateUrl: './cooperative-member-detail.component.html',
@@ -187,11 +179,6 @@ export class CooperativeMemberDetailComponent implements OnInit {
     const join = new Date(this.member.joinDate);
     const now = new Date();
     return (now.getFullYear() - join.getFullYear()) * 12 + (now.getMonth() - join.getMonth());
-  }
-
-  getRepaymentHistory(): RepaymentHistoryItem[] {
-    // Dummy implementation, replace with real logic if needed
-    return [];
   }
 
   get totalPages(): number {

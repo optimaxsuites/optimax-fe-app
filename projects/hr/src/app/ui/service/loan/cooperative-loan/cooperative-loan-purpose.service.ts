@@ -14,6 +14,15 @@ export class CooperativeLoanPurposeService {
 
   constructor(private http: HttpClient) {}
 
+  private getTenantId(): string {
+    const tenant = sessionStorage.getItem('tenantId')
+      || sessionStorage.getItem('tenant')
+      || localStorage.getItem('tenantId')
+      || localStorage.getItem('tenant')
+      || 'optimax';
+    return tenant && tenant !== 'undefined' && tenant !== 'null' ? tenant : 'optimax';
+  }
+
   private safeParseResponse(response: unknown): any {
     if (!response) {
       return response;
@@ -54,7 +63,7 @@ export class CooperativeLoanPurposeService {
   return this.http.get<any>(url, {
     headers: {
       Authorization: `Bearer ${token}`,
-      'X-Tenant-ID': 'optimax'
+      'X-Tenant-ID': this.getTenantId()
     },
     responseType: 'json'
   }).pipe(
@@ -88,7 +97,7 @@ export class CooperativeLoanPurposeService {
     return this.http.post<LoanPurposeData>(this.cooperativePurposeUrl, cleanPayload, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'X-Tenant-ID': 'optimax',
+        'X-Tenant-ID': this.getTenantId(),
         'Content-Type': 'application/json'
       }
     }).pipe(
@@ -106,7 +115,7 @@ export class CooperativeLoanPurposeService {
     return this.http.put<LoanPurposeData>(`${this.cooperativePurposeUrl}/${id}`, payload, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'X-Tenant-ID': 'optimax',
+        'X-Tenant-ID': this.getTenantId(),
         'Content-Type': 'application/json'
       }
     }).pipe(
@@ -136,7 +145,7 @@ export class CooperativeLoanPurposeService {
     return this.http.get<LoanPurposeData>(`${this.cooperativePurposeUrl}/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'X-Tenant-ID': 'optimax'
+        'X-Tenant-ID': this.getTenantId()
       }
     }).pipe(
       map(response => this.safeParseResponse(response)),
@@ -184,7 +193,7 @@ export class CooperativeLoanPurposeService {
     return this.http.delete<void>(`${this.cooperativePurposeUrl}/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'X-Tenant-ID': 'optimax'
+        'X-Tenant-ID': this.getTenantId()
       }
     }).pipe(
       catchError(this.handleError)
