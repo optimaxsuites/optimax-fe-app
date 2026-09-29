@@ -486,23 +486,11 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
   }
 
   // Helper: Auto-fill from code (UPC/Barcode)
-  autoFillFromCode(): void {
-    const code = this.productForm.get('code')?.value;
-    if (code && code.length >= 12) {
-      // Simulate API call to fetch product info
-      this.isLoading = true;
-      setTimeout(() => {
-        this.productForm.patchValue({
-          name: 'Auto-filled Product',
-          description: 'Product details retrieved from online database',
-          category: 'Electronics',
-          measurementUnit: 'Each'
-        });
-        this.isLoading = false;
-        this.messageService.add({ severity: 'info', summary: 'Notice', detail: 'Product information auto-filled from code!' });
-      }, 1000);
-    }
-  }
+  // autoFillFromCode() used to live here — on any 12+ character code it unconditionally patched
+  // in hardcoded placeholder values (name: 'Auto-filled Product', category: 'Electronics', etc.)
+  // regardless of the actual code, silently overwriting anything the user had already typed, and
+  // claimed "retrieved from online database" when nothing was actually looked up. Removed rather
+  // than kept as a fake feature — there's no real barcode/UPC lookup service to wire this up to.
 
   addSupplier(): void {
     const newSupplier = prompt('Enter new supplier name:');

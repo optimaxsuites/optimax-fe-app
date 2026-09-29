@@ -1,7 +1,8 @@
 // src/app/ui/view/sales-module/invoice-detail/invoice-detail.component.ts
 
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Invoice, InvoiceStatus, PaymentMethod, SaleLifecycleStatus, SalesandTransactions } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
@@ -22,8 +23,9 @@ import { MessageService } from 'primeng/api';
   templateUrl: './invoice-detail.component.html',
   styleUrls: ['./invoice-detail.component.scss']
 })
-export class InvoiceDetailComponent implements OnInit {
+export class InvoiceDetailComponent implements OnInit, OnDestroy {
   @Input() detailId?: string;
+  private destroy$ = new Subject<void>();
   @Output() closed = new EventEmitter<void>();
   @Output() edit = new EventEmitter<string>();
 
@@ -69,13 +71,24 @@ export class InvoiceDetailComponent implements OnInit {
     private salesService: SalesService
   ) {}
 
+  // Reading route.snapshot.paramMap once here meant navigating from one invoice's detail URL
+  // straight to another's kept showing the first invoice — Angular's default RouteReuseStrategy
+  // reuses this component instance across same-route-pattern navigations, so ngOnInit never
+  // re-ran. Subscribing to the live paramMap instead re-loads whenever the :id actually changes.
   ngOnInit(): void {
-    const id = this.detailId || this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.loadInvoice(id);
-    } else {
-      this.isLoading = false;
-    }
+    this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      const id = this.detailId || params.get('id');
+      if (id) {
+        this.loadInvoice(id);
+      } else {
+        this.isLoading = false;
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadInvoice(id: string): void {
@@ -368,11 +381,11 @@ export class InvoiceDetailComponent implements OnInit {
     this.salesService.updateInvoice(this.invoice.id, { status: 'CANCELLED' }).subscribe({
       next: (updated: Invoice) => {
         this.invoice = updated;
-        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Invoice ${invoiceNumber} deleted successfully` });
+        this.messageService.add({ severity: 'success', summary: 'Cancelled', detail: `Invoice ${invoiceNumber} cancelled successfully` });
       },
       error: (err: any) => {
         console.error('Error cancelling invoice:', err);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete invoice. Please try again.' });
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to cancel invoice. Please try again.' });
       }
     });
   }

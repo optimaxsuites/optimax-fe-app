@@ -1,0 +1,90 @@
+<p-toast position="top-right"></p-toast>
+
+<div class="dnd-page">
+
+  <div class="dnd-topbar no-print">
+    <div class="dnd-topbar-left">
+      <app-back-button (close)="goBack()"></app-back-button>
+      <div class="dnd-breadcrumb">Sales &gt; Delivery Notes &gt; {{ note?.deliveryNumber || 'Detail' }}</div>
+    </div>
+    <div class="dnd-topbar-right" *ngIf="note">
+      <span class="dnd-status-badge dnd-status-badge--{{ getStatusBadgeClass(note.status) }}">{{ note.status }}</span>
+      <button type="button" class="dnd-btn dnd-btn--ghost" (click)="printNote()"><i class="fas fa-print"></i> Print</button>
+      <button type="button" class="dnd-btn dnd-btn--ghost" [disabled]="isDownloading" (click)="downloadPDF()">
+        <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"></i>
+        {{ isDownloading ? 'Generating...' : 'Download PDF' }}
+      </button>
+      <button type="button" class="dnd-btn dnd-btn--ghost" *ngIf="canEdit()" (click)="editNote()"><i class="fas fa-pencil-alt"></i> Edit</button>
+      <button type="button" class="dnd-btn dnd-btn--primary" *ngIf="canMarkDispatched()" [disabled]="isUpdatingStatus" (click)="updateStatus('DISPATCHED')">
+        <i class="fas fa-truck"></i> Mark Dispatched
+      </button>
+      <button type="button" class="dnd-btn dnd-btn--primary" *ngIf="canMarkDelivered()" [disabled]="isUpdatingStatus" (click)="updateStatus('DELIVERED')">
+        <i class="fas fa-check-circle"></i> Mark Delivered
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="dnd-loading no-print"><div class="spinner"></div><p>Loading...</p></div>
+
+  <div class="dnd-doc-wrapper" *ngIf="!isLoading && note">
+    <div id="delivery-note-detail-sheet" class="dnd-doc-card">
+
+      <div class="dnd-doc-header">
+        <div class="dnd-doc-brand">
+          <h2>{{ merchantInfo?.companyName || merchantInfo?.name }}</h2>
+          <p *ngIf="merchantInfo?.address">{{ merchantInfo?.address }}</p>
+          <p *ngIf="merchantInfo?.email || merchantInfo?.phone">{{ merchantInfo?.email }} <span *ngIf="merchantInfo?.phone"> | {{ merchantInfo?.phone }}</span></p>
+        </div>
+        <div class="dnd-doc-meta">
+          <div class="dnd-doc-badge">DELIVERY NOTE</div>
+          <div class="meta-row"><span>Number:</span><strong>{{ note.deliveryNumber }}</strong></div>
+          <div class="meta-row" *ngIf="note.salesOrderId"><span>Order #:</span><strong>{{ note.salesOrderId }}</strong></div>
+        </div>
+      </div>
+
+      <div class="dnd-divider"></div>
+
+      <div class="dnd-parties-grid">
+        <div class="dnd-party-card">
+          <h4>Ship To</h4>
+          <strong>{{ customerName }}</strong>
+          <p>{{ note.customerAddress }}</p>
+        </div>
+        <div class="dnd-party-card">
+          <h4>Shipping Details</h4>
+          <div class="info-line"><span>Carrier:</span><strong>{{ note.carrier || 'Not yet assigned' }}</strong></div>
+          <div class="info-line"><span>Tracking:</span><strong>{{ note.trackingNumber || '—' }}</strong></div>
+        </div>
+      </div>
+
+      <div class="dnd-items-wrapper" *ngIf="note.items && note.items.length > 0">
+        <table class="dnd-table">
+          <thead><tr><th>#</th><th>Item</th><th class="text-center">Quantity</th><th>Unit</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let item of note.items; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td><strong>{{ item.productName }}</strong></td>
+              <td class="text-center">{{ item.quantity }}</td>
+              <td>{{ item.unit }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dnd-footer">
+        <div class="dnd-sign">
+          <div class="line">{{ note.signature }}</div>
+          <span>Received By</span>
+        </div>
+        <div class="dnd-sign"><div class="line"></div><span>Dispatched By</span></div>
+        <div class="dnd-footer-copy"><p>Issued {{ formatDateTime(note.createdAt) }}</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dnd-error" *ngIf="!isLoading && !note">
+    <i class="fas fa-triangle-exclamation"></i>
+    <h3>Delivery Note Not Found</h3>
+    <button type="button" class="dnd-btn dnd-btn--primary" (click)="goBack()">Back</button>
+  </div>
+</div>

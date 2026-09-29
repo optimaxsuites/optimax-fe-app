@@ -24,7 +24,12 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
   isLoading = true;
   productId: string = '';
 
-  // Mock sales history
+  // This used to call getSalesandTransactions({page:0, size:10}) with no product filter at
+  // all — i.e. it showed the 10 most recent transactions system-wide, for every product, as if
+  // they were this product's own history. There's no server-side "transactions containing this
+  // product" filter (line items live nested inside the transaction's linked quote, not as a
+  // flat, queryable field), so this fetches a larger recent batch and filters client-side —
+  // see loadSalesHistory() below.
   salesHistory: any[] = [];
   isLoadingHistory = false;
 
@@ -67,11 +72,24 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** A transaction's line items live nested inside its linked quote (tx.items.items, or
+   *  tx.quoteId.items as a fallback — same double-nested shape SalesAndTransactionsDetailComponent
+   *  already unwraps in its own getLineItems()), keyed by QuoteItem.productId — the same id space
+   *  as this Inventory product's own `id`. */
+  private transactionIncludesThisProduct(tx: any): boolean {
+    const items = (tx.items && Array.isArray(tx.items.items) ? tx.items.items : null)
+      || (tx.quoteId && Array.isArray(tx.quoteId.items) ? tx.quoteId.items : null)
+      || [];
+    return items.some((item: any) => String(item.productId) === String(this.productId));
+  }
+
   private loadSalesHistory(): void {
     this.isLoadingHistory = true;
-    this.salesService.getSalesandTransactions({ page: 0, size: 10 }).subscribe({
+    this.salesService.getSalesandTransactions({ page: 0, size: 200 }).subscribe({
       next: (res: any) => {
-        this.salesHistory = res.data || [];
+        this.salesHistory = ((res.data || []) as any[])
+          .filter(tx => this.transactionIncludesThisProduct(tx))
+          .slice(0, 10);
         this.isLoadingHistory = false;
       },
       error: () => { this.isLoadingHistory = false; }

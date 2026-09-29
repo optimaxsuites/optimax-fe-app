@@ -1,11 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, forkJoin } from 'rxjs';
 import { map, catchError, switchMap, tap } from 'rxjs/operators';
 import {
-  SalesSummary,
-  RevenueChartData,
-  TopProduct,
   Quote,
   QuoteStatus,
   Invoice,
@@ -17,30 +14,21 @@ import {
   InvoiceItem,
   MerchantInfo,
   PaymentReceipt,
+  DeliveryNote,
+  DeliveryNoteItem,
+  DeliveryNoteStatus,
   PaymentMethod,
   PaymentMode,
   PaymentTerms,
   AdditionalInvoiceOptions,
   AdditionalQuoteOptions,
   SalesandTransactions,
+  SaleLifecycleStatus,
   MeasurementUnit,
   Supplier
 } from '../../domain/sales/sales.dto';
 import { environment } from '../../shared-component/service/environments/environment';
 import { parseApiDate } from './date.util';
-
-export const defaultMerchantInfo: MerchantInfo = {
-  id: 0,
-  merchantId: '',
-  name: '',
-  companyName: '',
-  bankDetails: { bankName: '', accountName: '', accountNumber: '' },
-  address: [],
-  phone: '',
-  email: '',
-  taxId: '',
-  logoUrl: []
-};
 
 @Injectable({
   providedIn: 'root'
@@ -71,54 +59,12 @@ export class SalesService {
   }
 
   // ============================================
-  // DASHBOARD — no dedicated endpoint, return stubs
-  // ============================================
-
-  getDashboardStats(range: string): Observable<SalesSummary> {
-    const params = new HttpParams().set('dateRange', range);
-    // Attempt to fetch real stats from backend; fallback to stubbed data on failure
-    return this.http.get<SalesSummary>(`${this.base}/dashboard-stats`, { params }).pipe(
-      catchError(() => {
-        // Stubbed data – can be enhanced per range if needed
-        const stub: SalesSummary = {
-          totalRevenue: 0,
-          totalQuotes: 0,
-          pendingQuotes: 0,
-          acceptedQuotes: 0,
-          totalInvoices: 0,
-          paidInvoices: 0,
-          overdueInvoices: 0,
-          totalCustomers: 0
-        };
-        return of(stub);
-      })
-    );
-  }
-
-  getRecentQuotes(limit: number): Observable<Quote[]> {
-    return this.getQuotes({ page: 0, size: limit }).pipe(
-      map(res => res.data)
-    );
-  }
-
-  getRecentInvoices(limit: number): Observable<Invoice[]> {
-    return this.getInvoices({ page: 0, size: limit }).pipe(
-      map(res => res.data)
-    );
-  }
-
-  getTopProducts(limit: number): Observable<TopProduct[]> {
-    return of([]);
-  }
-
-  getRevenueChart(range: string): Observable<RevenueChartData[]> {
-    const params = new HttpParams().set('dateRange', range);
-    // Fetch revenue chart data; fallback to empty array on error
-    return this.http.get<RevenueChartData[]>(`${this.base}/dashboard-revenue`, { params }).pipe(
-      catchError(() => of([]))
-    );
-  }
-
+  // DASHBOARD — getDashboardStats/getRecentQuotes/getRecentInvoices/getTopProducts/
+  // getRevenueChart used to live here, but /dashboard-stats and /dashboard-revenue were never
+  // real endpoints (always stubs — getTopProducts was a permanent `return of([])`), and
+  // SalesDashboardComponent now computes everything client-side from the real
+  // getQuotes/getInvoices/getCustomers/getSalesandTransactions data instead. Confirmed zero
+  // callers anywhere in the codebase before removing.
   // ============================================
   // QUOTES
   // ============================================
@@ -505,11 +451,11 @@ export class SalesService {
   }
 
   createMerchantInfo(data: Partial<MerchantInfo>): Observable<MerchantInfo> {
-    return this.http.post<MerchantInfo>(`${this.base}/merchant-info`, data);
+    return this.http.post<MerchantInfo>(`${this.base}/merchant-info`, { ...data, tenantId: this.tenantId });
   }
 
   updateMerchantInfo(id: string | number, data: Partial<MerchantInfo>): Observable<MerchantInfo> {
-    return this.http.put<MerchantInfo>(`${this.base}/merchant-info/${id}`, data);
+    return this.http.put<MerchantInfo>(`${this.base}/merchant-info/${id}`, { ...data, tenantId: this.tenantId });
   }
 
   deleteMerchantInfo(id: string | number): Observable<boolean> {
@@ -686,6 +632,10 @@ export class SalesService {
     // object some callers pass in as shorthand for "copy this document's items over".
     if (d.items && !Array.isArray(d.items)) {
       const src = d.items;
+      // Was dropping taxRate/amount (both real fields on QuoteItem/InvoiceItem) — order-level
+      // totals still came out correct either way (they're copied straight from
+      // quote.taxAmount/totalAmount, never recomputed from these line items), but anything that
+      // renders per-line-item tax/amount from a transaction's own items lost that data.
       d.items = Array.isArray(src.items) ? src.items.map((it: any) => ({
         productId: it.productId ?? null,
         productName: it.productName || '',
@@ -693,6 +643,8 @@ export class SalesService {
         quantity: it.quantity || 1,
         unitPrice: it.unitPrice || 0,
         discount: it.discount || 0,
+        taxRate: it.taxRate || 0,
+        amount: it.amount || 0,
         total: it.total || 0
       })) : undefined;
     }
@@ -765,7 +717,7 @@ export class SalesService {
   // DELIVERY NOTES
   // ============================================
 
-  getDeliveryNotes(filters: any): Observable<{ data: any[]; total: number }> {
+  getDeliveryNotes(filters: any): Observable<{ data: DeliveryNote[]; total: number }> {
     let params = new HttpParams().set('tenantId', this.tenantId);
 
     if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
@@ -775,19 +727,118 @@ export class SalesService {
 
     return this.http.get<any>(`${this.base}/delivery-notes`, { params }).pipe(
       map(res => {
-        const arr: any[] = Array.isArray(res) ? res : (res?.data ?? []);
+        const arr: DeliveryNote[] = Array.isArray(res) ? res : (res?.data ?? []);
         return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
       }),
       catchError(() => of({ data: [], total: 0 }))
     );
   }
 
-  createDeliveryNote(data: any): Observable<any> {
-    return this.http.post<any>(`${this.base}/delivery-notes`, { ...data, tenantId: this.tenantId });
+  /** There's no GET /delivery-notes/{id} — the backend only exposes the list endpoint, so a
+   *  single record is found by filtering it client-side. */
+  getDeliveryNoteById(id: string | number): Observable<DeliveryNote | null> {
+    return this.getDeliveryNotes({ size: 1000 }).pipe(
+      map(res => res.data.find(n => String(n.id) === String(id)) || null)
+    );
   }
 
-  updateDeliveryNoteStatus(id: string | number, status: string): Observable<any> {
-    return this.http.patch<any>(`${this.base}/delivery-notes/${id}/status`, { status, tenantId: this.tenantId });
+  createDeliveryNote(data: Partial<DeliveryNote>): Observable<DeliveryNote> {
+    return this.http.post<DeliveryNote>(`${this.base}/delivery-notes`, { ...data, tenantId: this.tenantId });
+  }
+
+  /** There's no dedicated full-edit endpoint — PATCH .../status is the only mutation after
+   *  create, and its request body carries the whole record (not just `status`), so editing a
+   *  still-PENDING note's other fields goes through it too. */
+  updateDeliveryNote(id: string | number, data: Partial<DeliveryNote>): Observable<DeliveryNote> {
+    return this.http.patch<DeliveryNote>(`${this.base}/delivery-notes/${id}/status`, { ...data, tenantId: this.tenantId });
+  }
+
+  updateDeliveryNoteStatus(id: string | number, status: DeliveryNoteStatus): Observable<DeliveryNote> {
+    const timestamp: Partial<DeliveryNote> =
+      status === 'DISPATCHED' ? { dispatchedAt: new Date().toISOString() } :
+      status === 'DELIVERED' ? { deliveredAt: new Date().toISOString() } : {};
+    return this.http.patch<DeliveryNote>(`${this.base}/delivery-notes/${id}/status`, { status, ...timestamp, tenantId: this.tenantId });
+  }
+
+  /**
+   * The Delivery Notes tab's dashboard queue: orders that have reached a point where a delivery
+   * note makes sense (same eligibility rule as SalesAndTransactionsListComponent.
+   * canGenerateDeliveryNote — anything from INVOICE_SENT onward, excluding INVOICE_CANCELLED) but
+   * don't have one yet. Cross-references the two lists client-side since there's no dedicated
+   * backend endpoint for "orders missing a delivery note".
+   */
+  getOrdersAwaitingDeliveryNote(): Observable<SalesandTransactions[]> {
+    const preInvoiceStatuses: SaleLifecycleStatus[] = ['QUOTE_SENT', 'QUOTE_ACCEPTED', 'QUOTE_REJECTED', 'QUOTE_CONVERTED', 'INVOICE_CANCELLED'];
+    return forkJoin({
+      transactions: this.getSalesandTransactions({ size: 1000 }),
+      notes: this.getDeliveryNotes({ size: 1000 })
+    }).pipe(
+      map(({ transactions, notes }) => {
+        const orderIdsWithNotes = new Set(
+          notes.data.map(n => n.salesOrderId).filter(id => id !== undefined && id !== null).map(String)
+        );
+        return transactions.data.filter(tx =>
+          !preInvoiceStatuses.includes(tx.status) && !orderIdsWithNotes.has(String(tx.id))
+        );
+      }),
+      catchError(() => of([]))
+    );
+  }
+
+  /**
+   * Delivery Note step (Invoice -> Delivery Tracking -> Delivery Note -> Receipt): assembled the
+   * same way getPaymentReceipt() assembles a receipt — from the order + its linked invoice —
+   * rather than depending on a full backend delivery-note record existing yet. createDeliveryNote()
+   * is still called to persist it the first time (its endpoint already exists), but a failure
+   * there doesn't block the note itself: everything it needs to render/print is already derived
+   * below, and the backend call is best-effort record-keeping on top of that.
+   *
+   * The "OrCreate" used to not actually check for an existing one — every open of the modal for
+   * the same order POSTed a fresh record. getDeliveryNotes({salesOrderId}) is checked first now,
+   * the same find-or-create pattern upsertTransactionForQuote()/ForInvoice() already use, so
+   * reopening the same order's delivery note reuses its number instead of duplicating it.
+   */
+  getOrCreateDeliveryNote(orderId: string | number): Observable<DeliveryNote | null> {
+    return forkJoin({
+      tx: this.getSalesandTransactionsById(orderId),
+      existing: this.getDeliveryNotes({ salesOrderId: orderId })
+    }).pipe(
+      switchMap(({ tx, existing }) => {
+        if (!tx) return of(null);
+        const customer = tx.customerId as any;
+        const existingNote = existing?.data?.[0];
+        const invoice = tx.invoiceId as any;
+        // Invoice items are the most reliable source (real per-line quantities); fall back to
+        // the quote's own items (same double-nested shape SalesAndTransactionsDetailComponent
+        // already unwraps) when no invoice exists yet.
+        const sourceItems: any[] = invoice?.items
+          || (tx.items && Array.isArray((tx.items as any).items) ? (tx.items as any).items : null)
+          || (tx.quoteId && Array.isArray((tx.quoteId as any).items) ? (tx.quoteId as any).items : null)
+          || [];
+        const items: DeliveryNoteItem[] = existingNote?.items?.length ? existingNote.items : sourceItems.map(it => ({
+          productName: it.productName || '',
+          quantity: it.quantity || 0,
+          unit: it.unit || it.measurementUnit?.name || ''
+        }));
+        const note: DeliveryNote = {
+          id: existingNote?.id,
+          deliveryNumber: existingNote?.deliveryNumber || `DN-${String(tx.orderId || tx.paymentNumber || tx.id).replace(/^ORD-|^PAY-/, '')}`,
+          status: existingNote?.status || 'PENDING',
+          salesOrderId: Number(tx.id),
+          customerId: customer?.id,
+          customerAddress: existingNote?.customerAddress || tx.shippingAddress || (Array.isArray(customer?.deliverAddress) ? customer.deliverAddress.join(', ') : '') || tx.billingAddress || '',
+          carrier: existingNote?.carrier || tx.carrier,
+          trackingNumber: existingNote?.trackingNumber || tx.trackingNumber,
+          items
+        };
+        if (existingNote) return of(note);
+        return this.createDeliveryNote(note).pipe(
+          map(created => ({ ...note, id: (created as any)?.id ?? note.id })),
+          catchError(() => of(note))
+        );
+      }),
+      catchError(() => of(null))
+    );
   }
 
   // ============================================
@@ -908,15 +959,23 @@ export class SalesService {
   // ============================================
 
   getPaymentReceipt(paymentId: string): Observable<PaymentReceipt | null> {
-    return this.getSalesandTransactionsById(paymentId).pipe(
-      map(tx => {
+    return forkJoin({
+      tx: this.getSalesandTransactionsById(paymentId),
+      // getMerchantInfo() is a blank placeholder (hostname as name, empty address/phone/etc) —
+      // getMyMerchantInfo() fetches the real tenant record instead.
+      merchant: this.getMyMerchantInfo()
+    }).pipe(
+      map(({ tx, merchant }) => {
         if (!tx) return null;
+        // paymentNumber is never actually set by any client code (confirmed: only ever read,
+        // never assigned) — that made this always resolve to the literal string "RCT-" with
+        // nothing after it. orderId/id are always populated, so fall back through those instead.
         const receipt: PaymentReceipt = {
-          receiptNumber: `RCT-${(tx.paymentNumber || '').replace('PAY-', '')}`,
+          receiptNumber: `RCT-${String(tx.paymentNumber || tx.orderId || tx.id).replace(/^PAY-|^ORD-/, '')}`,
           payment: tx,
           invoice: tx.invoiceId as any,
           customer: tx.customerId,
-          merchantInfo: this.getMerchantInfo(),
+          merchantInfo: merchant || this.getMerchantInfo(),
           issuedAt: tx.orderDate
         };
         return receipt;

@@ -4,15 +4,14 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer } from '../../../../domain/sales/sales.dto';
 import { formatApiDate } from '../../../../service/sales/date.util';
 
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
-import { CustomerFormComponent } from '../customer-form/customer-form.component';
-import { QuoteFormComponent } from '../../quotations/quote-form/quote-form.component';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 
@@ -24,8 +23,6 @@ import { ToastModule } from 'primeng/toast';
     RouterModule,
     FormsModule,
     SharedOverlayModule,
-    CustomerFormComponent,
-    QuoteFormComponent,
     ToastModule
   ],
   providers: [MessageService],
@@ -38,13 +35,6 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   customers: any[] = [];
   isLoading = true;
   selectedCustomerIds: any[] = [];
-
-  showCustomerModal = false;
-  showCustomerDetails = false;
-  showQuoteModal = false;
-  selectedCustomerId?: string;
-  selectedCustomerForEdit?: Customer;
-  selectedCustomerDetail?: Customer;
 
   showDeleteModal = false;
   pendingDeleteCustomerName = '';
@@ -70,11 +60,6 @@ export class CustomerListComponent implements OnInit, OnDestroy {
     }
   }
 
-  closeCustomerModal(): void {
-    this.showCustomerModal = false;
-    this.selectedCustomerForEdit = undefined;
-  }
-
   openCustomerDetails(customer: Customer): void {
     let uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid === 'edit') {
@@ -87,26 +72,6 @@ export class CustomerListComponent implements OnInit, OnDestroy {
     }
   }
 
-  closeCustomerDetails(): void {
-    this.showCustomerDetails = false;
-    this.selectedCustomerDetail = undefined;
-  }
-
-  onCustomerSaved(): void {
-    this.closeCustomerModal();
-    this.loadCustomers();
-  }
-
-  closeQuoteModal(): void {
-    this.showQuoteModal = false;
-    this.selectedCustomerId = undefined;
-  }
-
-  onQuoteSaved(): void {
-    this.closeQuoteModal();
-    this.loadCustomers();
-  }
-  
   filters = {
     status: 'ALL',
     searchTerm: '',
@@ -127,9 +92,7 @@ export class CustomerListComponent implements OnInit, OnDestroy {
     total: 0,
     active: 0,
     inactive: 0,
-    blacklisted: 0,
-    totalSpent: 0,
-    avgOrderValue: 0
+    blacklisted: 0
   };
   
   statusOptions = [
@@ -157,11 +120,20 @@ export class CustomerListComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  // Guards against a stale response landing after a newer one — the search box fires
+  // applyFilters()/loadCustomers() on every keystroke with no debounce and no cancellation of
+  // the previous in-flight request, so fast typing could let an earlier search term's response
+  // resolve after a later one and overwrite the table with results for a term that no longer
+  // matches what's in the search box.
+  private loadRequestId = 0;
+
   loadCustomers(): void {
     this.isLoading = true;
-    
+    const requestId = ++this.loadRequestId;
+
     this.salesService.getCustomers(this.filters).subscribe({
       next: (response: any) => {
+        if (requestId !== this.loadRequestId) return;
         this.customers = response.data;
         this.totalElements = response.total;
         this.totalPages = Math.ceil(response.total / this.filters.size);
@@ -170,6 +142,7 @@ export class CustomerListComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       },
       error: (error: any) => {
+        if (requestId !== this.loadRequestId) return;
         console.error('Error loading customers:', error);
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load customers. Please try again.' });
         this.calculateStats(null);
@@ -178,15 +151,16 @@ export class CustomerListComponent implements OnInit, OnDestroy {
     });
   }
 
+  // totalSpent/avgOrderValue used to be computed here too, from this.customers — but that's only
+  // the current page (≤pageSize rows), so it would have been a page-scoped aggregate masquerading
+  // as a whole-book figure had it ever been wired up to the template (it wasn't — dead
+  // computation). Removed rather than left as a trap for later.
   private calculateStats(response?: any): void {
-    const totalSpent = this.customers.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
     this.stats = {
       total: this.totalElements,
       active: response?.totalActive ?? this.customers.filter(c => c.status === 'ACTIVE').length,
       inactive: response?.totalInactive ?? this.customers.filter(c => c.status === 'INACTIVE').length,
-      blacklisted: response?.totalBlacklisted ?? this.customers.filter(c => c.status === 'BLACKLISTED').length,
-      totalSpent,
-      avgOrderValue: this.customers.length > 0 ? totalSpent / this.customers.length : 0
+      blacklisted: response?.totalBlacklisted ?? this.customers.filter(c => c.status === 'BLACKLISTED').length
     };
   }
 
@@ -229,8 +203,12 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   }
 
   toggleSelectAll(event: any): void {
+    // Was keyed on c.customerId (a separate string field, not the same value as c.id) while
+    // every row checkbox's own toggleSelection()/isSelected() are keyed on c.id — "Select All"
+    // populated selectedCustomerIds with values that could never match any row's own checkbox
+    // state, so the header checkbox and bulk bar showed everything selected while no row did.
     if (event.target.checked) {
-      this.selectedCustomerIds = this.customers.map(c => c.customerId || String(c.id));
+      this.selectedCustomerIds = this.customers.map(c => c.id);
     } else {
       this.selectedCustomerIds = [];
     }
@@ -268,6 +246,33 @@ export class CustomerListComponent implements OnInit, OnDestroy {
 
   formatDate(date: Date): string {
     return formatApiDate(date);
+  }
+
+  isBulkDeleting = false;
+
+  // Had no (click) handler at all — selecting customers and clicking this did nothing.
+  bulkDeleteCustomers(): void {
+    if (this.selectedCustomerIds.length === 0 || this.isBulkDeleting) return;
+    if (!confirm(`Delete ${this.selectedCustomerIds.length} customer(s)? This cannot be undone.`)) return;
+
+    this.isBulkDeleting = true;
+    const ids = [...this.selectedCustomerIds];
+    const requests = ids.map(id => this.salesService.deleteCustomer(id).pipe(
+      map(() => ({ ok: true as const })),
+      catchError(() => of({ ok: false as const }))
+    ));
+
+    forkJoin(requests).subscribe(results => {
+      this.isBulkDeleting = false;
+      this.selectedCustomerIds = [];
+      this.loadCustomers();
+      const failed = results.filter(r => !r.ok).length;
+      if (failed > 0) {
+        this.messageService.add({ severity: 'warn', summary: 'Partial failure', detail: `${results.length - failed} of ${results.length} customers were deleted; ${failed} failed.` });
+      } else {
+        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${results.length} customer(s) deleted successfully.` });
+      }
+    });
   }
 
   deleteCustomer(customer: Customer): void {

@@ -133,10 +133,11 @@
     <div class="ql-bulk-bar" *ngIf="selectedQuoteIds.length > 0">
       <i class="fas fa-check-square"></i>
       <span><strong>{{ selectedQuoteIds.length }}</strong> quote{{ selectedQuoteIds.length > 1 ? 's' : '' }} selected</span>
-      <button type="button" class="ql-btn ql-btn--danger-sm">
-        <i class="fas fa-trash"></i> Delete Selected
+      <button type="button" class="ql-btn ql-btn--danger-sm" [disabled]="isBulkDeleting" (click)="bulkDeleteQuotes()">
+        <i class="fas" [class.fa-trash]="!isBulkDeleting" [class.fa-spinner]="isBulkDeleting" [class.fa-spin]="isBulkDeleting"></i>
+        {{ isBulkDeleting ? 'Deleting...' : 'Delete Selected' }}
       </button>
-      <button type="button" class="ql-btn ql-btn--ghost-sm" (click)="selectedQuoteIds = []">
+      <button type="button" class="ql-btn ql-btn--ghost-sm" [disabled]="isBulkDeleting" (click)="selectedQuoteIds = []">
         Clear
       </button>
     </div>
@@ -228,10 +229,13 @@
                 </button>
                 <button type="button" class="ql-action-btn ql-action-btn--convert"
                         (click)="openInvoiceModal(q.id)" title="Convert to Invoice"
-                        *ngIf="q.status === 'ACCEPTED' || q.status === 'SENT'">
+                        *ngIf="q.status === 'SENT'">
                   <i class="fas fa-exchange-alt"></i> Invoice
                 </button>
-                <button type="button" class="ql-action-btn ql-action-btn--danger" (click)="deleteQuote(q)" title="Delete">
+                <button type="button" class="ql-action-btn ql-action-btn--danger"
+                        [disabled]="!canDeleteQuote(q)"
+                        (click)="deleteQuote(q)"
+                        [title]="canDeleteQuote(q) ? 'Delete' : 'Already converted to an order — cannot be deleted'">
                   <i class="fas fa-trash-alt"></i>
                 </button>
               </div>

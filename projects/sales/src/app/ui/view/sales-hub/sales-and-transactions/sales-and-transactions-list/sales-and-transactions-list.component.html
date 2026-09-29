@@ -231,14 +231,22 @@
                   <i class="fas fa-eye"></i> View
                 </button>
                 <button type="button" class="il-action-btn il-action-btn--payment"
-                        *ngIf="tx.balanceDue > 0 && tx.status !== 'QUOTE_REJECTED' && tx.status !== 'PAYMENT_FAILED'"
-                        (click)="openPaymentModal(tx, $event)" title="Record Payment">
+                        [disabled]="!canRecordPayment(tx)"
+                        (click)="canRecordPayment(tx) && openPaymentModal(tx, $event)"
+                        [title]="canRecordPayment(tx) ? 'Record Payment' : 'No balance due'">
                   <i class="fas fa-credit-card"></i> Pay
                 </button>
                 <button type="button" class="il-action-btn il-action-btn--receipt"
-                        *ngIf="tx.paidAmount > 0"
-                        (click)="openReceiptModal(tx, $event)" title="Receipt">
+                        [disabled]="!canViewReceipt(tx)"
+                        (click)="canViewReceipt(tx) && openReceiptModal(tx, $event)"
+                        [title]="canViewReceipt(tx) ? 'Receipt' : 'No payment recorded yet'">
                   <i class="fas fa-receipt"></i>
+                </button>
+                <button type="button" class="il-action-btn il-action-btn--delivery"
+                        [disabled]="!canGenerateDeliveryNote(tx)"
+                        (click)="canGenerateDeliveryNote(tx) && openDeliveryNoteModal(tx, $event)"
+                        [title]="canGenerateDeliveryNote(tx) ? 'Generate Delivery Note' : 'Available once the invoice has been sent'">
+                  <i class="fas fa-truck-fast"></i> Delivery Note
                 </button>
               </div>
             </td>

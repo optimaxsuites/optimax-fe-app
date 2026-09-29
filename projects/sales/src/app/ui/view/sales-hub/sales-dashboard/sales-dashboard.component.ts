@@ -7,11 +7,6 @@ import { SalesService } from '../../../service/sales/sales.service';
 import { Quote, Invoice } from '../../../domain/sales/sales.dto';
 
 import { SharedOverlayModule } from '../../../../shared-overlay.module';
-import { QuoteFormComponent } from '../quotations/quote-form/quote-form.component';
-import { InvoiceFormComponent } from '../invoices/invoice-form/invoice-form.component';
-import { CustomerFormComponent } from '../customer-management/customer-form/customer-form.component';
-import { QuoteDetailComponent } from '../quotations/quote-detail/quote-detail.component';
-import { InvoiceDetailComponent } from '../invoices/invoice-detail/invoice-detail.component';
 import { formatApiDate, parseApiDate } from '../../../service/sales/date.util';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
@@ -24,11 +19,6 @@ import { ToastModule } from 'primeng/toast';
     RouterModule,
     FormsModule,
     SharedOverlayModule,
-    QuoteFormComponent,
-    InvoiceFormComponent,
-    CustomerFormComponent,
-    QuoteDetailComponent,
-    InvoiceDetailComponent,
     ToastModule
   ],
   providers: [MessageService],
@@ -37,7 +27,6 @@ import { ToastModule } from 'primeng/toast';
 })
 export class SalesDashboardComponent implements OnInit, OnDestroy {
   Math = Math;
-  customerAvatars: string[] = ['AO', 'FA', 'WL', 'KP'];
 
   // Dashboard Stats
   stats = {
@@ -64,14 +53,6 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   isLoading = true;
   error: string | null = null;
 
-  showQuoteModal = false;
-  showInvoiceModal = false;
-  showCustomerModal = false;
-  showProductModal = false;
-  showQuoteDetail = false;
-  showInvoiceDetail = false;
-  selectedItemId?: string;
-
   // Customization
   showCustomizationModal = false;
   customization = {
@@ -81,20 +62,6 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     showRecentInvoices: true,
     chartType: 'bar' // 'bar' | 'line' | 'pie' | 'doughnut'
   };
-
-  // Simple Product Form Data
-  productForm = {
-    name: '',
-    sku: '',
-    description: '',
-    unitPrice: 0,
-    costPrice: 0,
-    currency: 'NGN',
-    stockQuantity: 10,
-    category: 'General',
-    taxRate: 7.5
-  };
-  isSavingProduct = false;
 
   private destroy$ = new Subject<void>();
 
@@ -126,9 +93,17 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
    * Instead, this pulls a full batch of quotes/invoices/customers from the real endpoints
    * and computes the stats and the revenue chart client-side, scoped to the selected range.
    */
+  // Guards against a stale response landing after a newer one — changeDateRange()/refreshData()
+  // can each fire a fresh loadDashboardData() before the previous forkJoin has resolved (e.g.
+  // rapidly clicking Week -> Month -> Quarter), and with no cancellation of the in-flight
+  // request, whichever response happened to resolve last used to win regardless of which range
+  // was actually still selected when it landed.
+  private loadRequestId = 0;
+
   private loadDashboardData(): void {
     this.isLoading = true;
     this.error = null;
+    const requestId = ++this.loadRequestId;
 
     forkJoin({
       quotes: this.salesService.getQuotes({ size: 1000 }),
@@ -137,12 +112,15 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
       transactions: this.salesService.getSalesandTransactions({ size: 1000 })
     }).pipe(takeUntil(this.destroy$)).subscribe({
       next: ({ quotes, invoices, customers, transactions }) => {
+        if (requestId !== this.loadRequestId) return;
         const cutoff = this.getDateRangeCutoff(this.dateRange);
         const quotesInRange = quotes.data.filter(q => this.isOnOrAfter(q.createdAt, cutoff));
         const invoicesInRange = invoices.data.filter(i => this.isOnOrAfter(i.issueDate, cutoff));
+        // SENT invoices only — a still-unsent DRAFT invoice shouldn't count toward revenue.
+        const sentInvoicesInRange = invoicesInRange.filter(i => i.status === 'SENT');
 
         this.stats = this.computeStats(quotesInRange, invoicesInRange, customers.total);
-        this.revenueData = this.buildRevenueSeries(invoicesInRange, this.dateRange);
+        this.revenueData = this.buildRevenueSeries(sentInvoicesInRange, this.dateRange);
         // Already sorted newest-first by the service — "recent" is just the top of each list.
         this.recentQuotes = quotes.data.slice(0, 3);
         this.recentInvoices = invoices.data.slice(0, 3);
@@ -150,6 +128,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       },
       error: (error: any) => {
+        if (requestId !== this.loadRequestId) return;
         console.error('Error loading sales dashboard:', error);
         this.error = 'Failed to load sales dashboard data';
         this.isLoading = false;
@@ -183,15 +162,17 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   }
 
   private computeStats(quotesInRange: Quote[], invoicesInRange: Invoice[], totalCustomers: number) {
-    const validInvoices = invoicesInRange.filter(i => i.status !== 'CANCELLED');
+    // Only excluded CANCELLED before — a still-unsent DRAFT invoice counted toward Total Revenue
+    // and the revenue chart even though it was never actually sent to a customer yet.
+    const validInvoices = invoicesInRange.filter(i => i.status === 'SENT');
     return {
       totalRevenue: validInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0),
       totalQuotes: quotesInRange.length,
       pendingQuotes: quotesInRange.filter(q => q.status === 'SENT').length,
       acceptedQuotes: quotesInRange.filter(q => q.status === 'ACCEPTED' || (q.status as string) === 'CONVERTED').length,
       totalInvoices: invoicesInRange.length,
-      paidInvoices: invoicesInRange.filter(i => !!i.paidAt).length,
-      overdueInvoices: invoicesInRange.filter(i => !i.paidAt && this.isOverdue(i.dueDate)).length,
+      paidInvoices: validInvoices.filter(i => !!i.paidAt).length,
+      overdueInvoices: validInvoices.filter(i => !i.paidAt && this.isOverdue(i.dueDate)).length,
       // Not date-scoped — "Total Customers" means the whole book, not new signups this period.
       totalCustomers
     };
@@ -274,24 +255,6 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  navigateToNewCustomer(): void {
-    const uuid = this.route.snapshot.paramMap.get('uuid');
-    if (uuid) {
-      this.router.navigate(['/admin/sales/customers/new', uuid]);
-    } else {
-      this.router.navigate(['/admin/sales/customers/new']);
-    }
-  }
-
-  navigateToNewProduct(): void {
-    const uuid = this.route.snapshot.paramMap.get('uuid');
-    if (uuid) {
-      this.router.navigate(['/admin/sales/products/new', uuid]);
-    } else {
-      this.router.navigate(['/admin/sales/products/new']);
-    }
-  }
-
   navigateToQuoteList(): void {
     this.switchToTab('Quotes');
   }
@@ -337,86 +300,6 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     } else {
       this.router.navigate(['/admin/sales/sales-and-transactions', transactionId]);
     }
-  }
-
-  openEditInvoiceModal(id: string): void {
-    this.selectedItemId = id;
-    this.showInvoiceModal = true;
-  }
-
-  closeQuoteModal(): void {
-    this.showQuoteModal = false;
-    this.selectedItemId = undefined;
-  }
-
-  closeInvoiceModal(): void {
-    this.showInvoiceModal = false;
-    this.selectedItemId = undefined;
-  }
-
-  closeCustomerModal(): void {
-    this.showCustomerModal = false;
-  }
-
-  closeProductModal(): void {
-    this.showProductModal = false;
-  }
-
-  closeQuoteDetail(): void {
-    this.showQuoteDetail = false;
-    this.selectedItemId = undefined;
-  }
-
-  closeInvoiceDetail(): void {
-    this.showInvoiceDetail = false;
-    this.selectedItemId = undefined;
-  }
-
-  onQuoteSaved(): void {
-    this.closeQuoteModal();
-    this.loadDashboardData();
-  }
-
-  onInvoiceSaved(): void {
-    this.closeInvoiceModal();
-    this.loadDashboardData();
-  }
-
-  onCustomerSaved(): void {
-    this.closeCustomerModal();
-    this.loadDashboardData();
-  }
-
-  saveProduct(): void {
-    if (!this.productForm.name || !this.productForm.sku) {
-      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Product Name and SKU are required' });
-      return;
-    }
-    this.isSavingProduct = true;
-    this.salesService.createProduct(this.productForm as any).subscribe({
-      next: () => {
-        this.isSavingProduct = false;
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Product created successfully!' });
-        this.showProductModal = false;
-        this.productForm = {
-          name: '',
-          sku: '',
-          description: '',
-          unitPrice: 0,
-          costPrice: 0,
-          currency: 'NGN',
-          stockQuantity: 10,
-          category: 'General',
-          taxRate: 7.5
-        };
-        this.loadDashboardData();
-      },
-      error: (err) => {
-        console.error(err);
-        this.isSavingProduct = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create product.' });
-      }
-    });
   }
 
   // ============================================
@@ -607,6 +490,10 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     return ((amount / total) * 100).toFixed(1) + '%';
   }
 
+  // trend/percent ("+12.8% vs last month") used to be hardcoded literals here, identical on
+  // every load regardless of actual data — there's no period-over-period comparison data
+  // available to compute a real one from, so these are removed rather than left fabricated.
+  // Each `value` below is still a real, live computation from current stats.
   getInsightMetrics(): any[] {
     const totalRevenue = this.stats.totalRevenue;
 
@@ -614,29 +501,21 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
       {
         label: 'Revenue Growth',
         value: this.formatCurrency(totalRevenue),
-        trend: 'up',
-        percent: 12.8,
         color: '#2E6276'
       },
       {
         label: 'Conversion Rate',
         value: `${this.stats.totalQuotes > 0 ? Math.round((this.stats.acceptedQuotes / this.stats.totalQuotes) * 100) : 0}%`,
-        trend: 'up',
-        percent: 5.2,
         color: '#2EB270'
       },
       {
         label: 'Average Deal Size',
         value: this.formatCurrency(this.stats.totalQuotes > 0 ? this.stats.totalRevenue / this.stats.totalQuotes : 0),
-        trend: 'up',
-        percent: 8.7,
         color: '#F5A623'
       },
       {
         label: 'Payment Collection',
         value: `${this.stats.totalInvoices > 0 ? Math.round((this.stats.paidInvoices / this.stats.totalInvoices) * 100) : 0}%`,
-        trend: 'down',
-        percent: 2.3,
         color: '#8B5CF6'
       }
     ];

@@ -25,14 +25,14 @@ $radius-lg: 18px;
 $radius-xl: 24px;
 
 :host {
-  --p: #184440;
-  --p-lt: #e8f4f2;
-  --bg: #eef3f2;
+  --p: #1e3a5f;
+  --p-lt: #e8eef7;
+  --bg: #eef1f6;
   --surface: #ffffff;
-  --border: #ccddd9;
-  --text: #1a2e2c;
-  --muted: #6a8e89;
-  --shadow: 0 1px 8px rgba(24, 68, 64, 0.08);
+  --border: #c8d5e8;
+  --text: #1a2535;
+  --muted: #5a7299;
+  --shadow: 0 1px 8px rgba(30, 58, 95, 0.08);
 }
 
 .customer-detail-container {
@@ -979,11 +979,11 @@ $radius-xl: 24px;
   transition: all 0.15s;
 
   &--primary {
-    background: var(--p, #184440);
+    background: var(--p, #1e3a5f);
     color: #fff;
 
     &:hover {
-      background: #0f2d2a;
+      background: #152b47;
     }
   }
 }

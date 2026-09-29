@@ -23,8 +23,6 @@ export class PaymentReceiptComponent implements OnInit {
   receipt: PaymentReceipt | null = null;
   isLoading = true;
   isDownloading = false;
-  isSendingEmail = false;
-  emailSentSuccess = false;
 
   constructor(
     private messageService: MessageService,private salesService: SalesService) {}
@@ -107,15 +105,10 @@ export class PaymentReceiptComponent implements OnInit {
     window.print();
   }
 
-  sendEmail(): void {
-    if (this.isSendingEmail) return;
-    this.isSendingEmail = true;
-    setTimeout(() => {
-      this.isSendingEmail = false;
-      this.emailSentSuccess = true;
-      setTimeout(() => {
-        this.emailSentSuccess = false;
-      }, 4000);
-    }, 1200);
-  }
+  // Used to be a fake setTimeout that flipped emailSentSuccess=true and told staff "Receipt
+  // email dispatched successfully to {customer email}" — no email was ever actually sent.
+  // SalesEmailService.send() is the real email pipeline this app uses for Quote/Invoice, but its
+  // SalesEmailDocumentType only accepts 'QUOTE' | 'INVOICE' — there's no 'RECEIPT' document type
+  // on the backend contract, so this can't honestly be wired up to send a real receipt email
+  // without a backend change. Disabled with an explanatory tooltip instead of lying about success.
 }

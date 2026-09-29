@@ -1,6 +1,7 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { SalesandTransactions, SaleLifecycleStatus } from '../../../../domain/sales/sales.dto';
 import { parseApiDate } from '../../../../service/sales/date.util';
@@ -13,12 +14,14 @@ import { BackButtonComponent } from '../../../../shared-component/view/back-butt
   templateUrl: './sales-and-transactions-detail.component.html',
   styleUrls: ['./sales-and-transactions-detail.component.scss']
 })
-export class SalesAndTransactionsDetailComponent implements OnInit {
+export class SalesAndTransactionsDetailComponent implements OnInit, OnDestroy {
   @Input() detailId?: number | string | null;
   @Output() closed = new EventEmitter<void>();
 
   transaction: SalesandTransactions | null = null;
   isLoading: boolean = true;
+
+  private destroy$ = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
@@ -26,13 +29,24 @@ export class SalesAndTransactionsDetailComponent implements OnInit {
     private salesService: SalesService
   ) {}
 
+  // Reading route.snapshot.paramMap once here meant navigating from one order's detail URL
+  // straight to another's kept showing the first order — Angular's default RouteReuseStrategy
+  // reuses this component instance across same-route-pattern navigations, so ngOnInit never
+  // re-ran. Subscribing to the live paramMap instead re-loads whenever the :id actually changes.
   ngOnInit(): void {
-    const idParam = this.detailId || this.route.snapshot.paramMap.get('id');
-    if (idParam) {
-      this.loadTransaction(idParam);
-    } else {
-      this.isLoading = false;
-    }
+    this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      const idParam = this.detailId || params.get('id');
+      if (idParam) {
+        this.loadTransaction(idParam);
+      } else {
+        this.isLoading = false;
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadTransaction(id: number | string): void {
@@ -163,22 +177,44 @@ export class SalesAndTransactionsDetailComponent implements OnInit {
     return `${symbol}${(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
+  // Each status's furthest-reached milestone (0-4), matching the 5-step "Order Lifecycle
+  // Progression" stepper. This used to be an exhaustive per-step OR-list of specific statuses
+  // instead — it only ever listed 5-6 of the 17 real SaleLifecycleStatus values, so opening the
+  // detail page for an order that was DISPATCHED or IN_TRANSIT (exactly the statuses this
+  // delivery-tracking view exists to show) displayed "Quote Converted"/"Invoice Issued" as NOT
+  // completed — the progress bar visually regressed for the records users come here to track.
+  // Typing this as Record<SaleLifecycleStatus, number> makes TypeScript enforce that every status
+  // is accounted for, so a newly added status can't silently fall through as "step 0" again.
+  private static readonly STATUS_STAGE: Record<SaleLifecycleStatus, number> = {
+    QUOTE_SENT: 0,
+    QUOTE_REJECTED: 0,
+    QUOTE_ACCEPTED: 1,
+    QUOTE_CONVERTED: 1,
+    INVOICE_SENT: 2,
+    INVOICE_CANCELLED: 2,
+    PAYMENT_PENDING: 2,
+    PAYMENT_IN_PROGRESS: 2,
+    PAYMENT_FAILED: 2,
+    PAYMENT_COMPLETED: 3,
+    PAYMENT_REFUNDED: 3,
+    RECEIPT_GENERATED: 3,
+    DELIVERY_PENDING: 3,
+    DISPATCHED: 3,
+    IN_TRANSIT: 3,
+    DELIVERED: 4,
+    RETURNED: 4
+  };
+
   isStepCompleted(step: number): boolean {
     if (!this.transaction) return false;
-    const s = this.transaction.status;
+    const stage = SalesAndTransactionsDetailComponent.STATUS_STAGE[this.transaction.status] ?? 0;
     switch (step) {
-      case 1:
-        return !!this.transaction.quoteSentDate || s !== undefined;
-      case 2:
-        return s === 'QUOTE_ACCEPTED' || s === 'QUOTE_CONVERTED' || s === 'INVOICE_SENT' || s === 'PAYMENT_PENDING' || s === 'PAYMENT_COMPLETED' || s === 'DELIVERED';
-      case 3:
-        return s === 'INVOICE_SENT' || s === 'PAYMENT_PENDING' || s === 'PAYMENT_COMPLETED' || s === 'DELIVERED';
-      case 4:
-        return s === 'PAYMENT_COMPLETED' || s === 'RECEIPT_GENERATED' || s === 'DELIVERED';
-      case 5:
-        return s === 'DELIVERED';
-      default:
-        return false;
+      case 1: return true;
+      case 2: return stage >= 1;
+      case 3: return stage >= 2;
+      case 4: return stage >= 3;
+      case 5: return stage >= 4;
+      default: return false;
     }
   }
 

@@ -82,8 +82,10 @@
     <div class="ql-bulk-bar" *ngIf="selectedCustomerIds.length > 0">
       <i class="fas fa-check-circle" style="color:#0b8a5e;"></i>
       <span>{{ selectedCustomerIds.length }} selected</span>
-      <button class="ql-btn ql-btn--ghost-sm">Bulk Edit</button>
-      <button class="ql-btn ql-btn--danger-sm">Delete Selected</button>
+      <button class="ql-btn ql-btn--ghost-sm" disabled title="Bulk edit isn't available yet">Bulk Edit</button>
+      <button class="ql-btn ql-btn--danger-sm" [disabled]="isBulkDeleting" (click)="bulkDeleteCustomers()">
+        {{ isBulkDeleting ? 'Deleting...' : 'Delete Selected' }}
+      </button>
     </div>
 
     <!-- Loading State -->
@@ -213,57 +215,6 @@
   </main>
 </div>
 
-<!-- Customer Details Side Panel -->
-<div class="ql-confirm-backdrop" *ngIf="showCustomerDetails" (click)="closeCustomerDetails()">
-  <div class="ql-confirm-modal" style="max-width:500px;text-align:left;" (click)="$event.stopPropagation()">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
-      <div>
-        <h3 style="margin:0;font-size:18px;font-weight:800;color:#1a2e2c;">Customer Details</h3>
-        <p style="margin:4px 0 0;font-size:13px;color:#6a8e89;">{{ selectedCustomerDetail?.email }}</p>
-      </div>
-      <button style="background:none;border:none;font-size:24px;cursor:pointer;color:#6a8e89;" (click)="closeCustomerDetails()">×</button>
-    </div>
-    <div style="border-top:1px solid #eef3f2;padding-top:16px;">
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;">
-        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Name</span>
-        <span style="font-size:14px;color:#1a2e2c;font-weight:500;">{{ selectedCustomerDetail?.name }}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;">
-        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Phone</span>
-        <span style="font-size:14px;color:#1a2e2c;font-weight:500;">{{ selectedCustomerDetail?.phone }}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;">
-        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Address</span>
-        <span style="font-size:14px;color:#1a2e2c;font-weight:500;text-align:right;">{{ selectedCustomerDetail?.address }}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;" *ngIf="selectedCustomerDetail?.taxId">
-        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Tax ID</span>
-        <span style="font-size:14px;color:#1a2e2c;font-weight:500;">{{ selectedCustomerDetail?.taxId }}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;">
-        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Status</span>
-        <span>
-          <span class="ql-status-badge" [class]="getStatusBadgeClass(selectedCustomerDetail?.status || '')">
-            {{ getStatusLabel(selectedCustomerDetail?.status || '') | titlecase }}
-          </span>
-        </span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;">
-        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Total Spent</span>
-        <span style="font-size:14px;color:#1a2e2c;font-weight:700;">{{ selectedCustomerDetail ? formatCurrency(selectedCustomerDetail.totalSpent) : '' }}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;">
-        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Orders</span>
-        <span style="font-size:14px;color:#1a2e2c;font-weight:500;">{{ selectedCustomerDetail?.totalOrders }}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;">
-        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Since</span>
-        <span style="font-size:14px;color:#1a2e2c;font-weight:500;">{{ selectedCustomerDetail ? formatDate(selectedCustomerDetail.createdAt) : '' }}</span>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Delete Confirmation Modal -->
 <div class="ql-confirm-backdrop" *ngIf="showDeleteModal" (click)="showDeleteModal = false">
   <div class="ql-confirm-modal" (click)="$event.stopPropagation()">
@@ -279,13 +230,3 @@
     </div>
   </div>
 </div>
-
-<!-- Modals -->
-<app-modal *ngIf="showCustomerModal" [header]="selectedCustomerForEdit ? 'Edit Customer' : 'Add New Customer'"
-  (close)="closeCustomerModal()">
-  <app-customer-form [editId]="selectedCustomerForEdit?.id" (saved)="onCustomerSaved()"
-    (cancelled)="closeCustomerModal()"></app-customer-form>
-</app-modal>
-
-<app-quote-form *ngIf="showQuoteModal" [customerId]="selectedCustomerId" (saved)="onQuoteSaved()"
-  (cancelled)="closeQuoteModal()"></app-quote-form>

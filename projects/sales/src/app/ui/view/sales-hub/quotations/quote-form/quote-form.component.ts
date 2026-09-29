@@ -1664,7 +1664,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
         <p style="margin-top: 24px;">Thank you for your business!</p>
         <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-        <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from OptimaX.</p>
+        <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from ${this.billedBy.name || quote.merchantDetails?.name || quote.merchantDetails?.companyName || 'our company'}.</p>
       </div>
     `;
 
@@ -1699,7 +1699,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       to: email,
       cc: [],
       bcc: [],
-      subject: `Quotation ${quote.quoteNumber} from OptimaX`,
+      subject: `Quotation ${quote.quoteNumber} from ${this.billedBy.name || quote.merchantDetails?.name || quote.merchantDetails?.companyName || 'our company'}`,
       message: htmlBody,
       attachments,
       sentBy: quote.merchantDetails?.email || 'system'
@@ -1842,7 +1842,11 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   saveDiscountModal(): void {
     this.discountType = this.modalDiscountType;
-    this.discountValue = this.modalDiscountType === 'PERCENTAGE' ? Math.min(this.modalDiscountAmount, 100) : this.modalDiscountAmount;
+    // Only an upper bound (100%) was enforced for PERCENTAGE, and FIXED had no bound at all — a
+    // negative discount actively added to the grand total instead of subtracting from it, and
+    // nothing downstream caught it before the quote was saved/sent.
+    const clamped = Math.max(0, this.modalDiscountAmount || 0);
+    this.discountValue = this.modalDiscountType === 'PERCENTAGE' ? Math.min(clamped, 100) : clamped;
     this.calculateTotals();
     this.showDiscountModal = false;
   }
