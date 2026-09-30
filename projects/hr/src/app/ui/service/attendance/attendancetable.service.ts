@@ -1,5 +1,5 @@
-import { Injectable, OnDestroy } from '@angular/core';
-import { BehaviorSubject, Observable, of, Subscription } from 'rxjs';
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import { AttendanceTableRecord } from '../../domain/attendance/attendancetable.dto';
 import { OfficeHoursService } from './office-hours.service';
@@ -9,11 +9,6 @@ import { computeShiftTrackingMetrics } from '../workschedule-shift/shift-based-t
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../shared-component/environments/environment.prod';
 import { map } from 'rxjs/operators';
-import { MOCK_ATTENDANCE_RECORDS } from '../../domain/attendance/mock-attendance-data';
-
-// Backend mode: try live backend (https://be.optimaxsuites.com) first, with mock fallback if offline
-// Set to TRUE to test cross-branch approvals, remote check-in, and other features with mock data
-const USE_MOCK_DATA_ONLY = true;
 
 type ClockStatus = 'CLOCKED_IN' | 'CLOCKED_OUT';
 
@@ -58,35 +53,19 @@ const API_ENDPOINTS = {
   EMPLOYEES: () => `${environment.apiBaseUrl}/x/api/v2/hr/employees?page=1&size=100`
 };
 
-interface RegisteredEmployee {
-  id: string;
-  name: string;
-  department: string;
-}
-
 interface ParsedEmployeeResponse {
   id: number;
   fullName: string;
   department: string;
 }
 
-const ATTENDANCE_STORAGE_KEY = 'attendanceTestData';
-
 @Injectable({ providedIn: 'root' })
-export class AttendancetableService implements OnDestroy {
-  private attendanceSubject = new BehaviorSubject<AttendanceTableRecord[]>(
-    this.loadInitialData()
-  );
+export class AttendancetableService {
+  private attendanceSubject = new BehaviorSubject<AttendanceTableRecord[]>([]);
   private clockStatusSubject = new BehaviorSubject<ClockStatus>('CLOCKED_OUT');
   private totalRecordsSubject = new BehaviorSubject<number>(0);
 
-  private localRecords = new Map<string, AttendanceTableRecord>();
-  private registeredEmployees: RegisteredEmployee[] = [];
-  private lastAbsentRunDate: string | null = null;
-
-  private absentTimeout: NodeJS.Timeout | null = null;
-  private absentInterval: NodeJS.Timeout | null = null;
-  private officeHoursSubscription: Subscription | null = null;
+  private activeClockActions = new Set<string>();
 
   attendance$ = this.attendanceSubject.asObservable();
   clockStatus$ = this.clockStatusSubject.asObservable();
@@ -97,27 +76,7 @@ export class AttendancetableService implements OnDestroy {
     private http: HttpClient,
     private attendanceScheduleResolverService: AttendanceScheduleResolverService
   ) {
-    this.scheduleAbsentCheck();
-    this.officeHoursSubscription = this.officeHoursService.officeHours$.subscribe(() => {
-      this.scheduleAbsentCheck();
-    });
     this.fetchAllRecords();
-  }
-
-  private loadInitialData(): AttendanceTableRecord[] {
-    return this.loadFromStorage();
-  }
-
-  ngOnDestroy() {
-    if (this.absentTimeout) {
-      clearTimeout(this.absentTimeout);
-    }
-    if (this.absentInterval) {
-      clearInterval(this.absentInterval);
-    }
-    if (this.officeHoursSubscription) {
-      this.officeHoursSubscription.unsubscribe();
-    }
   }
 
   // ────────────────────────────────────────────────────────────
@@ -149,7 +108,6 @@ export class AttendancetableService implements OnDestroy {
     );
 
     this.attendanceSubject.next(records);
-    this.saveToStorage(records);
   }
 
   getTodayRecordForEmployee(employeeId: string): AttendanceTableRecord | undefined {
@@ -196,18 +154,6 @@ export class AttendancetableService implements OnDestroy {
   // ────────────────────────────────────────────────────────────
 
   fetchAllRecords(page: number = 1, size: number = 100): void {
-    // In development mode, use fresh mock data (ignore localStorage cache)
-    if (USE_MOCK_DATA_ONLY) {
-      // Simulate pagination with mock data
-      const start = (page - 1) * size;
-      const end = start + size;
-      const paginatedData = MOCK_ATTENDANCE_RECORDS.slice(start, end);
-      
-      this.mergeAndPublish(paginatedData.length > 0 ? paginatedData : MOCK_ATTENDANCE_RECORDS);
-      this.totalRecordsSubject.next(MOCK_ATTENDANCE_RECORDS.length);
-      return;
-    }
-
     this.http.get<any>(API_ENDPOINTS.ALL_RECORDS() + `?page=${page}&size=${size}`).subscribe({
       next: (res) => this.handleFetchSuccess(res),
       error: (err) => this.handleFetchError('fetchAllRecords', err)
@@ -215,18 +161,6 @@ export class AttendancetableService implements OnDestroy {
   }
 
   fetchByDateRange(from: string, to: string, page: number = 1, size: number = 100): void {
-    // In development mode, skip API calls and use mock data
-    if (USE_MOCK_DATA_ONLY) {
-      // Simulate pagination with mock data
-      const start = (page - 1) * size;
-      const end = start + size;
-      const paginatedData = MOCK_ATTENDANCE_RECORDS.slice(start, end);
-      
-      this.mergeAndPublish(paginatedData.length > 0 ? paginatedData : MOCK_ATTENDANCE_RECORDS);
-      this.totalRecordsSubject.next(MOCK_ATTENDANCE_RECORDS.length);
-      return;
-    }
-
     const url = `${API_ENDPOINTS.RECORDS_BY_RANGE()}?from=${from}&to=${to}&page=${page}&size=${size}`;
     this.http.get<any>(url).subscribe({
       next: (res) => this.handleFetchSuccess(res),
@@ -235,12 +169,6 @@ export class AttendancetableService implements OnDestroy {
   }
 
   fetchByEmployee(employeeId: string, page: number = 1, size: number = 100): void {
-    // In development mode, skip API calls and use fresh mock data
-    if (USE_MOCK_DATA_ONLY) {
-      this.mergeAndPublish(MOCK_ATTENDANCE_RECORDS);
-      return;
-    }
-
     this.http.get<any>(API_ENDPOINTS.RECORD_BY_EMPLOYEE(employeeId) + `?page=${page}&size=${size}`).subscribe({
       next: (res) => this.handleFetchSuccess(res),
       error: (err) => this.handleFetchError('fetchByEmployee', err)
@@ -302,23 +230,49 @@ export class AttendancetableService implements OnDestroy {
   ): Promise<void> {
     employeeName = employeeName.trim() || `Employee ${employeeId}`;
     department = department.trim() || 'Default Department';
-    if (!this.isWorkingDay()) {
-      if (USE_MOCK_DATA_ONLY || environment.env === 'development') {
-        console.warn('Clocking in on a non-working day allowed for testing in development mode.');
-      } else {
-        alert('Attendance is not available on weekends.');
-        return;
-      }
-    }
-
-    if (action === 'IN' && this.hasCompletedToday(employeeId)) {
-      if (!USE_MOCK_DATA_ONLY && environment.env !== 'development') {
-        throw new Error('Today\'s attendance is already completed.');
-      }
-    }
-
     const now = new Date();
     const today = toLocalDateString(now);
+    const actionKey = this.localKey(employeeId, today);
+    const record = this.attendanceSubject.value.find(
+      item => item.employeeId === employeeId && (item.date instanceof Date ? toLocalDateString(item.date) : item.date) === today
+    );
+
+    if (this.activeClockActions.has(actionKey)) {
+      throw new Error('An attendance action is already in progress.');
+    }
+    if (action === 'IN' && record?.checkIn && record.checkOut) {
+      throw new Error('Today\'s attendance is already completed.');
+    }
+    if (action === 'IN' && record?.checkIn) {
+      throw new Error('You are already clocked in.');
+    }
+    if (action === 'OUT' && (!record?.checkIn || record.checkOut)) {
+      throw new Error('You must clock in before clocking out.');
+    }
+
+    this.activeClockActions.add(actionKey);
+    try {
+      await this.performClockAction(employeeId, employeeName, department, action, now, today);
+    } finally {
+      this.activeClockActions.delete(actionKey);
+    }
+  }
+
+  private async performClockAction(
+    employeeId: string,
+    employeeName: string,
+    department: string,
+    action: 'IN' | 'OUT',
+    now: Date,
+    today: string
+  ): Promise<void> {
+    if (!this.isWorkingDay(now)) {
+      if (environment.env === 'development') {
+        console.warn('Clocking in on a non-working day allowed for testing in development mode.');
+      } else {
+        throw new Error('Attendance is not available on weekends.');
+      }
+    }
     const data = [...this.attendanceSubject.value];
     const officeHours = this.officeHoursService.getOfficeHours();
 
@@ -332,14 +286,9 @@ export class AttendancetableService implements OnDestroy {
     );
 
     let record = data.find(r => r.employeeId === employeeId && (r.date instanceof Date ? toLocalDateString(r.date) : r.date) === today);
-    if (action === 'OUT' && (!record || !record.checkIn || record.checkOut)) {
-      throw new Error('You must clock in before clocking out.');
-    }
     if (record) {
       record = { ...record };
     }
-    this.ensureRegistered(employeeId, employeeName, department);
-
     if (!record) {
       record = this.createNewRecord(employeeId, employeeName, department, today);
       data.unshift(record);
@@ -375,36 +324,27 @@ export class AttendancetableService implements OnDestroy {
     this.applyTrackingMetrics(record, workingWindow, today);
 
     if (action === 'IN') {
-      try {
-        const response = await this.clockInApi(
+      const response = await this.clockInApi(
+        employeeId,
+        now.toISOString(),
+        location?.address ?? '',
+        distanceFromOffice
+      );
+      const returnedId = response?.id ?? response?.attendanceId ?? response?.recordId;
+      if (returnedId) {
+        record.apiRecordId = Number(returnedId);
+      }
+    } else {
+      if (record.apiRecordId) {
+        await this.clockOutApi(
+          record.apiRecordId,
           employeeId,
           now.toISOString(),
           location?.address ?? '',
           distanceFromOffice
         );
-        const returnedId = response?.id ?? response?.attendanceId ?? response?.recordId;
-        if (returnedId) {
-          record.apiRecordId = Number(returnedId);
-        }
-      } catch (apiErr) {
-        console.warn('Backend clock-in API call failed; saving record locally:', apiErr);
-      }
-      this.localRecords.set(this.localKey(employeeId, today), { ...record });
-      this.attendanceSubject.next([...this.attendanceSubject.value]);
-      this.saveToStorage(this.attendanceSubject.value);
-    } else {
-      if (record.apiRecordId) {
-        try {
-          await this.clockOutApi(
-            record.apiRecordId,
-            employeeId,
-            now.toISOString(),
-            location?.address ?? '',
-            distanceFromOffice
-          );
-        } catch (apiErr) {
-          console.warn('Backend clock-out API call failed; saving record locally:', apiErr);
-        }
+      } else {
+        throw new Error('Unable to clock out because this attendance record is not linked to the server.');
       }
     }
 
@@ -430,8 +370,6 @@ export class AttendancetableService implements OnDestroy {
     );
 
     let record = data.find(r => r.employeeId === employeeId && toLocalDateString(r.date || new Date()) === today);
-    this.ensureRegistered(employeeId, employeeName, department);
-
     if (!record) {
       record = this.createNewRecord(employeeId, employeeName, department, today);
       record.checkIn = toLocalTimeString(now);
@@ -504,17 +442,10 @@ export class AttendancetableService implements OnDestroy {
 
     record.overrideOpen = true;
     this.attendanceSubject.next(records);
-    localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(records));
 
     if (record.apiRecordId) {
       this.overrideOpenApi(record.apiRecordId, actorUserId, reason);
     }
-  }
-
-  refreshFromLocalStorage(records: AttendanceTableRecord[]): void {
-    this.localRecords.clear();
-    this.attendanceSubject.next(records);
-    this.saveToStorage(records);
   }
 
   overrideAttendance(
@@ -764,21 +695,13 @@ export class AttendancetableService implements OnDestroy {
     // Extract pagination metadata
     const totalElements = res.totalElements ?? res.total ?? mapped.length;
     this.totalRecordsSubject.next(totalElements);
-
-    // If API returns empty results, use mock data as fallback
-    if (mapped.length === 0) {
-      this.mergeAndPublish(MOCK_ATTENDANCE_RECORDS);
-      this.totalRecordsSubject.next(MOCK_ATTENDANCE_RECORDS.length);
-    } else {
-      this.mergeAndPublish(mapped);
-    }
+    this.mergeAndPublish(mapped);
   }
 
   private handleFetchError(method: string, err: any): void {
-    const errorMsg = err?.error?.message ?? err?.message ?? err?.statusText ?? 'Unknown error';
-    const status = err?.status || 'unknown status';
-    // Use mock data as fallback
-    this.mergeAndPublish(MOCK_ATTENDANCE_RECORDS);
+    console.error(`Failed to ${method}:`, err);
+    this.totalRecordsSubject.next(0);
+    this.mergeAndPublish([]);
   }
 
   private shouldIncludeRecord(record: AttendanceTableRecord): boolean {
@@ -909,21 +832,11 @@ export class AttendancetableService implements OnDestroy {
   }
 
   private mergeAndPublish(apiRecords: AttendanceTableRecord[]): void {
-    const merged = [...apiRecords];
-
-    this.localRecords.forEach((localRecord, key) => {
-      const index = merged.findIndex(r => this.localKey(r.employeeId, toLocalDateString(r.date || new Date())) === key);
-
-      if (index !== -1) {
-        merged[index] = { ...merged[index], ...localRecord };
-      } else {
-        merged.unshift(localRecord);
-      }
-    });
+    const records = [...apiRecords];
 
     // Keep the schedule snapshot authoritative; use office hours only when
     // older records do not contain assigned shift times.
-    merged.forEach(record => {
+    records.forEach(record => {
       if (record.appliedExpectedStart && record.appliedExpectedEnd) {
         const openingTime = this.toHHmm(record.appliedExpectedStart);
         const window: WorkingWindow = {
@@ -941,23 +854,15 @@ export class AttendancetableService implements OnDestroy {
       }
     });
 
-    this.attendanceSubject.next(merged);
-    // Save to localStorage for admin dashboard
-    try {
-      localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(merged));
-    } catch {
-      // Storage error, continue
-    }
+    this.attendanceSubject.next(records);
   }
 
   private updateLocalAndPublish(employeeId: string, date: string, record: AttendanceTableRecord): void {
-    this.localRecords.set(this.localKey(employeeId, date), { ...record });
-
-    const currentApiData = this.attendanceSubject.value.filter(
-      r => !this.localRecords.has(this.localKey(r.employeeId, r.date instanceof Date ? toLocalDateString(r.date) : ''))
+    const key = this.localKey(employeeId, date);
+    const records = this.attendanceSubject.value.filter(
+      item => this.localKey(item.employeeId, item.date instanceof Date ? toLocalDateString(item.date) : '') !== key
     );
-
-    this.mergeAndPublish(currentApiData);
+    this.attendanceSubject.next([record, ...records]);
   }
 
   private createNewRecord(
@@ -1120,15 +1025,8 @@ export class AttendancetableService implements OnDestroy {
     return `${employeeId}_${date}`;
   }
 
-  private ensureRegistered(id: string, name: string, department: string): void {
-    const already = this.registeredEmployees.some(e => e.id === id);
-    if (!already) {
-      this.registeredEmployees.push({ id, name, department });
-    }
-  }
-
-  private isWorkingDay(): boolean {
-    const day = new Date().getDay();
+  private isWorkingDay(date: Date = new Date()): boolean {
+    const day = date.getDay();
     return day !== 0 && day !== 6;
   }
 
@@ -1164,60 +1062,6 @@ export class AttendancetableService implements OnDestroy {
     });
   }
 
-  private scheduleAbsentCheck(): void {
-    if (this.absentTimeout) clearTimeout(this.absentTimeout);
-    if (this.absentInterval) clearInterval(this.absentInterval);
-
-    this.autoMarkAbsentIfNeeded();
-    this.absentInterval = setInterval(() => this.autoMarkAbsentIfNeeded(), 60000);
-  }
-
-  private autoMarkAbsentIfNeeded(): void {
-    const now = new Date();
-    const day = now.getDay();
-
-    if (day === 0 || day === 6) return;
-
-    const today = toLocalDateString(now);
-    const data = [...this.attendanceSubject.value];
-
-    let changed = false;
-
-    this.registeredEmployees.forEach(emp => {
-      const recordExists = data.some(r => r.employeeId === String(emp.id) && toLocalDateString(r.date || new Date()) === today);
-
-      let workingWindow: WorkingWindow | null = null;
-      this.attendanceScheduleResolverService.resolve(String(emp.id), now).subscribe(window => {
-        workingWindow = window;
-      });
-
-      // `resolve()` always emits synchronously (built on `of(...)`), so
-      // `workingWindow` is already set here — the `as` cast below just stops
-      // TS from (wrongly) narrowing the closure-assigned variable to `never`
-      // on the next line, since a plain re-assignment keeps the same
-      // control-flow-narrowed type.
-      const resolvedWindow = workingWindow as WorkingWindow | null;
-      if (!resolvedWindow || now < this.convertToDateTime(resolvedWindow.absentTime)) return;
-
-      if (!recordExists) {
-        const absentRecord = this.createNewRecord(emp.id, emp.name, emp.department, today);
-        const key = this.localKey(emp.id, today);
-
-        if (!this.localRecords.has(key)) {
-          this.localRecords.set(key, absentRecord);
-          changed = true;
-        }
-      }
-    });
-
-    if (changed) {
-      const currentApiData = this.attendanceSubject.value.filter(
-        r => !this.localRecords.has(this.localKey(r.employeeId, toLocalDateString(r.date || new Date())))
-      );
-      this.mergeAndPublish(currentApiData);
-    }
-  }
-
   // ────────────────────────────────────────────────────────────
   // API Calls
   // ────────────────────────────────────────────────────────────
@@ -1229,10 +1073,6 @@ export class AttendancetableService implements OnDestroy {
     checkInDistance: number,
     remoteMetadata?: { userAgent?: string; networkType?: string; vpnDetected?: boolean; geoAddress?: string; accuracy?: number }
   ): Promise<any> {
-    if (USE_MOCK_DATA_ONLY) {
-      return Promise.resolve(null);
-    }
-
     const body = {
       employeeId,
       attendanceDate: toLocalDateString(new Date()),
@@ -1252,11 +1092,6 @@ export class AttendancetableService implements OnDestroy {
     checkOutLocation: string,
     checkOutDistance: number
   ): Promise<void> {
-    if (USE_MOCK_DATA_ONLY) {
-      this.setClockStatus('CLOCKED_OUT');
-      return Promise.resolve();
-    }
-
     const body = {
       id: apiRecordId,
       employeeId,
@@ -1271,11 +1106,6 @@ export class AttendancetableService implements OnDestroy {
   }
 
   private overrideOpenApi(apiRecordId: number, actorUserId: number, reason: string): void {
-    // Skip API calls in development mode
-    if (USE_MOCK_DATA_ONLY) {
-      return;
-    }
-
     const body = { actorUserId, reason };
 
     this.http.post<any>(API_ENDPOINTS.OVERRIDE_OPEN(apiRecordId), body).subscribe({
@@ -1350,28 +1180,4 @@ export class AttendancetableService implements OnDestroy {
     return this.toMinutes(officeHours[field]) - this.toMinutes(officeHours.openingTime);
   }
 
-  private loadFromStorage(): AttendanceTableRecord[] {
-    try {
-      const stored = localStorage.getItem(ATTENDANCE_STORAGE_KEY);
-      if (stored) {
-        const records = JSON.parse(stored);
-        // Convert date strings back to Date objects
-        return records.map((record: any) => ({
-          ...record,
-          date: record.date ? new Date(record.date) : null
-        }));
-      }
-    } catch {
-      // Storage error, fall back to mock
-    }
-    return MOCK_ATTENDANCE_RECORDS;
-  }
-
-  private saveToStorage(records: AttendanceTableRecord[]): void {
-    try {
-      localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(records));
-    } catch {
-      // Storage error, continue anyway
-    }
-  }
 }

@@ -1,3 +1,5 @@
+import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
 import { UserProfileComponent } from './ui/view/user-profile/user-profile.component';
 import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-dashboard.component';
@@ -14,8 +16,6 @@ import { ProductivityWorkspaceComponent } from './ui/view/productivity/productiv
 import { BonusDisbursementComponent } from './ui/view/payroll/bonus-disbursement/bonus-disbursement.component';
 import { EmployeeRelativesWidgetComponent } from './ui/shared-component/employee-relatives-widget/employee-relatives-widget.component';
 import { NgModule, NO_ERRORS_SCHEMA } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 
@@ -149,7 +149,6 @@ import { LeavePolicyComponent } from './ui/view/leave/leave-policy/leave-policy.
 import { AttendashboardComponent } from './ui/view/attendance/admin/attendashboard/attendashboard.component';
 import { StatsCardsComponent } from './ui/view/attendance/admin/attendashboard/stats-cards/stats-cards.component';
 import { LateArrivalsComponent } from './ui/view/attendance/admin/attendashboard/late-arrivals/late-arrivals.component';
-import { AbsentListComponent } from './ui/view/attendance/admin/attendashboard/absent-list/absent-list.component';
 //import { AttendancetableComponent } from './ui/view/attendance/admin/attendashboard/attendancetable/attendancetable.component';
 //import { AttendancefilterComponent } from './ui/view/attendance/admin/attendashboard/attendancetable/attendancefilter/attendancefilter.component';
 //import { AttendancesummaryComponent } from './ui/view/attendance/admin/attendashboard/attendancesummary/attendancesummary.component';
@@ -332,7 +331,6 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     AttendashboardComponent,
     StatsCardsComponent,
     LateArrivalsComponent,
-    AbsentListComponent,
     AttendanceDetailsComponent,
     AttendanceSheetsComponent,
     OfficeHoursComponent,

@@ -1,23 +1,23 @@
-<div class="stats-grid" *ngIf="stats; else noData">
+<div class="stats-grid">
 
   <div class="stat-card present" [class.active]="activeCard === 'PRESENT'" (click)="statusClick.emit('PRESENT')">
     <h3>Present</h3>
-    <p>{{ stats.present }}</p>
+    <p>{{ stats?.present ?? '-' }}</p>
   </div>
 
   <div class="stat-card absent" [class.active]="activeCard === 'ABSENT'" (click)="statusClick.emit('ABSENT')">
     <h3>Absent</h3>
-    <p>{{ stats.absent }}</p>
+    <p>{{ stats?.absent ?? '-' }}</p>
   </div>
 
   <div class="stat-card late" [class.active]="activeCard === 'LATE'" (click)="statusClick.emit('LATE')">
     <h3>Late</h3>
-    <p>{{ stats.late }}</p>
+    <p>{{ stats?.late ?? '-' }}</p>
   </div>
 
   <div class="stat-card leave">
     <h3>On Leave</h3>
-    <p>{{ stats.onLeave }}</p>
+    <p>{{ stats?.onLeave ?? '-' }}</p>
   </div>
 
   <div class="stat-card pending-approvals" [class.has-pending]="pendingApprovals > 0" (click)="pendingApprovals > 0 && pendingClick.emit()">
@@ -47,6 +47,3 @@
   </div>
 </div>
 
-<ng-template #noData>
-  <p>No data for selected period :P</p>
-</ng-template>

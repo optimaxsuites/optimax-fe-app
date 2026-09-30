@@ -24,6 +24,8 @@ interface AttendanceViewRecord {
 export class MyAttendanceComponent implements OnInit, OnDestroy {
   currentTime: string = '';
   currentRecord: AttendanceViewRecord | null = null;
+  hasCompletedAttendanceToday = false;
+  isClockActionPending = false;
   history: AttendanceViewRecord[] = [];
   filteredHistory: AttendanceViewRecord[] = [];
   private employeeId: string | null = null;
@@ -82,7 +84,10 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
           .filter(record => this.employeeId === null || record.employeeId === this.employeeId)
           .map(record => this.toViewRecord(record));
         this.filteredHistory = [...this.history];
-        this.currentRecord = this.history.find(record => record.clockIn && !record.clockOut) ?? null;
+        const today = this.formatDateLocal(new Date());
+        this.currentRecord = this.history.find(record => record.date === today) ?? null;
+        this.hasCompletedAttendanceToday = this.employeeId !== null
+          && this.attendanceService.hasCompletedToday(this.employeeId);
         this.calculateMetrics();
       })
     );
@@ -136,12 +141,15 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   }
 
   async clockIn(): Promise<void> {
-    if (this.employeeId === null) return;
+    if (this.employeeId === null || this.isClockActionPending || this.hasCompletedAttendanceToday) return;
+    this.isClockActionPending = true;
     try {
       await this.attendanceService.clockAction(this.employeeId, this.employeeName, this.department, 'IN');
     } catch (error) {
       this.messageService.add({ severity: 'error', summary: 'Clock In Failed', detail: error instanceof Error ? error.message : 'Location permission is required to clock in.', key: 'tl', life: 4000 });
       return;
+    } finally {
+      this.isClockActionPending = false;
     }
     this.messageService.add({
       severity: 'success',
@@ -153,12 +161,15 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   }
 
   async clockOut(): Promise<void> {
-    if (this.employeeId === null) return;
+    if (this.employeeId === null || this.isClockActionPending) return;
+    this.isClockActionPending = true;
     try {
       await this.attendanceService.clockAction(this.employeeId, this.employeeName, this.department, 'OUT');
     } catch (error) {
       this.messageService.add({ severity: 'error', summary: 'Clock Out Failed', detail: error instanceof Error ? error.message : 'Failed to update attendance.', key: 'tl', life: 4000 });
       return;
+    } finally {
+      this.isClockActionPending = false;
     }
     this.messageService.add({
       severity: 'success',

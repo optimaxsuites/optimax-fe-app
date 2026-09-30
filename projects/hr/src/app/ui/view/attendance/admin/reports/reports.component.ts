@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../domain/attendance/attendancetable.dto';
 import { ToastService } from '../../../../shared-component/service/toast/toast.service';
-import { MOCK_ATTENDANCE, BRANCHES, BRANCH_NAMES } from '../../../../domain/attendance/attendancetable.mock';
+import { BRANCHES, BRANCH_NAMES } from '../../../../domain/attendance/attendancetable.mock';
 import { TableComponent, TableColumn, TableAction } from '../../../../shared-component/view/table/table.component';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
