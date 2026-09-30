@@ -9,8 +9,9 @@
       <div class="status">
         <span
           [class.in]="status === 'CLOCKED_IN'"
-          [class.out]="status === 'CLOCKED_OUT'">
-          {{ status.replace('_', ' ') }}
+          [class.out]="status === 'CLOCKED_OUT' && !hasCompletedToday"
+          [class.complete]="status === 'CLOCKED_OUT' && hasCompletedToday">
+          {{ status === 'CLOCKED_OUT' && hasCompletedToday ? 'COMPLETED' : status.replace('_', ' ') }}
         </span>
       </div>
       <div class="location-badge" *ngIf="currentLocation">
@@ -42,7 +43,7 @@
 
   <!-- CLOCK IN -->
   <button
-    *ngIf="status === 'CLOCKED_OUT'"
+    *ngIf="status === 'CLOCKED_OUT' && !hasCompletedToday"
     class="main-btn"
     [disabled]="isGettingLocation"
     (click)="toggleClock()">

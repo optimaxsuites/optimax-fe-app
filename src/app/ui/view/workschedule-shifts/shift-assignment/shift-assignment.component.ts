@@ -2,6 +2,7 @@ import { Component, OnInit, Output, EventEmitter, HostListener, Input } from '@a
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ShiftserviceService } from '../../../service/workschedule-shift/shiftservice.service';
 import { ScheduleserviceService } from '../../../service/workschedule-shift/scheduleservice.service';
+import { EmployeeService } from '../../../service/employee.service';
 import { WorkShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
 import { ShiftScheduleDTO } from '../../../domain/workschedule-shift/schedule.dto';
 import { debounceTime } from 'rxjs';
@@ -39,20 +40,12 @@ export class ShiftAssignmentComponent implements OnInit {
 
   // Modal state
   showAddShiftModal = false;
-  showAddProjectModal = false;
   newShiftName = '';
   newShiftStart = '';
   newShiftEnd = '';
-  newProjectName = '';
 
   /* MOCK EMPLOYEES and RECURRENECE (replace later with employee service) */
-  projects = [
-    'HR System Upgrade',
-    'Client Onboarding',
-    'Internal Audit',
-    'Remote Support',
-    'Field Work'
-  ];  
+  projects: { id: number; name: string }[] = [];
 
     recurrenceOptions = [
       { value: 'none', label: 'None' },
@@ -61,21 +54,8 @@ export class ShiftAssignmentComponent implements OnInit {
       { value: 'custom', label: 'Custom' } 
   ];
 
-  // ── Mock data (replace with real service later) ────────
-  employees: Employee[] = [
-    { id: 'emp-1', name: 'Afolabi Daniels', department: 'Engineering'  },
-    { id: 'emp-2', name: 'David Okpabio',   department: 'Engineering'  },
-    { id: 'emp-3', name: 'Ngozi Ezer',      department: 'HR'           },
-    { id: 'emp-4', name: 'Amaka Okafor',    department: 'HR'           },
-    { id: 'emp-5', name: 'Tunde Bello',     department: 'Operations'   },
-    { id: 'emp-6', name: 'Chisom Eze',      department: 'Operations'   },
-  ];
-
-  departments: Department[] = [
-    { id: 'dept-1', name: 'Engineering', employeeIds: ['emp-1', 'emp-2'] },
-    { id: 'dept-2', name: 'HR',          employeeIds: ['emp-3', 'emp-4'] },
-    { id: 'dept-3', name: 'Operations',  employeeIds: ['emp-5', 'emp-6'] },
-  ];
+  employees: Employee[] = [];
+  departments: Department[] = [];
 
   @Input() preselectedDate!: string;
   @Input() preselectedEndDate!: string;
@@ -85,7 +65,8 @@ export class ShiftAssignmentComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private shiftserviceService: ShiftserviceService,
-    private scheduleserviceService: ScheduleserviceService
+    private scheduleserviceService: ScheduleserviceService,
+    private employeeService: EmployeeService
   ) {}
 
   ngOnInit(): void {
@@ -131,6 +112,50 @@ export class ShiftAssignmentComponent implements OnInit {
   // 2. Shifts
   this.shiftserviceService.shifts$.subscribe(shifts => {
     this.shifts = shifts;
+  });
+
+  this.scheduleserviceService.schedules$.subscribe(schedules => {
+    const projects = new Map<number, string>();
+    schedules.forEach(schedule => {
+      if (schedule.projectId && schedule.project) {
+        projects.set(schedule.projectId, schedule.project);
+      }
+    });
+    this.projects = Array.from(projects, ([id, name]) => ({ id, name }));
+  });
+
+  this.employeeService.getActiveEmployees().subscribe(employees => {
+    this.employees = employees.map(employee => {
+      const department = employee.department;
+      const departmentName = typeof department === 'string'
+        ? department
+        : department?.name ?? employee.departmentName ?? '';
+
+      return {
+        id: String(employee.id ?? employee.employeeId ?? ''),
+        name: employee.fullName
+          ?? employee.name
+          ?? `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim(),
+        department: departmentName
+      };
+    }).filter(employee => employee.id && employee.name);
+
+    const departments = new Map<string, Department>();
+    this.employees.forEach(employee => {
+      if (!employee.department) return;
+      const departmentId = String(
+        employees.find(item => String(item.id ?? item.employeeId ?? '') === employee.id)?.department?.id
+        ?? employee.department
+      );
+      const department = departments.get(departmentId) ?? {
+        id: departmentId,
+        name: employee.department,
+        employeeIds: []
+      };
+      department.employeeIds.push(employee.id);
+      departments.set(departmentId, department);
+    });
+    this.departments = Array.from(departments.values());
   });
 
   // 3. Single valueChanges subscription (removed the duplicate)
@@ -320,6 +345,8 @@ export class ShiftAssignmentComponent implements OnInit {
         shiftId: form.shiftId,
         date: form.date,
         project: form.project,
+        projectId: this.projects.find(project => project.name === form.project)?.id
+          ?? this.scheduleToEdit!.projectId,
         location: form.location,
         recurrence: form.recurrence,
         customDays: form.customDays,
@@ -374,6 +401,7 @@ export class ShiftAssignmentComponent implements OnInit {
           date: d,
           status: 'scheduled',
           project,
+          projectId: this.projects.find(projectOption => projectOption.name === project)?.id,
           location,
           recurrence,
           customDays,
@@ -675,15 +703,6 @@ get showRecurrenceControls(): boolean {
     }
   }
 
-  onProjectChange(event: any) {
-    if (event.target.value === '__add_new__') {
-      event.target.value = '';
-      this.assignmentForm.patchValue({ project: '' });
-      this.showAddProjectModal = true;
-      this.newProjectName = '';
-    }
-  }
-
   closeAddShiftModal() {
     this.showAddShiftModal = false;
     this.newShiftName = '';
@@ -691,34 +710,25 @@ get showRecurrenceControls(): boolean {
     this.newShiftEnd = '';
   }
 
-  closeAddProjectModal() {
-    this.showAddProjectModal = false;
-    this.newProjectName = '';
-  }
-
   saveNewShiftModal() {
     if (!this.newShiftName || !this.newShiftStart || !this.newShiftEnd) {
       alert('Please fill in all fields');
       return;
     }
-    const newShift: any = {
-      id: Date.now().toString(),
+    const newShift: WorkShiftDTO = {
+      id: '',
       name: this.newShiftName,
       startTime: this.newShiftStart,
-      endTime: this.newShiftEnd
+      endTime: this.newShiftEnd,
+      type: 'custom'
     };
-    this.shifts.push(newShift);
-    this.assignmentForm.patchValue({ shiftId: newShift.id });
-    this.closeAddShiftModal();
+    this.shiftserviceService.addShift(newShift).subscribe({
+      next: created => {
+        this.assignmentForm.patchValue({ shiftId: created.id });
+        this.closeAddShiftModal();
+      },
+      error: () => alert('Failed to save shift. Please try again.')
+    });
   }
 
-  saveNewProjectModal() {
-    if (!this.newProjectName) {
-      alert('Please enter a project name');
-      return;
-    }
-    this.projects.push(this.newProjectName);
-    this.assignmentForm.patchValue({ project: this.newProjectName });
-    this.closeAddProjectModal();
-  }
 }

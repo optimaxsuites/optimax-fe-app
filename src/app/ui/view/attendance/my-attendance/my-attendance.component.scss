@@ -248,6 +248,11 @@ $breakpoint-xl: 1280px;
     background-color: $color-warning-light;
     color: #92400e;
   }
+
+  &--complete {
+    background-color: $color-info-light;
+    color: $color-info;
+  }
 }
 
 .attendance-card__action {

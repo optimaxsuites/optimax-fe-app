@@ -97,6 +97,11 @@ $gap-card: 1.5rem;
       color: #b91c1c;
     }
 
+    &.complete {
+      background-color: #dbeafe;
+      color: #1d4ed8;
+    }
+
     &.break {
       background-color: #fef3c7;
       color: #d97706;

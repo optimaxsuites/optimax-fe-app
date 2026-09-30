@@ -155,11 +155,13 @@ export class ShiftFormComponent implements OnInit {
 
     if (this.isEditMode) {
       this.shiftserviceService.updateShift(shiftData);
+      this.close();
     } else {
-      this.shiftserviceService.addShift(shiftData);
+      this.shiftserviceService.addShift(shiftData).subscribe({
+        next: () => this.close(),
+        error: () => undefined
+      });
     }
-
-    this.close();
 
   }
 

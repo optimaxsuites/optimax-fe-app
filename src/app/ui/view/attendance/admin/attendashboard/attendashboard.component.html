@@ -7,20 +7,12 @@
         <p>Monitor and manage employee attendance</p>
       </div>
       <div class="header-actions">
-        <button
-          class="mark-attendance-btn"
-          [disabled]="markingAttendance"
-          (click)="markAttendance()">
-          <i class="fa-solid fa-user-check"></i>
-          {{ markingAttendance ? 'Marking...' : 'Mark Attendance' }}
-        </button>
         <app-adminexport
           [data]="filteredAttendance"
           [filters]="currentFilters">
         </app-adminexport>
       </div>
     </div>
-    <p class="mark-attendance-message" *ngIf="markAttendanceMessage">{{ markAttendanceMessage }}</p>
   </div>
 
   <!-- Summary Cards - Clickable Quick Filters, sourced from GET attendance/stats/today -->
@@ -34,9 +26,8 @@
     (pendingClick)="filterByPendingApproval()">
   </app-stats-cards>
 
-  <!-- Live lists from GET attendance/late/today and GET attendance/absent/today -->
+  <!-- Live absent list from GET attendance/absent/today -->
   <div class="dashboard-lists">
-    <app-late-arrivals [lateArrivals]="lateArrivals"></app-late-arrivals>
     <app-absent-list [absentees]="absentees"></app-absent-list>
   </div>
 

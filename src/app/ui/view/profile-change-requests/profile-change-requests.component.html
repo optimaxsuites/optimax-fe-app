@@ -1,258 +1,331 @@
-<div class="profile-change-requests-page">
-  <!-- Header -->
-  <div class="page-header">
-    <div class="header-top">
+<p-toast key="tl" position="top-right"></p-toast>
+
+<div class="pcr-page">
+
+  <!-- Page Header -->
+  <div class="pcr-header">
+    <div class="pcr-header-text">
       <h1>Profile Change Requests</h1>
-      <p class="subtitle">Manage employee profile field change requests</p>
+      <p>Review and action employee profile update requests</p>
     </div>
-  </div>
-
-  <!-- Filters -->
-  <div class="filters-section">
-    <div class="filter-group">
-      <label>Status:</label>
-      <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
-        <option *ngFor="let opt of statusOptions" [ngValue]="opt.value">{{ opt.label }}</option>
-      </select>
-    </div>
-
-    <div class="filter-group">
-      <label>Field Type:</label>
-      <select [(ngModel)]="fieldTypeFilter" (change)="applyFilters()" class="filter-select">
-        <option *ngFor="let opt of fieldTypeOptions" [ngValue]="opt.value">{{ opt.label }}</option>
-      </select>
-    </div>
-
-    <button (click)="loadRequests()" class="btn-refresh" [disabled]="loading">
-      <i class="fa-solid fa-rotate-right"></i> Refresh
+    <button (click)="loadRequests()" class="pcr-refresh-btn" [disabled]="loading">
+      <i class="fa-solid fa-rotate-right" [class.fa-spin]="loading"></i>
+      Refresh
     </button>
   </div>
 
+  <!-- Stats Row -->
+  <div class="pcr-stats">
+    <div class="pcr-stat pcr-stat--total" (click)="setStatusFilter(null)">
+      <span class="pcr-stat-value">{{ requests.length }}</span>
+      <span class="pcr-stat-label">Total</span>
+    </div>
+    <div class="pcr-stat pcr-stat--pending" (click)="setStatusFilter('pending')">
+      <span class="pcr-stat-value">{{ pendingCount }}</span>
+      <span class="pcr-stat-label">Pending</span>
+    </div>
+    <div class="pcr-stat pcr-stat--approved" (click)="setStatusFilter('approved')">
+      <span class="pcr-stat-value">{{ approvedCount }}</span>
+      <span class="pcr-stat-label">Approved</span>
+    </div>
+    <div class="pcr-stat pcr-stat--rejected" (click)="setStatusFilter('rejected')">
+      <span class="pcr-stat-value">{{ rejectedCount }}</span>
+      <span class="pcr-stat-label">Rejected</span>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="pcr-search-wrap">
+    <i class="fa-solid fa-magnifying-glass pcr-search-icon"></i>
+    <input type="text"
+           class="pcr-search"
+           placeholder="Search by name, field type, or reason…"
+           [(ngModel)]="searchQuery"
+           (ngModelChange)="applyFilters()" />
+    <button *ngIf="searchQuery" class="pcr-search-clear" (click)="searchQuery = ''; applyFilters()" title="Clear">
+      <i class="fa-solid fa-times"></i>
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="pcr-filters">
+    <div class="pcr-filter-row">
+      <span class="pcr-filter-label">Status</span>
+      <div class="pcr-pills">
+        <button *ngFor="let opt of statusOptions"
+                class="pcr-pill"
+                [class.pcr-pill--active]="statusFilter === opt.value"
+                (click)="setStatusFilter($any(opt.value))">
+          {{ opt.label }}
+        </button>
+      </div>
+    </div>
+    <div class="pcr-filter-row">
+      <span class="pcr-filter-label">Field</span>
+      <div class="pcr-pills">
+        <button *ngFor="let opt of fieldTypeOptions"
+                class="pcr-pill"
+                [class.pcr-pill--active]="fieldTypeFilter === opt.value"
+                (click)="setFieldTypeFilter($any(opt.value))">
+          {{ opt.label }}
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading -->
-  <div *ngIf="loading" class="loading-state">
-    <div class="spinner"></div>
-    <p>Loading requests...</p>
+  <div *ngIf="loading" class="pcr-loading">
+    <div class="pcr-spinner"></div>
+    <span>Loading requests…</span>
   </div>
 
   <!-- Empty State -->
-  <div *ngIf="!loading && filteredRequests.length === 0" class="empty-state">
-    <i class="fa-solid fa-inbox"></i>
-    <p>No requests found</p>
+  <div *ngIf="!loading && filteredRequests.length === 0" class="pcr-empty">
+    <div class="pcr-empty-icon">
+      <i class="fa-solid fa-inbox"></i>
+    </div>
+    <h3>No requests found</h3>
+    <p>There are no profile change requests matching the current filters.</p>
   </div>
 
-  <!-- Requests Table -->
-  <div *ngIf="!loading && filteredRequests.length > 0" class="requests-table-container">
-    <table class="requests-table">
-      <thead>
-        <tr>
-          <th>Employee</th>
-          <th>Field Type</th>
-          <th>Changes</th>
-          <th>Reason</th>
-          <th>Submitted</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let request of filteredRequests" [class.pending]="request.status === 'pending'">
-          <td>
-            <strong>{{ request.employeeName || request.employeeId }}</strong>
-          </td>
-          <td>
-            <span class="badge badge-field">{{ getFieldTypeLabel(request.fieldChangeType) }}</span>
-          </td>
-          <td class="changes-cell">
-            <span>{{ getFieldDisplayValue(request) }}</span>
-          </td>
-          <td class="reason-cell">
-            <small>{{ request.reason || '-' }}</small>
-          </td>
-          <td class="date-cell">
-            <small>{{ formatDate(request.submittedDate) }}</small>
-          </td>
-          <td>
-            <span 
-              class="status-badge" 
-              [ngClass]="'status-' + request.status"
-            >
-              {{ request.status | titlecase }}
-            </span>
-          </td>
-          <td class="actions-cell">
-            <button 
-              (click)="viewDetails(request)"
-              class="btn-small btn-info"
-              title="View Details"
-            >
-              <i class="fa-solid fa-eye"></i>
-            </button>
-            <button 
-              *ngIf="request.status === 'pending'"
-              (click)="approveRequest(request)"
-              class="btn-small btn-success"
-              [disabled]="isProcessingRequest"
-              title="Approve"
-            >
+  <!-- Request Cards -->
+  <div *ngIf="!loading && filteredRequests.length > 0" class="pcr-list">
+    <div *ngFor="let req of pagedRequests"
+         class="pcr-card"
+         [class.pcr-card--pending]="req.status === 'pending'"
+         [class.pcr-card--approved]="req.status === 'approved'"
+         [class.pcr-card--rejected]="req.status === 'rejected'">
+
+      <div class="pcr-card-avatar" [ngClass]="'pcr-avatar--' + req.status">
+        {{ getInitials(req.employeeName) }}
+      </div>
+
+      <div class="pcr-card-body">
+        <div class="pcr-card-top">
+          <span class="pcr-card-name">{{ req.employeeName || req.employeeId }}</span>
+          <span class="pcr-field-tag">{{ getFieldTypeLabel(req.fieldChangeType) }}</span>
+        </div>
+        <div class="pcr-card-change">
+          <i class="fa-solid fa-pen-to-square"></i>
+          {{ getFieldDisplayValue(req) }}
+        </div>
+        <div class="pcr-card-meta">
+          <span *ngIf="req.reason" class="pcr-card-reason">
+            <i class="fa-solid fa-comment-dots"></i> {{ req.reason }}
+          </span>
+          <span class="pcr-card-date">
+            <i class="fa-regular fa-clock"></i> {{ formatDate(req.submittedDate) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="pcr-card-aside">
+        <span class="pcr-status-badge" [class]="'pcr-status--' + req.status">
+          {{ req.status | titlecase }}
+        </span>
+        <div class="pcr-card-actions">
+          <button (click)="viewDetails(req)" class="pcr-act-btn pcr-act-btn--view" title="View Details">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+          <ng-container *ngIf="req.status === 'pending'">
+            <button (click)="approveRequest(req)" class="pcr-act-btn pcr-act-btn--approve"
+                    [disabled]="isProcessingRequest" title="Approve">
               <i class="fa-solid fa-check"></i>
             </button>
-            <button 
-              *ngIf="request.status === 'pending'"
-              (click)="openRejectionDialog(request)"
-              class="btn-small btn-danger"
-              [disabled]="isProcessingRequest"
-              title="Reject"
-            >
+            <button (click)="openRejectionDialog(req)" class="pcr-act-btn pcr-act-btn--reject"
+                    [disabled]="isProcessingRequest" title="Reject">
               <i class="fa-solid fa-times"></i>
             </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+          </ng-container>
+          <button *ngIf="userIsAdmin"
+                  (click)="deleteRequest(req)" class="pcr-act-btn pcr-act-btn--delete"
+                  [disabled]="isProcessingRequest" title="Delete">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Detail Modal -->
-  <div *ngIf="isDetailModalOpen && selectedRequest" class="modal-overlay" (click)="closeDetails()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3>Request Details</h3>
-        <button (click)="closeDetails()" class="btn-close">×</button>
+  <!-- Pagination -->
+  <div *ngIf="!loading && filteredRequests.length > pageSize" class="pcr-pagination">
+    <span class="pcr-page-info">
+      Showing {{ (currentPage - 1) * pageSize + 1 }}–{{ currentPage * pageSize > filteredRequests.length ? filteredRequests.length : currentPage * pageSize }} of {{ filteredRequests.length }}
+    </span>
+    <div class="pcr-page-nav">
+      <button class="pcr-page-btn pcr-page-btn--arrow"
+              [disabled]="currentPage === 1"
+              (click)="goToPage(currentPage - 1)">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <ng-container *ngFor="let p of pageNumbers">
+        <span *ngIf="p === -1" class="pcr-page-ellipsis">…</span>
+        <button *ngIf="p !== -1"
+                class="pcr-page-btn"
+                [class.pcr-page-btn--active]="p === currentPage"
+                (click)="goToPage(p)">
+          {{ p }}
+        </button>
+      </ng-container>
+      <button class="pcr-page-btn pcr-page-btn--arrow"
+              [disabled]="currentPage === totalPages"
+              (click)="goToPage(currentPage + 1)">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Detail Modal ──────────────────────────────────────────────── -->
+<div *ngIf="isDetailModalOpen && selectedRequest"
+     class="pcr-overlay" (click)="closeDetails()">
+  <div class="pcr-modal" (click)="$event.stopPropagation()">
+
+    <div class="pcr-modal-head">
+      <div class="pcr-modal-who">
+        <div class="pcr-modal-avatar" [ngClass]="'pcr-avatar--' + selectedRequest.status">
+          {{ getInitials(selectedRequest.employeeName) }}
+        </div>
+        <div>
+          <h3>{{ selectedRequest.employeeName || selectedRequest.employeeId }}</h3>
+          <span class="pcr-status-badge" [class]="'pcr-status--' + selectedRequest.status">
+            {{ selectedRequest.status | titlecase }}
+          </span>
+        </div>
+      </div>
+      <button (click)="closeDetails()" class="pcr-modal-x">×</button>
+    </div>
+
+    <div class="pcr-modal-body">
+
+      <!-- Meta row -->
+      <div class="pcr-meta-row">
+        <div class="pcr-meta-item">
+          <span class="pcr-meta-label">Field Type</span>
+          <span class="pcr-field-tag">{{ getFieldTypeLabel(selectedRequest.fieldChangeType) }}</span>
+        </div>
+        <div class="pcr-meta-item">
+          <span class="pcr-meta-label">Request Type</span>
+          <span class="pcr-meta-val">{{ selectedRequest.requestType | titlecase }}</span>
+        </div>
+        <div class="pcr-meta-item">
+          <span class="pcr-meta-label">Submitted</span>
+          <span class="pcr-meta-val">{{ formatDate(selectedRequest.submittedDate) }}</span>
+        </div>
       </div>
 
-      <div class="modal-body">
-        <div class="detail-group">
-          <label>Employee:</label>
-          <p>{{ selectedRequest.employeeName || selectedRequest.employeeId }}</p>
-        </div>
-
-        <div class="detail-group">
-          <label>Field Type:</label>
-          <p>{{ getFieldTypeLabel(selectedRequest.fieldChangeType) }}</p>
-        </div>
-
-        <div class="detail-group">
-          <label>Request Type:</label>
-          <p>{{ selectedRequest.requestType | titlecase }}</p>
-        </div>
-
-        <div class="detail-group">
-          <label>Changes:</label>
-          <div class="changes-list">
-            <div *ngFor="let change of filteredChanges" class="change-item">
-              <div class="change-field">
-                <strong>{{ change.fieldName }}:</strong>
-              </div>
-              <div class="change-values">
-                <span class="old-value">{{ change.oldValue || "Empty" }}</span>
-                <i class="fa-solid fa-arrow-right"></i>
-                <span class="new-value">{{ change.value }}</span>
-              </div>
-            </div>
+      <!-- Diff table -->
+      <div class="pcr-diff">
+        <h4 class="pcr-diff-title">
+          <i class="fa-solid fa-code-compare"></i> Changes Requested
+        </h4>
+        <div class="pcr-diff-table">
+          <div class="pcr-diff-head">
+            <span>Field</span><span>Before</span><span>After</span>
+          </div>
+          <div *ngFor="let change of filteredChanges" class="pcr-diff-row">
+            <span class="pcr-diff-field">{{ change.fieldName }}</span>
+            <span class="pcr-diff-old">{{ change.oldValue || '—' }}</span>
+            <span class="pcr-diff-new">{{ change.value }}</span>
           </div>
         </div>
-
-        <div class="detail-group" *ngIf="selectedRequest.reason">
-          <label>Reason:</label>
-          <p>{{ selectedRequest.reason }}</p>
-        </div>
-
-        <div class="detail-group">
-          <label>Status:</label>
-          <p>
-            <span class="status-badge" [ngClass]="'status-' + selectedRequest.status">
-              {{ selectedRequest.status | titlecase }}
-            </span>
-          </p>
-        </div>
-
-        <div class="detail-group" *ngIf="selectedRequest.processedDate">
-          <label>Processed:</label>
-          <p>
-            {{ formatDate(selectedRequest.processedDate) }}
-            <span *ngIf="selectedRequest.processedBy">
-              by {{ selectedRequest.processedBy.name }}
-            </span>
-          </p>
-        </div>
-
-        <div class="detail-group" *ngIf="selectedRequest.rejectionReason">
-          <label>Rejection Reason:</label>
-          <p class="rejection-text">{{ selectedRequest.rejectionReason }}</p>
-        </div>
       </div>
 
-      <div class="modal-footer">
-        <button 
-          *ngIf="selectedRequest.status === 'pending'"
-          (click)="approveRequest(selectedRequest)"
-          class="btn btn-success"
-          [disabled]="isProcessingRequest"
-        >
+      <!-- Reason -->
+      <div *ngIf="selectedRequest.reason" class="pcr-reason-box">
+        <span class="pcr-meta-label"><i class="fa-solid fa-comment-dots"></i> Reason</span>
+        <p>{{ selectedRequest.reason }}</p>
+      </div>
+
+      <!-- Rejection reason -->
+      <div *ngIf="selectedRequest.rejectionReason" class="pcr-rejection-box">
+        <span class="pcr-meta-label"><i class="fa-solid fa-ban"></i> Rejection Reason</span>
+        <p>{{ selectedRequest.rejectionReason }}</p>
+      </div>
+
+      <!-- Processed info -->
+      <div *ngIf="selectedRequest.processedDate" class="pcr-processed">
+        <i class="fa-regular fa-circle-check"></i>
+        Processed on {{ formatDate(selectedRequest.processedDate) }}
+        <span *ngIf="selectedRequest.processedBy"> by {{ selectedRequest.processedBy.name }}</span>
+      </div>
+
+    </div>
+
+    <div class="pcr-modal-foot">
+      <ng-container *ngIf="selectedRequest.status === 'pending'">
+        <button (click)="approveRequest(selectedRequest)"
+                class="pcr-foot-btn pcr-foot-btn--approve"
+                [disabled]="isProcessingRequest">
           <i class="fa-solid fa-check"></i> Approve
         </button>
-        <button 
-          *ngIf="selectedRequest.status === 'pending'"
-          (click)="openRejectionDialog(selectedRequest)"
-          class="btn btn-danger"
-          [disabled]="isProcessingRequest"
-        >
+        <button (click)="openRejectionDialog(selectedRequest)"
+                class="pcr-foot-btn pcr-foot-btn--reject"
+                [disabled]="isProcessingRequest">
           <i class="fa-solid fa-times"></i> Reject
         </button>
-        <button (click)="closeDetails()" class="btn btn-secondary">
-          Close
+      </ng-container>
+      <button *ngIf="userIsAdmin"
+              (click)="deleteRequest(selectedRequest)"
+              class="pcr-foot-btn pcr-foot-btn--delete"
+              [disabled]="isProcessingRequest">
+        <i class="fa-solid fa-trash"></i> Delete
+      </button>
+      <button (click)="closeDetails()" class="pcr-foot-btn pcr-foot-btn--cancel">
+        Close
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Rejection Dialog ───────────────────────────────────────────── -->
+<div *ngIf="showRejectionDialog && selectedRequest"
+     class="pcr-overlay" (click)="closeRejectionDialog()">
+  <div class="pcr-modal pcr-modal--sm" (click)="$event.stopPropagation()">
+
+    <div class="pcr-modal-head">
+      <h3>Reject Request</h3>
+      <button (click)="closeRejectionDialog()" class="pcr-modal-x">×</button>
+    </div>
+
+    <form [formGroup]="rejectionForm" (ngSubmit)="submitRejection()">
+      <div class="pcr-modal-body">
+        <p class="pcr-reject-prompt">
+          You're rejecting <strong>{{ selectedRequest.employeeName }}'s</strong>
+          {{ getFieldTypeLabel(selectedRequest.fieldChangeType) }} change request.
+          Please provide a reason.
+        </p>
+        <div class="pcr-form-field">
+          <label>Reason <span class="pcr-required">*</span></label>
+          <textarea formControlName="rejectionReason"
+                    rows="4"
+                    placeholder="Enter reason for rejection…"
+                    class="pcr-textarea"></textarea>
+          <small *ngIf="rejectionForm.get('rejectionReason')?.touched && rejectionForm.get('rejectionReason')?.invalid"
+                 class="pcr-error">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Required — minimum 5 characters
+          </small>
+        </div>
+      </div>
+
+      <div class="pcr-modal-foot">
+        <button type="button" (click)="closeRejectionDialog()"
+                class="pcr-foot-btn pcr-foot-btn--cancel"
+                [disabled]="isProcessingRequest">
+          Cancel
+        </button>
+        <button type="submit"
+                class="pcr-foot-btn pcr-foot-btn--reject"
+                [disabled]="rejectionForm.invalid || isProcessingRequest">
+          <i *ngIf="isProcessingRequest" class="fa-solid fa-spinner fa-spin"></i>
+          <i *ngIf="!isProcessingRequest" class="fa-solid fa-times"></i>
+          {{ isProcessingRequest ? 'Processing…' : 'Reject Request' }}
         </button>
       </div>
-    </div>
-  </div>
+    </form>
 
-  <!-- Rejection Dialog -->
-  <div *ngIf="showRejectionDialog && selectedRequest" class="modal-overlay" (click)="closeRejectionDialog()">
-    <div class="modal-content modal-sm" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3>Reject Request</h3>
-        <button (click)="closeRejectionDialog()" class="btn-close">×</button>
-      </div>
-
-      <form [formGroup]="rejectionForm" (ngSubmit)="submitRejection()">
-        <div class="modal-body">
-          <p class="rejection-prompt">
-            Please provide a reason for rejecting this request from <strong>{{ selectedRequest.employeeName }}</strong>
-          </p>
-
-          <div class="form-group">
-            <label for="rejectionReason">Rejection Reason:</label>
-            <textarea
-              id="rejectionReason"
-              formControlName="rejectionReason"
-              rows="4"
-              placeholder="Enter reason for rejection..."
-              class="form-control"
-            ></textarea>
-            <small *ngIf="rejectionForm.get('rejectionReason')?.touched && rejectionForm.get('rejectionReason')?.invalid" class="error-text">
-              Reason is required and must be at least 5 characters
-            </small>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button 
-            type="button"
-            (click)="closeRejectionDialog()"
-            class="btn btn-secondary"
-            [disabled]="isProcessingRequest"
-          >
-            Cancel
-          </button>
-          <button 
-            type="submit"
-            class="btn btn-danger"
-            [disabled]="rejectionForm.invalid || isProcessingRequest"
-          >
-            <span *ngIf="isProcessingRequest">Processing...</span>
-            <span *ngIf="!isProcessingRequest"><i class="fa-solid fa-times"></i> Reject</span>
-          </button>
-        </div>
-      </form>
-    </div>
   </div>
 </div>

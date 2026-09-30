@@ -160,6 +160,19 @@ applyGuarantorChangesToEmployee(request: ProfileChangeRequestDTO, record: any): 
   }
 
   /**
+   * Delete a profile change request
+   */
+  deleteProfileChangeRequest(id: string | number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`).pipe(
+      tap(() => {
+        const updated = this.requestsSubject.value.filter(r => String(r.id) !== String(id));
+        this.requestsSubject.next(updated);
+        this.saveRequestsToStorage(updated);
+      })
+    );
+  }
+
+  /**
    * Create a bank change request using the generic structure
    */
   submitBankChangeRequest(
@@ -260,7 +273,7 @@ applyGuarantorChangesToEmployee(request: ProfileChangeRequestDTO, record: any): 
   private toApiPayload(request: ProfileChangeRequestDTO): any {
     return {
       id: typeof request.id === 'number' ? request.id : parseInt(String(request.id).replace(/\D/g, '')) || 0,
-      employeeId: Number(request.employeeId) || 0,
+      employeeId: Number(request.employeeId) || null,
       requestType: request.requestType,
       fieldChangeType: request.fieldChangeType,
       request: request.request.map((item) => ({
@@ -405,7 +418,9 @@ applyGuarantorChangesToEmployee(request: ProfileChangeRequestDTO, record: any): 
     return this.http.get<any>(`${this.employeesUrl}/${employeeId}`).pipe(
       map((response) => response?.data ?? response?.result ?? response),
       map((employee) => this.buildUpdatedEmployeePayload(employee, request)),
-      switchMap((employeePayload) => this.http.post<any>(this.employeesUrl, this.toEmployeeFormData(employeePayload)))
+      switchMap((employeePayload) =>
+        this.http.put<any>(`${this.employeesUrl}/${employeePayload.id}`, employeePayload)
+      )
     );
   }
 
@@ -493,7 +508,7 @@ applyGuarantorChangesToEmployee(request: ProfileChangeRequestDTO, record: any): 
       departmentId: this.getRelationId(employee, 'department'),
       employeeMediaId: this.getRelationId(employee, 'employeeMedia'),
       jobTypeId: this.getRelationId(employee, 'jobType'),
-      levelId: this.getRelationId(employee, 'level'),
+      levelId: this.getRelationId(employee, 'level') ?? (Number(employee?.levelId) || null),
       userId: Number(employee?.userId ?? employee?.user?.userId ?? employee?.user?.id ?? 0) || 0,
     };
   }
@@ -603,7 +618,9 @@ applyGuarantorChangesToEmployee(request: ProfileChangeRequestDTO, record: any): 
 
   private toIsoDate(value: Date | string | number[] | undefined): string {
     const date = this.fromApiDate(value) || new Date();
-    return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+    const d = Number.isNaN(date.getTime()) ? new Date() : date;
+    // Strip 'Z' — the HR backend uses LocalDateTime which carries no timezone
+    return d.toISOString().replace('Z', '');
   }
 
   private toOptionalIsoDate(value: Date | string | number[] | null | undefined): string | null {
