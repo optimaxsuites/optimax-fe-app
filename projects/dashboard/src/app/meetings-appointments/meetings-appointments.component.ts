@@ -55,6 +55,8 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   @ViewChild('attachFileInput') attachFileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('formDrawerEl')   formDrawerEl!: ElementRef<HTMLElement>;
 
+  private readonly LS_EVENTS_KEY = 'ma_workspace_events';
+
   // ── Main UI state ────────────────────────────────────────
   activeMainTab: 'calendar' | 'analytics' = 'calendar';
   activeDetailTab = 'overview';
@@ -407,8 +409,8 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
     const isUpdate = this.events.some(e => e.id === payload.id);
     const idx = this.events.findIndex(e => e.id === payload.id);
     const nextEvs = [...this.events];
-    if (idx >= 0) { nextEvs[idx] = payload; this.events = nextEvs; this.syncEvent(payload, true); }
-    else          { this.events = [payload, ...nextEvs]; this.syncEvent(payload, false); }
+    if (idx >= 0) { nextEvs[idx] = payload; this.events = nextEvs; this.saveToLocalStorage(); this.syncEvent(payload, true); }
+    else          { this.events = [payload, ...nextEvs]; this.saveToLocalStorage(); this.syncEvent(payload, false); }
     this.selectedEventId  = payload.id;
     this.activeForm       = null;
     this.activeDetailTab  = 'overview';
@@ -424,6 +426,7 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
     const title = event.title;
     this.events = this.events.filter(e => e.id !== event.id);
     if (this.selectedEventId === event.id) this.selectedEventId = this.events[0]?.id || '';
+    this.saveToLocalStorage();
     this.addToast(`"${title}" deleted`, 'warn');
     this.collaborationService.deleteMeetingsAppointmentRecord(event.id).subscribe({ error: () => undefined });
     this.collaborationService.saveMeetingsAppointmentsWorkspace({ events: this.events, resources: this.resources }).subscribe({ error: () => undefined });
@@ -619,6 +622,7 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
     this.events = [ev, ...this.events];
     this.selectedEventId = ev.id;
     this.activeDetailTab = 'overview';
+    this.saveToLocalStorage();
     this.syncEvent(ev, false);
     this.addToast(`${ev.kind} "${ev.title}" created`, 'ok');
     this.closeQuickCreate();
@@ -981,10 +985,27 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
     return new Date(`${date}T${time}:00`).getTime() / 60000;
   }
 
+  private saveToLocalStorage(): void {
+    try { localStorage.setItem(this.LS_EVENTS_KEY, JSON.stringify(this.events)); } catch { /* quota exceeded */ }
+  }
+
   private loadWorkspace(): void {
-    this.events = this.seedEvents();
-    this.selectedEventId = this.events[0]?.id || '';
-    console.log('[M&A] seed events loaded:', this.events.length);
+    const stored = localStorage.getItem(this.LS_EVENTS_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length) {
+          this.events = parsed;
+          this.selectedEventId = this.events[0]?.id || '';
+          console.log('[M&A] events restored from localStorage:', this.events.length);
+        }
+      } catch { /* corrupt — fall through to seeds */ }
+    }
+    if (!this.events.length) {
+      this.events = this.seedEvents();
+      this.selectedEventId = this.events[0]?.id || '';
+      console.log('[M&A] seed events loaded:', this.events.length);
+    }
 
     this.collaborationService.getMeetingsAppointmentsWorkspace().subscribe({
       next: ws => {
@@ -993,9 +1014,10 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
           this.resources = ws.resources || this.resources;
           this.selectedEventId = this.events[0]?.id || '';
           this.navigateToNearestEvent();
+          this.saveToLocalStorage();
           console.log('[M&A] workspace loaded from backend:', this.events.length, 'events');
         } else {
-          console.log('[M&A] backend workspace empty — using seed events');
+          console.log('[M&A] backend workspace empty — using localStorage/seed events');
         }
         this.backendStatus = 'Synced ✓';
         this.backendOnline = true;
