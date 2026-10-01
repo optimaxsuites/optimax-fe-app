@@ -4,26 +4,30 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { DeliveryNote, DeliveryNoteStatus, SalesandTransactions } from '../../../../domain/sales/sales.dto';
+import { DeliveryNote, DeliveryNoteStatus, Quote } from '../../../../domain/sales/sales.dto';
 import { formatApiDate } from '../../../../service/sales/date.util';
 
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 
-/** Row shape combining both real delivery note records and orders that are still waiting for
+/** Row shape combining both real delivery note records and converted quotes still waiting on
  *  one — the two sources the dashboard table shows side by side. AWAITING_NOTE is a synthetic,
  *  UI-only status for the "pending" rows — kept distinct from the backend's own PENDING status
- *  (a real delivery note that's been created but not yet dispatched) so the two aren't conflated. */
+ *  (a real delivery note that's been created but not yet dispatched) so the two aren't conflated.
+ *  Delivery notes are only ever generated through the quote-driven LPO wizard now (Conversion ->
+ *  Receive LPO -> Generate Delivery Note), so the queue is keyed off converted quotes instead of
+ *  orders past the invoice stage — see SalesService.getConvertedQuotesAwaitingDeliveryNote(). */
 interface DeliveryNoteRow {
   kind: 'pending' | 'note';
   id: string | number;
   displayNumber: string;
+  orderId: string;
   customerName: string;
   itemCount: number;
   status: 'AWAITING_NOTE' | DeliveryNoteStatus;
   date: unknown;
-  source: SalesandTransactions | DeliveryNote;
+  source: Quote | DeliveryNote;
 }
 
 @Component({
@@ -43,9 +47,11 @@ interface DeliveryNoteRow {
 export class DeliveryNoteListComponent implements OnInit, OnDestroy {
   protected readonly Math = Math;
 
-  pendingOrders: SalesandTransactions[] = [];
+  pendingQuotes: Quote[] = [];
   deliveryNotes: DeliveryNote[] = [];
   customers: any[] = [];
+  orderIdByQuoteId = new Map<number, string>();
+  orderIdByTransactionId = new Map<number, string>();
   rows: DeliveryNoteRow[] = [];
   filteredRows: DeliveryNoteRow[] = [];
   isLoading = true;
@@ -99,14 +105,17 @@ export class DeliveryNoteListComponent implements OnInit, OnDestroy {
   loadData(): void {
     this.isLoading = true;
     forkJoin({
-      pending: this.salesService.getOrdersAwaitingDeliveryNote(),
+      pending: this.salesService.getConvertedQuotesAwaitingDeliveryNote(),
       notes: this.salesService.getDeliveryNotes({ size: 1000 }),
-      customers: this.salesService.getCustomers({ page: 0, size: 200 })
+      customers: this.salesService.getCustomers({ page: 0, size: 200 }),
+      orderIdLookup: this.salesService.getOrderIdLookup()
     }).subscribe({
-      next: ({ pending, notes, customers }) => {
+      next: ({ pending, notes, customers, orderIdLookup }) => {
         this.customers = customers.data;
-        this.pendingOrders = pending;
+        this.pendingQuotes = pending;
         this.deliveryNotes = notes.data;
+        this.orderIdByQuoteId = orderIdLookup.byQuoteId;
+        this.orderIdByTransactionId = orderIdLookup.byTransactionId;
         this.buildRows();
         this.isLoading = false;
       },
@@ -119,21 +128,23 @@ export class DeliveryNoteListComponent implements OnInit, OnDestroy {
   }
 
   private buildRows(): void {
-    const pendingRows: DeliveryNoteRow[] = this.pendingOrders.map(tx => ({
+    const pendingRows: DeliveryNoteRow[] = this.pendingQuotes.map(quote => ({
       kind: 'pending',
-      id: tx.id,
-      displayNumber: tx.orderId || `#${tx.id}`,
-      customerName: this.getCustomerName(tx.customerId, tx.customerName),
-      itemCount: this.countOrderItems(tx),
+      id: quote.id,
+      displayNumber: quote.quoteNumber || `#${quote.id}`,
+      orderId: this.orderIdByQuoteId.get(quote.id) || '—',
+      customerName: this.getCustomerName(quote.customerId, quote.customerName),
+      itemCount: (quote.items || []).length,
       status: 'AWAITING_NOTE',
-      date: tx.orderDate || tx.quoteConvertedDate,
-      source: tx
+      date: quote.createdAt,
+      source: quote
     }));
 
     const noteRows: DeliveryNoteRow[] = this.deliveryNotes.map(note => ({
       kind: 'note',
       id: note.id ?? note.deliveryNumber,
       displayNumber: note.deliveryNumber,
+      orderId: (note.salesOrderId != null ? this.orderIdByTransactionId.get(note.salesOrderId) : undefined) || '—',
       customerName: this.getCustomerName(note.customerId),
       itemCount: (note.items || []).length,
       status: note.status || 'PENDING',
@@ -144,16 +155,6 @@ export class DeliveryNoteListComponent implements OnInit, OnDestroy {
     this.rows = [...pendingRows, ...noteRows];
     this.calculateStats();
     this.applyFilters();
-  }
-
-  private countOrderItems(tx: SalesandTransactions): number {
-    const invoiceItems = (tx.invoiceId as any)?.items;
-    if (Array.isArray(invoiceItems)) return invoiceItems.length;
-    const txItems = (tx.items as any)?.items;
-    if (Array.isArray(txItems)) return txItems.length;
-    const quoteItems = (tx.quoteId as any)?.items;
-    if (Array.isArray(quoteItems)) return quoteItems.length;
-    return 0;
   }
 
   private calculateStats(): void {
@@ -275,15 +276,10 @@ export class DeliveryNoteListComponent implements OnInit, OnDestroy {
     return uuid ? uuid : null;
   }
 
-  openNewDeliveryNote(): void {
+  generateFromQuote(row: DeliveryNoteRow): void {
     const uuid = this.navExtras();
-    this.router.navigate(uuid ? ['/admin/sales/delivery-notes/new', uuid] : ['/admin/sales/delivery-notes/new']);
-  }
-
-  createFromOrder(row: DeliveryNoteRow): void {
-    const uuid = this.navExtras();
-    const path = uuid ? ['/admin/sales/delivery-notes/new', uuid] : ['/admin/sales/delivery-notes/new'];
-    this.router.navigate(path, { queryParams: { orderId: String(row.id) } });
+    const path = uuid ? ['/admin/sales/delivery-notes/generate', uuid] : ['/admin/sales/delivery-notes/generate'];
+    this.router.navigate(path, { queryParams: { quoteId: String(row.id) } });
   }
 
   viewDeliveryNote(row: DeliveryNoteRow): void {

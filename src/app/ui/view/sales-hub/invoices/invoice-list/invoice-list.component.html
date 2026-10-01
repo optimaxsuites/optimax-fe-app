@@ -132,6 +132,7 @@
               <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll($event)">
             </th>
             <th>Invoice #</th>
+            <th>Order #</th>
             <th>Client</th>
             <th>Amount</th>
             <th>Issue Date</th>
@@ -144,14 +145,14 @@
         <!-- Loading skeleton -->
         <tbody *ngIf="isLoading">
           <tr class="il-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
-            <td colspan="8"><div class="il-skeleton-bar"></div></td>
+            <td colspan="9"><div class="il-skeleton-bar"></div></td>
           </tr>
         </tbody>
 
         <!-- Empty state -->
         <tbody *ngIf="!isLoading && invoices.length === 0">
           <tr>
-            <td colspan="8">
+            <td colspan="9">
               <div class="il-empty">
                 <i class="fas fa-file-invoice il-empty-icon"></i>
                 <p class="il-empty-title">No invoices found</p>
@@ -179,6 +180,8 @@
                 {{ inv.invoiceNumber || '#' + inv.id }}
               </button>
             </td>
+
+            <td class="il-td-num">{{ inv.orderId || '—' }}</td>
 
             <td class="il-td-client">{{ getCustomerName(inv.customerId) }}</td>
 

@@ -22,6 +22,7 @@ import {
   PaymentTerms,
   AdditionalInvoiceOptions,
   AdditionalQuoteOptions,
+  QuoteDocumentAttachment,
   SalesandTransactions,
   SaleLifecycleStatus,
   MeasurementUnit,
@@ -211,6 +212,50 @@ export class SalesService {
     );
   }
 
+  /**
+   * "Conversion" (Create Quote -> Conversion -> Receive LPO -> ...): the customer has accepted
+   * the quote, so it becomes a firm order. Flips the quote to CONVERTED and advances its linked
+   * transaction (created back when the quote itself was made — see trackNewQuote()) to
+   * QUOTE_ACCEPTED, rather than creating a second one. Shared by quote-list and quote-detail so
+   * "Convert" works the same wherever it's triggered from.
+   */
+  convertQuote(quote: Quote): Observable<{ quote: Quote; transaction: SalesandTransactions }> {
+    return this.updateQuote(String(quote.id), { status: 'CONVERTED' }).pipe(
+      switchMap(updated => {
+        const addOpts = Array.isArray(updated.additionalOptions) ? updated.additionalOptions[0] : (updated.additionalOptions as any);
+        const orderData: Partial<SalesandTransactions> = {
+          quoteId: updated,
+          customerId: updated.customerId,
+          customerName: updated.customerName,
+          items: updated,
+          subtotal: updated.subtotal,
+          taxAmount: updated.taxAmount,
+          discountAmount: updated.discountAmount,
+          totalAmount: updated.totalAmount,
+          currency: updated.currency,
+          status: 'QUOTE_ACCEPTED',
+          quoteAcceptedOrRejectedDate: new Date(),
+          customerNotes: addOpts?.notes || '',
+          billingAddress: addOpts?.address || '',
+          shippingAddress: addOpts?.address || '',
+          PaymentTerms: {
+            id: 1,
+            customerId: updated.customerId,
+            customerName: updated.customerName,
+            paymentPeriod: 30,
+            amount: updated.totalAmount,
+            balanceDue: updated.totalAmount,
+            installmentNumber: 1,
+            completedInstallments: 0
+          }
+        };
+        return this.upsertTransactionForQuote(updated.id, orderData).pipe(
+          map(transaction => ({ quote: updated, transaction }))
+        );
+      })
+    );
+  }
+
   updateQuote(id: string | number, data: Partial<Quote>): Observable<Quote> {
     return this.http.put<Quote>(`${this.base}/quotes/${id}`, { ...data, tenantId: this.tenantId });
   }
@@ -223,6 +268,79 @@ export class SalesService {
     return this.http.delete<any>(`${this.base}/quotes/${id}`).pipe(
       map(() => true),
       catchError(() => of(false))
+    );
+  }
+
+  // ============================================
+  // QUOTE LPO / SIGNED DELIVERY NOTE DOCUMENTS
+  // Stored on the quote's own additionalOptions (PUT /quotes/{id}) — see
+  // QuoteDocumentAttachment's doc comment for why, in the absence of a dedicated
+  // document-storage backend.
+  // ============================================
+
+  hasLpoDocument(quote: Quote | null | undefined): boolean {
+    return !!this.firstAdditionalOptions(quote)?.lpoDocument;
+  }
+
+  hasSignedDeliveryNoteDocument(quote: Quote | null | undefined): boolean {
+    return !!this.firstAdditionalOptions(quote)?.signedDeliveryNoteDocument;
+  }
+
+  private firstAdditionalOptions(quote: Quote | null | undefined): AdditionalQuoteOptions | undefined {
+    if (!quote) return undefined;
+    return Array.isArray(quote.additionalOptions) ? quote.additionalOptions[0] : (quote.additionalOptions as any);
+  }
+
+  private saveQuoteDocument(quoteId: string | number, field: 'lpoDocument' | 'signedDeliveryNoteDocument', doc: QuoteDocumentAttachment): Observable<Quote> {
+    return this.getQuoteById(quoteId).pipe(
+      switchMap(quote => {
+        const existing = this.firstAdditionalOptions(quote) || {} as AdditionalQuoteOptions;
+        const addOpts: AdditionalQuoteOptions = {
+          signatureText: existing.signatureText || '',
+          attachments: existing.attachments || [],
+          email: existing.email || '',
+          address: existing.address || '',
+          phone: existing.phone || '',
+          notes: existing.notes || '',
+          terms: existing.terms || '',
+          lpoDocument: existing.lpoDocument,
+          signedDeliveryNoteDocument: existing.signedDeliveryNoteDocument,
+          [field]: doc
+        };
+        return this.updateQuote(quoteId, { additionalOptions: [addOpts] });
+      })
+    );
+  }
+
+  saveQuoteLpoDocument(quoteId: string | number, doc: QuoteDocumentAttachment): Observable<Quote> {
+    return this.saveQuoteDocument(quoteId, 'lpoDocument', doc);
+  }
+
+  saveSignedDeliveryNoteDocument(quoteId: string | number, doc: QuoteDocumentAttachment): Observable<Quote> {
+    return this.saveQuoteDocument(quoteId, 'signedDeliveryNoteDocument', doc);
+  }
+
+  // ============================================
+  // ORDER # LOOKUP
+  // Only SalesandTransactions carries the canonical orderId natively — Quote and DeliveryNote
+  // link to it indirectly (via quoteId / salesOrderId), so this resolves it once for any
+  // table/detail view that needs to display "Order #" next to a quote or delivery note.
+  // ============================================
+
+  getOrderIdLookup(): Observable<{ byQuoteId: Map<number, string>; byTransactionId: Map<number, string> }> {
+    return this.getSalesandTransactions({ size: 1000 }).pipe(
+      map(res => {
+        const byQuoteId = new Map<number, string>();
+        const byTransactionId = new Map<number, string>();
+        res.data.forEach(tx => {
+          if (!tx.orderId) return;
+          byTransactionId.set(tx.id, tx.orderId);
+          const quoteId = (tx.quoteId as any)?.id;
+          if (quoteId != null) byQuoteId.set(quoteId, tx.orderId);
+        });
+        return { byQuoteId, byTransactionId };
+      }),
+      catchError(() => of({ byQuoteId: new Map(), byTransactionId: new Map() }))
     );
   }
 
@@ -761,27 +879,60 @@ export class SalesService {
   }
 
   /**
-   * The Delivery Notes tab's dashboard queue: orders that have reached a point where a delivery
-   * note makes sense (same eligibility rule as SalesAndTransactionsListComponent.
-   * canGenerateDeliveryNote — anything from INVOICE_SENT onward, excluding INVOICE_CANCELLED) but
-   * don't have one yet. Cross-references the two lists client-side since there's no dedicated
-   * backend endpoint for "orders missing a delivery note".
+   * The Delivery Notes tab's dashboard queue: quotes that have been converted (the customer
+   * accepted — see quote-detail's confirmAcceptQuote()) but don't have a delivery note yet.
+   * Delivery notes are only ever generated through the quote-driven LPO-upload wizard now, so
+   * this replaces the old "orders past the invoice stage" rule — under the current flow, an
+   * invoice can't even exist yet at this point (it comes after the delivery note). Cross-
+   * references three lists client-side since there's no dedicated backend endpoint for this.
    */
-  getOrdersAwaitingDeliveryNote(): Observable<SalesandTransactions[]> {
-    const preInvoiceStatuses: SaleLifecycleStatus[] = ['QUOTE_SENT', 'QUOTE_ACCEPTED', 'QUOTE_REJECTED', 'QUOTE_CONVERTED', 'INVOICE_CANCELLED'];
+  getConvertedQuotesAwaitingDeliveryNote(): Observable<Quote[]> {
+    return forkJoin({
+      quotes: this.getQuotes({ status: 'CONVERTED', size: 1000 }),
+      noteByQuoteId: this.getQuoteDeliveryNoteMap()
+    }).pipe(
+      map(({ quotes, noteByQuoteId }) => quotes.data.filter(q => !noteByQuoteId.has(q.id))),
+      catchError(() => of([]))
+    );
+  }
+
+  /** Resolves each quote's delivery note (if one has been generated for it yet) by joining
+   *  through its linked SalesandTransactions record — a quote has no direct link to its
+   *  DeliveryNote, only an indirect one via quoteId -> transaction.id -> salesOrderId. Used by
+   *  the Quotes table/detail to gate the Generate Delivery Note / Create Invoice progression,
+   *  and by getConvertedQuotesAwaitingDeliveryNote() for the tab's queue. */
+  getQuoteDeliveryNoteMap(): Observable<Map<number, DeliveryNote>> {
     return forkJoin({
       transactions: this.getSalesandTransactions({ size: 1000 }),
       notes: this.getDeliveryNotes({ size: 1000 })
     }).pipe(
       map(({ transactions, notes }) => {
-        const orderIdsWithNotes = new Set(
-          notes.data.map(n => n.salesOrderId).filter(id => id !== undefined && id !== null).map(String)
-        );
-        return transactions.data.filter(tx =>
-          !preInvoiceStatuses.includes(tx.status) && !orderIdsWithNotes.has(String(tx.id))
-        );
+        const noteByTransactionId = new Map<number, DeliveryNote>();
+        notes.data.forEach(n => {
+          if (n.salesOrderId != null) noteByTransactionId.set(n.salesOrderId, n);
+        });
+        const noteByQuoteId = new Map<number, DeliveryNote>();
+        transactions.data.forEach(tx => {
+          const quoteId = (tx.quoteId as any)?.id;
+          const note = noteByTransactionId.get(tx.id);
+          if (quoteId != null && note) noteByQuoteId.set(quoteId, note);
+        });
+        return noteByQuoteId;
       }),
-      catchError(() => of([]))
+      catchError(() => of(new Map<number, DeliveryNote>()))
+    );
+  }
+
+  /** Same as getOrCreateDeliveryNote(), but resolves the order from a quoteId first — the entry
+   *  point for the quote-driven "Generate Delivery Note" wizard. */
+  getOrCreateDeliveryNoteForQuote(quoteId: string | number): Observable<DeliveryNote | null> {
+    return this.getSalesandTransactions({ quoteId, size: 1000 }).pipe(
+      switchMap(res => {
+        const tx = res.data?.[0];
+        if (!tx) return of(null);
+        return this.getOrCreateDeliveryNote(tx.id);
+      }),
+      catchError(() => of(null))
     );
   }
 

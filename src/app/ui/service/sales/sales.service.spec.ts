@@ -112,30 +112,33 @@ describe('SalesService', () => {
     });
   });
 
-  describe('getOrdersAwaitingDeliveryNote: the Delivery Notes tab\'s dashboard queue', () => {
-    it('excludes orders still at quote stage and orders that already have a delivery note', () => {
+  describe('getConvertedQuotesAwaitingDeliveryNote: the Delivery Notes tab\'s dashboard queue', () => {
+    it('excludes converted quotes whose linked order already has a delivery note', () => {
       let result: any;
-      service.getOrdersAwaitingDeliveryNote().subscribe(r => (result = r));
+      service.getConvertedQuotesAwaitingDeliveryNote().subscribe(r => (result = r));
 
+      http.expectOne(r => r.url === `${BASE}/quotes`).flush([
+        { id: 1, quoteNumber: 'QUO-1', status: 'CONVERTED' },
+        { id: 2, quoteNumber: 'QUO-2', status: 'CONVERTED' }
+      ]);
       http.expectOne(r => r.url === `${BASE}/sales-orders`).flush([
-        { id: 1, status: 'QUOTE_SENT' },        // too early — no invoice yet
-        { id: 2, status: 'INVOICE_CANCELLED' }, // never will have an invoice
-        { id: 3, status: 'INVOICE_SENT' },      // eligible, no note yet
-        { id: 4, status: 'DISPATCHED' }         // eligible, but already has a note
+        { id: 10, quoteId: { id: 1 } },
+        { id: 20, quoteId: { id: 2 } }
       ]);
       http.expectOne(r => r.url === `${BASE}/delivery-notes`).flush({
-        data: [{ deliveryNumber: 'DN-4', salesOrderId: 4 }],
+        data: [{ deliveryNumber: 'DN-20', salesOrderId: 20 }],
         total: 1
       });
 
-      expect(result.map((tx: any) => tx.id)).toEqual([3]);
+      expect(result.map((q: any) => q.id)).toEqual([1]);
     });
 
-    it('returns an empty list rather than throwing when either fetch fails', () => {
+    it('returns an empty list rather than throwing when a fetch fails', () => {
       let result: any;
-      service.getOrdersAwaitingDeliveryNote().subscribe(r => (result = r));
+      service.getConvertedQuotesAwaitingDeliveryNote().subscribe(r => (result = r));
 
-      http.expectOne(r => r.url === `${BASE}/sales-orders`).flush('boom', { status: 500, statusText: 'Server Error' });
+      http.expectOne(r => r.url === `${BASE}/quotes`).flush('boom', { status: 500, statusText: 'Server Error' });
+      http.expectOne(r => r.url === `${BASE}/sales-orders`).flush([]);
       http.expectOne(r => r.url === `${BASE}/delivery-notes`).flush({ data: [], total: 0 });
 
       expect(result).toEqual([]);

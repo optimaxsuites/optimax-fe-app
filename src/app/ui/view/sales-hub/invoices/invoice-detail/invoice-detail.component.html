@@ -35,6 +35,8 @@
     <div class="action-bar glass">
       <div class="action-bar-left">
         <div class="meta-info">
+          <span *ngIf="invoice.orderId"><i class="fas fa-hashtag"></i> Order: {{ invoice.orderId }}</span>
+          <span class="meta-divider" *ngIf="invoice.orderId"></span>
           <span><i class="fas fa-calendar-alt"></i> Issued: {{ formatDate(invoice.issueDate) }}</span>
           <span class="meta-divider"></span>
           <span><i class="fas fa-clock"></i> Due: {{ formatDate(invoice.dueDate) }}</span>
@@ -268,6 +270,10 @@
               <div class="detail-row">
                 <span class="detail-label">Invoice #</span>
                 <span class="detail-value">{{ invoice.invoiceNumber }}</span>
+              </div>
+              <div class="detail-row" *ngIf="invoice.orderId">
+                <span class="detail-label">Order #</span>
+                <span class="detail-value">{{ invoice.orderId }}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Issue Date</span>

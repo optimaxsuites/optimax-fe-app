@@ -27,6 +27,7 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
   note: DeliveryNote | null = null;
   customers: Customer[] = [];
   merchantInfo: MerchantInfo | null = null;
+  orderId: string | null = null;
   isLoading = true;
   isDownloading = false;
   isUpdatingStatus = false;
@@ -68,11 +69,18 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
       next: (note) => {
         this.note = note;
         this.isLoading = false;
+        if (note?.salesOrderId != null) this.loadOrderId(note.salesOrderId);
       },
       error: (err) => {
         console.error('Error loading delivery note:', err);
         this.isLoading = false;
       }
+    });
+  }
+
+  private loadOrderId(transactionId: number): void {
+    this.salesService.getOrderIdLookup().subscribe(lookup => {
+      this.orderId = lookup.byTransactionId.get(transactionId) || null;
     });
   }
 

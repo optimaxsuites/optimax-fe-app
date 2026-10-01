@@ -394,20 +394,6 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
     this.selectedReceiptTx = null;
   }
 
-  // Used to open a read-only auto-generated print preview inline (<app-delivery-note>). Now that
-  // there's a real Delivery Notes tab with its own create/edit form (mirroring how "Convert to
-  // Invoice" navigates to the invoice form instead of popping up a read-only view), this
-  // navigates there instead — pre-filled from this order, but reviewable/editable before saving,
-  // the same two-ways-to-create pattern already established for quotes/invoices.
-  openDeliveryNoteModal(tx: SalesandTransactions, event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-    }
-    const uuid = this.route.snapshot.paramMap.get('uuid');
-    const path = uuid ? ['/admin/sales/delivery-notes/new', uuid] : ['/admin/sales/delivery-notes/new'];
-    this.router.navigate(path, { queryParams: { orderId: String(tx.id) } });
-  }
-
   // ============================================================
   // ROW ACTION AVAILABILITY — buttons always render; these decide whether
   // they're clickable, so a seller can always see the full action set
@@ -429,10 +415,6 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
 
   canViewReceipt(tx: SalesandTransactions): boolean {
     return (tx.paidAmount || 0) > 0;
-  }
-
-  canGenerateDeliveryNote(tx: SalesandTransactions): boolean {
-    return !SalesAndTransactionsListComponent.PRE_INVOICE_STATUSES.includes(tx.status);
   }
 
   savePayment(): void {
