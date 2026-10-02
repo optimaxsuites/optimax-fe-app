@@ -91,6 +91,12 @@ describe('QuoteListComponent', () => {
       expect(component.canGenerateDeliveryNote(q)).toBeFalse();
     });
 
+    it('also offers it for an ACCEPTED quote, same as CONVERTED', () => {
+      const q = quote({ id: 9, status: 'ACCEPTED' as QuoteStatus });
+      component.deliveryNoteByQuoteId = new Map();
+      expect(component.canGenerateDeliveryNote(q)).toBeTrue();
+    });
+
     it('only offers Create Invoice once the signed delivery note has been uploaded', () => {
       const q = quote({ id: 9, status: 'CONVERTED' as QuoteStatus });
       salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);

@@ -70,16 +70,24 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     return this.orderIdByQuoteId.get(quote.id) || '—';
   }
 
+  /** Same ACCEPTED-or-CONVERTED treatment canDeleteQuote() already uses — a quote that's been
+   *  accepted by the customer is "on its way to being an order" even if something set it to
+   *  ACCEPTED rather than straight to CONVERTED (e.g. older data from before this app's own
+   *  conversion flow existed). */
+  private isConvertedOrAccepted(quote: Quote): boolean {
+    return quote.status === 'CONVERTED' || quote.status === 'ACCEPTED';
+  }
+
   canGenerateDeliveryNote(quote: Quote): boolean {
-    return quote.status === 'CONVERTED' && !this.deliveryNoteByQuoteId.has(quote.id);
+    return this.isConvertedOrAccepted(quote) && !this.deliveryNoteByQuoteId.has(quote.id);
   }
 
   canUploadSignedDeliveryNote(quote: Quote): boolean {
-    return quote.status === 'CONVERTED' && this.deliveryNoteByQuoteId.has(quote.id) && !this.salesService.hasSignedDeliveryNoteDocument(quote);
+    return this.isConvertedOrAccepted(quote) && this.deliveryNoteByQuoteId.has(quote.id) && !this.salesService.hasSignedDeliveryNoteDocument(quote);
   }
 
   canCreateInvoice(quote: Quote): boolean {
-    return quote.status === 'CONVERTED' && this.salesService.hasSignedDeliveryNoteDocument(quote);
+    return this.isConvertedOrAccepted(quote) && this.salesService.hasSignedDeliveryNoteDocument(quote);
   }
 
   /** "Conversion" — replaces the old shortcut that went from SENT straight to invoice creation,

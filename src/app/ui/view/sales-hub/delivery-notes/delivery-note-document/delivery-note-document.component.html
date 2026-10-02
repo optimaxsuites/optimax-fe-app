@@ -1,0 +1,72 @@
+<div [attr.id]="elementId" class="dnx-sheet" *ngIf="note">
+
+  <div class="dnx-header">
+    <div class="dnx-sender-box">
+      <strong>{{ merchantInfo?.companyName || merchantInfo?.name || 'Your Company' }}</strong>
+      <p *ngFor="let line of merchantAddressLines">{{ line }}</p>
+    </div>
+    <img *ngIf="logoUrl" [src]="logoUrl" class="dnx-logo" alt="Company logo">
+  </div>
+
+  <h1 class="dnx-title">DELIVERY NOTE</h1>
+
+  <table class="dnx-meta-table">
+    <tbody>
+      <tr>
+        <td class="dnx-label">To :</td>
+        <td class="dnx-value">{{ customerName || '—' }}</td>
+        <td class="dnx-label">PO Number /Date:</td>
+        <td class="dnx-value">{{ poNumber || '—' }}</td>
+      </tr>
+      <tr>
+        <td class="dnx-label">Address :</td>
+        <td class="dnx-value" rowspan="3" style="white-space: pre-line;">{{ note.customerAddress }}</td>
+        <td class="dnx-label">Date Sent :</td>
+        <td class="dnx-value">{{ formatDate(note.createdAt) }}</td>
+      </tr>
+      <tr>
+        <td class="dnx-label">Per Invoice Number :</td>
+        <td class="dnx-value">{{ invoiceNumber || '—' }}</td>
+      </tr>
+      <tr>
+        <td class="dnx-label">Our Contact Person :</td>
+        <td class="dnx-value">{{ contactPerson || '—' }}</td>
+      </tr>
+      <tr>
+        <td class="dnx-label">Attention :</td>
+        <td class="dnx-value">{{ attention || '—' }}</td>
+        <td class="dnx-label">Telephone :</td>
+        <td class="dnx-value">{{ customerPhone || '—' }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table class="dnx-items-table">
+    <thead>
+      <tr>
+        <th>Quantity<br>Delivered</th>
+        <th class="dnx-items-desc">Description</th>
+        <th>Date of Delivery</th>
+        <th>Signature</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of note.items">
+        <td class="dnx-center">{{ item.quantity }}</td>
+        <td>{{ item.productName }}</td>
+        <td class="dnx-center">{{ formatDate(deliveryDate || note.dispatchedAt || note.createdAt) }}</td>
+        <td></td>
+      </tr>
+      <tr *ngIf="!note.items?.length">
+        <td colspan="4" class="dnx-empty">No items</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="dnx-goods-bar">Goods received in good order</div>
+  <div class="dnx-goods-sign">
+    <span>Name : <span class="dnx-line"></span></span>
+    <span>Signature <span class="dnx-line"></span></span>
+    <span>Date: <span class="dnx-line"></span></span>
+  </div>
+</div>

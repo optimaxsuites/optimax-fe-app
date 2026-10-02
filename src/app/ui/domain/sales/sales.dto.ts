@@ -185,6 +185,16 @@ export interface QuoteDocumentAttachment {
   uploadedAt: Date | string;
 }
 
+/** The delivery note fields the company's real paper template carries that the backend
+ *  DeliveryNote resource has no column for (PO/LPO reference, who the note is addressed to,
+ *  which of ours is the contact) — stored alongside lpoDocument/signedDeliveryNoteDocument for
+ *  the same reason: no dedicated backend field, so it rides on the quote's additionalOptions. */
+export interface DeliveryNoteMeta {
+  poNumber?: string;
+  attention?: string;
+  contactPerson?: string;
+}
+
 export interface AdditionalQuoteOptions {
   signatureText: string;
   attachments: QuoteAttachments[];
@@ -198,6 +208,7 @@ export interface AdditionalQuoteOptions {
   /** The delivery note, re-uploaded once physically signed by the recipient — required before
    *  an invoice can be created for this quote. */
   signedDeliveryNoteDocument?: QuoteDocumentAttachment;
+  deliveryNoteMeta?: DeliveryNoteMeta;
 }
 
 

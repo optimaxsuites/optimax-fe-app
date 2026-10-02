@@ -18,10 +18,16 @@ describe('DeliveryNoteDetailComponent', () => {
   } as any);
 
   beforeEach(() => {
-    salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getDeliveryNoteById', 'updateDeliveryNoteStatus', 'getCustomers', 'getMyMerchantInfo']);
+    salesService = jasmine.createSpyObj<SalesService>('SalesService', [
+      'getDeliveryNoteById', 'updateDeliveryNoteStatus', 'getCustomers', 'getMyMerchantInfo',
+      'getOrderIdLookup', 'getSalesandTransactionsById', 'getDeliveryNoteMeta'
+    ]);
     salesService.getDeliveryNoteById.and.returnValue(of(null));
     salesService.getCustomers.and.returnValue(of({ data: [{ id: 1, name: 'Acme Co' }], total: 1 } as any));
     salesService.getMyMerchantInfo.and.returnValue(of({ id: 1, name: 'Merchant' } as any));
+    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map() }));
+    salesService.getSalesandTransactionsById.and.returnValue(of(null));
+    salesService.getDeliveryNoteMeta.and.returnValue({});
     component = new DeliveryNoteDetailComponent(
       activatedRoute(),
       { navigate: jasmine.createSpy('navigate') } as any,
