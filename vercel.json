@@ -3,5 +3,6 @@
   "outputDirectory": "dist/erp-fe/browser",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "framework": null
 }

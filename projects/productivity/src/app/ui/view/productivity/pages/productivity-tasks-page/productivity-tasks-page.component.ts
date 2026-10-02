@@ -1,5 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import { Subscription } from 'rxjs';
+import { TaskReminderService, TaskReminder, ReminderOffset } from './task-reminder.service';
 
 export type ViewMode = 'board' | 'list' | 'gantt';
 export type TaskStatus = 'To Do' | 'In Progress' | 'In Review' | 'Done';
@@ -35,6 +37,8 @@ export interface BoardTask {
   subtasks: SubTask[];
   activity: ActivityEntry[];
   expanded?: boolean;
+  reminderOffset?: ReminderOffset;
+  reminderNote?: string;
 }
 
 const SEED_TASKS: BoardTask[] = [
@@ -115,7 +119,7 @@ const STORAGE_KEY = 'pm_board_tasks';
   templateUrl: './productivity-tasks-page.component.html',
   styleUrls: ['./productivity-tasks-page.component.scss'],
 })
-export class ProductivityTasksPageComponent implements OnInit {
+export class ProductivityTasksPageComponent implements OnInit, OnDestroy {
   viewMode: ViewMode = 'board';
   allTasks: BoardTask[] = [];
 
@@ -133,6 +137,20 @@ export class ProductivityTasksPageComponent implements OnInit {
   newActivityText = '';
 
   newTask: Partial<BoardTask> = {};
+
+  pendingAlerts: TaskReminder[] = [];
+
+  readonly reminderOptions: Array<{ value: ReminderOffset; label: string }> = [
+    { value: 'none',    label: 'No reminder' },
+    { value: '1_day',   label: '1 day before due date' },
+    { value: '3_days',  label: '3 days before due date' },
+    { value: '1_week',  label: '1 week before due date' },
+    { value: '2_weeks', label: '2 weeks before due date' },
+  ];
+
+  private reminderSub?: Subscription;
+
+  constructor(readonly reminderService: TaskReminderService) {}
 
   readonly columns: Array<{ key: TaskStatus; label: string }> = [
     { key: 'To Do', label: 'To Do' },
@@ -152,6 +170,19 @@ export class ProductivityTasksPageComponent implements OnInit {
     this.allTasks = raw ? JSON.parse(raw) : [...SEED_TASKS];
     this.buildGantt();
     this.initNewTask();
+    this.reminderSub = this.reminderService.onReminderFired.subscribe(r => {
+      this.pendingAlerts.unshift(r);
+    });
+    this.reminderService.startPolling();
+  }
+
+  ngOnDestroy(): void {
+    this.reminderSub?.unsubscribe();
+    this.reminderService.stopPolling();
+  }
+
+  dismissAlert(index: number): void {
+    this.pendingAlerts.splice(index, 1);
   }
 
   private save(): void {
@@ -178,6 +209,7 @@ export class ProductivityTasksPageComponent implements OnInit {
       status: 'To Do', priority: 'Medium',
       startDate: new Date().toISOString().slice(0, 10), dueDate: '',
       weight: 10, progress: 0, tags: [], subtasks: [], activity: [],
+      reminderOffset: 'none', reminderNote: '',
     };
   }
 
@@ -256,6 +288,14 @@ export class ProductivityTasksPageComponent implements OnInit {
     t.id = `t${Date.now()}`;
     this.allTasks.unshift({ ...t });
     this.save();
+    if (t.reminderOffset && t.reminderOffset !== 'none' && t.dueDate) {
+      this.reminderService.schedule(
+        t.id, t.title, t.dueDate,
+        t.reminderOffset,
+        t.reminderNote || undefined,
+        t.assignee || undefined,
+      );
+    }
     this.showAddTask = false;
     this.initNewTask();
   }

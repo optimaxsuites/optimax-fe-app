@@ -34,6 +34,7 @@ import {
 import { EmployeeService } from '../../service/employee.service';
 import { HrTaskNotificationService } from '../../service/hr-task-notification.service';
 import { AuthenticationService } from '../../shared-component/service/auth-service/authentication.service';
+import { HrTaskReminderService, HrTaskReminder, ReminderOffset } from './hr-task-reminder.service';
 import {
   WorkTaskApiService,
   WorkTaskFull,
@@ -52,7 +53,7 @@ import {
   SupervisorReviewDTO,
 } from './work-task-api.service';
 
-export type PMSection = 'board' | 'reports' | 'batch' | 'assessment' | 'supervisor' | 'review';
+export type PMSection = 'board' | 'reports' | 'batch' | 'assessment' | 'supervisor' | 'review' | 'standup';
 
 export interface ReviewSession {
   id: string;
@@ -115,6 +116,8 @@ export interface BoardTask {
   closed?: boolean;
   closedReason?: string;
   sprint?: string;
+  reminderOffset?: ReminderOffset;
+  reminderNote?: string;
   // API-sync fields
   apiId?: number;
   assigneeEmployeeId?: number;
@@ -146,6 +149,24 @@ interface BatchRow {
   start: string; due: string; priority: string; type: string;
   subtasks: string; kpiTarget: string; weight: number;
 }
+
+interface DeveloperUpdate {
+  developer: string;
+  completed: string;
+  planned: string;
+  blockers: string;
+}
+
+interface SprintStandupEntry {
+  id: string;
+  sprintName: string;
+  date: string;
+  facilitator: string;
+  updates: DeveloperUpdate[];
+  generalNote: string;
+  createdAt: string;
+}
+
 
 const HR_SEED: BoardTask[] = [
   {
@@ -275,6 +296,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       board: 'Task Board', reports: 'Reports & Analytics',
       batch: 'Batch Import', assessment: 'Self-Assessment',
       supervisor: 'Supervisor Review', review: 'Performance Review',
+      standup: 'Sprint Standup',
     };
     return map[this.pmSection];
   }
@@ -313,6 +335,54 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   mySubmission: AppraisalSubmissionFull | null = null;
   submissionLoading = false;
   submitting = false;
+
+
+  // ── Sprint Standup ────────────────────────────────────────────────────────
+  private static readonly STANDUP_KEY = 'hr_pm_standups_v1';
+
+  standupEntries: SprintStandupEntry[] = [];
+  standupForm: SprintStandupEntry = this.blankStandup();
+  standupSaved = false;
+  standupShowHistory = false;
+
+  blankStandup(): SprintStandupEntry {
+    return {
+      id: '',
+      sprintName: '',
+      date: new Date().toISOString().slice(0, 10),
+      facilitator: '',
+      updates: [this.blankDevUpdate()],
+      generalNote: '',
+      createdAt: '',
+    };
+  }
+
+  blankDevUpdate(): DeveloperUpdate {
+    return { developer: '', completed: '', planned: '', blockers: '' };
+  }
+
+  addDevUpdate(): void { this.standupForm.updates.push(this.blankDevUpdate()); }
+  removeDevUpdate(i: number): void { if (this.standupForm.updates.length > 1) this.standupForm.updates.splice(i, 1); }
+
+  saveStandup(): void {
+    if (!this.standupForm.sprintName.trim() || !this.standupForm.date) return;
+    this.standupForm.id = `sd_${Date.now()}`;
+    this.standupForm.createdAt = new Date().toISOString();
+    this.standupEntries.unshift({ ...this.standupForm, updates: [...this.standupForm.updates] });
+    localStorage.setItem(ProductivityWorkspaceComponent.STANDUP_KEY, JSON.stringify(this.standupEntries));
+    this.standupSaved = true;
+    this.standupForm = this.blankStandup();
+    setTimeout(() => this.standupSaved = false, 3000);
+  }
+
+  loadStandups(): void {
+    try { this.standupEntries = JSON.parse(localStorage.getItem(ProductivityWorkspaceComponent.STANDUP_KEY) || '[]'); } catch { this.standupEntries = []; }
+  }
+
+  deleteStandup(id: string): void {
+    this.standupEntries = this.standupEntries.filter(e => e.id !== id);
+    localStorage.setItem(ProductivityWorkspaceComponent.STANDUP_KEY, JSON.stringify(this.standupEntries));
+  }
 
   setPmSection(s: PMSection): void {
     this.pmSection = s;
@@ -370,7 +440,17 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   filterStatus = '';
   filterPriority = '';
   filterAssignee = '';
+  filterSprint = '';
   searchText = '';
+
+  pendingAlerts: HrTaskReminder[] = [];
+  readonly reminderOptions: Array<{ value: ReminderOffset; label: string }> = [
+    { value: 'none',    label: 'No reminder' },
+    { value: '1_day',   label: '1 day before due date' },
+    { value: '3_days',  label: '3 days before due date' },
+    { value: '1_week',  label: '1 week before due date' },
+    { value: '2_weeks', label: '2 weeks before due date' },
+  ];
   selectedTask: BoardTask | null = null;
   detailPanelVisible = false;
   detailTab: 'overview' | 'subtasks' | 'activity' | 'analytics' = 'overview';
@@ -2108,6 +2188,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     private readonly notifService: HrTaskNotificationService,
     private readonly authService: AuthenticationService,
     private route: ActivatedRoute,
+    readonly reminderService: HrTaskReminderService,
   ) {}
 
   ngOnInit(): void {
@@ -2132,6 +2213,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     );
     this.buildGantt();
     this.initNewTask();
+    this.loadStandups();
     // Eagerly merge local imports so they appear immediately regardless of API timing
     this.mergeLocalImports();
 
@@ -2221,6 +2303,12 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         error: () => {},
       })
     );
+
+    // Reminder polling
+    this.subscription.add(
+      this.reminderService.onReminderFired.subscribe(r => this.pendingAlerts.unshift(r))
+    );
+    this.reminderService.startPolling();
   }
 
   private patchSubmissionsFromUsers(users: Array<{ id: string; fullName: string; department: string; role: string; supervisor: string }>): void {
@@ -2529,7 +2617,12 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return m[p];
   }
 
-  ngOnDestroy(): void { this.subscription.unsubscribe(); }
+  ngOnDestroy(): void {
+    this.reminderService.stopPolling();
+    this.subscription.unsubscribe();
+  }
+
+  dismissAlert(index: number): void { this.pendingAlerts.splice(index, 1); }
 
   // ── Board methods ──────────────────────────────────────────────────────────
   private save(): void {
@@ -2798,6 +2891,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       status: 'To Do', priority: 'Medium', startDate: new Date().toISOString().slice(0, 10),
       dueDate: '', weight: 10, progress: 0, tags: [], subtasks: [], activity: [],
       cost: undefined, costCurrency: 'NGN', sprint: '',
+      reminderOffset: 'none' as ReminderOffset, reminderNote: '',
     };
     this.taskSubmitAttempted = false;
     this.newTaskSubtasks = [];
@@ -2845,6 +2939,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       if (this.filterStatus && t.status !== this.filterStatus) return false;
       if (this.filterPriority && t.priority !== this.filterPriority) return false;
       if (this.filterAssignee && !(t.assignee || '').toLowerCase().includes(this.filterAssignee.toLowerCase())) return false;
+      if (this.filterSprint && (t.sprint || '') !== this.filterSprint) return false;
       if (this.searchText && !(t.title || '').toLowerCase().includes(this.searchText.toLowerCase())) return false;
       return true;
     });
@@ -3168,6 +3263,17 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     const newBoard: BoardTask = { ...t, subtasks: t.subtasks ?? [], activity: [], followUps: [] };
     this.boardTasks = [newBoard, ...this.boardTasks];
     this.save();
+
+    if (newBoard.reminderOffset && newBoard.reminderOffset !== 'none' && newBoard.dueDate) {
+      this.reminderService.schedule(
+        newBoard.id, newBoard.title, newBoard.dueDate,
+        newBoard.reminderOffset,
+        newBoard.sprint || undefined,
+        newBoard.reminderNote || undefined,
+        newBoard.assignee || undefined,
+      );
+    }
+
     this.showAddTask = false;
     this.initNewTask();
 
@@ -3442,6 +3548,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     } catch { return String(iso); }
   }
   get uniqueAssignees(): string[] { return [...new Set(this.boardTasks.map(t => t.assignee))].filter(Boolean); }
+  get uniqueSprints(): string[] { return [...new Set(this.boardTasks.map(t => t.sprint || ''))].filter(Boolean).sort(); }
 
   subDotClass(sub: SubTask): string {
     if (sub.done) return 'done';

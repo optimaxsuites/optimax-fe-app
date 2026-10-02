@@ -43,6 +43,9 @@ import { JopOpeningsComponent } from 'projects/hr/src/app/ui/view/recruitment/jo
 import { VendorProfileFormComponent } from 'projects/procurement/src/app/ui/view/vendor-management/vendor-profile-form/vendor-profile-form.component';
 import { VendorRegistrationComponent } from 'projects/procurement/src/app/ui/view/vendor-management/vendor-registration/vendor-registration.component';
 import { InterviewResponseComponent } from 'projects/hr/src/app/ui/view/recruitment/candidate/interview-response.component';
+import { VendorSignupComponent } from './ui/auth/view/vendor-signup/vendor-signup.component';
+import { VendorPendingComponent } from './ui/auth/view/vendor-pending/vendor-pending.component';
+import { VendorPortalGuard } from './ui/auth/service/vendor-portal.guard';
 
 const routes: Routes = [
   {
@@ -191,7 +194,7 @@ const routes: Routes = [
       {
         path: 'vendor',
         loadChildren: () => import('../../projects/vendor/src/app/app.module').then(m => m.AppModule),
-        canActivate: [UuidGuard]
+        canActivate: [UuidGuard, VendorPortalGuard]
 
       },
       {
@@ -251,6 +254,16 @@ const routes: Routes = [
   {
     path: 'subscription/:id',
     component: PaymentComponent
+  },
+
+  {
+    path: 'vendor',
+    children: [
+      { path: 'signup', component: VendorSignupComponent },
+      { path: 'signup/:uuid', component: VendorSignupComponent },
+      { path: 'pending', component: VendorPendingComponent },
+      { path: 'pending/:uuid', component: VendorPendingComponent },
+    ]
   },
 
   {

@@ -254,6 +254,19 @@ interface ChatArrivalToast {
   threadRootMessageBackendId?: number;
 }
 
+interface CollabReminder {
+  id: string;
+  taskId: string;
+  taskTitle: string;
+  sprint?: string;
+  dueDate: string;
+  reminderAt: string;
+  note?: string;
+  assignee?: string;
+  fired: boolean;
+  source: 'task' | 'issue';
+}
+
 interface ChatReactionOption {
   code: string;
   emoji: string;
@@ -659,6 +672,9 @@ export class CommunicationComponent
   taskRoutineTodos: TaskRoutineSummary[] = [];
   upcomingBirthdays: BirthdayReminderItem[] = [];
 
+  scheduledReminders: CollabReminder[] = [];
+  private reminderPollRef: ReturnType<typeof setInterval> | null = null;
+
   workspaceFocusItems: CollaborationFocusItem[] = [];
   chatArrivalToasts: ChatArrivalToast[] = [];
   private chatArrivalToastTimers = new Map<number, ReturnType<typeof setTimeout>>();
@@ -893,9 +909,12 @@ export class CommunicationComponent
       this.startConversationSync();
     }
     this.processMentionHashNavigation();
+    this.loadScheduledReminders();
+    this.reminderPollRef = setInterval(() => this.loadScheduledReminders(), 60_000);
   }
 
   ngOnDestroy() {
+    if (this.reminderPollRef !== null) { clearInterval(this.reminderPollRef); this.reminderPollRef = null; }
     this.stopJitsiListener();
     if (this.flashTimer) clearTimeout(this.flashTimer);
     if (this.typingTimer) clearTimeout(this.typingTimer);
@@ -4632,7 +4651,7 @@ export class CommunicationComponent
             0,
         ) || profile.userId,
       jobTitle:
-        employee?.jobTitle ||
+        employee?.jobTitle || 
         employee?.designation ||
         employee?.position ||
         profile.jobTitle,
@@ -4841,6 +4860,31 @@ export class CommunicationComponent
         : undefined;
     contact.daysUntilBirthday = reminder?.daysUntilBirthday ?? null;
     contact.birthdayIsToday = reminder?.birthdayIsToday ?? false;
+  }
+
+  loadScheduledReminders(): void {
+    const taskKey = 'hr_productivity_task_reminders_v1';
+    const issueKey = 'hr_issue_reminders_v1';
+    const parse = (key: string, source: 'task' | 'issue') => {
+      try {
+        return (JSON.parse(localStorage.getItem(key) || '[]') as any[]).map(r => ({ ...r, source }));
+      } catch { return []; }
+    };
+    const all: CollabReminder[] = [
+      ...parse(taskKey, 'task'),
+      ...parse(issueKey, 'issue'),
+    ];
+    all.sort((a, b) => new Date(a.reminderAt).getTime() - new Date(b.reminderAt).getTime());
+    this.scheduledReminders = all;
+  }
+
+  dismissCollabReminder(taskId: string, source: 'task' | 'issue'): void {
+    const key = source === 'task' ? 'hr_productivity_task_reminders_v1' : 'hr_issue_reminders_v1';
+    try {
+      const all = JSON.parse(localStorage.getItem(key) || '[]') as any[];
+      localStorage.setItem(key, JSON.stringify(all.filter((r: any) => r.taskId !== taskId)));
+    } catch { /* ignore */ }
+    this.loadScheduledReminders();
   }
 
   private buildUpcomingBirthdays(contacts: DmContact[]): BirthdayReminderItem[] {
@@ -8054,6 +8098,10 @@ export class CommunicationComponent
           optimistic.id = `backend-${saved.id}`;
           optimistic.deliveryState = 'DELIVERED';
           optimistic.retryMeta = undefined;
+          if (saved.sentAt) {
+            optimistic.sentAtRaw = saved.sentAt;
+            optimistic.time = formatRelativeTime(saved.sentAt);
+          }
           this.sendingMessage = false;
           this.syncActiveConversationState();
           if (capturedFiles.length && capturedAttachments.length) {
@@ -8129,6 +8177,10 @@ export class CommunicationComponent
           optimistic.id = `backend-${saved.id}`;
           optimistic.deliveryState = 'DELIVERED';
           optimistic.retryMeta = undefined;
+          if (saved.sentAt) {
+            optimistic.sentAtRaw = saved.sentAt;
+            optimistic.time = formatRelativeTime(saved.sentAt);
+          }
           this.sendingMessage = false;
           this.syncActiveConversationState();
           if (capturedFiles.length && capturedAttachments.length) {
@@ -8648,6 +8700,10 @@ export class CommunicationComponent
           optimistic.id = `backend-${saved.id}`;
           optimistic.deliveryState = 'DELIVERED';
           optimistic.retryMeta = undefined;
+          if (saved.sentAt) {
+            optimistic.sentAtRaw = saved.sentAt;
+            optimistic.time = formatRelativeTime(saved.sentAt);
+          }
           this.sendingReply = false;
           this.syncActiveConversationState();
           this.refreshSelectedThreadFromSource(stableRootMsg.id);
@@ -11680,6 +11736,7 @@ export class CommunicationComponent
         minute: '2-digit',
         hour12: true,
       }),
+      sentAtRaw: new Date().toISOString(),
       content,
       replies: [],
       liked: false,
@@ -11717,6 +11774,10 @@ export class CommunicationComponent
           msg.backendId = saved.id;
           msg.id = `backend-${saved.id}`;
           msg.deliveryState = 'DELIVERED';
+          if (saved.sentAt) {
+            msg.sentAtRaw = saved.sentAt;
+            msg.time = formatRelativeTime(saved.sentAt);
+          }
           const files = retryMeta.files || [];
           const attachments = retryMeta.attachments || [];
           msg.retryMeta = undefined;
