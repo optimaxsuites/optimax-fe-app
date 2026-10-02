@@ -547,10 +547,17 @@
       <button type="button" class="qf-modal-close" (click)="showSendQuoteModal = false"><i class="fas fa-times"></i></button>
     </div>
     <div class="qf-modal-body">
-      <div class="qf-confirm-icon" style="color:#184440"><i class="fas fa-envelope-open-text"></i></div>
-      <p class="qf-modal-hint" style="text-align:center">
-        Send <strong>{{ pendingSendQuoteNumber }}</strong> to <strong>{{ pendingSendCustomerName }}</strong>?
+      <p class="qf-modal-hint">
+        Sending <strong>{{ pendingSendQuoteNumber }}</strong> to <strong>{{ pendingSendCustomerName }}</strong>. This message appears above the quote summary and attached PDF — edit it as needed.
       </p>
+      <div class="qf-field">
+        <label class="qf-label">Subject</label>
+        <input type="text" class="qf-input" [(ngModel)]="emailSubject" [ngModelOptions]="{standalone: true}">
+      </div>
+      <div class="qf-field">
+        <label class="qf-label">Message</label>
+        <textarea class="qf-input" rows="6" [(ngModel)]="emailMessage" [ngModelOptions]="{standalone: true}"></textarea>
+      </div>
     </div>
     <div class="qf-modal-foot">
       <button type="button" class="qf-btn qf-btn--ghost" (click)="showSendQuoteModal = false">Cancel</button>

@@ -182,6 +182,13 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   showChargesModal = false;
   modalDiscountAmount = 0;
   modalDiscountType: 'PERCENTAGE' | 'FIXED' = 'FIXED';
+
+  showSendInvoiceModal = false;
+  pendingSendInvoiceNumber = '';
+  pendingSendCustomerName = '';
+  emailSubject = '';
+  emailMessage = '';
+  private pendingDeliveryInvoice: Invoice | null = null;
   
   // Additional charges breakdown
   additionalChargeItems: { id?: number; label: string; amount: number }[] = [];
@@ -1060,29 +1067,14 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     request.subscribe({
       next: async (response: Invoice) => {
         this.isSubmitting = false;
+        // For 'email'/'both', handleDeliveryAction only opens the Send modal and returns —
+        // finalizeInvoiceSubmit() below must NOT run yet in that case (it navigates away, which
+        // would tear this component and the modal down before the seller can type a message and
+        // confirm). confirmSendInvoice() calls it itself once they actually send.
         await this.handleDeliveryAction(response, this.selectedAction);
-
-        // This used to only fire when response.status === 'SENT' — but onSubmit() always POSTs
-        // status: 'DRAFT' above (a real Send only happens later, from invoice-detail's own Send
-        // Invoice action, which already marks the quote CONVERTED there), so that check could
-        // never actually be true and this never ran. The real gap it left: a quote at SENT with
-        // a draft invoice already created from it still showed as convertible, letting a second
-        // invoice be created from the same quote. Mark it CONVERTED the moment any invoice is
-        // successfully created from it, not only once that invoice is later sent.
-        if (!this.isEditMode && response.quoteId) {
-          this.salesService.updateQuote(response.quoteId, { status: 'CONVERTED' }).subscribe({
-            next: () => console.log(`Quote ${response.quoteId} marked as CONVERTED`),
-            error: (err) => console.error('Error converting quote:', err)
-          });
+        if (this.selectedAction === 'pdf') {
+          this.finalizeInvoiceSubmit(response);
         }
-
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: this.isEditMode ? 'Invoice updated successfully!' : 'Invoice created successfully!' });
-        const uuid = this.route.snapshot.paramMap.get('uuid');
-        const path = uuid ? ['/admin/sales/invoices', response.id, uuid] : ['/admin/sales/invoices', response.id];
-        // Replace this form's history entry with the invoice's detail page, for both create
-        // and edit — otherwise Back from there lands on the (stale, already-submitted) form
-        // instead of the invoice list the user actually came from.
-        this.router.navigate(path, { replaceUrl: true });
       },
       error: (error: any) => {
         console.error('Error saving invoice:', error);
@@ -1090,6 +1082,34 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save invoice. Please try again.' });
       }
     });
+  }
+
+  /** Marks the source quote CONVERTED (see the long-standing comment this used to carry, now
+   *  here instead of inline in onSubmit()), shows the success toast, and navigates to the
+   *  invoice's detail page. Called once the invoice is actually done being delivered — right
+   *  away for a plain PDF download, or after the Send modal is confirmed for email/both. */
+  private finalizeInvoiceSubmit(response: Invoice): void {
+    // This used to only fire when response.status === 'SENT' — but onSubmit() always POSTs
+    // status: 'DRAFT' above (a real Send only happens later, from invoice-detail's own Send
+    // Invoice action, which already marks the quote CONVERTED there), so that check could
+    // never actually be true and this never ran. The real gap it left: a quote at SENT with
+    // a draft invoice already created from it still showed as convertible, letting a second
+    // invoice be created from the same quote. Mark it CONVERTED the moment any invoice is
+    // successfully created from it, not only once that invoice is later sent.
+    if (!this.isEditMode && response.quoteId) {
+      this.salesService.updateQuote(response.quoteId, { status: 'CONVERTED' }).subscribe({
+        next: () => console.log(`Quote ${response.quoteId} marked as CONVERTED`),
+        error: (err) => console.error('Error converting quote:', err)
+      });
+    }
+
+    this.messageService.add({ severity: 'success', summary: 'Success', detail: this.isEditMode ? 'Invoice updated successfully!' : 'Invoice created successfully!' });
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/invoices', response.id, uuid] : ['/admin/sales/invoices', response.id];
+    // Replace this form's history entry with the invoice's detail page, for both create
+    // and edit — otherwise Back from there lands on the (stale, already-submitted) form
+    // instead of the invoice list the user actually came from.
+    this.router.navigate(path, { replaceUrl: true });
   }
 
   isSavingDraft = false;
@@ -1695,22 +1715,41 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   private async handleDeliveryAction(invoice: Invoice, action: 'pdf' | 'email' | 'both'): Promise<void> {
     try {
-      // Awaited in sequence, not fired-and-forgotten: the caller navigates away as soon as
-      // this promise resolves, which tears down this component (and the step-1 preview
-      // element the client-side PDF fallback needs) — racing ahead of the PDF silently
-      // killed it whenever the server PDF call failed during "PDF + Email".
-      let pdfBlob: Blob | null = null;
-      if (action === 'pdf' || action === 'both') {
-        pdfBlob = await this.downloadInvoicePdf(invoice);
-      }
-
-      if (action === 'email' || action === 'both') {
-        await this.sendInvoiceEmail(invoice, pdfBlob);
+      if (action === 'pdf') {
+        await this.downloadInvoicePdf(invoice);
+      } else {
+        // 'email' or 'both' -> open the Send modal, pre-filled with an editable subject/message
+        // so the seller can personalize what goes above the itemized summary (which stays
+        // fixed) before anything actually sends. confirmSendInvoice() does the real work.
+        this.pendingDeliveryInvoice = invoice;
+        const custName = (invoice.customerName as any)?.name || String(invoice.customerName || 'Customer');
+        const company = this.billedBy.name || invoice.merchantDetails?.name || invoice.merchantDetails?.companyName || 'our company';
+        this.pendingSendInvoiceNumber = invoice.invoiceNumber;
+        this.pendingSendCustomerName = custName;
+        this.emailSubject = `Invoice ${invoice.invoiceNumber} from ${company}`;
+        this.emailMessage = `Dear ${custName},\n\nPlease find the details of your invoice below:`;
+        this.showSendInvoiceModal = true;
       }
     } catch (error) {
       console.error('Error in delivery action:', error);
       this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'There was an issue with the delivery. Please try again.' });
     }
+  }
+
+  async confirmSendInvoice(): Promise<void> {
+    if (!this.pendingDeliveryInvoice) return;
+    const invoice = this.pendingDeliveryInvoice;
+    this.showSendInvoiceModal = false;
+
+    // "Both" downloads a PDF and emails one — reuse the same rendered blob for the email
+    // attachment instead of running the (slow) html2canvas capture twice.
+    let pdfBlob: Blob | null = null;
+    if (this.selectedAction === 'both') {
+      pdfBlob = await this.downloadInvoicePdf(invoice);
+    }
+
+    await this.sendInvoiceEmail(invoice, pdfBlob);
+    this.finalizeInvoiceSubmit(invoice);
   }
 
   private async generateInvoicePDF(invoice: Invoice): Promise<Blob> {
@@ -1850,8 +1889,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     const htmlBody = `
       <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
         <h2 style="color: ${accent}; margin-top: 0;">Invoice Details</h2>
-        <p>Dear ${name},</p>
-        <p>Please find the details of your invoice below:</p>
+        ${this.renderEmailMessageHtml(this.emailMessage || `Dear ${name},\n\nPlease find the details of your invoice below:`)}
         <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
           <tr>
             <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Invoice Number:</td>
@@ -1933,7 +1971,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       to: email,
       cc: [],
       bcc: [],
-      subject: `Invoice ${invoice.invoiceNumber} from ${this.billedBy.name || invoice.merchantDetails?.name || invoice.merchantDetails?.companyName || 'our company'}`,
+      subject: this.emailSubject || `Invoice ${invoice.invoiceNumber} from ${this.billedBy.name || invoice.merchantDetails?.name || invoice.merchantDetails?.companyName || 'our company'}`,
       message: htmlBody,
       attachments,
       sentBy: invoice.merchantDetails?.email || 'system'
@@ -1967,6 +2005,20 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
+  }
+
+  /** Renders the seller's free-typed email message (plain text from the Send modal's textarea)
+   *  as safe HTML paragraphs — escaped so pasted/typed `<`, `>`, `&` can't break the email markup
+   *  or inject anything, since this text goes straight into an HTML email body. */
+  private renderEmailMessageHtml(message: string): string {
+    const escape = (s: string) => s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return message
+      .split(/\n{2,}/)
+      .map(para => `<p style="margin:0 0 12px;">${escape(para).replace(/\n/g, '<br>')}</p>`)
+      .join('');
   }
 
   getProductSku(productId: string): string {

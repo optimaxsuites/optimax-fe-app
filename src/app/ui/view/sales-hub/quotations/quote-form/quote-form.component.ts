@@ -1385,6 +1385,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   showSendQuoteModal = false;
   pendingSendQuoteNumber = '';
   pendingSendCustomerName = '';
+  emailSubject = '';
+  emailMessage = '';
   private pendingDeliveryQuote: Quote | null = null;
 
   // Handle delivery actions
@@ -1437,11 +1439,16 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         await this.downloadQuotePdf(quote);
         this.navigateAfterSubmit(quote);
       } else {
-        // 'email' or 'both' -> Trigger custom Send Quote modal popup
+        // 'email' or 'both' -> Trigger custom Send Quote modal popup, pre-filled with an
+        // editable subject/message so the seller can personalize what goes above the itemized
+        // summary (which stays fixed) before anything actually sends.
         this.pendingDeliveryQuote = quote;
         const custName = (quote.customerName as any)?.name || String(quote.customerName || 'Customer');
+        const company = this.billedBy.name || quote.merchantDetails?.name || quote.merchantDetails?.companyName || 'our company';
         this.pendingSendQuoteNumber = quote.quoteNumber;
         this.pendingSendCustomerName = custName;
+        this.emailSubject = `Quotation ${quote.quoteNumber} from ${company}`;
+        this.emailMessage = `Dear ${custName},\n\nPlease find the details of your quotation below:`;
         this.showSendQuoteModal = true;
       }
     } catch (error) {
@@ -1616,8 +1623,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     const htmlBody = `
       <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
         <h2 style="color: ${accent}; margin-top: 0;">Quotation Details</h2>
-        <p>Dear ${name},</p>
-        <p>Please find the details of your quotation below:</p>
+        ${this.renderEmailMessageHtml(this.emailMessage || `Dear ${name},\n\nPlease find the details of your quotation below:`)}
         <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
           <tr>
             <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Quotation Number:</td>
@@ -1699,7 +1705,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       to: email,
       cc: [],
       bcc: [],
-      subject: `Quotation ${quote.quoteNumber} from ${this.billedBy.name || quote.merchantDetails?.name || quote.merchantDetails?.companyName || 'our company'}`,
+      subject: this.emailSubject || `Quotation ${quote.quoteNumber} from ${this.billedBy.name || quote.merchantDetails?.name || quote.merchantDetails?.companyName || 'our company'}`,
       message: htmlBody,
       attachments,
       sentBy: quote.merchantDetails?.email || 'system'
@@ -1743,6 +1749,20 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
+  }
+
+  /** Renders the seller's free-typed email message (plain text from the Send modal's textarea)
+   *  as safe HTML paragraphs — escaped so pasted/typed `<`, `>`, `&` can't break the email markup
+   *  or inject anything, since this text goes straight into an HTML email body. */
+  private renderEmailMessageHtml(message: string): string {
+    const escape = (s: string) => s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return message
+      .split(/\n{2,}/)
+      .map(para => `<p style="margin:0 0 12px;">${escape(para).replace(/\n/g, '<br>')}</p>`)
+      .join('');
   }
 
   // Helper methods
