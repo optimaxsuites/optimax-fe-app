@@ -309,7 +309,12 @@ export class SalesService {
           deliveryNoteMeta: existing.deliveryNoteMeta,
           ...patch
         };
-        return this.updateQuote(quoteId, { additionalOptions: [addOpts] });
+        // The real backend's Quote.additionalOptions is a single object, not an array, despite
+        // the TS type here (AdditionalQuoteOptions[]) — that type only reflects how some GET
+        // responses happen to shape it, and firstAdditionalOptions() already reads either shape
+        // defensively. Sending it wrapped in an array on PUT 500s with a Jackson
+        // "Cannot deserialize ... from Array value" error, so it goes over the wire unwrapped.
+        return this.updateQuote(quoteId, { additionalOptions: addOpts as unknown as AdditionalQuoteOptions[] });
       })
     );
   }
