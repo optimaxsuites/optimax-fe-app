@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subject, forkJoin, takeUntil, lastValueFrom } from 'rxjs';
+import { switchMap, map } from 'rxjs/operators';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { SalesEmailService } from '../../../../service/sales/sales-email.service';
 import { Customer, DeliveryNote, MerchantInfo, Quote, QuoteDocumentAttachment, SendSalesEmailRequest } from '../../../../domain/sales/sales.dto';
 import { formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
+import { DeliveryNoteDocumentComponent } from '../delivery-note-document/delivery-note-document.component';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { MessageService } from 'primeng/api';
@@ -31,7 +33,7 @@ import { ToastModule } from 'primeng/toast';
 @Component({
   selector: 'app-generate-delivery-note',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent, ToastModule],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent, DeliveryNoteDocumentComponent, ToastModule],
   providers: [MessageService],
   templateUrl: './generate-delivery-note.component.html',
   styleUrls: ['./generate-delivery-note.component.scss']
@@ -48,12 +50,19 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   // Step 1 — LPO upload
   lpoFileName = '';
   private lpoFile: QuoteDocumentAttachment | null = null;
+  poNumberInput = '';
   isSavingLpo = false;
 
-  // Step 2 — the generated note + inline-editable tracking fields
+  // Step 2 — the generated note + inline-editable delivery details. carrier/trackingNumber
+  // persist to the real DeliveryNote backend fields; poNumber/attention/contactPerson have no
+  // backend column so they ride on the quote's additionalOptions (see DeliveryNoteMeta).
   deliveryNote: DeliveryNote | null = null;
   carrier = '';
   trackingNumber = '';
+  poNumber = '';
+  attention = '';
+  contactPerson = '';
+  deliveryDate = '';
   isSavingTracking = false;
   isDownloading = false;
   isEmailing = false;
@@ -87,6 +96,11 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
       this.merchantInfo = merchant;
       this.isLoading = false;
 
+      const meta = this.salesService.getDeliveryNoteMeta(quote);
+      this.poNumberInput = meta.poNumber || '';
+      this.attention = meta.attention || this.selectedCustomer?.name || '';
+      this.contactPerson = meta.contactPerson || merchant?.name || merchant?.companyName || '';
+
       const existingNote = this.quoteId ? noteByQuoteId.get(this.quoteId) : undefined;
       if (existingNote) {
         // Already generated for this quote (e.g. they navigated back here) — skip straight to
@@ -94,6 +108,8 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
         this.deliveryNote = existingNote;
         this.carrier = existingNote.carrier || '';
         this.trackingNumber = existingNote.trackingNumber || '';
+        this.poNumber = meta.poNumber || '';
+        this.deliveryDate = this.toDateInputValue(existingNote.dispatchedAt || existingNote.createdAt || new Date());
         this.currentStep = 2;
       }
     });
@@ -102,6 +118,12 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /** Previews the delivery note with the still-unsaved carrier/tracking edits applied, so the
+   *  live preview reflects what's being typed before "Save" persists it. */
+  get previewNote(): DeliveryNote {
+    return { ...this.deliveryNote!, carrier: this.carrier, trackingNumber: this.trackingNumber };
   }
 
   get selectedCustomer(): Customer | null {
@@ -133,9 +155,16 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   submitLpo(): void {
     if (!this.quoteId || !this.lpoFile || this.isSavingLpo) return;
     this.isSavingLpo = true;
-    this.salesService.saveQuoteLpoDocument(this.quoteId, this.lpoFile).subscribe({
+    this.salesService.saveQuoteLpoDocument(this.quoteId, this.lpoFile).pipe(
+      switchMap(() => this.salesService.saveDeliveryNoteMeta(this.quoteId!, {
+        poNumber: this.poNumberInput || undefined,
+        attention: this.attention || undefined,
+        contactPerson: this.contactPerson || undefined
+      }))
+    ).subscribe({
       next: (updatedQuote) => {
         this.quote = updatedQuote;
+        this.poNumber = this.poNumberInput;
         // The LPO is in — now create/derive the actual delivery note record.
         this.salesService.getOrCreateDeliveryNoteForQuote(this.quoteId!).subscribe({
           next: (note) => {
@@ -147,6 +176,7 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
             this.deliveryNote = note;
             this.carrier = note.carrier || '';
             this.trackingNumber = note.trackingNumber || '';
+            this.deliveryDate = this.toDateInputValue(note.dispatchedAt || note.createdAt || new Date());
             this.currentStep = 2;
           },
           error: (err) => {
@@ -169,24 +199,36 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   // ============================================================
 
   saveTracking(): void {
-    if (!this.deliveryNote?.id || this.isSavingTracking) return;
+    if (!this.deliveryNote?.id || !this.quoteId || this.isSavingTracking) return;
     this.isSavingTracking = true;
     this.salesService.updateDeliveryNote(this.deliveryNote.id, {
       ...this.deliveryNote,
       carrier: this.carrier || undefined,
       trackingNumber: this.trackingNumber || undefined
-    }).subscribe({
+    }).pipe(
+      switchMap(updated => this.salesService.saveDeliveryNoteMeta(this.quoteId!, {
+        poNumber: this.poNumber || undefined,
+        attention: this.attention || undefined,
+        contactPerson: this.contactPerson || undefined
+      }).pipe(map(() => updated)))
+    ).subscribe({
       next: (updated) => {
         this.isSavingTracking = false;
         this.deliveryNote = { ...this.deliveryNote!, ...updated, carrier: this.carrier, trackingNumber: this.trackingNumber };
-        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Delivery tracking details saved.' });
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Delivery details saved.' });
       },
       error: (err) => {
-        console.error('Error saving tracking details:', err);
+        console.error('Error saving delivery details:', err);
         this.isSavingTracking = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save tracking details. Please try again.' });
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save delivery details. Please try again.' });
       }
     });
+  }
+
+  private toDateInputValue(date: Date | string): string {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().substring(0, 10);
   }
 
   private async generatePdfBlob(): Promise<Blob> {

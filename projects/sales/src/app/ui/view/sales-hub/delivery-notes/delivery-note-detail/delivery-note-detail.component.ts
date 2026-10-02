@@ -6,6 +6,7 @@ import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, DeliveryNote, DeliveryNoteStatus, MerchantInfo } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, formatApiDateTime } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
+import { DeliveryNoteDocumentComponent } from '../delivery-note-document/delivery-note-document.component';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { MessageService } from 'primeng/api';
@@ -14,7 +15,7 @@ import { ToastModule } from 'primeng/toast';
 @Component({
   selector: 'app-delivery-note-detail',
   standalone: true,
-  imports: [CommonModule, BackButtonComponent, ToastModule],
+  imports: [CommonModule, BackButtonComponent, DeliveryNoteDocumentComponent, ToastModule],
   providers: [MessageService],
   templateUrl: './delivery-note-detail.component.html',
   styleUrls: ['./delivery-note-detail.component.scss']
@@ -28,6 +29,10 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
   customers: Customer[] = [];
   merchantInfo: MerchantInfo | null = null;
   orderId: string | null = null;
+  poNumber = '';
+  attention = '';
+  contactPerson = '';
+  invoiceNumber = '';
   isLoading = true;
   isDownloading = false;
   isUpdatingStatus = false;
@@ -69,7 +74,7 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
       next: (note) => {
         this.note = note;
         this.isLoading = false;
-        if (note?.salesOrderId != null) this.loadOrderId(note.salesOrderId);
+        if (note?.salesOrderId != null) this.loadOrderContext(note.salesOrderId);
       },
       error: (err) => {
         console.error('Error loading delivery note:', err);
@@ -78,15 +83,32 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadOrderId(transactionId: number): void {
-    this.salesService.getOrderIdLookup().subscribe(lookup => {
+  /** Resolves the linked order's orderId (for display) and, via the order's own linked quote,
+   *  the delivery-note fields that have no backend column of their own (PO Number, Attention,
+   *  Our Contact Person — see DeliveryNoteMeta) plus the invoice number if one exists yet. */
+  private loadOrderContext(transactionId: number): void {
+    this.salesService.getOrderIdLookup().pipe(takeUntil(this.destroy$)).subscribe(lookup => {
       this.orderId = lookup.byTransactionId.get(transactionId) || null;
+    });
+    this.salesService.getSalesandTransactionsById(transactionId).pipe(takeUntil(this.destroy$)).subscribe(tx => {
+      if (!tx) return;
+      const quote = tx.quoteId as any;
+      const meta = this.salesService.getDeliveryNoteMeta(quote);
+      this.poNumber = meta.poNumber || '';
+      this.attention = meta.attention || '';
+      this.contactPerson = meta.contactPerson || '';
+      this.invoiceNumber = (tx.invoiceId as any)?.invoiceNumber || '';
     });
   }
 
   get customerName(): string {
     const customer = this.customers.find(c => c.id === this.note?.customerId);
     return customer?.name || 'Customer';
+  }
+
+  get customerPhone(): string {
+    const customer = this.customers.find(c => c.id === this.note?.customerId);
+    return customer?.phone || '';
   }
 
   canEdit(): boolean {

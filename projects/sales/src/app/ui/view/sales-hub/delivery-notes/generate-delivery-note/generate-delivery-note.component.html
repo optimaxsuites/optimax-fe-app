@@ -45,6 +45,11 @@
           <input type="file" accept="application/pdf,image/*" style="display:none;" (change)="onLpoFileSelected($event)">
         </label>
 
+        <div class="gdn-field" style="text-align:left;">
+          <label class="gdn-label">PO Number (from the LPO)</label>
+          <input type="text" class="gdn-input" [(ngModel)]="poNumberInput" placeholder="e.g. PR10821-104">
+        </div>
+
         <button type="button" class="gdn-btn gdn-btn--primary" style="width:100%;justify-content:center;"
                 [disabled]="!lpoFileName || isSavingLpo" (click)="submitLpo()">
           <i class="fas" [class.fa-arrow-right]="!isSavingLpo" [class.fa-spinner]="isSavingLpo" [class.fa-spin]="isSavingLpo"></i>
@@ -58,6 +63,22 @@
 
       <div class="gdn-tracking-card no-print">
         <div class="gdn-tracking-grid">
+          <div class="gdn-field">
+            <label class="gdn-label">PO Number</label>
+            <input type="text" class="gdn-input" [(ngModel)]="poNumber">
+          </div>
+          <div class="gdn-field">
+            <label class="gdn-label">Attention</label>
+            <input type="text" class="gdn-input" [(ngModel)]="attention">
+          </div>
+          <div class="gdn-field">
+            <label class="gdn-label">Our Contact Person</label>
+            <input type="text" class="gdn-input" [(ngModel)]="contactPerson">
+          </div>
+          <div class="gdn-field">
+            <label class="gdn-label">Date of Delivery</label>
+            <input type="date" class="gdn-input" [(ngModel)]="deliveryDate">
+          </div>
           <div class="gdn-field">
             <label class="gdn-label">Carrier</label>
             <input type="text" class="gdn-input" [(ngModel)]="carrier" placeholder="e.g. DHL, GIG Logistics">
@@ -74,58 +95,19 @@
       </div>
 
       <div class="gdn-finalize">
-        <div style="width:100%;max-width:640px;">
+        <div style="width:100%;max-width:800px;">
           <div class="gdn-doc-wrapper">
-            <div id="generate-dn-preview" class="gdn-doc-card">
-
-              <div class="gdn-doc-header">
-                <div class="gdn-doc-brand">
-                  <h3>{{ merchantInfo?.companyName || merchantInfo?.name || 'Your Company' }}</h3>
-                  <p *ngIf="merchantInfo?.address">{{ merchantInfo?.address }}</p>
-                  <p *ngIf="merchantInfo?.email || merchantInfo?.phone">{{ merchantInfo?.email }} <span *ngIf="merchantInfo?.phone"> | {{ merchantInfo?.phone }}</span></p>
-                </div>
-                <div class="gdn-doc-badge-wrap">
-                  <span class="gdn-doc-badge">DELIVERY NOTE</span>
-                  <div class="gdn-doc-number">{{ deliveryNote.deliveryNumber }}</div>
-                </div>
-              </div>
-
-              <div class="gdn-doc-meta">
-                <div><span>Date</span><strong>{{ formatDate(deliveryNote.createdAt || today) }}</strong></div>
-                <div><span>Carrier</span><strong>{{ carrier || '—' }}</strong></div>
-                <div><span>Tracking #</span><strong>{{ trackingNumber || '—' }}</strong></div>
-              </div>
-
-              <div class="gdn-doc-parties">
-                <div class="gdn-doc-party">
-                  <span class="gdn-doc-party-label">SHIP TO</span>
-                  <strong>{{ selectedCustomer?.name || 'Customer' }}</strong>
-                  <p>{{ deliveryNote.customerAddress }}</p>
-                  <p *ngIf="selectedCustomer?.phone">{{ selectedCustomer?.phone }}</p>
-                </div>
-              </div>
-
-              <div class="gdn-doc-section">
-                <table class="gdn-doc-table">
-                  <thead>
-                    <tr><th>Item</th><th class="text-center">Quantity</th><th>Unit</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let item of deliveryNote.items">
-                      <td>{{ item.productName || '—' }}</td>
-                      <td class="text-center">{{ item.quantity }}</td>
-                      <td>{{ item.unit }}</td>
-                    </tr>
-                    <tr *ngIf="!deliveryNote.items?.length"><td colspan="3" class="gdn-doc-empty">No items</td></tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="gdn-doc-footer">
-                <div class="gdn-doc-sign"><div class="gdn-sign-line"></div><span>Received By</span></div>
-                <div class="gdn-doc-sign"><div class="gdn-sign-line"></div><span>Dispatched By</span></div>
-              </div>
-            </div>
+            <app-delivery-note-document
+              elementId="generate-dn-preview"
+              [note]="previewNote"
+              [merchantInfo]="merchantInfo"
+              [customerName]="selectedCustomer?.name || ''"
+              [customerPhone]="selectedCustomer?.phone || ''"
+              [poNumber]="poNumber"
+              [attention]="attention"
+              [contactPerson]="contactPerson"
+              [deliveryDate]="deliveryDate">
+            </app-delivery-note-document>
           </div>
 
           <div class="gdn-finalize-actions no-print">

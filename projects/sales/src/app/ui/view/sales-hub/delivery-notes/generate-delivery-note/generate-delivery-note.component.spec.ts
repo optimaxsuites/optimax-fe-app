@@ -25,7 +25,8 @@ describe('GenerateDeliveryNoteComponent', () => {
   beforeEach(() => {
     salesService = jasmine.createSpyObj<SalesService>('SalesService', [
       'getQuoteById', 'getCustomers', 'getMyMerchantInfo', 'getQuoteDeliveryNoteMap',
-      'saveQuoteLpoDocument', 'getOrCreateDeliveryNoteForQuote', 'updateDeliveryNote'
+      'saveQuoteLpoDocument', 'getOrCreateDeliveryNoteForQuote', 'updateDeliveryNote',
+      'getDeliveryNoteMeta', 'saveDeliveryNoteMeta'
     ]);
     salesEmailService = jasmine.createSpyObj<SalesEmailService>('SalesEmailService', ['send']);
 
@@ -33,6 +34,8 @@ describe('GenerateDeliveryNoteComponent', () => {
     salesService.getCustomers.and.returnValue(of({ data: [{ id: 1, name: 'Acme Co', email: 'a@acme.com' }], total: 1 } as any));
     salesService.getMyMerchantInfo.and.returnValue(of({ id: 1, name: 'Merchant' } as any));
     salesService.getQuoteDeliveryNoteMap.and.returnValue(of(new Map()));
+    salesService.getDeliveryNoteMeta.and.returnValue({});
+    salesService.saveDeliveryNoteMeta.and.returnValue(of(quote()));
 
     component = new GenerateDeliveryNoteComponent(
       activatedRoute(),

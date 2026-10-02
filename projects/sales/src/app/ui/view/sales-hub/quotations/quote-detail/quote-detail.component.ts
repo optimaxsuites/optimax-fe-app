@@ -103,16 +103,22 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
     return this.quote?.status === 'SENT';
   }
 
+  /** Same ACCEPTED-or-CONVERTED treatment canDeleteQuote() already uses — see
+   *  QuoteListComponent.isConvertedOrAccepted() for why. */
+  private isConvertedOrAccepted(): boolean {
+    return this.quote?.status === 'CONVERTED' || this.quote?.status === 'ACCEPTED';
+  }
+
   canGenerateDeliveryNote(): boolean {
-    return this.quote?.status === 'CONVERTED' && !this.deliveryNote;
+    return this.isConvertedOrAccepted() && !this.deliveryNote;
   }
 
   canUploadSignedDeliveryNote(): boolean {
-    return this.quote?.status === 'CONVERTED' && !!this.deliveryNote && !this.salesService.hasSignedDeliveryNoteDocument(this.quote);
+    return this.isConvertedOrAccepted() && !!this.deliveryNote && !this.salesService.hasSignedDeliveryNoteDocument(this.quote);
   }
 
   canCreateInvoice(): boolean {
-    return this.quote?.status === 'CONVERTED' && this.salesService.hasSignedDeliveryNoteDocument(this.quote);
+    return this.isConvertedOrAccepted() && this.salesService.hasSignedDeliveryNoteDocument(this.quote);
   }
 
   goToGenerateDeliveryNote(): void {

@@ -27,59 +27,18 @@
   <div *ngIf="isLoading" class="dnd-loading no-print"><div class="spinner"></div><p>Loading...</p></div>
 
   <div class="dnd-doc-wrapper" *ngIf="!isLoading && note">
-    <div id="delivery-note-detail-sheet" class="dnd-doc-card">
-
-      <div class="dnd-doc-header">
-        <div class="dnd-doc-brand">
-          <h2>{{ merchantInfo?.companyName || merchantInfo?.name }}</h2>
-          <p *ngIf="merchantInfo?.address">{{ merchantInfo?.address }}</p>
-          <p *ngIf="merchantInfo?.email || merchantInfo?.phone">{{ merchantInfo?.email }} <span *ngIf="merchantInfo?.phone"> | {{ merchantInfo?.phone }}</span></p>
-        </div>
-        <div class="dnd-doc-meta">
-          <div class="dnd-doc-badge">DELIVERY NOTE</div>
-          <div class="meta-row"><span>Number:</span><strong>{{ note.deliveryNumber }}</strong></div>
-          <div class="meta-row" *ngIf="orderId"><span>Order #:</span><strong>{{ orderId }}</strong></div>
-        </div>
-      </div>
-
-      <div class="dnd-divider"></div>
-
-      <div class="dnd-parties-grid">
-        <div class="dnd-party-card">
-          <h4>Ship To</h4>
-          <strong>{{ customerName }}</strong>
-          <p>{{ note.customerAddress }}</p>
-        </div>
-        <div class="dnd-party-card">
-          <h4>Shipping Details</h4>
-          <div class="info-line"><span>Carrier:</span><strong>{{ note.carrier || 'Not yet assigned' }}</strong></div>
-          <div class="info-line"><span>Tracking:</span><strong>{{ note.trackingNumber || '—' }}</strong></div>
-        </div>
-      </div>
-
-      <div class="dnd-items-wrapper" *ngIf="note.items && note.items.length > 0">
-        <table class="dnd-table">
-          <thead><tr><th>#</th><th>Item</th><th class="text-center">Quantity</th><th>Unit</th></tr></thead>
-          <tbody>
-            <tr *ngFor="let item of note.items; let i = index">
-              <td>{{ i + 1 }}</td>
-              <td><strong>{{ item.productName }}</strong></td>
-              <td class="text-center">{{ item.quantity }}</td>
-              <td>{{ item.unit }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="dnd-footer">
-        <div class="dnd-sign">
-          <div class="line">{{ note.signature }}</div>
-          <span>Received By</span>
-        </div>
-        <div class="dnd-sign"><div class="line"></div><span>Dispatched By</span></div>
-        <div class="dnd-footer-copy"><p>Issued {{ formatDateTime(note.createdAt) }}</p></div>
-      </div>
-    </div>
+    <app-delivery-note-document
+      elementId="delivery-note-detail-sheet"
+      [note]="note"
+      [merchantInfo]="merchantInfo"
+      [customerName]="customerName"
+      [customerPhone]="customerPhone"
+      [poNumber]="poNumber"
+      [attention]="attention"
+      [contactPerson]="contactPerson"
+      [invoiceNumber]="invoiceNumber"
+      [deliveryDate]="note.dispatchedAt || note.createdAt">
+    </app-delivery-note-document>
   </div>
 
   <div class="dnd-error" *ngIf="!isLoading && !note">

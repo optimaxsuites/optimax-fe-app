@@ -23,6 +23,7 @@ import {
   AdditionalInvoiceOptions,
   AdditionalQuoteOptions,
   QuoteDocumentAttachment,
+  DeliveryNoteMeta,
   SalesandTransactions,
   SaleLifecycleStatus,
   MeasurementUnit,
@@ -291,7 +292,7 @@ export class SalesService {
     return Array.isArray(quote.additionalOptions) ? quote.additionalOptions[0] : (quote.additionalOptions as any);
   }
 
-  private saveQuoteDocument(quoteId: string | number, field: 'lpoDocument' | 'signedDeliveryNoteDocument', doc: QuoteDocumentAttachment): Observable<Quote> {
+  private patchAdditionalOptions(quoteId: string | number, patch: Partial<AdditionalQuoteOptions>): Observable<Quote> {
     return this.getQuoteById(quoteId).pipe(
       switchMap(quote => {
         const existing = this.firstAdditionalOptions(quote) || {} as AdditionalQuoteOptions;
@@ -305,7 +306,8 @@ export class SalesService {
           terms: existing.terms || '',
           lpoDocument: existing.lpoDocument,
           signedDeliveryNoteDocument: existing.signedDeliveryNoteDocument,
-          [field]: doc
+          deliveryNoteMeta: existing.deliveryNoteMeta,
+          ...patch
         };
         return this.updateQuote(quoteId, { additionalOptions: [addOpts] });
       })
@@ -313,11 +315,19 @@ export class SalesService {
   }
 
   saveQuoteLpoDocument(quoteId: string | number, doc: QuoteDocumentAttachment): Observable<Quote> {
-    return this.saveQuoteDocument(quoteId, 'lpoDocument', doc);
+    return this.patchAdditionalOptions(quoteId, { lpoDocument: doc });
   }
 
   saveSignedDeliveryNoteDocument(quoteId: string | number, doc: QuoteDocumentAttachment): Observable<Quote> {
-    return this.saveQuoteDocument(quoteId, 'signedDeliveryNoteDocument', doc);
+    return this.patchAdditionalOptions(quoteId, { signedDeliveryNoteDocument: doc });
+  }
+
+  getDeliveryNoteMeta(quote: Quote | null | undefined): DeliveryNoteMeta {
+    return this.firstAdditionalOptions(quote)?.deliveryNoteMeta || {};
+  }
+
+  saveDeliveryNoteMeta(quoteId: string | number, meta: DeliveryNoteMeta): Observable<Quote> {
+    return this.patchAdditionalOptions(quoteId, { deliveryNoteMeta: meta });
   }
 
   // ============================================
