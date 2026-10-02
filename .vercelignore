@@ -1,0 +1,7 @@
+.git
+.angular
+.gitlab
+.claude
+dist
+*.md
+electron.js

@@ -1,6 +1,9 @@
 {
   "name": "erp-fe",
   "version": "0.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -9,7 +12,7 @@
     "test": "ng test",
     "electron": "ng build --configuration=production && electron .",
     "package": "electron-packager . MyPOSApp --platform=win32 --arch=x64 --out=dist/erp-fe/browser/index.html",
-    "build:prod": "ng build --configuration production",
+    "build:prod": "node --max-old-space-size=4096 node_modules/@angular/cli/bin/ng build --configuration production",
     "pullHr": "git subtree pull --prefix=projects/hr https://gitlab.com/Simeon0001/erp-hr.git master --squash",
     "pushHr": "git subtree push --prefix=projects/hr https://gitlab.com/Simeon0001/erp-hr.git master",
     "pullDashboard": "git subtree pull --prefix=projects/dashboard https://gitlab.com/queensheba/erp-dashboard.git master --squash",
