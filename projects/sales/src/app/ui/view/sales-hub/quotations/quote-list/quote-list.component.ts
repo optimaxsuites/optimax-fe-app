@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil, forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Quote, QuoteStatus } from '../../../../domain/sales/sales.dto';
+import { Quote, QuoteStatus, DeliveryNote, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
@@ -33,6 +33,9 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   customers: any[] = [];
   isLoading = true;
   selectedQuoteIds: any[] = [];
+
+  orderIdByQuoteId = new Map<number, string>();
+  deliveryNoteByQuoteId = new Map<number, DeliveryNote>();
 
   openNewQuoteModal(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
@@ -63,11 +66,106 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     }
   }
 
+  getOrderId(quote: Quote): string {
+    return this.orderIdByQuoteId.get(quote.id) || '—';
+  }
+
+  canGenerateDeliveryNote(quote: Quote): boolean {
+    return quote.status === 'CONVERTED' && !this.deliveryNoteByQuoteId.has(quote.id);
+  }
+
+  canUploadSignedDeliveryNote(quote: Quote): boolean {
+    return quote.status === 'CONVERTED' && this.deliveryNoteByQuoteId.has(quote.id) && !this.salesService.hasSignedDeliveryNoteDocument(quote);
+  }
+
+  canCreateInvoice(quote: Quote): boolean {
+    return quote.status === 'CONVERTED' && this.salesService.hasSignedDeliveryNoteDocument(quote);
+  }
+
+  /** "Conversion" — replaces the old shortcut that went from SENT straight to invoice creation,
+   *  skipping the LPO/delivery-note steps the new flow requires in between. */
+  convertQuote(quote: Quote): void {
+    this.salesService.convertQuote(quote).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Converted', detail: `Quote ${quote.quoteNumber} converted to an order.` });
+        this.loadQuotes();
+      },
+      error: (err: any) => {
+        console.error('Error converting quote:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to convert quote. Please try again.' });
+      }
+    });
+  }
+
+  goToGenerateDeliveryNote(quote: Quote): void {
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/delivery-notes/generate', uuid] : ['/admin/sales/delivery-notes/generate'];
+    this.router.navigate(path, { queryParams: { quoteId: String(quote.id) } });
+  }
+
   openInvoiceModal(quoteId: string | number): void {
     const quoteIdStr = String(quoteId);
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
     this.router.navigate(path, { queryParams: { quoteId: quoteIdStr } });
+  }
+
+  // ============================================================
+  // SIGNED DELIVERY NOTE RE-UPLOAD
+  // ============================================================
+
+  showSignedDeliveryNoteModal = false;
+  signedDeliveryNoteFileName = '';
+  pendingSignedDeliveryNoteQuote: Quote | null = null;
+  private signedDeliveryNoteFile: QuoteDocumentAttachment | null = null;
+  isSavingSignedDeliveryNote = false;
+
+  openSignedDeliveryNoteModal(quote: Quote): void {
+    this.pendingSignedDeliveryNoteQuote = quote;
+    this.signedDeliveryNoteFileName = '';
+    this.signedDeliveryNoteFile = null;
+    this.showSignedDeliveryNoteModal = true;
+  }
+
+  closeSignedDeliveryNoteModal(): void {
+    this.showSignedDeliveryNoteModal = false;
+    this.pendingSignedDeliveryNoteQuote = null;
+  }
+
+  onSignedDeliveryNoteFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    this.signedDeliveryNoteFileName = file.name;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      this.signedDeliveryNoteFile = {
+        fileName: file.name,
+        base64Content: dataUrl.split(',')[1] || '',
+        contentType: file.type || 'application/pdf',
+        uploadedAt: new Date()
+      };
+    };
+    reader.readAsDataURL(file);
+  }
+
+  submitSignedDeliveryNote(): void {
+    if (!this.pendingSignedDeliveryNoteQuote || !this.signedDeliveryNoteFile || this.isSavingSignedDeliveryNote) return;
+    this.isSavingSignedDeliveryNote = true;
+    this.salesService.saveSignedDeliveryNoteDocument(this.pendingSignedDeliveryNoteQuote.id, this.signedDeliveryNoteFile).subscribe({
+      next: () => {
+        this.isSavingSignedDeliveryNote = false;
+        this.showSignedDeliveryNoteModal = false;
+        this.pendingSignedDeliveryNoteQuote = null;
+        this.messageService.add({ severity: 'success', summary: 'Uploaded', detail: 'Signed delivery note uploaded — you can now create the invoice.' });
+        this.loadQuotes();
+      },
+      error: (err) => {
+        console.error('Error uploading signed delivery note:', err);
+        this.isSavingSignedDeliveryNote = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to upload signed delivery note. Please try again.' });
+      }
+    });
   }
 
   duplicateQuote(quote: Quote): void {
@@ -138,13 +236,17 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     forkJoin({
       quotes: this.salesService.getQuotes(this.filters),
-      customers: this.salesService.getCustomers({ page: 0, size: 200 })
+      customers: this.salesService.getCustomers({ page: 0, size: 200 }),
+      orderIdLookup: this.salesService.getOrderIdLookup(),
+      deliveryNoteMap: this.salesService.getQuoteDeliveryNoteMap()
     }).subscribe({
-      next: ({ quotes, customers }: any) => {
+      next: ({ quotes, customers, orderIdLookup, deliveryNoteMap }: any) => {
         this.customers = customers.data;
         this.quotes = quotes.data;
         this.totalElements = quotes.total;
         this.totalPages = Math.ceil(quotes.total / this.filters.size);
+        this.orderIdByQuoteId = orderIdLookup.byQuoteId;
+        this.deliveryNoteByQuoteId = deliveryNoteMap;
         this.calculateStats();
         this.isLoading = false;
       },

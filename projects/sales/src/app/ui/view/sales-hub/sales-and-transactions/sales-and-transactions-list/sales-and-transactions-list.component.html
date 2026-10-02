@@ -242,12 +242,6 @@
                         [title]="canViewReceipt(tx) ? 'Receipt' : 'No payment recorded yet'">
                   <i class="fas fa-receipt"></i>
                 </button>
-                <button type="button" class="il-action-btn il-action-btn--delivery"
-                        [disabled]="!canGenerateDeliveryNote(tx)"
-                        (click)="canGenerateDeliveryNote(tx) && openDeliveryNoteModal(tx, $event)"
-                        [title]="canGenerateDeliveryNote(tx) ? 'Generate Delivery Note' : 'Available once the invoice has been sent'">
-                  <i class="fas fa-truck-fast"></i> Delivery Note
-                </button>
               </div>
             </td>
 

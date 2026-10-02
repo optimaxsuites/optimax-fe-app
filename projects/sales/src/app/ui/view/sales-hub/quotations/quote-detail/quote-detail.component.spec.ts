@@ -18,8 +18,14 @@ describe('QuoteDetailComponent', () => {
   } as any);
 
   beforeEach(() => {
-    salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getQuoteById', 'updateQuote']);
+    salesService = jasmine.createSpyObj<SalesService>('SalesService', [
+      'getQuoteById', 'updateQuote', 'getOrderIdLookup', 'getQuoteDeliveryNoteMap',
+      'hasSignedDeliveryNoteDocument', 'convertQuote', 'saveSignedDeliveryNoteDocument'
+    ]);
     salesService.getQuoteById.and.returnValue(of(null));
+    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map() }));
+    salesService.getQuoteDeliveryNoteMap.and.returnValue(of(new Map()));
+    salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
     component = new QuoteDetailComponent(
       { add: jasmine.createSpy('add') } as any,
       activatedRoute(),
@@ -67,6 +73,42 @@ describe('QuoteDetailComponent', () => {
       component.confirmDeleteQuote();
 
       expect(salesService.updateQuote).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Generate Delivery Note / Upload Signed Delivery Note / Create Invoice progression', () => {
+    it('only offers Generate Delivery Note once CONVERTED and no note exists yet', () => {
+      component.quote = quote({ status: 'SENT' as QuoteStatus });
+      expect(component.canGenerateDeliveryNote()).toBeFalse();
+
+      component.quote = quote({ status: 'CONVERTED' as QuoteStatus });
+      component.deliveryNote = null;
+      expect(component.canGenerateDeliveryNote()).toBeTrue();
+
+      component.deliveryNote = { id: 1 } as any;
+      expect(component.canGenerateDeliveryNote()).toBeFalse();
+    });
+
+    it('only offers Upload Signed Delivery Note once a note exists and no signed copy is uploaded yet', () => {
+      component.quote = quote({ status: 'CONVERTED' as QuoteStatus });
+      component.deliveryNote = null;
+      expect(component.canUploadSignedDeliveryNote()).toBeFalse();
+
+      component.deliveryNote = { id: 1 } as any;
+      salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
+      expect(component.canUploadSignedDeliveryNote()).toBeTrue();
+
+      salesService.hasSignedDeliveryNoteDocument.and.returnValue(true);
+      expect(component.canUploadSignedDeliveryNote()).toBeFalse();
+    });
+
+    it('only offers Create Invoice once the signed delivery note has been uploaded', () => {
+      component.quote = quote({ status: 'CONVERTED' as QuoteStatus });
+      salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
+      expect(component.canCreateInvoice()).toBeFalse();
+
+      salesService.hasSignedDeliveryNoteDocument.and.returnValue(true);
+      expect(component.canCreateInvoice()).toBeTrue();
     });
   });
 

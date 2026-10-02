@@ -34,6 +34,8 @@
     <div class="action-bar glass">
       <div class="action-bar-left">
         <div class="meta-info">
+          <span *ngIf="orderId"><i class="fas fa-hashtag"></i> Order: {{ orderId }}</span>
+          <span class="meta-divider" *ngIf="orderId"></span>
           <span><i class="fas fa-calendar-alt"></i> Created: {{ formatDate(getQuoteDate()) }}</span>
           <span class="meta-divider"></span>
           <span><i class="fas fa-clock"></i> Valid Until: {{ formatDate(getQuoteValidUntil()) }}</span>
@@ -48,6 +50,15 @@
         </button>
         <button *ngIf="quote.status === 'SENT'" (click)="declineQuote()" class="btn-action decline">
           <i class="fas fa-times-circle"></i> Customer Declined
+        </button>
+        <button *ngIf="canGenerateDeliveryNote()" (click)="goToGenerateDeliveryNote()" class="btn-action accept">
+          <i class="fas fa-truck"></i> Generate Delivery Note
+        </button>
+        <button *ngIf="canUploadSignedDeliveryNote()" (click)="openSignedDeliveryNoteModal()" class="btn-action accept">
+          <i class="fas fa-file-signature"></i> Upload Signed Delivery Note
+        </button>
+        <button *ngIf="canCreateInvoice()" (click)="goToCreateInvoice()" class="btn-action accept">
+          <i class="fas fa-file-invoice-dollar"></i> Create Invoice
         </button>
         <button (click)="downloadPDF()" class="btn-action download" [disabled]="isDownloading">
           <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"></i>
@@ -342,6 +353,15 @@
               <button *ngIf="quote.status === 'SENT'" (click)="declineQuote()" class="btn-action-mobile decline">
                 <i class="fas fa-times-circle"></i> Customer Declined
               </button>
+              <button *ngIf="canGenerateDeliveryNote()" (click)="goToGenerateDeliveryNote()" class="btn-action-mobile accept">
+                <i class="fas fa-truck"></i> Generate Delivery Note
+              </button>
+              <button *ngIf="canUploadSignedDeliveryNote()" (click)="openSignedDeliveryNoteModal()" class="btn-action-mobile accept">
+                <i class="fas fa-file-signature"></i> Upload Signed Delivery Note
+              </button>
+              <button *ngIf="canCreateInvoice()" (click)="goToCreateInvoice()" class="btn-action-mobile accept">
+                <i class="fas fa-file-invoice-dollar"></i> Create Invoice
+              </button>
               <button *ngIf="quote.status === 'DRAFT'" (click)="editQuote()" class="btn-action-mobile edit">
                 <i class="fas fa-pencil-alt"></i> Edit
               </button>
@@ -425,6 +445,40 @@
       <button type="button" class="btn-modal-cancel" (click)="showAcceptQuoteModal = false">Cancel</button>
       <button type="button" class="btn-modal-save" (click)="confirmAcceptQuote()">
         <i class="fas fa-check-circle"></i> Accept &amp; Create Order
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Signed Delivery Note Modal Overlay -->
+<div class="custom-modal-backdrop" *ngIf="showSignedDeliveryNoteModal" (click)="closeSignedDeliveryNoteModal()">
+  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge" style="background: rgba(46, 178, 112, 0.12); color: #2EB270;">
+          <i class="fas fa-file-signature"></i>
+        </div>
+        <h3>Upload Signed Delivery Note</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="closeSignedDeliveryNoteModal()">&times;</button>
+    </div>
+
+    <div class="custom-modal-body" style="padding: 1.5rem;">
+      <p style="margin: 0 0 1rem 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
+        Upload the delivery note once it's been physically signed by the recipient. This is required before an invoice can be created for this quote.
+      </p>
+      <label style="display: flex; flex-direction: column; gap: 0.5rem; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 1.25rem; text-align: center; cursor: pointer;">
+        <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; color: #94a3b8;"></i>
+        <span style="font-size: 0.9rem; color: #475569;">{{ signedDeliveryNoteFileName || 'Click to choose a file (PDF or image)' }}</span>
+        <input type="file" accept="application/pdf,image/*" style="display: none;" (change)="onSignedDeliveryNoteFileSelected($event)">
+      </label>
+    </div>
+
+    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
+      <button type="button" class="btn-modal-cancel" (click)="closeSignedDeliveryNoteModal()">Cancel</button>
+      <button type="button" class="btn-modal-save" [disabled]="!signedDeliveryNoteFileName || isSavingSignedDeliveryNote" (click)="submitSignedDeliveryNote()">
+        <i class="fas" [class.fa-check-circle]="!isSavingSignedDeliveryNote" [class.fa-spinner]="isSavingSignedDeliveryNote" [class.fa-spin]="isSavingSignedDeliveryNote"></i>
+        {{ isSavingSignedDeliveryNote ? 'Uploading...' : 'Upload' }}
       </button>
     </div>
   </div>

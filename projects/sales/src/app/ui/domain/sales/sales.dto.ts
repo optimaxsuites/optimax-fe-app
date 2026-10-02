@@ -175,6 +175,16 @@ export interface QuoteAttachments {
   type?: string;
 }
 
+/** A file captured client-side as a base64 data blob and stored directly on the quote's own
+ *  additionalOptions — there's no dedicated document-storage backend yet, so this reuses the one
+ *  real, already-working persistence path (PUT /quotes/{id}) instead of a new unbuilt endpoint. */
+export interface QuoteDocumentAttachment {
+  fileName: string;
+  base64Content: string;
+  contentType: string;
+  uploadedAt: Date | string;
+}
+
 export interface AdditionalQuoteOptions {
   signatureText: string;
   attachments: QuoteAttachments[];
@@ -182,7 +192,12 @@ export interface AdditionalQuoteOptions {
   address: string;
   phone: string;
   notes: string;
-  terms: string
+  terms: string;
+  /** The customer's Local Purchase Order — required before a delivery note can be generated. */
+  lpoDocument?: QuoteDocumentAttachment;
+  /** The delivery note, re-uploaded once physically signed by the recipient — required before
+   *  an invoice can be created for this quote. */
+  signedDeliveryNoteDocument?: QuoteDocumentAttachment;
 }
 
 
@@ -419,7 +434,7 @@ export interface DeliveryNote {
 // call quote-form/invoice-form used before this endpoint existed.
 // ------------------------------------------------------------------
 
-export type SalesEmailDocumentType = 'QUOTE' | 'INVOICE';
+export type SalesEmailDocumentType = 'QUOTE' | 'INVOICE' | 'DELIVERY_NOTE';
 
 export type SalesEmailStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
 

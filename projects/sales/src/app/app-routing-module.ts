@@ -21,6 +21,7 @@ import { InvoiceFormComponent } from './ui/view/sales-hub/invoices/invoice-form/
 import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-detail/invoice-detail.component';
 import { DeliveryNoteFormComponent } from './ui/view/sales-hub/delivery-notes/delivery-note-form/delivery-note-form.component';
 import { DeliveryNoteDetailComponent } from './ui/view/sales-hub/delivery-notes/delivery-note-detail/delivery-note-detail.component';
+import { GenerateDeliveryNoteComponent } from './ui/view/sales-hub/delivery-notes/generate-delivery-note/generate-delivery-note.component';
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
 import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/customer-form/customer-form.component';
 import { CustomerDetailComponent } from './ui/view/sales-hub/customer-management/customer-detail/customer-detail.component';
@@ -342,6 +343,14 @@ export const routes: Routes = [
   {
     path: 'delivery-notes/:id/edit/:uuid',
     component: DeliveryNoteFormComponent
+  },
+  {
+    path: 'delivery-notes/generate',
+    component: GenerateDeliveryNoteComponent
+  },
+  {
+    path: 'delivery-notes/generate/:uuid',
+    component: GenerateDeliveryNoteComponent
   },
   {
     path: 'delivery-notes/:id',

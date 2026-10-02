@@ -13,9 +13,15 @@ describe('QuoteListComponent', () => {
   } as Quote);
 
   beforeEach(() => {
-    salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getQuotes', 'getCustomers', 'deleteQuote']);
+    salesService = jasmine.createSpyObj<SalesService>('SalesService', [
+      'getQuotes', 'getCustomers', 'deleteQuote', 'getOrderIdLookup', 'getQuoteDeliveryNoteMap',
+      'hasSignedDeliveryNoteDocument', 'convertQuote', 'saveSignedDeliveryNoteDocument'
+    ]);
     salesService.getQuotes.and.returnValue(of({ data: [], total: 0 } as any));
     salesService.getCustomers.and.returnValue(of({ data: [], total: 0 } as any));
+    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map() }));
+    salesService.getQuoteDeliveryNoteMap.and.returnValue(of(new Map()));
+    salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
     component = new QuoteListComponent(
       { add: jasmine.createSpy('add') } as any,
       salesService,
@@ -72,6 +78,26 @@ describe('QuoteListComponent', () => {
       component.confirmDeleteQuote();
 
       expect(salesService.deleteQuote).toHaveBeenCalledWith('3');
+    });
+  });
+
+  describe('Generate Delivery Note / Upload Signed Delivery Note / Create Invoice progression', () => {
+    it('only offers Generate Delivery Note once CONVERTED and no note exists yet', () => {
+      const q = quote({ id: 9, status: 'CONVERTED' as QuoteStatus });
+      component.deliveryNoteByQuoteId = new Map();
+      expect(component.canGenerateDeliveryNote(q)).toBeTrue();
+
+      component.deliveryNoteByQuoteId = new Map([[9, { id: 1 } as any]]);
+      expect(component.canGenerateDeliveryNote(q)).toBeFalse();
+    });
+
+    it('only offers Create Invoice once the signed delivery note has been uploaded', () => {
+      const q = quote({ id: 9, status: 'CONVERTED' as QuoteStatus });
+      salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
+      expect(component.canCreateInvoice(q)).toBeFalse();
+
+      salesService.hasSignedDeliveryNoteDocument.and.returnValue(true);
+      expect(component.canCreateInvoice(q)).toBeTrue();
     });
   });
 

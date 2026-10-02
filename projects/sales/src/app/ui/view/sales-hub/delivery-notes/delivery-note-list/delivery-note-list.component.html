@@ -46,11 +46,6 @@
         <h1 class="dnl-title">Delivery Notes</h1>
         <span class="dnl-total-badge">{{ stats.total }}</span>
       </div>
-      <div class="dnl-top-bar-right">
-        <button type="button" class="dnl-btn dnl-btn--primary" (click)="openNewDeliveryNote()">
-          <i class="fas fa-plus"></i> New Delivery Note
-        </button>
-      </div>
     </div>
 
     <!-- AI Insight Banner -->
@@ -71,6 +66,7 @@
         <thead>
           <tr>
             <th>Reference</th>
+            <th>Order #</th>
             <th>Client</th>
             <th>Items</th>
             <th>Date</th>
@@ -82,21 +78,18 @@
         <!-- Loading skeleton -->
         <tbody *ngIf="isLoading">
           <tr class="dnl-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
-            <td colspan="6"><div class="dnl-skeleton-bar"></div></td>
+            <td colspan="7"><div class="dnl-skeleton-bar"></div></td>
           </tr>
         </tbody>
 
         <!-- Empty state -->
         <tbody *ngIf="!isLoading && filteredRows.length === 0">
           <tr>
-            <td colspan="6">
+            <td colspan="7">
               <div class="dnl-empty">
                 <i class="fas fa-truck-fast dnl-empty-icon"></i>
                 <p class="dnl-empty-title">No delivery notes found</p>
-                <p class="dnl-empty-sub">Try adjusting your filters or create a new delivery note</p>
-                <button type="button" class="dnl-btn dnl-btn--primary" (click)="openNewDeliveryNote()">
-                  <i class="fas fa-plus"></i> New Delivery Note
-                </button>
+                <p class="dnl-empty-sub">Delivery notes are generated from a converted quote, once its LPO has been received.</p>
               </div>
             </td>
           </tr>
@@ -109,6 +102,7 @@
               <button type="button" class="dnl-link" [disabled]="row.kind === 'pending'"
                       (click)="row.kind === 'note' ? viewDeliveryNote(row) : null">{{ row.displayNumber }}</button>
             </td>
+            <td class="dnl-td-num">{{ row.orderId }}</td>
             <td class="dnl-td-client">{{ row.customerName }}</td>
             <td>{{ row.itemCount }}</td>
             <td class="dnl-td-date">{{ formatDate(row.date) }}</td>
@@ -120,8 +114,8 @@
             <td class="dnl-td-actions">
               <div class="dnl-row-actions">
                 <button type="button" class="dnl-action-btn dnl-action-btn--create" *ngIf="row.kind === 'pending'"
-                        (click)="createFromOrder(row)" title="Create Delivery Note">
-                  <i class="fas fa-plus"></i> Create
+                        (click)="generateFromQuote(row)" title="Generate Delivery Note">
+                  <i class="fas fa-plus"></i> Generate
                 </button>
                 <ng-container *ngIf="row.kind === 'note'">
                   <button type="button" class="dnl-action-btn" (click)="viewDeliveryNote(row)" title="View">
