@@ -1,0 +1,129 @@
+.dnx-sheet {
+  background: #ffffff;
+  color: #000000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  padding: 28px;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.dnx-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.dnx-sender-box {
+  border: 1px solid #000;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-style: italic;
+  max-width: 320px;
+
+  strong {
+    display: block;
+    font-style: normal;
+    margin-bottom: 2px;
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.3;
+  }
+}
+
+.dnx-logo {
+  max-height: 70px;
+  max-width: 160px;
+  object-fit: contain;
+}
+
+.dnx-title {
+  text-align: center;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin: 0 0 18px;
+}
+
+.dnx-meta-table, .dnx-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 18px;
+}
+
+.dnx-meta-table td {
+  border: 1px solid #000;
+  padding: 6px 8px;
+  vertical-align: top;
+  font-size: 12px;
+}
+
+.dnx-label {
+  width: 16%;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.dnx-value {
+  width: 34%;
+}
+
+.dnx-items-table th, .dnx-items-table td {
+  border: 1px solid #000;
+  padding: 6px 8px;
+  font-size: 12px;
+  text-align: left;
+}
+
+.dnx-items-table th {
+  background: #f0f0f0;
+  font-weight: 700;
+  text-align: left;
+}
+
+.dnx-items-desc {
+  width: 45%;
+}
+
+.dnx-center {
+  text-align: center;
+}
+
+.dnx-empty {
+  text-align: center;
+  color: #666;
+  padding: 16px;
+}
+
+.dnx-goods-bar {
+  background: #d9d9d9;
+  border: 1px solid #000;
+  font-weight: 700;
+  padding: 6px 10px;
+  font-size: 12px;
+  margin-bottom: 20px;
+}
+
+.dnx-goods-sign {
+  display: flex;
+  gap: 28px;
+  font-size: 12px;
+  flex-wrap: wrap;
+
+  .dnx-line {
+    display: inline-block;
+    width: 160px;
+    border-bottom: 1px solid #000;
+    height: 14px;
+    margin-left: 4px;
+  }
+}
+
+@media print {
+  .dnx-sheet {
+    padding: 0;
+  }
+}

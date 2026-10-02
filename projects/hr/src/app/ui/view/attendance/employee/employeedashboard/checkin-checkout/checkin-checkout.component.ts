@@ -92,14 +92,7 @@ export class CheckinCheckoutComponent implements OnInit, OnDestroy {
               }
             });
 
-          // Load from localStorage (mock data)
-          const stored = JSON.parse(localStorage.getItem('attendanceTestData') || '[]');
-          if (stored.length > 0) {
-            this.attendancetableService.refreshFromLocalStorage(stored);
-          } else {
-            // Only fetch from API if no mock data
-            this.attendancetableService.fetchByEmployee(String(employeeId));
-          }
+          this.attendancetableService.fetchByEmployee(String(employeeId));
           this.attendancetableService.updateEmployeeIdentity(String(employeeId), this.hrEmployeeName, this.hrDepartment);
         },
         error: () => {

@@ -1,11 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { WorkShiftDTO, ShiftApiDTO } from '../../domain/workschedule-shift/shift.dto';
 import { LocalTimeDTO, PagedResponse } from '../../domain/attendance/attendance-event.dto';
-import { MOCK_SHIFTS } from '../../domain/workschedule-shift/mockshifts';
-import { getAppConfig } from '../../../config/app-config';
 import { environment } from '../../shared-component/environments/environment.prod';
 
 @Injectable({
@@ -18,12 +16,7 @@ export class ShiftserviceService {
   shifts$ = this.shiftsSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    const config = getAppConfig();
-    if (config.features.useMockShiftData) {
-      this.shiftsSubject.next(MOCK_SHIFTS);
-    } else {
-      this.refresh();
-    }
+    this.refresh();
   }
 
   /** GET /shifts — refreshes the local cache from the backend. */
@@ -46,16 +39,15 @@ export class ShiftserviceService {
   }
 
   /** POST /shifts */
-  addShift(shift: WorkShiftDTO): void {
-    this.http.post<ShiftApiDTO>(this.BASE, this.toApiBody(shift, 0)).pipe(
+  addShift(shift: WorkShiftDTO): Observable<WorkShiftDTO> {
+    return this.http.post<ShiftApiDTO>(this.BASE, this.toApiBody(shift, 0)).pipe(
       map(dto => this.toUiModel(dto)),
+      tap(created => this.shiftsSubject.next([...this.shiftsSubject.value, created])),
       catchError(error => {
         console.error('Failed to create shift:', error);
-        throw error;
+        return throwError(() => error);
       })
-    ).subscribe(created => {
-      this.shiftsSubject.next([...this.shiftsSubject.value, created]);
-    });
+    );
   }
 
   /** PUT /shifts/{id} */

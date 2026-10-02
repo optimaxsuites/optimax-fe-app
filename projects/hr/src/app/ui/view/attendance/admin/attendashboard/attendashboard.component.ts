@@ -4,7 +4,6 @@ import { AttendanceTableRecord } from '../../../../domain/attendance/attendancet
 import { CorrectionRequest } from '../../../../domain/attendance/correctionrequest.dto';
 import {
   AttendanceSummaryDTO,
-  LateArrivalDTO,
   AbsentEmployeeDTO
 } from '../../../../domain/attendance/attendance-summary.dto';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
@@ -30,11 +29,7 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
 
   // Live dashboard data (from the attendance/* "today" endpoints)
   todayStats: AttendanceSummaryDTO | null = null;
-  lateArrivals: LateArrivalDTO[] = [];
   absentees: AbsentEmployeeDTO[] = [];
-
-  markingAttendance = false;
-  markAttendanceMessage: string | null = null;
 
   pendingCorrectionsCount = 0;
   pendingCorrectionRequests: CorrectionRequest[] = [];
@@ -121,32 +116,9 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
       .pipe(takeUntil(this.destroy$))
       .subscribe(stats => this.todayStats = stats);
 
-    this.attendashboardService.getLateArrivals()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(lateArrivals => this.lateArrivals = lateArrivals);
-
     this.attendashboardService.getAbsentees()
       .pipe(takeUntil(this.destroy$))
       .subscribe(absentees => this.absentees = absentees);
-  }
-
-  markAttendance(): void {
-    this.markingAttendance = true;
-    this.markAttendanceMessage = null;
-
-    this.attendashboardService.markAttendance()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(result => {
-        this.markingAttendance = false;
-        this.markAttendanceMessage = result
-          ? (result.message || `Marked ${result.count} record(s)`)
-          : 'Failed to mark attendance';
-
-        if (result?.success) {
-          this.loadDashboardData();
-          this.attendanceService.fetchAllRecords();
-        }
-      });
   }
 
   ngOnDestroy(): void {

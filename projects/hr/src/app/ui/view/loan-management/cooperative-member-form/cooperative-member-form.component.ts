@@ -16,6 +16,8 @@ export class CooperativeMemberFormComponent implements OnInit {
   isEdit = false;
   memberId?: string;
   isLoading = false;
+  isSubmitting = false;
+  submitError: string | null = null;
   nextGeneratedMemberId = 'COP-001';
   existingMemberCode = '';
 
@@ -100,8 +102,9 @@ export class CooperativeMemberFormComponent implements OnInit {
 
   onSubmit(): void {
     if (this.memberForm.valid) {
+      this.submitError = null;
       const formValue = this.memberForm.value;
-      
+
       const memberData: any = {
         employeeId: String(formValue.employeeId || '').trim(),
         fullName: formValue.fullName,
@@ -125,13 +128,25 @@ export class CooperativeMemberFormComponent implements OnInit {
         const existing = this.cooperativeService.getMemberById(Number(this.memberId));
         if (existing) {
           const updated = { ...existing, ...memberData };
-          this.cooperativeService.updateMember(updated).subscribe(() => {
-            this.goBack();
+          this.isSubmitting = true;
+          this.cooperativeService.updateMember(updated).subscribe({
+            next: () => this.goBack(),
+            error: (error) => {
+              this.isSubmitting = false;
+              console.error('Error updating cooperative member:', error);
+              this.submitError = 'Failed to save changes. Please try again.';
+            }
           });
         }
       } else {
-        this.cooperativeService.addMember(memberData).subscribe(() => {
-          this.goBack();
+        this.isSubmitting = true;
+        this.cooperativeService.addMember(memberData).subscribe({
+          next: () => this.goBack(),
+          error: (error) => {
+            this.isSubmitting = false;
+            console.error('Error adding cooperative member:', error);
+            this.submitError = 'Failed to add member. Please try again.';
+          }
         });
       }
     }

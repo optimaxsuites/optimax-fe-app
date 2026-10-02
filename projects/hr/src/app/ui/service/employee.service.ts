@@ -175,8 +175,6 @@ export class EmployeeService {
       return throwError(() => new Error('No user ID found in session'));
     }
     
-    console.log('Getting employee ID for user ID:', userId);
-    
     // Strategy 1: Try to get from stored employee ID scoped to active user session
     const storedEmployeeId = sessionStorage.getItem('employeeId');
     const storedEmployeeUserId = sessionStorage.getItem('employeeUserId');
@@ -187,7 +185,6 @@ export class EmployeeService {
       && storedEmployeeUserId
       && String(storedEmployeeUserId) === String(userId)
     ) {
-      console.log('Using stored employee ID:', storedEmployeeId);
       return of(Number(storedEmployeeId));
     }
 
@@ -195,62 +192,24 @@ export class EmployeeService {
     if (storedEmployeeId && storedEmployeeUserId && String(storedEmployeeUserId) !== String(userId)) {
       sessionStorage.removeItem('employeeId');
     }
-    
-    // Strategy 2: Try to get from the loan list (which we know works)
-    // This requires the loan service, so we need to inject it
-    // We'll handle this in the component instead
-    
-    // Strategy 3: Try to get from employee list by user ID
-    return this.getAllEmployee().pipe(
-      map(employees => {
-        console.log(`Searching through ${employees.length} employees for user ID: ${userId}`);
-        
-        // Try to find employee by various user ID fields
-        const employee = employees.find(emp => 
-          String(emp.userId) === String(userId) || 
-          String(emp.user?.id) === String(userId) ||
-          String(emp.user?.userId) === String(userId) ||
-          String(emp.id) === String(userId)
-        );
-        
-        if (employee && employee.id) {
-          console.log('Found employee via list search:', employee);
-          console.log('Employee ID:', employee.id);
-          sessionStorage.setItem('employeeId', String(employee.id));
-          sessionStorage.setItem('employeeUserId', String(userId));
-          return employee.id;
+
+    // Strategy 2: Ask the backend directly for the employee record linked to this login user ID.
+    // (Previously this scanned the full employee list and, as a last resort, matched
+    // `employee.id === userId` — but an employee's record ID and their login user ID are
+    // unrelated identifier spaces, so that match was only ever coincidentally correct and
+    // could silently resolve to the WRONG employee. A hardcoded per-user fallback map used to
+    // sit here too, for the same reason — removed for the same reason.)
+    return this.getEmployeeByUserId(userId).pipe(
+      map(employee => {
+        if (!employee?.id) {
+          throw new Error(`No employee found for user ID ${userId}`);
         }
-        
-        throw new Error(`No employee found for user ID ${userId}`);
+        sessionStorage.setItem('employeeId', String(employee.id));
+        sessionStorage.setItem('employeeUserId', String(userId));
+        return employee.id;
       }),
       catchError((error) => {
-        console.error('Failed to find employee from list:', error);
-        
-        // Strategy 4: Known mapping fallback (from working loans)
-        // This is a temporary solution based on known data
-        const userIdNum = Number(userId);
-        let fallbackEmployeeId: number | null = null;
-        
-        // Known mappings from your loan data:
-        // - User ID 1 (dev) -> Employee ID 1
-        // - User ID 48 (developer) -> Employee ID 16
-        // - User ID 41 (admin) -> Employee ID 5
-        if (userIdNum === 1) {
-          fallbackEmployeeId = 1; // Development mode fallback
-        } else if (userIdNum === 48) {
-          fallbackEmployeeId = 16;
-        } else if (userIdNum === 41) {
-          fallbackEmployeeId = 5;
-        } else if (userIdNum === 32) {
-          fallbackEmployeeId = 17; // If there are other users, add mappings here
-        }
-        
-        if (fallbackEmployeeId) {
-          console.log(`Using fallback employee ID ${fallbackEmployeeId} for user ${userId}`);
-          sessionStorage.setItem('employeeId', String(fallbackEmployeeId));
-          sessionStorage.setItem('employeeUserId', String(userId));
-          return of(fallbackEmployeeId);
-        }
+        console.error(`Failed to resolve employee for user ${userId}:`, error);
 
         if (environment.env === 'development') {
           console.warn(`Could not determine employee ID for user ${userId}; falling back to ID 1 in dev mode.`);

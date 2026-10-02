@@ -7,6 +7,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 
 import { ScheduleserviceService } from '../../../service/workschedule-shift/scheduleservice.service';
 import { ShiftserviceService } from '../../../service/workschedule-shift/shiftservice.service';
+import { EmployeeService } from '../../../service/employee.service';
 import { ShiftScheduleDTO } from '../../../domain/workschedule-shift/schedule.dto';
 import { WorkShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
 import { TableColumn } from '../../../shared-component/view/table/table.component';
@@ -117,11 +118,7 @@ export class ShiftCalendarComponent implements OnInit, OnDestroy {
    */
   showShiftList = false;
 
-  employees = [
-    { id: 'emp-1', name: 'Afolabi Daniels' },
-    { id: 'emp-2', name: 'David Okpabio' },
-    { id: 'emp-3', name: 'Ngozi Ezer' }
-  ];
+  employees: { id: string; name: string }[] = [];
 
   private scheduleSub?: Subscription;
   /** Dates that carry at least one schedule — drives the day-cell marker. */
@@ -131,6 +128,7 @@ export class ShiftCalendarComponent implements OnInit, OnDestroy {
   constructor(
     private scheduleService: ScheduleserviceService,
     public shiftService: ShiftserviceService,
+    private employeeService: EmployeeService,
     private host: ElementRef<HTMLElement>
   ) {}
 
@@ -139,6 +137,16 @@ export class ShiftCalendarComponent implements OnInit, OnDestroy {
 
     this.initializeCalendarOptions();
     this.setGanttDateRange();
+
+    this.employeeService.getActiveEmployees().subscribe(employees => {
+      this.employees = employees.map(employee => ({
+        id: String(employee.id ?? employee.employeeId ?? ''),
+        name: employee.fullName
+          ?? employee.name
+          ?? `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim()
+      })).filter(employee => employee.id && employee.name);
+      this.refreshViews();
+    });
 
     this.scheduleSub = this.scheduleService.schedules$.subscribe(data => {
       this.schedules = data;

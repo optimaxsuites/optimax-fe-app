@@ -4,14 +4,13 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil, forkJoin } from 'rxjs';
+import { Subject, takeUntil, forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Invoice, InvoiceStatus } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
-import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
-import { InvoiceDetailComponent } from '../invoice-detail/invoice-detail.component';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 
@@ -23,8 +22,6 @@ import { ToastModule } from 'primeng/toast';
     RouterModule,
     FormsModule,
     SharedOverlayModule,
-    InvoiceFormComponent,
-    InvoiceDetailComponent,
     ToastModule
   ],
   providers: [MessageService],
@@ -40,10 +37,6 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
   customers: any[] = [];
   isLoading = true;
   selectedInvoiceIds: string[] = [];
-
-  showInvoiceModal = false;
-  showInvoiceDetail = false;
-  selectedInvoiceId?: string;
 
   openNewInvoiceModal(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
@@ -72,11 +65,6 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     }
   }
 
-  closeInvoiceModal(): void {
-    this.showInvoiceModal = false;
-    this.selectedInvoiceId = undefined;
-  }
-
   duplicateInvoice(invoice: Invoice): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
@@ -85,16 +73,6 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     this.router.navigate(path, { queryParams: { duplicateId: String(invoice.id) }, state: { duplicateSource: invoice } });
   }
 
-  closeInvoiceDetail(): void {
-    this.showInvoiceDetail = false;
-    this.selectedInvoiceId = undefined;
-  }
-
-  onInvoiceSaved(): void {
-    this.closeInvoiceModal();
-    this.loadInvoices();
-  }
-  
   // Filters
   filters = {
     status: 'ALL',
@@ -151,15 +129,31 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
 
   loadInvoices(): void {
     this.isLoading = true;
+    // 'OVERDUE' isn't a real InvoiceStatus (only DRAFT|SENT|CANCELLED exist) — it's computed
+    // client-side from dueDate, so the service's status filter/getInvoices() can never match it
+    // and this always returned zero results. Fetch the full SENT set instead and filter+paginate
+    // it here.
+    const isOverdueFilter = this.filters.status === 'OVERDUE';
+    const requestFilters = isOverdueFilter
+      ? { ...this.filters, status: 'ALL', page: 0, size: 1000 }
+      : this.filters;
+
     forkJoin({
-      invoices: this.salesService.getInvoices(this.filters),
+      invoices: this.salesService.getInvoices(requestFilters),
       customers: this.salesService.getCustomers({ page: 0, size: 200 })
     }).subscribe({
       next: ({ invoices, customers }: any) => {
         this.customers = customers.data;
-        this.invoices = invoices.data;
-        this.totalElements = invoices.total;
-        this.totalPages = Math.ceil(invoices.total / this.filters.size);
+        if (isOverdueFilter) {
+          const overdue = (invoices.data as Invoice[]).filter(i => i.status === 'SENT' && this.isOverdue(i.dueDate));
+          const start = this.filters.page * this.filters.size;
+          this.invoices = overdue.slice(start, start + this.filters.size);
+          this.totalElements = overdue.length;
+        } else {
+          this.invoices = invoices.data;
+          this.totalElements = invoices.total;
+        }
+        this.totalPages = Math.ceil(this.totalElements / this.filters.size);
         this.calculateStats();
         this.isLoading = false;
       },
@@ -180,12 +174,16 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
   }
 
   private calculateStats(): void {
+    // overdue was hardcoded 0 — the "Overdue" filter button's count pill never reflected reality
+    // and the AI insight banner (gated on stats.overdue > 0) could never appear. Like the other
+    // counters here, this is scoped to whatever page/filter is currently loaded, not the whole
+    // book — same as total/draft/sent/cancelled already were.
     this.stats = {
       total: this.invoices.length,
       draft: this.invoices.filter(i => i.status === 'DRAFT').length,
       sent: this.invoices.filter(i => i.status === 'SENT').length,
       paid: 0,
-      overdue: 0,
+      overdue: this.invoices.filter(i => i.status === 'SENT' && this.isOverdue(i.dueDate)).length,
       partial: 0,
       cancelled: this.invoices.filter(i => i.status === 'CANCELLED').length
     };
@@ -297,18 +295,53 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     this.showReminderModal = true;
   }
 
+  // This used to call updateInvoice(id, {status: 'SENT'}) — harmless for an invoice that's
+  // already SENT (the only case the "Remind" button is shown for now, see the *ngIf in the
+  // template), but it meant clicking what's labeled a reminder could silently finalize/push a
+  // still-DRAFT invoice live if this were ever reached from a DRAFT row, bypassing the real Send
+  // Invoice confirmation flow (invoice-detail.component.ts's confirmSendInvoice(), which also
+  // handles converting the linked quote). There's no real reminder-notification channel wired up
+  // yet (no backend action exists for "resend a reminder"), so this no longer mutates anything —
+  // it's an acknowledgement, not a real resend, until that's built.
   confirmSendReminder(): void {
     if (!this.pendingInvoice) return;
     const targetInvoice = this.pendingInvoice;
     this.showReminderModal = false;
-    this.salesService.updateInvoice(targetInvoice.id, { status: 'SENT' }).subscribe({
-      next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Reminder sent for invoice ${targetInvoice.invoiceNumber}` });
-        this.loadInvoices();
-      },
-      error: (error: any) => {
-        console.error('Error sending reminder:', error);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to send reminder. Please try again.' });
+    this.messageService.add({ severity: 'success', summary: 'Reminder Logged', detail: `Reminder logged for invoice ${targetInvoice.invoiceNumber}. Automatic reminder delivery isn't available yet — follow up with the customer directly.` });
+  }
+
+  isBulkCancelling = false;
+
+  // There's no real hard-delete for invoices (the individual per-row action, deleteInvoice()
+  // above, is actually a cancel — sets status: 'CANCELLED', already labeled honestly as "Cancel
+  // Invoice" in the UI). This bulk button used to have no (click) handler at all — selecting
+  // invoices and clicking it did nothing. Implemented as a real bulk cancel to match what the
+  // individual action already does, rather than a literal bulk delete.
+  bulkCancelInvoices(): void {
+    if (this.selectedInvoiceIds.length === 0 || this.isBulkCancelling) return;
+
+    const targets = this.invoices.filter(i => this.selectedInvoiceIds.includes(i.id) && i.status !== 'CANCELLED');
+    if (targets.length === 0) {
+      this.messageService.add({ severity: 'warn', summary: 'Already Cancelled', detail: 'All selected invoices are already cancelled.' });
+      return;
+    }
+    if (!confirm(`Cancel ${targets.length} invoice(s)?`)) return;
+
+    this.isBulkCancelling = true;
+    const requests = targets.map(inv => this.salesService.updateInvoice(inv.id, { status: 'CANCELLED' }).pipe(
+      map(() => ({ ok: true as const })),
+      catchError(() => of({ ok: false as const }))
+    ));
+
+    forkJoin(requests).subscribe(results => {
+      this.isBulkCancelling = false;
+      this.selectedInvoiceIds = [];
+      this.loadInvoices();
+      const failed = results.filter(r => !r.ok).length;
+      if (failed > 0) {
+        this.messageService.add({ severity: 'warn', summary: 'Partial failure', detail: `${results.length - failed} of ${results.length} invoices were cancelled; ${failed} failed.` });
+      } else {
+        this.messageService.add({ severity: 'success', summary: 'Cancelled', detail: `${results.length} invoice(s) cancelled successfully.` });
       }
     });
   }

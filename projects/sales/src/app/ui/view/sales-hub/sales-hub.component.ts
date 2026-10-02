@@ -2,11 +2,10 @@ import { Component } from '@angular/core';
 import { TabConfig } from '../../shared-component/service/interface/data';
 import { SalesDashboardComponent } from './sales-dashboard/sales-dashboard.component';
 import { ProductServiceCatalogListComponent } from './product-service-catalog/product-service-catalog-list/product-service-catalog-list.component';
-import { PaymentProcessingComponent } from './payment-processing/payment-processing.component';
 import { CustomerListComponent } from './customer-management/customer-list/customer-list.component';
-import { DeliveryManagementComponent } from './delivery-management/delivery-management.component';
 import { QuoteListComponent } from './quotations/quote-list/quote-list.component';
 import { InvoiceListComponent } from './invoices/invoice-list/invoice-list.component';
+import { DeliveryNoteListComponent } from './delivery-notes/delivery-note-list/delivery-note-list.component';
 import { SalesAndTransactionsListComponent } from './sales-and-transactions/sales-and-transactions-list/sales-and-transactions-list.component';
 
 @Component({
@@ -36,6 +35,11 @@ export class SalesHubComponent {
       name: 'Invoices',
       component: InvoiceListComponent,
       icon: 'fa-solid fa-file-invoice-dollar',
+    },
+    {
+      name: 'Delivery Notes',
+      component: DeliveryNoteListComponent,
+      icon: 'fa-solid fa-truck',
     },
     {
       name: 'Customers',

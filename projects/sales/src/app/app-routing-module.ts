@@ -1,5 +1,5 @@
 import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 import { RequestForQuotationFormComponent } from './ui/view/request-management/request-for-quotation-form/request-for-quotation-form.component';
 import { RequestForQuotationServiceFormComponent } from './ui/view/request-management/request-for-quotation-service-form/request-for-quotation-service-form.component';
 import { ProcurementTypeSelectorComponent } from './ui/view/request-management/procurement-type-selector/procurement-type-selector.component';
@@ -19,6 +19,9 @@ import { QuoteDetailComponent } from './ui/view/sales-hub/quotations/quote-detai
 import { InvoiceListComponent } from './ui/view/sales-hub/invoices/invoice-list/invoice-list.component';
 import { InvoiceFormComponent } from './ui/view/sales-hub/invoices/invoice-form/invoice-form.component';
 import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-detail/invoice-detail.component';
+import { DeliveryNoteFormComponent } from './ui/view/sales-hub/delivery-notes/delivery-note-form/delivery-note-form.component';
+import { DeliveryNoteDetailComponent } from './ui/view/sales-hub/delivery-notes/delivery-note-detail/delivery-note-detail.component';
+import { GenerateDeliveryNoteComponent } from './ui/view/sales-hub/delivery-notes/generate-delivery-note/generate-delivery-note.component';
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
 import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/customer-form/customer-form.component';
 import { CustomerDetailComponent } from './ui/view/sales-hub/customer-management/customer-detail/customer-detail.component';
@@ -322,6 +325,40 @@ export const routes: Routes = [
   {
     path: 'invoices/:id/:uuid',
     component: InvoiceDetailComponent
+  },
+
+  // ------------------------------------------ Delivery Notes ------------------------------------------------
+  {
+    path: 'delivery-notes/new',
+    component: DeliveryNoteFormComponent
+  },
+  {
+    path: 'delivery-notes/new/:uuid',
+    component: DeliveryNoteFormComponent
+  },
+  {
+    path: 'delivery-notes/:id/edit',
+    component: DeliveryNoteFormComponent
+  },
+  {
+    path: 'delivery-notes/:id/edit/:uuid',
+    component: DeliveryNoteFormComponent
+  },
+  {
+    path: 'delivery-notes/generate',
+    component: GenerateDeliveryNoteComponent
+  },
+  {
+    path: 'delivery-notes/generate/:uuid',
+    component: GenerateDeliveryNoteComponent
+  },
+  {
+    path: 'delivery-notes/:id',
+    component: DeliveryNoteDetailComponent
+  },
+  {
+    path: 'delivery-notes/:id/:uuid',
+    component: DeliveryNoteDetailComponent
   },
 
   // ------------------------------------------ Customers ---------------------------------------------------
@@ -632,8 +669,16 @@ export const routes: Routes = [
   { path: '**', redirectTo: '/', pathMatch: 'full' }
 ];
 
+// Does NOT register `routes` itself (no RouterModule.forChild/forRoot here) — main.ts's
+// AppDevModule already does that, nested under `{ path: 'admin/sales', children: routes }`.
+// forChild(routes) used to ALSO be called here, which registered a second, unprefixed copy of
+// the same array at the top level (NgModule-imported ROUTES providers are multi-provided and
+// get merged). That duplicate's own catch-all (`{ path: '**', redirectTo: '/' }`) ended up
+// ahead of main.ts's `admin/sales` entry in the merged config, so every `/admin/sales/...` URL
+// hit that wildcard and bounced to `/` before the router ever reached the route that actually
+// matches it — breaking every button in the app that navigates via that prefix, not just sales.
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [],
   exports: []
 })
 export class AppRoutingModule { }

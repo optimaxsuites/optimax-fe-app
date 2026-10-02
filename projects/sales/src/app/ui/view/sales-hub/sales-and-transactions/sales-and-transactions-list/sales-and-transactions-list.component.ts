@@ -61,6 +61,14 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
   selectedTxId: number | string | null = null;
   showDetailModal: boolean = false;
 
+  // Statuses reached before an invoice has actually been sent — the delivery note step in the
+  // sales flow (Quotation -> Convert -> Invoice -> Delivery Tracking -> Delivery Note -> Receipt)
+  // only makes sense once there's an invoice out the door, and INVOICE_CANCELLED means there
+  // never will be for this transaction.
+  private static readonly PRE_INVOICE_STATUSES: readonly SaleLifecycleStatus[] = [
+    'QUOTE_SENT', 'QUOTE_ACCEPTED', 'QUOTE_REJECTED', 'QUOTE_CONVERTED', 'INVOICE_CANCELLED'
+  ];
+
   // Pagination
   currentPage: number = 1;
   pageSize: number = 10;
@@ -386,6 +394,29 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
     this.selectedReceiptTx = null;
   }
 
+  // ============================================================
+  // ROW ACTION AVAILABILITY — buttons always render; these decide whether
+  // they're clickable, so a seller can always see the full action set
+  // instead of buttons disappearing once they're not yet relevant.
+  // ============================================================
+
+  // Statuses where recording a payment doesn't make business sense even if balanceDue happens
+  // to be stale/nonzero: no invoice exists yet (still at quote stage, or the invoice was
+  // cancelled), or the order is in a terminal state where a new payment shouldn't be accepted.
+  // This used to only exclude QUOTE_REJECTED/PAYMENT_FAILED — a payment could still be recorded
+  // against an order whose invoice was just cancelled, or before any invoice even existed.
+  private static readonly NON_PAYABLE_STATUSES: readonly SaleLifecycleStatus[] = [
+    ...SalesAndTransactionsListComponent.PRE_INVOICE_STATUSES, 'PAYMENT_FAILED', 'PAYMENT_REFUNDED', 'RETURNED'
+  ];
+
+  canRecordPayment(tx: SalesandTransactions): boolean {
+    return tx.balanceDue > 0 && !SalesAndTransactionsListComponent.NON_PAYABLE_STATUSES.includes(tx.status);
+  }
+
+  canViewReceipt(tx: SalesandTransactions): boolean {
+    return (tx.paidAmount || 0) > 0;
+  }
+
   savePayment(): void {
     if (!this.selectedTxForPayment || this.paymentAmount <= 0) {
       this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a valid payment amount' });
@@ -434,12 +465,28 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
         this.closePaymentModal();
         this.loadTransactions();
         this.openReceiptModal(updatedTx || tx);
+        this.syncInvoicePaymentStatus(tx, newPaidAmount, newBalanceDue);
       },
       error: (err) => {
         this.isSavingPayment = false;
         console.error('Error saving transaction payment:', err);
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to record payment. Please try again.' });
       }
+    });
+  }
+
+  /**
+   * Every payment is recorded here, on the SalesandTransactions record — but the linked
+   * Invoice's own amountPaid/balanceDue (set once at creation, see invoice-form.component.ts)
+   * never got updated afterward, so Invoice Detail's "Payment Status" card and the printed
+   * receipt's "Total Paid to Date"/"Remaining Balance Due" kept showing the invoice's original,
+   * pre-payment figures right next to a correct payment history on the same page.
+   */
+  private syncInvoicePaymentStatus(tx: SalesandTransactions, paidAmount: number, balanceDue: number): void {
+    const invoiceId = (tx.invoiceId as any)?.id ?? tx.invoiceId;
+    if (!invoiceId) return;
+    this.salesService.updateInvoice(invoiceId, { amountPaid: paidAmount, balanceDue } as any).subscribe({
+      error: (err) => console.error('Failed to sync payment status to linked invoice:', err)
     });
   }
 }

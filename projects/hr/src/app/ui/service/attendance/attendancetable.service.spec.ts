@@ -23,6 +23,54 @@ describe('AttendancetableService', () => {
     expect(service).toBeTruthy();
   });
 
+  it('should reject clocking in after completing today\'s attendance', async () => {
+    (service as any).attendanceSubject.next([{
+      employeeId: 'employee-1',
+      date: new Date(),
+      checkIn: '09:00:00',
+      checkOut: '17:00:00'
+    }]);
+
+    await expectAsync(
+      service.clockAction('employee-1', 'Employee One', 'HR', 'IN')
+    ).toBeRejectedWithError('Today\'s attendance is already completed.');
+  });
+
+  it('should reject a second clock-in while today\'s attendance is open', async () => {
+    (service as any).attendanceSubject.next([{
+      employeeId: 'employee-1',
+      date: new Date(),
+      checkIn: '09:00:00',
+      checkOut: null
+    }]);
+
+    await expectAsync(
+      service.clockAction('employee-1', 'Employee One', 'HR', 'IN')
+    ).toBeRejectedWithError('You are already clocked in.');
+  });
+
+  it('should reject clocking out when there is no open clock-in', async () => {
+    await expectAsync(
+      service.clockAction('employee-1', 'Employee One', 'HR', 'OUT')
+    ).toBeRejectedWithError('You must clock in before clocking out.');
+  });
+
+  it('should reject a concurrent clock action for the same employee and day', async () => {
+    let finishAction!: () => void;
+    const pendingAction = new Promise<void>(resolve => {
+      finishAction = resolve;
+    });
+    spyOn(service as any, 'performClockAction').and.returnValue(pendingAction);
+
+    const firstAction = service.clockAction('employee-1', 'Employee One', 'HR', 'IN');
+    await expectAsync(
+      service.clockAction('employee-1', 'Employee One', 'HR', 'IN')
+    ).toBeRejectedWithError('An attendance action is already in progress.');
+
+    finishAction();
+    await firstAction;
+  });
+
   it('should map checkIn/checkOut payload values correctly', () => {
     const mapped = (service as any).mapApiRecord({
       id: 7,

@@ -1330,13 +1330,6 @@ export class LoanDisbursementUiComponent implements OnInit {
     return this.batchLoanNotesMap.get(loan.id) || '';
   }
 
-  private setStoredLoanReference(loan: LoanApplication | null | undefined, reference: string): void {
-    if (!loan || !reference.trim()) {
-      return;
-    }
-    this.batchLoanReferenceMap.set(loan.id, reference.trim());
-  }
-
   private getStoredLoanReference(loan: LoanApplication | null | undefined): string {
     if (!loan) return '';
     return this.batchLoanReferenceMap.get(loan.id) || '';

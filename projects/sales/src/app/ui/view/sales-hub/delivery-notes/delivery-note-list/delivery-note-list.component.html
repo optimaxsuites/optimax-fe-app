@@ -1,0 +1,154 @@
+<p-toast position="top-right"></p-toast>
+
+<div class="dnl-layout">
+
+  <!-- ══ SIDEBAR FILTERS ═══════════════════════════════════════════════════ -->
+  <aside class="dnl-sidebar">
+
+    <div class="dnl-sidebar-title">
+      <span>Filters</span>
+      <button class="dnl-reset-link" (click)="resetFilters()" type="button">Reset</button>
+    </div>
+
+    <div class="dnl-filter-section">
+      <div class="dnl-search-wrap">
+        <i class="fas fa-search dnl-search-icon"></i>
+        <input type="text" class="dnl-search-input" placeholder="Search delivery notes…"
+               [(ngModel)]="filters.searchTerm" (input)="applyFilters()">
+      </div>
+    </div>
+
+    <div class="dnl-filter-section">
+      <div class="dnl-filter-heading">Status</div>
+      <button class="dnl-status-btn" type="button"
+              *ngFor="let opt of statusOptions"
+              [class.dnl-status-btn--active]="filters.status === opt.value"
+              (click)="filters.status = opt.value; applyFilters()">
+        <i class="fas" [ngClass]="opt.icon"></i>
+        <span>{{ opt.label }}</span>
+        <span class="dnl-count-pill"
+              [class.dnl-count-pill--orange]="opt.value === 'AWAITING_NOTE'"
+              [class.dnl-count-pill--blue]="opt.value === 'DISPATCHED'"
+              [class.dnl-count-pill--green]="opt.value === 'DELIVERED'">
+          {{ opt.value === 'ALL' ? stats.total : opt.value === 'AWAITING_NOTE' ? stats.awaitingNote : opt.value === 'PENDING' ? stats.pending : opt.value === 'DISPATCHED' ? stats.dispatched : opt.value === 'DELIVERED' ? stats.delivered : 0 }}
+        </span>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ══ MAIN AREA ═════════════════════════════════════════════════════════ -->
+  <main class="dnl-main">
+
+    <!-- Top bar -->
+    <div class="dnl-top-bar">
+      <div class="dnl-top-bar-left">
+        <h1 class="dnl-title">Delivery Notes</h1>
+        <span class="dnl-total-badge">{{ stats.total }}</span>
+      </div>
+    </div>
+
+    <!-- AI Insight Banner -->
+    <div class="dnl-ai-banner" *ngIf="!aiDismissed && stats.awaitingNote > 0">
+      <div class="dnl-ai-icon"><i class="fas fa-robot"></i></div>
+      <div class="dnl-ai-body">
+        <div class="dnl-ai-title">AI Insight</div>
+        <div class="dnl-ai-text">
+          <strong>{{ stats.awaitingNote }}</strong> order{{ stats.awaitingNote > 1 ? 's are' : ' is' }} waiting on a delivery note — customers can't confirm receipt until one is issued.
+        </div>
+      </div>
+      <button type="button" class="dnl-ai-dismiss" (click)="aiDismissed = true"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Table -->
+    <div class="dnl-table-wrap">
+      <table class="dnl-table">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Order #</th>
+            <th>Client</th>
+            <th>Items</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th class="dnl-th-actions">Actions</th>
+          </tr>
+        </thead>
+
+        <!-- Loading skeleton -->
+        <tbody *ngIf="isLoading">
+          <tr class="dnl-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
+            <td colspan="7"><div class="dnl-skeleton-bar"></div></td>
+          </tr>
+        </tbody>
+
+        <!-- Empty state -->
+        <tbody *ngIf="!isLoading && filteredRows.length === 0">
+          <tr>
+            <td colspan="7">
+              <div class="dnl-empty">
+                <i class="fas fa-truck-fast dnl-empty-icon"></i>
+                <p class="dnl-empty-title">No delivery notes found</p>
+                <p class="dnl-empty-sub">Delivery notes are generated from a converted quote, once its LPO has been received.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+
+        <!-- Data rows -->
+        <tbody *ngIf="!isLoading && filteredRows.length > 0">
+          <tr *ngFor="let row of filteredRows" [class.dnl-row--pending]="row.status === 'AWAITING_NOTE'">
+            <td class="dnl-td-num">
+              <button type="button" class="dnl-link" [disabled]="row.kind === 'pending'"
+                      (click)="row.kind === 'note' ? viewDeliveryNote(row) : null">{{ row.displayNumber }}</button>
+            </td>
+            <td class="dnl-td-num">{{ row.orderId }}</td>
+            <td class="dnl-td-client">{{ row.customerName }}</td>
+            <td>{{ row.itemCount }}</td>
+            <td class="dnl-td-date">{{ formatDate(row.date) }}</td>
+            <td>
+              <span class="dnl-status-badge dnl-status-badge--{{ getStatusBadgeSuffix(row.status) }}">
+                {{ getStatusLabel(row.status) }}
+              </span>
+            </td>
+            <td class="dnl-td-actions">
+              <div class="dnl-row-actions">
+                <button type="button" class="dnl-action-btn dnl-action-btn--create" *ngIf="row.kind === 'pending'"
+                        (click)="generateFromQuote(row)" title="Generate Delivery Note">
+                  <i class="fas fa-plus"></i> Generate
+                </button>
+                <ng-container *ngIf="row.kind === 'note'">
+                  <button type="button" class="dnl-action-btn" (click)="viewDeliveryNote(row)" title="View">
+                    <i class="fas fa-eye"></i> View
+                  </button>
+                  <button type="button" class="dnl-action-btn" [disabled]="!canEdit(row)"
+                          (click)="editDeliveryNote(row)"
+                          [title]="canEdit(row) ? 'Edit' : 'Only a Pending delivery note can be edited'">
+                    <i class="fas fa-pencil-alt"></i> Edit
+                  </button>
+                </ng-container>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="dnl-pagination" *ngIf="!isLoading && filteredRows.length > 0">
+      <div class="dnl-page-btns">
+        <button type="button" class="dnl-page-btn" [disabled]="currentPage === 0" (click)="onPageChange(currentPage - 1)">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button type="button" class="dnl-page-btn"
+                *ngFor="let p of getPageNumbers()"
+                [class.dnl-page-btn--active]="p === currentPage"
+                (click)="onPageChange(p)">{{ p + 1 }}</button>
+        <button type="button" class="dnl-page-btn" [disabled]="currentPage >= totalPages - 1" (click)="onPageChange(currentPage + 1)">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>

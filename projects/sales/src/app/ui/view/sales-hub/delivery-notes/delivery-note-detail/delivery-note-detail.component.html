@@ -1,0 +1,49 @@
+<p-toast position="top-right"></p-toast>
+
+<div class="dnd-page">
+
+  <div class="dnd-topbar no-print">
+    <div class="dnd-topbar-left">
+      <app-back-button (close)="goBack()"></app-back-button>
+      <div class="dnd-breadcrumb">Sales &gt; Delivery Notes &gt; {{ note?.deliveryNumber || 'Detail' }}</div>
+    </div>
+    <div class="dnd-topbar-right" *ngIf="note">
+      <span class="dnd-status-badge dnd-status-badge--{{ getStatusBadgeClass(note.status) }}">{{ note.status }}</span>
+      <button type="button" class="dnd-btn dnd-btn--ghost" (click)="printNote()"><i class="fas fa-print"></i> Print</button>
+      <button type="button" class="dnd-btn dnd-btn--ghost" [disabled]="isDownloading" (click)="downloadPDF()">
+        <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"></i>
+        {{ isDownloading ? 'Generating...' : 'Download PDF' }}
+      </button>
+      <button type="button" class="dnd-btn dnd-btn--ghost" *ngIf="canEdit()" (click)="editNote()"><i class="fas fa-pencil-alt"></i> Edit</button>
+      <button type="button" class="dnd-btn dnd-btn--primary" *ngIf="canMarkDispatched()" [disabled]="isUpdatingStatus" (click)="updateStatus('DISPATCHED')">
+        <i class="fas fa-truck"></i> Mark Dispatched
+      </button>
+      <button type="button" class="dnd-btn dnd-btn--primary" *ngIf="canMarkDelivered()" [disabled]="isUpdatingStatus" (click)="updateStatus('DELIVERED')">
+        <i class="fas fa-check-circle"></i> Mark Delivered
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="dnd-loading no-print"><div class="spinner"></div><p>Loading...</p></div>
+
+  <div class="dnd-doc-wrapper" *ngIf="!isLoading && note">
+    <app-delivery-note-document
+      elementId="delivery-note-detail-sheet"
+      [note]="note"
+      [merchantInfo]="merchantInfo"
+      [customerName]="customerName"
+      [customerPhone]="customerPhone"
+      [poNumber]="poNumber"
+      [attention]="attention"
+      [contactPerson]="contactPerson"
+      [invoiceNumber]="invoiceNumber"
+      [deliveryDate]="note.dispatchedAt || note.createdAt">
+    </app-delivery-note-document>
+  </div>
+
+  <div class="dnd-error" *ngIf="!isLoading && !note">
+    <i class="fas fa-triangle-exclamation"></i>
+    <h3>Delivery Note Not Found</h3>
+    <button type="button" class="dnd-btn dnd-btn--primary" (click)="goBack()">Back</button>
+  </div>
+</div>

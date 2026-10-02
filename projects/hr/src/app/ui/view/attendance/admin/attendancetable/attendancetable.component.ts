@@ -4,7 +4,6 @@ import { combineLatest } from 'rxjs';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
 import { AdminCorrectionApprovalService } from '../../../../service/attendance/admin-correction-approval.service';
 import { AttendanceTableRecord } from '../../../../domain/attendance/attendancetable.dto';
-import { MOCK_ATTENDANCE } from '../../../../domain/attendance/attendancetable.mock';
 import { AttendancefilterComponent } from './attendancefilter/attendancefilter.component';
 
 @Component({
@@ -25,10 +24,6 @@ export class AttendancetableComponent implements OnInit{
 
 
   ngOnInit(): void {
-    // Load MOCK_ATTENDANCE initially
-    this.attendance = MOCK_ATTENDANCE;
-    this.filteredAttendance = [...this.attendance];
-
     // Subscribe to correction requests - preserve them always
     this.correctionRequestService.correctionRequests$.subscribe((correctionRequests) => {
       if (correctionRequests && correctionRequests.length > 0) {
@@ -46,9 +41,7 @@ export class AttendancetableComponent implements OnInit{
 
     // Subscribe to attendance updates
     this.attendancetableService.attendance$.subscribe((attendanceData) => {
-      if (attendanceData && attendanceData.length > 0) {
-        this.attendance = [...attendanceData];
-      }
+      this.attendance = [...attendanceData];
 
       // Always re-apply preserved corrections after any update
       this.applyPreservedCorrections();

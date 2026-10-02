@@ -27,41 +27,73 @@
 </div>
 
 <!-- BACKDROP -->
-<div class="import-backdrop" *ngIf="importModalOpen"></div>
+<div class="import-backdrop" *ngIf="importModalOpen" aria-hidden="true"></div>
 
 <!-- MODAL -->
-<div class="import-modal" *ngIf="importModalOpen">
+<section class="import-modal" *ngIf="importModalOpen" role="dialog" aria-modal="true" aria-labelledby="attendance-import-title">
   <div class="modal-header">
-    <h3>
-      <i class="fa-solid fa-file-arrow-up"></i>
-      Import Attendance</h3>
-    <button class="close-btn" (click)="closeImportModal()">×</button>
+    <div class="header-icon"><i class="fa-solid fa-file-arrow-up"></i></div>
+    <div class="header-copy">
+      <h3 id="attendance-import-title">Import Attendance</h3>
+      <p>Upload an Excel workbook to add attendance records.</p>
+    </div>
+    <button type="button" class="close-btn" (click)="closeImportModal()" aria-label="Close attendance import">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
   </div>
 
-  <p class="modal-text">Download template, fill it, then upload:</p>
+  <div class="modal-body">
+    <div class="template-step">
+      <div class="step-heading">
+        <span class="step-number">1</span>
+        <div>
+          <h4>Prepare your spreadsheet</h4>
+          <p>Use the attendance template to keep columns in the expected format.</p>
+        </div>
+      </div>
 
-  <button class="template-btn" (click)="downloadTemplate()">
-    <i class="fa-solid fa-download"></i>
-    Download Template
-  </button>
+      <button type="button" class="template-btn" (click)="downloadTemplate()">
+        <i class="fa-solid fa-download"></i>
+        Download Excel template
+      </button>
+    </div>
 
-  <div class="file-upload">
-    <input type="file" #fileInput accept=".xlsx" />
-    <p class="file-name" *ngIf="fileInput.files?.length">
-      Selected: {{ fileInput.files?.[0]?.name }}
+    <div class="file-upload">
+      <div class="step-heading">
+        <span class="step-number">2</span>
+        <div>
+          <h4>Select attendance file</h4>
+          <p>Excel workbook only (.xlsx)</p>
+        </div>
+      </div>
+      <label class="file-picker" for="attendance-import-file">
+        <span class="file-picker-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span>
+        <span class="file-picker-copy">
+          <strong>Choose an Excel file</strong>
+          <small>Browse your device for an .xlsx workbook</small>
+        </span>
+        <input id="attendance-import-file" type="file" #fileInput accept=".xlsx" />
+      </label>
+      <p class="file-name" *ngIf="fileInput.files?.length">
+        <i class="fa-solid fa-file-excel"></i>
+        Selected: {{ fileInput.files?.[0]?.name }}
+      </p>
+    </div>
+
+    <p class="remind-text">
+      <i class="fa-solid fa-circle-info"></i>
+      Remove the initial mock data from the workbook before importing.
     </p>
   </div>
-  <div>
-    <p class="remind-text">Don't forget to remove the initial mock data before importing</p>
-  </div>
-  
 
   <div class="actions">
-    <button class="cancel-btn" (click)="closeImportModal()">
+    <button type="button" class="cancel-btn" (click)="closeImportModal()">
       <i class="fa-solid fa-xmark"></i>
-      Cancel</button>
-    <button class="import-btn" (click)="importNow()">
+      Cancel
+    </button>
+    <button type="button" class="import-btn" (click)="importNow()">
       <i class="fa-solid fa-upload"></i>
-      Import Now</button>
+      Import Now
+    </button>
   </div>
-</div>
+</section>

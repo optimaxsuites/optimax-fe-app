@@ -1,7 +1,8 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Quote, Invoice, SalesandTransactions, AdditionalQuoteOptions } from '../../../../domain/sales/sales.dto';
+import { Quote, Invoice, SalesandTransactions, AdditionalQuoteOptions, DeliveryNote, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { CommonModule } from '@angular/common';
@@ -17,7 +18,7 @@ import { MessageService } from 'primeng/api';
   templateUrl: './quote-detail.component.html',
   styleUrls: ['./quote-detail.component.scss']
 })
-export class QuoteDetailComponent implements OnInit {
+export class QuoteDetailComponent implements OnInit, OnDestroy {
   @Input() detailId?: string;
   @Output() closed = new EventEmitter<void>();
   @Output() edit = new EventEmitter<string>();
@@ -25,6 +26,11 @@ export class QuoteDetailComponent implements OnInit {
   quote: Quote | null = null;
   isLoading = true;
   isDownloading = false;
+
+  orderId: string | null = null;
+  deliveryNote: DeliveryNote | null = null;
+
+  private destroy$ = new Subject<void>();
 
   constructor(
     private messageService: MessageService,
@@ -38,13 +44,25 @@ export class QuoteDetailComponent implements OnInit {
     return Array.isArray(this.quote.additionalOptions) ? this.quote.additionalOptions[0] : (this.quote.additionalOptions as any);
   }
 
+  // Reading route.snapshot.paramMap once here meant navigating from one quote's detail URL
+  // straight to another's (e.g. browser Back/Forward between two previously visited quotes) kept
+  // showing the first quote — Angular's default RouteReuseStrategy reuses this component instance
+  // across same-route-pattern navigations, so ngOnInit never re-ran. Subscribing to the live
+  // paramMap instead re-loads whenever the :id actually changes.
   ngOnInit(): void {
-    const id = this.detailId || this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.loadQuote(id);
-    } else {
-      this.isLoading = false;
-    }
+    this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      const id = this.detailId || params.get('id');
+      if (id) {
+        this.loadQuote(id);
+      } else {
+        this.isLoading = false;
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadQuote(id: string): void {
@@ -53,10 +71,120 @@ export class QuoteDetailComponent implements OnInit {
       next: (quote: Quote | null) => {
         this.quote = quote;
         this.isLoading = false;
+        if (quote) {
+          this.loadOrderId(quote.id);
+          this.loadDeliveryNoteState(quote.id);
+        }
       },
       error: (err: any) => {
         console.error('Error loading quote:', err);
         this.isLoading = false;
+      }
+    });
+  }
+
+  private loadOrderId(quoteId: number): void {
+    this.salesService.getOrderIdLookup().subscribe(lookup => {
+      this.orderId = lookup.byQuoteId.get(quoteId) || null;
+    });
+  }
+
+  /** Read-only check for whether a delivery note already exists for this quote — unlike
+   *  getOrCreateDeliveryNoteForQuote(), this never creates one; that only happens when the
+   *  seller explicitly runs the Generate Delivery Note wizard. */
+  loadDeliveryNoteState(quoteId: number | undefined = this.quote?.id): void {
+    if (quoteId == null) return;
+    this.salesService.getQuoteDeliveryNoteMap().subscribe(map => {
+      this.deliveryNote = map.get(quoteId) || null;
+    });
+  }
+
+  canConvert(): boolean {
+    return this.quote?.status === 'SENT';
+  }
+
+  /** Same ACCEPTED-or-CONVERTED treatment canDeleteQuote() already uses — see
+   *  QuoteListComponent.isConvertedOrAccepted() for why. */
+  private isConvertedOrAccepted(): boolean {
+    return this.quote?.status === 'CONVERTED' || this.quote?.status === 'ACCEPTED';
+  }
+
+  canGenerateDeliveryNote(): boolean {
+    return this.isConvertedOrAccepted() && !this.deliveryNote;
+  }
+
+  canUploadSignedDeliveryNote(): boolean {
+    return this.isConvertedOrAccepted() && !!this.deliveryNote && !this.salesService.hasSignedDeliveryNoteDocument(this.quote);
+  }
+
+  canCreateInvoice(): boolean {
+    return this.isConvertedOrAccepted() && this.salesService.hasSignedDeliveryNoteDocument(this.quote);
+  }
+
+  goToGenerateDeliveryNote(): void {
+    if (!this.quote) return;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/delivery-notes/generate', uuid] : ['/admin/sales/delivery-notes/generate'];
+    this.router.navigate(path, { queryParams: { quoteId: String(this.quote.id) } });
+  }
+
+  goToCreateInvoice(): void {
+    if (!this.quote || !this.canCreateInvoice()) return;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
+    this.router.navigate(path, { queryParams: { quoteId: String(this.quote.id) } });
+  }
+
+  // ============================================================
+  // SIGNED DELIVERY NOTE RE-UPLOAD
+  // ============================================================
+
+  showSignedDeliveryNoteModal = false;
+  signedDeliveryNoteFileName = '';
+  private signedDeliveryNoteFile: QuoteDocumentAttachment | null = null;
+  isSavingSignedDeliveryNote = false;
+
+  openSignedDeliveryNoteModal(): void {
+    this.signedDeliveryNoteFileName = '';
+    this.signedDeliveryNoteFile = null;
+    this.showSignedDeliveryNoteModal = true;
+  }
+
+  closeSignedDeliveryNoteModal(): void {
+    this.showSignedDeliveryNoteModal = false;
+  }
+
+  onSignedDeliveryNoteFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    this.signedDeliveryNoteFileName = file.name;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      this.signedDeliveryNoteFile = {
+        fileName: file.name,
+        base64Content: dataUrl.split(',')[1] || '',
+        contentType: file.type || 'application/pdf',
+        uploadedAt: new Date()
+      };
+    };
+    reader.readAsDataURL(file);
+  }
+
+  submitSignedDeliveryNote(): void {
+    if (!this.quote || !this.signedDeliveryNoteFile || this.isSavingSignedDeliveryNote) return;
+    this.isSavingSignedDeliveryNote = true;
+    this.salesService.saveSignedDeliveryNoteDocument(this.quote.id, this.signedDeliveryNoteFile).subscribe({
+      next: (updated) => {
+        this.isSavingSignedDeliveryNote = false;
+        this.quote = updated;
+        this.showSignedDeliveryNoteModal = false;
+        this.messageService.add({ severity: 'success', summary: 'Uploaded', detail: 'Signed delivery note uploaded — you can now create the invoice.' });
+      },
+      error: (err) => {
+        console.error('Error uploading signed delivery note:', err);
+        this.isSavingSignedDeliveryNote = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to upload signed delivery note. Please try again.' });
       }
     });
   }
@@ -282,57 +410,17 @@ export class QuoteDetailComponent implements OnInit {
   confirmAcceptQuote(): void {
     if (!this.quote) return;
     this.showAcceptQuoteModal = false;
-    this.salesService.updateQuote(String(this.quote.id), { status: 'CONVERTED' }).subscribe({
-      next: (updated: Quote) => {
-        this.quote = updated;
-        
-        const addOpts = Array.isArray(updated.additionalOptions) ? updated.additionalOptions[0] : (updated.additionalOptions as any);
-        const orderData: Partial<SalesandTransactions> = {
-          quoteId: updated,
-          customerId: updated.customerId,
-          customerName: updated.customerName,
-          items: updated,
-          subtotal: updated.subtotal,
-          taxAmount: updated.taxAmount,
-          discountAmount: updated.discountAmount,
-          totalAmount: updated.totalAmount,
-          currency: updated.currency,
-          status: 'QUOTE_ACCEPTED',
-          quoteAcceptedOrRejectedDate: new Date(),
-          customerNotes: addOpts?.notes || '',
-          billingAddress: addOpts?.address || '',
-          shippingAddress: addOpts?.address || '',
-          PaymentTerms: {
-            id: 1,
-            customerId: updated.customerId,
-            customerName: updated.customerName,
-            paymentPeriod: 30,
-            amount: updated.totalAmount,
-            balanceDue: updated.totalAmount,
-            installmentNumber: 1,
-            completedInstallments: 0
-          }
-        };
-
-        // This quote already has a transaction tracking its lifecycle since it was created
-        // (see SalesService.trackNewQuote()) — advance that same record rather than creating
-        // a second, duplicate one now that it's been accepted.
-        this.salesService.upsertTransactionForQuote(updated.id, orderData).subscribe({
-          next: (tx) => {
-            const uuid = this.route.snapshot.paramMap.get('uuid');
-            if (uuid) {
-              this.router.navigate(['/admin/sales/orders', tx.id, uuid]);
-            } else {
-              this.router.navigate(['/admin/sales/orders', tx.id]);
-            }
-          },
-          error: (orderErr: any) => {
-            console.error('Error updating sales order from quote:', orderErr);
-          }
-        });
+    // Stays on the quote detail page (rather than jumping to the order) — the new flow's next
+    // step, Generate Delivery Note, is a button right here once conversion lands.
+    this.salesService.convertQuote(this.quote).subscribe({
+      next: ({ quote }) => {
+        this.quote = quote;
+        this.loadDeliveryNoteState();
+        this.messageService.add({ severity: 'success', summary: 'Converted', detail: `Quote ${quote.quoteNumber} converted to an order.` });
       },
       error: (err: any) => {
         console.error('Error accepting quote:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to convert quote. Please try again.' });
       }
     });
   }
@@ -361,26 +449,41 @@ export class QuoteDetailComponent implements OnInit {
     });
   }
 
+  /** Same rule as QuoteListComponent.canDeleteQuote(): once a quote is CONVERTED (or ACCEPTED, on
+   *  its way there) it already has a real SalesandTransactions order/invoice referencing it. */
+  canDeleteQuote(): boolean {
+    return !!this.quote && this.quote.status !== 'CONVERTED' && this.quote.status !== 'ACCEPTED';
+  }
+
   deleteQuote(): void {
     if (!this.quote) return;
+    if (!this.canDeleteQuote()) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Delete', detail: `Quote ${this.quote.quoteNumber} has already been converted to an order and can no longer be deleted.` });
+      return;
+    }
     const custName = (this.quote.customerName as any)?.name || this.quote.customerName || 'Customer';
     this.pendingQuoteNumber = this.quote.quoteNumber || '';
     this.pendingCustomerName = custName;
     this.showDeleteQuoteModal = true;
   }
 
+  // This doesn't actually delete the quote record — it marks it EXPIRED (a soft archive), the
+  // same as a quote that naturally passed its validUntil date without a response. It used to
+  // claim "deleted successfully" in the success toast while silently doing this instead, which
+  // is a different, misleading thing from what QuoteListComponent's real delete (a genuine
+  // DELETE call) does.
   confirmDeleteQuote(): void {
-    if (!this.quote) return;
+    if (!this.quote || !this.canDeleteQuote()) return;
     const quoteNumber = this.quote.quoteNumber;
     this.showDeleteQuoteModal = false;
     this.salesService.updateQuote(String(this.quote.id), { status: 'EXPIRED' }).subscribe({
       next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Quote ${quoteNumber} deleted successfully` });
+        this.messageService.add({ severity: 'success', summary: 'Archived', detail: `Quote ${quoteNumber} marked as expired.` });
         this.goBack();
       },
       error: (err: any) => {
-        console.error('Error deleting quote:', err);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete quote. Please try again.' });
+        console.error('Error archiving quote:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to archive quote. Please try again.' });
       }
     });
   }

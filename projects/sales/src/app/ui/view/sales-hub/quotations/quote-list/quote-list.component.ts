@@ -2,9 +2,10 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil, forkJoin } from 'rxjs';
+import { Subject, takeUntil, forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Quote, QuoteStatus } from '../../../../domain/sales/sales.dto';
+import { Quote, QuoteStatus, DeliveryNote, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
@@ -33,9 +34,8 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   isLoading = true;
   selectedQuoteIds: any[] = [];
 
-  showQuoteModal = false;
-  showQuoteDetail = false;
-  selectedQuoteId?: string;
+  orderIdByQuoteId = new Map<number, string>();
+  deliveryNoteByQuoteId = new Map<number, DeliveryNote>();
 
   openNewQuoteModal(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
@@ -66,22 +66,50 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     }
   }
 
-  closeQuoteModal(): void {
-    this.showQuoteModal = false;
-    this.selectedQuoteId = undefined;
+  getOrderId(quote: Quote): string {
+    return this.orderIdByQuoteId.get(quote.id) || '—';
   }
 
-  closeQuoteDetail(): void {
-    this.showQuoteDetail = false;
-    this.selectedQuoteId = undefined;
+  /** Same ACCEPTED-or-CONVERTED treatment canDeleteQuote() already uses — a quote that's been
+   *  accepted by the customer is "on its way to being an order" even if something set it to
+   *  ACCEPTED rather than straight to CONVERTED (e.g. older data from before this app's own
+   *  conversion flow existed). */
+  private isConvertedOrAccepted(quote: Quote): boolean {
+    return quote.status === 'CONVERTED' || quote.status === 'ACCEPTED';
   }
 
-  onQuoteSaved(): void {
-    this.closeQuoteModal();
-    this.loadQuotes();
+  canGenerateDeliveryNote(quote: Quote): boolean {
+    return this.isConvertedOrAccepted(quote) && !this.deliveryNoteByQuoteId.has(quote.id);
   }
 
-  showInvoiceModal = false;
+  canUploadSignedDeliveryNote(quote: Quote): boolean {
+    return this.isConvertedOrAccepted(quote) && this.deliveryNoteByQuoteId.has(quote.id) && !this.salesService.hasSignedDeliveryNoteDocument(quote);
+  }
+
+  canCreateInvoice(quote: Quote): boolean {
+    return this.isConvertedOrAccepted(quote) && this.salesService.hasSignedDeliveryNoteDocument(quote);
+  }
+
+  /** "Conversion" — replaces the old shortcut that went from SENT straight to invoice creation,
+   *  skipping the LPO/delivery-note steps the new flow requires in between. */
+  convertQuote(quote: Quote): void {
+    this.salesService.convertQuote(quote).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Converted', detail: `Quote ${quote.quoteNumber} converted to an order.` });
+        this.loadQuotes();
+      },
+      error: (err: any) => {
+        console.error('Error converting quote:', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to convert quote. Please try again.' });
+      }
+    });
+  }
+
+  goToGenerateDeliveryNote(quote: Quote): void {
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/delivery-notes/generate', uuid] : ['/admin/sales/delivery-notes/generate'];
+    this.router.navigate(path, { queryParams: { quoteId: String(quote.id) } });
+  }
 
   openInvoiceModal(quoteId: string | number): void {
     const quoteIdStr = String(quoteId);
@@ -90,9 +118,62 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     this.router.navigate(path, { queryParams: { quoteId: quoteIdStr } });
   }
 
-  closeInvoiceModal(): void {
-    this.showInvoiceModal = false;
-    this.selectedQuoteId = undefined;
+  // ============================================================
+  // SIGNED DELIVERY NOTE RE-UPLOAD
+  // ============================================================
+
+  showSignedDeliveryNoteModal = false;
+  signedDeliveryNoteFileName = '';
+  pendingSignedDeliveryNoteQuote: Quote | null = null;
+  private signedDeliveryNoteFile: QuoteDocumentAttachment | null = null;
+  isSavingSignedDeliveryNote = false;
+
+  openSignedDeliveryNoteModal(quote: Quote): void {
+    this.pendingSignedDeliveryNoteQuote = quote;
+    this.signedDeliveryNoteFileName = '';
+    this.signedDeliveryNoteFile = null;
+    this.showSignedDeliveryNoteModal = true;
+  }
+
+  closeSignedDeliveryNoteModal(): void {
+    this.showSignedDeliveryNoteModal = false;
+    this.pendingSignedDeliveryNoteQuote = null;
+  }
+
+  onSignedDeliveryNoteFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    this.signedDeliveryNoteFileName = file.name;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      this.signedDeliveryNoteFile = {
+        fileName: file.name,
+        base64Content: dataUrl.split(',')[1] || '',
+        contentType: file.type || 'application/pdf',
+        uploadedAt: new Date()
+      };
+    };
+    reader.readAsDataURL(file);
+  }
+
+  submitSignedDeliveryNote(): void {
+    if (!this.pendingSignedDeliveryNoteQuote || !this.signedDeliveryNoteFile || this.isSavingSignedDeliveryNote) return;
+    this.isSavingSignedDeliveryNote = true;
+    this.salesService.saveSignedDeliveryNoteDocument(this.pendingSignedDeliveryNoteQuote.id, this.signedDeliveryNoteFile).subscribe({
+      next: () => {
+        this.isSavingSignedDeliveryNote = false;
+        this.showSignedDeliveryNoteModal = false;
+        this.pendingSignedDeliveryNoteQuote = null;
+        this.messageService.add({ severity: 'success', summary: 'Uploaded', detail: 'Signed delivery note uploaded — you can now create the invoice.' });
+        this.loadQuotes();
+      },
+      error: (err) => {
+        console.error('Error uploading signed delivery note:', err);
+        this.isSavingSignedDeliveryNote = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to upload signed delivery note. Please try again.' });
+      }
+    });
   }
 
   duplicateQuote(quote: Quote): void {
@@ -102,11 +183,6 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     // Hand the already-loaded quote straight to the form via navigation state so it
     // doesn't have to make a fresh round-trip to re-fetch data we already have.
     this.router.navigate(path, { queryParams: { duplicateId: quoteIdStr }, state: { duplicateSource: quote } });
-  }
-
-  onInvoiceSaved(): void {
-    this.closeInvoiceModal();
-    this.loadQuotes();
   }
 
   // Filters
@@ -168,13 +244,17 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     forkJoin({
       quotes: this.salesService.getQuotes(this.filters),
-      customers: this.salesService.getCustomers({ page: 0, size: 200 })
+      customers: this.salesService.getCustomers({ page: 0, size: 200 }),
+      orderIdLookup: this.salesService.getOrderIdLookup(),
+      deliveryNoteMap: this.salesService.getQuoteDeliveryNoteMap()
     }).subscribe({
-      next: ({ quotes, customers }: any) => {
+      next: ({ quotes, customers, orderIdLookup, deliveryNoteMap }: any) => {
         this.customers = customers.data;
         this.quotes = quotes.data;
         this.totalElements = quotes.total;
         this.totalPages = Math.ceil(quotes.total / this.filters.size);
+        this.orderIdByQuoteId = orderIdLookup.byQuoteId;
+        this.deliveryNoteByQuoteId = deliveryNoteMap;
         this.calculateStats();
         this.isLoading = false;
       },
@@ -377,15 +457,63 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   pendingDeleteCustomerName = '';
   aiDismissed = false;
 
+  /** A CONVERTED (or ACCEPTED, on its way there) quote already has a real SalesandTransactions
+   *  order/invoice referencing it — deleting it would orphan that record and destroy the quote's
+   *  audit trail with no way to recover it. Only quotes that never produced a downstream order
+   *  (DRAFT/SENT/DECLINED/EXPIRED) can be deleted. */
+  canDeleteQuote(quote: Quote | null): boolean {
+    return !!quote && quote.status !== 'CONVERTED' && quote.status !== 'ACCEPTED';
+  }
+
   deleteQuote(quote: Quote): void {
+    if (!this.canDeleteQuote(quote)) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Delete', detail: `Quote ${quote.quoteNumber} has already been converted to an order and can no longer be deleted.` });
+      return;
+    }
     this.pendingDeleteQuote = quote;
     this.pendingDeleteQuoteNumber = quote.quoteNumber;
     this.pendingDeleteCustomerName = this.getCustomerName((quote as any).customerId) || (quote.customerName as any)?.name || quote.customerName || 'Customer';
     this.showDeleteModal = true;
   }
 
+  isBulkDeleting = false;
+
+  bulkDeleteQuotes(): void {
+    if (this.selectedQuoteIds.length === 0 || this.isBulkDeleting) return;
+
+    const targets = this.quotes.filter(q => this.selectedQuoteIds.includes(q.id));
+    const deletable = targets.filter(q => this.canDeleteQuote(q));
+    const blocked = targets.length - deletable.length;
+
+    if (deletable.length === 0) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Delete', detail: 'All selected quotes have already been converted to an order and cannot be deleted.' });
+      return;
+    }
+    if (!confirm(`Delete ${deletable.length} quote(s)? This cannot be undone.${blocked > 0 ? ` (${blocked} selected quote(s) are already converted and will be skipped.)` : ''}`)) {
+      return;
+    }
+
+    this.isBulkDeleting = true;
+    const requests = deletable.map(q => this.salesService.deleteQuote(String(q.id)).pipe(
+      map(() => ({ ok: true as const })),
+      catchError(() => of({ ok: false as const }))
+    ));
+
+    forkJoin(requests).subscribe(results => {
+      this.isBulkDeleting = false;
+      this.selectedQuoteIds = [];
+      this.loadQuotes();
+      const failed = results.filter(r => !r.ok).length;
+      if (failed > 0) {
+        this.messageService.add({ severity: 'warn', summary: 'Partial failure', detail: `${results.length - failed} of ${results.length} quotes were deleted; ${failed} failed.` });
+      } else {
+        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${results.length} quote(s) deleted successfully${blocked > 0 ? ` (${blocked} skipped — already converted)` : ''}.` });
+      }
+    });
+  }
+
   confirmDeleteQuote(): void {
-    if (!this.pendingDeleteQuote) return;
+    if (!this.pendingDeleteQuote || !this.canDeleteQuote(this.pendingDeleteQuote)) return;
     const target = this.pendingDeleteQuote;
     this.showDeleteModal = false;
     this.salesService.deleteQuote(String(target.id)).subscribe({

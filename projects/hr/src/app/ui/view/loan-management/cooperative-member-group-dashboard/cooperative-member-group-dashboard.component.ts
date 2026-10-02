@@ -679,16 +679,23 @@ getMemberByBorrowerRow(borrower: GroupBorrowerRow): CooperativeMember | null {
           amount,
           contributionMonth,
           paymentMethod
-        }).subscribe((request) => {
-          this.isSubmittingContribution = false;
-          if (!request) {
-            this.contributionError = 'The contribution confirmation request could not be created. Check the month and try again.';
-            return;
+        }).subscribe({
+          next: (request) => {
+            this.isSubmittingContribution = false;
+            if (!request) {
+              this.contributionError = 'The contribution confirmation request could not be created. Check the month and try again.';
+              return;
+            }
+            this.closeContributionModal();
+            this.loadDashboard();
+            this.actionMessageTone = 'success';
+            this.actionMessage = `Contribution confirmation request sent for ${this.getContributionMonthLabel(contributionMonth)}.`;
+          },
+          error: (error) => {
+            this.isSubmittingContribution = false;
+            console.error('Error creating contribution confirmation request:', error);
+            this.contributionError = 'The confirmation email was sent, but the request could not be saved. Please contact accounting.';
           }
-          this.closeContributionModal();
-          this.loadDashboard();
-          this.actionMessageTone = 'success';
-          this.actionMessage = `Contribution confirmation request sent for ${this.getContributionMonthLabel(contributionMonth)}.`;
         });
       },
       error: (err) => {

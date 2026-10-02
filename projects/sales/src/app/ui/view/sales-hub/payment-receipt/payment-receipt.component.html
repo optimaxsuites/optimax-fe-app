@@ -9,9 +9,8 @@
         </button>
       </div>
       <div class="toolbar-right">
-        <button class="btn-toolbar-secondary" (click)="sendEmail()" [disabled]="isSendingEmail">
-          <i class="fas" [class.fa-paper-plane]="!isSendingEmail" [class.fa-spinner]="isSendingEmail" [class.fa-spin]="isSendingEmail"></i>
-          {{ isSendingEmail ? 'Sending...' : 'Email Receipt' }}
+        <button class="btn-toolbar-secondary" disabled title="Email delivery isn't available for receipts yet — use Print or Download PDF instead.">
+          <i class="fas fa-paper-plane"></i> Email Receipt
         </button>
         <button class="btn-toolbar-secondary" (click)="printReceipt()">
           <i class="fas fa-print"></i> Print Receipt
@@ -24,12 +23,6 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-    </div>
-
-    <!-- Notification Toast -->
-    <div *ngIf="emailSentSuccess" class="email-alert no-print">
-      <i class="fas fa-check-circle"></i>
-      Receipt email dispatched successfully to <strong>{{ receipt?.customer?.email || receipt?.payment?.customerName }}</strong>!
     </div>
 
     <!-- Loading State -->
@@ -214,7 +207,7 @@
     <div *ngIf="!isLoading && !receipt" class="receipt-error-state">
       <i class="fas fa-triangle-exclamation"></i>
       <h3>Receipt Not Available</h3>
-      <p>Could not locate the receipt record for transaction ID: {{ paymentId }}.</p>
+      <p>Could not locate the receipt record for transaction ID: {{ paymentId || paymentObj?.id || paymentObj?.paymentNumber }}.</p>
       <button class="btn-toolbar-primary" (click)="close()">Close</button>
     </div>
 

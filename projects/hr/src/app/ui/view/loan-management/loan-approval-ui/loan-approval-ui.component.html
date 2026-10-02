@@ -143,7 +143,7 @@
   <table class="advance-loans-table" *ngIf="paginatedLoans.length > 0">
     <thead>
       <tr>
-        <th class="sortable" (click)="setSort('sn')">S/N <i class="fas" [ngClass]="getSortIcon('sn')"></i></th>
+        <th>S/N</th>
         <th class="sortable" (click)="setSort('loanId')">Loan ID <i class="fas" [ngClass]="getSortIcon('loanId')"></i></th>
         <th class="sortable" (click)="setSort('fullName')">Employee <i class="fas" [ngClass]="getSortIcon('fullName')"></i></th>
         <th class="sortable" (click)="setSort('employeeId')">Employee ID <i class="fas" [ngClass]="getSortIcon('employeeId')"></i></th>

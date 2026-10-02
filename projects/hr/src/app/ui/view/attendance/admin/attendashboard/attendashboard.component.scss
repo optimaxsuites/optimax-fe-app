@@ -175,45 +175,9 @@
   }
 }
 
-.mark-attendance-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0 1rem;
-  height: 40px;
-  background-color: white;
-  color: #0f766e;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
-  &:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
-  }
-
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-}
-
-.mark-attendance-message {
-  margin: 0.75rem 0 0 0;
-  color: rgba(255, 255, 255, 0.95);
-  font-size: 0.9rem;
-}
-
 .dashboard-lists {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
 
   @media (max-width: 900px) {

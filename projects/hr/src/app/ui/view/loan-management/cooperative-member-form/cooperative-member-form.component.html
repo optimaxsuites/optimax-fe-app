@@ -13,11 +13,13 @@
       </div>
       <div class="header-actions">
         <button type="button" class="cancel-btn" (click)="cancel()">Cancel</button>
-        <button type="submit" class="submit-btn" [disabled]="!memberForm.valid" form="member-form">
-          Save
+        <button type="submit" class="submit-btn" [disabled]="!memberForm.valid || isSubmitting" form="member-form">
+          {{ isSubmitting ? 'Saving...' : 'Save' }}
         </button>
       </div>
     </div>
+
+    <div class="error" *ngIf="submitError">{{ submitError }}</div>
 
     <form id="member-form" [formGroup]="memberForm" (ngSubmit)="onSubmit()" class="member-form">
       <div class="form-section">

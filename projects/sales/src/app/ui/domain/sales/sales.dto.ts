@@ -175,6 +175,26 @@ export interface QuoteAttachments {
   type?: string;
 }
 
+/** A file captured client-side as a base64 data blob and stored directly on the quote's own
+ *  additionalOptions — there's no dedicated document-storage backend yet, so this reuses the one
+ *  real, already-working persistence path (PUT /quotes/{id}) instead of a new unbuilt endpoint. */
+export interface QuoteDocumentAttachment {
+  fileName: string;
+  base64Content: string;
+  contentType: string;
+  uploadedAt: Date | string;
+}
+
+/** The delivery note fields the company's real paper template carries that the backend
+ *  DeliveryNote resource has no column for (PO/LPO reference, who the note is addressed to,
+ *  which of ours is the contact) — stored alongside lpoDocument/signedDeliveryNoteDocument for
+ *  the same reason: no dedicated backend field, so it rides on the quote's additionalOptions. */
+export interface DeliveryNoteMeta {
+  poNumber?: string;
+  attention?: string;
+  contactPerson?: string;
+}
+
 export interface AdditionalQuoteOptions {
   signatureText: string;
   attachments: QuoteAttachments[];
@@ -182,7 +202,13 @@ export interface AdditionalQuoteOptions {
   address: string;
   phone: string;
   notes: string;
-  terms: string
+  terms: string;
+  /** The customer's Local Purchase Order — required before a delivery note can be generated. */
+  lpoDocument?: QuoteDocumentAttachment;
+  /** The delivery note, re-uploaded once physically signed by the recipient — required before
+   *  an invoice can be created for this quote. */
+  signedDeliveryNoteDocument?: QuoteDocumentAttachment;
+  deliveryNoteMeta?: DeliveryNoteMeta;
 }
 
 
@@ -369,6 +395,48 @@ export interface PaymentReceipt {
   issuedAt: Date;
 }
 
+// PENDING/DISPATCHED/DELIVERED/CANCELLED matches the dispatchedAt/deliveredAt timestamp fields
+// the backend record carries; PENDING is the only value the API docs actually show as a sample.
+export type DeliveryNoteStatus = 'PENDING' | 'DISPATCHED' | 'DELIVERED' | 'CANCELLED';
+
+/** Line item on a delivery note, matching GET/POST /commerce/delivery-notes exactly — no pricing
+ *  (that belongs on the Invoice) and no separate ordered/shipped split (the backend only tracks
+ *  one quantity per line). */
+export interface DeliveryNoteItem {
+  id?: number;
+  deliveryNoteId?: number;
+  productName: string;
+  quantity: number;
+  unit: string;
+}
+
+/**
+ * The Delivery Note record, matching the real backend contract for
+ * GET/POST /commerce/delivery-notes and PATCH /commerce/delivery-notes/{id}/status. salesOrderId
+ * and customerId are plain ids (not nested objects) — the backend has no by-id GET, so a single
+ * record is found by filtering the list from getDeliveryNotes(); there's also no separate
+ * full-edit endpoint, so SalesService.updateDeliveryNoteStatus() is the only mutation after
+ * create, and it's used for both status transitions and any other field edits.
+ */
+export interface DeliveryNote {
+  id?: number;
+  tenantId?: string;
+  deliveryNumber: string;
+  salesOrderId?: number;
+  customerId?: number;
+  customerAddress: string;
+  carrier?: string;
+  trackingNumber?: string;
+  status: DeliveryNoteStatus;
+  dispatchedAt?: Date | string;
+  deliveredAt?: Date | string;
+  signature?: string;
+  createdBy?: number;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  items: DeliveryNoteItem[];
+}
+
 // ------------------------------------------------------------------
 // Sales Document Email DTOs
 // Backs POST/GET /x/api/v2/commerce/sales/email(/send|/{id}) — emailing
@@ -377,7 +445,7 @@ export interface PaymentReceipt {
 // call quote-form/invoice-form used before this endpoint existed.
 // ------------------------------------------------------------------
 
-export type SalesEmailDocumentType = 'QUOTE' | 'INVOICE';
+export type SalesEmailDocumentType = 'QUOTE' | 'INVOICE' | 'DELIVERY_NOTE';
 
 export type SalesEmailStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
 

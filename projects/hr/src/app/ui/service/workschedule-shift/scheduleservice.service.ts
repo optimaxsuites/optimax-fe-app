@@ -10,7 +10,6 @@ import {
 import { ConflictDTO } from '../../domain/workschedule-shift/conflict.dto';
 import { ShiftserviceService } from './shiftservice.service';
 import { PagedResponse } from '../../domain/attendance/attendance-event.dto';
-import { getAppConfig } from '../../../config/app-config';
 import { environment } from '../../shared-component/environments/environment.prod';
 
 @Injectable({
@@ -26,59 +25,7 @@ export class ScheduleserviceService {
     private shiftserviceService: ShiftserviceService,
     private http: HttpClient
   ) {
-    if (!getAppConfig().features.useMockShiftData) {
-      this.refresh();
-      return;
-    }
-
-    const scheduleDate = (daysFromToday: number): string => {
-      const date = new Date();
-      date.setDate(date.getDate() + daysFromToday);
-      return this.formatDateLocal(date);
-    };
-
-    const mockSchedules: ShiftScheduleDTO[] = [
-    {
-      id: 'sch-1',
-      employeeId: 'emp-1',
-      shiftId: 'shift-1',
-      date: scheduleDate(0),
-      project: 'CivicLens Dashboard'
-    },
-    {
-      id: 'sch-2',
-      employeeId: 'emp-2',
-      shiftId: 'shift-1',
-      date: scheduleDate(0),
-      project: 'CivicLens Dashboard'
-    },
-    {
-      id: 'sch-3',
-      employeeId: 'emp-3',
-      shiftId: 'shift-2',
-      date: scheduleDate(0),
-      project: 'ERP Revamp'
-    },
-
-    // extra days (for pagination testing)
-    {
-      id: 'sch-4',
-      employeeId: 'emp-1',
-      shiftId: 'shift-2',
-      date: scheduleDate(1),
-      project: 'ERP Revamp'
-    },
-    {
-      id: 'sch-5',
-      employeeId: 'emp-2',
-      shiftId: 'shift-2',
-      date: scheduleDate(2),
-      project: 'Mobile App'
-    }
-  ];
-
-  this.schedulesSubject.next(mockSchedules);
-
+    this.refresh();
   }
 
   /** GET /workSchedules — refreshes the local cache from the backend. */

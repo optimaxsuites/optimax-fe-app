@@ -3,7 +3,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 import { Observable, switchMap } from 'rxjs';
-import { MOCK_ATTENDANCE } from '../../../../../domain/attendance/attendancetable.mock';
 import * as L from 'leaflet';
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
 import { UserSessionService } from '../../../../../service/attendance/user-session.service';
@@ -105,20 +104,6 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
       this.startClosingWatcher();
       this.isLoading = true;
 
-      // Load from localStorage or use MOCK_ATTENDANCE
-      const stored = this.loadFromStorage();
-      this.attendance = stored.length > 0 ? stored : [...MOCK_ATTENDANCE];
-      this.filteredAttendance = [...this.attendance];
-
-      this.isLoading = false;
-      this.cdr.detectChanges();
-
-      // Emit data for parent component
-      this.dataChange.emit({
-        data: this.filteredAttendance,
-        filters: this.filters
-      });
-
       // Subscribe to total records count
       this.attendancetableService.totalRecords$.subscribe(total => {
         this.totalRecords = total;
@@ -129,7 +114,7 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
       this.attendancetableService.attendance$.subscribe(data => {
         this.attendance = data;
         this.filteredAttendance = [...this.attendance];
-        this.saveToStorage();
+        this.isLoading = false;
         this.dataChange.emit({
           data: this.filteredAttendance,
           filters: this.filters
@@ -181,7 +166,6 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
         });
 
         this.filteredAttendance = [...this.attendance];
-        this.saveToStorage();
         this.dataChange.emit({
           data: this.filteredAttendance,
           filters: this.filters
@@ -658,7 +642,6 @@ saveModification() {
       overriddenBy: admin,
       overrideReason: this.editReason
     };
-    this.saveToStorage();
     this.applyFilters();
   }
 
@@ -972,23 +955,6 @@ populateCalculatedFields(): void {
       this.calculateHours(record.checkIn ?? null, record.checkOut ?? null)
     )
   }));
-}
-
-private loadFromStorage(): AttendanceTableRecord[] {
-  try {
-    const stored = localStorage.getItem('attendanceTestData');
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-private saveToStorage(): void {
-  try {
-    localStorage.setItem('attendanceTestData', JSON.stringify(this.attendance));
-  } catch {
-    // Storage error, continue
-  }
 }
 
 isCrossBranchAttendance(record: AttendanceTableRecord): boolean {

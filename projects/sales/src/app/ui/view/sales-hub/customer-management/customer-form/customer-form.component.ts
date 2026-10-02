@@ -53,6 +53,8 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required, Validators.pattern(/^[0-9+\-\s()]{7,20}$/)]],
       address: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(255)]],
+      city: [''],
+      state: [''],
       taxId: ['', [Validators.maxLength(50)]],
       status: ['ACTIVE', Validators.required],
       notes: [''],
@@ -121,6 +123,10 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
     // *value* an array whose .length is the element count (usually 1), which always
     // failed minLength(5) even though the input displayed real text - silently blocking
     // every save with a spurious "Please fill in all required fields" warning.
+    // City/State aren't tracked as separate fields on the Customer record — the address was
+    // already only ever persisted as one combined string/array — so there's nothing to split
+    // them back out of here; they start blank on edit and get folded back into `address` again
+    // on save (see onSubmit()) if the user fills them in.
     const addressValue = Array.isArray(customer.address) ? customer.address.join(', ') : (customer.address || '');
     this.customerForm.patchValue({
       name: customer.name,
@@ -158,11 +164,18 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
     this.isSubmitting = true;
 
     const formValue = this.customerForm.value;
+    // City/State had no formControlName at all before — filled in, shown with no error, then
+    // silently discarded on save since they were never part of any control's value. Folded into
+    // the same combined address the street-address field already submits (Customer.address is
+    // string[] — previously sent as a bare string here, which only type-checked because
+    // formValue's untyped `any` shape hid the mismatch; wrapping it keeps that same one-line
+    // combined address, now honestly typed).
+    const address = [formValue.address, formValue.city, formValue.state].filter(Boolean).join(', ');
     const customerData: Partial<Customer> = {
       name: formValue.name,
       email: formValue.email,
       phone: formValue.phone,
-      address: formValue.address,
+      address: [address],
       taxId: formValue.taxId || '',
       status: formValue.status,
       notes: formValue.notes || '',

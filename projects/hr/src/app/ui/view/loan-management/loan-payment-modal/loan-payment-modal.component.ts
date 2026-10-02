@@ -4,13 +4,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Message } from 'primeng/api';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { AdvancePaymentRecordService, CreatePaymentRecordPayload } from '../../../service/loan/loan-payment-record.service';
-
-export interface BankAccountDetails {
-  bankName: string;
-  accountName: string;
-  accountNumber: string;
-  bankCode?: string;
-}
+import { PaymentConfigService, BankAccountDetails } from '../../../service/loan/loan-payment-config.service';
 
 @Component({
   selector: 'app-payment-modal',
@@ -36,19 +30,17 @@ export class LoanPaymentModalComponent implements OnInit, OnChanges {
     { value: 'LATE_FEE', label: 'Late Fee', icon: 'fas fa-exclamation-triangle', description: 'Pay outstanding late fees' }
   ];
   
-  // Bank account details (would come from backend/group settings)
-  accountingBankDetails: BankAccountDetails = {
-    bankName: 'Zenith Bank',
-    accountName: 'Optimax Solutions - Loan Repayment',
-    accountNumber: '1012345678',
-    bankCode: '057'
-  };
-
   constructor(
     private fb: FormBuilder,
-    private paymentRecordService: AdvancePaymentRecordService
+    private paymentRecordService: AdvancePaymentRecordService,
+    private paymentConfigService: PaymentConfigService
   ) {
     this.paymentForm = this.createForm();
+  }
+
+  /** Account details for the selected payment type, from the single shared config source. */
+  get accountingBankDetails(): BankAccountDetails {
+    return this.paymentConfigService.getAccountDetails(this.selectedPaymentType);
   }
 
   ngOnInit(): void {
