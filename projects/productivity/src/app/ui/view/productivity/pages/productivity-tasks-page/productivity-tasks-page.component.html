@@ -1,5 +1,18 @@
 <section class="pm-page">
 
+  <!-- ═══ REMINDER ALERTS ═══ -->
+  <div class="reminder-alerts" *ngIf="pendingAlerts.length">
+    <div class="reminder-alert" *ngFor="let alert of pendingAlerts; let i = index">
+      <span class="reminder-alert-icon">&#128276;</span>
+      <div class="reminder-alert-body">
+        <strong>{{ alert.taskTitle }}</strong>
+        <span *ngIf="alert.note"> — {{ alert.note }}</span>
+        <span class="reminder-alert-due">Due: {{ alert.dueDate }}</span>
+      </div>
+      <button type="button" class="reminder-alert-close" (click)="dismissAlert(i)" title="Dismiss">&#10005;</button>
+    </div>
+  </div>
+
   <!-- ═══ TOOLBAR ═══ -->
   <div class="pm-toolbar">
     <div class="toolbar-left">
@@ -373,6 +386,35 @@
           <label>Due date</label>
           <input type="date" [(ngModel)]="newTask.dueDate" />
         </div>
+      </div>
+
+      <!-- Reminder section -->
+      <div class="reminder-section">
+        <div class="reminder-section-header">
+          <i class="pi pi-bell"></i>
+          <span>Deadline Reminder</span>
+        </div>
+        <div class="detail-grid-2">
+          <div class="detail-field">
+            <label>Remind me</label>
+            <select [(ngModel)]="newTask.reminderOffset">
+              <option *ngFor="let opt of reminderOptions" [value]="opt.value">{{ opt.label }}</option>
+            </select>
+          </div>
+          <div class="detail-field" *ngIf="newTask.reminderOffset !== 'none'">
+            <label>Reminder note <span class="optional-label">(optional)</span></label>
+            <input type="text" placeholder="e.g. Submit business proposal to client" [(ngModel)]="newTask.reminderNote" maxlength="120" />
+          </div>
+        </div>
+        <p class="reminder-hint" *ngIf="newTask.reminderOffset !== 'none' && newTask.dueDate">
+          <i class="pi pi-info-circle"></i>
+          You will be reminded on
+          <strong>{{ reminderService.computeReminderDate(newTask.dueDate!, newTask.reminderOffset!) | date:'EEE, MMM d, y' }}</strong>
+          at 9:00 AM.
+        </p>
+        <p class="reminder-hint warn" *ngIf="newTask.reminderOffset !== 'none' && !newTask.dueDate">
+          <i class="pi pi-exclamation-triangle"></i> Set a due date to enable the reminder.
+        </p>
       </div>
     </div>
     <div class="modal-footer">

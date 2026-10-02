@@ -252,6 +252,7 @@ export class VendorService {
       createdAt: parseSafeDate(raw.createdAt),
       updatedAt: parseSafeDate(raw.updatedAt),
       applicationNumber: raw.applicationNumber || raw.application_number || undefined,
+      loginEnabled: raw.loginEnabled ?? false,
       // The backend was originally POSTed the full 6-step registration payload
       // (see VendorRegistrationService.submit) — preserve it here too, field by
       // field, so the Registration tab still shows everything the vendor
@@ -717,6 +718,21 @@ export class VendorService {
         }),
         catchError(err => {
           this.errorSubject.next('Failed to update vendor status');
+          return throwError(() => err);
+        })
+      );
+  }
+
+  enableVendorLogin(id: string, enabled: boolean): Observable<Vendor> {
+    return this.http.patch<any>(`${this.baseUrl}/vendor-management/vendors/${id}/enable-login`, { loginEnabled: enabled })
+      .pipe(
+        map(raw => this.mapVendor(raw)),
+        tap(vendor => {
+          this.selectedVendorSubject.next(vendor);
+          this.updateVendorInList(vendor);
+        }),
+        catchError(err => {
+          this.errorSubject.next('Failed to update vendor login access');
           return throwError(() => err);
         })
       );

@@ -2,6 +2,7 @@
 import { Component, EventEmitter, Output, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
+import { TaskReminderService, ReminderOffset } from '../../pages/productivity-tasks-page/task-reminder.service';
 
 @Component({
   selector: 'app-new-task',
@@ -28,8 +29,18 @@ export class NewTaskComponent implements OnInit {
     endDate: '',
     effortEstimation: '',
     selectedUsers: [] as string[],
-    projectId: '' // Add projectId to the task
+    projectId: '',
+    reminderOffset: 'none' as ReminderOffset,
+    reminderNote: '',
   };
+
+  readonly reminderOptions: Array<{ value: ReminderOffset; label: string }> = [
+    { value: 'none',    label: 'No reminder' },
+    { value: '1_day',   label: '1 day before due date' },
+    { value: '3_days',  label: '3 days before due date' },
+    { value: '1_week',  label: '1 week before due date' },
+    { value: '2_weeks', label: '2 weeks before due date' },
+  ];
 
   users = [
     { email: 'user1@example.com' },
@@ -42,8 +53,9 @@ export class NewTaskComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    public ref: DynamicDialogRef, // Inject DynamicDialogRef
-    public config: DynamicDialogConfig // Inject DynamicDialogConfig
+    public ref: DynamicDialogRef,
+    public config: DynamicDialogConfig,
+    readonly reminderService: TaskReminderService,
   ) {
     // Initialize the form with validators if needed
     this.form = this.fb.group({
@@ -127,10 +139,20 @@ export class NewTaskComponent implements OnInit {
     const success = this.saveTaskToLocalStorage(this.task);
 
     if (success) {
+      if (this.task.reminderOffset !== 'none' && this.task.dueDate) {
+        this.reminderService.schedule(
+          this.task.id,
+          this.task.name,
+          this.task.dueDate,
+          this.task.reminderOffset,
+          this.task.reminderNote || undefined,
+          this.task.selectedUsers[0] || undefined,
+        );
+      }
       this.message = 'Task successfully created!';
       this.resetTask();
       this.closeModal();
-      this.ref.close(this.task); // Close the modal and return the task
+      this.ref.close(this.task);
     } else {
       this.message = 'Failed to create the task. Please try again.';
     }
@@ -178,7 +200,9 @@ export class NewTaskComponent implements OnInit {
       endDate: '',
       effortEstimation: '',
       selectedUsers: [],
-      projectId: this.task.projectId // Preserve the projectId
+      projectId: this.task.projectId,
+      reminderOffset: 'none',
+      reminderNote: '',
     };
   }
 

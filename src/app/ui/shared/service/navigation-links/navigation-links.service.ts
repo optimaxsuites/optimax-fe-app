@@ -92,6 +92,8 @@ export class NavigationLinksService {
     this.links['signupLink'] = '/user/auth/sign-up/' +uuidV4();
     this.links['emvLink'] = '/user/auth/emv/' +uuidV4();
     this.links['verifyLink'] = '/user/auth/verify';
+    this.links['vendorSignupLink'] = '/vendor/signup/' +uuidV4();
+    this.links['vendorPendingLink'] = '/vendor/pending/' +uuidV4();
 //=============================================================================================================================
     this.links['checkoutLink'] = '/user/checkout/' +uuidV4();
     this.links['kitchenLink'] = '/user/checkout/kitchen/' +uuidV4();

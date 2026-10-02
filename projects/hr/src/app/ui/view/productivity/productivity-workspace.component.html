@@ -85,6 +85,14 @@
         <i class="fas fa-user-check tab-icon"></i>
         <span class="tab-label">Supervisor Review</span>
       </button>
+
+      <div class="tab-divider"></div>
+
+      <span class="tab-group-label">Sprint</span>
+      <button class="tab-btn" [class.active]="pmSection === 'standup'" (click)="setPmSection('standup')">
+        <i class="fas fa-clipboard-list tab-icon"></i>
+        <span class="tab-label">Standup</span>
+      </button>
     </div>
   </div>
 
@@ -94,13 +102,22 @@
     <!-- ════════════════ BOARD ════════════════ -->
     <ng-container *ngSwitchCase="'board'">
 
-      <!-- Reminder bar -->
-      <div class="reminder-bar">
-        <strong>⚠️ Reminders need your attention</strong>
+      <!-- Reminder alerts (fired by HrTaskReminderService) -->
+      <div class="reminder-bar" *ngIf="pendingAlerts.length">
+        <strong>🔔 Task Reminders</strong>
         <div class="rem-chips">
-          <span class="rem-chip red">Competency Framework — board sign-off blocked</span>
-          <span class="rem-chip red">Assessment cycle closes in 8 days</span>
-          <span class="rem-chip" (click)="setPmSection('assessment')">Q2 Self-Assessment due Jun 10 →</span>
+          <span class="rem-chip" *ngFor="let alert of pendingAlerts; let i = index"
+                style="display:flex;align-items:center;gap:6px">
+            <span>
+              <strong>{{ alert.taskTitle }}</strong>
+              <span *ngIf="alert.sprint"> · {{ alert.sprint }}</span>
+              — Due: {{ alert.dueDate }}
+              <span *ngIf="alert.note"> · {{ alert.note }}</span>
+            </span>
+            <button (click)="dismissAlert(i)"
+                    style="background:none;border:none;cursor:pointer;font-size:14px;line-height:1;padding:0;opacity:.6"
+                    title="Dismiss">✕</button>
+          </span>
         </div>
       </div>
 
@@ -180,6 +197,10 @@
         <select class="pm-select" [(ngModel)]="filterAssignee" (ngModelChange)="rebuildBoardMap()">
           <option value="">All Assignees</option>
           <option *ngFor="let a of uniqueAssignees" [value]="a">{{ a }}</option>
+        </select>
+        <select class="pm-select" [(ngModel)]="filterSprint" (ngModelChange)="rebuildBoardMap()">
+          <option value="">All Sprints</option>
+          <option *ngFor="let s of uniqueSprints" [value]="s">{{ s }}</option>
         </select>
 
         <!-- Overdue filter toggle -->
@@ -1803,6 +1824,175 @@
 
     </ng-container>
 
+    <!-- ════════════════ STANDUP ════════════════ -->
+    <ng-container *ngSwitchCase="'standup'">
+      <div style="max-width:800px;margin:0 auto;padding:8px 0">
+
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div>
+            <h3 style="margin:0 0 4px;font-size:1.15rem;font-weight:700;color:#111827">Sprint Standup</h3>
+            <p style="margin:0;font-size:0.85rem;color:#6b7280">Record developer updates during sprint meetings</p>
+          </div>
+          <button class="btn-ghost" style="font-size:0.8rem"
+                  (click)="standupShowHistory = !standupShowHistory">
+            <i class="fas" [class.fa-history]="!standupShowHistory" [class.fa-edit]="standupShowHistory"></i>
+            {{ standupShowHistory ? 'New Standup' : 'View History (' + standupEntries.length + ')' }}
+          </button>
+        </div>
+
+        <!-- Success banner -->
+        <div *ngIf="standupSaved"
+             style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:0.875rem;color:#065f46;display:flex;align-items:center;gap:8px">
+          <i class="fas fa-check-circle"></i> Standup saved successfully.
+        </div>
+
+        <!-- ── New Standup Form ─────────────────────────────────────────── -->
+        <ng-container *ngIf="!standupShowHistory">
+          <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+              <div class="form-row">
+                <label>Sprint Name *</label>
+                <select [(ngModel)]="standupForm.sprintName">
+                  <option value="">— Select sprint —</option>
+                  <option *ngFor="let s of uniqueSprints" [value]="s">{{ s }}</option>
+                </select>
+                <p *ngIf="!uniqueSprints.length" style="font-size:11px;color:#9ca3af;margin:3px 0 0">No sprints yet — create tasks with a sprint name first.</p>
+              </div>
+              <div class="form-row">
+                <label>Date *</label>
+                <input type="date" [(ngModel)]="standupForm.date">
+              </div>
+              <div class="form-row" style="grid-column:1/-1">
+                <label>Facilitator</label>
+                <select [(ngModel)]="standupForm.facilitator">
+                  <option value="">— select —</option>
+                  <option *ngFor="let emp of allEmployees" [value]="emp.fullName">{{ emp.fullName }}</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Developer updates -->
+            <div style="margin-bottom:16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <span style="font-size:0.85rem;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em">Developer Updates</span>
+                <button class="btn-ghost" style="font-size:0.8rem" (click)="addDevUpdate()">
+                  <i class="fas fa-plus"></i> Add Developer
+                </button>
+              </div>
+
+              <div *ngFor="let upd of standupForm.updates; let i = index"
+                   style="border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:10px;background:#f9fafb">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <select [(ngModel)]="upd.developer"
+                          style="font-weight:600;color:#111827;border:none;background:transparent;font-size:0.9rem;padding:0;cursor:pointer;outline:none;max-width:220px">
+                    <option value="">— Developer —</option>
+                    <option *ngFor="let emp of allEmployees" [value]="emp.fullName">{{ emp.fullName }}</option>
+                  </select>
+                  <button class="btn-icon" style="color:#dc2626;width:26px;height:26px;font-size:11px"
+                          (click)="removeDevUpdate(i)" title="Remove"
+                          [disabled]="standupForm.updates.length === 1">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <div>
+                    <label style="font-size:0.75rem;font-weight:600;color:#059669;display:block;margin-bottom:4px">
+                      <i class="fas fa-check-circle" style="margin-right:3px"></i>Completed
+                    </label>
+                    <textarea [(ngModel)]="upd.completed" rows="5"
+                              style="width:100%;resize:vertical;font-size:0.875rem;border:1px solid #d1fae5;border-radius:6px;padding:8px 10px;background:#fff;font-family:inherit"
+                              placeholder="What was completed?"></textarea>
+                  </div>
+                  <div>
+                    <label style="font-size:0.75rem;font-weight:600;color:#2563eb;display:block;margin-bottom:4px">
+                      <i class="fas fa-forward" style="margin-right:3px"></i>Planned
+                    </label>
+                    <textarea [(ngModel)]="upd.planned" rows="5"
+                              style="width:100%;resize:vertical;font-size:0.875rem;border:1px solid #bfdbfe;border-radius:6px;padding:8px 10px;background:#fff;font-family:inherit"
+                              placeholder="What is planned next?"></textarea>
+                  </div>
+                  <div>
+                    <label style="font-size:0.75rem;font-weight:600;color:#dc2626;display:block;margin-bottom:4px">
+                      <i class="fas fa-exclamation-circle" style="margin-right:3px"></i>Blockers
+                    </label>
+                    <textarea [(ngModel)]="upd.blockers" rows="5"
+                              style="width:100%;resize:vertical;font-size:0.875rem;border:1px solid #fecaca;border-radius:6px;padding:8px 10px;background:#fff;font-family:inherit"
+                              placeholder="Any blockers? Leave empty if none."></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- General note -->
+            <div class="form-row" style="margin-bottom:20px">
+              <label>General Note <span style="font-size:10px;color:#9ca3af;font-weight:400">(optional)</span></label>
+              <textarea [(ngModel)]="standupForm.generalNote" rows="2"
+                        style="resize:vertical;font-size:0.875rem"
+                        placeholder="Any decisions, action items, or notes from the meeting…"></textarea>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:8px">
+              <button class="btn-ghost" (click)="standupForm = blankStandup()">Clear</button>
+              <button class="btn-primary" (click)="saveStandup()"
+                      [disabled]="!standupForm.sprintName.trim() || !standupForm.date">
+                <i class="fas fa-save"></i> Save Standup
+              </button>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- ── History ──────────────────────────────────────────────────── -->
+        <ng-container *ngIf="standupShowHistory">
+          <div *ngIf="!standupEntries.length"
+               style="text-align:center;padding:48px 16px;color:#9ca3af;font-size:0.9rem">
+            <i class="fas fa-clipboard-list" style="font-size:2rem;margin-bottom:8px;display:block;opacity:.4"></i>
+            No standups recorded yet.
+          </div>
+
+          <div *ngFor="let entry of standupEntries"
+               style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+              <div>
+                <span style="font-size:1rem;font-weight:700;color:#111827">{{ entry.sprintName }}</span>
+                <span style="font-size:0.8rem;color:#6b7280;margin-left:10px">{{ entry.date | date:'EEE, MMM d, y' }}</span>
+                <span *ngIf="entry.facilitator" style="font-size:0.78rem;color:#6b7280;margin-left:8px">· Facilitated by {{ entry.facilitator }}</span>
+              </div>
+              <button class="btn-icon" style="color:#dc2626;width:26px;height:26px;font-size:11px"
+                      (click)="deleteStandup(entry.id)" title="Delete">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+
+            <div *ngFor="let upd of entry.updates"
+                 style="border-left:3px solid #e5e7eb;padding:8px 0 8px 14px;margin-bottom:8px">
+              <div style="font-size:0.85rem;font-weight:700;color:#374151;margin-bottom:6px">{{ upd.developer || '—' }}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:0.8rem">
+                <div *ngIf="upd.completed">
+                  <span style="color:#059669;font-weight:600">Done:</span> {{ upd.completed }}
+                </div>
+                <div *ngIf="upd.planned">
+                  <span style="color:#2563eb;font-weight:600">Planned:</span> {{ upd.planned }}
+                </div>
+                <div *ngIf="upd.blockers">
+                  <span style="color:#dc2626;font-weight:600">Blockers:</span> {{ upd.blockers }}
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="entry.generalNote"
+                 style="margin-top:10px;padding:8px 12px;background:#f9fafb;border-radius:6px;font-size:0.8rem;color:#374151;border:1px solid #e5e7eb">
+              <strong>Note:</strong> {{ entry.generalNote }}
+            </div>
+          </div>
+        </ng-container>
+
+      </div>
+    </ng-container>
+
+
+
   </div><!-- /pm-content -->
 
   <!-- ══ DETAIL SLIDE-OVER ════════════════════════════════════════════════════ -->
@@ -2324,6 +2514,8 @@
       </div>
 
     </ng-container>
+
+
   </div>
 
 <!-- ══ RIGHT RAIL — Archive & Stages ════════════════════════════════════ -->
@@ -2407,6 +2599,7 @@
 
   </div><!-- /right-rail-body -->
 </div><!-- /right-rail -->
+
 
 </div><!-- /pm-page -->
 
@@ -2803,6 +2996,40 @@
           <div style="font-size:12px;color:#9ca3af;padding:4px 0">No subtasks added — click Add Subtask to begin.</div>
         </ng-template>
       </div>
+
+      <!-- ── Deadline Reminder ────────────────────────────────────────────── -->
+      <div style="border:1px solid #bfdbfe;border-radius:12px;padding:16px 18px;background:#eff6ff;margin-top:8px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.85rem;font-weight:700;color:#1d4ed8">
+          <i class="fas fa-bell" style="font-size:13px"></i>
+          Deadline Reminder
+        </div>
+        <div class="form-2col">
+          <div class="form-row">
+            <label style="font-size:0.85rem">Remind me</label>
+            <select [(ngModel)]="newTask.reminderOffset" style="background:#fff">
+              <option *ngFor="let opt of reminderOptions" [value]="opt.value">{{ opt.label }}</option>
+            </select>
+          </div>
+          <div class="form-row" *ngIf="newTask.reminderOffset !== 'none'">
+            <label style="font-size:0.85rem">Note <span style="font-size:10px;color:#9ca3af;font-weight:400">(optional)</span></label>
+            <input type="text" [(ngModel)]="newTask.reminderNote" placeholder="e.g. Submit to client"
+                   maxlength="120" style="background:#fff">
+          </div>
+        </div>
+        <p *ngIf="newTask.reminderOffset !== 'none' && newTask.dueDate"
+           style="font-size:0.78rem;color:#2563eb;margin:0;display:flex;align-items:center;gap:4px">
+          <i class="fas fa-info-circle" style="font-size:11px"></i>
+          You will be reminded on
+          <strong>{{ reminderService.computeReminderDate(newTask.dueDate!, newTask.reminderOffset!) | date:'EEE, MMM d, y' }}</strong>
+          at 9:00 AM.
+        </p>
+        <p *ngIf="newTask.reminderOffset !== 'none' && !newTask.dueDate"
+           style="font-size:0.78rem;color:#d97706;margin:0;display:flex;align-items:center;gap:4px">
+          <i class="fas fa-exclamation-triangle" style="font-size:11px"></i>
+          Set a due date to enable the reminder.
+        </p>
+      </div>
+      <!-- ────────────────────────────────────────────────────────────────── -->
     </div>
     <div class="modal-footer">
       <span *ngIf="taskSubmitAttempted" style="font-size:12px;color:#dc2626;flex:1">Please fill in all required fields.</span>

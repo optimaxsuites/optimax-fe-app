@@ -1,0 +1,107 @@
+<div class="vendor-signup-page">
+  <div class="vs-card">
+
+    <!-- Logo / Brand -->
+    <div class="vs-brand">
+      <div class="vs-logo-wrap">
+        <img src="assets/img/logo.png" alt="OptimaX" class="vs-logo" onerror="this.style.display='none'">
+      </div>
+      <h1 class="vs-title">Vendor Registration</h1>
+      <p class="vs-subtitle">Join the OptimaX Vendor Network</p>
+    </div>
+
+    <!-- Success state -->
+    <div *ngIf="successMsg" class="vs-success">
+      <div class="vs-success-icon"><i class="fas fa-envelope-open-text"></i></div>
+      <h2>Check your inbox</h2>
+      <p>{{ successMsg }}</p>
+      <p class="vs-success-note">Once you verify your email, your account will be reviewed by our team before you can log in.</p>
+      <button type="button" class="vs-btn vs-btn--outline" (click)="goToLogin()">Back to Login</button>
+    </div>
+
+    <!-- Form -->
+    <form *ngIf="!successMsg" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+      <div class="vs-field">
+        <label class="vs-label">Company Name <span class="vs-req">*</span></label>
+        <input formControlName="companyName" type="text" class="vs-input"
+               placeholder="e.g. OptimaX Supplies"
+               [class.vs-input--error]="submitted && f['companyName'].errors">
+        <span class="vs-error" *ngIf="submitted && f['companyName'].errors?.['required']">Company name is required.</span>
+      </div>
+
+      <div class="vs-field">
+        <label class="vs-label">Username <span class="vs-req">*</span></label>
+        <input formControlName="username" type="text" class="vs-input"
+               placeholder="3–20 characters"
+               [class.vs-input--error]="submitted && f['username'].errors">
+        <span class="vs-error" *ngIf="submitted && f['username'].errors?.['required']">Username is required.</span>
+        <span class="vs-error" *ngIf="submitted && f['username'].errors?.['minlength']">Minimum 3 characters.</span>
+      </div>
+
+      <div class="vs-field">
+        <label class="vs-label">Email Address <span class="vs-req">*</span></label>
+        <input formControlName="email" type="email" class="vs-input"
+               placeholder="you@company.com"
+               [class.vs-input--error]="submitted && f['email'].errors">
+        <span class="vs-error" *ngIf="submitted && f['email'].errors?.['required']">Email is required.</span>
+        <span class="vs-error" *ngIf="submitted && f['email'].errors?.['email']">Enter a valid email address.</span>
+      </div>
+
+      <div class="vs-field">
+        <label class="vs-label">Password <span class="vs-req">*</span></label>
+        <div class="vs-input-wrap">
+          <input formControlName="password" [type]="hidePassword ? 'password' : 'text'" class="vs-input vs-input--icon"
+                 placeholder="Minimum 6 characters"
+                 [class.vs-input--error]="submitted && f['password'].errors">
+          <button type="button" class="vs-eye-btn" (click)="hidePassword = !hidePassword">
+            <i class="fas" [class.fa-eye]="hidePassword" [class.fa-eye-slash]="!hidePassword"></i>
+          </button>
+        </div>
+        <span class="vs-error" *ngIf="submitted && f['password'].errors?.['minlength']">Minimum 6 characters.</span>
+      </div>
+
+      <div class="vs-field">
+        <label class="vs-label">Confirm Password <span class="vs-req">*</span></label>
+        <div class="vs-input-wrap">
+          <input formControlName="confirmPassword" [type]="hideConfirm ? 'password' : 'text'" class="vs-input vs-input--icon"
+                 placeholder="Re-enter password"
+                 [class.vs-input--error]="submitted && form.errors?.['passwordMismatch']">
+          <button type="button" class="vs-eye-btn" (click)="hideConfirm = !hideConfirm">
+            <i class="fas" [class.fa-eye]="hideConfirm" [class.fa-eye-slash]="!hideConfirm"></i>
+          </button>
+        </div>
+        <span class="vs-error" *ngIf="submitted && form.errors?.['passwordMismatch']">Passwords do not match.</span>
+      </div>
+
+      <!-- BODMAS Captcha -->
+      <div class="vs-captcha-block">
+        <label class="vs-label">Verification <span class="vs-req">*</span></label>
+        <div class="vs-captcha-row">
+          <span class="vs-captcha-question">{{ captchaQuestion }}</span>
+          <button type="button" class="vs-refresh-btn" (click)="generateCaptcha()" title="New question">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+        <input formControlName="captchaInput" type="number" class="vs-input vs-captcha-input"
+               placeholder="Enter answer"
+               [class.vs-input--error]="submitted && f['captchaInput'].errors">
+        <span class="vs-error" *ngIf="submitted && f['captchaInput'].errors?.['required']">Answer is required.</span>
+      </div>
+
+      <div class="vs-error vs-error--banner" *ngIf="errorMsg">
+        <i class="fas fa-exclamation-circle"></i> {{ errorMsg }}
+      </div>
+
+      <button type="submit" class="vs-btn vs-btn--primary" [disabled]="loading">
+        <span *ngIf="!loading">Create Vendor Account</span>
+        <span *ngIf="loading"><i class="fas fa-spinner fa-spin"></i> Creating account…</span>
+      </button>
+
+      <p class="vs-login-link">
+        Already registered? <a (click)="goToLogin()" class="vs-link">Sign in here</a>
+      </p>
+
+    </form>
+  </div>
+</div>

@@ -35,6 +35,20 @@ export class AuthGuard implements CanActivate {
     }
 
     if (this.authService.isAuthenticated()) {
+      // Vendor users are restricted to the vendor portal only
+      const isVendor = sessionStorage.getItem('isVendor') === 'true';
+      if (isVendor) {
+        const vendorLoginEnabled = sessionStorage.getItem('vendorLoginEnabled') === 'true';
+        if (!vendorLoginEnabled) {
+          const pendingLink = this.navigationLink.getLink('vendorPendingLink');
+          return this.router.parseUrl(pendingLink);
+        }
+        const url = state.url || '';
+        if (!url.includes('/vendor/')) {
+          const vendorLink = this.navigationLink.getLink('vendorLink');
+          return this.router.parseUrl(vendorLink);
+        }
+      }
       return true;
     } else {
       if (state.url) {

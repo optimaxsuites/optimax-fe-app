@@ -21,6 +21,7 @@ import { MetadataService } from 'projects/POS/src/app/ui/service/metadata.servic
 import { TenantService } from 'src/app/ui/tenants/service/tenant.service';
 import { MenuItemsService } from 'src/app/ui/shared/service/menue-items/menu-items.service';
 import { Subscription } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 
 
 // dami just modified this to fix login handoff and route users cleanly into the app shell.
@@ -59,6 +60,7 @@ export class LoginComponent implements OnInit {
   supportEmail = 'support@optimaxsuites.com';
   pendingRedirectUrl = '';
   pendingRedirectLabel = '';
+  vendorSignupUrl = '';
   
   // New state variable to toggle between login modes
   isCodeLogin: boolean = false;
@@ -92,12 +94,14 @@ export class LoginComponent implements OnInit {
     private metadataService: MetadataService,
     private tenantService: TenantService,
     private menuItemsService: MenuItemsService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private http: HttpClient
   ){}
 
   ngOnInit(): void {
     this.loadTenantIdentity();
     this.loadPendingRedirectIntent();
+    this.vendorSignupUrl = this.navigationLink.getLink('vendorSignupLink');
   }
 
   ngOnDestroy(): void {
@@ -491,66 +495,59 @@ async posLoginAction(): Promise<void> {
 
 
 
-     if(isSuperUser()){
-        const dashboardLink = this.navigationLink.getLink('dashboardLink');
-        this.router.navigate([dashboardLink]);
-        return;
-      }
+    const baseUrl = (environment as any).apiBaseUrl;
 
-     this.authenticationService.getUserApplicationRole(data.id).subscribe({
-      next: (response) => {
-        console.log("User application role:", response);
-        // sessionStorage.setItem("userApplicationRole", JSON.stringify(response));
-        if (Array.isArray(data.roles) && data.roles.includes("ROLE_ADMIN")) {
-        console.log("Super user detected");
-        sessionStorage.setItem(
-          "userApplicationRole",
-          JSON.stringify(response)
-        );
-      } else {
-        sessionStorage.setItem(
-          "userApplicationRole",
-          JSON.stringify(response)
-        );
-      }
-
-      // console.log(hasOnlyCheckoutPermission())
-      // console.log((hasOnlyKitchenPermissions()))
-
-      if (hasOnlyCheckoutPermission()) {
-        const checkoutLink = this.navigationLink.getLink('checkoutLink');
-        this.router.navigate([checkoutLink]); 
-      } else if (hasOnlyKitchenPermissions()){
-        const kitchenLink = this.navigationLink.getLink('kitchenLink');
-        this.router.navigate([kitchenLink]);
-      }
-       else {
-        const dashboardLink = this.navigationLink.getLink('dashboardLink');
-        this.router.navigate([dashboardLink]);
-      }
-
+    this.http.get<any>(`${baseUrl}/x/api/v2/commerce/vendors/by-user/${data.id}`, {
+      headers: { 'X-Tenant-ID': data.tenantId || data.tenant || tenantId }
+    }).subscribe({
+      next: (vendor) => {
+        sessionStorage.setItem('isVendor', 'true');
+        sessionStorage.setItem('vendorLoginEnabled', String(!!vendor?.loginEnabled));
+        if (!vendor?.loginEnabled) {
+          const pendingLink = this.navigationLink.getLink('vendorPendingLink');
+          this.router.navigate([pendingLink]);
+        } else {
+          const vendorLink = this.navigationLink.getLink('vendorLink');
+          this.router.navigate([vendorLink]);
+        }
       },
-      error: (error) => {
-        console.error("Error fetching user application role:", error);
-         const storedRole = sessionStorage.getItem("userApplicationRole");
-          if (storedRole) {
-            console.log("Removing invalid userApplicationRole from sessionStorage");
-            sessionStorage.removeItem("userApplicationRole");
-          }
-          if (hasOnlyCheckoutPermission()) {
-            const checkoutLink = this.navigationLink.getLink('checkoutLink');
-            this.router.navigate([checkoutLink]);
-          } else if (hasOnlyKitchenPermissions()) {
-            const kitchenLink = this.navigationLink.getLink('kitchenLink');
-            this.router.navigate([kitchenLink]);
-          } else {
-            const dashboardLink = this.navigationLink.getLink('dashboardLink');
-            this.router.navigate([dashboardLink]);
-          }
+      error: () => {
+        // Not a vendor — proceed with normal role-based navigation
+        sessionStorage.setItem('isVendor', 'false');
+        this.proceedWithNormalNavigation(data);
       }
-    })
+    });
 
      
+  }
+
+  proceedWithNormalNavigation(data: any): void {
+    if (isSuperUser()) {
+      this.router.navigate([this.navigationLink.getLink('dashboardLink')]);
+      return;
+    }
+    this.authenticationService.getUserApplicationRole(data.id).subscribe({
+      next: (response) => {
+        sessionStorage.setItem('userApplicationRole', JSON.stringify(response));
+        if (hasOnlyCheckoutPermission()) {
+          this.router.navigate([this.navigationLink.getLink('checkoutLink')]);
+        } else if (hasOnlyKitchenPermissions()) {
+          this.router.navigate([this.navigationLink.getLink('kitchenLink')]);
+        } else {
+          this.router.navigate([this.navigationLink.getLink('dashboardLink')]);
+        }
+      },
+      error: () => {
+        sessionStorage.removeItem('userApplicationRole');
+        if (hasOnlyCheckoutPermission()) {
+          this.router.navigate([this.navigationLink.getLink('checkoutLink')]);
+        } else if (hasOnlyKitchenPermissions()) {
+          this.router.navigate([this.navigationLink.getLink('kitchenLink')]);
+        } else {
+          this.router.navigate([this.navigationLink.getLink('dashboardLink')]);
+        }
+      }
+    });
   }
 
   async getUserRegInfoData(data: any) {

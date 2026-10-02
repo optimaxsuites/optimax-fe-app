@@ -347,7 +347,7 @@ export class MessageFeedComponent implements OnInit, OnDestroy, OnChanges {
 
   isWithinEditWindow(msg: Message): boolean {
     const sent = this.parseServerDate(msg.sentAtRaw);
-    if (!sent) return false;
+    if (!sent) return true; // no timestamp → assume recent, allow edit/delete
     return Date.now() - sent.getTime() < this.EDIT_WINDOW_MS;
   }
 

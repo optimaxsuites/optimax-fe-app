@@ -313,8 +313,8 @@
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
           </svg>
         </button>
-        <!-- Lock indicator (own messages past the 30-min window) -->
-        <span *ngIf="isOwnMessage(msg) && !isWithinEditWindow(msg)"
+        <!-- Lock indicator (own messages past the 30-min window, timestamp confirmed) -->
+        <span *ngIf="isOwnMessage(msg) && !!msg.sentAtRaw && !isWithinEditWindow(msg)"
               class="float-action-btn float-locked"
               title="Can't edit or delete — messages are locked after 30 minutes">
           <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">

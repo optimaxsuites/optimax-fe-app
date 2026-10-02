@@ -259,6 +259,8 @@ import { ModuleComponent } from './ui/marketplace/view/module/module.component';
 import { DeployErpComponent } from './ui/marketplace/view/deploy-erp/deploy-erp.component';
 import { TenantInit } from './ui/tenants/service/tenant-init.service';
 import { MenuModule } from 'primeng/menu';
+import { VendorSignupComponent } from './ui/auth/view/vendor-signup/vendor-signup.component';
+import { VendorPendingComponent } from './ui/auth/view/vendor-pending/vendor-pending.component';
 
 
 const dbConfig: DBConfig = {
@@ -498,6 +500,8 @@ const dbConfig: DBConfig = {
     DeployErpComponent,
     InterviewInviteComponent,
     ReminderBellComponent,
+    VendorSignupComponent,
+    VendorPendingComponent,
     //  EstimatedDeliveryPipe
 
   ],
