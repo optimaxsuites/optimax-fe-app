@@ -438,8 +438,6 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     // FooterComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
     CommonModule,
     AppHrRoutingModule,
     LargeSideModalComponent,
