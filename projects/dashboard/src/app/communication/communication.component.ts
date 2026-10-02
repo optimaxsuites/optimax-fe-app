@@ -4651,7 +4651,7 @@ export class CommunicationComponent
             0,
         ) || profile.userId,
       jobTitle:
-        employee?.jobTitle ||
+        employee?.jobTitle || 
         employee?.designation ||
         employee?.position ||
         profile.jobTitle,
