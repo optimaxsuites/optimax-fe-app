@@ -115,7 +115,7 @@
               <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"></i>
               {{ isDownloading ? 'Generating...' : 'Download PDF' }}
             </button>
-            <button type="button" class="gdn-btn gdn-btn--ghost" [disabled]="isEmailing" (click)="emailToCustomer()">
+            <button type="button" class="gdn-btn gdn-btn--ghost" [disabled]="isEmailing" (click)="openSendModal()">
               <i class="fas" [class.fa-envelope]="!isEmailing" [class.fa-spinner]="isEmailing" [class.fa-spin]="isEmailing"></i>
               {{ isEmailing ? 'Sending...' : 'Email to Customer' }}
             </button>
@@ -127,4 +127,34 @@
       </div>
     </ng-container>
   </ng-container>
+</div>
+
+<!-- ══ SEND EMAIL MODAL ══════════════════════════════════════════════════ -->
+<div class="gdn-modal-backdrop" *ngIf="showSendModal" (click)="$event.target === $event.currentTarget && (showSendModal = false)">
+  <div class="gdn-modal">
+    <div class="gdn-modal-head">
+      <h3><i class="fas fa-paper-plane"></i> Send Delivery Note by Email</h3>
+      <button type="button" class="gdn-icon-btn" (click)="showSendModal = false"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="gdn-modal-body">
+      <p class="gdn-upload-hint">
+        This message appears above the delivery note summary and attached PDF — edit it as needed.
+      </p>
+      <div class="gdn-field">
+        <label class="gdn-label">Subject</label>
+        <input type="text" class="gdn-input" [(ngModel)]="emailSubject">
+      </div>
+      <div class="gdn-field">
+        <label class="gdn-label">Message</label>
+        <textarea class="gdn-input" rows="6" [(ngModel)]="emailMessage"></textarea>
+      </div>
+    </div>
+    <div class="gdn-modal-footer">
+      <button type="button" class="gdn-btn gdn-btn--ghost" (click)="showSendModal = false">Cancel</button>
+      <button type="button" class="gdn-btn gdn-btn--primary" [disabled]="isEmailing" (click)="confirmSendEmail()">
+        <i class="fas" [class.fa-paper-plane]="!isEmailing" [class.fa-spinner]="isEmailing" [class.fa-spin]="isEmailing"></i>
+        {{ isEmailing ? 'Sending...' : 'Send' }}
+      </button>
+    </div>
+  </div>
 </div>

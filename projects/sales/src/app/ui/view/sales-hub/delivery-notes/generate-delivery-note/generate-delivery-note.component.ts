@@ -67,6 +67,10 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   isDownloading = false;
   isEmailing = false;
 
+  showSendModal = false;
+  emailSubject = '';
+  emailMessage = '';
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -271,7 +275,23 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     }
   }
 
-  async emailToCustomer(): Promise<void> {
+  /** Opens the Send modal, pre-filled with an editable subject/message — confirmSendEmail()
+   *  does the actual send once the seller confirms. */
+  openSendModal(): void {
+    if (!this.quote || !this.deliveryNote) return;
+    const customer = this.selectedCustomer;
+    const email = customer?.email || (this.quote.customerName as any)?.email || (this.quote.customerId as any)?.email || '';
+    if (!email) {
+      this.messageService.add({ severity: 'warn', summary: 'Missing Email', detail: 'Could not find a recipient email address for this customer.' });
+      return;
+    }
+    const company = this.merchantInfo?.companyName || this.merchantInfo?.name || 'our company';
+    this.emailSubject = `Delivery Note ${this.deliveryNote.deliveryNumber} from ${company}`;
+    this.emailMessage = `Hi ${customer?.name || 'there'},\n\nPlease find attached the delivery note ${this.deliveryNote.deliveryNumber} for your order.`;
+    this.showSendModal = true;
+  }
+
+  async confirmSendEmail(): Promise<void> {
     if (this.isEmailing || !this.quote || !this.deliveryNote) return;
 
     const customer = this.selectedCustomer;
@@ -281,23 +301,61 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.showSendModal = false;
     this.isEmailing = true;
     try {
       const blob = await this.generatePdfBlob();
       const base64Content = await this.blobToBase64(blob);
       const fileName = `DeliveryNote-${this.deliveryNote.deliveryNumber}.pdf`;
+      const note = this.deliveryNote;
+
+      const itemsRows = (note.items || []).map(item => `
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.productName || ''}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.unit || ''}</td>
+        </tr>`).join('');
+
+      const htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
+          <h2 style="color: #184440; margin-top: 0;">Delivery Note Details</h2>
+          ${this.renderEmailMessageHtml(this.emailMessage || `Hi ${customer?.name || 'there'},\n\nPlease find attached the delivery note ${note.deliveryNumber} for your order.`)}
+          <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Delivery Note #:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${note.deliveryNumber}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Carrier:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${note.carrier || '—'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Tracking #:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${note.trackingNumber || '—'}</td>
+            </tr>
+          </table>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
+            <thead>
+              <tr style="background: #f8fafc;">
+                <th style="text-align: left; padding: 8px; border-bottom: 2px solid #e5e7eb;">Item</th>
+                <th style="text-align: center; padding: 8px; border-bottom: 2px solid #e5e7eb;">Quantity</th>
+                <th style="text-align: left; padding: 8px; border-bottom: 2px solid #e5e7eb;">Unit</th>
+              </tr>
+            </thead>
+            <tbody>${itemsRows}</tbody>
+          </table>
+          <p style="margin-top: 24px;">Thank you for your business!</p>
+          <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+          <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from ${this.merchantInfo?.companyName || this.merchantInfo?.name || 'our company'}.</p>
+        </div>`;
 
       const payload: SendSalesEmailRequest = {
         documentType: 'DELIVERY_NOTE',
-        documentId: this.deliveryNote.id!,
-        documentNumber: this.deliveryNote.deliveryNumber,
+        documentId: note.id!,
+        documentNumber: note.deliveryNumber,
         to: email,
-        subject: `Delivery Note ${this.deliveryNote.deliveryNumber} from ${this.merchantInfo?.companyName || this.merchantInfo?.name || 'our company'}`,
-        message: `<div style="font-family: sans-serif; font-size: 14px; color: #1a2e2c;">
-          <p>Hi ${customer?.name || 'there'},</p>
-          <p>Please find attached the delivery note ${this.deliveryNote.deliveryNumber} for your order.</p>
-          <p>Thank you for your business!</p>
-        </div>`,
+        subject: this.emailSubject || `Delivery Note ${note.deliveryNumber} from ${this.merchantInfo?.companyName || this.merchantInfo?.name || 'our company'}`,
+        message: htmlBody,
         attachments: [{ fileName, base64Content, contentType: 'application/pdf', type: 'application/pdf' }],
         sentBy: this.merchantInfo?.email || 'system'
       };
@@ -314,6 +372,20 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     } finally {
       this.isEmailing = false;
     }
+  }
+
+  /** Renders the seller's free-typed email message (plain text from the Send modal's textarea)
+   *  as safe HTML paragraphs — escaped so pasted/typed `<`, `>`, `&` can't break the email markup
+   *  or inject anything, since this text goes straight into an HTML email body. */
+  private renderEmailMessageHtml(message: string): string {
+    const escape = (s: string) => s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return message
+      .split(/\n{2,}/)
+      .map(para => `<p style="margin:0 0 12px;">${escape(para).replace(/\n/g, '<br>')}</p>`)
+      .join('');
   }
 
   // ============================================================
