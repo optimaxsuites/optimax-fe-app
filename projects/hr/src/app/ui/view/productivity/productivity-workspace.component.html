@@ -123,7 +123,7 @@
 
       <!-- Metrics -->
       <div class="metrics">
-        <div class="mc" *ngFor="let m of boardMetrics">
+        <div class="mc" *ngFor="let m of boardMetricCards">
           <div class="lbl">{{ m.label }}</div>
           <div class="val" [style.color]="m.color">{{ m.value }}</div>
           <div class="sub">{{ m.sub }}</div>
@@ -405,7 +405,7 @@
             </div>
           </div>
 
-          <div class="board-empty" *ngIf="columnTasks(col.key).length === 0">
+          <div class="board-empty" *ngIf="!(columnTasksMap[col.key]?.length)">
             <i class="fas fa-inbox"></i>
             <span>Drop tasks here</span>
           </div>
@@ -577,7 +577,7 @@
 
         <!-- ── KPI summary row ─────────────────────────────────────── -->
         <div class="rep-kpi-grid">
-          <div class="rep-kpi" *ngFor="let m of boardMetrics">
+          <div class="rep-kpi" *ngFor="let m of boardMetricCards">
             <div class="rep-kpi-lbl">{{ m.label }}</div>
             <div class="rep-kpi-val" [style.color]="m.color">{{ m.value }}</div>
             <div class="rep-kpi-sub">{{ m.sub }}</div>
@@ -2543,7 +2543,7 @@
       <div *ngFor="let s of customStages" class="rail-stage-row">
         <span class="rail-stage-dot"></span>
         <span class="rail-stage-name">{{ s.label }}</span>
-        <span class="rail-stage-cnt">{{ columnTasks(s.key).length }}</span>
+        <span class="rail-stage-cnt">{{ columnTasksMap[s.key]?.length || 0 }}</span>
         <button class="rail-icon-btn rail-del-btn" (click)="removeStage(s.key)" title="Remove stage">
           <i class="fas fa-times"></i>
         </button>
