@@ -102,6 +102,7 @@ export interface Vendor {
     createdAt: Date;
     updatedAt: Date;
     applicationNumber?: string;
+    loginEnabled?: boolean;
     // The full 6-step vendor portal submission this vendor originated from, if any.
     // The slim fields above are a mapped summary of this — kept alongside it so
     // approval-queue/vendor-directory views can display everything the vendor

@@ -672,6 +672,19 @@ app-login .support-row a {
 }
 app-login .support-row a:hover { text-decoration: underline !important; }
 
+app-login .vendor-register-row {
+  margin-top: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+  color: var(--text-light) !important;
+  svg { color: var(--teal, #2E6276) !important; }
+  a { color: var(--teal, #2E6276) !important; font-weight: 600 !important; text-decoration: none !important; }
+  a:hover { text-decoration: underline !important; }
+}
+
 /* ── ANIMATION ──────────────────────────────────────────────── */
 @keyframes login-spin {
   to { transform: rotate(360deg); }

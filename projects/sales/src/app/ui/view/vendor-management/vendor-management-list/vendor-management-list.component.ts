@@ -56,6 +56,7 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   // Loading
   isLoading: boolean = false;
   isExporting: boolean = false;
+  togglingLoginId: number | null = null;
   error: string | null = null;
   /** Set after the first load settles (success or failure) — used so a later reload (search/filter/
    *  refresh) shows the in-table spinner instead of tearing down and rebuilding the whole filter bar,
@@ -791,6 +792,23 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   /**
    * Delete vendor with confirmation
    */
+  toggleLoginAccess(vendor: Vendor): void {
+    const enabling = !vendor.loginEnabled;
+    const label = vendor.companyName || `Vendor #${vendor.id}`;
+    const msg = enabling
+      ? `Enable login access for ${label}?`
+      : `Revoke login access for ${label}?`;
+    if (!confirm(msg)) return;
+    this.togglingLoginId = vendor.id;
+    this.vendorService.enableVendorLogin(String(vendor.id), enabling).subscribe({
+      next: updated => {
+        vendor.loginEnabled = updated.loginEnabled;
+        this.togglingLoginId = null;
+      },
+      error: () => { this.togglingLoginId = null; }
+    });
+  }
+
   deleteVendor(vendor: Vendor): void {
     if (confirm(`Are you sure you want to delete ${vendor.companyName}? This action cannot be undone.`)) {
       this.vendorService.deleteVendor(String(vendor.id)).subscribe({

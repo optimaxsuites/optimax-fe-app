@@ -1,0 +1,211 @@
+.vendor-signup-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f2a38 0%, #1a4a62 60%, #2E6276 100%);
+  padding: 24px 16px;
+}
+
+.vs-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 460px;
+}
+
+.vs-brand {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.vs-logo-wrap { margin-bottom: 12px; }
+.vs-logo { height: 40px; }
+
+.vs-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1a3a4a;
+  margin: 0 0 4px;
+}
+
+.vs-subtitle {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.vs-field {
+  margin-bottom: 18px;
+}
+
+.vs-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.vs-req { color: #e03e3e; }
+
+.vs-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  outline: none;
+
+  &:focus { border-color: #2E6276; }
+  &--error { border-color: #e03e3e !important; }
+  &--icon { padding-right: 42px; }
+}
+
+.vs-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.vs-eye-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 0;
+  font-size: 0.95rem;
+
+  &:hover { color: #2E6276; }
+}
+
+.vs-captcha-block {
+  background: #f8fafc;
+  border: 1.5px dashed #c3d9e6;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+
+.vs-captcha-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.vs-captcha-question {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a3a4a;
+  letter-spacing: 0.5px;
+}
+
+.vs-refresh-btn {
+  background: none;
+  border: 1px solid #c3d9e6;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 0.8rem;
+
+  &:hover { color: #2E6276; border-color: #2E6276; }
+}
+
+.vs-captcha-input {
+  max-width: 120px;
+}
+
+.vs-error {
+  display: block;
+  font-size: 0.8rem;
+  color: #e03e3e;
+  margin-top: 4px;
+
+  &--banner {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.vs-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+
+  &--primary {
+    background: #2E6276;
+    color: #fff;
+
+    &:hover:not(:disabled) { background: #235060; }
+    &:disabled { opacity: 0.65; cursor: not-allowed; }
+  }
+
+  &--outline {
+    background: transparent;
+    border: 1.5px solid #2E6276;
+    color: #2E6276;
+
+    &:hover { background: #f0f7fa; }
+  }
+}
+
+.vs-login-link {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.vs-link {
+  color: #2E6276;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+// Success state
+.vs-success {
+  text-align: center;
+  padding: 12px 0;
+
+  .vs-success-icon {
+    font-size: 3rem;
+    color: #2E6276;
+    margin-bottom: 16px;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1a3a4a;
+    margin: 0 0 8px;
+  }
+
+  p { color: #4b5563; font-size: 0.95rem; margin: 0 0 10px; }
+
+  .vs-success-note {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    margin-bottom: 24px;
+  }
+}
