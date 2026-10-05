@@ -8,6 +8,8 @@ import { AuthenticationService } from './ui/shared-component/service/auth-servic
 import { MetadataService } from './ui/service/metadata.service';
 import { environment } from './ui/shared-component/service/environments/environment';
 
+const DEV_LOGIN_STORAGE_KEY = 'devLoginCredentials';
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -27,35 +29,18 @@ export class AppHrComponent {
   ngOnInit(): void {
     this.checkScreenWidth();
 
-    // Development mode: set hardcoded authentication and navigate
+    // Development mode: sign in for real so the session holds the actual user ID and a fresh token.
     if (environment.env === 'development') {
-      console.log(
-        '🔧 [Development Mode] Setting hardcoded authentication for eseose',
-      );
-      const devToken =
-        'eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoia2luZG5lc3MiLCJpYXQiOjE3ODkzNjM1MjMsImV4cCI6MTc4OTQ0OTkyM30.JUwWuBQ_t5nR-bPjYCmMZvqUc4c1cVHOfbxEBh8Tg2g';
-      const devUUID = '1';
-      sessionStorage.setItem('Token', devToken);
-      localStorage.setItem('Token', devToken);
-      sessionStorage.setItem('userid', '1');
-      sessionStorage.setItem('uuid', devUUID);
-      sessionStorage.setItem('userid', '1');
-      sessionStorage.setItem('username', 'eseose');
-      sessionStorage.setItem('fullname', 'Eseose Developer');
-      sessionStorage.setItem('email', 'eseose@optimax.com');
-      sessionStorage.setItem('role', 'ADMIN');
-      sessionStorage.setItem(
-        'userRegData',
-        JSON.stringify({
-          id: 1,
-          userId: 1,
-          username: 'eseose',
-          fullname: 'Eseose Developer',
-          email: 'eseose@optimax.com',
-          role: 'ADMIN',
-        }),
-      );
-      this.metadataService.fetchMetaData(true);
+      if (this.authenticationService.isAuthenticated() && this.hasRealLoginSession()) {
+        this.metadataService.fetchMetaData(true);
+      } else {
+        // Reload once after signing in so components initialise with the real session.
+        this.userLoginAction().then(() => {
+          if (this.hasRealLoginSession()) {
+            window.location.reload();
+          }
+        });
+      }
     } else if (this.authenticationService.isAuthenticated()) {
       this.metadataService.fetchMetaData(true);
     } else {
@@ -79,28 +64,36 @@ export class AppHrComponent {
     // }
   }
 
-  async userLoginAction(): Promise<void> {
-    console.log('Signing in user with hardcoded credentials for testing...');
+  /** True when the session came from a real sign-in (not the old hardcoded dev user). */
+  private hasRealLoginSession(): boolean {
+    try {
+      const userRegData = JSON.parse(sessionStorage.getItem('userRegData') || 'null');
+      return !!userRegData?.accessToken && !!sessionStorage.getItem('userid');
+    } catch {
+      return false;
+    }
+  }
 
+  async userLoginAction(): Promise<void> {
+    const credentials = this.getDevLoginCredentials();
+    if (!credentials) {
+      if (environment.env !== 'development') {
+        return;
+      }
+      console.warn(
+        '🔧 [Development Mode] No dev login saved. Run loginAs("<username>", "<password>") in the console to sign in.',
+      );
+      return;
+    }
+
+    console.log(`🔧 [Development Mode] Signing in as ${credentials.username}...`);
     const loginDetails = {
-      // username: 'Ayaobasheba',
-      // username: 'developer',
-      // password: '123456',
-      username: 'Eseose',
-      password: 'soyBTY86b*rC',
+      username: credentials.username,
+      password: credentials.password,
       project: 'ERP',
       clientId: 'optimax-erp-web',
       appVersion: '2026.05.30',
     };
-
-    if (!loginDetails.username || !loginDetails.password) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Username and password are required',
-      });
-      return;
-    }
 
     try {
       const data = await this.authenticationService
@@ -108,13 +101,53 @@ export class AppHrComponent {
         .toPromise();
 
       if (!data) {
+        console.error('🔧 [Development Mode] Sign-in returned no data.');
         return;
       }
 
       this.loadInitParam(data);
       this.metadataService.fetchMetaData(true);
     } catch (error) {
+      console.error(
+        `🔧 [Development Mode] Sign-in failed for ${credentials.username}. ` +
+          'Check the password and run loginAs("<username>", "<password>") again.',
+        error,
+      );
       this.authenticationService.logout();
+    }
+  }
+
+  private getDevLoginCredentials(): { username: string; password: string } | null {
+    if (environment.env !== 'development') {
+      return null;
+    }
+
+    try {
+      const stored = JSON.parse(localStorage.getItem(DEV_LOGIN_STORAGE_KEY) || 'null');
+      if (stored?.username && stored?.password) {
+        return { username: stored.username, password: stored.password };
+      }
+    } catch {
+      // Ignore malformed stored credentials.
+    }
+    return null;
+  }
+
+  /**
+   * Save dev login credentials in this browser only (never in source) and sign in with them.
+   */
+  async loginAs(username: string, password: string): Promise<void> {
+    if (environment.env !== 'development') {
+      console.error('loginAs() is only available in development mode.');
+      return;
+    }
+
+    localStorage.setItem(DEV_LOGIN_STORAGE_KEY, JSON.stringify({ username, password }));
+    this.authenticationService.logout();
+    await this.userLoginAction();
+
+    if (this.hasRealLoginSession()) {
+      window.location.reload();
     }
   }
 
@@ -203,79 +236,17 @@ export class AppHrComponent {
     this.sidebarHidden = window.innerWidth <= 992;
   }
 
-  // ========== Added by Ese for testing cooperative features - Console only ==========
-
-  /**
-   * Switch to admin account
-   */
-  async switchToAdmin(): Promise<void> {
-    console.log('Switching to admin account...');
-
-    const loginDetails = {
-      username: 'damilola',
-      password: 'Damilolar@123',
-      project: 'ERP',
-      apiKey: environment.apiKey,
-    };
-
-    try {
-      const data = await this.authenticationService
-        .userLogin(loginDetails)
-        .toPromise();
-
-      if (data) {
-        this.loadInitParam(data);
-        this.metadataService.fetchMetaData(true);
-        window.location.reload();
-      } else {
-        console.error('Failed to switch to admin: No data returned');
-      }
-    } catch (error) {
-      console.error('Failed to switch to admin:', error);
-    }
-  }
-
-  /**
-   * Switch to regular user account
-   */
-  async switchToUser(): Promise<void> {
-    console.log('Switching to user account...');
-
-    const loginDetails = {
-      // username: 'developer',
-      // password: '123456',
-      username: 'Eseose',
-      password: 'soyBTY86b*rC',
-      project: 'ERP',
-      apiKey: environment.apiKey,
-    };
-
-    // eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoiZXNlb3NlIiwiaWF0IjoxNzgwNTY0OTY2LCJleHAiOjE3ODA2NTEzNjZ9.3ioaIPHGekrrS676pesQ27yDg25QP9Gpk_KMXWO9SOc
-
-    try {
-      const data = await this.authenticationService
-        .userLogin(loginDetails)
-        .toPromise();
-
-      if (data) {
-        this.loadInitParam(data);
-        this.metadataService.fetchMetaData(true);
-        window.location.reload();
-      } else {
-        console.error('Failed to switch to user: No data returned');
-      }
-    } catch (error) {
-      console.error('Failed to switch to user:', error);
-    }
-  }
-
   /**
    * Log out and clear all session data
    */
   logout(): void {
     console.log('Logging out...');
+    const devLogin = localStorage.getItem(DEV_LOGIN_STORAGE_KEY);
     sessionStorage.clear();
     localStorage.clear();
+    if (devLogin) {
+      localStorage.setItem(DEV_LOGIN_STORAGE_KEY, devLogin);
+    }
     window.location.href = '/';
   }
 
@@ -304,13 +275,13 @@ export class AppHrComponent {
    * Expose helper functions to browser console for easy switching
    */
   private exposeGlobalHelpers(): void {
-    (window as any).switchToAdmin = () => this.switchToAdmin();
-    (window as any).switchToUser = () => this.switchToUser();
+    (window as any).loginAs = (username: string, password: string) =>
+      this.loginAs(username, password);
     (window as any).logout = () => this.logout();
     (window as any).getCurrentUser = () => this.getCurrentUserInfo();
 
     console.log(
-      'Console helpers available: switchToAdmin(), switchToUser(), logout(), getCurrentUser()',
+      'Console helpers available: loginAs(username, password), logout(), getCurrentUser()',
     );
   }
 }
