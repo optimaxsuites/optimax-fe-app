@@ -437,6 +437,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   get boardTasks(): BoardTask[] { return this._boardTasks; }
   private set boardTasks(v: BoardTask[]) { this._boardTasks = v; this.rebuildBoardMap(); }
   columnTasksMap: Record<string, BoardTask[]> = {};
+  boardMetricCards: { label: string; value: string | number; sub: string; color: string }[] = [];
   filterStatus = '';
   filterPriority = '';
   filterAssignee = '';
@@ -2958,6 +2959,16 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       );
     }
     this.columnTasksMap = map;
+
+    const all = this._boardTasks;
+    const done = all.filter(t => t.status === 'Done').length;
+    const pct = all.length ? Math.round((done / all.length) * 100) : 0;
+    this.boardMetricCards = [
+      { label: 'Active Tasks',       value: all.filter(t => t.status !== 'Done').length, sub: 'in progress or queued', color: '#2563eb' },
+      { label: 'Sub-tasks Tracked',  value: all.reduce((s, t) => s + (t.subtasks?.length ?? 0), 0), sub: `across ${all.length} tasks`, color: '#374151' },
+      { label: 'Completion Rate',    value: `${pct}%`, sub: 'tasks marked done', color: '#16a34a' },
+      { label: 'Supervisor Queue',   value: all.filter(t => t.status === 'In Review').length, sub: 'awaiting review', color: '#7c3aed' },
+    ];
   }
 
   toggleHideOverdue(show?: boolean): void {
