@@ -1,11 +1,10 @@
 // loan-approval.service.ts
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { switchMap, map, catchError } from 'rxjs/operators';
+import { switchMap, map } from 'rxjs/operators';
 import { LoanApplication, RepaymentScheduleItem, StatusChange, LoanStatus, LoanStatusUpdate } from './loan.types';
 import { LoanApplicationService } from './loan-application.service';
 import { LoanPurposeService } from './loan-purpose.service';
-import { AdvanceInterestAgreementService } from './loan-interest-agreement.service';
 import {
   normalizeLoanRepaymentStartDate,
   readPersistedLoanLateFeeGracePeriodDays,
@@ -28,8 +27,7 @@ import {
 export class LoanApprovalService {
   constructor(
     private loanApplicationService: LoanApplicationService,
-    private loanPurposeService: LoanPurposeService,
-    private interestAgreementService: AdvanceInterestAgreementService
+    private loanPurposeService: LoanPurposeService
   ) {}
 
   updateApplicationStatus(
@@ -331,92 +329,6 @@ export class LoanApprovalService {
       notes: notes || 'Loan rejected',
       changedAt: new Date().toISOString()
     });
-  }
-
-  acceptInterestRate(loanId: string | number, acceptedRate: number): Observable<LoanApplication> {
-    console.log('Employee accepting interest rate - setting status to APPROVED');
-    
-    return this.updateApplicationStatus(loanId, {
-      status: 'APPROVED' as LoanStatus,
-      notes: `Employee accepted interest rate of ${acceptedRate}%`,
-      changedAt: new Date().toISOString(),
-      interestRate: acceptedRate
-    } as any).pipe(
-      switchMap((loan) => {
-        return this.interestAgreementService.getAgreementByLoanId(Number(loanId)).pipe(
-          switchMap((agreement: any) => {
-            if (agreement && agreement.id) {
-              return this.interestAgreementService.updateAgreement(agreement.id, {
-                loanId: agreement.loanId,
-                employeeId: agreement.employeeId,
-                proposedInterestRate: agreement.proposedInterestRate,
-                agreedInterestRate: acceptedRate,
-                status: 'ACCEPTED', // Fix: use ACCEPTED to match AdvanceInterestAgreement type
-                agreedAt: new Date().toISOString(),
-                agreementMethod: agreement.agreementMethod || 'DASHBOARD',
-                ipAddress: agreement.ipAddress || '0.0.0.0',
-                notes: agreement.notes
-              }).pipe(
-                map(() => loan),
-                catchError((error) => {
-                  console.error('Interest agreement acceptance update failed after loan approval:', error);
-                  return of(loan);
-                })
-              );
-            }
-            return of(loan);
-          }),
-          catchError((error) => {
-            console.error('Interest agreement lookup failed after loan approval:', error);
-            return of(loan);
-          })
-        );
-      })
-    );
-  }
-
-  rejectInterestRate(loanId: string | number, reason: string): Observable<LoanApplication> {
-    // removed AWAITING_INTEREST_ACCEPTANCE logic
-    
-    return this.updateApplicationStatus(loanId, {
-      status: 'REJECTED',
-      notes: `Employee rejected proposed interest rate. Reason: ${reason}. Admin review required before resubmission.`,
-      changedAt: new Date().toISOString()
-    }).pipe(
-      switchMap((loan) => {
-        return this.interestAgreementService.getAgreementByLoanId(Number(loanId)).pipe(
-          switchMap((agreement: any) => {
-            if (agreement && agreement.id) {
-              if (agreement.status === 'DECLINED') {
-                return of(loan);
-              }
-
-              return this.interestAgreementService.updateAgreement(agreement.id, {
-                loanId: agreement.loanId,
-                employeeId: agreement.employeeId,
-                proposedInterestRate: agreement.proposedInterestRate,
-                agreedInterestRate: agreement.agreedInterestRate,
-                status: 'DECLINED',
-                agreementMethod: agreement.agreementMethod || 'DASHBOARD',
-                ipAddress: agreement.ipAddress || '0.0.0.0',
-                notes: reason || 'Interest rate declined by employee'
-              }).pipe(
-                map(() => loan),
-                catchError((error) => {
-                  console.error('Interest agreement rejection update failed after loan status update:', error);
-                  return of(loan);
-                })
-              );
-            }
-            return of(loan);
-          }),
-          catchError((error) => {
-            console.error('Interest agreement lookup failed after loan rejection feedback:', error);
-            return of(loan);
-          })
-        );
-      })
-    );
   }
 
   overrideLoanStatus(

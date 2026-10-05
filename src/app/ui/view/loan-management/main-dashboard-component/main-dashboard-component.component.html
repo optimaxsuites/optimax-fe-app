@@ -1,4 +1,25 @@
 <div class="main-dashboard-wrapper">
+  <div class="dashboard-toggle" role="tablist">
+    <button
+      type="button"
+      role="tab"
+      class="toggle-btn"
+      [class.active]="selectedDashboard === 'advance'"
+      [attr.aria-selected]="selectedDashboard === 'advance'"
+      (click)="onDashboardChange('advance')">
+      Advance Loans
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="toggle-btn"
+      [class.active]="selectedDashboard === 'cooperative'"
+      [attr.aria-selected]="selectedDashboard === 'cooperative'"
+      (click)="onDashboardChange('cooperative')">
+      Cooperative
+    </button>
+  </div>
+
   <section class="dashboard-section" *ngIf="selectedDashboard === 'advance'">
     <app-loan-dashboard></app-loan-dashboard>
   </section>

@@ -1,4 +1,3 @@
-import { Loan } from './ui/view/loan-management/loan.model';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AppHrComponent } from './app.component';
@@ -561,7 +560,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
 })
 export class AppHrRoutingModule {}
