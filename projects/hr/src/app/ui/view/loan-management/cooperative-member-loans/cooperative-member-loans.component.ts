@@ -119,11 +119,13 @@ export class CooperativeMemberLoansComponent implements OnInit {
   }
 
   viewLoanDetails(id: string): void {
-    this.router.navigate(['/member/cooperative/loans', id, this.currentUuid]);
+    this.router.navigate(['/admin/hr/member/cooperative/loans', id, this.currentUuid]);
   }
 
   goBack(): void {
-    this.backNavigationService.goBack(['/member/cooperative/dashboard', this.currentUuid]);
+    this.backNavigationService.goBack(['/admin/hr/loan', this.currentUuid], {
+      queryParams: { tab: 'my-membership' }
+    });
   }
 
   formatCurrency(amount: number): string {

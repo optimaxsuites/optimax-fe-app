@@ -392,6 +392,22 @@ const routes: Routes = [
     component: CooperativeMemberDetailComponent, // Read-only version
   },
   {
+    path: 'admin/hr/member/cooperative/dashboard/:uuid',
+    component: CooperativeMemberDashboardComponent,
+  },
+  {
+    path: 'admin/hr/member/cooperative/my-loans/:uuid',
+    component: CooperativeMemberLoansComponent,
+  },
+  {
+    path: 'admin/hr/member/cooperative/groups/:groupId/:uuid',
+    component: CooperativeMemberGroupDashboardComponent,
+  },
+  {
+    path: 'admin/hr/member/cooperative/loans/:id/:uuid',
+    component: CooperativeMemberDetailComponent, // Read-only version
+  },
+  {
     path: 'leave/:uuid',
     component: LeaveComponent,
   },
