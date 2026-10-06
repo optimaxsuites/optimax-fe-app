@@ -392,7 +392,7 @@ export class CooperativeMembershipService {
       context.saveToStorage();
     }
 
-    const activationPath = '/member/cooperative/dashboard';
+    const activationPath = '/admin/hr/member/cooperative/dashboard';
     context.notifications.unshift({
       id: Date.now(),
       type: 'LOAN_STATUS_UPDATE',

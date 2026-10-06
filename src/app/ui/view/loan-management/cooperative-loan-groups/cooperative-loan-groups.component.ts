@@ -1080,7 +1080,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   }
 
   private buildGroupInviteMail(employee: GroupInviteEmployeeRow): { name: string; to: string; recieverEmail: string; receiverEmail: string; subject: string; body: string } {
-    const dashboardUrl = `${window.location.origin}/member/cooperative/dashboard/${this.currentUuid}`;
+    const dashboardUrl = `${window.location.origin}/admin/hr/loan/${this.currentUuid}?tab=my-membership`;
     const groupName = this.selectedGroupForInvite?.name || 'the selected cooperative group';
     const groupCode = this.selectedGroupForInvite?.code ? ` (${this.selectedGroupForInvite.code})` : '';
     const description = this.selectedGroupForInvite?.description ? `<p><strong>Group overview:</strong> ${this.selectedGroupForInvite.description}</p>` : '';
