@@ -2,89 +2,77 @@
 
   <!-- Header -->
   <header class="rpt-hero">
-    <div>
+    <div class="rpt-hero__text">
       <h1 class="rpt-hero__title">HR Reports &amp; Analytics</h1>
       <p class="rpt-hero__sub">Live data from the HR microservice — workforce, payroll, compliance and performance indicators.</p>
     </div>
+    <div class="rpt-hero__actions">
+      <span class="rpt-hero__stamp" *ngIf="lastUpdated">Updated {{ lastUpdated | date:'mediumTime' }}</span>
+      <button type="button" class="rpt-hero__btn" (click)="load()" [disabled]="loading">
+        <i class="fas fa-sync-alt" [class.fa-spin]="loading" aria-hidden="true"></i> Refresh
+      </button>
+      <button type="button" class="rpt-hero__btn" (click)="print()">
+        <i class="fas fa-print" aria-hidden="true"></i> Print
+      </button>
+    </div>
   </header>
 
-  <!-- Loading -->
-  <div class="rpt-skeleton" *ngIf="loading">
-    <div class="rpt-sk-block" *ngFor="let i of [1,2,3,4]"></div>
+  <!-- Loading (first load only; later refreshes keep the current view) -->
+  <div class="rpt-skeleton" *ngIf="loading && !lastUpdated" aria-busy="true" aria-label="Loading reports">
+    <div class="rpt-sk-block rpt-sk-block--stat" *ngFor="let i of [1,2,3,4]"></div>
+    <div class="rpt-sk-block rpt-sk-block--table"></div>
   </div>
 
   <!-- Error -->
-  <div class="rpt-error" *ngIf="error && !loading">
-    <i class="fas fa-exclamation-circle"></i>
+  <div class="rpt-error" role="alert" *ngIf="error && !loading">
+    <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
     <p>Unable to load report data. Please check your connection and retry.</p>
-    <button class="rpt-retry-btn" (click)="load()">Retry</button>
+    <button type="button" class="rpt-retry-btn" (click)="load()">Retry</button>
   </div>
 
-  <ng-container *ngIf="!loading">
+  <ng-container *ngIf="!loading || lastUpdated">
 
     <!-- Tab bar -->
-    <div class="rpt-tabs">
-      <button class="rpt-tab" [class.rpt-tab--active]="activeTab==='executive'" (click)="activeTab='executive'">
-        <i class="fas fa-chart-pie"></i> Executive
-      </button>
-      <button class="rpt-tab" [class.rpt-tab--active]="activeTab==='workforce'" (click)="activeTab='workforce'">
-        <i class="fas fa-users"></i> Workforce
-      </button>
-      <button class="rpt-tab" [class.rpt-tab--active]="activeTab==='payroll'" (click)="activeTab='payroll'">
-        <i class="fas fa-money-bill-wave"></i> Payroll
-      </button>
-      <button class="rpt-tab" [class.rpt-tab--active]="activeTab==='leave'" (click)="activeTab='leave'">
-        <i class="fas fa-calendar-alt"></i> Leave
-      </button>
-      <button class="rpt-tab" [class.rpt-tab--active]="activeTab==='turnover'" (click)="activeTab='turnover'">
-        <i class="fas fa-exchange-alt"></i> Turnover
-      </button>
-      <button class="rpt-tab" [class.rpt-tab--active]="activeTab==='risk'" (click)="activeTab='risk'">
-        <i class="fas fa-shield-alt"></i> HR Risk
-      </button>
-      <button class="rpt-tab" [class.rpt-tab--active]="activeTab==='probation'" (click)="activeTab='probation'">
-        <i class="fas fa-user-clock"></i> Probation
-      </button>
-      <button class="rpt-tab" [class.rpt-tab--active]="activeTab==='equity'" (click)="activeTab='equity'">
-        <i class="fas fa-balance-scale"></i> Pay Equity
-      </button>
-      <button class="rpt-tab" [class.rpt-tab--active]="activeTab==='bonus'" (click)="activeTab='bonus'">
-        <i class="fas fa-gift"></i> Bonus
-      </button>
-      <button class="rpt-tab" [class.rpt-tab--active]="activeTab==='statutory'" (click)="activeTab='statutory'">
-        <i class="fas fa-landmark"></i> Statutory
-      </button>
-      <button class="rpt-tab" [class.rpt-tab--active]="activeTab==='overtime'" (click)="activeTab='overtime'">
-        <i class="fas fa-clock"></i> Overtime
-      </button>
-      <button class="rpt-tab" [class.rpt-tab--active]="activeTab==='vacancy'" (click)="activeTab='vacancy'">
-        <i class="fas fa-briefcase"></i> Vacancies
+    <div class="rpt-tabs" role="tablist" aria-label="HR report sections">
+      <button *ngFor="let t of tabs; let i = index"
+              type="button" role="tab" class="rpt-tab"
+              [id]="'rpt-tab-' + t.key"
+              [class.rpt-tab--active]="activeTab === t.key"
+              [attr.aria-selected]="activeTab === t.key"
+              [attr.tabindex]="activeTab === t.key ? 0 : -1"
+              (click)="selectTab(t.key)"
+              (keydown)="onTabKeydown($event, i)">
+        <i class="fas" [ngClass]="t.icon" aria-hidden="true"></i> {{ t.label }}
       </button>
     </div>
+
+    <div role="tabpanel" class="rpt-panel" [class.rpt-panel--busy]="loading" [attr.aria-busy]="loading" [attr.aria-labelledby]="'rpt-tab-' + activeTab">
+
+      <div class="rpt-panel-head" *ngIf="activeTabMeta as m">
+        <span class="rpt-panel-head__icon"><i class="fas" [ngClass]="m.icon" aria-hidden="true"></i></span>
+        <div>
+          <h2 class="rpt-panel-head__title">{{ m.label }}</h2>
+          <p class="rpt-panel-head__desc">{{ m.desc }}</p>
+        </div>
+        <input *ngIf="hasTable" type="search" class="rpt-search" placeholder="Search rows…" aria-label="Search rows"
+               [disabled]="!activeRows.length" [value]="search" (input)="search = $any($event.target).value">
+      </div>
 
     <!-- ── EXECUTIVE ─────────────────────────────────────────────────────────── -->
     <ng-container *ngIf="activeTab==='executive'">
       <div *ngIf="execReport; else noData">
         <div class="rpt-stat-row">
-          <div class="rpt-stat-card">
-            <span class="rpt-stat-card__num" style="color:#2563eb">{{ execReport.totalEmployees | number }}</span>
-            <span class="rpt-stat-card__lbl">Total Employees</span>
-            <span class="rpt-stat-card__sub">{{ execReport.activeEmployees | number }} active</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--green">
-            <span class="rpt-stat-card__num" style="color:#16a34a">{{ fmt(execReport.totalPayroll) }}</span>
-            <span class="rpt-stat-card__lbl">Monthly Gross Payroll</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--orange">
-            <span class="rpt-stat-card__num" style="color:#d97706">{{ fmt(execReport.totalOutstandingBalance) }}</span>
-            <span class="rpt-stat-card__lbl">Loans Outstanding</span>
-            <span class="rpt-stat-card__sub">{{ execReport.totalOverdueLoanRecords }} overdue</span>
-          </div>
-          <div class="rpt-stat-card" style="border-left-color:#7c3aed">
-            <span class="rpt-stat-card__num" style="color:#7c3aed">{{ execReport.totalAdvanceLoanRecords }}</span>
-            <span class="rpt-stat-card__lbl">Advance Loans</span>
-            <span class="rpt-stat-card__sub">{{ execReport.totalCooperativeLoanRecords }} cooperative</span>
-          </div>
+          <app-report-stat-card icon="fa-users" label="Total Employees" tone="primary" [colored]="true"
+            [value]="(execReport.totalEmployees ?? 0) | number"
+            [sub]="((execReport.activeEmployees ?? 0) | number) + ' active'"></app-report-stat-card>
+          <app-report-stat-card icon="fa-money-bill-wave" label="Monthly Gross Payroll" tone="success" [colored]="true"
+            [value]="fmt(execReport.totalPayroll)"></app-report-stat-card>
+          <app-report-stat-card icon="fa-hand-holding-usd" label="Loans Outstanding" tone="warn" [colored]="true"
+            [value]="fmt(execReport.totalOutstandingBalance)"
+            [sub]="(execReport.totalOverdueLoanRecords ?? 0) + ' overdue'"></app-report-stat-card>
+          <app-report-stat-card icon="fa-file-invoice-dollar" label="Advance Loans" tone="accent" [colored]="true"
+            [value]="execReport.totalAdvanceLoanRecords ?? 0"
+            [sub]="(execReport.totalCooperativeLoanRecords ?? 0) + ' cooperative'"></app-report-stat-card>
         </div>
       </div>
     </ng-container>
@@ -93,44 +81,24 @@
     <ng-container *ngIf="activeTab==='workforce'">
       <div *ngIf="workforceReport; else noData">
         <div class="rpt-stat-row">
-          <div class="rpt-stat-card">
-            <span class="rpt-stat-card__num">{{ workforceReport.totalEmployees ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Total Employees</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--green">
-            <span class="rpt-stat-card__num">{{ workforceReport.totalJoins ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Total Joins</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--red">
-            <span class="rpt-stat-card__num">{{ workforceReport.totalExits ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Total Exits</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--orange">
-            <span class="rpt-stat-card__num">{{ workforceReport.totalVacancies ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Vacancies</span>
-          </div>
+          <app-report-stat-card icon="fa-users" label="Total Employees" [value]="workforceReport.totalHeadcount ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-user-plus" label="Total Joins" tone="success" [value]="workforceReport.totalJoins ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-user-minus" label="Total Exits" tone="danger" [value]="workforceReport.totalExits ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-briefcase" label="Vacancies" tone="warn" [value]="workforceReport.totalVacancies ?? 0"></app-report-stat-card>
         </div>
-        <div class="rpt-card" *ngIf="workforceReport?.rows?.length">
-          <table class="rpt-table">
-            <thead>
-              <tr>
-                <th>Department</th><th>Level</th><th>Status</th><th>Gender</th>
-                <th>Headcount</th><th>Joins</th><th>Exits</th><th>Vacancies</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let row of workforceReport.rows">
-                <td style="font-weight:600;color:#1f2937">{{ row.department }}</td>
-                <td>{{ row.level }}</td>
-                <td>{{ row.status }}</td>
-                <td>{{ row.gender }}</td>
-                <td style="font-weight:600">{{ row.headcount }}</td>
-                <td style="color:#16a34a">{{ row.joins }}</td>
-                <td style="color:#dc2626">{{ row.exits }}</td>
-                <td style="color:#d97706">{{ row.vacancyCount }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="rpt-table-wrap">
+          <app-table [columns]="cols.workforce" [rows]="rows(workforceReport.rows)" [emptyMessage]="emptyText">
+            <ng-template appTableBody let-row>
+              <td class="rpt-cell--strong">{{ row.department }}</td>
+              <td>{{ row.level }}</td>
+              <td>{{ row.status }}</td>
+              <td>{{ row.gender }}</td>
+              <td class="rpt-cell--strong">{{ row.headcount }}</td>
+              <td class="rpt-c--success">{{ row.joins }}</td>
+              <td class="rpt-c--danger">{{ row.exits }}</td>
+              <td class="rpt-c--warn">{{ row.vacancyCount }}</td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
     </ng-container>
@@ -139,42 +107,22 @@
     <ng-container *ngIf="activeTab==='payroll'">
       <div *ngIf="payrollReport; else noData">
         <div class="rpt-stat-row">
-          <div class="rpt-stat-card rpt-stat-card--blue">
-            <span class="rpt-stat-card__num" style="color:#2563eb">{{ fmt(payrollReport.totalGrossPay) }}</span>
-            <span class="rpt-stat-card__lbl">Total Gross Pay</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--green">
-            <span class="rpt-stat-card__num" style="color:#16a34a">{{ fmt(payrollReport.totalNetPayable) }}</span>
-            <span class="rpt-stat-card__lbl">Total Net Payable</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--red">
-            <span class="rpt-stat-card__num" style="color:#dc2626">{{ fmt(payrollReport.totalDeductions) }}</span>
-            <span class="rpt-stat-card__lbl">Total Deductions</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--orange">
-            <span class="rpt-stat-card__num" style="color:#d97706">{{ fmt(payrollReport.totalEmployerCost) }}</span>
-            <span class="rpt-stat-card__lbl">Employer Cost</span>
-          </div>
+          <app-report-stat-card icon="fa-coins" label="Total Gross Pay" tone="primary" [colored]="true" [value]="fmt(payrollReport.totalGrossPay)"></app-report-stat-card>
+          <app-report-stat-card icon="fa-wallet" label="Total Net Payable" tone="success" [colored]="true" [value]="fmt(payrollReport.totalNetPayable)"></app-report-stat-card>
+          <app-report-stat-card icon="fa-minus-circle" label="Total Deductions" tone="danger" [colored]="true" [value]="fmt(payrollReport.totalDeductions)"></app-report-stat-card>
+          <app-report-stat-card icon="fa-building" label="Employer Cost" tone="warn" [colored]="true" [value]="fmt(payrollReport.totalEmployerCost)"></app-report-stat-card>
         </div>
-        <div class="rpt-card" *ngIf="payrollReport?.rows?.length">
-          <table class="rpt-table">
-            <thead>
-              <tr>
-                <th>Department</th><th>Employees</th>
-                <th>Gross Pay</th><th>Net Payable</th><th>Deductions</th><th>Employer Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let row of payrollReport.rows">
-                <td style="font-weight:600;color:#1f2937">{{ row.department }}</td>
-                <td>{{ row.employeeCount }}</td>
-                <td style="color:#2563eb">{{ fmt(row.grossPay) }}</td>
-                <td style="color:#16a34a">{{ fmt(row.netPayable) }}</td>
-                <td style="color:#dc2626">{{ fmt(row.totalDeductions) }}</td>
-                <td style="color:#d97706">{{ fmt(row.employerCost) }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="rpt-table-wrap">
+          <app-table [columns]="cols.payroll" [rows]="rows(payrollReport.rows)" [emptyMessage]="emptyText">
+            <ng-template appTableBody let-row>
+              <td class="rpt-cell--strong">{{ row.department }}</td>
+              <td>{{ row.employeeCount }}</td>
+              <td class="rpt-c--primary">{{ fmt(row.grossPay) }}</td>
+              <td class="rpt-c--success">{{ fmt(row.netPayable) }}</td>
+              <td class="rpt-c--danger">{{ fmt(row.totalDeductions) }}</td>
+              <td class="rpt-c--warn">{{ fmt(row.employerCost) }}</td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
     </ng-container>
@@ -183,37 +131,20 @@
     <ng-container *ngIf="activeTab==='leave'">
       <div *ngIf="leaveReport; else noData">
         <div class="rpt-stat-row">
-          <div class="rpt-stat-card">
-            <span class="rpt-stat-card__num">{{ leaveReport.totalRequests ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Total Requests</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--green">
-            <span class="rpt-stat-card__num">{{ leaveReport.totalApproved ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Approved</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--orange">
-            <span class="rpt-stat-card__num">{{ leaveReport.totalPending ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Pending</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--red">
-            <span class="rpt-stat-card__num">{{ leaveReport.totalRejected ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Rejected</span>
-          </div>
+          <app-report-stat-card icon="fa-calendar-alt" label="Total Requests" [value]="leaveReport.totalRequests ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-check-circle" label="Approved" tone="success" [value]="leaveReport.approvedRequests ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-hourglass-half" label="Pending" tone="warn" [value]="leaveReport.pendingRequests ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-times-circle" label="Rejected" tone="danger" [value]="leaveReport.rejectedRequests ?? 0"></app-report-stat-card>
         </div>
-        <div class="rpt-card" *ngIf="leaveReport?.rows?.length">
-          <table class="rpt-table">
-            <thead>
-              <tr><th>Leave Type</th><th>Status</th><th>Requests</th><th>Total Days</th></tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let row of leaveReport.rows">
-                <td style="font-weight:600">{{ row.leaveType }}</td>
-                <td><span [class]="leaveStatusClass(row.status)">{{ row.status }}</span></td>
-                <td>{{ row.requestCount }}</td>
-                <td>{{ row.totalDays }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="rpt-table-wrap">
+          <app-table [columns]="cols.leave" [rows]="rows(leaveReport.rows)" [emptyMessage]="emptyText">
+            <ng-template appTableBody let-row>
+              <td class="rpt-cell--strong">{{ row.leaveType }}</td>
+              <td><span [class]="leaveStatusClass(row.status)">{{ row.status }}</span></td>
+              <td>{{ row.requestCount }}</td>
+              <td>{{ row.totalDays }}</td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
     </ng-container>
@@ -222,33 +153,19 @@
     <ng-container *ngIf="activeTab==='turnover'">
       <div *ngIf="turnoverReport; else noData">
         <div class="rpt-stat-row">
-          <div class="rpt-stat-card">
-            <span class="rpt-stat-card__num">{{ turnoverReport.totalJoins ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Total Joins</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--red">
-            <span class="rpt-stat-card__num">{{ turnoverReport.totalExits ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Total Exits</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--orange">
-            <span class="rpt-stat-card__num">{{ turnoverReport.overallTurnoverRate | number:'1.1-1' }}%</span>
-            <span class="rpt-stat-card__lbl">Overall Rate</span>
-          </div>
+          <app-report-stat-card icon="fa-user-plus" label="Total Joins" [value]="turnoverReport.totalJoins ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-user-minus" label="Total Exits" tone="danger" [value]="turnoverReport.totalExits ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-percentage" label="Overall Rate" tone="warn" [value]="(turnoverReport.turnoverRate | number:'1.1-1') + '%'"></app-report-stat-card>
         </div>
-        <div class="rpt-card" *ngIf="turnoverReport?.rows?.length">
-          <table class="rpt-table">
-            <thead>
-              <tr><th>Department</th><th>Joins</th><th>Exits</th><th>Turnover Rate</th></tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let row of turnoverReport.rows">
-                <td style="font-weight:600;color:#1f2937">{{ row.department }}</td>
-                <td style="color:#16a34a">{{ row.joins }}</td>
-                <td style="color:#dc2626">{{ row.exits }}</td>
-                <td [style.color]="turnoverColor(row.turnoverRate)">{{ row.turnoverRate | number:'1.1-1' }}%</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="rpt-table-wrap">
+          <app-table [columns]="cols.turnover" [rows]="rows(turnoverReport.rows)" [emptyMessage]="emptyText">
+            <ng-template appTableBody let-row>
+              <td class="rpt-cell--strong">{{ row.department }}</td>
+              <td class="rpt-c--success">{{ row.joins }}</td>
+              <td class="rpt-c--danger">{{ row.exits }}</td>
+              <td [style.color]="turnoverColor(row.turnoverRate)">{{ row.turnoverRate | number:'1.1-1' }}%</td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
     </ng-container>
@@ -257,39 +174,27 @@
     <ng-container *ngIf="activeTab==='risk'">
       <div *ngIf="riskReport; else noData">
         <div class="rpt-stat-row">
-          <div class="rpt-stat-card rpt-stat-card--red">
-            <span class="rpt-stat-card__num" style="color:#dc2626">{{ riskReport.highRiskEmployees ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">High-Risk Employees</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--orange">
-            <span class="rpt-stat-card__num" style="color:#d97706">{{ fmt(riskReport.totalLoanExposure) }}</span>
-            <span class="rpt-stat-card__lbl">Total Loan Exposure</span>
-          </div>
-          <div class="rpt-stat-card">
-            <span class="rpt-stat-card__num">{{ riskReport.overdueLoans ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Overdue Loans</span>
-          </div>
-          <div class="rpt-stat-card">
-            <span class="rpt-stat-card__num">{{ riskReport.employeesOnLeave ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">On Leave</span>
-          </div>
+          <app-report-stat-card icon="fa-exclamation-triangle" label="Defaulted Loans" tone="danger" [colored]="true" [value]="riskReport.totalDefaultedLoans ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-hand-holding-usd" label="Total Loan Exposure" tone="warn" [colored]="true" [value]="fmt(riskReport.totalLoanExposure)"></app-report-stat-card>
+          <app-report-stat-card icon="fa-clock" label="Overdue Loans" [value]="riskReport.totalOverdueLoans ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-hourglass-half" label="Grace Period Requests" [value]="riskReport.gracePeriodRequests ?? 0"></app-report-stat-card>
         </div>
         <div class="rpt-card">
           <div class="rpt-risk-detail">
-            <div class="rpt-risk-row" *ngIf="riskReport.highRiskEmployees">
-              <i class="fas fa-exclamation-triangle rpt-risk-icon rpt-risk-icon--red"></i>
+            <div class="rpt-risk-row" *ngIf="riskReport.totalDefaultedLoans">
+              <i class="fas fa-exclamation-triangle rpt-risk-icon rpt-risk-icon--red" aria-hidden="true"></i>
               <div>
-                <strong>{{ riskReport.highRiskEmployees }}</strong> employees flagged as high-risk based on loan and attendance history
+                <strong>{{ riskReport.totalDefaultedLoans }}</strong> defaulted loan accounts
               </div>
             </div>
-            <div class="rpt-risk-row" *ngIf="riskReport.overdueLoans">
-              <i class="fas fa-hand-holding-usd rpt-risk-icon rpt-risk-icon--orange"></i>
+            <div class="rpt-risk-row" *ngIf="riskReport.totalOverdueLoans">
+              <i class="fas fa-hand-holding-usd rpt-risk-icon rpt-risk-icon--orange" aria-hidden="true"></i>
               <div>
-                <strong>{{ riskReport.overdueLoans }}</strong> overdue loan accounts — total exposure {{ fmt(riskReport.totalLoanExposure) }}
+                <strong>{{ riskReport.totalOverdueLoans }}</strong> overdue loan accounts — total exposure {{ fmt(riskReport.totalLoanExposure) }}
               </div>
             </div>
-            <div class="rpt-risk-row rpt-risk-row--ok" *ngIf="!riskReport.highRiskEmployees && !riskReport.overdueLoans">
-              <i class="fas fa-check-circle rpt-risk-icon rpt-risk-icon--green"></i>
+            <div class="rpt-risk-row rpt-risk-row--ok" *ngIf="!riskReport.totalDefaultedLoans && !riskReport.totalOverdueLoans">
+              <i class="fas fa-check-circle rpt-risk-icon rpt-risk-icon--green" aria-hidden="true"></i>
               <div>No high-risk flags detected at this time.</div>
             </div>
           </div>
@@ -301,18 +206,9 @@
     <ng-container *ngIf="activeTab==='probation'">
       <div *ngIf="probationReport; else noData">
         <div class="rpt-stat-row">
-          <div class="rpt-stat-card">
-            <span class="rpt-stat-card__num">{{ probationReport.totalOnProbation ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">On Probation</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--orange">
-            <span class="rpt-stat-card__num">{{ probationReport.probationDueSoon ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Due Soon</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--red">
-            <span class="rpt-stat-card__num">{{ probationReport.probationOverdue ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Overdue</span>
-          </div>
+          <app-report-stat-card icon="fa-user-clock" label="On Probation" [value]="probationReport.totalOnProbation ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-hourglass-half" label="Due Soon" tone="warn" [value]="probationReport.probationDueSoon ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-exclamation-circle" label="Overdue" tone="danger" [value]="probationReport.probationOverdue ?? 0"></app-report-stat-card>
         </div>
         <div class="rpt-filter-row">
           <button class="rpt-filter-btn" [class.rpt-filter-btn--active]="probationFilter==='ALL'" (click)="probationFilter='ALL'">All</button>
@@ -320,32 +216,21 @@
           <button class="rpt-filter-btn rpt-filter-btn--orange" [class.rpt-filter-btn--active]="probationFilter==='DUE_SOON'" (click)="probationFilter='DUE_SOON'">Due Soon</button>
           <button class="rpt-filter-btn rpt-filter-btn--green" [class.rpt-filter-btn--active]="probationFilter==='ACTIVE'" (click)="probationFilter='ACTIVE'">Active</button>
         </div>
-        <div class="rpt-card">
-          <table class="rpt-table">
-            <thead>
-              <tr>
-                <th>Employee</th><th>Department</th><th>Level</th>
-                <th>End Date</th><th>Days Remaining</th><th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let row of filteredProbationRows">
-                <td style="font-weight:600;color:#1f2937">{{ row.employeeName }}</td>
-                <td>{{ row.department }}</td>
-                <td>{{ row.level }}</td>
-                <td>{{ formatDate(row.probationEndDate) }}</td>
-                <td>
-                  <span [class.rpt-days--neg]="daysRemaining(row.probationEndDate) < 0">
-                    {{ daysRemaining(row.probationEndDate) }} days
-                  </span>
-                </td>
-                <td><span [class]="probationStatusClass(row.probationStatus)">{{ row.probationStatus }}</span></td>
-              </tr>
-              <tr *ngIf="!filteredProbationRows.length">
-                <td colspan="6" class="rpt-empty">No employees match this filter.</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="rpt-table-wrap">
+          <app-table [columns]="cols.probation" [rows]="filteredProbationRows" emptyMessage="No employees match this filter.">
+            <ng-template appTableBody let-row>
+              <td class="rpt-cell--strong">{{ row.employeeName }}</td>
+              <td>{{ row.department }}</td>
+              <td>{{ row.level }}</td>
+              <td>{{ formatDate(row.probationEndDate) }}</td>
+              <td>
+                <span [class.rpt-days--neg]="daysRemaining(row.probationEndDate) < 0">
+                  {{ daysRemaining(row.probationEndDate) }} days
+                </span>
+              </td>
+              <td><span [class]="probationStatusClass(row.probationStatus)">{{ row.probationStatus }}</span></td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
     </ng-container>
@@ -354,34 +239,20 @@
     <ng-container *ngIf="activeTab==='equity'">
       <div *ngIf="equityReport; else noData">
         <div class="rpt-stat-row">
-          <div class="rpt-stat-card rpt-stat-card--blue">
-            <span class="rpt-stat-card__num" style="color:#2563eb">{{ fmt(equityReport.overallAverageNetPayable) }}</span>
-            <span class="rpt-stat-card__lbl">Avg Net Pay (Overall)</span>
-          </div>
-          <div class="rpt-stat-card">
-            <span class="rpt-stat-card__num">{{ equityReport.totalPayrollRecords ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Payroll Records</span>
-          </div>
+          <app-report-stat-card icon="fa-balance-scale" label="Avg Net Pay (Overall)" tone="primary" [colored]="true" [value]="fmt(equityReport.overallAverageNetPayable)"></app-report-stat-card>
+          <app-report-stat-card icon="fa-file-alt" label="Payroll Records" [value]="equityReport.totalPayrollRecords ?? 0"></app-report-stat-card>
         </div>
-        <div class="rpt-card" *ngIf="equityReport?.rows?.length">
-          <table class="rpt-table">
-            <thead>
-              <tr>
-                <th>Level</th><th>Department</th><th>Gender</th>
-                <th>Count</th><th>Avg Net Pay</th><th>Median Net Pay</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let row of equityReport.rows">
-                <td style="font-weight:600">{{ row.level }}</td>
-                <td>{{ row.department }}</td>
-                <td>{{ row.gender }}</td>
-                <td>{{ row.count }}</td>
-                <td style="color:#2563eb">{{ fmt(row.averageNetPayable) }}</td>
-                <td style="color:#7c3aed">{{ fmt(row.medianApproxNetPayable) }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="rpt-table-wrap">
+          <app-table [columns]="cols.equity" [rows]="rows(equityReport.rows)" [emptyMessage]="emptyText">
+            <ng-template appTableBody let-row>
+              <td class="rpt-cell--strong">{{ row.level }}</td>
+              <td>{{ row.department }}</td>
+              <td>{{ row.gender }}</td>
+              <td>{{ row.employeeCount }}</td>
+              <td class="rpt-c--primary">{{ fmt(row.averageNetPayable) }}</td>
+              <td class="rpt-c--accent">{{ fmt(row.medianApproxNetPayable) }}</td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
     </ng-container>
@@ -390,29 +261,18 @@
     <ng-container *ngIf="activeTab==='bonus'">
       <div *ngIf="bonusReport; else noData">
         <div class="rpt-stat-row">
-          <div class="rpt-stat-card rpt-stat-card--green">
-            <span class="rpt-stat-card__num" style="color:#16a34a">{{ fmt(bonusReport.totalBonusAmount) }}</span>
-            <span class="rpt-stat-card__lbl">Total Bonus Amount</span>
-          </div>
-          <div class="rpt-stat-card">
-            <span class="rpt-stat-card__num">{{ bonusReport.totalBonuses ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Total Bonuses Issued</span>
-          </div>
+          <app-report-stat-card icon="fa-gift" label="Total Bonus Amount" tone="success" [colored]="true" [value]="fmt(bonusReport.totalBonusAmount)"></app-report-stat-card>
+          <app-report-stat-card icon="fa-award" label="Total Bonuses Issued" [value]="bonusReport.totalBonuses ?? 0"></app-report-stat-card>
         </div>
-        <div class="rpt-card" *ngIf="bonusReport?.rows?.length">
-          <table class="rpt-table">
-            <thead>
-              <tr><th>Level</th><th>Type</th><th>Count</th><th>Total</th></tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let row of bonusReport.rows">
-                <td style="font-weight:600">{{ row.level }}</td>
-                <td>{{ row.bonusType }}</td>
-                <td>{{ row.count }}</td>
-                <td style="color:#16a34a">{{ fmt(row.totalAmount) }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="rpt-table-wrap">
+          <app-table [columns]="cols.bonus" [rows]="rows(bonusReport.rows)" [emptyMessage]="emptyText">
+            <ng-template appTableBody let-row>
+              <td class="rpt-cell--strong">{{ row.level }}</td>
+              <td>{{ row.bonusType }}</td>
+              <td>{{ row.count }}</td>
+              <td class="rpt-c--success">{{ fmt(row.totalAmount) }}</td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
     </ng-container>
@@ -421,34 +281,20 @@
     <ng-container *ngIf="activeTab==='statutory'">
       <div *ngIf="statutoryReport; else noData">
         <div class="rpt-stat-row">
-          <div class="rpt-stat-card">
-            <span class="rpt-stat-card__num">{{ statutoryReport.totalRecords ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Total Records</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--blue">
-            <span class="rpt-stat-card__num" style="color:#2563eb">{{ fmtPct(statutoryReport.totalNsitfRate) }}</span>
-            <span class="rpt-stat-card__lbl">Total NSITF Rate</span>
-          </div>
-          <div class="rpt-stat-card" style="border-left-color:#7c3aed">
-            <span class="rpt-stat-card__num" style="color:#7c3aed">{{ fmtPct(statutoryReport.totalItfRate) }}</span>
-            <span class="rpt-stat-card__lbl">Total ITF Rate</span>
-          </div>
+          <app-report-stat-card icon="fa-file-alt" label="Total Records" [value]="statutoryReport.totalRecords ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-landmark" label="Total NSITF Rate" tone="primary" [colored]="true" [value]="fmtPct(statutoryReport.totalNsitfRate)"></app-report-stat-card>
+          <app-report-stat-card icon="fa-percentage" label="Total ITF Rate" tone="accent" [colored]="true" [value]="fmtPct(statutoryReport.totalItfRate)"></app-report-stat-card>
         </div>
-        <div class="rpt-card" *ngIf="statutoryReport?.rows?.length">
-          <table class="rpt-table">
-            <thead>
-              <tr><th>#</th><th>NSITF Rate (%)</th><th>ITF Rate (%)</th><th>Created</th><th>Updated</th></tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let row of statutoryReport.rows">
-                <td>{{ row.id }}</td>
-                <td style="color:#2563eb">{{ row.nsitfRate | number:'1.2-2' }}</td>
-                <td style="color:#7c3aed">{{ row.itfRate | number:'1.2-2' }}</td>
-                <td>{{ formatDate(row.createdAt) }}</td>
-                <td>{{ formatDate(row.updatedAt) }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="rpt-table-wrap">
+          <app-table [columns]="cols.statutory" [rows]="rows(statutoryReport.rows)" [emptyMessage]="emptyText">
+            <ng-template appTableBody let-row>
+              <td>{{ row.id }}</td>
+              <td class="rpt-c--primary">{{ row.nsitfRate | number:'1.2-2' }}</td>
+              <td class="rpt-c--accent">{{ row.itfRate | number:'1.2-2' }}</td>
+              <td>{{ formatDate(row.createdAt) }}</td>
+              <td>{{ formatDate(row.updatedAt) }}</td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
     </ng-container>
@@ -457,33 +303,19 @@
     <ng-container *ngIf="activeTab==='overtime'">
       <div *ngIf="overtimeReport; else noData">
         <div class="rpt-stat-row">
-          <div class="rpt-stat-card">
-            <span class="rpt-stat-card__num">{{ overtimeReport.totalConfigurations ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Configurations</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--orange">
-            <span class="rpt-stat-card__num" style="color:#d97706">{{ fmt(overtimeReport.totalConfiguredCost) }}</span>
-            <span class="rpt-stat-card__lbl">Total Configured Cost</span>
-          </div>
+          <app-report-stat-card icon="fa-cog" label="Configurations" [value]="overtimeReport.totalConfigurations ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-clock" label="Total Configured Cost" tone="warn" [colored]="true" [value]="fmt(overtimeReport.totalConfiguredCost)"></app-report-stat-card>
         </div>
-        <div class="rpt-card" *ngIf="overtimeReport?.rows?.length">
-          <table class="rpt-table">
-            <thead>
-              <tr><th>Level</th><th>Overtime Type</th><th>Max Hours</th><th>Rate (₦/hr)</th><th>Configured Cost (₦)</th></tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let row of overtimeReport.rows">
-                <td style="font-weight:600">{{ row.level }}</td>
-                <td>{{ row.overtimeType }}</td>
-                <td>{{ row.maxHours }}</td>
-                <td>{{ row.rate | number }}</td>
-                <td style="color:#d97706">{{ row.configuredCost | number:'1.2-2' }}</td>
-              </tr>
-              <tr *ngIf="!overtimeReport?.rows?.length">
-                <td colspan="5" class="rpt-empty">No overtime configurations found.</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="rpt-table-wrap">
+          <app-table [columns]="cols.overtime" [rows]="rows(overtimeReport.rows)" [emptyMessage]="search ? emptyText : 'No overtime configurations found.'">
+            <ng-template appTableBody let-row>
+              <td class="rpt-cell--strong">{{ row.level }}</td>
+              <td>{{ row.overtimeType }}</td>
+              <td>{{ row.maxHours }}</td>
+              <td>{{ row.rate | number }}</td>
+              <td class="rpt-c--warn">{{ row.configuredCost | number:'1.2-2' }}</td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
     </ng-container>
@@ -492,41 +324,29 @@
     <ng-container *ngIf="activeTab==='vacancy'">
       <div *ngIf="vacancyReport; else noData">
         <div class="rpt-stat-row">
-          <div class="rpt-stat-card">
-            <span class="rpt-stat-card__num">{{ vacancyReport.totalVacancies ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Open Vacancies</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--red">
-            <span class="rpt-stat-card__num">{{ vacancyReport.expiredVacancies ?? 0 }}</span>
-            <span class="rpt-stat-card__lbl">Expired</span>
-          </div>
-          <div class="rpt-stat-card rpt-stat-card--orange">
-            <span class="rpt-stat-card__num">{{ vacancyReport.averageDaysOpen | number:'1.0-0' }}</span>
-            <span class="rpt-stat-card__lbl">Avg Days Open</span>
-          </div>
+          <app-report-stat-card icon="fa-briefcase" label="Open Vacancies" [value]="vacancyReport.totalVacancies ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-calendar-times" label="Expired" tone="danger" [value]="vacancyReport.expiredVacancies ?? 0"></app-report-stat-card>
+          <app-report-stat-card icon="fa-hourglass-half" label="Avg Days Open" tone="warn" [value]="vacancyReport.averageDaysOpen | number:'1.0-0'"></app-report-stat-card>
         </div>
-        <div class="rpt-card" *ngIf="vacancyReport?.rows?.length">
-          <table class="rpt-table">
-            <thead>
-              <tr><th>Job Title</th><th>Location</th><th>Type</th><th>Days Open</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let row of vacancyReport.rows">
-                <td style="font-weight:600;color:#1f2937">{{ row.jobTitle }}</td>
-                <td>{{ row.location }}</td>
-                <td>{{ row.employmentType }}</td>
-                <td [style.color]="vacancyDaysColor(row.daysOpen)">{{ row.daysOpen }} days</td>
-                <td>
-                  <span class="rpt-badge" [class.rpt-badge--red]="vacancyExpired(row)" [class.rpt-badge--green]="!vacancyExpired(row)">
-                    {{ vacancyExpired(row) ? 'Expired' : 'Active' }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="rpt-table-wrap">
+          <app-table [columns]="cols.vacancy" [rows]="rows(vacancyReport.rows)" [emptyMessage]="emptyText">
+            <ng-template appTableBody let-row>
+              <td class="rpt-cell--strong">{{ row.jobTitle }}</td>
+              <td>{{ row.location }}</td>
+              <td>{{ row.jobType }}</td>
+              <td [style.color]="vacancyDaysColor(row.daysOpen)">{{ row.daysOpen }} days</td>
+              <td>
+                <span class="rpt-badge" [class.rpt-badge--red]="vacancyExpired(row)" [class.rpt-badge--green]="!vacancyExpired(row)">
+                  {{ vacancyExpired(row) ? 'Expired' : 'Active' }}
+                </span>
+              </td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
     </ng-container>
+
+    </div>
 
     <!-- ── no-data fallback ───────────────────────────────────────────────────── -->
     <ng-template #noData>

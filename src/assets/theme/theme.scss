@@ -23,6 +23,17 @@
     --badge-purple: rgb(158, 138, 231);
     --badge-pink: rgb(192, 118, 174);
 
+    // darker text and light tint variants of the palette (text is AA on white)
+    --celadon-green-text: #238654;
+    --badge-red-text: #c62f2f;
+    --badge-yellow-text: #68642d;
+    --badge-purple-text: #6f61a2;
+    --celadon-green-tint: #d9f1e5;
+    --badge-red-tint: #fbdbdb;
+    --badge-yellow-tint: #f7f4c9;
+    --blue-green-tint: #e6ecef;
+    --blue-green-dark: #204553;
+
     // icons
     --icon-edit: #2EB270;
     --icon-delete: red;

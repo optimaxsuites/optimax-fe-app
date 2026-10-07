@@ -6,6 +6,7 @@ import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-
 import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
 import { OrgChartComponent } from './ui/view/org-chart/org-chart.component';
 import { HrReportsComponent } from './ui/view/hr-reports/hr-reports.component';
+import { ReportStatCardComponent } from './ui/view/hr-reports/report-stat-card.component';
 import { PreOnboardingFormComponent } from './ui/view/employee-management/pre-onboarding-form/pre-onboarding-form.component';
 import { PreOnboardingImportComponent } from './ui/view/employee-management/pre-onboarding-import/pre-onboarding-import.component';
 import { OffboardingFormComponent } from './ui/view/employee-management/offboarding-form/offboarding-form.component';
@@ -438,6 +439,8 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     // FooterComponent,
   ],
   imports: [
+    BrowserModule,
+    BrowserAnimationsModule,
     CommonModule,
     AppHrRoutingModule,
     LargeSideModalComponent,
@@ -502,6 +505,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     EmployeeRelativesWidgetComponent,
     TimeFormatPipe,
     ToastComponent,
+    ReportStatCardComponent,
     // Standalone. Without these two here <app-table> resolves to an unknown
     // element and NO_ERRORS_SCHEMA swallows the error, so the table silently
     // renders nothing.

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { environment } from '../../shared-component/service/environments/environment';
 
 // ── TypeScript interfaces mapped 1:1 from Java DTOs ──────────────────────────
 
@@ -186,7 +187,7 @@ export interface HrVacancyAging {
   providedIn: 'root',
 })
 export class HrReportingService {
-  private readonly baseUrl = 'https://be.optimaxsuites.com';
+  private readonly baseUrl = environment.apiBaseUrl;
   private readonly reportsBase = `${this.baseUrl}/x/api/v2/hr/reports`;
 
   constructor(private readonly http: HttpClient) {}
