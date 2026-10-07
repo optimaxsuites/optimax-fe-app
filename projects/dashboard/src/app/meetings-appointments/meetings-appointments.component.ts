@@ -1,4 +1,5 @@
 import { Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Observable, of } from 'rxjs';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import {
   AudioTranscriptionJob,
@@ -744,8 +745,10 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   generateVirtualRoom(platform: string): void {
     const event = this.selectedEvent; if (!event) return;
     event.onlineLink = `https://test-meet.optimaxsuites.com/${platform.toLowerCase().replace(/\s+/g, '-')}/${event.id}`;
-    this.addToast(`${platform} room generated — link ready to share`, 'ok');
-    this.persistAndSync(event);
+    this.syncEvent(event, true).subscribe({
+      next: () => this.addToast(`${platform} room ready — ${event.shortCode ? 'short link available' : 'link ready to share'}`, 'ok'),
+      error: () => this.addToast(`${platform} room generated — link ready to share`, 'ok'),
+    });
   }
 
   startCall():  void { this.openMeetingRoom('CALL'); }
@@ -776,14 +779,21 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
 
   private applyMeetingRoom(event: MeetingEvent, authedUrl: string, guestUrl: string): void {
     this.meetingRoomUrl   = authedUrl;
-    this.meetingGuestUrl  = guestUrl;
+    this.meetingGuestUrl  = guestUrl;        // full URL shown while short code loads
     this.trustedMeetingRoomUrl = this.sanitizer.bypassSecurityTrustResourceUrl(authedUrl);
     this.meetingRoomOpen  = true;
     this.activeDetailTab  = 'virtual';
     event.meetingMode = this.activeMeetingMode === 'CALL' ? 'Virtual' : event.meetingMode === 'Physical' ? 'Hybrid' : event.meetingMode;
     event.onlineLink  = guestUrl;
     this.transcriptionTitle = this.transcriptionTitle || `${event.title} recording`;
-    this.persistAndSync(event);
+    this.syncEvent(event, true).subscribe({
+      next: () => {
+        if (event.shortCode) {
+          this.meetingGuestUrl = `https://be.optimaxsuites.com/m/${event.shortCode}`;
+        }
+      },
+      error: () => undefined,
+    });
   }
 
   closeMeetingRoom(): void { this.meetingRoomOpen = false; this.trustedMeetingRoomUrl = null; }
@@ -794,17 +804,17 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   }
 
   copyGuestLink(): void {
-    const url = this.meetingGuestUrl;
+    const url = this.meetingShortUrl || this.meetingGuestUrl;
     if (!url) { this.addToast('Start a meeting first to get a shareable link', 'warn'); return; }
     navigator.clipboard.writeText(url).then(
-      () => this.addToast('Guest link copied — share with external attendees', 'ok'),
+      () => this.addToast(this.meetingShortUrl ? 'Short link copied' : 'Guest link copied — share with external attendees', 'ok'),
       () => this.addToast('Copy failed — select and copy the link manually', 'warn'),
     );
   }
 
   get meetingShortUrl(): string | null {
     const code = this.selectedEvent?.shortCode;
-    return code ? `https://be.optimaxsuites.com/x/api/v2/ai/m/${code}` : null;
+    return code ? `https://be.optimaxsuites.com/m/${code}` : null;
   }
 
   copyShortLink(): void {
@@ -1058,42 +1068,40 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   }
 
   private persistAndSync(event: MeetingEvent): void {
-    this.syncEvent(event, true);
+    this.syncEvent(event, true).subscribe({ error: () => undefined });
   }
 
-  private syncEvent(event: MeetingEvent, update: boolean): void {
+  private syncEvent(event: MeetingEvent, update: boolean): Observable<any> {
     const payload = { ...event, meetingUrl: event.onlineLink || undefined };
-    const req = update
-      ? this.collaborationService.updateMeetingsAppointmentRecord(event.id, payload)
-      : this.collaborationService.createMeetingsAppointmentRecord(payload);
-    req.subscribe({
-      next: (resp: any) => {
-        this.backendStatus = 'Synced ✓';
-        this.backendOnline = true;
-        if (resp?.shortCode && !event.shortCode) {
-          event.shortCode = resp.shortCode;
-        }
-      },
-      error: (err: any) => {
-        // PUT returned 404 → record doesn't exist yet; create it instead
-        if (update && err?.status === 404) {
-          this.collaborationService.createMeetingsAppointmentRecord(payload).subscribe({
-            next: (resp: any) => {
-              this.backendStatus = 'Synced ✓';
-              this.backendOnline = true;
-              if (resp?.shortCode && !event.shortCode) {
-                event.shortCode = resp.shortCode;
-              }
-            },
-            error: () => { this.backendStatus = 'Working offline'; this.backendOnline = false; },
-          });
-        } else {
-          this.backendStatus = 'Working offline';
-          this.backendOnline = false;
-        }
-      },
+    const applyResponse = (resp: any) => {
+      this.backendStatus = 'Synced ✓';
+      this.backendOnline = true;
+      if (resp?.shortCode && !event.shortCode) {
+        event.shortCode = resp.shortCode;
+      }
+      // Save workspace after shortCode is set so it survives reload
+      this.collaborationService.saveMeetingsAppointmentsWorkspace({ events: this.events, resources: this.resources }).subscribe({ error: () => undefined });
+    };
+    return new Observable(obs => {
+      const req = update
+        ? this.collaborationService.updateMeetingsAppointmentRecord(event.id, payload)
+        : this.collaborationService.createMeetingsAppointmentRecord(payload);
+      req.subscribe({
+        next: (resp: any) => { applyResponse(resp); obs.next(resp); obs.complete(); },
+        error: (err: any) => {
+          if (update && err?.status === 404) {
+            this.collaborationService.createMeetingsAppointmentRecord(payload).subscribe({
+              next: (resp: any) => { applyResponse(resp); obs.next(resp); obs.complete(); },
+              error: (e: any) => { this.backendStatus = 'Working offline'; this.backendOnline = false; obs.error(e); },
+            });
+          } else {
+            this.backendStatus = 'Working offline';
+            this.backendOnline = false;
+            obs.error(err);
+          }
+        },
+      });
     });
-    this.collaborationService.saveMeetingsAppointmentsWorkspace({ events: this.events, resources: this.resources }).subscribe({ error: () => undefined });
   }
 
   private applyAiOutput(op: string, res: MeetingsAssistantResponse): void {
