@@ -436,6 +436,12 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
 
       this.cooperativeService.loadMemberById(candidateIds[index]).subscribe({
         next: (member) => {
+          // Candidates are employee/user IDs, but this looks up by cooperative member ID — separate ID
+          // spaces. (e.g. employee 13 is not member 13.) Only accept the member if it is really ours.
+          if (member && !this.memberMatchesCurrentProfile(member)) {
+            tryCandidate(index + 1);
+            return;
+          }
           if (member && this.isResolvedMemberActive(member)) {
             this.usingRealData = true;
             this.actionMessage = '';

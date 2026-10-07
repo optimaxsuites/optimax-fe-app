@@ -420,7 +420,11 @@ export class CooperativeService {
   }
 
   public getMemberById(id: number): CooperativeMember | undefined {
-    const cachedMember = this.members.find(m => m.id === id || m.memberId === id || m.employeeId === id);
+    // Member IDs and employee IDs overlap (member 13 ≠ employee 13), so prefer an exact member-ID
+    // match and only fall back to employeeId when no member has that ID.
+    const cachedMember = this.members.find(m => m.id === id)
+      ?? this.members.find(m => m.memberId === id)
+      ?? this.members.find(m => m.employeeId === id);
     if (cachedMember) {
       return cachedMember;
     }
