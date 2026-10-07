@@ -7,8 +7,12 @@ import { ScheduledInterviewComponent } from './ui/view/recruitment/scheduled-int
 import { AuthenticationService } from './ui/shared-component/service/auth-service/authentication.service';
 import { MetadataService } from './ui/service/metadata.service';
 import { environment } from './ui/shared-component/service/environments/environment';
+import { firstValueFrom } from 'rxjs';
 
-const DEV_LOGIN_STORAGE_KEY = 'devLoginCredentials';
+// Dev-only bearer token for eseose. Expires 24h after issue (this one: 2026-10-08 15:02 WAT).
+// Signing in as eseose anywhere else invalidates it early.
+const DEV_TOKEN =
+  'eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoiZXNlb3NlIiwiaWF0IjoxNzkxMzgxNzM3LCJleHAiOjE3OTE0NjgxMzd9.IeSicPKkLMnXMAQQqiw9_euqF3nxYCcLQnGDWGDgFSI';
 
 @Component({
   selector: 'app-root',
@@ -28,23 +32,16 @@ export class AppHrComponent {
 
   ngOnInit(): void {
     this.checkScreenWidth();
+    this.restoreSessionFromLocalStorage();
 
-    // Development mode: sign in for real so the session holds the actual user ID and a fresh token.
+    // Development mode: set hardcoded authentication.
+    // The token expires 24h after it is issued — replace DEV_TOKEN daily.
     if (environment.env === 'development') {
-      if (this.authenticationService.isAuthenticated() && this.hasRealLoginSession()) {
-        this.metadataService.fetchMetaData(true);
-      } else {
-        // Reload once after signing in so components initialise with the real session.
-        this.userLoginAction().then(() => {
-          if (this.hasRealLoginSession()) {
-            window.location.reload();
-          }
-        });
-      }
+      console.log('🔧 [Development Mode] Setting hardcoded authentication for eseose');
+      this.setDevSession();
+      this.metadataService.fetchMetaData(true);
     } else if (this.authenticationService.isAuthenticated()) {
       this.metadataService.fetchMetaData(true);
-    } else {
-      this.userLoginAction();
     }
     this.exposeGlobalHelpers();
 
@@ -64,113 +61,77 @@ export class AppHrComponent {
     // }
   }
 
-  /** True when the session came from a real sign-in (not the old hardcoded dev user). */
-  private hasRealLoginSession(): boolean {
-    try {
-      const userRegData = JSON.parse(sessionStorage.getItem('userRegData') || 'null');
-      return !!userRegData?.accessToken && !!sessionStorage.getItem('userid');
-    } catch {
-      return false;
-    }
-  }
-
-  async userLoginAction(): Promise<void> {
-    const credentials = this.getDevLoginCredentials();
-    if (!credentials) {
-      if (environment.env !== 'development') {
-        return;
-      }
-      console.warn(
-        '🔧 [Development Mode] No dev login saved. Run loginAs("<username>", "<password>") in the console to sign in.',
-      );
-      return;
-    }
-
-    console.log(`🔧 [Development Mode] Signing in as ${credentials.username}...`);
+  private async signIn(username: string, password: string): Promise<boolean> {
     const loginDetails = {
-      username: credentials.username,
-      password: credentials.password,
+      username,
+      password,
       project: 'ERP',
       clientId: 'optimax-erp-web',
       appVersion: '2026.05.30',
     };
 
     try {
-      const data = await this.authenticationService
-        .userLogin(loginDetails)
-        .toPromise();
+      const data = await firstValueFrom(this.authenticationService.userLogin(loginDetails));
 
       if (!data) {
-        console.error('🔧 [Development Mode] Sign-in returned no data.');
-        return;
+        console.error('Sign-in returned no data.');
+        return false;
       }
 
       this.loadInitParam(data);
       this.metadataService.fetchMetaData(true);
-    } catch (error) {
-      console.error(
-        `🔧 [Development Mode] Sign-in failed for ${credentials.username}. ` +
-          'Check the password and run loginAs("<username>", "<password>") again.',
-        error,
-      );
-      this.authenticationService.logout();
+      return true;
+    } catch (error: unknown) {
+      console.error(`Sign-in failed for ${username}. Check the credentials and try again.`, error);
+      return false;
     }
   }
 
-  private getDevLoginCredentials(): { username: string; password: string } | null {
-    if (environment.env !== 'development') {
-      return null;
-    }
-
-    try {
-      const stored = JSON.parse(localStorage.getItem(DEV_LOGIN_STORAGE_KEY) || 'null');
-      if (stored?.username && stored?.password) {
-        return { username: stored.username, password: stored.password };
-      }
-    } catch {
-      // Ignore malformed stored credentials.
-    }
-    return null;
-  }
-
-  /**
-   * Save dev login credentials in this browser only (never in source) and sign in with them.
-   */
   async loginAs(username: string, password: string): Promise<void> {
     if (environment.env !== 'development') {
       console.error('loginAs() is only available in development mode.');
       return;
     }
 
-    localStorage.setItem(DEV_LOGIN_STORAGE_KEY, JSON.stringify({ username, password }));
     this.authenticationService.logout();
-    await this.userLoginAction();
-
-    if (this.hasRealLoginSession()) {
+    if (await this.signIn(username, password)) {
       window.location.reload();
     }
   }
 
   loadInitParam(data: any) {
-    const role = data.roles;
-    const username = data.username;
+    const response = data?.data ?? data;
+    const user = response?.user ?? response;
+    const roleValue = user.roles ?? user.role ?? response.roles ?? response.role;
+    const role = Array.isArray(roleValue) ? roleValue[0] : roleValue;
+    const username = user.username ?? user.userName ?? response.username ?? '';
     const fullname =
-      data.fullname || data.fullName || data.name || data.username;
-    const email = data.email;
-    const userId = data.id ?? data.userId;
+      user.fullname || user.fullName || user.name || `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || username;
+    const email = user.email ?? response.email ?? '';
+    const userId = user.userId ?? user.id ?? response.userId ?? response.id;
+    const accessToken =
+      response.accessToken ?? response.token ?? user.accessToken ?? user.token;
 
-    sessionStorage.setItem('role', role);
-    sessionStorage.setItem('username', username);
-    sessionStorage.setItem('fullname', fullname);
-    sessionStorage.setItem('email', email);
-    sessionStorage.setItem('userid', userId);
+    if (userId === undefined || userId === null || String(userId).trim() === '') {
+      throw new Error('Login response does not include an authentication user ID');
+    }
+    const token = this.extractToken(accessToken);
+    if (!token) {
+      throw new Error('Unable to extract access token from login response');
+    }
+
+    sessionStorage.setItem('role', String(role ?? ''));
+    sessionStorage.setItem('username', String(username));
+    sessionStorage.setItem('fullname', String(fullname));
+    sessionStorage.setItem('email', String(email));
+    sessionStorage.setItem('userid', String(userId));
 
     try {
-      localStorage.setItem('role', role);
-      localStorage.setItem('username', username);
-      localStorage.setItem('fullname', fullname);
-      localStorage.setItem('email', email);
-      localStorage.setItem('userid', userId);
+      localStorage.setItem('role', String(role ?? ''));
+      localStorage.setItem('username', String(username));
+      localStorage.setItem('fullname', String(fullname));
+      localStorage.setItem('email', String(email));
+      localStorage.setItem('userid', String(userId));
     } catch (e) {
       console.warn(
         'localStorage quota exceeded or disabled, proceeding with sessionStorage only',
@@ -178,28 +139,65 @@ export class AppHrComponent {
       );
     }
 
-    const token = this.extractToken(data.accessToken);
-
-    if (!token) {
-      throw new Error('Unable to extract access token from login response');
-    }
-
     sessionStorage.setItem('Token', token);
     sessionStorage.setItem('token', token);
-    sessionStorage.setItem('accessToken', data.accessToken);
+    sessionStorage.setItem('accessToken', String(accessToken));
     sessionStorage.setItem('userRegData', JSON.stringify(data));
 
     try {
       localStorage.setItem('Token', token);
       localStorage.setItem('token', token);
       localStorage.setItem('Token2', token);
-      localStorage.setItem('accessToken2', data.accessToken);
+      localStorage.setItem('accessToken2', String(accessToken));
       localStorage.setItem('userRegData', JSON.stringify(data));
     } catch (e) {
       console.warn(
         'localStorage quota exceeded or disabled, proceeding with sessionStorage only',
         e,
       );
+    }
+  }
+
+  private setDevSession(): void {
+    // Eseose Odion: auth user ID 65 -> employee ID 13.
+    const devUser = {
+      id: 65,
+      userId: 65,
+      username: 'eseose',
+      fullname: 'Eseose Odion',
+      email: 'eseose.odion@centrifugegroup.com',
+      role: 'ADMIN',
+    };
+
+    for (const storage of [sessionStorage, localStorage]) {
+      storage.setItem('Token', DEV_TOKEN);
+      storage.setItem('token', DEV_TOKEN);
+      storage.setItem('userid', String(devUser.userId));
+      storage.setItem('username', devUser.username);
+      storage.setItem('fullname', devUser.fullname);
+      storage.setItem('email', devUser.email);
+      storage.setItem('role', devUser.role);
+      storage.setItem('userRegData', JSON.stringify(devUser));
+    }
+    sessionStorage.setItem('uuid', '1');
+  }
+
+  /**
+   * sessionStorage is cleared for every new tab/browser restart, but the login is also kept in
+   * localStorage. Copy it back so screens that read the user from sessionStorage (names, user ID)
+   * don't fall back to "Admin" while the token is still valid.
+   */
+  private restoreSessionFromLocalStorage(): void {
+    const keys = ['role', 'username', 'fullname', 'email', 'userid', 'Token', 'token', 'userRegData'];
+    try {
+      for (const key of keys) {
+        const localValue = localStorage.getItem(key);
+        if (!sessionStorage.getItem(key) && localValue && localValue !== 'undefined' && localValue !== 'null') {
+          sessionStorage.setItem(key, localValue);
+        }
+      }
+    } catch {
+      // Storage unavailable (e.g. privacy mode); screens fall back to their defaults.
     }
   }
 
@@ -241,12 +239,8 @@ export class AppHrComponent {
    */
   logout(): void {
     console.log('Logging out...');
-    const devLogin = localStorage.getItem(DEV_LOGIN_STORAGE_KEY);
     sessionStorage.clear();
     localStorage.clear();
-    if (devLogin) {
-      localStorage.setItem(DEV_LOGIN_STORAGE_KEY, devLogin);
-    }
     window.location.href = '/';
   }
 

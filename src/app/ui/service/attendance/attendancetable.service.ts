@@ -43,13 +43,13 @@ const STORAGE_KEYS = {
 };
 
 const API_ENDPOINTS = {
-  ALL_RECORDS: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records`,
-  RECORDS_BY_RANGE: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/date-range`,
-  RECORD_BY_ID: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/${id}`,
+  ALL_RECORDS: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords`,
+  RECORDS_BY_RANGE: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/dateRange`,
+  RECORD_BY_ID: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${id}`,
   RECORD_BY_EMPLOYEE: (id: string) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/employee/${id}`,
   CLOCK_IN: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockIn`,
   CLOCK_OUT: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockOut`,
-  OVERRIDE_OPEN: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/${id}/override/open`,
+  OVERRIDE_OPEN: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${id}/override/open`,
   EMPLOYEES: () => `${environment.apiBaseUrl}/x/api/v2/hr/employees?page=1&size=100`
 };
 
