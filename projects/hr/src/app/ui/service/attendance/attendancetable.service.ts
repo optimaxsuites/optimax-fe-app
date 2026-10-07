@@ -46,9 +46,9 @@ const API_ENDPOINTS = {
   ALL_RECORDS: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records`,
   RECORDS_BY_RANGE: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/date-range`,
   RECORD_BY_ID: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/${id}`,
-  RECORD_BY_EMPLOYEE: (id: string) => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/employee/${id}`,
-  CLOCK_IN: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/clock-in`,
-  CLOCK_OUT: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/clock-out`,
+  RECORD_BY_EMPLOYEE: (id: string) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/employee/${id}`,
+  CLOCK_IN: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockIn`,
+  CLOCK_OUT: () => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockOut`,
   OVERRIDE_OPEN: (id: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendance-records/${id}/override/open`,
   EMPLOYEES: () => `${environment.apiBaseUrl}/x/api/v2/hr/employees?page=1&size=100`
 };

@@ -429,7 +429,7 @@ export class EmployeeService {
         console.error("An error occurred:", error.error.message);
     } else {
         console.error(
-            `Backend returned code ${error.status}, ` +
+          `Backend returned code ${error.status} for ${error.url || 'unknown URL'}, ` +
                 `body was: ${JSON.stringify(error.error)}`
         );
     }
