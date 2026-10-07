@@ -93,4 +93,42 @@ describe('GenerateDeliveryNoteComponent', () => {
       expect(component.isSavingLpo).toBeFalse();
     });
   });
+
+  describe('openSendModal / confirmSendEmail: compose-before-send', () => {
+    beforeEach(() => {
+      component.ngOnInit();
+      component.deliveryNote = note({ id: 7, deliveryNumber: 'DN-7' });
+    });
+
+    it('opens the modal pre-filled with an editable subject/message instead of sending immediately', () => {
+      component.openSendModal();
+
+      expect(component.showSendModal).toBeTrue();
+      expect(component.emailSubject).toContain('DN-7');
+      expect(component.emailMessage).toContain('DN-7');
+      expect(salesEmailService.send).not.toHaveBeenCalled();
+    });
+
+    it('warns instead of opening the modal when the customer has no email', () => {
+      component.customers = [{ id: 1, name: 'Acme Co' } as any]; // no email field
+      component.openSendModal();
+      expect(component.showSendModal).toBeFalse();
+    });
+
+    it('sends with the edited subject/message once confirmed, closing the modal first', async () => {
+      component.showSendModal = true;
+      component.emailSubject = 'Custom subject';
+      component.emailMessage = 'Custom message body';
+      salesEmailService.send.and.returnValue(of({ status: 'SENT' } as any));
+      spyOn<any>(component, 'generatePdfBlob').and.returnValue(Promise.resolve(new Blob(['x'])));
+
+      await component.confirmSendEmail();
+
+      expect(component.showSendModal).toBeFalse();
+      expect(salesEmailService.send).toHaveBeenCalledWith(jasmine.objectContaining({
+        subject: 'Custom subject',
+        message: jasmine.stringContaining('Custom message body')
+      }));
+    });
+  });
 });

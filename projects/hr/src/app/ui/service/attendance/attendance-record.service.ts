@@ -73,8 +73,8 @@ export class AttendanceRecordService {
   ): Observable<PagedResponse<AttendanceRecordDTO>> {
     let params = new HttpParams();
     if (employeeId !== undefined) params = params.set('employeeId', employeeId);
-    if (startDate) params = params.set('startDate', startDate);
-    if (endDate) params = params.set('endDate', endDate);
+    if (startDate) params = params.set('from', startDate);
+    if (endDate) params = params.set('to', endDate);
 
     return this.http.get<PagedResponse<AttendanceRecordDTO>>(`${this.BASE}/dateRange`, { params }).pipe(
       catchError(error => {

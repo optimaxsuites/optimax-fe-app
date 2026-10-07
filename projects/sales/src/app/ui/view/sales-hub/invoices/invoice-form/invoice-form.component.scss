@@ -76,6 +76,7 @@
 .if-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); }
 .if-req { color:var(--danger); }
 .if-field-err { font-size:11px; color:var(--danger); }
+.if-modal-hint { font-size:13px; color:var(--muted); margin:0 0 14px; }
 
 .if-input, .if-select, .if-textarea { width:100%; border:1px solid var(--border); border-radius:7px; padding:9px 12px; font-size:13px; font-family:inherit; color:var(--text); background:var(--surface); transition:border-color .15s,box-shadow .15s; &:focus { outline:none; border-color:var(--p); box-shadow:0 0 0 3px rgba(30,58,95,.11); } &--sm { padding:5px 8px; font-size:12px; } &--err { border-color:var(--danger); } }
 .if-textarea { resize:vertical; min-height:68px; }

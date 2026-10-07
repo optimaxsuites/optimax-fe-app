@@ -310,29 +310,75 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     this.route.params.subscribe(params => {
       this.uuid = params['uuid'];
 
-      let userId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
+      const userId = this.resolveSessionUserId();
       if (!userId) {
-        console.warn('No user ID found in session; using fallback user ID 1 for development mode.');
-        userId = '1';
+        this.handleEmployeeLookupFailure('No logged-in user ID found in session. Please sign in again.');
+        return;
       }
 
       this.employeeService.getEmployeeByUserId(userId).subscribe({
         next: (response) => {
           if (response) {
-            this.employeeId = String(response.id || response.employeeId || '');
+            this.employeeId = String(response.id || response.employeeId || this.employeeId || '');
             this.employeeName = `${response.firstName || ''} ${response.lastName || ''}`.trim() || response.fullName || this.displayEmployeeName;
             this.employeeDepartment = response.department?.name || response.department || '';
+            if (this.employeeId) {
+              sessionStorage.setItem('employeeId', this.employeeId);
+              sessionStorage.setItem('employeeUserId', userId);
+            }
           }
 
           this.setupLoanSubscription();
           this.loadLoanData();
         },
         error: (error) => {
-          console.error('Error loading employee:', error);
-          this.isLoading = false;
+          console.error(`Error loading employee for user ID ${userId}:`, error);
+          this.handleEmployeeLookupFailure(`No employee record is linked to your user account (user ID ${userId}).`);
         }
       });
     });
+  }
+
+  private resolveSessionUserId(): string {
+    const isUsable = (value: unknown): boolean => {
+      const normalized = String(value ?? '').trim().toLowerCase();
+      return !!normalized && normalized !== 'undefined' && normalized !== 'null';
+    };
+
+    const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
+    if (isUsable(storedUserId)) {
+      return String(storedUserId).trim();
+    }
+
+    try {
+      const rawUserRegData = sessionStorage.getItem('userRegData') || localStorage.getItem('userRegData');
+      if (rawUserRegData) {
+        const parsed = JSON.parse(rawUserRegData);
+        const payload = Array.isArray(parsed) ? parsed[0] : parsed;
+        const regUserId = payload?.id ?? payload?.userId;
+        if (isUsable(regUserId)) {
+          return String(regUserId).trim();
+        }
+      }
+    } catch {
+      // Ignore malformed registration payload.
+    }
+
+    return '';
+  }
+
+  private handleEmployeeLookupFailure(detail: string): void {
+    this.messages = [{ severity: 'warn', summary: 'Employee Not Found', detail }];
+
+    // Fall back to any employee ID already cached for this session so the dashboard still renders.
+    if (this.displayEmployeeId) {
+      this.employeeId = this.displayEmployeeId;
+      this.setupLoanSubscription();
+      this.loadLoanData();
+      return;
+    }
+
+    this.isLoading = false;
   }
 
   private processLoadedData(): void {

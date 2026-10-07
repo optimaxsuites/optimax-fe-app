@@ -436,6 +436,12 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
 
       this.cooperativeService.loadMemberById(candidateIds[index]).subscribe({
         next: (member) => {
+          // Candidates are employee/user IDs, but this looks up by cooperative member ID — separate ID
+          // spaces. (e.g. employee 13 is not member 13.) Only accept the member if it is really ours.
+          if (member && !this.memberMatchesCurrentProfile(member)) {
+            tryCandidate(index + 1);
+            return;
+          }
           if (member && this.isResolvedMemberActive(member)) {
             this.usingRealData = true;
             this.actionMessage = '';
@@ -930,7 +936,7 @@ public toTitleCase(value: string | undefined | null): string {
       memberId: this.member?.id || this.currentMemberId
     });
     this.closeMyGroupsModal();
-    this.router.navigate(['/member/cooperative/groups', groupId, this.currentUuid], {
+    this.router.navigate(['/admin/hr/member/cooperative/groups', groupId, this.currentUuid], {
       state: { memberId: this.member?.id || this.currentMemberId }
     });
   }
@@ -1026,7 +1032,7 @@ public toTitleCase(value: string | undefined | null): string {
     if (!this.selectedLoanForDetails) return;
     const loanId = this.selectedLoanForDetails.id;
     this.closeLoanDetailsModal();
-    this.router.navigate([`/member/cooperative/loans/${loanId}/${this.currentUuid}`]);
+    this.router.navigate([`/admin/hr/member/cooperative/loans/${loanId}/${this.currentUuid}`]);
   }
 
   viewRepaymentSchedule(id: number): void {
@@ -1389,7 +1395,7 @@ public toTitleCase(value: string | undefined | null): string {
   }
 
   goBack(): void {
-    this.backNavigationService.goBack(['/member/cooperative/dashboard', this.currentUuid]);
+    this.backNavigationService.goBack(['/admin/hr/member/cooperative/dashboard', this.currentUuid]);
   }
 
   private loadRepayments(): void {
@@ -1465,9 +1471,10 @@ public toTitleCase(value: string | undefined | null): string {
   openActivationLink(event: Event, link: string): void {
     event.preventDefault();
     if (!link) return;
-    if (link.startsWith('/member/cooperative/dashboard')) {
-      this.router.navigate(['/member/cooperative/dashboard', this.currentUuid], {
-        queryParams: { activateMembership: 'true' }
+    if (link.startsWith('/admin/hr/member/cooperative/dashboard') || link.startsWith('/member/cooperative/dashboard')) {
+      // Open My Membership inside the loan tab host (not the standalone dashboard) so the nav tab stays visible.
+      this.router.navigate(['/admin/hr/loan', this.currentUuid], {
+        queryParams: { tab: 'my-membership' }
       }).then(() => {
         setTimeout(() => this.loadMemberData(), 500);
       });
@@ -1483,7 +1490,11 @@ public toTitleCase(value: string | undefined | null): string {
   }
 
   private navigateToSafeMemberLink(link: string): boolean {
-    const normalizedLink = String(link || '').trim();
+    let normalizedLink = String(link || '').trim();
+    // Links saved before routes were prefixed lack /admin/hr, which 404s inside the shell.
+    if (normalizedLink.startsWith('/member/')) {
+      normalizedLink = `/admin/hr${normalizedLink}`;
+    }
     if (!normalizedLink.startsWith('/')) {
       this.actionMessage = 'That link is not available right now.';
       this.actionMessageTone = 'error';
@@ -1493,7 +1504,7 @@ public toTitleCase(value: string | undefined | null): string {
     const tree = this.router.parseUrl(normalizedLink);
     const primarySegments = tree.root.children['primary']?.segments.map(segment => segment.path) || [];
     const allowedPrefixes = [
-      ['member', 'cooperative'],
+      ['admin', 'hr', 'member', 'cooperative'],
       ['admin', 'hr', 'cooperative']
     ];
     const isAllowed = allowedPrefixes.some(prefix =>
@@ -1563,7 +1574,7 @@ public toTitleCase(value: string | undefined | null): string {
       description: `Applied for loan of ${this.formatCurrency(loan.amount)} for ${loan.purpose || 'general purpose'}`,
       date: loan.requestDate,
       status: this.getStatusDisplay(loan.status),  // Format the status here
-      link: `/member/cooperative/loans/${loan.id}/${this.currentUuid}`
+      link: `/admin/hr/member/cooperative/loans/${loan.id}/${this.currentUuid}`
     });
     
     const repayments: CooperativeRepayment[] = this.repaymentsByLoanId[loan.id] || [];
@@ -1576,7 +1587,7 @@ public toTitleCase(value: string | undefined | null): string {
           description: `Made repayment of ${this.formatCurrency(repayment.amount)} for loan ${loan.loanCode || loan.id}`,
           date: repayment.paidDate,
           status: this.getStatusDisplay('PAID'),  // Format the status here
-          link: `/member/cooperative/loans/${loan.id}/${this.currentUuid}`
+          link: `/admin/hr/member/cooperative/loans/${loan.id}/${this.currentUuid}`
         });
       } else if (repayment.status === 'OVERDUE') {
         activities.push({
@@ -1586,7 +1597,7 @@ public toTitleCase(value: string | undefined | null): string {
           description: `Payment of ${this.formatCurrency(repayment.amount)} is overdue for loan ${loan.loanCode || loan.id}`,
           date: repayment.dueDate,
           status: this.getStatusDisplay('OVERDUE'),  // Format the status here
-          link: `/member/cooperative/loans/${loan.id}/${this.currentUuid}`
+          link: `/admin/hr/member/cooperative/loans/${loan.id}/${this.currentUuid}`
         });
       }
     });
@@ -1600,7 +1611,7 @@ public toTitleCase(value: string | undefined | null): string {
       description: `Joined ${group.groupName} cooperative group`,
       date: group.membership.joinedAt,
       status: this.getStatusDisplay(group.membership.status),  // Format the status here
-      link: `/member/cooperative/groups/${group.membership.groupId}/${this.currentUuid}`
+      link: `/admin/hr/member/cooperative/groups/${group.membership.groupId}/${this.currentUuid}`
     });
   });
 
@@ -1613,7 +1624,7 @@ public toTitleCase(value: string | undefined | null): string {
       description: notification.message,
       date: notification.createdAt,
       status: notification.type === 'GROUP_JOIN_STATUS_UPDATE' ? this.getStatusDisplay(notification.type) : undefined,
-      link: notification.loanId ? `/member/cooperative/loans/${notification.loanId}/${this.currentUuid}` : undefined
+      link: notification.loanId ? `/admin/hr/member/cooperative/loans/${notification.loanId}/${this.currentUuid}` : undefined
     });
   });
 

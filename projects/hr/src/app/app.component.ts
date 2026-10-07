@@ -7,6 +7,12 @@ import { ScheduledInterviewComponent } from './ui/view/recruitment/scheduled-int
 import { AuthenticationService } from './ui/shared-component/service/auth-service/authentication.service';
 import { MetadataService } from './ui/service/metadata.service';
 import { environment } from './ui/shared-component/service/environments/environment';
+import { firstValueFrom } from 'rxjs';
+
+// Dev-only bearer token for eseose. Expires 24h after issue (this one: 2026-10-08 15:02 WAT).
+// Signing in as eseose anywhere else invalidates it early.
+const DEV_TOKEN =
+  'eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoiZXNlb3NlIiwiaWF0IjoxNzkxMzgxNzM3LCJleHAiOjE3OTE0NjgxMzd9.IeSicPKkLMnXMAQQqiw9_euqF3nxYCcLQnGDWGDgFSI';
 
 @Component({
   selector: 'app-root',
@@ -26,40 +32,16 @@ export class AppHrComponent {
 
   ngOnInit(): void {
     this.checkScreenWidth();
+    this.restoreSessionFromLocalStorage();
 
-    // Development mode: set hardcoded authentication and navigate
+    // Development mode: set hardcoded authentication.
+    // The token expires 24h after it is issued — replace DEV_TOKEN daily.
     if (environment.env === 'development') {
-      console.log(
-        '🔧 [Development Mode] Setting hardcoded authentication for eseose',
-      );
-      const devToken =
-        'eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoia2luZG5lc3MiLCJpYXQiOjE3ODkzNjM1MjMsImV4cCI6MTc4OTQ0OTkyM30.JUwWuBQ_t5nR-bPjYCmMZvqUc4c1cVHOfbxEBh8Tg2g';
-      const devUUID = '1';
-      sessionStorage.setItem('Token', devToken);
-      localStorage.setItem('Token', devToken);
-      sessionStorage.setItem('userid', '1');
-      sessionStorage.setItem('uuid', devUUID);
-      sessionStorage.setItem('userid', '1');
-      sessionStorage.setItem('username', 'eseose');
-      sessionStorage.setItem('fullname', 'Eseose Developer');
-      sessionStorage.setItem('email', 'eseose@optimax.com');
-      sessionStorage.setItem('role', 'ADMIN');
-      sessionStorage.setItem(
-        'userRegData',
-        JSON.stringify({
-          id: 1,
-          userId: 1,
-          username: 'eseose',
-          fullname: 'Eseose Developer',
-          email: 'eseose@optimax.com',
-          role: 'ADMIN',
-        }),
-      );
+      console.log('🔧 [Development Mode] Setting hardcoded authentication for eseose');
+      this.setDevSession();
       this.metadataService.fetchMetaData(true);
     } else if (this.authenticationService.isAuthenticated()) {
       this.metadataService.fetchMetaData(true);
-    } else {
-      this.userLoginAction();
     }
     this.exposeGlobalHelpers();
 
@@ -79,65 +61,77 @@ export class AppHrComponent {
     // }
   }
 
-  async userLoginAction(): Promise<void> {
-    console.log('Signing in user with hardcoded credentials for testing...');
-
+  private async signIn(username: string, password: string): Promise<boolean> {
     const loginDetails = {
-      // username: 'Ayaobasheba',
-      // username: 'developer',
-      // password: '123456',
-      username: 'Eseose',
-      password: 'soyBTY86b*rC',
+      username,
+      password,
       project: 'ERP',
       clientId: 'optimax-erp-web',
       appVersion: '2026.05.30',
     };
 
-    if (!loginDetails.username || !loginDetails.password) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Username and password are required',
-      });
-      return;
-    }
-
     try {
-      const data = await this.authenticationService
-        .userLogin(loginDetails)
-        .toPromise();
+      const data = await firstValueFrom(this.authenticationService.userLogin(loginDetails));
 
       if (!data) {
-        return;
+        console.error('Sign-in returned no data.');
+        return false;
       }
 
       this.loadInitParam(data);
       this.metadataService.fetchMetaData(true);
-    } catch (error) {
-      this.authenticationService.logout();
+      return true;
+    } catch (error: unknown) {
+      console.error(`Sign-in failed for ${username}. Check the credentials and try again.`, error);
+      return false;
+    }
+  }
+
+  async loginAs(username: string, password: string): Promise<void> {
+    if (environment.env !== 'development') {
+      console.error('loginAs() is only available in development mode.');
+      return;
+    }
+
+    this.authenticationService.logout();
+    if (await this.signIn(username, password)) {
+      window.location.reload();
     }
   }
 
   loadInitParam(data: any) {
-    const role = data.roles;
-    const username = data.username;
+    const response = data?.data ?? data;
+    const user = response?.user ?? response;
+    const roleValue = user.roles ?? user.role ?? response.roles ?? response.role;
+    const role = Array.isArray(roleValue) ? roleValue[0] : roleValue;
+    const username = user.username ?? user.userName ?? response.username ?? '';
     const fullname =
-      data.fullname || data.fullName || data.name || data.username;
-    const email = data.email;
-    const userId = data.id ?? data.userId;
+      user.fullname || user.fullName || user.name || `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || username;
+    const email = user.email ?? response.email ?? '';
+    const userId = user.userId ?? user.id ?? response.userId ?? response.id;
+    const accessToken =
+      response.accessToken ?? response.token ?? user.accessToken ?? user.token;
 
-    sessionStorage.setItem('role', role);
-    sessionStorage.setItem('username', username);
-    sessionStorage.setItem('fullname', fullname);
-    sessionStorage.setItem('email', email);
-    sessionStorage.setItem('userid', userId);
+    if (userId === undefined || userId === null || String(userId).trim() === '') {
+      throw new Error('Login response does not include an authentication user ID');
+    }
+    const token = this.extractToken(accessToken);
+    if (!token) {
+      throw new Error('Unable to extract access token from login response');
+    }
+
+    sessionStorage.setItem('role', String(role ?? ''));
+    sessionStorage.setItem('username', String(username));
+    sessionStorage.setItem('fullname', String(fullname));
+    sessionStorage.setItem('email', String(email));
+    sessionStorage.setItem('userid', String(userId));
 
     try {
-      localStorage.setItem('role', role);
-      localStorage.setItem('username', username);
-      localStorage.setItem('fullname', fullname);
-      localStorage.setItem('email', email);
-      localStorage.setItem('userid', userId);
+      localStorage.setItem('role', String(role ?? ''));
+      localStorage.setItem('username', String(username));
+      localStorage.setItem('fullname', String(fullname));
+      localStorage.setItem('email', String(email));
+      localStorage.setItem('userid', String(userId));
     } catch (e) {
       console.warn(
         'localStorage quota exceeded or disabled, proceeding with sessionStorage only',
@@ -145,28 +139,65 @@ export class AppHrComponent {
       );
     }
 
-    const token = this.extractToken(data.accessToken);
-
-    if (!token) {
-      throw new Error('Unable to extract access token from login response');
-    }
-
     sessionStorage.setItem('Token', token);
     sessionStorage.setItem('token', token);
-    sessionStorage.setItem('accessToken', data.accessToken);
+    sessionStorage.setItem('accessToken', String(accessToken));
     sessionStorage.setItem('userRegData', JSON.stringify(data));
 
     try {
       localStorage.setItem('Token', token);
       localStorage.setItem('token', token);
       localStorage.setItem('Token2', token);
-      localStorage.setItem('accessToken2', data.accessToken);
+      localStorage.setItem('accessToken2', String(accessToken));
       localStorage.setItem('userRegData', JSON.stringify(data));
     } catch (e) {
       console.warn(
         'localStorage quota exceeded or disabled, proceeding with sessionStorage only',
         e,
       );
+    }
+  }
+
+  private setDevSession(): void {
+    // Eseose Odion: auth user ID 65 -> employee ID 13.
+    const devUser = {
+      id: 65,
+      userId: 65,
+      username: 'eseose',
+      fullname: 'Eseose Odion',
+      email: 'eseose.odion@centrifugegroup.com',
+      role: 'ADMIN',
+    };
+
+    for (const storage of [sessionStorage, localStorage]) {
+      storage.setItem('Token', DEV_TOKEN);
+      storage.setItem('token', DEV_TOKEN);
+      storage.setItem('userid', String(devUser.userId));
+      storage.setItem('username', devUser.username);
+      storage.setItem('fullname', devUser.fullname);
+      storage.setItem('email', devUser.email);
+      storage.setItem('role', devUser.role);
+      storage.setItem('userRegData', JSON.stringify(devUser));
+    }
+    sessionStorage.setItem('uuid', '1');
+  }
+
+  /**
+   * sessionStorage is cleared for every new tab/browser restart, but the login is also kept in
+   * localStorage. Copy it back so screens that read the user from sessionStorage (names, user ID)
+   * don't fall back to "Admin" while the token is still valid.
+   */
+  private restoreSessionFromLocalStorage(): void {
+    const keys = ['role', 'username', 'fullname', 'email', 'userid', 'Token', 'token', 'userRegData'];
+    try {
+      for (const key of keys) {
+        const localValue = localStorage.getItem(key);
+        if (!sessionStorage.getItem(key) && localValue && localValue !== 'undefined' && localValue !== 'null') {
+          sessionStorage.setItem(key, localValue);
+        }
+      }
+    } catch {
+      // Storage unavailable (e.g. privacy mode); screens fall back to their defaults.
     }
   }
 
@@ -201,72 +232,6 @@ export class AppHrComponent {
 
   private checkScreenWidth(): void {
     this.sidebarHidden = window.innerWidth <= 992;
-  }
-
-  // ========== Added by Ese for testing cooperative features - Console only ==========
-
-  /**
-   * Switch to admin account
-   */
-  async switchToAdmin(): Promise<void> {
-    console.log('Switching to admin account...');
-
-    const loginDetails = {
-      username: 'damilola',
-      password: 'Damilolar@123',
-      project: 'ERP',
-      apiKey: environment.apiKey,
-    };
-
-    try {
-      const data = await this.authenticationService
-        .userLogin(loginDetails)
-        .toPromise();
-
-      if (data) {
-        this.loadInitParam(data);
-        this.metadataService.fetchMetaData(true);
-        window.location.reload();
-      } else {
-        console.error('Failed to switch to admin: No data returned');
-      }
-    } catch (error) {
-      console.error('Failed to switch to admin:', error);
-    }
-  }
-
-  /**
-   * Switch to regular user account
-   */
-  async switchToUser(): Promise<void> {
-    console.log('Switching to user account...');
-
-    const loginDetails = {
-      // username: 'developer',
-      // password: '123456',
-      username: 'Eseose',
-      password: 'soyBTY86b*rC',
-      project: 'ERP',
-      apiKey: environment.apiKey,
-    };
-
-    // eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoiZXNlb3NlIiwiaWF0IjoxNzgwNTY0OTY2LCJleHAiOjE3ODA2NTEzNjZ9.3ioaIPHGekrrS676pesQ27yDg25QP9Gpk_KMXWO9SOc
-
-    try {
-      const data = await this.authenticationService
-        .userLogin(loginDetails)
-        .toPromise();
-
-      if (data) {
-        this.loadInitParam(data);
-        this.metadataService.fetchMetaData(true);
-        window.location.reload();
-      } else {
-        console.error('Failed to switch to user: No data returned');
-      }
-    } catch (error) {
-      console.error('Failed to switch to user:', error);
-    }
   }
 
   /**
@@ -304,13 +269,13 @@ export class AppHrComponent {
    * Expose helper functions to browser console for easy switching
    */
   private exposeGlobalHelpers(): void {
-    (window as any).switchToAdmin = () => this.switchToAdmin();
-    (window as any).switchToUser = () => this.switchToUser();
+    (window as any).loginAs = (username: string, password: string) =>
+      this.loginAs(username, password);
     (window as any).logout = () => this.logout();
     (window as any).getCurrentUser = () => this.getCurrentUserInfo();
 
     console.log(
-      'Console helpers available: switchToAdmin(), switchToUser(), logout(), getCurrentUser()',
+      'Console helpers available: loginAs(username, password), logout(), getCurrentUser()',
     );
   }
 }

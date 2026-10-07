@@ -1023,8 +1023,10 @@ getMemberByBorrowerRow(borrower: GroupBorrowerRow): CooperativeMember | null {
 
   goBack(): void {
     this.backNavigationService.goBack(
-      ['/member/cooperative/dashboard', this.currentUuid],
+      // Return to My Membership inside the loan tab host so the nav tab stays visible.
+      ['/admin/hr/loan', this.currentUuid],
       {
+        queryParams: { tab: 'my-membership' },
         state: {
           memberId: Number(this.currentMember?.id || this.currentMemberId || 0) || undefined,
           source: 'group-dashboard'

@@ -3,7 +3,7 @@ import { Injectable, isDevMode } from '@angular/core';
 import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
-import { environment } from '../../shared-component/environments/environment.prod';
+import { environment } from '../../shared-component/environments/environment';
 import {
   AdvanceLoan,
   AdvanceLoanPaymentHistory,
@@ -59,7 +59,7 @@ export class LoanService {
     this.advanceLoansCacheTimestamp = 0;
   }
 
-  private readonly standardLoanUrl = 'https://be.optimaxsuites.com/x/api/v2/hr/advanceLoans';
+  private readonly standardLoanUrl = `${environment.apiBaseUrl}/x/api/v2/hr/advanceLoans`;
   private readonly repaymentStartDateSignatureCacheKey = 'advance-loan-repayment-start-date-signature-cache';
 
   constructor(private http: HttpClient) {}
@@ -69,12 +69,6 @@ export class LoanService {
    * Pass forceRefresh=true to bypass cache.
    */
   getAllAdvanceLoans(forceRefresh = false): Observable<AdvanceLoan[]> {
-    // Development mode: return empty data
-    if (environment.env === 'development') {
-      console.log('🔧 [Development Mode] Returning empty loan data');
-      return of([]);
-    }
-
     const now = Date.now();
     if (!forceRefresh && this.advanceLoansCache && (now - this.advanceLoansCacheTimestamp < this.cacheTTL)) {
       return of(this.advanceLoansCache);
