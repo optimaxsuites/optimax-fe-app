@@ -1,6 +1,7 @@
 import { Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { environment } from '../ui/sharedComponent/service/environments/environment';
 import {
   AudioTranscriptionJob,
   CollaborationService,
@@ -789,7 +790,7 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
     this.syncEvent(event, true).subscribe({
       next: () => {
         if (event.shortCode) {
-          this.meetingGuestUrl = `https://be.optimaxsuites.com/m/${event.shortCode}`;
+          this.meetingGuestUrl = `${environment.meetingsShortBase}/${event.shortCode}`;
         }
       },
       error: () => undefined,
@@ -814,7 +815,7 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
 
   get meetingShortUrl(): string | null {
     const code = this.selectedEvent?.shortCode;
-    return code ? `https://be.optimaxsuites.com/m/${code}` : null;
+    return code ? `${environment.meetingsShortBase}/${code}` : null;
   }
 
   copyShortLink(): void {
