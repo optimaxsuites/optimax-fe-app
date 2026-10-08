@@ -37,19 +37,18 @@ export class MonthlysummaryComponent implements OnChanges {
   const totalDays = data.length;
 
   const presentDays = data.filter(d =>
-    d.status === 'PRESENT' || d.status === 'LATE'
+    d.status === 'PRESENT' || d.status === 'LATE' || d.status === 'OVERTIME'
   ).length;
 
-  const lateDays = data.filter(d => d.status === 'LATE').length;
+  const lateDays = data.filter(d => d.status === 'LATE' || (d.shiftMetrics?.isLate ?? false)).length;
 
   const absentDays = data.filter(d => d.status === 'ABSENT').length;
 
-  const totalHours = data.reduce((sum, d) => sum + (d.hours ?? 0), 0);
-
-  const expectedHoursPerDay = 8;
-  const expectedHours = totalDays * expectedHoursPerDay;
-
-  const overtime = Math.max(totalHours - expectedHours, 0);
+  // Overtime is per day (past the shift end), not total hours minus days x 8
+  const overtime = data.reduce((sum, d) => {
+    if (d.shiftMetrics) return sum + d.shiftMetrics.overtimeMinutes / 60;
+    return sum + Math.max((d.hours ?? 0) - 8, 0);
+  }, 0);
 
   this.monthlyPerformance = {
     attendanceRate: Math.round((presentDays / totalDays) * 100),

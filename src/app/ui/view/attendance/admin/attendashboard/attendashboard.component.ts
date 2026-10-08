@@ -41,9 +41,12 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
   @ViewChild('attendanceTable') attendanceTableComponent: any;
 
   onDataChange(event: { data: AttendanceTableRecord[], filters:any }) {
-    this.filteredAttendance = event.data;
-    this.currentFilters = event.filters;
-    this.calculateDashboardData();
+    // The child emits during its own init/check; deferring avoids NG0100 on [data] bindings above it.
+    Promise.resolve().then(() => {
+      this.filteredAttendance = event.data;
+      this.currentFilters = event.filters;
+      this.calculateDashboardData();
+    });
   }
 
   calculateDashboardData() {
@@ -103,6 +106,7 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
       .subscribe({
         next: () => {
           this.attendanceService.fetchAllRecords();
+          this.correctionRequestService.loadPendingApprovals();
           this.loadDashboardData();
         },
         error: (err) => {
@@ -143,11 +147,16 @@ export class AttendashboardComponent implements OnInit, OnDestroy{
 
     this.activeCard = 'PENDING_APPROVAL';
     this.currentFilters = { status: 'PENDING_APPROVAL' };
-    // Show only records that need approval
+    // Show only records that need approval. `this.attendance` is the raw list with no correction
+    // data attached, so pending corrections are matched from the request list by employee and date.
     this.filteredAttendance = this.attendance.filter(r =>
       (r.isCrossBranchAttendance ||
       (r.checkedInBranchId && r.homeBranchId && r.checkedInBranchId !== r.homeBranchId)) ||
-      r.correctionRequest?.status === 'PENDING'
+      r.correctionRequest?.status === 'PENDING' ||
+      this.pendingCorrectionRequests.some(c =>
+        c.employeeId === r.employeeId &&
+        !!r.date && !!c.date &&
+        this.formatDateLocal(new Date(r.date)) === this.formatDateLocal(new Date(c.date)))
     );
   }
 

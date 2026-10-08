@@ -73,7 +73,8 @@ export class MonthlyattendancelistComponent implements OnInit {
 
     this.filteredData = this.attendanceData.filter(record => {
       if (!record.date) return false;
-      const parts = String(record.date).split('-').map(Number);
+      // record.date is a Date; String(Date) has no "YYYY-MM" to split
+      const parts = (record.date instanceof Date ? this.formatDateLocal(record.date) : String(record.date)).split('-').map(Number);
       if (parts.length < 2) return false;
       const rYear = parts[0];
       const rMonth = parts[1];

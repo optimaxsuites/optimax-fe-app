@@ -371,12 +371,20 @@
               <span class="label">Requested:</span>
               <span class="value">{{ record.correctionRequest.requestedAt | date:'short' }}</span>
             </div>
+            <div class="detail-row" *ngIf="record.correctionRequest.requestedClockIn">
+              <span class="label">Requested clock-in:</span>
+              <span class="value">{{ record.correctionRequest.requestedClockIn | date:'HH:mm' }}</span>
+            </div>
+            <div class="detail-row" *ngIf="record.correctionRequest.requestedClockOut">
+              <span class="label">Requested clock-out:</span>
+              <span class="value">{{ record.correctionRequest.requestedClockOut | date:'HH:mm' }}</span>
+            </div>
             <div class="detail-row">
               <span class="label">Status:</span>
               <span class="value">
                 <span class="flag-badge"
                       [style.background-color]="record.correctionRequest.status === 'PENDING' ? '#FFA500' :
-                                               record.correctionRequest.status === 'APPROVED' ? '#10B981' : '#EF4444'">
+                                               record.correctionRequest.status === 'SUBMITTED' ? '#10B981' : '#EF4444'">
                   {{ record.correctionRequest.status }}
                 </span>
               </span>
@@ -392,7 +400,7 @@
               </button>
             </div>
 
-            <div class="approval-info" *ngIf="record.correctionRequest.status === 'APPROVED'">
+            <div class="approval-info" *ngIf="record.correctionRequest.status === 'SUBMITTED'">
               <p><strong>✅ Approved by:</strong> {{ record.correctionRequest.approvedBy }}</p>
             </div>
 

@@ -440,7 +440,6 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
   ],
   imports: [
     BrowserModule,
-    BrowserAnimationsModule,
     CommonModule,
     AppHrRoutingModule,
     LargeSideModalComponent,

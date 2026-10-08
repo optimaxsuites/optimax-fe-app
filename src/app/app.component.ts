@@ -9,10 +9,10 @@ import { MetadataService } from './ui/service/metadata.service';
 import { environment } from './ui/shared-component/service/environments/environment';
 import { firstValueFrom } from 'rxjs';
 
-// Dev-only bearer token for eseose. Expires 24h after issue (this one: 2026-10-08 15:02 WAT).
-// Signing in as eseose anywhere else invalidates it early.
+// Dev-only bearer token for ayodeji. Expires 24h after issue (this one: 2026-10-09 09:40 WAT).
+// Signing in as ayodeji anywhere else invalidates it early.
 const DEV_TOKEN =
-  'eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoiZXNlb3NlIiwiaWF0IjoxNzkxMzgxNzM3LCJleHAiOjE3OTE0NjgxMzd9.IeSicPKkLMnXMAQQqiw9_euqF3nxYCcLQnGDWGDgFSI';
+  'eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoiYXlvZGVqaSIsImlhdCI6MTc5MTQ1NDkzNSwiZXhwIjoxNzkxNTQxMzM1fQ.dIylWrPYBG55MqCKq42wA-Xf12jesVp7NRiujT_Muvs';
 
 @Component({
   selector: 'app-root',
@@ -159,13 +159,13 @@ export class AppHrComponent {
   }
 
   private setDevSession(): void {
-    // Eseose Odion: auth user ID 65 -> employee ID 13.
+    // ayodeji: auth user ID 68.
     const devUser = {
-      id: 65,
-      userId: 65,
-      username: 'eseose',
-      fullname: 'Eseose Odion',
-      email: 'eseose.odion@centrifugegroup.com',
+      id: 68,
+      userId: 68,
+      username: 'ayodeji',
+      fullname: 'ayodeji',
+      email: 'ishorunmu@gmail.com',
       role: 'ADMIN',
     };
 

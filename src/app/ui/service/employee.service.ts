@@ -29,12 +29,15 @@ export class EmployeeService {
     sessionStorage.removeItem('currentEmployeeUserId');
   }
 
+  // Writes make the cached list stale, so the next getAllEmployee() call reloads it.
+  private invalidateEmployeesCache = () => { this.employeesLoaded = false; };
+
   addEmployee(data: any): Observable<any>{
     return this.http
         .post<any>(
             this.baseurl +
                 `/x/api/v2/hr/employees`, data)
-        .pipe(catchError(this.handleError));
+        .pipe(tap(this.invalidateEmployeesCache), catchError(this.handleError));
   }
 
   updateEmployee(data: any, id: number): Observable<any>{
@@ -42,7 +45,7 @@ export class EmployeeService {
         .put<any>(
             this.baseurl +
                 `/x/api/v2/hr/employees/${id}`, data)
-        .pipe(catchError(this.handleError));
+        .pipe(tap(this.invalidateEmployeesCache), catchError(this.handleError));
   }
 
   uploadEmployeePhoto(employee: any, file: File): Observable<any> {
@@ -59,7 +62,7 @@ export class EmployeeService {
         .post<any>(
             this.baseurl +
                 `/x/api/v2/hr/employees/createBatchEmployee`, data)
-        .pipe(catchError(this.handleError));
+        .pipe(tap(this.invalidateEmployeesCache), catchError(this.handleError));
   }
 
   sendNotificationEmail(to: string, subject: string, htmlBody: string): Observable<any> {

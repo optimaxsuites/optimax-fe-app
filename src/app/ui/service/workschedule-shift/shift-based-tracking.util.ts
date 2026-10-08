@@ -38,6 +38,18 @@ function toMinutes(d: Date): number {
   return d.getHours() * 60 + d.getMinutes();
 }
 
+// Records store clock times as bare HH:mm[:ss], which `new Date()` cannot parse.
+function parseClock(dateIso: string, value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const bare = value.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!bare) {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  const [year, month, day] = dateIso.split('-').map(Number);
+  return new Date(year, month - 1, day, Number(bare[1]), Number(bare[2]), Number(bare[3] ?? 0));
+}
+
 function resolveWindowEnd(start: Date, endTime: string): Date {
   // If endTime is <= startTime in clock terms, assume shift crosses midnight.
   const endCandidate = new Date(start);
@@ -62,8 +74,8 @@ export function computeShiftTrackingMetrics(
   const appConfig = getAppConfig();
   const otThresholdMinutes = config?.otThresholdMinutes ?? appConfig.attendance.overtimeThresholdMinutes;
 
-  const clockIn = clocks.clockInIso ? new Date(clocks.clockInIso) : null;
-  const clockOut = clocks.clockOutIso ? new Date(clocks.clockOutIso) : null;
+  const clockIn = parseClock(dateIso, clocks.clockInIso);
+  const clockOut = parseClock(dateIso, clocks.clockOutIso);
 
   // Treat absent as no clock-in recorded.
   const isAbsent = !clockIn;

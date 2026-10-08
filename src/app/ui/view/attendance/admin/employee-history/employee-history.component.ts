@@ -1,7 +1,9 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../domain/attendance/attendancetable.dto';
 import { ToastService } from '../../../../shared-component/service/toast/toast.service';
@@ -14,11 +16,12 @@ import { BRANCH_NAMES } from '../../../../domain/attendance/attendancetable.mock
   templateUrl: './employee-history.component.html',
   styleUrl: './employee-history.component.scss'
 })
-export class EmployeeHistoryComponent implements OnInit {
+export class EmployeeHistoryComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private attendanceService = inject(AttendancetableService);
   private toastService = inject(ToastService);
+  private destroy$ = new Subject<void>();
 
   employeeName: string = '';
   employeeId: string | null = null;
@@ -26,8 +29,19 @@ export class EmployeeHistoryComponent implements OnInit {
   filteredRecords: AttendanceTableRecord[] = [];
   isLoading = true;
 
-  startDate = new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0];
-  endDate = new Date().toISOString().split('T')[0];
+  startDate = EmployeeHistoryComponent.localDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+  endDate = EmployeeHistoryComponent.localDate(new Date());
+
+  // Local calendar date; toISOString() would use UTC and can be a day off.
+  private static localDate(date: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   summary = {
     total: 0,
@@ -52,7 +66,11 @@ export class EmployeeHistoryComponent implements OnInit {
 
   loadEmployeeHistory(): void {
     this.isLoading = true;
-    this.attendanceService.attendance$.subscribe(data => {
+    // The shared list only holds the first page for everyone, so load this employee's own records.
+    if (this.employeeId !== null) {
+      this.attendanceService.fetchByEmployee(this.employeeId);
+    }
+    this.attendanceService.attendance$.pipe(takeUntil(this.destroy$)).subscribe(data => {
       this.employeeRecords = data.filter(r => this.employeeId !== null
         ? r.employeeId === this.employeeId
         : r.employee === this.employeeName);
@@ -63,7 +81,9 @@ export class EmployeeHistoryComponent implements OnInit {
 
   applyFilters(): void {
     this.filteredRecords = this.employeeRecords.filter(record => {
-      const recordDate = record.date ?? '';
+      const recordDate = record.date
+        ? (record.date instanceof Date ? EmployeeHistoryComponent.localDate(record.date) : String(record.date))
+        : '';
       if (this.startDate && recordDate < this.startDate) return false;
       if (this.endDate && recordDate > this.endDate) return false;
       return true;
