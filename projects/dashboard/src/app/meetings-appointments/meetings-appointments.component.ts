@@ -25,7 +25,6 @@ interface MeetingEvent {
   attendance: Record<string, 'Present' | 'Absent' | 'Excused' | 'Late'>;
   resources: string[]; agenda: AgendaItem[]; minutes: MeetingMinutes;
   actions: MeetingAction[]; reminders: string[]; attachments: string[];
-  shortCode?: string;
 }
 
 interface AgendaItem {
@@ -802,20 +801,6 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
     );
   }
 
-  get meetingShortUrl(): string | null {
-    const code = this.selectedEvent?.shortCode;
-    return code ? `https://be.optimaxsuites.com/x/api/v2/ai/m/${code}` : null;
-  }
-
-  copyShortLink(): void {
-    const url = this.meetingShortUrl;
-    if (!url) { this.addToast('Short link not yet available — save the event with a meeting room first', 'warn'); return; }
-    navigator.clipboard.writeText(url).then(
-      () => this.addToast('Short link copied', 'ok'),
-      () => this.addToast('Copy failed — select and copy the link manually', 'warn'),
-    );
-  }
-
   // ── Transcription ─────────────────────────────────────────
 
   onTranscriptionFileSelected(event: Event): void {
@@ -1062,29 +1047,16 @@ export class MeetingsAppointmentsComponent implements OnInit, OnDestroy {
   }
 
   private syncEvent(event: MeetingEvent, update: boolean): void {
-    const payload = { ...event, meetingUrl: event.onlineLink || undefined };
     const req = update
-      ? this.collaborationService.updateMeetingsAppointmentRecord(event.id, payload)
-      : this.collaborationService.createMeetingsAppointmentRecord(payload);
+      ? this.collaborationService.updateMeetingsAppointmentRecord(event.id, event)
+      : this.collaborationService.createMeetingsAppointmentRecord(event);
     req.subscribe({
-      next: (resp: any) => {
-        this.backendStatus = 'Synced ✓';
-        this.backendOnline = true;
-        if (resp?.shortCode && !event.shortCode) {
-          event.shortCode = resp.shortCode;
-        }
-      },
+      next: () => { this.backendStatus = 'Synced ✓'; this.backendOnline = true; },
       error: (err: any) => {
         // PUT returned 404 → record doesn't exist yet; create it instead
         if (update && err?.status === 404) {
-          this.collaborationService.createMeetingsAppointmentRecord(payload).subscribe({
-            next: (resp: any) => {
-              this.backendStatus = 'Synced ✓';
-              this.backendOnline = true;
-              if (resp?.shortCode && !event.shortCode) {
-                event.shortCode = resp.shortCode;
-              }
-            },
+          this.collaborationService.createMeetingsAppointmentRecord(event).subscribe({
+            next: () => { this.backendStatus = 'Synced ✓'; this.backendOnline = true; },
             error: () => { this.backendStatus = 'Working offline'; this.backendOnline = false; },
           });
         } else {
