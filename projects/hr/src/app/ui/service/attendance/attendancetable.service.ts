@@ -37,6 +37,21 @@ function toLocalTimeString(date: Date): string {
   return `${hour}:${minute}:${second}`;
 }
 
+/**
+ * Wall-clock time in Nigeria (WAT, UTC+1, no DST), independent of the browser timezone.
+ * Sent without a zone: the backend stores LocalDateTime and would otherwise shift or reject the value.
+ */
+function toNigeriaIso(date: Date): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Lagos',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(date);
+  const get = (type: string) => parts.find(p => p.type === type)!.value;
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`;
+}
+
 // Constants
 const STORAGE_KEYS = {
   OFFICE_HOURS: 'officeHours'
@@ -199,6 +214,16 @@ export class AttendancetableService {
     );
   }
 
+  /** Returns a copy of the record with status and hours recomputed from its current clock times. */
+  recalculateStatus(record: AttendanceTableRecord): AttendanceTableRecord {
+    const copy = { ...record };
+    if (copy.appliedExpectedStart && copy.appliedExpectedEnd) {
+      return this.enrichRecordMetrics(copy);
+    }
+    copy.status = this.calculateAttendanceStatus(copy);
+    return copy;
+  }
+
   resolveHrEmployeeId(sessionUserId: number): Observable<ParsedEmployeeResponse | null> {
     return this.http.get<any>(API_ENDPOINTS.EMPLOYEES()).pipe(
       map(res => {
@@ -326,7 +351,7 @@ export class AttendancetableService {
     if (action === 'IN') {
       const response = await this.clockInApi(
         employeeId,
-        now.toISOString(),
+        toNigeriaIso(now),
         location?.address ?? '',
         distanceFromOffice
       );
@@ -339,9 +364,9 @@ export class AttendancetableService {
         await this.clockOutApi(
           record.apiRecordId,
           employeeId,
-          now.toISOString(),
-          location?.address ?? '',
-          distanceFromOffice
+          toNigeriaIso(now),
+          location?.address ?? 'Location unavailable',
+          location ? distanceFromOffice : undefined
         );
       } else {
         throw new Error('Unable to clock out because this attendance record is not linked to the server.');
@@ -409,7 +434,7 @@ export class AttendancetableService {
 
     const response = await this.clockInApi(
       employeeId,
-      now.toISOString(),
+      toNigeriaIso(now),
       metadata?.geoAddress || 'Remote',
       distanceFromOffice,
       {
@@ -768,6 +793,11 @@ export class AttendancetableService {
       if (value.includes(' ')) {
         return value.split(' ')[1];
       }
+      // Zone-qualified instants (Z / +01:00) must be shown in the user's local time
+      if (/T.*(Z|[+-]\d{2}:?\d{2})$/.test(value)) {
+        const instant = new Date(value);
+        if (!Number.isNaN(instant.getTime())) return toLocalTimeString(instant);
+      }
       // If it contains 'T' (ISO format), extract time
       if (value.includes('T')) {
         return value.split('T')[1].split('.')[0];
@@ -1033,7 +1063,7 @@ export class AttendancetableService {
   private getCurrentLocation(): Promise<{ address: string; lat: number; lng: number } | null> {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
-        resolve({ address: 'Default Office Location', lat: 6.5244, lng: 3.3792 });
+        resolve(null);
         return;
       }
 
@@ -1053,11 +1083,8 @@ export class AttendancetableService {
             resolve({ address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, lat, lng });
           }
         },
-        () => {
-          // Geolocation permission denied or timed out; fallback to default coordinates
-          resolve({ address: 'Office HQ (Default Location)', lat: 6.5244, lng: 3.3792 });
-        },
-        { timeout: 5000, maximumAge: 0 }
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     });
   }
@@ -1090,7 +1117,7 @@ export class AttendancetableService {
     employeeId: string,
     checkOut: string,
     checkOutLocation: string,
-    checkOutDistance: number
+    checkOutDistance: number | undefined
   ): Promise<void> {
     const body = {
       id: apiRecordId,

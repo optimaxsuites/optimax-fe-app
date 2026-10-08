@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { interval, Subscription } from 'rxjs';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
@@ -10,7 +11,7 @@ import { EmployeeService } from '../../../../../service/employee.service';
   templateUrl: './today-summary.component.html',
   styleUrl: './today-summary.component.scss'
 })
-export class TodaySummaryComponent implements OnInit {
+export class TodaySummaryComponent implements OnInit, OnDestroy {
 
   private attendanceService = inject(AttendancetableService);
   private officehoursService = inject(OfficeHoursService);
@@ -27,6 +28,12 @@ export class TodaySummaryComponent implements OnInit {
   hrEmployeeId: number | null = null;
 
   private currentUser: any;
+  private latestData: AttendanceTableRecord[] = [];
+  private tickSub?: Subscription;
+
+  ngOnDestroy() {
+    this.tickSub?.unsubscribe();
+  }
 
   ngOnInit() {
     this.currentUser = this.userSession.getCurrentUser();
@@ -34,6 +41,9 @@ export class TodaySummaryComponent implements OnInit {
     if(!this.currentUser) {
       return;
     }
+
+    // Keep hours ticking while the user is still clocked in
+    this.tickSub = interval(30000).subscribe(() => this.calculateTodaySummary(this.latestData));
 
     // Use EmployeeService which has better fallback mechanisms
     this.employeeService.getEmployeeIdForCurrentUser().subscribe({
@@ -51,6 +61,7 @@ export class TodaySummaryComponent implements OnInit {
   }
 
   private calculateTodaySummary(data: AttendanceTableRecord[]) {
+  this.latestData = data;
   const today = this.formatDateLocal(new Date());
 
   if (!this.hrEmployeeId) {
@@ -80,7 +91,12 @@ export class TodaySummaryComponent implements OnInit {
     return;
   }
 
-  const hoursWorked = record.hours ?? 0;
+  let hoursWorked = record.hours ?? 0;
+  if (record.checkIn && !record.checkOut) {
+    const start = new Date(`${today}T${record.checkIn}`);
+    const elapsed = (Date.now() - start.getTime()) / 3600000;
+    if (elapsed > 0) hoursWorked = elapsed;
+  }
 
   const lateMinutes = this.calculateLateMinutes(
     record.checkIn,

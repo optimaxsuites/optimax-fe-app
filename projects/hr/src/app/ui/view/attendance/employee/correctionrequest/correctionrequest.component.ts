@@ -95,51 +95,15 @@ export class CorrectionrequestComponent  implements OnInit{
   }
 
   addRequest(request: CorrectionRequest) {
-    // Add to employee's own list
     this.correctionService.addRequest(request).subscribe({
+      next: () => {
+        // Admin side keeps its own list; reload it so the new request shows up there
+        this.adminCorrectionRequestService.loadPendingApprovals();
+        this.toastService.success('✅ Correction request submitted to admin');
+      },
       error: err => {
         console.error('Failed to submit correction request:', err);
         this.toastService.error('❌ Failed to submit correction request');
-      }
-    });
-
-    // Also submit to admin dashboard in real-time
-    const employeeName = sessionStorage.getItem('fullname') || 'Employee';
-
-    // Find the attendance record for today by employee name
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
-    // Use take(1) to automatically unsubscribe after first emission
-    this.attendanceService.attendance$.pipe(
-      take(1)
-    ).subscribe(records => {
-      if (!records || records.length === 0) {
-        this.toastService.error(`❌ No attendance record found for today`);
-        return;
-      }
-
-      const todayRecord = records.find(r =>
-        r.employee?.toLowerCase().includes(employeeName.toLowerCase()) &&
-        r.date?.toISOString().split('T')[0] === today
-      );
-
-      if (todayRecord) {
-        this.adminCorrectionRequestService.submitCorrectionRequest(
-          {
-            employeeId: todayRecord.employeeId!,
-            employeeName: todayRecord.employee || employeeName,
-            recordId: todayRecord.id,
-            type: this.issueToCorrectionType(request.issueType),
-            reason: request.description ?? '',
-            currentStatus: todayRecord.status,
-            requestedAt: new Date().toISOString()
-          },
-          todayRecord
-        );
-        this.toastService.success(`✅ Correction request submitted to admin`);
-      } else {
-        this.toastService.error(`❌ Could not find your attendance record`);
       }
     });
 

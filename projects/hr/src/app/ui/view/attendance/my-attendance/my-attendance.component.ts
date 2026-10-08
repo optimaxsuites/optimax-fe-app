@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AttendancetableService } from '../../../service/attendance/attendancetable.service';
+import { EmployeeCorrectionService } from '../../../service/attendance/employee-correction.service';
 import { AttendanceTableRecord } from '../../../domain/attendance/attendancetable.dto';
 import { UserSessionService } from '../../../service/attendance/user-session.service';
 import { EmployeeService } from '../../../service/employee.service';
@@ -56,6 +57,7 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
     private attendanceService: AttendancetableService,
     private userSession: UserSessionService,
     private employeeService: EmployeeService,
+    private correctionService: EmployeeCorrectionService,
     private confirmationService: ConfirmationService,
     private messageService: MessageService
   ) {}
@@ -75,6 +77,7 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
     this.sub.add(
       interval(1000).subscribe(() => {
         this.currentTime = new Date().toLocaleTimeString();
+        this.calculateHoursWorked();
       })
     );
 
@@ -223,6 +226,11 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
     if (this.currentRecord && this.currentRecord.clockIn && this.currentRecord.clockOut) {
       const hours = this.getTimeDifferenceInHours(this.currentRecord.clockIn, this.currentRecord.clockOut);
       this.hoursWorkedToday = `${hours}h`;
+    } else if (this.currentRecord?.clockIn) {
+      // Still clocked in: count up to now
+      const now = new Date();
+      const nowHHmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      this.hoursWorkedToday = `${this.getTimeDifferenceInHours(this.currentRecord.clockIn, nowHHmm)}h`;
     } else {
       this.hoursWorkedToday = '0h';
     }
@@ -439,12 +447,21 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   }
 
   handleCorrectionSubmit(event: any): void {
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Correction Request Submitted',
-      detail: 'Your request has been submitted for review',
-      key: 'tl',
-      life: 3000
+    this.correctionService.submitForCurrentEmployee(event).subscribe({
+      next: () => this.messageService.add({
+        severity: 'success',
+        summary: 'Correction Request Submitted',
+        detail: 'Your request has been submitted for review',
+        key: 'tl',
+        life: 3000
+      }),
+      error: () => this.messageService.add({
+        severity: 'error',
+        summary: 'Submission Failed',
+        detail: 'Could not submit your correction request. Please try again.',
+        key: 'tl',
+        life: 4000
+      })
     });
     this.closeCorrectionModal();
   }

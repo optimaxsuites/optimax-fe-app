@@ -38,8 +38,31 @@ export class CorrectionrequestformComponent {
       date: ['', Validators.required],
       issueType: ['', Validators.required],
       description: ['', Validators.required],
-      evidence: ['']
+      evidence: [''],
+      requestedClockIn: [''],
+      requestedClockOut: ['']
     });
+  }
+
+  timeError = '';
+
+  // Local today as YYYY-MM-DD; a correction can't target a day that hasn't happened.
+  today = (() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  })();
+
+  get showClockIn(): boolean {
+    return ['MISSING_IN', 'WRONG_TIME', 'OTHER'].includes(this.form.value.issueType);
+  }
+
+  get showClockOut(): boolean {
+    return ['MISSING_OUT', 'WRONG_TIME', 'OTHER'].includes(this.form.value.issueType);
+  }
+
+  private toDate(date: string, time: string): Date | undefined {
+    return date && time ? new Date(`${date}T${time}`) : undefined;
   }
 
   onIssueTypeChange(event: any): void {
@@ -70,6 +93,24 @@ export class CorrectionrequestformComponent {
   submit() {
     if (this.form.invalid) return;
 
+    const { date, issueType } = this.form.value;
+    if (date > this.today) {
+      this.timeError = 'The date of incident cannot be in the future.';
+      return;
+    }
+    const requestedClockIn = this.showClockIn ? this.toDate(date, this.form.value.requestedClockIn) : undefined;
+    const requestedClockOut = this.showClockOut ? this.toDate(date, this.form.value.requestedClockOut) : undefined;
+
+    // A correction with no corrected time gives the backend nothing to change on the record
+    const needsIn = issueType === 'MISSING_IN' && !requestedClockIn;
+    const needsOut = issueType === 'MISSING_OUT' && !requestedClockOut;
+    const needsAny = (issueType === 'WRONG_TIME' || issueType === 'OTHER') && !requestedClockIn && !requestedClockOut;
+    if (needsIn || needsOut || needsAny) {
+      this.timeError = 'Enter the correct clock-in and/or clock-out time.';
+      return;
+    }
+    this.timeError = '';
+
     const newRequest: CorrectionRequest = {
       id: uuidv4(),
       employeeId: this.currentUser.employeeId,
@@ -80,6 +121,8 @@ export class CorrectionrequestformComponent {
       correctionType: IssueToCorrectionType(this.form.value.issueType),
       description: this.form.value.description,
       evidence: this.form.value.evidence,
+      requestedClockIn,
+      requestedClockOut,
       status: 'PENDING',
       locked: false,
       history: [],
