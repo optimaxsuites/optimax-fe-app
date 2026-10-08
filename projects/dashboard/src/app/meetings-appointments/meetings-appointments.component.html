@@ -643,7 +643,7 @@
                 <i class="pi pi-users"></i> Invite external attendees
               </div>
               <div class="guest-link-row">
-                <input type="text" class="guest-link-input" [value]="meetingShortUrl || meetingGuestUrl" readonly />
+                <input type="text" class="guest-link-input" [value]="meetingGuestUrl" readonly />
                 <button class="btn btn-outline btn-sm" (click)="copyGuestLink()" title="Copy link">
                   <i class="pi pi-copy"></i> Copy
                 </button>
@@ -655,6 +655,13 @@
                 Share this link with external guests — no account required.
                 Internal users join automatically as moderators.
               </p>
+              <div class="guest-link-row short-link-row" *ngIf="meetingShortUrl">
+                <span class="sec-label short-link-label"><i class="pi pi-link"></i> Short link</span>
+                <input type="text" class="guest-link-input" [value]="meetingShortUrl" readonly />
+                <button class="btn btn-outline btn-sm" (click)="copyShortLink()" title="Copy short link">
+                  <i class="pi pi-copy"></i> Copy
+                </button>
+              </div>
             </div>
 
             <!-- Stored meeting link (for events that already have one) -->
