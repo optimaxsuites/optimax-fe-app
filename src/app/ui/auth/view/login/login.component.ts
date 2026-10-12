@@ -463,6 +463,17 @@ async posLoginAction(): Promise<void> {
     sessionStorage["userRegData"] = JSON.stringify(safeUserData);
     localStorage.setItem("userRegData", JSON.stringify(safeUserData));
 
+    // Set vendor flags synchronously from the login role BEFORE any redirect or
+    // async call, so AuthGuard blocks vendors regardless of which code path runs.
+    const rolesStr = String(data.roles || '');
+    const isVendorByRole = rolesStr.includes('VENDOR');
+    sessionStorage.setItem('isVendor', String(isVendorByRole));
+    localStorage.setItem('isVendor', String(isVendorByRole));
+    if (isVendorByRole) {
+      sessionStorage.setItem('vendorLoginEnabled', 'false');
+      localStorage.setItem('vendorLoginEnabled', 'false');
+    }
+
     let redirectUrl: string | null =
       sessionStorage.getItem('pendingApprovalRedirect') ||
       localStorage.getItem('pendingApprovalRedirect') ||
@@ -470,6 +481,13 @@ async posLoginAction(): Promise<void> {
       localStorage.getItem('postLoginRedirect');
     const consumeRedirect = (): boolean => {
       if (!redirectUrl) return false;
+      // Never honour a saved redirect for a vendor pending approval
+      if (sessionStorage.getItem('isVendor') === 'true' &&
+          sessionStorage.getItem('vendorLoginEnabled') !== 'true') {
+        sessionStorage.removeItem('postLoginRedirect');
+        localStorage.removeItem('postLoginRedirect');
+        return false;
+      }
       const targetUrl = redirectUrl;
       const isApprovalRedirect = targetUrl.includes('/expensesApproval/');
       if (!isApprovalRedirect) {
