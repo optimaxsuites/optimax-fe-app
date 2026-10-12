@@ -11,6 +11,7 @@ import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service
 import { AdvanceDisbursementConfirmationService, CreateDisbursementPayload } from '../../../service/loan/loan-disbursement-confirmation.service';
 import { resolveLoanTotalRepayableAmount, formatAdvancedLoanCode, resolveLoanActorName } from '../../../service/loan/loan-display.util';
 import { environment } from '../../../shared-component/environments/environment';
+import { formatNaira } from '../../../service/loan/loan-format.util';
 
 type QueueSortKey = 'loanId' | 'employee' | 'department' | 'amount' | 'approvedDate' | 'readyDate' | 'status';
 type QueueSortDirection = 'asc' | 'desc';
@@ -323,7 +324,6 @@ export class LoanDisbursementUiComponent implements OnInit {
       next: (employee) => {
         this.employeeDetailsCache.set(employeeId, employee);
         this.selectedEmployeeDetails = employee;
-        console.log('Employee details:', employee);
         this.isLoadingEmployeeDetails = false;
       },
       error: (error) => {
@@ -443,8 +443,6 @@ export class LoanDisbursementUiComponent implements OnInit {
           'X-Tenant-ID': tenantId
         });
 
-        console.log('Sending to accounting with headers:', headers.keys());
-        console.log('Payload:', accountingPayload);
 
         this.submissionProgress = 70;
 
@@ -588,7 +586,6 @@ export class LoanDisbursementUiComponent implements OnInit {
           return this.http.post(url, accountingPayload, { headers });
         });
 
-        console.log('Sending batch accounting requests:', accountingRequests.length);
         this.submissionProgress = 70;
 
         forkJoin(accountingRequests).subscribe({
@@ -770,7 +767,7 @@ export class LoanDisbursementUiComponent implements OnInit {
             disbursementReference: this.disbursementReference || confirmation.disbursementReference,
             notes: `Disbursement completed on ${new Date(disbursedAt).toLocaleString()}`
           }).subscribe({
-            next: () => console.log('Disbursement confirmation updated'),
+            next: () => undefined,
             error: (err) => console.error('Error updating confirmation:', err)
           });
         }
@@ -866,11 +863,7 @@ export class LoanDisbursementUiComponent implements OnInit {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2
-    }).format(amount);
+    return formatNaira(amount);
   }
 
   formatDate(value?: string | null): string {

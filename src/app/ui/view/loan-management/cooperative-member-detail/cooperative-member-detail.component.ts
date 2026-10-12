@@ -1,4 +1,5 @@
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
@@ -13,6 +14,7 @@ import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.uti
   encapsulation: ViewEncapsulation.None
 })
 export class CooperativeMemberDetailComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   currentUuid = uuidV4();
   member!: CooperativeMember;
   memberLoans: CooperativeLoan[] = [];
@@ -46,7 +48,7 @@ export class CooperativeMemberDetailComponent implements OnInit {
     const groupId = Number(this.route.snapshot.queryParamMap.get('groupId') || 0);
     this.returnGroupId = Number.isFinite(groupId) && groupId > 0 ? groupId : undefined;
 
-    this.route.params.subscribe(params => {
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       let id = params['id'];
       this.currentUuid = params['uuid'] || this.currentUuid;
       if (!id) {
@@ -84,7 +86,6 @@ export class CooperativeMemberDetailComponent implements OnInit {
   };
 
   public formatStatusDisplay(status: string): string {
-    console.log('Formatting status:', status);
     if (!status) return '';
     return this.statusLabelMap[status] || status
       .toLowerCase()
@@ -113,7 +114,6 @@ export class CooperativeMemberDetailComponent implements OnInit {
         this.cooperativeService.loadGroupMembershipsForMember(member).subscribe({
           next: memberships => {
             // DEBUG: Log raw memberships data
-            console.log('Raw group memberships for member', member, memberships);
             this.activeGroups = memberships
               .filter(membership => membership.status === 'ACTIVE')
               .map(membership => ({

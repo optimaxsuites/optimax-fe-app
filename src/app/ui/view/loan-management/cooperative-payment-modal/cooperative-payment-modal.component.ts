@@ -1,4 +1,5 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Message } from 'primeng/api';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
@@ -14,6 +15,7 @@ type CooperativeRepaymentPaymentType = 'PRINCIPAL_REPAYMENT' | 'INTEREST_REPAYME
   styleUrls: ['./cooperative-payment-modal.component.scss']
 })
 export class CooperativePaymentModalComponent implements OnInit, OnChanges {
+  private readonly destroyRef = inject(DestroyRef);
   @Input() loan: CooperativeLoan | null = null;
   @Input() group: CooperativeLoanGroup | null = null;
   @Input() installment: CooperativeRepayment | null = null;
@@ -47,8 +49,8 @@ export class CooperativePaymentModalComponent implements OnInit, OnChanges {
     this.initializeSelection();
     this.initializePaymentTypes();
     this.syncAmountWithPaymentType();
-    this.paymentForm.get('paymentType')?.valueChanges.subscribe(() => this.syncAmountWithPaymentType());
-    this.paymentForm.get('paymentMethod')?.valueChanges.subscribe(() => this.updateSourceAccountValidation());
+    this.paymentForm.get('paymentType')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.syncAmountWithPaymentType());
+    this.paymentForm.get('paymentMethod')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.updateSourceAccountValidation());
     this.updateSourceAccountValidation();
   }
 

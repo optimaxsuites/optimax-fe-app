@@ -10,6 +10,7 @@ import { resolveCooperativeTotalRepayable } from '../../../service/loan/cooperat
 import { EmployeeService } from '../../../service/employee.service';
 import { MailNotificationService } from '../../../service/mailNotification.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { getLoanStatusClass } from '../../../service/loan/loan-format.util';
 
 type QueueMessage = {
   severity: 'success' | 'error' | 'warn';
@@ -514,16 +515,9 @@ sendToAccounting(): void {
     }
   };
 
-  console.log('=== DISBURSEMENT PAYLOAD DEBUG ===');
-  console.log('POST URL:', apiUrl);
-  console.log('Payload:', JSON.stringify(accountingEventPayload, null, 2));
-  console.log('===================================');
   
   this.http.post(apiUrl, accountingEventPayload).subscribe({
     next: (response) => {
-      console.log('=== POST SUCCESS RESPONSE ===');
-      console.log('Response:', response);
-      console.log('=============================');
 
       // Update loan status using the cooperative service
       // Pass the group financial details to preserve them
@@ -655,8 +649,7 @@ sendToAccounting(): void {
   }
 
   getStatusClass(status: string | undefined): string {
-    const normalized = String(status || '').toLowerCase().replace(/_/g, '-');
-    return `status-${normalized}`;
+    return getLoanStatusClass(status, 'status-', '-');
   }
 
   getReadyDate(loan: CooperativeLoan): string {

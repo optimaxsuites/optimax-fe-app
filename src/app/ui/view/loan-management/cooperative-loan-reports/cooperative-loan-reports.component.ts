@@ -14,6 +14,8 @@ import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.
 import { CooperativeGroupMembership } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { CooperativeLoanPurposeService } from '../../../service/loan/cooperative-loan/cooperative-loan-purpose.service';
 import { LoanPurposeData } from '../../../service/loan/loan-purpose.service';
+import { toCsvCell } from '../../../service/loan/csv-export.util';
+import { getLoanStatusClass } from '../../../service/loan/loan-format.util';
 
 type LoanReportSummary = {
   totalLoans: number;
@@ -481,23 +483,7 @@ export class CooperativeLoanReportsComponent implements OnInit, OnDestroy {
   }
 
 getStatusClass(status: string | undefined): string {
-  if (!status) return 'status-default';
-
-  // Normalize status: uppercase, underscores
-  const normalized = String(status).trim().toUpperCase().replace(/\s+/g, '_');
-  const statusClassMap: { [key: string]: string } = {
-    'PENDING': 'status-pending',
-    'APPROVED': 'status-approved',
-    'READY_FOR_DISBURSEMENT': 'status-ready_for_disbursement',
-    'ACTIVE': 'status-active',
-    'SKIPPED': 'status-skipped',
-    'OVERDUE': 'status-overdue',
-    'PAUSED': 'status-paused',
-    'COMPLETED': 'status-completed',
-    'DEFAULTED': 'status-defaulted',
-    'REJECTED': 'status-rejected'
-  };
-  return statusClassMap[normalized] || 'status-default';
+  return getLoanStatusClass(status);
 }
   openLoanDetails(loanId: number): void {
     this.router.navigate(['/admin/hr/cooperative/loans', loanId, this.currentUuid], {
@@ -706,8 +692,7 @@ getStatusClass(status: string | undefined): string {
   }
 
   private escapeCsvValue(value: string | number): string {
-    const stringValue = String(value ?? '');
-    return `"${stringValue.replace(/"/g, '""')}"`;
+    return toCsvCell(value);
   }
 
   private downloadBlob(blob: Blob, fileName: string): void {

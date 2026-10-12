@@ -67,7 +67,8 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
       isActive: [true],
       maxLoanAmount: [null, [Validators.min(0)]],
       minLoanAmount: [null, [Validators.min(0)]],
-      defaultInterestRate: [null, [Validators.required, Validators.min(0), Validators.max(100)]],
+      // Mandatory: approval always applies this rate and admins can't override it there.
+      defaultInterestRate: [null, [Validators.required, Validators.min(0.01), Validators.max(100)]],
       requiresDocumentation: [false],
       documentationTypes: this.fb.array([])
     });
@@ -129,10 +130,27 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
   }
 
   getInterestRateDisplay(rate: number | null | undefined): string {
-    if (rate === null || rate === undefined || rate === 0) {
-      return '—';
+    if (!this.hasInterestRate(rate)) {
+      return 'Not set';
     }
     return `${rate}%`;
+  }
+
+  hasInterestRate(rate: number | null | undefined): boolean {
+    return Number(rate || 0) > 0;
+  }
+
+  /** Purposes saved before the rate was mandatory: their loans can't be approved until a rate is set. */
+  get purposesMissingInterestRate(): LoanPurposeData[] {
+    return this.purposes.filter((purpose) => !this.hasInterestRate(purpose.defaultInterestRate));
+  }
+
+  get missingInterestRateMessage(): string {
+    const missing = this.purposesMissingInterestRate;
+    const names = missing.slice(0, 3).map((purpose) => purpose.name).join(', ');
+    const more = missing.length > 3 ? ` and ${missing.length - 3} more` : '';
+    return `${missing.length} loan purpose${missing.length === 1 ? ' has' : 's have'} no interest rate (${names}${more}). `
+      + 'Loans with these purposes can\'t be approved until a rate is set.';
   }
 
   loadPurposes(): void {
@@ -265,7 +283,7 @@ updatePagination(): void {
       documentationTypes: [],
       minLoanAmount: formValue.minLoanAmount || null,
       maxLoanAmount: formValue.maxLoanAmount || null,
-      defaultInterestRate: formValue.defaultInterestRate || null
+      defaultInterestRate: Number(formValue.defaultInterestRate)
     };
 
     // Validate min < max if both are provided

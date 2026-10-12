@@ -26,6 +26,7 @@ import {
   resolveLoanTotalRepayableAmount,
   resolveLoanTotalLateFees
 } from '../../../service/loan/loan-display.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
 
 interface LoanDashboardAlert {
   level: 'warning' | 'danger';
@@ -77,8 +78,9 @@ const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
   encapsulation: ViewEncapsulation.None
 })
 export class LoanDashboardComponent implements OnInit, OnDestroy {
+  /** Rows per page in the dashboard loans table. */
   readonly recentLoanLimit = 9;
-  readonly dashboardTableRowsPerPage = 10;
+  dashboardPage = 1;
   private hasInitializedLoanSubscription = false;
   isLoading = false;
   isDataLoaded = false;
@@ -401,14 +403,37 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
 
     this.totalFilteredLoans = matchingLoans.length;
 
-    const latestLoans = matchingLoans
-      .sort((first, second) => new Date(second.requestDate).getTime() - new Date(first.requestDate).getTime())
-      .slice(0, this.recentLoanLimit);
+    // Sort the whole filtered set (not just the newest few) and page through it, so sorting by
+    // amount, name, etc. reflects every matching loan.
+    this.filteredLoans = this.sortLoans(matchingLoans);
+    this.dashboardPage = Math.min(Math.max(this.dashboardPage, 1), this.dashboardTotalPages);
+    this.refreshDashboardPage();
+  }
 
-    this.filteredLoans = this.sortLoans(latestLoans);
-    this.dashboardLoanRows = this.filteredLoans.map((loan) => this.buildDashboardLoanRow(loan));
-      
-    this.recentLoans = this.filteredLoans;
+  get dashboardTotalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredLoans.length / this.recentLoanLimit));
+  }
+
+  get dashboardPageStart(): number {
+    return this.filteredLoans.length === 0 ? 0 : (this.dashboardPage - 1) * this.recentLoanLimit + 1;
+  }
+
+  get dashboardPageEnd(): number {
+    return Math.min(this.dashboardPage * this.recentLoanLimit, this.filteredLoans.length);
+  }
+
+  changeDashboardPage(page: number): void {
+    if (page < 1 || page > this.dashboardTotalPages || page === this.dashboardPage) {
+      return;
+    }
+    this.dashboardPage = page;
+    this.refreshDashboardPage();
+  }
+
+  private refreshDashboardPage(): void {
+    const start = (this.dashboardPage - 1) * this.recentLoanLimit;
+    this.recentLoans = this.filteredLoans.slice(start, start + this.recentLoanLimit);
+    this.dashboardLoanRows = this.recentLoans.map((loan) => this.buildDashboardLoanRow(loan));
   }
 
   private buildDashboardLoanRow(loan: LoanApplication): DashboardLoanRow {
@@ -547,18 +572,12 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
 
   setStatusFilter(status: LoanApplication['status'] | 'ALL'): void {
     this.activeFilter = status;
+    this.dashboardPage = 1;
     this.applyFilter();
   }
 
   getStatusDisplay(status: LoanApplication['status'] | undefined): string {
-    if (!status) return '';
-    if (status === 'READY_FOR_DISBURSEMENT') {
-      return 'Disbursable';
-    }
-    return String(status)
-      .toLowerCase()
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, c => c.toUpperCase());
+    return getLoanStatusLabel(status);
   }
 
   getDisplayedSubsetLabel(): string {
@@ -579,6 +598,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       this.sortField = field;
       this.sortDirection = field === 'requestDate' ? 'desc' : 'asc';
     }
+    this.dashboardPage = 1;
     this.applyFilter();
   }
 
@@ -608,27 +628,11 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   getStatusClass(status: string | undefined): string {
-  switch (status) {
-    case 'PENDING': return 'status-pending';
-    case 'APPROVED': return 'status-approved';
-    case 'READY_FOR_DISBURSEMENT': return 'status-ready_for_disbursement';
-    case 'ACTIVE': return 'status-active';
-    case 'REJECTED': return 'status-rejected';
-    case 'COMPLETED': return 'status-completed';
-    case 'SKIPPED': return 'status-skipped';
-    case 'OVERDUE': return 'status-overdue';
-    case 'DEFAULTED': return 'status-defaulted';
-    case 'PAUSED': return 'status-paused';
-    default: return 'status-default';
+    return getLoanStatusClass(status);
   }
-}
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2
-    }).format(amount);
+    return formatNaira(amount);
   }
 
   getLateFeePercentageDisplay(loan: LoanApplication): string {
@@ -896,7 +900,22 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     return 'Upcoming';
   }
 
+  /**
+   * Called from template bindings (several times per change-detection cycle), so the result is cached
+   * per loan object. Loans are replaced, not mutated, when data refreshes, which invalidates the cache.
+   */
+  private readonly statusTimelineCache = new WeakMap<LoanApplication, StatusChange[]>();
+
   private buildStatusTimeline(loan: LoanApplication): StatusChange[] {
+    let timeline = this.statusTimelineCache.get(loan);
+    if (!timeline) {
+      timeline = this.computeStatusTimeline(loan);
+      this.statusTimelineCache.set(loan, timeline);
+    }
+    return timeline;
+  }
+
+  private computeStatusTimeline(loan: LoanApplication): StatusChange[] {
     const timeline = [...(loan.statusHistory || [])]
       .map((entry) => ({
         ...entry,

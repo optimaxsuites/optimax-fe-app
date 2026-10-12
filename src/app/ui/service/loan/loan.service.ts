@@ -112,7 +112,6 @@ export class LoanService {
       tap(loans => {
         this.advanceLoansCache = loans;
         this.advanceLoansCacheTimestamp = Date.now();
-        console.log(`[CACHE] Advance loans loaded and cached: ${loans.length}`);
       }),
       catchError((error) => {
         console.error('Failed to load loans from API:', error.status);
@@ -150,7 +149,6 @@ export class LoanService {
       status: 'PENDING'
     };
     
-    console.log('Sending payload:', formattedPayload);
     
     return this.http.post<AdvanceLoan>(this.standardLoanUrl, formattedPayload, {
       headers: { 
@@ -160,7 +158,6 @@ export class LoanService {
     }).pipe(
       map(response => this.safeParseResponse(response)),
       tap((response: AdvanceLoan) => {
-        console.log('Loan created:', response.id, 'Status:', response.status);
       }),
       catchError((error) => {
         if (error.status === 0 || error.message?.includes('Connection refused')) {
@@ -214,10 +211,7 @@ export class LoanService {
     if (requestBody.status) {
       requestBody.status = String(requestBody.status).toUpperCase();
     }
-    
-    if (isDevMode()) {
-      console.log('Update request payload:', requestBody);
-    }
+
     
     return this.http.put<AdvanceLoan>(`${this.standardLoanUrl}/${id}`, requestBody, {
       responseType: 'json'
@@ -278,7 +272,6 @@ export class LoanService {
       ...(formData.defaultInterestRate !== undefined ? { defaultInterestRate: formData.defaultInterestRate } : {})
     };
     
-    console.log('Creating loan with payload:', payload);
     
     return this.createAdvanceLoan(payload).pipe(
       map((loan) => {
@@ -330,10 +323,7 @@ export class LoanService {
         }
 
         const payload = this.toUpdatePayload(application, sourceLoan);
-        
-        if (isDevMode()) {
-          console.log('Advance loan update payload:', JSON.stringify(payload, null, 2));
-        }
+
 
         return this.updateAdvanceLoan(
           Number(sourceLoan.id),

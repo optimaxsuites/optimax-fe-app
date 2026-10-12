@@ -1,4 +1,5 @@
-import { Component, OnInit} from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Message } from 'primeng/api';
@@ -9,6 +10,7 @@ import { CooperativeLoan, PaymentHistory, StatusHistory } from '../../../domain/
 import { CooperativeMember, CooperativeLoanGroup, CooperativeRepayment, CooperativeLoanGuarantor, CooperativeGroupMembership } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 import { formatLoanPurposeDisplay, formatLoanRepaymentDayDisplay, normalizeLoanRepaymentStartDate, resolveLoanActorName } from '../../../service/loan/loan-display.util';
+import { getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
 
 type CooperativeLoanAuditEntryView = {
   status: string;
@@ -23,6 +25,7 @@ type CooperativeLoanAuditEntryView = {
   styleUrls: ['./cooperative-loan-detail.component.scss']
 })
 export class CooperativeLoanDetailComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
     // Helper: True if any guarantor has rejected
     get anyGuarantorRejected(): boolean {
       return this.guarantors.some(g => g.status === 'REJECTED');
@@ -53,8 +56,6 @@ export class CooperativeLoanDetailComponent implements OnInit {
   overrideReason = '';
   rejectionReason = '';
   requestChangesNote = '';
-  paymentAmount = 0;
-  modeofPayment: CooperativeRepayment['modeofPayment'] = 'BANK_TRANSFER';
   messages: Message[] = [];
   suggestedInterestRate = 0;
   approvalPreview = {
@@ -81,7 +82,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       const id = Number(params['id']);
       this.currentUuid = params['uuid'] || this.currentUuid;
       this.loadLoan(id);
@@ -112,7 +113,6 @@ export class CooperativeLoanDetailComponent implements OnInit {
         }
         this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(loan.id);
         this.guarantors = this.normalizeGuarantors(loan.guarantors);
-        this.seedPaymentDefaults();
         this.updateStatusTimeline();
       }
 
@@ -125,13 +125,11 @@ export class CooperativeLoanDetailComponent implements OnInit {
       return;
     }
 
-    this.seedPaymentDefaults();
     this.showRecordPaymentModal = true;
   }
 
   cancelRecordPayment(): void {
     this.showRecordPaymentModal = false;
-    this.seedPaymentDefaults();
   }
 
   openGracePeriodModal(): void {
@@ -155,41 +153,6 @@ export class CooperativeLoanDetailComponent implements OnInit {
   handleRecordPaymentSuccess(): void {
     this.showRecordPaymentModal = false;
     this.loadLoan(this.loan.id);
-  }
-
-  recordPayment(): void {
-    if (this.loan.status !== 'ACTIVE') {
-      return;
-    }
-
-    this.cooperativeService.recordRepayment(this.loan.id, {
-      amount: this.paymentAmount,
-      modeofPayment: this.modeofPayment,
-      paidDate: new Date().toISOString()
-    }).subscribe((recorded) => {
-      if (!recorded) {
-        this.messages = [{
-          severity: 'warn',
-          summary: 'Payment Not Recorded',
-          detail: 'Unable to record payment. Confirm amount and loan state.'
-        }];
-        return;
-      }
-
-      this.cooperativeService.getLoanById(this.loan.id).subscribe((latest) => {
-        if (latest) {
-          this.loan = latest;
-        }
-        this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
-        this.showRecordPaymentModal = false;
-
-        this.messages = [{
-          severity: 'success',
-          summary: 'Payment Recorded',
-          detail: `${this.formatCurrency(recorded.amount)} recorded via ${this.getmodeofPaymentLabel(recorded.modeofPayment)}.`
-        }];
-      });
-    });
   }
 
   sendReminder(): void {
@@ -542,51 +505,6 @@ export class CooperativeLoanDetailComponent implements OnInit {
     this.rejectionReason = '';
   }
 
-  disburseLoan(): void {
-    const beforeStats = this.cooperativeService.getStats();
-    const beforeAvailable = Math.max(beforeStats.totalFund - beforeStats.loanPortfolio, 0);
-    this.cooperativeService.disburseLoan(this.loan.id).subscribe((updated: CooperativeLoan | undefined) => {
-      const afterStats = this.cooperativeService.getStats();
-      const afterAvailable = Math.max(afterStats.totalFund - afterStats.loanPortfolio, 0);
-
-      if (!updated) {
-        this.cooperativeService.loadLoanById(this.loan.id).subscribe((freshLoan) => {
-          if (freshLoan) {
-            this.loan = freshLoan;
-            this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
-            this.updateStatusTimeline();
-
-            if (freshLoan.status === 'ACTIVE') {
-              this.messages = [{
-                severity: 'success',
-                summary: 'Already Disbursed',
-                detail: 'This loan is already ACTIVE. The page has been refreshed with the latest backend status.'
-              }];
-              return;
-            }
-          }
-
-          this.messages = [{
-            severity: 'warn',
-            summary: 'Disbursement Failed',
-            detail: 'Only cooperative loans already sent to accounting can be marked as disbursed.'
-          }];
-        });
-        return;
-      }
-
-      this.loan = updated;
-      this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
-      const deducted = Math.max(beforeAvailable - afterAvailable, 0);
-
-      this.messages = [{
-        severity: 'success',
-        summary: 'Loan Disbursed',
-        detail: `Loan is now ACTIVE, disbursement date recorded, repayment schedule generated, and ${this.formatCurrency(deducted || this.loan.amount)} deducted from the co-op pool.`
-      }];
-    });
-  }
-
   openDisbursementWorkspace(): void {
     this.router.navigate(['/admin/hr/cooperative/loans', this.currentUuid], {
       queryParams: {
@@ -636,28 +554,6 @@ export class CooperativeLoanDetailComponent implements OnInit {
   cancelRequestChanges(): void {
     this.showRequestChangesModal = false;
     this.requestChangesNote = '';
-  }
-
-  completeLoan(): void {
-    this.loan.status = 'COMPLETED';
-    this.loan.completedDate = new Date();
-    this.cooperativeService.updateLoan(this.loan).subscribe({
-      next: (updatedLoan) => {
-        this.loan = updatedLoan;
-        this.messages = [{
-          severity: 'success',
-          summary: 'Loan Completed',
-          detail: 'Loan marked as completed.'
-        }];
-      },
-      error: () => {
-        this.messages = [{
-          severity: 'warn',
-          summary: 'Update Failed',
-          detail: 'Unable to mark this loan as completed right now.'
-        }];
-      }
-    });
   }
 
   setPendingReview(): void {
@@ -771,32 +667,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   getStatusLabel(status: string): string {
-    switch (String(status || '').toUpperCase()) {
-      case 'PENDING':
-        return 'Pending';
-      case 'AWAITING_INTEREST_ACCEPTANCE':
-        return 'Awaiting Interest Acceptance';
-      case 'APPROVED':
-        return 'Approved';
-      case 'READY_FOR_DISBURSEMENT':
-        return 'Disbursable';
-      case 'ACTIVE':
-        return 'Active';
-      case 'SKIPPED':
-        return 'Skipped';
-      case 'OVERDUE':
-        return 'Overdue';
-      case 'DEFAULTED':
-        return 'Defaulted';
-      case 'PAUSED':
-        return 'Paused';
-      case 'REJECTED':
-        return 'Rejected';
-      case 'COMPLETED':
-        return 'Completed';
-      default:
-        return String(status || '').replace(/_/g, ' ');
-    }
+    return getLoanStatusLabel(status);
   }
 
   getDisplayedRepaymentStartDate(): string {
@@ -858,21 +729,8 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
  getStatusClass(status: string | undefined): string {
-  switch (status) {
-    case 'PENDING': return 'status-pending';
-    case 'AWAITING_INTEREST_ACCEPTANCE': return 'status-awaiting_interest_acceptance';
-    case 'APPROVED': return 'status-approved';
-    case 'READY_FOR_DISBURSEMENT': return 'status-ready_for_disbursement';
-    case 'ACTIVE': return 'status-active';
-    case 'REJECTED': return 'status-rejected';
-    case 'COMPLETED': return 'status-completed';
-    case 'SKIPPED': return 'status-skipped';
-    case 'OVERDUE': return 'status-overdue';
-    case 'DEFAULTED': return 'status-defaulted';
-    case 'PAUSED': return 'status-paused';
-    default: return 'status-default';
-  }
-}
+   return getLoanStatusClass(status);
+ }
 
   getGuarantorStatusClass(status: string): string {
     return `status-${status.toLowerCase()}`;
@@ -1102,15 +960,6 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   get statusDisplayLabel(): string {
     return this.getStatusLabel(this.loan?.status || '');
-  }
-
-  private seedPaymentDefaults(): void {
-    const nextUnpaid = this.repaymentSchedule
-      .filter(item => item.status !== 'PAID')
-      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
-
-    this.paymentAmount = nextUnpaid?.amount || this.loan?.repaymentAmount || 0;
-    this.modeofPayment = 'BANK_TRANSFER';
   }
 
   private updateApprovalPreview(interestRate: number): void {

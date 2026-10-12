@@ -141,14 +141,11 @@ export class CooperativeGroupService {
     }
 
     getAllCooperativeGroups(): Observable<CooperativeGroupApiResponse[]> {
-      console.log('[CooperativeGroupService] Fetching all groups from:', this.groupsUrl);
       const headers = this.getAuthHeaders();
       // Without paging params the backend returns only the first 10 groups, so newer groups never appear.
       const params = { page: '1', size: '1000' };
       return this.http.get<CooperativeGroupApiResponse[]>(this.groupsUrl, { headers, params }).pipe(
         map((groups) => {
-          console.log('[CooperativeGroupService] Groups received:', groups);
-          console.log('[CooperativeGroupService] Number of groups:', groups?.length);
           return groups;
         }),
         catchError((error: HttpErrorResponse) => {
@@ -163,11 +160,9 @@ export class CooperativeGroupService {
 
     getCooperativeGroupById(id: number): Observable<CooperativeGroupApiResponse> {
       const url = `${this.groupsUrl}/${id}`;
-      console.log(`[CooperativeGroupService] Fetching group by ID: ${id} from: ${url}`);
       const headers = this.getAuthHeaders();
       return this.http.get<CooperativeGroupApiResponse>(url, { headers }).pipe(
         map((group) => {
-          console.log(`[CooperativeGroupService] Group received:`, group);
           return group;
         }),
         catchError((error: HttpErrorResponse) => {
@@ -179,11 +174,9 @@ export class CooperativeGroupService {
 
     // FIXED: Use correct URL and headers
     createCooperativeGroup(payload: CooperativeGroupApiPayload): Observable<CooperativeGroupApiResponse> {
-      console.log('[CooperativeGroupService] Creating group with payload:', JSON.stringify(payload, null, 2));
       const headers = this.getAuthHeaders();
       return this.http.post<CooperativeGroupApiResponse>(this.groupsUrl, payload, { headers }).pipe(
         map((group) => {
-          console.log('[CooperativeGroupService] Group created successfully:', group);
           return group;
         }),
         catchError((error: HttpErrorResponse) => {
@@ -197,11 +190,9 @@ export class CooperativeGroupService {
 
     updateCooperativeGroup(id: number, payload: CooperativeGroupApiPayload): Observable<CooperativeGroupApiResponse> {
       const url = `${this.groupsUrl}/${id}`;
-      console.log(`[CooperativeGroupService] Updating group ${id} with payload:`, JSON.stringify(payload, null, 2));
       const headers = this.getAuthHeaders();
       return this.http.put<CooperativeGroupApiResponse>(url, payload, { headers }).pipe(
         map((group) => {
-          console.log(`[CooperativeGroupService] Group ${id} updated successfully:`, group);
           return group;
         }),
         catchError((error: HttpErrorResponse) => {
@@ -213,7 +204,6 @@ export class CooperativeGroupService {
 
     deleteCooperativeGroup(id: number): Observable<void> {
       const url = `${this.groupsUrl}/${id}`;
-      console.log(`[CooperativeGroupService] Deleting group ${id} from: ${url}`);
       const headers = this.getAuthHeaders();
       return this.http.delete<void>(url, { headers }).pipe(
         map(() => void 0),

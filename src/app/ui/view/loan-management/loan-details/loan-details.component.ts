@@ -1,5 +1,6 @@
 // loan-details.component.ts
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
@@ -25,6 +26,8 @@ import {
   resolveLoanTotalPaid,
   resolveLoanTotalRepayableAmount
 } from '../../../service/loan/loan-display.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
+import { PurposeRateResolution, isValidCustomInterestRate, resolvePurposeInterestRate } from '../../../service/loan/loan-purpose-rate.util';
 
 type LoanLifecycleStage = {
   status: LoanApplication['status'];
@@ -53,11 +56,15 @@ const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
   encapsulation: ViewEncapsulation.None
 })
 export class LoanDetailsComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   loanId: string = '';
   loan: LoanApplication | null = null;
   statusTimeline: StatusChange[] = [];
   isLoading: boolean = true;
   isSubmitting = false;
+  purposesLoaded = false;
+  /** Rate entered by the admin, only for "Other" / undefined purposes. */
+  readonly customInterestRateControl = new FormControl<number | null>(null);
   canChangeStatus: boolean = true;
   navigationSource: string = 'approval';
   
@@ -66,7 +73,6 @@ export class LoanDetailsComponent implements OnInit {
   showCommentModal: boolean = false;
   selectedAction: LoanApplication['status'] | '' = '';
   messages: Message[] = [];
-  suggestedInterestRate = 0;
   showOverrideModal = false;
   overrideTargetStatus: 'ACTIVE' | 'PAUSED' = 'PAUSED';
   overrideReason = '';
@@ -102,7 +108,8 @@ export class LoanDetailsComponent implements OnInit {
   ) {
     this.commentForm = this.fb.group({
       comment: ['', Validators.required],
-      interestRate: [0, [Validators.min(0), Validators.max(100)]],
+      // Display only: approval always applies the loan purpose's rate (see approveLoan).
+      interestRate: [{ value: null, disabled: true }],
       lateFeePercentage: [2, [Validators.required, Validators.min(0), Validators.max(100)]],
       lateFeeGracePeriodDays: [15, [Validators.required, Validators.min(0), Validators.max(365)]],
       repaymentDay: [15, [Validators.required, Validators.min(1), Validators.max(31)]]
@@ -110,13 +117,20 @@ export class LoanDetailsComponent implements OnInit {
   }
   
   ngOnInit(): void {
+    // Keep the repayment preview in step with a custom rate as the admin types it.
+    this.customInterestRateControl.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((rate) => {
+      if (this.selectedAction === 'APPROVED' && this.rateResolution?.kind === 'custom') {
+        this.updateApprovalPreview(isValidCustomInterestRate(rate) ? Number(rate) : 0);
+      }
+    });
     this.navigationSource = window.history.state?.source || 'approval';
     // Load all loan purposes first
     // Include inactive purposes so a since-deactivated purpose still fixes the rate.
     this.loanPurposeService.getAllPurposes(false).subscribe({
       next: (purposes) => {
         this.loanPurposes = purposes;
-        this.route.params.subscribe(params => {
+        this.purposesLoaded = true;
+        this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
           this.loanId = params['loanId'];
           this.loadLoanDetails();
         });
@@ -124,7 +138,7 @@ export class LoanDetailsComponent implements OnInit {
       error: (error) => {
         console.error('Error loading loan purposes:', error);
         // Still load loan details even if purposes fail
-        this.route.params.subscribe(params => {
+        this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
           this.loanId = params['loanId'];
           this.loadLoanDetails();
         });
@@ -176,8 +190,6 @@ export class LoanDetailsComponent implements OnInit {
           }
           this.loan = loan;
           // Debug log for troubleshooting purpose code resolution
-          console.log('Loaded loan:', loan);
-          console.log('Loaded loanPurposes:', this.loanPurposes);
           this.updateStatusTimeline();
           this.isLoading = false;
           return;
@@ -239,20 +251,11 @@ export class LoanDetailsComponent implements OnInit {
   }
 
   getStatusLabel(status: string): string {
-    const statusUpper = String(status || '').toUpperCase();
-    const statusOption = this.statusOptions.find(option => String(option.value).toUpperCase() === statusUpper);
-    if (statusOption) return statusOption.label;
-    // Fallback: Properly title-case each word
-    return String(status || '')
-      .replace(/_/g, ' ')
-      .replace(/-/g, ' ')
-      .toLowerCase()
-      .replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown';
+    return getLoanStatusLabel(status);
   }
 
   getStatusClass(status: string | undefined | null): string {
-    const normalized = String(status || '').trim().toLowerCase().replace(/-/g, '_');
-    return normalized ? `status-${normalized}` : 'status-pending';
+    return getLoanStatusClass(status);
   }
 
   formatDate(date: string): string {
@@ -338,26 +341,20 @@ formatDepartmentDisplay(department?: unknown): string {
   openCommentModal(action: LoanApplication['status']): void {
     this.selectedAction = action;
     this.commentForm.reset();
-    this.suggestedInterestRate = this.loan ? this.loanApprovalService.determineInterestRate(this.loan) : 0;
-    const currentInterestRate = this.resolvedPurposeDefaultInterestRate
-      ?? (Number(this.loan?.interestRate || 0) || this.suggestedInterestRate);
-    
+    this.customInterestRateControl.reset(null);
+    const purposeRate = this.resolvedPurposeDefaultInterestRate;
+
     this.commentForm.patchValue({
-      interestRate: action === 'APPROVED' ? currentInterestRate : this.loan?.interestRate ?? 0,
+      interestRate: action === 'APPROVED' ? purposeRate : this.loan?.interestRate ?? null,
       lateFeePercentage: this.loan?.lateFeePercentage ?? 2,
       lateFeeGracePeriodDays: this.loan?.lateFeeGracePeriodDays ?? 15,
       comment: '',
       repaymentDay: this.loan?.repaymentDay || 15
     });
 
-    const interestRateControl = this.commentForm.get('interestRate');
-    if (action === 'APPROVED') {
-      interestRateControl?.setValidators([Validators.required, Validators.min(0), Validators.max(100)]);
-      this.updateApprovalPreview(Number(this.commentForm.value.interestRate ?? this.suggestedInterestRate));
-    } else {
-      interestRateControl?.setValidators([Validators.min(0), Validators.max(100)]);
+    if (action === 'APPROVED' && purposeRate !== null) {
+      this.updateApprovalPreview(purposeRate);
     }
-    interestRateControl?.updateValueAndValidity();
 
     this.showCommentModal = true;
   }
@@ -366,7 +363,6 @@ formatDepartmentDisplay(department?: unknown): string {
     this.showCommentModal = false;
     this.selectedAction = '';
     this.commentForm.reset();
-    this.suggestedInterestRate = 0;
     this.approvalPreview = {
       repaymentAmount: 0,
       totalRepayment: 0,
@@ -442,12 +438,9 @@ formatDepartmentDisplay(department?: unknown): string {
     return this.overrideTargetStatus === 'PAUSED' ? 'Pause Loan' : 'Set Active';
   }
 
-  onInterestRateInput(): void {
-    if (this.selectedAction !== 'APPROVED') {
-      return;
-    }
-    const currentRate = Number(this.commentForm.value.interestRate ?? 0);
-    this.updateApprovalPreview(currentRate);
+  openPurposeManagement(): void {
+    this.closeCommentModal();
+    this.router.navigate(['/admin/hr/loan-management/loan-purposes', uuidV4()]);
   }
 
   submitStatusChange(): void {
@@ -460,8 +453,22 @@ formatDepartmentDisplay(department?: unknown): string {
       return;
     }
 
-    if (this.selectedAction === 'APPROVED' && (this.interestRateControl.invalid || this.lateFeePercentageControl.invalid || this.lateFeeGracePeriodDaysControl.invalid || this.repaymentDayControl.invalid)) {
-      this.interestRateControl.markAsTouched();
+    if (this.selectedAction === 'APPROVED' && !this.hasApprovalRate) {
+      const kind = this.rateResolution?.kind;
+      this.messages = [{
+        severity: 'warn',
+        summary: 'Interest Rate Needed',
+        detail: kind === 'missing'
+          ? 'This loan\'s purpose has no interest rate. Set it in Loan Purpose Management before approving.'
+          : kind === 'custom'
+            ? 'Enter an interest rate above 0% (up to 100%) for this loan.'
+            : 'Loan purposes couldn\'t be loaded, so the interest rate can\'t be confirmed. Reload the page and try again.'
+      }];
+      this.customInterestRateControl.markAsTouched();
+      return;
+    }
+
+    if (this.selectedAction === 'APPROVED' && (this.lateFeePercentageControl.invalid || this.lateFeeGracePeriodDaysControl.invalid || this.repaymentDayControl.invalid)) {
       this.lateFeePercentageControl.markAsTouched();
       this.lateFeeGracePeriodDaysControl.markAsTouched();
       this.repaymentDayControl.markAsTouched();
@@ -472,10 +479,7 @@ formatDepartmentDisplay(department?: unknown): string {
       status: this.selectedAction,
       notes: this.commentForm.value.comment || '',
       changedBy: Number(sessionStorage.getItem('userid') || localStorage.getItem('userid') || 0) || 'Admin',
-      changedAt: new Date().toISOString(),
-      interestRate: this.selectedAction === 'APPROVED'
-        ? Number(this.commentForm.value.interestRate ?? this.suggestedInterestRate)
-        : Number(this.commentForm.value.interestRate ?? 0)
+      changedAt: new Date().toISOString()
     };
 
     if (this.selectedAction === 'APPROVED') {
@@ -487,19 +491,19 @@ formatDepartmentDisplay(department?: unknown): string {
       this.isSubmitting = true;
       this.loanApprovalService.approveLoan(
         this.loan.id, 
-        statusUpdate.notes, 
-        statusUpdate.interestRate, 
-        repaymentStartDate, 
+        statusUpdate.notes,
+        repaymentStartDate,
         repaymentDay,
         lateFeePercentage,
-        lateFeeGracePeriodDays
+        lateFeeGracePeriodDays,
+        this.rateResolution?.kind === 'custom' ? Number(this.customInterestRateControl.value) : undefined
       ).subscribe({
         next: (approvedLoan) => {
           this.isSubmitting = false;
           this.messages = [{
             severity: 'success',
             summary: 'Loan Approved',
-            detail: `Loan approved with ${approvedLoan?.interestRate ?? statusUpdate.interestRate}% interest rate.`
+            detail: `Loan approved with ${approvedLoan?.interestRate}% interest rate.`
           }];
           this.closeCommentModal();
           this.loadLoanDetails();
@@ -652,11 +656,7 @@ formatDepartmentDisplay(department?: unknown): string {
   }
   
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2
-    }).format(amount);
+    return formatNaira(amount);
   }
 
   getPaymentModeDisplay(mode?: string): string {
@@ -701,33 +701,29 @@ formatDepartmentDisplay(department?: unknown): string {
   }
 
     // Get the default interest rate for the resolved loan purpose
-  get resolvedPurposeDefaultInterestRate(): number | null {
-    if (!this.loan || !this.loanPurposes.length) return null;
-    let code = (this.loan.purposeCode || '').trim().toLowerCase();
-    let name = (this.loan.purpose || '').trim().toLowerCase();
-    if (code === 'n/a') code = '';
-    // Try to match by code or name, robustly
-    let found: LoanPurposeData | undefined = undefined;
-    if (code) {
-      found = this.loanPurposes.find(p => (p.code || '').trim().toLowerCase() === code);
-    }
-    if (!found && name) {
-      found = this.loanPurposes.find(p => (p.name || '').trim().toLowerCase() === name);
-    }
-    // Fallback: try to match any purpose where either code or name matches (robust)
-    if (!found && (code || name)) {
-      found = this.loanPurposes.find(p =>
-        ((p.code || '').trim().toLowerCase() === code) ||
-        ((p.name || '').trim().toLowerCase() === name)
-      );
-    }
-    const rate = Number(found?.defaultInterestRate ?? 0);
-    return rate > 0 ? rate : null;
+  /**
+   * Where this loan's rate comes from at approval (same rule as the Loan Approval page). Null until the
+   * purpose list has loaded, so an undefined-looking purpose is never mistaken for a custom one.
+   */
+  get rateResolution(): PurposeRateResolution | null {
+    if (!this.loan || !this.purposesLoaded) return null;
+    return resolvePurposeInterestRate(this.loan, this.loanPurposes);
   }
 
-  /** Same rule as the Loan Approval page: a purpose's fixed rate cannot be changed at approval. */
-  get isInterestRateLocked(): boolean {
-    return this.resolvedPurposeDefaultInterestRate !== null;
+  /** The purpose's fixed rate, or null when the purpose has no rate or isn't defined. */
+  get resolvedPurposeDefaultInterestRate(): number | null {
+    const resolution = this.rateResolution;
+    return resolution?.kind === 'fixed' ? resolution.rate : null;
+  }
+
+  get isCustomRateValid(): boolean {
+    return isValidCustomInterestRate(this.customInterestRateControl.value);
+  }
+
+  /** Whether the approval form has a usable interest rate (fixed, or a valid custom one). */
+  get hasApprovalRate(): boolean {
+    const kind = this.rateResolution?.kind;
+    return kind === 'fixed' || (kind === 'custom' && this.isCustomRateValid);
   }
 
   private toTitleCase(value: string): string {

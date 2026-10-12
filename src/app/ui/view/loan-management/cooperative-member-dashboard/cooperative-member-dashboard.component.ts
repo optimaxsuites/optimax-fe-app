@@ -29,6 +29,7 @@ import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/lo
 import { formatLoanPurposeDisplay, formatCooperativeLoanCode as _formatCooperativeLoanCode } from '../../../service/loan/loan-display.util';
 import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 import { CooperativeMembershipRequestSource } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { getLoanStatusClass } from '../../../service/loan/loan-format.util';
 
 interface CooperativeMemberLoanRow {
   loan: CooperativeLoan;
@@ -294,9 +295,6 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       members: this.cooperativeService.getMembers()
     }).subscribe({
       next: ({ groups, members }) => {
-        console.log('Groups loaded:', groups);
-        console.log('Loaded members:', members);
-        console.log('Using real API data:', this.cooperativeService.isUsingRealData());
         this.usingRealData = this.cooperativeService.isUsingRealData();
 
         const member = this.resolveDashboardMember(members);
@@ -930,11 +928,6 @@ public toTitleCase(value: string | undefined | null): string {
   }
 
   openGroupDashboard(groupId: number): void {
-    console.log('[openGroupDashboard] Navigating to group dashboard:', {
-      groupId,
-      currentUuid: this.currentUuid,
-      memberId: this.member?.id || this.currentMemberId
-    });
     this.closeMyGroupsModal();
     this.router.navigate(['/admin/hr/member/cooperative/groups', groupId, this.currentUuid], {
       state: { memberId: this.member?.id || this.currentMemberId }
@@ -1351,11 +1344,8 @@ public toTitleCase(value: string | undefined | null): string {
   }
 
  getStatusClass(status: string): string {
-  if (!status) return '';
-  // Convert to lowercase and replace spaces with underscores for CSS class
-  const normalized = status.toLowerCase().replace(/ /g, '_');
-  return `status-${normalized}`;
-}
+   return getLoanStatusClass(status);
+ }
 
   getActivityIconClass(type: 'LOAN' | 'GROUP' | 'NOTIFICATION'): string {
     if (type === 'GROUP') {

@@ -1,0 +1,69 @@
+<div class="payment-history-page">
+  <header class="page-header">
+    <app-back-button (click)="goBack()"></app-back-button>
+    <div class="header-title">
+      <h1><i class="fas fa-receipt"></i> My Payment History</h1>
+      <p>Repayments recorded against your advance loans</p>
+    </div>
+  </header>
+
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+
+  <div class="state-card" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Loading your loans...</p>
+  </div>
+
+  <div class="state-card" *ngIf="!isLoading && !messages.length && loans.length === 0">
+    <i class="fas fa-wallet"></i>
+    <h3>No repayments yet</h3>
+    <p>Payment history appears here once one of your loans has been disbursed.</p>
+  </div>
+
+  <ng-container *ngIf="!isLoading && loans.length > 0">
+    <section class="loan-picker" aria-label="Choose a loan">
+      <h2>Your loans</h2>
+      <div class="loan-picker-list" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          class="loan-chip"
+          *ngFor="let loan of loans; trackBy: trackByLoanId"
+          [class.selected]="loan.id === selectedLoanId"
+          [attr.aria-selected]="loan.id === selectedLoanId"
+          (click)="selectLoan(loan)">
+          <span class="loan-chip-code">{{ getLoanCode(loan) }}</span>
+          <span class="loan-chip-amount">{{ formatCurrency(loan.amount) }}</span>
+          <span class="status-badge" [ngClass]="getStatusClass(loan.status)">{{ getStatusLabel(loan.status) }}</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="loan-detail-card" *ngIf="selectedLoan as loan">
+      <div class="loan-summary">
+        <div class="summary-item">
+          <span>Loan</span>
+          <strong>{{ getLoanCode(loan) }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>Purpose</span>
+          <strong>{{ loan.purpose || 'N/A' }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>Total Repayable</span>
+          <strong>{{ formatCurrency(getTotalRepayable(loan)) }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>Repaid</span>
+          <strong class="positive">{{ formatCurrency(getTotalRepaid(loan)) }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>Outstanding</span>
+          <strong>{{ formatCurrency(getOutstanding(loan)) }}</strong>
+        </div>
+      </div>
+
+      <app-employee-payment-history [loanId]="loan.id"></app-employee-payment-history>
+    </section>
+  </ng-container>
+</div>
