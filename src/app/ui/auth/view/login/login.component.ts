@@ -512,9 +512,19 @@ async posLoginAction(): Promise<void> {
         }
       },
       error: () => {
-        // Not a vendor — proceed with normal role-based navigation
-        sessionStorage.setItem('isVendor', 'false');
-        this.proceedWithNormalNavigation(data);
+        // No commerce record yet — fall back to role from login response.
+        // VENDOR role users must stay blocked even if the vendor record
+        // hasn't been created in commerce yet (pre-register pending / commerce down).
+        const roles = String(data.roles || '');
+        if (roles.includes('VENDOR')) {
+          sessionStorage.setItem('isVendor', 'true');
+          sessionStorage.setItem('vendorLoginEnabled', 'false');
+          const pendingLink = this.navigationLink.getLink('vendorPendingLink');
+          this.router.navigate([pendingLink]);
+        } else {
+          sessionStorage.setItem('isVendor', 'false');
+          this.proceedWithNormalNavigation(data);
+        }
       }
     });
 
