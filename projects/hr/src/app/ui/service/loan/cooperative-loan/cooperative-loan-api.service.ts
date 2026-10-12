@@ -804,7 +804,8 @@ export class CooperativeLoanApiService {
 
   // ==================== GROUP ENDPOINTS ====================
   getAllCooperativeGroups(): Observable<CooperativeGroupApiResponse[]> {
-    const url = `${this.groupsBaseUrl}`;
+    // Without paging params the backend returns only the first 10 groups.
+    const url = `${this.groupsBaseUrl}?page=1&size=1000`;
     this.logRequest('GET', url);
     const headers = this.getAuthHeaders();
     return this.http.get<unknown>(url, { headers }).pipe(

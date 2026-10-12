@@ -17,7 +17,8 @@ import {
   formatLoanPurposeDisplay,
   resolveLoanTotalRepayableAmount,
   formatAdvancedLoanCode,
-  resolveLoanOutstandingExposure
+  resolveLoanOutstandingExposure,
+  normalizeLoanRepaymentStartDate
 } from '../../../service/loan/loan-display.util';
 
 interface LoanApprovalRow {
@@ -82,6 +83,8 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   showRejectModal = false;
   selectedLoanForRejection: LoanApplication | null = null;
   rejectionReason: string = '';
+  isSubmitting = false;
+  interestRateLocked = false;
   private readonly searchTermChanges = new Subject<string>();
   private readonly subscriptions = new Subscription();
 
@@ -523,43 +526,42 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
 
   // Approval methods
   openApprovalModal(loan: LoanApplication): void {
+    if (loan.status !== 'PENDING') {
+      return;
+    }
+
     this.selectedLoanForApproval = loan;
-    const codeToLookup = loan.purposeCode || loan.purpose;
-    this.loanPurposeService.getPurposeByCode(codeToLookup).subscribe((purpose: LoanPurposeData | null) => {
-      if (purpose && typeof purpose.defaultInterestRate === 'number') {
-        this.proposedInterestRate = Number(purpose.defaultInterestRate);
-        // Always set on the loan object for template binding
-        (this.selectedLoanForApproval as any).defaultInterestRate = Number(purpose.defaultInterestRate);
-      } else {
-        this.proposedInterestRate = 0;
-        (this.selectedLoanForApproval as any).defaultInterestRate = undefined;
-        this.messages = [
-          {
-            severity: 'error',
-            summary: 'Missing Interest Rate',
-            detail: 'No default interest rate is set for this loan purpose. Please set it in Loan Purpose Management before approving.'
-          }
-        ];
-        this.showApprovalModal = false;
-        return;
-      }
-      this.proposedLateFeePercentage = Number(loan.lateFeePercentage ?? 2);
-      this.proposedLateFeeGracePeriodDays = Number(loan.lateFeeGracePeriodDays ?? 15);
-      this.repaymentStartDate = loan.repaymentStartDate || this.getMinRepaymentDate();
-      this.proposedRepaymentDay = loan.repaymentDay || 0;
-      this.approvalNotes = '';
-      this.onRepaymentStartDateChange(this.repaymentStartDate);
+    this.proposedLateFeePercentage = Number(loan.lateFeePercentage ?? 2);
+    this.proposedLateFeeGracePeriodDays = Number(loan.lateFeeGracePeriodDays ?? 15);
+    this.repaymentStartDate = normalizeLoanRepaymentStartDate(loan.repaymentStartDate) || this.getMinRepaymentDate();
+    this.proposedRepaymentDay = loan.repaymentDay || 0;
+    this.approvalNotes = '';
+    this.onRepaymentStartDateChange(this.repaymentStartDate);
+
+    // Same rule as the loan-details screen: a purpose with a fixed rate locks it; otherwise
+    // (e.g. "other") the approver sets the rate, starting from the suggested one.
+    const applyRate = (fixedRate: number | null) => {
+      this.interestRateLocked = fixedRate !== null;
+      this.proposedInterestRate = fixedRate ?? (Number(loan.interestRate || 0) || this.loanApprovalService.determineInterestRate(loan));
       this.showApprovalModal = true;
-    }, (err) => {
-      this.messages = [
-        {
-          severity: 'error',
-          summary: 'Purpose Lookup Failed',
-          detail: 'Could not find loan purpose for this application. Please check the loan purpose code.'
-        }
-      ];
-      this.showApprovalModal = false;
+    };
+
+    this.loanApprovalService.getFixedPurposeInterestRate(loan).subscribe({
+      next: applyRate,
+      error: (err) => {
+        console.error('Error resolving purpose interest rate:', err);
+        applyRate(null);
+      }
     });
+  }
+
+  get isApprovalRateValid(): boolean {
+    const rate = Number(this.proposedInterestRate);
+    return this.proposedInterestRate !== null
+      && String(this.proposedInterestRate).trim() !== ''
+      && Number.isFinite(rate)
+      && rate >= 0
+      && rate <= 100;
   }
 
   getEmployeeInterestRejectionComment(loan: LoanApplication | null | undefined): string {
@@ -588,23 +590,28 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   closeApprovalModal(): void {
     this.showApprovalModal = false;
     this.selectedLoanForApproval = null;
+    this.interestRateLocked = false;
     this.repaymentStartDate = '';
     this.availableRepaymentDays = [];
     this.repaymentDayWarning = '';
   }
 
   submitApproval(): void {
-    if (!this.selectedLoanForApproval) return;
-    // Always use the fetched defaultInterestRate for approval
-    const rateToApprove = (this.selectedLoanForApproval as any).defaultInterestRate ?? this.proposedInterestRate;
-    if (typeof rateToApprove !== 'number' || rateToApprove <= 0) {
+    if (!this.selectedLoanForApproval || this.isSubmitting) return;
+    if (!this.isApprovalRateValid) {
       this.messages = [{
         severity: 'error',
-        summary: 'Missing Interest Rate',
-        detail: 'No valid interest rate found. Please check Loan Purpose Management.'
+        summary: 'Invalid Interest Rate',
+        detail: 'Enter an interest rate between 0% and 100%.'
       }];
       return;
     }
+    if (this.repaymentDayWarning) {
+      this.messages = [{ severity: 'error', summary: 'Invalid Repayment Day', detail: this.repaymentDayWarning }];
+      return;
+    }
+    const rateToApprove = Number(this.proposedInterestRate);
+    this.isSubmitting = true;
     this.loanApprovalService.approveLoan(
       this.selectedLoanForApproval.id,
       this.approvalNotes,
@@ -614,21 +621,23 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
       this.proposedLateFeePercentage,
       this.proposedLateFeeGracePeriodDays
     ).subscribe({
-      next: () => {
+      next: (approvedLoan) => {
+        this.isSubmitting = false;
         this.messages = [{
           severity: 'success',
           summary: 'Loan Approved',
-          detail: `Loan approved with default interest rate (${rateToApprove}%). No employee acceptance required.`
+          detail: `Loan approved with an interest rate of ${approvedLoan?.interestRate ?? rateToApprove}%.`
         }];
         this.closeApprovalModal();
         this.loadApplications();
       },
       error: (error) => {
+        this.isSubmitting = false;
         console.error('Error approving loan:', error);
         this.messages = [{
           severity: 'error',
           summary: 'Approval Failed',
-          detail: 'Failed to approve loan.'
+          detail: error?.message || 'Failed to approve loan.'
         }];
       }
     });
@@ -636,6 +645,9 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
 
   // Reject methods
   openRejectModal(loan: LoanApplication): void {
+    if (loan.status !== 'PENDING') {
+      return;
+    }
     this.selectedLoanForRejection = loan;
     this.rejectionReason = '';
     this.showRejectModal = true;
@@ -657,10 +669,12 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.selectedLoanForRejection) return;
+    if (!this.selectedLoanForRejection || this.isSubmitting) return;
 
+    this.isSubmitting = true;
     this.loanApprovalService.rejectLoan(this.selectedLoanForRejection.id, this.rejectionReason).subscribe({
       next: () => {
+        this.isSubmitting = false;
         this.messages = [{
           severity: 'success',
           summary: 'Loan Rejected',
@@ -670,6 +684,7 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
         this.loadApplications();
       },
       error: (error) => {
+        this.isSubmitting = false;
         console.error('Error rejecting loan:', error);
         this.messages = [{
           severity: 'error',

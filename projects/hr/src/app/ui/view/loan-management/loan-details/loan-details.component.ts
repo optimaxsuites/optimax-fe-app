@@ -57,6 +57,7 @@ export class LoanDetailsComponent implements OnInit {
   loan: LoanApplication | null = null;
   statusTimeline: StatusChange[] = [];
   isLoading: boolean = true;
+  isSubmitting = false;
   canChangeStatus: boolean = true;
   navigationSource: string = 'approval';
   
@@ -111,7 +112,8 @@ export class LoanDetailsComponent implements OnInit {
   ngOnInit(): void {
     this.navigationSource = window.history.state?.source || 'approval';
     // Load all loan purposes first
-    this.loanPurposeService.getAllPurposes().subscribe({
+    // Include inactive purposes so a since-deactivated purpose still fixes the rate.
+    this.loanPurposeService.getAllPurposes(false).subscribe({
       next: (purposes) => {
         this.loanPurposes = purposes;
         this.route.params.subscribe(params => {
@@ -337,7 +339,8 @@ formatDepartmentDisplay(department?: unknown): string {
     this.selectedAction = action;
     this.commentForm.reset();
     this.suggestedInterestRate = this.loan ? this.loanApprovalService.determineInterestRate(this.loan) : 0;
-    const currentInterestRate = Number(this.loan?.interestRate || this.suggestedInterestRate);
+    const currentInterestRate = this.resolvedPurposeDefaultInterestRate
+      ?? (Number(this.loan?.interestRate || 0) || this.suggestedInterestRate);
     
     this.commentForm.patchValue({
       interestRate: action === 'APPROVED' ? currentInterestRate : this.loan?.interestRate ?? 0,
@@ -394,7 +397,7 @@ formatDepartmentDisplay(department?: unknown): string {
   }
 
   submitOverrideStatusChange(): void {
-    if (!this.loan) {
+    if (!this.loan || this.isSubmitting) {
       return;
     }
 
@@ -407,8 +410,10 @@ formatDepartmentDisplay(department?: unknown): string {
       return;
     }
 
+    this.isSubmitting = true;
     this.loanApprovalService.overrideLoanStatus(this.loan.id, this.overrideTargetStatus, this.overrideReason.trim()).subscribe({
       next: () => {
+        this.isSubmitting = false;
         this.messages = [{
           severity: 'success',
           summary: 'Status Overridden',
@@ -418,6 +423,7 @@ formatDepartmentDisplay(department?: unknown): string {
         this.loadLoanDetails();
       },
       error: (error) => {
+        this.isSubmitting = false;
         console.error('Error overriding loan status:', error);
         this.messages = [{
           severity: 'error',
@@ -447,6 +453,7 @@ formatDepartmentDisplay(department?: unknown): string {
   submitStatusChange(): void {
     if (!this.loan) return;
     if (!this.selectedAction) return;
+    if (this.isSubmitting) return;
     
     if (this.selectedAction === 'REJECTED' && this.commentForm.invalid) {
       this.commentForm.markAllAsTouched();
@@ -477,6 +484,7 @@ formatDepartmentDisplay(department?: unknown): string {
       const lateFeePercentage = Number(this.commentForm.value.lateFeePercentage ?? 2);
       const lateFeeGracePeriodDays = Number(this.commentForm.value.lateFeeGracePeriodDays ?? 15);
       
+      this.isSubmitting = true;
       this.loanApprovalService.approveLoan(
         this.loan.id, 
         statusUpdate.notes, 
@@ -486,16 +494,18 @@ formatDepartmentDisplay(department?: unknown): string {
         lateFeePercentage,
         lateFeeGracePeriodDays
       ).subscribe({
-        next: () => {
+        next: (approvedLoan) => {
+          this.isSubmitting = false;
           this.messages = [{
             severity: 'success',
             summary: 'Loan Approved',
-            detail: `Loan approved with ${statusUpdate.interestRate}% interest rate.`
+            detail: `Loan approved with ${approvedLoan?.interestRate ?? statusUpdate.interestRate}% interest rate.`
           }];
           this.closeCommentModal();
           this.loadLoanDetails();
         },
         error: (error) => {
+          this.isSubmitting = false;
           console.error('Error approving loan:', error);
           this.messages = [{
             severity: 'error',
@@ -505,8 +515,10 @@ formatDepartmentDisplay(department?: unknown): string {
         }
       });
     } else {
+      this.isSubmitting = true;
       this.loanApprovalService.updateApplicationStatus(this.loan.id, statusUpdate).subscribe({
         next: () => {
+          this.isSubmitting = false;
           const actionVerb = this.selectedAction === 'REJECTED' ? 'rejected' : 'updated';
           this.messages = [{
             severity: 'success',
@@ -517,6 +529,7 @@ formatDepartmentDisplay(department?: unknown): string {
           this.loadLoanDetails();
         },
         error: (error) => {
+          this.isSubmitting = false;
           console.error('Error updating status:', error);
           const actionVerb = this.selectedAction === 'REJECTED' ? 'reject' : 'update';
           this.messages = [{
@@ -708,7 +721,13 @@ formatDepartmentDisplay(department?: unknown): string {
         ((p.name || '').trim().toLowerCase() === name)
       );
     }
-    return found && typeof found.defaultInterestRate === 'number' ? found.defaultInterestRate : null;
+    const rate = Number(found?.defaultInterestRate ?? 0);
+    return rate > 0 ? rate : null;
+  }
+
+  /** Same rule as the Loan Approval page: a purpose's fixed rate cannot be changed at approval. */
+  get isInterestRateLocked(): boolean {
+    return this.resolvedPurposeDefaultInterestRate !== null;
   }
 
   private toTitleCase(value: string): string {

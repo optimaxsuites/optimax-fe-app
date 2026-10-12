@@ -41,6 +41,14 @@ import {
 } from './loan-display.util';
 import { SUPPRESS_ERROR_TOAST } from '../../shared-component/service/error-message/error-toast.interceptor';
 
+/** Thrown when a save would overwrite changes another user made to the same loan. */
+export class LoanConcurrentModificationError extends Error {
+  constructor(message = 'This loan was updated by someone else while you were working on it. Reload the loan and try again.') {
+    super(message);
+    this.name = 'LoanConcurrentModificationError';
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -315,6 +323,12 @@ export class LoanService {
           return throwError(() => new Error('Loan not found on backend'));
         }
 
+        // Compare-and-set: the PUT below replaces the whole loan (schedule, payments, history), so
+        // refuse to send it if the server copy changed since this working copy was read.
+        if (application.serverFingerprint && application.serverFingerprint !== this.buildServerFingerprint(sourceLoan)) {
+          return throwError(() => new LoanConcurrentModificationError());
+        }
+
         const payload = this.toUpdatePayload(application, sourceLoan);
         
         if (isDevMode()) {
@@ -386,6 +400,8 @@ export class LoanService {
   }
 
   private toLoanApplication(loan: AdvanceLoan): LoanApplication {
+    // Taken before any local backfilling so it reflects exactly what the server returned.
+    const serverFingerprint = this.buildServerFingerprint(loan);
     this.backfillPersistedStatusActors(loan);
 
     const mappedRepaymentSchedule = (loan.repaymentSchedule || []).map((item, index) =>
@@ -510,7 +526,8 @@ export class LoanService {
       statusHistory,
       repaymentSchedule,
       paymentHistory,
-      supportingDocuments: []
+      supportingDocuments: [],
+      serverFingerprint
     };
   }
 
@@ -1431,7 +1448,10 @@ export class LoanService {
   }
 
   private deriveLateFeePercentage(loan: AdvanceLoan): number {
-    const explicitLateFeePercentage = Number((loan as any).lateFeePercentage || 0);
+    // Only treat the backend value as explicit when it was actually sent; `Number(undefined || 0)`
+    // would otherwise turn a missing field into a valid 0% and skip the fallbacks below.
+    const rawLateFeePercentage = (loan as any).lateFeePercentage;
+    const explicitLateFeePercentage = this.hasNumericValue(rawLateFeePercentage) ? Number(rawLateFeePercentage) : NaN;
     if (Number.isFinite(explicitLateFeePercentage) && explicitLateFeePercentage >= 0) {
       return Number(explicitLateFeePercentage.toFixed(2));
     }
@@ -1448,7 +1468,8 @@ export class LoanService {
   }
 
   private deriveLateFeeGracePeriodDays(loan: AdvanceLoan): number {
-    const explicitGracePeriodDays = Number((loan as any).lateFeeGracePeriodDays || 0);
+    const rawGracePeriodDays = (loan as any).lateFeeGracePeriodDays;
+    const explicitGracePeriodDays = this.hasNumericValue(rawGracePeriodDays) ? Number(rawGracePeriodDays) : NaN;
     if (Number.isFinite(explicitGracePeriodDays) && explicitGracePeriodDays >= 0) {
       return Math.round(explicitGracePeriodDays);
     }
@@ -1462,6 +1483,37 @@ export class LoanService {
     }
 
     return 15;
+  }
+
+  /**
+   * Stable summary of the business state a save could overwrite. Deliberately excludes display-only
+   * and actor fields that the client backfills locally.
+   */
+  private buildServerFingerprint(loan: AdvanceLoan): string {
+    const anyLoan = loan as any;
+    return JSON.stringify([
+      String(loan.status || '').toUpperCase(),
+      Number(loan.amount || 0),
+      Number(anyLoan.interestRate || 0),
+      this.normalizeDateValue(loan.approvedDate),
+      this.normalizeDateValue(loan.disbursedDate),
+      this.normalizeDateValue(loan.rejectedDate),
+      this.normalizeDateValue(loan.completedDate),
+      (loan.statusHistory || []).length,
+      (loan.paymentHistory || []).map((payment: any) => [payment.id, Number(payment.totalAmount || payment.amount || 0)]),
+      (loan.repaymentSchedule || []).map((item: any) => [
+        item.installmentNo,
+        String(item.status || ''),
+        Number(item.paidAmount || 0),
+        this.normalizeDateValue(item.dueDate),
+        Number(item.lateFeeAmount || 0)
+      ]),
+      (loan.gracePeriodRequests || []).map((request: any) => [request.id, String(request.status || '')])
+    ]);
+  }
+
+  private hasNumericValue(value: unknown): boolean {
+    return value !== null && value !== undefined && String(value).trim() !== '';
   }
 
   private getDefaultInterestRate(modeOfPayment?: string, tenureMonths = 0): number {

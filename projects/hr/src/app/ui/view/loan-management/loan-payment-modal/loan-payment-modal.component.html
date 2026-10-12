@@ -32,6 +32,10 @@
         <span>Due Date:</span>
         <strong>{{ (currentInstallment?.dueDate || currentLoan?.repaymentStartDate) | date:'mediumDate' }}</strong>
       </div>
+      <div class="summary-row" *ngIf="currentInstallment">
+        <span>Installment Balance:</span>
+        <strong>{{ formatCurrency(dueAmount) }} ({{ formatCurrency(remainingPrincipalDue) }} principal + {{ formatCurrency(remainingInterestDue) }} interest)</strong>
+      </div>
       <div class="summary-row total">
         <span>{{ paymentAmountLabel }}:</span>
         <strong class="amount">{{ formatCurrency(selectedAmountDue) }}</strong>

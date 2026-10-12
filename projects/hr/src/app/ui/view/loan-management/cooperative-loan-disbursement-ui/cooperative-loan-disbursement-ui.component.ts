@@ -6,6 +6,7 @@ import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { CooperativeLoanGroup, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { formatLoanPurposeDisplay, resolveLoanActorName } from '../../../service/loan/loan-display.util';
+import { resolveCooperativeTotalRepayable } from '../../../service/loan/cooperative-loan/cooperative-loan-amounts.util';
 import { EmployeeService } from '../../../service/employee.service';
 import { MailNotificationService } from '../../../service/mailNotification.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -122,47 +123,47 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   }
 
   loadAllData(): void {
-  // Load groups first (most important for financial fields)
+  // Groups, members and loans load in parallel: loans used to wait for groups to succeed, so a slow or
+  // failed groups call (or the members 500) left the disbursement queue empty.
   this.cooperativeService.loadGroups().subscribe({
     next: (groups) => {
       this.groups = groups;
       this.isGroupsLoading = false;
-      
-      // After groups are loaded, load members and loans
-      this.cooperativeService.getMembers().subscribe({
-        next: (members) => {
-          this.members = members;
-          this.isMembersLoading = false;
-        },
-        error: () => {
-          this.isMembersLoading = false;
-        }
-      });
-      
-      this.cooperativeService.refreshLoans().subscribe({
-        next: (loans) => {
-          this.loans = loans;
-          this.isLoansLoading = false;
-          
-          const requestedLoanId = String(this.route.snapshot.queryParamMap.get('loanId') || '').trim();
-          const defaultLoan = this.readyForDisbursementLoans[0] || this.approvedLoans[0] || null;
-          const selectedLoan = [...this.readyForDisbursementLoans, ...this.approvedLoans].find((loan) => String(loan.id) === requestedLoanId) || defaultLoan;
-          if (selectedLoan) {
-            this.selectLoan(selectedLoan);
-          }
-        },
-        error: () => {
-          this.isLoansLoading = false;
-          this.showMessage('error', 'Load Failed', 'The cooperative disbursement queue could not be loaded.');
-        }
-      });
     },
     error: () => {
       this.isGroupsLoading = false;
       this.showMessage('error', 'Load Failed', 'Could not load cooperative groups.');
     }
   });
-  
+
+  this.cooperativeService.getMembers().subscribe({
+    next: (members) => {
+      this.members = members;
+      this.isMembersLoading = false;
+    },
+    error: () => {
+      this.isMembersLoading = false;
+    }
+  });
+
+  this.cooperativeService.refreshLoans().subscribe({
+    next: (loans) => {
+      this.loans = loans;
+      this.isLoansLoading = false;
+
+      const requestedLoanId = String(this.route.snapshot.queryParamMap.get('loanId') || '').trim();
+      const defaultLoan = this.readyForDisbursementLoans[0] || this.approvedLoans[0] || null;
+      const selectedLoan = [...this.readyForDisbursementLoans, ...this.approvedLoans].find((loan) => String(loan.id) === requestedLoanId) || defaultLoan;
+      if (selectedLoan) {
+        this.selectLoan(selectedLoan);
+      }
+    },
+    error: () => {
+      this.isLoansLoading = false;
+      this.showMessage('error', 'Load Failed', 'The cooperative disbursement queue could not be loaded.');
+    }
+  });
+
   // Load group memberships
   this.cooperativeService.loadGroupMemberships().subscribe();
 }
@@ -468,8 +469,8 @@ sendToAccounting(): void {
   const memberName = this.getMemberName(loan);
   
   const approvedAmount = Number(loan.approvedAmount || loan.amount || 0);
-  // Keep totalRepayable for metadata visibility only.
-  const totalRepayable = approvedAmount * (1 + (Number(group.interestRate || 0) / 100));
+  // Metadata only; same figure the member saw when applying.
+  const totalRepayable = resolveCooperativeTotalRepayable(loan, group.interestRate);
 
   this.isSubmitting = true;
   
@@ -961,7 +962,7 @@ isBatchSelected(loan: CooperativeLoan): boolean {
     // Step 1: Concurrently post accounting events
     const accountingRequests = loanRefs.map(({ loan, reference, employeeDetails, group }) => {
       const approvedAmount = Number(loan.approvedAmount || loan.amount || 0);
-      const totalRepayable = group ? approvedAmount * (1 + (Number(group.interestRate || 0) / 100)) : approvedAmount;
+      const totalRepayable = resolveCooperativeTotalRepayable(loan, group?.interestRate);
       const memberName = this.getMemberName(loan);
       const loanNote = this.getStoredLoanNote(loan) || this.emailNotes;
 
@@ -1031,6 +1032,15 @@ isBatchSelected(loan: CooperativeLoan): boolean {
               .filter((l): l is CooperativeLoan => !!l)
               .map(updated => this.cooperativeService.loadLoanById(updated.id));
 
+            const skippedCount = updatedLoans.length - reloadRequests.length;
+            if (!reloadRequests.length) {
+              // forkJoin([]) completes without emitting, which used to leave the spinner running.
+              this.isSubmitting = false;
+              this.submissionProgress = 0;
+              this.showMessage('warn', 'Statuses Not Updated', 'Accounting events were posted, but none of the selected loans could be moved to Sent to Accounting. Reload and check them before retrying.');
+              return;
+            }
+
             forkJoin(reloadRequests).subscribe({
               next: (freshLoans) => {
                 this.submissionProgress = 100;
@@ -1048,7 +1058,11 @@ isBatchSelected(loan: CooperativeLoan): boolean {
                 this.clearBatchSelection();
                 this.selectedDisbursementLoan = null;
                 this.selectedLoanId = '';
-                this.showMessage('success', 'Batch Sent', `${loans.length} disbursement request(s) sent to accounting successfully.`);
+                if (skippedCount > 0) {
+                  this.showMessage('warn', 'Batch Partially Updated', `${reloadRequests.length} loan(s) sent to accounting. ${skippedCount} loan(s) had their accounting event posted but their status could not be updated; reload and check them before retrying.`);
+                } else {
+                  this.showMessage('success', 'Batch Sent', `${loans.length} disbursement request(s) sent to accounting successfully.`);
+                }
               },
               error: () => {
                 this.isSubmitting = false;
