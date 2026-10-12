@@ -215,7 +215,19 @@
             </div>
             <div class="detail-row" *ngIf="modeOfPayment?.value === 'MONTHLY' && repaymentTime?.value">
               <span>Over {{ repaymentTime?.value }} months</span>
-              <strong>{{ (amount?.value / repaymentTime?.value) | currency:'NGN':'symbol':'1.2-2' }}/month</strong>
+              <strong>{{ repaymentBreakdown.repaymentAmount | currency:'NGN':'symbol':'1.2-2' }}/month</strong>
+            </div>
+            <div class="detail-row" *ngIf="repaymentTime?.value && previewInterestRate !== null">
+              <span>Interest ({{ previewInterestRate }}%)</span>
+              <strong>{{ repaymentBreakdown.totalInterest | currency:'NGN':'symbol':'1.2-2' }}</strong>
+            </div>
+            <div class="detail-row" *ngIf="repaymentTime?.value && previewInterestRate !== null">
+              <span>Total Repayable</span>
+              <strong>{{ repaymentBreakdown.totalRepayment | currency:'NGN':'symbol':'1.2-2' }}</strong>
+            </div>
+            <div class="detail-row" *ngIf="repaymentTime?.value && previewInterestRate === null">
+              <span>Interest</span>
+              <strong>Set at approval (not included above)</strong>
             </div>
             <div class="detail-row" *ngIf="modeOfPayment?.value === 'MONTHLY' && repaymentTime?.value && repaymentDay?.value">
               <span>Due date</span>

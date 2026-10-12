@@ -660,8 +660,13 @@ export class CooperativeService {
 }
 
 private fetchDetailedGroups(rawGroups: CooperativeGroupApiResponse[]): Observable<CooperativeGroupApiResponse[]> {
-  // Fetch details for ALL groups, not just those that appear incomplete
-  // This ensures accounting fields are always populated
+  // The list endpoint already returns every field the detail endpoint does (accounting fields included),
+  // so fetching each group again only added one ~1s request per group to every dashboard load.
+  return of(rawGroups);
+}
+
+// Kept for reference: per-group detail fetch, no longer needed (see fetchDetailedGroups).
+private fetchEachGroupDetail(rawGroups: CooperativeGroupApiResponse[]): Observable<CooperativeGroupApiResponse[]> {
   return forkJoin(
     rawGroups.map((rawGroup) => 
       this.cooperativeGroupService.getCooperativeGroupById(Number(rawGroup.id)).pipe(
@@ -1408,7 +1413,16 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
           return [];
         }
         // this.mergeLoanReferenceData(rawLoans);
-        const loans = rawLoans.map((loan) => this.mapApiLoanToLoan(loan));
+        // Map each record on its own: one malformed record (the backend has some with no status/fields)
+        // must not throw and replace the whole list with [] via catchError below.
+        const loans = rawLoans.flatMap((loan) => {
+          try {
+            return [this.mapApiLoanToLoan(loan)];
+          } catch (mappingError) {
+            console.warn('Skipping cooperative loan that could not be mapped:', loan?.id, mappingError);
+            return [];
+          }
+        });
         this.syncLoanCache(loans);
         return loans;
       }),

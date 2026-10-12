@@ -27,13 +27,14 @@ import { CommonModule, Location } from '@angular/common';
 import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, Subscription, forkJoin } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Observable, Subject, Subscription, forkJoin, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeMember, CooperativeLoanGroup, CooperativeGroupMembership } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { RepaymentDayHelperService } from '../../../service/loan/repayment-day-helper.service';
 import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import { resolveCooperativeTotalRepayable } from '../../../service/loan/cooperative-loan/cooperative-loan-amounts.util';
 import { BackButtonModule } from '../../../shared-component/view/back-button/back-button.module';
 import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 
@@ -171,11 +172,19 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
     const loadProfiler = startLoanLoadProfiler('cooperative-loan-approval');
     this.isLoading = true;
     
+    // Each source falls back to empty on failure so one broken endpoint (e.g. members 500) doesn't hide the loans.
+    const orEmpty = <T>(source: Observable<T[]>, label: string): Observable<T[]> => source.pipe(
+      catchError((error) => {
+        console.error(`[CooperativeLoanApproval] Failed to load ${label}:`, error);
+        return of([] as T[]);
+      })
+    );
+
     forkJoin({
-      groups: this.cooperativeService.loadGroups(),
-      members: this.cooperativeService.getMembers(),
-      loans: this.cooperativeService.refreshLoans(),
-      memberships: this.cooperativeService.loadGroupMemberships()
+      groups: orEmpty(this.cooperativeService.loadGroups(), 'groups'),
+      members: orEmpty(this.cooperativeService.getMembers(), 'members'),
+      loans: orEmpty(this.cooperativeService.refreshLoans(), 'loans'),
+      memberships: orEmpty(this.cooperativeService.loadGroupMemberships(), 'memberships')
     }).subscribe({
       next: ({ groups, members, loans, memberships }) => {
         this.groups = groups;
@@ -377,12 +386,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   getTotalRepayable(loan: CooperativeLoan): number {
-    if (loan.totalRepayable) return Number(loan.totalRepayable);
-    const amount = Number(loan.amount || 0);
-    const group = this.getGroupForLoan(loan);
-    const rate = Number(group?.interestRate || 0) / 100;
-    const months = Number(loan.repaymentTime || loan.duration || 1);
-    return amount + (amount * rate * months);
+    return resolveCooperativeTotalRepayable(loan, this.getGroupForLoan(loan)?.interestRate);
   }
 
   getStatusClass(status: string | undefined): string {

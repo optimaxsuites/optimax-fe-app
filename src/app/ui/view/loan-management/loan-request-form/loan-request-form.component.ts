@@ -11,6 +11,7 @@ import { ErrorMessageService } from '../../../shared-component/service/error-mes
 import { LoanPurposeService, LoanPurposeData } from '../../../service/loan/loan-purpose.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
 import { EmployeeService } from '../../../service/employee.service';
+import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 
 interface SalaryAllowanceItem {
   amount?: number;
@@ -68,13 +69,16 @@ export class LoanRequestFormComponent implements OnInit {
   monthlySalary = 0;
   isLoadingSalary = false;
 
+  repaymentBreakdown = { repaymentAmount: 0, totalRepayment: 0, totalInterest: 0 };
+
   constructor(
     private fb: FormBuilder,
     private loanApplicationService: LoanApplicationService,
     private errorMessageService: ErrorMessageService,
     private loanPurposeService: LoanPurposeService,
     private employeeLoanService: EmployeeLoanService,
-    private employeeService: EmployeeService
+    private employeeService: EmployeeService,
+    private loanApprovalService: LoanApprovalService
   ) {}
 
   private unwrapSalaryPayload(payload: unknown): EmployeeSalaryResponse {
@@ -229,6 +233,9 @@ export class LoanRequestFormComponent implements OnInit {
         this.defaultInterestAcknowledged = false;
         this.pendingPurposeCode = null;
       }
+
+      // The preview's interest rate depends on the selected purpose.
+      this.calculateRepaymentAmount();
     });
   }
 
@@ -405,18 +412,31 @@ export class LoanRequestFormComponent implements OnInit {
     });
   }
 
+  /**
+   * Interest rate the preview can honestly apply: the purpose's fixed rate if it has one.
+   * Purposes without a fixed rate get their rate at approval, so the preview shows principal only.
+   */
+  get previewInterestRate(): number | null {
+    const rate = Number(this.selectedPurposeDefinition?.defaultInterestRate ?? 0);
+    return rate > 0 ? rate : null;
+  }
+
   calculateRepaymentAmount(): void {
-    const amount = this.loanRequestForm.get('amount')?.value;
-    const repaymentTime = this.loanRequestForm.get('repaymentTime')?.value;
+    const amount = Number(this.loanRequestForm.get('amount')?.value || 0);
+    const repaymentTime = Number(this.loanRequestForm.get('repaymentTime')?.value || 0);
     const modeOfPayment = this.loanRequestForm.get('modeOfPayment')?.value;
-    
-    if (amount && repaymentTime) {
-      if (modeOfPayment === 'ONE_OFF') {
-        this.loanRequestForm.get('repaymentAmountAmount')?.setValue(amount);
-      } else {
-        const repaymentAmount = amount / repaymentTime;
-        this.loanRequestForm.get('repaymentAmountAmount')?.setValue(Number(repaymentAmount.toFixed(2)));
-      }
+
+    if (amount > 0 && repaymentTime > 0) {
+      // Same amortisation the approval step uses to build the repayment schedule.
+      this.repaymentBreakdown = this.loanApprovalService.calculateRepaymentBreakdown(
+        amount,
+        repaymentTime,
+        this.previewInterestRate ?? 0,
+        modeOfPayment === 'ONE_OFF' ? 'ONE_OFF' : 'MONTHLY'
+      );
+      this.loanRequestForm.get('repaymentAmountAmount')?.setValue(this.repaymentBreakdown.repaymentAmount);
+    } else {
+      this.repaymentBreakdown = { repaymentAmount: 0, totalRepayment: 0, totalInterest: 0 };
     }
   }
 
@@ -506,7 +526,9 @@ export class LoanRequestFormComponent implements OnInit {
 
   acceptInterestAndContinue(): void {
     if (this.defaultInterestAcknowledged && this.pendingPurposeCode) {
-      this.loanRequestForm.patchValue({ purpose: this.pendingPurposeCode });
+      // emitEvent: false — re-emitting would re-run the purpose listener, which reopens the modal
+      // and resets defaultInterestAcknowledged, so the consent was always submitted as false.
+      this.loanRequestForm.patchValue({ purpose: this.pendingPurposeCode }, { emitEvent: false });
       const purposeControl = this.loanRequestForm.get('purpose');
       purposeControl?.markAsDirty();
       purposeControl?.markAsTouched();

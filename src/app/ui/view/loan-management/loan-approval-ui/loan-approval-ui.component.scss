@@ -560,6 +560,31 @@ app-loan-approval-ui {
               transform: translateY(-2px);
             }
           }
+
+          &.approve-action-btn {
+            color: #15803d;
+            background: rgba(22, 163, 74, 0.1);
+
+            &:hover:not(:disabled) {
+              background: rgba(22, 163, 74, 0.2);
+              transform: translateY(-2px);
+            }
+          }
+
+          &.reject-action-btn {
+            color: #b91c1c;
+            background: rgba(220, 38, 38, 0.08);
+
+            &:hover:not(:disabled) {
+              background: rgba(220, 38, 38, 0.16);
+              transform: translateY(-2px);
+            }
+          }
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
         }
       }
     }
@@ -867,9 +892,15 @@ app-loan-approval-ui {
           box-shadow: 0 2px 8px rgba(46, 178, 112, 0.3);
           transition: all 0.2s;
 
-          &:hover {
+          &:hover:not(:disabled) {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(46, 178, 112, 0.4);
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none;
           }
         }
 
@@ -888,9 +919,15 @@ app-loan-approval-ui {
           box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
           transition: all 0.2s;
 
-          &:hover {
+          &:hover:not(:disabled) {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none;
           }
         }
       }

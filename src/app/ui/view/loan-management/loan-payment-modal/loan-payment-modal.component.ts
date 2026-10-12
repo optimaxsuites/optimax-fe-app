@@ -92,14 +92,63 @@ export class LoanPaymentModalComponent implements OnInit, OnChanges {
     return this.allowLoanSelection && !this.installment && this.availableLoans.length > 1;
   }
 
+  /** Amount still owed on the current installment (principal + interest), net of partial payments. */
   get dueAmount(): number {
     if (this.currentInstallment) {
-      return this.currentInstallment.totalAmount;
+      return this.roundCurrency(this.remainingPrincipalDue + this.remainingInterestDue);
     }
     if (this.currentLoan) {
       return this.currentLoan.repaymentAmount;
     }
     return 0;
+  }
+
+  /**
+   * How much of the current installment's principal / interest / late fee has already been paid.
+   * Uses the per-component split recorded in the loan's payment history; if the history has no split
+   * for this installment, the installment's aggregate paidAmount is applied to interest first, then
+   * principal (the usual allocation order).
+   */
+  private get installmentPaidBreakdown(): { principal: number; interest: number; lateFee: number } {
+    const installment = this.currentInstallment;
+    if (!installment) {
+      return { principal: 0, interest: 0, lateFee: 0 };
+    }
+
+    const payments = (this.currentLoan?.paymentHistory || [])
+      .filter((payment) => Number(payment.installmentNo) === Number(installment.installmentNo));
+    const fromHistory = payments.reduce((sum, payment) => ({
+      principal: sum.principal + Number(payment.principalAmount || 0),
+      interest: sum.interest + Number(payment.interestPaid || 0),
+      lateFee: sum.lateFee + Number(payment.lateFeeAmount || 0)
+    }), { principal: 0, interest: 0, lateFee: 0 });
+
+    if (fromHistory.principal + fromHistory.interest + fromHistory.lateFee > 0) {
+      return fromHistory;
+    }
+
+    const paid = Math.max(Number(installment.paidAmount || 0), 0);
+    const interestDue = Number(installment.interestAmount || 0);
+    const interest = Math.min(paid, interestDue);
+    return { principal: paid - interest, interest, lateFee: 0 };
+  }
+
+  get remainingPrincipalDue(): number {
+    if (!this.currentInstallment) {
+      return 0;
+    }
+    return this.roundCurrency(Math.max(Number(this.currentInstallment.principalAmount || 0) - this.installmentPaidBreakdown.principal, 0));
+  }
+
+  get remainingInterestDue(): number {
+    if (!this.currentInstallment) {
+      return 0;
+    }
+    return this.roundCurrency(Math.max(Number(this.currentInstallment.interestAmount || 0) - this.installmentPaidBreakdown.interest, 0));
+  }
+
+  private roundCurrency(value: number): number {
+    return Number(value.toFixed(2));
   }
 
   get selectedPaymentType(): 'PRINCIPAL_REPAYMENT' | 'INTEREST_REPAYMENT' | 'LATE_FEE' {
@@ -123,15 +172,23 @@ export class LoanPaymentModalComponent implements OnInit, OnChanges {
   }
 
   get lateFeeAmountDue(): number {
-    return Number(this.currentInstallment?.lateFeeAmount || 0);
+    const lateFee = Number(this.currentInstallment?.lateFeeAmount || 0);
+    return this.roundCurrency(Math.max(lateFee - this.installmentPaidBreakdown.lateFee, 0));
   }
 
+  /** The outstanding amount for the chosen payment type only. */
   get selectedAmountDue(): number {
-    if (this.selectedPaymentType === 'LATE_FEE') {
-      return this.lateFeeAmountDue;
+    switch (this.selectedPaymentType) {
+      case 'LATE_FEE':
+        return this.lateFeeAmountDue;
+      case 'INTEREST_REPAYMENT':
+        return this.currentInstallment ? this.remainingInterestDue : 0;
+      case 'PRINCIPAL_REPAYMENT':
+      default:
+        // Without a schedule row there is no principal/interest split, so fall back to the loan's
+        // repayment amount rather than recording nothing.
+        return this.currentInstallment ? this.remainingPrincipalDue : this.dueAmount;
     }
-
-    return this.dueAmount;
   }
 
   get lateFeeTotalExposure(): number {
@@ -143,7 +200,14 @@ export class LoanPaymentModalComponent implements OnInit, OnChanges {
   }
 
   get paymentAmountLabel(): string {
-    return this.selectedPaymentType === 'LATE_FEE' ? 'Late Fee Due' : 'Amount Due';
+    switch (this.selectedPaymentType) {
+      case 'LATE_FEE':
+        return 'Late Fee Due';
+      case 'INTEREST_REPAYMENT':
+        return 'Interest Due';
+      default:
+        return this.currentInstallment ? 'Principal Due' : 'Amount Due';
+    }
   }
 
   get selectedPaymentTypeLabel(): string {
@@ -152,8 +216,21 @@ export class LoanPaymentModalComponent implements OnInit, OnChanges {
   }
 
   onSubmit(): void {
+    if (this.isLoading) {
+      return;
+    }
+
     if (this.paymentForm.invalid || !this.currentLoan) {
       this.paymentForm.markAllAsTouched();
+      return;
+    }
+
+    if (this.selectedAmountDue <= 0) {
+      this.messages = [{
+        severity: 'info',
+        summary: 'Nothing Due',
+        detail: `There is no outstanding ${this.selectedPaymentTypeLabel.toLowerCase()} on this installment.`
+      }];
       return;
     }
 

@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment';
+import { fetchAllPages } from './paginated-fetch.util';
 import { getTokenFromStorage } from './cooperative-loan/token-util';
 
 export interface CooperativeGracePeriodRequest {
@@ -64,17 +65,24 @@ export class CooperativeGracePeriodService {
     return tenant && tenant !== 'undefined' && tenant !== 'null' ? tenant : 'optimax';
   }
 
+  /** All matching requests across every page, or just `params.page` when one is given. */
   getAllRequests(params?: { page?: number; size?: number; loanId?: number; memberId?: number; status?: string }): Observable<CooperativeGracePeriodRequest[]> {
-    let httpParams = new HttpParams();
-    if (params?.page) httpParams = httpParams.set('page', params.page.toString());
-    if (params?.size) httpParams = httpParams.set('size', params.size.toString());
-    if (params?.loanId) httpParams = httpParams.set('loanId', params.loanId.toString());
-    if (params?.memberId) httpParams = httpParams.set('memberId', params.memberId.toString());
-    if (params?.status) httpParams = httpParams.set('status', params.status);
-    return this.http.get<CooperativeGracePeriodRequest[]>(this.baseUrl, {
-      headers: this.getHeaders(),
-      params: httpParams
-    }).pipe(map(res => res as CooperativeGracePeriodRequest[]));
+    const fetchPage = (page: number) => {
+      let httpParams = new HttpParams().set('page', page.toString());
+      if (params?.size) httpParams = httpParams.set('size', params.size.toString());
+      if (params?.loanId) httpParams = httpParams.set('loanId', params.loanId.toString());
+      if (params?.memberId) httpParams = httpParams.set('memberId', params.memberId.toString());
+      if (params?.status) httpParams = httpParams.set('status', params.status);
+      return this.http.get<unknown>(this.baseUrl, {
+        headers: this.getHeaders(),
+        params: httpParams
+      });
+    };
+
+    if (params?.page) {
+      return fetchPage(params.page).pipe(map((res: any) => (Array.isArray(res) ? res : res?.content || []) as CooperativeGracePeriodRequest[]));
+    }
+    return fetchAllPages<CooperativeGracePeriodRequest>(fetchPage);
   }
 
   getRequestById(id: number): Observable<CooperativeGracePeriodRequest> {

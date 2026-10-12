@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Message } from 'primeng/api';
 import { AdvanceGracePeriodService, CreateGracePeriodRequestPayload } from '../../../service/loan/loan-grace-period.service';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
+import { isLoanEligibleForExtension } from '../../../service/loan/loan-display.util';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeRepayment } from '../../../service/loan/cooperative-loan/cooperative.types';
@@ -112,7 +113,7 @@ export class GracePeriodRequestsComponent implements OnInit, OnChanges, AfterVie
   }
 
   get availableActiveLoans(): LoanApplication[] {
-    return (this.availableLoans || []).filter((loan) => loan.status === 'ACTIVE');
+    return (this.availableLoans || []).filter((loan) => isLoanEligibleForExtension(loan));
   }
 
   get showLoanSelector(): boolean {

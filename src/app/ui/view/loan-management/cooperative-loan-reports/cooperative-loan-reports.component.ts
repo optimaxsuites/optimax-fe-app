@@ -2,8 +2,8 @@ import { CommonModule, formatDate } from '@angular/common';
 import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, Subscription, forkJoin } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Observable, Subject, Subscription, forkJoin, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import * as XLSX from 'xlsx';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
@@ -178,12 +178,20 @@ export class CooperativeLoanReportsComponent implements OnInit, OnDestroy {
   loadData(): void {
     const loadProfiler = startLoanLoadProfiler('cooperative-loan-reports');
     this.isLoading = true;
+    // Each source falls back to empty on failure so one broken endpoint (e.g. members 500) doesn't hide the loans.
+    const orEmpty = <T>(source: Observable<T[]>, label: string): Observable<T[]> => source.pipe(
+      catchError((error) => {
+        console.error(`[CooperativeLoanReports] Failed to load ${label}:`, error);
+        return of([] as T[]);
+      })
+    );
+
     forkJoin({
-      loans: this.cooperativeService.getLoans(),
-      members: this.cooperativeService.getMembers(),
-      groups: this.cooperativeService.loadGroups(),
-      memberships: this.cooperativeService.loadGroupMemberships(), // Batch fetch all memberships
-      purposes: this.cooperativeLoanPurposeService.getAllPurposes(false)
+      loans: orEmpty(this.cooperativeService.getLoans(), 'loans'),
+      members: orEmpty(this.cooperativeService.getMembers(), 'members'),
+      groups: orEmpty(this.cooperativeService.loadGroups(), 'groups'),
+      memberships: orEmpty(this.cooperativeService.loadGroupMemberships(), 'memberships'), // Batch fetch all memberships
+      purposes: orEmpty(this.cooperativeLoanPurposeService.getAllPurposes(false), 'purposes')
     }).subscribe({
       next: ({ loans, members, groups, memberships, purposes }) => {
         this.loans = loans;
@@ -352,32 +360,31 @@ export class CooperativeLoanReportsComponent implements OnInit, OnDestroy {
     return `${lateFeePercentage}% after ${lateFeeGraceDays} day(s)`;
   }
 
+  /**
+   * Late fees on a cooperative loan, matching how the repayment service charges them: an installment
+   * only becomes OVERDUE after the group's grace period, and its fee (installment amount x rate) is
+   * then recorded on lateFeeAmount. Uses the real repayment list, as the loan detail page does.
+   */
   private calculateTotalLateFees(loan: CooperativeLoan, lateFeePercentage: number): number {
-    if (!lateFeePercentage || lateFeePercentage <= 0) {
+    const inRepayment = ['ACTIVE', 'OVERDUE', 'SKIPPED', 'PAUSED', 'DEFAULTED', 'COMPLETED'].includes(String(loan.status || ''));
+    if (!inRepayment) {
       return 0;
     }
 
-    const schedule = Array.isArray((loan as any).repaymentSchedule) ? (loan as any).repaymentSchedule : [];
-    const overdueInstallments = schedule.filter((item: any) => String(item?.status || '').toUpperCase() === 'OVERDUE');
-
-    if (!overdueInstallments.length) {
-      return 0;
-    }
-
-    let totalLateFees = 0;
-    for (const installment of overdueInstallments) {
-      const principalAmount = Number(
-        installment?.principalAmount ?? installment?.principal ?? installment?.amount ?? installment?.totalAmount ?? 0
-      );
-      if (!Number.isFinite(principalAmount) || principalAmount <= 0) {
-        continue;
+    const totalLateFees = this.cooperativeService.getRepaymentsByLoanId(loan.id).reduce((sum, repayment) => {
+      const recordedLateFee = Number(repayment.lateFeeAmount || 0);
+      if (recordedLateFee > 0) {
+        return sum + recordedLateFee;
       }
-      totalLateFees += principalAmount * (lateFeePercentage / 100);
-    }
+      // Overdue but not yet accrued locally: estimate with the same base the service uses.
+      if (repayment.status === 'OVERDUE' && lateFeePercentage > 0) {
+        return sum + Number(repayment.amount || 0) * (lateFeePercentage / 100);
+      }
+      return sum;
+    }, 0);
 
     return Number(totalLateFees.toFixed(2));
   }
-
 
   resetFilters(): void {
     this.filters = {

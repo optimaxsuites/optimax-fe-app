@@ -10,7 +10,7 @@ export function formatAdvancedLoanCode(raw: string | number | undefined | null):
   if (!code) return '';
   return code.startsWith('ADV-') ? code : `ADV-${code}`;
 }
-import { LoanApplication, LoanAuditUser, PaymentRecord } from './loan.types';
+import { LoanApplication, LoanAuditUser, PaymentRecord, RepaymentScheduleItem } from './loan.types';
 
 const loanActorCacheKey = 'advance-loan-actor-name-cache';
 const loanStatusActorCacheKey = 'advance-loan-status-actor-cache';
@@ -1199,4 +1199,57 @@ function parseSortableNumber(value: string): number | null {
 
   const parsedValue = Number(normalizedValue);
   return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+/** Loan statuses whose borrower may ask for a payment extension (overdue borrowers need it most). */
+export const LOAN_EXTENSION_ELIGIBLE_STATUSES: ReadonlyArray<LoanApplication['status']> = ['ACTIVE', 'OVERDUE'];
+
+export function isLoanEligibleForExtension(loan: Pick<LoanApplication, 'status'> | null | undefined): boolean {
+  return !!loan && LOAN_EXTENSION_ELIGIBLE_STATUSES.includes(loan.status);
+}
+
+/**
+ * Late fee on one installment, matching how LoanRepaymentService charges it: the recorded
+ * lateFeeAmount when there is one; otherwise, for an OVERDUE installment past the late-fee grace
+ * period, the late-fee percentage of the unpaid principal + interest.
+ */
+export function resolveInstallmentLateFee(
+  item: Pick<RepaymentScheduleItem, 'status' | 'dueDate' | 'principalAmount' | 'interestAmount' | 'paidAmount' | 'lateFeeAmount'>,
+  loan: Pick<LoanApplication, 'id' | 'loanCode'> & Partial<Pick<LoanApplication, 'lateFeePercentage' | 'lateFeeGracePeriodDays'>>,
+  today: Date = new Date()
+): number {
+  const recordedLateFee = Number(item.lateFeeAmount || 0);
+  if (recordedLateFee > 0) {
+    return Number(recordedLateFee.toFixed(2));
+  }
+
+  if (item.status !== 'OVERDUE') {
+    return 0;
+  }
+
+  const dueDate = new Date(item.dueDate);
+  if (Number.isNaN(dueDate.getTime())) {
+    return 0;
+  }
+  dueDate.setHours(0, 0, 0, 0);
+  const startOfToday = new Date(today);
+  startOfToday.setHours(0, 0, 0, 0);
+  const overdueDays = Math.floor((startOfToday.getTime() - dueDate.getTime()) / (24 * 60 * 60 * 1000));
+  if (overdueDays < (resolveLoanLateFeeGracePeriodDays(loan) ?? 15)) {
+    return 0;
+  }
+
+  const unpaidInstallmentAmount = Math.max(
+    Number(item.principalAmount || 0) + Number(item.interestAmount || 0) - Number(item.paidAmount || 0),
+    0
+  );
+  return Number((unpaidInstallmentAmount * ((resolveLoanLateFeePercentage(loan) ?? 2) / 100)).toFixed(2));
+}
+
+export function resolveLoanTotalLateFees(
+  loan: Pick<LoanApplication, 'id' | 'loanCode' | 'repaymentSchedule'> & Partial<Pick<LoanApplication, 'lateFeePercentage' | 'lateFeeGracePeriodDays'>>,
+  today: Date = new Date()
+): number {
+  const total = (loan.repaymentSchedule || [])
+    .reduce((sum, item) => sum + resolveInstallmentLateFee(item, loan, today), 0);
+  return Number(total.toFixed(2));
 }

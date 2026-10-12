@@ -5,7 +5,7 @@ import { LoanApplication, LoanApplicationFormData } from './loan.types';
 import { LoanService } from './loan.service';
 import { EmployeeService } from '../../service/employee.service';
 import { LoanStatusNotificationService } from './loan-status-notification.service';
-import { catchError, map, switchMap, tap } from 'rxjs/operators';
+import { catchError, filter, finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -13,7 +13,10 @@ import { catchError, map, switchMap, tap } from 'rxjs/operators';
 export class LoanApplicationService {
   private readonly applicationsSubject = new BehaviorSubject<LoanApplication[]>([]);
   private readonly applicationsCacheKeyPrefix = 'advance-loan-applications-cache';
+  private static readonly APPLICATIONS_TTL_MS = 60 * 1000;
   private hasLoadedApplications = false;
+  private lastRefreshedAt = 0;
+  private refreshInFlight$: Observable<LoanApplication[]> | null = null;
 
   constructor(
     private loanService: LoanService,
@@ -25,7 +28,8 @@ export class LoanApplicationService {
   return this.loanService.createLoanApplication(formData).pipe(
     catchError((error) => this.recoverSubmittedApplication(formData, error)),
     tap((createdApplication) => {
-      this.hasLoadedApplications = true;
+      // Force the next list subscriber to revalidate so the new loan's server state is picked up.
+      this.lastRefreshedAt = 0;
       this.upsertApplication(this.buildOptimisticSubmittedApplication(formData, createdApplication), true);
       // Remove or modify this refresh call - it's causing the connection refused error
       // this.refreshApplications().subscribe({ error: () => {} });
@@ -74,17 +78,26 @@ export class LoanApplicationService {
   }
 
 getApplicationsObservable(): Observable<LoanApplication[]> {
-  const cachedApplications = this.getCachedApplications();
-  if (!cachedApplications && !this.hasLoadedApplications) {
+  // Serve the session cache immediately (if any), but always revalidate against the backend
+  // once it is older than the TTL, so the cache can never go permanently stale.
+  this.getCachedApplications();
+  if (Date.now() - this.lastRefreshedAt > LoanApplicationService.APPLICATIONS_TTL_MS) {
     this.refreshApplications().subscribe({
-      error: (err) => {
-        // Don't show error for connection refused
-        console.debug('Initial load failed, using empty array');
-        this.applicationsSubject.next([]);
+      error: () => {
+        console.debug('Loan applications refresh failed, keeping current list');
+        if (!this.hasLoadedApplications) {
+          // Release subscribers waiting on the first load so screens can leave their loading state.
+          this.hasLoadedApplications = true;
+          this.applicationsSubject.next(this.applicationsSubject.value);
+        }
       }
     });
   }
-  return this.applicationsSubject.asObservable();
+  // Hold back the BehaviorSubject's initial empty seed so screens don't flash "no loans"
+  // before the first real list (cached or fetched) arrives.
+  return this.applicationsSubject.asObservable().pipe(
+    filter(() => this.hasLoadedApplications)
+  );
 }
 
   saveApplication(
@@ -110,14 +123,24 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
   }
 
   refreshApplications(): Observable<LoanApplication[]> {
-    return this.loanService.listLoanApplications().pipe(
-      map((applications) => this.mergeApplicationCollections(this.applicationsSubject.value, applications)),
-      tap((applications) => {
-        this.hasLoadedApplications = true;
-        this.applicationsSubject.next(applications);
-        this.writeCachedApplications(applications);
-      })
-    );
+    // Share one in-flight request between concurrent callers (e.g. a screen's explicit refresh
+    // plus the TTL revalidation in getApplicationsObservable).
+    if (!this.refreshInFlight$) {
+      this.refreshInFlight$ = this.loanService.listLoanApplications(true).pipe(
+        map((applications) => this.mergeApplicationCollections(this.applicationsSubject.value, applications)),
+        tap((applications) => {
+          this.lastRefreshedAt = Date.now();
+          this.hasLoadedApplications = true;
+          this.applicationsSubject.next(applications);
+          this.writeCachedApplications(applications);
+        }),
+        finalize(() => {
+          this.refreshInFlight$ = null;
+        }),
+        shareReplay({ bufferSize: 1, refCount: false })
+      );
+    }
+    return this.refreshInFlight$;
   }
 
   private resolveEmployeeRecord(formData: LoanApplicationFormData): Observable<any> {
@@ -285,8 +308,9 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
 
     this.applicationsSubject.next(currentApplications);
 
-    if (persistLocally) {
-      this.hasLoadedApplications = true;
+    // Only persist once the full list has been loaded; otherwise a single upserted loan would be
+    // cached (and served) as if it were the complete list.
+    if (persistLocally && this.hasLoadedApplications) {
       this.writeCachedApplications(currentApplications);
     }
   }

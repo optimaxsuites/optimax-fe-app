@@ -1,7 +1,7 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, forkJoin, of } from 'rxjs';
+import { Subscription, combineLatest, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication, PaymentRecord, RepaymentScheduleItem, StatusChange } from '../../../service/loan/loan.types';
@@ -23,7 +23,8 @@ import {
   resolveLoanOutstandingExposure,
   resolveLoanRepaymentProgress,
   resolveLoanTotalPaid,
-  resolveLoanTotalRepayableAmount
+  resolveLoanTotalRepayableAmount,
+  resolveLoanTotalLateFees
 } from '../../../service/loan/loan-display.util';
 
 interface LoanDashboardAlert {
@@ -267,28 +268,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.refreshLoanData();
   }
 
-  private processApplications(applications: LoanApplication[], onComplete?: () => void): void {
-    // First load employees to enrich loan data
-    this.employeeService.getAllEmployee().pipe(catchError(() => of([]))).subscribe({
-      next: (employees) => {
-        this.rebuildEmployeeLookup(Array.isArray(employees) ? employees : []);
-        this.allLoans = this.enrichLoansWithEmployeeData(
-          applications.filter((loan) => !(loan.fullName ?? '').includes('Rolayo Awe') && !(loan.fullName ?? '').includes('Rolayo Awe'))
-        );
-        this.processLoadedData();
-        this.isDataLoaded = true;
-        onComplete?.();
-      },
-      error: (error) => {
-        console.error('Error loading employees:', error);
-        this.allLoans = applications;
-        this.processLoadedData();
-        this.isDataLoaded = true;
-        onComplete?.();
-      }
-    });
-  }
-
   private processLoadedData(): void {
     this.syncSelectedLoan();
     this.updateDashboardStats();
@@ -301,14 +280,10 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     if (!this.isDataLoaded) {
       this.isLoading = true;
     }
+    // The refreshed list reaches the screen through the subscription in setupLoanSubscription.
     this.loanApplicationService.refreshApplications().subscribe({
       next: (applications) => {
-        this.processApplications(applications || [], () => {
-          loadProfiler.success({ loans: this.allLoans.length, filtered: this.filteredLoans.length });
-          this.isLoading = false;
-          this.isInitialLoad = false;
-          this.isDataLoaded = true;
-        });
+        loadProfiler.success({ loans: applications.length, filtered: this.filteredLoans.length });
       },
       error: (error) => {
         console.error('Error refreshing applications:', error);
@@ -324,22 +299,27 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.hasInitializedLoanSubscription = true;
-    this.loanSubscription = this.loanApplicationService.getApplicationsObservable().subscribe({
-      next: (applications) => {
-        this.employeeService.getAllEmployee().pipe(catchError(() => of([]))).subscribe((employees) => {
-          this.rebuildEmployeeLookup(Array.isArray(employees) ? employees : []);
-          this.allLoans = this.enrichLoansWithEmployeeData(
-            applications.filter((loan) => !(loan.fullName ?? '').includes('Rolayo Awe') && !(loan.fullName ?? '').includes('Rolayo Awe'))
-          );
-          this.processLoadedData();
-          if (this.allLoans.length > 0 || !this.isInitialLoad) {
-            this.isDataLoaded = true;
-            this.isLoading = false;
-          }
-        });
+    // One flat stream instead of a new employee request nested inside every loan emission:
+    // the employee list is resolved once (EmployeeService caches it) and each loan update is
+    // processed against it, so a slow earlier response can no longer overwrite newer data.
+    const employees$ = this.employeeService.getAllEmployee().pipe(catchError(() => of([])));
+    this.loanSubscription = combineLatest([
+      this.loanApplicationService.getApplicationsObservable(),
+      employees$
+    ]).subscribe({
+      next: ([applications, employees]) => {
+        this.rebuildEmployeeLookup(Array.isArray(employees) ? employees : []);
+        this.allLoans = this.enrichLoansWithEmployeeData(
+          applications.filter((loan) => !(loan.fullName ?? '').includes('Rolayo Awe'))
+        );
+        this.processLoadedData();
+        this.isDataLoaded = true;
+        this.isLoading = false;
+        this.isInitialLoad = false;
       },
       error: (error) => {
         console.error('Error in loan subscription:', error);
+        this.isLoading = false;
       }
     });
   }
@@ -858,7 +838,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   getLateFeesTotal(loan: LoanApplication): number {
-    return (loan.repaymentSchedule || []).reduce((sum, item) => sum + Number(item.lateFeeAmount || 0), 0);
+    return resolveLoanTotalLateFees(loan);
   }
 
   getPreviewResolvedAmountPaid(loan: LoanApplication): number {

@@ -181,6 +181,14 @@
           <button class="action-btn history-btn" (click)="seeLoanHistory(row.employeeId)" title="View Loan History">
             <i class="fas fa-history"></i>
           </button>
+          <ng-container *ngIf="row.loan.status === 'PENDING'">
+            <button class="action-btn approve-action-btn" (click)="openApprovalModal(row.loan)" [disabled]="isSubmitting" title="Approve" aria-label="Approve loan">
+              <i class="fas fa-check"></i>
+            </button>
+            <button class="action-btn reject-action-btn" (click)="openRejectModal(row.loan)" [disabled]="isSubmitting" title="Reject" aria-label="Reject loan">
+              <i class="fas fa-times"></i>
+            </button>
+          </ng-container>
         </td>
       </tr>
     </tbody>
@@ -202,7 +210,7 @@
   </div>
 </div>
 
-<!-- Approval Modal (unchanged) -->
+<!-- Approval Modal -->
 <div class="modal-overlay" *ngIf="showApprovalModal" (click)="closeApprovalModal()">
   <div class="modal-container" (click)="$event.stopPropagation()">
     <div class="modal-header">
@@ -231,8 +239,10 @@
 
       <div class="form-group">
         <label>Interest Rate (%) <span class="required">*</span></label>
-        <input type="number" [value]="selectedLoanForApproval.defaultInterestRate ?? proposedInterestRate" class="form-input" readonly disabled>
-        <div class="field-hint">Default interest rate for this purpose: <strong>{{ selectedLoanForApproval.defaultInterestRate ?? proposedInterestRate }}%</strong> (immutable, set in Loan Purpose Management)</div>
+        <input type="number" [(ngModel)]="proposedInterestRate" min="0" max="100" step="0.1" class="form-input" [readonly]="interestRateLocked">
+        <div class="field-hint" *ngIf="interestRateLocked">Fixed rate for this loan purpose: <strong>{{ proposedInterestRate }}%</strong> (set in Loan Purpose Management; the employee accepted it when applying)</div>
+        <div class="field-hint" *ngIf="!interestRateLocked">This purpose has no fixed rate. Pre-filled with the suggested rate for the repayment period; adjust if needed.</div>
+        <div class="field-hint error-text" *ngIf="!interestRateLocked && !isApprovalRateValid">Enter a rate between 0% and 100%.</div>
       </div>
 
       <div class="form-group">
@@ -270,8 +280,8 @@
 
     <div class="modal-footer">
       <button class="cancel-btn" (click)="closeApprovalModal()">Cancel</button>
-      <button class="approve-btn" (click)="submitApproval()">
-        <i class="fas fa-check"></i> Approve Loan
+      <button class="approve-btn" (click)="submitApproval()" [disabled]="isSubmitting || !isApprovalRateValid">
+        <i class="fas" [ngClass]="isSubmitting ? 'fa-spinner fa-spin' : 'fa-check'"></i> Approve Loan
       </button>
     </div>
   </div>
@@ -303,8 +313,8 @@
 
     <div class="modal-footer">
       <button class="cancel-btn" (click)="closeRejectModal()">Cancel</button>
-      <button class="reject-btn" (click)="confirmRejection()">
-        <i class="fas fa-ban"></i> Reject Application
+      <button class="reject-btn" (click)="confirmRejection()" [disabled]="isSubmitting">
+        <i class="fas" [ngClass]="isSubmitting ? 'fa-spinner fa-spin' : 'fa-ban'"></i> Reject Application
       </button>
     </div>
   </div>
