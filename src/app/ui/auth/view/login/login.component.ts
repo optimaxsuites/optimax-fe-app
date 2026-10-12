@@ -501,8 +501,11 @@ async posLoginAction(): Promise<void> {
       headers: { 'X-Tenant-ID': data.tenantId || data.tenant || tenantId }
     }).subscribe({
       next: (vendor) => {
+        const enabled = String(!!vendor?.loginEnabled);
         sessionStorage.setItem('isVendor', 'true');
-        sessionStorage.setItem('vendorLoginEnabled', String(!!vendor?.loginEnabled));
+        sessionStorage.setItem('vendorLoginEnabled', enabled);
+        localStorage.setItem('isVendor', 'true');
+        localStorage.setItem('vendorLoginEnabled', enabled);
         if (!vendor?.loginEnabled) {
           const pendingLink = this.navigationLink.getLink('vendorPendingLink');
           this.router.navigate([pendingLink]);
@@ -519,10 +522,13 @@ async posLoginAction(): Promise<void> {
         if (roles.includes('VENDOR')) {
           sessionStorage.setItem('isVendor', 'true');
           sessionStorage.setItem('vendorLoginEnabled', 'false');
+          localStorage.setItem('isVendor', 'true');
+          localStorage.setItem('vendorLoginEnabled', 'false');
           const pendingLink = this.navigationLink.getLink('vendorPendingLink');
           this.router.navigate([pendingLink]);
         } else {
           sessionStorage.setItem('isVendor', 'false');
+          localStorage.setItem('isVendor', 'false');
           this.proceedWithNormalNavigation(data);
         }
       }
