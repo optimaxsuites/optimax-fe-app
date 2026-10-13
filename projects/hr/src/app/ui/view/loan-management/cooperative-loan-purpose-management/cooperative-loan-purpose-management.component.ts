@@ -143,10 +143,6 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
     this.subscriptions.add(
       this.cooperativeLoanPurposeService.getAllPurposes(false).subscribe({
         next: (purposes: LoanPurposeData[]) => {
-          console.log('Loaded purposes from API after refresh:', purposes);
-          console.log('Active purposes:', purposes.filter(p => p.isActive));
-          console.log('Inactive purposes:', purposes.filter(p => !p.isActive));
-          console.log('Count:', purposes.length);
           
           this.purposes = [...purposes];
           this.applyFilter();
@@ -180,7 +176,6 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
   }
 
   updatePagination(): void {
-  console.log('Filtered purposes length:', this.filteredPurposes.length);
   this.totalPages = Math.max(1, Math.ceil(this.filteredPurposes.length / this.pageSize));
   if (this.currentPage > this.totalPages) {
     this.currentPage = this.totalPages;
@@ -188,7 +183,6 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
   const startIndex = (this.currentPage - 1) * this.pageSize;
   const endIndex = startIndex + this.pageSize;
   this.paginatedPurposes = this.filteredPurposes.slice(startIndex, endIndex);
-  console.log('Paginated purposes length:', this.paginatedPurposes.length);
 }
 
   changePage(page: number): void {

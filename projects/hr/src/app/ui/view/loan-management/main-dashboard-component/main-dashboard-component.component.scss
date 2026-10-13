@@ -33,3 +33,22 @@
   display: block;
   margin-bottom: 2rem;
 }
+
+// Small screens: the two toggle tabs split the width evenly so both stay visible and tappable.
+@media (max-width: 600px) {
+  .dashboard-toggle {
+    gap: 0;
+    margin-bottom: 1rem;
+  }
+
+  .toggle-btn {
+    flex: 1;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .dashboard-section {
+    margin-bottom: 1.25rem;
+  }
+}

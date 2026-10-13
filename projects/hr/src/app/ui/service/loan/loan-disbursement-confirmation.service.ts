@@ -93,13 +93,6 @@ export class AdvanceDisbursementConfirmationService {
       ...payload
     };
 
-    console.log('[DisbursementConfirmation] Creating record', {
-      url: this.baseUrl,
-      payload: requestBody,
-      hasToken: !!this.getAccessToken(),
-      tenantId: this.getTenantId(),
-      currentUserId: this.getCurrentUserId()
-    });
 
     return this.http.post<DisbursementConfirmation>(this.baseUrl, requestBody, {
       headers: this.getHeaders()

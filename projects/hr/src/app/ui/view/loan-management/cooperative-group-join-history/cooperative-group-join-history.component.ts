@@ -7,6 +7,7 @@ import {
   CooperativeLoanGroup
 } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { CooperativeGroupMembership, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { getLoanStatusClass } from '../../../service/loan/loan-format.util';
 
 type GroupJoinStatusFilter = 'ALL' | CooperativeGroupMembership['status'];
 
@@ -352,7 +353,7 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
   }
 
   getStatusClass(status: string): string {
-    return `status-${status.toLowerCase()}`;
+    return getLoanStatusClass(status);
   }
 
   formatMemberId(memberCode: string): string {

@@ -1,5 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
@@ -85,6 +86,7 @@ type GroupFormValueSource = Omit<Partial<CooperativeLoanGroup>, 'memberLimit'> &
   encapsulation: ViewEncapsulation.None
 })
 export class CooperativeLoanGroupsComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   // ==================== PROPERTIES ====================
   inviteLevelOptions: string[] = [];
   currentUuid = uuidV4();
@@ -308,7 +310,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       status: ['ACTIVE', Validators.required]
     });
 
-    this.groupForm.get('requiresGuarantors')?.valueChanges.subscribe((enabled) => {
+    this.groupForm.get('requiresGuarantors')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((enabled) => {
       const minimumGuarantorsControl = this.groupForm.get('minimumGuarantors');
       if (!minimumGuarantorsControl) return;
       if (enabled) {
@@ -321,7 +323,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       minimumGuarantorsControl.updateValueAndValidity({ emitEvent: false });
     });
 
-    this.groupForm.get('patronageEligible')?.valueChanges.subscribe(enabled => {
+    this.groupForm.get('patronageEligible')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(enabled => {
       if (!enabled) this.groupForm.get('patronageRate')?.setValue(0);
     });
   }

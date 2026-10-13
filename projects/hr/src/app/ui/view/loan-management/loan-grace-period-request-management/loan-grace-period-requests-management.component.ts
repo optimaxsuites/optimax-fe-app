@@ -6,7 +6,9 @@ import { v4 as uuidV4 } from 'uuid';
 import { switchMap, map } from 'rxjs/operators';
 import { AdvanceGracePeriodService } from '../../../service/loan/loan-grace-period.service';
 import type { GracePeriodRequest } from '../../../service/loan/loan-grace-period.service';
-import { formatAdvancedLoanCode } from '../../../service/loan/loan-display.util';
+import { formatAdvancedLoanCode,
+  toLocalDateString
+} from '../../../service/loan/loan-display.util';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanRepaymentService } from '../../../service/loan/loan-repayment.service';
 
@@ -80,7 +82,6 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
           }
           return { ...r, requestedAt };
         });
-        console.log('Normalized requests:', normalized);
         this.requests = normalized;
         this.applyFilter();
         this.isLoading = false;
@@ -241,7 +242,7 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
 
     const recalculatedDueDate = new Date(baseDueDate);
     recalculatedDueDate.setDate(recalculatedDueDate.getDate() + this.approvedDays);
-    return recalculatedDueDate.toISOString().split('T')[0];
+    return toLocalDateString(recalculatedDueDate);
   }
 
   openApprovalModal(request: GracePeriodRequest): void {
@@ -445,7 +446,6 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
   }
 
   private sendEmailNotification(request: GracePeriodRequest, status: string): void {
-    console.log(`Sending ${status} email notification for grace period request ${request.id}`);
   }
 
   private getSelectedInstallmentDueDate(): string | null {

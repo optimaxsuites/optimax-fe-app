@@ -17,6 +17,7 @@ import {
   resolveLoanEmployeeName,
   resolveLoanTotalRepayableAmount
 } from '../../../service/loan/loan-display.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
 
 type LoanLifecycleStage = {
   status: LoanApplication['status'];
@@ -168,7 +169,6 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
   }
 
   onMakePayment(event: { loan: LoanApplication; installment: RepaymentScheduleItem }): void {
-    console.log('Make payment for:', event);
     this.refresh.emit();
   }
 
@@ -199,11 +199,7 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(amount: number | undefined): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2
-    }).format(amount ?? 0);
+    return formatNaira(amount);
   }
 
   formatPurposeDisplay(purpose?: string | null): string {
@@ -307,49 +303,11 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
   }
 
   getStatusClass(status: string | undefined): string {
-    switch (status) {
-      case 'PENDING': return 'status-pending';
-      case 'AWAITING_INTEREST_ACCEPTANCE': return 'status-awaiting_interest_acceptance';
-      case 'APPROVED': return 'status-approved';
-      case 'READY_FOR_DISBURSEMENT': return 'status-ready_for_disbursement';
-      case 'ACTIVE': return 'status-active';
-      case 'REJECTED': return 'status-rejected';
-      case 'COMPLETED': return 'status-completed';
-      case 'SKIPPED': return 'status-skipped';
-      case 'OVERDUE': return 'status-overdue';
-      case 'DEFAULTED': return 'status-defaulted';
-      case 'PAUSED': return 'status-paused';
-      default: return 'status-default';
-    }
+    return getLoanStatusClass(status);
   }
 
   getStatusDisplay(status: string | undefined): string {
-    switch (status) {
-        case 'AWAITING_INTEREST_ACCEPTANCE':
-          return 'Awaiting Interest Acceptance';
-        case 'READY_FOR_DISBURSEMENT':
-          return 'Disbursable';
-        case 'SKIPPED':
-          return 'Skipped';
-        case 'OVERDUE':
-          return 'Overdue';
-        case 'PAUSED':
-          return 'Paused';
-        case 'DEFAULTED':
-          return 'Defaulted';
-        case 'PENDING':
-          return 'Pending';
-        case 'APPROVED':
-          return 'Approved';
-        case 'REJECTED':
-          return 'Rejected';
-        case 'ACTIVE':
-          return 'Active';
-        case 'COMPLETED':
-          return 'Completed';
-        default:
-          return String(status || 'Unknown').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    }
+    return getLoanStatusLabel(status);
   }
 
   getDayOrdinal(day: number): string {
@@ -417,7 +375,22 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
     return resolveLoanActorName(this.loan.approvedBy);
   }
 
+  /**
+   * Called from template bindings (several times per change-detection cycle), so the result is cached
+   * per loan object. Loans are replaced, not mutated, when data refreshes, which invalidates the cache.
+   */
+  private readonly statusTimelineCache = new WeakMap<LoanApplication, StatusChange[]>();
+
   private buildStatusTimeline(loan: LoanApplication): StatusChange[] {
+    let timeline = this.statusTimelineCache.get(loan);
+    if (!timeline) {
+      timeline = this.computeStatusTimeline(loan);
+      this.statusTimelineCache.set(loan, timeline);
+    }
+    return timeline;
+  }
+
+  private computeStatusTimeline(loan: LoanApplication): StatusChange[] {
     const timeline = this.getNormalizedLoanStatusHistory(loan)
       .filter((item) => !!this.normalizeDate(item.changedAt));
 

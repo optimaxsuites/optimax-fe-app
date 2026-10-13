@@ -25,6 +25,7 @@ import { LoanDetailsComponent } from './ui/view/loan-management/loan-details/loa
 import { EmployeeLoanHistoryComponent } from './ui/view/loan-management/employee-loan-history/employee-loan-history.component';
 import { EmployeeDashboardComponent } from './ui/view/loan-management/employee-loan-dashboard/employee-loan-dashboard.component';
 import { LoanReportsComponent } from './ui/view/loan-management/loan-reports/loan-reports.component';
+import { EmployeePaymentHistoryPageComponent } from './ui/view/loan-management/employee-payment-history-page/employee-payment-history-page.component';
 import { LoanDisbursementUiComponent } from './ui/view/loan-management/loan-disbursement-ui/loan-disbursement-ui.component';
 import { CooperativeDashboardComponent } from './ui/view/loan-management/cooperative-dashboard/cooperative-dashboard.component';
 import { CooperativeLoansComponent } from './ui/view/loan-management/cooperative-loans/cooperative-loans.component';
@@ -248,6 +249,14 @@ const routes: Routes = [
   {
     path: 'admin/hr/loan-management/employee-loan-history/:employeeId/:uuid',
     component: EmployeeLoanHistoryComponent,
+  },
+  {
+    path: 'loan-management/payment-history/:uuid',
+    component: EmployeePaymentHistoryPageComponent,
+  },
+  {
+    path: 'admin/hr/loan-management/payment-history/:uuid',
+    component: EmployeePaymentHistoryPageComponent,
   },
   {
     path: 'loan-management/reports/:uuid',

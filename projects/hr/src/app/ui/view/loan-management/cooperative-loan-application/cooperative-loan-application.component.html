@@ -1,5 +1,6 @@
 <!-- Guarantor View - Only shows modal, no form -->
 <div *ngIf="isGuarantorView" class="guarantor-view-container">
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
   <app-guarantor-approval-modal
     [visible]="showGuarantorApprovalModal"
     [loanSummary]="modalLoanSummary"

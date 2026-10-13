@@ -5,6 +5,7 @@ import { Message } from 'primeng/api';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { AdvancePaymentRecordService, CreatePaymentRecordPayload } from '../../../service/loan/loan-payment-record.service';
 import { PaymentConfigService, BankAccountDetails } from '../../../service/loan/loan-payment-config.service';
+import { formatNaira } from '../../../service/loan/loan-format.util';
 
 @Component({
   selector: 'app-payment-modal',
@@ -275,11 +276,7 @@ export class LoanPaymentModalComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2
-    }).format(amount);
+    return formatNaira(amount);
   }
 
   cancel(): void {

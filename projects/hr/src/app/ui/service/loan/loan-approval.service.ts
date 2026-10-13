@@ -6,6 +6,7 @@ import { LoanApplication, RepaymentScheduleItem, StatusChange, LoanStatus, LoanS
 import { LoanApplicationService } from './loan-application.service';
 import { LoanPurposeService } from './loan-purpose.service';
 import { LoanConcurrentModificationError } from './loan.service';
+import { PurposeRateResolution, isValidCustomInterestRate, resolvePurposeInterestRate } from './loan-purpose-rate.util';
 import {
   normalizeLoanRepaymentStartDate,
   readPersistedLoanLateFeeGracePeriodDays,
@@ -19,7 +20,8 @@ import {
   persistLoanRepaymentStartDate,
   persistLoanStatusActorName,
   persistLoanStatusChangedAt,
-  persistLoanStatusNote
+  persistLoanStatusNote,
+  toLocalDateString
 } from './loan-display.util';
 
 @Injectable({
@@ -58,7 +60,11 @@ export class LoanApprovalService {
         const changedAt = typeof statusOrUpdate === 'string'
           ? new Date().toISOString()
           : this.toLoanDateTime(statusOrUpdate.changedAt) || new Date().toISOString();
-        const interestRate = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.interestRate;
+        // Rates are only ever set by approval (from the loan's purpose, via approveLoan). Ignore any
+        // rate passed with other status changes so e.g. a rejection can't overwrite it.
+        const interestRate = typeof statusOrUpdate === 'string' || rawStatus.toUpperCase() !== 'APPROVED'
+          ? undefined
+          : statusOrUpdate.interestRate;
         const lateFeePercentage = Number((statusOrUpdate as any).lateFeePercentage);
         const lateFeeGracePeriodDays = Number((statusOrUpdate as any).lateFeeGracePeriodDays);
         const repaymentStartDate = normalizeLoanRepaymentStartDate((statusOrUpdate as any).repaymentStartDate);
@@ -220,7 +226,6 @@ export class LoanApprovalService {
 
         return this.loanApplicationService.saveApplication(workingApplication, previousStatus).pipe(
           switchMap((savedApp) => {
-            console.log('Status updated successfully to:', savedApp.status);
             return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
               map((refreshedApp) => refreshedApp || savedApp)
             );
@@ -340,29 +345,52 @@ export class LoanApprovalService {
     }
   }
 
-  approveLoan(loanId: string | number, notes?: string, interestRate?: number, repaymentStartDate?: string, repaymentDay?: number, lateFeePercentage?: number, lateFeeGracePeriodDays?: number): Observable<LoanApplication> {
-    // Fetch the application and then the purpose to check for default interest
-    // Always approve directly, no more AWAITING_INTEREST_ACCEPTANCE
+  /**
+   * Approves a PENDING loan. A purpose defined in Loan Purpose Management always supplies the rate
+   * (admins can't override it here). Only for "Other" / undefined purposes is `customInterestRate`,
+   * entered by the approving admin, used. The admin's notes are kept.
+   */
+  approveLoan(
+    loanId: string | number,
+    notes?: string,
+    repaymentStartDate?: string,
+    repaymentDay?: number,
+    lateFeePercentage?: number,
+    lateFeeGracePeriodDays?: number,
+    customInterestRate?: number
+  ): Observable<LoanApplication> {
     return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
       switchMap((application) => {
         if (!application) throw new Error('Application not found');
-        return this.getFixedPurposeInterestRate(application).pipe(
-          switchMap((fixedRate) => {
-            // Rule shared by every approval screen: a purpose's fixed rate always wins; otherwise
-            // the rate the admin entered is used.
-            const interestToSet = fixedRate ?? interestRate;
-            if (interestToSet === undefined || !Number.isFinite(interestToSet) || interestToSet < 0) {
-              return throwError(() => new Error('A valid interest rate is required to approve this loan.'));
+        return this.resolvePurposeRate(application).pipe(
+          switchMap((resolution) => {
+            let rate: number;
+            switch (resolution.kind) {
+              case 'fixed':
+                rate = resolution.rate;
+                break;
+              case 'missing':
+                return throwError(() => new Error(
+                  `The purpose "${resolution.purposeName}" has no interest rate. Set one in Loan Purpose Management, then approve the loan.`
+                ));
+              case 'custom':
+                if (!isValidCustomInterestRate(customInterestRate)) {
+                  return throwError(() => new Error(
+                    `"${resolution.purposeName}" isn't a purpose defined in Loan Purpose Management, so enter an interest rate above 0% (up to 100%) for this loan.`
+                  ));
+                }
+                rate = Number(Number(customInterestRate).toFixed(2));
+                break;
             }
-            const approvalNotes = notes?.trim()
-              || (fixedRate !== null
-                ? `Loan approved with the purpose's fixed interest rate of ${interestToSet}%.`
-                : `Loan approved with an interest rate of ${interestToSet}%.`);
+
+            const defaultNote = resolution.kind === 'fixed'
+              ? `Loan approved at the purpose's interest rate of ${rate}%.`
+              : `Loan approved at an interest rate of ${rate}% set by the approver (purpose not defined in Loan Purpose Management).`;
             return this.updateApplicationStatus(loanId, {
               status: 'APPROVED',
-              notes: approvalNotes,
+              notes: notes?.trim() || defaultNote,
               changedAt: new Date().toISOString(),
-              interestRate: interestToSet,
+              interestRate: rate,
               lateFeePercentage: lateFeePercentage,
               lateFeeGracePeriodDays: lateFeeGracePeriodDays,
               repaymentStartDate: repaymentStartDate,
@@ -374,23 +402,11 @@ export class LoanApprovalService {
     );
   }
 
-  /**
-   * The fixed interest rate of the loan's purpose (matched by code, then by name), or null when the
-   * purpose has no fixed rate (e.g. "other") and the approver must set one.
-   */
-  getFixedPurposeInterestRate(application: Pick<LoanApplication, 'purposeCode' | 'purpose'>): Observable<number | null> {
-    const code = String(application.purposeCode || '').trim().toLowerCase();
-    const name = String(application.purpose || '').trim().toLowerCase();
+  /** Where this loan's interest rate comes from at approval (see PurposeRateResolution). */
+  resolvePurposeRate(application: Pick<LoanApplication, 'purposeCode' | 'purpose'>): Observable<PurposeRateResolution> {
     // Include inactive purposes: a purpose deactivated after the employee applied still fixes the rate.
     return this.loanPurposeService.getAllPurposes(false).pipe(
-      map((purposes) => {
-        const purpose = (code && code !== 'n/a'
-          ? purposes.find((p) => String(p.code || '').trim().toLowerCase() === code)
-          : undefined)
-          || (name ? purposes.find((p) => String(p.name || '').trim().toLowerCase() === name) : undefined);
-        const rate = Number(purpose?.defaultInterestRate ?? 0);
-        return rate > 0 ? rate : null;
-      })
+      map((purposes) => resolvePurposeInterestRate(application, purposes))
     );
   }
 
@@ -495,7 +511,7 @@ export class LoanApprovalService {
 
       return [{
         installmentNo: 1,
-        dueDate: oneOffDueDate.toISOString().split('T')[0],
+        dueDate: toLocalDateString(oneOffDueDate),
         principalAmount: parseFloat(amount.toFixed(2)),
         interestAmount: parseFloat(oneOffInterest.toFixed(2)),
         totalAmount: parseFloat(oneOffTotal.toFixed(2)),
@@ -527,7 +543,7 @@ export class LoanApprovalService {
 
       schedule.push({
         installmentNo: month,
-        dueDate: dueDate.toISOString().split('T')[0],
+        dueDate: toLocalDateString(dueDate),
         principalAmount: parseFloat(principal.toFixed(2)),
         interestAmount: parseFloat(interest.toFixed(2)),
         totalAmount: parseFloat(monthlyPayment.toFixed(2)),
@@ -558,7 +574,7 @@ export class LoanApprovalService {
       
       return [{
         installmentNo: 1,
-        dueDate: oneOffDueDate.toISOString().split('T')[0],
+        dueDate: toLocalDateString(oneOffDueDate),
         principalAmount: parseFloat(amount.toFixed(2)),
         interestAmount: parseFloat(oneOffInterest.toFixed(2)),
         totalAmount: parseFloat(oneOffTotal.toFixed(2)),
@@ -594,7 +610,7 @@ export class LoanApprovalService {
 
       schedule.push({
         installmentNo: month + 1,
-        dueDate: dueDate.toISOString().split('T')[0],
+        dueDate: toLocalDateString(dueDate),
         principalAmount: parseFloat(principal.toFixed(2)),
         interestAmount: parseFloat(interest.toFixed(2)),
         totalAmount: parseFloat(monthlyPayment.toFixed(2)),

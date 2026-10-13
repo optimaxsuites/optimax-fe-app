@@ -1712,3 +1712,39 @@ app-loan-dashboard {
     }
   }
 }
+// Pagination for the dashboard loans table (sorting applies to every matching loan, not one page).
+.loan-dashboard-container .dashboard-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 4px 0;
+  font-size: 0.8rem;
+  color: #6b8a97;
+
+  .dashboard-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dashboard-pagination-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid #d6e6ec;
+    background: #fff;
+    color: #2E6276;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  @media (max-width: 600px) {
+    justify-content: center;
+  }
+}

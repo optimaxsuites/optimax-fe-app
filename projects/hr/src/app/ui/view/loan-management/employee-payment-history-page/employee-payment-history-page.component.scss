@@ -1,0 +1,210 @@
+@use '../loan-status-badges' as loanStatus;
+
+// Matches the other employee loan pages (soft teal palette, white rounded cards).
+.payment-history-page {
+  padding: 20px;
+  min-height: 100%;
+  background: linear-gradient(135deg, #f8feff 0%, #f0f7fa 100%);
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+
+    .header-title {
+      min-width: 0;
+
+      h1 {
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #1a4b5c;
+
+        i {
+          color: #eb9b3f;
+          margin-right: 8px;
+        }
+      }
+
+      p {
+        margin: 4px 0 0;
+        font-size: 0.85rem;
+        color: #6b8a97;
+      }
+    }
+  }
+
+  .state-card,
+  .loan-picker,
+  .loan-detail-card {
+    background: #fff;
+    border: 1px solid #e3eef0;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(46, 98, 118, 0.08);
+  }
+
+  .state-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 48px 24px;
+    color: #6b8a97;
+
+    i {
+      font-size: 2.5rem;
+      color: #cde3ea;
+      margin-bottom: 12px;
+    }
+
+    h3 {
+      margin: 0 0 6px;
+      color: #1a4b5c;
+      font-size: 1.05rem;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.88rem;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e3eef0;
+      border-top-color: #2E6276;
+      border-radius: 50%;
+      animation: payment-history-spin 1s linear infinite;
+      margin-bottom: 12px;
+    }
+  }
+
+  .loan-picker {
+    padding: 16px 20px;
+    margin-bottom: 16px;
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1a4b5c;
+    }
+  }
+
+  .loan-picker-list {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .loan-chip {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 170px;
+    padding: 12px 14px;
+    border: 1px solid #e3eef0;
+    border-radius: 14px;
+    background: #fbfeff;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      border-color: #bcd9e3;
+    }
+
+    &.selected {
+      border-color: #2E6276;
+      box-shadow: 0 0 0 2px rgba(46, 98, 118, 0.15);
+      background: #fff;
+    }
+
+    .loan-chip-code {
+      font-weight: 700;
+      color: #1a4b5c;
+      font-size: 0.85rem;
+    }
+
+    .loan-chip-amount {
+      color: #2EB270;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+  }
+
+  .status-badge {
+    @include loanStatus.advanceLoanStatusBadges(false);
+  }
+
+  .loan-detail-card {
+    padding: 20px;
+  }
+
+  .loan-summary {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f8feff, #eef7fa);
+      border: 1px solid #e3eef0;
+      min-width: 0;
+
+      span {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: #8aadba;
+      }
+
+      strong {
+        color: #1a4b5c;
+        font-size: 0.95rem;
+        overflow-wrap: anywhere;
+
+        &.positive {
+          color: #2EB270;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 992px) {
+    .loan-summary {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 600px) {
+    padding: 12px;
+
+    .page-header .header-title h1 {
+      font-size: 1.1rem;
+    }
+
+    .loan-picker,
+    .loan-detail-card {
+      padding: 14px;
+      border-radius: 16px;
+    }
+
+    .loan-summary {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}
+
+@keyframes payment-history-spin {
+  to { transform: rotate(360deg); }
+}

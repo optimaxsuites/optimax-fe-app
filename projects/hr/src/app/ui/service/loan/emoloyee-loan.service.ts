@@ -31,7 +31,6 @@ export class EmployeeLoanService {
     const token = sessionStorage.getItem('token');
     const tenantId = 'optimax';
     
-    console.log('GET salary:', `${this.baseUrl}/x/api/v2/hr/salaries/${employeeId}`);
     
     return this.http.get<any>(`${this.baseUrl}/x/api/v2/hr/salaries/${employeeId}`, {
       headers: {

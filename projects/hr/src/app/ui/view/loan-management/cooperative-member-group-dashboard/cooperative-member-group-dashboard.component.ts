@@ -1,6 +1,7 @@
 // ...existing code...
 // ...existing code...
-import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewEncapsulation, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { Subscription } from 'rxjs';
@@ -20,6 +21,7 @@ import {
 } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { formatCooperativeLoanCode } from '../../../service/loan/loan-display.util';
+import { getLoanStatusLabel } from '../../../service/loan/loan-format.util';
 
 interface GroupBorrowerRow {
   memberId: number;
@@ -91,6 +93,7 @@ interface GroupActivityItem {
   encapsulation: ViewEncapsulation.Emulated
 })
 export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestroy {
+  private readonly destroyRef = inject(DestroyRef);
 
   // Format loan code for display (with COPLO- prefix)
   public formatLoanCode(code: string | number | undefined | null): string {
@@ -167,7 +170,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
 
   // Helper to normalize status label for display
   getStatusLabel(status: string): string {
-    return status === 'READY_FOR_DISBURSEMENT' ? 'Disbursable' : status;
+    return getLoanStatusLabel(status);
   }
   groupMemberRosterRows: GroupMemberRosterRow[] = [];
   selectedContributionMonth = '';
@@ -220,7 +223,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
       this.syncMemberDisplayState(members);
     });
 
-    this.route.params.subscribe(params => {
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       this.currentUuid = params['uuid'] || this.currentUuid;
       this.currentGroupId = params['groupId'] || this.currentGroupId;
       this.currentMemberId = String(window.history.state?.memberId || '').trim() || this.resolveCurrentMemberId();

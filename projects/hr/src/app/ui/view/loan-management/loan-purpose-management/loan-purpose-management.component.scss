@@ -208,6 +208,11 @@ app-loan-purpose-management {
       .interest-cell {
         font-weight: 600;
         color: #1a4b5c;
+
+        &.missing-rate {
+          color: #b45309;
+          font-style: italic;
+        }
       }
 
       // Status Badge Styles
@@ -790,4 +795,10 @@ app-loan-purpose-management {
       justify-content: center;
     }
   }
+}
+// Banner listing purposes that still need an interest rate.
+.missing-rate-banner {
+  width: 100%;
+  justify-content: flex-start;
+  margin-bottom: 16px;
 }

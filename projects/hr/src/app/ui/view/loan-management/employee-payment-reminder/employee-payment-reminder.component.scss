@@ -305,3 +305,48 @@
     }
   }
 }
+// Small screens: reminder cards wrap so the pay button drops under the text instead of squeezing it,
+// and the hover slide is disabled (it causes horizontal overflow on narrow viewports).
+@media (max-width: 600px) {
+  .payment-reminder-container {
+    .up-to-date-notice {
+      padding: 14px;
+    }
+
+    .reminder-section .reminder-item {
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+
+      &:hover {
+        transform: none;
+      }
+
+      .reminder-icon {
+        width: 40px;
+        height: 40px;
+      }
+
+      .reminder-content {
+        flex: 1 1 calc(100% - 56px);
+        min-width: 0;
+
+        .reminder-title {
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .reminder-details {
+          flex-wrap: wrap;
+          gap: 4px 12px;
+        }
+      }
+
+      .action-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+}

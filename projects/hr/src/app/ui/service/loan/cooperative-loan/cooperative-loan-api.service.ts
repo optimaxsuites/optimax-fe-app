@@ -423,7 +423,6 @@ export class CooperativeLoanApiService {
   const token = getTokenFromStorage();
   const tenantId = this.getTenantId();
   
-  console.log('[CooperativeLoanApi] Building auth headers, token exists:', !!token);
   
   let headers: Record<string, string> = {
     'X-Tenant-ID': tenantId,
@@ -442,10 +441,6 @@ export class CooperativeLoanApiService {
   }
   
   // Log headers for debugging (without exposing full token)
-  console.log('[CooperativeLoanApi] Headers:', {
-    'X-Tenant-ID': headers['X-Tenant-ID'],
-    'Authorization': headers['Authorization'] ? 'Bearer [REDACTED]' : 'MISSING'
-  });
   
   return new HttpHeaders(headers);
 }
@@ -460,7 +455,6 @@ export class CooperativeLoanApiService {
   }
 
   private logRequest(method: string, url: string): void {
-    console.log(`[CooperativeLoanApi] ${method} ${url}`);
   }
 
   private mapCollectionResponse<T>(response: unknown): T[] {
@@ -710,7 +704,6 @@ export class CooperativeLoanApiService {
     const paginatedUrl = `${this.membersBaseUrl}?page=1&size=100`;
     return this.getWithCollectionFallback<CooperativeLoanApiMemberRef>(paginatedUrl, this.membersBaseUrl, 'getAllMembers').pipe(
       map((members) => {
-        console.log(`[CooperativeLoanApi] Members received: ${members.length}`);
         return members;
       })
     );
@@ -811,7 +804,6 @@ export class CooperativeLoanApiService {
     return this.http.get<unknown>(url, { headers }).pipe(
       map((groups) => {
         const records = this.mapCollectionResponse<CooperativeGroupApiResponse>(groups);
-        console.log(`[CooperativeLoanApi] Groups received: ${records.length}`);
         return records;
       }),
       catchError((error: HttpErrorResponse) => this.handleError(error, 'getAllCooperativeGroups'))

@@ -1,5 +1,6 @@
 import { Component, Input, OnChanges, OnInit, Output, EventEmitter, SimpleChanges } from '@angular/core';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
+import { formatNaira } from '../../../service/loan/loan-format.util';
 
 @Component({
   selector: 'app-employee-payment-reminder',
@@ -123,11 +124,7 @@ export class EmployeePaymentReminderComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2
-    }).format(amount);
+    return formatNaira(amount);
   }
 
   getDaysText(days: number): string {

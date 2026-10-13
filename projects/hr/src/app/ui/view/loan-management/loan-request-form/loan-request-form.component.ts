@@ -1,17 +1,21 @@
 import { formatDate } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation} from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup, FormBuilder, Validators, AbstractControl } from '@angular/forms';
 import { Message } from 'primeng/api';
 import { of } from 'rxjs';
 import { catchError, finalize, map, switchMap } from 'rxjs/operators';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApplication, LoanApplicationFormData, LoanSupportingDocument } from '../../../service/loan/loan.types';
-import { normalizeLoanRepaymentStartDate } from '../../../service/loan/loan-display.util';
+import { normalizeLoanRepaymentStartDate,
+  toLocalDateString
+} from '../../../service/loan/loan-display.util';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 import { LoanPurposeService, LoanPurposeData } from '../../../service/loan/loan-purpose.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
 import { EmployeeService } from '../../../service/employee.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
+import { formatNaira } from '../../../service/loan/loan-format.util';
 
 interface SalaryAllowanceItem {
   amount?: number;
@@ -44,6 +48,7 @@ interface EmployeeIdentityResponse {
   encapsulation: ViewEncapsulation.None 
 })
 export class LoanRequestFormComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private static readonly FALLBACK_MONTHLY_SALARY = 20000000;
 
   @Input() isModal = false;
@@ -195,7 +200,7 @@ export class LoanRequestFormComponent implements OnInit {
   this.loanRequestForm.get('repaymentDay')?.enable();
 
     // Add conditional validator for repaymentDay when mode is MONTHLY
-    this.loanRequestForm.get('modeOfPayment')?.valueChanges.subscribe((mode) => {
+    this.loanRequestForm.get('modeOfPayment')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((mode) => {
       const repaymentDayControl = this.loanRequestForm.get('repaymentDay');
       if (mode === 'MONTHLY') {
         repaymentDayControl?.setValidators([Validators.required, Validators.min(1), Validators.max(31)]);
@@ -208,7 +213,7 @@ export class LoanRequestFormComponent implements OnInit {
 
     this.loanRequestForm.get('modeOfPayment')?.updateValueAndValidity();
 
-    this.loanRequestForm.get('purpose')?.valueChanges.subscribe((value: string) => {
+    this.loanRequestForm.get('purpose')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value: string) => {
       this.showOtherPurpose = value === 'other';
       const otherPurposeControl = this.loanRequestForm.get('otherPurpose');
       if (value === 'other') {
@@ -240,20 +245,20 @@ export class LoanRequestFormComponent implements OnInit {
   }
 
   setupFormListeners(): void {
-    this.loanRequestForm.get('amount')?.valueChanges.subscribe(() => {
+    this.loanRequestForm.get('amount')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.calculateRepaymentAmount();
     });
 
-    this.loanRequestForm.get('repaymentTime')?.valueChanges.subscribe(() => {
+    this.loanRequestForm.get('repaymentTime')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.calculateRepaymentAmount();
       this.updateRepaymentDayFromStartDate();
     });
 
-    this.loanRequestForm.get('modeOfPayment')?.valueChanges.subscribe(() => {
+    this.loanRequestForm.get('modeOfPayment')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.calculateRepaymentAmount();
     });
 
-    this.loanRequestForm.get('repaymentStartDate')?.valueChanges.subscribe(() => {
+    this.loanRequestForm.get('repaymentStartDate')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.updateRepaymentDayFromStartDate();
     });
   }
@@ -315,7 +320,9 @@ export class LoanRequestFormComponent implements OnInit {
     this.isLoadingPurposes = true;
     this.loanPurposeService.getAllPurposes(true).subscribe({
       next: (purposes: LoanPurposeData[]) => {
-        this.loanPurposes = purposes;
+        // Approval always applies the purpose's rate, so a purpose without one can't be approved;
+        // don't offer it until an admin sets a rate in Loan Purpose Management.
+        this.loanPurposes = purposes.filter((purpose) => Number(purpose.defaultInterestRate || 0) > 0);
         this.isLoadingPurposes = false;
       },
       error: (err: Error) => {
@@ -495,11 +502,7 @@ export class LoanRequestFormComponent implements OnInit {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 0
-    }).format(amount);
+    return formatNaira(amount, { omitZeroKobo: true });
   }
 
   get purpose(): AbstractControl | null { return this.loanRequestForm.get('purpose'); }
@@ -515,7 +518,7 @@ export class LoanRequestFormComponent implements OnInit {
   getMinRepaymentDate(): string {
     const today = new Date();
     today.setMonth(today.getMonth() + 1);
-    return today.toISOString().split('T')[0];
+    return toLocalDateString(today);
   }
 
   // ==================== INTEREST RATE MODAL METHODS ====================

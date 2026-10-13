@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChange
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeLoanGroup, CooperativeMember, CooperativeRepayment } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
+import { formatNaira, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
 
 @Component({
   selector: 'app-cooperative-repayment-schedule',
@@ -64,13 +65,7 @@ export class CooperativeRepaymentScheduleComponent implements OnInit, OnChanges 
   }
 
   formatCurrency(amount: number): string {
-    if (!amount && amount !== 0) return '₦0.00';
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
+    return formatNaira(amount);
   }
 
   get repaymentSchedule() {
@@ -137,13 +132,7 @@ export class CooperativeRepaymentScheduleComponent implements OnInit, OnChanges 
   }
 
   getStatusDisplay(status: string): string {
-    if ((status || '').toUpperCase() === 'READY_FOR_DISBURSEMENT') {
-      return 'Disbursable';
-    }
-    return (status || '')
-      .toLowerCase()
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, char => char.toUpperCase());
+    return getLoanStatusLabel(status);
   }
 
   getFormattedLoanCode(): string {
