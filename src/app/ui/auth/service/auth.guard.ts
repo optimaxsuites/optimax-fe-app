@@ -27,7 +27,7 @@ export class AuthGuard implements CanActivate {
     if (!sessionStorage.getItem('userid') && localStorage.getItem('userid')) {
       ['userid', 'username', 'fullname', 'email', 'role',
        'Token', 'token', 'accessToken', 'Token2', 'accessToken2',
-       'tenantId', 'userRegData']
+       'tenantId', 'userRegData', 'isVendor', 'vendorLoginEnabled']
         .forEach(key => {
           const v = localStorage.getItem(key);
           if (v) sessionStorage.setItem(key, v);

@@ -89,6 +89,13 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   showColumnMenu: boolean = false;
   isMobileView: boolean = false;
 
+  // Confirm modal
+  showConfirmModal = false;
+  confirmTitle = '';
+  confirmMessage = '';
+  confirmDanger = false;
+  private pendingConfirmAction: (() => void) | null = null;
+
   // Enums for template
   VendorStatus = VendorStatus;
   VendorTier = VendorTier;
@@ -660,30 +667,50 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
     }
   }
 
+  openConfirm(title: string, message: string, danger: boolean, action: () => void): void {
+    this.confirmTitle = title;
+    this.confirmMessage = message;
+    this.confirmDanger = danger;
+    this.pendingConfirmAction = action;
+    this.showConfirmModal = true;
+  }
+
+  confirmModalSubmit(): void {
+    if (this.pendingConfirmAction) this.pendingConfirmAction();
+    this.showConfirmModal = false;
+    this.pendingConfirmAction = null;
+  }
+
+  closeConfirmModal(): void {
+    this.showConfirmModal = false;
+    this.pendingConfirmAction = null;
+  }
+
   private bulkUpdateStatus(status: VendorStatus): void {
-    // status.toLowerCase() reads as a bare noun, not a verb — "you want to active 3 vendor(s)?"
     const verbs: Partial<Record<VendorStatus, string>> = { [VendorStatus.ACTIVE]: 'activate', [VendorStatus.SUSPENDED]: 'suspend' };
     const verb = verbs[status] ?? status.toLowerCase();
-    if (!confirm(`Are you sure you want to ${verb} ${this.selectedVendors.size} vendor(s)?`)) {
-      return;
-    }
-
-    this.runBulk(
-      Array.from(this.selectedVendors),
-      id => this.vendorService.updateVendorStatus(String(id), status),
-      `updated to ${status.toLowerCase()}`
+    this.openConfirm(
+      `${verb.charAt(0).toUpperCase() + verb.slice(1)} Vendors`,
+      `Are you sure you want to ${verb} ${this.selectedVendors.size} vendor(s)?`,
+      status === VendorStatus.SUSPENDED,
+      () => this.runBulk(
+        Array.from(this.selectedVendors),
+        id => this.vendorService.updateVendorStatus(String(id), status),
+        `updated to ${status.toLowerCase()}`
+      )
     );
   }
 
   private bulkDelete(): void {
-    if (!confirm(`Are you sure you want to delete ${this.selectedVendors.size} vendor(s)? This action cannot be undone.`)) {
-      return;
-    }
-
-    this.runBulk(
-      Array.from(this.selectedVendors),
-      id => this.vendorService.deleteVendor(String(id)),
-      'deleted'
+    this.openConfirm(
+      'Delete Vendors',
+      `Are you sure you want to delete ${this.selectedVendors.size} vendor(s)? This action cannot be undone.`,
+      true,
+      () => this.runBulk(
+        Array.from(this.selectedVendors),
+        id => this.vendorService.deleteVendor(String(id)),
+        'deleted'
+      )
     );
   }
 
@@ -795,32 +822,38 @@ export class VendorManagementListComponent implements OnInit, OnDestroy, AfterVi
   toggleLoginAccess(vendor: Vendor): void {
     const enabling = !vendor.loginEnabled;
     const label = vendor.companyName || `Vendor #${vendor.id}`;
-    const msg = enabling
-      ? `Enable login access for ${label}?`
-      : `Revoke login access for ${label}?`;
-    if (!confirm(msg)) return;
-    this.togglingLoginId = vendor.id;
-    this.vendorService.enableVendorLogin(String(vendor.id), enabling).subscribe({
-      next: updated => {
-        vendor.loginEnabled = updated.loginEnabled;
-        this.togglingLoginId = null;
-      },
-      error: () => { this.togglingLoginId = null; }
-    });
+    this.openConfirm(
+      enabling ? 'Enable Login Access' : 'Revoke Login Access',
+      enabling
+        ? `Enable portal login access for ${label}?`
+        : `Revoke portal login access for ${label}?`,
+      !enabling,
+      () => {
+        this.togglingLoginId = vendor.id;
+        this.vendorService.enableVendorLogin(String(vendor.id), enabling).subscribe({
+          next: updated => {
+            vendor.loginEnabled = updated.loginEnabled;
+            this.togglingLoginId = null;
+          },
+          error: () => { this.togglingLoginId = null; }
+        });
+      }
+    );
   }
 
   deleteVendor(vendor: Vendor): void {
-    if (confirm(`Are you sure you want to delete ${vendor.companyName}? This action cannot be undone.`)) {
-      this.vendorService.deleteVendor(String(vendor.id)).subscribe({
-        next: () => {
-          this.loadVendors();
-        },
+    this.openConfirm(
+      'Delete Vendor',
+      `Are you sure you want to delete ${vendor.companyName}? This action cannot be undone.`,
+      true,
+      () => this.vendorService.deleteVendor(String(vendor.id)).subscribe({
+        next: () => this.loadVendors(),
         error: (err) => {
           console.error('Failed to delete vendor:', err);
           this.error = `Could not delete ${vendor.companyName}.`;
         }
-      });
-    }
+      })
+    );
   }
 
   /**

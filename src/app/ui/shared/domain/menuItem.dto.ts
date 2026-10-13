@@ -11,8 +11,8 @@ export interface MenuItem {
     code?: string;
     description?: string;
     shortDescription?: string;
+    queryParams?: Record<string, string>;
     isNotSidebarItem?: boolean;
     isSectionHeader?: boolean;
     doNotRegisterAsPermission?: boolean;
   }
-  

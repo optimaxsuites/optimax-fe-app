@@ -33,6 +33,14 @@
         (click)="activeSection = 'office-hours'">
         <i class="fas fa-clock"></i> Office Hours
       </button>
+      <button class="snav-item" [class.active]="activeSection === 'biometric-devices'"
+        (click)="activeSection = 'biometric-devices'; onBiometricSectionEnter()">
+        <i class="fas fa-fingerprint"></i> Biometric Devices
+      </button>
+      <button class="snav-item" [class.active]="activeSection === 'hikvision-config'"
+        (click)="activeSection = 'hikvision-config'">
+        <i class="fas fa-camera"></i> Hikvision Config
+      </button>
     </div>
 
     <!-- Right panel -->
@@ -458,6 +466,283 @@
       <!-- ══ OFFICE HOURS ══ -->
       <ng-container *ngIf="activeSection === 'office-hours'">
         <app-office-hours></app-office-hours>
+      </ng-container>
+
+      <!-- ══ BIOMETRIC DEVICES ══ -->
+      <ng-container *ngIf="activeSection === 'biometric-devices'">
+        <div class="section-head">
+          <h3>Biometric Devices</h3>
+          <p>Register and manage time-attendance terminals (Hikvision DS-K1T321 and similar). Each device is identified
+            by its IP address and routes events via the HR callback endpoint.</p>
+        </div>
+
+        <!-- Toolbar -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:13px;color:#64748b">
+            {{ deviceList.length }} device{{ deviceList.length !== 1 ? 's' : '' }} registered
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-ghost" (click)="loadDevices()" [disabled]="deviceListLoading">
+              <i class="fas"
+                [class.fa-sync-alt]="!deviceListLoading"
+                [class.fa-spinner]="deviceListLoading"
+                [class.fa-spin]="deviceListLoading"></i>
+              Refresh
+            </button>
+            <button class="btn-primary" (click)="openNewDevice()">
+              <i class="fas fa-plus"></i> Register Device
+            </button>
+          </div>
+        </div>
+
+        <!-- Device register / edit form -->
+        <div class="odoo-form-card" *ngIf="showDeviceForm" style="margin-bottom:20px">
+          <h4 class="form-card-title">{{ deviceEditTarget ? 'Edit Device' : 'Register New Device' }}</h4>
+          <p class="form-card-sub">{{ deviceEditTarget ? 'Update device details below.' : 'Add a new biometric terminal to the network.' }}</p>
+
+          <div class="form-2col">
+            <div class="form-row">
+              <label>Device ID <span style="color:#e11d48">*</span></label>
+              <input type="text" [(ngModel)]="deviceForm.deviceId" placeholder="e.g. HIK-BR01-A" class="form-input">
+            </div>
+            <div class="form-row">
+              <label>Display Name <span style="color:#e11d48">*</span></label>
+              <input type="text" [(ngModel)]="deviceForm.name" placeholder="e.g. Main Entrance" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-2col">
+            <div class="form-row">
+              <label>IP Address <span style="color:#e11d48">*</span></label>
+              <input type="text" [(ngModel)]="deviceForm.ipAddress" placeholder="192.168.1.100" class="form-input">
+            </div>
+            <div class="form-row">
+              <label>Branch / Location</label>
+              <input type="text" [(ngModel)]="deviceForm.branchId" placeholder="Branch code or ID" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-2col">
+            <div class="form-row">
+              <label>Manufacturer</label>
+              <input type="text" [(ngModel)]="deviceForm.manufacturer" placeholder="Hikvision" class="form-input">
+            </div>
+            <div class="form-row">
+              <label>Model</label>
+              <input type="text" [(ngModel)]="deviceForm.model" placeholder="DS-K1T321MFWX" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-2col">
+            <div class="form-row">
+              <label>Serial Number</label>
+              <input type="text" [(ngModel)]="deviceForm.serialNumber" placeholder="Device serial" class="form-input">
+            </div>
+            <div class="form-row">
+              <label>Device Type</label>
+              <select [(ngModel)]="deviceForm.deviceType" class="form-input">
+                <option *ngFor="let t of deviceTypeOptions" [value]="t">{{ t }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-2col">
+            <div class="form-row">
+              <label>MAC Address</label>
+              <input type="text" [(ngModel)]="deviceForm.macAddress" placeholder="AA:BB:CC:DD:EE:FF" class="form-input">
+            </div>
+            <div class="form-row">
+              <label>Firmware Version</label>
+              <input type="text" [(ngModel)]="deviceForm.firmwareVersion" placeholder="V2.0.8" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label>Max Template Capacity</label>
+            <input type="number" min="1" [(ngModel)]="deviceForm.maxStorageCapacity" class="form-input" style="max-width:160px">
+          </div>
+
+          <div class="form-row" style="flex-direction:row;align-items:center;gap:12px">
+            <label style="margin:0">Active</label>
+            <label class="toggle-switch" style="margin:0">
+              <input type="checkbox" [(ngModel)]="deviceForm.isActive">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <div class="error-msg" *ngIf="deviceFormError">⚠️ {{ deviceFormError }}</div>
+          <div style="color:#10b981;font-size:13px;font-weight:600;margin-top:8px" *ngIf="deviceFormSuccess">
+            <i class="fas fa-check-circle"></i> Saved successfully
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-ghost" (click)="closeDeviceForm()">Cancel</button>
+            <button class="btn-primary" (click)="saveDevice()" [disabled]="deviceSaving">
+              <i class="fas" [class.fa-save]="!deviceSaving" [class.fa-spinner]="deviceSaving" [class.fa-spin]="deviceSaving"></i>
+              {{ deviceSaving ? 'Saving…' : (deviceEditTarget ? 'Update Device' : 'Register Device') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Loading state -->
+        <div *ngIf="deviceListLoading" style="text-align:center;padding:40px;color:#94a3b8">
+          <i class="fas fa-spinner fa-spin" style="font-size:24px"></i>
+        </div>
+
+        <!-- Device list table -->
+        <div *ngIf="!deviceListLoading" class="table-wrap">
+          <table class="list-table" *ngIf="deviceList.length > 0">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>IP Address</th>
+                <th>Type</th>
+                <th>Branch</th>
+                <th>Status</th>
+                <th style="width:100px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let dev of deviceList">
+                <td>
+                  <div style="font-weight:600;color:#1e293b">{{ dev.name }}</div>
+                  <div style="font-size:11px;color:#94a3b8">{{ dev.model }}</div>
+                </td>
+                <td style="font-family:monospace;font-size:12px">{{ dev.ipAddress }}</td>
+                <td>
+                  <span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600">
+                    {{ dev.deviceType }}
+                  </span>
+                </td>
+                <td style="font-size:12px;color:#64748b">{{ dev.branchId || '—' }}</td>
+                <td>
+                  <span *ngIf="dev.isOnline && dev.isActive"
+                    style="color:#059669;font-size:12px;font-weight:600">
+                    <i class="fas fa-circle" style="font-size:7px;margin-right:4px"></i> Online
+                  </span>
+                  <span *ngIf="!dev.isOnline && dev.isActive"
+                    style="color:#d97706;font-size:12px;font-weight:600">
+                    <i class="fas fa-circle" style="font-size:7px;margin-right:4px"></i> Offline
+                  </span>
+                  <span *ngIf="!dev.isActive"
+                    style="color:#9ca3af;font-size:12px">Inactive</span>
+                </td>
+                <td>
+                  <div style="display:flex;gap:6px">
+                    <button class="bulk-btn" (click)="openEditDevice(dev)" title="Edit">
+                      <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button class="bulk-btn" (click)="deleteDevice(dev)"
+                      [disabled]="deviceDeleteIds[dev.id]" title="Delete"
+                      style="color:#e11d48">
+                      <i class="fas" [class.fa-trash]="!deviceDeleteIds[dev.id]"
+                        [class.fa-spinner]="deviceDeleteIds[dev.id]"
+                        [class.fa-spin]="deviceDeleteIds[dev.id]"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div *ngIf="deviceList.length === 0"
+            style="text-align:center;padding:48px;color:#9ca3af;font-size:13px;border:2px dashed #e2e8f0;border-radius:12px">
+            <i class="fas fa-fingerprint" style="font-size:32px;display:block;margin-bottom:12px;opacity:.4"></i>
+            No devices registered yet. Click <strong>Register Device</strong> to add your first terminal.
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- ══ HIKVISION CONFIG ══ -->
+      <ng-container *ngIf="activeSection === 'hikvision-config'">
+        <div class="section-head">
+          <h3>Hikvision Integration Config</h3>
+          <p>Configure the DS-K1T321 (and compatible) terminals to push attendance events to OptimaX automatically.</p>
+        </div>
+
+        <!-- Callback URL card -->
+        <div class="settings-group">
+          <h4 class="settings-group__title">Callback Endpoint</h4>
+          <p style="font-size:13px;color:#64748b;margin:0 0 12px">
+            Enter this URL in the Hikvision device web interface under
+            <strong>Configuration → Network → Advanced Settings → Linked Network Application → Subscribing Host Address</strong>.
+          </p>
+
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <code style="flex:1;background:#1e293b;color:#7dd3fc;padding:10px 14px;border-radius:8px;font-size:12px;word-break:break-all;min-width:0">
+              {{ hikCallbackUrl }}
+            </code>
+            <button class="btn-primary" (click)="copyHikUrl()" style="white-space:nowrap;flex-shrink:0">
+              <i class="fas" [class.fa-copy]="!hikUrlCopied" [class.fa-check]="hikUrlCopied"></i>
+              {{ hikUrlCopied ? 'Copied!' : 'Copy URL' }}
+            </button>
+          </div>
+
+          <div class="info-box" style="margin-top:12px">
+            Replace <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px">&lt;YOUR_TOKEN&gt;</code>
+            with the value of the <strong>HIKVISION_CALLBACK_TOKEN</strong> environment variable set on the HR service server.
+            This token is the shared secret that authenticates the device push. Keep it out of source control.
+          </div>
+        </div>
+
+        <!-- Environment variable setup -->
+        <div class="settings-group">
+          <h4 class="settings-group__title">Environment Variable</h4>
+          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+            <p style="font-size:13px;color:#64748b;margin:0">
+              Set the following on the HR microservice host (production):
+            </p>
+            <code style="background:#1e293b;color:#a3e635;padding:8px 14px;border-radius:8px;font-size:12px;display:block;width:100%">
+              HIKVISION_CALLBACK_TOKEN=<span style="color:#fde68a">your-strong-secret-here</span>
+            </code>
+            <p style="font-size:12px;color:#94a3b8;margin:0">
+              Default fallback is <code style="background:#f1f5f9;padding:1px 5px">hik-cb-prod-change-me</code> — change this before going live.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step-by-step guide -->
+        <div class="settings-group">
+          <h4 class="settings-group__title">Device Configuration Steps</h4>
+          <ol style="font-size:13px;color:#475569;line-height:2;margin:0;padding-left:20px">
+            <li>Open a browser and navigate to the device IP (e.g. <code style="background:#f1f5f9;padding:1px 5px">http://192.168.1.100</code>).</li>
+            <li>Log in with admin credentials (default: <code style="background:#f1f5f9;padding:1px 5px">admin / 12345</code> — change immediately).</li>
+            <li>Go to <strong>Configuration → Network → Advanced Settings → Linked Network Application</strong>.</li>
+            <li>Set <strong>Subscribing Host Address</strong> to the callback URL above (with your token).</li>
+            <li>Set <strong>Subscribing Host Port</strong> to <code style="background:#f1f5f9;padding:1px 5px">443</code>.</li>
+            <li>Enable <strong>HTTPS</strong> and set the event subscription to include <strong>Access Control Events</strong>.</li>
+            <li>Save and reboot the device.</li>
+            <li>Register the device in OptimaX using the <strong>Biometric Devices</strong> settings panel (IP address must match).</li>
+            <li>Enroll employee fingerprints / faces in the Personnel → Biometric Enrollment module.</li>
+          </ol>
+        </div>
+
+        <!-- Quick reference -->
+        <div class="settings-group">
+          <h4 class="settings-group__title">DS-K1T321MFWX Capabilities</h4>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+            <div class="panel-card" style="padding:14px;text-align:center">
+              <div style="font-size:22px;color:#6366f1"><i class="fas fa-fingerprint"></i></div>
+              <div style="font-weight:700;font-size:14px;margin:6px 0 2px">3,000</div>
+              <div style="font-size:11px;color:#64748b">Fingerprint templates</div>
+            </div>
+            <div class="panel-card" style="padding:14px;text-align:center">
+              <div style="font-size:22px;color:#0ea5e9"><i class="fas fa-smile"></i></div>
+              <div style="font-weight:700;font-size:14px;margin:6px 0 2px">500</div>
+              <div style="font-size:11px;color:#64748b">Face templates</div>
+            </div>
+            <div class="panel-card" style="padding:14px;text-align:center">
+              <div style="font-size:22px;color:#10b981"><i class="fas fa-history"></i></div>
+              <div style="font-weight:700;font-size:14px;margin:6px 0 2px">150,000</div>
+              <div style="font-size:11px;color:#64748b">Event records</div>
+            </div>
+            <div class="panel-card" style="padding:14px;text-align:center">
+              <div style="font-size:22px;color:#f59e0b"><i class="fas fa-wifi"></i></div>
+              <div style="font-weight:700;font-size:14px;margin:6px 0 2px">WiFi</div>
+              <div style="font-size:11px;color:#64748b">+ Ethernet</div>
+            </div>
+          </div>
+        </div>
       </ng-container>
 
     </div>

@@ -383,4 +383,26 @@
         </ng-container>
 
     </main>
+
+    <!-- Confirm modal -->
+    <div class="ql-modal-backdrop" *ngIf="showConfirmModal" (click)="closeConfirmModal()"></div>
+    <div class="ql-modal ql-modal--confirm" *ngIf="showConfirmModal" role="dialog" aria-modal="true">
+        <div class="ql-modal-header">
+            <h3>{{ confirmTitle }}</h3>
+            <button class="ql-modal-close" (click)="closeConfirmModal()" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="ql-modal-body">
+            <p>{{ confirmMessage }}</p>
+        </div>
+        <div class="ql-modal-footer">
+            <button class="ql-btn ql-btn--ghost" (click)="closeConfirmModal()">Cancel</button>
+            <button class="ql-btn"
+                    [class.ql-btn--danger]="confirmDanger"
+                    [class.ql-btn--primary]="!confirmDanger"
+                    (click)="confirmModalSubmit()">Confirm</button>
+        </div>
+    </div>
+
 </div>

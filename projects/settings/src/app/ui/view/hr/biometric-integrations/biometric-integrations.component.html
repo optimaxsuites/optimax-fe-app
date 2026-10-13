@@ -1,0 +1,122 @@
+<div class="bi-shell">
+
+  <div class="bi-layout">
+
+    <!-- ── Manufacturer list ── -->
+    <div class="bi-list">
+      <div class="bi-list-header">Manufacturers</div>
+
+      <div *ngFor="let m of manufacturers"
+           class="bi-list-item"
+           [class.active]="selected.id === m.id"
+           (click)="select(m)">
+        <span class="bi-list-icon" [style.background]="m.iconColor + '18'">
+          <i [class]="m.icon" [style.color]="m.iconColor"></i>
+        </span>
+        <span class="bi-list-name">{{ m.name }}</span>
+        <span *ngIf="m.available" class="bi-badge bi-badge--live">Live</span>
+        <span *ngIf="!m.available" class="bi-badge bi-badge--soon">Soon</span>
+      </div>
+    </div>
+
+    <!-- ── Detail panel ── -->
+    <div class="bi-detail">
+
+      <!-- Manufacturer header -->
+      <div class="bi-detail-header">
+        <span class="bi-detail-icon" [style.background]="selected.iconColor + '18'">
+          <i [class]="selected.icon" [style.color]="selected.iconColor"></i>
+        </span>
+        <div>
+          <h3 class="bi-detail-name">{{ selected.name }}</h3>
+          <p class="bi-detail-tagline">{{ selected.tagline }}</p>
+        </div>
+        <span *ngIf="selected.available" class="bi-badge bi-badge--live bi-badge--lg">Live</span>
+        <span *ngIf="!selected.available" class="bi-badge bi-badge--soon bi-badge--lg">Coming soon</span>
+      </div>
+
+      <!-- Supported models -->
+      <div class="bi-models">
+        <span *ngFor="let mdl of selected.models" class="bi-model-chip">{{ mdl }}</span>
+      </div>
+
+      <!-- ── Available: full config ── -->
+      <ng-container *ngIf="selected.available">
+
+        <!-- Callback URL -->
+        <div class="bi-card">
+          <div class="bi-card-label">Callback Endpoint URL</div>
+          <p class="bi-card-desc">
+            Enter this URL in the device web interface under
+            <strong>Configuration → Network → Advanced Settings → Linked Network Application → Subscribing Host Address</strong>.
+          </p>
+          <div class="bi-url-row">
+            <code class="bi-url-code">{{ callbackUrl }}</code>
+            <button class="bi-copy-btn" (click)="copyUrl()">
+              <i class="fas" [class.fa-copy]="!urlCopied" [class.fa-check]="urlCopied"></i>
+              {{ urlCopied ? 'Copied!' : 'Copy' }}
+            </button>
+          </div>
+          <p class="bi-note">
+            Replace <code class="bi-inline-code">&lt;YOUR_TOKEN&gt;</code> with the value of the
+            <strong>{{ selected.envVar }}</strong> environment variable set on the HR service host.
+          </p>
+        </div>
+
+        <!-- Environment variable -->
+        <div class="bi-card">
+          <div class="bi-card-label">Environment Variable (Production Server)</div>
+          <code class="bi-env-code">
+            {{ selected.envVar }}=<span class="bi-env-val">your-strong-secret-here</span>
+          </code>
+          <p class="bi-note" style="margin-top:8px">
+            Default fallback is <code class="bi-inline-code">hik-cb-prod-change-me</code> — change this before going live.
+          </p>
+        </div>
+
+        <!-- Setup steps -->
+        <div class="bi-card">
+          <div class="bi-card-label">Device Configuration Steps</div>
+          <ol class="bi-steps">
+            <li *ngFor="let step of selected.setupSteps" [innerHTML]="step"></li>
+          </ol>
+        </div>
+
+        <!-- Capabilities -->
+        <div class="bi-card" *ngIf="selected.capabilities">
+          <div class="bi-card-label">{{ selected.name }} Capabilities</div>
+          <div class="bi-caps-grid">
+            <div *ngFor="let cap of selected.capabilities" class="bi-cap">
+              <i [class]="cap.icon" [style.color]="cap.iconColor"></i>
+              <strong>{{ cap.value }}</strong>
+              <span>{{ cap.label }}</span>
+            </div>
+          </div>
+        </div>
+
+      </ng-container>
+
+      <!-- ── Not yet available ── -->
+      <ng-container *ngIf="!selected.available">
+        <div class="bi-coming-soon">
+          <div class="bi-cs-icon">
+            <i [class]="selected.icon" [style.color]="selected.iconColor"></i>
+          </div>
+          <h4 class="bi-cs-title">{{ selected.name }} integration is coming soon</h4>
+          <p class="bi-cs-body">
+            We're working on native push-event support for {{ selected.name }} devices.
+            Once live, the callback URL and environment variable will appear here automatically.
+          </p>
+          <div class="bi-cs-models">
+            <p class="bi-cs-models-label">Planned support for</p>
+            <div class="bi-models">
+              <span *ngFor="let mdl of selected.models" class="bi-model-chip">{{ mdl }}</span>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+    </div>
+  </div>
+
+</div>

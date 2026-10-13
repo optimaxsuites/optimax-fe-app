@@ -18,8 +18,11 @@ export class AuthInterceptor implements HttpInterceptor {
     ): Observable<HttpEvent<any>> {
         const accessToken = sessionStorage.getItem("Token");
         if (accessToken) {
+            const tenantId = sessionStorage.getItem('tenantId') ?? localStorage.getItem('tenantId') ?? 'optimax';
             const _request = request.clone({
-              headers: request.headers.set("Authorization", `Bearer ${accessToken}`)
+              headers: request.headers
+                .set("Authorization", `Bearer ${accessToken}`)
+                .set("X-Tenant-ID", tenantId)
             });
             return next.handle(_request);
           }

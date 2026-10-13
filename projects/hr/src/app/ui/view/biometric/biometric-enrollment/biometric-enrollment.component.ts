@@ -67,9 +67,9 @@ export class BiometricEnrollmentComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (devices) => {
-          this.availableDevices = devices.filter(d => d.isActive && d.isOnline);
+          this.availableDevices = devices.filter(d => d.isActive);
           if (this.availableDevices.length === 0) {
-            this.errorMessage = 'No active biometric devices available. Please contact HR.';
+            this.errorMessage = 'No active biometric devices registered. Go to Settings → HR Settings → Biometric Devices and register a device first.';
           }
         },
         error: (err) => {

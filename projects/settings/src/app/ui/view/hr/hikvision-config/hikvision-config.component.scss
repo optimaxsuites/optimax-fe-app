@@ -1,0 +1,138 @@
+.hc-shell { padding: 4px 0 16px; }
+
+.hc-header {
+  margin-bottom: 20px;
+}
+
+.hc-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 4px;
+  i { color: #6366f1; margin-right: 8px; }
+}
+
+.hc-sub {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+.hc-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+}
+
+.hc-card-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+
+.hc-card-desc {
+  font-size: 13px;
+  color: #475569;
+  margin: 0 0 12px;
+  line-height: 1.7;
+}
+
+.hc-url-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hc-url-code {
+  flex: 1;
+  background: #1e293b;
+  color: #7dd3fc;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  word-break: break-all;
+  min-width: 0;
+  display: block;
+}
+
+.hc-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .15s;
+  &:hover { background: #4f46e5; }
+}
+
+.hc-note {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 10px 0 0;
+  line-height: 1.6;
+}
+
+.hc-inline-code {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.hc-env-code {
+  display: block;
+  background: #1e293b;
+  color: #a3e635;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.hc-env-val { color: #fde68a; }
+
+.hc-steps {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #475569;
+  line-height: 2;
+
+  li { padding: 1px 0; }
+}
+
+.hc-caps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.hc-cap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  padding: 14px 8px;
+  text-align: center;
+
+  i    { font-size: 22px; }
+  strong { font-size: 15px; color: #1e293b; font-weight: 700; }
+  span { font-size: 11px; color: #64748b; }
+}

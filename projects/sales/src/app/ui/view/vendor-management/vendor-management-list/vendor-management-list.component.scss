@@ -1197,3 +1197,72 @@
     border-color: #fca5a5;
     color: #dc2626;
 }
+
+// ============================================================
+// CONFIRM MODAL
+// ============================================================
+
+.ql-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .4);
+    z-index: 900;
+}
+
+.ql-modal--confirm {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 901;
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .2);
+    width: min(480px, 90vw);
+    display: flex;
+    flex-direction: column;
+
+    .ql-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+
+        h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .ql-modal-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 4px;
+
+            &:hover { color: var(--text); }
+        }
+    }
+
+    .ql-modal-body {
+        padding: 20px;
+
+        p {
+            margin: 0;
+            color: var(--text);
+            line-height: 1.5;
+        }
+    }
+
+    .ql-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 12px 20px;
+        border-top: 1px solid var(--border);
+    }
+}
