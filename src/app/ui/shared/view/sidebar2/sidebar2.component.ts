@@ -157,8 +157,12 @@ tenant: any = {
   }
 
   isSuperUser(): boolean {
-  const roles = sessionStorage.getItem("role");
-  return roles?.includes("ROLE_ADMIN") ?? false;
-}
+    const roles = sessionStorage.getItem("role");
+    return roles?.includes("ROLE_ADMIN") ?? false;
+  }
+
+  isVendorUser(): boolean {
+    return sessionStorage.getItem('isVendor') === 'true';
+  }
   
 }

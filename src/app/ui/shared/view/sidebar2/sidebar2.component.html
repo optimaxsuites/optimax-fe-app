@@ -128,7 +128,7 @@
     </li>
 
     <!-- Tenants -->
-    <li *ngIf="showAdminUI" class="sb-entry">
+    <li *ngIf="showAdminUI && !isVendorUser()" class="sb-entry">
       <a [routerLink]="tenant.route"
          (click)="onNavigate()"
          routerLinkActive="sb-link--active"

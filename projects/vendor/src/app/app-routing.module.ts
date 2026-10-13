@@ -4,11 +4,8 @@ import { VendorPageComponent } from './ui/view/vendor-page.component';
 import { VendorRfqComponent } from './ui/view/vendor-rfq/vendor-rfq.component';
 
 const routes: Routes = [
-  {path: 'admin/vendor/:uuid',
-    component: VendorPageComponent,
-  },
-  {path: 'admin/vendor/rfq/:uuid', component:VendorRfqComponent },
-      
+  { path: ':uuid', component: VendorPageComponent },
+  { path: 'rfq/:uuid', component: VendorRfqComponent },
 ];
 
 @NgModule({
