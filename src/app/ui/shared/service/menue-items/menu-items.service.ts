@@ -293,6 +293,8 @@ export class MenuItemsService {
         { label: 'Attendance', route: this.navigationLink.getLink('attendanceLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
         { label: 'Leave', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
         { label: 'Score Sheet', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
+        { label: 'Biometric Devices', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'biometric-devices' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-id-card' },
+        { label: 'Manufacturer Integrations', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'biometric-integrations' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-plug' },
 
       ],
     },

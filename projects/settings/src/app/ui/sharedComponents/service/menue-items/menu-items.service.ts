@@ -906,6 +906,8 @@ export class MenuItemsService {
         { label: 'Notifications', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'notifications' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-bell' },
         { label: 'Import from Odoo', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'odoo' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-puzzle-piece' },
         { label: 'Forms & Templates', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'forms' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-file-alt' },
+        { label: 'Biometric Devices', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'biometric-devices' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-fingerprint' },
+        { label: 'Manufacturer Integrations', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'biometric-integrations' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-plug' },
       ],
     },
     {

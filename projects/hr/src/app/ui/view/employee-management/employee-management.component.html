@@ -1,4 +1,34 @@
 <div class="employee-management-shell">
+
+  <!-- Submodule tab strip -->
+  <div class="emp-submodule-tabs">
+    <button class="emp-subtab" [class.active]="activeSubmodule === 'directory'"
+      (click)="activeSubmodule = 'directory'">
+      <i class="fas fa-users"></i> Employee Directory
+    </button>
+    <button class="emp-subtab" [class.active]="activeSubmodule === 'staff-numbers'"
+      (click)="activeSubmodule = 'staff-numbers'">
+      <i class="fas fa-id-badge"></i> Staff Numbers
+    </button>
+    <button class="emp-subtab" [class.active]="activeSubmodule === 'enrollment'"
+      (click)="activeSubmodule = 'enrollment'">
+      <i class="fas fa-fingerprint"></i> Biometric Enrollment
+    </button>
+  </div>
+
+  <!-- Staff Numbers submodule -->
+  <ng-container *ngIf="activeSubmodule === 'staff-numbers'">
+    <app-staff-numbers></app-staff-numbers>
+  </ng-container>
+
+  <!-- Biometric Enrollment submodule -->
+  <ng-container *ngIf="activeSubmodule === 'enrollment'">
+    <app-biometric-enrollment></app-biometric-enrollment>
+  </ng-container>
+
+  <!-- Employee Directory (default) -->
+  <ng-container *ngIf="activeSubmodule === 'directory'">
+
   <div *ngIf="loading" class="surface-loading-overlay">
     <div class="surface-loading-card">
       <div class="employee-loading-shell">
@@ -627,4 +657,6 @@
     </div>
   </div>
 </app-modal>
+
+  </ng-container> <!-- /directory submodule -->
 </div>

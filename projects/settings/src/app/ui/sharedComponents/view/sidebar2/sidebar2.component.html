@@ -38,6 +38,7 @@
             <span *ngIf="subItem.isSectionHeader" class="submenu-section-label">{{ subItem.label }}</span>
             <a *ngIf="!subItem.isSectionHeader"
                [routerLink]="subItem.route"
+               [queryParams]="subItem.queryParams"
                [class.active]="isSubItemActive(subItem.route)">
               <i *ngIf="subItem.icon" [class]="subItem.icon"></i>
               {{ subItem.label }}

@@ -13,6 +13,9 @@ import { HrNotificationsComponent } from '../hr-notifications/hr-notifications.c
 import { HrOdooImportComponent } from '../hr-odoo-import/hr-odoo-import.component';
 import { ProbationSettingsComponent } from '../probation/probation-settings.component';
 import { HrFormsComponent } from '../hr-forms/hr-forms.component';
+import { BiometricDevicesSettingsComponent } from '../biometric-devices/biometric-devices-settings.component';
+import { HikvisionConfigComponent } from '../hikvision-config/hikvision-config.component';
+import { BiometricIntegrationsComponent } from '../biometric-integrations/biometric-integrations.component';
 
 @Component({
   selector: 'app-hr-settings',
@@ -53,6 +56,10 @@ export class HrSettingsComponent implements OnInit {
       subSetting: ['Active probation list', 'Overdue cases', 'Due-soon alerts'] },
     { name: 'Forms & Templates', key: 'forms', icon: 'fas fa-file-alt', component: HrFormsComponent,
       subSetting: ['Pre-Onboarding Form', 'Employee Record Update Form', 'Exit / Offboarding Form'] },
+    { name: 'Biometric Devices', key: 'biometric-devices', icon: 'fas fa-fingerprint', component: BiometricDevicesSettingsComponent,
+      subSetting: ['Register terminals', 'Device management', 'IP-based event routing'] },
+    { name: 'Manufacturer Integrations', key: 'biometric-integrations', icon: 'fas fa-plug', component: BiometricIntegrationsComponent,
+      subSetting: ['Hikvision · ZKTeco · Suprema · Anviz', 'Callback URLs & tokens', 'Per-manufacturer setup guides'] },
   ];
 
   filteredSettings = [...this.settings];
