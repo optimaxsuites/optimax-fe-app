@@ -528,8 +528,8 @@ async posLoginAction(): Promise<void> {
           const pendingLink = this.navigationLink.getLink('vendorPendingLink');
           this.router.navigate([pendingLink]);
         } else {
-          const vendorLink = this.navigationLink.getLink('vendorLink');
-          this.router.navigate([vendorLink]);
+          const vpLink = this.navigationLink.getLink('VPLink');
+          this.router.navigate([vpLink]);
         }
       },
       error: () => {
