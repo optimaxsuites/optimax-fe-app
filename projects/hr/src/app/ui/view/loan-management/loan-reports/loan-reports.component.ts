@@ -19,7 +19,8 @@ import {
   resolveLoanLateFeeGracePeriodDays,
   resolveLoanLateFeePercentage,
   resolveLoanInterestAmount,
-  resolveLoanTotalRepayableAmount
+  resolveLoanTotalRepayableAmount,
+  resolveLoanTotalLateFees
 } from '../../../service/loan/loan-display.util';
 
 interface LoanReportRow {
@@ -288,31 +289,10 @@ export class LoanReportsComponent implements OnInit {
 
   // Calculate late fees for a loan (based on principal of overdue installments)
  calculateTotalLateFees(loan: LoanApplication): number {
-  // Only calculate for loans that have late fee policy and are overdue
-  const lateFeePercentage = resolveLoanLateFeePercentage(loan);
-  if (!lateFeePercentage || lateFeePercentage === 0) {
-    return 0;
+    // Same rule the repayment service uses to charge fees (and the dashboard shows):
+    // recorded fee, else % of unpaid principal + interest once past the grace period.
+    return resolveLoanTotalLateFees(loan);
   }
-  
-  // Check for overdue installments
-  const overdueInstallments = (loan.repaymentSchedule || []).filter(
-    item => item.status === 'OVERDUE'
-  );
-  
-  if (overdueInstallments.length === 0) {
-    return 0;
-  }
-  
-  // Calculate late fee based on principal of each overdue installment
-  let totalLateFees = 0;
-  for (const installment of overdueInstallments) {
-    const principalAmount = installment.principalAmount || 0;
-    const lateFeeAmount = principalAmount * (lateFeePercentage / 100);
-    totalLateFees += lateFeeAmount;
-  }
-  
-  return Number(totalLateFees.toFixed(2));
-}
 
   // Get active loans only for summary cards
   get activeLoans(): LoanApplication[] {

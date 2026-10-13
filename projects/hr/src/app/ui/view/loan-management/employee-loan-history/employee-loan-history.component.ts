@@ -17,7 +17,9 @@ import {
   resolveLoanOutstandingBalance,
   resolveLoanTotalPaid,
   resolveLoanTotalRepayableAmount,
-  resolveLoanInterestAmount
+  resolveLoanInterestAmount,
+  isLoanEligibleForExtension,
+  resolveLoanTotalLateFees
 } from '../../../service/loan/loan-display.util';
 
 interface EmployeeLoanHistoryRow {
@@ -128,10 +130,10 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   // ============================================
 
   openGracePeriodRequest(): void {
-    const activeLoans = this.employeeLoans.filter(loan => loan.status === 'ACTIVE');
+    const activeLoans = this.employeeLoans.filter(loan => isLoanEligibleForExtension(loan));
 
     if (!activeLoans.length) {
-      alert('You can only request a payment extension when you have at least one active loan.');
+      alert('You can only request a payment extension when you have at least one active or overdue loan.');
       return;
     }
 
@@ -211,27 +213,9 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   }
 
   calculateTotalLateFees(loan: LoanApplication): number {
-    if (loan.status !== 'OVERDUE' && loan.status !== 'ACTIVE') {
-      return 0;
-    }
-    
-    const lateFeePercentage = resolveLoanLateFeePercentage(loan);
-    if (!lateFeePercentage || lateFeePercentage === 0) return 0;
-    
-    const overdueInstallments = (loan.repaymentSchedule || []).filter(
-      item => item.status === 'OVERDUE'
-    );
-    
-    if (overdueInstallments.length === 0) return 0;
-    
-    let totalLateFees = 0;
-    for (const installment of overdueInstallments) {
-      const principalAmount = installment.principalAmount || 0;
-      const lateFeeAmount = principalAmount * (lateFeePercentage / 100);
-      totalLateFees += lateFeeAmount;
-    }
-    
-    return Number(totalLateFees.toFixed(2));
+    // Same rule the repayment service uses to charge fees (and the dashboard shows):
+    // recorded fee, else % of unpaid principal + interest once past the grace period.
+    return resolveLoanTotalLateFees(loan);
   }
 
   // Active loans only for summary cards

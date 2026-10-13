@@ -5,6 +5,7 @@ import { switchMap, map } from 'rxjs/operators';
 import { LoanApplication, RepaymentScheduleItem, StatusChange, LoanStatus, LoanStatusUpdate } from './loan.types';
 import { LoanApplicationService } from './loan-application.service';
 import { LoanPurposeService } from './loan-purpose.service';
+import { LoanConcurrentModificationError } from './loan.service';
 import {
   normalizeLoanRepaymentStartDate,
   readPersistedLoanLateFeeGracePeriodDays,
@@ -71,6 +72,17 @@ export class LoanApprovalService {
           ? undefined
           : ((statusOrUpdate as any).statusBeforeOverride as LoanStatus | undefined);
         const previousStatus = application.status;
+        const isOverride = !!overrideReason;
+
+        // `application` was just re-read from the server, so this rejects decisions made on a stale
+        // screen (e.g. rejecting a loan another admin has already approved, or disbursing twice).
+        const allowedPreviousStatuses = LoanApprovalService.getAllowedPreviousStatuses(status, isOverride);
+        if (allowedPreviousStatuses && !allowedPreviousStatuses.includes(previousStatus)) {
+          return throwError(() => new LoanConcurrentModificationError(
+            `This loan is now ${String(previousStatus).replace(/_/g, ' ').toLowerCase()}, so it can't be moved to ${String(status).replace(/_/g, ' ').toLowerCase()}. ` +
+            'It may have been changed by someone else. Reload the loan and try again.'
+          ));
+        }
         
         if (interestRate !== undefined && Number.isFinite(interestRate)) {
           workingApplication.interestRate = Number(interestRate.toFixed(2));
@@ -134,9 +146,13 @@ export class LoanApprovalService {
             this.recalculateApprovalTerms(workingApplication);
             break;
           case 'ACTIVE':
-            workingApplication.disbursedDate = changedAt;
-            workingApplication.disbursedBy = actingUserId;
-            persistLoanStatusActorName(workingApplication, 'ACTIVE', actingUserId);
+            // Only a real disbursement stamps disbursement metadata. An admin override restoring a
+            // paused/overdue loan must keep the original disbursement date and actor.
+            if (!isOverride) {
+              workingApplication.disbursedDate = changedAt;
+              workingApplication.disbursedBy = actingUserId;
+              persistLoanStatusActorName(workingApplication, 'ACTIVE', actingUserId);
+            }
             if (!workingApplication.repaymentSchedule?.length && workingApplication.repaymentStartDate && workingApplication.repaymentDay) {
               workingApplication.repaymentSchedule = this.generateRepaymentScheduleWithStartDate(
                 workingApplication.amount,
@@ -212,6 +228,34 @@ export class LoanApprovalService {
         );
       })
     );
+  }
+
+  /**
+   * Statuses a loan must currently be in for a move to `target`, or null when the target isn't
+   * governed here. Mirrors the actions the screens offer for each status.
+   */
+  private static getAllowedPreviousStatuses(target: LoanStatus, isOverride: boolean): LoanStatus[] | null {
+    if (isOverride) {
+      switch (target) {
+        case 'ACTIVE': return ['PAUSED', 'DEFAULTED', 'OVERDUE', 'SKIPPED'];
+        case 'PAUSED': return ['ACTIVE', 'SKIPPED', 'OVERDUE'];
+        default: return null;
+      }
+    }
+
+    switch (target) {
+      case 'APPROVED':
+      case 'REJECTED':
+        return ['PENDING'];
+      case 'READY_FOR_DISBURSEMENT':
+        return ['APPROVED'];
+      case 'ACTIVE':
+        return ['READY_FOR_DISBURSEMENT'];
+      case 'COMPLETED':
+        return ['ACTIVE', 'OVERDUE', 'SKIPPED', 'PAUSED'];
+      default:
+        return null;
+    }
   }
 
   private getCurrentUserId(): number {
@@ -302,11 +346,18 @@ export class LoanApprovalService {
     return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
       switchMap((application) => {
         if (!application) throw new Error('Application not found');
-        const purposeCode = application.purposeCode || application.purpose;
-        return this.loanPurposeService.getPurposeByCode(purposeCode).pipe(
-          switchMap((purpose) => {
-            const approvalNotes = `Loan auto-approved with default interest rate of ${purpose?.defaultInterestRate ?? interestRate}%.`;
-            const interestToSet = purpose?.defaultInterestRate ?? interestRate;
+        return this.getFixedPurposeInterestRate(application).pipe(
+          switchMap((fixedRate) => {
+            // Rule shared by every approval screen: a purpose's fixed rate always wins; otherwise
+            // the rate the admin entered is used.
+            const interestToSet = fixedRate ?? interestRate;
+            if (interestToSet === undefined || !Number.isFinite(interestToSet) || interestToSet < 0) {
+              return throwError(() => new Error('A valid interest rate is required to approve this loan.'));
+            }
+            const approvalNotes = notes?.trim()
+              || (fixedRate !== null
+                ? `Loan approved with the purpose's fixed interest rate of ${interestToSet}%.`
+                : `Loan approved with an interest rate of ${interestToSet}%.`);
             return this.updateApplicationStatus(loanId, {
               status: 'APPROVED',
               notes: approvalNotes,
@@ -319,6 +370,26 @@ export class LoanApprovalService {
             } as any);
           })
         );
+      })
+    );
+  }
+
+  /**
+   * The fixed interest rate of the loan's purpose (matched by code, then by name), or null when the
+   * purpose has no fixed rate (e.g. "other") and the approver must set one.
+   */
+  getFixedPurposeInterestRate(application: Pick<LoanApplication, 'purposeCode' | 'purpose'>): Observable<number | null> {
+    const code = String(application.purposeCode || '').trim().toLowerCase();
+    const name = String(application.purpose || '').trim().toLowerCase();
+    // Include inactive purposes: a purpose deactivated after the employee applied still fixes the rate.
+    return this.loanPurposeService.getAllPurposes(false).pipe(
+      map((purposes) => {
+        const purpose = (code && code !== 'n/a'
+          ? purposes.find((p) => String(p.code || '').trim().toLowerCase() === code)
+          : undefined)
+          || (name ? purposes.find((p) => String(p.name || '').trim().toLowerCase() === name) : undefined);
+        const rate = Number(purpose?.defaultInterestRate ?? 0);
+        return rate > 0 ? rate : null;
       })
     );
   }

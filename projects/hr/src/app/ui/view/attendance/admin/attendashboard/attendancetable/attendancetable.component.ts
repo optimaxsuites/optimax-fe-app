@@ -2,6 +2,7 @@ import { Component, inject, OnInit, Output, EventEmitter, HostListener, ChangeDe
 import { ActivatedRoute, Router } from '@angular/router';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
+import { CorrectionRequest } from '../../../../../domain/attendance/correctionrequest.dto';
 import { Observable, switchMap } from 'rxjs';
 import * as L from 'leaflet';
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
@@ -95,7 +96,7 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
  
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['externalFilters'] && this.externalFilters) {
-      this.filteredAttendance = [...this.externalFilters];
+      this.filteredAttendance = this.withCorrections([...this.externalFilters]);
       this.cdr.markForCheck();
     }
   }
@@ -112,7 +113,7 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
 
       // Subscribe to real-time updates from service
       this.attendancetableService.attendance$.subscribe(data => {
-        this.attendance = data;
+        this.attendance = this.withCorrections(data);
         this.filteredAttendance = [...this.attendance];
         this.isLoading = false;
         this.dataChange.emit({
@@ -141,29 +142,8 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
 
       // Subscribe to correction requests and merge with attendance
       this.correctionRequestService.correctionRequests$.subscribe(correctionRequests => {
-        // Merge correction requests with existing attendance records
-        correctionRequests.forEach(corrReq => {
-          // Find attendance record by employeeId and date
-          const index = this.attendance.findIndex(a =>
-            a.employeeId === corrReq.employeeId && 
-            a.date?.toDateString() === corrReq.date?.toDateString()
-          );
-          
-          if (index > -1) {
-            // Map CorrectionRequest to correctionRequest nested object
-            this.attendance[index] = {
-              ...this.attendance[index],
-              correctionRequest: {
-                id: parseInt(corrReq.id),
-                type: corrReq.correctionType,
-                reason: corrReq.description || '',
-                status: corrReq.status as 'PENDING' | 'APPROVED' | 'REJECTED',
-                requestedAt: corrReq.date,
-                requestedBy: corrReq.employeeName
-              }
-            };
-          }
-        });
+        this.latestCorrections = correctionRequests;
+        this.attendance = this.withCorrections(this.attendance);
 
         this.filteredAttendance = [...this.attendance];
         this.dataChange.emit({
@@ -172,6 +152,46 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
         });
         this.cdr.detectChanges();
       });
+  }
+
+  private latestCorrections: CorrectionRequest[] = [];
+
+  // Attendance refreshes replace the records, so corrections must be re-applied each time.
+  private withCorrections(records: AttendanceTableRecord[]): AttendanceTableRecord[] {
+    return records.map(record => {
+      const corr = this.latestCorrections.find(c =>
+        c.employeeId === record.employeeId &&
+        !!record.date && !!c.date &&
+        new Date(record.date).toDateString() === new Date(c.date).toDateString()
+      );
+      if (!corr) return record;
+      let result: AttendanceTableRecord = record;
+
+      // An approved correction replaces the clock times, so the status is recomputed from them.
+      if (corr.status === 'SUBMITTED' && (corr.requestedClockIn || corr.requestedClockOut)) {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const time = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        result = this.attendancetableService.recalculateStatus({
+          ...record,
+          checkIn: corr.requestedClockIn ? time(corr.requestedClockIn) : record.checkIn,
+          checkOut: corr.requestedClockOut ? time(corr.requestedClockOut) : record.checkOut
+        });
+      }
+
+      return {
+        ...result,
+        correctionRequest: {
+          id: parseInt(corr.id),
+          type: corr.correctionType,
+          reason: corr.description || '',
+          status: corr.status,
+          requestedAt: corr.date,
+          requestedBy: corr.employeeName,
+          requestedClockIn: corr.requestedClockIn,
+          requestedClockOut: corr.requestedClockOut
+        }
+      };
+    });
   }
 
   private mergePreservedCorrections(): void {
@@ -536,7 +556,7 @@ applyFilters() {
           }
           break;
         case 'HAS_APPROVED':
-          if (!record.correctionRequest || record.correctionRequest.status !== 'APPROVED') {
+          if (!record.correctionRequest || record.correctionRequest.status !== 'SUBMITTED') {
             return false;
           }
           break;
@@ -740,32 +760,33 @@ approveCorrectionRequest(recordId: number): void {
   const attendanceRecord = this.attendance.find(r => r.id === recordId);
   const filteredRecord = this.filteredAttendance.find(r => r.id === recordId);
 
-  if (attendanceRecord && attendanceRecord.correctionRequest) {
-    // Change status to PRESENT when approved
-    attendanceRecord.status = 'PRESENT';
-    attendanceRecord.correctionRequest.status = 'APPROVED';
-    attendanceRecord.correctionRequest.approvedBy = adminName;
+  // The service is keyed by the correction request id, not the attendance record id
+  const correctionId = (attendanceRecord ?? filteredRecord)?.correctionRequest?.id;
+  if (correctionId === undefined) {
+    this.toastService.error('No correction request found for this record');
+    return;
   }
 
-  if (filteredRecord && filteredRecord.correctionRequest) {
-    // Update filtered record too
-    filteredRecord.status = 'PRESENT';
-    filteredRecord.correctionRequest.status = 'APPROVED';
-    filteredRecord.correctionRequest.approvedBy = adminName;
-  }
-
-  // Update in service
-  this.correctionRequestService.approveCorrectionRequest(recordId, adminName).subscribe({
-    error: err => console.error('Failed to approve correction request:', err)
+  this.correctionRequestService.approveCorrectionRequest(correctionId, adminName).subscribe({
+    next: () => {
+      // Approval only changes the request status; the attendance record is left untouched.
+      if (attendanceRecord?.correctionRequest) {
+        attendanceRecord.correctionRequest.status = 'SUBMITTED';
+        attendanceRecord.correctionRequest.approvedBy = adminName;
+      }
+      if (filteredRecord?.correctionRequest) {
+        filteredRecord.correctionRequest.status = 'SUBMITTED';
+        filteredRecord.correctionRequest.approvedBy = adminName;
+      }
+      this.detailsRecord = null;
+      this.applyFilters();
+      this.toastService.success(`✅ Correction request approved for ${attendanceRecord?.employee}`);
+    },
+    error: err => {
+      console.error('Failed to approve correction request:', err);
+      this.toastService.error('Failed to approve correction request');
+    }
   });
-
-  // Close drawer to prevent stale data
-  this.detailsRecord = null;
-
-  // Trigger re-render
-  this.applyFilters();
-
-  this.toastService.success(`✅ Approved! ${attendanceRecord?.employee} status changed to PRESENT`);
 }
 
 rejectCorrectionRequest(recordId: number, reason: string = ''): void {
@@ -775,30 +796,31 @@ rejectCorrectionRequest(recordId: number, reason: string = ''): void {
   const attendanceRecord = this.attendance.find(r => r.id === recordId);
   const filteredRecord = this.filteredAttendance.find(r => r.id === recordId);
 
-  if (attendanceRecord && attendanceRecord.correctionRequest) {
-    // Status stays the same - only mark as rejected
-    attendanceRecord.correctionRequest.status = 'REJECTED';
-    attendanceRecord.correctionRequest.rejectionReason = rejectionReason;
+  const correctionId = (attendanceRecord ?? filteredRecord)?.correctionRequest?.id;
+  if (correctionId === undefined) {
+    this.toastService.error('No correction request found for this record');
+    return;
   }
 
-  if (filteredRecord && filteredRecord.correctionRequest) {
-    // Update filtered record too
-    filteredRecord.correctionRequest.status = 'REJECTED';
-    filteredRecord.correctionRequest.rejectionReason = rejectionReason;
-  }
-
-  // Update in service
-  this.correctionRequestService.rejectCorrectionRequest(recordId, rejectionReason).subscribe({
-    error: err => console.error('Failed to reject correction request:', err)
+  this.correctionRequestService.rejectCorrectionRequest(correctionId, rejectionReason).subscribe({
+    next: () => {
+      if (attendanceRecord?.correctionRequest) {
+        attendanceRecord.correctionRequest.status = 'REJECTED';
+        attendanceRecord.correctionRequest.rejectionReason = rejectionReason;
+      }
+      if (filteredRecord?.correctionRequest) {
+        filteredRecord.correctionRequest.status = 'REJECTED';
+        filteredRecord.correctionRequest.rejectionReason = rejectionReason;
+      }
+      this.detailsRecord = null;
+      this.applyFilters();
+      this.toastService.warning(`❌ Rejected! ${attendanceRecord?.employee} status remains ${attendanceRecord?.status}`);
+    },
+    error: err => {
+      console.error('Failed to reject correction request:', err);
+      this.toastService.error('Failed to reject correction request');
+    }
   });
-
-  // Close drawer to prevent stale data
-  this.detailsRecord = null;
-
-  // Trigger re-render
-  this.applyFilters();
-
-  this.toastService.warning(`❌ Rejected! ${attendanceRecord?.employee} status remains ${attendanceRecord?.status}`);
 }
 
 // ── STEP 6: Cross-Branch Approval Workflow ────────────────────────────────

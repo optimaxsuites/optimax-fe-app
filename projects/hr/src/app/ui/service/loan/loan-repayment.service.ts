@@ -375,7 +375,8 @@ export class LoanRepaymentService {
   }
 
   private getLateFeeRate(loan: LoanApplication): number {
-    const configuredPercentage = Number(loan.lateFeePercentage || 0);
+    // A missing value must fall through to the default, not become a valid 0%.
+    const configuredPercentage = Number(loan.lateFeePercentage ?? NaN);
     if (Number.isFinite(configuredPercentage) && configuredPercentage >= 0) {
       return configuredPercentage / 100;
     }
@@ -384,7 +385,7 @@ export class LoanRepaymentService {
   }
 
   private getLateFeeGracePeriodDays(loan: LoanApplication): number {
-    const configuredGracePeriodDays = Number(loan.lateFeeGracePeriodDays || 0);
+    const configuredGracePeriodDays = Number(loan.lateFeeGracePeriodDays ?? NaN);
     if (Number.isFinite(configuredGracePeriodDays) && configuredGracePeriodDays >= 0) {
       return Math.round(configuredGracePeriodDays);
     }

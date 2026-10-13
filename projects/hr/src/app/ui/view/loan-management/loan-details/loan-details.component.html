@@ -236,19 +236,19 @@
               <i class="fas fa-history"></i>
               <span>View Employee History</span>
             </button>
-            <button class="action-btn approve" *ngIf="loan.status === 'PENDING'" (click)="approveLoan()">
+            <button class="action-btn approve" *ngIf="loan.status === 'PENDING'" (click)="approveLoan()" [disabled]="isSubmitting">
               <i class="fas fa-check-circle"></i>
               <span>Approve</span>
             </button>
-            <button class="action-btn reject" *ngIf="loan.status === 'PENDING'" (click)="rejectLoan()">
+            <button class="action-btn reject" *ngIf="loan.status === 'PENDING'" (click)="rejectLoan()" [disabled]="isSubmitting">
               <i class="fas fa-ban"></i>
               <span>Reject</span>
             </button>
-            <button class="action-btn pause" *ngIf="canPauseLoan()" (click)="openOverrideModal('PAUSED')">
+            <button class="action-btn pause" *ngIf="canPauseLoan()" (click)="openOverrideModal('PAUSED')" [disabled]="isSubmitting">
               <i class="fas fa-pause-circle"></i>
               <span>Pause Loan</span>
             </button>
-            <button class="action-btn restore" *ngIf="canRestoreActiveLoan()" (click)="openOverrideModal('ACTIVE')">
+            <button class="action-btn restore" *ngIf="canRestoreActiveLoan()" (click)="openOverrideModal('ACTIVE')" [disabled]="isSubmitting">
               <i class="fas fa-rotate-left"></i>
               <span>Restore Active</span>
             </button>
@@ -442,11 +442,15 @@
         <div class="action-form" *ngIf="selectedAction === 'APPROVED'">
           <div class="form-group">
             <label>Interest Rate (%) <span class="required">*</span></label>
-            <div class="interest-hint">
-              <i class="fas fa-info-circle"></i>
-              Suggested rate: <strong>{{ suggestedInterestRate }}%</strong> (auto-calculated from repayment mode and tenure)
+            <div class="interest-hint" *ngIf="isInterestRateLocked">
+              <i class="fas fa-lock"></i>
+              Fixed rate for this loan purpose: <strong>{{ resolvedPurposeDefaultInterestRate }}%</strong> (set in Loan Purpose Management; the employee accepted it when applying)
             </div>
-            <input type="number" [formControl]="interestRateControl" class="form-control" [readonly]="true" [disabled]="true">
+            <div class="interest-hint" *ngIf="!isInterestRateLocked">
+              <i class="fas fa-info-circle"></i>
+              This purpose has no fixed rate. Suggested rate: <strong>{{ suggestedInterestRate }}%</strong> (from repayment mode and tenure); adjust if needed.
+            </div>
+            <input type="number" [formControl]="interestRateControl" (input)="onInterestRateInput()" class="form-control" step="0.1" min="0" max="100" [readonly]="isInterestRateLocked">
           </div>
 
           <div class="form-group">
@@ -508,7 +512,7 @@
       <div class="modal-actions">
         <button class="btn-cancel" (click)="closeCommentModal()">Cancel</button>
         <button class="btn-submit" [ngClass]="{'approve': selectedAction === 'APPROVED', 'reject': selectedAction === 'REJECTED'}"
-          (click)="submitStatusChange()" [disabled]="(selectedAction === 'REJECTED' && commentControl.invalid) ||
+          (click)="submitStatusChange()" [disabled]="isSubmitting || (selectedAction === 'REJECTED' && commentControl.invalid) ||
             (selectedAction === 'APPROVED' && (interestRateControl.invalid || lateFeePercentageControl.invalid || lateFeeGracePeriodDaysControl.invalid))">
           <i class="fas" [ngClass]="{'fa-check-circle': selectedAction === 'APPROVED', 'fa-ban': selectedAction === 'REJECTED'}"></i>
           {{ selectedAction === 'APPROVED' ? 'Approve Loan Application' : 'Reject' }}
@@ -561,7 +565,7 @@
 
       <div class="modal-actions">
         <button class="btn-cancel" (click)="closeOverrideModal()">Cancel</button>
-        <button class="btn-submit override" (click)="submitOverrideStatusChange()" [disabled]="!overrideReason.trim()">
+        <button class="btn-submit override" (click)="submitOverrideStatusChange()" [disabled]="isSubmitting || !overrideReason.trim()">
           <i class="fas" [ngClass]="{'fa-pause-circle': overrideTargetStatus === 'PAUSED', 'fa-rotate-left': overrideTargetStatus === 'ACTIVE'}"></i>
           {{ getOverrideSubmitLabel() }}
         </button>

@@ -4,6 +4,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment';
+import { fetchAllPages } from './paginated-fetch.util';
 
 export interface GracePeriodRequest {
   id?: number;
@@ -51,17 +52,24 @@ export class AdvanceGracePeriodService {
     };
   }
 
+  /** All matching requests across every page, or just `params.page` when one is given. */
   getAllRequests(params?: { page?: number; size?: number; loanId?: number; status?: string }): Observable<GracePeriodRequest[]> {
-    let httpParams = new HttpParams();
-    if (params?.page) httpParams = httpParams.set('page', params.page.toString());
-    if (params?.size) httpParams = httpParams.set('size', params.size.toString());
-    if (params?.loanId) httpParams = httpParams.set('loanId', params.loanId.toString());
-    if (params?.status) httpParams = httpParams.set('status', params.status);
+    const fetchPage = (page: number) => {
+      let httpParams = new HttpParams().set('page', page.toString());
+      if (params?.size) httpParams = httpParams.set('size', params.size.toString());
+      if (params?.loanId) httpParams = httpParams.set('loanId', params.loanId.toString());
+      if (params?.status) httpParams = httpParams.set('status', params.status);
 
-    return this.http.get<GracePeriodRequest[]>(this.baseUrl, {
-      headers: this.getHeaders(),
-      params: httpParams
-    }).pipe(map(res => this.safeParseResponse(res)));
+      return this.http.get<unknown>(this.baseUrl, {
+        headers: this.getHeaders(),
+        params: httpParams
+      }).pipe(map(res => this.safeParseResponse(res)));
+    };
+
+    if (params?.page) {
+      return fetchPage(params.page).pipe(map((res) => (Array.isArray(res) ? res : res?.content || []) as GracePeriodRequest[]));
+    }
+    return fetchAllPages<GracePeriodRequest>(fetchPage);
   }
 
   getRequestById(id: number): Observable<GracePeriodRequest> {

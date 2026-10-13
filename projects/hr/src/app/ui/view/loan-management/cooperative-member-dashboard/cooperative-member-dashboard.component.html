@@ -463,7 +463,21 @@
     </ng-template>
   </p-message>
 
-  <div *ngIf="!isLoading" class="dashboard-content">
+  <!-- Show the page shell immediately while the member record loads (instead of a blank page). -->
+  <div *ngIf="isLoading && !member" class="dashboard-content">
+    <div class="hero-section">
+      <div class="hero-content">
+        <div class="hero-text">
+          <h1>Welcome, <span class="lm-coop-emp-name">{{ displayMemberName }}</span></h1>
+        </div>
+      </div>
+    </div>
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading your cooperative membership...</p>
+    </div>
+  </div>
+  <div *ngIf="!isLoading || member" class="dashboard-content">
     <div class="member-dashboard-exact">
       <div *ngIf="!member; else activeMemberDashboard">
         <div class="hero-section onboarding-hero">

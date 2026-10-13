@@ -33,6 +33,11 @@ export interface LoanApplication {
   loanCode: string;
   clientSubmissionKey?: string;
   localOnly?: boolean;
+  /**
+   * Snapshot of the server state this object was built from. Saves compare it with a fresh read
+   * and refuse to overwrite a loan that someone else changed in the meantime.
+   */
+  serverFingerprint?: string;
   employeeId: number;
   amount: number;
   purpose: string;

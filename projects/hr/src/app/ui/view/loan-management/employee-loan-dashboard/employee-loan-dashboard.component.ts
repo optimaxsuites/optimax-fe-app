@@ -13,7 +13,8 @@ import {
   formatLoanPurposeDisplay,
   formatLoanRepaymentDayDisplay,
   formatLoanRepaymentMonthYear,
-  resolveLoanTotalRepayableAmount
+  resolveLoanTotalRepayableAmount,
+  isLoanEligibleForExtension
 } from '../../../service/loan/loan-display.util';
 
 interface EmployeeLoanHistoryRow {
@@ -46,7 +47,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       this.messages = [{
         severity: 'warn',
         summary: 'Extension Unavailable',
-        detail: 'You can only request a payment extension when you have at least one active loan.'
+        detail: 'You can only request a payment extension when you have at least one active or overdue loan.'
       }];
       return;
     }
@@ -786,7 +787,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   private getActiveLoansForExtension(): LoanApplication[] {
-    return this.allLoans.filter((loan) => loan.status === 'ACTIVE');
+    return this.allLoans.filter((loan) => isLoanEligibleForExtension(loan));
   }
 
   private getPreferredPayableLoan(): LoanApplication | null {

@@ -118,11 +118,7 @@ export class AdminCorrectionApprovalService {
       return throwError(() => new Error('Correction request not found'));
     }
 
-    return this.correctionApi.updateStatus(idStr, {
-      newStatus: 'SUBMITTED',
-      actorUserId: this.currentActorId(),
-      comments: `Approved by ${adminName}`
-    }).pipe(
+    return this.decide(idStr, 'SUBMITTED', `Approved by ${adminName}`).pipe(
       tap(approved => {
         const updated = [...requests];
         updated[requestIndex] = approved;
@@ -145,11 +141,7 @@ export class AdminCorrectionApprovalService {
       return throwError(() => new Error('Correction request not found'));
     }
 
-    return this.correctionApi.updateStatus(idStr, {
-      newStatus: 'REJECTED',
-      actorUserId: this.currentActorId(),
-      comments: reason
-    }).pipe(
+    return this.decide(idStr, 'REJECTED', reason).pipe(
       tap(rejected => {
         const updated = [...requests];
         updated[requestIndex] = rejected;
@@ -192,6 +184,19 @@ export class AdminCorrectionApprovalService {
   clearRequests(): void {
     this.correctionRequestsSubject.next([]);
     this.saveToStorage();
+  }
+
+  // Approve is one call to SUBMITTED, reject is one call to REJECTED; no intermediate review step.
+  private decide(
+    id: string,
+    newStatus: 'SUBMITTED' | 'REJECTED',
+    comments: string
+  ): Observable<CorrectionRequest> {
+    return this.correctionApi.updateStatus(id, {
+      newStatus,
+      actorUserId: this.currentActorId(),
+      comments
+    });
   }
 
   private currentActorId(): number {

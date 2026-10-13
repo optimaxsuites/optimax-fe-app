@@ -57,7 +57,9 @@ export class CorrectionRequestApiService {
 
   /** PUT /correction-requests/{id}/status — handles review/approve/reject/resubmit transitions */
   updateStatus(id: string, request: UpdateCorrectionStatusRequest): Observable<CorrectionRequest> {
-    return this.http.put<CorrectionRequestApiDTO>(`${this.BASE}/${id}/status`, request).pipe(
+    // Backend limits comments to 1000 characters
+    const body = { ...request, comments: request.comments?.slice(0, 1000) };
+    return this.http.put<CorrectionRequestApiDTO>(`${this.BASE}/${id}/status`, body).pipe(
       map(r => this.toUiModel(r))
     );
   }
@@ -75,11 +77,11 @@ export class CorrectionRequestApiService {
       employeeId: employee ? String(employee.id) : '',
       employeeName: employee ? `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim() : undefined,
       department: employee?.department?.name ?? '',
-      date: new Date(dto.attendanceDate),
+      date: this.toDate(dto.attendanceDate) ?? new Date(),
       issueType: dto.issueType,
       correctionType: dto.correctionType,
-      requestedClockIn: dto.requestedClockIn ? new Date(dto.requestedClockIn) : undefined,
-      requestedClockOut: dto.requestedClockOut ? new Date(dto.requestedClockOut) : undefined,
+      requestedClockIn: this.toDate(dto.requestedClockIn),
+      requestedClockOut: this.toDate(dto.requestedClockOut),
       description: dto.description,
       evidence: dto.evidence,
       status: dto.status,
@@ -90,10 +92,21 @@ export class CorrectionRequestApiService {
         status: h.status,
         actor: String(h.actor),
         note: h.comments,
-        createdAt: new Date(h.createdAt)
+        createdAt: this.toDate(h.createdAt) ?? new Date()
       })),
-      createdAt: new Date(dto.createdAt),
-      updatedAt: dto.updatedAt ? new Date(dto.updatedAt) : undefined
+      createdAt: this.toDate(dto.createdAt) ?? new Date(),
+      updatedAt: this.toDate(dto.updatedAt)
     };
+  }
+
+  // The backend serialises LocalDateTime as [y, m, d, h, mi, s, nano], which `new Date()` misreads.
+  private toDate(value: unknown): Date | undefined {
+    if (!value) return undefined;
+    if (Array.isArray(value)) {
+      const [y, mo, d, h = 0, mi = 0, s = 0, nano = 0] = value as number[];
+      return new Date(y, mo - 1, d, h, mi, s, Math.floor(nano / 1e6));
+    }
+    const parsed = new Date(value as string);
+    return Number.isNaN(parsed.getTime()) ? undefined : parsed;
   }
 }

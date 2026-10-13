@@ -135,7 +135,8 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   openGracePeriodModal(): void {
-    if (!this.loan || this.loan.status !== 'ACTIVE' || !this.nextGracePeriodInstallment) {
+    // Overdue borrowers are the ones who most need an extension, so they qualify too.
+    if (!this.loan || !['ACTIVE', 'OVERDUE'].includes(String(this.loan.status)) || !this.nextGracePeriodInstallment) {
       return;
     }
 

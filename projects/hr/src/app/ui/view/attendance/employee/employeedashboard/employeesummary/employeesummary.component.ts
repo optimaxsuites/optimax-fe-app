@@ -8,6 +8,11 @@ import { AttendanceTableRecord } from '../../../../../domain/attendance/attendan
 })
 export class EmployeesummaryComponent /*implements OnInit*/ {
   monthlyFilteredData: AttendanceTableRecord[] = [];
+
+  onFilteredDataChange(data: AttendanceTableRecord[]): void {
+    // The child emits during its own init, after the summary binding above it was checked.
+    Promise.resolve().then(() => this.monthlyFilteredData = data);
+  }
   /*filteredData: AttendanceTableRecord[] = [];
   ngOnInit(): void {}*/
 

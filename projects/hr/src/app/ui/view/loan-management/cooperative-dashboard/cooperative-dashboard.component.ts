@@ -1,6 +1,6 @@
 // ...imports remain unchanged...
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { Subscription } from 'rxjs';
@@ -525,12 +525,21 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     const loadProfiler = startLoanLoadProfiler('cooperative-admin-dashboard');
     this.isLoading = true;
 
+    // Each source falls back to empty on failure so one broken endpoint (e.g. members returning 500)
+    // doesn't throw away the data that did load — previously the loans table ended up empty.
+    const orEmpty = <T>(source: Observable<T[]>, label: string): Observable<T[]> => source.pipe(
+      catchError((error) => {
+        console.error(`[CooperativeDashboard] Failed to load ${label}:`, error);
+        return of([] as T[]);
+      })
+    );
+
     forkJoin({
-      groups: this.cooperativeService.loadGroups(),
-      loans: this.cooperativeService.getLoans(),
-      members: this.cooperativeService.getMembers(),
-      memberships: this.cooperativeService.loadGroupMemberships(),
-      contributions: this.cooperativeService.loadContributionEntries()
+      groups: orEmpty(this.cooperativeService.loadGroups(), 'groups'),
+      loans: orEmpty(this.cooperativeService.getLoans(), 'loans'),
+      members: orEmpty(this.cooperativeService.getMembers(), 'members'),
+      memberships: orEmpty(this.cooperativeService.loadGroupMemberships(), 'memberships'),
+      contributions: orEmpty(this.cooperativeService.loadContributionEntries(), 'contributions')
     }).subscribe({
       next: ({ groups, loans, members, memberships }: { groups: CooperativeLoanGroup[]; loans: CooperativeLoan[]; members: CooperativeMember[]; memberships: CooperativeGroupMembership[]; contributions: any }) => {
         // Loans

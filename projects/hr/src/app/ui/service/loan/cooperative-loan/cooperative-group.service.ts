@@ -143,7 +143,9 @@ export class CooperativeGroupService {
     getAllCooperativeGroups(): Observable<CooperativeGroupApiResponse[]> {
       console.log('[CooperativeGroupService] Fetching all groups from:', this.groupsUrl);
       const headers = this.getAuthHeaders();
-      return this.http.get<CooperativeGroupApiResponse[]>(this.groupsUrl, { headers }).pipe(
+      // Without paging params the backend returns only the first 10 groups, so newer groups never appear.
+      const params = { page: '1', size: '1000' };
+      return this.http.get<CooperativeGroupApiResponse[]>(this.groupsUrl, { headers, params }).pipe(
         map((groups) => {
           console.log('[CooperativeGroupService] Groups received:', groups);
           console.log('[CooperativeGroupService] Number of groups:', groups?.length);

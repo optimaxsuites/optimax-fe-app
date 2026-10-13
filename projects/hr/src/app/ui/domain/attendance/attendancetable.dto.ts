@@ -67,9 +67,11 @@ export interface AttendanceTableRecord {
     id?: number;
     type: CorrectionType; // MISSING_IN | MISSING_OUT | WRONG_TIME | OTHER
     reason: string;
-    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    status: 'PENDING' | 'UNDER_REVIEW' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
     requestedAt: Date;
     requestedBy?: string;
+    requestedClockIn?: Date;
+    requestedClockOut?: Date;
     approvedBy?: string;
     approvalNotes?: string;
     rejectionReason?: string;
