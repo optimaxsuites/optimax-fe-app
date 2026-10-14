@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 // // import { CompanyProfileService }
 import { NavigationLinksService } from '../../shared-component/service/navigation-links/navigation-links.service';
@@ -33,7 +33,8 @@ import jsPDF from 'jspdf';
   styleUrl: './employee-management.component.scss',
   providers: [MessageService, ConfirmationService],
 })
-export class EmployeeManagementComponent implements OnDestroy {
+export class EmployeeManagementComponent implements OnInit, OnDestroy {
+  activeSubmodule: 'directory' | 'staff-numbers' | 'enrollment' = 'directory';
   private readonly minimumLoaderDurationMs = 900;
 
   tabsConfig: TabConfig[] = [

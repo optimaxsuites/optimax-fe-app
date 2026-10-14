@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { MenuItem } from '../../domain/menuItem.dto';
 import { NavigationLinksService } from '../navigation-links/navigation-links.service';
-import { BehaviorSubject, map, Observable } from 'rxjs';
+import { BehaviorSubject, map, Observable, of } from 'rxjs';
 import { AppRegisterServiceService } from '../app-register-service.service';
 
 @Injectable({
@@ -906,6 +906,8 @@ export class MenuItemsService {
         { label: 'Notifications', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'notifications' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-bell' },
         { label: 'Import from Odoo', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'odoo' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-puzzle-piece' },
         { label: 'Forms & Templates', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'forms' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-file-alt' },
+        { label: 'Biometric Devices', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'biometric-devices' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-fingerprint' },
+        { label: 'Manufacturer Integrations', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'biometric-integrations' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-plug' },
       ],
     },
     {
@@ -1179,6 +1181,27 @@ export class MenuItemsService {
   }
 
   getMenuItems$(): Observable<MenuItem[]> {
+    if (sessionStorage.getItem('isVendor') === 'true') {
+      const vendorMenu: MenuItem[] = [{
+        label: 'Commerce',
+        code: 'optimaXCommerce',
+        icon: 'fas fa-chart-line',
+        roles: ['ROLE_VENDOR'],
+        locked: false,
+        active: true,
+        submenu: [{
+          label: 'Vendor Portal',
+          code: 'COM_VENDOR',
+          route: this.navigationLink.getLink('VPLink'),
+          roles: ['ROLE_VENDOR'],
+          icon: 'fas fa-handshake',
+          description: 'View and manage vendor quotations.',
+          doNotRegisterAsPermission: true
+        }]
+      }];
+      return of(vendorMenu);
+    }
+
     if (this.isSuperUser()) {
       return this.getUnlockedModulesObservable();
     }

@@ -164,6 +164,7 @@ import { CorrectionrequestformComponent } from './ui/view/attendance/employee/co
 import { AdminCorrectionsComponent } from './ui/view/attendance/admin/admin-corrections/admin-corrections.component';
 import { AttendanceReportsComponent } from './ui/view/attendance/admin/attendance-reports/attendance-reports.component';
 import { BiometricEnrollmentComponent } from './ui/view/biometric/biometric-enrollment/biometric-enrollment.component';
+import { StaffNumbersComponent } from './ui/view/employee-management/staff-numbers/staff-numbers.component';
 import { RemoteCheckinComponent } from './ui/view/attendance/employee/remote-checkin/remote-checkin.component';
 import { SupervisorApprovalQueueComponent } from './ui/view/attendance/admin/supervisor-approval-queue/supervisor-approval-queue.component';
 import { CalendarModule } from 'primeng/calendar';
@@ -339,6 +340,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     AdminCorrectionsComponent,
     AttendanceReportsComponent,
     BiometricEnrollmentComponent,
+    StaffNumbersComponent,
     RemoteCheckinComponent,
     SupervisorApprovalQueueComponent,
     ProjectComponent,
@@ -432,6 +434,8 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     // FooterComponent,
   ],
   imports: [
+    // BrowserModule — lazy module; root app already provides BrowserModule providers
+    // BrowserAnimationsModule — same; animations provided by root app
     CommonModule,
     AppHrRoutingModule,
     LargeSideModalComponent,

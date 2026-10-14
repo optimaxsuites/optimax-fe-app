@@ -1,0 +1,82 @@
+<div class="hc-shell">
+
+  <div class="hc-header">
+    <h3 class="hc-title"><i class="fas fa-camera"></i> Hikvision Integration Config</h3>
+    <p class="hc-sub">Configure the DS-K1T321 (and compatible) terminals to push attendance events to OptimaX automatically.</p>
+  </div>
+
+  <!-- Callback URL -->
+  <div class="hc-card">
+    <div class="hc-card-label">Callback Endpoint URL</div>
+    <p class="hc-card-desc">
+      Enter this URL in the Hikvision device web interface under
+      <strong>Configuration → Network → Advanced Settings → Linked Network Application → Subscribing Host Address</strong>.
+    </p>
+    <div class="hc-url-row">
+      <code class="hc-url-code">{{ callbackUrl }}</code>
+      <button class="hc-copy-btn" (click)="copyUrl()">
+        <i class="fas" [class.fa-copy]="!urlCopied" [class.fa-check]="urlCopied"></i>
+        {{ urlCopied ? 'Copied!' : 'Copy' }}
+      </button>
+    </div>
+    <p class="hc-note">
+      Replace <code class="hc-inline-code">&lt;YOUR_TOKEN&gt;</code> with the value of the
+      <strong>HIKVISION_CALLBACK_TOKEN</strong> environment variable set on the HR service host.
+    </p>
+  </div>
+
+  <!-- Environment variable -->
+  <div class="hc-card">
+    <div class="hc-card-label">Environment Variable (Production Server)</div>
+    <code class="hc-env-code">
+      HIKVISION_CALLBACK_TOKEN=<span class="hc-env-val">your-strong-secret-here</span>
+    </code>
+    <p class="hc-note" style="margin-top:8px">
+      Default fallback is <code class="hc-inline-code">hik-cb-prod-change-me</code> — change this before going live.
+    </p>
+  </div>
+
+  <!-- Setup steps -->
+  <div class="hc-card">
+    <div class="hc-card-label">Device Configuration Steps</div>
+    <ol class="hc-steps">
+      <li>Open a browser and navigate to the device IP (e.g. <code class="hc-inline-code">http://192.168.1.100</code>).</li>
+      <li>Log in with admin credentials (default: <code class="hc-inline-code">admin / 12345</code> — change on first login).</li>
+      <li>Go to <strong>Configuration → Network → Advanced Settings → Linked Network Application</strong>.</li>
+      <li>Set <strong>Subscribing Host Address</strong> to the callback URL above (with your token substituted).</li>
+      <li>Set <strong>Subscribing Host Port</strong> to <code class="hc-inline-code">443</code> (HTTPS).</li>
+      <li>Enable <strong>HTTPS</strong> and subscribe to <strong>Access Control Events</strong>.</li>
+      <li>Save and reboot the device.</li>
+      <li>Register the device in <strong>HR Settings → Biometric Devices</strong> (IP address must match).</li>
+      <li>Enroll employee fingerprints / faces in <strong>Personnel → Biometric Enrollment</strong>.</li>
+    </ol>
+  </div>
+
+  <!-- Capabilities reference -->
+  <div class="hc-card">
+    <div class="hc-card-label">DS-K1T321MFWX Capabilities</div>
+    <div class="hc-caps-grid">
+      <div class="hc-cap">
+        <i class="fas fa-fingerprint" style="color:#6366f1"></i>
+        <strong>3,000</strong>
+        <span>Fingerprint templates</span>
+      </div>
+      <div class="hc-cap">
+        <i class="fas fa-smile" style="color:#0ea5e9"></i>
+        <strong>500</strong>
+        <span>Face templates</span>
+      </div>
+      <div class="hc-cap">
+        <i class="fas fa-history" style="color:#10b981"></i>
+        <strong>150,000</strong>
+        <span>Event records</span>
+      </div>
+      <div class="hc-cap">
+        <i class="fas fa-wifi" style="color:#f59e0b"></i>
+        <strong>WiFi</strong>
+        <span>+ Ethernet</span>
+      </div>
+    </div>
+  </div>
+
+</div>

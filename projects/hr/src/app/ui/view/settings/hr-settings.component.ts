@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { NavigationLinksService } from '../../shared-component/service/navigation-links/navigation-links.service';
 import { PayrollService } from '../../service/payroll.service';
+import { BiometricDeviceService } from '../../service/biometric/biometric-device.service';
+import { BiometricDeviceDTO, BiometricDeviceType } from '../../domain/biometric/biometric-device.dto';
 
 export type NotifChannel = 'email' | 'in_app' | 'push' | 'sms';
 
@@ -113,10 +115,53 @@ export class HrSettingsComponent implements OnInit {
     return map[key] ?? key;
   }
 
+  // ── Biometric Devices ──────────────────────────────────────────────────────
+  deviceList: BiometricDeviceDTO[] = [];
+  deviceListLoading = false;
+  showDeviceForm = false;
+  deviceSaving = false;
+  deviceDeleteIds: Record<number, boolean> = {};
+  deviceEditTarget: BiometricDeviceDTO | null = null;
+  deviceFormError = '';
+  deviceFormSuccess = false;
+
+  readonly deviceTypeOptions: BiometricDeviceType[] = ['MULTI', 'FINGERPRINT', 'FACE', 'IRIS', 'PALM'];
+
+  deviceForm: Omit<BiometricDeviceDTO, 'id' | 'isOnline' | 'lastHeartbeat' | 'registeredDate' | 'currentTemplateCount'> = {
+    deviceId: '',
+    branchId: '',
+    name: '',
+    serialNumber: '',
+    deviceType: 'MULTI',
+    manufacturer: 'Hikvision',
+    model: 'DS-K1T321MFWX',
+    firmwareVersion: '',
+    macAddress: '',
+    ipAddress: '',
+    maxStorageCapacity: 3000,
+    isActive: true,
+  };
+
+  // ── Hikvision Config ───────────────────────────────────────────────────────
+  readonly hikCallbackPath = '/x/api/v2/hr/hikvision/callback';
+  hikUrlCopied = false;
+
+  get hikCallbackUrl(): string {
+    return `https://be.optimaxsuites.com${this.hikCallbackPath}?token=<YOUR_TOKEN>`;
+  }
+
+  copyHikUrl(): void {
+    navigator.clipboard.writeText(this.hikCallbackUrl).then(() => {
+      this.hikUrlCopied = true;
+      setTimeout(() => { this.hikUrlCopied = false; }, 2000);
+    }).catch(() => {});
+  }
+
   constructor(
     private navLinks: NavigationLinksService,
     private route: ActivatedRoute,
     private payrollService: PayrollService,
+    private biometricService: BiometricDeviceService,
   ) {
     this.preOnboardingLink = this.navLinks.getLink('preOnboardingForm');
     this.employeeUpdateFormLink = this.navLinks.getLink('employeeUpdateForm');
@@ -128,7 +173,7 @@ export class HrSettingsComponent implements OnInit {
   }
 
   // ── Navigation ─────────────────────────────────────────────────────────────
-  activeSection: 'notifications' | 'odoo' | 'general' | 'forms' | 'payroll' | 'office-hours' = 'notifications';
+  activeSection: 'notifications' | 'odoo' | 'general' | 'forms' | 'payroll' | 'office-hours' | 'biometric-devices' | 'hikvision-config' = 'notifications';
 
   // ── Notification prefs ─────────────────────────────────────────────────────
   readonly notifChannels: Array<{ key: NotifChannel; label: string; icon: string; desc: string }> = [
@@ -173,8 +218,11 @@ export class HrSettingsComponent implements OnInit {
     this.loadPrefs();
     this.route.queryParams.subscribe(params => {
       const panel = params['panel'];
-      if (panel && ['notifications', 'odoo', 'general', 'forms', 'payroll', 'office-hours'].includes(panel)) {
+      if (panel && ['notifications', 'odoo', 'general', 'forms', 'payroll', 'office-hours', 'biometric-devices', 'hikvision-config'].includes(panel)) {
         this.activeSection = panel as typeof this.activeSection;
+        if (panel === 'biometric-devices') {
+          this.loadDevices();
+        }
       }
     });
     this.loadPayrollSettings();
@@ -215,6 +263,90 @@ export class HrSettingsComponent implements OnInit {
       },
       error: () => { this.payrollSettingsSaving = false; }
     });
+  }
+
+  loadDevices(): void {
+    this.deviceListLoading = true;
+    this.biometricService.getAllDevices().subscribe({
+      next: (devices) => { this.deviceList = devices; this.deviceListLoading = false; },
+      error: () => { this.deviceListLoading = false; }
+    });
+  }
+
+  openNewDevice(): void {
+    this.deviceEditTarget = null;
+    this.deviceForm = {
+      deviceId: '', branchId: '', name: '', serialNumber: '',
+      deviceType: 'MULTI', manufacturer: 'Hikvision', model: 'DS-K1T321MFWX',
+      firmwareVersion: '', macAddress: '', ipAddress: '',
+      maxStorageCapacity: 3000, isActive: true,
+    };
+    this.deviceFormError = '';
+    this.deviceFormSuccess = false;
+    this.showDeviceForm = true;
+  }
+
+  openEditDevice(device: BiometricDeviceDTO): void {
+    this.deviceEditTarget = device;
+    this.deviceForm = {
+      deviceId: device.deviceId, branchId: device.branchId, name: device.name,
+      serialNumber: device.serialNumber, deviceType: device.deviceType,
+      manufacturer: device.manufacturer, model: device.model,
+      firmwareVersion: device.firmwareVersion, macAddress: device.macAddress,
+      ipAddress: device.ipAddress, maxStorageCapacity: device.maxStorageCapacity,
+      isActive: device.isActive,
+    };
+    this.deviceFormError = '';
+    this.deviceFormSuccess = false;
+    this.showDeviceForm = true;
+  }
+
+  closeDeviceForm(): void {
+    this.showDeviceForm = false;
+    this.deviceEditTarget = null;
+    this.deviceFormError = '';
+  }
+
+  saveDevice(): void {
+    if (!this.deviceForm.name || !this.deviceForm.ipAddress || !this.deviceForm.deviceId) {
+      this.deviceFormError = 'Device ID, Name, and IP Address are required.';
+      return;
+    }
+    this.deviceSaving = true;
+    this.deviceFormError = '';
+    const payload: any = { ...this.deviceForm };
+    const op = this.deviceEditTarget
+      ? this.biometricService.updateDevice(this.deviceEditTarget.id, payload)
+      : this.biometricService.registerDevice(payload);
+
+    op.subscribe({
+      next: () => {
+        this.deviceSaving = false;
+        this.deviceFormSuccess = true;
+        this.loadDevices();
+        setTimeout(() => { this.closeDeviceForm(); this.deviceFormSuccess = false; }, 1200);
+      },
+      error: (err: any) => {
+        this.deviceSaving = false;
+        this.deviceFormError = err?.error?.message ?? 'Failed to save device. Please try again.';
+      }
+    });
+  }
+
+  deleteDevice(device: BiometricDeviceDTO): void {
+    if (!confirm(`Delete "${device.name}"? This cannot be undone.`)) return;
+    this.deviceDeleteIds[device.id] = true;
+    this.biometricService.deleteDevice(device.id).subscribe({
+      next: () => {
+        delete this.deviceDeleteIds[device.id];
+        this.deviceList = this.deviceList.filter(d => d.id !== device.id);
+      },
+      error: () => { delete this.deviceDeleteIds[device.id]; }
+    });
+  }
+
+  onBiometricSectionEnter(): void {
+    this.loadDevices();
   }
 
   private clone<T>(obj: T): T {

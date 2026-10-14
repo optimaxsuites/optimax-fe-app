@@ -1,0 +1,155 @@
+<div class="bd-shell">
+
+  <div class="bd-header">
+    <div>
+      <h3 class="bd-title"><i class="fas fa-fingerprint"></i> Biometric Devices</h3>
+      <p class="bd-sub">Register and manage time-attendance terminals. Each device is identified by its IP address
+        and pushes events to OptimaX via the Hikvision callback endpoint.</p>
+    </div>
+    <div class="bd-toolbar-btns">
+      <button class="bd-btn bd-btn--ghost" (click)="load()" [disabled]="loading">
+        <i class="fas" [class.fa-sync-alt]="!loading" [class.fa-spinner]="loading" [class.fa-spin]="loading"></i>
+        Refresh
+      </button>
+      <button class="bd-btn bd-btn--primary" (click)="openNew()">
+        <i class="fas fa-plus"></i> Register Device
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Register / Edit form ── -->
+  <div class="bd-form-card" *ngIf="showForm">
+    <div class="bd-form-title">
+      {{ editTarget ? 'Edit Device' : 'Register New Device' }}
+    </div>
+
+    <div class="bd-form-grid">
+      <div class="bd-field">
+        <label>Device ID <span class="req">*</span></label>
+        <input type="text" [(ngModel)]="form.deviceId" placeholder="e.g. HIK-BR01-A" class="bd-input">
+      </div>
+      <div class="bd-field">
+        <label>Display Name <span class="req">*</span></label>
+        <input type="text" [(ngModel)]="form.name" placeholder="e.g. Main Entrance" class="bd-input">
+      </div>
+      <div class="bd-field">
+        <label>IP Address <span class="req">*</span></label>
+        <input type="text" [(ngModel)]="form.ipAddress" placeholder="192.168.1.100" class="bd-input">
+      </div>
+      <div class="bd-field">
+        <label>Branch / Location</label>
+        <input type="text" [(ngModel)]="form.branchId" placeholder="Branch code or ID" class="bd-input">
+      </div>
+      <div class="bd-field">
+        <label>Manufacturer</label>
+        <select [(ngModel)]="form.manufacturer" class="bd-input">
+          <option *ngFor="let m of manufacturers" [value]="m">{{ m }}</option>
+        </select>
+      </div>
+      <div class="bd-field">
+        <label>Model</label>
+        <input type="text" [(ngModel)]="form.model" placeholder="DS-K1T321MFWX" class="bd-input">
+      </div>
+      <div class="bd-field">
+        <label>Serial Number</label>
+        <input type="text" [(ngModel)]="form.serialNumber" placeholder="Device serial" class="bd-input">
+      </div>
+      <div class="bd-field">
+        <label>Device Type</label>
+        <select [(ngModel)]="form.deviceType" class="bd-input">
+          <option *ngFor="let t of deviceTypes" [value]="t">{{ t }}</option>
+        </select>
+      </div>
+      <div class="bd-field">
+        <label>MAC Address</label>
+        <input type="text" [(ngModel)]="form.macAddress" placeholder="AA:BB:CC:DD:EE:FF" class="bd-input">
+      </div>
+      <div class="bd-field">
+        <label>Firmware Version</label>
+        <input type="text" [(ngModel)]="form.firmwareVersion" placeholder="V2.0.8" class="bd-input">
+      </div>
+      <div class="bd-field">
+        <label>Max Capacity</label>
+        <input type="number" min="1" [(ngModel)]="form.maxStorageCapacity" class="bd-input">
+      </div>
+      <div class="bd-field bd-field--inline">
+        <label>Active</label>
+        <label class="bd-toggle">
+          <input type="checkbox" [(ngModel)]="form.isActive">
+          <span class="bd-toggle-track"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="bd-form-error" *ngIf="formError">⚠️ {{ formError }}</div>
+    <div class="bd-form-success" *ngIf="saveSuccess"><i class="fas fa-check-circle"></i> Saved successfully</div>
+
+    <div class="bd-form-actions">
+      <button class="bd-btn bd-btn--ghost" (click)="closeForm()">Cancel</button>
+      <button class="bd-btn bd-btn--primary" (click)="save()" [disabled]="saving">
+        <i class="fas" [class.fa-save]="!saving" [class.fa-spinner]="saving" [class.fa-spin]="saving"></i>
+        {{ saving ? 'Saving…' : (editTarget ? 'Update Device' : 'Register Device') }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Loading ── -->
+  <div *ngIf="loading" class="bd-loading">
+    <i class="fas fa-spinner fa-spin"></i> Loading devices…
+  </div>
+
+  <!-- ── Device list ── -->
+  <ng-container *ngIf="!loading">
+    <div class="bd-table-wrap" *ngIf="devices.length > 0">
+      <table class="bd-table">
+        <thead>
+          <tr>
+            <th>Name / Model</th>
+            <th>IP Address</th>
+            <th>Type</th>
+            <th>Branch</th>
+            <th>Status</th>
+            <th style="width:90px">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of devices">
+            <td>
+              <div class="bd-device-name">{{ d.name }}</div>
+              <div class="bd-device-model">{{ d.model }}</div>
+            </td>
+            <td class="bd-mono">{{ d.ipAddress }}</td>
+            <td><span class="bd-type-badge">{{ d.deviceType }}</span></td>
+            <td class="bd-meta">{{ d.branchId || '—' }}</td>
+            <td>
+              <span *ngIf="d.isActive && d.isOnline" class="bd-status bd-status--online">Online</span>
+              <span *ngIf="d.isActive && !d.isOnline" class="bd-status bd-status--offline">Offline</span>
+              <span *ngIf="!d.isActive" class="bd-status bd-status--inactive">Inactive</span>
+            </td>
+            <td>
+              <div class="bd-row-actions">
+                <button class="bd-icon-btn" (click)="openEdit(d)" title="Edit">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="bd-icon-btn bd-icon-btn--danger" (click)="delete(d)"
+                  [disabled]="deleteIds[d.id]" title="Delete">
+                  <i class="fas" [class.fa-trash]="!deleteIds[d.id]"
+                    [class.fa-spinner]="deleteIds[d.id]" [class.fa-spin]="deleteIds[d.id]"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="devices.length === 0" class="bd-empty">
+      <i class="fas fa-fingerprint"></i>
+      <p>No devices registered yet.</p>
+      <button class="bd-btn bd-btn--primary" (click)="openNew()">
+        <i class="fas fa-plus"></i> Register Your First Device
+      </button>
+    </div>
+  </ng-container>
+
+</div>

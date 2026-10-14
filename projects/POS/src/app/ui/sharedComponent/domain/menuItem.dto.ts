@@ -5,6 +5,13 @@ export interface MenuItem {
     icon?: string;
     roles: string[];
     submenu?: MenuItem[];
-    open?: boolean; 
+    open?: boolean;
+    locked?: boolean;
+    active?: boolean;
+    code?: string;
+    description?: string;
+    queryParams?: Record<string, string>;
+    isNotSidebarItem?: boolean;
+    isSectionHeader?: boolean;
+    doNotRegisterAsPermission?: boolean;
   }
-  

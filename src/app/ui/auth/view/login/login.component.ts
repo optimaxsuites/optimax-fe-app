@@ -463,6 +463,17 @@ async posLoginAction(): Promise<void> {
     sessionStorage["userRegData"] = JSON.stringify(safeUserData);
     localStorage.setItem("userRegData", JSON.stringify(safeUserData));
 
+    // Set vendor flags synchronously from the login role BEFORE any redirect or
+    // async call, so AuthGuard blocks vendors regardless of which code path runs.
+    const rolesStr = String(data.roles || '');
+    const isVendorByRole = rolesStr.includes('VENDOR');
+    sessionStorage.setItem('isVendor', String(isVendorByRole));
+    localStorage.setItem('isVendor', String(isVendorByRole));
+    if (isVendorByRole) {
+      sessionStorage.setItem('vendorLoginEnabled', 'false');
+      localStorage.setItem('vendorLoginEnabled', 'false');
+    }
+
     let redirectUrl: string | null =
       sessionStorage.getItem('pendingApprovalRedirect') ||
       localStorage.getItem('pendingApprovalRedirect') ||
@@ -470,6 +481,13 @@ async posLoginAction(): Promise<void> {
       localStorage.getItem('postLoginRedirect');
     const consumeRedirect = (): boolean => {
       if (!redirectUrl) return false;
+      // Never honour a saved redirect for a vendor pending approval
+      if (sessionStorage.getItem('isVendor') === 'true' &&
+          sessionStorage.getItem('vendorLoginEnabled') !== 'true') {
+        sessionStorage.removeItem('postLoginRedirect');
+        localStorage.removeItem('postLoginRedirect');
+        return false;
+      }
       const targetUrl = redirectUrl;
       const isApprovalRedirect = targetUrl.includes('/expensesApproval/');
       if (!isApprovalRedirect) {
@@ -501,20 +519,36 @@ async posLoginAction(): Promise<void> {
       headers: { 'X-Tenant-ID': data.tenantId || data.tenant || tenantId }
     }).subscribe({
       next: (vendor) => {
+        const enabled = String(!!vendor?.loginEnabled);
         sessionStorage.setItem('isVendor', 'true');
-        sessionStorage.setItem('vendorLoginEnabled', String(!!vendor?.loginEnabled));
+        sessionStorage.setItem('vendorLoginEnabled', enabled);
+        localStorage.setItem('isVendor', 'true');
+        localStorage.setItem('vendorLoginEnabled', enabled);
         if (!vendor?.loginEnabled) {
           const pendingLink = this.navigationLink.getLink('vendorPendingLink');
           this.router.navigate([pendingLink]);
         } else {
-          const vendorLink = this.navigationLink.getLink('vendorLink');
-          this.router.navigate([vendorLink]);
+          const vpLink = this.navigationLink.getLink('VPLink');
+          this.router.navigate([vpLink]);
         }
       },
       error: () => {
-        // Not a vendor — proceed with normal role-based navigation
-        sessionStorage.setItem('isVendor', 'false');
-        this.proceedWithNormalNavigation(data);
+        // No commerce record yet — fall back to role from login response.
+        // VENDOR role users must stay blocked even if the vendor record
+        // hasn't been created in commerce yet (pre-register pending / commerce down).
+        const roles = String(data.roles || '');
+        if (roles.includes('VENDOR')) {
+          sessionStorage.setItem('isVendor', 'true');
+          sessionStorage.setItem('vendorLoginEnabled', 'false');
+          localStorage.setItem('isVendor', 'true');
+          localStorage.setItem('vendorLoginEnabled', 'false');
+          const pendingLink = this.navigationLink.getLink('vendorPendingLink');
+          this.router.navigate([pendingLink]);
+        } else {
+          sessionStorage.setItem('isVendor', 'false');
+          localStorage.setItem('isVendor', 'false');
+          this.proceedWithNormalNavigation(data);
+        }
       }
     });
 

@@ -104,6 +104,9 @@ import { HrNotificationsComponent } from './ui/view/hr/hr-notifications/hr-notif
 import { HrOdooImportComponent } from './ui/view/hr/hr-odoo-import/hr-odoo-import.component';
 import { ProbationSettingsComponent } from './ui/view/hr/probation/probation-settings.component';
 import { HrFormsComponent } from './ui/view/hr/hr-forms/hr-forms.component';
+import { BiometricDevicesSettingsComponent } from './ui/view/hr/biometric-devices/biometric-devices-settings.component';
+import { HikvisionConfigComponent } from './ui/view/hr/hikvision-config/hikvision-config.component';
+import { BiometricIntegrationsComponent } from './ui/view/hr/biometric-integrations/biometric-integrations.component';
 import { ModuleRegistryComponent } from './ui/view/module-registry/module-registry.component';
 import { BugTrackerComponent } from './ui/view/bug-tracker/bug-tracker.component';
 import { ImageViewerDialogComponent } from './ui/view/bug-tracker/image-viewer-dialog.component';
@@ -162,6 +165,9 @@ import { SettingsHomeComponent } from './ui/view/settings-home/settings-home.com
     HrOdooImportComponent,
     ProbationSettingsComponent,
     HrFormsComponent,
+    BiometricDevicesSettingsComponent,
+    HikvisionConfigComponent,
+    BiometricIntegrationsComponent,
     ModuleRegistryComponent,
     BugTrackerComponent,
     ImageViewerDialogComponent,

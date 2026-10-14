@@ -1,0 +1,94 @@
+<div class="sn-shell">
+
+  <div class="sn-header">
+    <div>
+      <h3 class="sn-title"><i class="fas fa-id-badge"></i> Staff Numbers</h3>
+      <p class="sn-sub">Assign and manage unique staff identification numbers for biometric device recognition.</p>
+    </div>
+    <button class="btn-ghost" (click)="load()" [disabled]="loading">
+      <i class="fas" [class.fa-sync-alt]="!loading" [class.fa-spinner]="loading" [class.fa-spin]="loading"></i>
+      Refresh
+    </button>
+  </div>
+
+  <div class="sn-toolbar">
+    <div class="sn-search-wrap">
+      <i class="fas fa-search sn-search-icon"></i>
+      <input type="text" class="sn-search-input" placeholder="Search by name, department or staff number…"
+        [(ngModel)]="searchTerm">
+    </div>
+    <div class="sn-count">
+      <span class="sn-count-filled">{{ assignedCount }} assigned</span>
+      <span class="sn-count-empty">{{ unassignedCount }} unassigned</span>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="sn-loading">
+    <i class="fas fa-spinner fa-spin"></i> Loading employees…
+  </div>
+
+  <div *ngIf="!loading" class="sn-table-wrap">
+    <table class="sn-table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>Job Title</th>
+          <th>Staff Number</th>
+          <th style="width:120px">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of filtered"
+            [class.sn-row--saved]="successIds.has(row.id)"
+            [class.sn-row--error]="!!errorIds[row.id]">
+          <td>
+            <div class="sn-emp-name">{{ row.name }}</div>
+          </td>
+          <td class="sn-meta">{{ row.department || '—' }}</td>
+          <td class="sn-meta">{{ row.jobTitle || '—' }}</td>
+          <td>
+            <ng-container *ngIf="!row.editing">
+              <span *ngIf="row.originalStaffNumber" class="sn-badge sn-badge--set">
+                <i class="fas fa-check-circle" style="margin-right:4px;font-size:10px"></i>
+                {{ row.originalStaffNumber }}
+              </span>
+              <span *ngIf="!row.originalStaffNumber" class="sn-badge sn-badge--empty">Not set</span>
+            </ng-container>
+            <ng-container *ngIf="row.editing">
+              <input type="text" class="sn-inline-input" [(ngModel)]="row.staffNumber"
+                placeholder="e.g. EMP-001"
+                (keyup.enter)="saveRow(row)"
+                (keyup.escape)="cancelEdit(row)">
+            </ng-container>
+            <div *ngIf="errorIds[row.id]" class="sn-row-error">{{ errorIds[row.id] }}</div>
+          </td>
+          <td>
+            <div class="sn-actions">
+              <ng-container *ngIf="!row.editing">
+                <button class="sn-btn sn-btn--edit" (click)="startEdit(row)" title="Edit staff number">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+              </ng-container>
+              <ng-container *ngIf="row.editing">
+                <button class="sn-btn sn-btn--save" (click)="saveRow(row)" [disabled]="row.saving" title="Save">
+                  <i class="fas"
+                    [class.fa-check]="!row.saving"
+                    [class.fa-spinner]="row.saving"
+                    [class.fa-spin]="row.saving"></i>
+                </button>
+                <button class="sn-btn sn-btn--cancel" (click)="cancelEdit(row)" [disabled]="row.saving" title="Cancel">
+                  <i class="fas fa-times"></i>
+                </button>
+              </ng-container>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="filtered.length === 0">
+          <td colspan="5" class="sn-empty-row">No employees match your search.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
