@@ -605,7 +605,7 @@ app-loan-disbursement-ui {
 // ============================================
 // LOAN DETAILS MODAL STYLES
 // ============================================
-.loan-details-modal {
+:where(app-loan-disbursement-ui) .loan-details-modal {
   border-radius: 18px !important;
   overflow: hidden;
   box-shadow: 0 24px 48px rgba(15, 44, 56, 0.28) !important;
@@ -797,6 +797,97 @@ app-loan-disbursement-ui {
     }
   }
 
+  .disbursement-confirm-message {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 16px;
+  }
+
+  .disbursement-confirm {
+    padding: 18px 0 0;
+    border-top: 1px solid #eef3f6;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #1a4b5c;
+
+      .required {
+        color: #dc3545;
+      }
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #e3eef0;
+      border-radius: 10px;
+      font-size: 0.9rem;
+
+      &:focus {
+        outline: none;
+        border-color: #2E6276;
+      }
+    }
+
+    .field-hint {
+      font-size: 0.75rem;
+      color: #b45309;
+    }
+
+    .disbursement-confirm-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .cancel-confirm-btn,
+    .send-btn {
+      padding: 11px 22px;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
+    .cancel-confirm-btn {
+      border: 1px solid #bcd9e3;
+      background: #fff;
+      color: #2E6276;
+    }
+
+    .send-btn {
+      border: none;
+      color: #fff;
+      background: linear-gradient(135deg, #2EB270, #239d60);
+    }
+
+    @media (max-width: 600px) {
+      .disbursement-confirm-actions {
+        flex-direction: column-reverse;
+
+        .cancel-confirm-btn,
+        .send-btn {
+          width: 100%;
+        }
+      }
+    }
+  }
+
   .modal-actions {
     padding: 18px 0 0;
     border-top: 1px solid #eef3f6;
@@ -857,7 +948,7 @@ app-loan-disbursement-ui {
   }
 }
 
-.loan-details-mask {
+:where(app-loan-disbursement-ui) .loan-details-mask {
   background: rgba(12, 34, 44, 0.52) !important;
   backdrop-filter: blur(4px);
   animation: loanDetailsMaskIn 0.2s ease-out;
@@ -882,7 +973,7 @@ app-loan-disbursement-ui {
 // ============================================
 // SEND TO ACCOUNTING MODAL STYLES
 // ============================================
-.send-to-accounting-modal {
+:where(app-loan-disbursement-ui) .send-to-accounting-modal {
   border-radius: 18px !important;
   overflow: hidden;
   box-shadow: 0 24px 48px rgba(15, 44, 56, 0.28) !important;
@@ -1175,7 +1266,7 @@ app-loan-disbursement-ui {
   }
 }
 
-.send-to-accounting-mask {
+:where(app-loan-disbursement-ui) .send-to-accounting-mask {
   background: rgba(12, 34, 44, 0.52) !important;
   backdrop-filter: blur(4px);
   animation: sendToAccountingMaskIn 0.2s ease-out;
@@ -1243,7 +1334,7 @@ app-loan-disbursement-ui {
     }
   }
 
-  .loan-details-modal .loan-info-grid {
+  :where(app-loan-disbursement-ui) .loan-details-modal .loan-info-grid {
     grid-template-columns: 1fr !important;
 
     .info-group.full-width {
@@ -1251,9 +1342,7 @@ app-loan-disbursement-ui {
     }
   }
 
-  .loan-details-modal .approval-info .info-grid-two-col,
-  .loan-details-modal .bank-details .info-grid-two-col,
-  .loan-details-modal .disbursement-info .info-grid-two-col {
+  :where(app-loan-disbursement-ui) .loan-details-modal .approval-info .info-grid-two-col, :where(app-loan-disbursement-ui) .loan-details-modal .bank-details .info-grid-two-col, :where(app-loan-disbursement-ui) .loan-details-modal .disbursement-info .info-grid-two-col {
     grid-template-columns: 1fr;
   }
 }

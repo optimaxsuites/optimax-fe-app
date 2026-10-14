@@ -1404,3 +1404,16 @@ app-cooperative-loan-application {
     }
   }
 }
+// Submission error banner and "salary / borrowing limit not available" hints.
+:where(app-cooperative-loan-application) {
+  .submit-error-message {
+    width: 100%;
+    justify-content: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .salary-warning {
+    color: #b45309;
+    font-weight: 600;
+  }
+}

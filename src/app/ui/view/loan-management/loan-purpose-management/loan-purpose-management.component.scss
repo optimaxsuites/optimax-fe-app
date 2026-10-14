@@ -797,7 +797,7 @@ app-loan-purpose-management {
   }
 }
 // Banner listing purposes that still need an interest rate.
-.missing-rate-banner {
+:where(app-loan-purpose-management) .missing-rate-banner {
   width: 100%;
   justify-content: flex-start;
   margin-bottom: 16px;

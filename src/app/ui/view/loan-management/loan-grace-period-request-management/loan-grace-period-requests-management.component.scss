@@ -757,9 +757,15 @@
       box-shadow: 0 4px 12px rgba(46, 178, 112, 0.3);
       transition: all 0.2s ease;
 
-      &:hover {
+      &:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(46, 178, 112, 0.4);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        box-shadow: none;
       }
     }
 

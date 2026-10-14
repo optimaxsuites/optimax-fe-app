@@ -21,7 +21,7 @@ import {
   normalizeLoanRepaymentStartDate,
   toLocalDateString
 } from '../../../service/loan/loan-display.util';
-import { formatNaira, getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 import { isValidCustomInterestRate } from '../../../service/loan/loan-purpose-rate.util';
 
 interface LoanApprovalRow {
@@ -753,7 +753,7 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
 
   get totalActiveLoanBalance(): number {
     return this.loanApplications
-      .filter(loan => loan.status === 'ACTIVE')
+      .filter(loan => hasOutstandingBalanceStatus(loan.status))
       .reduce((sum, loan) => sum + resolveLoanOutstandingExposure(loan), 0);
   }
 

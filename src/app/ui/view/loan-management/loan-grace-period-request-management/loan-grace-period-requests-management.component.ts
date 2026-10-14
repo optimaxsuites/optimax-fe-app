@@ -3,14 +3,26 @@ import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
-import { switchMap, map } from 'rxjs/operators';
+import { switchMap } from 'rxjs/operators';
 import { AdvanceGracePeriodService } from '../../../service/loan/loan-grace-period.service';
 import type { GracePeriodRequest } from '../../../service/loan/loan-grace-period.service';
 import { formatAdvancedLoanCode,
   toLocalDateString
 } from '../../../service/loan/loan-display.util';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
-import { LoanRepaymentService } from '../../../service/loan/loan-repayment.service';
+import { LoanRepaymentService, findAppliedGracePeriodInstallment } from '../../../service/loan/loan-repayment.service';
+import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
+import { MailNotificationService } from '../../../service/mailNotification.service';
+import { getPaymentTypeLabel, getPaymentTypeTone } from '../../../service/loan/loan-payment-types';
+
+function escapeHtml(value: string): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 @Component({
   selector: 'app-loan-grace-period-requests-management',
@@ -31,6 +43,10 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
   reviewNote: string = '';
   rejectionReason: string = '';
   selectedInstallmentDueDate: string | null = null;
+  /** Set when an earlier approval attempt already moved this request's installment. */
+  alreadyAppliedDueDate: string | null = null;
+  isSubmitting = false;
+  private messageTimer?: ReturnType<typeof setTimeout>;
   
   searchTerm: string = '';
   statusFilter: string = '';
@@ -53,7 +69,9 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
     private router: Router,
     private gracePeriodService: AdvanceGracePeriodService,
     private loanApplicationService: LoanApplicationService,
-    private loanRepaymentService: LoanRepaymentService
+    private loanRepaymentService: LoanRepaymentService,
+    private employeeLoanService: EmployeeLoanService,
+    private mailNotificationService: MailNotificationService
   ) {}
 
   ngOnInit(): void {
@@ -193,21 +211,11 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
   }
 
   formatPaymentType(paymentSubtype: string): string {
-    switch(paymentSubtype) {
-      case 'PRINCIPAL_REPAYMENT': return 'Principal Payment';
-      case 'INTEREST_PAYMENT': return 'Interest Payment';
-      case 'LATE_FEE': return 'Late Fee';
-      default: return paymentSubtype;
-    }
+    return getPaymentTypeLabel(paymentSubtype);
   }
 
   getPaymentTypeClass(paymentSubtype: string): string {
-    switch(paymentSubtype) {
-      case 'PRINCIPAL_REPAYMENT': return 'principal';
-      case 'INTEREST_PAYMENT': return 'interest';
-      case 'LATE_FEE': return 'late-fee';
-      default: return '';
-    }
+    return getPaymentTypeTone(paymentSubtype);
   }
 
   formatDate(date: string | undefined | null): string {
@@ -237,6 +245,10 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
   }
 
   getNewDueDate(): string {
+    // A previous attempt already moved the due date; show that date rather than adding days again.
+    if (this.alreadyAppliedDueDate) {
+      return toLocalDateString(new Date(this.alreadyAppliedDueDate));
+    }
     const baseDueDate = this.getSelectedInstallmentDueDate();
     if (!baseDueDate) return '';
 
@@ -250,12 +262,20 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
     this.approvedDays = request.requestedDays;
     this.reviewNote = '';
     this.selectedInstallmentDueDate = null;
+    this.alreadyAppliedDueDate = null;
     this.showApprovalModal = true;
 
     this.loanApplicationService.getApplicationById(String(request.loanId)).subscribe({
       next: (loan) => {
         if (!loan) {
           return;
+        }
+
+        // An earlier approval attempt may have updated the loan but failed to record the approval.
+        const appliedInstallment = request.id ? findAppliedGracePeriodInstallment(loan, request.id) : undefined;
+        if (appliedInstallment) {
+          this.alreadyAppliedDueDate = this.normalizeDateValue(appliedInstallment.dueDate) || null;
+          this.approvedDays = Number(request.approvedGraceDays || request.requestedDays || this.approvedDays);
         }
 
         const matchingInstallment = [...(loan.repaymentSchedule || [])]
@@ -277,93 +297,88 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
     this.approvedDays = 0;
     this.reviewNote = '';
     this.selectedInstallmentDueDate = null;
+    this.alreadyAppliedDueDate = null;
   }
 
   formatLoanCode(raw: string | number | undefined | null): string {
     return formatAdvancedLoanCode(raw);
   }
 
+  /**
+   * Two writes, ordered so a failure is always retryable: first move the loan's due date (idempotent
+   * per request), then mark the request APPROVED. If the second write fails the request stays PENDING
+   * and approving again just finishes it, without moving the due date a second time.
+   */
   approveRequest(): void {
-    if (!this.selectedRequest || !this.selectedRequest.loanId) {
-      this.messages = [{
-        severity: 'error',
-        summary: 'Approval Failed',
-        detail: 'Invalid request data.'
-      }];
+    if (this.isSubmitting) {
+      return;
+    }
+    if (!this.selectedRequest || !this.selectedRequest.loanId || !this.selectedRequest.id) {
+      this.showActionMessage('error', 'Approval Failed', 'Invalid request data.');
       return;
     }
 
-    if (this.approvedDays < 1 || this.approvedDays > 60) {
-      this.messages = [{
-        severity: 'error',
-        summary: 'Invalid Days',
-        detail: 'Approved grace days must be between 1 and 60.'
-      }];
+    if (!this.alreadyAppliedDueDate && (this.approvedDays < 1 || this.approvedDays > 60)) {
+      this.showActionMessage('error', 'Invalid Days', 'Approved grace days must be between 1 and 60.');
       return;
     }
 
-    const installmentDueDate = this.getSelectedInstallmentDueDate();
+    const installmentDueDate = this.alreadyAppliedDueDate || this.getSelectedInstallmentDueDate();
     if (!installmentDueDate) {
-      this.messages = [{
-        severity: 'error',
-        summary: 'Approval Failed',
-        detail: 'Unable to resolve the installment due date for this request.'
-      }];
+      this.showActionMessage('error', 'Approval Failed', 'Unable to resolve the installment due date for this request.');
       return;
     }
 
     const newDueDate = new Date(installmentDueDate);
-    newDueDate.setDate(newDueDate.getDate() + this.approvedDays);
-    
-    // Store the original request data before approval
-    const originalRequest = { ...this.selectedRequest };
-    const loanId = originalRequest.loanId;
-    const installmentNumber = originalRequest.installmentNumber;
+    if (!this.alreadyAppliedDueDate) {
+      newDueDate.setDate(newDueDate.getDate() + this.approvedDays);
+    }
+    const newDueDateIso = newDueDate.toISOString();
 
-    this.gracePeriodService.approveRequest(
-      this.selectedRequest.id!,
-      this.approvedDays,
-      newDueDate.toISOString(),
-      this.reviewNote
-    ).pipe(
-      switchMap((approvedRequest: GracePeriodRequest) => {
-        // Call the existing applyApprovedGracePeriod method with the expected payload structure
-        return this.loanRepaymentService.applyApprovedGracePeriod({
-          loanId: Number(loanId),
-          installmentNumber: Number(installmentNumber),
-          newDueDate: newDueDate.toISOString(),
-          approvedGraceDays: this.approvedDays,
-          reviewNote: this.reviewNote || `Grace period of ${this.approvedDays} days approved for installment ${installmentNumber}`
-        }).pipe(
-          map(() => approvedRequest)
-        );
+    const request = { ...this.selectedRequest };
+    const approvedDays = this.approvedDays;
+    const reviewNote = this.reviewNote;
+    const installmentNumber = request.installmentNumber;
+    let loanUpdated = false;
+
+    this.isSubmitting = true;
+    this.loanRepaymentService.applyApprovedGracePeriod({
+      loanId: Number(request.loanId),
+      installmentNumber: Number(installmentNumber),
+      newDueDate: newDueDateIso,
+      approvedGraceDays: approvedDays,
+      reviewNote: reviewNote || `Grace period of ${approvedDays} days approved for installment ${installmentNumber}`,
+      requestId: request.id
+    }).pipe(
+      switchMap(() => {
+        loanUpdated = true;
+        return this.gracePeriodService.approveRequest(request.id!, approvedDays, newDueDateIso, reviewNote);
       })
     ).subscribe({
       next: (approvedRequest: GracePeriodRequest) => {
-        this.messages = [{
-          severity: 'success',
-          summary: 'Request Approved',
-          detail: `Grace period of ${this.approvedDays} days approved successfully for installment ${installmentNumber}.`
-        }];
+        this.isSubmitting = false;
+        this.showActionMessage('success', 'Request Approved', `Grace period of ${approvedDays} days approved for installment ${installmentNumber}. New due date: ${this.formatDate(newDueDateIso)}.`);
         this.closeApprovalModal();
         this.loadRequests();
         this.sendEmailNotification(approvedRequest, 'approved');
-        
-        setTimeout(() => {
-          this.messages = [];
-        }, 5000);
       },
       error: (error: any) => {
+        this.isSubmitting = false;
         console.error('Error approving request:', error);
-        this.messages = [{
-          severity: 'error',
-          summary: 'Approval Failed',
-          detail: error.message || 'Failed to approve grace period request. Please try again.'
-        }];
-        
-        setTimeout(() => {
-          this.messages = [];
-        }, 5000);
+        if (loanUpdated) {
+          // The loan is extended but the request is still PENDING: keep it actionable.
+          this.showActionMessage(
+            'warn',
+            'Approval Not Finished',
+            `The installment's due date was moved to ${this.formatDate(newDueDateIso)}, but the request couldn't be marked approved. `
+              + 'Open it and click Approve again to finish. The due date won\'t be moved twice.',
+            true
+          );
+          this.closeApprovalModal();
+          this.loadRequests();
+          return;
+        }
+        this.showActionMessage('error', 'Approval Failed', `${error?.message || 'Failed to approve grace period request.'} Nothing was changed; please try again.`);
       }
     });
   }
@@ -445,7 +460,64 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
     this.selectedRequest = null;
   }
 
-  private sendEmailNotification(request: GracePeriodRequest, status: string): void {
+  /**
+   * Emails the employee about the decision. Best effort: the decision is already saved, so a mail
+   * failure only shows a warning rather than undoing anything.
+   */
+  private sendEmailNotification(request: GracePeriodRequest, status: 'approved' | 'rejected'): void {
+    if (!request?.employeeId) {
+      return;
+    }
+
+    this.employeeLoanService.getEmployeeById(Number(request.employeeId)).pipe(
+      switchMap((response: any) => {
+        const employee = response?.data || response;
+        const email = String(employee?.email || employee?.workEmail || '').trim();
+        if (!email) {
+          throw new Error('No email address on file for this employee.');
+        }
+        const name = `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim() || employee?.fullName || 'there';
+        return this.mailNotificationService.sendMail({
+          name,
+          recieverEmail: email,
+          subject: status === 'approved' ? 'Your payment extension request was approved' : 'Your payment extension request was declined',
+          body: this.buildDecisionEmailBody(request, status, name)
+        });
+      })
+    ).subscribe({
+      error: (error) => {
+        console.error('Failed to send grace period decision email:', error);
+        this.showActionMessage('warn', 'Email Not Sent', `The decision was saved, but the employee couldn't be emailed: ${error?.message || 'mail service unavailable'}.`, true);
+      }
+    });
+  }
+
+  private buildDecisionEmailBody(request: GracePeriodRequest, status: 'approved' | 'rejected', name: string): string {
+    const loanCode = escapeHtml(this.formatLoanCode(request.loanId));
+    const installment = escapeHtml(String(request.installmentNumber || ''));
+    const decision = status === 'approved'
+      ? `<p>Your request for more time on installment ${installment} of loan ${loanCode} has been <strong>approved</strong>`
+        + ` for ${escapeHtml(String(request.approvedGraceDays || request.requestedDays || ''))} day(s).`
+        + (request.newDueDate ? ` The new due date is <strong>${escapeHtml(this.formatDate(request.newDueDate))}</strong>.` : '')
+        + '</p>'
+      : `<p>Your request for more time on installment ${installment} of loan ${loanCode} has been <strong>declined</strong>.</p>`
+        + (request.rejectionReason ? `<p>Reason: ${escapeHtml(request.rejectionReason)}</p>` : '');
+    const note = request.reviewNote && request.reviewNote !== request.rejectionReason
+      ? `<p>Note from HR: ${escapeHtml(request.reviewNote)}</p>`
+      : '';
+    return `<div style="font-family: Arial, sans-serif; color: #1a4b5c;">`
+      + `<p>Hello ${escapeHtml(name)},</p>${decision}${note}`
+      + '<p>You can see the details in <strong>My Loans</strong>.</p>'
+      + '<p>Regards,<br/><strong>HR</strong></p></div>';
+  }
+
+  /** Shows a page message; transient ones clear after 5s, `persist` ones stay until replaced. */
+  private showActionMessage(severity: 'success' | 'info' | 'warn' | 'error', summary: string, detail: string, persist = false): void {
+    clearTimeout(this.messageTimer);
+    this.messages = [{ severity, summary, detail }];
+    if (!persist) {
+      this.messageTimer = setTimeout(() => { this.messages = []; }, 5000);
+    }
   }
 
   private getSelectedInstallmentDueDate(): string | null {

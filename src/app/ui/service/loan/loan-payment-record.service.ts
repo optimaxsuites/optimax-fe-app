@@ -5,11 +5,13 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment';
 import { fetchAllPages } from './paginated-fetch.util';
+import { resolveTenantId } from './loan-tenant.util';
+import { PaymentRecordType } from './loan-payment-types';
 
 export interface PaymentRecord {
   id?: number;
   loanId: number;
-  paymentType: 'PRINCIPAL_REPAYMENT' | 'INTEREST_REPAYMENT' | 'LATE_FEE';
+  paymentType: PaymentRecordType;
   installmentNumber: number;
   amount: number;
   principalApplied?: number;
@@ -28,7 +30,7 @@ export interface PaymentRecord {
 
 export interface CreatePaymentRecordPayload {
   loanId: number;
-  paymentType: 'PRINCIPAL_REPAYMENT' | 'INTEREST_REPAYMENT' | 'LATE_FEE';
+  paymentType: PaymentRecordType;
   installmentNumber: number;
   amount: number;
   paymentMethod: 'BANK_TRANSFER' | 'CARD' | 'CASH' | 'PAYROLL_DEDUCTION' | 'MOBILE_MONEY';
@@ -45,7 +47,7 @@ export class AdvancePaymentRecordService {
 
   private getHeaders() {
     const token = sessionStorage.getItem('token');
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     return {
       'Authorization': `Bearer ${token}`,
       'X-Tenant-ID': tenantId,

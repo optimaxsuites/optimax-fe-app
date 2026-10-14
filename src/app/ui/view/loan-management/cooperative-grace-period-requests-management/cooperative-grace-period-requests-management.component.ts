@@ -8,6 +8,7 @@ import { CooperativeService } from '../../../service/loan/cooperative-loan/coope
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { toLocalDateString } from '../../../service/loan/loan-display.util';
 import { getLoanStatusClass } from '../../../service/loan/loan-format.util';
+import { getPaymentTypeLabel, getPaymentTypeTone } from '../../../service/loan/loan-payment-types';
 
 @Component({
   selector: 'app-cooperative-grace-period-requests-management',
@@ -271,23 +272,11 @@ export class CooperativeGracePeriodRequestsManagementComponent implements OnInit
   }
 
   formatPaymentType(paymentSubtype: string): string {
-    switch (paymentSubtype) {
-      case 'CONTRIBUTION': return 'Contribution';
-      case 'PRINCIPAL_REPAYMENT': return 'Principal Payment';
-      case 'INTEREST_PAYMENT': return 'Interest Payment';
-      case 'LATE_FEE': return 'Late Fee';
-      default: return paymentSubtype;
-    }
+    return getPaymentTypeLabel(paymentSubtype);
   }
 
   getPaymentTypeClass(paymentSubtype: string): string {
-    switch (paymentSubtype) {
-      case 'CONTRIBUTION': return 'contribution';
-      case 'PRINCIPAL_REPAYMENT': return 'principal';
-      case 'INTEREST_PAYMENT': return 'interest';
-      case 'LATE_FEE': return 'late-fee';
-      default: return '';
-    }
+    return getPaymentTypeTone(paymentSubtype);
   }
 
   getStatusClass(status: string): string {

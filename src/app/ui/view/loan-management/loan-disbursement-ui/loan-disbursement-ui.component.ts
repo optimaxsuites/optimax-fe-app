@@ -1,6 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
@@ -12,6 +13,7 @@ import { AdvanceDisbursementConfirmationService, CreateDisbursementPayload } fro
 import { resolveLoanTotalRepayableAmount, formatAdvancedLoanCode, resolveLoanActorName } from '../../../service/loan/loan-display.util';
 import { environment } from '../../../shared-component/environments/environment';
 import { formatNaira } from '../../../service/loan/loan-format.util';
+import { resolveTenantId } from '../../../service/loan/loan-tenant.util';
 
 type QueueSortKey = 'loanId' | 'employee' | 'department' | 'amount' | 'approvedDate' | 'readyDate' | 'status';
 type QueueSortDirection = 'asc' | 'desc';
@@ -66,6 +68,9 @@ export class LoanDisbursementUiComponent implements OnInit {
   disbursementAmount: number = 0;
   paymentMethod: 'BANK_TRANSFER' | 'CASH' | 'CHEQUE' | 'PAYROLL_DEDUCTION' = 'BANK_TRANSFER';
   disbursementReference: string = '';
+  /** Confirmation step for "Set Loan to Active". */
+  showDisbursementConfirmation = false;
+  bankTransferReference = '';
   
   // Loading states
   isLoadingEmployeeDetails = false;
@@ -224,6 +229,11 @@ export class LoanDisbursementUiComponent implements OnInit {
   }
 
   private applySelectedLoan(loan: LoanApplication): void {
+    // Only a different loan resets the confirmation step (a background refresh of the same loan must
+    // not wipe a reference the admin is typing).
+    if (this.selectedDisbursementLoan?.id !== loan.id) {
+      this.cancelDisbursementConfirmation();
+    }
     this.selectedDisbursementLoan = loan;
     this.selectedEmployeeDetails = null;
     this.populateDisbursementTrackingFromLoan(loan);
@@ -258,6 +268,7 @@ export class LoanDisbursementUiComponent implements OnInit {
   // ============================================
   closeLoanDetailsModal(): void {
     this.isLoanDetailsModalVisible = false;
+    this.cancelDisbursementConfirmation();
     // Don't clear selected loan immediately to avoid flicker
     setTimeout(() => {
       if (!this.isSendToAccountingModalVisible) {
@@ -320,9 +331,15 @@ export class LoanDisbursementUiComponent implements OnInit {
     }
 
     this.isLoadingEmployeeDetails = true;
+    this.selectedEmployeeDetails = null;
     this.employeeLoanService.getEmployeeById(employeeId).subscribe({
       next: (employee) => {
         this.employeeDetailsCache.set(employeeId, employee);
+        // Ignore a late response for a loan that's no longer selected, so one employee's bank
+        // details can never end up on another employee's disbursement.
+        if (Number(this.selectedDisbursementLoan?.employeeId) !== Number(employeeId)) {
+          return;
+        }
         this.selectedEmployeeDetails = employee;
         this.isLoadingEmployeeDetails = false;
       },
@@ -351,9 +368,22 @@ export class LoanDisbursementUiComponent implements OnInit {
       return;
     }
 
+    if (this.isLoadingEmployeeDetails) {
+      this.messages = [{ severity: 'warn', summary: 'Bank Details Loading', detail: 'The employee\'s bank details are still loading. Try again in a moment.' }];
+      return;
+    }
+    if (!this.hasBankDetails(this.selectedEmployeeDetails)) {
+      this.messages = [{
+        severity: 'error',
+        summary: 'Bank Details Missing',
+        detail: `${this.selectedDisbursementLoan.fullName || 'This employee'} has no bank name and account number on file. Add them to the employee record before sending to accounting.`
+      }];
+      return;
+    }
+
     // Get authentication token and tenant ID
     const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     
     if (!token) {
       console.error('No authentication token found!');
@@ -478,12 +508,55 @@ export class LoanDisbursementUiComponent implements OnInit {
     });
   }
 
+  /**
+   * Batch send: first make sure every selected employee's bank details are actually loaded (they're
+   * fetched in the background when loans are ticked) and present, so accounting never receives an
+   * empty account number.
+   */
   private sendBatchToAccounting(): void {
     const loans = this.batchSelectedLoans.filter(l => l.status === 'APPROVED');
     if (!loans.length) return;
 
+    const missing = loans.filter((loan) => !this.batchEmployeeDetailsMap.get(loan.id));
+    this.isSubmittingDisbursement = true;
+    const fetches = missing.map((loan) =>
+      this.employeeLoanService.getEmployeeById(loan.employeeId).pipe(
+        map((employee) => ({ loan, employee })),
+        catchError(() => of({ loan, employee: null }))
+      )
+    );
+    (fetches.length ? forkJoin(fetches) : of([] as Array<{ loan: LoanApplication; employee: any }>)).subscribe((results) => {
+      results.forEach(({ loan, employee }) => this.batchEmployeeDetailsMap.set(loan.id, employee));
+      this.isSubmittingDisbursement = false;
+
+      const withoutBankDetails = loans.filter((loan) => !this.hasBankDetails(this.batchEmployeeDetailsMap.get(loan.id)));
+      if (withoutBankDetails.length) {
+        const names = withoutBankDetails.slice(0, 3).map((loan) => `${loan.fullName || 'Employee'} (${this.getFormattedLoanCode(loan)})`).join(', ');
+        const more = withoutBankDetails.length > 3 ? ` and ${withoutBankDetails.length - 3} more` : '';
+        this.messages = [{
+          severity: 'error',
+          summary: 'Bank Details Missing',
+          detail: `Nothing was sent. These employees have no bank name and account number on file: ${names}${more}. Add them, or untick those loans, then try again.`
+        }];
+        return;
+      }
+
+      this.postBatchToAccounting(loans);
+    });
+  }
+
+  get hasSelectedEmployeeBankDetails(): boolean {
+    return this.hasBankDetails(this.selectedEmployeeDetails);
+  }
+
+  private hasBankDetails(employee: any): boolean {
+    return !!String(employee?.accountNumber || '').trim() && !!String(employee?.bankName || '').trim();
+  }
+
+  private postBatchToAccounting(loans: LoanApplication[]): void {
+
     const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     
     if (!token) {
       console.error('No authentication token found!');
@@ -749,102 +822,104 @@ export class LoanDisbursementUiComponent implements OnInit {
     });
   }
 
+  /** "Set Loan to Active": ask for the bank transfer reference and an explicit confirmation first. */
   markAsDisbursed(): void {
     if (!this.selectedDisbursementLoan || this.isSubmittingDisbursement) {
       return;
     }
+    this.bankTransferReference = '';
+    this.showDisbursementConfirmation = true;
+  }
 
-    this.isSubmittingDisbursement = true;
+  cancelDisbursementConfirmation(): void {
+    this.showDisbursementConfirmation = false;
+    this.bankTransferReference = '';
+  }
+
+  get isBankTransferReferenceValid(): boolean {
+    return this.bankTransferReference.trim().length >= 4;
+  }
+
+  /**
+   * Confirms the disbursement, in order: find this loan's disbursement record, record the transfer
+   * reference on it (creating it for older loans that never got one), and only then set the loan
+   * ACTIVE. If the record can't be checked or saved, the loan is not activated.
+   */
+  confirmMarkAsDisbursed(): void {
+    const loan = this.selectedDisbursementLoan;
+    if (!loan || this.isSubmittingDisbursement) {
+      return;
+    }
+    if (!this.isBankTransferReferenceValid) {
+      this.messages = [{ severity: 'warn', summary: 'Reference Required', detail: 'Enter the bank transfer reference for this disbursement.' }];
+      return;
+    }
+
+    const reference = this.bankTransferReference.trim();
     const disbursedAt = new Date().toISOString();
-    
-    // Update the disbursement confirmation record
-    this.disbursementConfirmationService.getConfirmationByLoanId(this.selectedDisbursementLoan.id).subscribe({
-      next: (confirmation) => {
-        if (confirmation && confirmation.id) {
-          this.disbursementConfirmationService.updateConfirmation(confirmation.id, {
-            disbursementConfirmedAt: disbursedAt,
-            disbursementConfirmedBy: this.getCurrentUserId(),
-            disbursementReference: this.disbursementReference || confirmation.disbursementReference,
-            notes: `Disbursement completed on ${new Date(disbursedAt).toLocaleString()}`
-          }).subscribe({
-            next: () => undefined,
-            error: (err) => console.error('Error updating confirmation:', err)
-          });
-        }
-        
-        // Update loan status to ACTIVE
-        this.loanApprovalService.updateApplicationStatus(this.selectedDisbursementLoan!.id, {
+    const instructionReference = loan.disbursementInstructionReference || this.disbursementInstructionReference || '';
+    let confirmationRecorded = false;
+    this.isSubmittingDisbursement = true;
+
+    this.disbursementConfirmationService.getConfirmationByLoanId(loan.id).pipe(
+      switchMap((confirmation) => {
+        const confirmedFields = {
+          disbursementConfirmedAt: disbursedAt,
+          disbursementConfirmedBy: this.getCurrentUserId(),
+          disbursementReference: reference,
+          notes: `Disbursement confirmed on ${new Date(disbursedAt).toLocaleString()}. Bank reference: ${reference}.`
+        };
+        return confirmation?.id
+          ? this.disbursementConfirmationService.updateConfirmation(confirmation.id, confirmedFields)
+          : this.disbursementConfirmationService.createConfirmation({
+              loanId: loan.id,
+              disbursedAmount: this.getApprovedAmount(loan),
+              disbursementInstructionReference: instructionReference || this.generateUniqueDisbursementReference(loan),
+              disbursementReference: reference,
+              paymentMethod: this.paymentMethod,
+              notes: confirmedFields.notes
+            });
+      }),
+      switchMap(() => {
+        confirmationRecorded = true;
+        return this.loanApprovalService.updateApplicationStatus(loan.id, {
           status: 'ACTIVE',
           changedAt: disbursedAt,
-          notes: `Loan disbursed successfully. Reference: ${this.disbursementInstructionReference || 'N/A'}.`,
-          repaymentStartDate: this.selectedDisbursementLoan?.repaymentStartDate,
-          repaymentDay: this.selectedDisbursementLoan?.repaymentDay
-        } as any).subscribe({
-          next: (updatedLoan) => {
-            this.selectedDisbursementLoan = updatedLoan;
-            (this.selectedDisbursementLoan as any).disbursementInitiatedAt = this.disbursementInitiatedAt || disbursedAt;
-            (this.selectedDisbursementLoan as any).disbursementInitiatedBy = this.disbursementInitiatedBy || (sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin');
-            (this.selectedDisbursementLoan as any).disbursementInstructionReference = this.disbursementInstructionReference;
-            
-            this.replaceQueueLoan(updatedLoan);
-            this.isLoanDetailsModalVisible = false;
-            this.selectedDisbursementLoan = null;
-            this.selectedEmployeeDetails = null;
-            this.messages = [{
-              severity: 'success',
-              summary: 'Loan Activated',
-              detail: `Loan ${this.getFormattedLoanCode(updatedLoan)} has been set to ACTIVE.`
-            }];
-            this.isSubmittingDisbursement = false;
-            this.loadApprovedLoans();
-          },
-          error: (error) => {
-            console.error('Error marking loan as disbursed:', error);
-            this.messages = [{
-              severity: 'error',
-              summary: 'Disbursement Failed',
-              detail: 'Unable to move the loan to active status.'
-            }];
-            this.isSubmittingDisbursement = false;
-          }
-        });
+          notes: `Loan disbursed. Bank reference: ${reference}.${instructionReference ? ` Instruction reference: ${instructionReference}.` : ''}`,
+          repaymentStartDate: loan.repaymentStartDate,
+          repaymentDay: loan.repaymentDay
+        } as any);
+      })
+    ).subscribe({
+      next: (updatedLoan) => {
+        this.isSubmittingDisbursement = false;
+        this.showDisbursementConfirmation = false;
+        this.bankTransferReference = '';
+        this.replaceQueueLoan(updatedLoan);
+        this.isLoanDetailsModalVisible = false;
+        this.selectedDisbursementLoan = null;
+        this.selectedEmployeeDetails = null;
+        this.messages = [{
+          severity: 'success',
+          summary: 'Loan Activated',
+          detail: `Loan ${this.getFormattedLoanCode(updatedLoan)} is now ACTIVE. Bank reference: ${reference}.`
+        }];
+        this.loadApprovedLoans();
       },
-      error: () => {
-        // If no confirmation record exists, just update the loan
-        this.loanApprovalService.updateApplicationStatus(this.selectedDisbursementLoan!.id, {
-          status: 'ACTIVE',
-          changedAt: disbursedAt,
-          notes: `Loan disbursed successfully. Reference: ${this.disbursementInstructionReference || 'N/A'}.`,
-          repaymentStartDate: this.selectedDisbursementLoan?.repaymentStartDate,
-          repaymentDay: this.selectedDisbursementLoan?.repaymentDay
-        } as any).subscribe({
-          next: (updatedLoan) => {
-            this.replaceQueueLoan(updatedLoan);
-            this.isLoanDetailsModalVisible = false;
-            this.selectedDisbursementLoan = null;
-            this.selectedEmployeeDetails = null;
-            this.messages = [{
-              severity: 'success',
-              summary: 'Loan Disbursed',
-              detail: `Loan ${this.getFormattedLoanCode(updatedLoan)} has been marked as disbursed.`
-            }];
-            this.isSubmittingDisbursement = false;
-            this.loadApprovedLoans();
-          },
-          error: (error) => {
-            console.error('Error marking loan as disbursed:', error);
-            this.messages = [{
-              severity: 'error',
-              summary: 'Disbursement Failed',
-              detail: 'Unable to move the loan to active status.'
-            }];
-            this.isSubmittingDisbursement = false;
-          }
-        });
+      error: (error) => {
+        this.isSubmittingDisbursement = false;
+        console.error('Error confirming disbursement:', error);
+        this.messages = [{
+          severity: 'error',
+          summary: confirmationRecorded ? 'Loan Not Activated' : 'Disbursement Not Confirmed',
+          detail: confirmationRecorded
+            ? `The transfer reference ${reference} was recorded, but the loan couldn't be set to Active. Click "Set Loan to Active" again to finish.`
+            : `The disbursement record couldn't be checked or saved, so the loan was not activated. ${error?.message || ''}`.trim()
+        }];
       }
     });
   }
-  
+
   // Helper method to format loan code
   getFormattedLoanCode(loan: LoanApplication): string {
     return formatAdvancedLoanCode(loan.loanCode || loan.id);

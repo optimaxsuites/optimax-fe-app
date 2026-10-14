@@ -205,8 +205,12 @@
           [(ngModel)]="approvedDays" 
           min="1" 
           max="60"
+          [readonly]="!!alreadyAppliedDueDate"
           class="form-input">
-        <div class="field-hint">Number of days to extend the due date (max 60 days)</div>
+        <div class="field-hint" *ngIf="!alreadyAppliedDueDate">Number of days to extend the due date (max 60 days)</div>
+        <div class="field-hint" *ngIf="alreadyAppliedDueDate">
+          <i class="fas fa-circle-info"></i> An earlier approval already moved this installment's due date. Approving now only records the approval; the date won't move again.
+        </div>
       </div>
 
       <div class="form-group">
@@ -239,7 +243,9 @@
     
     <div class="modal-footer">
       <button class="cancel-btn" (click)="closeApprovalModal()">Cancel</button>
-      <button class="approve-btn" (click)="approveRequest()">Approve Request</button>
+      <button class="approve-btn" (click)="approveRequest()" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Approving…' : (alreadyAppliedDueDate ? 'Finish Approval' : 'Approve Request') }}
+      </button>
     </div>
   </div>
 </div>

@@ -11,6 +11,10 @@ import { CooperativeMember, CooperativeLoanGroup, CooperativeRepayment, Cooperat
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 import { formatLoanPurposeDisplay, formatLoanRepaymentDayDisplay, normalizeLoanRepaymentStartDate, resolveLoanActorName } from '../../../service/loan/loan-display.util';
 import { getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
+import { Observable, forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import { EmployeeService } from '../../../service/employee.service';
+import { resolveSessionUserId } from '../../../service/loan/loan-display.util';
 
 type CooperativeLoanAuditEntryView = {
   status: string;
@@ -25,6 +29,12 @@ type CooperativeLoanAuditEntryView = {
   styleUrls: ['./cooperative-loan-detail.component.scss']
 })
 export class CooperativeLoanDetailComponent implements OnInit {
+  /**
+   * Opened from the member side (/member/cooperative/loans/:id): read-only for the borrower, with the
+   * admin actions hidden and access limited to the member's own loans.
+   */
+  readonly isMemberView = this.isMemberRoute();
+  accessDenied = false;
   private readonly destroyRef = inject(DestroyRef);
     // Helper: True if any guarantor has rejected
     get anyGuarantorRejected(): boolean {
@@ -70,7 +80,8 @@ export class CooperativeLoanDetailComponent implements OnInit {
     private cooperativeService: CooperativeService,
     private backNavigationService: BackNavigationService,
     private fb: FormBuilder,
-    private loanApprovalService: LoanApprovalService
+    private loanApprovalService: LoanApprovalService,
+    private employeeService: EmployeeService
   ) {
     this.commentForm = this.fb.group({
       comment: [''],
@@ -79,6 +90,10 @@ export class CooperativeLoanDetailComponent implements OnInit {
       lateFeeGracePeriodDays: [0, [Validators.required, Validators.min(0), Validators.max(365)]],
       repaymentDay: [15, [Validators.required, Validators.min(1), Validators.max(31)]]
     });
+  }
+
+  private isMemberRoute(): boolean {
+    return inject(Router).url.includes('/member/cooperative/');
   }
 
   ngOnInit(): void {
@@ -91,33 +106,75 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   loadLoan(id: number): void {
     this.isLoading = true;
+    this.accessDenied = false;
     this.cooperativeService.loadLoanById(id).subscribe(loan => {
-      if (loan) {
-        this.loan = loan;
-        const memberId = loan.cooperativeMemberId ?? loan.memberId;
-        this.member = memberId !== undefined ? this.cooperativeService.getMemberById(memberId) : undefined;
-        const groupId = loan.cooperativeGroupId ?? loan.groupId;
-        this.group = groupId !== undefined ? this.cooperativeService.getGroupById(groupId) : undefined;
-        if (groupId !== undefined) {
-          this.cooperativeService.loadGroupById(Number(groupId)).subscribe((group) => {
-            if (group) {
-              this.group = group;
-            }
-          });
-        }
-        this.currentMembership = this.resolveCurrentMembership(memberId, groupId, loan.membershipId);
-        if (memberId) {
-          this.cooperativeService.loadGroupMembershipsByMember(Number(memberId)).subscribe((memberships) => {
-            this.currentMembership = this.resolveMembershipFromCollection(memberships, Number(groupId || 0), loan.membershipId);
-          });
-        }
-        this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(loan.id);
-        this.guarantors = this.normalizeGuarantors(loan.guarantors);
-        this.updateStatusTimeline();
+      if (!loan) {
+        this.isLoading = false;
+        return;
       }
 
-      this.isLoading = false;
+      if (!this.isMemberView) {
+        this.applyLoan(loan);
+        this.isLoading = false;
+        return;
+      }
+
+      // Member view: only show the loan if it belongs to the signed-in member.
+      this.memberOwnsLoan(loan).subscribe((owns) => {
+        if (owns) {
+          this.applyLoan(loan);
+        } else {
+          this.accessDenied = true;
+        }
+        this.isLoading = false;
+      });
     });
+  }
+
+  /**
+   * True when the loan's cooperative member is the signed-in employee. Compares employee ids, never
+   * names. Anything that can't be resolved counts as "not yours".
+   */
+  private memberOwnsLoan(loan: CooperativeLoan): Observable<boolean> {
+    const loanMemberId = Number(loan.cooperativeMemberId ?? loan.memberId ?? 0);
+    const userId = resolveSessionUserId();
+    if (!loanMemberId || !userId) {
+      return of(false);
+    }
+    return forkJoin({
+      members: this.cooperativeService.getMembers().pipe(catchError(() => of([] as CooperativeMember[]))),
+      employee: this.employeeService.getEmployeeByUserId(userId).pipe(catchError(() => of(null)))
+    }).pipe(
+      map(({ members, employee }) => {
+        const currentEmployeeId = Number((employee as any)?.id || (employee as any)?.employeeId || 0);
+        const loanMember = members.find((member) => Number(member.id) === loanMemberId || Number(member.memberId) === loanMemberId);
+        return !!currentEmployeeId && !!loanMember && Number(loanMember.employeeId) === currentEmployeeId;
+      })
+    );
+  }
+
+  private applyLoan(loan: CooperativeLoan): void {
+    this.loan = loan;
+    const memberId = loan.cooperativeMemberId ?? loan.memberId;
+    this.member = memberId !== undefined ? this.cooperativeService.getMemberById(memberId) : undefined;
+    const groupId = loan.cooperativeGroupId ?? loan.groupId;
+    this.group = groupId !== undefined ? this.cooperativeService.getGroupById(groupId) : undefined;
+    if (groupId !== undefined) {
+      this.cooperativeService.loadGroupById(Number(groupId)).subscribe((group) => {
+        if (group) {
+          this.group = group;
+        }
+      });
+    }
+    this.currentMembership = this.resolveCurrentMembership(memberId, groupId, loan.membershipId);
+    if (memberId) {
+      this.cooperativeService.loadGroupMembershipsByMember(Number(memberId)).subscribe((memberships) => {
+        this.currentMembership = this.resolveMembershipFromCollection(memberships, Number(groupId || 0), loan.membershipId);
+      });
+    }
+    this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(loan.id);
+    this.guarantors = this.normalizeGuarantors(loan.guarantors);
+    this.updateStatusTimeline();
   }
 
   openRecordPaymentModal(): void {
@@ -619,6 +676,11 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   goBack(): void {
+    if (this.isMemberView) {
+      // Members came from My Membership.
+      this.router.navigate(['/admin/hr/loan', this.currentUuid || 'uu'], { queryParams: { tab: 'my-membership' } });
+      return;
+    }
     this.router.navigate(['/admin/hr/loan', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });

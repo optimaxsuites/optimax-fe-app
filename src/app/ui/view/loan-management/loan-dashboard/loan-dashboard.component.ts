@@ -26,7 +26,7 @@ import {
   resolveLoanTotalRepayableAmount,
   resolveLoanTotalLateFees
 } from '../../../service/loan/loan-display.util';
-import { formatNaira, getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 interface LoanDashboardAlert {
   level: 'warning' | 'danger';
@@ -311,9 +311,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     ]).subscribe({
       next: ([applications, employees]) => {
         this.rebuildEmployeeLookup(Array.isArray(employees) ? employees : []);
-        this.allLoans = this.enrichLoansWithEmployeeData(
-          applications.filter((loan) => !(loan.fullName ?? '').includes('Rolayo Awe'))
-        );
+        this.allLoans = this.enrichLoansWithEmployeeData(applications);
         this.processLoadedData();
         this.isDataLoaded = true;
         this.isLoading = false;
@@ -379,7 +377,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     ).length;
     
     this.dashboardStats.totalBalance = this.allLoans
-      .filter((loan) => loan.status === 'ACTIVE')
+      .filter((loan) => hasOutstandingBalanceStatus(loan.status))
       .reduce((total, loan) => total + resolveLoanOutstandingExposure(loan), 0);
   }
 

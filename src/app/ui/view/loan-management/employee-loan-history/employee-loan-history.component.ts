@@ -24,7 +24,7 @@ import {
   resolveLoanTotalLateFees
 } from '../../../service/loan/loan-display.util';
 import { toCsvCell } from '../../../service/loan/csv-export.util';
-import { formatNaira, getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 interface EmployeeLoanHistoryRow {
   loan: LoanApplication;
@@ -224,9 +224,9 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     return resolveLoanTotalLateFees(loan);
   }
 
-  // Active loans only for summary cards
+  // Loans still in repayment (including overdue/defaulted) for the financial summary cards
   get activeLoans(): LoanApplication[] {
-    return this.employeeLoans.filter(loan => loan.status === 'ACTIVE');
+    return this.employeeLoans.filter(loan => hasOutstandingBalanceStatus(loan.status));
   }
 
   get activeTotalAmount(): number {
@@ -251,7 +251,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   
   loadEmployeeHistory(): void {
     this.isLoading = true;
-    this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId, this.employeeName).subscribe({
+    this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId).subscribe({
       next: (applications) => {
         this.employeeService.getEmployeeById(Number(this.employeeId)).toPromise()
           .then(employee => {

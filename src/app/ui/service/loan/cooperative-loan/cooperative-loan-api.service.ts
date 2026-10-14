@@ -4,6 +4,8 @@ import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../shared-component/service/environments/environment.prod';
 import { getTokenFromStorage } from './token-util';
+import { resolveTenantId } from '../loan-tenant.util';
+import { fetchAllPages } from '../paginated-fetch.util';
 
 export interface CooperativeLoanApiAuditUser {
   id: number;
@@ -446,12 +448,7 @@ export class CooperativeLoanApiService {
 }
 
   private getTenantId(): string {
-    const tenant = sessionStorage.getItem('tenantId')
-      || sessionStorage.getItem('tenant')
-      || localStorage.getItem('tenantId')
-      || localStorage.getItem('tenant')
-      || 'optimax';
-    return tenant && tenant !== 'undefined' && tenant !== 'null' ? tenant : 'optimax';
+    return resolveTenantId();
   }
 
   private logRequest(method: string, url: string): void {
@@ -766,6 +763,18 @@ export class CooperativeLoanApiService {
   getAllLoans(): Observable<CooperativeLoanApiResponse[]> {
     const paginatedUrl = `${this.loansBaseUrl}?page=1&size=100`;
     return this.getWithCollectionFallback<CooperativeLoanApiResponse>(paginatedUrl, this.loansBaseUrl, 'getAllLoans');
+  }
+
+  /**
+   * Every cooperative loan across all pages (getAllLoans only reads the first 100). Errors propagate,
+   * for callers that must not mistake a failed load for "no loans", such as the borrowing-limit check.
+   */
+  getAllLoansAllPages(): Observable<CooperativeLoanApiResponse[]> {
+    const headers = this.getAuthHeaders();
+    const fetchPage = (page: number) => this.http.get(`${this.loansBaseUrl}?page=${page}&size=100`, { headers, responseType: 'text' }).pipe(
+      map((response) => this.mapCollectionResponse<CooperativeLoanApiResponse>(this.safeParseResponse(response)))
+    );
+    return fetchAllPages<CooperativeLoanApiResponse>(fetchPage);
   }
 
   createLoan(payload: CooperativeLoanApiCreatePayload): Observable<CooperativeLoanApiResponse> {

@@ -222,7 +222,6 @@ import { ShiftCalendarComponent } from './ui/view/workschedule-shifts/shift-cale
 import { ShiftFormComponent } from './ui/view/workschedule-shifts/shift-form/shift-form.component';
 import { ShiftListComponent } from './ui/view/workschedule-shifts/shift-list/shift-list.component';
 import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-cooperative-group/join-cooperative-group.component';
-import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-management/cooperative-membership-applications/cooperative-membership-applications.component';
 import { EmployeePaymentHistoryComponent } from './ui/view/loan-management/employee-payment-history/employee-payment-history.component';
 import { EmployeePaymentHistoryPageComponent } from './ui/view/loan-management/employee-payment-history-page/employee-payment-history-page.component';
 import { LoanPurposeManagementComponent } from './ui/view/loan-management/loan-purpose-management/loan-purpose-management.component';
@@ -392,7 +391,6 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     ShiftFormComponent,
     ShiftAssignmentComponent,
     ShiftCalendarComponent,
-    CooperativeMembershipApplicationsComponent,
     EmployeePaymentHistoryComponent,
     EmployeePaymentHistoryPageComponent,
     LoanPurposeManagementComponent,
@@ -434,6 +432,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     // FooterComponent,
   ],
   imports: [
+    BrowserModule,
     CommonModule,
     AppHrRoutingModule,
     LargeSideModalComponent,

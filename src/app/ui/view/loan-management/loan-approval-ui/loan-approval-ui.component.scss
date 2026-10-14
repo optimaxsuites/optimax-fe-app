@@ -673,7 +673,7 @@ app-loan-approval-ui {
       max-height: 85vh;
       overflow-y: auto;
       box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-      animation: slideUp 0.25s ease;
+      animation: approvalSlideUp 0.25s ease;
 
       .modal-header {
         display: flex;
@@ -966,7 +966,7 @@ app-loan-approval-ui {
   to { opacity: 1; }
 }
 
-@keyframes slideUp {
+@keyframes approvalSlideUp {
   from {
     opacity: 0;
     transform: translateY(20px);

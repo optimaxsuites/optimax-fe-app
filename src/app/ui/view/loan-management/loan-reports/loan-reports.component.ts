@@ -24,7 +24,7 @@ import {
   resolveLoanTotalLateFees
 } from '../../../service/loan/loan-display.util';
 import { toCsvCell } from '../../../service/loan/csv-export.util';
-import { formatNaira, getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 interface LoanReportRow {
   loan: LoanApplication;
@@ -296,9 +296,9 @@ export class LoanReportsComponent implements OnInit {
     return resolveLoanTotalLateFees(loan);
   }
 
-  // Get active loans only for summary cards
+  // Loans still in repayment (including overdue/defaulted) for the financial summary cards
   get activeLoans(): LoanApplication[] {
-    return this.allLoans.filter(loan => loan.status === 'ACTIVE');
+    return this.allLoans.filter(loan => hasOutstandingBalanceStatus(loan.status));
   }
 
   get activeTotalAmount(): number {

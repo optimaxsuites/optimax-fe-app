@@ -8,6 +8,7 @@ import {
   CooperativeLoanDisbursementConfirmationApiPayload,
   CooperativeLoanDisbursementConfirmationApiResponse
 } from './cooperative-loan-api.service';
+import { resolveTenantId } from '../loan-tenant.util';
 
 export interface CooperativeDisbursementConfirmation {
   id?: number;
@@ -89,12 +90,7 @@ export class CooperativeDisbursementConfirmationService {
   }
 
   private getTenantId(): string {
-    const tenant = sessionStorage.getItem('tenantId')
-      || sessionStorage.getItem('tenant')
-      || localStorage.getItem('tenantId')
-      || localStorage.getItem('tenant')
-      || 'optimax';
-    return tenant && tenant !== 'undefined' && tenant !== 'null' ? tenant : 'optimax';
+    return resolveTenantId();
   }
 
   private mapConfirmation(item: CooperativeLoanDisbursementConfirmationApiResponse): CooperativeDisbursementConfirmation {

@@ -58,7 +58,7 @@ import { CooperativeRepaymentService } from './cooperative-repayment.service';
 import { LoanStatusNotificationService } from '../loan-status-notification.service';
 import { EmployeeService } from '../../employee.service';
 import { LoanSupportingDocument } from '../loan.types';
-import { formatNaira } from '../loan-format.util';
+import { formatNaira, hasOutstandingBalanceStatus } from '../loan-format.util';
 
 @Injectable({ providedIn: 'root' })
 export class CooperativeService {
@@ -1376,6 +1376,22 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
     return this.fetchLoans();
   }
 
+  /**
+   * Fresh cooperative loans from every page. Unlike getLoans/refreshLoans, a failure is reported as an
+   * error rather than an empty list, so eligibility checks can't pass just because loading failed.
+   */
+  public fetchLoansOrFail(): Observable<CooperativeLoan[]> {
+    return this.cooperativeLoanApiService.getAllLoansAllPages().pipe(
+      map((rawLoans) => rawLoans.flatMap((loan) => {
+        try {
+          return [this.mapApiLoanToLoan(loan)];
+        } catch {
+          return [];
+        }
+      }))
+    );
+  }
+
   private fetchLoans(): Observable<CooperativeLoan[]> {
     this.loansRequest$ = this.cooperativeLoanApiService.getAllLoans().pipe(
       map((rawLoans) => {
@@ -2158,8 +2174,11 @@ public sendLoanToAccountingForDisbursement(
       totalLoans: this.loans.length,
       activeLoans: this.loans.filter(l => l.status === 'ACTIVE').length,
       pendingLoans: this.loans.filter(l => l.status === 'PENDING').length,
-      totalFund: this.members.reduce((sum, m) => sum + m.shareCapital, 0),
-      loanPortfolio: this.loans.filter(l => l.status === 'ACTIVE').reduce((sum, l) => sum + l.amount, 0)
+      // Money members have paid in, from the backend's per-group membership totals. (Member share
+      // capital isn't returned by the API, so summing it always gave ₦0.)
+      totalFund: this.groupMemberships.reduce((sum, membership) => sum + Number(membership.totalContribution || 0), 0),
+      // Money still lent out, including at-risk loans, so available funds aren't overstated.
+      loanPortfolio: this.loans.filter(l => hasOutstandingBalanceStatus(l.status)).reduce((sum, l) => sum + l.amount, 0)
     };
   }
 

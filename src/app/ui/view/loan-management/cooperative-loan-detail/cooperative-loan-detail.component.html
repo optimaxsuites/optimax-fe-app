@@ -6,7 +6,13 @@
     <p>Loading loan details...</p>
   </div>
 
-  <div *ngIf="!isLoading && loan" class="loan-content">
+  <div *ngIf="!isLoading && accessDenied" class="loading-state">
+    <i class="fas fa-lock"></i>
+    <p>This loan isn't linked to your cooperative membership.</p>
+    <app-back-button (click)="goBack()"></app-back-button>
+  </div>
+
+  <div *ngIf="!isLoading && loan && !accessDenied" class="loan-content">
     <div class="loan-header lm-header-card">
       <app-back-button (click)="goBack()"></app-back-button>
       <div class="loan-header-copy">
@@ -208,7 +214,7 @@
           <li *ngFor="let guarantor of guarantors">
             <span>{{ getGuarantorMemberName(guarantor.memberId) }} - {{ formatCurrency(guarantor.guaranteedAmount) }}</span>
             <span class="guarantor-status" [ngClass]="getGuarantorStatusClass(guarantor.status)">{{ guarantor.status }}</span>
-            <div class="guarantor-actions" *ngIf="loan.status === 'PENDING' && guarantor.status === 'PENDING'">
+            <div class="guarantor-actions" *ngIf="!isMemberView && loan.status === 'PENDING' && guarantor.status === 'PENDING'">
               <button class="approve-btn" type="button" (click)="approveGuarantor(guarantor.memberId)" title="Approve guarantor" aria-label="Approve guarantor">
                 <i class="fas fa-check"></i>
               </button>
@@ -223,7 +229,7 @@
         <section class="repayment-card" *ngIf="loan.status === 'ACTIVE' && repaymentSchedule.length > 0">
         <div class="repayment-card-header">
           <h3>Active Loan: {{ loan.loanId }}</h3>
-          <button class="record-btn" *ngIf="hasOpenRepayments" (click)="openRecordPaymentModal()">Record Payment</button>
+          <button class="record-btn" *ngIf="hasOpenRepayments" (click)="openRecordPaymentModal()">{{ isMemberView ? 'Make Payment' : 'Record Payment' }}</button>
         </div>
 
         <div class="loan-summary-line">
@@ -275,11 +281,13 @@
         </div>
 
         <div class="repayment-actions">
-          <button class="changes-btn" (click)="sendReminder()">Send Reminder</button>
-          <button class="reject-btn" [disabled]="!canMarkDefaulted" (click)="markDefaulted()">Mark as Defaulted</button>
+          <ng-container *ngIf="!isMemberView">
+            <button class="changes-btn" (click)="sendReminder()">Send Reminder</button>
+            <button class="reject-btn" [disabled]="!canMarkDefaulted" (click)="markDefaulted()">Mark as Defaulted</button>
+          </ng-container>
           <button class="changes-btn" *ngIf="nextGracePeriodInstallment" (click)="openGracePeriodModal()">Request Grace Period</button>
         </div>
-        <p class="helper-copy" *ngIf="!canMarkDefaulted">A loan becomes defaulted only after 3 overdue installments.</p>
+        <p class="helper-copy" *ngIf="!isMemberView && !canMarkDefaulted">A loan becomes defaulted only after 3 overdue installments.</p>
         </section>
 
         <section class="info-card" *ngIf="recentPaymentHistory.length > 0">
@@ -358,7 +366,7 @@
       </div>
 
       <div class="loan-actions-section">
-        <section class="action-card" *ngIf="loan.status === 'PENDING' || loan.status === 'AWAITING_INTEREST_ACCEPTANCE'">
+        <section class="action-card" *ngIf="!isMemberView && (loan.status === 'PENDING' || loan.status === 'AWAITING_INTEREST_ACCEPTANCE')">
           <h3>Quick Actions</h3>
           <div class="action-buttons-vertical">
             <button type="button" class="view-history-btn" (click)="viewMemberHistory()" title="See History" aria-label="See History">

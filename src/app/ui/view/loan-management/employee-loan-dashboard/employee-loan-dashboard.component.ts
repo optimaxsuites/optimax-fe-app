@@ -18,7 +18,7 @@ import {
   isLoanEligibleForExtension,
   resolveSessionUserId
 } from '../../../service/loan/loan-display.util';
-import { formatNaira, getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 interface EmployeeLoanHistoryRow {
   loan: LoanApplication;
@@ -229,7 +229,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   get totalBalanceSum(): number {
     return this.allLoans
-      .filter(loan => loan.status === 'ACTIVE')
+      .filter(loan => hasOutstandingBalanceStatus(loan.status))
       .reduce((sum, loan) => sum + (loan.currentBalance || 0), 0);
   }
 
@@ -418,11 +418,10 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     }));
   }
 
+  /** Matched on employee id only: names aren't unique, so a name match could show someone else's loans. */
   private isCurrentEmployeeLoan(loan: LoanApplication): boolean {
-    if (String(loan.employeeId) === this.employeeId) {
-      return true;
-    }
-    return (loan.fullName ?? '').trim().toLowerCase() === this.employeeName.trim().toLowerCase();
+    const currentEmployeeId = String(this.employeeId || '').trim();
+    return !!currentEmployeeId && String(loan.employeeId ?? '').trim() === currentEmployeeId;
   }
 
   calculateLoanCounts(): void {
