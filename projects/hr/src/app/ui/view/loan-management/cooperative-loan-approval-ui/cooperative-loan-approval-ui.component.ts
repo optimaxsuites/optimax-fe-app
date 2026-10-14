@@ -39,7 +39,7 @@ import { compareLoanSortValues, formatLoanPurposeDisplay,
 import { resolveCooperativeTotalRepayable } from '../../../service/loan/cooperative-loan/cooperative-loan-amounts.util';
 import { BackButtonModule } from '../../../shared-component/view/back-button/back-button.module';
 import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
-import { formatNaira, getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 @Component({
   selector: 'app-cooperative-loan-approval-ui',
@@ -427,7 +427,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
 
   get totalActiveLoanBalance(): number {
     return this.loans
-      .filter((loan) => loan.status === 'ACTIVE')
+      .filter((loan) => hasOutstandingBalanceStatus(loan.status))
       .reduce((sum, loan) => sum + Number(
         loan.outstandingBalance ||
         loan.outstandingPrincipal ||

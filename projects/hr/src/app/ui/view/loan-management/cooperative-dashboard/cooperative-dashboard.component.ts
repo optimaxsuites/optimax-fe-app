@@ -25,6 +25,7 @@ import { formatLoanPurposeDisplay, formatCooperativeLoanCode as _formatCooperati
 import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 import { PaymentHistory, StatusHistory } from '../../../domain/loan/cooperative-loan.dto';
 import { toCsvCell } from '../../../service/loan/csv-export.util';
+import { hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 interface DashboardActivity {
   icon: string;
@@ -503,7 +504,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
   get totalBalance(): number {
     return this.allLoans
-      .filter((loan) => loan.status === 'ACTIVE')
+      .filter((loan) => hasOutstandingBalanceStatus(loan.status))
       .reduce((sum, loan) => sum + Number(
         loan.outstandingBalance ||
         loan.outstandingPrincipal ||

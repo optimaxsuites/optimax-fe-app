@@ -13,7 +13,7 @@ import { CooperativeLoanGroup } from '../../../service/loan/cooperative-loan/coo
 import { compareLoanSortValues, formatLoanPurposeDisplay, resolveLoanActorName } from '../../../service/loan/loan-display.util';
 import { EmployeeService } from '../../../service/employee.service';
 import { MailNotificationService } from '../../../service/mailNotification.service';
-import { getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
+import { getLoanStatusClass, getLoanStatusLabel, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 type CooperativeLoanAuditEntryView = {
   status: string;
@@ -629,7 +629,7 @@ export class CooperativeLoansComponent implements OnInit {
 
   get totalPortfolio(): number {
     return this.loans
-      .filter(l => l.status === 'ACTIVE')
+      .filter(l => hasOutstandingBalanceStatus(l.status))
       .reduce((sum, l) => sum + l.amount, 0);
   }
 

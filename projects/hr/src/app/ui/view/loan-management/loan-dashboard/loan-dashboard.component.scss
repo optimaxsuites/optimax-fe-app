@@ -1713,7 +1713,7 @@ app-loan-dashboard {
   }
 }
 // Pagination for the dashboard loans table (sorting applies to every matching loan, not one page).
-.loan-dashboard-container .dashboard-pagination {
+:where(app-loan-dashboard) .loan-dashboard-container .dashboard-pagination {
   display: flex;
   align-items: center;
   justify-content: space-between;

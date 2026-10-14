@@ -26,11 +26,9 @@ import {
   persistLoanRepaymentStartDate,
   persistLoanStatusChangedAt,
   persistLoanStatusActorName,
-  readPersistedLoanRequestedAmount,
   readPersistedLoanInterestRate,
   readPersistedLoanLateFeePercentage,
   readPersistedLoanLateFeeGracePeriodDays,
-  readPersistedLoanStatusChangedAt,
   readPersistedLoanStatusNote,
   readPersistedLoanStatusActorName,
   resolveCompletedLoanActor,
@@ -40,6 +38,8 @@ import {
   resolvePaymentActorName
 } from './loan-display.util';
 import { SUPPRESS_ERROR_TOAST } from '../../shared-component/service/error-message/error-toast.interceptor';
+import { resolveTenantId } from './loan-tenant.util';
+import { fetchAllPages } from './paginated-fetch.util';
 
 /** Thrown when a save would overwrite changes another user made to the same loan. */
 export class LoanConcurrentModificationError extends Error {
@@ -82,42 +82,42 @@ export class LoanService {
       return of(this.advanceLoansCache);
     }
 
-    const tenantId = 'optimax';
-    const token = sessionStorage.getItem('token');
-    const fetchPage = (page: number): Observable<AdvanceLoan[]> => {
-      return this.http.get<any>(`${this.standardLoanUrl}?page=${page}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Tenant-ID': tenantId
-        },
-        context: new HttpContext().set(SUPPRESS_ERROR_TOAST, true),
-        responseType: 'json'
-      }).pipe(
-        map(response => this.safeParseResponse(response)),
-        switchMap(data => {
-          if (Array.isArray(data)) {
-            if (data.length === 10) {
-              return fetchPage(page + 1).pipe(
-                map(nextPageLoans => [...data, ...nextPageLoans])
-              );
-            }
-            return of(data);
-          }
-          return of([]);
-        })
-      );
-    };
-
-    return fetchPage(1).pipe(
-      tap(loans => {
-        this.advanceLoansCache = loans;
-        this.advanceLoansCacheTimestamp = Date.now();
-      }),
+    return this.fetchAllAdvanceLoans().pipe(
       catchError((error) => {
-        console.error('Failed to load loans from API:', error.status);
+        console.error('Failed to load loans from API:', error?.status);
         return of([]);
       })
     );
+  }
+
+  /**
+   * Every advance loan across all pages, refreshing the cache. Unlike getAllAdvanceLoans, a failure is
+   * reported as an error instead of an empty list, for callers that must not mistake "couldn't load"
+   * for "no loans" (e.g. the borrowing-limit check).
+   */
+  fetchAllAdvanceLoans(): Observable<AdvanceLoan[]> {
+    const tenantId = resolveTenantId();
+    const token = sessionStorage.getItem('token');
+    const fetchPage = (page: number) => this.http.get<any>(`${this.standardLoanUrl}?page=${page}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'X-Tenant-ID': tenantId
+      },
+      context: new HttpContext().set(SUPPRESS_ERROR_TOAST, true),
+      responseType: 'json'
+    }).pipe(map((response) => this.safeParseResponse(response)));
+
+    return fetchAllPages<AdvanceLoan>(fetchPage).pipe(
+      tap((loans) => {
+        this.advanceLoansCache = loans;
+        this.advanceLoansCacheTimestamp = Date.now();
+      })
+    );
+  }
+
+  /** Fresh loan applications; errors propagate (see fetchAllAdvanceLoans). */
+  listLoanApplicationsOrFail(): Observable<LoanApplication[]> {
+    return this.fetchAllAdvanceLoans().pipe(map((loans) => loans.map((loan) => this.toLoanApplication(loan))));
   }
 
   getAdvanceLoanById(id: number): Observable<AdvanceLoan> {
@@ -411,7 +411,8 @@ export class LoanService {
     const lateFeeGracePeriodDays = this.deriveLateFeeGracePeriodDays(loan);
     const repaymentSchedule = mappedRepaymentSchedule.length > 0
       ? mappedRepaymentSchedule
-      : this.buildFallbackRepaymentSchedule(loan, interestRate, requestDate);
+      // No schedule from the backend means none is shown; one is not invented in the browser.
+      : [];
     const normalizedStatus = this.toLoanStatus(loan.status);
     const resolvedTotalPaid = this.resolveTotalPaid(loan, paymentHistory, repaymentSchedule);
     const resolvedCurrentBalance = this.resolveCurrentBalance(loan, repaymentSchedule, resolvedTotalPaid, normalizedStatus);
@@ -419,10 +420,6 @@ export class LoanService {
     const resolvedEmployeeId = Number(employee?.id || 0);
     const resolvedFullName = this.getEmployeeFullName(employee) || 'Employee';
     const resolvedDepartment = employee?.department?.name ?? '';
-    const persistedRequestedAmount = readPersistedLoanRequestedAmount({
-      id: Number(loan.id || 0),
-      loanCode: String(loan.loanCode || loan.id || '')
-    });
     const normalizedRepaymentStartDate = normalizeLoanRepaymentStartDate(loan.repaymentStartDate);
     const resolvedRepaymentDay = Number(loan.repaymentDay || 0);
 
@@ -443,7 +440,7 @@ export class LoanService {
       employeeId: resolvedEmployeeId,
       fullName: resolvedFullName,
       department: resolvedDepartment,
-      amount: this.resolveDisplayAmount(loan, normalizedStatus, persistedRequestedAmount),
+      amount: Number(Number(loan.amount || 0).toFixed(2)),
       modeOfPayment: this.fromBackendPaymentMode(loan.modeOfPayment),
       status: normalizedStatus,
       purpose: loan.purpose || '',
@@ -726,23 +723,24 @@ export class LoanService {
       });
     }
 
+    // Dates and notes come from the backend record; values saved in this browser are only used to
+    // fill a note the backend doesn't have, never to replace backend data.
     if (normalizedApprovedDate) {
-      const explicitApprovedDate = this.getPersistedStatusChangedAt(loan, 'APPROVED');
-      if (explicitApprovedDate || currentStatus !== 'APPROVED') {
-        entries.push({
-          status: 'APPROVED',
-          changedAt: explicitApprovedDate || normalizedApprovedDate,
-          changedBy: this.getStatusActorDisplayName(loan, 'APPROVED', loan.approvedBy),
-          notes: this.getPersistedStatusNote(loan, 'APPROVED') || (currentStatus === 'APPROVED' && adminComment ? adminComment : 'Loan approved')
-        });
-      }
+      entries.push({
+        status: 'APPROVED',
+        changedAt: normalizedApprovedDate,
+        changedBy: this.getStatusActorDisplayName(loan, 'APPROVED', loan.approvedBy),
+        notes: (currentStatus === 'APPROVED' && adminComment ? adminComment : '')
+          || this.getPersistedStatusNote(loan, 'APPROVED')
+          || 'Loan approved'
+      });
     }
 
-    const persistedReadyForDisbursementDate = this.getPersistedStatusChangedAt(loan, 'READY_FOR_DISBURSEMENT');
-    if (persistedReadyForDisbursementDate) {
+    const normalizedDisbursementInitiatedAt = this.normalizeDateValue(loan.disbursementInitiatedAt);
+    if (normalizedDisbursementInitiatedAt) {
       entries.push({
         status: 'READY_FOR_DISBURSEMENT',
-        changedAt: persistedReadyForDisbursementDate,
+        changedAt: normalizedDisbursementInitiatedAt,
         changedBy: this.getStatusActorDisplayName(loan, 'READY_FOR_DISBURSEMENT', loan.approvedBy),
         notes: this.getPersistedStatusNote(loan, 'READY_FOR_DISBURSEMENT') || 'Loan is ready for disbursement'
       });
@@ -751,7 +749,7 @@ export class LoanService {
     if (normalizedDisbursedDate) {
       entries.push({
         status: 'ACTIVE',
-        changedAt: this.getPersistedStatusChangedAt(loan, 'ACTIVE') || normalizedDisbursedDate,
+        changedAt: normalizedDisbursedDate,
         changedBy: this.getStatusActorDisplayName(loan, 'ACTIVE', loan.disbursedBy),
         notes: 'Loan disbursed'
       });
@@ -760,7 +758,7 @@ export class LoanService {
     if (normalizedCompletedDate) {
       entries.push({
         status: 'COMPLETED',
-        changedAt: this.getPersistedStatusChangedAt(loan, 'COMPLETED') || normalizedCompletedDate,
+        changedAt: normalizedCompletedDate,
         changedBy: resolveCompletedLoanActor({
           paymentHistory: mappedPaymentHistory,
           fullName: this.getEmployeeFullName(loan.employee),
@@ -773,9 +771,11 @@ export class LoanService {
     if (normalizedRejectedDate) {
       entries.push({
         status: 'REJECTED',
-        changedAt: this.getPersistedStatusChangedAt(loan, 'REJECTED') || normalizedRejectedDate,
+        changedAt: normalizedRejectedDate,
         changedBy: this.getStatusActorDisplayName(loan, 'REJECTED', loan.rejectedBy),
-        notes: this.getPersistedStatusNote(loan, 'REJECTED') || (currentStatus === 'REJECTED' && adminComment ? adminComment : 'Loan rejected')
+        notes: (currentStatus === 'REJECTED' && adminComment ? adminComment : '')
+          || this.getPersistedStatusNote(loan, 'REJECTED')
+          || 'Loan rejected'
       });
     }
 
@@ -1236,19 +1236,6 @@ export class LoanService {
     return '';
   }
 
-  private resolveDisplayAmount(loan: AdvanceLoan, status: LoanApplication['status'], persistedRequestedAmount: number): number {
-    const backendAmount = Number(loan.amount || 0);
-    if (
-      status === 'PENDING' &&
-      persistedRequestedAmount > 0 &&
-      Math.abs(backendAmount - persistedRequestedAmount) <= 2
-    ) {
-      return Number(persistedRequestedAmount.toFixed(2));
-    }
-
-    return Number(backendAmount.toFixed(2));
-  }
-
   private getEmployeeFullName(employee?: AdvanceLoan['employee']): string {
     if (!employee) {
       return 'Employee';
@@ -1289,16 +1276,6 @@ export class LoanService {
     status: LoanApplication['status']
   ): string {
     return readPersistedLoanStatusNote({
-      id: Number(loan.id || 0),
-      loanCode: String(loan.loanCode || loan.id || '')
-    }, status);
-  }
-
-  private getPersistedStatusChangedAt(
-    loan: Pick<AdvanceLoan, 'id' | 'loanCode'>,
-    status: LoanApplication['status']
-  ): string {
-    return readPersistedLoanStatusChangedAt({
       id: Number(loan.id || 0),
       loanCode: String(loan.loanCode || loan.id || '')
     }, status);
@@ -1388,7 +1365,17 @@ export class LoanService {
     }
   }
 
+  /**
+   * The loan's interest rate, backend first: the loan's own rate, then the rate recorded on its
+   * approval, then one implied by its backend repayment schedule. A value saved in this browser is
+   * only used if the backend has none, and no rate is ever invented (0 means "not known").
+   */
   private deriveInterestRate(loan: AdvanceLoan, statusHistory: StatusChange[] = []): number {
+    const explicitRate = Number((loan as any).interestRate);
+    if (Number.isFinite(explicitRate) && explicitRate > 0) {
+      return Number(explicitRate.toFixed(2));
+    }
+
     const latestApprovedInterestRate = [...statusHistory]
       .filter((entry) => entry.status === 'APPROVED' && Number(entry.interestRate || 0) > 0)
       .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())[0]?.interestRate;
@@ -1396,45 +1383,18 @@ export class LoanService {
       return Number(Number(latestApprovedInterestRate).toFixed(2));
     }
 
+    const principal = Number(loan.amount || 0);
+    const tenureMonths = Number(loan.repaymentTime || 0);
+    const totalInterest = (loan.repaymentSchedule || []).reduce((sum, item) => sum + Number(item.interestAmount || 0), 0);
+    if (principal > 0 && tenureMonths > 0 && totalInterest > 0) {
+      return Number((((totalInterest / principal) * 100 * 12) / tenureMonths).toFixed(2));
+    }
+
     const persistedInterestRate = readPersistedLoanInterestRate({
       id: Number(loan.id || 0),
       loanCode: String(loan.loanCode || loan.id || '')
     });
-    if (persistedInterestRate > 0) {
-      return Number(persistedInterestRate.toFixed(2));
-    }
-
-    const explicitRate = Number((loan as any).interestRate);
-    if (Number.isFinite(explicitRate) && explicitRate > 0) {
-      return Number(explicitRate.toFixed(2));
-    }
-
-    const normalizedStatus = String(loan.status || '').toUpperCase();
-    if (normalizedStatus !== 'APPROVED' && normalizedStatus !== 'ACTIVE' && normalizedStatus !== 'COMPLETED') {
-      return 0;
-    }
-
-    const principal = Number(loan.amount || 0);
-    const tenureMonths = Number(loan.repaymentTime || 0);
-    if (principal <= 0 || tenureMonths <= 0) {
-      return this.getDefaultInterestRate(loan.modeOfPayment, tenureMonths);
-    }
-
-    if (!loan.repaymentSchedule?.length) {
-      return this.getDefaultInterestRate(loan.modeOfPayment, tenureMonths);
-    }
-
-    const totalInterest = loan.repaymentSchedule.reduce(
-      (sum, item) => sum + Number(item.interestAmount || 0),
-      0
-    );
-
-    if (totalInterest <= 0) {
-      return this.getDefaultInterestRate(loan.modeOfPayment, tenureMonths);
-    }
-
-    const annualizedRate = ((totalInterest / principal) * 100 * 12) / tenureMonths;
-    return Number(annualizedRate.toFixed(2));
+    return persistedInterestRate > 0 ? Number(persistedInterestRate.toFixed(2)) : 0;
   }
 
   private deriveLateFeePercentage(loan: AdvanceLoan): number {
@@ -1504,91 +1464,6 @@ export class LoanService {
 
   private hasNumericValue(value: unknown): boolean {
     return value !== null && value !== undefined && String(value).trim() !== '';
-  }
-
-  private getDefaultInterestRate(modeOfPayment?: string, tenureMonths = 0): number {
-    if (String(modeOfPayment || '').toUpperCase() === 'ONE_OFF') {
-      return 5;
-    }
-    if (tenureMonths <= 3) {
-      return 4.5;
-    }
-    if (tenureMonths <= 6) {
-      return 6;
-    }
-    if (tenureMonths <= 12) {
-      return 8.5;
-    }
-    return 10.5;
-  }
-
-  private buildFallbackRepaymentSchedule(
-    loan: AdvanceLoan,
-    interestRate: number,
-    fallbackRequestDate: string
-  ): RepaymentScheduleItem[] {
-    const normalizedStatus = this.toLoanStatus(loan.status);
-    const totalAmount = Number(loan.amount || 0);
-    const tenureMonths = Number(loan.repaymentTime || 0);
-    const modeOfPayment = this.fromBackendPaymentMode(loan.modeOfPayment);
-
-    if ((normalizedStatus !== 'ACTIVE' && normalizedStatus !== 'COMPLETED') || totalAmount <= 0 || tenureMonths <= 0) {
-      return [];
-    }
-
-    const baseDateRaw = this.normalizeDateValue(loan.disbursedDate)
-      || this.normalizeDateValue(loan.approvedDate)
-      || fallbackRequestDate
-      || new Date().toISOString();
-    const baseDate = new Date(baseDateRaw);
-    const monthlyInterestRate = interestRate > 0 ? interestRate / 100 / 12 : 0;
-
-    if (modeOfPayment === 'ONE_OFF') {
-      const dueDate = new Date(baseDate);
-      dueDate.setMonth(dueDate.getMonth() + 1);
-      dueDate.setDate(15);
-      const oneOffInterest = Number((totalAmount * (interestRate / 100)).toFixed(2));
-      const oneOffTotal = Number((totalAmount + oneOffInterest).toFixed(2));
-      return [{
-        installmentNo: 1,
-        dueDate: dueDate.toISOString(),
-        principalAmount: Number(totalAmount.toFixed(2)),
-        interestAmount: oneOffInterest,
-        totalAmount: oneOffTotal,
-        paidAmount: 0,
-        remainingBalance: 0,
-        status: 'PENDING'
-      }];
-    }
-
-    const monthlyPayment = monthlyInterestRate > 0
-      ? totalAmount *
-        (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenureMonths)) /
-        (Math.pow(1 + monthlyInterestRate, tenureMonths) - 1)
-      : totalAmount / tenureMonths;
-
-    const schedule: RepaymentScheduleItem[] = [];
-    let remainingBalance = totalAmount;
-
-    for (let month = 1; month <= tenureMonths; month++) {
-      const interestPortion = monthlyInterestRate > 0 ? remainingBalance * monthlyInterestRate : 0;
-      const principalPortion = monthlyPayment - interestPortion;
-      remainingBalance = Math.max(remainingBalance - principalPortion, 0);
-      const dueDate = new Date(baseDate);
-      dueDate.setMonth(dueDate.getMonth() + month);
-      dueDate.setDate(15);
-      schedule.push({
-        installmentNo: month,
-        dueDate: dueDate.toISOString(),
-        principalAmount: Number(principalPortion.toFixed(2)),
-        interestAmount: Number(interestPortion.toFixed(2)),
-        totalAmount: Number(monthlyPayment.toFixed(2)),
-        paidAmount: 0,
-        remainingBalance: Number(remainingBalance.toFixed(2)),
-        status: 'PENDING'
-      });
-    }
-    return schedule;
   }
 
   private normalizeDateValue(value: unknown, fallback = ''): string {

@@ -15,7 +15,7 @@ import { CooperativeGroupMembership } from '../../../service/loan/cooperative-lo
 import { CooperativeLoanPurposeService } from '../../../service/loan/cooperative-loan/cooperative-loan-purpose.service';
 import { LoanPurposeData } from '../../../service/loan/loan-purpose.service';
 import { toCsvCell } from '../../../service/loan/csv-export.util';
-import { getLoanStatusClass } from '../../../service/loan/loan-format.util';
+import { getLoanStatusClass, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 type LoanReportSummary = {
   totalLoans: number;
@@ -641,8 +641,8 @@ getStatusClass(status: string | undefined): string {
   }
 
   private calculateSummary(): void {
-    // Only include ACTIVE loans for financial calculations
-    const activeLoans = this.filteredLoans.filter(loan => loan.status === 'ACTIVE');
+    // Financial totals cover every loan still in repayment, including overdue/defaulted ones.
+    const activeLoans = this.filteredLoans.filter(loan => hasOutstandingBalanceStatus(loan.status));
     
     this.summary = {
       totalLoans: this.filteredLoans.length,

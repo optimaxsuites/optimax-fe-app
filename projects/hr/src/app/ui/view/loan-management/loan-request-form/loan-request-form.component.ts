@@ -3,9 +3,9 @@ import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, Dest
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup, FormBuilder, Validators, AbstractControl } from '@angular/forms';
 import { Message } from 'primeng/api';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { catchError, finalize, map, switchMap } from 'rxjs/operators';
-import { LoanApplicationService } from '../../../service/loan/loan-application.service';
+import { LoanApplicationService, LoanSubmissionUnconfirmedError } from '../../../service/loan/loan-application.service';
 import { LoanApplication, LoanApplicationFormData, LoanSupportingDocument } from '../../../service/loan/loan.types';
 import { normalizeLoanRepaymentStartDate,
   toLocalDateString
@@ -13,25 +13,11 @@ import { normalizeLoanRepaymentStartDate,
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 import { LoanPurposeService, LoanPurposeData } from '../../../service/loan/loan-purpose.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
-import { EmployeeService } from '../../../service/employee.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 import { formatNaira } from '../../../service/loan/loan-format.util';
-
-interface SalaryAllowanceItem {
-  amount?: number;
-}
-
-interface SalaryDeductionItem {
-  amount?: number;
-}
-
-interface EmployeeSalaryResponse {
-  id?: number;
-  baseSalary?: number;
-  
-  allowance?: SalaryAllowanceItem[];
-  deductions?: SalaryDeductionItem[];
-}
+import { resolveEmployeeLevelId } from '../../../service/loan/level-salary.util';
+import { LoanService } from '../../../service/loan/loan.service';
+import { computeBorrowingCommitment } from '../../../service/loan/loan-eligibility.util';
 
 interface EmployeeIdentityResponse {
   id?: number;
@@ -41,6 +27,9 @@ interface EmployeeIdentityResponse {
   lastName?: string;
 }
 
+/** The signed-in employee couldn't be identified, so the form must not submit as anyone. */
+class SignedInEmployeeUnavailableError extends Error {}
+
 @Component({
   selector: 'app-loan-request-form',
   templateUrl: './loan-request-form.component.html',
@@ -49,7 +38,6 @@ interface EmployeeIdentityResponse {
 })
 export class LoanRequestFormComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
-  private static readonly FALLBACK_MONTHLY_SALARY = 20000000;
 
   @Input() isModal = false;
   @Input() employeeId = '';
@@ -72,6 +60,9 @@ export class LoanRequestFormComponent implements OnInit {
   isLoadingPurposes = false;
   
   monthlySalary = 0;
+  salaryStatus: 'loading' | 'ok' | 'missing' | 'invalid' | 'error' | 'no-employee' = 'loading';
+  identityErrorMessage = '';
+  salaryLevelName = '';
   isLoadingSalary = false;
 
   repaymentBreakdown = { repaymentAmount: 0, totalRepayment: 0, totalInterest: 0 };
@@ -82,31 +73,9 @@ export class LoanRequestFormComponent implements OnInit {
     private errorMessageService: ErrorMessageService,
     private loanPurposeService: LoanPurposeService,
     private employeeLoanService: EmployeeLoanService,
-    private employeeService: EmployeeService,
-    private loanApprovalService: LoanApprovalService
+    private loanApprovalService: LoanApprovalService,
+    private loanService: LoanService
   ) {}
-
-  private unwrapSalaryPayload(payload: unknown): EmployeeSalaryResponse {
-    if (!payload || typeof payload !== 'object') {
-      return {};
-    }
-
-    const candidate = payload as Record<string, unknown>;
-    const nestedKeys = ['data', 'content', 'result', 'payload'];
-    for (const key of nestedKeys) {
-      const nested = candidate[key];
-      if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
-        return nested as EmployeeSalaryResponse;
-      }
-    }
-
-    return candidate as EmployeeSalaryResponse;
-  }
-
-  private toNumber(value: unknown): number {
-    const normalized = Number(value ?? 0);
-    return Number.isFinite(normalized) ? normalized : 0;
-  }
 
   private toPositiveNumber(value: unknown): number {
     if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
@@ -141,37 +110,6 @@ export class LoanRequestFormComponent implements OnInit {
     }
 
     return candidate as EmployeeIdentityResponse;
-  }
-
-  private sumAmounts(items: Array<{ amount?: number }> | undefined): number {
-    return (items || []).reduce((total, item) => total + this.toNumber(item?.amount), 0);
-  }
-
-  private extractSalaryAmount(payload: unknown): number {
-    const salary = this.unwrapSalaryPayload(payload);
-    const baseSalary = this.toNumber(salary.baseSalary);
-    const totalAllowances = this.sumAmounts(salary.allowance);
-    const totalDeductions = this.sumAmounts(salary.deductions);
-
-    const computedMonthlySalary = baseSalary + totalAllowances - totalDeductions;
-    return computedMonthlySalary > 0 ? computedMonthlySalary : baseSalary;
-  }
-
-  private resolveEmployeeIdCandidate(): number {
-    const candidates = [
-      this.employeeId,
-      sessionStorage.getItem('employeeId'),
-      localStorage.getItem('employeeId')
-    ];
-
-    for (const candidate of candidates) {
-      const value = this.toPositiveNumber(candidate || 0);
-      if (value > 0) {
-        return value;
-      }
-    }
-
-    return 0;
   }
 
   ngOnInit(): void {
@@ -332,91 +270,86 @@ export class LoanRequestFormComponent implements OnInit {
     });
   }
 
+  /**
+   * The employee's monthly salary for the one-third eligibility check, from their level:
+   * GET /employees/{id} gives `level.id`, matched to a GET /salaries record's `levelId`
+   * (base + allowances − deductions). There is no fallback: if it can't be determined the employee
+   * is told why and can't submit, because a guessed salary would make the eligibility check meaningless.
+   */
   loadEmployeeSalary(): void {
-    const candidateEmployeeId = this.resolveEmployeeIdCandidate();
-
     this.isLoadingSalary = true;
+    this.salaryStatus = 'loading';
+    this.monthlySalary = 0;
 
-    this.employeeService.getCurrentEmployee().pipe(
-      map((employee: any) => {
-        const normalizedEmployee = this.unwrapEmployeePayload(employee);
-        const resolvedEmployeeId = this.toPositiveNumber(
-          normalizedEmployee?.id || normalizedEmployee?.employeeId || candidateEmployeeId || 0
-        );
-        const resolvedLevelId = this.toPositiveNumber(normalizedEmployee?.levelId || 0);
-        return {
-          resolvedEmployeeId,
-          resolvedLevelId,
-          employee: normalizedEmployee
-        };
+    // Strict lookup of the signed-in employee: never a default or stored-elsewhere id, since the
+    // loan is submitted under this employee and their salary sets the limit.
+    this.employeeLoanService.getSignedInEmployee().pipe(
+      map((employee: any) => this.unwrapEmployeePayload(employee) as any),
+      catchError((error) => {
+        this.identityErrorMessage = error?.message || 'We couldn\'t confirm who you are. Please sign in again.';
+        return throwError(() => new SignedInEmployeeUnavailableError());
       }),
-      catchError(() => of({
-        resolvedEmployeeId: candidateEmployeeId,
-        resolvedLevelId: 0,
-        employee: null
-      })),
-      switchMap(({ resolvedEmployeeId, resolvedLevelId, employee }) => {
-        if (!resolvedEmployeeId) {
-          return of({ salary: 0, employee });
+      switchMap((employee: any) => {
+        const employeeId = this.toPositiveNumber(employee?.id || 0);
+        this.employeeId = employeeId ? String(employeeId) : '';
+        if (employee) {
+          this.employeeName = this.employeeName || `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim();
         }
-
-        this.employeeId = String(resolvedEmployeeId);
-
-        return this.employeeLoanService.getSalaryByEmployeeId(resolvedEmployeeId).pipe(
-          switchMap((salaryData: any) => {
-            const salaryAmount = this.extractSalaryAmount(salaryData);
-            if (salaryAmount > 0) {
-              return of({ salary: salaryAmount, employee });
-            }
-
-            if (resolvedLevelId > 0) {
-              return this.employeeService.getSalaryById(resolvedLevelId).pipe(
-                map((levelSalaryData: any) => ({
-                  salary: this.extractSalaryAmount(levelSalaryData),
-                  employee
-                })),
-                catchError(() => of({ salary: 0, employee }))
-              );
-            }
-
-            return of({ salary: 0, employee });
-          }),
-          catchError((salaryError: any) => {
-            console.error('Error loading salary:', salaryError);
-
-            if (resolvedLevelId > 0) {
-              return this.employeeService.getSalaryById(resolvedLevelId).pipe(
-                map((levelSalaryData: any) => ({
-                  salary: this.extractSalaryAmount(levelSalaryData),
-                  employee
-                })),
-                catchError(() => of({ salary: 0, employee }))
-              );
-            }
-
-            return of({ salary: 0, employee });
-          })
-        );
+        // A cached copy may lack `level`; fetch the full record by id when it does.
+        const fullEmployee$ = resolveEmployeeLevelId(employee) || !employeeId
+          ? of(employee)
+          : this.employeeLoanService.getEmployeeById(employeeId).pipe(
+              map((response: any) => this.unwrapEmployeePayload(response) as any),
+              catchError(() => of(employee))
+            );
+        return fullEmployee$.pipe(switchMap((fullEmployee) => this.employeeLoanService.getMonthlySalaryForEmployee(fullEmployee)));
       }),
       finalize(() => {
         this.isLoadingSalary = false;
       })
     ).subscribe({
-      next: ({ salary, employee }) => {
-        const resolvedSalary = salary && salary > 0
-          ? salary
-          : LoanRequestFormComponent.FALLBACK_MONTHLY_SALARY;
-        this.monthlySalary = resolvedSalary;
-        if (employee) {
-          this.employeeName = this.employeeName || `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim();
+      next: (result) => {
+        this.salaryLevelName = result.levelName;
+        if (result.status === 'ok') {
+          this.salaryStatus = 'ok';
+          this.monthlySalary = result.monthlySalary;
+        } else {
+          this.salaryStatus = result.status;
+          this.monthlySalary = 0;
+          this.showMessage('warn', 'Salary Not Available', this.salaryProblemMessage, true);
         }
         this.loanRequestForm.get('monthlySalary')?.setValue(this.monthlySalary);
-
-        if (!(salary && salary > 0)) {
-          this.showMessage('info', 'Salary Fallback Applied', 'Salary was not available from HR records. A temporary fallback of NGN 20,000,000 has been applied.');
-        }
+      },
+      error: (error) => {
+        console.error('Error loading salary:', error);
+        this.salaryStatus = error instanceof SignedInEmployeeUnavailableError ? 'no-employee' : 'error';
+        this.monthlySalary = 0;
+        this.loanRequestForm.get('monthlySalary')?.setValue(0);
+        this.showMessage('warn', 'Salary Not Available', this.salaryProblemMessage, true);
       }
     });
+  }
+
+  /** Why the salary couldn't be used, for the form's warning (empty when it's fine). */
+  get salaryProblemMessage(): string {
+    const level = this.salaryLevelName ? ` (${this.salaryLevelName})` : '';
+    switch (this.salaryStatus) {
+      case 'no-employee':
+        return this.identityErrorMessage;
+      case 'missing':
+        return `No salary is set up for your level${level} in HR records, so your loan limit can't be worked out. Please contact HR before applying.`;
+      case 'invalid':
+        return `The salary set up for your level${level} doesn't add up (deductions are more than pay). Please contact HR before applying.`;
+      case 'error':
+        return 'Your salary couldn\'t be loaded, so your loan limit can\'t be worked out. Refresh the page and try again.';
+      default:
+        return '';
+    }
+  }
+
+  /** One-third of monthly salary: the most the employee's active loans plus this request may total. */
+  get maxTotalBorrowing(): number {
+    return Number((this.monthlySalary / 3).toFixed(2));
   }
 
   /**
@@ -565,9 +498,15 @@ export class LoanRequestFormComponent implements OnInit {
     this.formCancelled.emit();
   }
 
-  private showMessage(severity: 'success' | 'error' | 'warn' | 'info', summary: string, detail: string): void {
+  private messageTimer?: ReturnType<typeof setTimeout>;
+
+  /** `persist` keeps the message until replaced, for ones the employee must act on. */
+  private showMessage(severity: 'success' | 'error' | 'warn' | 'info', summary: string, detail: string, persist = false): void {
+    clearTimeout(this.messageTimer);
     this.messages = [{ severity, summary, detail }];
-    setTimeout(() => { this.messages = []; }, 5000);
+    if (!persist) {
+      this.messageTimer = setTimeout(() => { this.messages = []; }, 5000);
+    }
   }
 
   onSubmit(): void {
@@ -577,22 +516,40 @@ export class LoanRequestFormComponent implements OnInit {
       return;
     }
 
+    if (this.salaryStatus !== 'ok' || this.monthlySalary <= 0) {
+      this.showMessage('warn', 'Salary Not Available', this.salaryProblemMessage || 'Your salary is still loading. Try again in a moment.', true);
+      return;
+    }
+
     if (this.loanRequestForm.valid) {
       this.isLoading = true;
 
-      this.employeeLoanService.getAllLoans().pipe(
-        map((loans: any[]) => {
-          const employeeLoans = (loans || []).filter(l => String(l.employeeId) === String(this.employeeId));
-          const activeLoans = employeeLoans.filter(l => l.status === 'ACTIVE');
-          const totalActiveLoanAmount = activeLoans.reduce((sum, l) => sum + Number(l.amount || 0), 0);
-          return totalActiveLoanAmount;
-        }),
-        switchMap((totalActiveLoanAmount: number) => {
-          const oneThirdSalary = this.monthlySalary / 3;
+      // Every page of loans, fresh; a failed load must block the request rather than count as "no loans".
+      this.loanService.listLoanApplicationsOrFail().pipe(
+        catchError(() => throwError(() => new Error(
+          'We couldn\'t check your existing loans, so your application wasn\'t sent. Please try again.'
+        ))),
+        map((loans: LoanApplication[]) => computeBorrowingCommitment(
+          (loans || []).filter((loan) => String(loan.employeeId) === String(this.employeeId))
+        )),
+        switchMap((commitment) => {
+          const oneThirdSalary = this.maxTotalBorrowing;
           const requestedAmount = parseFloat(this.loanRequestForm.get('amount')?.value);
-          if ((totalActiveLoanAmount + requestedAmount) > oneThirdSalary) {
+          if ((commitment.total + requestedAmount) > oneThirdSalary) {
             this.isLoading = false;
-            this.showMessage('error', 'Loan Limit Exceeded', `You cannot request this loan because your total active loans would exceed one-third of your monthly salary (₦${oneThirdSalary.toLocaleString()}).`);
+            const remaining = Math.max(oneThirdSalary - commitment.total, 0);
+            const parts = [
+              commitment.outstandingPrincipal > 0 ? `${this.formatCurrency(commitment.outstandingPrincipal)} still owed on loans you're repaying` : '',
+              commitment.pipelineAmount > 0 ? `${this.formatCurrency(commitment.pipelineAmount)} in applications not yet disbursed` : ''
+            ].filter(Boolean).join(' and ');
+            this.showMessage(
+              'error',
+              'Loan Limit Exceeded',
+              `Your borrowing can't exceed one-third of your monthly salary (${this.formatCurrency(oneThirdSalary)}). `
+                + (parts ? `You already have ${parts}, so ` : '')
+                + `you can request up to ${this.formatCurrency(remaining)}.`,
+              true
+            );
             return of(null);
           }
 
@@ -697,7 +654,15 @@ export class LoanRequestFormComponent implements OnInit {
         },
         error: (err: Error) => {
           console.error('Error submitting loan application:', err);
-          this.showMessage('error', 'Submission Failed', this.errorMessageService.getUserMessage(err, 'There was an error submitting your application.'));
+          // Also covers failures before submission (e.g. the eligibility check), which used to leave
+          // the Submit button disabled.
+          this.isLoading = false;
+          if (err instanceof LoanSubmissionUnconfirmedError) {
+            // It may have gone through: keep this visible so the employee checks before retrying.
+            this.showMessage('warn', 'Submission Not Confirmed', err.message, true);
+            return;
+          }
+          this.showMessage('error', 'Submission Failed', this.errorMessageService.getUserMessage(err, 'There was an error submitting your application.'), true);
         }
       });
     } else {

@@ -645,7 +645,7 @@ app-cooperative-members {
   }
 }
 // Inline confirmation (PrimeNG warn message + actions) used instead of window.confirm().
-.coop-members-container .status-confirm-bar {
+:where(app-cooperative-members) .coop-members-container .status-confirm-bar {
   display: flex;
   align-items: center;
   gap: 12px;

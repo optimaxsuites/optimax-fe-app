@@ -42,3 +42,14 @@ export function getLoanStatusClass(status: string | null | undefined, prefix = '
   const normalized = String(status || '').trim().toLowerCase().replace(/[\s_-]+/g, separator);
   return `${prefix}${normalized || 'default'}`;
 }
+
+/**
+ * Loans that still owe money: in repayment, including the at-risk ones. Balance, exposure and
+ * portfolio totals must use this, not just ACTIVE, or overdue/defaulted debt disappears from them.
+ * ("Active Loans" counts still mean status ACTIVE.)
+ */
+export const OUTSTANDING_BALANCE_STATUSES: ReadonlyArray<string> = ['ACTIVE', 'OVERDUE', 'SKIPPED', 'PAUSED', 'DEFAULTED'];
+
+export function hasOutstandingBalanceStatus(status: string | null | undefined): boolean {
+  return OUTSTANDING_BALANCE_STATUSES.includes(String(status || '').trim().toUpperCase());
+}

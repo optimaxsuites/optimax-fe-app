@@ -5,6 +5,7 @@ import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../shared-component/service/environments/environment.prod';
 import { CooperativeContributionEntry, CooperativeGroupMembership, CooperativeLoanGroup, CooperativeMember } from './cooperative.types';
 import { getTokenFromStorage } from './token-util';
+import { resolveTenantId } from '../loan-tenant.util';
 
 export interface CooperativeGroupApiContributionHistory {
   id?: number;
@@ -132,12 +133,7 @@ export class CooperativeGroupService {
     }
 
     private getTenantId(): string {
-      const tenant = sessionStorage.getItem('tenantId')
-        || sessionStorage.getItem('tenant')
-        || localStorage.getItem('tenantId')
-        || localStorage.getItem('tenant')
-        || 'optimax';
-      return tenant && tenant !== 'undefined' && tenant !== 'null' ? tenant : 'optimax';
+      return resolveTenantId();
     }
 
     getAllCooperativeGroups(): Observable<CooperativeGroupApiResponse[]> {

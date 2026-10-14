@@ -4,6 +4,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment';
+import { resolveTenantId } from './loan-tenant.util';
 
 
 export interface LoanPurposeData {
@@ -68,7 +69,7 @@ export class LoanPurposeService {
   }
 
   getAllPurposes(onlyActive: boolean = true): Observable<LoanPurposeData[]> {
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     const token = sessionStorage.getItem('token');
     
     
@@ -97,7 +98,7 @@ export class LoanPurposeService {
   }
 
   createPurpose(payload: CreatePurposePayload): Observable<LoanPurposeData> {
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     const token = sessionStorage.getItem('token');
     
     const cleanPayload: any = {
@@ -130,7 +131,7 @@ export class LoanPurposeService {
   }
 
   updatePurpose(id: number, payload: Partial<CreatePurposePayload>): Observable<LoanPurposeData> {
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     const token = sessionStorage.getItem('token');
 
     // Partial updates (e.g. toggling isActive) may omit the rate, but it can never be cleared.
@@ -170,7 +171,7 @@ export class LoanPurposeService {
 
   // ADD THIS DELETE METHOD
   deletePurpose(id: number): Observable<void> {
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     const token = sessionStorage.getItem('token');
     
     return this.http.delete<void>(`${this.standardPurposeUrl}/${id}`, {
@@ -184,7 +185,7 @@ export class LoanPurposeService {
   }
 
   getPurposeById(id: number): Observable<LoanPurposeData> {
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     const token = sessionStorage.getItem('token');
     
     return this.http.get<LoanPurposeData>(`${this.standardPurposeUrl}/${id}`, {

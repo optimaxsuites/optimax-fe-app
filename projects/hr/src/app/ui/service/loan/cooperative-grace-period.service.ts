@@ -5,13 +5,15 @@ import { map } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment';
 import { fetchAllPages } from './paginated-fetch.util';
 import { getTokenFromStorage } from './cooperative-loan/token-util';
+import { resolveTenantId } from './loan-tenant.util';
+import { CooperativeGraceRequestPaymentSubtype } from './loan-payment-types';
 
 export interface CooperativeGracePeriodRequest {
   id?: number;
   loanId: number;
   memberId: number;
   installmentNumber: number;
-  paymentSubtype: 'CONTRIBUTION' | 'PRINCIPAL_REPAYMENT' | 'INTEREST_PAYMENT' | 'LATE_FEE';
+  paymentSubtype: CooperativeGraceRequestPaymentSubtype;
   amountPaid: number;
   remainingBalance: number;
   requestedAt: string;
@@ -31,7 +33,7 @@ export interface CreateCooperativeGracePeriodRequestPayload {
   loanId: number;
   memberId: number;
   installmentNumber: number;
-  paymentSubtype: 'CONTRIBUTION' | 'PRINCIPAL_REPAYMENT' | 'INTEREST_PAYMENT' | 'LATE_FEE';
+  paymentSubtype: CooperativeGraceRequestPaymentSubtype;
   requestedDays: number;
   reason: string;
 }
@@ -57,12 +59,7 @@ export class CooperativeGracePeriodService {
   }
 
   private getTenantId(): string {
-    const tenant = sessionStorage.getItem('tenantId')
-      || sessionStorage.getItem('tenant')
-      || localStorage.getItem('tenantId')
-      || localStorage.getItem('tenant')
-      || 'optimax';
-    return tenant && tenant !== 'undefined' && tenant !== 'null' ? tenant : 'optimax';
+    return resolveTenantId();
   }
 
   /** All matching requests across every page, or just `params.page` when one is given. */

@@ -59,6 +59,9 @@
       </div>
     </div>
 
+    <!-- Submission problems (eligibility, limits, missing details). Previously set but never shown. -->
+    <p-message *ngIf="submitError" severity="error" [text]="submitError" styleClass="submit-error-message"></p-message>
+
     <!-- Success Message -->
     <div class="submit-success" *ngIf="submitSuccessMessage">
       <i class="fas fa-check-circle"></i>
@@ -94,7 +97,9 @@
               </div>
               <div class="member-detail-dark">
                 <span class="detail-label-dark">Monthly Salary</span>
-                <span class="detail-value-dark salary-highlight">{{ formatCurrency(selectedMemberSalary) }}</span>
+                <span class="detail-value-dark salary-highlight" *ngIf="memberSalaryStatus === 'ok'">{{ formatCurrency(selectedMemberSalary) }}</span>
+                <span class="detail-value-dark" *ngIf="memberSalaryStatus === 'loading'">Loading…</span>
+                <span class="detail-value-dark salary-warning" *ngIf="memberSalaryStatus !== 'ok' && memberSalaryStatus !== 'loading'">Not available — contact HR</span>
               </div>
               <div class="member-detail-dark">
                 <span class="detail-label-dark">Membership Tenure</span>
@@ -134,8 +139,11 @@
                 <span class="input-symbol">₦</span>
                 <input type="number" formControlName="amount" class="form-control with-symbol" placeholder="0.00" [min]="minLoanAmount" [max]="effectiveMaxLoanAmount">
               </div>
-              <div class="field-hint" *ngIf="selectedGroup">
-                Max borrowable: {{ formatCurrency(maxBorrowableAmount) }}
+              <div class="field-hint" *ngIf="selectedGroup && effectiveMaxLoanAmount > 0">
+                Max borrowable: {{ formatCurrency(effectiveMaxLoanAmount) }}
+              </div>
+              <div class="field-hint salary-warning" *ngIf="selectedGroup && effectiveMaxLoanAmount <= 0">
+                <i class="fas fa-triangle-exclamation"></i> Your contributions to this group don't give you a borrowing limit yet (₦0).
               </div>
               <div class="field-hint" *ngIf="hasPurposeAmountConstraints">
                 <i class="fas fa-scale-balanced"></i> {{ selectedPurposeAmountRangeMessage }}
@@ -416,7 +424,7 @@
         <i class="fas fa-times"></i>
         <span>Cancel</span>
       </button>
-      <button type="submit" class="btn-primary" [disabled]="!applicationForm.valid || isSubmitting">
+      <button type="submit" class="btn-primary" [disabled]="!applicationForm.valid || isSubmitting || isCheckingEligibility">
         <span *ngIf="!isSubmitting">
           <i class="fas fa-paper-plane"></i>
           <span>Submit Application</span>

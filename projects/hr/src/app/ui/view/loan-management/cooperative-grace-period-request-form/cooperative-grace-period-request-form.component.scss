@@ -578,8 +578,7 @@ app-cooperative-grace-period-request-form {
   }
 }
 
-// Global modal override to ensure proper width
-.p-dialog.grace-period-dialog,
+// Widen the PrimeNG dialog that hosts this form (scoped via :has to this component)
 .p-dialog:has(app-cooperative-grace-period-request-form) {
   width: 90vw !important;
   max-width: 1200px !important;

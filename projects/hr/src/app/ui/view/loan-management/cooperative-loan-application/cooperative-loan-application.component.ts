@@ -10,12 +10,13 @@ import { v4 as uuidV4 } from 'uuid';
 import { forkJoin, of } from 'rxjs';
 import { EmployeeService } from '../../../service/employee.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
-import { catchError } from 'rxjs/operators';
+import { catchError, finalize, switchMap } from 'rxjs/operators';
 import { CooperativeMember, CooperativeLoanGroup, CooperativeGroupMembership, CooperativeEmployeeProfile, CooperativeMembershipEligibility } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { Message } from 'primeng/api';
 import { CooperativeLoanPurposeApiResponse } from '../../../service/loan/cooperative-loan/cooperative-loan-api.service';
 import { LoanSupportingDocument, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { formatNaira } from '../../../service/loan/loan-format.util';
+import { computeBorrowingCommitment } from '../../../service/loan/loan-eligibility.util';
 
 @Component({
   selector: 'app-cooperative-loan-application',
@@ -51,6 +52,8 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   employeeDirectory: CooperativeEmployeeProfile[] = [];
   selectedMemberEligibility?: CooperativeMembershipEligibility;
   selectedMemberSalary = 0;
+  memberSalaryStatus: 'loading' | 'ok' | 'missing' | 'invalid' | 'error' = 'missing';
+  isCheckingEligibility = false;
 
   // Calculated values
   repaymentAmount = 0;
@@ -92,7 +95,8 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     private cooperativeService: CooperativeService,
     private employeeService: EmployeeService,
     private mailNotificationService: MailNotificationService,
-    private guarantorService: GuarantorService
+    private guarantorService: GuarantorService,
+    private employeeLoanService: EmployeeLoanService
   ) {}
 
   ngOnInit(): void {
@@ -335,19 +339,15 @@ initForm(): void {
     return maxAmount > 0 ? maxAmount : null;
   }
 
+  /**
+   * Most the member may request in this group: their borrowable amount (contributions × the group's
+   * borrowing %), capped by the purpose maximum. A borrowable amount of 0 means they can't borrow yet;
+   * it used to mean "no limit".
+   */
   get effectiveMaxLoanAmount(): number {
-    const maxBorrowable = Number(this.maxBorrowableAmount || 0);
+    const maxBorrowable = Math.max(Number(this.maxBorrowableAmount || 0), 0);
     const purposeMax = this.maxPurposeLoanAmount;
-
-    if (purposeMax && maxBorrowable > 0) {
-      return Math.min(purposeMax, maxBorrowable);
-    }
-
-    if (purposeMax) {
-      return purposeMax;
-    }
-
-    return maxBorrowable > 0 ? maxBorrowable : Number.MAX_SAFE_INTEGER;
+    return purposeMax ? Math.min(purposeMax, maxBorrowable) : maxBorrowable;
   }
 
   get hasPurposeAmountConstraints(): boolean {
@@ -887,21 +887,70 @@ initForm(): void {
     }
   }
 
+  /**
+   * The member's monthly salary for the one-third limit: the salary on their cooperative member record,
+   * otherwise the salary set up for their employee level (GET /employees/{id} → level → GET /salaries).
+   * There is no fallback amount: without a salary the application can't be submitted.
+   */
   resolveSelectedMemberSalary(): void {
-    if (!this.selectedMember) {
-      this.selectedMemberSalary = 20000000;
+    const member = this.selectedMember;
+    this.selectedMemberSalary = 0;
+    if (!member) {
+      this.memberSalaryStatus = 'missing';
       return;
     }
-    let salary = 0;
-    if (typeof this.selectedMember.monthlySalary === 'number') {
-      salary = this.selectedMember.monthlySalary;
-    } else if (this.selectedMember.employeeId) {
-      const empProfile = this.employeeDirectory.find(e => String(e.employeeId) === String(this.selectedMember?.employeeId));
-      if (empProfile && typeof empProfile.monthlySalary === 'number') {
-        salary = empProfile.monthlySalary;
-      }
+
+    const recordedSalary = Number(member.monthlySalary || 0);
+    if (recordedSalary > 0) {
+      this.selectedMemberSalary = recordedSalary;
+      this.memberSalaryStatus = 'ok';
+      return;
     }
-    this.selectedMemberSalary = salary && salary > 0 ? salary : 20000000;
+
+    const employeeId = Number(member.employeeId || 0);
+    if (!employeeId) {
+      this.memberSalaryStatus = 'missing';
+      return;
+    }
+
+    this.memberSalaryStatus = 'loading';
+    const requestedForMemberId = member.id;
+    this.employeeLoanService.getEmployeeById(employeeId).pipe(
+      switchMap((response: any) => this.employeeLoanService.getMonthlySalaryForEmployee(response?.data || response))
+    ).subscribe({
+      next: (result) => {
+        if (this.selectedMember?.id !== requestedForMemberId) {
+          return; // a different member was selected meanwhile
+        }
+        if (result.status === 'ok') {
+          this.selectedMemberSalary = result.monthlySalary;
+          this.memberSalaryStatus = 'ok';
+        } else {
+          this.memberSalaryStatus = result.status;
+        }
+      },
+      error: () => {
+        if (this.selectedMember?.id === requestedForMemberId) {
+          this.memberSalaryStatus = 'error';
+        }
+      }
+    });
+  }
+
+  /** Why the salary can't be used (empty when it's fine), for the submit error. */
+  get memberSalaryProblem(): string {
+    switch (this.memberSalaryStatus) {
+      case 'loading':
+        return 'Your salary is still loading. Try again in a moment.';
+      case 'missing':
+        return 'No salary is on record for you (neither on your membership nor for your employee level), so your loan limit can\'t be worked out. Please contact HR.';
+      case 'invalid':
+        return 'The salary set up for your employee level doesn\'t add up (deductions are more than pay). Please contact HR.';
+      case 'error':
+        return 'Your salary couldn\'t be loaded, so your loan limit can\'t be worked out. Refresh the page and try again.';
+      default:
+        return '';
+    }
   }
 
   tryApplyPrefillMember(): void {
@@ -1380,7 +1429,7 @@ private validateGuarantors(): void {
     }
 
     const validators = [Validators.required, Validators.min(this.minLoanAmount)];
-    if (Number.isFinite(this.effectiveMaxLoanAmount) && this.effectiveMaxLoanAmount !== Number.MAX_SAFE_INTEGER) {
+    if (this.selectedGroup) {
       validators.push(Validators.max(this.effectiveMaxLoanAmount));
     }
 
@@ -1390,7 +1439,7 @@ private validateGuarantors(): void {
 
   onSubmit(): void {
   
-  if (this.isSubmitting) {
+  if (this.isSubmitting || this.isCheckingEligibility) {
     return;
   }
   
@@ -1410,43 +1459,61 @@ private validateGuarantors(): void {
     return;
   }
 
-  const memberId = this.applicationForm.get('memberId')?.value;
-  const requestedAmount = Number(this.applicationForm.get('amount')?.value || 0);
-  const salary = Number(this.selectedMemberSalary || 0);
-
-
-  // Check salary limit
-  if (memberId && salary > 0) {
-    this.cooperativeService.getLoans().subscribe({
-      next: (loans) => {
-        const activeLoans = (loans || []).filter(l => 
-          (l.memberId === memberId || l.cooperativeMemberId === memberId) && 
-          l.status === 'ACTIVE'
-        );
-        const totalActiveLoanAmount = activeLoans.reduce((sum, l) => sum + Number(l.amount || 0), 0);
-        const oneThirdSalary = salary / 3;
-        
-        
-        if ((totalActiveLoanAmount + requestedAmount) > oneThirdSalary) {
-          this.submitError = `You cannot request this loan because your total active loans would exceed one-third of your monthly salary (₦${oneThirdSalary.toLocaleString()}).`;
-          this.showConfirmation = false;
-          return;
-        }
-
-        // Proceed to confirmation
-        this.showConfirmation = true;
-      },
-      error: (err) => {
-        console.error('[CoopLoanApp] Error getting loans for salary check:', err);
-        // Still proceed even if salary check fails
-        this.showConfirmation = true;
-      }
-    });
+  // Business rules (approved membership, purpose, duration, guarantors) — defined but never called before.
+  if (!this.validateBeforeSubmit()) {
     return;
   }
 
-  // If no salary info, proceed directly to confirmation
-  this.showConfirmation = true;
+  const member = this.selectedMember;
+  const requestedAmount = Number(this.applicationForm.get('amount')?.value || 0);
+
+  if (this.selectedGroup && this.effectiveMaxLoanAmount <= 0) {
+    this.submitError = `You can't borrow from ${this.selectedGroup.name || 'this group'} yet: your contributions don't give you a borrowing limit (₦0). Keep contributing, or contact the cooperative admin.`;
+    return;
+  }
+
+  const salary = Number(this.selectedMemberSalary || 0);
+  if (!member || this.memberSalaryStatus !== 'ok' || salary <= 0) {
+    this.submitError = this.memberSalaryProblem || 'Select the member applying for this loan.';
+    return;
+  }
+
+  // Every page of loans, fresh. A failed load must block the application, not count as "no loans".
+  this.isCheckingEligibility = true;
+  this.cooperativeService.fetchLoansOrFail().pipe(
+    finalize(() => { this.isCheckingEligibility = false; })
+  ).subscribe({
+    next: (loans) => {
+      // Compare as numbers: the form value is a string and loan ids are numbers, so the old
+      // strict comparison never matched and existing loans were never counted.
+      const memberIds = new Set([Number(member.id), Number(member.memberId)].filter((id) => id > 0));
+      const memberLoans = (loans || []).filter((loan) =>
+        memberIds.has(Number(loan.cooperativeMemberId ?? 0)) || memberIds.has(Number(loan.memberId ?? 0))
+      );
+      const commitment = computeBorrowingCommitment(memberLoans as any);
+      const oneThirdSalary = Number((salary / 3).toFixed(2));
+
+      if (commitment.total + requestedAmount > oneThirdSalary) {
+        const remaining = Math.max(oneThirdSalary - commitment.total, 0);
+        const parts = [
+          commitment.outstandingPrincipal > 0 ? `${this.formatCurrency(commitment.outstandingPrincipal)} still owed on loans you're repaying` : '',
+          commitment.pipelineAmount > 0 ? `${this.formatCurrency(commitment.pipelineAmount)} in applications not yet disbursed` : ''
+        ].filter(Boolean).join(' and ');
+        this.submitError = `Your borrowing can't exceed one-third of your monthly salary (${this.formatCurrency(oneThirdSalary)}). `
+          + (parts ? `You already have ${parts}, so ` : '')
+          + `you can request up to ${this.formatCurrency(remaining)}.`;
+        this.showConfirmation = false;
+        return;
+      }
+
+      this.showConfirmation = true;
+    },
+    error: (err) => {
+      console.error('[CoopLoanApp] Error getting loans for eligibility check:', err);
+      this.submitError = 'We couldn\'t check your existing loans, so your application wasn\'t sent. Please try again.';
+      this.showConfirmation = false;
+    }
+  });
 }
   confirmSubmit(): void {
     this.isSubmitting = true;

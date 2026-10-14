@@ -22,6 +22,8 @@ import {
   CooperativeStaffRank
 } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { environment } from '../../../shared-component/environments/environment';
+import { LOAN_MAIL_WEBHOOK_URL } from '../../../service/loan/loan-integrations.config';
+import { resolveBaseSalaryForLevel, resolveEmployeeLevelId } from '../../../service/loan/level-salary.util';
 
 interface GroupMetrics {
   memberCount: number;
@@ -66,6 +68,7 @@ interface GroupInviteEmployeeRow {
   email: string;
   department: string;
   level?: string;
+  levelId: number;
   employmentStartDate: string;
   tenureMonths: number;
   monthlySalary: number;
@@ -526,20 +529,22 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     this.applyFilters();
   }
 
+  /**
+   * Base salary per employee from their level (`level.id` → a salary record's `levelId`), fetched once
+   * for the whole directory. The old per-employee GET /salaries/{employeeId} read a salary record by
+   * its own id, i.e. some other level's pay.
+   */
   private loadEmployeeSalariesDebug(): void {
     if (this.employeeDirectory.length === 0) return;
-    
-    this.employeeDirectory.forEach((employee) => {
-      this.employeeLoanService.getSalaryByEmployeeId(employee.employeeId).pipe(
-        timeout(10000),
-        catchError(() => of({ baseSalary: employee.monthlySalary }))
-      ).subscribe({
-        next: (salaryData: any) => {
-          const salary = Number(salaryData?.baseSalary || salaryData?.monthlySalary || salaryData?.salary || employee.monthlySalary || 0);
-          this.employeeSalaryById[employee.employeeId] = salary;
-          const empIndex = this.employeeDirectory.findIndex(e => e.employeeId === employee.employeeId);
-          if (empIndex !== -1) this.employeeDirectory[empIndex].monthlySalary = salary;
-        }
+
+    this.employeeLoanService.getAllSalaries().pipe(
+      timeout(10000),
+      catchError(() => of([]))
+    ).subscribe((salaries) => {
+      this.employeeDirectory.forEach((employee, index) => {
+        const salary = resolveBaseSalaryForLevel(employee.levelId, salaries) || Number(employee.monthlySalary || 0);
+        this.employeeSalaryById[employee.employeeId] = salary;
+        this.employeeDirectory[index].monthlySalary = salary;
       });
     });
   }
@@ -1121,7 +1126,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     });
 
     return this.http.post(
-      'https://automation.optimaxsuites.com/webhook/735f4d81-3f63-4390-9b03-098be2a31469',
+      LOAN_MAIL_WEBHOOK_URL,
       this.buildGroupInviteMail(employee),
       { headers }
     );
@@ -1182,6 +1187,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       email,
       department,
       level: levelName,
+      levelId: resolveEmployeeLevelId(employee),
       employmentStartDate: normalizedStartDate,
       tenureMonths: this.getTenureMonths(normalizedStartDate),
       monthlySalary: Number(employee?.monthlySalary || employee?.salary || employee?.baseSalary || 0)

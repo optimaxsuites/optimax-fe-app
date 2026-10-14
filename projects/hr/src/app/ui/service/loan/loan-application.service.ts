@@ -7,6 +7,18 @@ import { EmployeeService } from '../../service/employee.service';
 import { LoanStatusNotificationService } from './loan-status-notification.service';
 import { catchError, filter, finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 
+/**
+ * The submission failed in transit (network or server error) and the loan couldn't be found
+ * afterwards, so it may or may not have been created. Employees should check My Loans before
+ * submitting again, to avoid a duplicate application.
+ */
+export class LoanSubmissionUnconfirmedError extends Error {
+  constructor(message = "We couldn't confirm that your application was received. Please check My Loans in a minute before submitting again, so you don't apply twice.") {
+    super(message);
+    this.name = 'LoanSubmissionUnconfirmedError';
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -25,8 +37,14 @@ export class LoanApplicationService {
   ) {}
 
   submitLoanApplication(formData: LoanApplicationFormData): Observable<LoanApplication> {
+  // Captured before sending so recovery can tell this submission apart from earlier identical ones.
+  const attemptStartedAt = Date.now();
+  const knownApplicationIds = this.hasLoadedApplications
+    ? new Set(this.applicationsSubject.value.map((application) => String(application.id)))
+    : null;
+
   return this.loanService.createLoanApplication(formData).pipe(
-    catchError((error) => this.recoverSubmittedApplication(formData, error)),
+    catchError((error) => this.recoverSubmittedApplication(formData, error, attemptStartedAt, knownApplicationIds)),
     tap((createdApplication) => {
       // Force the next list subscriber to revalidate so the new loan's server state is picked up.
       this.lastRefreshedAt = 0;
@@ -34,7 +52,7 @@ export class LoanApplicationService {
       // Remove or modify this refresh call - it's causing the connection refused error
       // this.refreshApplications().subscribe({ error: () => {} });
     }),
-    catchError(this.handleError)
+    catchError((error) => this.handleError(error))
   );
 }
 
@@ -71,9 +89,9 @@ export class LoanApplicationService {
     );
   }
 
-  getApplicationsByEmployeeId(employeeId: string, employeeName?: string): Observable<LoanApplication[]> {
+  getApplicationsByEmployeeId(employeeId: string): Observable<LoanApplication[]> {
     return this.getAllApplications().pipe(
-      map((applications) => this.filterApplicationsByEmployee(applications, employeeId, employeeName))
+      map((applications) => this.filterApplicationsByEmployee(applications, employeeId))
     );
   }
 
@@ -273,23 +291,13 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
     }
   }
 
-  private filterApplicationsByEmployee(
-    applications: LoanApplication[],
-    employeeId: string,
-    employeeName?: string
-  ): LoanApplication[] {
+  /** Matched on employee id only: names aren't unique, so a name match could return someone else's loans. */
+  private filterApplicationsByEmployee(applications: LoanApplication[], employeeId: string): LoanApplication[] {
     const normalizedEmployeeId = String(employeeId || '').trim();
-    const normalizedEmployeeName = this.normalizeValue(employeeName || '');
-
-    return applications.filter((application) => {
-      if (normalizedEmployeeId && String(application.employeeId || '').trim() === normalizedEmployeeId) {
-        return true;
-      }
-      if (normalizedEmployeeName && this.normalizeValue(application.fullName || '') === normalizedEmployeeName) {
-        return true;
-      }
-      return false;
-    });
+    if (!normalizedEmployeeId) {
+      return [];
+    }
+    return applications.filter((application) => String(application.employeeId ?? '').trim() === normalizedEmployeeId);
   }
 
   private upsertApplication(application: LoanApplication, persistLocally = false): void {
@@ -593,11 +601,20 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
     return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
   }
 
+  /**
+   * After a network failure or server error the loan may still have been created. Look for it with a
+   * fresh (uncached) list, accepting only a loan that is new since this attempt started, so an earlier
+   * identical application is never reported as this one. If exactly one match isn't found, fail with
+   * LoanSubmissionUnconfirmedError rather than guessing.
+   */
   private recoverSubmittedApplication(
     formData: LoanApplicationFormData,
-    error: unknown
+    error: unknown,
+    attemptStartedAt: number,
+    knownApplicationIds: Set<string> | null
   ): Observable<LoanApplication> {
-    if (!(error instanceof HttpErrorResponse) || error.status !== 500) {
+    const isRecoverable = error instanceof HttpErrorResponse && (error.status === 0 || error.status >= 500);
+    if (!isRecoverable) {
       return throwError(() => error);
     }
 
@@ -608,31 +625,35 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
       modeOfPayment: formData.modeOfPayment,
       requestDate: formData.requestDate
     });
+    // Allow for clock differences between this browser and the server.
+    const earliestAcceptedRequestTime = attemptStartedAt - 2 * 60 * 1000;
 
-    return this.loanService.listLoanApplications().pipe(
+    return this.loanService.listLoanApplications(true).pipe(
       map((applications) => {
-        const recoveredApplication = applications.find((application) => {
-          if (this.buildClientSubmissionKey(application) === candidateSignature) {
-            return true;
+        const candidates = applications.filter((application) => {
+          if (Number(application.employeeId || 0) !== Number(formData.employeeId || 0)) {
+            return false;
           }
-
-          return this.matchesSubmittedApplication(application, formData);
+          if (knownApplicationIds?.has(String(application.id))) {
+            return false; // existed before this attempt
+          }
+          const requestedAt = new Date(String(application.requestDate || '')).getTime();
+          if (!Number.isFinite(requestedAt) || requestedAt < earliestAcceptedRequestTime) {
+            return false;
+          }
+          // Without a pre-submit snapshot only an exact signature match is trusted.
+          return this.buildClientSubmissionKey(application) === candidateSignature
+            || (knownApplicationIds !== null && this.matchesSubmittedApplication(application, formData));
         });
 
-        if (!recoveredApplication) {
-          throw error;
+        if (candidates.length !== 1) {
+          throw new LoanSubmissionUnconfirmedError();
         }
-
-        if (isDevMode()) {
-          console.warn('Recovered advance-loan submission after backend 500 response', {
-            requestedAt: formData.requestDate,
-            recoveredLoanId: recoveredApplication.id,
-            recoveredLoanCode: recoveredApplication.loanCode
-          });
-        }
-
-        return recoveredApplication;
-      })
+        return candidates[0];
+      }),
+      catchError((recoveryError) => throwError(() =>
+        recoveryError instanceof LoanSubmissionUnconfirmedError ? recoveryError : new LoanSubmissionUnconfirmedError()
+      ))
     );
   }
 
@@ -666,16 +687,9 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
     return Math.abs(applicationRequestedAt - requestedAt) <= 5 * 60 * 1000;
   }
 
- private handleError(error: any): Observable<never> {
-  if (error instanceof HttpErrorResponse) {
-    // Don't log connection refused errors as errors
-    if (error.status === 0 || error.message?.includes('Connection refused')) {
-      console.debug('Backend connection issue, but operation may have succeeded');
-      // Return a successful observable with empty data instead of throwing
-      return of(null as any) as Observable<never>;
-    }
-    
-    if (isDevMode()) {
+  private handleError(error: any): Observable<never> {
+    // Never swallow a failure: the form must always tell the employee what happened.
+    if (isDevMode() && error instanceof HttpErrorResponse) {
       console.error('Loan submission HTTP error', {
         status: error.status,
         statusText: error.statusText,
@@ -685,7 +699,4 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
     }
     return throwError(() => error);
   }
-  console.error('Loan submission error', error);
-  return throwError(() => error);
-}
 }

@@ -398,7 +398,9 @@ const routes: Routes = [
   },
   {
     path: 'member/cooperative/loans/:id/:uuid',
-    component: CooperativeMemberDetailComponent, // Read-only version
+    // The member's own loan (read-only, ownership-checked). This used to point at the member-detail
+    // page, which read the loan id as a member id and showed someone else's profile.
+    component: CooperativeLoanDetailComponent,
   },
   {
     path: 'admin/hr/member/cooperative/dashboard/:uuid',
@@ -414,7 +416,9 @@ const routes: Routes = [
   },
   {
     path: 'admin/hr/member/cooperative/loans/:id/:uuid',
-    component: CooperativeMemberDetailComponent, // Read-only version
+    // The member's own loan (read-only, ownership-checked). This used to point at the member-detail
+    // page, which read the loan id as a member id and showed someone else's profile.
+    component: CooperativeLoanDetailComponent,
   },
   {
     path: 'leave/:uuid',

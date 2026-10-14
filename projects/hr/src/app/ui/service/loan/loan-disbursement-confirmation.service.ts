@@ -4,6 +4,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment';
+import { resolveTenantId } from './loan-tenant.util';
 
 export interface DisbursementConfirmation {
   id?: number;
@@ -33,9 +34,7 @@ export class AdvanceDisbursementConfirmationService {
   constructor(private http: HttpClient) {}
 
   private getTenantId(): string {
-    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-    const hostnameParts = hostname.split('.').filter(Boolean);
-    return hostnameParts[0] || 'optimax';
+    return resolveTenantId();
   }
 
   private getAccessToken(): string {
@@ -82,9 +81,20 @@ export class AdvanceDisbursementConfirmationService {
     }).pipe(map(res => this.safeParseResponse(res)));
   }
 
+  /**
+   * The confirmation record for this loan, or null if none exists. Filters by loanId on the client too:
+   * taking the first row unchecked could return another loan's record if the backend ignores the
+   * filter. When there are several, the most recent one wins.
+   */
   getConfirmationByLoanId(loanId: number): Observable<DisbursementConfirmation | null> {
     return this.getAllConfirmations({ loanId }).pipe(
-      map(confirmations => confirmations.length > 0 ? confirmations[0] : null)
+      map((response: any) => {
+        const confirmations: DisbursementConfirmation[] = Array.isArray(response) ? response : (response?.content || []);
+        const forLoan = confirmations
+          .filter((confirmation) => Number(confirmation?.loanId) === Number(loanId))
+          .sort((a, b) => Number(b.id || 0) - Number(a.id || 0));
+        return forLoan[0] || null;
+      })
     );
   }
 

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../shared-component/environments/environment';
+import { resolveTenantId } from './loan-tenant.util';
 
 export interface GuarantorMedia {
   id: number;
@@ -36,7 +37,7 @@ export class GuarantorService {
 
   private getHeaders(): HttpHeaders {
     const token = sessionStorage.getItem('token');
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
 
     return new HttpHeaders({
       Authorization: `Bearer ${token}`,

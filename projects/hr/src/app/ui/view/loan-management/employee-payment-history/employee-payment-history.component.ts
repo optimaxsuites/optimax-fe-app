@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
 import { AdvancePaymentRecordService, PaymentRecord } from '../../../service/loan/loan-payment-record.service';
 import { formatNaira, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
+import { getPaymentTypeLabel, getPaymentTypeTone } from '../../../service/loan/loan-payment-types';
 
 /** Payment records for one advance loan. Reloads whenever `loanId` changes. */
 @Component({
@@ -92,21 +93,11 @@ export class EmployeePaymentHistoryComponent implements OnChanges {
   }
 
   getPaymentTypeLabel(type: string): string {
-    switch (type) {
-      case 'PRINCIPAL_REPAYMENT': return 'Principal Payment';
-      case 'INTEREST_REPAYMENT': return 'Interest Payment';
-      case 'LATE_FEE': return 'Late Fee';
-      default: return getLoanStatusLabel(type);
-    }
+    return getPaymentTypeLabel(type);
   }
 
   getPaymentTypeClass(type: string): string {
-    switch (type) {
-      case 'PRINCIPAL_REPAYMENT': return 'principal';
-      case 'INTEREST_REPAYMENT': return 'interest';
-      case 'LATE_FEE': return 'late-fee';
-      default: return '';
-    }
+    return getPaymentTypeTone(type);
   }
 
   getPaymentMethodLabel(method: string | undefined): string {

@@ -5,6 +5,7 @@ import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../../shared-component/service/environments/environment.prod';
 import { getTokenFromStorage } from './token-util';
 import { CreatePurposePayload, LoanPurposeData } from '../loan-purpose.service';
+import { resolveTenantId } from '../loan-tenant.util';
 
 @Injectable({
   providedIn: 'root'
@@ -15,12 +16,7 @@ export class CooperativeLoanPurposeService {
   constructor(private http: HttpClient) {}
 
   private getTenantId(): string {
-    const tenant = sessionStorage.getItem('tenantId')
-      || sessionStorage.getItem('tenant')
-      || localStorage.getItem('tenantId')
-      || localStorage.getItem('tenant')
-      || 'optimax';
-    return tenant && tenant !== 'undefined' && tenant !== 'null' ? tenant : 'optimax';
+    return resolveTenantId();
   }
 
   private safeParseResponse(response: unknown): any {
