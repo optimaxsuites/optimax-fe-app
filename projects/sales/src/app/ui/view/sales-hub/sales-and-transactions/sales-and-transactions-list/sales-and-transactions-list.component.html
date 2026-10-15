@@ -234,7 +234,7 @@
                         [disabled]="!canRecordPayment(tx)"
                         (click)="canRecordPayment(tx) && openPaymentModal(tx, $event)"
                         [title]="canRecordPayment(tx) ? 'Record Payment' : 'No balance due'">
-                  <i class="fas fa-credit-card"></i> Pay
+                  <i class="fas fa-credit-card"></i> Record Payment
                 </button>
                 <button type="button" class="il-action-btn il-action-btn--receipt"
                         [disabled]="!canViewReceipt(tx)"

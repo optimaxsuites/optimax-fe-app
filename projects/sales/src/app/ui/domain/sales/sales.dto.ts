@@ -185,14 +185,18 @@ export interface QuoteDocumentAttachment {
   uploadedAt: Date | string;
 }
 
-/** The delivery note fields the company's real paper template carries that the backend
- *  DeliveryNote resource has no column for (PO/LPO reference, who the note is addressed to,
- *  which of ours is the contact) — stored alongside lpoDocument/signedDeliveryNoteDocument for
- *  the same reason: no dedicated backend field, so it rides on the quote's additionalOptions. */
-export interface DeliveryNoteMeta {
+/** LEGACY — delivery note fields that used to ride on the quote's additionalOptions before the
+ *  backend's SalesDeliveryNote / SalesLpo resources had columns for them. Nothing writes this any
+ *  more; it's only read as a fallback for delivery notes generated before then. The real homes:
+ *  poNumber -> SalesLpo.lpoNumber, everything else -> the same-named SalesDeliveryNote field. */
+export interface SalesDeliveryNoteMeta {
   poNumber?: string;
   attention?: string;
   contactPerson?: string;
+  /** Id of the TemplateTypesComponent template picked in the Generate Delivery Note wizard. */
+  templateId?: string;
+  /** Date of Delivery entered in the wizard (yyyy-MM-dd), shown on every item line. */
+  deliveryDate?: string;
 }
 
 export interface AdditionalQuoteOptions {
@@ -208,7 +212,7 @@ export interface AdditionalQuoteOptions {
   /** The delivery note, re-uploaded once physically signed by the recipient — required before
    *  an invoice can be created for this quote. */
   signedDeliveryNoteDocument?: QuoteDocumentAttachment;
-  deliveryNoteMeta?: DeliveryNoteMeta;
+  deliveryNoteMeta?: SalesDeliveryNoteMeta;
 }
 
 
@@ -397,28 +401,45 @@ export interface PaymentReceipt {
 
 // PENDING/DISPATCHED/DELIVERED/CANCELLED matches the dispatchedAt/deliveredAt timestamp fields
 // the backend record carries; PENDING is the only value the API docs actually show as a sample.
-export type DeliveryNoteStatus = 'PENDING' | 'DISPATCHED' | 'DELIVERED' | 'CANCELLED';
+// Each transition has its own endpoint: PATCH /delivery-notes/{id}/dispatch | in-transit |
+// deliver | return | cancel (see SalesService.updateDeliveryNoteStatus()).
+export type SalesDeliveryNoteStatus = 'PENDING' | 'DISPATCHED' | 'IN_TRANSIT' | 'DELIVERED' | 'RETURNED' | 'CANCELLED';
 
-/** Line item on a delivery note, matching GET/POST /commerce/delivery-notes exactly — no pricing
- *  (that belongs on the Invoice) and no separate ordered/shipped split (the backend only tracks
- *  one quantity per line). */
-export interface DeliveryNoteItem {
+/** Line item on a delivery note, matching GET/POST/PUT /commerce/delivery-notes — no pricing
+ *  (that belongs on the Invoice). */
+export interface SalesDeliveryNoteItem {
   id?: number;
   deliveryNoteId?: number;
   productName: string;
+  /** Quantity delivered on this note. */
   quantity: number;
   unit: string;
+  /** Links the line back to the catalog product — today lines are copied by name only. */
+  productId?: string;
+  /** The quote/order line this delivers, so partial deliveries can be reconciled. */
+  quoteItemId?: number;
+  /** The quote item's description, shown under the product name. */
+  description?: string;
+  /** Quantity on the order, next to `quantity` delivered — enables "3 of 5 delivered". */
+  orderedQuantity?: number;
+  /** Per-line Date of Delivery, as the paper template allows. */
+  deliveryDate?: Date | string;
+  serialNumbers?: string[];
+  batchNumber?: string;
+  /** Quantity the customer actually accepted on receipt (short or damaged deliveries). */
+  quantityReceived?: number;
+  remarks?: string;
 }
 
 /**
- * The Delivery Note record, matching the real backend contract for
- * GET/POST /commerce/delivery-notes and PATCH /commerce/delivery-notes/{id}/status. salesOrderId
- * and customerId are plain ids (not nested objects) — the backend has no by-id GET, so a single
- * record is found by filtering the list from getDeliveryNotes(); there's also no separate
- * full-edit endpoint, so SalesService.updateDeliveryNoteStatus() is the only mutation after
- * create, and it's used for both status transitions and any other field edits.
+ * The Delivery Note record, matching GET/POST /commerce/delivery-notes, GET/PUT/DELETE
+ * /delivery-notes/{id} and the PATCH /delivery-notes/{id}/<transition> status endpoints.
+ * salesOrderId, quoteId, lpoId, invoiceId and customerId are plain ids (not nested objects).
+ *
+ * Files still live on the quote's additionalOptions (lpoDocument / signedDeliveryNoteDocument)
+ * because the backend has no upload endpoint yet — signedDocumentUrl stays empty until it does.
  */
-export interface DeliveryNote {
+export interface SalesDeliveryNote {
   id?: number;
   tenantId?: string;
   deliveryNumber: string;
@@ -427,14 +448,95 @@ export interface DeliveryNote {
   customerAddress: string;
   carrier?: string;
   trackingNumber?: string;
-  status: DeliveryNoteStatus;
+  status: SalesDeliveryNoteStatus;
   dispatchedAt?: Date | string;
   deliveredAt?: Date | string;
+  /** Free text from the edit form — unclear what it holds; superseded by receivedByName /
+   *  receivedAt / signedDocumentUrl below. */
   signature?: string;
   createdBy?: number;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  items: DeliveryNoteItem[];
+  items: SalesDeliveryNoteItem[];
+
+  // Links
+  quoteId?: number;
+  invoiceId?: number;
+  /** The customer's SalesLpo record (its lpoNumber is the note's "LPO Number"). */
+  lpoId?: number;
+
+  // Recipient, captured at issue time so editing the customer later doesn't rewrite old notes
+  recipientName?: string;
+  recipientPhone?: string;
+  /** Delivery address at issue time (the customer has a separate deliverAddress list). */
+  deliveryAddress?: string;
+  attention?: string;
+  attentionPhone?: string;
+  contactPerson?: string;
+  contactPhone?: string;
+
+  // Dates
+  /** Date of Delivery, shown on every item line. */
+  deliveryDate?: Date | string;
+  /** When it was last emailed to the customer. */
+  sentAt?: Date | string;
+  inTransitAt?: Date | string;
+  returnedAt?: Date | string;
+  cancelledAt?: Date | string;
+  cancellationReason?: string;
+
+  // Receipt — from the signed copy's Name / Signature / Date sign-off
+  receivedByName?: string;
+  receivedAt?: Date | string;
+  /** Empty until the backend has an upload endpoint — the signed copy itself is still stored as
+   *  AdditionalQuoteOptions.signedDeliveryNoteDocument. */
+  signedDocumentUrl?: string;
+
+  /** Id of the TemplateTypesComponent template picked in the Generate Delivery Note wizard. */
+  templateId?: string;
+  /** Delivery instructions / notes printed on the note. */
+  notes?: string;
+}
+
+// ------------------------------------------------------------------
+// LPO (Local Purchase Order) DTOs
+// Backs /x/api/v2/commerce/sales-lpos (GET/POST, GET/PUT/DELETE /{id}, PATCH /{id}/verify and
+// /{id}/reject). The file itself still lives on the quote's additionalOptions.lpoDocument because
+// the backend has no upload endpoint yet, so document.fileUrl is empty until it does.
+// ------------------------------------------------------------------
+
+export type SalesLpoStatus = 'RECEIVED' | 'VERIFIED' | 'REJECTED';
+
+/** The uploaded LPO file — stored by the backend and referenced by URL, rather than as base64
+ *  inside the quote like QuoteDocumentAttachment. */
+export interface SalesLpoDocument {
+  fileName: string;
+  fileUrl: string;
+  contentType: string;
+  size?: number;
+  uploadedAt: Date | string;
+}
+
+/** The customer's Local Purchase Order — required before a delivery note can be generated. */
+export interface SalesLpo {
+  id?: number;
+  tenantId?: string;
+  /** The customer's own PO number, as printed on their LPO (today's deliveryNoteMeta.poNumber). */
+  lpoNumber: string;
+  /** Date printed on the customer's LPO. */
+  lpoDate?: Date | string;
+  quoteId: number;
+  salesOrderId?: number;
+  customerId: number;
+  /** LPO value, to check it against the quote total. */
+  amount?: number;
+  currency?: string;
+  status: SalesLpoStatus;
+  document: SalesLpoDocument;
+  notes?: string;
+  receivedBy?: number;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 
 // ------------------------------------------------------------------

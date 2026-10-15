@@ -2,10 +2,11 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angu
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Quote, Invoice, SalesandTransactions, AdditionalQuoteOptions, DeliveryNote, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
+import { Quote, Invoice, SalesandTransactions, AdditionalQuoteOptions, SalesDeliveryNote, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -14,7 +15,7 @@ import { MessageService } from 'primeng/api';
 @Component({
   selector: 'app-quote-detail',
   standalone: true,
-  imports: [CommonModule, BackButtonComponent],
+  imports: [CommonModule, FormsModule, BackButtonComponent],
   templateUrl: './quote-detail.component.html',
   styleUrls: ['./quote-detail.component.scss']
 })
@@ -28,7 +29,7 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
   isDownloading = false;
 
   orderId: string | null = null;
-  deliveryNote: DeliveryNote | null = null;
+  deliveryNote: SalesDeliveryNote | null = null;
 
   private destroy$ = new Subject<void>();
 
@@ -143,11 +144,20 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
   signedDeliveryNoteFileName = '';
   private signedDeliveryNoteFile: QuoteDocumentAttachment | null = null;
   isSavingSignedDeliveryNote = false;
+  /** From the signed copy's Name / Date sign-off — saved on the delivery note. */
+  receivedByName = '';
+  receivedDate = '';
 
   openSignedDeliveryNoteModal(): void {
     this.signedDeliveryNoteFileName = '';
     this.signedDeliveryNoteFile = null;
+    this.receivedByName = '';
+    this.receivedDate = new Date().toISOString().substring(0, 10);
     this.showSignedDeliveryNoteModal = true;
+  }
+
+  get canSubmitSignedDeliveryNote(): boolean {
+    return !!this.signedDeliveryNoteFileName && !!this.receivedByName.trim() && !!this.receivedDate && !this.isSavingSignedDeliveryNote;
   }
 
   closeSignedDeliveryNoteModal(): void {
@@ -172,14 +182,20 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
   }
 
   submitSignedDeliveryNote(): void {
-    if (!this.quote || !this.signedDeliveryNoteFile || this.isSavingSignedDeliveryNote) return;
+    if (!this.quote || !this.signedDeliveryNoteFile || !this.canSubmitSignedDeliveryNote) return;
     this.isSavingSignedDeliveryNote = true;
-    this.salesService.saveSignedDeliveryNoteDocument(this.quote.id, this.signedDeliveryNoteFile).subscribe({
-      next: (updated) => {
+    this.salesService.recordSignedDeliveryNote(this.quote.id, this.signedDeliveryNoteFile, this.deliveryNote, {
+      receivedByName: this.receivedByName.trim(),
+      receivedAt: new Date(this.receivedDate).toISOString()
+    }).subscribe({
+      next: ({ quote, note, noteSaved }) => {
         this.isSavingSignedDeliveryNote = false;
-        this.quote = updated;
+        this.quote = quote;
+        if (note) this.deliveryNote = note;
         this.showSignedDeliveryNoteModal = false;
-        this.messageService.add({ severity: 'success', summary: 'Uploaded', detail: 'Signed delivery note uploaded — you can now create the invoice.' });
+        this.messageService.add(noteSaved
+          ? { severity: 'success', summary: 'Uploaded', detail: 'Signed delivery note uploaded and the delivery marked as delivered — you can now create the invoice.' }
+          : { severity: 'warn', summary: 'Uploaded', detail: 'Signed copy uploaded, but who received it couldn\'t be saved on the delivery note.' });
       },
       error: (err) => {
         console.error('Error uploading signed delivery note:', err);

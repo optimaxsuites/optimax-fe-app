@@ -88,6 +88,185 @@ describe('SalesService', () => {
     });
   });
 
+  describe('getOrCreateDeliveryNote: links and line details the backend now stores', () => {
+    it('captures quote/invoice links, the recipient and per-line product details on create, plus extras', () => {
+      let posted: any;
+      service.getOrCreateDeliveryNote(42, { lpoId: 9, attention: 'J. Okafor' }).subscribe();
+
+      http.expectOne(`${BASE}/sales-orders/42`).flush({
+        id: 42, orderId: 'ORD-42', quoteId: { id: 3 },
+        invoiceId: { id: 5, items: [{ productId: 77, productName: 'Widget', description: 'Blue', quantity: 3 }] },
+        customerId: { id: 7, name: 'Acme Co', phone: '0803', deliverAddress: ['12 Broad St'] }
+      });
+      http.expectOne(r => r.url === `${BASE}/delivery-notes` && r.method === 'GET').flush({ data: [], total: 0 });
+      const req = http.expectOne(r => r.url === `${BASE}/delivery-notes` && r.method === 'POST');
+      posted = req.request.body;
+      req.flush({ id: 100 });
+
+      expect(posted).toEqual(jasmine.objectContaining({
+        quoteId: 3, invoiceId: 5, recipientName: 'Acme Co', recipientPhone: '0803',
+        deliveryAddress: '12 Broad St', lpoId: 9, attention: 'J. Okafor', status: 'PENDING'
+      }));
+      expect(posted.items[0]).toEqual(jasmine.objectContaining({
+        productId: '77', description: 'Blue', quantity: 3, orderedQuantity: 3
+      }));
+    });
+  });
+
+  describe('delivery note endpoints', () => {
+    const note: any = { id: 5, deliveryNumber: 'DN-5', status: 'PENDING', items: [], customerAddress: '', createdAt: 'x', updatedAt: 'y' };
+
+    it('fetches a single note by id instead of filtering the whole list', () => {
+      service.getDeliveryNoteById(5).subscribe();
+      http.expectOne(r => r.url === `${BASE}/delivery-notes/5` && r.method === 'GET').flush(note);
+    });
+
+    it('updates with a full-record PUT, leaving server-managed timestamps out of the body', () => {
+      service.updateDeliveryNote(5, note).subscribe();
+      const req = http.expectOne(r => r.url === `${BASE}/delivery-notes/5` && r.method === 'PUT');
+      expect(req.request.body.deliveryNumber).toBe('DN-5');
+      expect(req.request.body.createdAt).toBeUndefined();
+      expect(req.request.body.updatedAt).toBeUndefined();
+      expect(req.request.body.tenantId).toBeTruthy();
+      req.flush(note);
+    });
+
+    const transitions: [string, string, string][] = [
+      ['DISPATCHED', 'dispatch', 'dispatchedAt'],
+      ['IN_TRANSIT', 'in-transit', 'inTransitAt'],
+      ['DELIVERED', 'deliver', 'deliveredAt'],
+      ['RETURNED', 'return', 'returnedAt'],
+      ['CANCELLED', 'cancel', 'cancelledAt']
+    ];
+    transitions.forEach(([status, path, stamp]) => {
+      it(`moves to ${status} through PATCH /{id}/${path} with the full record`, () => {
+        service.updateDeliveryNoteStatus(note, status as any).subscribe();
+        const req = http.expectOne(r => r.url === `${BASE}/delivery-notes/5/${path}` && r.method === 'PATCH');
+        expect(req.request.body.status).toBe(status);
+        expect(req.request.body.deliveryNumber).toBe('DN-5');
+        expect(req.request.body[stamp]).toBeTruthy();
+        req.flush({ ...note, status });
+      });
+    });
+
+    it('sends the cancellation reason with a cancel', () => {
+      service.updateDeliveryNoteStatus(note, 'CANCELLED', 'Customer changed order').subscribe();
+      const req = http.expectOne(`${BASE}/delivery-notes/5/cancel`);
+      expect(req.request.body.cancellationReason).toBe('Customer changed order');
+      req.flush(note);
+    });
+
+    it('falls back to a PUT for PENDING, which has no transition endpoint', () => {
+      service.updateDeliveryNoteStatus({ ...note, status: 'DISPATCHED' }, 'PENDING').subscribe();
+      const req = http.expectOne(r => r.url === `${BASE}/delivery-notes/5` && r.method === 'PUT');
+      expect(req.request.body.status).toBe('PENDING');
+      req.flush(note);
+    });
+
+    it('maps a quote to its note through the note\'s own quoteId', () => {
+      let result: any;
+      service.getQuoteDeliveryNoteMap().subscribe(r => (result = r));
+      http.expectOne(r => r.url === `${BASE}/sales-orders`).flush([]);
+      http.expectOne(r => r.url === `${BASE}/delivery-notes`).flush([{ id: 5, deliveryNumber: 'DN-5', quoteId: 3 }]);
+      expect(result.get(3)?.deliveryNumber).toBe('DN-5');
+    });
+  });
+
+  describe('recordSignedDeliveryNote', () => {
+    const note: any = { id: 5, deliveryNumber: 'DN-5', status: 'DELIVERED', items: [], customerAddress: '' };
+    const dispatched: any = { ...note, status: 'DISPATCHED' };
+    const received = { receivedByName: 'J. Okafor', receivedAt: '2026-10-15T00:00:00.000Z' };
+    const doc: any = { fileName: 'signed.pdf', base64Content: 'x', contentType: 'application/pdf', uploadedAt: 'now' };
+
+    const flushQuoteSave = () => {
+      http.expectOne(r => r.url === `${BASE}/quotes/3` && r.method === 'GET').flush({ id: 3, additionalOptions: {} });
+      http.expectOne(r => r.url === `${BASE}/quotes/3` && r.method === 'PUT').flush({ id: 3 });
+    };
+
+    it('stores the file on the quote, then saves who received it on the full note', () => {
+      let result: any;
+      service.recordSignedDeliveryNote(3, doc, note, received).subscribe(r => (result = r));
+      flushQuoteSave();
+      const put = http.expectOne(r => r.url === `${BASE}/delivery-notes/5` && r.method === 'PUT');
+      expect(put.request.body).toEqual(jasmine.objectContaining({ deliveryNumber: 'DN-5', ...received }));
+      put.flush({ ...note, ...received });
+
+      expect(result.noteSaved).toBeTrue();
+      expect(result.note.receivedByName).toBe('J. Okafor');
+    });
+
+    it('marks a dispatched note delivered once the signed copy is in, keeping the receiver details', () => {
+      let result: any;
+      service.recordSignedDeliveryNote(3, doc, dispatched, received).subscribe(r => (result = r));
+      flushQuoteSave();
+      http.expectOne(r => r.url === `${BASE}/delivery-notes/5` && r.method === 'PUT').flush({ ...dispatched, ...received });
+      const deliver = http.expectOne(r => r.url === `${BASE}/delivery-notes/5/deliver` && r.method === 'PATCH');
+      expect(deliver.request.body).toEqual(jasmine.objectContaining({ status: 'DELIVERED', ...received }));
+      deliver.flush({ ...dispatched, ...received, status: 'DELIVERED' });
+
+      expect(result.note.status).toBe('DELIVERED');
+      expect(result.noteSaved).toBeTrue();
+    });
+
+    it('leaves a cancelled note\'s status alone', () => {
+      service.recordSignedDeliveryNote(3, doc, { ...note, status: 'CANCELLED' }, received).subscribe();
+      flushQuoteSave();
+      http.expectOne(r => r.url === `${BASE}/delivery-notes/5` && r.method === 'PUT').flush({ ...note, status: 'CANCELLED' });
+      // no PATCH .../deliver — http.verify() in afterEach fails if one was sent
+    });
+
+    it('still succeeds, flagged, when the note update fails after the file was stored', () => {
+      let result: any;
+      service.recordSignedDeliveryNote(3, doc, note, received).subscribe(r => (result = r));
+      flushQuoteSave();
+      http.expectOne(`${BASE}/delivery-notes/5`).flush('boom', { status: 500, statusText: 'Server Error' });
+
+      expect(result.noteSaved).toBeFalse();
+      expect(result.quote.id).toBe(3);
+    });
+  });
+
+  describe('sales LPO endpoints', () => {
+    const lpo: any = { id: 9, lpoNumber: 'PR-1', quoteId: 3, status: 'RECEIVED', document: {}, createdAt: 'x' };
+
+    it('picks the quote\'s most recent LPO that has not been rejected', () => {
+      let result: any;
+      service.getSalesLpoForQuote(3).subscribe(r => (result = r));
+      const req = http.expectOne(r => r.url === `${BASE}/sales-lpos` && r.method === 'GET');
+      expect(req.request.params.get('quoteId')).toBe('3');
+      req.flush([
+        { id: 1, quoteId: 3, status: 'VERIFIED' },
+        { id: 4, quoteId: 3, status: 'REJECTED' },
+        { id: 2, quoteId: 3, status: 'RECEIVED' },
+        { id: 8, quoteId: 99, status: 'RECEIVED' }
+      ]);
+      expect(result.id).toBe(2);
+    });
+
+    it('creates with POST and updates with a full-record PUT', () => {
+      service.createSalesLpo({ lpoNumber: 'PR-1', quoteId: 3 }).subscribe();
+      http.expectOne(r => r.url === `${BASE}/sales-lpos` && r.method === 'POST').flush(lpo);
+
+      service.updateSalesLpo(9, lpo).subscribe();
+      const put = http.expectOne(r => r.url === `${BASE}/sales-lpos/9` && r.method === 'PUT');
+      expect(put.request.body.createdAt).toBeUndefined();
+      put.flush(lpo);
+    });
+
+    it('verifies and rejects through their PATCH endpoints', () => {
+      service.verifySalesLpo(lpo).subscribe();
+      const verify = http.expectOne(r => r.url === `${BASE}/sales-lpos/9/verify` && r.method === 'PATCH');
+      expect(verify.request.body.status).toBe('VERIFIED');
+      verify.flush(lpo);
+
+      service.rejectSalesLpo(lpo, 'Wrong amount').subscribe();
+      const reject = http.expectOne(r => r.url === `${BASE}/sales-lpos/9/reject` && r.method === 'PATCH');
+      expect(reject.request.body.status).toBe('REJECTED');
+      expect(reject.request.body.notes).toBe('Wrong amount');
+      reject.flush(lpo);
+    });
+  });
+
   describe('getPaymentReceipt: real merchant info + a receipt number that is never just "RCT-"', () => {
     it('falls back through orderId/id when paymentNumber was never set, instead of always "RCT-"', () => {
       let result: any;

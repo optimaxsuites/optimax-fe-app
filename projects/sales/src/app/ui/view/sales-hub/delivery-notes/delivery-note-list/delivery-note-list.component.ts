@@ -4,7 +4,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { DeliveryNote, DeliveryNoteStatus, Quote } from '../../../../domain/sales/sales.dto';
+import { SalesDeliveryNote, SalesDeliveryNoteStatus, Quote } from '../../../../domain/sales/sales.dto';
 import { formatApiDate } from '../../../../service/sales/date.util';
 
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
@@ -25,9 +25,9 @@ interface DeliveryNoteRow {
   orderId: string;
   customerName: string;
   itemCount: number;
-  status: 'AWAITING_NOTE' | DeliveryNoteStatus;
+  status: 'AWAITING_NOTE' | SalesDeliveryNoteStatus;
   date: unknown;
-  source: Quote | DeliveryNote;
+  source: Quote | SalesDeliveryNote;
 }
 
 @Component({
@@ -48,7 +48,7 @@ export class DeliveryNoteListComponent implements OnInit, OnDestroy {
   protected readonly Math = Math;
 
   pendingQuotes: Quote[] = [];
-  deliveryNotes: DeliveryNote[] = [];
+  deliveryNotes: SalesDeliveryNote[] = [];
   customers: any[] = [];
   orderIdByQuoteId = new Map<number, string>();
   orderIdByTransactionId = new Map<number, string>();
@@ -250,7 +250,9 @@ export class DeliveryNoteListComponent implements OnInit, OnDestroy {
       AWAITING_NOTE: 'pending',
       PENDING: 'draft',
       DISPATCHED: 'dispatched',
+      IN_TRANSIT: 'dispatched',
       DELIVERED: 'delivered',
+      RETURNED: 'cancelled',
       CANCELLED: 'cancelled'
     };
     return suffixes[status] || 'draft';
@@ -261,7 +263,9 @@ export class DeliveryNoteListComponent implements OnInit, OnDestroy {
       AWAITING_NOTE: 'Awaiting Note',
       PENDING: 'Pending',
       DISPATCHED: 'Dispatched',
+      IN_TRANSIT: 'In Transit',
       DELIVERED: 'Delivered',
+      RETURNED: 'Returned',
       CANCELLED: 'Cancelled'
     };
     return labels[status] || status;

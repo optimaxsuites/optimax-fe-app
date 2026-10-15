@@ -1,68 +1,36 @@
-:host {
-  --p: #184440; --p-dk: #0f2d2a; --p-lt: #e8f4f2;
-  --bg: #eef3f2; --surface: #ffffff; --border: #ccddd9; --text: #1a2e2c;
-  --muted: #6a8e89; --shadow: 0 2px 14px rgba(24,68,64,.09);
-}
+// Layout and page chrome come from quote-detail.component.scss (see styleUrls); only the
+// delivery-note-specific pieces live here.
 
-.dnd-page { display:flex; flex-direction:column; min-height:100vh; background:var(--bg); font-family:'Outfit',sans-serif; }
+// Matches the quote detail's inline "See Quotes" button styling
+.btn-see-list { background-color: #2E6276 !important; color: #fff !important; border: none; margin-left: 10px; }
 
-.dnd-topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 24px; background:var(--surface); border-bottom:1px solid var(--border); }
-.dnd-topbar-left { display:flex; align-items:center; gap:14px; }
-.dnd-topbar-right { display:flex; align-items:center; gap:8px; }
-.dnd-breadcrumb { font-size:13px; color:var(--muted); }
+// Same paper-card treatment as the quote detail's #quote-detail-sheet
+.dnd-sheet-card { background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08); }
 
-.dnd-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:7px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; border:none;
-  &--primary { background:var(--p); color:#fff; &:disabled { opacity:.6; cursor:not-allowed; } }
-  &--ghost { background:transparent; border:1px solid var(--border); color:var(--muted); &:hover:not(:disabled) { background:var(--bg); } &:disabled { opacity:.5; cursor:not-allowed; } }
-}
+.dnd-address { margin: 0.75rem 0 0; font-size: 0.8rem; color: #7a8a9e; line-height: 1.6; white-space: pre-line; }
 
-.dnd-status-badge { display:inline-flex; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700;
-  &--draft { background:#f1f5f9; color:#475569; }
-  &--dispatched { background:#dbeafe; color:#1d4ed8; }
-  &--delivered { background:#dcfce7; color:#166534; }
-  &--cancelled { background:#fee2e2; color:#991b1b; }
-}
+.error-state i { font-size: 2rem; color: #7a8a9e; }
 
-.dnd-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; height:50vh; gap:12px; color:var(--muted);
-  .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--p); border-radius:50%; animation:dnd-spin .8s linear infinite; }
-}
-@keyframes dnd-spin { to { transform:rotate(360deg); } }
+.dnd-lpo-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.85rem; }
+.dnd-muted { margin: 0; font-size: 0.85rem; color: #7a8a9e; }
 
-.dnd-doc-wrapper { max-width:780px; margin:24px auto; width:100%; }
-.dnd-doc-card { background:#fffef7; border-radius:12px; box-shadow:var(--shadow); padding:32px; color:var(--text); }
-.dnd-doc-header { display:flex; justify-content:space-between; gap:16px;
-  h2 { margin:0 0 4px; font-size:18px; }
-  p { margin:0 0 2px; font-size:12px; color:var(--muted); }
+// Confirmation modal — layout matches the quote detail's inline-styled modals
+.dnd-modal-body { padding: 1.5rem; }
+.dnd-modal-message { margin: 0 0 1rem; color: #64748b; font-size: 0.95rem; line-height: 1.5; }
+.dnd-modal-label { display: block; margin-bottom: 0.4rem; font-size: 0.8rem; font-weight: 600; color: #334155; }
+.dnd-req { color: #ef4444; }
+.dnd-modal-input { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.6rem 0.75rem; font: inherit; font-size: 0.9rem; resize: vertical;
+  &:focus { outline: none; border-color: #2E6276; box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.12); }
 }
-.dnd-doc-meta { text-align:right; }
-.dnd-doc-badge { display:inline-block; background:var(--p); color:#fff; font-size:12px; font-weight:700; padding:4px 12px; border-radius:6px; margin-bottom:8px; }
-.meta-row { display:flex; justify-content:flex-end; gap:8px; font-size:12px; margin-bottom:3px; span { color:var(--muted); } }
-.dnd-divider { height:1px; background:var(--border); margin:18px 0; }
-.dnd-parties-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
-.dnd-party-card { background:#f8faf9; border:1px solid var(--border); border-radius:8px; padding:14px;
-  h4 { margin:0 0 8px; font-size:11px; text-transform:uppercase; color:var(--muted); }
-  strong { display:block; margin-bottom:4px; }
-  p { margin:0; font-size:13px; color:var(--muted); }
-}
-.info-line { display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px; span { color:var(--muted); } }
-.dnd-items-wrapper { margin-bottom:20px; }
-.dnd-table { width:100%; border-collapse:collapse; font-size:13px;
-  th { background:#f0f4f3; padding:8px 10px; text-align:left; font-size:10px; text-transform:uppercase; color:var(--muted); }
-  td { padding:8px 10px; border-bottom:1px solid #f0f4f3; }
-  .text-center { text-align:center; }
-  .item-desc { display:block; font-size:11px; color:var(--muted); }
-}
-.dnd-notes { margin-bottom:20px; font-size:13px; strong { display:block; margin-bottom:4px; } p { margin:0; color:var(--muted); white-space:pre-wrap; } }
-.dnd-footer { display:flex; gap:20px; border-top:2px dashed var(--border); padding-top:18px; margin-top:20px; }
-.dnd-sign { text-align:center; flex:1; .line { border-bottom:1px solid var(--muted); height:36px; margin-bottom:5px; } span { font-size:11px; color:var(--muted); } }
-.dnd-footer-copy { flex:1; text-align:right; p { margin:0; font-size:11px; color:var(--muted); } }
-
-.dnd-error { display:flex; flex-direction:column; align-items:center; justify-content:center; height:50vh; gap:10px; color:var(--muted);
-  i { font-size:32px; }
-}
+.dnd-modal-footer { padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end; }
+.icon-badge { background: rgba(46, 178, 112, 0.12); color: #2EB270; }
+.icon-badge.dnd-icon-danger { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+.btn-modal-save.dnd-btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25); }
+.btn-modal-save:disabled { opacity: 0.55; cursor: not-allowed; }
 
 @media print {
-  .no-print { display:none !important; }
-  .dnd-doc-wrapper { margin:0; max-width:100%; }
-  .dnd-doc-card { box-shadow:none; }
+  .no-print { display: none !important; }
+  .quote-detail-container, .detail-wrapper { background: #fff !important; padding: 0 !important; min-height: 0 !important; }
+  .detail-grid { display: block !important; }
+  .dnd-sheet-card { box-shadow: none; border-radius: 0; }
 }

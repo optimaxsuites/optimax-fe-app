@@ -472,11 +472,21 @@
         <span style="font-size: 0.9rem; color: #475569;">{{ signedDeliveryNoteFileName || 'Click to choose a file (PDF or image)' }}</span>
         <input type="file" accept="application/pdf,image/*" style="display: none;" (change)="onSignedDeliveryNoteFileSelected($event)">
       </label>
+      <div class="signed-received-fields">
+        <label>
+          <span>Received by <em>*</em></span>
+          <input type="text" [(ngModel)]="receivedByName" placeholder="Name on the signed copy">
+        </label>
+        <label>
+          <span>Date received <em>*</em></span>
+          <input type="date" [(ngModel)]="receivedDate">
+        </label>
+      </div>
     </div>
 
     <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
       <button type="button" class="btn-modal-cancel" (click)="closeSignedDeliveryNoteModal()">Cancel</button>
-      <button type="button" class="btn-modal-save" [disabled]="!signedDeliveryNoteFileName || isSavingSignedDeliveryNote" (click)="submitSignedDeliveryNote()">
+      <button type="button" class="btn-modal-save" [disabled]="!canSubmitSignedDeliveryNote" (click)="submitSignedDeliveryNote()">
         <i class="fas" [class.fa-check-circle]="!isSavingSignedDeliveryNote" [class.fa-spinner]="isSavingSignedDeliveryNote" [class.fa-spin]="isSavingSignedDeliveryNote"></i>
         {{ isSavingSignedDeliveryNote ? 'Uploading...' : 'Upload' }}
       </button>

@@ -661,7 +661,9 @@
       </div>
       <div class="if-field">
         <label class="if-label">Message</label>
-        <textarea class="if-input" rows="6" [(ngModel)]="emailMessage" [ngModelOptions]="{standalone: true}"></textarea>
+        <app-email-ai-assist [message]="emailMessage">
+          <textarea class="if-input" rows="6" [(ngModel)]="emailMessage" [ngModelOptions]="{standalone: true}"></textarea>
+        </app-email-ai-assist>
       </div>
     </div>
     <div class="if-modal-foot">

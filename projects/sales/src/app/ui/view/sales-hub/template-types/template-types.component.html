@@ -6,13 +6,13 @@
     <!-- 2-column template card grid -->
     <div class="template-grid">
 
-      <div *ngFor="let template of templates"
+      <div *ngFor="let template of visibleTemplates"
            class="tpl-card"
            [class.tpl-card--selected]="selectedTemplateId === template.id"
            (click)="selectTemplate(template.id)">
 
         <!-- ── TOP: document preview area ── -->
-        <div class="tpl-preview" [ngClass]="'tpl-preview--' + getLayoutKey(template.id)">
+        <div class="tpl-preview" [ngClass]="'tpl-preview--' + getLayoutKey(template.id)" [class.tpl-preview--dn]="isDeliveryNote">
 
           <!-- selected checkmark badge -->
           <div class="tpl-check" *ngIf="selectedTemplateId === template.id">
@@ -21,6 +21,9 @@
 
           <!-- white paper document -->
           <div class="doc-paper">
+
+          <!-- ═══ QUOTE / INVOICE MOCKS ═══ -->
+          <ng-container *ngIf="!isDeliveryNote">
 
             <!-- STANDARD -->
             <ng-container *ngIf="getLayoutKey(template.id) === 'standard'">
@@ -237,6 +240,71 @@
               </div>
             </ng-container>
 
+          </ng-container>
+
+          <!-- ═══ DELIVERY NOTE MOCKS — each layout keeps its own header style; the recipient section,
+               items table and sign-off underneath are the same on every template (see dnBody) ═══ -->
+          <ng-container *ngIf="isDeliveryNote">
+
+            <!-- STANDARD -->
+            <ng-container *ngIf="getLayoutKey(template.id) === 'standard'">
+              <div class="dp-header">
+                <div class="dp-logo" *ngIf="template.sections.showCompanyLogo"></div>
+                <div class="dp-org">
+                  <div class="dp-org-name">Company Name</div>
+                  <div class="dp-org-sub">Delivery Note · DN-2026-014</div>
+                </div>
+              </div>
+              <div class="dp-rule orange"></div>
+            </ng-container>
+
+            <!-- CORPORATE / BRANDED -->
+            <ng-container *ngIf="getLayoutKey(template.id) === 'centrifuge'">
+              <div class="dp-corp-top">
+                <div class="dp-corp-word">Delivery Note</div>
+                <div class="dp-corp-brand"><strong>YOUR</strong><br>COMPANY</div>
+              </div>
+              <div class="dp-rule orange"></div>
+            </ng-container>
+
+            <!-- MINIMAL -->
+            <ng-container *ngIf="getLayoutKey(template.id) === 'minimal'">
+              <div class="dp-min-head">Delivery Note</div>
+              <div class="dp-thin-rule"></div>
+            </ng-container>
+
+            <!-- DETAILED -->
+            <ng-container *ngIf="getLayoutKey(template.id) === 'detailed'">
+              <div class="dp-header">
+                <div class="dp-logo" *ngIf="template.sections.showCompanyLogo"></div>
+                <div class="dp-org">
+                  <div class="dp-org-name">Company Name</div>
+                  <div class="dp-org-sub">Detailed Delivery Note · DN-2026-014</div>
+                </div>
+              </div>
+              <div class="dp-rule orange"></div>
+            </ng-container>
+
+            <!-- COMPACT -->
+            <ng-container *ngIf="getLayoutKey(template.id) === 'compact'">
+              <div class="dp-cpt-header">
+                <span class="dp-cpt-org">Company Name</span><span class="dp-cpt-sep">·</span><span>Delivery Note</span><span class="dp-cpt-sep">·</span><span>DN 014</span>
+              </div>
+              <div class="dp-thin-rule"></div>
+            </ng-container>
+
+            <!-- CLIENT-FACING PREMIUM -->
+            <ng-container *ngIf="getLayoutKey(template.id) === 'custom-client'">
+              <div class="dp-prem-top">
+                <div class="dp-prem-word">Delivery Note</div>
+                <div class="dp-prem-brand"><strong>Company Name</strong></div>
+              </div>
+              <div class="dp-rule green"></div>
+            </ng-container>
+
+            <ng-container *ngTemplateOutlet="dnBody; context: { $implicit: template }"></ng-container>
+          </ng-container>
+
           </div><!-- /doc-paper -->
 
           <div class="preview-fade"></div>
@@ -252,7 +320,7 @@
                 <i class="fas fa-star"></i> Default
               </span>
             </div>
-            <p class="tpl-desc">{{ template.description }}</p>
+            <p class="tpl-desc">{{ getTemplateDescription(template) }}</p>
             <div class="tpl-tags" *ngIf="getTemplateTags(template).length > 0">
               <span class="tpl-tag" *ngFor="let tag of getTemplateTags(template)">
                 {{ tag }}
@@ -273,3 +341,38 @@
 
   </div>
 </div>
+
+<!-- Delivery note body shared by every template's thumbnail: recipient section (To, Address, Date Sent
+     and Contact Person always; Attention / LPO No. / Invoice No. / Telephone per template), the fixed
+     four-column items table, and the Name / Signature / Date sign-off. -->
+<ng-template #dnBody let-t>
+  <div class="dp-dn-fields">
+    <div class="dp-dn-f"><span class="lbl">To</span><span class="val">Client Ltd</span></div>
+    <div class="dp-dn-f"><span class="lbl">Date Sent</span><span class="val">31 Jul 2026</span></div>
+    <div class="dp-dn-f"><span class="lbl">Address</span><span class="val">12 Marina Rd, Lagos</span></div>
+    <div class="dp-dn-f"><span class="lbl">Contact Person</span><span class="val">A. Bello</span></div>
+    <div class="dp-dn-f" *ngIf="dnShows(t, 'attention')"><span class="lbl">Attention</span><span class="val">J. Okafor</span></div>
+    <div class="dp-dn-f" *ngIf="dnShows(t, 'lpoNumber')"><span class="lbl">LPO No.</span><span class="val">PR10821</span></div>
+    <div class="dp-dn-f" *ngIf="dnShows(t, 'invoiceNumber')"><span class="lbl">Invoice No.</span><span class="val">INV-2026-031</span></div>
+    <div class="dp-dn-f" *ngIf="dnShows(t, 'telephone')"><span class="lbl">Telephone</span><span class="val">0803 123 4567</span></div>
+  </div>
+
+  <div class="dp-table dp-dn-table">
+    <div class="dp-thead">
+      <span class="qty">Qty Delivered</span><span>Description</span><span class="date">Date of Delivery</span><span class="sig">Signature</span>
+    </div>
+    <div class="dp-trow">
+      <span class="qty">2</span><span>HP ProBook 440 G9</span><span class="date">31 Jul 2026</span><span class="sig"></span>
+    </div>
+    <div class="dp-trow alt">
+      <span class="qty">1</span><span>Air Conditioner 1.5HP</span><span class="date">31 Jul 2026</span><span class="sig"></span>
+    </div>
+  </div>
+
+  <div class="dp-dn-sign">
+    <div class="dp-dn-sign-bar">Goods received in good order</div>
+    <div class="dp-dn-sign-row">
+      <span>Name <i></i></span><span>Signature <i></i></span><span>Date <i></i></span>
+    </div>
+  </div>
+</ng-template>

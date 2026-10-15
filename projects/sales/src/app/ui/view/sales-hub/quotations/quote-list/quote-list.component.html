@@ -332,9 +332,19 @@
       <span style="font-size:13px;color:#1a2e2c;">{{ signedDeliveryNoteFileName || 'Click to choose a file (PDF or image)' }}</span>
       <input type="file" accept="application/pdf,image/*" style="display:none;" (change)="onSignedDeliveryNoteFileSelected($event)">
     </label>
+    <div class="ql-received-fields">
+      <label>
+        <span>Received by <em>*</em></span>
+        <input type="text" [(ngModel)]="receivedByName" placeholder="Name on the signed copy">
+      </label>
+      <label>
+        <span>Date received <em>*</em></span>
+        <input type="date" [(ngModel)]="receivedDate">
+      </label>
+    </div>
     <div class="ql-confirm-actions">
       <button type="button" class="ql-btn ql-btn--ghost-sm" style="padding:8px 16px;font-size:13px" (click)="closeSignedDeliveryNoteModal()">Cancel</button>
-      <button type="button" class="ql-btn ql-btn--primary" [disabled]="!signedDeliveryNoteFileName || isSavingSignedDeliveryNote" (click)="submitSignedDeliveryNote()">
+      <button type="button" class="ql-btn ql-btn--primary" [disabled]="!canSubmitSignedDeliveryNote" (click)="submitSignedDeliveryNote()">
         <i class="fas" [class.fa-check-circle]="!isSavingSignedDeliveryNote" [class.fa-spinner]="isSavingSignedDeliveryNote" [class.fa-spin]="isSavingSignedDeliveryNote"></i>
         {{ isSavingSignedDeliveryNote ? 'Uploading...' : 'Upload' }}
       </button>
