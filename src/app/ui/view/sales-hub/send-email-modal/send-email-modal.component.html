@@ -1,0 +1,36 @@
+<div class="sem-backdrop" (click)="onBackdropClick($event)">
+  <div class="sem-card" role="dialog" aria-modal="true" [attr.aria-label]="title">
+    <div class="sem-head">
+      <div class="sem-title">
+        <span class="sem-icon"><i class="fas fa-paper-plane"></i></span>
+        <h3>{{ title }}</h3>
+      </div>
+      <button type="button" class="sem-close" [disabled]="sending" (click)="dismiss.emit()" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="sem-body">
+      <p class="sem-hint">
+        <ng-container *ngIf="documentNumber">Sending <strong>{{ documentNumber }}</strong><ng-container *ngIf="recipientName"> to <strong>{{ recipientName }}</strong></ng-container>. </ng-container>
+        This message appears above the {{ documentLabel }} summary and attached PDF — edit it as needed.
+      </p>
+      <div class="sem-field">
+        <label class="sem-label" for="sem-subject">Subject</label>
+        <input id="sem-subject" type="text" class="sem-input" [ngModel]="subject" (ngModelChange)="subjectChange.emit($event)">
+      </div>
+      <div class="sem-field">
+        <label class="sem-label">Message</label>
+        <app-email-ai-assist [message]="message">
+          <textarea class="sem-input" rows="6" [ngModel]="message" (ngModelChange)="messageChange.emit($event)"></textarea>
+        </app-email-ai-assist>
+      </div>
+    </div>
+
+    <div class="sem-foot">
+      <button type="button" class="sem-btn sem-btn--ghost" [disabled]="sending" (click)="dismiss.emit()">{{ dismissLabel }}</button>
+      <button type="button" class="sem-btn sem-btn--primary" [disabled]="sending" (click)="send.emit()">
+        <i class="fas" [class.fa-paper-plane]="!sending" [class.fa-spinner]="sending" [class.fa-spin]="sending"></i>
+        {{ sending ? 'Sending...' : 'Send' }}
+      </button>
+    </div>
+  </div>
+</div>

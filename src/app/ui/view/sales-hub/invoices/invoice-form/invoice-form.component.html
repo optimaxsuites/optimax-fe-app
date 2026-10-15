@@ -1,5 +1,3 @@
-<p-toast position="top-right"></p-toast>
-
 <!-- ══ OVERDUE BANNER ══════════════════════════════════════════════════════ -->
 <div class="if-overdue-banner"
      *ngIf="isEditMode && invoiceForm.get('dueDate')?.value && invoiceForm.get('dueDate')?.value < today">
@@ -644,36 +642,19 @@
   </div>
 </div>
 
-<!-- ══ SEND INVOICE MODAL ═══════════════════════════════════════════════ -->
-<div class="if-modal-backdrop" *ngIf="showSendInvoiceModal" (click)="$event.target === $event.currentTarget && (showSendInvoiceModal = false)">
-  <div class="if-modal" style="max-width:480px">
-    <div class="if-modal-head">
-      <span><i class="fas fa-paper-plane"></i> Send Invoice by Email</span>
-      <button type="button" class="if-modal-close" (click)="showSendInvoiceModal = false"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="if-modal-body">
-      <p class="if-modal-hint">
-        Sending <strong>{{ pendingSendInvoiceNumber }}</strong> to <strong>{{ pendingSendCustomerName }}</strong>. This message appears above the invoice summary and attached PDF — edit it as needed.
-      </p>
-      <div class="if-field">
-        <label class="if-label">Subject</label>
-        <input type="text" class="if-input" [(ngModel)]="emailSubject" [ngModelOptions]="{standalone: true}">
-      </div>
-      <div class="if-field">
-        <label class="if-label">Message</label>
-        <app-email-ai-assist [message]="emailMessage">
-          <textarea class="if-input" rows="6" [(ngModel)]="emailMessage" [ngModelOptions]="{standalone: true}"></textarea>
-        </app-email-ai-assist>
-      </div>
-    </div>
-    <div class="if-modal-foot">
-      <button type="button" class="if-btn if-btn--ghost" (click)="showSendInvoiceModal = false">Cancel</button>
-      <button type="button" class="if-btn if-btn--primary" (click)="confirmSendInvoice()">
-        <i class="fas fa-paper-plane"></i> Send
-      </button>
-    </div>
-  </div>
-</div>
+<!-- ══ SEND INVOICE MODAL (shared with the invoice detail page) ═══════════════ -->
+<app-send-email-modal *ngIf="showSendInvoiceModal"
+  title="Send Invoice by Email"
+  documentLabel="invoice"
+  dismissLabel="Don't Send"
+  [documentNumber]="pendingSendInvoiceNumber"
+  [recipientName]="pendingSendCustomerName"
+  [sending]="isSendingEmail"
+  [(subject)]="emailSubject"
+  [(message)]="emailMessage"
+  (send)="confirmSendInvoice()"
+  (dismiss)="skipSendInvoice()">
+</app-send-email-modal>
 
 <!-- ══ DISCOUNT MODAL ════════════════════════════════════════════════════ -->
 <div class="if-modal-backdrop" *ngIf="showDiscountModal" (click)="$event.target === $event.currentTarget && (showDiscountModal = false)">
