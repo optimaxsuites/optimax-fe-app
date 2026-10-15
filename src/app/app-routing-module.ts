@@ -1,5 +1,5 @@
 import { NgModule } from '@angular/core';
-import { Routes } from '@angular/router';
+import { RouterModule, Routes } from '@angular/router';
 import { RequestForQuotationFormComponent } from './ui/view/request-management/request-for-quotation-form/request-for-quotation-form.component';
 import { RequestForQuotationServiceFormComponent } from './ui/view/request-management/request-for-quotation-service-form/request-for-quotation-service-form.component';
 import { ProcurementTypeSelectorComponent } from './ui/view/request-management/procurement-type-selector/procurement-type-selector.component';
@@ -669,16 +669,10 @@ export const routes: Routes = [
   { path: '**', redirectTo: '/', pathMatch: 'full' }
 ];
 
-// Does NOT register `routes` itself (no RouterModule.forChild/forRoot here) — main.ts's
-// AppDevModule already does that, nested under `{ path: 'admin/sales', children: routes }`.
-// forChild(routes) used to ALSO be called here, which registered a second, unprefixed copy of
-// the same array at the top level (NgModule-imported ROUTES providers are multi-provided and
-// get merged). That duplicate's own catch-all (`{ path: '**', redirectTo: '/' }`) ended up
-// ahead of main.ts's `admin/sales` entry in the merged config, so every `/admin/sales/...` URL
-// hit that wildcard and bounced to `/` before the router ever reached the route that actually
-// matches it — breaking every button in the app that navigates via that prefix, not just sales.
+// Registers routes for the lazy-loaded sales module (loaded at /admin/sales via loadChildren).
+// RouterModule.forChild(routes) is the correct registration method for lazy-loaded Angular modules.
 @NgModule({
-  imports: [],
-  exports: []
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule]
 })
 export class AppRoutingModule { }

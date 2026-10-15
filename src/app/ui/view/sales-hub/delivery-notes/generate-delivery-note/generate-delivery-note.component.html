@@ -8,11 +8,17 @@
         Sales &gt; Quotes &gt; {{ quote?.quoteNumber || 'Quote' }} &gt; Generate Delivery Note
       </div>
     </div>
+    <div class="gdn-topbar-right" *ngIf="!isLoading && quote">
+      <button type="button" class="gdn-btn gdn-btn--ghost" [disabled]="isSavingDraft" (click)="saveDraft()">
+        <i class="fas" [class.fa-save]="!isSavingDraft" [class.fa-spinner]="isSavingDraft" [class.fa-spin]="isSavingDraft"></i>
+        {{ isSavingDraft ? 'Saving...' : 'Save Draft' }}
+      </button>
+    </div>
   </div>
 
   <!-- Step pills -->
   <div class="gdn-steps no-print">
-    <div class="gdn-step" [class.gdn-step--active]="currentStep === 1" [class.gdn-step--done]="currentStep > 1">
+    <div class="gdn-step" [class.gdn-step--active]="currentStep === 1" [class.gdn-step--done]="currentStep > 1" (click)="goToStep(1)">
       <span class="gdn-step-bubble">1</span> Upload LPO
     </div>
     <div class="gdn-step-line"></div>
@@ -68,6 +74,9 @@
         (templateSelected)="selectedTemplate = $event">
       </app-template-types>
       <div class="gdn-template-actions">
+        <button type="button" class="gdn-btn gdn-btn--ghost" (click)="goToStep(1)">
+          <i class="fas fa-arrow-left"></i> Back
+        </button>
         <button type="button" class="gdn-btn gdn-btn--primary" [disabled]="isSavingTemplate" (click)="confirmTemplate()">
           <i class="fas" [class.fa-arrow-right]="!isSavingTemplate" [class.fa-spinner]="isSavingTemplate" [class.fa-spin]="isSavingTemplate"></i>
           {{ isSavingTemplate ? 'Saving...' : 'Continue' }}
@@ -122,7 +131,7 @@
 
           <div class="gdn-finalize-actions no-print">
             <button type="button" class="gdn-btn gdn-btn--ghost" (click)="goToStep(2)">
-              <i class="fas fa-swatchbook"></i> Change Template
+              <i class="fas fa-arrow-left"></i> Back
             </button>
             <button type="button" class="gdn-btn gdn-btn--ghost" [disabled]="isDownloading" (click)="downloadPDF()">
               <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"></i>

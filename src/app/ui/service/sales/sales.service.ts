@@ -1101,75 +1101,135 @@ export class SalesService {
    *  point for the quote-driven "Generate Delivery Note" wizard. `extras` (e.g. lpoId, attention)
    *  are applied when the note is first created. */
   getOrCreateDeliveryNoteForQuote(quoteId: string | number, extras: Partial<SalesDeliveryNote> = {}): Observable<SalesDeliveryNote | null> {
-    return this.getSalesandTransactions({ quoteId, size: 1000 }).pipe(
-      switchMap(res => {
-        const tx = res.data?.[0];
+    return forkJoin({
+      orders: this.getSalesandTransactions({ quoteId, size: 1000 }),
+      quote: this.getQuoteById(quoteId).pipe(catchError(() => of(null)))
+    }).pipe(
+      switchMap(({ orders, quote }) => {
+        const tx = orders.data?.[0];
         if (!tx) return of(null);
-        return this.getOrCreateDeliveryNote(tx.id, { quoteId: Number(quoteId), ...extras });
+        // The quote is the delivery note's source for its items and customer details.
+        return this.getOrCreateDeliveryNote(tx.id, { quoteId: Number(quoteId), ...extras }, quote);
       }),
       catchError(() => of(null))
     );
   }
 
   /**
-   * Finds the order's existing delivery note (GET /delivery-notes?salesOrderId=) or creates one,
-   * deriving its items, customer and address from the order + its linked invoice (or quote, before
-   * an invoice exists). If the POST fails, the derived note is still returned — without an id —
-   * so callers can render it, but anything that needs to save it must check for `id`.
+   * Finds the order's existing delivery note (GET /delivery-notes?salesOrderId=) or creates one.
+   * A new note takes its items and customer details from its quote — passed in by the
+   * quote-driven wizard, otherwise fetched from the order's quote link — with the order and its
+   * invoice only as fallbacks. If the POST fails, the derived note is still returned (without an
+   * id) so callers can render it, but anything that needs to save it must check for `id`.
    */
-  getOrCreateDeliveryNote(orderId: string | number, extras: Partial<SalesDeliveryNote> = {}): Observable<SalesDeliveryNote | null> {
+  getOrCreateDeliveryNote(orderId: string | number, extras: Partial<SalesDeliveryNote> = {}, sourceQuote?: Quote | null): Observable<SalesDeliveryNote | null> {
     return forkJoin({
       tx: this.getSalesandTransactionsById(orderId),
       existing: this.getDeliveryNotes({ salesOrderId: orderId })
     }).pipe(
       switchMap(({ tx, existing }) => {
         if (!tx) return of(null);
-        const customer = tx.customerId as any;
         const existingNote = existing?.data?.[0];
-        const invoice = tx.invoiceId as any;
-        // Invoice items are the most reliable source (real per-line quantities); fall back to
-        // the quote's own items (same double-nested shape SalesAndTransactionsDetailComponent
-        // already unwraps) when no invoice exists yet.
-        const sourceItems: any[] = invoice?.items
-          || (tx.items && Array.isArray((tx.items as any).items) ? (tx.items as any).items : null)
-          || (tx.quoteId && Array.isArray((tx.quoteId as any).items) ? (tx.quoteId as any).items : null)
-          || [];
         if (existingNote) return of(existingNote);
 
-        const items: SalesDeliveryNoteItem[] = sourceItems.map(it => ({
-          productName: it.productName || '',
-          quantity: it.quantity || 0,
-          unit: it.unit || it.measurementUnit?.name || '',
-          productId: it.productId != null ? String(it.productId) : undefined,
-          quoteItemId: invoice?.items ? undefined : it.id,
-          description: it.description || undefined,
-          orderedQuantity: it.quantity || 0
+        const nestedQuote = tx.quoteId as any;
+        const quoteId = sourceQuote?.id ?? nestedQuote?.id ?? extras.quoteId;
+        const quote$ = sourceQuote ? of(sourceQuote)
+          : quoteId != null ? this.getQuoteById(quoteId).pipe(catchError(() => of(null)))
+          : of(null);
+        return quote$.pipe(switchMap(fetched => {
+          const quote: any = fetched || nestedQuote;
+          const invoice = tx.invoiceId as any;
+          const nonEmpty = (arr: any) => Array.isArray(arr) && arr.length ? arr : null;
+
+          // Items: the quote's lines first; the order/invoice copies only if the quote has none.
+          const quoteItems = nonEmpty(quote?.items) || nonEmpty(nestedQuote?.items);
+          const items = quoteItems
+            ? this.toDeliveryNoteItems(quoteItems, true)
+            : this.toDeliveryNoteItems(nonEmpty(invoice?.items) || nonEmpty((tx.items as any)?.items) || [], false);
+
+          // Customer details: the quote's customer first, then the order's.
+          const quoteCustomer: any = this.quoteCustomer(quote);
+          const orderCustomer: any = tx.customerId;
+          const customer = quoteCustomer || orderCustomer;
+          const address = this.deliveryAddressFor(quoteCustomer, orderCustomer)
+            || tx.shippingAddress || tx.billingAddress || '';
+
+          const note: SalesDeliveryNote = {
+            deliveryNumber: `DN-${String(tx.orderId || tx.paymentNumber || tx.id).replace(/^ORD-|^PAY-/, '')}`,
+            status: 'PENDING',
+            salesOrderId: Number(tx.id),
+            quoteId: quote?.id ?? quoteId,
+            invoiceId: invoice?.id,
+            customerId: customer?.id,
+            customerAddress: address,
+            deliveryAddress: address,
+            recipientName: customer?.name,
+            recipientPhone: customer?.phone || orderCustomer?.phone,
+            carrier: tx.carrier,
+            trackingNumber: tx.trackingNumber,
+            createdBy: Number(sessionStorage.getItem('userid')) || undefined,
+            items,
+            ...extras
+          };
+          return this.createDeliveryNote(note).pipe(
+            // Keep the derived lines if the create response leaves them out
+            map(created => ({ ...note, ...(created || {}), items: created?.items?.length ? created.items : note.items })),
+            catchError(() => of(note))
+          );
         }));
-        const address = tx.shippingAddress || (Array.isArray(customer?.deliverAddress) ? customer.deliverAddress.join(', ') : '') || tx.billingAddress || '';
-        const note: SalesDeliveryNote = {
-          deliveryNumber: `DN-${String(tx.orderId || tx.paymentNumber || tx.id).replace(/^ORD-|^PAY-/, '')}`,
-          status: 'PENDING',
-          salesOrderId: Number(tx.id),
-          quoteId: (tx.quoteId as any)?.id,
-          invoiceId: invoice?.id,
-          customerId: customer?.id,
-          customerAddress: address,
-          deliveryAddress: address,
-          recipientName: customer?.name,
-          recipientPhone: customer?.phone,
-          carrier: tx.carrier,
-          trackingNumber: tx.trackingNumber,
-          createdBy: Number(sessionStorage.getItem('userid')) || undefined,
-          items,
-          ...extras
-        };
-        return this.createDeliveryNote(note).pipe(
-          map(created => ({ ...note, ...(created || {}) })),
-          catchError(() => of(note))
-        );
       }),
       catchError(() => of(null))
     );
+  }
+
+  /** Delivery note lines from quote/invoice lines — `fromQuote` links each back to its quote line. */
+  toDeliveryNoteItems(sourceItems: any[], fromQuote = true): SalesDeliveryNoteItem[] {
+    return (sourceItems || []).map(it => ({
+      productName: it.productName || '',
+      quantity: it.quantity || 0,
+      unit: it.unit || it.measurementUnit?.name || '',
+      productId: it.productId != null ? String(it.productId) : undefined,
+      quoteItemId: fromQuote ? it.id : undefined,
+      description: it.description || undefined,
+      orderedQuantity: it.quantity || 0
+    }));
+  }
+
+  /**
+   * For a note saved before it picked everything up from its quote: the note with its missing
+   * items, address and recipient filled in from the quote, or null if nothing was missing (or the
+   * quote has nothing to add). Fields the note already has are never overwritten.
+   */
+  fillMissingFromQuote(note: SalesDeliveryNote, quote: any, fallbackCustomer?: any): SalesDeliveryNote | null {
+    if (!quote) return null;
+    const customer = this.quoteCustomer(quote) || fallbackCustomer;
+    const quoteItems = Array.isArray(quote.items) ? quote.items : [];
+    const address = this.deliveryAddressFor(this.quoteCustomer(quote), fallbackCustomer);
+
+    const patch: Partial<SalesDeliveryNote> = {};
+    if (!note.items?.length && quoteItems.length) patch.items = this.toDeliveryNoteItems(quoteItems, true);
+    if (!note.customerAddress && address) patch.customerAddress = address;
+    if (!note.deliveryAddress && (note.customerAddress || address)) patch.deliveryAddress = note.customerAddress || address;
+    if (!note.recipientName && customer?.name) patch.recipientName = customer.name;
+    if (!note.recipientPhone && customer?.phone) patch.recipientPhone = customer.phone;
+    if (note.quoteId == null && quote.id != null) patch.quoteId = quote.id;
+    return Object.keys(patch).length ? { ...note, ...patch } : null;
+  }
+
+  /** The customer embedded on a quote (customerName and customerId both carry the Customer). */
+  quoteCustomer(quote: any): any {
+    const c = quote?.customerName && typeof quote.customerName === 'object' ? quote.customerName : quote?.customerId;
+    return c && typeof c === 'object' ? c : null;
+  }
+
+  /** Where the goods go: the first customer's delivery address, then their main address (what the
+   *  quote itself shows), then the same from the second customer. A quote's
+   *  additionalOptions.address is deliberately not used — that's the seller's own contact address. */
+  deliveryAddressFor(customer: any, fallbackCustomer?: any): string {
+    const join = (v: any) => Array.isArray(v) ? v.filter(Boolean).join(', ') : (v || '');
+    return join(customer?.deliverAddress) || join(customer?.address)
+      || join(fallbackCustomer?.deliverAddress) || join(fallbackCustomer?.address);
   }
 
   // ============================================

@@ -88,28 +88,89 @@ describe('SalesService', () => {
     });
   });
 
-  describe('getOrCreateDeliveryNote: links and line details the backend now stores', () => {
-    it('captures quote/invoice links, the recipient and per-line product details on create, plus extras', () => {
+  describe('getOrCreateDeliveryNote: picks up its items and details from its quote', () => {
+    it('fetches the order\'s quote and uses its lines and customer, plus the links and extras', () => {
       let posted: any;
       service.getOrCreateDeliveryNote(42, { lpoId: 9, attention: 'J. Okafor' }).subscribe();
 
       http.expectOne(`${BASE}/sales-orders/42`).flush({
         id: 42, orderId: 'ORD-42', quoteId: { id: 3 },
-        invoiceId: { id: 5, items: [{ productId: 77, productName: 'Widget', description: 'Blue', quantity: 3 }] },
-        customerId: { id: 7, name: 'Acme Co', phone: '0803', deliverAddress: ['12 Broad St'] }
+        invoiceId: { id: 5, items: [{ productId: 1, productName: 'Invoice copy', quantity: 9 }] },
+        customerId: { id: 7, name: 'Order Customer', phone: '0000' }
       });
       http.expectOne(r => r.url === `${BASE}/delivery-notes` && r.method === 'GET').flush({ data: [], total: 0 });
+      http.expectOne(r => r.url === `${BASE}/quotes/3` && r.method === 'GET').flush({
+        id: 3,
+        items: [{ id: 11, productId: 77, productName: 'Widget', description: 'Blue', quantity: 3 }],
+        customerName: { id: 7, name: 'Acme Co', phone: '0803', deliverAddress: ['12 Broad St'] },
+        additionalOptions: { address: 'SELLER HQ, Lekki' }
+      });
       const req = http.expectOne(r => r.url === `${BASE}/delivery-notes` && r.method === 'POST');
       posted = req.request.body;
       req.flush({ id: 100 });
 
       expect(posted).toEqual(jasmine.objectContaining({
-        quoteId: 3, invoiceId: 5, recipientName: 'Acme Co', recipientPhone: '0803',
+        quoteId: 3, invoiceId: 5, customerId: 7, recipientName: 'Acme Co', recipientPhone: '0803',
         deliveryAddress: '12 Broad St', lpoId: 9, attention: 'J. Okafor', status: 'PENDING'
       }));
-      expect(posted.items[0]).toEqual(jasmine.objectContaining({
-        productId: '77', description: 'Blue', quantity: 3, orderedQuantity: 3
-      }));
+      expect(posted.items).toEqual([jasmine.objectContaining({
+        productName: 'Widget', productId: '77', quoteItemId: 11, description: 'Blue', quantity: 3, orderedQuantity: 3
+      })]);
+    });
+  });
+
+  describe('getOrCreateDeliveryNoteForQuote: the quote is the fallback source for lines and address', () => {
+    it('takes the quote\'s items and address when the order carries neither, and keeps them if the create response drops them', () => {
+      let result: any;
+      service.getOrCreateDeliveryNoteForQuote(3).subscribe(r => (result = r));
+
+      http.expectOne(r => r.url === `${BASE}/sales-orders` && r.method === 'GET').flush([{ id: 42, orderId: 'ORD-42', quoteId: { id: 3 } }]);
+      http.expectOne(r => r.url === `${BASE}/quotes/3` && r.method === 'GET').flush({
+        id: 3, items: [{ id: 11, productId: 77, productName: 'Widget', quantity: 3 }],
+        customerName: { id: 7, name: 'Acme Co', address: ['12 Broad St', 'Lagos'] }
+      });
+      http.expectOne(`${BASE}/sales-orders/42`).flush({ id: 42, orderId: 'ORD-42', customerId: { id: 7, name: 'Acme Co' } });
+      http.expectOne(r => r.url === `${BASE}/delivery-notes` && r.method === 'GET').flush({ data: [], total: 0 });
+      const post = http.expectOne(r => r.url === `${BASE}/delivery-notes` && r.method === 'POST');
+      expect(post.request.body.items).toEqual([jasmine.objectContaining({ productName: 'Widget', quantity: 3, quoteItemId: 11, productId: '77' })]);
+      expect(post.request.body.customerAddress).toBe('12 Broad St, Lagos');
+      post.flush({ id: 100, items: [] });
+
+      expect(result.id).toBe(100);
+      expect(result.items.length).toBe(1);
+    });
+  });
+
+  describe('fillMissingFromQuote: fixing up notes saved before they used their quote', () => {
+    const quote = {
+      id: 3, items: [{ id: 11, productName: 'Widget', quantity: 3 }],
+      customerName: { id: 7, name: 'Acme Co', phone: '0803', address: ['12 Broad St', 'Lagos'] },
+      additionalOptions: { address: 'SELLER HQ, Lekki' }
+    };
+
+    it('fills the missing items, address and recipient from the quote', () => {
+      const patched: any = service.fillMissingFromQuote({ id: 1, deliveryNumber: 'DN-1', status: 'PENDING', customerAddress: '', items: [] } as any, quote);
+      expect(patched.items).toEqual([jasmine.objectContaining({ productName: 'Widget', quantity: 3 })]);
+      expect(patched.customerAddress).toBe('12 Broad St, Lagos');
+      expect(patched.recipientName).toBe('Acme Co');
+      expect(patched.recipientPhone).toBe('0803');
+      expect(patched.quoteId).toBe(3);
+    });
+
+    it('never overwrites what the note already has, and returns null when nothing is missing', () => {
+      const complete: any = {
+        id: 1, deliveryNumber: 'DN-1', status: 'PENDING', quoteId: 3, customerAddress: 'Site B', deliveryAddress: 'Site B',
+        recipientName: 'Kept', recipientPhone: '1', items: [{ productName: 'Kept', quantity: 1, unit: '' }]
+      };
+      expect(service.fillMissingFromQuote(complete, quote)).toBeNull();
+    });
+
+    it('never uses the seller\'s address stored on the quote', () => {
+      const patched: any = service.fillMissingFromQuote(
+        { id: 1, deliveryNumber: 'DN-1', status: 'PENDING', customerAddress: '', items: [] } as any,
+        { ...quote, customerName: { id: 7, name: 'Acme Co' } });
+      expect(patched.customerAddress).toBe('');
+      expect(JSON.stringify(patched)).not.toContain('SELLER HQ');
     });
   });
 

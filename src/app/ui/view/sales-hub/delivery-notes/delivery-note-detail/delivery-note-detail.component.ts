@@ -120,6 +120,7 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
     if (note.quoteId != null) {
       this.salesService.getQuoteById(note.quoteId).pipe(takeUntil(this.destroy$)).subscribe(quote => {
         if (this.salesService.hasSignedDeliveryNoteDocument(quote)) this.hasSignedCopy = true;
+        this.backfillFromQuote(note, quote);
       });
     }
     this.attention = note.attention || '';
@@ -150,6 +151,19 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
       this.contactPerson ||= meta.contactPerson || '';
       this.deliveryDate ||= meta.deliveryDate || '';
       this.template ||= QUOTE_TEMPLATES.find(t => t.id === meta.templateId) || null;
+    });
+  }
+
+  /** Notes saved before they picked everything up from their quote can be missing lines, the
+   *  address or the recipient — fill those in from the quote and save. */
+  private backfillFromQuote(note: SalesDeliveryNote, quote: any): void {
+    if (!note.id) return;
+    const customer = this.customers.find(c => c.id === note.customerId);
+    const patched = this.salesService.fillMissingFromQuote(note, quote, customer);
+    if (!patched) return;
+    this.note = { ...(this.note || note), ...patched };
+    this.salesService.updateDeliveryNote(note.id, patched).pipe(takeUntil(this.destroy$)).subscribe({
+      error: err => console.error('Error filling in the delivery note from its quote:', err)
     });
   }
 
