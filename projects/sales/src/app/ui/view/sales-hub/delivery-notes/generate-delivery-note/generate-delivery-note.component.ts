@@ -7,7 +7,7 @@ import { map, switchMap } from 'rxjs/operators';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { SalesEmailService } from '../../../../service/sales/sales-email.service';
 import { Customer, SalesDeliveryNote, SalesLpo, MerchantInfo, Quote, QuoteDocumentAttachment, SendSalesEmailRequest } from '../../../../domain/sales/sales.dto';
-import { formatApiDate } from '../../../../service/sales/date.util';
+import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { DeliveryNoteDocumentComponent } from '../delivery-note-document/delivery-note-document.component';
 import { TemplateTypesComponent, QuoteTemplate, QUOTE_TEMPLATES } from '../../template-types/template-types.component';
@@ -62,6 +62,9 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   lpoFileName = '';
   private lpoFile: QuoteDocumentAttachment | null = null;
   private lpoFileSize?: number;
+  /** Whether lpoFile was picked in this visit (vs. restored from the quote) — an unchanged
+   *  file isn't uploaded again. */
+  private lpoFileChanged = false;
   poNumberInput = '';
   /** The quote's SalesLpo record, once one exists. */
   lpo: SalesLpo | null = null;
@@ -79,6 +82,7 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   contactPerson = '';
   deliveryDate = '';
   isSavingDetails = false;
+  isSavingDraft = false;
   isDownloading = false;
   isEmailing = false;
 
@@ -121,6 +125,12 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
       const meta = this.salesService.getDeliveryNoteMeta(quote);
       const existingNote = this.quoteId ? noteByQuoteId.get(this.quoteId) : undefined;
       this.poNumberInput = lpo?.lpoNumber || meta.poNumber || '';
+      // A previously saved LPO (draft or not) — show it so it doesn't have to be uploaded again
+      const savedFile = this.salesService.getQuoteLpoDocument(quote);
+      if (savedFile) {
+        this.lpoFile = savedFile;
+        this.lpoFileName = savedFile.fileName;
+      }
       this.attention = existingNote?.attention || meta.attention || this.selectedCustomer?.name || '';
       this.contactPerson = existingNote?.contactPerson || meta.contactPerson || merchant?.name || merchant?.companyName || '';
 
@@ -133,9 +143,24 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
           || meta.deliveryDate
           || this.toDateInputValue(existingNote.dispatchedAt || existingNote.createdAt || new Date());
         this.selectedTemplate = QUOTE_TEMPLATES.find(t => t.id === (existingNote.templateId || meta.templateId)) || null;
+        this.backfillFromQuote(existingNote);
         // Straight to the preview if a template was already picked, otherwise to the template step
         this.currentStep = this.selectedTemplate ? 3 : 2;
       }
+    });
+  }
+
+  /** Notes saved before they picked everything up from their quote can be missing lines, the
+   *  address or the recipient — fill those in from the quote and save, so the preview, PDF and
+   *  detail page all have them. */
+  private backfillFromQuote(note: SalesDeliveryNote): void {
+    if (!note.id) return;
+    const patched = this.salesService.fillMissingFromQuote(note, this.quote, this.selectedCustomer);
+    if (!patched) return;
+    this.deliveryNote = patched;
+    this.salesService.updateDeliveryNote(note.id, patched).pipe(takeUntil(this.destroy$)).subscribe({
+      next: saved => this.deliveryNote = { ...patched, ...(saved || {}), items: saved?.items?.length ? saved.items : patched.items },
+      error: err => console.error('Error filling in the delivery note from its quote:', err)
     });
   }
 
@@ -158,6 +183,7 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     if (!file) return;
     this.lpoFileName = file.name;
     this.lpoFileSize = file.size;
+    this.lpoFileChanged = true;
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
@@ -171,30 +197,40 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     reader.readAsDataURL(file);
   }
 
-  /** Stores the file on the quote, records the SalesLpo (updating the quote's existing one on a
-   *  re-upload), then creates the delivery note linked to it. */
+  /** Stores the file on the quote (when it's new) and creates/updates the quote's SalesLpo —
+   *  shared by Continue and Save Draft on step 1. */
+  private saveLpo(): Observable<SalesLpo | null> {
+    const file = this.lpoFile;
+    const saveFile$ = file && this.lpoFileChanged
+      ? this.salesService.saveQuoteLpoDocument(this.quoteId!, file).pipe(map(quote => { this.quote = quote; this.lpoFileChanged = false; return true; }))
+      : of(false);
+    return saveFile$.pipe(
+      switchMap(fileSaved => {
+        if (this.lpo?.id) {
+          const unchanged = !fileSaved && (this.lpo.lpoNumber || '') === this.poNumberInput;
+          return unchanged ? of(this.lpo) : this.salesService.updateSalesLpo(this.lpo.id, { ...this.lpo, ...this.buildLpo(this.poNumberInput, file, this.lpoFileSize), status: this.lpo.status });
+        }
+        return this.salesService.createSalesLpo(this.buildLpo(this.poNumberInput, file, this.lpoFileSize));
+      }),
+      map(lpo => {
+        this.lpo = lpo;
+        this.poNumber = this.poNumberInput;
+        return lpo;
+      })
+    );
+  }
+
+  /** Saves the LPO, then creates the delivery note linked to it (or picks up the existing one
+   *  when coming back to this step) and moves on to the template. */
   submitLpo(): void {
     if (!this.quoteId || !this.lpoFile || this.isSavingLpo) return;
     this.isSavingLpo = true;
-    const file = this.lpoFile;
-    this.salesService.saveQuoteLpoDocument(this.quoteId, file).pipe(
-      switchMap(updatedQuote => {
-        this.quote = updatedQuote;
-        const payload = this.buildLpo(this.poNumberInput, file, this.lpoFileSize);
-        return this.lpo?.id
-          ? this.salesService.updateSalesLpo(this.lpo.id, { ...this.lpo, ...payload })
-          : this.salesService.createSalesLpo(payload);
-      }),
-      switchMap(lpo => {
-        this.lpo = lpo;
-        this.poNumber = this.poNumberInput;
-        // The LPO is in — now create/derive the actual delivery note record.
-        return this.salesService.getOrCreateDeliveryNoteForQuote(this.quoteId!, {
-          lpoId: lpo?.id,
-          attention: this.attention || undefined,
-          contactPerson: this.contactPerson || undefined
-        });
-      })
+    this.saveLpo().pipe(
+      switchMap(lpo => this.salesService.getOrCreateDeliveryNoteForQuote(this.quoteId!, {
+        lpoId: lpo?.id,
+        attention: this.attention || undefined,
+        contactPerson: this.contactPerson || undefined
+      }))
     ).subscribe({
       next: (note) => {
         this.isSavingLpo = false;
@@ -203,13 +239,48 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
           return;
         }
         this.deliveryNote = note;
-        this.deliveryDate = this.toDateInputValue(note.deliveryDate || note.dispatchedAt || note.createdAt || new Date());
+        // Keep a date already set in this visit (e.g. after coming back to step 1)
+        this.deliveryDate ||= this.toDateInputValue(note.deliveryDate || note.dispatchedAt || note.createdAt || new Date());
         this.currentStep = 2;
       },
       error: (err) => {
         console.error('Error saving LPO / generating delivery note:', err);
         this.isSavingLpo = false;
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save the LPO. Please try again.' });
+      }
+    });
+  }
+
+  // ============================================================
+  // SAVE DRAFT — available on every step; saves and stays put
+  // ============================================================
+
+  saveDraft(): void {
+    if (!this.quoteId || this.isSavingDraft) return;
+    let save$: Observable<unknown>;
+    if (this.currentStep === 1) {
+      if (!this.lpoFile && !this.poNumberInput) {
+        this.messageService.add({ severity: 'warn', summary: 'Nothing to Save', detail: 'Choose the LPO file or enter its PO number first.' });
+        return;
+      }
+      save$ = this.saveLpo();
+    } else {
+      if (!this.deliveryNote?.id) return;
+      if (this.currentStep === 2) {
+        this.selectedTemplate = this.templatePicker?.selectedTemplate || this.selectedTemplate || QUOTE_TEMPLATES[0];
+      }
+      save$ = this.persistDetails();
+    }
+    this.isSavingDraft = true;
+    save$.subscribe({
+      next: () => {
+        this.isSavingDraft = false;
+        this.messageService.add({ severity: 'success', summary: 'Draft Saved', detail: 'Delivery note saved as draft — you can pick up where you left off.' });
+      },
+      error: (err) => {
+        console.error('Error saving delivery note draft:', err);
+        this.isSavingDraft = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save draft. Please try again.' });
       }
     });
   }
@@ -240,8 +311,14 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   // STEP 2 — TEMPLATE
   // ============================================================
 
-  /** Steps 2 and 3 can be revisited once the note exists; step 1 (LPO) is a one-time gate. */
-  goToStep(step: 2 | 3): void {
+  /** Any step can be revisited: step 1 always (to change the LPO), steps 2 and 3 once the note
+   *  exists. Moving forward from the template saves it first. */
+  goToStep(step: 1 | 2 | 3): void {
+    if (step === this.currentStep) return;
+    if (step === 1) {
+      this.currentStep = 1;
+      return;
+    }
     if (!this.deliveryNote) return;
     if (step === 3 && this.currentStep === 2) {
       this.confirmTemplate();
@@ -321,11 +398,11 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     return this.salesService.createSalesLpo(this.buildLpo(this.poNumber, legacyFile));
   }
 
-  private toDateInputValue(date: Date | string | null | undefined): string {
-    if (!date) return '';
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
-    return d.toISOString().substring(0, 10);
+  /** API dates can arrive as ISO strings or epoch seconds/ms — parseApiDate handles all of them
+   *  (a bare `new Date(seconds)` lands in January 1970). */
+  private toDateInputValue(date: unknown): string {
+    const d = parseApiDate(date);
+    return d ? d.toISOString().substring(0, 10) : '';
   }
 
   private async generatePdfBlob(): Promise<Blob> {

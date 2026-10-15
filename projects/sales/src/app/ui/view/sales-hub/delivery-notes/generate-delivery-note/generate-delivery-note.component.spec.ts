@@ -28,7 +28,7 @@ describe('GenerateDeliveryNoteComponent', () => {
     salesService = jasmine.createSpyObj<SalesService>('SalesService', [
       'getQuoteById', 'getCustomers', 'getMyMerchantInfo', 'getQuoteDeliveryNoteMap',
       'saveQuoteLpoDocument', 'getOrCreateDeliveryNoteForQuote', 'updateDeliveryNote',
-      'getDeliveryNoteMeta', 'getSalesLpoForQuote', 'createSalesLpo', 'updateSalesLpo', 'getQuoteLpoDocument'
+      'getDeliveryNoteMeta', 'getSalesLpoForQuote', 'createSalesLpo', 'updateSalesLpo', 'getQuoteLpoDocument', 'fillMissingFromQuote'
     ]);
     salesEmailService = jasmine.createSpyObj<SalesEmailService>('SalesEmailService', ['send']);
 
@@ -39,6 +39,7 @@ describe('GenerateDeliveryNoteComponent', () => {
     salesService.getDeliveryNoteMeta.and.returnValue({});
     salesService.getSalesLpoForQuote.and.returnValue(of(null));
     salesService.getQuoteLpoDocument.and.returnValue(null);
+    salesService.fillMissingFromQuote.and.returnValue(null);
     salesService.createSalesLpo.and.callFake(body => of({ ...body, id: 9 } as SalesLpo));
     salesService.updateSalesLpo.and.callFake((id, body) => of({ ...body, id } as SalesLpo));
     salesService.updateDeliveryNote.and.callFake((id, body) => of(body as SalesDeliveryNote));
@@ -96,6 +97,41 @@ describe('GenerateDeliveryNoteComponent', () => {
     });
   });
 
+  describe('fixing up notes created without their lines or address', () => {
+    it('fills a note\'s missing items and address from its quote and saves them', () => {
+      salesService.getQuoteDeliveryNoteMap.and.returnValue(of(new Map([[1, note({ items: [], customerAddress: '' })]])));
+      salesService.fillMissingFromQuote.and.callFake((n: any) => ({
+        ...n, customerAddress: '12 Broad St, Lagos', items: [{ productName: 'Widget', quantity: 3, unit: '' }]
+      }));
+
+      component.ngOnInit();
+
+      expect(salesService.fillMissingFromQuote).toHaveBeenCalledWith(jasmine.objectContaining({ id: 1 }), jasmine.objectContaining({ id: 1 }), jasmine.anything());
+      expect(salesService.updateDeliveryNote).toHaveBeenCalledWith(1, jasmine.objectContaining({
+        customerAddress: '12 Broad St, Lagos',
+        items: [jasmine.objectContaining({ productName: 'Widget', quantity: 3 })]
+      }));
+      expect(component.deliveryNote?.items.length).toBe(1);
+    });
+
+    it('leaves a complete note alone', () => {
+      salesService.getQuoteDeliveryNoteMap.and.returnValue(of(new Map([[1, note({ items: [{ productName: 'Widget', quantity: 3, unit: '' }], customerAddress: '1 Main St' })]])));
+
+      component.ngOnInit();
+
+      expect(salesService.updateDeliveryNote).not.toHaveBeenCalled();
+    });
+
+    it('reads epoch-second dates from the API instead of landing in January 1970', () => {
+      const seconds = Math.floor(new Date('2026-10-20T00:00:00Z').getTime() / 1000);
+      salesService.getQuoteDeliveryNoteMap.and.returnValue(of(new Map([[1, note({ deliveryDate: seconds as any })]])));
+
+      component.ngOnInit();
+
+      expect(component.deliveryDate).toBe('2026-10-20');
+    });
+  });
+
   describe('submitLpo', () => {
     beforeEach(() => component.ngOnInit());
 
@@ -106,6 +142,7 @@ describe('GenerateDeliveryNoteComponent', () => {
 
     it('keeps the file on the quote, records a SalesLpo, and creates the note linked to it', () => {
       (component as any).lpoFile = lpoFile();
+      (component as any).lpoFileChanged = true;
       component.poNumberInput = 'PR-1';
       salesService.saveQuoteLpoDocument.and.returnValue(of(quote()));
       salesService.getOrCreateDeliveryNoteForQuote.and.returnValue(of(note()));
@@ -125,6 +162,7 @@ describe('GenerateDeliveryNoteComponent', () => {
     it('updates the quote\'s existing SalesLpo on a re-upload instead of creating another', () => {
       component.lpo = { id: 4, lpoNumber: 'OLD', status: 'RECEIVED' } as SalesLpo;
       (component as any).lpoFile = lpoFile();
+      (component as any).lpoFileChanged = true;
       component.poNumberInput = 'NEW';
       salesService.saveQuoteLpoDocument.and.returnValue(of(quote()));
       salesService.getOrCreateDeliveryNoteForQuote.and.returnValue(of(note()));
@@ -137,6 +175,7 @@ describe('GenerateDeliveryNoteComponent', () => {
 
     it('stays on step 1 if the delivery note could not be saved', () => {
       (component as any).lpoFile = lpoFile();
+      (component as any).lpoFileChanged = true;
       salesService.saveQuoteLpoDocument.and.returnValue(of(quote()));
       salesService.getOrCreateDeliveryNoteForQuote.and.returnValue(of(note({ id: undefined })));
 
@@ -144,6 +183,92 @@ describe('GenerateDeliveryNoteComponent', () => {
 
       expect(component.currentStep).toBe(1);
       expect(component.isSavingLpo).toBeFalse();
+    });
+  });
+
+  describe('Save Draft — on every step, saves and stays put', () => {
+    it('step 1: saves the LPO file and number without generating the note', () => {
+      component.ngOnInit();
+      (component as any).lpoFile = lpoFile();
+      (component as any).lpoFileChanged = true;
+      component.poNumberInput = 'PR-1';
+      salesService.saveQuoteLpoDocument.and.returnValue(of(quote()));
+
+      component.saveDraft();
+
+      expect(salesService.saveQuoteLpoDocument).toHaveBeenCalled();
+      expect(salesService.createSalesLpo).toHaveBeenCalledWith(jasmine.objectContaining({ lpoNumber: 'PR-1' }));
+      expect(salesService.getOrCreateDeliveryNoteForQuote).not.toHaveBeenCalled();
+      expect(component.currentStep).toBe(1);
+      expect(component.isSavingDraft).toBeFalse();
+    });
+
+    it('step 1: refuses when there is nothing to save yet', () => {
+      component.ngOnInit();
+      component.saveDraft();
+      expect(salesService.createSalesLpo).not.toHaveBeenCalled();
+    });
+
+    it('step 2: saves the template currently picked', () => {
+      component.ngOnInit();
+      component.deliveryNote = note();
+      component.currentStep = 2;
+      (component as any).templatePicker = { selectedTemplate: { id: 'compact' } };
+
+      component.saveDraft();
+
+      expect(salesService.updateDeliveryNote).toHaveBeenCalledWith(1, jasmine.objectContaining({ templateId: 'compact' }));
+      expect(component.currentStep).toBe(2);
+    });
+
+    it('step 3: saves the delivery details', () => {
+      component.ngOnInit();
+      component.deliveryNote = note();
+      component.currentStep = 3;
+      component.attention = 'J. Okafor';
+
+      component.saveDraft();
+
+      expect(salesService.updateDeliveryNote).toHaveBeenCalledWith(1, jasmine.objectContaining({ attention: 'J. Okafor' }));
+      expect(component.currentStep).toBe(3);
+    });
+
+    it('restores a previously saved LPO file so it needn\'t be uploaded again', () => {
+      salesService.getQuoteLpoDocument.and.returnValue({ fileName: 'saved-lpo.pdf', base64Content: 'x', contentType: 'application/pdf', uploadedAt: 'then' });
+      component.ngOnInit();
+      expect(component.lpoFileName).toBe('saved-lpo.pdf');
+    });
+  });
+
+  describe('moving between steps', () => {
+    beforeEach(() => {
+      salesService.getQuoteDeliveryNoteMap.and.returnValue(of(new Map([[1, note({ templateId: 'minimal' })]])));
+      component.ngOnInit();
+    });
+
+    it('can go back to any earlier step', () => {
+      expect(component.currentStep).toBe(3);
+      component.goToStep(2);
+      expect(component.currentStep).toBe(2);
+      component.goToStep(1);
+      expect(component.currentStep).toBe(1);
+    });
+
+    it('continuing from step 1 with nothing changed reuses the LPO and the note, and keeps edits', () => {
+      component.lpo = { id: 9, lpoNumber: 'PR-1', status: 'RECEIVED' } as SalesLpo;
+      component.poNumberInput = 'PR-1';
+      (component as any).lpoFile = lpoFile();
+      component.deliveryDate = '2026-12-01';
+      salesService.getOrCreateDeliveryNoteForQuote.and.returnValue(of(note()));
+      component.goToStep(1);
+
+      component.submitLpo();
+
+      expect(salesService.saveQuoteLpoDocument).not.toHaveBeenCalled();
+      expect(salesService.updateSalesLpo).not.toHaveBeenCalled();
+      expect(salesService.createSalesLpo).not.toHaveBeenCalled();
+      expect(component.currentStep).toBe(2);
+      expect(component.deliveryDate).toBe('2026-12-01');
     });
   });
 

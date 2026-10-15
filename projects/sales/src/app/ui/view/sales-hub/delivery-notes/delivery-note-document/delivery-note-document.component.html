@@ -20,7 +20,8 @@
     <tbody>
       <tr *ngFor="let row of metaRows">
         <ng-container *ngIf="row.left">
-          <td class="dnx-label">{{ row.left.label }}</td>
+          <!-- Label and value both span, so the right-hand references keep their own columns -->
+          <td class="dnx-label" [attr.rowspan]="row.left.rowspan || 1">{{ row.left.label }}</td>
           <td class="dnx-value" [attr.rowspan]="row.left.rowspan || 1" [class.dnx-pre]="row.left.rowspan">{{ row.left.value }}</td>
         </ng-container>
         <ng-container *ngIf="row.right; else emptyRight">

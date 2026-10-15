@@ -22,8 +22,9 @@ describe('DeliveryNoteDetailComponent', () => {
       'getDeliveryNoteById', 'updateDeliveryNoteStatus', 'getCustomers', 'getMyMerchantInfo',
       'getOrderIdLookup', 'getSalesandTransactionsById', 'getDeliveryNoteMeta', 'getSalesLpoById', 'getSalesLpoForQuote',
       'deleteDeliveryNote', 'updateDeliveryNote', 'verifySalesLpo', 'rejectSalesLpo', 'deleteSalesLpo',
-      'getQuoteById', 'hasSignedDeliveryNoteDocument'
+      'getQuoteById', 'hasSignedDeliveryNoteDocument', 'fillMissingFromQuote'
     ]);
+    salesService.fillMissingFromQuote.and.returnValue(null);
     salesService.getQuoteById.and.returnValue(of(null));
     salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
     salesService.getDeliveryNoteById.and.returnValue(of(null));
@@ -166,6 +167,23 @@ describe('DeliveryNoteDetailComponent', () => {
       salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
       (component as any).loadContext(note({ quoteId: 3 }));
       expect(component.hasSignedCopy).toBeFalse();
+    });
+  });
+
+  describe('fixing up notes created without their lines', () => {
+    it('fills missing items from the quote, shows them and saves them', () => {
+      salesService.getQuoteById.and.returnValue(of({ id: 3, items: [{ productName: 'Widget', quantity: 3 }] } as any));
+      salesService.fillMissingFromQuote.and.callFake((n: any) => ({ ...n, items: [{ productName: 'Widget', quantity: 3, unit: '' }] }));
+      salesService.updateDeliveryNote.and.callFake((id, body) => of(body as any));
+      const n = note({ id: 1, quoteId: 3, items: [], customerAddress: '1 Main St' });
+      component.note = n;
+
+      (component as any).loadContext(n);
+
+      expect(component.note?.items.length).toBe(1);
+      expect(salesService.updateDeliveryNote).toHaveBeenCalledWith(1, jasmine.objectContaining({
+        items: [jasmine.objectContaining({ productName: 'Widget' })], customerAddress: '1 Main St'
+      }));
     });
   });
 

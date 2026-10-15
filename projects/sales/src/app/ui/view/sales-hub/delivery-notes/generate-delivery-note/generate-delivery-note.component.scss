@@ -30,7 +30,7 @@
 .gdn-step-line { width:48px; height:2px; background:var(--border); }
 
 .gdn-template-wrap { width:100%; max-width:1100px; margin:0 auto; padding:20px 24px 32px; box-sizing:border-box; }
-.gdn-template-actions { display:flex; justify-content:flex-end; margin-top:16px; }
+.gdn-template-actions { display:flex; justify-content:space-between; gap:10px; margin-top:16px; }
 
 .gdn-body { flex:1; display:grid; grid-template-columns: 55fr 45fr; gap:0; }
 .gdn-form-col { padding:20px 20px 40px; overflow-y:auto; }
