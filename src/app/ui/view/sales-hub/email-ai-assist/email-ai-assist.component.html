@@ -1,0 +1,19 @@
+<div class="eaa-options" *ngIf="showOptions">
+  <span class="eaa-options-label">AI</span>
+  <button type="button" class="eaa-chip" *ngFor="let opt of options"
+          [disabled]="opt.needsText && !hasText"
+          [title]="opt.needsText && !hasText ? 'Type a message first' : opt.label"
+          (click)="onSelect(opt)">
+    <i class="fas {{ opt.icon }}"></i> {{ opt.label }}
+  </button>
+</div>
+
+<div class="eaa-box">
+  <ng-content></ng-content>
+  <div class="eaa-toolbar">
+    <button type="button" class="eaa-ai-btn" [class.eaa-ai-btn--active]="showOptions" (click)="toggleOptions()">
+      <i class="fas fa-wand-magic-sparkles"></i> AI Assistance
+      <i class="fas eaa-caret" [class.fa-chevron-up]="showOptions" [class.fa-chevron-down]="!showOptions"></i>
+    </button>
+  </div>
+</div>

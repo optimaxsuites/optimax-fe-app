@@ -2,15 +2,15 @@ import { of, Subject } from 'rxjs';
 
 import { DeliveryNoteDetailComponent } from './delivery-note-detail.component';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { DeliveryNote } from '../../../../domain/sales/sales.dto';
+import { SalesDeliveryNote } from '../../../../domain/sales/sales.dto';
 
 describe('DeliveryNoteDetailComponent', () => {
   let component: DeliveryNoteDetailComponent;
   let salesService: jasmine.SpyObj<SalesService>;
 
-  const note = (over: Partial<DeliveryNote> = {}): DeliveryNote => ({
+  const note = (over: Partial<SalesDeliveryNote> = {}): SalesDeliveryNote => ({
     id: 1, deliveryNumber: 'DN-1', status: 'PENDING', items: [], customerAddress: '', ...over
-  } as DeliveryNote);
+  } as SalesDeliveryNote);
 
   const activatedRoute = (paramMap$: any = of({ get: () => null } as any)) => ({
     paramMap: paramMap$,
@@ -20,14 +20,20 @@ describe('DeliveryNoteDetailComponent', () => {
   beforeEach(() => {
     salesService = jasmine.createSpyObj<SalesService>('SalesService', [
       'getDeliveryNoteById', 'updateDeliveryNoteStatus', 'getCustomers', 'getMyMerchantInfo',
-      'getOrderIdLookup', 'getSalesandTransactionsById', 'getDeliveryNoteMeta'
+      'getOrderIdLookup', 'getSalesandTransactionsById', 'getDeliveryNoteMeta', 'getSalesLpoById', 'getSalesLpoForQuote',
+      'deleteDeliveryNote', 'updateDeliveryNote', 'verifySalesLpo', 'rejectSalesLpo', 'deleteSalesLpo',
+      'getQuoteById', 'hasSignedDeliveryNoteDocument'
     ]);
+    salesService.getQuoteById.and.returnValue(of(null));
+    salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
     salesService.getDeliveryNoteById.and.returnValue(of(null));
     salesService.getCustomers.and.returnValue(of({ data: [{ id: 1, name: 'Acme Co' }], total: 1 } as any));
     salesService.getMyMerchantInfo.and.returnValue(of({ id: 1, name: 'Merchant' } as any));
     salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map() }));
     salesService.getSalesandTransactionsById.and.returnValue(of(null));
     salesService.getDeliveryNoteMeta.and.returnValue({});
+    salesService.getSalesLpoById.and.returnValue(of(null));
+    salesService.getSalesLpoForQuote.and.returnValue(of(null));
     component = new DeliveryNoteDetailComponent(
       activatedRoute(),
       { navigate: jasmine.createSpy('navigate') } as any,
@@ -60,15 +66,180 @@ describe('DeliveryNoteDetailComponent', () => {
   });
 
   describe('updateStatus', () => {
-    it('updates the local note status on success', () => {
+    it('sends the full note to the transition endpoint and updates it locally on success', () => {
       component.note = note({ id: 1, status: 'PENDING' });
       salesService.updateDeliveryNoteStatus.and.returnValue(of(note({ id: 1, status: 'DISPATCHED' })));
 
       component.updateStatus('DISPATCHED');
 
-      expect(salesService.updateDeliveryNoteStatus).toHaveBeenCalledWith(1, 'DISPATCHED');
+      expect(salesService.updateDeliveryNoteStatus).toHaveBeenCalledWith(jasmine.objectContaining({ id: 1, deliveryNumber: 'DN-1' }), 'DISPATCHED', undefined);
       expect(component.note?.status).toBe('DISPATCHED');
       expect(component.isUpdatingStatus).toBeFalse();
+    });
+  });
+
+  describe('more status actions', () => {
+    it('offers In Transit only from DISPATCHED, Returned once it has left, and Cancel until delivered', () => {
+      component.note = note({ status: 'DISPATCHED' });
+      expect(component.canMarkInTransit()).toBeTrue();
+      expect(component.canMarkReturned()).toBeTrue();
+      expect(component.canCancel()).toBeTrue();
+
+      component.note = note({ status: 'DELIVERED' });
+      expect(component.canMarkInTransit()).toBeFalse();
+      expect(component.canMarkReturned()).toBeTrue();
+      expect(component.canCancel()).toBeFalse();
+
+      component.note = note({ status: 'PENDING' });
+      expect(component.canMarkReturned()).toBeFalse();
+      expect(component.canCancel()).toBeTrue();
+    });
+
+    it('only lets a PENDING or CANCELLED note be deleted', () => {
+      component.note = note({ status: 'PENDING' });
+      expect(component.canDelete()).toBeTrue();
+      component.note = note({ status: 'CANCELLED' });
+      expect(component.canDelete()).toBeTrue();
+      component.note = note({ status: 'DISPATCHED' });
+      expect(component.canDelete()).toBeFalse();
+    });
+
+    it('won\'t cancel without a reason, then sends the reason with the cancel', () => {
+      component.note = note({ id: 1, status: 'PENDING' });
+      salesService.updateDeliveryNoteStatus.and.returnValue(of(note({ id: 1, status: 'CANCELLED' })));
+
+      component.askCancel();
+      component.confirmPendingAction();
+      expect(salesService.updateDeliveryNoteStatus).not.toHaveBeenCalled();
+      expect(component.pendingAction).not.toBeNull();
+
+      component.actionReason = 'Customer changed order';
+      component.confirmPendingAction();
+      expect(salesService.updateDeliveryNoteStatus).toHaveBeenCalledWith(jasmine.objectContaining({ id: 1 }), 'CANCELLED', 'Customer changed order');
+      expect(component.note?.status).toBe('CANCELLED');
+      expect(component.pendingAction).toBeNull();
+    });
+
+    it('deletes the note only after confirming, then goes back to the list', () => {
+      component.note = note({ id: 1, status: 'PENDING' });
+      salesService.deleteDeliveryNote.and.returnValue(of(undefined));
+
+      component.askDelete();
+      expect(salesService.deleteDeliveryNote).not.toHaveBeenCalled();
+      component.confirmPendingAction();
+
+      expect(salesService.deleteDeliveryNote).toHaveBeenCalledWith(1);
+      expect((component as any).router.navigate).toHaveBeenCalled();
+    });
+  });
+
+  describe('Mark Delivered needs the signed copy', () => {
+    it('refuses without one, and says why', () => {
+      component.note = note({ id: 1, status: 'DISPATCHED' });
+      component.hasSignedCopy = false;
+
+      component.updateStatus('DELIVERED');
+
+      expect(salesService.updateDeliveryNoteStatus).not.toHaveBeenCalled();
+      expect((component as any).messageService.add).toHaveBeenCalledWith(jasmine.objectContaining({ severity: 'warn' }));
+    });
+
+    it('goes ahead once it has been uploaded', () => {
+      component.note = note({ id: 1, status: 'DISPATCHED' });
+      component.hasSignedCopy = true;
+      salesService.updateDeliveryNoteStatus.and.returnValue(of(note({ id: 1, status: 'DELIVERED' })));
+
+      component.updateStatus('DELIVERED');
+
+      expect(salesService.updateDeliveryNoteStatus).toHaveBeenCalled();
+    });
+
+    it('detects the signed copy from the note\'s receipt or from the file on its quote', () => {
+      (component as any).loadContext(note({ receivedAt: '2026-10-15' }));
+      expect(component.hasSignedCopy).toBeTrue();
+
+      salesService.getQuoteById.and.returnValue(of({ id: 3 } as any));
+      salesService.hasSignedDeliveryNoteDocument.and.returnValue(true);
+      (component as any).loadContext(note({ quoteId: 3 }));
+      expect(component.hasSignedCopy).toBeTrue();
+
+      salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
+      (component as any).loadContext(note({ quoteId: 3 }));
+      expect(component.hasSignedCopy).toBeFalse();
+    });
+  });
+
+  describe('LPO actions', () => {
+    const lpo = { id: 9, lpoNumber: 'PR-1', status: 'RECEIVED' } as any;
+
+    beforeEach(() => {
+      component.note = note({ id: 1, lpoId: 9 });
+      component.lpo = { ...lpo };
+      component.poNumber = 'PR-1';
+    });
+
+    it('verifies the LPO', () => {
+      salesService.verifySalesLpo.and.returnValue(of({ ...lpo, status: 'VERIFIED' }));
+      component.verifyLpo();
+      expect(salesService.verifySalesLpo).toHaveBeenCalledWith(jasmine.objectContaining({ id: 9 }));
+      expect(component.lpo?.status).toBe('VERIFIED');
+    });
+
+    it('rejects the LPO with the reason given', () => {
+      salesService.rejectSalesLpo.and.returnValue(of({ ...lpo, status: 'REJECTED', notes: 'Wrong amount' }));
+      component.askRejectLpo();
+      component.actionReason = 'Wrong amount';
+      component.confirmPendingAction();
+      expect(salesService.rejectSalesLpo).toHaveBeenCalledWith(jasmine.objectContaining({ id: 9 }), 'Wrong amount');
+      expect(component.lpo?.status).toBe('REJECTED');
+    });
+
+    it('deletes the LPO and unlinks it from the note', () => {
+      salesService.deleteSalesLpo.and.returnValue(of(undefined));
+      salesService.updateDeliveryNote.and.callFake((id, body) => of(body as any));
+
+      component.askDeleteLpo();
+      component.confirmPendingAction();
+
+      expect(salesService.deleteSalesLpo).toHaveBeenCalledWith(9);
+      expect(salesService.updateDeliveryNote).toHaveBeenCalledWith(1, jasmine.objectContaining({ lpoId: undefined }));
+      expect(component.lpo).toBeNull();
+      expect(component.poNumber).toBe('');
+      expect(component.note?.lpoId).toBeUndefined();
+    });
+  });
+
+  describe('document fields', () => {
+    it('reads them from the note itself, the LPO number from its SalesLpo, and the recipient snapshot', () => {
+      salesService.getSalesLpoById.and.returnValue(of({ id: 9, lpoNumber: 'PR-1' } as any));
+      component.note = note({
+        lpoId: 9, attention: 'J. Okafor', contactPerson: 'A. Bello', templateId: 'minimal',
+        deliveryDate: '2026-07-15T00:00:00.000Z', recipientName: 'Acme (at issue)', recipientPhone: '0803'
+      });
+
+      (component as any).loadContext(component.note);
+
+      expect(salesService.getSalesLpoById).toHaveBeenCalledWith(9);
+      expect(component.poNumber).toBe('PR-1');
+      expect(component.attention).toBe('J. Okafor');
+      expect(component.contactPerson).toBe('A. Bello');
+      expect(component.template?.id).toBe('minimal');
+      expect(component.deliveryDate).toBe('2026-07-15T00:00:00.000Z');
+      expect(component.customerName).toBe('Acme (at issue)');
+      expect(component.customerPhone).toBe('0803');
+    });
+
+    it('falls back to the legacy values on the quote for notes from before the backend fields existed', () => {
+      salesService.getSalesandTransactionsById.and.returnValue(of({ id: 10, quoteId: { id: 3 }, invoiceId: { invoiceNumber: 'INV-1' } } as any));
+      salesService.getDeliveryNoteMeta.and.returnValue({ poNumber: 'OLD-1', attention: 'Legacy Attn', templateId: 'compact' });
+      component.note = note({ salesOrderId: 10 });
+
+      (component as any).loadContext(component.note);
+
+      expect(component.poNumber).toBe('OLD-1');
+      expect(component.attention).toBe('Legacy Attn');
+      expect(component.template?.id).toBe('compact');
+      expect(component.invoiceNumber).toBe('INV-1');
     });
   });
 

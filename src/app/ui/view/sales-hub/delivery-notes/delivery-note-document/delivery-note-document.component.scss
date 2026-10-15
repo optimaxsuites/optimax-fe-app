@@ -71,6 +71,10 @@
   width: 34%;
 }
 
+.dnx-pre {
+  white-space: pre-line;
+}
+
 .dnx-items-table th, .dnx-items-table td {
   border: 1px solid #000;
   padding: 6px 8px;
@@ -120,6 +124,18 @@
     height: 14px;
     margin-left: 4px;
   }
+}
+
+// ── Template theming (only when a template is applied — see the component's `template` input) ──
+.dnx-sheet--small { font-size: 11px; td, th { font-size: 11px !important; } }
+.dnx-sheet--large { font-size: 13px; td, th { font-size: 13px !important; } }
+
+.dnx-sheet--themed {
+  .dnx-header { border-bottom: 2px solid var(--dnx-accent); padding-bottom: 14px; }
+  .dnx-sender-box { border-color: var(--dnx-accent); }
+  .dnx-title { color: var(--dnx-accent); }
+  .dnx-items-table th { background: var(--dnx-accent); color: #fff; }
+  .dnx-goods-bar { background: var(--dnx-accent); color: #fff; border-color: var(--dnx-accent); }
 }
 
 @media print {

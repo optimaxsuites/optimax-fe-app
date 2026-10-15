@@ -13,6 +13,7 @@ import { BackButtonComponent } from '../../../../shared-component/view/back-butt
 import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { EmailAiAssistComponent } from '../../email-ai-assist/email-ai-assist.component';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { CompanyProfileService } from '../../../../shared-component/service/company-profile/company-profile.service';
@@ -52,7 +53,7 @@ export function dateAfterValidator(otherControlName: string): ValidatorFn {
 @Component({
   selector: 'app-invoice-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent, TemplateTypesComponent, ToastModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent, TemplateTypesComponent, ToastModule, EmailAiAssistComponent],
   providers: [MessageService],
   templateUrl: './invoice-form.component.html',
   styleUrls: ['./invoice-form.component.scss']

@@ -29,6 +29,9 @@
 }
 .gdn-step-line { width:48px; height:2px; background:var(--border); }
 
+.gdn-template-wrap { width:100%; max-width:1100px; margin:0 auto; padding:20px 24px 32px; box-sizing:border-box; }
+.gdn-template-actions { display:flex; justify-content:flex-end; margin-top:16px; }
+
 .gdn-body { flex:1; display:grid; grid-template-columns: 55fr 45fr; gap:0; }
 .gdn-form-col { padding:20px 20px 40px; overflow-y:auto; }
 .gdn-preview-col { background:#f3f6f5; border-left:1px solid var(--border); padding:20px; overflow-y:auto; }
@@ -134,7 +137,7 @@
 .gdn-upload-hint { font-size:12px; color:var(--muted); margin:0 0 4px; }
 
 /* Step 2 — inline delivery-detail fields above the preview */
-.gdn-tracking-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin:20px 24px 0; box-shadow:var(--shadow); }
-.gdn-tracking-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; align-items:end;
+.gdn-details-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin:20px 24px 0; box-shadow:var(--shadow); }
+.gdn-details-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; align-items:end;
   button { grid-column: 1 / -1; justify-self: start; }
 }

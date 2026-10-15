@@ -556,7 +556,9 @@
       </div>
       <div class="qf-field">
         <label class="qf-label">Message</label>
-        <textarea class="qf-input" rows="6" [(ngModel)]="emailMessage" [ngModelOptions]="{standalone: true}"></textarea>
+        <app-email-ai-assist [message]="emailMessage">
+          <textarea class="qf-input" rows="6" [(ngModel)]="emailMessage" [ngModelOptions]="{standalone: true}"></textarea>
+        </app-email-ai-assist>
       </div>
     </div>
     <div class="qf-modal-foot">

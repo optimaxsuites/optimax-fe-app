@@ -1,45 +1,55 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { Subject, forkJoin, takeUntil, lastValueFrom } from 'rxjs';
-import { switchMap, map } from 'rxjs/operators';
+import { Observable, Subject, forkJoin, of, takeUntil, lastValueFrom } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { SalesEmailService } from '../../../../service/sales/sales-email.service';
-import { Customer, DeliveryNote, MerchantInfo, Quote, QuoteDocumentAttachment, SendSalesEmailRequest } from '../../../../domain/sales/sales.dto';
+import { Customer, SalesDeliveryNote, SalesLpo, MerchantInfo, Quote, QuoteDocumentAttachment, SendSalesEmailRequest } from '../../../../domain/sales/sales.dto';
 import { formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { DeliveryNoteDocumentComponent } from '../delivery-note-document/delivery-note-document.component';
+import { TemplateTypesComponent, QuoteTemplate, QUOTE_TEMPLATES } from '../../template-types/template-types.component';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { EmailAiAssistComponent } from '../../email-ai-assist/email-ai-assist.component';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 
 /**
- * The quote-driven "Generate Delivery Note" wizard (Conversion -> Receive LPO -> Delivery
- * Tracking -> Generate Delivery Note -> Re-upload Signed Delivery Note -> Send Invoice):
+ * The quote-driven "Generate Delivery Note" wizard (Conversion -> Receive LPO -> Generate
+ * Delivery Note -> Re-upload Signed Delivery Note -> Send Invoice):
  *
  * Step 1 — upload the LPO the customer sent back. Receiving it is the gate: nothing below is
  * created until it's uploaded, since generating a delivery note without a customer's purchase
- * order isn't supposed to be possible under this flow.
+ * order isn't supposed to be possible under this flow. It's recorded as a SalesLpo
+ * (/commerce/sales-lpos); the scanned file itself stays on the quote's additionalOptions because
+ * there's no upload endpoint yet.
  *
  * Step 2 — once the LPO is in, the delivery note itself is created/derived (via
  * getOrCreateDeliveryNoteForQuote(), the same item/customer/address derivation
- * getOrCreateDeliveryNote() already does for an order) and shown as a live, read-only preview.
- * Carrier/tracking ("Delivery Tracking" — not a separate page, just these two fields) are
- * editable inline here. From here it's generated: downloaded as a PDF or emailed to the customer
- * via the same sales-email endpoint Quote/Invoice already use.
+ * getOrCreateDeliveryNote() already does for an order), and the seller picks a document template
+ * from the same TemplateTypesComponent gallery Quote/Invoice use. The choice is saved on the
+ * note's templateId so the detail page renders it the same way.
+ *
+ * Step 3 — the note is shown as a live, read-only preview with the chosen template applied.
+ * PO number, attention, contact person and date of delivery are editable inline here. From here
+ * it's generated: downloaded as a PDF or emailed to the customer via the same sales-email
+ * endpoint Quote/Invoice already use.
  */
 @Component({
   selector: 'app-generate-delivery-note',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent, DeliveryNoteDocumentComponent, ToastModule],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent, DeliveryNoteDocumentComponent, TemplateTypesComponent, ToastModule, EmailAiAssistComponent],
   providers: [MessageService],
   templateUrl: './generate-delivery-note.component.html',
   styleUrls: ['./generate-delivery-note.component.scss']
 })
 export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
-  currentStep: 1 | 2 = 1;
+  @ViewChild(TemplateTypesComponent) private templatePicker?: TemplateTypesComponent;
+
+  currentStep: 1 | 2 | 3 = 1;
   isLoading = true;
   today = new Date();
   quoteId?: number;
@@ -50,20 +60,24 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   // Step 1 — LPO upload
   lpoFileName = '';
   private lpoFile: QuoteDocumentAttachment | null = null;
+  private lpoFileSize?: number;
   poNumberInput = '';
+  /** The quote's SalesLpo record, once one exists. */
+  lpo: SalesLpo | null = null;
   isSavingLpo = false;
 
-  // Step 2 — the generated note + inline-editable delivery details. carrier/trackingNumber
-  // persist to the real DeliveryNote backend fields; poNumber/attention/contactPerson have no
-  // backend column so they ride on the quote's additionalOptions (see DeliveryNoteMeta).
-  deliveryNote: DeliveryNote | null = null;
-  carrier = '';
-  trackingNumber = '';
+  // Step 2 — template choice (applied to the step 3 preview, PDF and emailed copy)
+  selectedTemplate: QuoteTemplate | null = null;
+  isSavingTemplate = false;
+
+  // Step 3 — the generated note + inline-editable delivery details. poNumber saves to the
+  // SalesLpo's lpoNumber; the rest save to the same-named SalesDeliveryNote fields.
+  deliveryNote: SalesDeliveryNote | null = null;
   poNumber = '';
   attention = '';
   contactPerson = '';
   deliveryDate = '';
-  isSavingTracking = false;
+  isSavingDetails = false;
   isDownloading = false;
   isEmailing = false;
 
@@ -93,28 +107,33 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
       quote: this.salesService.getQuoteById(this.quoteId),
       customers: this.salesService.getCustomers({ page: 0, size: 200 }),
       merchant: this.salesService.getMyMerchantInfo(),
-      noteByQuoteId: this.salesService.getQuoteDeliveryNoteMap()
-    }).pipe(takeUntil(this.destroy$)).subscribe(({ quote, customers, merchant, noteByQuoteId }) => {
+      noteByQuoteId: this.salesService.getQuoteDeliveryNoteMap(),
+      lpo: this.salesService.getSalesLpoForQuote(this.quoteId)
+    }).pipe(takeUntil(this.destroy$)).subscribe(({ quote, customers, merchant, noteByQuoteId, lpo }) => {
       this.quote = quote;
       this.customers = customers.data;
       this.merchantInfo = merchant;
+      this.lpo = lpo;
       this.isLoading = false;
 
+      // Legacy fallback for notes generated before these fields had backend columns
       const meta = this.salesService.getDeliveryNoteMeta(quote);
-      this.poNumberInput = meta.poNumber || '';
-      this.attention = meta.attention || this.selectedCustomer?.name || '';
-      this.contactPerson = meta.contactPerson || merchant?.name || merchant?.companyName || '';
-
       const existingNote = this.quoteId ? noteByQuoteId.get(this.quoteId) : undefined;
+      this.poNumberInput = lpo?.lpoNumber || meta.poNumber || '';
+      this.attention = existingNote?.attention || meta.attention || this.selectedCustomer?.name || '';
+      this.contactPerson = existingNote?.contactPerson || meta.contactPerson || merchant?.name || merchant?.companyName || '';
+
       if (existingNote) {
         // Already generated for this quote (e.g. they navigated back here) — skip straight to
         // the preview instead of re-asking for the LPO.
         this.deliveryNote = existingNote;
-        this.carrier = existingNote.carrier || '';
-        this.trackingNumber = existingNote.trackingNumber || '';
-        this.poNumber = meta.poNumber || '';
-        this.deliveryDate = this.toDateInputValue(existingNote.dispatchedAt || existingNote.createdAt || new Date());
-        this.currentStep = 2;
+        this.poNumber = this.poNumberInput;
+        this.deliveryDate = this.toDateInputValue(existingNote.deliveryDate)
+          || meta.deliveryDate
+          || this.toDateInputValue(existingNote.dispatchedAt || existingNote.createdAt || new Date());
+        this.selectedTemplate = QUOTE_TEMPLATES.find(t => t.id === (existingNote.templateId || meta.templateId)) || null;
+        // Straight to the preview if a template was already picked, otherwise to the template step
+        this.currentStep = this.selectedTemplate ? 3 : 2;
       }
     });
   }
@@ -122,12 +141,6 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  /** Previews the delivery note with the still-unsaved carrier/tracking edits applied, so the
-   *  live preview reflects what's being typed before "Save" persists it. */
-  get previewNote(): DeliveryNote {
-    return { ...this.deliveryNote!, carrier: this.carrier, trackingNumber: this.trackingNumber };
   }
 
   get selectedCustomer(): Customer | null {
@@ -143,6 +156,7 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     const file = event.target.files?.[0];
     if (!file) return;
     this.lpoFileName = file.name;
+    this.lpoFileSize = file.size;
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
@@ -156,80 +170,158 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     reader.readAsDataURL(file);
   }
 
+  /** Stores the file on the quote, records the SalesLpo (updating the quote's existing one on a
+   *  re-upload), then creates the delivery note linked to it. */
   submitLpo(): void {
     if (!this.quoteId || !this.lpoFile || this.isSavingLpo) return;
     this.isSavingLpo = true;
-    this.salesService.saveQuoteLpoDocument(this.quoteId, this.lpoFile).pipe(
-      switchMap(() => this.salesService.saveDeliveryNoteMeta(this.quoteId!, {
-        poNumber: this.poNumberInput || undefined,
-        attention: this.attention || undefined,
-        contactPerson: this.contactPerson || undefined
-      }))
-    ).subscribe({
-      next: (updatedQuote) => {
+    const file = this.lpoFile;
+    this.salesService.saveQuoteLpoDocument(this.quoteId, file).pipe(
+      switchMap(updatedQuote => {
         this.quote = updatedQuote;
+        const payload = this.buildLpo(this.poNumberInput, file, this.lpoFileSize);
+        return this.lpo?.id
+          ? this.salesService.updateSalesLpo(this.lpo.id, { ...this.lpo, ...payload })
+          : this.salesService.createSalesLpo(payload);
+      }),
+      switchMap(lpo => {
+        this.lpo = lpo;
         this.poNumber = this.poNumberInput;
         // The LPO is in — now create/derive the actual delivery note record.
-        this.salesService.getOrCreateDeliveryNoteForQuote(this.quoteId!).subscribe({
-          next: (note) => {
-            this.isSavingLpo = false;
-            if (!note) {
-              this.messageService.add({ severity: 'error', summary: 'Error', detail: 'LPO uploaded, but the delivery note could not be generated. Please try again.' });
-              return;
-            }
-            this.deliveryNote = note;
-            this.carrier = note.carrier || '';
-            this.trackingNumber = note.trackingNumber || '';
-            this.deliveryDate = this.toDateInputValue(note.dispatchedAt || note.createdAt || new Date());
-            this.currentStep = 2;
-          },
-          error: (err) => {
-            console.error('Error generating delivery note:', err);
-            this.isSavingLpo = false;
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'LPO uploaded, but the delivery note could not be generated. Please try again.' });
-          }
+        return this.salesService.getOrCreateDeliveryNoteForQuote(this.quoteId!, {
+          lpoId: lpo?.id,
+          attention: this.attention || undefined,
+          contactPerson: this.contactPerson || undefined
         });
+      })
+    ).subscribe({
+      next: (note) => {
+        this.isSavingLpo = false;
+        if (!note?.id) {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'LPO saved, but the delivery note could not be generated. Please try again.' });
+          return;
+        }
+        this.deliveryNote = note;
+        this.deliveryDate = this.toDateInputValue(note.deliveryDate || note.dispatchedAt || note.createdAt || new Date());
+        this.currentStep = 2;
       },
       error: (err) => {
-        console.error('Error saving LPO:', err);
+        console.error('Error saving LPO / generating delivery note:', err);
         this.isSavingLpo = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save the uploaded LPO. Please try again.' });
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save the LPO. Please try again.' });
+      }
+    });
+  }
+
+  /** SalesLpo body for this quote. document.fileUrl stays empty — the file itself is stored on
+   *  the quote (no upload endpoint yet). */
+  private buildLpo(lpoNumber: string, file: QuoteDocumentAttachment | null, size?: number): Partial<SalesLpo> {
+    const customerId = this.selectedCustomer?.id ?? (this.quote?.customerId as any)?.id;
+    return {
+      lpoNumber: lpoNumber || '',
+      quoteId: this.quoteId!,
+      customerId,
+      amount: this.quote?.totalAmount,
+      currency: this.quote?.currency,
+      status: 'RECEIVED',
+      document: {
+        fileName: file?.fileName || '',
+        fileUrl: '',
+        contentType: file?.contentType || '',
+        size,
+        uploadedAt: new Date(file?.uploadedAt || new Date()).toISOString()
+      },
+      receivedBy: Number(sessionStorage.getItem('userid')) || undefined
+    };
+  }
+
+  // ============================================================
+  // STEP 2 — TEMPLATE
+  // ============================================================
+
+  /** Steps 2 and 3 can be revisited once the note exists; step 1 (LPO) is a one-time gate. */
+  goToStep(step: 2 | 3): void {
+    if (!this.deliveryNote) return;
+    if (step === 3 && this.currentStep === 2) {
+      this.confirmTemplate();
+      return;
+    }
+    this.currentStep = step;
+  }
+
+  /** Saves the picked template (the gallery pre-selects its first one without emitting, so read
+   *  it off the picker) and moves on to the preview. */
+  confirmTemplate(): void {
+    if (!this.deliveryNote?.id || this.isSavingTemplate) return;
+    this.selectedTemplate = this.templatePicker?.selectedTemplate || this.selectedTemplate || QUOTE_TEMPLATES[0];
+    this.isSavingTemplate = true;
+    this.persistDetails().subscribe({
+      next: () => {
+        this.isSavingTemplate = false;
+        this.currentStep = 3;
+      },
+      error: (err) => {
+        console.error('Error saving delivery note template:', err);
+        this.isSavingTemplate = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save the template choice. Please try again.' });
       }
     });
   }
 
   // ============================================================
-  // STEP 2 — TRACKING + GENERATE
+  // STEP 3 — DELIVERY DETAILS + GENERATE
   // ============================================================
 
-  saveTracking(): void {
-    if (!this.deliveryNote?.id || !this.quoteId || this.isSavingTracking) return;
-    this.isSavingTracking = true;
-    this.salesService.updateDeliveryNote(this.deliveryNote.id, {
-      ...this.deliveryNote,
-      carrier: this.carrier || undefined,
-      trackingNumber: this.trackingNumber || undefined
-    }).pipe(
-      switchMap(updated => this.salesService.saveDeliveryNoteMeta(this.quoteId!, {
-        poNumber: this.poNumber || undefined,
-        attention: this.attention || undefined,
-        contactPerson: this.contactPerson || undefined
-      }).pipe(map(() => updated)))
-    ).subscribe({
-      next: (updated) => {
-        this.isSavingTracking = false;
-        this.deliveryNote = { ...this.deliveryNote!, ...updated, carrier: this.carrier, trackingNumber: this.trackingNumber };
+  saveDetails(): void {
+    if (!this.deliveryNote?.id || this.isSavingDetails) return;
+    this.isSavingDetails = true;
+    this.persistDetails().subscribe({
+      next: () => {
+        this.isSavingDetails = false;
         this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Delivery details saved.' });
       },
       error: (err) => {
         console.error('Error saving delivery details:', err);
-        this.isSavingTracking = false;
+        this.isSavingDetails = false;
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save delivery details. Please try again.' });
       }
     });
   }
 
-  private toDateInputValue(date: Date | string): string {
+  /** Saves the LPO number to the SalesLpo first (so its id can be linked), then PUTs the full
+   *  note with the edited attention / contact / date / template. */
+  private persistDetails(): Observable<SalesDeliveryNote> {
+    const note = this.deliveryNote!;
+    return this.syncLpoNumber().pipe(
+      switchMap(lpo => {
+        this.lpo = lpo;
+        return this.salesService.updateDeliveryNote(note.id!, {
+          ...note,
+          lpoId: lpo?.id ?? note.lpoId,
+          attention: this.attention || undefined,
+          contactPerson: this.contactPerson || undefined,
+          deliveryDate: this.deliveryDate ? new Date(this.deliveryDate).toISOString() : undefined,
+          templateId: this.selectedTemplate?.id
+        });
+      }),
+      map(updated => (this.deliveryNote = { ...note, ...(updated || {}) }))
+    );
+  }
+
+  /** Keeps the SalesLpo's number in step with the LPO Number field — updates the existing record,
+   *  or creates one for notes generated before SalesLpo existed. */
+  private syncLpoNumber(): Observable<SalesLpo | null> {
+    if (this.lpo?.id) {
+      if ((this.lpo.lpoNumber || '') === this.poNumber) return of(this.lpo);
+      return this.salesService.updateSalesLpo(this.lpo.id, { ...this.lpo, lpoNumber: this.poNumber });
+    }
+    if (!this.poNumber) return of(null);
+    const legacyFile = this.salesService.getQuoteLpoDocument(this.quote);
+    return this.salesService.createSalesLpo(this.buildLpo(this.poNumber, legacyFile));
+  }
+
+  private toDateInputValue(date: Date | string | null | undefined): string {
+    if (!date) return '';
     const d = new Date(date);
     if (isNaN(d.getTime())) return '';
     return d.toISOString().substring(0, 10);
@@ -325,14 +417,6 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
               <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Delivery Note #:</td>
               <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${note.deliveryNumber}</td>
             </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Carrier:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${note.carrier || '—'}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Tracking #:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${note.trackingNumber || '—'}</td>
-            </tr>
           </table>
           <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
             <thead>
@@ -365,6 +449,11 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
         this.messageService.add({ severity: 'error', summary: 'Email Not Delivered', detail: response.failureReason || `Delivery to ${email} failed.` });
       } else {
         this.messageService.add({ severity: 'success', summary: 'Email Sent', detail: `Delivery note sent to ${email}.` });
+        // Record when it went out (best-effort — the email itself already succeeded)
+        this.salesService.updateDeliveryNote(note.id!, { ...note, sentAt: new Date().toISOString() }).subscribe({
+          next: updated => this.deliveryNote = { ...note, ...(updated || {}) },
+          error: err => console.error('Error recording delivery note sentAt:', err)
+        });
       }
     } catch (err) {
       console.error('Error emailing delivery note:', err);

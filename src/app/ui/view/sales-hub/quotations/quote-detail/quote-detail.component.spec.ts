@@ -20,7 +20,7 @@ describe('QuoteDetailComponent', () => {
   beforeEach(() => {
     salesService = jasmine.createSpyObj<SalesService>('SalesService', [
       'getQuoteById', 'updateQuote', 'getOrderIdLookup', 'getQuoteDeliveryNoteMap',
-      'hasSignedDeliveryNoteDocument', 'convertQuote', 'saveSignedDeliveryNoteDocument'
+      'hasSignedDeliveryNoteDocument', 'convertQuote', 'saveSignedDeliveryNoteDocument', 'recordSignedDeliveryNote'
     ]);
     salesService.getQuoteById.and.returnValue(of(null));
     salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map() }));
@@ -130,6 +130,39 @@ describe('QuoteDetailComponent', () => {
       paramMap$.next({ get: () => '2' } as any);
       expect(salesService.getQuoteById).toHaveBeenCalledWith('2');
       expect(salesService.getQuoteById).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('submitSignedDeliveryNote: records who received the goods on the delivery note', () => {
+    const file: any = { fileName: 'signed.pdf', base64Content: 'x', contentType: 'application/pdf', uploadedAt: new Date() };
+
+    beforeEach(() => {
+      component.quote = quote({ status: 'CONVERTED' as QuoteStatus });
+      component.deliveryNote = { id: 5, deliveryNumber: 'DN-5' } as any;
+      component.openSignedDeliveryNoteModal();
+      component.signedDeliveryNoteFileName = 'signed.pdf';
+      (component as any).signedDeliveryNoteFile = file;
+    });
+
+    it('requires the receiver\'s name before it can be submitted', () => {
+      expect(component.canSubmitSignedDeliveryNote).toBeFalse();
+      component.submitSignedDeliveryNote();
+      expect(salesService.recordSignedDeliveryNote).not.toHaveBeenCalled();
+    });
+
+    it('sends the file, the note and the receiver details, and keeps the updated note', () => {
+      component.receivedByName = '  J. Okafor ';
+      component.receivedDate = '2026-10-15';
+      const savedNote = { id: 5, receivedByName: 'J. Okafor' } as any;
+      salesService.recordSignedDeliveryNote.and.returnValue(of({ quote: quote({ id: 1 }), note: savedNote, noteSaved: true }));
+
+      component.submitSignedDeliveryNote();
+
+      expect(salesService.recordSignedDeliveryNote).toHaveBeenCalledWith(1, file, jasmine.objectContaining({ id: 5 }), {
+        receivedByName: 'J. Okafor', receivedAt: new Date('2026-10-15').toISOString()
+      });
+      expect(component.deliveryNote).toBe(savedNote);
+      expect(component.showSignedDeliveryNoteModal).toBeFalse();
     });
   });
 });

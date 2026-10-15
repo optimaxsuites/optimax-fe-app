@@ -13,6 +13,7 @@ import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/temp
 import { lastValueFrom } from 'rxjs';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { EmailAiAssistComponent } from '../../email-ai-assist/email-ai-assist.component';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { CompanyProfileService } from '../../../../shared-component/service/company-profile/company-profile.service';
@@ -40,7 +41,8 @@ export function futureDateValidator(): ValidatorFn {
     RouterModule,
     BackButtonComponent,
     TemplateTypesComponent,
-    ToastModule
+    ToastModule,
+    EmailAiAssistComponent
   ],
   providers: [MessageService],
   templateUrl: './quote-form.component.html',

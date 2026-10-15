@@ -68,20 +68,6 @@
         </div>
 
         <div class="dnf-card">
-          <div class="dnf-card-head"><span>Shipping Details</span></div>
-          <div class="dnf-grid-2">
-            <div class="dnf-field">
-              <label class="dnf-label">Carrier</label>
-              <input type="text" class="dnf-input" formControlName="carrier" placeholder="e.g. DHL, GIG Logistics">
-            </div>
-            <div class="dnf-field">
-              <label class="dnf-label">Tracking Number</label>
-              <input type="text" class="dnf-input" formControlName="trackingNumber">
-            </div>
-          </div>
-        </div>
-
-        <div class="dnf-card">
           <div class="dnf-card-head"><span>Items to Ship</span></div>
           <table class="dnf-item-table" formArrayName="items">
             <thead>
@@ -139,8 +125,6 @@
 
             <div class="dnf-doc-meta">
               <div><span>Date</span><strong>{{ formatDate(today) }}</strong></div>
-              <div><span>Carrier</span><strong>{{ deliveryNoteForm.get('carrier')?.value || '—' }}</strong></div>
-              <div><span>Tracking #</span><strong>{{ deliveryNoteForm.get('trackingNumber')?.value || '—' }}</strong></div>
             </div>
 
             <div class="dnf-doc-parties">
