@@ -262,6 +262,17 @@ export class SalesService {
     return this.http.put<Quote>(`${this.base}/quotes/${id}`, { ...data, tenantId: this.tenantId });
   }
 
+  /** After the quote has actually been emailed: SENT (so the detail page offers Customer
+   *  Accepted / Declined instead of Send), and the Sales & Transactions record follows. */
+  markQuoteSent(quote: Quote): Observable<Quote> {
+    return this.updateQuote(quote.id, { status: 'SENT' }).pipe(
+      map(updated => ({ ...quote, ...(updated || {}), status: 'SENT' as QuoteStatus })),
+      tap(updated => this.upsertTransactionForQuote(updated.id, { status: 'QUOTE_SENT', quoteSentDate: new Date() }).subscribe({
+        error: (err) => console.error('Failed to sync quote-sent status to Sales & Transactions:', err)
+      }))
+    );
+  }
+
   updateQuoteStatus(id: string | number, status: QuoteStatus): Observable<Quote> {
     return this.http.patch<Quote>(`${this.base}/quotes/${id}/status`, { status, tenantId: this.tenantId });
   }
@@ -481,6 +492,20 @@ export class SalesService {
 
   updateInvoice(id: string | number, data: Partial<Invoice>): Observable<Invoice> {
     return this.http.put<Invoice>(`${this.base}/invoices/${id}`, { ...data, tenantId: this.tenantId });
+  }
+
+  /** After the invoice has actually been emailed: SENT, and its source quote CONVERTED (an
+   *  invoice exists for it, so it mustn't be invoiced again). */
+  markInvoiceSent(invoice: Invoice): Observable<Invoice> {
+    return this.updateInvoice(invoice.id, { status: 'SENT' }).pipe(
+      map(updated => ({ ...invoice, ...(updated || {}), status: 'SENT' as InvoiceStatus })),
+      tap(updated => {
+        if (!updated.quoteId) return;
+        this.updateQuote(updated.quoteId, { status: 'CONVERTED' }).subscribe({
+          error: (err) => console.error('Error updating quote to CONVERTED:', err)
+        });
+      })
+    );
   }
 
   updateInvoiceStatus(id: string | number, status: InvoiceStatus): Observable<Invoice> {

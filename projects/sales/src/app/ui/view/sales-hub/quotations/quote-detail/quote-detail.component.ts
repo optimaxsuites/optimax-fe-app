@@ -1,12 +1,14 @@
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, lastValueFrom } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote, Invoice, SalesandTransactions, AdditionalQuoteOptions, SalesDeliveryNote, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { SendEmailModalComponent } from '../../send-email-modal/send-email-modal.component';
+import { SalesDocumentEmailService, renderElementToPdf } from '../../../../service/sales/sales-document-email.service';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -15,7 +17,7 @@ import { MessageService } from 'primeng/api';
 @Component({
   selector: 'app-quote-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, BackButtonComponent],
+  imports: [CommonModule, FormsModule, BackButtonComponent, SendEmailModalComponent],
   templateUrl: './quote-detail.component.html',
   styleUrls: ['./quote-detail.component.scss']
 })
@@ -37,7 +39,8 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
     private messageService: MessageService,
     private route: ActivatedRoute,
     private router: Router,
-    private salesService: SalesService
+    private salesService: SalesService,
+    private documentEmail: SalesDocumentEmailService
   ) {}
 
   get additionalOpts(): AdditionalQuoteOptions | undefined {
@@ -391,28 +394,76 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
   pendingQuoteNumber = '';
   pendingCustomerName = '';
 
+  // Send Quote — the same email dialog as the create form, and a real email (PDF of this page's
+  // sheet attached). Once it's sent the quote moves to SENT, which swaps this button for
+  // Customer Accepted / Declined.
+  emailSubject = '';
+  emailMessage = '';
+  isSendingEmail = false;
+
+  private get quoteCustomerName(): string {
+    return (this.quote?.customerName as any)?.name || (typeof this.quote?.customerName === 'string' ? this.quote.customerName : '') || 'Customer';
+  }
+
+  /** The customer's email from the nested customer on the quote, or — when the record doesn't
+   *  carry it — from the customer list. */
+  private async resolveCustomerEmail(quote: any): Promise<string> {
+    const nested = quote.customerName || quote.customerId;
+    const direct = nested?.email || quote.customerId?.email;
+    if (direct || nested?.id == null) return direct || '';
+    try {
+      const res = await lastValueFrom(this.salesService.getCustomers({ page: 0, size: 200 }));
+      return res.data.find(c => String(c.id) === String(nested.id))?.email || '';
+    } catch {
+      return '';
+    }
+  }
+
+  private get merchantName(): string {
+    const m: any = this.quote?.merchantDetails;
+    return m?.companyName || m?.name || 'our company';
+  }
+
   sendQuote(): void {
     if (!this.quote) return;
-    const custName = (this.quote.customerName as any)?.name || this.quote.customerName || 'Customer';
     this.pendingQuoteNumber = this.quote.quoteNumber || '';
-    this.pendingCustomerName = custName;
+    this.pendingCustomerName = this.quoteCustomerName;
+    this.emailSubject = `Quotation ${this.quote.quoteNumber} from ${this.merchantName}`;
+    this.emailMessage = `Dear ${this.quoteCustomerName},\n\nPlease find the details of your quotation below:`;
     this.showSendQuoteModal = true;
   }
 
-  confirmSendQuote(): void {
-    if (!this.quote) return;
-    this.showSendQuoteModal = false;
-    this.salesService.updateQuote(String(this.quote.id), { status: 'SENT' }).subscribe({
-      next: (updated: Quote) => {
-        this.quote = updated;
-        this.salesService.upsertTransactionForQuote(updated.id, { status: 'QUOTE_SENT', quoteSentDate: new Date() }).subscribe({
-          error: (err) => console.error('Failed to sync quote-sent status to Sales & Transactions:', err)
-        });
-      },
-      error: (err: any) => {
-        console.error('Error sending quote:', err);
-      }
+  async confirmSendQuote(): Promise<void> {
+    if (!this.quote || this.isSendingEmail) return;
+    const quote = this.quote;
+    this.isSendingEmail = true;
+
+    const sheet = document.getElementById('quote-detail-sheet');
+    const pdfBlob = sheet ? await renderElementToPdf(sheet).catch(err => {
+      console.warn('[QuoteDetailComponent] PDF attachment generation failed, sending without attachment:', err);
+      return null;
+    }) : null;
+
+    const result = await this.documentEmail.sendQuote(quote, {
+      to: await this.resolveCustomerEmail(quote),
+      recipientName: this.quoteCustomerName,
+      subject: this.emailSubject,
+      message: this.emailMessage,
+      companyName: this.merchantName,
+      sentBy: (quote.merchantDetails as any)?.email,
+      pdfBlob
     });
+
+    if (this.documentEmail.isSent(result)) {
+      try {
+        this.quote = await lastValueFrom(this.salesService.markQuoteSent(quote));
+      } catch (err) {
+        console.error('Quote emailed, but marking it SENT failed:', err);
+        this.messageService.add({ severity: 'warn', summary: 'Status Not Updated', detail: 'The quote was emailed, but its status could not be changed to Sent.' });
+      }
+      this.showSendQuoteModal = false;
+    }
+    this.isSendingEmail = false;
   }
 
   acceptQuote(): void {

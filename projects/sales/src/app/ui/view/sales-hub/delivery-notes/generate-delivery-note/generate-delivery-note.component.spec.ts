@@ -218,6 +218,36 @@ describe('GenerateDeliveryNoteComponent', () => {
     });
   });
 
+  describe('routing to the delivery note detail page', () => {
+    const router = () => (component as any).router.navigate as jasmine.Spy;
+
+    beforeEach(() => {
+      component.ngOnInit();
+      component.deliveryNote = note({ id: 7 });
+    });
+
+    it('goes there right after the PDF downloads', async () => {
+      spyOn<any>(component, 'generatePdfBlob').and.returnValue(Promise.resolve(new Blob(['x'])));
+      await component.downloadPDF();
+      expect(router()).toHaveBeenCalledWith(['/admin/sales/delivery-notes', 7], { replaceUrl: true });
+    });
+
+    it('goes there on Done', () => {
+      component.finish();
+      expect(router()).toHaveBeenCalledWith(['/admin/sales/delivery-notes', 7], { replaceUrl: true });
+    });
+
+    it('stays put when the email fails, so it can be retried', async () => {
+      component.customers = [{ id: 1, name: 'Acme Co', email: 'a@acme.com' } as any];
+      salesEmailService.send.and.returnValue(of({ status: 'FAILED' } as any));
+      spyOn<any>(component, 'generatePdfBlob').and.returnValue(Promise.resolve(new Blob(['x'])));
+
+      await component.confirmSendEmail();
+
+      expect(router()).not.toHaveBeenCalled();
+    });
+  });
+
   describe('openSendModal / confirmSendEmail: compose-before-send', () => {
     beforeEach(() => {
       component.ngOnInit();
@@ -254,6 +284,7 @@ describe('GenerateDeliveryNoteComponent', () => {
         message: jasmine.stringContaining('Custom message body')
       }));
       expect(salesService.updateDeliveryNote).toHaveBeenCalledWith(7, jasmine.objectContaining({ sentAt: jasmine.any(String) }));
+      expect((component as any).router.navigate).toHaveBeenCalledWith(['/admin/sales/delivery-notes', 7], { replaceUrl: true });
     });
   });
 });

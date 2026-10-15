@@ -2,13 +2,15 @@
 
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, lastValueFrom } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Invoice, InvoiceStatus, PaymentMethod, SaleLifecycleStatus, SalesandTransactions } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { SendEmailModalComponent } from '../../send-email-modal/send-email-modal.component';
+import { SalesDocumentEmailService, renderElementToPdf } from '../../../../service/sales/sales-document-email.service';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { PaymentReceiptComponent } from '../../payment-receipt/payment-receipt.component';
@@ -19,7 +21,7 @@ import { MessageService } from 'primeng/api';
 @Component({
   selector: 'app-invoice-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, BackButtonComponent, SharedOverlayModule, PaymentReceiptComponent],
+  imports: [CommonModule, FormsModule, BackButtonComponent, SharedOverlayModule, PaymentReceiptComponent, SendEmailModalComponent],
   templateUrl: './invoice-detail.component.html',
   styleUrls: ['./invoice-detail.component.scss']
 })
@@ -68,7 +70,8 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
     private messageService: MessageService,
     private route: ActivatedRoute,
     private router: Router,
-    private salesService: SalesService
+    private salesService: SalesService,
+    private documentEmail: SalesDocumentEmailService
   ) {}
 
   // Reading route.snapshot.paramMap once here meant navigating from one invoice's detail URL
@@ -341,31 +344,75 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
   pendingInvoiceNumber = '';
   pendingCustomerName = '';
 
+  // Send Invoice — the same email dialog as the create form, and a real email (PDF of this
+  // page's sheet attached). Once it's sent the invoice moves to SENT.
+  emailSubject = '';
+  emailMessage = '';
+  isSendingEmail = false;
+
+  private get invoiceCustomerName(): string {
+    return (this.invoice?.customerName as any)?.name || (typeof this.invoice?.customerName === 'string' ? this.invoice.customerName : '') || 'Customer';
+  }
+
+  /** The customer's email from the nested customer on the invoice, or — when the record doesn't
+   *  carry it — from the customer list. */
+  private async resolveCustomerEmail(invoice: any): Promise<string> {
+    const nested = invoice.customerName || invoice.customerId;
+    const direct = nested?.email || invoice.customerId?.email;
+    if (direct || nested?.id == null) return direct || '';
+    try {
+      const res = await lastValueFrom(this.salesService.getCustomers({ page: 0, size: 200 }));
+      return res.data.find(c => String(c.id) === String(nested.id))?.email || '';
+    } catch {
+      return '';
+    }
+  }
+
+  private get merchantName(): string {
+    const m: any = this.invoice?.merchantDetails;
+    return m?.companyName || m?.name || 'our company';
+  }
+
   sendInvoice(): void {
     if (!this.invoice) return;
-    const custName = (this.invoice.customerName as any)?.name || this.invoice.customerName || 'Customer';
     this.pendingInvoiceNumber = this.invoice.invoiceNumber || '';
-    this.pendingCustomerName = custName;
+    this.pendingCustomerName = this.invoiceCustomerName;
+    this.emailSubject = `Invoice ${this.invoice.invoiceNumber} from ${this.merchantName}`;
+    this.emailMessage = `Dear ${this.invoiceCustomerName},\n\nPlease find the details of your invoice below:`;
     this.showSendInvoiceModal = true;
   }
 
-  confirmSendInvoice(): void {
-    if (!this.invoice) return;
-    this.showSendInvoiceModal = false;
-    this.salesService.updateInvoice(this.invoice.id, { status: 'SENT' }).subscribe({
-      next: (updated: Invoice) => {
-        this.invoice = updated;
-        if (updated.quoteId) {
-          this.salesService.updateQuote(updated.quoteId, { status: 'CONVERTED' }).subscribe({
-            next: () => console.log(`Quote ${updated.quoteId} updated to CONVERTED`),
-            error: (err) => console.error('Error updating quote to CONVERTED:', err)
-          });
-        }
-      },
-      error: (err: any) => {
-        console.error('Error sending invoice:', err);
-      }
+  async confirmSendInvoice(): Promise<void> {
+    if (!this.invoice || this.isSendingEmail) return;
+    const invoice = this.invoice;
+    this.isSendingEmail = true;
+
+    const sheet = document.getElementById('invoice-detail-sheet');
+    const pdfBlob = sheet ? await renderElementToPdf(sheet).catch(err => {
+      console.warn('[InvoiceDetailComponent] PDF attachment generation failed, sending without attachment:', err);
+      return null;
+    }) : null;
+
+    const result = await this.documentEmail.sendInvoice(invoice, {
+      to: await this.resolveCustomerEmail(invoice),
+      recipientName: this.invoiceCustomerName,
+      subject: this.emailSubject,
+      message: this.emailMessage,
+      companyName: this.merchantName,
+      sentBy: (invoice.merchantDetails as any)?.email,
+      pdfBlob
     });
+
+    if (this.documentEmail.isSent(result)) {
+      try {
+        this.invoice = await lastValueFrom(this.salesService.markInvoiceSent(invoice));
+      } catch (err) {
+        console.error('Invoice emailed, but marking it SENT failed:', err);
+        this.messageService.add({ severity: 'warn', summary: 'Status Not Updated', detail: 'The invoice was emailed, but its status could not be changed to Sent.' });
+      }
+      this.showSendInvoiceModal = false;
+    }
+    this.isSendingEmail = false;
   }
 
   cancelInvoice(): void {

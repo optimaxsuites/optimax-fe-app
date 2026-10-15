@@ -42,7 +42,8 @@ import { ToastModule } from 'primeng/toast';
   selector: 'app-generate-delivery-note',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent, DeliveryNoteDocumentComponent, TemplateTypesComponent, ToastModule, EmailAiAssistComponent],
-  providers: [MessageService],
+  // No component-level MessageService: toasts go through the app-wide one (shown by app.html's
+  // <p-toast>) so a result like "Email sent" stays visible after routing to the detail page.
   templateUrl: './generate-delivery-note.component.html',
   styleUrls: ['./generate-delivery-note.component.scss']
 })
@@ -359,6 +360,7 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
       a.download = `DeliveryNote-${this.deliveryNote?.deliveryNumber || 'note'}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
+      this.goToDetail();
     } catch (err) {
       console.error('Error generating PDF:', err);
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to build PDF document.' });
@@ -454,6 +456,7 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
           next: updated => this.deliveryNote = { ...note, ...(updated || {}) },
           error: err => console.error('Error recording delivery note sentAt:', err)
         });
+        this.goToDetail();
       }
     } catch (err) {
       console.error('Error emailing delivery note:', err);
@@ -492,7 +495,19 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   }
 
   finish(): void {
-    this.goBack();
+    this.goToDetail();
+  }
+
+  /** The generated note's detail page — where the wizard lands after a download, a successful
+   *  email, or Done. Replaces the wizard's history entry so Back doesn't return to it. */
+  goToDetail(): void {
+    if (!this.deliveryNote?.id) {
+      this.goBack();
+      return;
+    }
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/delivery-notes', this.deliveryNote.id, uuid] : ['/admin/sales/delivery-notes', this.deliveryNote.id];
+    this.router.navigate(path, { replaceUrl: true });
   }
 
   formatDate(date: unknown): string {
