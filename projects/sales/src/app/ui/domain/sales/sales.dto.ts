@@ -216,6 +216,10 @@ export interface AdditionalQuoteOptions {
    *  copy, until the backend has an upload endpoint. Falls back to the quote's logoUrl. */
   deliveryNoteLogo?: QuoteDocumentAttachment;
   deliveryNoteMeta?: SalesDeliveryNoteMeta;
+  /** Template the seller picked for this quote, and for the invoice made from it — so downloads
+   *  from the detail pages use the same design (no backend column for it yet). */
+  templateId?: string;
+  invoiceTemplateId?: string;
 }
 
 

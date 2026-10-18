@@ -110,6 +110,10 @@
         <input type="file" accept="application/pdf,image/*" style="display:none;" (change)="onSignedFileSelected($event)">
       </label>
 
+      <div class="if-signed-error" *ngIf="signedError" role="alert">
+        <i class="fas fa-exclamation-circle"></i> {{ signedError }}
+      </div>
+
       <div class="if-signed-fields">
         <label>
           <span class="if-label">Received by <em class="if-req">*</em></span>
@@ -814,3 +818,7 @@
   </div>
 </div>
 
+<!-- Off-screen A4 render of the invoice in the chosen template — only present while a PDF is made -->
+<div class="if-pdf-host" *ngIf="pdfDocument" aria-hidden="true">
+  <app-sales-document elementId="invoice-pdf-document" [doc]="pdfDocument" [template]="selectedTemplate"></app-sales-document>
+</div>

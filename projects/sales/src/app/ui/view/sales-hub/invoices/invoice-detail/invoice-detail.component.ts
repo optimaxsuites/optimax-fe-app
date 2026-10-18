@@ -10,20 +10,21 @@ import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SendEmailModalComponent } from '../../send-email-modal/send-email-modal.component';
+import { SalesDocumentComponent } from '../../sales-document/sales-document.component';
+import { SalesDocumentModel, invoiceDocument } from '../../../../service/sales/sales-document';
+import { QuoteTemplate, QUOTE_TEMPLATES } from '../../template-types/template-types.component';
 import { DocumentViewerComponent } from '../../document-viewer/document-viewer.component';
 import { ViewableDocument, downloadDocument, hasDocumentContent } from '../../../../service/sales/document-file.util';
 import { SalesDocumentEmailService, renderElementToPdf } from '../../../../service/sales/sales-document-email.service';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { PaymentReceiptComponent } from '../../payment-receipt/payment-receipt.component';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-invoice-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, BackButtonComponent, SharedOverlayModule, PaymentReceiptComponent, SendEmailModalComponent, DocumentViewerComponent],
+  imports: [CommonModule, FormsModule, BackButtonComponent, SharedOverlayModule, PaymentReceiptComponent, SendEmailModalComponent, DocumentViewerComponent, SalesDocumentComponent],
   templateUrl: './invoice-detail.component.html',
   styleUrls: ['./invoice-detail.component.scss']
 })
@@ -140,6 +141,7 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
       quote: this.salesService.getQuoteById(quoteId),
       notes: this.salesService.getDeliveryNotes({ quoteId, size: 1000 })
     }).pipe(takeUntil(this.destroy$)).subscribe(({ quote, notes }) => {
+      this.templateQuote = quote;
       this.signedFile = this.salesService.getQuoteSignedDeliveryNote(quote);
       this.deliveryNote = notes.data.find(n => String(n.invoiceId) === String(invoice.id))
         || notes.data.find(n => String(n.quoteId) === String(quoteId))
@@ -575,48 +577,52 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  downloadPDF(): void {
+  // ── The document: the invoice in the template the seller picked ──
+  /** The seller's company profile (logo, address, bank) for the document's "From" block. */
+  private merchant: any = null;
+  private merchantRequested = false;
+  private docCache: { key: unknown[]; doc: SalesDocumentModel } | null = null;
+  private templateQuote: any = null;
+
+  get document(): SalesDocumentModel {
+    if (!this.merchantRequested) {
+      this.merchantRequested = true;
+      this.salesService.getMyMerchantInfo().pipe(takeUntil(this.destroy$)).subscribe(m => this.merchant = m);
+    }
+    const key = [this.invoice, this.merchant, this.orderNumber];
+    if (!this.docCache || this.docCache.key.some((v, i) => v !== key[i])) {
+      const merchant = this.merchant ? { ...this.invoice?.merchantDetails, ...this.merchant } : this.invoice?.merchantDetails;
+      this.docCache = { key, doc: invoiceDocument(this.invoice, merchant, undefined, this.orderNumber || undefined) };
+    }
+    return this.docCache.doc;
+  }
+
+  /** The template chosen when the invoice was created (see SalesService.saveDocumentTemplate). */
+  get documentTemplate(): QuoteTemplate | null {
+    const id = this.salesService.getDocumentTemplateId('INVOICE', this.invoice?.id, this.templateQuote);
+    return QUOTE_TEMPLATES.find(t => t.id === id) || null;
+  }
+
+  async downloadPDF(): Promise<void> {
     const element = document.getElementById('invoice-detail-sheet');
-    if (!element) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find element to export.' });
+    if (!element || this.isDownloading) {
+      if (!element) this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find the document to export.' });
       return;
     }
     this.isDownloading = true;
-    element.classList.add('pdf-printing-active');
-
-    setTimeout(() => {
-      html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }).then(canvas => {
-        element.classList.remove('pdf-printing-active');
-        const imgData = canvas.toDataURL('image/png');
-        const pageW = 210;
-        const pageH = 297;
-        const imgW = pageW;
-        const imgH = (canvas.height * imgW) / canvas.width;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-
-        if (imgH <= pageH) {
-          pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
-        } else {
-          let heightLeft = imgH;
-          let position = 0;
-          pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
-          heightLeft -= pageH;
-          while (heightLeft > 0) {
-            position = heightLeft - imgH;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
-            heightLeft -= pageH;
-          }
-        }
-
-        pdf.save(`Invoice-${this.invoice?.invoiceNumber || 'Detail'}.pdf`);
-        this.isDownloading = false;
-      }).catch(err => {
-        element.classList.remove('pdf-printing-active');
-        console.error('Error generating PDF:', err);
-        this.isDownloading = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate PDF.' });
-      });
-    }, 300);
+    try {
+      const blob = await renderElementToPdf(element);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${this.invoice?.invoiceNumber || 'Detail'}.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate PDF.' });
+    } finally {
+      this.isDownloading = false;
+    }
   }
 }

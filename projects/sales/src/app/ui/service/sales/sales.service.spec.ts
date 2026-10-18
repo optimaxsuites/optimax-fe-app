@@ -412,6 +412,28 @@ describe('SalesService', () => {
     });
   });
 
+  describe('remembering the chosen document template', () => {
+    beforeEach(() => localStorage.clear());
+
+    it('stores a quote\'s template on the quote and reads it back', () => {
+      service.saveDocumentTemplate('QUOTE', 3, 'emirates', 3);
+      http.expectOne(r => r.url === `${BASE}/quotes/3` && r.method === 'GET').flush({ id: 3, additionalOptions: {} });
+      const put = http.expectOne(r => r.url === `${BASE}/quotes/3` && r.method === 'PUT');
+      expect(put.request.body.additionalOptions.templateId).toBe('emirates');
+      put.flush({ id: 3 });
+
+      expect(service.getDocumentTemplateId('QUOTE', 3, { additionalOptions: { templateId: 'minimal' } } as any)).toBe('minimal');
+      expect(service.getDocumentTemplateId('QUOTE', 3, null)).toBe('emirates');
+    });
+
+    it('keeps an invoice\'s template on its quote, and in the browser for standalone invoices', () => {
+      service.saveDocumentTemplate('INVOICE', 8, 'compact', null);
+      http.expectNone(r => r.url.includes('/quotes/'));
+      expect(service.getDocumentTemplateId('INVOICE', 8, null)).toBe('compact');
+      expect(service.getDocumentTemplateId('INVOICE', 9, { additionalOptions: { invoiceTemplateId: 'detailed' } } as any)).toBe('detailed');
+    });
+  });
+
   describe('sales LPO endpoints', () => {
     const lpo: any = { id: 9, lpoNumber: 'PR-1', quoteId: 3, status: 'RECEIVED', document: {}, createdAt: 'x' };
 

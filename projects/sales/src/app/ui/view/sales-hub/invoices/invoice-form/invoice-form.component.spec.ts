@@ -115,28 +115,47 @@ describe('InvoiceFormComponent: lands on the invoice detail page after delivery'
       component.currentStep = 0;
     });
 
-    it('will not move on without a signed copy', () => {
-      component.nextStep();
+    it('will not move on without a signed copy, and says why on the card', async () => {
+      await component.submitSignedCopy();
       expect(component.currentStep as number).toBe(0);
+      expect(component.signedError).toContain('Choose the signed delivery note');
       expect(salesService.recordSignedDeliveryNote).not.toHaveBeenCalled();
     });
 
-    it('requires who received the goods and when', () => {
+    it('requires who received the goods and when', async () => {
       component.signedFileName = 'signed.pdf';
       (component as any).signedFile = signed;
       component.receivedByName = '';
-      component.nextStep();
+      await component.submitSignedCopy();
+      expect(component.signedError).toContain('who received the goods');
       expect(salesService.recordSignedDeliveryNote).not.toHaveBeenCalled();
     });
 
-    it('stores the signed copy with the receiver, then goes to the template', () => {
+    it('waits for a file that is still being read instead of needing another click', async () => {
+      let finishReading!: (f: any) => void;
+      component.signedFileName = 'signed.pdf';
+      (component as any).signedFileReady = new Promise(resolve => (finishReading = resolve));
+      component.receivedByName = 'J. Okafor';
+      component.receivedDate = '2026-10-18';
+      salesService.recordSignedDeliveryNote.and.returnValue(of({ quote: {} as any, note: null, noteSaved: true }));
+
+      const pending = component.submitSignedCopy();
+      expect(component.isSavingSignedCopy).toBeTrue();
+      finishReading(signed);
+      await pending;
+
+      expect(salesService.recordSignedDeliveryNote).toHaveBeenCalledWith('3', signed, jasmine.anything(), jasmine.anything());
+      expect(component.currentStep as number).toBe(3);
+    });
+
+    it('stores the signed copy with the receiver, then goes to the template', async () => {
       component.signedFileName = 'signed.pdf';
       (component as any).signedFile = signed;
       component.receivedByName = 'J. Okafor';
       component.receivedDate = '2026-10-18';
       salesService.recordSignedDeliveryNote.and.returnValue(of({ quote: {} as any, note: { id: 4, receivedByName: 'J. Okafor' } as any, noteSaved: true }));
 
-      component.nextStep();
+      await component.submitSignedCopy();
 
       expect(salesService.recordSignedDeliveryNote).toHaveBeenCalledWith('3', signed, jasmine.objectContaining({ id: 4 }), {
         receivedByName: 'J. Okafor', receivedAt: new Date('2026-10-18').toISOString()
@@ -144,9 +163,9 @@ describe('InvoiceFormComponent: lands on the invoice detail page after delivery'
       expect(component.currentStep as number).toBe(3);
     });
 
-    it('moves straight on when a signed copy is already on file', () => {
+    it('moves straight on when a signed copy is already on file', async () => {
       component.signedCopyOnFile = 'signed-earlier.pdf';
-      component.nextStep();
+      await component.submitSignedCopy();
       expect(component.currentStep as number).toBe(3);
       expect(salesService.recordSignedDeliveryNote).not.toHaveBeenCalled();
     });

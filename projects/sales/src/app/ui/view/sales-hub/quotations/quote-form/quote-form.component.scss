@@ -148,3 +148,5 @@
 .qf-btn, .if-btn { border-radius: 5px !important; }
 .qf-input, .qf-select, .if-input, .if-select { border-radius: 5px !important; }
 .qf-modal, .if-modal { border-radius: 8px !important; }
+
+.qf-pdf-host { position: fixed; top: -20000px; left: 0; width: 794px; pointer-events: none; }

@@ -1454,3 +1454,8 @@ $radius-xl: 24px;
 .signed-actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; .btn-view-customer { flex: 1; margin-top: 0; } }
 .signed-muted { margin: 0.5rem 0 0; font-size: 0.85rem; color: #7a8a9e; }
 .signed-link { color: #2563eb; font-weight: 600; cursor: pointer; &:hover { text-decoration: underline; } }
+
+// The A4 document is a fixed 794px page — scroll sideways on narrow screens instead of squashing it
+.doc-sheet-scroll { overflow-x: auto; border-radius: 8px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); background: #fff; max-width: 100%;
+  app-sales-document { width: 794px; margin: 0 auto; }
+}
