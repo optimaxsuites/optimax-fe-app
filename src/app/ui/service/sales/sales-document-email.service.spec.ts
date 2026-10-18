@@ -6,6 +6,7 @@ describe('SalesDocumentEmailService', () => {
   let service: SalesDocumentEmailService;
   let emailApi: { send: jasmine.Spy };
   let messages: { add: jasmine.Spy };
+  let notifications: { sendDirectEmail: jasmine.Spy };
 
   const quote: any = {
     id: 5, quoteNumber: 'QUO-5', currency: 'NGN', validUntil: '2026-11-01',
@@ -21,7 +22,8 @@ describe('SalesDocumentEmailService', () => {
   beforeEach(() => {
     emailApi = { send: jasmine.createSpy('send').and.returnValue(of({ status: 'SENT' })) };
     messages = { add: jasmine.createSpy('add') };
-    service = new SalesDocumentEmailService(emailApi as any, messages as any);
+    notifications = { sendDirectEmail: jasmine.createSpy('sendDirectEmail').and.returnValue(of({})) };
+    service = new SalesDocumentEmailService(emailApi as any, messages as any, notifications as any);
   });
 
   it('sends the quote with its itemised summary, escaped message, existing attachments and the PDF', async () => {
@@ -63,5 +65,41 @@ describe('SalesDocumentEmailService', () => {
   it('renders paragraphs and line breaks from the plain-text message', () => {
     expect(renderEmailMessageHtml('Line 1\nLine 2\n\nPara 2')).toBe(
       '<p style="margin:0 0 12px;">Line 1<br>Line 2</p><p style="margin:0 0 12px;">Para 2</p>');
+  });
+
+  describe('sendDeliveryNote', () => {
+    const note: any = { id: 7, deliveryNumber: 'DN-7', status: 'PENDING', customerAddress: '', items: [{ productName: 'Widget', quantity: 2, unit: 'pcs' }] };
+
+    it('sends the same request shape as quotes/invoices (cc/bcc included) and reports success', async () => {
+      const outcome = await service.sendDeliveryNote(note, opts({ pdfBlob: new Blob(['pdf']) }));
+      const payload = emailApi.send.calls.mostRecent().args[0];
+      expect(payload).toEqual(jasmine.objectContaining({ documentType: 'DELIVERY_NOTE', documentId: 7, cc: [], bcc: [] }));
+      expect(payload.message).toContain('Widget');
+      expect(payload.attachments[0].fileName).toBe('DeliveryNote-DN-7.pdf');
+      expect(outcome.result).toBe('SENT');
+      expect(notifications.sendDirectEmail).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the general email endpoint when the sales one rejects the request', async () => {
+      emailApi.send.and.returnValue(throwError(() => ({ status: 400, error: { message: 'Unknown documentType' } })));
+      const outcome = await service.sendDeliveryNote(note, opts());
+      expect(notifications.sendDirectEmail).toHaveBeenCalledWith(jasmine.objectContaining({ to: 'a@acme.com', html: true }));
+      expect(outcome.result).toBe('SENT');
+    });
+
+    it('explains the failure when both endpoints fail', async () => {
+      emailApi.send.and.returnValue(throwError(() => ({ status: 400 })));
+      notifications.sendDirectEmail.and.returnValue(throwError(() => ({ status: 500, error: { message: 'SMTP down' } })));
+      const outcome = await service.sendDeliveryNote(note, opts());
+      expect(outcome.result).toBe('FAILED');
+      expect(outcome.detail).toContain('SMTP down');
+    });
+
+    it('does not fall back for a delivery failure — that address really bounced', async () => {
+      emailApi.send.and.returnValue(of({ status: 'BOUNCED', failureReason: 'No mailbox' }));
+      const outcome = await service.sendDeliveryNote(note, opts());
+      expect(outcome).toEqual({ result: 'FAILED', detail: 'No mailbox' });
+      expect(notifications.sendDirectEmail).not.toHaveBeenCalled();
+    });
   });
 });

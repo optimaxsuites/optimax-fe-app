@@ -124,6 +124,11 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
     return parseApiDate(value);
   }
 
+  /** See SalesService.orderNumberFor() — the backend's number, or one derived from the record. */
+  orderNumberOf(tx: any): string {
+    return this.salesService.orderNumberFor(tx);
+  }
+
   loadTransactions(): void {
     this.isLoading = true;
     // This component does its own search/status/date-range filtering and pagination over the
@@ -157,7 +162,7 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase().trim();
       result = result.filter(tx =>
-        (tx.orderId || '').toLowerCase().includes(term) ||
+        this.orderNumberOf(tx).toLowerCase().includes(term) ||
         (tx.quoteId?.quoteNumber || '').toLowerCase().includes(term) ||
         (tx.paymentNumber || '').toLowerCase().includes(term) ||
         (tx.reference || '').toLowerCase().includes(term) ||

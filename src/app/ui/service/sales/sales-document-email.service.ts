@@ -4,13 +4,20 @@ import { lastValueFrom } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import { Invoice, Quote, SalesEmailAttachment, SendSalesEmailRequest } from '../../domain/sales/sales.dto';
+import { Invoice, Quote, SalesDeliveryNote, SalesEmailAttachment, SendSalesEmailRequest } from '../../domain/sales/sales.dto';
 import { SalesEmailService } from './sales-email.service';
+import { NotificationService } from '../procurement/notification.service';
 import { formatApiDate } from './date.util';
 
 /** How a quote/invoice email went: SENT/QUEUED count as sent (the document can move to SENT),
  *  FAILED and NO_EMAIL don't. */
 export type DocumentEmailResult = 'SENT' | 'QUEUED' | 'FAILED' | 'NO_EMAIL';
+
+/** A send's outcome plus a human-readable line for an inline message. */
+export interface DocumentEmailOutcome {
+  result: DocumentEmailResult;
+  detail: string;
+}
 
 export interface DocumentEmailOptions {
   /** Recipient — callers resolve it from whatever customer data they have. */
@@ -39,7 +46,11 @@ const DEFAULT_ACCENT = '#184440';
 @Injectable({ providedIn: 'root' })
 export class SalesDocumentEmailService {
 
-  constructor(private salesEmailService: SalesEmailService, private messageService: MessageService) {}
+  constructor(
+    private salesEmailService: SalesEmailService,
+    private messageService: MessageService,
+    private notificationService: NotificationService
+  ) {}
 
   isSent(result: DocumentEmailResult): boolean {
     return result === 'SENT' || result === 'QUEUED';
@@ -71,6 +82,74 @@ export class SalesDocumentEmailService {
       notes: invoice.notes || addOpts?.notes,
       attachments: addOpts?.attachments
     }, opts);
+  }
+
+  /**
+   * Emails a delivery note: same request shape as quotes/invoices (via the sales email endpoint),
+   * falling back to the general notification email endpoint if the sales endpoint rejects the
+   * request outright — e.g. a backend that doesn't take DELIVERY_NOTE as a document type.
+   */
+  async sendDeliveryNote(note: SalesDeliveryNote, opts: DocumentEmailOptions): Promise<DocumentEmailOutcome> {
+    if (!opts.to) {
+      const detail = 'Could not find a recipient email address for this customer.';
+      this.messageService.add({ severity: 'warn', summary: 'Missing Email', detail });
+      return { result: 'NO_EMAIL', detail };
+    }
+
+    const html = buildDeliveryNoteEmailHtml(note, opts);
+    const subject = opts.subject || `Delivery Note ${note.deliveryNumber} from ${opts.companyName}`;
+    const pdf = opts.pdfBlob
+      ? { fileName: `DeliveryNote-${note.deliveryNumber}.pdf`, base64Content: await blobToBase64(opts.pdfBlob), contentType: 'application/pdf' }
+      : null;
+
+    const payload: SendSalesEmailRequest = {
+      documentType: 'DELIVERY_NOTE',
+      documentId: note.id!,
+      documentNumber: note.deliveryNumber,
+      to: opts.to,
+      cc: [],
+      bcc: [],
+      subject,
+      message: html,
+      attachments: pdf ? [{ ...pdf, type: 'application/pdf' }] : [],
+      sentBy: opts.sentBy || 'system'
+    };
+
+    let rejected: unknown = null;
+    try {
+      const response = await lastValueFrom(this.salesEmailService.send(payload));
+      if (response?.status === 'FAILED' || response?.status === 'BOUNCED') {
+        return this.outcome('FAILED', 'Email Not Delivered', response.failureReason || `Delivery to ${opts.to} failed.`);
+      }
+      if (response?.status === 'PENDING') {
+        return this.outcome('QUEUED', 'Email Queued', `Delivery note queued for delivery to ${opts.to}. It hasn't been confirmed sent yet.`);
+      }
+      return this.outcome('SENT', 'Email Sent', `Delivery note ${note.deliveryNumber} was emailed to ${opts.to}.`);
+    } catch (err) {
+      rejected = err;
+      console.warn('[SalesDocumentEmailService] Sales email endpoint rejected the delivery note; trying the general email endpoint:', err);
+    }
+
+    try {
+      await lastValueFrom(this.notificationService.sendDirectEmail({
+        to: opts.to,
+        subject,
+        body: html,
+        html: true,
+        tenant: tenantFromHost(),
+        attachments: pdf ? [pdf] : []
+      }));
+      return this.outcome('SENT', 'Email Sent', `Delivery note ${note.deliveryNumber} was emailed to ${opts.to}.`);
+    } catch (err) {
+      console.error('[SalesDocumentEmailService] Failed to send delivery note email:', rejected, err);
+      return this.outcome('FAILED', 'Email Error', `The delivery note could not be emailed${httpReason(err) ? ` (${httpReason(err)})` : ''}. Please try again.`);
+    }
+  }
+
+  private outcome(result: DocumentEmailResult, summary: string, detail: string): DocumentEmailOutcome {
+    const severity = result === 'SENT' ? 'success' : result === 'QUEUED' ? 'info' : 'error';
+    this.messageService.add({ severity, summary, detail });
+    return { result, detail };
   }
 
   private async send(
@@ -134,6 +213,54 @@ export class SalesDocumentEmailService {
       return 'FAILED';
     }
   }
+}
+
+function tenantFromHost(): string {
+  const h = window.location.hostname;
+  return (h.includes('localhost') || h.includes('127.0.0.1')) ? 'optimax' : h.split('.')[0] || 'optimax';
+}
+
+/** The backend's own message for a failed request, when it sent one. */
+function httpReason(err: any): string {
+  const body = err?.error;
+  return (typeof body === 'string' ? body : body?.message || body?.error) || err?.statusText || '';
+}
+
+function buildDeliveryNoteEmailHtml(note: SalesDeliveryNote, opts: DocumentEmailOptions): string {
+  const rows = (note.items || []).map(item => `
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">
+            <div style="font-weight: 600;">${item.productName || ''}</div>
+            ${item.description ? `<div style="font-size: 12px; color: #6b7280;">${item.description}</div>` : ''}
+          </td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.unit || ''}</td>
+        </tr>`).join('');
+  const accent = opts.accent || DEFAULT_ACCENT;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
+      <h2 style="color: ${accent}; margin-top: 0;">Delivery Note Details</h2>
+      ${renderEmailMessageHtml(opts.message || `Hi ${opts.recipientName},\n\nPlease find attached the delivery note ${note.deliveryNumber} for your order.`)}
+      <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Delivery Note #:</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${note.deliveryNumber}</td>
+        </tr>
+      </table>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
+        <thead>
+          <tr style="background: #f8fafc;">
+            <th style="text-align: left; padding: 8px; border-bottom: 2px solid #e5e7eb;">Item</th>
+            <th style="text-align: center; padding: 8px; border-bottom: 2px solid #e5e7eb;">Quantity</th>
+            <th style="text-align: left; padding: 8px; border-bottom: 2px solid #e5e7eb;">Unit</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p style="margin-top: 24px;">Thank you for your business!</p>
+      <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+      <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from ${opts.companyName}.</p>
+    </div>`;
 }
 
 function firstOptions(opts: any): any {

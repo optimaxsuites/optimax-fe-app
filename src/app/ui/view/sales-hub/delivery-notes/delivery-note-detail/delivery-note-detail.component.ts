@@ -14,6 +14,7 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
+import { MessageModule } from 'primeng/message';
 
 /** A destructive or reason-requiring action waiting on the confirmation modal. */
 interface PendingAction {
@@ -30,7 +31,7 @@ interface PendingAction {
 @Component({
   selector: 'app-delivery-note-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, BackButtonComponent, DeliveryNoteDocumentComponent, ToastModule],
+  imports: [CommonModule, FormsModule, MessageModule, BackButtonComponent, DeliveryNoteDocumentComponent, ToastModule],
   providers: [MessageService],
   templateUrl: './delivery-note-detail.component.html',
   // Page chrome (header, action bar, sidebar cards) is shared with the Quote detail page rather
@@ -62,8 +63,10 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
   isUpdatingLpo = false;
   isDeleting = false;
   pendingAction: PendingAction | null = null;
-  /** Whether the signed delivery note has been uploaded — required before Mark Delivered. */
+  /** Whether the signed delivery note has been uploaded (the first step of Generate Invoice). */
   hasSignedCopy = false;
+  /** The logo uploaded for this delivery note, or its quote's (see SalesService.getDeliveryNoteLogo). */
+  logo: string | null = null;
   actionReason = '';
 
   private destroy$ = new Subject<void>();
@@ -78,6 +81,9 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
   // Same navigation-staleness fix as the other detail pages in this module — subscribes to the
   // live paramMap instead of reading route.snapshot once, so navigating between two different
   // delivery notes' URLs actually reloads instead of reusing the previous one.
+  /** A result carried over from the page that routed here, e.g. "Delivery note emailed to …". */
+  flash: { severity: string; text: string } | null = (typeof history !== 'undefined' && history.state?.flash) || null;
+
   ngOnInit(): void {
     this.salesService.getCustomers({ page: 0, size: 200 }).pipe(takeUntil(this.destroy$)).subscribe(res => this.customers = res.data);
     this.salesService.getMyMerchantInfo().pipe(takeUntil(this.destroy$)).subscribe(merchant => this.merchantInfo = merchant);
@@ -120,6 +126,7 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
     if (note.quoteId != null) {
       this.salesService.getQuoteById(note.quoteId).pipe(takeUntil(this.destroy$)).subscribe(quote => {
         if (this.salesService.hasSignedDeliveryNoteDocument(quote)) this.hasSignedCopy = true;
+        this.logo = this.salesService.getDeliveryNoteLogo(quote);
         this.backfillFromQuote(note, quote);
       });
     }
@@ -175,6 +182,12 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
     return customer?.name || 'Customer';
   }
 
+  /** The customer's address on file, shown when the note itself has none saved. */
+  get customerAddressFallback(): string {
+    const customer = this.customers.find(c => c.id === this.note?.customerId);
+    return this.salesService.deliveryAddressFor(customer);
+  }
+
   get customerPhone(): string {
     if (this.note?.recipientPhone) return this.note.recipientPhone;
     const customer = this.customers.find(c => c.id === this.note?.customerId);
@@ -183,6 +196,30 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
 
   getTotalQuantity(): number {
     return (this.note?.items || []).reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+  }
+
+  /** Once delivered, the next step is the invoice — unless one has already been made. */
+  canGenerateInvoice(): boolean {
+    return this.note?.status === 'DELIVERED' && this.note?.invoiceId == null;
+  }
+
+  /** Invoice flow that starts by uploading the signed delivery note (see InvoiceFormComponent). */
+  generateInvoice(): void {
+    if (!this.note?.id || !this.canGenerateInvoice()) return;
+    const quoteId = this.note.quoteId;
+    if (quoteId == null) {
+      this.messageService.add({ severity: 'warn', summary: 'No Quote', detail: 'This delivery note is not linked to a quote, so an invoice cannot be generated from it.' });
+      return;
+    }
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
+    this.router.navigate(path, { queryParams: { quoteId: String(quoteId), deliveryNoteId: String(this.note.id) } });
+  }
+
+  viewInvoice(): void {
+    if (this.note?.invoiceId == null) return;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    this.router.navigate(uuid ? ['/admin/sales/invoices', this.note.invoiceId, uuid] : ['/admin/sales/invoices', this.note.invoiceId]);
   }
 
   canEdit(): boolean {
@@ -227,17 +264,8 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
     this.router.navigate(path);
   }
 
-  /** Tooltip for Mark Delivered while it's blocked on the signed copy. */
-  get markDeliveredHint(): string {
-    return this.hasSignedCopy ? 'Mark Delivered' : 'Upload the signed delivery note (from its quote) before marking it delivered';
-  }
-
   updateStatus(status: SalesDeliveryNoteStatus, reason?: string): void {
     if (!this.note?.id || this.isUpdatingStatus) return;
-    if (status === 'DELIVERED' && !this.hasSignedCopy) {
-      this.messageService.add({ severity: 'warn', summary: 'Signed Copy Needed', detail: this.markDeliveredHint + '.' });
-      return;
-    }
     this.isUpdatingStatus = true;
     this.salesService.updateDeliveryNoteStatus(this.note, status, reason).subscribe({
       next: (updated) => {

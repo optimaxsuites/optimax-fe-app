@@ -21,11 +21,10 @@ describe('DeliveryNoteDocumentComponent', () => {
     expect(labels()).toEqual([
       ['To :', 'LPO Number :'],
       ['Address :', 'Date Sent :'],
-      [undefined, 'Per Invoice Number :'],
       [undefined, 'Our Contact Person :'],
       ['Attention :', 'Telephone :']
     ]);
-    expect(component.metaRows[1].left?.rowspan).toBe(3);
+    expect(component.metaRows[1].left?.rowspan).toBe(2);
   });
 
   it('always keeps To, Address, Date Sent and Our Contact Person, dropping the template\'s optional fields', () => {
@@ -48,5 +47,24 @@ describe('DeliveryNoteDocumentComponent', () => {
     const rows = component.metaRows;
     expect(rows[rows.length - 1].left?.label).toBe('Attention :');
     expect(rows[1].left?.rowspan).toBe(rows.length - 2);
+  });
+
+  it('never shows an invoice number — invoices come after the signed delivery note', () => {
+    component.ngOnChanges();
+    expect(JSON.stringify(component.metaRows)).not.toContain('Invoice');
+  });
+
+  it('falls back to the customer\'s address on file when the note has none saved', () => {
+    component.note = { ...component.note, customerAddress: '' };
+    component.customerAddress = '12 Broad St, Lagos';
+    component.ngOnChanges();
+    expect(component.metaRows[1].left?.value).toBe('12 Broad St, Lagos');
+  });
+
+  it('uses the delivery note\'s own logo over the company profile one', () => {
+    component.merchantInfo = { logoUrl: ['profile.png'] } as any;
+    expect(component.logoUrl).toBe('profile.png');
+    component.logo = 'data:image/png;base64,abc';
+    expect(component.logoUrl).toBe('data:image/png;base64,abc');
   });
 });

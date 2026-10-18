@@ -665,8 +665,8 @@ export const routes: Routes = [
     redirectTo: 'commerce/requests',
     pathMatch: 'full'
   },
-  // Catch-all route for any undefined paths
-  { path: '**', redirectTo: '/', pathMatch: 'full' }
+  // Keep unknown paths within the sales app instead of bouncing through the root redirect.
+  { path: '**', redirectTo: '/admin/sales/sales-hub', pathMatch: 'full' }
 ];
 
 // Registers routes for the lazy-loaded sales module (loaded at /admin/sales via loadChildren).

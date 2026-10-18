@@ -23,6 +23,11 @@ export class SalesAndTransactionsDetailComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
+  /** See SalesService.orderNumberFor(). */
+  get orderNumber(): string {
+    return this.salesService.orderNumberFor(this.transaction);
+  }
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,

@@ -9,6 +9,7 @@ describe('GenerateDeliveryNoteComponent', () => {
   let component: GenerateDeliveryNoteComponent;
   let salesService: jasmine.SpyObj<SalesService>;
   let salesEmailService: jasmine.SpyObj<SalesEmailService>;
+  let documentEmail: jasmine.SpyObj<any>;
 
   const quote = (over: Partial<Quote> = {}): Quote => ({
     id: 1, quoteNumber: 'QUO-1', status: 'CONVERTED', customerId: { id: 1, name: 'Acme Co' } as any, items: [], ...over
@@ -28,9 +29,11 @@ describe('GenerateDeliveryNoteComponent', () => {
     salesService = jasmine.createSpyObj<SalesService>('SalesService', [
       'getQuoteById', 'getCustomers', 'getMyMerchantInfo', 'getQuoteDeliveryNoteMap',
       'saveQuoteLpoDocument', 'getOrCreateDeliveryNoteForQuote', 'updateDeliveryNote',
-      'getDeliveryNoteMeta', 'getSalesLpoForQuote', 'createSalesLpo', 'updateSalesLpo', 'getQuoteLpoDocument', 'fillMissingFromQuote'
+      'getDeliveryNoteMeta', 'getSalesLpoForQuote', 'createSalesLpo', 'updateSalesLpo', 'getQuoteLpoDocument', 'fillMissingFromQuote', 'getDeliveryNoteLogo', 'saveDeliveryNoteLogo'
     ]);
     salesEmailService = jasmine.createSpyObj<SalesEmailService>('SalesEmailService', ['send']);
+    documentEmail = jasmine.createSpyObj('SalesDocumentEmailService', ['sendDeliveryNote', 'isSent']);
+    documentEmail.isSent.and.callFake((r: string) => r === 'SENT' || r === 'QUEUED');
 
     salesService.getQuoteById.and.returnValue(of(quote()));
     salesService.getCustomers.and.returnValue(of({ data: [{ id: 1, name: 'Acme Co', email: 'a@acme.com' }], total: 1 } as any));
@@ -40,6 +43,8 @@ describe('GenerateDeliveryNoteComponent', () => {
     salesService.getSalesLpoForQuote.and.returnValue(of(null));
     salesService.getQuoteLpoDocument.and.returnValue(null);
     salesService.fillMissingFromQuote.and.returnValue(null);
+    salesService.getDeliveryNoteLogo.and.returnValue(null);
+    salesService.saveDeliveryNoteLogo.and.returnValue(of(quote()));
     salesService.createSalesLpo.and.callFake(body => of({ ...body, id: 9 } as SalesLpo));
     salesService.updateSalesLpo.and.callFake((id, body) => of({ ...body, id } as SalesLpo));
     salesService.updateDeliveryNote.and.callFake((id, body) => of(body as SalesDeliveryNote));
@@ -49,7 +54,8 @@ describe('GenerateDeliveryNoteComponent', () => {
       { navigate: jasmine.createSpy('navigate') } as any,
       salesService,
       salesEmailService,
-      { add: jasmine.createSpy('add') } as any
+      { add: jasmine.createSpy('add') } as any,
+      documentEmail
     );
   });
 
@@ -183,6 +189,56 @@ describe('GenerateDeliveryNoteComponent', () => {
 
       expect(component.currentStep).toBe(1);
       expect(component.isSavingLpo).toBeFalse();
+    });
+  });
+
+  describe('LPO step: one click on Continue', () => {
+    beforeEach(() => component.ngOnInit());
+
+    it('waits for the chosen file to finish reading before Continue can run', () => {
+      (component as any).lpoFile = lpoFile();
+      component.isReadingLpo = true;
+      component.submitLpo();
+      expect(salesService.saveQuoteLpoDocument).not.toHaveBeenCalled();
+    });
+
+    it('fills a freshly created note from its quote straight away', () => {
+      (component as any).lpoFile = lpoFile();
+      (component as any).lpoFileChanged = true;
+      salesService.saveQuoteLpoDocument.and.returnValue(of(quote()));
+      salesService.getOrCreateDeliveryNoteForQuote.and.returnValue(of(note()));
+
+      component.submitLpo();
+
+      expect(component.currentStep).toBe(2);
+      expect(salesService.fillMissingFromQuote).toHaveBeenCalledWith(jasmine.objectContaining({ id: 1 }), jasmine.anything(), jasmine.anything());
+    });
+  });
+
+  describe('logo', () => {
+    beforeEach(() => component.ngOnInit());
+
+    it('starts from the quote\'s logo', () => {
+      salesService.getDeliveryNoteLogo.and.returnValue('quote-logo.png');
+      component.ngOnInit();
+      expect(component.logo).toBe('quote-logo.png');
+    });
+
+    it('saves an uploaded logo on the quote along with the details', () => {
+      component.deliveryNote = note();
+      (component as any).pendingLogo = { fileName: 'logo.png', base64Content: 'abc', contentType: 'image/png', uploadedAt: 'now' };
+
+      component.saveDetails();
+
+      expect(salesService.saveDeliveryNoteLogo).toHaveBeenCalledWith(1, jasmine.objectContaining({ fileName: 'logo.png' }));
+      expect(salesService.updateDeliveryNote).toHaveBeenCalled();
+      expect((component as any).pendingLogo).toBeNull();
+    });
+
+    it('does not re-save when no new logo was picked', () => {
+      component.deliveryNote = note();
+      component.saveDetails();
+      expect(salesService.saveDeliveryNoteLogo).not.toHaveBeenCalled();
     });
   });
 
@@ -354,17 +410,17 @@ describe('GenerateDeliveryNoteComponent', () => {
     it('goes there right after the PDF downloads', async () => {
       spyOn<any>(component, 'generatePdfBlob').and.returnValue(Promise.resolve(new Blob(['x'])));
       await component.downloadPDF();
-      expect(router()).toHaveBeenCalledWith(['/admin/sales/delivery-notes', 7], { replaceUrl: true });
+      expect(router()).toHaveBeenCalledWith(['/admin/sales/delivery-notes', 7], { replaceUrl: true, state: undefined });
     });
 
     it('goes there on Done', () => {
       component.finish();
-      expect(router()).toHaveBeenCalledWith(['/admin/sales/delivery-notes', 7], { replaceUrl: true });
+      expect(router()).toHaveBeenCalledWith(['/admin/sales/delivery-notes', 7], { replaceUrl: true, state: undefined });
     });
 
     it('stays put when the email fails, so it can be retried', async () => {
       component.customers = [{ id: 1, name: 'Acme Co', email: 'a@acme.com' } as any];
-      salesEmailService.send.and.returnValue(of({ status: 'FAILED' } as any));
+      documentEmail.sendDeliveryNote.and.returnValue(Promise.resolve({ result: 'FAILED', detail: 'Delivery failed.' }));
       spyOn<any>(component, 'generatePdfBlob').and.returnValue(Promise.resolve(new Blob(['x'])));
 
       await component.confirmSendEmail();
@@ -394,22 +450,43 @@ describe('GenerateDeliveryNoteComponent', () => {
       expect(component.showSendModal).toBeFalse();
     });
 
-    it('sends with the edited subject/message once confirmed, closing the modal first', async () => {
+    it('sends the edited subject/message through the shared email service, then shows the result on the detail page', async () => {
       component.showSendModal = true;
       component.emailSubject = 'Custom subject';
       component.emailMessage = 'Custom message body';
-      salesEmailService.send.and.returnValue(of({ status: 'SENT' } as any));
+      documentEmail.sendDeliveryNote.and.returnValue(Promise.resolve({ result: 'SENT', detail: 'Delivery note DN-7 was emailed to a@acme.com.' }));
       spyOn<any>(component, 'generatePdfBlob').and.returnValue(Promise.resolve(new Blob(['x'])));
 
       await component.confirmSendEmail();
 
       expect(component.showSendModal).toBeFalse();
-      expect(salesEmailService.send).toHaveBeenCalledWith(jasmine.objectContaining({
-        subject: 'Custom subject',
-        message: jasmine.stringContaining('Custom message body')
+      expect(documentEmail.sendDeliveryNote).toHaveBeenCalledWith(jasmine.objectContaining({ id: 7 }), jasmine.objectContaining({
+        to: 'a@acme.com', subject: 'Custom subject', message: 'Custom message body', pdfBlob: jasmine.any(Blob)
       }));
       expect(salesService.updateDeliveryNote).toHaveBeenCalledWith(7, jasmine.objectContaining({ sentAt: jasmine.any(String) }));
-      expect((component as any).router.navigate).toHaveBeenCalledWith(['/admin/sales/delivery-notes', 7], { replaceUrl: true });
+      expect((component as any).router.navigate).toHaveBeenCalledWith(['/admin/sales/delivery-notes', 7], {
+        replaceUrl: true, state: { flash: { severity: 'success', text: 'Delivery note DN-7 was emailed to a@acme.com.' } }
+      });
+    });
+
+    it('stays on step 3 with the reason shown inline when the email fails', async () => {
+      documentEmail.sendDeliveryNote.and.returnValue(Promise.resolve({ result: 'FAILED', detail: 'The delivery note could not be emailed (Bad request).' }));
+      spyOn<any>(component, 'generatePdfBlob').and.returnValue(Promise.resolve(new Blob(['x'])));
+
+      await component.confirmSendEmail();
+
+      expect(component.emailOutcome).toEqual({ severity: 'error', text: 'The delivery note could not be emailed (Bad request).' });
+      expect((component as any).router.navigate).not.toHaveBeenCalled();
+      expect(salesService.updateDeliveryNote).not.toHaveBeenCalledWith(7, jasmine.objectContaining({ sentAt: jasmine.any(String) }));
+    });
+
+    it('still sends, without the attachment, when the PDF cannot be rendered', async () => {
+      documentEmail.sendDeliveryNote.and.returnValue(Promise.resolve({ result: 'SENT', detail: 'ok' }));
+      spyOn<any>(component, 'generatePdfBlob').and.returnValue(Promise.reject(new Error('canvas')));
+
+      await component.confirmSendEmail();
+
+      expect(documentEmail.sendDeliveryNote).toHaveBeenCalledWith(jasmine.anything(), jasmine.objectContaining({ pdfBlob: null }));
     });
   });
 });

@@ -189,7 +189,7 @@
 
             <td class="il-td-num">
               <button type="button" class="il-link" (click)="viewDetails(tx)">
-                {{ tx.orderId || '#' + tx.id }}
+                {{ orderNumberOf(tx) }}
               </button>
             </td>
 
@@ -294,7 +294,7 @@
         <div>
           <label class="il-flabel">Order #</label>
           <div style="padding:6px 10px;background:#f8fafc;border-radius:6px;border:1px solid var(--border);font-weight:600;font-size:13px;color:var(--p);">
-            {{ selectedTxForPayment?.orderId || '#' + selectedTxForPayment?.id }}
+            {{ orderNumberOf(selectedTxForPayment) }}
           </div>
         </div>
         <div>

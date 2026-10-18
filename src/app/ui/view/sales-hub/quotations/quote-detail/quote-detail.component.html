@@ -185,7 +185,7 @@
                 <span style="color:#c0392b;font-weight:600;font-size:0.82rem;">-{{ formatCurrency(quote.discountAmount) }}</span>
               </div>
               <div *ngIf="quote.taxAmount > 0" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
-                <span style="color:#666;font-size:0.82rem;">VAT &#64; 7.5%</span>
+                <span style="color:#666;font-size:0.82rem;">{{ taxLabel }}</span>
                 <span style="color:#333;font-weight:600;font-size:0.82rem;">{{ formatCurrency(quote.taxAmount) }}</span>
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#1a2e3b;margin-top:6px;">

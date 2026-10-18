@@ -24,7 +24,7 @@ describe('QuoteDetailComponent', () => {
       'hasSignedDeliveryNoteDocument', 'convertQuote', 'saveSignedDeliveryNoteDocument', 'recordSignedDeliveryNote', 'markQuoteSent', 'getCustomers'
     ]);
     salesService.getQuoteById.and.returnValue(of(null));
-    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map() }));
+    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map(), byInvoiceId: new Map() }));
     salesService.getQuoteDeliveryNoteMap.and.returnValue(of(new Map()));
     salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
     documentEmail = jasmine.createSpyObj('SalesDocumentEmailService', ['sendQuote', 'isSent']);

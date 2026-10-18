@@ -19,7 +19,7 @@ describe('QuoteListComponent', () => {
     ]);
     salesService.getQuotes.and.returnValue(of({ data: [], total: 0 } as any));
     salesService.getCustomers.and.returnValue(of({ data: [], total: 0 } as any));
-    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map() }));
+    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map(), byInvoiceId: new Map() }));
     salesService.getQuoteDeliveryNoteMap.and.returnValue(of(new Map()));
     salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
     component = new QuoteListComponent(

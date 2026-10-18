@@ -144,3 +144,18 @@
 .qf-btn, .if-btn { border-radius: 5px !important; }
 .qf-input, .qf-select, .if-input, .if-select { border-radius: 5px !important; }
 .qf-modal, .if-modal { border-radius: 8px !important; }
+
+// ── Step 0: Upload Signed Delivery Note (Generate Invoice from a delivery note) ──
+.if-signed-card { width:100%; max-width:560px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:28px; text-align:center; align-self:flex-start; }
+.if-signed-icon { width:56px; height:56px; margin:0 auto 12px; border-radius:50%; background:var(--p-lt); color:var(--p); display:flex; align-items:center; justify-content:center; font-size:22px; }
+.if-signed-title { margin:0 0 6px; font-size:18px; color:var(--text); }
+.if-signed-sub { margin:0 0 16px; font-size:13px; color:var(--muted); line-height:1.5; }
+.if-signed-onfile { display:flex; align-items:center; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:12px; padding:8px 12px; border-radius:8px; background:#ecfdf5; color:#065f46; font-size:13px; i { color:#10b981; } }
+.if-signed-drop { display:flex; flex-direction:column; align-items:center; gap:8px; padding:18px; margin-bottom:16px; border:1px dashed var(--border); border-radius:10px; cursor:pointer; font-size:13px; color:var(--text);
+  i { font-size:22px; color:var(--muted); }
+  &:hover { border-color:var(--p); background:var(--p-lt); }
+}
+.if-signed-fields { display:grid; grid-template-columns:1fr 1fr; gap:12px; text-align:left;
+  label { display:flex; flex-direction:column; gap:5px; }
+  @media (max-width:480px) { grid-template-columns:1fr; }
+}

@@ -607,9 +607,12 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     const unitPrice = itemForm.get('unitPrice')?.value || 0;
     const taxRate = itemForm.get('taxRate')?.value || 0;
     
-    const total = quantity * unitPrice;
-    const taxAmount = total * (taxRate / 100);
-    
+    // A line's amount includes its own tax, so it changes as soon as a tax rate is entered; the
+    // subtotal (calculateTotals) stays net of tax, with tax as its own row underneath.
+    const net = quantity * unitPrice;
+    const taxAmount = net * (taxRate / 100);
+    const total = net + taxAmount;
+
     itemForm.patchValue({ total: total, taxAmount: taxAmount }, { emitEvent: false });
     this.calculateTotals();
   }
@@ -623,7 +626,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       const total = item.get('total')?.value || 0;
       const taxAmount = item.get('taxAmount')?.value || 0;
       
-      this.subtotal += total;
+      this.subtotal += total - taxAmount;
       this.totalTax += taxAmount;
     }
     
@@ -1253,6 +1256,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         quantity: Number(raw.quantity) || 1,
         unitPrice: Number(raw.unitPrice) || 0,
         discount: 0,
+        taxRate: Number(raw.taxRate) || 0,
         total: Number(raw.total) || 0
       };
     });
@@ -1301,7 +1305,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         this.isSubmitting = false;
         
         // Handle delivery action
-        await this.handleDeliveryAction(response, this.selectedAction);
+        await this.handleDeliveryAction(this.withFormTax(response), this.selectedAction);
       },
       error: (error: any) => {
         console.error('Error saving quote:', error);
@@ -1328,6 +1332,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         quantity: Number(raw.quantity) || 1,
         unitPrice: Number(raw.unitPrice) || 0,
         discount: 0,
+        taxRate: Number(raw.taxRate) || 0,
         total: Number(raw.total) || 0
       };
     });
@@ -1437,6 +1442,22 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         return null;
       }
     }
+  }
+
+  /** The saved quote with each line's tax rate (and the tax total) taken from this form when
+   *  the save response leaves them out — the email and PDF are built from it, and would
+   *  otherwise show every line at 0% tax. */
+  private withFormTax<T extends { items?: any[]; taxAmount?: number }>(saved: T): T {
+    const formItems = this.items.getRawValue();
+    return {
+      ...saved,
+      taxAmount: saved.taxAmount ?? this.totalTax,
+      items: (saved.items || []).map((item: any, i: number) => ({
+        ...item,
+        taxRate: item.taxRate ?? formItems[i]?.taxRate ?? 0,
+        total: item.total ?? formItems[i]?.total
+      }))
+    };
   }
 
   private async handleDeliveryAction(quote: Quote, action: 'pdf' | 'email' | 'both'): Promise<void> {

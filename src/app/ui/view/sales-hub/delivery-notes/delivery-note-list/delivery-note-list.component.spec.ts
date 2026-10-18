@@ -20,7 +20,7 @@ describe('DeliveryNoteListComponent', () => {
   beforeEach(() => {
     salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getConvertedQuotesAwaitingDeliveryNote', 'getDeliveryNotes', 'getCustomers', 'getOrderIdLookup']);
     salesService.getCustomers.and.returnValue(of({ data: [{ id: 1, name: 'Acme Co' }, { id: 2, name: 'Globex' }], total: 2 } as any));
-    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map() }));
+    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map(), byInvoiceId: new Map() }));
     component = new DeliveryNoteListComponent(
       { add: jasmine.createSpy('add') } as any,
       salesService,
