@@ -203,6 +203,9 @@
                 </div>
               </div>
               <div class="dnd-lpo-actions">
+                <button *ngIf="canViewLpo" type="button" class="btn-action download" (click)="viewLpo()">
+                  <i class="fas fa-eye"></i> View LPO
+                </button>
                 <button *ngIf="lpo.status === 'RECEIVED'" type="button" class="btn-action accept" [disabled]="isUpdatingLpo" (click)="verifyLpo()">
                   <i class="fas fa-check"></i> Verify
                 </button>
@@ -215,7 +218,20 @@
               </div>
             </ng-container>
             <ng-template #noLpo>
-              <p class="dnd-muted">No LPO record is linked to this delivery note.</p>
+              <p class="dnd-muted" *ngIf="!canViewLpo">No LPO has been uploaded for this delivery note.</p>
+              <ng-container *ngIf="canViewLpo">
+                <div class="details-list">
+                  <div class="detail-row">
+                    <span class="detail-label">File</span>
+                    <span class="detail-value">{{ lpoFileName }}</span>
+                  </div>
+                </div>
+                <div class="dnd-lpo-actions">
+                  <button type="button" class="btn-action download" (click)="viewLpo()">
+                    <i class="fas fa-eye"></i> View LPO
+                  </button>
+                </div>
+              </ng-container>
             </ng-template>
           </div>
         </div>
@@ -369,6 +385,30 @@
               [disabled]="!!action.reasonLabel && !actionReason.trim()" (click)="confirmPendingAction()">
         <i class="fas {{ action.icon }}"></i> {{ action.confirmLabel }}
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- View LPO — the order document the customer sent back -->
+<div class="custom-modal-backdrop" *ngIf="showLpoViewer" (click)="closeLpoViewer()">
+  <div class="custom-modal-card dnd-lpo-viewer" (click)="$event.stopPropagation()">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge"><i class="fas fa-file-import"></i></div>
+        <h3>LPO{{ lpo?.lpoNumber ? ' — ' + lpo?.lpoNumber : '' }}</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="closeLpoViewer()">&times;</button>
+    </div>
+
+    <div class="dnd-lpo-frame">
+      <img *ngIf="lpoIsImage" [src]="lpoViewUrl" [alt]="lpoFileName">
+      <iframe *ngIf="!lpoIsImage" [src]="lpoViewUrl" [title]="lpoFileName"></iframe>
+    </div>
+
+    <div class="custom-modal-footer dnd-modal-footer">
+      <span class="dnd-lpo-name">{{ lpoFileName }}</span>
+      <button type="button" class="btn-modal-cancel" (click)="openLpoInNewTab()"><i class="fas fa-external-link-alt"></i> Open in New Tab</button>
+      <button type="button" class="btn-modal-save" (click)="downloadLpo()"><i class="fas fa-download"></i> Download</button>
     </div>
   </div>
 </div>

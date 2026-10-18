@@ -732,3 +732,7 @@
   padding: 12px 20px 16px 20px;
   border-top: 1px solid var(--border);
 }
+
+// Stage tones that the derived order progress uses (see order-progress.ts)
+.il-status-badge--invoice { background: #f3e8ff; color: #7e22ce; }
+.il-count-pill--orange { background: #ffedd5; color: #9a3412; }

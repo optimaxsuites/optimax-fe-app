@@ -349,6 +349,27 @@ describe('SalesService', () => {
     });
   });
 
+  describe('getOrderSnapshot: one order with everything linked to it', () => {
+    it('reads the quote, invoice, delivery note, LPO and full customer record', () => {
+      let result: any;
+      service.getOrderSnapshot(42).subscribe(r => (result = r));
+
+      http.expectOne(`${BASE}/sales-orders/42`).flush({ id: 42, status: 'QUOTE_CONVERTED', quoteId: { id: 3 }, invoiceId: { id: 8 }, customerId: { id: 7 } });
+      http.expectOne(r => r.url === `${BASE}/quotes/3`).flush({ id: 3, status: 'CONVERTED', items: [{ productName: 'Widget', quantity: 2 }], customerName: { id: 7, name: 'Acme Co' } });
+      http.expectOne(r => r.url === `${BASE}/invoices/8`).flush({ id: 8, invoiceNumber: 'INV-8', status: 'SENT' });
+      http.expectOne(r => r.url === `${BASE}/delivery-notes`).flush([{ id: 4, deliveryNumber: 'DN-4', salesOrderId: 42, status: 'DELIVERED', items: [] }, { id: 5, salesOrderId: 99 }]);
+      http.expectOne(r => r.url === `${BASE}/sales-lpos`).flush([{ id: 9, quoteId: 3, lpoNumber: 'PR-1', status: 'RECEIVED' }]);
+      http.expectOne(r => r.url.includes('/customers')).flush({ data: [{ id: 7, name: 'Acme Co', email: 'a@acme.com', phone: '0803' }], totalElements: 1 });
+
+      expect(result.deliveryNote.deliveryNumber).toBe('DN-4');
+      expect(result.lpo.lpoNumber).toBe('PR-1');
+      expect(result.invoice.invoiceNumber).toBe('INV-8');
+      expect(result.customer.email).toBe('a@acme.com');
+      expect(result.items.length).toBe(1);
+      expect(result.progress.label).toBe('Awaiting Payment');
+    });
+  });
+
   describe('sales LPO endpoints', () => {
     const lpo: any = { id: 9, lpoNumber: 'PR-1', quoteId: 3, status: 'RECEIVED', document: {}, createdAt: 'x' };
 

@@ -32,6 +32,21 @@ import {
 } from '../../domain/sales/sales.dto';
 import { environment } from '../../shared-component/service/environments/environment';
 import { parseApiDate } from './date.util';
+import { deriveOrderProgress, OrderProgress } from './order-progress';
+
+/** Everything belonging to one order, assembled from its linked documents (see getOrderSnapshot). */
+export interface OrderSnapshot {
+  tx: SalesandTransactions;
+  quote: Quote | null;
+  invoice: Invoice | null;
+  deliveryNote: SalesDeliveryNote | null;
+  lpo: SalesLpo | null;
+  /** The full customer record — the order only carries a partial copy. */
+  customer: Customer | null;
+  /** Line items: the quote's, else the invoice's, else what the order record carries. */
+  items: any[];
+  progress: OrderProgress;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -439,6 +454,48 @@ export class SalesService {
         return { byQuoteId, byTransactionId, byInvoiceId };
       }),
       catchError(() => of({ byQuoteId: new Map(), byTransactionId: new Map(), byInvoiceId: new Map() }))
+    );
+  }
+
+  /**
+   * One order with everything linked to it — the Sales & Transactions record only keeps a partial
+   * copy of the quote and is only updated on quote/invoice events, so the detail page reads the
+   * quote, invoice, delivery note, LPO and customer themselves.
+   */
+  getOrderSnapshot(id: string | number): Observable<OrderSnapshot | null> {
+    return this.getSalesandTransactionsById(id).pipe(
+      switchMap(tx => {
+        if (!tx) return of(null);
+        const quoteId = this.idOf(tx.quoteId);
+        const invoiceId = this.idOf(tx.invoiceId);
+        return forkJoin({
+          quote: quoteId != null ? this.getQuoteById(quoteId) : of(null),
+          invoice: invoiceId != null ? this.getInvoiceById(invoiceId) : of(null),
+          notes: this.getDeliveryNotes({ salesOrderId: tx.id, size: 1000 }),
+          lpo: quoteId != null ? this.getSalesLpoForQuote(quoteId) : of(null),
+          customers: this.getCustomers({ page: 0, size: 1000 }).pipe(catchError(() => of({ data: [] as Customer[], total: 0 })))
+        }).pipe(
+          map(({ quote, invoice, notes, lpo, customers }) => {
+            const fullQuote: any = quote || (typeof tx.quoteId === 'object' ? tx.quoteId : null);
+            const fullInvoice: any = invoice || (typeof tx.invoiceId === 'object' ? tx.invoiceId : null);
+            // The list endpoint may ignore salesOrderId, so match on the links here too
+            const deliveryNote = notes.data.find(n =>
+              String(n.salesOrderId) === String(tx.id) || (quoteId != null && String(n.quoteId) === String(quoteId))) || null;
+            const nested: any = this.quoteCustomer(fullQuote) || (typeof tx.customerId === 'object' ? tx.customerId : null)
+              || (typeof tx.customerName === 'object' ? tx.customerName : null);
+            const customerId = nested?.id ?? this.idOf(tx.customerId);
+            const customer = customers.data.find(c => String(c.id) === String(customerId)) || nested || null;
+            const nonEmpty = (arr: any) => Array.isArray(arr) && arr.length ? arr : null;
+            const items = nonEmpty(fullQuote?.items) || nonEmpty(fullInvoice?.items) || nonEmpty((tx.items as any)?.items) || [];
+            const hasLpo = !!lpo || !!this.getQuoteLpoDocument(fullQuote);
+            return {
+              tx, quote: fullQuote, invoice: fullInvoice, deliveryNote, lpo, customer, items,
+              progress: deriveOrderProgress({ tx, quote: fullQuote, hasLpo, deliveryNote, invoice: fullInvoice })
+            };
+          })
+        );
+      }),
+      catchError(() => of(null))
     );
   }
 
