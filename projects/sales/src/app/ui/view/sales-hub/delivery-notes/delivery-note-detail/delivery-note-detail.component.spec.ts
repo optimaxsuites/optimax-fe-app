@@ -7,6 +7,7 @@ import { SalesDeliveryNote } from '../../../../domain/sales/sales.dto';
 describe('DeliveryNoteDetailComponent', () => {
   let component: DeliveryNoteDetailComponent;
   let salesService: jasmine.SpyObj<SalesService>;
+  const sanitizer: any = { bypassSecurityTrustResourceUrl: (url: string) => ({ safe: url }) };
 
   const note = (over: Partial<SalesDeliveryNote> = {}): SalesDeliveryNote => ({
     id: 1, deliveryNumber: 'DN-1', status: 'PENDING', items: [], customerAddress: '', ...over
@@ -22,8 +23,11 @@ describe('DeliveryNoteDetailComponent', () => {
       'getDeliveryNoteById', 'updateDeliveryNoteStatus', 'getCustomers', 'getMyMerchantInfo',
       'getOrderIdLookup', 'getSalesandTransactionsById', 'getDeliveryNoteMeta', 'getSalesLpoById', 'getSalesLpoForQuote',
       'deleteDeliveryNote', 'updateDeliveryNote', 'verifySalesLpo', 'rejectSalesLpo', 'deleteSalesLpo',
-      'getQuoteById', 'hasSignedDeliveryNoteDocument', 'fillMissingFromQuote', 'getDeliveryNoteLogo', 'deliveryAddressFor'
+      'getQuoteById', 'hasSignedDeliveryNoteDocument', 'fillMissingFromQuote', 'getDeliveryNoteLogo', 'deliveryAddressFor',
+      'quoteCustomer', 'getQuoteLpoDocument'
     ]);
+    salesService.quoteCustomer.and.callFake((q: any) => q?.customerName && typeof q.customerName === 'object' ? q.customerName : null);
+    salesService.getQuoteLpoDocument.and.callFake((q: any) => q?.additionalOptions?.lpoDocument || null);
     salesService.getDeliveryNoteLogo.and.returnValue(null);
     salesService.deliveryAddressFor.and.returnValue('');
     salesService.fillMissingFromQuote.and.returnValue(null);
@@ -41,7 +45,8 @@ describe('DeliveryNoteDetailComponent', () => {
       activatedRoute(),
       { navigate: jasmine.createSpy('navigate') } as any,
       salesService,
-      { add: jasmine.createSpy('add') } as any
+      { add: jasmine.createSpy('add') } as any,
+      sanitizer
     );
   });
 
@@ -201,6 +206,56 @@ describe('DeliveryNoteDetailComponent', () => {
     });
   });
 
+  describe('Customer card', () => {
+    it('finds the customer even when the ids come back as different types', () => {
+      component.customers = [{ id: 7, name: 'Acme Co', phone: '0803' } as any];
+      component.note = note({ customerId: '7' as any });
+      expect(component.customerName).toBe('Acme Co');
+      expect(component.customerPhone).toBe('0803');
+    });
+
+    it('prefers the recipient captured on the note', () => {
+      component.note = note({ recipientName: 'Acme (at issue)' });
+      expect(component.customerName).toBe('Acme (at issue)');
+    });
+
+    it('falls back to the customer on the note\'s quote', () => {
+      salesService.getQuoteById.and.returnValue(of({ id: 3, customerName: { id: 7, name: 'Quote Customer Ltd' } } as any));
+      component.note = note({ quoteId: 3, customerId: 99 });
+      (component as any).loadContext(component.note);
+      expect(component.customerName).toBe('Quote Customer Ltd');
+    });
+  });
+
+  describe('View LPO', () => {
+    const lpoDoc = { fileName: 'lpo.pdf', base64Content: btoa('%PDF-1.4'), contentType: 'application/pdf', uploadedAt: 'then' };
+
+    it('shows the LPO uploaded for this delivery note', () => {
+      salesService.getQuoteById.and.returnValue(of({ id: 3, additionalOptions: { lpoDocument: lpoDoc } } as any));
+      component.note = note({ quoteId: 3 });
+      (component as any).loadContext(component.note);
+
+      expect(component.canViewLpo).toBeTrue();
+      component.viewLpo();
+
+      expect(component.showLpoViewer).toBeTrue();
+      expect((component.lpoViewUrl as any).safe).toMatch(/^blob:/);
+      expect(component.lpoFileName).toBe('lpo.pdf');
+    });
+
+    it('uses the backend\'s stored copy once the LPO record has one', () => {
+      component.lpo = { id: 9, document: { fileName: 'lpo.pdf', fileUrl: 'https://files/lpo.pdf', contentType: 'application/pdf' } } as any;
+      component.viewLpo();
+      expect((component.lpoViewUrl as any).safe).toBe('https://files/lpo.pdf');
+    });
+
+    it('says so when there is nothing to show', () => {
+      component.viewLpo();
+      expect(component.showLpoViewer).toBeFalse();
+      expect((component as any).messageService.add).toHaveBeenCalledWith(jasmine.objectContaining({ severity: 'warn' }));
+    });
+  });
+
   describe('LPO actions', () => {
     const lpo = { id: 9, lpoNumber: 'PR-1', status: 'RECEIVED' } as any;
 
@@ -283,7 +338,8 @@ describe('DeliveryNoteDetailComponent', () => {
         activatedRoute(paramMap$.asObservable()),
         { navigate: jasmine.createSpy('navigate') } as any,
         salesService,
-        { add: jasmine.createSpy('add') } as any
+        { add: jasmine.createSpy('add') } as any,
+        sanitizer
       );
 
       c.ngOnInit();

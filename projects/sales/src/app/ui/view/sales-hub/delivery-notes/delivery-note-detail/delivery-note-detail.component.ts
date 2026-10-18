@@ -5,7 +5,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, Subject, of, takeUntil } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Customer, SalesDeliveryNote, SalesDeliveryNoteStatus, SalesLpo, MerchantInfo } from '../../../../domain/sales/sales.dto';
+import { Customer, SalesDeliveryNote, SalesDeliveryNoteStatus, SalesLpo, MerchantInfo, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { formatApiDate, formatApiDateTime } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { DeliveryNoteDocumentComponent } from '../delivery-note-document/delivery-note-document.component';
@@ -65,6 +66,14 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
   pendingAction: PendingAction | null = null;
   /** Whether the signed delivery note has been uploaded (the first step of Generate Invoice). */
   hasSignedCopy = false;
+  /** The customer from the note's quote / order — the Customer card's fallback when the note has
+   *  no recipient snapshot and the customer list doesn't have them. */
+  private sourceCustomer: any = null;
+  /** The LPO file the seller uploaded, kept on the quote until the backend stores it (see View LPO). */
+  lpoFile: QuoteDocumentAttachment | null = null;
+  showLpoViewer = false;
+  lpoViewUrl: SafeResourceUrl | null = null;
+  private lpoObjectUrl: string | null = null;
   /** The logo uploaded for this delivery note, or its quote's (see SalesService.getDeliveryNoteLogo). */
   logo: string | null = null;
   actionReason = '';
@@ -75,7 +84,8 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private salesService: SalesService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private sanitizer: DomSanitizer
   ) { }
 
   // Same navigation-staleness fix as the other detail pages in this module — subscribes to the
@@ -99,6 +109,7 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.lpoObjectUrl) URL.revokeObjectURL(this.lpoObjectUrl);
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -127,6 +138,8 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
       this.salesService.getQuoteById(note.quoteId).pipe(takeUntil(this.destroy$)).subscribe(quote => {
         if (this.salesService.hasSignedDeliveryNoteDocument(quote)) this.hasSignedCopy = true;
         this.logo = this.salesService.getDeliveryNoteLogo(quote);
+        this.sourceCustomer = this.salesService.quoteCustomer(quote) || this.sourceCustomer;
+        this.lpoFile = this.salesService.getQuoteLpoDocument(quote) || this.lpoFile;
         this.backfillFromQuote(note, quote);
       });
     }
@@ -151,6 +164,8 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
     this.salesService.getSalesandTransactionsById(transactionId).pipe(takeUntil(this.destroy$)).subscribe(tx => {
       if (!tx) return;
       this.invoiceNumber = (tx.invoiceId as any)?.invoiceNumber || '';
+      this.sourceCustomer ||= this.salesService.quoteCustomer(tx.quoteId) || (typeof tx.customerId === 'object' ? tx.customerId : null);
+      this.lpoFile ||= this.salesService.getQuoteLpoDocument(tx.quoteId as any);
       if (this.salesService.hasSignedDeliveryNoteDocument(tx.quoteId as any)) this.hasSignedCopy = true;
       const meta = this.salesService.getDeliveryNoteMeta(tx.quoteId as any);
       this.poNumber ||= meta.poNumber || '';
@@ -176,22 +191,79 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
 
   /** The recipient as captured when the note was issued, falling back to the live customer
    *  record for notes created before recipientName/recipientPhone existed. */
+  /** The note's customer from the customer list — ids are compared as strings since the API
+   *  isn't consistent about sending them as numbers or strings — else the quote's / order's. */
+  private get customer(): any {
+    const id = this.note?.customerId;
+    return (id != null ? this.customers.find(c => String(c.id) === String(id)) : null) || this.sourceCustomer;
+  }
+
   get customerName(): string {
-    if (this.note?.recipientName) return this.note.recipientName;
-    const customer = this.customers.find(c => c.id === this.note?.customerId);
-    return customer?.name || 'Customer';
+    return this.note?.recipientName || this.customer?.name || this.customer?.customerName || 'Customer';
   }
 
   /** The customer's address on file, shown when the note itself has none saved. */
   get customerAddressFallback(): string {
-    const customer = this.customers.find(c => c.id === this.note?.customerId);
-    return this.salesService.deliveryAddressFor(customer);
+    return this.salesService.deliveryAddressFor(this.customer, this.sourceCustomer);
   }
 
   get customerPhone(): string {
-    if (this.note?.recipientPhone) return this.note.recipientPhone;
-    const customer = this.customers.find(c => c.id === this.note?.customerId);
-    return customer?.phone || '';
+    return this.note?.recipientPhone || this.customer?.phone || '';
+  }
+
+  // ============================================================
+  // VIEW LPO — the order document the customer sent back
+  // ============================================================
+
+  get canViewLpo(): boolean {
+    return !!(this.lpo?.document?.fileUrl || this.lpoFile?.base64Content);
+  }
+
+  get lpoFileName(): string {
+    return this.lpo?.document?.fileName || this.lpoFile?.fileName || 'LPO';
+  }
+
+  get lpoIsImage(): boolean {
+    return (this.lpo?.document?.contentType || this.lpoFile?.contentType || '').startsWith('image/');
+  }
+
+  /** The backend's stored copy once it has one (document.fileUrl), else the file kept on the quote. */
+  private get lpoSourceUrl(): string | null {
+    if (this.lpo?.document?.fileUrl) return this.lpo.document.fileUrl;
+    if (!this.lpoFile?.base64Content) return null;
+    if (!this.lpoObjectUrl) {
+      const bytes = Uint8Array.from(atob(this.lpoFile.base64Content), ch => ch.charCodeAt(0));
+      this.lpoObjectUrl = URL.createObjectURL(new Blob([bytes], { type: this.lpoFile.contentType || 'application/pdf' }));
+    }
+    return this.lpoObjectUrl;
+  }
+
+  viewLpo(): void {
+    const url = this.lpoSourceUrl;
+    if (!url) {
+      this.messageService.add({ severity: 'warn', summary: 'No LPO File', detail: 'No LPO file has been uploaded for this delivery note.' });
+      return;
+    }
+    this.lpoViewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    this.showLpoViewer = true;
+  }
+
+  closeLpoViewer(): void {
+    this.showLpoViewer = false;
+  }
+
+  openLpoInNewTab(): void {
+    const url = this.lpoSourceUrl;
+    if (url) window.open(url, '_blank', 'noopener');
+  }
+
+  downloadLpo(): void {
+    const url = this.lpoSourceUrl;
+    if (!url) return;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = this.lpoFileName;
+    a.click();
   }
 
   getTotalQuantity(): number {

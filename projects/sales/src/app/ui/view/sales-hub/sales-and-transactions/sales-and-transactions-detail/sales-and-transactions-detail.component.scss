@@ -136,7 +136,7 @@
     align-items: center;
     z-index: 2;
     text-align: center;
-    min-width: 110px;
+    min-width: 96px;
 
     .step-icon {
       width: 44px;
@@ -163,6 +163,13 @@
     .step-date {
       font-size: 0.75rem;
       color: #94a3b8;
+    }
+
+    .step-detail { display: block; margin-top: 0.15rem; color: #64748b; }
+
+    &.stopped {
+      .step-icon { background: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
+      .step-label { color: #b91c1c; }
     }
 
     &.completed {
@@ -338,3 +345,7 @@
   &.badge-returned { background: #fef3c7; color: #b45309; }
   &.badge-default { background: #f1f5f9; color: #475569; }
 }
+
+.doc-link { border: 0; background: none; padding: 0; color: #2563eb; font: inherit; font-weight: 600; cursor: pointer; &:hover { text-decoration: underline; } }
+.muted-note { margin: 0; font-size: 0.85rem; color: #94a3b8; }
+.stepper-track { overflow-x: auto; }

@@ -15,10 +15,13 @@ describe('SalesAndTransactionsListComponent', () => {
   let salesService: jasmine.SpyObj<SalesService>;
 
   beforeEach(() => {
-    salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getSalesandTransactions', 'getCustomers', 'updateSalesandTransactions', 'updateInvoice', 'orderNumberFor']);
+    salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getSalesandTransactions', 'getCustomers', 'updateSalesandTransactions', 'updateInvoice', 'orderNumberFor', 'getDeliveryNotes', 'getSalesLpos', 'getQuoteLpoDocument']);
     salesService.orderNumberFor.and.callFake((tx: any) => tx?.orderId || '');
     salesService.getSalesandTransactions.and.returnValue(of({ data: [], total: 0 } as any));
     salesService.getCustomers.and.returnValue(of({ data: [], total: 0 } as any));
+    salesService.getDeliveryNotes.and.returnValue(of({ data: [], total: 0 }));
+    salesService.getSalesLpos.and.returnValue(of([]));
+    salesService.getQuoteLpoDocument.and.returnValue(null);
     component = new SalesAndTransactionsListComponent(
       salesService,
       { navigate: jasmine.createSpy('navigate') } as any,
@@ -102,4 +105,24 @@ describe('SalesAndTransactionsListComponent', () => {
     });
   });
 
+  describe('status column and filters follow the order\'s real stage', () => {
+    it('shows a delivery stage the order record\'s own status never reached', () => {
+      salesService.getSalesandTransactions.and.returnValue(of({ data: [
+        { id: 42, status: 'QUOTE_CONVERTED', quoteId: { id: 3, status: 'CONVERTED' } },
+        { id: 43, status: 'QUOTE_SENT', quoteId: { id: 5, status: 'SENT' } }
+      ], total: 2 } as any));
+      salesService.getDeliveryNotes.and.returnValue(of({ data: [{ id: 4, salesOrderId: 42, status: 'IN_TRANSIT' }] as any, total: 1 }));
+
+      component.loadTransactions();
+
+      const order = component.transactions.find((t: any) => t.id === 42)!;
+      expect(component.progressOf(order).label).toBe('In Transit');
+      expect(component.getStageCount('IN_DELIVERY')).toBe(1);
+      expect(component.getStageCount('QUOTE')).toBe(1);
+
+      component.selectedStatus = 'IN_DELIVERY';
+      component.applyFilters();
+      expect(component.filteredTransactions.map((t: any) => t.id)).toEqual([42]);
+    });
+  });
 });

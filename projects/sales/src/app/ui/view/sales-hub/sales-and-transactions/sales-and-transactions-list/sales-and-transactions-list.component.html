@@ -30,54 +30,12 @@
         <span>All Transactions</span>
         <span class="il-count-pill">{{ transactions.length }}</span>
       </button>
-      <button class="il-status-btn" type="button"
-              [class.il-status-btn--active]="selectedStatus === 'QUOTE_SENT'"
-              (click)="selectedStatus = 'QUOTE_SENT'; onStatusFilterChange()">
-        <i class="fas fa-file-invoice"></i>
-        <span>Quote Sent</span>
-        <span class="il-count-pill il-count-pill--blue">{{ getStatusCount('QUOTE_SENT') }}</span>
-      </button>
-      <button class="il-status-btn" type="button"
-              [class.il-status-btn--active]="selectedStatus === 'QUOTE_ACCEPTED' || selectedStatus === 'QUOTE_CONVERTED'"
-              (click)="selectedStatus = 'QUOTE_ACCEPTED'; onStatusFilterChange()">
-        <i class="fas fa-check-circle"></i>
-        <span>Quote Accepted</span>
-        <span class="il-count-pill il-count-pill--green">{{ getStatusCount('QUOTE_ACCEPTED') + getStatusCount('QUOTE_CONVERTED') }}</span>
-      </button>
-      <button class="il-status-btn" type="button"
-              [class.il-status-btn--active]="selectedStatus === 'PAYMENT_PENDING'"
-              (click)="selectedStatus = 'PAYMENT_PENDING'; onStatusFilterChange()">
-        <i class="fas fa-clock"></i>
-        <span>Payment Pending</span>
-        <span class="il-count-pill il-count-pill--orange">{{ getStatusCount('PAYMENT_PENDING') + getStatusCount('PAYMENT_IN_PROGRESS') }}</span>
-      </button>
-      <button class="il-status-btn" type="button"
-              [class.il-status-btn--active]="selectedStatus === 'PAYMENT_COMPLETED'"
-              (click)="selectedStatus = 'PAYMENT_COMPLETED'; onStatusFilterChange()">
-        <i class="fas fa-check-circle"></i>
-        <span>Payment Completed</span>
-        <span class="il-count-pill il-count-pill--green">{{ getStatusCount('PAYMENT_COMPLETED') + getStatusCount('RECEIPT_GENERATED') }}</span>
-      </button>
-      <button class="il-status-btn" type="button"
-              [class.il-status-btn--active]="selectedStatus === 'DISPATCHED'"
-              (click)="selectedStatus = 'DISPATCHED'; onStatusFilterChange()">
-        <i class="fas fa-truck"></i>
-        <span>In Transit</span>
-        <span class="il-count-pill il-count-pill--blue">{{ getStatusCount('DISPATCHED') + getStatusCount('IN_TRANSIT') }}</span>
-      </button>
-      <button class="il-status-btn" type="button"
-              [class.il-status-btn--active]="selectedStatus === 'DELIVERED'"
-              (click)="selectedStatus = 'DELIVERED'; onStatusFilterChange()">
-        <i class="fas fa-home"></i>
-        <span>Delivered</span>
-        <span class="il-count-pill il-count-pill--green">{{ getStatusCount('DELIVERED') }}</span>
-      </button>
-      <button class="il-status-btn" type="button"
-              [class.il-status-btn--active]="selectedStatus === 'PAYMENT_FAILED' || selectedStatus === 'QUOTE_REJECTED'"
-              (click)="selectedStatus = 'PAYMENT_FAILED'; onStatusFilterChange()">
-        <i class="fas fa-exclamation-circle"></i>
-        <span>Failed / Rejected</span>
-        <span class="il-count-pill il-count-pill--red">{{ getStatusCount('PAYMENT_FAILED') + getStatusCount('QUOTE_REJECTED') }}</span>
+      <button class="il-status-btn" type="button" *ngFor="let f of stageFilters"
+              [class.il-status-btn--active]="selectedStatus === f.value"
+              (click)="selectedStatus = f.value; onStatusFilterChange()">
+        <i class="fas" [ngClass]="f.icon"></i>
+        <span>{{ f.label }}</span>
+        <span class="il-count-pill" [ngClass]="'il-count-pill--' + f.pill">{{ getStageCount(f.value) }}</span>
       </button>
     </div>
 
@@ -181,7 +139,7 @@
         <tbody *ngIf="!isLoading && filteredTransactions.length > 0">
           <tr *ngFor="let tx of filteredTransactions"
               [class.il-row--overdue]="isPaymentOverdue(tx)"
-              [class.il-row--cancelled]="tx.status === 'QUOTE_REJECTED' || tx.status === 'PAYMENT_FAILED'">
+              [class.il-row--cancelled]="progressOf(tx).stopped">
 
             <td class="il-td-chk">
               <input type="checkbox" [checked]="isSelected(tx.id)" (change)="toggleSelection(tx.id, $event)">
@@ -211,15 +169,8 @@
 
             <td>
               <span class="il-status-badge"
-                    [class.il-status-badge--sent]="tx.status === 'QUOTE_SENT' || tx.status === 'INVOICE_SENT'"
-                    [class.il-status-badge--accepted]="tx.status === 'QUOTE_ACCEPTED' || tx.status === 'QUOTE_CONVERTED'"
-                    [class.il-status-badge--pending]="tx.status === 'PAYMENT_PENDING' || tx.status === 'PAYMENT_IN_PROGRESS'"
-                    [class.il-status-badge--paid]="tx.status === 'PAYMENT_COMPLETED' || tx.status === 'RECEIPT_GENERATED'"
-                    [class.il-status-badge--transit]="tx.status === 'DISPATCHED' || tx.status === 'IN_TRANSIT'"
-                    [class.il-status-badge--delivered]="tx.status === 'DELIVERED'"
-                    [class.il-status-badge--overdue]="isPaymentOverdue(tx)"
-                    [class.il-status-badge--cancelled]="tx.status === 'QUOTE_REJECTED' || tx.status === 'PAYMENT_FAILED'">
-                {{ isPaymentOverdue(tx) ? 'Overdue' : formatStatusLabel(tx.status) }}
+                    [ngClass]="'il-status-badge--' + (isPaymentOverdue(tx) ? 'overdue' : progressOf(tx).tone)">
+                {{ isPaymentOverdue(tx) ? 'Overdue' : progressOf(tx).label }}
               </span>
             </td>
 
