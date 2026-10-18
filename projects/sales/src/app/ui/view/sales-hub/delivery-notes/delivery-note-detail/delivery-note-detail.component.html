@@ -58,8 +58,7 @@
         <button *ngIf="canMarkInTransit()" (click)="updateStatus('IN_TRANSIT')" class="btn-action send" [disabled]="isUpdatingStatus">
           <i class="fas fa-shipping-fast"></i> Mark In Transit
         </button>
-        <button *ngIf="canMarkDelivered()" (click)="updateStatus('DELIVERED')" class="btn-action accept"
-                [disabled]="isUpdatingStatus || !hasSignedCopy" [title]="markDeliveredHint">
+        <button *ngIf="canMarkDelivered()" (click)="updateStatus('DELIVERED')" class="btn-action accept" [disabled]="isUpdatingStatus">
           <i class="fas fa-check-circle"></i> Mark Delivered
         </button>
         <button *ngIf="canMarkReturned()" (click)="askReturn()" class="btn-action decline" [disabled]="isUpdatingStatus">
@@ -67,6 +66,12 @@
         </button>
         <button *ngIf="canCancel()" (click)="askCancel()" class="btn-action decline" [disabled]="isUpdatingStatus">
           <i class="fas fa-ban"></i> Cancel
+        </button>
+        <button *ngIf="canGenerateInvoice()" (click)="generateInvoice()" class="btn-action send">
+          <i class="fas fa-file-invoice-dollar"></i> Generate Invoice
+        </button>
+        <button *ngIf="note.invoiceId != null" (click)="viewInvoice()" class="btn-action download">
+          <i class="fas fa-file-invoice"></i> View Invoice
         </button>
         <button (click)="printNote()" class="btn-action download">
           <i class="fas fa-print"></i> Print
@@ -80,6 +85,8 @@
         </button>
       </div>
     </div>
+
+    <p-message *ngIf="flash" class="dnd-flash no-print" [severity]="flash.severity" [text]="flash.text"></p-message>
 
     <!-- Main Content -->
     <div class="detail-grid">
@@ -96,7 +103,8 @@
             [poNumber]="poNumber"
             [attention]="attention"
             [contactPerson]="contactPerson"
-            [invoiceNumber]="invoiceNumber"
+            [customerAddress]="customerAddressFallback"
+            [logo]="logo"
             [deliveryDate]="deliveryDate || note.dispatchedAt || note.createdAt"
             [template]="template">
           </app-delivery-note-document>
@@ -289,8 +297,7 @@
               <button *ngIf="canMarkInTransit()" (click)="updateStatus('IN_TRANSIT')" class="btn-action-mobile send" [disabled]="isUpdatingStatus">
                 <i class="fas fa-shipping-fast"></i> Mark In Transit
               </button>
-              <button *ngIf="canMarkDelivered()" (click)="updateStatus('DELIVERED')" class="btn-action-mobile accept"
-                      [disabled]="isUpdatingStatus || !hasSignedCopy" [title]="markDeliveredHint">
+              <button *ngIf="canMarkDelivered()" (click)="updateStatus('DELIVERED')" class="btn-action-mobile accept" [disabled]="isUpdatingStatus">
                 <i class="fas fa-check-circle"></i> Mark Delivered
               </button>
               <button *ngIf="canMarkReturned()" (click)="askReturn()" class="btn-action-mobile decline" [disabled]="isUpdatingStatus">
@@ -298,6 +305,9 @@
               </button>
               <button *ngIf="canCancel()" (click)="askCancel()" class="btn-action-mobile decline" [disabled]="isUpdatingStatus">
                 <i class="fas fa-ban"></i> Cancel
+              </button>
+              <button *ngIf="canGenerateInvoice()" (click)="generateInvoice()" class="btn-action-mobile send">
+                <i class="fas fa-file-invoice-dollar"></i> Generate Invoice
               </button>
               <button *ngIf="canEdit()" (click)="editNote()" class="btn-action-mobile edit">
                 <i class="fas fa-pencil-alt"></i> Edit

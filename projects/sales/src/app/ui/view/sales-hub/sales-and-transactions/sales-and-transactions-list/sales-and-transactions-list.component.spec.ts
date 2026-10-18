@@ -15,7 +15,8 @@ describe('SalesAndTransactionsListComponent', () => {
   let salesService: jasmine.SpyObj<SalesService>;
 
   beforeEach(() => {
-    salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getSalesandTransactions', 'getCustomers', 'updateSalesandTransactions', 'updateInvoice']);
+    salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getSalesandTransactions', 'getCustomers', 'updateSalesandTransactions', 'updateInvoice', 'orderNumberFor']);
+    salesService.orderNumberFor.and.callFake((tx: any) => tx?.orderId || '');
     salesService.getSalesandTransactions.and.returnValue(of({ data: [], total: 0 } as any));
     salesService.getCustomers.and.returnValue(of({ data: [], total: 0 } as any));
     component = new SalesAndTransactionsListComponent(

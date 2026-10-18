@@ -16,7 +16,8 @@ describe('SalesAndTransactionsDetailComponent', () => {
   } as any);
 
   beforeEach(() => {
-    salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getSalesandTransactionsById']);
+    salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getSalesandTransactionsById', 'orderNumberFor']);
+    salesService.orderNumberFor.and.callFake((tx: any) => tx?.orderId || '');
     salesService.getSalesandTransactionsById.and.returnValue(of(null));
     component = new SalesAndTransactionsDetailComponent(
       activatedRoute(),

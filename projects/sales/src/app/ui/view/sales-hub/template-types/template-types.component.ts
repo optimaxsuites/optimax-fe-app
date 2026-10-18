@@ -265,9 +265,10 @@ export const QUOTE_TEMPLATES: QuoteTemplate[] = [
  * Person are on every delivery note, as are the Quantity Delivered / Description / Date of
  * Delivery / Signature table and the Name / Signature / Date sign-off — only these can be left out.
  */
-export type DeliveryNoteOptionalField = 'attention' | 'lpoNumber' | 'invoiceNumber' | 'telephone';
+// No invoice number: invoices are only created after the signed delivery note comes back.
+export type DeliveryNoteOptionalField = 'attention' | 'lpoNumber' | 'telephone';
 
-const ALL_DELIVERY_NOTE_FIELDS: DeliveryNoteOptionalField[] = ['attention', 'lpoNumber', 'invoiceNumber', 'telephone'];
+const ALL_DELIVERY_NOTE_FIELDS: DeliveryNoteOptionalField[] = ['attention', 'lpoNumber', 'telephone'];
 
 /** Which optional fields each template shows on a delivery note — used by both the gallery
  *  thumbnails and DeliveryNoteDocumentComponent so the two always match. */
@@ -275,7 +276,7 @@ export const DELIVERY_NOTE_OPTIONAL_FIELDS: Record<string, DeliveryNoteOptionalF
   'standard': ALL_DELIVERY_NOTE_FIELDS,
   'minimal': ['lpoNumber'],
   'detailed': ALL_DELIVERY_NOTE_FIELDS,
-  'compact': ['lpoNumber', 'invoiceNumber'],
+  'compact': ['lpoNumber', 'telephone'],
   'custom-client': ALL_DELIVERY_NOTE_FIELDS,
   'emirates': ALL_DELIVERY_NOTE_FIELDS,
   'thcomms': ['attention', 'lpoNumber', 'telephone']
@@ -403,7 +404,7 @@ export class TemplateTypesComponent implements OnInit {
       'standard': 'Balanced layout with logo and full recipient details',
       'minimal': 'Just the essentials: recipient, address, LPO number, date sent and contact person',
       'detailed': 'Every delivery field, with logo, in a detailed layout',
-      'compact': 'Space-saving, printer-friendly layout with LPO and invoice references',
+      'compact': 'Space-saving, printer-friendly layout with the LPO number and telephone',
       'custom-client': 'Branded green layout with logo and full recipient details',
       'emirates': 'Elegant corporate layout with logo and full recipient details',
       'thcomms': 'Clean modern layout with attention, LPO number and telephone, no logo'
@@ -462,7 +463,7 @@ export class TemplateTypesComponent implements OnInit {
       // Only what differs between delivery note templates (see DeliveryNoteDocumentComponent) —
       // the table, core recipient fields and sign-off are on every one.
       const fieldLabels: Record<DeliveryNoteOptionalField, string> = {
-        attention: 'Attention', lpoNumber: 'LPO No.', invoiceNumber: 'Invoice Ref', telephone: 'Telephone'
+        attention: 'Attention', lpoNumber: 'LPO No.', telephone: 'Telephone'
       };
       const fields = DELIVERY_NOTE_OPTIONAL_FIELDS[template.id] || ALL_DELIVERY_NOTE_FIELDS;
       const tags: string[] = [];

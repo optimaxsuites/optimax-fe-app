@@ -295,6 +295,19 @@ export class SalesService {
     return !!this.firstAdditionalOptions(quote)?.lpoDocument;
   }
 
+  saveDeliveryNoteLogo(quoteId: string | number, logo: QuoteDocumentAttachment): Observable<Quote> {
+    return this.patchAdditionalOptions(quoteId, { deliveryNoteLogo: logo });
+  }
+
+  /** The delivery note's logo as an image src: the one uploaded for it, else the quote's own logo.
+   *  Null means the document falls back to the company profile logo. */
+  getDeliveryNoteLogo(quote: Quote | null | undefined): string | null {
+    const uploaded = this.firstAdditionalOptions(quote)?.deliveryNoteLogo;
+    if (uploaded?.base64Content) return `data:${uploaded.contentType || 'image/png'};base64,${uploaded.base64Content}`;
+    const quoteLogo: any = quote?.logoUrl;
+    return (Array.isArray(quoteLogo) ? quoteLogo[0] : quoteLogo) || null;
+  }
+
   /** The scanned LPO file stored on the quote (the SalesLpo record has no file storage yet). */
   getQuoteLpoDocument(quote: Quote | null | undefined): QuoteDocumentAttachment | null {
     return this.firstAdditionalOptions(quote)?.lpoDocument || null;
@@ -323,6 +336,7 @@ export class SalesService {
           terms: existing.terms || '',
           lpoDocument: existing.lpoDocument,
           signedDeliveryNoteDocument: existing.signedDeliveryNoteDocument,
+          deliveryNoteLogo: existing.deliveryNoteLogo,
           deliveryNoteMeta: existing.deliveryNoteMeta,
           ...patch
         };
@@ -390,21 +404,52 @@ export class SalesService {
   // table/detail view that needs to display "Order #" next to a quote or delivery note.
   // ============================================
 
-  getOrderIdLookup(): Observable<{ byQuoteId: Map<number, string>; byTransactionId: Map<number, string> }> {
+  /**
+   * The order number shown in every sales table. A whole chain — quote → delivery note → invoice
+   * → payments — hangs off one Sales & Transactions record (the quote is tracked by one from
+   * creation, its delivery note points at it via salesOrderId, its invoice is attached to it;
+   * a standalone invoice gets its own), so that record's number links them all. The backend's
+   * own orderId / orderNumber wins when it sends one; otherwise it's derived from the record —
+   * ORD-<year it started>-<record id, 5 digits> — which is unique and never changes.
+   */
+  orderNumberFor(tx: any): string {
+    if (!tx) return '';
+    const own = tx.orderId || tx.orderNumber;
+    if (own && typeof own !== 'object') return String(own);
+    if (tx.id == null) return '';
+    const started = parseApiDate(tx.orderDate) || parseApiDate(tx.createdAt) || parseApiDate(tx.quoteId?.createdAt);
+    return `ORD-${started ? `${started.getFullYear()}-` : ''}${String(tx.id).padStart(5, '0')}`;
+  }
+
+  getOrderIdLookup(): Observable<{ byQuoteId: Map<number, string>; byTransactionId: Map<number, string>; byInvoiceId: Map<number, string> }> {
     return this.getSalesandTransactions({ size: 1000 }).pipe(
       map(res => {
         const byQuoteId = new Map<number, string>();
         const byTransactionId = new Map<number, string>();
+        const byInvoiceId = new Map<number, string>();
         res.data.forEach(tx => {
-          if (!tx.orderId) return;
-          byTransactionId.set(tx.id, tx.orderId);
-          const quoteId = (tx.quoteId as any)?.id;
-          if (quoteId != null) byQuoteId.set(quoteId, tx.orderId);
+          const orderNumber = this.orderNumberFor(tx);
+          if (!orderNumber) return;
+          byTransactionId.set(tx.id, orderNumber);
+          const quoteId = this.idOf(tx.quoteId);
+          if (quoteId != null) byQuoteId.set(Number(quoteId), orderNumber);
+          const invoiceId = this.idOf(tx.invoiceId);
+          if (invoiceId != null) byInvoiceId.set(Number(invoiceId), orderNumber);
         });
-        return { byQuoteId, byTransactionId };
+        return { byQuoteId, byTransactionId, byInvoiceId };
       }),
-      catchError(() => of({ byQuoteId: new Map(), byTransactionId: new Map() }))
+      catchError(() => of({ byQuoteId: new Map(), byTransactionId: new Map(), byInvoiceId: new Map() }))
     );
+  }
+
+  /** An invoice's order number: from its own Sales & Transactions record, else its quote's. */
+  orderNumberForInvoice(invoice: any, lookup: { byQuoteId: Map<number, string>; byInvoiceId: Map<number, string> }): string {
+    if (!invoice) return '';
+    const own = typeof invoice.orderId === 'string' ? invoice.orderId : this.orderNumberFor(invoice.orderId);
+    return own
+      || lookup.byInvoiceId.get(Number(invoice.id))
+      || (invoice.quoteId != null ? lookup.byQuoteId.get(Number(this.idOf(invoice.quoteId))) : undefined)
+      || '';
   }
 
   // ============================================
@@ -939,7 +984,23 @@ export class SalesService {
   }
 
   createDeliveryNote(data: Partial<SalesDeliveryNote>): Observable<SalesDeliveryNote> {
-    return this.http.post<SalesDeliveryNote>(`${this.base}/delivery-notes`, this.deliveryNoteBody(data));
+    return this.http.post<any>(`${this.base}/delivery-notes`, this.deliveryNoteBody(data)).pipe(
+      map(res => this.createdRecord<SalesDeliveryNote>(data, res))
+    );
+  }
+
+  /**
+   * What a create returned, as a full record. The commerce API's POSTs can answer with just the
+   * new id (see createQuote()), a wrapped `{ data }`, or the record itself — spreading a bare id
+   * into the sent body used to lose the id, which is why the LPO step needed Continue twice
+   * (the note looked unsaved until a re-fetch found it).
+   */
+  private createdRecord<T extends { id?: number }>(sent: Partial<T>, res: any): T {
+    if (typeof res === 'number' || (typeof res === 'string' && /^\d+$/.test(res))) {
+      return { ...sent, id: Number(res) } as T;
+    }
+    const record = res && typeof res === 'object' && res.data && typeof res.data === 'object' ? res.data : res;
+    return { ...sent, ...(record && typeof record === 'object' ? record : {}) } as T;
   }
 
   /** PUT replaces the whole record — pass the full note (spread the loaded one), not just the
@@ -1022,7 +1083,9 @@ export class SalesService {
   }
 
   createSalesLpo(data: Partial<SalesLpo>): Observable<SalesLpo> {
-    return this.http.post<SalesLpo>(`${this.base}/sales-lpos`, this.salesLpoBody(data));
+    return this.http.post<any>(`${this.base}/sales-lpos`, this.salesLpoBody(data)).pipe(
+      map(res => this.createdRecord<SalesLpo>(data, res))
+    );
   }
 
   /** PUT replaces the whole record — pass the full LPO, not just the changed fields. */

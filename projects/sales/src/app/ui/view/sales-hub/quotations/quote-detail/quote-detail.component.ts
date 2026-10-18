@@ -208,6 +208,15 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** "VAT @ 10%" when every taxed line uses the same rate, plain "VAT" when they differ —
+   *  instead of the 7.5% this used to be hardcoded to whatever was actually entered. */
+  get taxLabel(): string {
+    const rates = Array.from(new Set(((this.quote?.items || []) as any[])
+      .map(item => Number(item.taxRate) || 0)
+      .filter(rate => rate > 0)));
+    return rates.length === 1 ? `VAT @ ${rates[0]}%` : 'VAT';
+  }
+
   formatCurrency(amount: number): string {
     const currency = this.quote?.currency || 'NGN';
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency }).format(amount);

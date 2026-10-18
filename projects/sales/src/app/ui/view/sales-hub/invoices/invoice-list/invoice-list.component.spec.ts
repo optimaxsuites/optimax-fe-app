@@ -16,7 +16,9 @@ describe('InvoiceListComponent', () => {
   } as Invoice);
 
   beforeEach(() => {
-    salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getInvoices', 'getCustomers', 'updateInvoice']);
+    salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getInvoices', 'getCustomers', 'updateInvoice', 'getOrderIdLookup', 'orderNumberForInvoice']);
+    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map(), byInvoiceId: new Map() }));
+    salesService.orderNumberForInvoice.and.returnValue('');
     salesService.getCustomers.and.returnValue(of({ data: [], total: 0 } as any));
     component = new InvoiceListComponent(
       { add: jasmine.createSpy('add') } as any,

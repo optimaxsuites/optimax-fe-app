@@ -99,4 +99,36 @@ describe('QuoteFormComponent: lands on the quote detail page after delivery', ()
       expect(documentEmail.sendQuote).not.toHaveBeenCalled();
     });
   });
+
+  describe('tax on a line', () => {
+    const addLine = (qty: number, price: number, tax: number) => {
+      (component as any).addLineItem();
+      const row = (component as any).items.at((component as any).items.length - 1);
+      row.patchValue({ quantity: qty, unitPrice: price, taxRate: tax });
+      return row;
+    };
+
+    it('changes the line amount as soon as a tax rate is entered, with tax as its own row', () => {
+      const row = addLine(2, 100, 10);
+
+      expect(row.getRawValue().total).toBe(220);
+      expect(component.subtotal).toBe(200);
+      expect(component.totalTax).toBe(20);
+      expect(component.grandTotal).toBe(220);
+    });
+
+    it('carries each line\'s tax rate onto the saved record used for the email and PDF', () => {
+      addLine(2, 100, 10);
+      const enriched = (component as any).withFormTax({ id: 1, items: [{ productName: 'Widget', quantity: 2, unitPrice: 100 }] });
+      expect(enriched.items[0].taxRate).toBe(10);
+      expect(enriched.taxAmount).toBe(20);
+    });
+
+    it('keeps the backend\'s values when it does return them', () => {
+      addLine(2, 100, 10);
+      const enriched = (component as any).withFormTax({ id: 1, taxAmount: 5, items: [{ taxRate: 2.5, total: 205 }] });
+      expect(enriched.items[0].taxRate).toBe(2.5);
+      expect(enriched.taxAmount).toBe(5);
+    });
+  });
 });

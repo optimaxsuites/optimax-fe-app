@@ -212,6 +212,9 @@ export interface AdditionalQuoteOptions {
   /** The delivery note, re-uploaded once physically signed by the recipient — required before
    *  an invoice can be created for this quote. */
   signedDeliveryNoteDocument?: QuoteDocumentAttachment;
+  /** Logo uploaded in the Generate Delivery Note wizard — kept here, like the LPO and signed
+   *  copy, until the backend has an upload endpoint. Falls back to the quote's logoUrl. */
+  deliveryNoteLogo?: QuoteDocumentAttachment;
   deliveryNoteMeta?: SalesDeliveryNoteMeta;
 }
 

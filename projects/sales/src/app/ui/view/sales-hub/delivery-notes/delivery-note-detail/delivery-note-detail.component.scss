@@ -28,6 +28,8 @@
 .btn-modal-save.dnd-btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25); }
 .btn-modal-save:disabled { opacity: 0.55; cursor: not-allowed; }
 
+.dnd-flash { display: block; margin: 0 0 1rem; ::ng-deep .p-inline-message { width: 100%; justify-content: flex-start; } }
+
 @media print {
   .no-print { display: none !important; }
   .quote-detail-container, .detail-wrapper { background: #fff !important; padding: 0 !important; min-height: 0 !important; }

@@ -22,15 +22,17 @@ describe('DeliveryNoteDetailComponent', () => {
       'getDeliveryNoteById', 'updateDeliveryNoteStatus', 'getCustomers', 'getMyMerchantInfo',
       'getOrderIdLookup', 'getSalesandTransactionsById', 'getDeliveryNoteMeta', 'getSalesLpoById', 'getSalesLpoForQuote',
       'deleteDeliveryNote', 'updateDeliveryNote', 'verifySalesLpo', 'rejectSalesLpo', 'deleteSalesLpo',
-      'getQuoteById', 'hasSignedDeliveryNoteDocument', 'fillMissingFromQuote'
+      'getQuoteById', 'hasSignedDeliveryNoteDocument', 'fillMissingFromQuote', 'getDeliveryNoteLogo', 'deliveryAddressFor'
     ]);
+    salesService.getDeliveryNoteLogo.and.returnValue(null);
+    salesService.deliveryAddressFor.and.returnValue('');
     salesService.fillMissingFromQuote.and.returnValue(null);
     salesService.getQuoteById.and.returnValue(of(null));
     salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
     salesService.getDeliveryNoteById.and.returnValue(of(null));
     salesService.getCustomers.and.returnValue(of({ data: [{ id: 1, name: 'Acme Co' }], total: 1 } as any));
     salesService.getMyMerchantInfo.and.returnValue(of({ id: 1, name: 'Merchant' } as any));
-    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map() }));
+    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map(), byInvoiceId: new Map() }));
     salesService.getSalesandTransactionsById.and.returnValue(of(null));
     salesService.getDeliveryNoteMeta.and.returnValue({});
     salesService.getSalesLpoById.and.returnValue(of(null));
@@ -134,25 +136,37 @@ describe('DeliveryNoteDetailComponent', () => {
     });
   });
 
-  describe('Mark Delivered needs the signed copy', () => {
-    it('refuses without one, and says why', () => {
-      component.note = note({ id: 1, status: 'DISPATCHED' });
+  describe('after delivery: Generate Invoice', () => {
+    it('Mark Delivered works without a signed copy — that\'s uploaded when generating the invoice', () => {
+      component.note = note({ id: 1, status: 'IN_TRANSIT' });
       component.hasSignedCopy = false;
-
-      component.updateStatus('DELIVERED');
-
-      expect(salesService.updateDeliveryNoteStatus).not.toHaveBeenCalled();
-      expect((component as any).messageService.add).toHaveBeenCalledWith(jasmine.objectContaining({ severity: 'warn' }));
-    });
-
-    it('goes ahead once it has been uploaded', () => {
-      component.note = note({ id: 1, status: 'DISPATCHED' });
-      component.hasSignedCopy = true;
       salesService.updateDeliveryNoteStatus.and.returnValue(of(note({ id: 1, status: 'DELIVERED' })));
 
       component.updateStatus('DELIVERED');
 
-      expect(salesService.updateDeliveryNoteStatus).toHaveBeenCalled();
+      expect(salesService.updateDeliveryNoteStatus).toHaveBeenCalledWith(jasmine.objectContaining({ id: 1 }), 'DELIVERED', undefined);
+      expect(component.note?.status).toBe('DELIVERED');
+    });
+
+    it('offers Generate Invoice only once delivered and not yet invoiced', () => {
+      component.note = note({ status: 'IN_TRANSIT' });
+      expect(component.canGenerateInvoice()).toBeFalse();
+      component.note = note({ status: 'DELIVERED' });
+      expect(component.canGenerateInvoice()).toBeTrue();
+      component.note = note({ status: 'DELIVERED', invoiceId: 12 });
+      expect(component.canGenerateInvoice()).toBeFalse();
+    });
+
+    it('opens the invoice flow that starts with uploading the signed delivery note', () => {
+      component.note = note({ id: 4, status: 'DELIVERED', quoteId: 3 });
+      component.generateInvoice();
+      expect((component as any).router.navigate).toHaveBeenCalledWith(['/admin/sales/invoices/new'], { queryParams: { quoteId: '3', deliveryNoteId: '4' } });
+    });
+
+    it('goes to the invoice once there is one', () => {
+      component.note = note({ id: 4, status: 'DELIVERED', invoiceId: 12 });
+      component.viewInvoice();
+      expect((component as any).router.navigate).toHaveBeenCalledWith(['/admin/sales/invoices', 12]);
     });
 
     it('detects the signed copy from the note\'s receipt or from the file on its quote', () => {

@@ -94,6 +94,9 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  /** Order number linking this invoice to its quote / delivery note / transaction. */
+  orderNumber = '';
+
   loadInvoice(id: string): void {
     this.isLoading = true;
     this.salesService.getInvoiceById(id).subscribe({
@@ -101,6 +104,9 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
         this.invoice = invoice;
         if (invoice) {
           this.loadPaymentsForInvoice(invoice.id);
+          this.salesService.getOrderIdLookup().pipe(takeUntil(this.destroy$)).subscribe(lookup => {
+            this.orderNumber = this.salesService.orderNumberForInvoice(invoice, lookup);
+          });
         } else {
           this.isLoading = false;
         }
@@ -190,6 +196,15 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to record payment. Please try again.' });
       }
     });
+  }
+
+  /** "VAT @ 10%" when every taxed line uses the same rate, plain "VAT" when they differ —
+   *  instead of the 7.5% this used to be hardcoded to whatever was actually entered. */
+  get taxLabel(): string {
+    const rates = Array.from(new Set(((this.invoice?.items || []) as any[])
+      .map(item => Number(item.taxRate) || 0)
+      .filter(rate => rate > 0)));
+    return rates.length === 1 ? `VAT @ ${rates[0]}%` : 'VAT';
   }
 
   formatCurrency(amount: number): string {

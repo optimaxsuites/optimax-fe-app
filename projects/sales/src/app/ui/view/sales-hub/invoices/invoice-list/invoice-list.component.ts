@@ -127,6 +127,13 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  private orderLookup: { byQuoteId: Map<number, string>; byInvoiceId: Map<number, string> } = { byQuoteId: new Map(), byInvoiceId: new Map() };
+
+  /** The invoice's order number, linking it to its quote / delivery note / transaction. */
+  orderNumberOf(inv: Invoice): string {
+    return this.salesService.orderNumberForInvoice(inv, this.orderLookup) || '—';
+  }
+
   loadInvoices(): void {
     this.isLoading = true;
     // 'OVERDUE' isn't a real InvoiceStatus (only DRAFT|SENT|CANCELLED exist) — it's computed
@@ -140,10 +147,12 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
 
     forkJoin({
       invoices: this.salesService.getInvoices(requestFilters),
-      customers: this.salesService.getCustomers({ page: 0, size: 200 })
+      customers: this.salesService.getCustomers({ page: 0, size: 200 }),
+      orderLookup: this.salesService.getOrderIdLookup()
     }).subscribe({
-      next: ({ invoices, customers }: any) => {
+      next: ({ invoices, customers, orderLookup }: any) => {
         this.customers = customers.data;
+        this.orderLookup = orderLookup;
         if (isOverdueFilter) {
           const overdue = (invoices.data as Invoice[]).filter(i => i.status === 'SENT' && this.isOverdue(i.dueDate));
           const start = this.filters.page * this.filters.size;

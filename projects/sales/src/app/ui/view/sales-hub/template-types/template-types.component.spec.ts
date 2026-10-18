@@ -43,6 +43,8 @@ describe('TemplateTypesComponent', () => {
       const tags = (id: string) => component.getTemplateTags(QUOTE_TEMPLATES.find(t => t.id === id)!);
       expect(tags('standard')).toEqual(['Logo', 'Full Recipient Details']);
       expect(tags('minimal')).toEqual(['LPO No.']);
+      expect(tags('compact')).toEqual(['LPO No.', 'Telephone']);
+      expect(QUOTE_TEMPLATES.map(t => tags(t.id).join()).join()).not.toContain('Invoice');
       expect(tags('standard')).not.toContain('Tax Breakdown');
     });
 

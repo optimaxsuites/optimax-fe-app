@@ -65,6 +65,11 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
+  /** Same order number as the sales tables (see SalesService.orderNumberFor()). */
+  orderNumberOf(tx: any): string {
+    return this.salesService.orderNumberFor(tx);
+  }
+
   constructor(
     private messageService: MessageService,
     private salesService: SalesService,

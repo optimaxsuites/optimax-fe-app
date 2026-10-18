@@ -17,7 +17,7 @@ interface MetaRow { left?: MetaCell; right?: MetaCell; }
  * table, and a "Goods received in good order" sign-off strip.
  *
  * Fields the real template has but the backend SalesDeliveryNote resource has no column for
- * (PO/LPO number, Attention, Our Contact Person, Per Invoice Number) are passed in as separate
+ * (PO/LPO number, Attention, Our Contact Person) are passed in as separate
  * inputs rather than read off `note` — see SalesDeliveryNoteMeta's doc comment for where they're
  * actually persisted (the quote's additionalOptions).
  *
@@ -43,7 +43,10 @@ export class DeliveryNoteDocumentComponent implements OnChanges {
   @Input() poNumber = '';
   @Input() attention = '';
   @Input() contactPerson = '';
-  @Input() invoiceNumber = '';
+  /** Fallback when the note itself has no address saved yet (e.g. the customer's on file). */
+  @Input() customerAddress = '';
+  /** Overrides the company-profile logo — the logo uploaded for this delivery note, or its quote's. */
+  @Input() logo: string | null = null;
   /** Single delivery date applied to every line item — the backend's SalesDeliveryNoteItem has no
    *  per-item date field, so unlike the paper template (which can show a different date per
    *  line), this is one shared value for the whole shipment. */
@@ -75,7 +78,6 @@ export class DeliveryNoteDocumentComponent implements OnChanges {
     const right: MetaCell[] = [];
     if (this.showField('lpoNumber')) right.push({ label: 'LPO Number :', value: dash(this.poNumber) });
     right.push({ label: 'Date Sent :', value: this.formatDate(this.note.createdAt) });
-    if (this.showField('invoiceNumber')) right.push({ label: 'Per Invoice Number :', value: dash(this.invoiceNumber) });
     right.push({ label: 'Our Contact Person :', value: dash(this.contactPerson) });
     if (this.showField('telephone')) right.push({ label: 'Telephone :', value: dash(this.customerPhone) });
 
@@ -83,7 +85,7 @@ export class DeliveryNoteDocumentComponent implements OnChanges {
     const rowCount = Math.max(right.length, showAttention ? 3 : 2);
     const rows: MetaRow[] = Array.from({ length: rowCount }, (_, i) => ({ right: right[i] }));
     rows[0].left = { label: 'To :', value: dash(this.customerName) };
-    rows[1].left = { label: 'Address :', value: this.note.customerAddress || '—', rowspan: rowCount - 1 - (showAttention ? 1 : 0) };
+    rows[1].left = { label: 'Address :', value: this.note.customerAddress || this.customerAddress || '—', rowspan: rowCount - 1 - (showAttention ? 1 : 0) };
     if (showAttention) rows[rowCount - 1].left = { label: 'Attention :', value: dash(this.attention) };
     return rows;
   }
@@ -99,6 +101,7 @@ export class DeliveryNoteDocumentComponent implements OnChanges {
   }
 
   get logoUrl(): string | null {
+    if (this.logo) return this.logo;
     const logo = this.merchantInfo?.logoUrl;
     return Array.isArray(logo) ? (logo[0] || null) : (logo as any) || null;
   }

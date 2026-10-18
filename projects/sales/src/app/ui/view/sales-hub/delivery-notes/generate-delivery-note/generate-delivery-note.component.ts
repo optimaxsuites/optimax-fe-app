@@ -13,7 +13,9 @@ import { DeliveryNoteDocumentComponent } from '../delivery-note-document/deliver
 import { TemplateTypesComponent, QuoteTemplate, QUOTE_TEMPLATES } from '../../template-types/template-types.component';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import { EmailAiAssistComponent } from '../../email-ai-assist/email-ai-assist.component';
+import { SendEmailModalComponent } from '../../send-email-modal/send-email-modal.component';
+import { SalesDocumentEmailService } from '../../../../service/sales/sales-document-email.service';
+import { MessageModule } from 'primeng/message';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 
@@ -41,7 +43,7 @@ import { ToastModule } from 'primeng/toast';
 @Component({
   selector: 'app-generate-delivery-note',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent, DeliveryNoteDocumentComponent, TemplateTypesComponent, ToastModule, EmailAiAssistComponent],
+  imports: [CommonModule, FormsModule, RouterModule, BackButtonComponent, DeliveryNoteDocumentComponent, TemplateTypesComponent, ToastModule, SendEmailModalComponent, MessageModule],
   // No component-level MessageService: toasts go through the app-wide one (shown by app.html's
   // <p-toast>) so a result like "Email sent" stays visible after routing to the detail page.
   templateUrl: './generate-delivery-note.component.html',
@@ -65,6 +67,8 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   /** Whether lpoFile was picked in this visit (vs. restored from the quote) — an unchanged
    *  file isn't uploaded again. */
   private lpoFileChanged = false;
+  /** True while a picked file is still being read — Continue waits for it. */
+  isReadingLpo = false;
   poNumberInput = '';
   /** The quote's SalesLpo record, once one exists. */
   lpo: SalesLpo | null = null;
@@ -83,10 +87,17 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   deliveryDate = '';
   isSavingDetails = false;
   isSavingDraft = false;
+
+  // Logo — uploaded here, or else the quote's own (falls back to the company profile logo)
+  logo: string | null = null;
+  logoFileName = '';
+  private pendingLogo: QuoteDocumentAttachment | null = null;
   isDownloading = false;
   isEmailing = false;
 
   showSendModal = false;
+  /** Inline result of the last email attempt (shown on step 3 when it failed). */
+  emailOutcome: { severity: 'success' | 'info' | 'error'; text: string } | null = null;
   emailSubject = '';
   emailMessage = '';
 
@@ -97,7 +108,8 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     private router: Router,
     private salesService: SalesService,
     private salesEmailService: SalesEmailService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private documentEmail: SalesDocumentEmailService
   ) {}
 
   ngOnInit(): void {
@@ -126,6 +138,7 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
       const existingNote = this.quoteId ? noteByQuoteId.get(this.quoteId) : undefined;
       this.poNumberInput = lpo?.lpoNumber || meta.poNumber || '';
       // A previously saved LPO (draft or not) — show it so it doesn't have to be uploaded again
+      this.logo = this.salesService.getDeliveryNoteLogo(quote);
       const savedFile = this.salesService.getQuoteLpoDocument(quote);
       if (savedFile) {
         this.lpoFile = savedFile;
@@ -169,6 +182,40 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  /** The customer's address on file, shown when the note itself has none saved. */
+  get deliveryAddressFallback(): string {
+    return this.salesService.deliveryAddressFor(this.salesService.quoteCustomer(this.quote), this.selectedCustomer);
+  }
+
+  onLogoSelected(event: any): void {
+    const file: File | undefined = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      this.messageService.add({ severity: 'warn', summary: 'Not an Image', detail: 'Please choose an image file for the logo.' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      this.logo = dataUrl;
+      this.logoFileName = file.name;
+      this.pendingLogo = {
+        fileName: file.name,
+        base64Content: dataUrl.split(',')[1] || '',
+        contentType: file.type,
+        uploadedAt: new Date().toISOString()
+      };
+      // Saved straight away, so a download or email right after still uses it
+      this.saveLogo().subscribe({
+        error: err => {
+          console.error('Error saving delivery note logo:', err);
+          this.messageService.add({ severity: 'error', summary: 'Logo Not Saved', detail: 'The logo shows on this preview but could not be saved. Try Save again.' });
+        }
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
   get selectedCustomer(): Customer | null {
     const customerId = (this.quote?.customerId as any)?.id ?? this.quote?.customerId;
     return this.customers.find(c => String(c.id) === String(customerId)) || null;
@@ -184,8 +231,14 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     this.lpoFileName = file.name;
     this.lpoFileSize = file.size;
     this.lpoFileChanged = true;
+    this.isReadingLpo = true;
     const reader = new FileReader();
+    reader.onerror = () => {
+      this.isReadingLpo = false;
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not read that file. Please choose it again.' });
+    };
     reader.onload = () => {
+      this.isReadingLpo = false;
       const dataUrl = reader.result as string;
       this.lpoFile = {
         fileName: file.name,
@@ -223,7 +276,7 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   /** Saves the LPO, then creates the delivery note linked to it (or picks up the existing one
    *  when coming back to this step) and moves on to the template. */
   submitLpo(): void {
-    if (!this.quoteId || !this.lpoFile || this.isSavingLpo) return;
+    if (!this.quoteId || !this.lpoFile || this.isReadingLpo || this.isSavingLpo) return;
     this.isSavingLpo = true;
     this.saveLpo().pipe(
       switchMap(lpo => this.salesService.getOrCreateDeliveryNoteForQuote(this.quoteId!, {
@@ -239,6 +292,7 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
           return;
         }
         this.deliveryNote = note;
+        this.backfillFromQuote(note);
         // Keep a date already set in this visit (e.g. after coming back to step 1)
         this.deliveryDate ||= this.toDateInputValue(note.deliveryDate || note.dispatchedAt || note.createdAt || new Date());
         this.currentStep = 2;
@@ -370,7 +424,8 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
    *  note with the edited attention / contact / date / template. */
   private persistDetails(): Observable<SalesDeliveryNote> {
     const note = this.deliveryNote!;
-    return this.syncLpoNumber().pipe(
+    return this.saveLogo().pipe(
+      switchMap(() => this.syncLpoNumber()),
       switchMap(lpo => {
         this.lpo = lpo;
         return this.salesService.updateDeliveryNote(note.id!, {
@@ -383,6 +438,19 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
         });
       }),
       map(updated => (this.deliveryNote = { ...note, ...(updated || {}) }))
+    );
+  }
+
+  /** Stores a newly uploaded logo on the quote (no upload endpoint yet — same as the LPO file). */
+  private saveLogo(): Observable<unknown> {
+    if (!this.pendingLogo || !this.quoteId) return of(null);
+    const logo = this.pendingLogo;
+    return this.salesService.saveDeliveryNoteLogo(this.quoteId, logo).pipe(
+      map(quote => {
+        this.quote = quote;
+        if (this.pendingLogo === logo) this.pendingLogo = null;
+        return quote;
+      })
     );
   }
 
@@ -415,15 +483,6 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
     return pdf.output('blob');
-  }
-
-  private blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string).replace(/^data:[^;]+;base64,/, ''));
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
   }
 
   async downloadPDF(): Promise<void> {
@@ -462,99 +521,42 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     this.showSendModal = true;
   }
 
+  /** Sends through the shared SalesDocumentEmailService (same request as quotes/invoices, with a
+   *  fallback endpoint). Sent → the note's detail page, carrying a confirmation message; not
+   *  sent → stays here with the reason shown inline so it can be retried. */
   async confirmSendEmail(): Promise<void> {
     if (this.isEmailing || !this.quote || !this.deliveryNote) return;
-
+    const note = this.deliveryNote;
     const customer = this.selectedCustomer;
     const email = customer?.email || (this.quote.customerName as any)?.email || (this.quote.customerId as any)?.email || '';
-    if (!email) {
-      this.messageService.add({ severity: 'warn', summary: 'Missing Email', detail: 'Could not find a recipient email address for this customer.' });
+
+    this.isEmailing = true;
+    this.emailOutcome = null;
+    const pdfBlob = await this.generatePdfBlob().catch(err => {
+      console.warn('[GenerateDeliveryNoteComponent] PDF attachment generation failed, sending without attachment:', err);
+      return null;
+    });
+    const outcome = await this.documentEmail.sendDeliveryNote(note, {
+      to: email,
+      recipientName: note.recipientName || customer?.name || 'there',
+      subject: this.emailSubject,
+      message: this.emailMessage,
+      companyName: this.merchantInfo?.companyName || this.merchantInfo?.name || 'our company',
+      sentBy: this.merchantInfo?.email,
+      pdfBlob
+    });
+    this.isEmailing = false;
+    this.showSendModal = false;
+
+    if (!this.documentEmail.isSent(outcome.result)) {
+      this.emailOutcome = { severity: 'error', text: outcome.detail };
       return;
     }
-
-    this.showSendModal = false;
-    this.isEmailing = true;
-    try {
-      const blob = await this.generatePdfBlob();
-      const base64Content = await this.blobToBase64(blob);
-      const fileName = `DeliveryNote-${this.deliveryNote.deliveryNumber}.pdf`;
-      const note = this.deliveryNote;
-
-      const itemsRows = (note.items || []).map(item => `
-        <tr>
-          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.productName || ''}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.unit || ''}</td>
-        </tr>`).join('');
-
-      const htmlBody = `
-        <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
-          <h2 style="color: #184440; margin-top: 0;">Delivery Note Details</h2>
-          ${this.renderEmailMessageHtml(this.emailMessage || `Hi ${customer?.name || 'there'},\n\nPlease find attached the delivery note ${note.deliveryNumber} for your order.`)}
-          <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Delivery Note #:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${note.deliveryNumber}</td>
-            </tr>
-          </table>
-          <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
-            <thead>
-              <tr style="background: #f8fafc;">
-                <th style="text-align: left; padding: 8px; border-bottom: 2px solid #e5e7eb;">Item</th>
-                <th style="text-align: center; padding: 8px; border-bottom: 2px solid #e5e7eb;">Quantity</th>
-                <th style="text-align: left; padding: 8px; border-bottom: 2px solid #e5e7eb;">Unit</th>
-              </tr>
-            </thead>
-            <tbody>${itemsRows}</tbody>
-          </table>
-          <p style="margin-top: 24px;">Thank you for your business!</p>
-          <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-          <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from ${this.merchantInfo?.companyName || this.merchantInfo?.name || 'our company'}.</p>
-        </div>`;
-
-      const payload: SendSalesEmailRequest = {
-        documentType: 'DELIVERY_NOTE',
-        documentId: note.id!,
-        documentNumber: note.deliveryNumber,
-        to: email,
-        subject: this.emailSubject || `Delivery Note ${note.deliveryNumber} from ${this.merchantInfo?.companyName || this.merchantInfo?.name || 'our company'}`,
-        message: htmlBody,
-        attachments: [{ fileName, base64Content, contentType: 'application/pdf', type: 'application/pdf' }],
-        sentBy: this.merchantInfo?.email || 'system'
-      };
-
-      const response = await lastValueFrom(this.salesEmailService.send(payload));
-      if (response?.status === 'FAILED' || response?.status === 'BOUNCED') {
-        this.messageService.add({ severity: 'error', summary: 'Email Not Delivered', detail: response.failureReason || `Delivery to ${email} failed.` });
-      } else {
-        this.messageService.add({ severity: 'success', summary: 'Email Sent', detail: `Delivery note sent to ${email}.` });
-        // Record when it went out (best-effort — the email itself already succeeded)
-        this.salesService.updateDeliveryNote(note.id!, { ...note, sentAt: new Date().toISOString() }).subscribe({
-          next: updated => this.deliveryNote = { ...note, ...(updated || {}) },
-          error: err => console.error('Error recording delivery note sentAt:', err)
-        });
-        this.goToDetail();
-      }
-    } catch (err) {
-      console.error('Error emailing delivery note:', err);
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to send the delivery note by email.' });
-    } finally {
-      this.isEmailing = false;
-    }
-  }
-
-  /** Renders the seller's free-typed email message (plain text from the Send modal's textarea)
-   *  as safe HTML paragraphs — escaped so pasted/typed `<`, `>`, `&` can't break the email markup
-   *  or inject anything, since this text goes straight into an HTML email body. */
-  private renderEmailMessageHtml(message: string): string {
-    const escape = (s: string) => s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    return message
-      .split(/\n{2,}/)
-      .map(para => `<p style="margin:0 0 12px;">${escape(para).replace(/\n/g, '<br>')}</p>`)
-      .join('');
+    // Record when it went out (best-effort — the email itself already succeeded)
+    this.salesService.updateDeliveryNote(note.id!, { ...note, sentAt: new Date().toISOString() }).subscribe({
+      error: err => console.error('Error recording delivery note sentAt:', err)
+    });
+    this.goToDetail({ severity: outcome.result === 'SENT' ? 'success' : 'info', text: outcome.detail });
   }
 
   // ============================================================
@@ -577,14 +579,15 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
 
   /** The generated note's detail page — where the wizard lands after a download, a successful
    *  email, or Done. Replaces the wizard's history entry so Back doesn't return to it. */
-  goToDetail(): void {
+  goToDetail(flash?: { severity: string; text: string }): void {
     if (!this.deliveryNote?.id) {
       this.goBack();
       return;
     }
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/delivery-notes', this.deliveryNote.id, uuid] : ['/admin/sales/delivery-notes', this.deliveryNote.id];
-    this.router.navigate(path, { replaceUrl: true });
+    // `flash` is shown as an inline message on the detail page (see DeliveryNoteDetailComponent)
+    this.router.navigate(path, { replaceUrl: true, state: flash ? { flash } : undefined });
   }
 
   formatDate(date: unknown): string {

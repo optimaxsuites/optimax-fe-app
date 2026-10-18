@@ -287,6 +287,68 @@ describe('SalesService', () => {
     });
   });
 
+  describe('create responses that are just the new id', () => {
+    it('keeps the id when POST /delivery-notes answers with a bare number (no second Continue needed)', () => {
+      let result: any;
+      service.createDeliveryNote({ deliveryNumber: 'DN-1', status: 'PENDING', items: [], customerAddress: '' }).subscribe(r => (result = r));
+      http.expectOne(r => r.url === `${BASE}/delivery-notes` && r.method === 'POST').flush(55);
+      expect(result.id).toBe(55);
+      expect(result.deliveryNumber).toBe('DN-1');
+    });
+
+    it('unwraps a { data } response for an LPO', () => {
+      let result: any;
+      service.createSalesLpo({ lpoNumber: 'PR-1', quoteId: 3 }).subscribe(r => (result = r));
+      http.expectOne(r => r.url === `${BASE}/sales-lpos` && r.method === 'POST').flush({ data: { id: 9, status: 'RECEIVED' } });
+      expect(result.id).toBe(9);
+      expect(result.lpoNumber).toBe('PR-1');
+    });
+  });
+
+  describe('getDeliveryNoteLogo', () => {
+    it('prefers the logo uploaded for the delivery note, then the quote\'s own', () => {
+      const uploaded = { additionalOptions: { deliveryNoteLogo: { base64Content: 'abc', contentType: 'image/png' } }, logoUrl: ['quote.png'] } as any;
+      expect(service.getDeliveryNoteLogo(uploaded)).toBe('data:image/png;base64,abc');
+      expect(service.getDeliveryNoteLogo({ logoUrl: ['quote.png'] } as any)).toBe('quote.png');
+      expect(service.getDeliveryNoteLogo({} as any)).toBeNull();
+    });
+  });
+
+  describe('order numbers: one per Sales & Transactions record, linking quote → delivery note → invoice', () => {
+    it('uses the backend\'s own number when it sends one', () => {
+      expect(service.orderNumberFor({ id: 42, orderId: 'ORD-REAL-1' })).toBe('ORD-REAL-1');
+      expect(service.orderNumberFor({ id: 42, orderNumber: 'SO-2026-123456' })).toBe('SO-2026-123456');
+    });
+
+    it('otherwise derives ORD-<year>-<id>, the same every time', () => {
+      expect(service.orderNumberFor({ id: 42, orderDate: '2026-03-04T10:00:00Z' })).toBe('ORD-2026-00042');
+      expect(service.orderNumberFor({ id: 42, orderDate: '2026-03-04T10:00:00Z' })).toBe(service.orderNumberFor({ id: 42, orderDate: '2026-03-04T10:00:00Z' }));
+      expect(service.orderNumberFor({ id: 7 })).toBe('ORD-00007');
+      expect(service.orderNumberFor(null)).toBe('');
+    });
+
+    it('maps each quote, transaction and invoice in a chain to the same number', () => {
+      let lookup: any;
+      service.getOrderIdLookup().subscribe(r => (lookup = r));
+      http.expectOne(r => r.url === `${BASE}/sales-orders`).flush([
+        { id: 42, orderDate: '2026-03-04T10:00:00Z', quoteId: { id: 3 }, invoiceId: { id: 8 } },
+        { id: 43, orderDate: '2026-05-01T10:00:00Z', invoiceId: { id: 9 } }
+      ]);
+
+      expect(lookup.byQuoteId.get(3)).toBe('ORD-2026-00042');
+      expect(lookup.byTransactionId.get(42)).toBe('ORD-2026-00042');
+      expect(lookup.byInvoiceId.get(8)).toBe('ORD-2026-00042');
+      expect(lookup.byInvoiceId.get(9)).toBe('ORD-2026-00043');
+    });
+
+    it('finds an invoice\'s number through its own record, else through its quote', () => {
+      const lookup = { byQuoteId: new Map([[3, 'ORD-2026-00042']]), byInvoiceId: new Map([[9, 'ORD-2026-00043']]) };
+      expect(service.orderNumberForInvoice({ id: 9 }, lookup)).toBe('ORD-2026-00043');
+      expect(service.orderNumberForInvoice({ id: 8, quoteId: '3' }, lookup)).toBe('ORD-2026-00042');
+      expect(service.orderNumberForInvoice({ id: 8 }, lookup)).toBe('');
+    });
+  });
+
   describe('sales LPO endpoints', () => {
     const lpo: any = { id: 9, lpoNumber: 'PR-1', quoteId: 3, status: 'RECEIVED', document: {}, createdAt: 'x' };
 

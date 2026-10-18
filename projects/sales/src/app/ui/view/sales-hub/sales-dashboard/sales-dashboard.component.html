@@ -343,7 +343,7 @@
               <i class="fas fa-receipt"></i>
             </div>
             <div class="ql-activity-content">
-              <span class="ql-activity-title">#{{ tx.orderNumber || tx.orderId || tx.id }}</span>
+              <span class="ql-activity-title">{{ orderNumberOf(tx) }}</span>
               <span class="ql-activity-desc">{{ getCustomerName(tx) }}</span>
               <span class="ql-activity-time">{{ formatDate(tx.orderDate) }}</span>
             </div>

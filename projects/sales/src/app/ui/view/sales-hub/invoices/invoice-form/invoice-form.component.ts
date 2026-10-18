@@ -7,8 +7,8 @@ import { SalesService } from '../../../../service/sales/sales.service';
 import { PdfGenerationService } from '../../../../service/procurement/pdf-generation.service';
 import { SalesEmailService } from '../../../../service/sales/sales-email.service';
 import { lastValueFrom } from 'rxjs';
-import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails, InvoiceAttachments, MerchantInfo } from '../../../../domain/sales/sales.dto';
-import { toDateInputValue, formatApiDate } from '../../../../service/sales/date.util';
+import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails, InvoiceAttachments, MerchantInfo, SalesDeliveryNote, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
+import { toDateInputValue, formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
 import { jsPDF } from 'jspdf';
@@ -84,7 +84,24 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   generatedInvoiceNumber: string = '';
 
   // ============ WIZARD STATE ============
-  currentStep: 1 | 2 | 3 | 4 = 1;
+  /** 0 is "Upload Signed Delivery Note" — only in the flow started from a delivered delivery note
+   *  (Generate Invoice), whose steps are 0 → 3 (Template) → 4 (Preview & Send). */
+  currentStep: 0 | 1 | 2 | 3 | 4 = 1;
+
+  // ── Generate Invoice from a delivery note ──
+  deliveryNoteId = '';
+  deliveryNote: SalesDeliveryNote | null = null;
+  /** File name of a signed copy already stored on the quote, if any. */
+  signedCopyOnFile = '';
+  signedFileName = '';
+  private signedFile: QuoteDocumentAttachment | null = null;
+  receivedByName = '';
+  receivedDate = '';
+  isSavingSignedCopy = false;
+
+  get fromDeliveryNote(): boolean {
+    return !!this.deliveryNoteId;
+  }
   totalSteps = 4;
   selectedTemplate: QuoteTemplate | null = null;
   selectedAction: 'pdf' | 'email' | 'both' = 'pdf';
@@ -321,6 +338,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.invoiceId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.quoteId = this.fromQuoteId || this.route.snapshot.queryParamMap.get('quoteId') || '';
+    this.deliveryNoteId = this.route.snapshot.queryParamMap.get('deliveryNoteId') || '';
     this.isEditMode = !!this.invoiceId;
     if (!this.duplicateId) {
       this.duplicateId = this.route.snapshot.queryParamMap.get('duplicateId') || '';
@@ -403,7 +421,12 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
           this.loadInvoice();
         } else if (this.quoteId) {
           this.loadQuoteForInvoice();
-          this.currentStep = 3;
+          if (this.fromDeliveryNote) {
+            this.currentStep = 0;
+            this.loadDeliveryNoteForInvoice();
+          } else {
+            this.currentStep = 3;
+          }
         } else if (this.duplicateId) {
           this.loadInvoiceForDuplicate();
         } else {
@@ -525,8 +548,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     const unitPrice = itemForm.get('unitPrice')?.value || 0;
     const taxRate = itemForm.get('taxRate')?.value || 0;
 
-    const total = quantity * unitPrice;
-    const taxAmount = total * (taxRate / 100);
+    // A line's amount includes its own tax, so it changes as soon as a tax rate is entered; the
+    // subtotal (calculateTotals) stays net of tax, with tax as its own row underneath.
+    const net = quantity * unitPrice;
+    const taxAmount = net * (taxRate / 100);
+    const total = net + taxAmount;
 
     itemForm.patchValue({ total: total, taxAmount: taxAmount }, { emitEvent: false });
     this.calculateTotals();
@@ -556,7 +582,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       const total = item.get('total')?.value || 0;
       const taxAmount = item.get('taxAmount')?.value || 0;
 
-      this.subtotal += total;
+      this.subtotal += total - taxAmount;
       this.totalTax += taxAmount;
     }
 
@@ -793,6 +819,87 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** The delivery note (and any signed copy already on its quote) for the Upload Signed
+   *  Delivery Note step. */
+  private loadDeliveryNoteForInvoice(): void {
+    this.receivedDate = new Date().toISOString().substring(0, 10);
+    this.salesService.getDeliveryNoteById(this.deliveryNoteId).pipe(takeUntil(this.destroy$)).subscribe(note => {
+      this.deliveryNote = note;
+      if (note?.receivedByName) this.receivedByName = note.receivedByName;
+      const received = parseApiDate(note?.receivedAt);
+      if (received) this.receivedDate = received.toISOString().substring(0, 10);
+    });
+    this.salesService.getQuoteById(this.quoteId).pipe(takeUntil(this.destroy$)).subscribe(quote => {
+      if (this.salesService.hasSignedDeliveryNoteDocument(quote)) {
+        this.signedCopyOnFile = (quote?.additionalOptions as any)?.signedDeliveryNoteDocument?.fileName
+          || (quote?.additionalOptions as any)?.[0]?.signedDeliveryNoteDocument?.fileName
+          || 'Signed delivery note';
+      }
+    });
+  }
+
+  onSignedFileSelected(event: any): void {
+    const file: File | undefined = event.target.files?.[0];
+    if (!file) return;
+    this.signedFileName = file.name;
+    this.signedFile = null;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      this.signedFile = {
+        fileName: file.name,
+        base64Content: dataUrl.split(',')[1] || '',
+        contentType: file.type || 'application/pdf',
+        uploadedAt: new Date().toISOString()
+      };
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /** Step 0 → Template: stores a newly chosen signed copy (and who received the goods, when) on
+   *  the delivery note; with one already on file it just moves on. */
+  submitSignedCopy(): void {
+    if (this.isSavingSignedCopy) return;
+    if (!this.signedFileName) {
+      if (this.signedCopyOnFile) {
+        this.currentStep = 3;
+        return;
+      }
+      this.messageService.add({ severity: 'warn', summary: 'Signed Copy Needed', detail: 'Upload the signed delivery note to continue.' });
+      return;
+    }
+    if (!this.signedFile) {
+      this.messageService.add({ severity: 'info', summary: 'Still Reading', detail: 'The file is still loading — try again in a moment.' });
+      return;
+    }
+    if (!this.receivedByName.trim() || !this.receivedDate) {
+      this.messageService.add({ severity: 'warn', summary: 'Missing Details', detail: 'Enter who received the goods and the date received.' });
+      return;
+    }
+    this.isSavingSignedCopy = true;
+    this.salesService.recordSignedDeliveryNote(this.quoteId, this.signedFile, this.deliveryNote, {
+      receivedByName: this.receivedByName.trim(),
+      receivedAt: new Date(this.receivedDate).toISOString()
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: ({ note, noteSaved }) => {
+        this.isSavingSignedCopy = false;
+        if (note) this.deliveryNote = note;
+        this.signedCopyOnFile = this.signedFileName;
+        this.signedFileName = '';
+        this.signedFile = null;
+        if (!noteSaved) {
+          this.messageService.add({ severity: 'warn', summary: 'Uploaded', detail: 'Signed copy uploaded, but who received it couldn\'t be saved on the delivery note.' });
+        }
+        this.currentStep = 3;
+      },
+      error: (err) => {
+        console.error('Error uploading signed delivery note:', err);
+        this.isSavingSignedCopy = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to upload the signed delivery note. Please try again.' });
+      }
+    });
+  }
+
   private loadQuoteForInvoice(): void {
     this.isLoading = true;
     this.salesService.getQuoteById(this.quoteId).subscribe({
@@ -1020,6 +1127,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         description: raw.description || '',
         quantity: Number(raw.quantity) || 1,
         unitPrice: Number(raw.unitPrice) || 0,
+        taxRate: Number(raw.taxRate) || 0,
         total: Number(raw.total) || 0
       };
     });
@@ -1076,7 +1184,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         // finalizeInvoiceSubmit() below must NOT run yet in that case (it navigates away, which
         // would tear this component and the modal down before the seller can type a message and
         // confirm). confirmSendInvoice() calls it itself once they actually send.
-        await this.handleDeliveryAction(response, this.selectedAction);
+        await this.handleDeliveryAction(this.withFormTax(response), this.selectedAction);
         if (this.selectedAction === 'pdf') {
           this.finalizeInvoiceSubmit(response);
         }
@@ -1108,6 +1216,13 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       });
     }
 
+    if (!this.isEditMode && this.deliveryNote?.id && response.id) {
+      const note = this.deliveryNote;
+      this.salesService.updateDeliveryNote(note.id!, { ...note, invoiceId: Number(response.id) }).subscribe({
+        error: (err) => console.error('Error linking the delivery note to its invoice:', err)
+      });
+    }
+
     this.messageService.add({ severity: 'success', summary: 'Success', detail: this.isEditMode ? 'Invoice updated successfully!' : 'Invoice created successfully!' });
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/invoices', response.id, uuid] : ['/admin/sales/invoices', response.id];
@@ -1131,6 +1246,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         description: raw.description || '',
         quantity: Number(raw.quantity) || 1,
         unitPrice: Number(raw.unitPrice) || 0,
+        taxRate: Number(raw.taxRate) || 0,
         total: Number(raw.total) || 0
       };
     });
@@ -1518,7 +1634,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   // ============ WIZARD NAVIGATION ============
-  goToStep(step: 1 | 2 | 3 | 4): void {
+  goToStep(step: 0 | 1 | 2 | 3 | 4): void {
+    if (this.fromDeliveryNote && this.currentStep === 0 && step > 0) {
+      this.submitSignedCopy();
+      return;
+    }
     if (step > this.currentStep) {
       if (this.currentStep === 1 && !this.validateStep1()) return;
       if (this.currentStep === 2 && !this.validateStep2()) return;
@@ -1529,7 +1649,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   nextStep(): void {
-    if (this.currentStep === 1) {
+    if (this.currentStep === 0) {
+      this.submitSignedCopy();
+    } else if (this.currentStep === 1) {
       if (this.validateStep1()) {
         this.currentStep = 2;
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1548,7 +1670,10 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   prevStep(): void {
-    if (this.currentStep > 1) {
+    if (this.fromDeliveryNote && this.currentStep === 3) {
+      this.currentStep = 0;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (this.currentStep > 1) {
       this.currentStep = (this.currentStep - 1) as 1 | 2 | 3 | 4;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -1716,6 +1841,22 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         return null;
       }
     }
+  }
+
+  /** The saved invoice with each line's tax rate (and the tax total) taken from this form when
+   *  the save response leaves them out — the email and PDF are built from it, and would
+   *  otherwise show every line at 0% tax. */
+  private withFormTax<T extends { items?: any[]; taxAmount?: number }>(saved: T): T {
+    const formItems = this.items.getRawValue();
+    return {
+      ...saved,
+      taxAmount: saved.taxAmount ?? this.totalTax,
+      items: (saved.items || []).map((item: any, i: number) => ({
+        ...item,
+        taxRate: item.taxRate ?? formItems[i]?.taxRate ?? 0,
+        total: item.total ?? formItems[i]?.total
+      }))
+    };
   }
 
   private async handleDeliveryAction(invoice: Invoice, action: 'pdf' | 'email' | 'both'): Promise<void> {

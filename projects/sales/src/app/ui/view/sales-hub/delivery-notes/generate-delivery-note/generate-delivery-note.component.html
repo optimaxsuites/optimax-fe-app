@@ -59,7 +59,7 @@
         </div>
 
         <button type="button" class="gdn-btn gdn-btn--primary" style="width:100%;justify-content:center;"
-                [disabled]="!lpoFileName || isSavingLpo" (click)="submitLpo()">
+                [disabled]="!lpoFileName || isReadingLpo || isSavingLpo" (click)="submitLpo()">
           <i class="fas" [class.fa-arrow-right]="!isSavingLpo" [class.fa-spinner]="isSavingLpo" [class.fa-spin]="isSavingLpo"></i>
           {{ isSavingLpo ? 'Processing...' : 'Continue' }}
         </button>
@@ -105,6 +105,15 @@
             <label class="gdn-label">Date of Delivery</label>
             <input type="date" class="gdn-input" [(ngModel)]="deliveryDate">
           </div>
+          <div class="gdn-field">
+            <label class="gdn-label">Logo</label>
+            <label class="gdn-logo-pick">
+              <img *ngIf="logo" [src]="logo" alt="Logo preview">
+              <i *ngIf="!logo" class="fas fa-image"></i>
+              <span>{{ logoFileName || (logo ? 'Change logo' : 'Upload logo') }}</span>
+              <input type="file" accept="image/*" style="display:none;" (change)="onLogoSelected($event)">
+            </label>
+          </div>
           <button type="button" class="gdn-btn gdn-btn--ghost" [disabled]="isSavingDetails" (click)="saveDetails()">
             <i class="fas" [class.fa-save]="!isSavingDetails" [class.fa-spinner]="isSavingDetails" [class.fa-spin]="isSavingDetails"></i>
             {{ isSavingDetails ? 'Saving...' : 'Save' }}
@@ -120,6 +129,8 @@
               [note]="deliveryNote"
               [merchantInfo]="merchantInfo"
               [customerName]="deliveryNote.recipientName || selectedCustomer?.name || ''"
+              [customerAddress]="deliveryAddressFallback"
+              [logo]="logo"
               [customerPhone]="deliveryNote.recipientPhone || selectedCustomer?.phone || ''"
               [poNumber]="poNumber"
               [attention]="attention"
@@ -129,6 +140,7 @@
             </app-delivery-note-document>
           </div>
 
+          <p-message *ngIf="emailOutcome" class="gdn-outcome no-print" [severity]="emailOutcome.severity" [text]="emailOutcome.text"></p-message>
           <div class="gdn-finalize-actions no-print">
             <button type="button" class="gdn-btn gdn-btn--ghost" (click)="goToStep(2)">
               <i class="fas fa-arrow-left"></i> Back
@@ -151,34 +163,15 @@
   </ng-container>
 </div>
 
-<!-- ══ SEND EMAIL MODAL ══════════════════════════════════════════════════ -->
-<div class="gdn-modal-backdrop" *ngIf="showSendModal" (click)="$event.target === $event.currentTarget && (showSendModal = false)">
-  <div class="gdn-modal">
-    <div class="gdn-modal-head">
-      <h3><i class="fas fa-paper-plane"></i> Send Delivery Note by Email</h3>
-      <button type="button" class="gdn-icon-btn" (click)="showSendModal = false"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="gdn-modal-body">
-      <p class="gdn-upload-hint">
-        This message appears above the delivery note summary and attached PDF — edit it as needed.
-      </p>
-      <div class="gdn-field">
-        <label class="gdn-label">Subject</label>
-        <input type="text" class="gdn-input" [(ngModel)]="emailSubject">
-      </div>
-      <div class="gdn-field">
-        <label class="gdn-label">Message</label>
-        <app-email-ai-assist [message]="emailMessage">
-          <textarea class="gdn-input" rows="6" [(ngModel)]="emailMessage"></textarea>
-        </app-email-ai-assist>
-      </div>
-    </div>
-    <div class="gdn-modal-footer">
-      <button type="button" class="gdn-btn gdn-btn--ghost" (click)="showSendModal = false">Cancel</button>
-      <button type="button" class="gdn-btn gdn-btn--primary" [disabled]="isEmailing" (click)="confirmSendEmail()">
-        <i class="fas" [class.fa-paper-plane]="!isEmailing" [class.fa-spinner]="isEmailing" [class.fa-spin]="isEmailing"></i>
-        {{ isEmailing ? 'Sending...' : 'Send' }}
-      </button>
-    </div>
-  </div>
-</div>
+<!-- ══ SEND EMAIL MODAL (shared with quotes and invoices) ═══════════════ -->
+<app-send-email-modal *ngIf="showSendModal"
+  title="Send Delivery Note by Email"
+  documentLabel="delivery note"
+  [documentNumber]="deliveryNote?.deliveryNumber || ''"
+  [recipientName]="deliveryNote?.recipientName || selectedCustomer?.name || ''"
+  [sending]="isEmailing"
+  [(subject)]="emailSubject"
+  [(message)]="emailMessage"
+  (send)="confirmSendEmail()"
+  (dismiss)="showSendModal = false">
+</app-send-email-modal>
