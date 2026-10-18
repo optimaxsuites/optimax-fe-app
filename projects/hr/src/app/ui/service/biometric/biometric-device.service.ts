@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, of, from } from 'rxjs';
+import { BehaviorSubject, Observable, of, from, switchMap } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment.prod';
 import {
@@ -119,6 +119,46 @@ export class BiometricDeviceService {
         throw err;
       })
     );
+  }
+
+  /**
+   * Check device reachability from the browser (same LAN as device), then
+   * persist the result to the backend. The backend cannot reach private-network
+   * device IPs from a cloud server, so the browser must perform the check.
+   */
+  pingDevice(id: number, ipAddress: string | undefined): Observable<BiometricDeviceDTO> {
+    return from(this.checkBrowserReachability(ipAddress)).pipe(
+      switchMap(online =>
+        this.http.post<BiometricDeviceDTO>(`${this.DEVICES_BASE}/${id}/ping`, { online })
+      ),
+      tap(updated => {
+        const devices = this.devicesSubject.value.map(d => d.id === updated.id ? updated : d);
+        this.devicesSubject.next(devices);
+      }),
+      catchError((err) => {
+        console.error('Error pinging device:', err);
+        throw err;
+      })
+    );
+  }
+
+  private checkBrowserReachability(ipAddress: string | undefined): Promise<boolean> {
+    return new Promise(resolve => {
+      if (!ipAddress?.trim()) { resolve(false); return; }
+
+      let settled = false;
+      const done = (online: boolean) => { if (!settled) { settled = true; resolve(online); } };
+
+      // If the device IP is unreachable the OS-level TCP timeout takes 20 s+.
+      // Any actual response (301, 401, cert error) arrives within milliseconds on LAN.
+      // We use 2.5 s as the cutoff: fires first → offline; img fires first → online.
+      const offlineTimer = setTimeout(() => done(false), 2500);
+
+      const img = new Image();
+      img.onload  = () => { clearTimeout(offlineTimer); done(true); };
+      img.onerror = () => { clearTimeout(offlineTimer); done(true); };
+      img.src = `http://${ipAddress}/favicon.ico?_=${Date.now()}`;
+    });
   }
 
   /** DELETE /biometric-devices/{id} */

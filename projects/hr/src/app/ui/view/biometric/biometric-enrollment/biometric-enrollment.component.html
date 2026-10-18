@@ -36,12 +36,25 @@
               <i class="fas fa-fingerprint"></i>
               <span class="device-name">{{ device.name }}</span>
               <span class="badge bg-success" *ngIf="device.isOnline">Online</span>
-              <span class="badge bg-warning text-dark" *ngIf="!device.isOnline">Offline / Not pinged yet</span>
+              <span class="badge bg-warning text-dark" *ngIf="!device.isOnline && device.lastHeartbeat">Offline</span>
+              <span class="badge bg-secondary" *ngIf="!device.isOnline && !device.lastHeartbeat">Not checked yet</span>
+              <button type="button"
+                      class="btn btn-sm btn-outline-secondary ms-auto"
+                      (click)="pingDevice(device, $event)"
+                      [disabled]="pingingDeviceId === device.id"
+                      title="Check device connectivity">
+                <i class="fas fa-spinner fa-spin" *ngIf="pingingDeviceId === device.id"></i>
+                <i class="fas fa-satellite-dish" *ngIf="pingingDeviceId !== device.id"></i>
+                {{ pingingDeviceId === device.id ? 'Checking...' : 'Check Status' }}
+              </button>
             </div>
             <div class="device-details">
               <p><strong>Type:</strong> {{ device.deviceType }}</p>
               <p><strong>Location:</strong> Branch {{ device.branchId }}</p>
-              <p><strong>Capacity:</strong> {{ device.currentTemplateCount }}/{{ device.maxStorageCapacity }}</p>
+              <p><strong>Capacity:</strong> {{ device.currentTemplateCount ?? 0 }}/{{ device.maxStorageCapacity }}</p>
+              <p *ngIf="device.lastHeartbeat" class="text-muted" style="font-size:0.8em">
+                <strong>Last seen:</strong> {{ toDate(device.lastHeartbeat) | date:'dd MMM yyyy, HH:mm' }}
+              </p>
             </div>
           </div>
         </div>
