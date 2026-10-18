@@ -210,6 +210,48 @@ describe('SalesService', () => {
       });
     });
 
+    it('sends dates back as ISO strings and leaves out fields the API doesn\'t take', () => {
+      const seconds = Math.floor(new Date('2026-10-20T08:00:00Z').getTime() / 1000);
+      service.updateDeliveryNoteStatus({ ...note, status: 'IN_TRANSIT', dispatchedAt: seconds, inTransitAt: seconds,
+        tenant: { id: 1 }, auditTrail: [], items: [{ id: 11, productName: 'Widget', quantity: 2, unit: 'pcs', extra: 'x' }] } as any, 'DELIVERED').subscribe();
+      const req = http.expectOne(`${BASE}/delivery-notes/5/deliver`);
+      expect(req.request.body.dispatchedAt).toBe('2026-10-20T08:00:00.000Z');
+      expect(req.request.body.inTransitAt).toBe('2026-10-20T08:00:00.000Z');
+      expect(req.request.body.deliveredAt).toMatch(/^\d{4}-\d\d-\d\dT/);
+      expect(req.request.body.tenant).toBeUndefined();
+      expect(req.request.body.auditTrail).toBeUndefined();
+      expect(req.request.body.items[0]).toEqual({ id: 11, productName: 'Widget', quantity: 2, unit: 'pcs' });
+      req.flush({ ...note, status: 'DELIVERED' });
+    });
+
+    it('does not echo back an empty serial-number list (PATCH /deliver rejects it)', () => {
+      service.updateDeliveryNoteStatus({ ...note, status: 'IN_TRANSIT',
+        items: [{ id: 11, productName: 'Widget', quantity: 2, unit: 'pcs', serialNumbers: [] }, { id: 12, productName: 'Laptop', quantity: 1, unit: 'pcs', serialNumbers: ['SN-1'] }] } as any, 'DELIVERED').subscribe();
+      const req = http.expectOne(`${BASE}/delivery-notes/5/deliver`);
+      expect('serialNumbers' in req.request.body.items[0]).toBeFalse();
+      expect(req.request.body.items[1].serialNumbers).toEqual(['SN-1']);
+      req.flush({ ...note, status: 'DELIVERED' });
+    });
+
+    it('falls back to a full-record PUT when the transition endpoint rejects the change', () => {
+      let result: any;
+      service.updateDeliveryNoteStatus({ ...note, status: 'IN_TRANSIT' }, 'DELIVERED').subscribe(r => (result = r));
+      http.expectOne(`${BASE}/delivery-notes/5/deliver`).flush({ message: 'bad' }, { status: 400, statusText: 'Bad Request' });
+      const put = http.expectOne(r => r.url === `${BASE}/delivery-notes/5` && r.method === 'PUT');
+      expect(put.request.body.status).toBe('DELIVERED');
+      expect(put.request.body.deliveredAt).toBeTruthy();
+      put.flush({ ...note, status: 'DELIVERED' });
+      expect(result.status).toBe('DELIVERED');
+    });
+
+    it('reports the transition\'s own error, with the backend\'s reason, when the fallback fails too', () => {
+      let error: any;
+      service.updateDeliveryNoteStatus({ ...note, status: 'IN_TRANSIT' }, 'DELIVERED').subscribe({ error: e => (error = e) });
+      http.expectOne(`${BASE}/delivery-notes/5/deliver`).flush({ message: 'Signed copy required' }, { status: 400, statusText: 'Bad Request' });
+      http.expectOne(r => r.url === `${BASE}/delivery-notes/5` && r.method === 'PUT').flush('nope', { status: 500, statusText: 'Server Error' });
+      expect(service.errorReason(error)).toBe('Signed copy required');
+    });
+
     it('sends the cancellation reason with a cancel', () => {
       service.updateDeliveryNoteStatus(note, 'CANCELLED', 'Customer changed order').subscribe();
       const req = http.expectOne(`${BASE}/delivery-notes/5/cancel`);
