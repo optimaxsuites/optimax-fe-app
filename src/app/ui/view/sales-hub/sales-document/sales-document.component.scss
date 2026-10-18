@@ -1,0 +1,141 @@
+// A4 page at 96dpi. Colours come from --sd-accent (the chosen template's accent).
+:host { display: block; }
+
+.sd-page {
+  --sd-text: #1f2937;
+  --sd-muted: #6b7280;
+  --sd-line: #e5e7eb;
+  width: 794px;
+  min-height: 1123px;
+  box-sizing: border-box;
+  padding: 48px 52px;
+  background: #fff;
+  color: var(--sd-text);
+  font-family: 'Inter', 'Segoe UI', Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  position: relative;
+}
+.sd-font-small { font-size: 12px; }
+.sd-font-large { font-size: 14.5px; }
+
+.sd-muted { color: var(--sd-muted); }
+.sd-strong { font-weight: 600; }
+.sd-italic { font-style: italic; }
+.sd-pre { white-space: pre-line; }
+.sd-label { font-size: 0.72em; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--sd-muted); margin-bottom: 4px;
+  &--accent { color: var(--sd-accent); }
+}
+.sd-company { font-size: 1.35em; font-weight: 700; color: var(--sd-text); }
+.sd-logo { max-height: 64px; max-width: 180px; object-fit: contain; display: block; margin-bottom: 6px;
+  &--lg { max-height: 80px; max-width: 220px; }
+}
+.sd-brand { display: flex; gap: 14px; align-items: flex-start;
+  &--right { text-align: right; justify-content: flex-end; }
+}
+.sd-rule { height: 3px; background: var(--sd-accent); margin: 18px 0; &--thick { height: 4px; } }
+.sd-thin { height: 1px; background: var(--sd-line); margin: 14px 0; }
+.sd-two { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin: 18px 0; }
+.sd-box { border: 1px solid var(--sd-line); border-radius: 6px; padding: 14px 16px; }
+.sd-block { margin: 18px 0; }
+
+.sd-kv { border-collapse: collapse; width: 100%;
+  th { text-align: left; font-weight: 500; color: var(--sd-muted); padding: 3px 12px 3px 0; white-space: nowrap; vertical-align: top; }
+  td { padding: 3px 0; font-weight: 600; }
+}
+.sd-fields { width: 100%; border-collapse: collapse;
+  th { text-align: left; font-weight: 600; padding: 3px 10px 3px 0; width: 14%; }
+  td { padding: 3px 0; color: var(--sd-text); }
+}
+
+// Meta strip (standard / detailed)
+.sd-meta { display: flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--sd-line); border-radius: 6px; overflow: hidden;
+  > div { flex: 1 1 0; min-width: 120px; padding: 10px 14px; border-right: 1px solid var(--sd-line); &:last-child { border-right: 0; } }
+  .sd-meta-total { background: var(--sd-accent); .sd-label, .sd-strong { color: #fff; } }
+}
+
+// Items table
+.sd-items { width: 100%; border-collapse: collapse; margin-top: 18px; table-layout: fixed;
+  th, td { box-sizing: border-box; }
+  th { background: var(--sd-accent); color: #fff; font-size: 0.78em; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 9px 10px; text-align: left; }
+  td { padding: 10px; border-bottom: 1px solid var(--sd-line); vertical-align: top; }
+  tbody tr:nth-child(even) td { background: #fafafa; }
+  .sd-c-sn { width: 40px; }
+  td.sd-c-sn { color: var(--sd-muted); }
+  .sd-c-num { width: 64px; text-align: center; }
+  .sd-c-money { width: 128px; text-align: right; }
+  .sd-empty { text-align: center; color: var(--sd-muted); padding: 20px; }
+}
+
+// Totals
+.sd-totals { display: flex; justify-content: flex-end; margin-top: 14px;
+  table { min-width: 300px; border-collapse: collapse; }
+  th { text-align: left; font-weight: 500; color: var(--sd-muted); padding: 6px 24px 6px 0; }
+  td { text-align: right; padding: 6px 0; font-weight: 600; }
+  .sd-grand th, .sd-grand td { border-top: 2px solid var(--sd-accent); padding-top: 10px; font-size: 1.12em; font-weight: 800; color: var(--sd-text); }
+  .sd-grand td { color: var(--sd-accent); }
+  .sd-balance th, .sd-balance td { font-weight: 800; color: #b91c1c; }
+}
+.sd-words { margin: 18px 0; padding: 12px 16px; background: #f6f7f9; border-left: 4px solid var(--sd-accent); }
+.sd-extras { margin-top: 10px; }
+.sd-sign { margin-top: 36px; width: 240px; .sd-sign-line { border-bottom: 1px solid var(--sd-text); height: 36px; margin-bottom: 4px; } }
+.sd-footnote { margin-top: 24px; }
+
+// ── Standard ──
+.sd-std-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+.sd-std-title { text-align: right; }
+.sd-title { font-size: 1.9em; font-weight: 800; letter-spacing: .06em; color: var(--sd-accent); }
+
+// ── Corporate ──
+.sd-corp-head { display: flex; justify-content: space-between; align-items: flex-end; }
+.sd-corp-word { font-size: 2.6em; font-weight: 200; line-height: 1; letter-spacing: -.02em; }
+.sd-corp-brand { text-align: right; }
+.sd-corp-name { font-size: 1.6em; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; color: var(--sd-accent); }
+.sd-corp-bar { display: flex; background: #1a2e3b; color: #fff; margin-top: -6px;
+  > div { flex: 1; padding: 14px 18px; border-right: 1px solid rgba(255,255,255,.12); &:last-child { border-right: 0; text-align: right; } }
+  .sd-bar-label { font-size: 0.68em; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.6); margin-bottom: 4px; }
+  .sd-bar-value { font-weight: 700; }
+  .sd-bar-total { background: var(--sd-accent); }
+}
+.sd-corp-foot { margin-top: 28px; padding-top: 10px; border-top: 1px solid var(--sd-accent); text-align: center; color: var(--sd-muted); font-size: 0.85em; }
+
+// ── Minimal ──
+.sd-minimal { .sd-items th { background: transparent; color: var(--sd-text); border-bottom: 2px solid var(--sd-text); } }
+.sd-min-head { display: flex; justify-content: space-between; align-items: baseline; }
+.sd-min-title { font-size: 2em; font-weight: 700; }
+
+// ── Compact ──
+.sd-compact { padding: 36px 40px;
+  .sd-items td { padding: 6px 8px; }
+  .sd-items th { padding: 7px 8px; }
+}
+.sd-cpt-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; font-size: 1.05em; }
+.sd-sep { color: var(--sd-muted); }
+.sd-cpt-party { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; margin: 6px 0; .sd-label { margin: 0; } }
+
+// ── Premium ──
+.sd-prem-head { display: flex; justify-content: space-between; align-items: center; }
+.sd-prem-word { font-size: 2.6em; font-weight: 300; color: var(--sd-accent); }
+.sd-prem-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; margin: 18px 0; align-items: start; }
+.sd-prem-card { background: #f8fafb; border: 1px solid var(--sd-line); border-left: 4px solid var(--sd-accent); border-radius: 8px; padding: 16px 18px; }
+.sd-prem-name { font-size: 1.3em; font-weight: 700; color: var(--sd-accent); margin-bottom: 2px; }
+.sd-prem-meta .sd-prem-total th, .sd-prem-meta .sd-prem-total td { padding-top: 8px; border-top: 2px solid var(--sd-accent); color: var(--sd-accent); font-size: 1.1em; font-weight: 800; }
+
+// ── Receipt (conventional) ──
+.sd-receipt { padding-top: 0; padding-bottom: 0; display: flex; flex-direction: column; }
+.sd-bar { height: 22px; background: var(--sd-accent); margin: 0 -52px 28px; &--bottom { margin: auto -52px 0; margin-top: 32px; } }
+.sd-rc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+.sd-rc-title { font-size: 2em; font-weight: 800; letter-spacing: .08em; color: var(--sd-accent); }
+.sd-rc-grid { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 24px; margin: 26px 0 18px; }
+.sd-rc-refs { border-collapse: collapse; align-self: start;
+  th { text-align: left; font-size: 0.8em; letter-spacing: .05em; text-transform: uppercase; padding: 3px 14px 3px 0; color: var(--sd-text); white-space: nowrap; }
+  td { text-align: right; padding: 3px 0; }
+}
+.sd-rc-total { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 0; border-top: 1px solid var(--sd-text); border-bottom: 1px solid var(--sd-text);
+  span:first-child { font-size: 1.6em; font-weight: 800; }
+  span:last-child { font-size: 1.8em; font-weight: 800; }
+}
+.sd-receipt .sd-items th { background: transparent; color: var(--sd-text); border-bottom: 1px solid var(--sd-text); }
+.sd-receipt .sd-items tbody tr:nth-child(even) td { background: transparent; }
+.sd-receipt .sd-items td { border-bottom: 0; }
+.sd-rc-sign { margin: 30px 0 10px auto; width: 240px; text-align: center; .sd-sign-line { border-bottom: 1px solid var(--sd-text); height: 40px; margin-bottom: 4px; } }

@@ -85,6 +85,58 @@ export class SalesDocumentEmailService {
   }
 
   /**
+   * Emails a payment receipt. The sales email endpoint has no RECEIPT document type, so this goes
+   * through the general notification email endpoint, with the receipt PDF attached.
+   */
+  async sendReceipt(receipt: { number: string; total: number; paidNow?: number; balanceDue?: number; currency: string; invoiceNumber?: string },
+                    opts: DocumentEmailOptions): Promise<DocumentEmailOutcome> {
+    if (!opts.to) {
+      const detail = 'Could not find a recipient email address for this customer.';
+      this.messageService.add({ severity: 'warn', summary: 'Missing Email', detail });
+      return { result: 'NO_EMAIL', detail };
+    }
+    const fmt = (n: number | undefined) => `${receipt.currency} ${(Number(n) || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}`;
+    const accent = opts.accent || DEFAULT_ACCENT;
+    const row = (label: string, value: string, bold = false) => `
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; ${bold ? 'font-weight: bold;' : ''}">${label}</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; ${bold ? 'font-weight: bold;' : ''}">${value}</td>
+        </tr>`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
+        <h2 style="color: ${accent}; margin-top: 0;">Payment Receipt</h2>
+        ${renderEmailMessageHtml(opts.message || `Dear ${opts.recipientName},\n\nThank you for your payment. Your receipt is attached.`)}
+        <table style="width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px;">
+          ${row('Receipt Number', receipt.number)}
+          ${receipt.invoiceNumber ? row('Invoice Number', receipt.invoiceNumber) : ''}
+          ${row('Amount Received', fmt(receipt.paidNow), true)}
+          ${row('Invoice Total', fmt(receipt.total))}
+          ${row('Balance Due', fmt(receipt.balanceDue))}
+        </table>
+        <p style="margin-top: 24px;">Thank you for your business!</p>
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+        <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from ${opts.companyName}.</p>
+      </div>`;
+    const attachments = opts.pdfBlob
+      ? [{ fileName: `Receipt-${receipt.number}.pdf`, base64Content: await blobToBase64(opts.pdfBlob), contentType: 'application/pdf' }]
+      : [];
+    try {
+      await lastValueFrom(this.notificationService.sendDirectEmail({
+        to: opts.to,
+        subject: opts.subject || `Payment Receipt ${receipt.number} from ${opts.companyName}`,
+        body: html,
+        html: true,
+        tenant: tenantFromHost(),
+        attachments
+      }));
+      return this.outcome('SENT', 'Email Sent', `Receipt ${receipt.number} was emailed to ${opts.to}.`);
+    } catch (err) {
+      console.error('[SalesDocumentEmailService] Failed to send receipt email:', err);
+      return this.outcome('FAILED', 'Email Error', `The receipt could not be emailed${httpReason(err) ? ` (${httpReason(err)})` : ''}. Please try again.`);
+    }
+  }
+
+  /**
    * Emails a delivery note: same request shape as quotes/invoices (via the sales email endpoint),
    * falling back to the general notification email endpoint if the sales endpoint rejects the
    * request outright — e.g. a backend that doesn't take DELIVERY_NOTE as a document type.
@@ -382,11 +434,15 @@ export function blobToBase64(blob: Blob): Promise<string> {
 
 /** Renders an on-screen document sheet to a multi-page A4 PDF — what the detail pages download
  *  and attach. `pdf-printing-active` lets the sheet's stylesheet adjust for capture. */
-export async function renderElementToPdf(element: HTMLElement): Promise<Blob> {
+export async function renderElementToPdf(element: HTMLElement, scale = 3): Promise<Blob> {
   element.classList.add('pdf-printing-active');
   try {
     await new Promise(resolve => setTimeout(resolve, 300));
-    const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
+    // scale 3 → ~290dpi across an A4 width, which keeps text crisp when the page is zoomed/printed
+    const canvas = await html2canvas(element, {
+      scale, useCORS: true, allowTaint: true, backgroundColor: '#ffffff',
+      scrollX: 0, scrollY: 0, windowWidth: Math.max(element.scrollWidth, 794)
+    });
     const imgData = canvas.toDataURL('image/png');
     const pageH = 297;
     const imgW = 210;

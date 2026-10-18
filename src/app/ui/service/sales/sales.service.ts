@@ -338,6 +338,32 @@ export class SalesService {
     return (Array.isArray(quoteLogo) ? quoteLogo[0] : quoteLogo) || null;
   }
 
+  // ── Chosen document template (quotes / invoices) ──────────────────────────────
+  // There's no backend column for it yet, so it's kept on the quote's additionalOptions (an
+  // invoice made from a quote uses invoiceTemplateId there) and, for standalone invoices, in this
+  // browser. Detail pages read it back so their downloads match what the seller picked.
+
+  private templateKey(kind: 'QUOTE' | 'INVOICE', id: unknown): string {
+    return `sales.template.${kind}.${id}`;
+  }
+
+  saveDocumentTemplate(kind: 'QUOTE' | 'INVOICE', docId: number | string, templateId: string | undefined, quoteId?: number | string | null): void {
+    if (!templateId || docId == null) return;
+    try { localStorage.setItem(this.templateKey(kind, docId), templateId); } catch { /* storage unavailable */ }
+    if (quoteId == null || quoteId === '') return;
+    const patch: Partial<AdditionalQuoteOptions> = kind === 'QUOTE' ? { templateId } : { invoiceTemplateId: templateId };
+    this.patchAdditionalOptions(quoteId, patch).subscribe({
+      error: err => console.error('Could not save the chosen template on the quote:', err)
+    });
+  }
+
+  getDocumentTemplateId(kind: 'QUOTE' | 'INVOICE', docId: number | string | undefined, quote?: Quote | null): string | null {
+    const opts = this.firstAdditionalOptions(quote);
+    const fromQuote = kind === 'QUOTE' ? opts?.templateId : opts?.invoiceTemplateId;
+    if (fromQuote) return fromQuote;
+    try { return docId != null ? localStorage.getItem(this.templateKey(kind, docId)) : null; } catch { return null; }
+  }
+
   /** The scanned LPO file stored on the quote (the SalesLpo record has no file storage yet). */
   getQuoteLpoDocument(quote: Quote | null | undefined): QuoteDocumentAttachment | null {
     return this.firstAdditionalOptions(quote)?.lpoDocument || null;
@@ -372,6 +398,8 @@ export class SalesService {
           lpoDocument: existing.lpoDocument,
           signedDeliveryNoteDocument: existing.signedDeliveryNoteDocument,
           deliveryNoteLogo: existing.deliveryNoteLogo,
+          templateId: existing.templateId,
+          invoiceTemplateId: existing.invoiceTemplateId,
           deliveryNoteMeta: existing.deliveryNoteMeta,
           ...patch
         };

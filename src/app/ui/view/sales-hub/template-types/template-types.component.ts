@@ -288,6 +288,23 @@ export function deliveryNoteShowsField(templateId: string | null | undefined, fi
   return (DELIVERY_NOTE_OPTIONAL_FIELDS[templateId] || ALL_DELIVERY_NOTE_FIELDS).includes(field);
 }
 
+/** Which layout a template renders with — shared by the gallery thumbnails and the real documents
+ *  (SalesDocumentComponent) so a seller gets the layout they picked. 'detailed' and
+ *  'custom-client' share a section set but are two distinct layouts. */
+export function templateLayoutKey(templateId: string | null | undefined): string {
+  const map: Record<string, string> = {
+    standard: 'standard',
+    minimal: 'minimal',
+    detailed: 'detailed',
+    compact: 'compact',
+    'custom-client': 'custom-client',
+    emirates: 'centrifuge',
+    'emirates-custbank': 'centrifuge',
+    thcomms: 'standard'
+  };
+  return (templateId && map[templateId]) || 'standard';
+}
+
 /** Accent colour per template id — shared by the gallery cards and by documents rendered with a
  *  chosen template (e.g. the delivery note), so both carry the same colour. */
 export const TEMPLATE_ACCENT_COLORS: Record<string, string> = {
@@ -447,17 +464,7 @@ export class TemplateTypesComponent implements OnInit {
   // share the same `layout` value but must render as two distinct mockups,
   // matching their two distinct bespoke real preview layouts in the form.
   getLayoutKey(templateId: string): string {
-    const map: Record<string, string> = {
-      standard: 'standard',
-      minimal: 'minimal',
-      detailed: 'detailed',
-      compact: 'compact',
-      'custom-client': 'custom-client',
-      emirates: 'centrifuge',
-      'emirates-custbank': 'centrifuge',
-      thcomms: 'standard'
-    };
-    return map[templateId] ?? 'standard';
+    return templateLayoutKey(templateId);
   }
 
   isTemplateDefault(template: QuoteTemplate): boolean {
