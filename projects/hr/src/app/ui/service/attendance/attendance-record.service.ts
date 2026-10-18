@@ -66,6 +66,10 @@ export class AttendanceRecordService {
     return this.http.post<AttendanceRecordDTO>(`${this.BASE}/clockOut`, request);
   }
 
+  processUnhandledBiometricEvents(): Observable<number> {
+    return this.http.post<number>(`${this.BASE}/processUnhandledBiometricEvents`, {});
+  }
+
   getRecordsByDateRange(
     employeeId?: number,
     startDate?: string,

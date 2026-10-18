@@ -87,11 +87,19 @@ export class StaffNumbersComponent implements OnInit {
       return;
     }
     row.saving = true;
+    const r = row.raw;
     const payload = {
-      ...row.raw,
+      ...r,
       staffNumber: row.staffNumber,
-      department: row.raw.department?.id ?? row.raw.department,
-      level: row.raw.level?.id ?? row.raw.level,
+      departmentId: r.department?.id ?? r.departmentId ?? null,
+      levelId: r.level?.id ?? r.levelId ?? null,
+      genderId: r.gender?.id ?? r.genderId ?? null,
+      religionId: r.religion?.id ?? r.religionId ?? null,
+      maritalStatusId: r.maritalStatus?.id ?? r.maritalStatusId ?? null,
+      relationshipId: r.relationship?.id ?? r.relationshipId ?? null,
+      jobTypeId: r.jobType?.id ?? r.jobTypeId ?? null,
+      employeeMediaId: r.employeeMedia?.id ?? r.employeeMediaId ?? null,
+      userId: r.user?.id ?? r.userId ?? null,
     };
     this.employeeService.updateEmployee(payload, row.id).subscribe({
       next: () => {
