@@ -2,14 +2,16 @@
 
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, takeUntil, lastValueFrom } from 'rxjs';
+import { Subject, takeUntil, lastValueFrom, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Invoice, InvoiceStatus, PaymentMethod, SaleLifecycleStatus, SalesandTransactions } from '../../../../domain/sales/sales.dto';
+import { Invoice, InvoiceStatus, PaymentMethod, SaleLifecycleStatus, SalesandTransactions, SalesDeliveryNote, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SendEmailModalComponent } from '../../send-email-modal/send-email-modal.component';
+import { DocumentViewerComponent } from '../../document-viewer/document-viewer.component';
+import { ViewableDocument, downloadDocument, hasDocumentContent } from '../../../../service/sales/document-file.util';
 import { SalesDocumentEmailService, renderElementToPdf } from '../../../../service/sales/sales-document-email.service';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
@@ -21,7 +23,7 @@ import { MessageService } from 'primeng/api';
 @Component({
   selector: 'app-invoice-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, BackButtonComponent, SharedOverlayModule, PaymentReceiptComponent, SendEmailModalComponent],
+  imports: [CommonModule, FormsModule, BackButtonComponent, SharedOverlayModule, PaymentReceiptComponent, SendEmailModalComponent, DocumentViewerComponent],
   templateUrl: './invoice-detail.component.html',
   styleUrls: ['./invoice-detail.component.scss']
 })
@@ -97,6 +99,72 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
   /** Order number linking this invoice to its quote / delivery note / transaction. */
   orderNumber = '';
 
+  // ── Signed delivery note (invoices that came through Quote → LPO → Delivery Note) ──
+  deliveryNote: SalesDeliveryNote | null = null;
+  private signedFile: QuoteDocumentAttachment | null = null;
+  signedLookupDone = false;
+  showSignedViewer = false;
+
+  /** Whether this invoice came through the quote / delivery flow (a standalone one didn't). */
+  get fromDeliveryFlow(): boolean {
+    return !!this.invoice?.quoteId || !!this.deliveryNote;
+  }
+
+  /** The signed copy: the backend's stored file once it has one, else the file kept on the quote. */
+  get signedDocument(): ViewableDocument | null {
+    if (this.deliveryNote?.signedDocumentUrl) {
+      return { fileName: `Signed-${this.deliveryNote.deliveryNumber || 'DeliveryNote'}`, url: this.deliveryNote.signedDocumentUrl };
+    }
+    if (this.signedFile?.base64Content) {
+      return { fileName: this.signedFile.fileName || 'Signed delivery note', contentType: this.signedFile.contentType,
+        base64Content: this.signedFile.base64Content, uploadedAt: this.signedFile.uploadedAt };
+    }
+    return null;
+  }
+
+  get canViewSigned(): boolean {
+    return hasDocumentContent(this.signedDocument);
+  }
+
+  /** Finds the invoice's delivery note and the signed copy uploaded for it. */
+  private loadSignedDeliveryNote(invoice: Invoice): void {
+    this.deliveryNote = null;
+    this.signedFile = null;
+    this.signedLookupDone = false;
+    const quoteId = invoice.quoteId;
+    if (quoteId == null || quoteId === '') {
+      this.signedLookupDone = true;
+      return;
+    }
+    forkJoin({
+      quote: this.salesService.getQuoteById(quoteId),
+      notes: this.salesService.getDeliveryNotes({ quoteId, size: 1000 })
+    }).pipe(takeUntil(this.destroy$)).subscribe(({ quote, notes }) => {
+      this.signedFile = this.salesService.getQuoteSignedDeliveryNote(quote);
+      this.deliveryNote = notes.data.find(n => String(n.invoiceId) === String(invoice.id))
+        || notes.data.find(n => String(n.quoteId) === String(quoteId))
+        || null;
+      this.signedLookupDone = true;
+    });
+  }
+
+  viewSignedDeliveryNote(): void {
+    if (this.canViewSigned) this.showSignedViewer = true;
+  }
+
+  downloadSignedDeliveryNote(): void {
+    const doc = this.signedDocument;
+    if (!doc || !downloadDocument(doc)) {
+      this.messageService.add({ severity: 'warn', summary: 'Not Available', detail: 'No signed delivery note file is available for this invoice.' });
+    }
+  }
+
+  openDeliveryNote(): void {
+    if (this.deliveryNote?.id == null) return;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    this.router.navigate(uuid ? ['/admin/sales/delivery-notes', this.deliveryNote.id, uuid] : ['/admin/sales/delivery-notes', this.deliveryNote.id]);
+  }
+
   loadInvoice(id: string): void {
     this.isLoading = true;
     this.salesService.getInvoiceById(id).subscribe({
@@ -104,6 +172,7 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
         this.invoice = invoice;
         if (invoice) {
           this.loadPaymentsForInvoice(invoice.id);
+          this.loadSignedDeliveryNote(invoice);
           this.salesService.getOrderIdLookup().pipe(takeUntil(this.destroy$)).subscribe(lookup => {
             this.orderNumber = this.salesService.orderNumberForInvoice(invoice, lookup);
           });

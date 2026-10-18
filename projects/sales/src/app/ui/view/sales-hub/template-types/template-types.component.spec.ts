@@ -66,4 +66,18 @@ describe('TemplateTypesComponent', () => {
       expect(deliveryNoteShowsField('minimal', 'attention')).toBeFalse();
     });
   });
+
+  describe('for invoices', () => {
+    beforeEach(() => component.documentType = 'invoice');
+
+    it('labels the thumbnails "Invoice", not "Quotation"', () => {
+      expect(component.docLabel).toBe('Invoice');
+      expect(component.sampleNumber).toBe('INV-2026-001');
+    });
+
+    it('talks about invoices in the descriptions', () => {
+      component.visibleTemplates.forEach(t => expect(component.getTemplateDescription(t)).not.toMatch(/\bquotes?\b/i));
+      expect(component.getTemplateDescription(QUOTE_TEMPLATES.find(t => t.id === 'minimal')!)).toContain('core invoice details');
+    });
+  });
 });

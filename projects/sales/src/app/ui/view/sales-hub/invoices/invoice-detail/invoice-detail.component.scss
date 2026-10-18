@@ -1448,3 +1448,9 @@ $radius-xl: 24px;
     transform: translateY(0);
   }
 }
+
+// Signed Delivery Note card
+.signed-file { margin: 0.75rem 0 0; font-size: 0.85rem; font-weight: 600; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.signed-actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; .btn-view-customer { flex: 1; margin-top: 0; } }
+.signed-muted { margin: 0.5rem 0 0; font-size: 0.85rem; color: #7a8a9e; }
+.signed-link { color: #2563eb; font-weight: 600; cursor: pointer; &:hover { text-decoration: underline; } }

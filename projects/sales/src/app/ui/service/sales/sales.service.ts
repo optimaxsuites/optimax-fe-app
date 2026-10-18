@@ -343,6 +343,11 @@ export class SalesService {
     return this.firstAdditionalOptions(quote)?.lpoDocument || null;
   }
 
+  /** The signed delivery note file stored on the quote (no upload endpoint yet). */
+  getQuoteSignedDeliveryNote(quote: Quote | null | undefined): QuoteDocumentAttachment | null {
+    return this.firstAdditionalOptions(quote)?.signedDeliveryNoteDocument || null;
+  }
+
   hasSignedDeliveryNoteDocument(quote: Quote | null | undefined): boolean {
     return !!this.firstAdditionalOptions(quote)?.signedDeliveryNoteDocument;
   }
