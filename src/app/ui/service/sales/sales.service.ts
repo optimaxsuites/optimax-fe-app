@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of, forkJoin } from 'rxjs';
+import { Observable, of, forkJoin, throwError } from 'rxjs';
 import { map, catchError, switchMap, tap } from 'rxjs/operators';
 import {
   Quote,
@@ -47,6 +47,21 @@ export interface OrderSnapshot {
   items: any[];
   progress: OrderProgress;
 }
+
+/** SalesDeliveryNote fields the delivery-note endpoints accept (dates listed separately). */
+const DELIVERY_NOTE_FIELDS = [
+  'id', 'deliveryNumber', 'salesOrderId', 'quoteId', 'lpoId', 'invoiceId', 'customerId', 'customerAddress',
+  'carrier', 'trackingNumber', 'status', 'recipientName', 'recipientPhone', 'deliveryAddress', 'attention',
+  'attentionPhone', 'contactPerson', 'contactPhone', 'cancellationReason', 'receivedByName', 'signedDocumentUrl',
+  'templateId', 'notes', 'signature', 'createdBy'
+] as const;
+const DELIVERY_NOTE_DATE_FIELDS = [
+  'deliveryDate', 'dispatchedAt', 'sentAt', 'inTransitAt', 'deliveredAt', 'returnedAt', 'cancelledAt', 'receivedAt'
+] as const;
+const DELIVERY_NOTE_ITEM_FIELDS = [
+  'id', 'deliveryNoteId', 'productName', 'quantity', 'unit', 'productId', 'quoteItemId', 'description',
+  'orderedQuantity', 'serialNumbers', 'batchNumber', 'quantityReceived', 'remarks'
+] as const;
 
 @Injectable({
   providedIn: 'root'
@@ -1087,17 +1102,61 @@ export class SalesService {
     };
     const transition = transitions[status];
     if (!transition || note.id == null) return this.updateDeliveryNote(note.id!, { ...note, status });
+    const changed: Partial<SalesDeliveryNote> = { ...note, ...transition.stamp, status };
     return this.http.patch<SalesDeliveryNote>(
       `${this.base}/delivery-notes/${note.id}/${transition.path}`,
-      this.deliveryNoteBody({ ...note, ...transition.stamp, status })
+      this.deliveryNoteBody(changed)
+    ).pipe(
+      // If the transition endpoint rejects the request, make the same change through the full-record
+      // PUT (the save path the wizard uses). If that fails too, report the transition's own error.
+      catchError(transitionErr => {
+        console.warn(`[SalesService] PATCH /delivery-notes/${note.id}/${transition.path} failed; saving the status change with PUT instead:`, transitionErr);
+        return this.updateDeliveryNote(note.id!, changed).pipe(
+          catchError(() => throwError(() => transitionErr))
+        );
+      })
     );
+  }
+
+  /** The backend's own explanation for a failed request, when it sent one. */
+  errorReason(err: any): string {
+    const body = err?.error;
+    const fromBody = typeof body === 'string' ? body : (body?.message || body?.error || body?.detail);
+    return String(fromBody || err?.statusText || '').trim();
   }
 
   /** Request body for create/update/transition calls — server-managed fields are left to the
    *  backend, and tenantId is always the current tenant's. */
+  /**
+   * Request body for create/update/transition calls. Only the documented fields are sent (anything
+   * extra a response carried could be rejected), dates go back as ISO strings (the API returns
+   * some as epoch seconds), server-managed timestamps are left to the backend, and tenantId is
+   * always the current tenant's.
+   */
   private deliveryNoteBody(data: Partial<SalesDeliveryNote>): Partial<SalesDeliveryNote> {
-    const { createdAt, updatedAt, ...rest } = data;
-    return { ...rest, tenantId: this.tenantId };
+    const iso = (v: unknown) => {
+      if (v === null || v === undefined || v === '') return undefined;
+      const d = parseApiDate(v);
+      return d && d.getTime() > 0 ? d.toISOString() : undefined;
+    };
+    const pick = (src: any, keys: readonly string[], dates: readonly string[]) => {
+      const out: any = {};
+      keys.forEach(k => { if (src[k] !== undefined) out[k] = src[k]; });
+      dates.forEach(k => { if (k in src) out[k] = iso(src[k]); });
+      return out;
+    };
+    const body = pick(data, DELIVERY_NOTE_FIELDS, DELIVERY_NOTE_DATE_FIELDS);
+    if (Array.isArray(data.items)) {
+      body.items = data.items.map(item => {
+        const line = pick(item, DELIVERY_NOTE_ITEM_FIELDS, ['deliveryDate']);
+        // Nothing here sets serial numbers; echoing back the empty list a response carried makes
+        // PATCH /deliver fail ("Cannot deserialize value of type String from Array value"), so
+        // only send them when there actually are some.
+        if (Array.isArray(line.serialNumbers) && !line.serialNumbers.length) delete line.serialNumbers;
+        return line;
+      });
+    }
+    return { ...body, tenantId: this.tenantId };
   }
 
   // ============================================

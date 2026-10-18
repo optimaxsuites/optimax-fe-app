@@ -348,7 +348,7 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error updating delivery note status:', err);
         this.isUpdatingStatus = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update status. Please try again.' });
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: this.withReason('Failed to update status.', err) });
       }
     });
   }
@@ -413,7 +413,7 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error deleting delivery note:', err);
         this.isDeleting = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete the delivery note. Please try again.' });
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: this.withReason('Failed to delete the delivery note.', err) });
       }
     });
   }
@@ -458,7 +458,7 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error updating LPO:', err);
         this.isUpdatingLpo = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: `${failure} Please try again.` });
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: this.withReason(failure, err) });
       }
     });
   }
@@ -491,9 +491,15 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error deleting LPO:', err);
         this.isUpdatingLpo = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete the LPO. Please try again.' });
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: this.withReason('Failed to delete the LPO.', err) });
       }
     });
+  }
+
+  /** "Failed to update status. (The backend's reason.) Please try again." */
+  private withReason(message: string, err: unknown): string {
+    const reason = this.salesService.errorReason(err);
+    return `${message}${reason ? ` (${reason})` : ''} Please try again.`;
   }
 
   goBack(): void {

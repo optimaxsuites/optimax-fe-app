@@ -1,4 +1,4 @@
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 
 import { DeliveryNoteDetailComponent } from './delivery-note-detail.component';
 import { SalesService } from '../../../../service/sales/sales.service';
@@ -24,8 +24,9 @@ describe('DeliveryNoteDetailComponent', () => {
       'getOrderIdLookup', 'getSalesandTransactionsById', 'getDeliveryNoteMeta', 'getSalesLpoById', 'getSalesLpoForQuote',
       'deleteDeliveryNote', 'updateDeliveryNote', 'verifySalesLpo', 'rejectSalesLpo', 'deleteSalesLpo',
       'getQuoteById', 'hasSignedDeliveryNoteDocument', 'fillMissingFromQuote', 'getDeliveryNoteLogo', 'deliveryAddressFor',
-      'quoteCustomer', 'getQuoteLpoDocument'
+      'quoteCustomer', 'getQuoteLpoDocument', 'errorReason'
     ]);
+    salesService.errorReason.and.callFake((err: any) => err?.error?.message || '');
     salesService.quoteCustomer.and.callFake((q: any) => q?.customerName && typeof q.customerName === 'object' ? q.customerName : null);
     salesService.getQuoteLpoDocument.and.callFake((q: any) => q?.additionalOptions?.lpoDocument || null);
     salesService.getDeliveryNoteLogo.and.returnValue(null);
@@ -151,6 +152,18 @@ describe('DeliveryNoteDetailComponent', () => {
 
       expect(salesService.updateDeliveryNoteStatus).toHaveBeenCalledWith(jasmine.objectContaining({ id: 1 }), 'DELIVERED', undefined);
       expect(component.note?.status).toBe('DELIVERED');
+    });
+
+    it('says why when the backend refuses the change', () => {
+      component.note = note({ id: 1, status: 'IN_TRANSIT' });
+      salesService.updateDeliveryNoteStatus.and.returnValue(throwError(() => ({ status: 400, error: { message: 'Signed copy required' } })));
+
+      component.updateStatus('DELIVERED');
+
+      expect((component as any).messageService.add).toHaveBeenCalledWith(jasmine.objectContaining({
+        severity: 'error', detail: 'Failed to update status. (Signed copy required) Please try again.'
+      }));
+      expect(component.isUpdatingStatus).toBeFalse();
     });
 
     it('offers Generate Invoice only once delivered and not yet invoiced', () => {
