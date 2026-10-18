@@ -2,7 +2,7 @@ import { of } from 'rxjs';
 
 import { DeliveryNoteListComponent } from './delivery-note-list.component';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { DeliveryNote, Quote } from '../../../../domain/sales/sales.dto';
+import { SalesDeliveryNote, Quote } from '../../../../domain/sales/sales.dto';
 
 describe('DeliveryNoteListComponent', () => {
   let component: DeliveryNoteListComponent;
@@ -12,15 +12,15 @@ describe('DeliveryNoteListComponent', () => {
     id: 1, quoteNumber: 'QUO-1', status: 'CONVERTED', customerName: { name: 'Acme Co' } as any, items: [], ...over
   } as Quote);
 
-  const note = (over: Partial<DeliveryNote> = {}): DeliveryNote => ({
+  const note = (over: Partial<SalesDeliveryNote> = {}): SalesDeliveryNote => ({
     id: 1, deliveryNumber: 'DN-1', status: 'PENDING', customerId: 1,
     items: [], customerAddress: '', ...over
-  } as DeliveryNote);
+  } as SalesDeliveryNote);
 
   beforeEach(() => {
     salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getConvertedQuotesAwaitingDeliveryNote', 'getDeliveryNotes', 'getCustomers', 'getOrderIdLookup']);
     salesService.getCustomers.and.returnValue(of({ data: [{ id: 1, name: 'Acme Co' }, { id: 2, name: 'Globex' }], total: 2 } as any));
-    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map() }));
+    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map(), byInvoiceId: new Map() }));
     component = new DeliveryNoteListComponent(
       { add: jasmine.createSpy('add') } as any,
       salesService,

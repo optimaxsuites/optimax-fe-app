@@ -1253,3 +1253,43 @@ export function resolveLoanTotalLateFees(
     .reduce((sum, item) => sum + resolveInstallmentLateFee(item, loan, today), 0);
   return Number(total.toFixed(2));
 }
+
+/**
+ * yyyy-MM-dd for the date's *local* calendar day. `toISOString().split('T')[0]` uses UTC and lands on
+ * the wrong day for times near midnight (e.g. 00:30 in Lagos is still the previous day in UTC).
+ */
+export function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/** The signed-in user's id from the session (userid, else the registration payload), or ''. */
+export function resolveSessionUserId(): string {
+  const isUsable = (value: unknown): boolean => {
+    const normalized = String(value ?? '').trim().toLowerCase();
+    return !!normalized && normalized !== 'undefined' && normalized !== 'null';
+  };
+
+  const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
+  if (isUsable(storedUserId)) {
+    return String(storedUserId).trim();
+  }
+
+  try {
+    const rawUserRegData = sessionStorage.getItem('userRegData') || localStorage.getItem('userRegData');
+    if (rawUserRegData) {
+      const parsed = JSON.parse(rawUserRegData);
+      const payload = Array.isArray(parsed) ? parsed[0] : parsed;
+      const regUserId = payload?.id ?? payload?.userId;
+      if (isUsable(regUserId)) {
+        return String(regUserId).trim();
+      }
+    }
+  } catch {
+    // Ignore malformed registration payload.
+  }
+
+  return '';
+}

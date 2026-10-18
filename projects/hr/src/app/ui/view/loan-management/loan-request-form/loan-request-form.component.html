@@ -55,16 +55,17 @@
             <h3>Financial Summary</h3>
           </div>
           <div class="salary-display">
-            <span class="salary-label">Current Monthly Salary</span>
-            <span class="salary-value">{{ (monthlySalary || 0) | currency:'NGN':'symbol':'1.2-2' }}</span>
+            <span class="salary-label">Current Monthly Salary<ng-container *ngIf="salaryLevelName"> · {{ salaryLevelName }}</ng-container></span>
+            <span class="salary-value" *ngIf="!isLoadingSalary">{{ (monthlySalary || 0) | currency:'NGN':'symbol':'1.2-2' }}</span>
+            <span class="salary-value" *ngIf="isLoadingSalary">Loading…</span>
           </div>
-          <div class="salary-hint" *ngIf="monthlySalary > 0">
+          <div class="salary-hint" *ngIf="salaryStatus === 'ok'">
             <i class="fas fa-info-circle"></i>
-            <span>Maximum loan amount up to 3x your monthly salary ({{ (monthlySalary * 3) | currency:'NGN':'symbol':'1.2-2' }})</span>
+            <span>What you still owe, plus loans you've applied for, plus this request, can't exceed one-third of your monthly salary ({{ maxTotalBorrowing | currency:'NGN':'symbol':'1.2-2' }}).</span>
           </div>
-          <div class="salary-hint warning" *ngIf="monthlySalary === 0 && !isLoadingSalary">
+          <div class="salary-hint warning" *ngIf="!isLoadingSalary && salaryStatus !== 'ok'">
             <i class="fas fa-exclamation-triangle"></i>
-            <span>Salary information not available. Please contact HR.</span>
+            <span>{{ salaryProblemMessage }}</span>
           </div>
         </div>
 
@@ -300,7 +301,7 @@
         <i class="fas fa-times"></i>
         <span>Cancel</span>
       </button>
-      <button type="submit" class="btn-primary" [disabled]="!loanRequestForm.valid || isLoading || showInterestModal">
+      <button type="submit" class="btn-primary" [disabled]="!loanRequestForm.valid || isLoading || showInterestModal || salaryStatus !== 'ok'">
         <span *ngIf="!isLoading">
           <i class="fas fa-paper-plane"></i>
           <span>Submit Application</span>

@@ -8,13 +8,9 @@ import { App } from './app/app';
 import { routes } from './app/app-routing-module';
 
 const devRoutes: Routes = [
-  // Bare '/' used to resolve by accident, via a second, buggy copy of `routes` that
-  // AppRoutingModule registered at the top level (its own '' -> 'sales-hub' redirect landed
-  // here too). That duplicate's been removed (see app-routing-module.ts), so '/' needs its own
-  // explicit redirect now — straight into the one real, correctly-prefixed route tree below.
   {
     path: '',
-    redirectTo: 'admin/sales',
+    redirectTo: '/admin/sales/sales-hub',
     pathMatch: 'full'
   },
   {
@@ -23,7 +19,7 @@ const devRoutes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'admin/sales'
+    redirectTo: '/admin/sales/sales-hub'
   }
 ];
 

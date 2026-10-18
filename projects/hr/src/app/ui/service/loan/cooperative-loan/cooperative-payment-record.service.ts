@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
+import { PaymentRecordType } from '../loan-payment-types';
 
 export interface CooperativePaymentRecord {
   id: number;
@@ -7,7 +8,7 @@ export interface CooperativePaymentRecord {
   memberId: number;
   membershipId?: number;
   groupId?: number;
-  paymentType: 'PRINCIPAL_REPAYMENT' | 'INTEREST_REPAYMENT' | 'LATE_FEE';
+  paymentType: PaymentRecordType;
   installmentNumber: number;
   amount: number;
   principalApplied?: number;
@@ -31,7 +32,7 @@ export interface CreateCooperativePaymentRecordPayload {
   memberId: number;
   membershipId?: number;
   groupId?: number;
-  paymentType: 'PRINCIPAL_REPAYMENT' | 'INTEREST_REPAYMENT' | 'LATE_FEE';
+  paymentType: PaymentRecordType;
   installmentNumber: number;
   amount: number;
   principalApplied?: number;

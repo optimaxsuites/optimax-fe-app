@@ -24,6 +24,8 @@ import { getSessionUserDisplayName } from '../../../shared-component/service/ses
 import { formatLoanPurposeDisplay, formatCooperativeLoanCode as _formatCooperativeLoanCode } from '../../../service/loan/loan-display.util';
 import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 import { PaymentHistory, StatusHistory } from '../../../domain/loan/cooperative-loan.dto';
+import { toCsvCell } from '../../../service/loan/csv-export.util';
+import { hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 interface DashboardActivity {
   icon: string;
@@ -362,7 +364,6 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    console.log('[CooperativeDashboard] ngOnInit running');
     // Preload group data to warm up cache for all loan-management UIs
     this.cooperativeService.loadGroups().subscribe();
 
@@ -387,7 +388,6 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     this.employeeLoanService.getAllLevels().subscribe({
       next: (levels) => {
         this.levels = Array.isArray(levels) ? levels : [];
-        console.log('Levels loaded for filter:', this.levels);
       },
       error: (err) => {
         this.levels = [];
@@ -504,7 +504,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
   get totalBalance(): number {
     return this.allLoans
-      .filter((loan) => loan.status === 'ACTIVE')
+      .filter((loan) => hasOutstandingBalanceStatus(loan.status))
       .reduce((sum, loan) => sum + Number(
         loan.outstandingBalance ||
         loan.outstandingPrincipal ||
@@ -568,7 +568,6 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
           .sort((a: CooperativeMember, b: CooperativeMember) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
           .slice(0, 5);
         this.memberships = memberships || [];
-        console.log('[CooperativeDashboard] memberships loaded:', this.memberships);
         this.recentLoanRows = this.recentLoans.map((loan) => this.buildRecentLoanRow(loan));
 
         // Dependent refreshes
@@ -1379,7 +1378,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     ]);
 
     const csvContent = [headers, ...rows]
-      .map(line => line.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+      .map(line => line.map(field => toCsvCell(field)).join(','))
       .join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1534,7 +1533,6 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   private mapEmployeeToProfile(employee: any): CooperativeEmployeeProfile | null {
-    console.log('Raw employee object:', employee);
     const firstName = String(employee?.firstName || '').trim();
     const lastName = String(employee?.lastName || '').trim();
     const fallbackName = String(employee?.fullName || '').trim();

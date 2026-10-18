@@ -6,6 +6,9 @@ import { v4 as uuidV4 } from 'uuid';
 import { CooperativeLoanGracePeriodRequest } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { toLocalDateString } from '../../../service/loan/loan-display.util';
+import { getLoanStatusClass } from '../../../service/loan/loan-format.util';
+import { getPaymentTypeLabel, getPaymentTypeTone } from '../../../service/loan/loan-payment-types';
 
 @Component({
   selector: 'app-cooperative-grace-period-requests-management',
@@ -269,27 +272,15 @@ export class CooperativeGracePeriodRequestsManagementComponent implements OnInit
   }
 
   formatPaymentType(paymentSubtype: string): string {
-    switch (paymentSubtype) {
-      case 'CONTRIBUTION': return 'Contribution';
-      case 'PRINCIPAL_REPAYMENT': return 'Principal Payment';
-      case 'INTEREST_PAYMENT': return 'Interest Payment';
-      case 'LATE_FEE': return 'Late Fee';
-      default: return paymentSubtype;
-    }
+    return getPaymentTypeLabel(paymentSubtype);
   }
 
   getPaymentTypeClass(paymentSubtype: string): string {
-    switch (paymentSubtype) {
-      case 'CONTRIBUTION': return 'contribution';
-      case 'PRINCIPAL_REPAYMENT': return 'principal';
-      case 'INTEREST_PAYMENT': return 'interest';
-      case 'LATE_FEE': return 'late-fee';
-      default: return '';
-    }
+    return getPaymentTypeTone(paymentSubtype);
   }
 
   getStatusClass(status: string): string {
-    return `status-${status.toLowerCase()}`;
+    return getLoanStatusClass(status);
   }
 
   formatStatus(status: string): string {
@@ -311,7 +302,7 @@ export class CooperativeGracePeriodRequestsManagementComponent implements OnInit
   getNewDueDate(): string {
     if (!this.selectedRequest?.newDueDate) return '';
     const parsed = new Date(this.selectedRequest.newDueDate);
-    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().split('T')[0];
+    return Number.isNaN(parsed.getTime()) ? '' : toLocalDateString(parsed);
   }
 
   formatLoanCode(raw: string | number | undefined | null): string {

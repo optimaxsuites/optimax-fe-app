@@ -36,6 +36,7 @@ export class CooperativeMembersComponent implements OnInit {
   isLoading = true;
   searchTerm = '';
   messages: MemberMessage[] = [];
+  pendingStatusChange: { member: CooperativeMember; status: 'ACTIVE' | 'INACTIVE'; prompt: string } | null = null;
 
   // Filters
   filters = {
@@ -264,29 +265,34 @@ export class CooperativeMembersComponent implements OnInit {
 
   reactivateMember(member: CooperativeMember, event: Event): void {
     event.stopPropagation();
-    const shouldReactivate = window.confirm(`Reactivate ${member.fullName}? They will regain active cooperative privileges.`);
-    if (!shouldReactivate) {
-      return;
-    }
-    this.updateMemberStatus(member, 'ACTIVE');
+    this.requestStatusChange(member, 'ACTIVE', `Reactivate ${member.fullName}? They will regain active cooperative privileges.`);
   }
 
   markMemberInactive(member: CooperativeMember, event: Event): void {
     event.stopPropagation();
-    const shouldMarkInactive = window.confirm(`Mark ${member.fullName} as inactive?`);
-    if (!shouldMarkInactive) {
-      return;
-    }
-    this.updateMemberStatus(member, 'INACTIVE');
+    this.requestStatusChange(member, 'INACTIVE', `Mark ${member.fullName} as inactive?`);
   }
 
   activateInactiveMember(member: CooperativeMember, event: Event): void {
     event.stopPropagation();
-    const shouldActivate = window.confirm(`Set ${member.fullName} back to active?`);
-    if (!shouldActivate) {
-      return;
+    this.requestStatusChange(member, 'ACTIVE', `Set ${member.fullName} back to active?`);
+  }
+
+  /** Asks for confirmation with an inline PrimeNG warning message instead of window.confirm(). */
+  private requestStatusChange(member: CooperativeMember, status: 'ACTIVE' | 'INACTIVE', prompt: string): void {
+    this.pendingStatusChange = { member, status, prompt };
+  }
+
+  confirmPendingStatusChange(): void {
+    const pending = this.pendingStatusChange;
+    this.pendingStatusChange = null;
+    if (pending) {
+      this.updateMemberStatus(pending.member, pending.status);
     }
-    this.updateMemberStatus(member, 'ACTIVE');
+  }
+
+  cancelPendingStatusChange(): void {
+    this.pendingStatusChange = null;
   }
 
   goBack(): void {

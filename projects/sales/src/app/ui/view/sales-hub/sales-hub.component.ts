@@ -32,14 +32,14 @@ export class SalesHubComponent {
       icon: 'fa-solid fa-file',
     },
     {
-      name: 'Invoices',
-      component: InvoiceListComponent,
-      icon: 'fa-solid fa-file-invoice-dollar',
-    },
-    {
       name: 'Delivery Notes',
       component: DeliveryNoteListComponent,
       icon: 'fa-solid fa-truck',
+    },
+    {
+      name: 'Invoices',
+      component: InvoiceListComponent,
+      icon: 'fa-solid fa-file-invoice-dollar',
     },
     {
       name: 'Customers',

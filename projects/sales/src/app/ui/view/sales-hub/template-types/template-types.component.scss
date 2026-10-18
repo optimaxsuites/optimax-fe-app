@@ -95,6 +95,13 @@ $dark-doc:  #2d4a47;
   &.tpl-preview--custom-client .preview-fade { background: linear-gradient(to bottom, transparent, #cdecd9); }
 }
 
+// Delivery note thumbnails carry more fields — taller preview with a shorter fade so the
+// sign-off at the bottom stays visible.
+.tpl-preview.tpl-preview--dn {
+  height: 380px;
+  .preview-fade { height: 36px; }
+}
+
 // ── White document paper — elevated white card resembling a real doc ───────────
 .doc-paper {
   position: relative;
@@ -314,4 +321,28 @@ $dark-doc:  #2d4a47;
 
 @media (max-width: 768px) {
   .template-container { padding: 1rem; }
+}
+
+// ── Delivery note mock (dnBody) ────────────────────────────────────────────────
+.dp-dn-fields {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 3px 10px;
+  border: 1px solid rgba(0,0,0,.1); border-radius: 4px; padding: 5px 7px; margin: 6px 0 7px;
+  .dp-dn-f { display: flex; gap: 4px; min-width: 0; font-size: 7.5px; line-height: 1.35; }
+  .lbl { flex: 0 0 auto; font-weight: 700; color: #374151; &::after { content: ':'; } }
+  .val { color: $muted; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+.dp-dn-table {
+  .dp-thead span, .dp-trow span { font-size: 7px; }
+  span.qty  { flex: 0 0 34px; text-align: center; }
+  span.date { flex: 0 0 48px; }
+  span.sig  { flex: 0 0 40px; }
+  .dp-trow span.sig { border-bottom: 1px dotted #9ca3af; align-self: stretch; }
+}
+.dp-dn-sign {
+  .dp-dn-sign-bar { background: #e5e7eb; border: 1px solid #9ca3af; font-size: 7.5px; font-weight: 700; padding: 3px 6px; margin-bottom: 6px; }
+  .dp-dn-sign-row {
+    display: flex; gap: 8px; font-size: 7.5px; color: #374151;
+    span { flex: 1; display: flex; align-items: flex-end; gap: 3px; white-space: nowrap; }
+    i { flex: 1; border-bottom: 1px solid #6b7280; height: 9px; }
+  }
 }

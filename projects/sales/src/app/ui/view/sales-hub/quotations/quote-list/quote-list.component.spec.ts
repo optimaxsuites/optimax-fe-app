@@ -15,11 +15,11 @@ describe('QuoteListComponent', () => {
   beforeEach(() => {
     salesService = jasmine.createSpyObj<SalesService>('SalesService', [
       'getQuotes', 'getCustomers', 'deleteQuote', 'getOrderIdLookup', 'getQuoteDeliveryNoteMap',
-      'hasSignedDeliveryNoteDocument', 'convertQuote', 'saveSignedDeliveryNoteDocument'
+      'hasSignedDeliveryNoteDocument', 'convertQuote', 'saveSignedDeliveryNoteDocument', 'recordSignedDeliveryNote'
     ]);
     salesService.getQuotes.and.returnValue(of({ data: [], total: 0 } as any));
     salesService.getCustomers.and.returnValue(of({ data: [], total: 0 } as any));
-    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map() }));
+    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map(), byInvoiceId: new Map() }));
     salesService.getQuoteDeliveryNoteMap.and.returnValue(of(new Map()));
     salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
     component = new QuoteListComponent(
@@ -133,6 +133,27 @@ describe('QuoteListComponent', () => {
       component.bulkDeleteQuotes();
 
       expect(salesService.deleteQuote).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('submitSignedDeliveryNote: records who received the goods on the delivery note', () => {
+    it('passes that quote\'s delivery note and the receiver details', () => {
+      const q = quote({ id: 3, status: 'CONVERTED' as QuoteStatus });
+      const file: any = { fileName: 'signed.pdf', base64Content: 'x', contentType: 'application/pdf', uploadedAt: new Date() };
+      component.deliveryNoteByQuoteId.set(3, { id: 5 } as any);
+      component.openSignedDeliveryNoteModal(q);
+      component.signedDeliveryNoteFileName = 'signed.pdf';
+      (component as any).signedDeliveryNoteFile = file;
+      component.receivedByName = 'J. Okafor';
+      component.receivedDate = '2026-10-15';
+      salesService.recordSignedDeliveryNote.and.returnValue(of({ quote: q, note: { id: 5 } as any, noteSaved: true }));
+
+      component.submitSignedDeliveryNote();
+
+      expect(salesService.recordSignedDeliveryNote).toHaveBeenCalledWith(3, file, jasmine.objectContaining({ id: 5 }), {
+        receivedByName: 'J. Okafor', receivedAt: new Date('2026-10-15').toISOString()
+      });
+      expect(component.showSignedDeliveryNoteModal).toBeFalse();
     });
   });
 });

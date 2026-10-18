@@ -25,13 +25,13 @@
       <div class="header-main">
         <div class="title-group">
           <span class="badge-type"><i class="fas fa-receipt"></i> ORDER SNAPSHOT</span>
-          <h2>{{ transaction.orderId }}</h2>
+          <h2>{{ orderNumber }}</h2>
           <span class="quote-link"><i class="fas fa-quote-left"></i> Quote Ref: <strong>{{ getQuoteNumber() }}</strong></span>
         </div>
         <div class="header-status">
-          <span class="status-badge" [ngClass]="getStatusBadgeClass(transaction.status)">
+          <span class="status-badge" [ngClass]="progressBadgeClass">
             <i class="fas fa-circle badge-dot"></i>
-            {{ formatStatusLabel(transaction.status) }}
+            {{ progressLabel }}
           </span>
         </div>
       </div>
@@ -44,56 +44,17 @@
     <div class="lifecycle-card">
       <h4 class="card-section-title"><i class="fas fa-project-diagram"></i> Order Lifecycle Progression</h4>
       <div class="stepper-track">
-        
-        <!-- Step 1: Quote Created/Sent -->
-        <div class="step-item" [class.completed]="isStepCompleted(1)">
-          <div class="step-icon"><i class="fas fa-paper-plane"></i></div>
-          <div class="step-label">Quote Sent</div>
-          <div class="step-date">{{ toDate(transaction.quoteSentDate || transaction.orderDate) | date:'mediumDate' }}</div>
-        </div>
-        <div class="step-line" [class.active]="isStepCompleted(2)"></div>
-
-        <!-- Step 2: Quote Accepted & Converted -->
-        <div class="step-item" [class.completed]="isStepCompleted(2)">
-          <div class="step-icon"><i class="fas fa-check-circle"></i></div>
-          <div class="step-label">Quote Converted</div>
-          <div class="step-date">{{ toDate(transaction.quoteConvertedDate || transaction.quoteAcceptedOrRejectedDate) | date:'mediumDate' }}</div>
-        </div>
-        <div class="step-line" [class.active]="isStepCompleted(3)"></div>
-
-        <!-- Step 3: Invoice Issued -->
-        <div class="step-item" [class.completed]="isStepCompleted(3)">
-          <div class="step-icon"><i class="fas fa-file-invoice-dollar"></i></div>
-          <div class="step-label">Invoice Issued</div>
-          <div class="step-date">
-            <ng-container *ngIf="transaction.invoiceSentDate">{{ toDate(transaction.invoiceSentDate) | date:'mediumDate' }}</ng-container>
-            <ng-container *ngIf="!transaction.invoiceSentDate">INV: {{ getInvoiceNumber() }}</ng-container>
+        <ng-container *ngFor="let stage of stages; let i = index; let last = last">
+          <div class="step-item" [class.completed]="isStageReached(i)" [class.stopped]="isStageStopped(i)">
+            <div class="step-icon"><i class="fas" [ngClass]="isStageStopped(i) ? 'fa-times' : stageIcons[i]"></i></div>
+            <div class="step-label">{{ isStageStopped(i) ? progressLabel : stage }}</div>
+            <div class="step-date">
+              <ng-container *ngIf="stageDate(i) as d">{{ d | date:'mediumDate' }}</ng-container>
+              <span class="step-detail" *ngIf="stageDetail(i)">{{ stageDetail(i) }}</span>
+            </div>
           </div>
-        </div>
-        <div class="step-line" [class.active]="isStepCompleted(4)"></div>
-
-        <!-- Step 4: Payment Received -->
-        <div class="step-item" [class.completed]="isStepCompleted(4)">
-          <div class="step-icon"><i class="fas fa-wallet"></i></div>
-          <div class="step-label">Payment {{ transaction.status === 'PAYMENT_COMPLETED' ? 'Completed' : 'Status' }}</div>
-          <div class="step-date">{{ formatCurrency(transaction.paidAmount, transaction.currency) }} Paid</div>
-        </div>
-        <div class="step-line" [class.active]="isStepCompleted(5)"></div>
-
-        <!-- Step 5: Fulfillment & Delivery -->
-        <div class="step-item" [class.completed]="isStepCompleted(5)">
-          <div class="step-icon"><i class="fas fa-truck"></i></div>
-          <div class="step-label">Fulfillment</div>
-          <div class="step-date">
-            <ng-container *ngIf="getDeliveredAtDate() as deliveredAt; else notDelivered">
-              {{ deliveredAt | date:'mediumDate' }}
-            </ng-container>
-            <ng-template #notDelivered>
-              {{ transaction.status === 'DELIVERED' ? 'Delivered' : 'In Progress' }}
-            </ng-template>
-          </div>
-        </div>
-
+          <div class="step-line" *ngIf="!last" [class.active]="isStageReached(i + 1)"></div>
+        </ng-container>
       </div>
     </div>
 
@@ -116,11 +77,11 @@
         </div>
         <div class="info-group">
           <label>Billing Address:</label>
-          <span>{{ transaction.billingAddress || 'N/A' }}</span>
+          <span>{{ getBillingAddress() }}</span>
         </div>
         <div class="info-group">
           <label>Shipping Address:</label>
-          <span>{{ transaction.shippingAddress || transaction.billingAddress || 'N/A' }}</span>
+          <span>{{ getShippingAddress() }}</span>
         </div>
       </div>
 
@@ -150,6 +111,73 @@
       </div>
     </div>
 
+    <!-- Linked Documents & Delivery -->
+    <div class="snapshot-grid">
+      <div class="grid-card">
+        <h4 class="card-section-title"><i class="fas fa-link"></i> Linked Documents</h4>
+        <div class="info-group">
+          <label>Quote:</label>
+          <span>
+            <button type="button" class="doc-link" *ngIf="snapshot?.quote?.id; else noQuote" (click)="openQuote()">{{ getQuoteNumber() }}</button>
+            <ng-template #noQuote>—</ng-template>
+            <small *ngIf="snapshot?.quote?.status"> · {{ formatLabel(snapshot?.quote?.status) }}</small>
+          </span>
+        </div>
+        <div class="info-group">
+          <label>LPO:</label>
+          <span>
+            {{ lpoLabel }}
+            <small *ngIf="snapshot?.lpo?.status"> · {{ formatLabel(snapshot?.lpo?.status) }}</small>
+          </span>
+        </div>
+        <div class="info-group">
+          <label>Delivery Note:</label>
+          <span>
+            <button type="button" class="doc-link" *ngIf="snapshot?.deliveryNote?.id; else noNote" (click)="openDeliveryNote()">{{ snapshot?.deliveryNote?.deliveryNumber }}</button>
+            <ng-template #noNote>—</ng-template>
+            <small *ngIf="snapshot?.deliveryNote?.status"> · {{ formatLabel(snapshot?.deliveryNote?.status) }}</small>
+          </span>
+        </div>
+        <div class="info-group">
+          <label>Invoice:</label>
+          <span>
+            <button type="button" class="doc-link" *ngIf="snapshot?.invoice?.id; else noInvoice" (click)="openInvoice()">{{ getInvoiceNumber() }}</button>
+            <ng-template #noInvoice>—</ng-template>
+            <small *ngIf="snapshot?.invoice?.status"> · {{ formatLabel(snapshot?.invoice?.status) }}</small>
+          </span>
+        </div>
+      </div>
+
+      <div class="grid-card">
+        <h4 class="card-section-title"><i class="fas fa-truck"></i> Delivery</h4>
+        <ng-container *ngIf="snapshot?.deliveryNote as dn; else noDelivery">
+          <div class="info-group">
+            <label>Status:</label>
+            <span>{{ formatLabel(dn.status) }}</span>
+          </div>
+          <div class="info-group">
+            <label>Deliver To:</label>
+            <span>{{ dn.deliveryAddress || dn.customerAddress || getShippingAddress() }}</span>
+          </div>
+          <div class="info-group" *ngIf="toDate(dn.dispatchedAt) as d">
+            <label>Dispatched:</label>
+            <span>{{ d | date:'mediumDate' }}</span>
+          </div>
+          <div class="info-group" *ngIf="toDate(dn.deliveredAt) as d">
+            <label>Delivered:</label>
+            <span>{{ d | date:'mediumDate' }}</span>
+          </div>
+          <div class="info-group" *ngIf="dn.receivedByName">
+            <label>Received By:</label>
+            <span>{{ dn.receivedByName }}<ng-container *ngIf="toDate(dn.receivedAt) as d"> on {{ d | date:'mediumDate' }}</ng-container></span>
+          </div>
+        </ng-container>
+        <ng-template #noDelivery>
+          <p class="muted-note">No delivery note has been generated for this order yet.</p>
+        </ng-template>
+      </div>
+    </div>
+
     <!-- Itemized Products Table -->
     <div class="items-card">
       <h4 class="card-section-title"><i class="fas fa-boxes"></i> Line Items & Pricing Breakdown</h4>
@@ -162,6 +190,7 @@
               <th>Description</th>
               <th class="text-center">Qty</th>
               <th class="text-right">Unit Price</th>
+              <th class="text-right">Tax</th>
               <th class="text-right">Total Amount</th>
             </tr>
           </thead>
@@ -171,8 +200,12 @@
               <td><strong>{{ item.productName }}</strong></td>
               <td>{{ item.description || '-' }}</td>
               <td class="text-center">{{ item.quantity }}</td>
-              <td class="text-right">{{ formatCurrency(item.unitPrice, transaction.currency) }}</td>
-              <td class="text-right"><strong>{{ formatCurrency(item.amount || item.total || (item.quantity * item.unitPrice), transaction.currency) }}</strong></td>
+              <td class="text-right">{{ formatCurrency(item.unitPrice, currency) }}</td>
+              <td class="text-right">{{ item.taxRate ? item.taxRate + '%' : '—' }}</td>
+              <td class="text-right"><strong>{{ formatCurrency(item.total || item.amount || (item.quantity * item.unitPrice), currency) }}</strong></td>
+            </tr>
+            <tr *ngIf="getItemsList().length === 0">
+              <td colspan="7" class="text-center muted-note">No line items on this order's quote or invoice.</td>
             </tr>
           </tbody>
         </table>
@@ -182,27 +215,27 @@
       <div class="totals-summary-box">
         <div class="totals-row">
           <span>Subtotal:</span>
-          <span>{{ formatCurrency(transaction.subtotal, transaction.currency) }}</span>
+          <span>{{ formatCurrency(subtotal, currency) }}</span>
         </div>
-        <div class="totals-row" *ngIf="transaction.discountAmount > 0">
+        <div class="totals-row" *ngIf="discountAmount > 0">
           <span>Discount:</span>
-          <span class="discount-text">- {{ formatCurrency(transaction.discountAmount, transaction.currency) }}</span>
+          <span class="discount-text">- {{ formatCurrency(discountAmount, currency) }}</span>
         </div>
-        <div class="totals-row" *ngIf="transaction.taxAmount > 0">
+        <div class="totals-row" *ngIf="taxAmount > 0">
           <span>Tax Amount:</span>
-          <span>+ {{ formatCurrency(transaction.taxAmount, transaction.currency) }}</span>
+          <span>+ {{ formatCurrency(taxAmount, currency) }}</span>
         </div>
         <div class="totals-row grand-total">
           <span>Grand Total:</span>
-          <span>{{ formatCurrency(transaction.totalAmount, transaction.currency) }}</span>
+          <span>{{ formatCurrency(totalAmount, currency) }}</span>
         </div>
         <div class="totals-row paid-row">
           <span>Amount Paid:</span>
-          <span class="paid-val">{{ formatCurrency(transaction.paidAmount, transaction.currency) }}</span>
+          <span class="paid-val">{{ formatCurrency(paidAmount, currency) }}</span>
         </div>
         <div class="totals-row due-row">
           <span>Balance Due:</span>
-          <span class="due-val" [class.has-due]="transaction.balanceDue > 0">{{ formatCurrency(transaction.balanceDue, transaction.currency) }}</span>
+          <span class="due-val" [class.has-due]="balanceDue > 0">{{ formatCurrency(balanceDue, currency) }}</span>
         </div>
       </div>
     </div>

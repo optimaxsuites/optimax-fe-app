@@ -62,3 +62,14 @@
 .ql-ai-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:#6ee7b7; margin-bottom:2px; }
 .ql-ai-text { font-size:13px; color:rgba(255,255,255,.9); }
 .ql-ai-dismiss { background:none; border:none; color:rgba(255,255,255,.5); cursor:pointer; font-size:14px; flex-shrink:0; &:hover { color:#fff; } }
+
+// Upload Signed Delivery Note modal — who received the goods and when
+.ql-received-fields {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 14px; text-align: left;
+  label { display: flex; flex-direction: column; gap: 5px; }
+  span { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #6a8e89; em { color: #dc2626; font-style: normal; } }
+  input { border: 1px solid #ccddd9; border-radius: 7px; padding: 8px 10px; font: inherit; font-size: 13px; color: #1a2e2c; min-width: 0;
+    &:focus { outline: none; border-color: #184440; box-shadow: 0 0 0 3px rgba(24, 68, 64, .11); }
+  }
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
+}

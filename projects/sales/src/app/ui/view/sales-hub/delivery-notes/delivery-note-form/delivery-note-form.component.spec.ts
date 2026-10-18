@@ -3,7 +3,7 @@ import { FormBuilder } from '@angular/forms';
 
 import { DeliveryNoteFormComponent } from './delivery-note-form.component';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Customer, DeliveryNote } from '../../../../domain/sales/sales.dto';
+import { Customer, SalesDeliveryNote } from '../../../../domain/sales/sales.dto';
 
 describe('DeliveryNoteFormComponent', () => {
   let component: DeliveryNoteFormComponent;
@@ -102,7 +102,7 @@ describe('DeliveryNoteFormComponent', () => {
     });
 
     it('creates a new delivery note when not in edit mode', () => {
-      salesService.createDeliveryNote.and.returnValue(of({ id: 42 } as DeliveryNote));
+      salesService.createDeliveryNote.and.returnValue(of({ id: 42 } as SalesDeliveryNote));
 
       component.onSubmit();
 
@@ -117,12 +117,31 @@ describe('DeliveryNoteFormComponent', () => {
     it('updates the existing record when in edit mode', () => {
       component.isEditMode = true;
       component.deliveryNoteId = '7';
-      salesService.updateDeliveryNote.and.returnValue(of({ id: 7 } as DeliveryNote));
+      salesService.updateDeliveryNote.and.returnValue(of({ id: 7 } as SalesDeliveryNote));
 
       component.onSubmit();
 
       expect(salesService.updateDeliveryNote).toHaveBeenCalledWith('7', jasmine.any(Object));
       expect(salesService.createDeliveryNote).not.toHaveBeenCalled();
+    });
+
+    it('keeps fields the form does not edit in the full-record PUT', () => {
+      (component as any).populateForm({
+        id: 7, deliveryNumber: 'DN-7', status: 'PENDING', customerId: 1, customerAddress: '1 Main St',
+        quoteId: 3, lpoId: 9, templateId: 'minimal', attention: 'J. Okafor',
+        items: [{ id: 50, productName: 'Widget', quantity: 2, unit: 'pcs', productId: 'P-1', orderedQuantity: 5 }]
+      } as SalesDeliveryNote);
+      component.isEditMode = true;
+      component.deliveryNoteId = '7';
+      component.items.at(0).patchValue({ quantity: 3 });
+      salesService.updateDeliveryNote.and.returnValue(of({ id: 7 } as SalesDeliveryNote));
+
+      component.onSubmit();
+
+      const body = salesService.updateDeliveryNote.calls.mostRecent().args[1];
+      expect(body).toEqual(jasmine.objectContaining({ quoteId: 3, lpoId: 9, templateId: 'minimal', attention: 'J. Okafor' }));
+      expect(body.items![0]).toEqual(jasmine.objectContaining({ id: 50, productId: 'P-1', orderedQuantity: 5, quantity: 3 }));
+      expect((body.items![0] as any).source).toBeUndefined();
     });
 
     it('does not submit when required fields are missing', () => {
@@ -140,7 +159,7 @@ describe('DeliveryNoteFormComponent', () => {
       salesService.getOrCreateDeliveryNote.and.returnValue(of({
         id: 3, deliveryNumber: 'DN-3', status: 'PENDING', items: [], customerAddress: 'Warehouse A',
         salesOrderId: 55, customerId: 1
-      } as DeliveryNote));
+      } as SalesDeliveryNote));
 
       (component as any).loadFromOrder('55');
 

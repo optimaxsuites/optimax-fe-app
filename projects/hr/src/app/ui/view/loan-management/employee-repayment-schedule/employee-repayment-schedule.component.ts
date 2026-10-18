@@ -14,6 +14,7 @@ import {
   resolveLoanTotalRepayableAmount,
   resolveLoanInterestAmount
 } from '../../../service/loan/loan-display.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
 
 @Component({
   selector: 'app-employee-repayment-schedule',
@@ -58,11 +59,7 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2
-    }).format(amount);
+    return formatNaira(amount);
   }
 
   getFormattedLoanCode(): string {
@@ -73,30 +70,11 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
   }
 
   getStatusDisplay(status: string | undefined): string {
-    if (!status) return '';
-    if (status.toUpperCase() === 'READY_FOR_DISBURSEMENT') {
-      return 'Disbursable';
-    }
-    return String(status)
-      .toLowerCase()
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, c => c.toUpperCase());
+    return getLoanStatusLabel(status);
   }
 
   getStatusClass(status: string | undefined): string {
-    const statusMap: Record<string, string> = {
-      'PENDING': 'pending',
-      'APPROVED': 'approved',
-      'READY_FOR_DISBURSEMENT': 'ready_for_disbursement',
-      'ACTIVE': 'active',
-      'REJECTED': 'rejected',
-      'COMPLETED': 'completed',
-      'SKIPPED': 'skipped',
-      'OVERDUE': 'overdue',
-      'DEFAULTED': 'defaulted',
-      'PAUSED': 'paused'
-    };
-    return statusMap[status || ''] || 'default';
+    return getLoanStatusClass(status, '', '_');
   }
   
   calculateStats(): void {

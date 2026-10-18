@@ -1,7 +1,8 @@
 import { Location } from '@angular/common';
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { CooperativeLoanGroup, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
@@ -10,6 +11,8 @@ import { resolveCooperativeTotalRepayable } from '../../../service/loan/cooperat
 import { EmployeeService } from '../../../service/employee.service';
 import { MailNotificationService } from '../../../service/mailNotification.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { getLoanStatusClass } from '../../../service/loan/loan-format.util';
+import { resolveTenantId } from '../../../service/loan/loan-tenant.util';
 
 type QueueMessage = {
   severity: 'success' | 'error' | 'warn';
@@ -74,6 +77,10 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   groups: CooperativeLoanGroup[] = [];
   selectedLoanId = '';
   selectedEmployeeDetails: any = null;
+  isLoadingEmployeeDetails = false;
+  /** Confirmation step for "Set Loan to Active". */
+  showDisbursementConfirmation = false;
+  bankTransferReference = '';
 
   
   approvedSearchTerm = '';
@@ -314,7 +321,24 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   }
 
   get canSendToAccounting(): boolean {
-    return !!this.selectedLoan && this.selectedLoan.status === 'APPROVED' && !this.isSubmitting;
+    return !!this.selectedLoan
+      && this.selectedLoan.status === 'APPROVED'
+      && !this.isSubmitting
+      && !this.isLoadingEmployeeDetails
+      && this.hasBankDetails(this.selectedEmployeeDetails, this.selectedLoan);
+  }
+
+  /** Bank name and account number for the payout, from the employee record or the loan. */
+  hasBankDetails(employee: any, loan: CooperativeLoan | null | undefined): boolean {
+    const accountNumber = String(employee?.accountNumber || loan?.memberAccountNumber || '').trim();
+    const bankName = String(employee?.bankName || loan?.memberBankName || '').trim();
+    return !!accountNumber && accountNumber.toUpperCase() !== 'N/A' && !!bankName && bankName.toUpperCase() !== 'N/A';
+  }
+
+  get selectedLoanMissingBankDetails(): boolean {
+    return this.selectedLoan?.status === 'APPROVED'
+      && !this.isLoadingEmployeeDetails
+      && !this.hasBankDetails(this.selectedEmployeeDetails, this.selectedLoan);
   }
 
   onCurrentLoanNoteChange(value: string): void {
@@ -330,6 +354,9 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   }
 
   selectLoan(loan: CooperativeLoan, skipServerRefresh = false): void {
+    if (this.selectedDisbursementLoan?.id !== loan.id) {
+      this.cancelDisbursementConfirmation();
+    }
     this.selectedLoanId = String(loan.id);
     this.selectedDisbursementLoan = loan;
     this.disbursementAmount = Number(loan.amount || 0);
@@ -400,6 +427,7 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
 
   closeLoanDetailsModal(): void {
     this.isLoanDetailsModalVisible = false;
+    this.cancelDisbursementConfirmation();
     setTimeout(() => {
       if (!this.isSendToAccountingModalVisible) {
         this.selectedDisbursementLoan = null;
@@ -426,17 +454,29 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   loadEmployeeDetails(loan: CooperativeLoan): void {
     const member = this.getMemberForLoan(loan);
     const employeeId = Number(member?.employeeId || 0);
+    this.selectedEmployeeDetails = null;
     if (!employeeId) {
-      this.selectedEmployeeDetails = null;
+      this.isLoadingEmployeeDetails = false;
       return;
     }
 
+    this.isLoadingEmployeeDetails = true;
     this.employeeService.getEmployeeById(employeeId).subscribe({
       next: (employee) => {
+        // Ignore a late response for a loan that's no longer selected, so one member's bank
+        // details can never end up on another member's disbursement.
+        if (this.selectedLoan?.id !== loan.id) {
+          return;
+        }
         this.selectedEmployeeDetails = employee;
+        this.isLoadingEmployeeDetails = false;
       },
       error: () => {
+        if (this.selectedLoan?.id !== loan.id) {
+          return;
+        }
         this.selectedEmployeeDetails = null;
+        this.isLoadingEmployeeDetails = false;
       }
     });
   }
@@ -454,6 +494,10 @@ sendToAccounting(): void {
 
   const loan = this.selectedLoan;
   const group = this.selectedGroup;
+  if (loan && loan.status === 'APPROVED' && !this.isLoadingEmployeeDetails && !this.hasBankDetails(this.selectedEmployeeDetails, loan)) {
+    this.showMessage('error', 'Bank Details Missing', `${this.getMemberName(loan)} has no bank name and account number on file. Add them before sending to accounting.`);
+    return;
+  }
   if (!loan || !group || !this.canSendToAccounting) {
     return;
   }
@@ -514,16 +558,9 @@ sendToAccounting(): void {
     }
   };
 
-  console.log('=== DISBURSEMENT PAYLOAD DEBUG ===');
-  console.log('POST URL:', apiUrl);
-  console.log('Payload:', JSON.stringify(accountingEventPayload, null, 2));
-  console.log('===================================');
   
   this.http.post(apiUrl, accountingEventPayload).subscribe({
     next: (response) => {
-      console.log('=== POST SUCCESS RESPONSE ===');
-      console.log('Response:', response);
-      console.log('=============================');
 
       // Update loan status using the cooperative service
       // Pass the group financial details to preserve them
@@ -655,8 +692,7 @@ sendToAccounting(): void {
   }
 
   getStatusClass(status: string | undefined): string {
-    const normalized = String(status || '').toLowerCase().replace(/_/g, '-');
-    return `status-${normalized}`;
+    return getLoanStatusClass(status, 'status-', '-');
   }
 
   getReadyDate(loan: CooperativeLoan): string {
@@ -772,29 +808,54 @@ sendToAccounting(): void {
     }, 6000);
   }
 
+  /** "Set Loan to Active": ask for the bank transfer reference and an explicit confirmation first. */
   setLoanActive(loan: CooperativeLoan): void {
-    if (!loan || loan.status === 'ACTIVE') return;
+    if (!loan || loan.status !== 'READY_FOR_DISBURSEMENT' || this.isSubmitting) return;
+    this.bankTransferReference = '';
+    this.showDisbursementConfirmation = true;
+  }
+
+  cancelDisbursementConfirmation(): void {
+    this.showDisbursementConfirmation = false;
+    this.bankTransferReference = '';
+  }
+
+  get isBankTransferReferenceValid(): boolean {
+    return this.bankTransferReference.trim().length >= 4;
+  }
+
+  confirmSetLoanActive(): void {
+    const loan = this.selectedDisbursementLoan;
+    if (!loan || this.isSubmitting) return;
+    if (!this.isBankTransferReferenceValid) {
+      this.showMessage('warn', 'Reference Required', 'Enter the bank transfer reference for this disbursement.');
+      return;
+    }
+
+    const reference = this.bankTransferReference.trim();
     this.isSubmitting = true;
     this.cooperativeService.disburseLoan(loan.id, {
       disbursedAmount: loan.amount,
       paymentMethod: this.paymentMethod,
-      notes: 'Loan activated by admin.'
+      disbursementReference: reference,
+      notes: `Loan disbursed and activated. Bank reference: ${reference}.`
     }).subscribe({
       next: (updated: CooperativeLoan | undefined) => {
         this.isSubmitting = false;
         if (updated) {
+          this.cancelDisbursementConfirmation();
           // Remove the activated loan from the queue immediately
           this.loans = this.loans.filter(l => l.id !== loan.id);
           this.selectedLoanId = '';
-          this.showMessage('success', 'Loan Activated', `Loan has been set to ACTIVE.`);
+          this.showMessage('success', 'Loan Activated', `Loan has been set to ACTIVE. Bank reference: ${reference}.`);
           this.loadAllData();
         } else {
-          this.showMessage('warn', 'Activation Failed', 'Loan could not be set to ACTIVE.');
+          this.showMessage('warn', 'Activation Failed', 'Loan could not be set to ACTIVE. It may no longer be Disbursable; reload and check its status.');
         }
       },
-      error: (err: any) => {
+      error: () => {
         this.isSubmitting = false;
-        this.showMessage('error', 'Activation Failed', 'Could not set loan to ACTIVE.');
+        this.showMessage('error', 'Activation Failed', 'Could not set loan to ACTIVE. Nothing was changed; please try again.');
       }
     });
   }
@@ -921,12 +982,43 @@ isBatchSelected(loan: CooperativeLoan): boolean {
     }
   }
 
+  /**
+   * Batch send: make sure every selected member's bank details are loaded and present first, so
+   * accounting never receives 'N/A' as an account number.
+   */
   sendBatchToAccounting(): void {
     const loans = this.batchSelectedLoans.filter(l => l.status === 'APPROVED');
     if (!loans.length) return;
 
+    const missing = loans.filter((loan) => !this.batchEmployeeDetailsMap.get(loan.id));
+    const fetches = missing.map((loan) => {
+      const employeeId = Number(this.getMemberForLoan(loan)?.employeeId || 0);
+      return (employeeId ? this.employeeService.getEmployeeById(employeeId) : of(null)).pipe(
+        map((employee) => ({ loan, employee })),
+        catchError(() => of({ loan, employee: null }))
+      );
+    });
+    this.isSubmitting = true;
+    (fetches.length ? forkJoin(fetches) : of([] as Array<{ loan: CooperativeLoan; employee: any }>)).subscribe((results) => {
+      results.forEach(({ loan, employee }) => this.batchEmployeeDetailsMap.set(loan.id, employee));
+      this.isSubmitting = false;
+
+      const withoutBankDetails = loans.filter((loan) => !this.hasBankDetails(this.batchEmployeeDetailsMap.get(loan.id), loan));
+      if (withoutBankDetails.length) {
+        const names = withoutBankDetails.slice(0, 3).map((loan) => this.getMemberName(loan)).join(', ');
+        const more = withoutBankDetails.length > 3 ? ` and ${withoutBankDetails.length - 3} more` : '';
+        this.showMessage('error', 'Bank Details Missing', `Nothing was sent. These members have no bank name and account number on file: ${names}${more}. Add them, or untick those loans, then try again.`);
+        return;
+      }
+
+      this.postBatchToAccounting(loans);
+    });
+  }
+
+  private postBatchToAccounting(loans: CooperativeLoan[]): void {
+
     const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     
     const currentUser = sessionStorage.getItem('fullname') || 
                         sessionStorage.getItem('username') || 

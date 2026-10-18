@@ -5,6 +5,7 @@ import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../../shared-component/service/environments/environment.prod';
 import { getTokenFromStorage } from './token-util';
 import { CreatePurposePayload, LoanPurposeData } from '../loan-purpose.service';
+import { resolveTenantId } from '../loan-tenant.util';
 
 @Injectable({
   providedIn: 'root'
@@ -15,12 +16,7 @@ export class CooperativeLoanPurposeService {
   constructor(private http: HttpClient) {}
 
   private getTenantId(): string {
-    const tenant = sessionStorage.getItem('tenantId')
-      || sessionStorage.getItem('tenant')
-      || localStorage.getItem('tenantId')
-      || localStorage.getItem('tenant')
-      || 'optimax';
-    return tenant && tenant !== 'undefined' && tenant !== 'null' ? tenant : 'optimax';
+    return resolveTenantId();
   }
 
   private safeParseResponse(response: unknown): any {
@@ -57,8 +53,6 @@ export class CooperativeLoanPurposeService {
     // Alternative: url = `${this.cooperativePurposeUrl}?status=all`;
   }
 
-  console.log('Fetching purposes from URL:', url);
-  console.log('onlyActive parameter:', onlyActive);
 
   return this.http.get<any>(url, {
     headers: {
@@ -78,7 +72,6 @@ export class CooperativeLoanPurposeService {
         purposes = data.data;
       }
       
-      console.log('Raw purposes from API:', purposes);
       
       // Only filter client-side if the API returns everything
       return onlyActive ? purposes.filter(purpose => purpose.isActive === true) : purposes;
@@ -102,7 +95,6 @@ export class CooperativeLoanPurposeService {
       }
     }).pipe(
       map(response => this.safeParseResponse(response)),
-      tap(response => console.log('Create purpose response:', response)),
       catchError(this.handleError)
     );
   }
@@ -110,7 +102,6 @@ export class CooperativeLoanPurposeService {
   updatePurpose(id: number, payload: Partial<CreatePurposePayload>): Observable<LoanPurposeData> {
     const token = getTokenFromStorage();
 
-    console.log(`Updating purpose ${id} with payload:`, payload);
 
     return this.http.put<LoanPurposeData>(`${this.cooperativePurposeUrl}/${id}`, payload, {
       headers: {
@@ -134,7 +125,6 @@ export class CooperativeLoanPurposeService {
         }
         return this.safeParseResponse(response);
       }),
-      tap(response => console.log('Update purpose response:', response)),
       catchError(this.handleError)
     );
   }
@@ -160,7 +150,6 @@ export class CooperativeLoanPurposeService {
   }
 
   togglePurposeStatus(id: number, isActive: boolean): Observable<LoanPurposeData> {
-    console.log(`Toggling purpose ${id} to isActive: ${isActive}`);
     return this.updatePurpose(id, { isActive });
   }
 

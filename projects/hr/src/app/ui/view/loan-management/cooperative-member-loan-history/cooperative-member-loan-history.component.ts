@@ -10,6 +10,8 @@ import { CooperativeService } from '../../../service/loan/cooperative-loan/coope
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { BackButtonModule } from '../../../shared-component/view/back-button/back-button.module';
+import { neutralizeSpreadsheetFormula } from '../../../service/loan/csv-export.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
 
 @Component({
   selector: 'app-cooperative-member-loan-history',
@@ -235,50 +237,15 @@ export class CooperativeMemberLoanHistoryComponent implements OnInit {
   }
   
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2
-    }).format(amount);
+    return formatNaira(amount);
   }
   
   getStatusClass(status: string | undefined): string {
-    if (!status) return 'status-pending';
-    const normalized = String(status).trim().toUpperCase().replace(/\s+/g, '_');
-    const statusClassMap: Record<string, string> = {
-      'PENDING': 'status-pending',
-      'APPROVED': 'status-approved',
-      'READY_FOR_DISBURSEMENT': 'status-ready_for_disbursement',
-      'ACTIVE': 'status-active',
-      'COMPLETED': 'status-completed',
-      'REJECTED': 'status-rejected',
-      'OVERDUE': 'status-overdue',
-      'DEFAULTED': 'status-defaulted',
-      'PAUSED': 'status-paused',
-      'SKIPPED': 'status-skipped'
-    };
-    return statusClassMap[normalized] || 'status-pending';
+    return getLoanStatusClass(status);
   }
 
   getStatusLabel(status: string | undefined): string {
-    const map: Record<string, string> = {
-      'PENDING': 'Pending',
-      'APPROVED': 'Approved',
-      'READY_FOR_DISBURSEMENT': 'Disbursable',
-      'ACTIVE': 'Active',
-      'COMPLETED': 'Completed',
-      'REJECTED': 'Rejected',
-      'OVERDUE': 'Overdue',
-      'DEFAULTED': 'Defaulted',
-      'PAUSED': 'Paused',
-      'SKIPPED': 'Skipped'
-    };
-    const key = (status || '').toUpperCase();
-    if (map[key]) return map[key];
-    return String(status || '')
-      .toLowerCase()
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, c => c.toUpperCase());
+    return getLoanStatusLabel(status);
   }
   
   // ==================== ADD THIS METHOD INSIDE THE CLASS ====================
@@ -326,7 +293,11 @@ export class CooperativeMemberLoanHistoryComponent implements OnInit {
       'Completion Date': loan.completedDate
     }));
     
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    // Neutralize text cells that a spreadsheet would run as formulas (CSV injection).
+    const safeExportData = exportData.map((row) => Object.fromEntries(
+      Object.entries(row).map(([key, value]) => [key, neutralizeSpreadsheetFormula(value)])
+    ));
+    const worksheet = XLSX.utils.json_to_sheet(safeExportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, `Loan_History_${this.memberId}`);
     XLSX.writeFile(workbook, `Loan_History_${this.memberId}.csv`, { bookType: 'csv' });

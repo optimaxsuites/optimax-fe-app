@@ -1,5 +1,3 @@
-<p-toast position="top-right"></p-toast>
-
 <!-- ══ OVERDUE BANNER ══════════════════════════════════════════════════════ -->
 <div class="if-overdue-banner"
      *ngIf="isEditMode && invoiceForm.get('dueDate')?.value && invoiceForm.get('dueDate')?.value < today">
@@ -27,7 +25,8 @@
         <i class="fas fa-chevron-right"></i>
         <span class="if-breadcrumb-active">{{ isEditMode ? 'Edit Invoice' : 'New Invoice' }}</span>
       </nav>
-      <span class="if-chip" *ngIf="quoteId"><i class="fas fa-exchange-alt"></i> From Quote</span>
+      <span class="if-chip" *ngIf="quoteId && !fromDeliveryNote"><i class="fas fa-exchange-alt"></i> From Quote</span>
+      <span class="if-chip" *ngIf="fromDeliveryNote"><i class="fas fa-truck"></i> From Delivery Note</span>
     </div>
     <div class="if-topbar-right">
       <button type="button" class="if-btn if-btn--ghost" (click)="cancel()">
@@ -38,12 +37,12 @@
         <i class="fas fa-save" *ngIf="!isSavingDraft"></i>
         {{ isSavingDraft ? 'Saving…' : 'Save Draft' }}
       </button>
-      <button type="button" class="if-btn if-btn--ghost" (click)="prevStep()" *ngIf="currentStep > 1">
+      <button type="button" class="if-btn if-btn--ghost" (click)="prevStep()" *ngIf="currentStep > 1 || (fromDeliveryNote && currentStep > 0)">
         <i class="fas fa-arrow-left"></i> Back
       </button>
-      <button type="button" class="if-btn if-btn--primary" [disabled]="isSubmitting" (click)="currentStep < 4 ? nextStep() : onSubmit()">
-        <i class="fas fa-circle-notch fa-spin" *ngIf="isSubmitting"></i>
-        <ng-container *ngIf="!isSubmitting">
+      <button type="button" class="if-btn if-btn--primary" [disabled]="isSubmitting || isSavingSignedCopy" (click)="currentStep < 4 ? nextStep() : onSubmit()">
+        <i class="fas fa-circle-notch fa-spin" *ngIf="isSubmitting || isSavingSignedCopy"></i>
+        <ng-container *ngIf="!isSubmitting && !isSavingSignedCopy">
           <ng-container *ngIf="currentStep < 4">Continue <i class="fas fa-arrow-right"></i></ng-container>
           <ng-container *ngIf="currentStep === 4"><i class="fas fa-check"></i> {{ isEditMode ? 'Update Invoice' : 'Create Invoice' }}</ng-container>
         </ng-container>
@@ -52,7 +51,25 @@
   </header>
 
   <!-- STEP INDICATOR -->
-  <nav class="if-steps">
+  <!-- Generate Invoice from a delivery note: Upload Signed Delivery Note → Template → Preview & Send -->
+  <nav class="if-steps" *ngIf="fromDeliveryNote">
+    <div class="if-step" [class.if-step--active]="currentStep === 0" [class.if-step--done]="currentStep > 0" (click)="goToStep(0)">
+      <div class="if-step-bubble">{{ currentStep > 0 ? '✓' : '1' }}</div>
+      <span>Upload Signed Delivery Note</span>
+    </div>
+    <div class="if-step-line" [class.if-step-line--done]="currentStep > 0"></div>
+    <div class="if-step" [class.if-step--active]="currentStep === 3" [class.if-step--done]="currentStep > 3" (click)="goToStep(3)">
+      <div class="if-step-bubble">{{ currentStep > 3 ? '✓' : '2' }}</div>
+      <span>Template</span>
+    </div>
+    <div class="if-step-line" [class.if-step-line--done]="currentStep > 3"></div>
+    <div class="if-step" [class.if-step--active]="currentStep === 4" (click)="goToStep(4)">
+      <div class="if-step-bubble">3</div>
+      <span>Preview &amp; Send</span>
+    </div>
+  </nav>
+
+  <nav class="if-steps" *ngIf="!fromDeliveryNote">
     <div class="if-step" [class.if-step--active]="currentStep === 1" [class.if-step--done]="currentStep > 1" (click)="goToStep(1)">
       <div class="if-step-bubble">{{ currentStep > 1 ? '✓' : '1' }}</div>
       <span>Invoice Details</span>
@@ -73,6 +90,38 @@
       <span>Preview &amp; Send</span>
     </div>
   </nav>
+
+  <!-- ══ STEP 0: Upload Signed Delivery Note (Generate Invoice from a delivery note) ═══ -->
+  <div class="if-body if-body--centered" *ngIf="currentStep === 0">
+    <div class="if-signed-card">
+      <div class="if-signed-icon"><i class="fas fa-file-signature"></i></div>
+      <h2 class="if-signed-title">Upload the Signed Delivery Note</h2>
+      <p class="if-signed-sub">
+        Upload <strong>{{ deliveryNote?.deliveryNumber || 'the delivery note' }}</strong> as signed by the recipient. The invoice is generated from its quote once it's in.
+      </p>
+
+      <div class="if-signed-onfile" *ngIf="signedCopyOnFile && !signedFileName">
+        <i class="fas fa-check-circle"></i> Signed copy on file: <strong>{{ signedCopyOnFile }}</strong> — continue, or choose a new file to replace it.
+      </div>
+
+      <label class="if-signed-drop">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <span>{{ signedFileName || 'Click to choose the signed copy (PDF or image)' }}</span>
+        <input type="file" accept="application/pdf,image/*" style="display:none;" (change)="onSignedFileSelected($event)">
+      </label>
+
+      <div class="if-signed-fields">
+        <label>
+          <span class="if-label">Received by <em class="if-req">*</em></span>
+          <input type="text" class="if-input" [(ngModel)]="receivedByName" [ngModelOptions]="{standalone: true}" placeholder="Name on the signed copy">
+        </label>
+        <label>
+          <span class="if-label">Date received <em class="if-req">*</em></span>
+          <input type="date" class="if-input" [(ngModel)]="receivedDate" [ngModelOptions]="{standalone: true}">
+        </label>
+      </div>
+    </div>
+  </div>
 
   <!-- ══ STEP 1: Invoice Details + Live Preview ════════════════════════════ -->
   <div class="if-body" *ngIf="currentStep === 1" [formGroup]="invoiceForm">
@@ -644,34 +693,19 @@
   </div>
 </div>
 
-<!-- ══ SEND INVOICE MODAL ═══════════════════════════════════════════════ -->
-<div class="if-modal-backdrop" *ngIf="showSendInvoiceModal" (click)="$event.target === $event.currentTarget && (showSendInvoiceModal = false)">
-  <div class="if-modal" style="max-width:480px">
-    <div class="if-modal-head">
-      <span><i class="fas fa-paper-plane"></i> Send Invoice by Email</span>
-      <button type="button" class="if-modal-close" (click)="showSendInvoiceModal = false"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="if-modal-body">
-      <p class="if-modal-hint">
-        Sending <strong>{{ pendingSendInvoiceNumber }}</strong> to <strong>{{ pendingSendCustomerName }}</strong>. This message appears above the invoice summary and attached PDF — edit it as needed.
-      </p>
-      <div class="if-field">
-        <label class="if-label">Subject</label>
-        <input type="text" class="if-input" [(ngModel)]="emailSubject" [ngModelOptions]="{standalone: true}">
-      </div>
-      <div class="if-field">
-        <label class="if-label">Message</label>
-        <textarea class="if-input" rows="6" [(ngModel)]="emailMessage" [ngModelOptions]="{standalone: true}"></textarea>
-      </div>
-    </div>
-    <div class="if-modal-foot">
-      <button type="button" class="if-btn if-btn--ghost" (click)="showSendInvoiceModal = false">Cancel</button>
-      <button type="button" class="if-btn if-btn--primary" (click)="confirmSendInvoice()">
-        <i class="fas fa-paper-plane"></i> Send
-      </button>
-    </div>
-  </div>
-</div>
+<!-- ══ SEND INVOICE MODAL (shared with the invoice detail page) ═══════════════ -->
+<app-send-email-modal *ngIf="showSendInvoiceModal"
+  title="Send Invoice by Email"
+  documentLabel="invoice"
+  dismissLabel="Don't Send"
+  [documentNumber]="pendingSendInvoiceNumber"
+  [recipientName]="pendingSendCustomerName"
+  [sending]="isSendingEmail"
+  [(subject)]="emailSubject"
+  [(message)]="emailMessage"
+  (send)="confirmSendInvoice()"
+  (dismiss)="skipSendInvoice()">
+</app-send-email-modal>
 
 <!-- ══ DISCOUNT MODAL ════════════════════════════════════════════════════ -->
 <div class="if-modal-backdrop" *ngIf="showDiscountModal" (click)="$event.target === $event.currentTarget && (showDiscountModal = false)">

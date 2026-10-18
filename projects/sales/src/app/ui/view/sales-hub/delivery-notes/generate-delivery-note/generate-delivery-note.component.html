@@ -1,5 +1,3 @@
-<p-toast position="top-right"></p-toast>
-
 <div class="gdn-page">
 
   <!-- Top bar -->
@@ -10,16 +8,26 @@
         Sales &gt; Quotes &gt; {{ quote?.quoteNumber || 'Quote' }} &gt; Generate Delivery Note
       </div>
     </div>
+    <div class="gdn-topbar-right" *ngIf="!isLoading && quote">
+      <button type="button" class="gdn-btn gdn-btn--ghost" [disabled]="isSavingDraft" (click)="saveDraft()">
+        <i class="fas" [class.fa-save]="!isSavingDraft" [class.fa-spinner]="isSavingDraft" [class.fa-spin]="isSavingDraft"></i>
+        {{ isSavingDraft ? 'Saving...' : 'Save Draft' }}
+      </button>
+    </div>
   </div>
 
   <!-- Step pills -->
   <div class="gdn-steps no-print">
-    <div class="gdn-step" [class.gdn-step--active]="currentStep === 1" [class.gdn-step--done]="currentStep > 1">
+    <div class="gdn-step" [class.gdn-step--active]="currentStep === 1" [class.gdn-step--done]="currentStep > 1" (click)="goToStep(1)">
       <span class="gdn-step-bubble">1</span> Upload LPO
     </div>
     <div class="gdn-step-line"></div>
-    <div class="gdn-step" [class.gdn-step--active]="currentStep === 2">
-      <span class="gdn-step-bubble">2</span> Preview &amp; Generate
+    <div class="gdn-step" [class.gdn-step--active]="currentStep === 2" [class.gdn-step--done]="currentStep > 2" (click)="goToStep(2)">
+      <span class="gdn-step-bubble">2</span> Choose Template
+    </div>
+    <div class="gdn-step-line"></div>
+    <div class="gdn-step" [class.gdn-step--active]="currentStep === 3" (click)="goToStep(3)">
+      <span class="gdn-step-bubble">3</span> Preview &amp; Generate
     </div>
   </div>
 
@@ -51,18 +59,36 @@
         </div>
 
         <button type="button" class="gdn-btn gdn-btn--primary" style="width:100%;justify-content:center;"
-                [disabled]="!lpoFileName || isSavingLpo" (click)="submitLpo()">
+                [disabled]="!lpoFileName || isReadingLpo || isSavingLpo" (click)="submitLpo()">
           <i class="fas" [class.fa-arrow-right]="!isSavingLpo" [class.fa-spinner]="isSavingLpo" [class.fa-spin]="isSavingLpo"></i>
           {{ isSavingLpo ? 'Processing...' : 'Continue' }}
         </button>
       </div>
     </div>
 
-    <!-- ══ STEP 2 — PREVIEW + GENERATE ══════════════════════════════════════ -->
-    <ng-container *ngIf="currentStep === 2 && deliveryNote">
+    <!-- ══ STEP 2 — TEMPLATE ═══════════════════════════════════════════════ -->
+    <div class="gdn-template-wrap no-print" *ngIf="currentStep === 2 && deliveryNote">
+      <app-template-types
+        documentType="delivery-note"
+        [selectedTemplateId]="selectedTemplate?.id || ''"
+        (templateSelected)="selectedTemplate = $event">
+      </app-template-types>
+      <div class="gdn-template-actions">
+        <button type="button" class="gdn-btn gdn-btn--ghost" (click)="goToStep(1)">
+          <i class="fas fa-arrow-left"></i> Back
+        </button>
+        <button type="button" class="gdn-btn gdn-btn--primary" [disabled]="isSavingTemplate" (click)="confirmTemplate()">
+          <i class="fas" [class.fa-arrow-right]="!isSavingTemplate" [class.fa-spinner]="isSavingTemplate" [class.fa-spin]="isSavingTemplate"></i>
+          {{ isSavingTemplate ? 'Saving...' : 'Continue' }}
+        </button>
+      </div>
+    </div>
 
-      <div class="gdn-tracking-card no-print">
-        <div class="gdn-tracking-grid">
+    <!-- ══ STEP 3 — PREVIEW + GENERATE ══════════════════════════════════════ -->
+    <ng-container *ngIf="currentStep === 3 && deliveryNote">
+
+      <div class="gdn-details-card no-print">
+        <div class="gdn-details-grid">
           <div class="gdn-field">
             <label class="gdn-label">PO Number</label>
             <input type="text" class="gdn-input" [(ngModel)]="poNumber">
@@ -80,16 +106,17 @@
             <input type="date" class="gdn-input" [(ngModel)]="deliveryDate">
           </div>
           <div class="gdn-field">
-            <label class="gdn-label">Carrier</label>
-            <input type="text" class="gdn-input" [(ngModel)]="carrier" placeholder="e.g. DHL, GIG Logistics">
+            <label class="gdn-label">Logo</label>
+            <label class="gdn-logo-pick">
+              <img *ngIf="logo" [src]="logo" alt="Logo preview">
+              <i *ngIf="!logo" class="fas fa-image"></i>
+              <span>{{ logoFileName || (logo ? 'Change logo' : 'Upload logo') }}</span>
+              <input type="file" accept="image/*" style="display:none;" (change)="onLogoSelected($event)">
+            </label>
           </div>
-          <div class="gdn-field">
-            <label class="gdn-label">Tracking Number</label>
-            <input type="text" class="gdn-input" [(ngModel)]="trackingNumber">
-          </div>
-          <button type="button" class="gdn-btn gdn-btn--ghost" [disabled]="isSavingTracking" (click)="saveTracking()">
-            <i class="fas" [class.fa-save]="!isSavingTracking" [class.fa-spinner]="isSavingTracking" [class.fa-spin]="isSavingTracking"></i>
-            {{ isSavingTracking ? 'Saving...' : 'Save' }}
+          <button type="button" class="gdn-btn gdn-btn--ghost" [disabled]="isSavingDetails" (click)="saveDetails()">
+            <i class="fas" [class.fa-save]="!isSavingDetails" [class.fa-spinner]="isSavingDetails" [class.fa-spin]="isSavingDetails"></i>
+            {{ isSavingDetails ? 'Saving...' : 'Save' }}
           </button>
         </div>
       </div>
@@ -99,18 +126,25 @@
           <div class="gdn-doc-wrapper">
             <app-delivery-note-document
               elementId="generate-dn-preview"
-              [note]="previewNote"
+              [note]="deliveryNote"
               [merchantInfo]="merchantInfo"
-              [customerName]="selectedCustomer?.name || ''"
-              [customerPhone]="selectedCustomer?.phone || ''"
+              [customerName]="deliveryNote.recipientName || selectedCustomer?.name || ''"
+              [customerAddress]="deliveryAddressFallback"
+              [logo]="logo"
+              [customerPhone]="deliveryNote.recipientPhone || selectedCustomer?.phone || ''"
               [poNumber]="poNumber"
               [attention]="attention"
               [contactPerson]="contactPerson"
-              [deliveryDate]="deliveryDate">
+              [deliveryDate]="deliveryDate"
+              [template]="selectedTemplate">
             </app-delivery-note-document>
           </div>
 
+          <p-message *ngIf="emailOutcome" class="gdn-outcome no-print" [severity]="emailOutcome.severity" [text]="emailOutcome.text"></p-message>
           <div class="gdn-finalize-actions no-print">
+            <button type="button" class="gdn-btn gdn-btn--ghost" (click)="goToStep(2)">
+              <i class="fas fa-arrow-left"></i> Back
+            </button>
             <button type="button" class="gdn-btn gdn-btn--ghost" [disabled]="isDownloading" (click)="downloadPDF()">
               <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"></i>
               {{ isDownloading ? 'Generating...' : 'Download PDF' }}
@@ -129,32 +163,15 @@
   </ng-container>
 </div>
 
-<!-- ══ SEND EMAIL MODAL ══════════════════════════════════════════════════ -->
-<div class="gdn-modal-backdrop" *ngIf="showSendModal" (click)="$event.target === $event.currentTarget && (showSendModal = false)">
-  <div class="gdn-modal">
-    <div class="gdn-modal-head">
-      <h3><i class="fas fa-paper-plane"></i> Send Delivery Note by Email</h3>
-      <button type="button" class="gdn-icon-btn" (click)="showSendModal = false"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="gdn-modal-body">
-      <p class="gdn-upload-hint">
-        This message appears above the delivery note summary and attached PDF — edit it as needed.
-      </p>
-      <div class="gdn-field">
-        <label class="gdn-label">Subject</label>
-        <input type="text" class="gdn-input" [(ngModel)]="emailSubject">
-      </div>
-      <div class="gdn-field">
-        <label class="gdn-label">Message</label>
-        <textarea class="gdn-input" rows="6" [(ngModel)]="emailMessage"></textarea>
-      </div>
-    </div>
-    <div class="gdn-modal-footer">
-      <button type="button" class="gdn-btn gdn-btn--ghost" (click)="showSendModal = false">Cancel</button>
-      <button type="button" class="gdn-btn gdn-btn--primary" [disabled]="isEmailing" (click)="confirmSendEmail()">
-        <i class="fas" [class.fa-paper-plane]="!isEmailing" [class.fa-spinner]="isEmailing" [class.fa-spin]="isEmailing"></i>
-        {{ isEmailing ? 'Sending...' : 'Send' }}
-      </button>
-    </div>
-  </div>
-</div>
+<!-- ══ SEND EMAIL MODAL (shared with quotes and invoices) ═══════════════ -->
+<app-send-email-modal *ngIf="showSendModal"
+  title="Send Delivery Note by Email"
+  documentLabel="delivery note"
+  [documentNumber]="deliveryNote?.deliveryNumber || ''"
+  [recipientName]="deliveryNote?.recipientName || selectedCustomer?.name || ''"
+  [sending]="isEmailing"
+  [(subject)]="emailSubject"
+  [(message)]="emailMessage"
+  (send)="confirmSendEmail()"
+  (dismiss)="showSendModal = false">
+</app-send-email-modal>

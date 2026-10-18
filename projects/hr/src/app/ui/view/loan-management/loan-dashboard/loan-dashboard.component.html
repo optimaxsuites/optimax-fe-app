@@ -374,7 +374,7 @@
           <div class="section-header">
             <div class="header-left">
               <i class="fas fa-file-invoice"></i>
-              <h2>Recent Loan Applications</h2>
+              <h2>Loan Applications</h2>
             </div>
             <div class="filter-tabs">
               <button 
@@ -434,7 +434,7 @@
               </thead>
               <tbody>
                 <tr *ngFor="let row of dashboardLoanRows; let i = index">
-                  <td class="sn">{{ i + 1 }}</td>
+                  <td class="sn">{{ dashboardPageStart + i }}</td>
                   <td class="loan-id">{{ row.displayId }}</td>
                   <td class="employee-id">{{ row.employeeId }}</td>
                   <td class="employee-name">{{ row.fullName }}</td>
@@ -457,6 +457,19 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div class="dashboard-pagination" *ngIf="!isLoading && filteredLoans.length > recentLoanLimit">
+            <span class="dashboard-pagination-info">Showing {{ dashboardPageStart }}–{{ dashboardPageEnd }} of {{ filteredLoans.length }}</span>
+            <div class="dashboard-pagination-controls">
+              <button type="button" class="dashboard-pagination-btn" (click)="changeDashboardPage(dashboardPage - 1)" [disabled]="dashboardPage === 1" aria-label="Previous page">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <span class="dashboard-pagination-page">Page {{ dashboardPage }} of {{ dashboardTotalPages }}</span>
+              <button type="button" class="dashboard-pagination-btn" (click)="changeDashboardPage(dashboardPage + 1)" [disabled]="dashboardPage === dashboardTotalPages" aria-label="Next page">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
           </div>
 
           <div class="empty-state" *ngIf="!isLoading && dashboardLoanRows.length === 0 && isDataLoaded">

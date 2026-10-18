@@ -5,13 +5,15 @@ import { Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment';
 import { fetchAllPages } from './paginated-fetch.util';
+import { resolveTenantId } from './loan-tenant.util';
+import { GraceRequestPaymentSubtype } from './loan-payment-types';
 
 export interface GracePeriodRequest {
   id?: number;
   loanId: number;
   employeeId: number;
   installmentNumber: number;
-  paymentSubtype: 'PRINCIPAL_REPAYMENT' | 'INTEREST_PAYMENT' | 'LATE_FEE';
+  paymentSubtype: GraceRequestPaymentSubtype;
   amountPaid: number;
   remainingBalance: number;
   requestedAt: string;
@@ -31,7 +33,7 @@ export interface CreateGracePeriodRequestPayload {
   loanId: number;
   employeeId: number;
   installmentNumber: number;
-  paymentSubtype: 'PRINCIPAL_REPAYMENT' | 'INTEREST_PAYMENT' | 'LATE_FEE';
+  paymentSubtype: GraceRequestPaymentSubtype;
   requestedDays: number;
   reason: string;
 }
@@ -44,7 +46,7 @@ export class AdvanceGracePeriodService {
 
   private getHeaders() {
     const token = sessionStorage.getItem('token');
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     return {
       'Authorization': `Bearer ${token}`,
       'X-Tenant-ID': tenantId,

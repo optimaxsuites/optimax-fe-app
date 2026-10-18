@@ -1,5 +1,6 @@
 import { formatDate } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GuarantorDto, GuarantorService } from '../../../service/loan/guarantor.service';
@@ -9,11 +10,13 @@ import { v4 as uuidV4 } from 'uuid';
 import { forkJoin, of } from 'rxjs';
 import { EmployeeService } from '../../../service/employee.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
-import { catchError } from 'rxjs/operators';
+import { catchError, finalize, switchMap } from 'rxjs/operators';
 import { CooperativeMember, CooperativeLoanGroup, CooperativeGroupMembership, CooperativeEmployeeProfile, CooperativeMembershipEligibility } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { Message } from 'primeng/api';
 import { CooperativeLoanPurposeApiResponse } from '../../../service/loan/cooperative-loan/cooperative-loan-api.service';
 import { LoanSupportingDocument, RepaymentScheduleItem } from '../../../service/loan/loan.types';
+import { formatNaira } from '../../../service/loan/loan-format.util';
+import { computeBorrowingCommitment } from '../../../service/loan/loan-eligibility.util';
 
 @Component({
   selector: 'app-cooperative-loan-application',
@@ -22,6 +25,7 @@ import { LoanSupportingDocument, RepaymentScheduleItem } from '../../../service/
   encapsulation: ViewEncapsulation.None
 })
 export class CooperativeLoanApplicationComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
     @Input() isModal = false;
     @Input() isSelfService = false;
     @Input() prefillMemberId: string | null = null;
@@ -48,6 +52,8 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   employeeDirectory: CooperativeEmployeeProfile[] = [];
   selectedMemberEligibility?: CooperativeMembershipEligibility;
   selectedMemberSalary = 0;
+  memberSalaryStatus: 'loading' | 'ok' | 'missing' | 'invalid' | 'error' = 'missing';
+  isCheckingEligibility = false;
 
   // Calculated values
   repaymentAmount = 0;
@@ -89,12 +95,13 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     private cooperativeService: CooperativeService,
     private employeeService: EmployeeService,
     private mailNotificationService: MailNotificationService,
-    private guarantorService: GuarantorService
+    private guarantorService: GuarantorService,
+    private employeeLoanService: EmployeeLoanService
   ) {}
 
   ngOnInit(): void {
     // Check URL parameters for guarantor approval
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       if (params['guarantorApproval'] === 'true' && params['loanId']) {
         this.isGuarantorView = true;
         this.modalLoanId = Number(params['loanId']);
@@ -158,10 +165,9 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     const guarantorId = this.getGuarantorIdFromSession();
     
     this.cooperativeService.submitGuarantorDecision(this.modalLoanId, guarantorId, 'APPROVED').subscribe({
-      next: () => {
+      next: (updatedLoan) => {
         this.modalLoading = false;
-        this.showGuarantorApprovalModal = false;
-        alert('You have successfully approved this loan as a guarantor.');
+        this.handleGuarantorDecisionResult(updatedLoan, 'approved');
       },
       error: (err) => {
         console.error('Error approving loan:', err);
@@ -180,10 +186,9 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     const guarantorId = this.getGuarantorIdFromSession();
     
     this.cooperativeService.submitGuarantorDecision(this.modalLoanId, guarantorId, 'REJECTED').subscribe({
-      next: () => {
+      next: (updatedLoan) => {
         this.modalLoading = false;
-        this.showGuarantorApprovalModal = false;
-        alert('You have rejected this loan as a guarantor.');
+        this.handleGuarantorDecisionResult(updatedLoan, 'rejected');
       },
       error: (err) => {
         console.error('Error rejecting loan:', err);
@@ -191,6 +196,24 @@ export class CooperativeLoanApplicationComponent implements OnInit {
         this.modalError = 'Failed to reject loan. Please try again.';
       }
     });
+  }
+
+  /**
+   * submitGuarantorDecision resolves with undefined when nothing was recorded (no matching pending
+   * guarantor on the loan), so only report success when the loan actually came back updated.
+   */
+  private handleGuarantorDecisionResult(updatedLoan: unknown, decisionLabel: 'approved' | 'rejected'): void {
+    if (!updatedLoan) {
+      this.modalError = 'Your decision could not be recorded. This request may already have been answered, or you may not be a guarantor on this loan.';
+      return;
+    }
+
+    this.showGuarantorApprovalModal = false;
+    this.messages = [{
+      severity: decisionLabel === 'approved' ? 'success' : 'info',
+      summary: decisionLabel === 'approved' ? 'Guarantee Approved' : 'Guarantee Rejected',
+      detail: `You have ${decisionLabel} this loan as a guarantor.`
+    }];
   }
 
   handleGuarantorModalClose(): void {
@@ -211,7 +234,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   // ==================== SETUP METHODS ====================
   
   setupPurposeChangeListener(): void {
-    this.applicationForm.get('purpose')?.valueChanges.subscribe(() => {
+    this.applicationForm.get('purpose')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.supportingDocuments = [];
       const purposeControl = this.applicationForm.get('purpose');
       if (purposeControl?.errors) {
@@ -251,11 +274,11 @@ initForm(): void {
   });
 
   // Watch for changes - use distinctUntilChanged to prevent loops
-  this.applicationForm.get('groupId')?.valueChanges.subscribe(groupId => {
+  this.applicationForm.get('groupId')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(groupId => {
     this.onGroupSelect(groupId);
   });
 
-  this.applicationForm.get('memberId')?.valueChanges.subscribe(memberId => {
+  this.applicationForm.get('memberId')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(memberId => {
     // Look up in eligibleMembers first; fall back to full members list so guarantors are
     // not wiped out when eligibleMembers hasn't been populated yet (e.g. auto-resolve path).
     const found =
@@ -275,17 +298,17 @@ initForm(): void {
     this.validateGuarantors();
   });
 
-  this.applicationForm.get('amount')?.valueChanges.subscribe(() => {
+  this.applicationForm.get('amount')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
     this.calculateRepayment();
     this.validateGuarantors();
   });
 
-  this.applicationForm.get('repaymentTime')?.valueChanges.subscribe(() => {
+  this.applicationForm.get('repaymentTime')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
     this.calculateRepayment();
   });
 
   // Use debounce to prevent rapid fire
-  this.guarantorsArray.valueChanges.subscribe(() => {
+  this.guarantorsArray.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
     this.validateGuarantors();
   });
 }
@@ -316,19 +339,15 @@ initForm(): void {
     return maxAmount > 0 ? maxAmount : null;
   }
 
+  /**
+   * Most the member may request in this group: their borrowable amount (contributions × the group's
+   * borrowing %), capped by the purpose maximum. A borrowable amount of 0 means they can't borrow yet;
+   * it used to mean "no limit".
+   */
   get effectiveMaxLoanAmount(): number {
-    const maxBorrowable = Number(this.maxBorrowableAmount || 0);
+    const maxBorrowable = Math.max(Number(this.maxBorrowableAmount || 0), 0);
     const purposeMax = this.maxPurposeLoanAmount;
-
-    if (purposeMax && maxBorrowable > 0) {
-      return Math.min(purposeMax, maxBorrowable);
-    }
-
-    if (purposeMax) {
-      return purposeMax;
-    }
-
-    return maxBorrowable > 0 ? maxBorrowable : Number.MAX_SAFE_INTEGER;
+    return purposeMax ? Math.min(purposeMax, maxBorrowable) : maxBorrowable;
   }
 
   get hasPurposeAmountConstraints(): boolean {
@@ -520,12 +539,6 @@ initForm(): void {
         this.members = members.filter((m: CooperativeMember) => m.status === 'ACTIVE');
         this.groups = groups.filter((group: CooperativeLoanGroup) => group.status === 'ACTIVE');
         
-        console.log('[CoopLoanApp] Loaded members:', this.members.map(m => ({
-          id: m.id,
-          employeeId: m.employeeId,
-          fullName: m.fullName,
-          email: m.email
-        })));
         
         const sessionUserId = Number(
           sessionStorage.getItem('userid')
@@ -544,12 +557,9 @@ initForm(): void {
         }
         
         if (!foundMember && sessionUserId) {
-          console.log('[CoopLoanApp] Looking up employee by userId:', sessionUserId);
           this.employeeService.getEmployeeByUserId(sessionUserId).subscribe({
             next: (employee) => {
-              console.log('[CoopLoanApp] Employee found:', employee);
               const employeeId = employee?.employeeId || employee?.id;
-              console.log('[CoopLoanApp] Looking for member with employeeId:', employeeId);
               
               foundMember = this.members.find(m => 
                 m.employeeId === employeeId || 
@@ -562,7 +572,6 @@ initForm(): void {
               }
               
               if (foundMember) {
-                console.log('[CoopLoanApp] Found member by employee lookup:', foundMember);
                 this.setSelectedMemberAndLoadData(foundMember);
               } else {
                 console.error('[CoopLoanApp] No member found for employeeId:', employeeId);
@@ -583,7 +592,6 @@ initForm(): void {
             }
           });
         } else if (foundMember) {
-          console.log('[CoopLoanApp] Found member directly:', foundMember);
           this.setSelectedMemberAndLoadData(foundMember);
         } else {
           console.error('[CoopLoanApp] No member found and no session userId');
@@ -606,7 +614,6 @@ initForm(): void {
   }
 
   private setSelectedMemberAndLoadData(member: CooperativeMember): void {
-  console.log('[CoopLoanApp] Setting selected member:', member);
   
   // Guard against null/undefined
   if (!member || !member.id) {
@@ -619,7 +626,6 @@ initForm(): void {
 
   // Store the ID for verification
   const selectedMemberId = this.selectedMember.id;
-  console.log('[CoopLoanApp] Selected member set with ID:', selectedMemberId);
 
   // Populate eligibleMembers BEFORE patching the form so the memberId.valueChanges
   // subscriber can find this member immediately and not zero out guarantorCandidates.
@@ -632,7 +638,6 @@ initForm(): void {
   // Update the form if it exists
   if (this.applicationForm) {
     this.applicationForm.patchValue({ memberId: selectedMemberId });
-    console.log('[CoopLoanApp] Form patched with memberId:', selectedMemberId);
   } else {
     console.warn('[CoopLoanApp] Form not ready, will retry');
     setTimeout(() => {
@@ -653,12 +658,10 @@ initForm(): void {
     this.selectedMember = member;
   }
   
-  console.log('[CoopLoanApp] Loading group memberships for member ID:', selectedMemberId);
   
   // Load group memberships
   this.cooperativeService.refreshGroupMembershipsForMember(this.selectedMember).subscribe({
     next: (memberships) => {
-      console.log('[CoopLoanApp] Group memberships loaded:', memberships);
       
       // Verify member still exists
       if (!this.selectedMember) {
@@ -681,27 +684,23 @@ initForm(): void {
             detail: 'You are a cooperative member but not yet a member of any active loan group. Please contact support to join a group.'
           }];
         } else {
-          console.log('[CoopLoanApp] Available groups:', this.qualifiedGroups);
           
           // Auto-select first group if available and none selected
           if (this.qualifiedGroups.length > 0 && !this.applicationForm.get('groupId')?.value) {
             const firstGroup = this.qualifiedGroups[0];
             this.applicationForm.patchValue({ groupId: firstGroup.id });
             this.selectedGroup = firstGroup;
-            console.log('[CoopLoanApp] Auto-selected group:', firstGroup.name);
           }
           
           // Set default values for amount and repayment time if not set
           if (!this.applicationForm.get('amount')?.value || this.applicationForm.get('amount')?.value < 1000) {
             this.applicationForm.patchValue({ amount: 10000 });
-            console.log('[CoopLoanApp] Set default amount to 10000');
           }
           
           // FIX: Ensure repaymentTime has a valid value between 1-12
           const currentRepaymentTime = this.applicationForm.get('repaymentTime')?.value;
           if (!currentRepaymentTime || currentRepaymentTime < 1 || currentRepaymentTime > 12) {
             this.applicationForm.patchValue({ repaymentTime: 6 });
-            console.log('[CoopLoanApp] Set default repaymentTime to 6');
           }
           
           // Ensure modeOfPayment is set
@@ -724,9 +723,6 @@ initForm(): void {
           
           // Debug form validity after fixes
           setTimeout(() => {
-            console.log('[CoopLoanApp] After fixes - repaymentTime value:', this.applicationForm.get('repaymentTime')?.value);
-            console.log('[CoopLoanApp] After fixes - repaymentTime valid:', this.applicationForm.get('repaymentTime')?.valid);
-            console.log('[CoopLoanApp] After fixes - Form valid:', this.applicationForm.valid);
           }, 100);
           
           // Force change detection
@@ -767,35 +763,6 @@ initForm(): void {
         this.guarantorCandidates = [];
       }
     });
-  }
-
-  // Debug method
-  debugFormValidity(): void {
-    if (!this.applicationForm) {
-      console.log('[DEBUG] Form is not initialized yet');
-      return;
-    }
-    
-    console.log('========== FORM VALIDATION DEBUG ==========');
-    console.log('Form Valid:', this.applicationForm.valid);
-    
-    const controls = ['memberId', 'groupId', 'amount', 'purpose', 'repaymentTime', 'modeOfPayment', 'requestDate', 'acceptTerms', 'acceptAcknowledgement'];
-    
-    controls.forEach(controlName => {
-      const control = this.applicationForm.get(controlName);
-      if (control) {
-        console.log(`${controlName}:`, {
-          value: control.value,
-          valid: control.valid,
-          errors: control.errors
-        });
-      }
-    });
-    
-    console.log('Selected Member:', this.selectedMember?.id);
-    console.log('Selected Group:', this.selectedGroup?.id);
-    console.log('Qualified Groups Count:', this.qualifiedGroups.length);
-    console.log('==========================================');
   }
 
   loadData(): void {
@@ -920,21 +887,70 @@ initForm(): void {
     }
   }
 
+  /**
+   * The member's monthly salary for the one-third limit: the salary on their cooperative member record,
+   * otherwise the salary set up for their employee level (GET /employees/{id} → level → GET /salaries).
+   * There is no fallback amount: without a salary the application can't be submitted.
+   */
   resolveSelectedMemberSalary(): void {
-    if (!this.selectedMember) {
-      this.selectedMemberSalary = 20000000;
+    const member = this.selectedMember;
+    this.selectedMemberSalary = 0;
+    if (!member) {
+      this.memberSalaryStatus = 'missing';
       return;
     }
-    let salary = 0;
-    if (typeof this.selectedMember.monthlySalary === 'number') {
-      salary = this.selectedMember.monthlySalary;
-    } else if (this.selectedMember.employeeId) {
-      const empProfile = this.employeeDirectory.find(e => String(e.employeeId) === String(this.selectedMember?.employeeId));
-      if (empProfile && typeof empProfile.monthlySalary === 'number') {
-        salary = empProfile.monthlySalary;
-      }
+
+    const recordedSalary = Number(member.monthlySalary || 0);
+    if (recordedSalary > 0) {
+      this.selectedMemberSalary = recordedSalary;
+      this.memberSalaryStatus = 'ok';
+      return;
     }
-    this.selectedMemberSalary = salary && salary > 0 ? salary : 20000000;
+
+    const employeeId = Number(member.employeeId || 0);
+    if (!employeeId) {
+      this.memberSalaryStatus = 'missing';
+      return;
+    }
+
+    this.memberSalaryStatus = 'loading';
+    const requestedForMemberId = member.id;
+    this.employeeLoanService.getEmployeeById(employeeId).pipe(
+      switchMap((response: any) => this.employeeLoanService.getMonthlySalaryForEmployee(response?.data || response))
+    ).subscribe({
+      next: (result) => {
+        if (this.selectedMember?.id !== requestedForMemberId) {
+          return; // a different member was selected meanwhile
+        }
+        if (result.status === 'ok') {
+          this.selectedMemberSalary = result.monthlySalary;
+          this.memberSalaryStatus = 'ok';
+        } else {
+          this.memberSalaryStatus = result.status;
+        }
+      },
+      error: () => {
+        if (this.selectedMember?.id === requestedForMemberId) {
+          this.memberSalaryStatus = 'error';
+        }
+      }
+    });
+  }
+
+  /** Why the salary can't be used (empty when it's fine), for the submit error. */
+  get memberSalaryProblem(): string {
+    switch (this.memberSalaryStatus) {
+      case 'loading':
+        return 'Your salary is still loading. Try again in a moment.';
+      case 'missing':
+        return 'No salary is on record for you (neither on your membership nor for your employee level), so your loan limit can\'t be worked out. Please contact HR.';
+      case 'invalid':
+        return 'The salary set up for your employee level doesn\'t add up (deductions are more than pay). Please contact HR.';
+      case 'error':
+        return 'Your salary couldn\'t be loaded, so your loan limit can\'t be worked out. Refresh the page and try again.';
+      default:
+        return '';
+    }
   }
 
   tryApplyPrefillMember(): void {
@@ -982,7 +998,6 @@ initForm(): void {
         if (!currentRepaymentTime || currentRepaymentTime < minDuration || currentRepaymentTime > maxDuration) {
           const defaultTime = Math.min(Math.max(6, minDuration), maxDuration);
           this.applicationForm.patchValue({ repaymentTime: defaultTime });
-          console.log(`[CoopLoanApp] Set repaymentTime to ${defaultTime} (min: ${minDuration}, max: ${maxDuration})`);
         }
         
         this.applicationForm.get('amount')?.updateValueAndValidity();
@@ -1002,15 +1017,12 @@ initForm(): void {
   });
 }
   private refreshQualifiedGroups(): void {
-  console.log('[CoopLoanApp] refreshQualifiedGroups called, selectedMember:', this.selectedMember?.id);
   
   if (!this.applicationForm) {
-    console.log('[CoopLoanApp] Application form not initialized yet, skipping refresh');
     return;
   }
   
   if (!this.selectedMember || !this.selectedMember.id) {
-    console.log('[CoopLoanApp] No valid selected member, clearing qualified groups');
     this.qualifiedGroups = [];
     this.selectedGroup = undefined;
     this.selectedGroupMembership = undefined;
@@ -1022,7 +1034,6 @@ initForm(): void {
   }
 
   const memberId = this.selectedMember.id;
-  console.log('[CoopLoanApp] Refreshing qualified groups for member:', memberId);
   this.resolveSelectedMemberSalary();
   
   const activeMembershipGroupIds = new Set(
@@ -1032,19 +1043,16 @@ initForm(): void {
       .map(membership => String(membership.groupId))
   );
   
-  console.log('[CoopLoanApp] Active group IDs from memberships:', Array.from(activeMembershipGroupIds));
 
   this.qualifiedGroups = this.groups
     .filter(group => activeMembershipGroupIds.has(String(group.id)))
     .sort((left, right) => left.name.localeCompare(right.name));
   
-  console.log('[CoopLoanApp] Qualified groups count:', this.qualifiedGroups.length);
 
   const selectedGroupId = this.applicationForm.get('groupId')?.value;
   let groupChanged = false;
   
   if (selectedGroupId && !this.qualifiedGroups.some(group => String(group.id) === String(selectedGroupId))) {
-    console.log('[CoopLoanApp] Previously selected group no longer valid, clearing');
     this.applicationForm.patchValue({ groupId: '' }, { emitEvent: false });
     this.selectedGroup = undefined;
     this.selectedGroupMembership = undefined;
@@ -1058,14 +1066,12 @@ initForm(): void {
     this.selectedGroupMembership = this.selectedGroup
       ? this.cooperativeService.getGroupMembership(memberId, this.selectedGroup.id)
       : undefined;
-    console.log('[CoopLoanApp] Selected group:', this.selectedGroup?.name);
   } else if (this.qualifiedGroups.length > 0 && !selectedGroupId) {
     const firstGroup = this.qualifiedGroups[0];
     this.applicationForm.patchValue({ groupId: firstGroup.id });
     this.selectedGroup = firstGroup;
     this.selectedGroupMembership = this.cooperativeService.getGroupMembership(memberId, firstGroup.id);
     groupChanged = true;
-    console.log('[CoopLoanApp] Auto-selected first group:', firstGroup.name);
   }
   
   // If group changed, update guarantor requirements
@@ -1303,8 +1309,7 @@ private validateGuarantors(): void {
   // ==================== UI HELPERS ====================
 
   formatCurrency(value: number | undefined): string {
-    if (typeof value !== 'number' || isNaN(value)) return '₦0';
-    return value.toLocaleString('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 });
+    return formatNaira(value, { omitZeroKobo: true });
   }
 
   buildMailLink(email?: string): string | null {
@@ -1424,7 +1429,7 @@ private validateGuarantors(): void {
     }
 
     const validators = [Validators.required, Validators.min(this.minLoanAmount)];
-    if (Number.isFinite(this.effectiveMaxLoanAmount) && this.effectiveMaxLoanAmount !== Number.MAX_SAFE_INTEGER) {
+    if (this.selectedGroup) {
       validators.push(Validators.max(this.effectiveMaxLoanAmount));
     }
 
@@ -1433,10 +1438,8 @@ private validateGuarantors(): void {
   }
 
   onSubmit(): void {
-  console.log('[CoopLoanApp] Submit button clicked');
   
-  if (this.isSubmitting) {
-    console.log('[CoopLoanApp] Already submitting, ignoring click');
+  if (this.isSubmitting || this.isCheckingEligibility) {
     return;
   }
   
@@ -1446,15 +1449,9 @@ private validateGuarantors(): void {
   this.submitError = '';
 
   // Debug: Log all form values, validity, and errors
-  console.log('[CoopLoanApp] Submit Attempt:', {
-    formValue: this.applicationForm.getRawValue(),
-    valid: this.applicationForm.valid,
-    errors: this.applicationForm.errors,
-  });
 
   // Check if form is valid
   if (!this.applicationForm.valid) {
-    console.log('[CoopLoanApp] Form is invalid - cannot submit');
     const firstInvalid = document.querySelector('.ng-invalid');
     if (firstInvalid) {
       firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1462,48 +1459,61 @@ private validateGuarantors(): void {
     return;
   }
 
-  const memberId = this.applicationForm.get('memberId')?.value;
-  const requestedAmount = Number(this.applicationForm.get('amount')?.value || 0);
-  const salary = Number(this.selectedMemberSalary || 0);
-
-  console.log('[CoopLoanApp] Validation passed, checking salary limits:', { memberId, requestedAmount, salary });
-
-  // Check salary limit
-  if (memberId && salary > 0) {
-    this.cooperativeService.getLoans().subscribe({
-      next: (loans) => {
-        const activeLoans = (loans || []).filter(l => 
-          (l.memberId === memberId || l.cooperativeMemberId === memberId) && 
-          l.status === 'ACTIVE'
-        );
-        const totalActiveLoanAmount = activeLoans.reduce((sum, l) => sum + Number(l.amount || 0), 0);
-        const oneThirdSalary = salary / 3;
-        
-        console.log('[CoopLoanApp] Salary check:', { totalActiveLoanAmount, requestedAmount, oneThirdSalary });
-        
-        if ((totalActiveLoanAmount + requestedAmount) > oneThirdSalary) {
-          this.submitError = `You cannot request this loan because your total active loans would exceed one-third of your monthly salary (₦${oneThirdSalary.toLocaleString()}).`;
-          this.showConfirmation = false;
-          console.log('[CoopLoanApp] Salary limit exceeded');
-          return;
-        }
-
-        // Proceed to confirmation
-        console.log('[CoopLoanApp] Opening confirmation dialog');
-        this.showConfirmation = true;
-      },
-      error: (err) => {
-        console.error('[CoopLoanApp] Error getting loans for salary check:', err);
-        // Still proceed even if salary check fails
-        this.showConfirmation = true;
-      }
-    });
+  // Business rules (approved membership, purpose, duration, guarantors) — defined but never called before.
+  if (!this.validateBeforeSubmit()) {
     return;
   }
 
-  // If no salary info, proceed directly to confirmation
-  console.log('[CoopLoanApp] No salary info, proceeding directly to confirmation');
-  this.showConfirmation = true;
+  const member = this.selectedMember;
+  const requestedAmount = Number(this.applicationForm.get('amount')?.value || 0);
+
+  if (this.selectedGroup && this.effectiveMaxLoanAmount <= 0) {
+    this.submitError = `You can't borrow from ${this.selectedGroup.name || 'this group'} yet: your contributions don't give you a borrowing limit (₦0). Keep contributing, or contact the cooperative admin.`;
+    return;
+  }
+
+  const salary = Number(this.selectedMemberSalary || 0);
+  if (!member || this.memberSalaryStatus !== 'ok' || salary <= 0) {
+    this.submitError = this.memberSalaryProblem || 'Select the member applying for this loan.';
+    return;
+  }
+
+  // Every page of loans, fresh. A failed load must block the application, not count as "no loans".
+  this.isCheckingEligibility = true;
+  this.cooperativeService.fetchLoansOrFail().pipe(
+    finalize(() => { this.isCheckingEligibility = false; })
+  ).subscribe({
+    next: (loans) => {
+      // Compare as numbers: the form value is a string and loan ids are numbers, so the old
+      // strict comparison never matched and existing loans were never counted.
+      const memberIds = new Set([Number(member.id), Number(member.memberId)].filter((id) => id > 0));
+      const memberLoans = (loans || []).filter((loan) =>
+        memberIds.has(Number(loan.cooperativeMemberId ?? 0)) || memberIds.has(Number(loan.memberId ?? 0))
+      );
+      const commitment = computeBorrowingCommitment(memberLoans as any);
+      const oneThirdSalary = Number((salary / 3).toFixed(2));
+
+      if (commitment.total + requestedAmount > oneThirdSalary) {
+        const remaining = Math.max(oneThirdSalary - commitment.total, 0);
+        const parts = [
+          commitment.outstandingPrincipal > 0 ? `${this.formatCurrency(commitment.outstandingPrincipal)} still owed on loans you're repaying` : '',
+          commitment.pipelineAmount > 0 ? `${this.formatCurrency(commitment.pipelineAmount)} in applications not yet disbursed` : ''
+        ].filter(Boolean).join(' and ');
+        this.submitError = `Your borrowing can't exceed one-third of your monthly salary (${this.formatCurrency(oneThirdSalary)}). `
+          + (parts ? `You already have ${parts}, so ` : '')
+          + `you can request up to ${this.formatCurrency(remaining)}.`;
+        this.showConfirmation = false;
+        return;
+      }
+
+      this.showConfirmation = true;
+    },
+    error: (err) => {
+      console.error('[CoopLoanApp] Error getting loans for eligibility check:', err);
+      this.submitError = 'We couldn\'t check your existing loans, so your application wasn\'t sent. Please try again.';
+      this.showConfirmation = false;
+    }
+  });
 }
   confirmSubmit(): void {
     this.isSubmitting = true;

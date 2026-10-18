@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CooperativeLoanGroup } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { formatNaira } from '../../../service/loan/loan-format.util';
 
 @Component({
   selector: 'app-join-cooperative-group',
@@ -16,12 +17,7 @@ export class JoinCooperativeGroupComponent {
   applicationSent: boolean = false;
 
   formatCurrency(amount: number | undefined): string {
-    return Number(amount || 0).toLocaleString('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    });
+    return formatNaira(amount, { omitZeroKobo: true });
   }
 
   isEligible(groupId: string): boolean {

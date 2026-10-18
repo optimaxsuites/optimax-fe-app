@@ -6,6 +6,7 @@ import { CooperativeService } from '../../../service/loan/cooperative-loan/coope
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { getLoanStatusClass, getLoanStatusLabel } from '../../../service/loan/loan-format.util';
 
 @Component({
   selector: 'app-cooperative-member-loans',
@@ -133,7 +134,7 @@ export class CooperativeMemberLoansComponent implements OnInit {
   }
 
   getStatusClass(status: string): string {
-    return `status-${status.toLowerCase()}`;
+    return getLoanStatusClass(status);
   }
 
   get pendingCount(): number {
@@ -177,7 +178,7 @@ export class CooperativeMemberLoansComponent implements OnInit {
   }
 
   getStatusLabel(status: string): string {
-    return String(status || '').replaceAll('_', ' ');
+    return getLoanStatusLabel(status);
   }
 
   get memberDisplayName(): string {

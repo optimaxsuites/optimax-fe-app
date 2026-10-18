@@ -6,6 +6,20 @@ import { LoanApplication, RepaymentScheduleItem, PaymentRecord, LoanStatus, Stat
 import { LoanApplicationService } from './loan-application.service';
 import { resolveCompletedLoanActor, resolveLoanEmployeeName, resolvePaymentActorName } from './loan-display.util';
 
+/** Marker written into an installment's notes when a grace-period request has been applied to it. */
+export function gracePeriodRequestTag(requestId: number): string {
+  return `(request #${requestId})`;
+}
+
+/** The installment a grace-period request was already applied to, if any. */
+export function findAppliedGracePeriodInstallment(
+  loan: Pick<LoanApplication, 'repaymentSchedule'>,
+  requestId: number
+): RepaymentScheduleItem | undefined {
+  const tag = gracePeriodRequestTag(requestId);
+  return (loan.repaymentSchedule || []).find((item) => String(item.notes || '').includes(tag));
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -211,17 +225,27 @@ export class LoanRepaymentService {
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
   }
 
+  /**
+   * Moves the installment's due date for an approved grace-period request. Idempotent per request:
+   * the installment is tagged "(request #id)", and calling this again for the same request leaves the
+   * loan untouched, so a failed approval can be retried without pushing the due date out twice.
+   */
   applyApprovedGracePeriod(request: {
     loanId: number;
     installmentNumber: number;
     newDueDate: string;
     approvedGraceDays?: number;
     reviewNote?: string;
+    requestId?: number;
   }): Observable<LoanApplication> {
     return this.loanApplicationService.getApplicationById(String(request.loanId)).pipe(
       switchMap((loan) => {
         if (!loan) {
           return throwError(() => new Error('Loan not found'));
+        }
+
+        if (request.requestId && findAppliedGracePeriodInstallment(loan, request.requestId)) {
+          return of(loan);
         }
 
         const installment = [...(loan.repaymentSchedule || [])]
@@ -233,11 +257,12 @@ export class LoanRepaymentService {
           return throwError(() => new Error('No eligible installment found for grace period approval'));
         }
 
+        const requestTag = request.requestId ? ` ${gracePeriodRequestTag(request.requestId)}` : '';
         installment.dueDate = request.newDueDate;
         installment.status = 'SKIPPED';
         installment.notes = request.reviewNote?.trim()
-          ? `Grace period approved. ${request.reviewNote.trim()}`
-          : `Grace period approved for ${request.approvedGraceDays || 0} days.`;
+          ? `Grace period approved${requestTag}. ${request.reviewNote.trim()}`
+          : `Grace period approved for ${request.approvedGraceDays || 0} days${requestTag}.`;
         installment.reminderSentAt = undefined;
         installment.creditReportedAt = undefined;
 

@@ -29,6 +29,8 @@ import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/lo
 import { formatLoanPurposeDisplay, formatCooperativeLoanCode as _formatCooperativeLoanCode } from '../../../service/loan/loan-display.util';
 import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 import { CooperativeMembershipRequestSource } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { getLoanStatusClass, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
+import { finalize } from 'rxjs/operators';
 
 interface CooperativeMemberLoanRow {
   loan: CooperativeLoan;
@@ -270,15 +272,17 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       managerId: ''
     };
 
-    this.employeeService.getCurrentEmployee().subscribe({
+    // Strict lookup of the signed-in employee (no default-employee fallback). `finalize` loads the
+    // member data on success *and* failure; `complete` alone never ran after an error, leaving the
+    // dashboard blank.
+    this.employeeLoanService.getSignedInEmployee().pipe(
+      finalize(() => this.loadMemberData())
+    ).subscribe({
       next: (employee) => {
         this.currentEmployeeProfile = this.mapEmployeeToProfile(employee);
       },
       error: (error) => {
         console.warn('Failed to resolve current employee profile for cooperative dashboard:', error);
-      },
-      complete: () => {
-        this.loadMemberData();
       }
     });
   }
@@ -294,9 +298,6 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       members: this.cooperativeService.getMembers()
     }).subscribe({
       next: ({ groups, members }) => {
-        console.log('Groups loaded:', groups);
-        console.log('Loaded members:', members);
-        console.log('Using real API data:', this.cooperativeService.isUsingRealData());
         this.usingRealData = this.cooperativeService.isUsingRealData();
 
         const member = this.resolveDashboardMember(members);
@@ -764,7 +765,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   }
 
   get personalOutstandingBalance(): number {
-    return this.loans.filter(loan => loan.status === 'ACTIVE').reduce((sum, loan) => sum + this.getOutstandingAmount(loan), 0);
+    return this.loans.filter(loan => hasOutstandingBalanceStatus(loan.status)).reduce((sum, loan) => sum + this.getOutstandingAmount(loan), 0);
   }
 
   get nextPayment(): { amount: number; dueDate: string } | null {
@@ -930,11 +931,6 @@ public toTitleCase(value: string | undefined | null): string {
   }
 
   openGroupDashboard(groupId: number): void {
-    console.log('[openGroupDashboard] Navigating to group dashboard:', {
-      groupId,
-      currentUuid: this.currentUuid,
-      memberId: this.member?.id || this.currentMemberId
-    });
     this.closeMyGroupsModal();
     this.router.navigate(['/admin/hr/member/cooperative/groups', groupId, this.currentUuid], {
       state: { memberId: this.member?.id || this.currentMemberId }
@@ -1351,11 +1347,8 @@ public toTitleCase(value: string | undefined | null): string {
   }
 
  getStatusClass(status: string): string {
-  if (!status) return '';
-  // Convert to lowercase and replace spaces with underscores for CSS class
-  const normalized = status.toLowerCase().replace(/ /g, '_');
-  return `status-${normalized}`;
-}
+   return getLoanStatusClass(status);
+ }
 
   getActivityIconClass(type: 'LOAN' | 'GROUP' | 'NOTIFICATION'): string {
     if (type === 'GROUP') {
@@ -1430,9 +1423,9 @@ public toTitleCase(value: string | undefined | null): string {
       return;
     }
 
-    this.employeeLoanService.getSalaryByEmployeeId(employeeId).subscribe({
-      next: (salaryData: { baseSalary?: number; monthlySalary?: number; salary?: number }) => {
-        const salary = Number(salaryData?.baseSalary || salaryData?.monthlySalary || salaryData?.salary || 0);
+    // Base salary from the employee's level (GET /salaries/{employeeId} read the wrong record).
+    this.employeeLoanService.getBaseSalaryForEmployeeId(employeeId).subscribe({
+      next: (salary: number) => {
         updateEligibleGroups(salary || fallbackSalary);
       },
       error: () => {

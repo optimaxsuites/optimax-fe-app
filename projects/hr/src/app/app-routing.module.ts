@@ -25,6 +25,7 @@ import { LoanDetailsComponent } from './ui/view/loan-management/loan-details/loa
 import { EmployeeLoanHistoryComponent } from './ui/view/loan-management/employee-loan-history/employee-loan-history.component';
 import { EmployeeDashboardComponent } from './ui/view/loan-management/employee-loan-dashboard/employee-loan-dashboard.component';
 import { LoanReportsComponent } from './ui/view/loan-management/loan-reports/loan-reports.component';
+import { EmployeePaymentHistoryPageComponent } from './ui/view/loan-management/employee-payment-history-page/employee-payment-history-page.component';
 import { LoanDisbursementUiComponent } from './ui/view/loan-management/loan-disbursement-ui/loan-disbursement-ui.component';
 import { CooperativeDashboardComponent } from './ui/view/loan-management/cooperative-dashboard/cooperative-dashboard.component';
 import { CooperativeLoansComponent } from './ui/view/loan-management/cooperative-loans/cooperative-loans.component';
@@ -250,6 +251,14 @@ const routes: Routes = [
     component: EmployeeLoanHistoryComponent,
   },
   {
+    path: 'loan-management/payment-history/:uuid',
+    component: EmployeePaymentHistoryPageComponent,
+  },
+  {
+    path: 'admin/hr/loan-management/payment-history/:uuid',
+    component: EmployeePaymentHistoryPageComponent,
+  },
+  {
     path: 'loan-management/reports/:uuid',
     component: LoanReportsComponent,
   },
@@ -389,7 +398,9 @@ const routes: Routes = [
   },
   {
     path: 'member/cooperative/loans/:id/:uuid',
-    component: CooperativeMemberDetailComponent, // Read-only version
+    // The member's own loan (read-only, ownership-checked). This used to point at the member-detail
+    // page, which read the loan id as a member id and showed someone else's profile.
+    component: CooperativeLoanDetailComponent,
   },
   {
     path: 'admin/hr/member/cooperative/dashboard/:uuid',
@@ -405,7 +416,9 @@ const routes: Routes = [
   },
   {
     path: 'admin/hr/member/cooperative/loans/:id/:uuid',
-    component: CooperativeMemberDetailComponent, // Read-only version
+    // The member's own loan (read-only, ownership-checked). This used to point at the member-detail
+    // page, which read the loan id as a member id and showed someone else's profile.
+    component: CooperativeLoanDetailComponent,
   },
   {
     path: 'leave/:uuid',

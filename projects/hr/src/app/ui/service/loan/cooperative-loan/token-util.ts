@@ -34,7 +34,6 @@ export function getTokenFromStorage(): string | null {
       
       // Validate token looks reasonable
       if (token && token !== 'undefined' && token !== 'null' && token.length > 10) {
-        console.log(`[TokenUtil] Successfully extracted token from key: ${key}`);
         return token;
       }
     }
@@ -58,7 +57,6 @@ export function getTokenFromStorage(): string | null {
       // Check if it looks like a JWT (3 dot-separated segments)
       const segments = cleanValue.split('.');
       if (segments.length === 3 && segments[0] && segments[1] && segments[2]) {
-        console.log(`[TokenUtil] Found JWT-like token in key: ${key}`);
         return cleanValue;
       }
     }
@@ -66,29 +64,4 @@ export function getTokenFromStorage(): string | null {
   
   console.warn('[TokenUtil] No valid token found in storage');
   return null;
-}
-
-/**
- * Debug function to check token status - call this from console
- */
-export function debugTokenStatus(): void {
-  console.log('=== TOKEN DEBUG ===');
-  const token = getTokenFromStorage();
-  console.log('Valid token found:', !!token);
-  if (token) {
-    console.log('Token preview:', token.substring(0, 50) + '...');
-    console.log('Token length:', token.length);
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      console.log('Token expiry:', new Date(payload.exp * 1000).toLocaleString());
-      console.log('Is expired:', Date.now() >= payload.exp * 1000);
-      console.log('Token payload:', payload);
-    } catch(e) {
-      console.log('Could not parse token payload (might not be JWT)');
-    }
-  }
-  
-  console.log('Tenant ID:', sessionStorage.getItem('tenantId') || localStorage.getItem('tenantId') || 'optimax');
-  console.log('User ID:', sessionStorage.getItem('userid') || localStorage.getItem('userid'));
-  console.log('==================');
 }

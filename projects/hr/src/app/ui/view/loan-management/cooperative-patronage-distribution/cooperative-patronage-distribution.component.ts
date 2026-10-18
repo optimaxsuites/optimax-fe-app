@@ -8,6 +8,7 @@ import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { formatNaira } from '../../../service/loan/loan-format.util';
 
 @Component({
   selector: 'app-cooperative-patronage-distribution',
@@ -520,12 +521,7 @@ export class CooperativePatronageDistributionComponent implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    if (value === null || value === undefined || isNaN(value)) return '₦0.00';
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2
-    }).format(value);
+    return formatNaira(value);
   }
 
   private showMessage(severity: 'success' | 'error' | 'warn' | 'info', summary: string, detail: string): void {

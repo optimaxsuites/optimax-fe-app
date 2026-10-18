@@ -394,14 +394,44 @@
         </div>
       </div>
 
+      <p-message
+        *ngIf="selectedLoanMissingBankDetails"
+        severity="error"
+        styleClass="disbursement-confirm-message"
+        text="This member has no bank name and account number on file, so it can't be sent to accounting. Add them first."></p-message>
+
+      <!-- Confirm disbursement: bank reference + explicit confirmation before the loan goes ACTIVE -->
+      <div class="disbursement-confirm" *ngIf="showDisbursementConfirmation && selectedDisbursementLoan?.status === 'READY_FOR_DISBURSEMENT'">
+        <p-message
+          severity="warn"
+          styleClass="disbursement-confirm-message"
+          text="Only confirm once the money has actually been transferred. This sets the loan to Active and starts repayments."></p-message>
+        <label for="coop-bank-transfer-reference">Bank transfer reference <span class="required">*</span></label>
+        <input
+          id="coop-bank-transfer-reference"
+          type="text"
+          class="form-input"
+          [(ngModel)]="bankTransferReference"
+          placeholder="e.g. the transfer or payment reference from the bank"
+          autocomplete="off">
+        <div class="field-hint" *ngIf="bankTransferReference && !isBankTransferReferenceValid">Enter the full reference (at least 4 characters).</div>
+        <div class="disbursement-confirm-actions">
+          <button type="button" class="cancel-confirm-btn" (click)="cancelDisbursementConfirmation()" [disabled]="isSubmitting">Cancel</button>
+          <button type="button" class="send-btn activate-btn" (click)="confirmSetLoanActive()" [disabled]="isSubmitting || !isBankTransferReferenceValid">
+            <i class="fas" [ngClass]="isSubmitting ? 'fa-spinner fa-spin' : 'fa-circle-check'"></i>
+            Confirm Disbursement
+          </button>
+        </div>
+      </div>
+
       <!-- Action Buttons -->
-      <div class="modal-actions" *ngIf="selectedDisbursementLoan && (selectedDisbursementLoan.status === 'APPROVED' || selectedDisbursementLoan.status === 'READY_FOR_DISBURSEMENT')">
+      <div class="modal-actions" *ngIf="!showDisbursementConfirmation && selectedDisbursementLoan && (selectedDisbursementLoan.status === 'APPROVED' || selectedDisbursementLoan.status === 'READY_FOR_DISBURSEMENT')">
         <button
           type="button"
           class="send-btn"
           [class.activate-btn]="selectedDisbursementLoan.status === 'READY_FOR_DISBURSEMENT'"
           (click)="selectedDisbursementLoan.status === 'READY_FOR_DISBURSEMENT' ? setLoanActive(selectedDisbursementLoan) : openSendToAccountingModal()"
-          [disabled]="isSubmitting">
+          [disabled]="isSubmitting || (selectedDisbursementLoan.status === 'APPROVED' && (isLoadingEmployeeDetails || selectedLoanMissingBankDetails))">
           <i class="fas" [ngClass]="selectedDisbursementLoan.status === 'READY_FOR_DISBURSEMENT' ? 'fa-circle-check' : 'fa-paper-plane'"></i>
           {{ selectedDisbursementLoan.status === 'READY_FOR_DISBURSEMENT' ? 'Set Loan to Active' : 'Send to Accounting' }}
         </button>

@@ -4,6 +4,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
+import { deriveOrderProgress, OrderFilter, OrderProgress } from '../../../../service/sales/order-progress';
 import { SalesandTransactions, SaleLifecycleStatus, PaymentMethod } from '../../../../domain/sales/sales.dto';
 import { parseApiDate } from '../../../../service/sales/date.util';
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
@@ -83,6 +84,24 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
   // Row selection (bulk actions bar)
   selectedTransactionIds: number[] = [];
 
+  /** Sidebar filters by where each order actually is (see order-progress.ts). */
+  readonly stageFilters: { value: OrderFilter; label: string; icon: string; pill: string }[] = [
+    { value: 'QUOTE', label: 'Quote Stage', icon: 'fa-file-invoice', pill: 'blue' },
+    { value: 'AWAITING_LPO', label: 'Awaiting LPO', icon: 'fa-hourglass-half', pill: 'orange' },
+    { value: 'IN_DELIVERY', label: 'In Delivery', icon: 'fa-truck', pill: 'blue' },
+    { value: 'DELIVERED', label: 'Delivered', icon: 'fa-home', pill: 'green' },
+    { value: 'INVOICED', label: 'Awaiting Payment', icon: 'fa-file-invoice-dollar', pill: 'orange' },
+    { value: 'PAID', label: 'Paid', icon: 'fa-check-circle', pill: 'green' },
+    { value: 'STOPPED', label: 'Declined / Cancelled', icon: 'fa-exclamation-circle', pill: 'red' }
+  ];
+
+  /** Each order's progress, worked out from its quote, LPO, delivery note and invoice. */
+  private progressById = new Map<number, OrderProgress>();
+
+  progressOf(tx: SalesandTransactions): OrderProgress {
+    return this.progressById.get(tx.id) || deriveOrderProgress({ tx, quote: tx.quoteId, invoice: tx.invoiceId });
+  }
+
   statusOptions: { label: string; value: string }[] = [
     { label: 'All Lifecycle Statuses', value: 'ALL' },
     { label: 'Quote Sent', value: 'QUOTE_SENT' },
@@ -124,6 +143,11 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
     return parseApiDate(value);
   }
 
+  /** See SalesService.orderNumberFor() — the backend's number, or one derived from the record. */
+  orderNumberOf(tx: any): string {
+    return this.salesService.orderNumberFor(tx);
+  }
+
   loadTransactions(): void {
     this.isLoading = true;
     // This component does its own search/status/date-range filtering and pagination over the
@@ -131,12 +155,15 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
     // page — a small size here would silently hide anything past the cap from search/filters.
     forkJoin({
       transactions: this.salesService.getSalesandTransactions({ size: 1000 }),
-      customers: this.salesService.getCustomers({ page: 0, size: 1000 })
+      customers: this.salesService.getCustomers({ page: 0, size: 1000 }),
+      notes: this.salesService.getDeliveryNotes({ size: 1000 }),
+      lpos: this.salesService.getSalesLpos()
     }).pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ({ transactions, customers }: any) => {
+        next: ({ transactions, customers, notes, lpos }: any) => {
           this.customers = customers.data || [];
           this.transactions = transactions.data || [];
+          this.indexProgress(notes?.data || [], lpos || []);
           this.applyFilters();
           this.isLoading = false;
         },
@@ -147,17 +174,38 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
       });
   }
 
+  /** Works out every order's stage once per load, from its linked documents. */
+  private indexProgress(notes: any[], lpos: any[]): void {
+    const noteByOrder = new Map<string, any>();
+    const noteByQuote = new Map<string, any>();
+    notes.forEach(n => {
+      if (n.salesOrderId != null) noteByOrder.set(String(n.salesOrderId), n);
+      if (n.quoteId != null) noteByQuote.set(String(n.quoteId), n);
+    });
+    const lpoQuotes = new Set(lpos.filter(l => l.status !== 'REJECTED').map(l => String(l.quoteId)));
+
+    this.progressById.clear();
+    this.transactions.forEach(tx => {
+      const quote: any = typeof tx.quoteId === 'object' ? tx.quoteId : null;
+      const quoteId = quote?.id ?? tx.quoteId;
+      const hasLpo = (quoteId != null && lpoQuotes.has(String(quoteId))) || !!this.salesService.getQuoteLpoDocument(quote);
+      const deliveryNote = noteByOrder.get(String(tx.id)) || (quoteId != null ? noteByQuote.get(String(quoteId)) : undefined);
+      const invoice: any = typeof tx.invoiceId === 'object' ? tx.invoiceId : null;
+      this.progressById.set(tx.id, deriveOrderProgress({ tx, quote, hasLpo, deliveryNote, invoice }));
+    });
+  }
+
   applyFilters(): void {
     let result = [...this.transactions];
 
     if (this.selectedStatus !== 'ALL') {
-      result = result.filter(tx => tx.status === this.selectedStatus);
+      result = result.filter(tx => this.progressOf(tx).filter === this.selectedStatus);
     }
 
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase().trim();
       result = result.filter(tx =>
-        (tx.orderId || '').toLowerCase().includes(term) ||
+        this.orderNumberOf(tx).toLowerCase().includes(term) ||
         (tx.quoteId?.quoteNumber || '').toLowerCase().includes(term) ||
         (tx.paymentNumber || '').toLowerCase().includes(term) ||
         (tx.reference || '').toLowerCase().includes(term) ||
@@ -282,6 +330,10 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
     }
 
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }
+
+  getStageCount(filter: OrderFilter): number {
+    return this.transactions.filter(tx => this.progressOf(tx).filter === filter).length;
   }
 
   getStatusCount(status: string): number {

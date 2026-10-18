@@ -2,7 +2,8 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angu
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
-import { SalesService } from '../../../../service/sales/sales.service';
+import { SalesService, OrderSnapshot } from '../../../../service/sales/sales.service';
+import { ORDER_STAGES } from '../../../../service/sales/order-progress';
 import { SalesandTransactions, SaleLifecycleStatus } from '../../../../domain/sales/sales.dto';
 import { parseApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
@@ -19,9 +20,17 @@ export class SalesAndTransactionsDetailComponent implements OnInit, OnDestroy {
   @Output() closed = new EventEmitter<void>();
 
   transaction: SalesandTransactions | null = null;
+  /** The order with its quote, LPO, delivery note, invoice and customer (see getOrderSnapshot). */
+  snapshot: OrderSnapshot | null = null;
+  readonly stages = ORDER_STAGES;
   isLoading: boolean = true;
 
   private destroy$ = new Subject<void>();
+
+  /** See SalesService.orderNumberFor(). */
+  get orderNumber(): string {
+    return this.salesService.orderNumberFor(this.transaction);
+  }
 
   constructor(
     private route: ActivatedRoute,
@@ -51,9 +60,10 @@ export class SalesAndTransactionsDetailComponent implements OnInit, OnDestroy {
 
   loadTransaction(id: number | string): void {
     this.isLoading = true;
-    this.salesService.getSalesandTransactionsById(id).subscribe({
-      next: (tx) => {
-        this.transaction = tx;
+    this.salesService.getOrderSnapshot(id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (snapshot) => {
+        this.snapshot = snapshot;
+        this.transaction = snapshot?.tx || null;
         this.isLoading = false;
       },
       error: (err) => {
@@ -77,31 +87,43 @@ export class SalesAndTransactionsDetailComponent implements OnInit, OnDestroy {
     return d && d.getTime() > 0 ? d : null;
   }
 
+  private get customer(): any {
+    return this.snapshot?.customer || null;
+  }
+
   getCustomerName(): string {
     if (!this.transaction) return 'N/A';
-    const tx = this.transaction;
-    if (typeof tx.customerName === 'object' && tx.customerName?.name) {
-      return tx.customerName.name;
-    }
-    if (typeof tx.customerId === 'object' && tx.customerId?.name) {
-      return tx.customerId.name;
-    }
-    return String(tx.customerName || tx.customerId || 'N/A');
+    const tx: any = this.transaction;
+    return this.customer?.name
+      || (typeof tx.customerName === 'object' ? tx.customerName?.name : null)
+      || (typeof tx.customerId === 'object' ? tx.customerId?.name : null)
+      || 'N/A';
   }
 
   getCustomerEmail(): string {
-    if (!this.transaction) return '-';
-    const cust = this.transaction.customerId || this.transaction.customerName;
-    return typeof cust === 'object' ? cust?.email || '-' : '-';
+    return this.customer?.email || '-';
   }
 
   getCustomerPhone(): string {
-    if (!this.transaction) return '-';
-    const cust = this.transaction.customerId || this.transaction.customerName;
-    return typeof cust === 'object' ? cust?.phone || '-' : '-';
+    return this.customer?.phone || '-';
+  }
+
+  private joinAddress(v: any): string {
+    return Array.isArray(v) ? v.filter(Boolean).join(', ') : (v || '');
+  }
+
+  getBillingAddress(): string {
+    return this.transaction?.billingAddress || this.joinAddress(this.customer?.address) || 'N/A';
+  }
+
+  getShippingAddress(): string {
+    return this.snapshot?.deliveryNote?.deliveryAddress || this.snapshot?.deliveryNote?.customerAddress
+      || this.transaction?.shippingAddress || this.joinAddress(this.customer?.deliverAddress)
+      || this.getBillingAddress();
   }
 
   getQuoteNumber(): string {
+    if (this.snapshot?.quote?.quoteNumber) return this.snapshot.quote.quoteNumber;
     if (!this.transaction?.quoteId) return 'N/A';
     if (typeof this.transaction.quoteId === 'object') {
       return this.transaction.quoteId.quoteNumber || 'N/A';
@@ -110,6 +132,7 @@ export class SalesAndTransactionsDetailComponent implements OnInit, OnDestroy {
   }
 
   getInvoiceNumber(): string {
+    if (this.snapshot?.invoice?.invoiceNumber) return this.snapshot.invoice.invoiceNumber;
     if (!this.transaction?.invoiceId) return 'N/A';
     if (typeof this.transaction.invoiceId === 'object') {
       return this.transaction.invoiceId.invoiceNumber || 'N/A';
@@ -118,6 +141,7 @@ export class SalesAndTransactionsDetailComponent implements OnInit, OnDestroy {
   }
 
   getItemsList(): any[] {
+    if (this.snapshot?.items?.length) return this.snapshot.items;
     if (!this.transaction) return [];
     if (this.transaction.items && Array.isArray((this.transaction.items as any).items)) {
       return (this.transaction.items as any).items;
@@ -126,6 +150,113 @@ export class SalesAndTransactionsDetailComponent implements OnInit, OnDestroy {
       return (this.transaction.quoteId as any).items;
     }
     return [];
+  }
+
+  /** The priced document behind the order — the invoice once there is one, else the quote. */
+  private get pricedDoc(): any {
+    return this.snapshot?.invoice || this.snapshot?.quote || null;
+  }
+
+  get currency(): string {
+    return this.transaction?.currency || this.pricedDoc?.currency || 'NGN';
+  }
+
+  get subtotal(): number { return this.transaction?.subtotal || this.pricedDoc?.subtotal || 0; }
+  get discountAmount(): number { return this.transaction?.discountAmount || this.pricedDoc?.discountAmount || 0; }
+  get taxAmount(): number { return this.transaction?.taxAmount || this.pricedDoc?.taxAmount || 0; }
+  get totalAmount(): number { return this.transaction?.totalAmount || this.pricedDoc?.totalAmount || 0; }
+  get paidAmount(): number { return this.transaction?.paidAmount || 0; }
+  get balanceDue(): number {
+    const due = this.transaction?.balanceDue;
+    return due != null && (due > 0 || this.paidAmount > 0) ? due : Math.max(0, this.totalAmount - this.paidAmount);
+  }
+
+  // ── Lifecycle (from the linked documents, not the order record's own status) ──
+
+  get progressLabel(): string {
+    return this.snapshot?.progress.label || this.formatStatusLabel(this.transaction?.status);
+  }
+
+  get progressTone(): string {
+    return this.snapshot?.progress.tone || 'draft';
+  }
+
+  /** The stage's tone as one of this page's existing badge styles. */
+  get progressBadgeClass(): string {
+    const map: Record<string, string> = {
+      draft: 'badge-default', sent: 'badge-sent', accepted: 'badge-converted', pending: 'badge-pending',
+      transit: 'badge-transit', delivered: 'badge-delivered', invoice: 'badge-invoice', paid: 'badge-completed', cancelled: 'badge-rejected'
+    };
+    return this.snapshot ? map[this.progressTone] || 'badge-default' : this.getStatusBadgeClass(this.transaction?.status);
+  }
+
+  readonly stageIcons = ['fa-paper-plane', 'fa-check-circle', 'fa-file-import', 'fa-truck', 'fa-home', 'fa-file-invoice-dollar', 'fa-wallet'];
+
+  isStageReached(index: number): boolean {
+    const p = this.snapshot?.progress;
+    return !!p && index <= p.stage && !(p.stopped && index === p.stage);
+  }
+
+  isStageStopped(index: number): boolean {
+    const p = this.snapshot?.progress;
+    return !!p && p.stopped && index === p.stage;
+  }
+
+  /** The date shown under each lifecycle step, when one is known. */
+  stageDate(index: number): Date | null {
+    const s = this.snapshot;
+    const tx: any = this.transaction;
+    if (!s || !tx) return null;
+    const dn: any = s.deliveryNote;
+    const candidates: unknown[][] = [
+      [tx.quoteSentDate, s.quote?.createdAt, tx.orderDate],
+      [tx.quoteConvertedDate, tx.quoteAcceptedOrRejectedDate],
+      [s.lpo?.createdAt, s.lpo?.document?.uploadedAt],
+      [dn?.dispatchedAt, dn?.createdAt],
+      [dn?.deliveredAt, dn?.receivedAt],
+      [tx.invoiceSentDate, s.invoice?.issueDate, (s.invoice as any)?.createdAt],
+      []
+    ];
+    for (const value of candidates[index] || []) {
+      const d = parseApiDate(value);
+      if (d && d.getTime() > 0) return d;
+    }
+    return null;
+  }
+
+  stageDetail(index: number): string {
+    const s = this.snapshot;
+    if (!s) return '';
+    switch (index) {
+      case 2: return s.lpo?.lpoNumber ? `LPO ${s.lpo.lpoNumber}` : '';
+      case 3: return s.deliveryNote ? `${s.deliveryNote.deliveryNumber} · ${this.formatDisplayLabel(s.deliveryNote.status)}` : '';
+      case 5: return s.invoice?.invoiceNumber || '';
+      case 6: return `${this.formatCurrency(this.paidAmount, this.currency)} paid`;
+      default: return '';
+    }
+  }
+
+  // ── Linked documents ──
+
+  openQuote(): void { this.openDoc('quotes', this.snapshot?.quote?.id); }
+  openInvoice(): void { this.openDoc('invoices', this.snapshot?.invoice?.id); }
+  openDeliveryNote(): void { this.openDoc('delivery-notes', this.snapshot?.deliveryNote?.id); }
+
+  private openDoc(segment: string, id: unknown): void {
+    if (id == null) return;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    this.router.navigate(uuid ? ['/admin/sales', segment, id, uuid] : ['/admin/sales', segment, id]);
+  }
+
+  /** The LPO's number; "Received" for an LPO only stored as a file on the quote. */
+  get lpoLabel(): string {
+    if (this.snapshot?.lpo?.lpoNumber) return this.snapshot.lpo.lpoNumber;
+    if (this.snapshot?.lpo || this.salesService.getQuoteLpoDocument(this.snapshot?.quote)) return 'Received';
+    return '—';
+  }
+
+  formatLabel(value: string | undefined): string {
+    return value ? this.formatDisplayLabel(value) : '—';
   }
 
   getStatusBadgeClass(status: SaleLifecycleStatus | string | undefined): string {
@@ -175,47 +306,6 @@ export class SalesAndTransactionsDetailComponent implements OnInit, OnDestroy {
   formatCurrency(amount: number | undefined, currency: string = 'NGN'): string {
     const symbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '₦';
     return `${symbol}${(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  }
-
-  // Each status's furthest-reached milestone (0-4), matching the 5-step "Order Lifecycle
-  // Progression" stepper. This used to be an exhaustive per-step OR-list of specific statuses
-  // instead — it only ever listed 5-6 of the 17 real SaleLifecycleStatus values, so opening the
-  // detail page for an order that was DISPATCHED or IN_TRANSIT (exactly the statuses this
-  // delivery-tracking view exists to show) displayed "Quote Converted"/"Invoice Issued" as NOT
-  // completed — the progress bar visually regressed for the records users come here to track.
-  // Typing this as Record<SaleLifecycleStatus, number> makes TypeScript enforce that every status
-  // is accounted for, so a newly added status can't silently fall through as "step 0" again.
-  private static readonly STATUS_STAGE: Record<SaleLifecycleStatus, number> = {
-    QUOTE_SENT: 0,
-    QUOTE_REJECTED: 0,
-    QUOTE_ACCEPTED: 1,
-    QUOTE_CONVERTED: 1,
-    INVOICE_SENT: 2,
-    INVOICE_CANCELLED: 2,
-    PAYMENT_PENDING: 2,
-    PAYMENT_IN_PROGRESS: 2,
-    PAYMENT_FAILED: 2,
-    PAYMENT_COMPLETED: 3,
-    PAYMENT_REFUNDED: 3,
-    RECEIPT_GENERATED: 3,
-    DELIVERY_PENDING: 3,
-    DISPATCHED: 3,
-    IN_TRANSIT: 3,
-    DELIVERED: 4,
-    RETURNED: 4
-  };
-
-  isStepCompleted(step: number): boolean {
-    if (!this.transaction) return false;
-    const stage = SalesAndTransactionsDetailComponent.STATUS_STAGE[this.transaction.status] ?? 0;
-    switch (step) {
-      case 1: return true;
-      case 2: return stage >= 1;
-      case 3: return stage >= 2;
-      case 4: return stage >= 3;
-      case 5: return stage >= 4;
-      default: return false;
-    }
   }
 
   printSnapshot(): void {

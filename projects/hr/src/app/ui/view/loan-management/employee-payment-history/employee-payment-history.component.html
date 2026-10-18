@@ -1,7 +1,10 @@
 <div class="payment-history-container">
   <div class="section-header">
     <h3><i class="fas fa-history"></i> Payment History</h3>
-    <span class="total-paid">Total Paid: {{ formatCurrency(totalPaid) }}</span>
+    <div class="totals">
+      <span class="total-paid">Total Paid: {{ formatCurrency(totalPaid) }}</span>
+      <span class="total-pending" *ngIf="pendingTotal > 0">Awaiting confirmation: {{ formatCurrency(pendingTotal) }}</span>
+    </div>
   </div>
 
   <div class="loading-state" *ngIf="isLoading">
@@ -9,17 +12,25 @@
     <p>Loading payment history...</p>
   </div>
 
-  <div class="empty-state" *ngIf="!isLoading && paymentRecords.length === 0">
-    <i class="fas fa-receipt"></i>
-    <p>No payment records found</p>
+  <div class="empty-state error" *ngIf="!isLoading && loadFailed">
+    <i class="fas fa-triangle-exclamation"></i>
+    <p>Payment history couldn't be loaded.</p>
+    <button type="button" class="retry-btn" (click)="loadPaymentHistory()">Try again</button>
   </div>
 
-  <div class="table-wrapper" *ngIf="!isLoading && paymentRecords.length > 0">
+  <div class="empty-state" *ngIf="!isLoading && !loadFailed && paymentRecords.length === 0">
+    <i class="fas fa-receipt"></i>
+    <p>No payments have been recorded for this loan yet.</p>
+  </div>
+
+  <div class="table-wrapper" *ngIf="!isLoading && !loadFailed && paymentRecords.length > 0">
     <app-table
       [columns]="[
         { header: 'Date' },
         { header: 'Payment Type' },
+        { header: 'Installment' },
         { header: 'Amount' },
+        { header: 'Method' },
         { header: 'Reference' },
         { header: 'Status' }
       ]"
@@ -32,11 +43,13 @@
             {{ getPaymentTypeLabel(record.paymentType) }}
           </span>
         </td>
+        <td>{{ record.installmentNumber ? '#' + record.installmentNumber : '—' }}</td>
         <td class="amount">{{ formatCurrency(record.amount) }}</td>
-        <td class="reference">{{ record.paymentReference }}</td>
+        <td>{{ getPaymentMethodLabel(record.paymentMethod) }}</td>
+        <td class="reference">{{ record.paymentReference || '—' }}</td>
         <td>
           <span class="status-badge" [ngClass]="getStatusClass(record.status)">
-            {{ record.status }}
+            {{ getStatusLabel(record.status) }}
           </span>
         </td>
       </ng-template>

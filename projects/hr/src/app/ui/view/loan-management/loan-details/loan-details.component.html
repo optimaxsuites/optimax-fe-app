@@ -442,15 +442,41 @@
         <div class="action-form" *ngIf="selectedAction === 'APPROVED'">
           <div class="form-group">
             <label>Interest Rate (%) <span class="required">*</span></label>
-            <div class="interest-hint" *ngIf="isInterestRateLocked">
-              <i class="fas fa-lock"></i>
-              Fixed rate for this loan purpose: <strong>{{ resolvedPurposeDefaultInterestRate }}%</strong> (set in Loan Purpose Management; the employee accepted it when applying)
-            </div>
-            <div class="interest-hint" *ngIf="!isInterestRateLocked">
-              <i class="fas fa-info-circle"></i>
-              This purpose has no fixed rate. Suggested rate: <strong>{{ suggestedInterestRate }}%</strong> (from repayment mode and tenure); adjust if needed.
-            </div>
-            <input type="number" [formControl]="interestRateControl" (input)="onInterestRateInput()" class="form-control" step="0.1" min="0" max="100" [readonly]="isInterestRateLocked">
+            <ng-container [ngSwitch]="rateResolution?.kind">
+              <ng-container *ngSwitchCase="'fixed'">
+                <div class="interest-hint">
+                  <i class="fas fa-lock"></i>
+                  Set by the loan purpose in Loan Purpose Management. The employee accepted this rate when applying, and it can only be changed there.
+                </div>
+                <input type="text" class="form-control" readonly [value]="resolvedPurposeDefaultInterestRate + '%'">
+              </ng-container>
+
+              <ng-container *ngSwitchCase="'custom'">
+                <div class="interest-hint">
+                  <i class="fas fa-pen"></i>
+                  "{{ rateResolution?.purposeName }}" isn't a purpose defined in Loan Purpose Management, so set the rate for this loan.
+                </div>
+                <input type="number" class="form-control" [formControl]="customInterestRateControl" min="0.01" max="100" step="0.1" placeholder="Enter the interest rate for this loan">
+                <div class="error-message" *ngIf="customInterestRateControl.touched && !isCustomRateValid"><i class="fas fa-exclamation-circle"></i> Enter a rate above 0% and at most 100%.</div>
+              </ng-container>
+
+              <ng-container *ngSwitchCase="'missing'">
+                <p-message
+                  severity="warn"
+                  styleClass="missing-rate-message"
+                  text="This loan's purpose has no interest rate, so it can't be approved yet. Set the rate in Loan Purpose Management first."></p-message>
+                <button type="button" class="link-btn" (click)="openPurposeManagement()">
+                  <i class="fas fa-arrow-right"></i> Go to Loan Purpose Management
+                </button>
+              </ng-container>
+
+              <ng-container *ngSwitchDefault>
+                <p-message
+                  severity="warn"
+                  styleClass="missing-rate-message"
+                  text="Loan purposes couldn't be loaded, so the interest rate can't be confirmed. Reload the page and try again."></p-message>
+              </ng-container>
+            </ng-container>
           </div>
 
           <div class="form-group">
@@ -513,7 +539,7 @@
         <button class="btn-cancel" (click)="closeCommentModal()">Cancel</button>
         <button class="btn-submit" [ngClass]="{'approve': selectedAction === 'APPROVED', 'reject': selectedAction === 'REJECTED'}"
           (click)="submitStatusChange()" [disabled]="isSubmitting || (selectedAction === 'REJECTED' && commentControl.invalid) ||
-            (selectedAction === 'APPROVED' && (interestRateControl.invalid || lateFeePercentageControl.invalid || lateFeeGracePeriodDaysControl.invalid))">
+            (selectedAction === 'APPROVED' && (!hasApprovalRate || lateFeePercentageControl.invalid || lateFeeGracePeriodDaysControl.invalid))">
           <i class="fas" [ngClass]="{'fa-check-circle': selectedAction === 'APPROVED', 'fa-ban': selectedAction === 'REJECTED'}"></i>
           {{ selectedAction === 'APPROVED' ? 'Approve Loan Application' : 'Reject' }}
         </button>

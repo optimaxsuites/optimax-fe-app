@@ -18,8 +18,11 @@ import {
   resolveLoanTotalRepayableAmount,
   formatAdvancedLoanCode,
   resolveLoanOutstandingExposure,
-  normalizeLoanRepaymentStartDate
+  normalizeLoanRepaymentStartDate,
+  toLocalDateString
 } from '../../../service/loan/loan-display.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
+import { isValidCustomInterestRate } from '../../../service/loan/loan-purpose-rate.util';
 
 interface LoanApprovalRow {
   id: number; 
@@ -56,9 +59,7 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
     department: '',
     status: '',
     dateFrom: '',
-    dateTo: '',
-    minAmount: null as number | null,
-    maxAmount: null as number | null
+    dateTo: ''
   };
 
   loanApplications: LoanApplication[] = [];
@@ -70,7 +71,12 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   // Approval modal properties
   showApprovalModal = false;
   selectedLoanForApproval: LoanApplication | null = null;
-  proposedInterestRate: number = 0;
+  /** The loan purpose's interest rate, applied on approval and not editable here. */
+  purposeInterestRate: number | null = null;
+  purposeRateStatus: 'loading' | 'set' | 'missing' | 'custom' | 'error' = 'loading';
+  /** Entered by the admin only when the loan's purpose isn't defined in Loan Purpose Management. */
+  customInterestRate: number | null = null;
+  ratePurposeName = '';
   proposedLateFeePercentage: number = 2;
   proposedLateFeeGracePeriodDays: number = 15;
   proposedRepaymentDay: number = 15;
@@ -84,7 +90,6 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   selectedLoanForRejection: LoanApplication | null = null;
   rejectionReason: string = '';
   isSubmitting = false;
-  interestRateLocked = false;
   private readonly searchTermChanges = new Subject<string>();
   private readonly subscriptions = new Subscription();
 
@@ -158,16 +163,12 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   setDefaultRepaymentStartDate(): void {
     const today = new Date();
     today.setMonth(today.getMonth() + 1);
-    this.repaymentStartDate = today.toISOString().split('T')[0];
+    this.repaymentStartDate = toLocalDateString(today);
     this.onRepaymentStartDateChange(this.repaymentStartDate);
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2
-    }).format(amount);
+    return formatNaira(amount);
   }
 
   formatPurposeDisplay(purpose?: string | null): string {
@@ -257,14 +258,6 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
       results = results.filter((loan) => new Date(loan.requestDate).getTime() <= toDate.getTime());
     }
 
-    if (this.filters.minAmount !== null) {
-      results = results.filter(loan => loan.amount >= this.filters.minAmount!);
-    }
-
-    if (this.filters.maxAmount !== null) {
-      results = results.filter(loan => loan.amount <= this.filters.maxAmount!);
-    }
-
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
       results = results.filter(loan =>
@@ -322,9 +315,7 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
       department: '',
       status: '',
       dateFrom: '',
-      dateTo: '',
-      minAmount: null,
-      maxAmount: null
+      dateTo: ''
     };
     this.sortField = 'requestDate';
     this.sortDirection = 'desc';
@@ -423,33 +414,11 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   getStatusClass(status: string | undefined): string {
-  switch (status) {
-    case 'PENDING': return 'status-pending';
-    case 'APPROVED': return 'status-approved';
-    case 'READY_FOR_DISBURSEMENT': return 'status-ready_for_disbursement';
-    case 'ACTIVE': return 'status-active';
-    case 'REJECTED': return 'status-rejected';
-    case 'COMPLETED': return 'status-completed';
-    case 'SKIPPED': return 'status-skipped';
-    case 'OVERDUE': return 'status-overdue';
-    case 'DEFAULTED': return 'status-defaulted';
-    case 'PAUSED': return 'status-paused';
-    default: return 'status-default';
+    return getLoanStatusClass(status);
   }
-}
 
   getStatusLabel(status: string | undefined): string {
-    // Convert status to Title Case for display
-    if (!status) return '';
-    if (status.toUpperCase() === 'READY_FOR_DISBURSEMENT') {
-      return 'Disbursable';
-    }
-    const titleCase = (str: string) =>
-      str
-        .toLowerCase()
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, c => c.toUpperCase());
-    return titleCase(status);
+    return getLoanStatusLabel(status);
   }
 
   get statusCounts() {
@@ -538,30 +507,49 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
     this.approvalNotes = '';
     this.onRepaymentStartDateChange(this.repaymentStartDate);
 
-    // Same rule as the loan-details screen: a purpose with a fixed rate locks it; otherwise
-    // (e.g. "other") the approver sets the rate, starting from the suggested one.
-    const applyRate = (fixedRate: number | null) => {
-      this.interestRateLocked = fixedRate !== null;
-      this.proposedInterestRate = fixedRate ?? (Number(loan.interestRate || 0) || this.loanApprovalService.determineInterestRate(loan));
-      this.showApprovalModal = true;
-    };
-
-    this.loanApprovalService.getFixedPurposeInterestRate(loan).subscribe({
-      next: applyRate,
+    // A purpose defined in Loan Purpose Management supplies a locked rate; only "Other" / undefined
+    // purposes let the admin enter one. Same rule as the loan-details screen (resolvePurposeInterestRate).
+    this.purposeInterestRate = null;
+    this.customInterestRate = null;
+    this.purposeRateStatus = 'loading';
+    this.showApprovalModal = true;
+    this.loanApprovalService.resolvePurposeRate(loan).subscribe({
+      next: (resolution) => {
+        this.ratePurposeName = resolution.purposeName;
+        if (resolution.kind === 'fixed') {
+          this.purposeInterestRate = resolution.rate;
+          this.purposeRateStatus = 'set';
+        } else {
+          this.purposeRateStatus = resolution.kind;
+        }
+      },
       error: (err) => {
         console.error('Error resolving purpose interest rate:', err);
-        applyRate(null);
+        this.purposeRateStatus = 'error';
       }
     });
   }
 
-  get isApprovalRateValid(): boolean {
-    const rate = Number(this.proposedInterestRate);
-    return this.proposedInterestRate !== null
-      && String(this.proposedInterestRate).trim() !== ''
-      && Number.isFinite(rate)
-      && rate >= 0
-      && rate <= 100;
+  openPurposeManagement(): void {
+    this.closeApprovalModal();
+    this.router.navigate(['/admin/hr/loan-management/loan-purposes', uuidV4()]);
+  }
+
+  get isCustomRateValid(): boolean {
+    return isValidCustomInterestRate(this.customInterestRate);
+  }
+
+  get canSubmitApproval(): boolean {
+    if (this.isSubmitting) {
+      return false;
+    }
+    return this.purposeRateStatus === 'set'
+      || (this.purposeRateStatus === 'custom' && this.isCustomRateValid);
+  }
+
+  /** Rate that will be applied, for display in messages. */
+  private get approvalRate(): number | null {
+    return this.purposeRateStatus === 'custom' ? Number(this.customInterestRate) : this.purposeInterestRate;
   }
 
   getEmployeeInterestRejectionComment(loan: LoanApplication | null | undefined): string {
@@ -590,43 +578,36 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   closeApprovalModal(): void {
     this.showApprovalModal = false;
     this.selectedLoanForApproval = null;
-    this.interestRateLocked = false;
+    this.purposeInterestRate = null;
+    this.customInterestRate = null;
+    this.purposeRateStatus = 'loading';
     this.repaymentStartDate = '';
     this.availableRepaymentDays = [];
     this.repaymentDayWarning = '';
   }
 
   submitApproval(): void {
-    if (!this.selectedLoanForApproval || this.isSubmitting) return;
-    if (!this.isApprovalRateValid) {
-      this.messages = [{
-        severity: 'error',
-        summary: 'Invalid Interest Rate',
-        detail: 'Enter an interest rate between 0% and 100%.'
-      }];
-      return;
-    }
+    if (!this.selectedLoanForApproval || !this.canSubmitApproval) return;
     if (this.repaymentDayWarning) {
       this.messages = [{ severity: 'error', summary: 'Invalid Repayment Day', detail: this.repaymentDayWarning }];
       return;
     }
-    const rateToApprove = Number(this.proposedInterestRate);
     this.isSubmitting = true;
     this.loanApprovalService.approveLoan(
       this.selectedLoanForApproval.id,
       this.approvalNotes,
-      rateToApprove,
       this.repaymentStartDate,
       this.proposedRepaymentDay,
       this.proposedLateFeePercentage,
-      this.proposedLateFeeGracePeriodDays
+      this.proposedLateFeeGracePeriodDays,
+      this.purposeRateStatus === 'custom' ? Number(this.customInterestRate) : undefined
     ).subscribe({
       next: (approvedLoan) => {
         this.isSubmitting = false;
         this.messages = [{
           severity: 'success',
           summary: 'Loan Approved',
-          detail: `Loan approved with an interest rate of ${approvedLoan?.interestRate ?? rateToApprove}%.`
+          detail: `Loan approved with an interest rate of ${approvedLoan?.interestRate ?? this.approvalRate}%.`
         }];
         this.closeApprovalModal();
         this.loadApplications();
@@ -767,12 +748,12 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   getMinRepaymentDate(): string {
     const today = new Date();
     today.setMonth(today.getMonth() + 1);
-    return today.toISOString().split('T')[0];
+    return toLocalDateString(today);
   }
 
   get totalActiveLoanBalance(): number {
     return this.loanApplications
-      .filter(loan => loan.status === 'ACTIVE')
+      .filter(loan => hasOutstandingBalanceStatus(loan.status))
       .reduce((sum, loan) => sum + resolveLoanOutstandingExposure(loan), 0);
   }
 

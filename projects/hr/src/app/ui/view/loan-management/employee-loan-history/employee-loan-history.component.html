@@ -1,5 +1,6 @@
 <!-- employee-loan-history.component.html -->
 <div class="employee-history-container">
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
   <!-- Grace Period Modal - Root level overlay -->
   <div class="grace-period-root-overlay" *ngIf="showGracePeriodModal">
     <div class="grace-period-modal-wrapper" (click)="$event.stopPropagation()">

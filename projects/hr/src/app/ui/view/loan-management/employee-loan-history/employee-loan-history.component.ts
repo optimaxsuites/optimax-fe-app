@@ -1,4 +1,6 @@
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Message } from 'primeng/api';
+import { Component, OnInit, ViewEncapsulation, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Location, formatDate } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
@@ -21,6 +23,8 @@ import {
   isLoanEligibleForExtension,
   resolveLoanTotalLateFees
 } from '../../../service/loan/loan-display.util';
+import { toCsvCell } from '../../../service/loan/csv-export.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 interface EmployeeLoanHistoryRow {
   loan: LoanApplication;
@@ -45,6 +49,8 @@ interface EmployeeLoanHistoryRow {
   encapsulation: ViewEncapsulation.None
 })
 export class EmployeeLoanHistoryComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  messages: Message[] = [];
   readonly pageSize = 10;
   currentPage = 1;
   employeeId: string = '';
@@ -112,7 +118,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
         this.currentUuid = window.history.state?.uuid || this.currentUuid;
         this.employeeName = window.history.state?.employeeName || this.employeeName;
 
-        this.route.params.subscribe(params => {
+        this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
           this.employeeId = params['employeeId'];
           this.currentUuid = params['uuid'] || this.currentUuid;
           this.loadEmployeeHistory();
@@ -133,7 +139,11 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     const activeLoans = this.employeeLoans.filter(loan => isLoanEligibleForExtension(loan));
 
     if (!activeLoans.length) {
-      alert('You can only request a payment extension when you have at least one active or overdue loan.');
+      this.messages = [{
+        severity: 'warn',
+        summary: 'Extension Unavailable',
+        detail: 'You can only request a payment extension when you have at least one active or overdue loan.'
+      }];
       return;
     }
 
@@ -166,11 +176,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   // ============================================
   
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2
-    }).format(amount);
+    return formatNaira(amount);
   }
 
   formatLateFeeAmount(amount: number): string {
@@ -218,9 +224,9 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     return resolveLoanTotalLateFees(loan);
   }
 
-  // Active loans only for summary cards
+  // Loans still in repayment (including overdue/defaulted) for the financial summary cards
   get activeLoans(): LoanApplication[] {
-    return this.employeeLoans.filter(loan => loan.status === 'ACTIVE');
+    return this.employeeLoans.filter(loan => hasOutstandingBalanceStatus(loan.status));
   }
 
   get activeTotalAmount(): number {
@@ -245,7 +251,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   
   loadEmployeeHistory(): void {
     this.isLoading = true;
-    this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId, this.employeeName).subscribe({
+    this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId).subscribe({
       next: (applications) => {
         this.employeeService.getEmployeeById(Number(this.employeeId)).toPromise()
           .then(employee => {
@@ -423,27 +429,11 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   // ============================================
   
   getStatusClass(status: string | undefined): string {
-    const statusMap: Record<string, string> = {
-      'PENDING': 'status-pending',
-      'APPROVED': 'status-approved',
-      'READY_FOR_DISBURSEMENT': 'status-ready_for_disbursement',
-      'ACTIVE': 'status-active',
-      'REJECTED': 'status-rejected',
-      'COMPLETED': 'status-completed',
-      'SKIPPED': 'status-skipped',
-      'OVERDUE': 'status-overdue',
-      'DEFAULTED': 'status-defaulted',
-      'PAUSED': 'status-paused'
-    };
-    return statusMap[status || ''] || 'status-default';
+    return getLoanStatusClass(status);
   }
 
   getStatusLabel(status: string | undefined): string {
-    if (!status) return '';
-    if (status.toUpperCase() === 'READY_FOR_DISBURSEMENT') {
-      return 'Disbursable';
-    }
-    return status.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return getLoanStatusLabel(status);
   }
 
   formatPurposeDisplay(purpose?: string | null): string {
@@ -615,7 +605,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   }
 
   private escapeCsvValue(value: unknown): string {
-    return `"${String(value ?? '').replace(/"/g, '""')}"`;
+    return toCsvCell(value);
   }
 
   private downloadBlob(blob: Blob, filename: string): void {

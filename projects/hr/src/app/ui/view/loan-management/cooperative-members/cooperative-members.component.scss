@@ -644,3 +644,48 @@ app-cooperative-members {
     }
   }
 }
+// Inline confirmation (PrimeNG warn message + actions) used instead of window.confirm().
+:where(app-cooperative-members) .coop-members-container .status-confirm-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+
+  .status-confirm-message {
+    flex: 1 1 280px;
+    justify-content: flex-start;
+  }
+
+  .status-confirm-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .status-confirm-btn {
+    padding: 8px 18px;
+    border-radius: 32px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border: 1px solid #bcd9e3;
+    background: #fff;
+    color: #2E6276;
+
+    &.confirm {
+      border-color: transparent;
+      background: #2E6276;
+      color: #fff;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .status-confirm-actions {
+      width: 100%;
+
+      .status-confirm-btn {
+        flex: 1;
+      }
+    }
+  }
+}

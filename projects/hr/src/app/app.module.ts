@@ -182,15 +182,12 @@ import { SchedulingComponent } from './ui/view/scheduling/scheduling/scheduling.
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { AdminexportComponent } from './ui/view/attendance/admin/attendashboard/adminexport/adminexport.component';
-import { LoanBalanceIndicatorsComponent } from './ui/view/loan-management/loan-balance-indicators/loan-balance-indicators.component';
-import { RepaymentScheduleViewComponent } from './ui/view/loan-management/repayment-schedule-view/repayment-schedule-view.component';
 import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
 import { LoanDashboardComponent } from './ui/view/loan-management/loan-dashboard/loan-dashboard.component';
 import { EmployeeLoanHistoryComponent } from './ui/view/loan-management/employee-loan-history/employee-loan-history.component';
 import { EmployeeDashboardComponent } from './ui/view/loan-management/employee-loan-dashboard/employee-loan-dashboard.component';
 import { LoanApprovalUiComponent } from './ui/view/loan-management/loan-approval-ui/loan-approval-ui.component';
 import { LoanDetailsComponent } from './ui/view/loan-management/loan-details/loan-details.component';
-import { StatusTrackingComponent } from './ui/view/loan-management/status-tracking/status-tracking.component';
 import { LoanComponent } from './ui/view/loan-management/loan.component';
 import { EmployeeRepaymentScheduleComponent } from './ui/view/loan-management/employee-repayment-schedule/employee-repayment-schedule.component';
 import { LoanReportsComponent } from './ui/view/loan-management/loan-reports/loan-reports.component';
@@ -227,7 +224,8 @@ import { ShiftCalendarComponent } from './ui/view/workschedule-shifts/shift-cale
 import { ShiftFormComponent } from './ui/view/workschedule-shifts/shift-form/shift-form.component';
 import { ShiftListComponent } from './ui/view/workschedule-shifts/shift-list/shift-list.component';
 import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-cooperative-group/join-cooperative-group.component';
-import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-management/cooperative-membership-applications/cooperative-membership-applications.component';
+import { EmployeePaymentHistoryComponent } from './ui/view/loan-management/employee-payment-history/employee-payment-history.component';
+import { EmployeePaymentHistoryPageComponent } from './ui/view/loan-management/employee-payment-history-page/employee-payment-history-page.component';
 import { LoanPurposeManagementComponent } from './ui/view/loan-management/loan-purpose-management/loan-purpose-management.component';
 
 import { MenuModule } from 'primeng/menu';
@@ -240,7 +238,6 @@ import { CooperativeGracePeriodRequestsManagementComponent } from './ui/view/loa
 import { CooperativeGracePeriodRequestFormComponent } from './ui/view/loan-management/cooperative-grace-period-request-form/cooperative-grace-period-request-form.component';
 import { CooperativeGracePeriodRequestFormModule } from './ui/view/loan-management/cooperative-grace-period-request-form/cooperative-grace-period-request-form.module';
 import { LoanPaymentModalComponent } from './ui/view/loan-management/loan-payment-modal/loan-payment-modal.component';
-import { EmployeePaymentHistoryComponent } from './ui/view/loan-management/employee-payment-history/employee-payment-history.component';
 import { EmployeePaymentReminderComponent } from './ui/view/loan-management/employee-payment-reminder/employee-payment-reminder.component';
 import { CooperativeLoanPurposeManagementComponent } from './ui/view/loan-management/cooperative-loan-purpose-management/cooperative-loan-purpose-management.component';
 import { CooperativePaymentModalComponent } from './ui/view/loan-management/cooperative-payment-modal/cooperative-payment-modal.component';
@@ -358,16 +355,13 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     //SchedulesComponent,
     SchedulingComponent,
     AdminexportComponent,
-    RepaymentScheduleViewComponent,
     LoanRequestFormComponent,
     LoanDashboardComponent,
     EmployeeLoanHistoryComponent,
     EmployeeDashboardComponent,
     EmployeeProfileDashboardComponent,
     LoanApprovalUiComponent,
-    LoanBalanceIndicatorsComponent,
     LoanDetailsComponent,
-    StatusTrackingComponent,
     LoanComponent,
     EmployeeRepaymentScheduleComponent,
     LoanReportsComponent,
@@ -401,7 +395,8 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     ShiftFormComponent,
     ShiftAssignmentComponent,
     ShiftCalendarComponent,
-    CooperativeMembershipApplicationsComponent,
+    EmployeePaymentHistoryComponent,
+    EmployeePaymentHistoryPageComponent,
     LoanPurposeManagementComponent,
     AdHocComponent,
     QueryComponent,
@@ -413,7 +408,6 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     CooperativeRepaymentScheduleComponent,
     CooperativePaymentModalComponent,
     LoanPaymentModalComponent,
-    EmployeePaymentHistoryComponent,
     EmployeePaymentReminderComponent,
     CooperativeLoanReportsComponent,
     CooperativeLoanDisbursementUiComponent,

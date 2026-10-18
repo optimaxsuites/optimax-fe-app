@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of, forkJoin } from 'rxjs';
+import { Observable, of, forkJoin, throwError } from 'rxjs';
 import { map, catchError, switchMap, tap } from 'rxjs/operators';
 import {
   Quote,
@@ -14,16 +14,17 @@ import {
   InvoiceItem,
   MerchantInfo,
   PaymentReceipt,
-  DeliveryNote,
-  DeliveryNoteItem,
-  DeliveryNoteStatus,
+  SalesDeliveryNote,
+  SalesDeliveryNoteItem,
+  SalesDeliveryNoteStatus,
   PaymentMethod,
   PaymentMode,
   PaymentTerms,
   AdditionalInvoiceOptions,
   AdditionalQuoteOptions,
   QuoteDocumentAttachment,
-  DeliveryNoteMeta,
+  SalesDeliveryNoteMeta,
+  SalesLpo,
   SalesandTransactions,
   SaleLifecycleStatus,
   MeasurementUnit,
@@ -31,6 +32,36 @@ import {
 } from '../../domain/sales/sales.dto';
 import { environment } from '../../shared-component/service/environments/environment';
 import { parseApiDate } from './date.util';
+import { deriveOrderProgress, OrderProgress } from './order-progress';
+
+/** Everything belonging to one order, assembled from its linked documents (see getOrderSnapshot). */
+export interface OrderSnapshot {
+  tx: SalesandTransactions;
+  quote: Quote | null;
+  invoice: Invoice | null;
+  deliveryNote: SalesDeliveryNote | null;
+  lpo: SalesLpo | null;
+  /** The full customer record — the order only carries a partial copy. */
+  customer: Customer | null;
+  /** Line items: the quote's, else the invoice's, else what the order record carries. */
+  items: any[];
+  progress: OrderProgress;
+}
+
+/** SalesDeliveryNote fields the delivery-note endpoints accept (dates listed separately). */
+const DELIVERY_NOTE_FIELDS = [
+  'id', 'deliveryNumber', 'salesOrderId', 'quoteId', 'lpoId', 'invoiceId', 'customerId', 'customerAddress',
+  'carrier', 'trackingNumber', 'status', 'recipientName', 'recipientPhone', 'deliveryAddress', 'attention',
+  'attentionPhone', 'contactPerson', 'contactPhone', 'cancellationReason', 'receivedByName', 'signedDocumentUrl',
+  'templateId', 'notes', 'signature', 'createdBy'
+] as const;
+const DELIVERY_NOTE_DATE_FIELDS = [
+  'deliveryDate', 'dispatchedAt', 'sentAt', 'inTransitAt', 'deliveredAt', 'returnedAt', 'cancelledAt', 'receivedAt'
+] as const;
+const DELIVERY_NOTE_ITEM_FIELDS = [
+  'id', 'deliveryNoteId', 'productName', 'quantity', 'unit', 'productId', 'quoteItemId', 'description',
+  'orderedQuantity', 'serialNumbers', 'batchNumber', 'quantityReceived', 'remarks'
+] as const;
 
 @Injectable({
   providedIn: 'root'
@@ -261,6 +292,17 @@ export class SalesService {
     return this.http.put<Quote>(`${this.base}/quotes/${id}`, { ...data, tenantId: this.tenantId });
   }
 
+  /** After the quote has actually been emailed: SENT (so the detail page offers Customer
+   *  Accepted / Declined instead of Send), and the Sales & Transactions record follows. */
+  markQuoteSent(quote: Quote): Observable<Quote> {
+    return this.updateQuote(quote.id, { status: 'SENT' }).pipe(
+      map(updated => ({ ...quote, ...(updated || {}), status: 'SENT' as QuoteStatus })),
+      tap(updated => this.upsertTransactionForQuote(updated.id, { status: 'QUOTE_SENT', quoteSentDate: new Date() }).subscribe({
+        error: (err) => console.error('Failed to sync quote-sent status to Sales & Transactions:', err)
+      }))
+    );
+  }
+
   updateQuoteStatus(id: string | number, status: QuoteStatus): Observable<Quote> {
     return this.http.patch<Quote>(`${this.base}/quotes/${id}/status`, { status, tenantId: this.tenantId });
   }
@@ -281,6 +323,24 @@ export class SalesService {
 
   hasLpoDocument(quote: Quote | null | undefined): boolean {
     return !!this.firstAdditionalOptions(quote)?.lpoDocument;
+  }
+
+  saveDeliveryNoteLogo(quoteId: string | number, logo: QuoteDocumentAttachment): Observable<Quote> {
+    return this.patchAdditionalOptions(quoteId, { deliveryNoteLogo: logo });
+  }
+
+  /** The delivery note's logo as an image src: the one uploaded for it, else the quote's own logo.
+   *  Null means the document falls back to the company profile logo. */
+  getDeliveryNoteLogo(quote: Quote | null | undefined): string | null {
+    const uploaded = this.firstAdditionalOptions(quote)?.deliveryNoteLogo;
+    if (uploaded?.base64Content) return `data:${uploaded.contentType || 'image/png'};base64,${uploaded.base64Content}`;
+    const quoteLogo: any = quote?.logoUrl;
+    return (Array.isArray(quoteLogo) ? quoteLogo[0] : quoteLogo) || null;
+  }
+
+  /** The scanned LPO file stored on the quote (the SalesLpo record has no file storage yet). */
+  getQuoteLpoDocument(quote: Quote | null | undefined): QuoteDocumentAttachment | null {
+    return this.firstAdditionalOptions(quote)?.lpoDocument || null;
   }
 
   hasSignedDeliveryNoteDocument(quote: Quote | null | undefined): boolean {
@@ -306,6 +366,7 @@ export class SalesService {
           terms: existing.terms || '',
           lpoDocument: existing.lpoDocument,
           signedDeliveryNoteDocument: existing.signedDeliveryNoteDocument,
+          deliveryNoteLogo: existing.deliveryNoteLogo,
           deliveryNoteMeta: existing.deliveryNoteMeta,
           ...patch
         };
@@ -327,36 +388,140 @@ export class SalesService {
     return this.patchAdditionalOptions(quoteId, { signedDeliveryNoteDocument: doc });
   }
 
-  getDeliveryNoteMeta(quote: Quote | null | undefined): DeliveryNoteMeta {
-    return this.firstAdditionalOptions(quote)?.deliveryNoteMeta || {};
+  /**
+   * Records the signed delivery note: the file goes on the quote (no upload endpoint yet), then
+   * who received the goods and when are saved on the delivery note itself, and — since a signed
+   * copy means the goods arrived — the note is moved to DELIVERED through PATCH .../deliver
+   * (unless it's already delivered, returned or cancelled). `noteSaved` is false when the file
+   * was stored but a note update failed, so callers can say so.
+   */
+  recordSignedDeliveryNote(
+    quoteId: string | number,
+    doc: QuoteDocumentAttachment,
+    note: SalesDeliveryNote | null | undefined,
+    received: { receivedByName: string; receivedAt: string }
+  ): Observable<{ quote: Quote; note: SalesDeliveryNote | null; noteSaved: boolean }> {
+    return this.saveSignedDeliveryNoteDocument(quoteId, doc).pipe(
+      switchMap(quote => {
+        if (note?.id == null) return of({ quote, note: null, noteSaved: false });
+        const updated: SalesDeliveryNote = { ...note, ...received };
+        const alreadySettled = ['DELIVERED', 'RETURNED', 'CANCELLED'].includes(note.status);
+        return this.updateDeliveryNote(note.id, updated).pipe(
+          map(saved => ({ ...updated, ...(saved || {}) })),
+          switchMap(saved => alreadySettled
+            ? of(saved)
+            : this.updateDeliveryNoteStatus(saved, 'DELIVERED').pipe(map(delivered => ({ ...saved, ...(delivered || {}), status: 'DELIVERED' as const })))),
+          map(saved => ({ quote, note: saved, noteSaved: true })),
+          catchError(err => {
+            console.error('Signed copy stored, but recording receipt on the delivery note failed:', err);
+            return of({ quote, note, noteSaved: false });
+          })
+        );
+      })
+    );
   }
 
-  saveDeliveryNoteMeta(quoteId: string | number, meta: DeliveryNoteMeta): Observable<Quote> {
-    return this.patchAdditionalOptions(quoteId, { deliveryNoteMeta: meta });
+  /** LEGACY read-only fallback for delivery notes generated before the backend had columns for
+   *  these fields — see SalesDeliveryNoteMeta. Nothing writes it any more. */
+  getDeliveryNoteMeta(quote: Quote | null | undefined): SalesDeliveryNoteMeta {
+    return this.firstAdditionalOptions(quote)?.deliveryNoteMeta || {};
   }
 
   // ============================================
   // ORDER # LOOKUP
-  // Only SalesandTransactions carries the canonical orderId natively — Quote and DeliveryNote
+  // Only SalesandTransactions carries the canonical orderId natively — Quote and SalesDeliveryNote
   // link to it indirectly (via quoteId / salesOrderId), so this resolves it once for any
   // table/detail view that needs to display "Order #" next to a quote or delivery note.
   // ============================================
 
-  getOrderIdLookup(): Observable<{ byQuoteId: Map<number, string>; byTransactionId: Map<number, string> }> {
+  /**
+   * The order number shown in every sales table. A whole chain — quote → delivery note → invoice
+   * → payments — hangs off one Sales & Transactions record (the quote is tracked by one from
+   * creation, its delivery note points at it via salesOrderId, its invoice is attached to it;
+   * a standalone invoice gets its own), so that record's number links them all. The backend's
+   * own orderId / orderNumber wins when it sends one; otherwise it's derived from the record —
+   * ORD-<year it started>-<record id, 5 digits> — which is unique and never changes.
+   */
+  orderNumberFor(tx: any): string {
+    if (!tx) return '';
+    const own = tx.orderId || tx.orderNumber;
+    if (own && typeof own !== 'object') return String(own);
+    if (tx.id == null) return '';
+    const started = parseApiDate(tx.orderDate) || parseApiDate(tx.createdAt) || parseApiDate(tx.quoteId?.createdAt);
+    return `ORD-${started ? `${started.getFullYear()}-` : ''}${String(tx.id).padStart(5, '0')}`;
+  }
+
+  getOrderIdLookup(): Observable<{ byQuoteId: Map<number, string>; byTransactionId: Map<number, string>; byInvoiceId: Map<number, string> }> {
     return this.getSalesandTransactions({ size: 1000 }).pipe(
       map(res => {
         const byQuoteId = new Map<number, string>();
         const byTransactionId = new Map<number, string>();
+        const byInvoiceId = new Map<number, string>();
         res.data.forEach(tx => {
-          if (!tx.orderId) return;
-          byTransactionId.set(tx.id, tx.orderId);
-          const quoteId = (tx.quoteId as any)?.id;
-          if (quoteId != null) byQuoteId.set(quoteId, tx.orderId);
+          const orderNumber = this.orderNumberFor(tx);
+          if (!orderNumber) return;
+          byTransactionId.set(tx.id, orderNumber);
+          const quoteId = this.idOf(tx.quoteId);
+          if (quoteId != null) byQuoteId.set(Number(quoteId), orderNumber);
+          const invoiceId = this.idOf(tx.invoiceId);
+          if (invoiceId != null) byInvoiceId.set(Number(invoiceId), orderNumber);
         });
-        return { byQuoteId, byTransactionId };
+        return { byQuoteId, byTransactionId, byInvoiceId };
       }),
-      catchError(() => of({ byQuoteId: new Map(), byTransactionId: new Map() }))
+      catchError(() => of({ byQuoteId: new Map(), byTransactionId: new Map(), byInvoiceId: new Map() }))
     );
+  }
+
+  /**
+   * One order with everything linked to it — the Sales & Transactions record only keeps a partial
+   * copy of the quote and is only updated on quote/invoice events, so the detail page reads the
+   * quote, invoice, delivery note, LPO and customer themselves.
+   */
+  getOrderSnapshot(id: string | number): Observable<OrderSnapshot | null> {
+    return this.getSalesandTransactionsById(id).pipe(
+      switchMap(tx => {
+        if (!tx) return of(null);
+        const quoteId = this.idOf(tx.quoteId);
+        const invoiceId = this.idOf(tx.invoiceId);
+        return forkJoin({
+          quote: quoteId != null ? this.getQuoteById(quoteId) : of(null),
+          invoice: invoiceId != null ? this.getInvoiceById(invoiceId) : of(null),
+          notes: this.getDeliveryNotes({ salesOrderId: tx.id, size: 1000 }),
+          lpo: quoteId != null ? this.getSalesLpoForQuote(quoteId) : of(null),
+          customers: this.getCustomers({ page: 0, size: 1000 }).pipe(catchError(() => of({ data: [] as Customer[], total: 0 })))
+        }).pipe(
+          map(({ quote, invoice, notes, lpo, customers }) => {
+            const fullQuote: any = quote || (typeof tx.quoteId === 'object' ? tx.quoteId : null);
+            const fullInvoice: any = invoice || (typeof tx.invoiceId === 'object' ? tx.invoiceId : null);
+            // The list endpoint may ignore salesOrderId, so match on the links here too
+            const deliveryNote = notes.data.find(n =>
+              String(n.salesOrderId) === String(tx.id) || (quoteId != null && String(n.quoteId) === String(quoteId))) || null;
+            const nested: any = this.quoteCustomer(fullQuote) || (typeof tx.customerId === 'object' ? tx.customerId : null)
+              || (typeof tx.customerName === 'object' ? tx.customerName : null);
+            const customerId = nested?.id ?? this.idOf(tx.customerId);
+            const customer = customers.data.find(c => String(c.id) === String(customerId)) || nested || null;
+            const nonEmpty = (arr: any) => Array.isArray(arr) && arr.length ? arr : null;
+            const items = nonEmpty(fullQuote?.items) || nonEmpty(fullInvoice?.items) || nonEmpty((tx.items as any)?.items) || [];
+            const hasLpo = !!lpo || !!this.getQuoteLpoDocument(fullQuote);
+            return {
+              tx, quote: fullQuote, invoice: fullInvoice, deliveryNote, lpo, customer, items,
+              progress: deriveOrderProgress({ tx, quote: fullQuote, hasLpo, deliveryNote, invoice: fullInvoice })
+            };
+          })
+        );
+      }),
+      catchError(() => of(null))
+    );
+  }
+
+  /** An invoice's order number: from its own Sales & Transactions record, else its quote's. */
+  orderNumberForInvoice(invoice: any, lookup: { byQuoteId: Map<number, string>; byInvoiceId: Map<number, string> }): string {
+    if (!invoice) return '';
+    const own = typeof invoice.orderId === 'string' ? invoice.orderId : this.orderNumberFor(invoice.orderId);
+    return own
+      || lookup.byInvoiceId.get(Number(invoice.id))
+      || (invoice.quoteId != null ? lookup.byQuoteId.get(Number(this.idOf(invoice.quoteId))) : undefined)
+      || '';
   }
 
   // ============================================
@@ -444,6 +609,20 @@ export class SalesService {
 
   updateInvoice(id: string | number, data: Partial<Invoice>): Observable<Invoice> {
     return this.http.put<Invoice>(`${this.base}/invoices/${id}`, { ...data, tenantId: this.tenantId });
+  }
+
+  /** After the invoice has actually been emailed: SENT, and its source quote CONVERTED (an
+   *  invoice exists for it, so it mustn't be invoiced again). */
+  markInvoiceSent(invoice: Invoice): Observable<Invoice> {
+    return this.updateInvoice(invoice.id, { status: 'SENT' }).pipe(
+      map(updated => ({ ...invoice, ...(updated || {}), status: 'SENT' as InvoiceStatus })),
+      tap(updated => {
+        if (!updated.quoteId) return;
+        this.updateQuote(updated.quoteId, { status: 'CONVERTED' }).subscribe({
+          error: (err) => console.error('Error updating quote to CONVERTED:', err)
+        });
+      })
+    );
   }
 
   updateInvoiceStatus(id: string | number, status: InvoiceStatus): Observable<Invoice> {
@@ -847,50 +1026,206 @@ export class SalesService {
   }
 
   // ============================================
-  // DELIVERY NOTES
+  // DELIVERY NOTES — /commerce/delivery-notes
   // ============================================
 
-  getDeliveryNotes(filters: any): Observable<{ data: DeliveryNote[]; total: number }> {
+  getDeliveryNotes(filters: any): Observable<{ data: SalesDeliveryNote[]; total: number }> {
     let params = new HttpParams().set('tenantId', this.tenantId);
 
     if (filters?.page !== undefined) params = params.set('page', String((filters.page || 0) + 1));
     if (filters?.size !== undefined) params = params.set('size', String(filters.size));
     if (filters?.salesOrderId) params = params.set('salesOrderId', filters.salesOrderId);
+    if (filters?.quoteId) params = params.set('quoteId', filters.quoteId);
     if (filters?.status && filters.status !== 'ALL') params = params.set('status', filters.status);
 
     return this.http.get<any>(`${this.base}/delivery-notes`, { params }).pipe(
       map(res => {
-        const arr: DeliveryNote[] = Array.isArray(res) ? res : (res?.data ?? []);
+        const arr: SalesDeliveryNote[] = Array.isArray(res) ? res : (res?.data ?? []);
         return { data: arr, total: Array.isArray(res) ? res.length : (res?.totalElements ?? arr.length) };
       }),
       catchError(() => of({ data: [], total: 0 }))
     );
   }
 
-  /** There's no GET /delivery-notes/{id} — the backend only exposes the list endpoint, so a
-   *  single record is found by filtering it client-side. */
-  getDeliveryNoteById(id: string | number): Observable<DeliveryNote | null> {
-    return this.getDeliveryNotes({ size: 1000 }).pipe(
-      map(res => res.data.find(n => String(n.id) === String(id)) || null)
+  getDeliveryNoteById(id: string | number): Observable<SalesDeliveryNote | null> {
+    const params = new HttpParams().set('tenantId', this.tenantId);
+    return this.http.get<SalesDeliveryNote>(`${this.base}/delivery-notes/${id}`, { params }).pipe(
+      map(note => note || null),
+      catchError(() => of(null))
     );
   }
 
-  createDeliveryNote(data: Partial<DeliveryNote>): Observable<DeliveryNote> {
-    return this.http.post<DeliveryNote>(`${this.base}/delivery-notes`, { ...data, tenantId: this.tenantId });
+  createDeliveryNote(data: Partial<SalesDeliveryNote>): Observable<SalesDeliveryNote> {
+    return this.http.post<any>(`${this.base}/delivery-notes`, this.deliveryNoteBody(data)).pipe(
+      map(res => this.createdRecord<SalesDeliveryNote>(data, res))
+    );
   }
 
-  /** There's no dedicated full-edit endpoint — PATCH .../status is the only mutation after
-   *  create, and its request body carries the whole record (not just `status`), so editing a
-   *  still-PENDING note's other fields goes through it too. */
-  updateDeliveryNote(id: string | number, data: Partial<DeliveryNote>): Observable<DeliveryNote> {
-    return this.http.patch<DeliveryNote>(`${this.base}/delivery-notes/${id}/status`, { ...data, tenantId: this.tenantId });
+  /**
+   * What a create returned, as a full record. The commerce API's POSTs can answer with just the
+   * new id (see createQuote()), a wrapped `{ data }`, or the record itself — spreading a bare id
+   * into the sent body used to lose the id, which is why the LPO step needed Continue twice
+   * (the note looked unsaved until a re-fetch found it).
+   */
+  private createdRecord<T extends { id?: number }>(sent: Partial<T>, res: any): T {
+    if (typeof res === 'number' || (typeof res === 'string' && /^\d+$/.test(res))) {
+      return { ...sent, id: Number(res) } as T;
+    }
+    const record = res && typeof res === 'object' && res.data && typeof res.data === 'object' ? res.data : res;
+    return { ...sent, ...(record && typeof record === 'object' ? record : {}) } as T;
   }
 
-  updateDeliveryNoteStatus(id: string | number, status: DeliveryNoteStatus): Observable<DeliveryNote> {
-    const timestamp: Partial<DeliveryNote> =
-      status === 'DISPATCHED' ? { dispatchedAt: new Date().toISOString() } :
-      status === 'DELIVERED' ? { deliveredAt: new Date().toISOString() } : {};
-    return this.http.patch<DeliveryNote>(`${this.base}/delivery-notes/${id}/status`, { status, ...timestamp, tenantId: this.tenantId });
+  /** PUT replaces the whole record — pass the full note (spread the loaded one), not just the
+   *  changed fields, or anything left out is cleared. */
+  updateDeliveryNote(id: string | number, data: Partial<SalesDeliveryNote>): Observable<SalesDeliveryNote> {
+    return this.http.put<SalesDeliveryNote>(`${this.base}/delivery-notes/${id}`, this.deliveryNoteBody(data));
+  }
+
+  deleteDeliveryNote(id: string | number): Observable<void> {
+    const params = new HttpParams().set('tenantId', this.tenantId);
+    return this.http.delete<void>(`${this.base}/delivery-notes/${id}`, { params });
+  }
+
+  /**
+   * Moves a note to a new status through its dedicated transition endpoint
+   * (PATCH /delivery-notes/{id}/dispatch | in-transit | deliver | return | cancel), each of which
+   * takes the full record. PENDING has no transition endpoint, so it goes through a plain PUT.
+   */
+  updateDeliveryNoteStatus(note: SalesDeliveryNote, status: SalesDeliveryNoteStatus, cancellationReason?: string): Observable<SalesDeliveryNote> {
+    const now = new Date().toISOString();
+    const transitions: Partial<Record<SalesDeliveryNoteStatus, { path: string; stamp: Partial<SalesDeliveryNote> }>> = {
+      DISPATCHED: { path: 'dispatch', stamp: { dispatchedAt: now } },
+      IN_TRANSIT: { path: 'in-transit', stamp: { inTransitAt: now } },
+      DELIVERED: { path: 'deliver', stamp: { deliveredAt: now } },
+      RETURNED: { path: 'return', stamp: { returnedAt: now } },
+      CANCELLED: { path: 'cancel', stamp: { cancelledAt: now, cancellationReason } }
+    };
+    const transition = transitions[status];
+    if (!transition || note.id == null) return this.updateDeliveryNote(note.id!, { ...note, status });
+    const changed: Partial<SalesDeliveryNote> = { ...note, ...transition.stamp, status };
+    return this.http.patch<SalesDeliveryNote>(
+      `${this.base}/delivery-notes/${note.id}/${transition.path}`,
+      this.deliveryNoteBody(changed)
+    ).pipe(
+      // If the transition endpoint rejects the request, make the same change through the full-record
+      // PUT (the save path the wizard uses). If that fails too, report the transition's own error.
+      catchError(transitionErr => {
+        console.warn(`[SalesService] PATCH /delivery-notes/${note.id}/${transition.path} failed; saving the status change with PUT instead:`, transitionErr);
+        return this.updateDeliveryNote(note.id!, changed).pipe(
+          catchError(() => throwError(() => transitionErr))
+        );
+      })
+    );
+  }
+
+  /** The backend's own explanation for a failed request, when it sent one. */
+  errorReason(err: any): string {
+    const body = err?.error;
+    const fromBody = typeof body === 'string' ? body : (body?.message || body?.error || body?.detail);
+    return String(fromBody || err?.statusText || '').trim();
+  }
+
+  /** Request body for create/update/transition calls — server-managed fields are left to the
+   *  backend, and tenantId is always the current tenant's. */
+  /**
+   * Request body for create/update/transition calls. Only the documented fields are sent (anything
+   * extra a response carried could be rejected), dates go back as ISO strings (the API returns
+   * some as epoch seconds), server-managed timestamps are left to the backend, and tenantId is
+   * always the current tenant's.
+   */
+  private deliveryNoteBody(data: Partial<SalesDeliveryNote>): Partial<SalesDeliveryNote> {
+    const iso = (v: unknown) => {
+      if (v === null || v === undefined || v === '') return undefined;
+      const d = parseApiDate(v);
+      return d && d.getTime() > 0 ? d.toISOString() : undefined;
+    };
+    const pick = (src: any, keys: readonly string[], dates: readonly string[]) => {
+      const out: any = {};
+      keys.forEach(k => { if (src[k] !== undefined) out[k] = src[k]; });
+      dates.forEach(k => { if (k in src) out[k] = iso(src[k]); });
+      return out;
+    };
+    const body = pick(data, DELIVERY_NOTE_FIELDS, DELIVERY_NOTE_DATE_FIELDS);
+    if (Array.isArray(data.items)) {
+      body.items = data.items.map(item => {
+        const line = pick(item, DELIVERY_NOTE_ITEM_FIELDS, ['deliveryDate']);
+        // Nothing here sets serial numbers; echoing back the empty list a response carried makes
+        // PATCH /deliver fail ("Cannot deserialize value of type String from Array value"), so
+        // only send them when there actually are some.
+        if (Array.isArray(line.serialNumbers) && !line.serialNumbers.length) delete line.serialNumbers;
+        return line;
+      });
+    }
+    return { ...body, tenantId: this.tenantId };
+  }
+
+  // ============================================
+  // SALES LPOs — /commerce/sales-lpos
+  // The customer's Local Purchase Order. The scanned file itself still lives on the quote's
+  // additionalOptions.lpoDocument (no upload endpoint yet), so document.fileUrl stays empty.
+  // ============================================
+
+  getSalesLpos(filters?: { quoteId?: number | string; status?: string }): Observable<SalesLpo[]> {
+    let params = new HttpParams().set('tenantId', this.tenantId);
+    if (filters?.quoteId != null) params = params.set('quoteId', String(filters.quoteId));
+    if (filters?.status) params = params.set('status', filters.status);
+    return this.http.get<any>(`${this.base}/sales-lpos`, { params }).pipe(
+      map(res => {
+        const arr: SalesLpo[] = Array.isArray(res) ? res : (res?.data ?? []);
+        // Filtered again client-side in case the backend ignores the query params
+        return arr.filter(lpo =>
+          (filters?.quoteId == null || String(lpo.quoteId) === String(filters.quoteId)) &&
+          (!filters?.status || lpo.status === filters.status));
+      }),
+      catchError(() => of([]))
+    );
+  }
+
+  getSalesLpoById(id: string | number): Observable<SalesLpo | null> {
+    const params = new HttpParams().set('tenantId', this.tenantId);
+    return this.http.get<SalesLpo>(`${this.base}/sales-lpos/${id}`, { params }).pipe(
+      map(lpo => lpo || null),
+      catchError(() => of(null))
+    );
+  }
+
+  /** The quote's current LPO — the most recent one that hasn't been rejected. */
+  getSalesLpoForQuote(quoteId: string | number): Observable<SalesLpo | null> {
+    return this.getSalesLpos({ quoteId }).pipe(
+      map(lpos => lpos
+        .filter(lpo => lpo.status !== 'REJECTED')
+        .sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0))[0] || null)
+    );
+  }
+
+  createSalesLpo(data: Partial<SalesLpo>): Observable<SalesLpo> {
+    return this.http.post<any>(`${this.base}/sales-lpos`, this.salesLpoBody(data)).pipe(
+      map(res => this.createdRecord<SalesLpo>(data, res))
+    );
+  }
+
+  /** PUT replaces the whole record — pass the full LPO, not just the changed fields. */
+  updateSalesLpo(id: string | number, data: Partial<SalesLpo>): Observable<SalesLpo> {
+    return this.http.put<SalesLpo>(`${this.base}/sales-lpos/${id}`, this.salesLpoBody(data));
+  }
+
+  deleteSalesLpo(id: string | number): Observable<void> {
+    const params = new HttpParams().set('tenantId', this.tenantId);
+    return this.http.delete<void>(`${this.base}/sales-lpos/${id}`, { params });
+  }
+
+  verifySalesLpo(lpo: SalesLpo): Observable<SalesLpo> {
+    return this.http.patch<SalesLpo>(`${this.base}/sales-lpos/${lpo.id}/verify`, this.salesLpoBody({ ...lpo, status: 'VERIFIED' }));
+  }
+
+  rejectSalesLpo(lpo: SalesLpo, notes?: string): Observable<SalesLpo> {
+    return this.http.patch<SalesLpo>(`${this.base}/sales-lpos/${lpo.id}/reject`,
+      this.salesLpoBody({ ...lpo, status: 'REJECTED', notes: notes ?? lpo.notes }));
+  }
+
+  private salesLpoBody(data: Partial<SalesLpo>): Partial<SalesLpo> {
+    const { createdAt, updatedAt, ...rest } = data;
+    return { ...rest, tenantId: this.tenantId };
   }
 
   /**
@@ -911,100 +1246,169 @@ export class SalesService {
     );
   }
 
-  /** Resolves each quote's delivery note (if one has been generated for it yet) by joining
-   *  through its linked SalesandTransactions record — a quote has no direct link to its
-   *  DeliveryNote, only an indirect one via quoteId -> transaction.id -> salesOrderId. Used by
+  /** Resolves each quote's delivery note (if one has been generated for it yet) — from the
+   *  note's own quoteId, or for notes created before that field existed, by joining through the
+   *  linked SalesandTransactions record (quoteId -> transaction.id -> salesOrderId). Used by
    *  the Quotes table/detail to gate the Generate Delivery Note / Create Invoice progression,
    *  and by getConvertedQuotesAwaitingDeliveryNote() for the tab's queue. */
-  getQuoteDeliveryNoteMap(): Observable<Map<number, DeliveryNote>> {
+  getQuoteDeliveryNoteMap(): Observable<Map<number, SalesDeliveryNote>> {
     return forkJoin({
       transactions: this.getSalesandTransactions({ size: 1000 }),
       notes: this.getDeliveryNotes({ size: 1000 })
     }).pipe(
       map(({ transactions, notes }) => {
-        const noteByTransactionId = new Map<number, DeliveryNote>();
+        const noteByTransactionId = new Map<number, SalesDeliveryNote>();
         notes.data.forEach(n => {
           if (n.salesOrderId != null) noteByTransactionId.set(n.salesOrderId, n);
         });
-        const noteByQuoteId = new Map<number, DeliveryNote>();
+        const noteByQuoteId = new Map<number, SalesDeliveryNote>();
+        notes.data.forEach(n => {
+          if (n.quoteId != null) noteByQuoteId.set(Number(n.quoteId), n);
+        });
         transactions.data.forEach(tx => {
           const quoteId = (tx.quoteId as any)?.id;
           const note = noteByTransactionId.get(tx.id);
-          if (quoteId != null && note) noteByQuoteId.set(quoteId, note);
+          if (quoteId != null && note && !noteByQuoteId.has(quoteId)) noteByQuoteId.set(quoteId, note);
         });
         return noteByQuoteId;
       }),
-      catchError(() => of(new Map<number, DeliveryNote>()))
+      catchError(() => of(new Map<number, SalesDeliveryNote>()))
     );
   }
 
   /** Same as getOrCreateDeliveryNote(), but resolves the order from a quoteId first — the entry
-   *  point for the quote-driven "Generate Delivery Note" wizard. */
-  getOrCreateDeliveryNoteForQuote(quoteId: string | number): Observable<DeliveryNote | null> {
-    return this.getSalesandTransactions({ quoteId, size: 1000 }).pipe(
-      switchMap(res => {
-        const tx = res.data?.[0];
+   *  point for the quote-driven "Generate Delivery Note" wizard. `extras` (e.g. lpoId, attention)
+   *  are applied when the note is first created. */
+  getOrCreateDeliveryNoteForQuote(quoteId: string | number, extras: Partial<SalesDeliveryNote> = {}): Observable<SalesDeliveryNote | null> {
+    return forkJoin({
+      orders: this.getSalesandTransactions({ quoteId, size: 1000 }),
+      quote: this.getQuoteById(quoteId).pipe(catchError(() => of(null)))
+    }).pipe(
+      switchMap(({ orders, quote }) => {
+        const tx = orders.data?.[0];
         if (!tx) return of(null);
-        return this.getOrCreateDeliveryNote(tx.id);
+        // The quote is the delivery note's source for its items and customer details.
+        return this.getOrCreateDeliveryNote(tx.id, { quoteId: Number(quoteId), ...extras }, quote);
       }),
       catchError(() => of(null))
     );
   }
 
   /**
-   * Delivery Note step (Invoice -> Delivery Tracking -> Delivery Note -> Receipt): assembled the
-   * same way getPaymentReceipt() assembles a receipt — from the order + its linked invoice —
-   * rather than depending on a full backend delivery-note record existing yet. createDeliveryNote()
-   * is still called to persist it the first time (its endpoint already exists), but a failure
-   * there doesn't block the note itself: everything it needs to render/print is already derived
-   * below, and the backend call is best-effort record-keeping on top of that.
-   *
-   * The "OrCreate" used to not actually check for an existing one — every open of the modal for
-   * the same order POSTed a fresh record. getDeliveryNotes({salesOrderId}) is checked first now,
-   * the same find-or-create pattern upsertTransactionForQuote()/ForInvoice() already use, so
-   * reopening the same order's delivery note reuses its number instead of duplicating it.
+   * Finds the order's existing delivery note (GET /delivery-notes?salesOrderId=) or creates one.
+   * A new note takes its items and customer details from its quote — passed in by the
+   * quote-driven wizard, otherwise fetched from the order's quote link — with the order and its
+   * invoice only as fallbacks. If the POST fails, the derived note is still returned (without an
+   * id) so callers can render it, but anything that needs to save it must check for `id`.
    */
-  getOrCreateDeliveryNote(orderId: string | number): Observable<DeliveryNote | null> {
+  getOrCreateDeliveryNote(orderId: string | number, extras: Partial<SalesDeliveryNote> = {}, sourceQuote?: Quote | null): Observable<SalesDeliveryNote | null> {
     return forkJoin({
       tx: this.getSalesandTransactionsById(orderId),
       existing: this.getDeliveryNotes({ salesOrderId: orderId })
     }).pipe(
       switchMap(({ tx, existing }) => {
         if (!tx) return of(null);
-        const customer = tx.customerId as any;
         const existingNote = existing?.data?.[0];
-        const invoice = tx.invoiceId as any;
-        // Invoice items are the most reliable source (real per-line quantities); fall back to
-        // the quote's own items (same double-nested shape SalesAndTransactionsDetailComponent
-        // already unwraps) when no invoice exists yet.
-        const sourceItems: any[] = invoice?.items
-          || (tx.items && Array.isArray((tx.items as any).items) ? (tx.items as any).items : null)
-          || (tx.quoteId && Array.isArray((tx.quoteId as any).items) ? (tx.quoteId as any).items : null)
-          || [];
-        const items: DeliveryNoteItem[] = existingNote?.items?.length ? existingNote.items : sourceItems.map(it => ({
-          productName: it.productName || '',
-          quantity: it.quantity || 0,
-          unit: it.unit || it.measurementUnit?.name || ''
+        if (existingNote) return of(existingNote);
+
+        const nestedQuote = tx.quoteId as any;
+        const quoteId = sourceQuote?.id ?? nestedQuote?.id ?? extras.quoteId;
+        const quote$ = sourceQuote ? of(sourceQuote)
+          : quoteId != null ? this.getQuoteById(quoteId).pipe(catchError(() => of(null)))
+          : of(null);
+        return quote$.pipe(switchMap(fetched => {
+          const quote: any = fetched || nestedQuote;
+          const invoice = tx.invoiceId as any;
+          const nonEmpty = (arr: any) => Array.isArray(arr) && arr.length ? arr : null;
+
+          // Items: the quote's lines first; the order/invoice copies only if the quote has none.
+          const quoteItems = nonEmpty(quote?.items) || nonEmpty(nestedQuote?.items);
+          const items = quoteItems
+            ? this.toDeliveryNoteItems(quoteItems, true)
+            : this.toDeliveryNoteItems(nonEmpty(invoice?.items) || nonEmpty((tx.items as any)?.items) || [], false);
+
+          // Customer details: the quote's customer first, then the order's.
+          const quoteCustomer: any = this.quoteCustomer(quote);
+          const orderCustomer: any = tx.customerId;
+          const customer = quoteCustomer || orderCustomer;
+          const address = this.deliveryAddressFor(quoteCustomer, orderCustomer)
+            || tx.shippingAddress || tx.billingAddress || '';
+
+          const note: SalesDeliveryNote = {
+            deliveryNumber: `DN-${String(tx.orderId || tx.paymentNumber || tx.id).replace(/^ORD-|^PAY-/, '')}`,
+            status: 'PENDING',
+            salesOrderId: Number(tx.id),
+            quoteId: quote?.id ?? quoteId,
+            invoiceId: invoice?.id,
+            customerId: customer?.id,
+            customerAddress: address,
+            deliveryAddress: address,
+            recipientName: customer?.name,
+            recipientPhone: customer?.phone || orderCustomer?.phone,
+            carrier: tx.carrier,
+            trackingNumber: tx.trackingNumber,
+            createdBy: Number(sessionStorage.getItem('userid')) || undefined,
+            items,
+            ...extras
+          };
+          return this.createDeliveryNote(note).pipe(
+            // Keep the derived lines if the create response leaves them out
+            map(created => ({ ...note, ...(created || {}), items: created?.items?.length ? created.items : note.items })),
+            catchError(() => of(note))
+          );
         }));
-        const note: DeliveryNote = {
-          id: existingNote?.id,
-          deliveryNumber: existingNote?.deliveryNumber || `DN-${String(tx.orderId || tx.paymentNumber || tx.id).replace(/^ORD-|^PAY-/, '')}`,
-          status: existingNote?.status || 'PENDING',
-          salesOrderId: Number(tx.id),
-          customerId: customer?.id,
-          customerAddress: existingNote?.customerAddress || tx.shippingAddress || (Array.isArray(customer?.deliverAddress) ? customer.deliverAddress.join(', ') : '') || tx.billingAddress || '',
-          carrier: existingNote?.carrier || tx.carrier,
-          trackingNumber: existingNote?.trackingNumber || tx.trackingNumber,
-          items
-        };
-        if (existingNote) return of(note);
-        return this.createDeliveryNote(note).pipe(
-          map(created => ({ ...note, id: (created as any)?.id ?? note.id })),
-          catchError(() => of(note))
-        );
       }),
       catchError(() => of(null))
     );
+  }
+
+  /** Delivery note lines from quote/invoice lines — `fromQuote` links each back to its quote line. */
+  toDeliveryNoteItems(sourceItems: any[], fromQuote = true): SalesDeliveryNoteItem[] {
+    return (sourceItems || []).map(it => ({
+      productName: it.productName || '',
+      quantity: it.quantity || 0,
+      unit: it.unit || it.measurementUnit?.name || '',
+      productId: it.productId != null ? String(it.productId) : undefined,
+      quoteItemId: fromQuote ? it.id : undefined,
+      description: it.description || undefined,
+      orderedQuantity: it.quantity || 0
+    }));
+  }
+
+  /**
+   * For a note saved before it picked everything up from its quote: the note with its missing
+   * items, address and recipient filled in from the quote, or null if nothing was missing (or the
+   * quote has nothing to add). Fields the note already has are never overwritten.
+   */
+  fillMissingFromQuote(note: SalesDeliveryNote, quote: any, fallbackCustomer?: any): SalesDeliveryNote | null {
+    if (!quote) return null;
+    const customer = this.quoteCustomer(quote) || fallbackCustomer;
+    const quoteItems = Array.isArray(quote.items) ? quote.items : [];
+    const address = this.deliveryAddressFor(this.quoteCustomer(quote), fallbackCustomer);
+
+    const patch: Partial<SalesDeliveryNote> = {};
+    if (!note.items?.length && quoteItems.length) patch.items = this.toDeliveryNoteItems(quoteItems, true);
+    if (!note.customerAddress && address) patch.customerAddress = address;
+    if (!note.deliveryAddress && (note.customerAddress || address)) patch.deliveryAddress = note.customerAddress || address;
+    if (!note.recipientName && customer?.name) patch.recipientName = customer.name;
+    if (!note.recipientPhone && customer?.phone) patch.recipientPhone = customer.phone;
+    if (note.quoteId == null && quote.id != null) patch.quoteId = quote.id;
+    return Object.keys(patch).length ? { ...note, ...patch } : null;
+  }
+
+  /** The customer embedded on a quote (customerName and customerId both carry the Customer). */
+  quoteCustomer(quote: any): any {
+    const c = quote?.customerName && typeof quote.customerName === 'object' ? quote.customerName : quote?.customerId;
+    return c && typeof c === 'object' ? c : null;
+  }
+
+  /** Where the goods go: the first customer's delivery address, then their main address (what the
+   *  quote itself shows), then the same from the second customer. A quote's
+   *  additionalOptions.address is deliberately not used — that's the seller's own contact address. */
+  deliveryAddressFor(customer: any, fallbackCustomer?: any): string {
+    const join = (v: any) => Array.isArray(v) ? v.filter(Boolean).join(', ') : (v || '');
+    return join(customer?.deliverAddress) || join(customer?.address)
+      || join(fallbackCustomer?.deliverAddress) || join(fallbackCustomer?.address);
   }
 
   // ============================================

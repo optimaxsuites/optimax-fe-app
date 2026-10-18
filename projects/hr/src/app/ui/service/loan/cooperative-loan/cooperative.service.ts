@@ -58,6 +58,7 @@ import { CooperativeRepaymentService } from './cooperative-repayment.service';
 import { LoanStatusNotificationService } from '../loan-status-notification.service';
 import { EmployeeService } from '../../employee.service';
 import { LoanSupportingDocument } from '../loan.types';
+import { formatNaira, hasOutstandingBalanceStatus } from '../loan-format.util';
 
 @Injectable({ providedIn: 'root' })
 export class CooperativeService {
@@ -364,13 +365,10 @@ export class CooperativeService {
       return this.membersRequest$;
     }
 
-    this.debugTokenStatus();
     this.checkUserPermissions();
-    console.log('=== Getting members from API ===');
 
     this.membersRequest$ = this.cooperativeLoanApiService.getAllMembers().pipe(
       switchMap((rawMembers) => {
-        console.log('Raw members from API:', rawMembers);
         
         if (rawMembers && (rawMembers as any).error) {
           console.error('API returned error:', (rawMembers as any).error);
@@ -379,7 +377,6 @@ export class CooperativeService {
         }
         
         if (!rawMembers || rawMembers.length === 0) {
-          console.log('No members found in backend. This is normal if you haven\'t applied for membership yet.');
           this.usingRealApiData = true;
           this.syncMemberCache([], []);
           return of([] as CooperativeMember[]);
@@ -619,10 +616,8 @@ export class CooperativeService {
     return this.groupsRequest$;
   }
 
-  console.log('[CooperativeService] Loading groups from backend');
   this.groupsRequest$ = this.cooperativeGroupService.getAllCooperativeGroups().pipe(
     switchMap((rawGroups) => {
-      console.log('[CooperativeService] Raw groups from API:', rawGroups);
       if (rawGroups && (rawGroups as any).error) {
         console.error('[CooperativeService] API returned error for groups:', (rawGroups as any).error);
         this.usingRealApiData = false;
@@ -640,7 +635,6 @@ export class CooperativeService {
         map((hydratedGroups) => {
           const groups = hydratedGroups.map((group) => this.mapApiGroupToGroup(group));
           this.syncGroupCache(groups, hydratedGroups);
-          console.log('[CooperativeService] Processed groups with accounting details:', groups);
           return groups;
         })
       );
@@ -673,12 +667,6 @@ private fetchEachGroupDetail(rawGroups: CooperativeGroupApiResponse[]): Observab
         map((detailGroup) => {
           // Merge the detail group data, giving priority to detail endpoint data
           const merged = { ...rawGroup, ...detailGroup };
-          console.log(`[CooperativeService] Fetched details for group ${rawGroup.id}:`, {
-            accountingEmail: merged.accountingEmail,
-            hasPrincipal: !!merged.principalBankName && !!merged.principalCollectionAccount,
-            hasInterest: !!merged.interestBankName && !!merged.interestCollectionAccount,
-            hasLateFee: !!merged.lateFeeBankName && !!merged.lateFeeCollectionAccount
-          });
           return merged;
         }),
         catchError((error) => {
@@ -693,7 +681,6 @@ private fetchEachGroupDetail(rawGroups: CooperativeGroupApiResponse[]): Observab
 
 
 public refreshGroups(): Observable<CooperativeLoanGroup[]> {
-  console.log('[CooperativeService] Refreshing groups from backend');
   // Clear cache to force fresh load
   this.groupsLoadedAt = 0;
   this.groupsRequest$ = undefined;
@@ -718,22 +705,9 @@ public refreshGroups(): Observable<CooperativeLoanGroup[]> {
   }
 
 public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<CooperativeLoanGroup> {
-  console.log('[CooperativeService] Creating group via API:', group);
   const payload = this.buildGroupApiPayload(group);
-  console.log('[CooperativeService] Sending payload with bank fields:', {
-    contributionsBankName: payload.contributionsBankName,
-    contributionsAccount: payload.contributionsAccount,
-    principalBankName: payload.principalBankName,
-    principalCollectionAccount: payload.principalCollectionAccount,
-    interestBankName: payload.interestBankName,
-    interestCollectionAccount: payload.interestCollectionAccount,
-    lateFeeBankName: payload.lateFeeBankName,
-    lateFeeCollectionAccount: payload.lateFeeCollectionAccount,
-    accountingEmail: payload.accountingEmail
-  });
   return this.cooperativeGroupService.createCooperativeGroup(payload).pipe(
     map((rawGroup) => {
-      console.log('[CooperativeService] Group created successfully:', rawGroup);
       const newGroup = this.mergeGroupLocalFields(this.mapApiGroupToGroup(rawGroup), group);
       this.persistGroupOverride(newGroup);
       this.upsertGroupInCache(newGroup, true, rawGroup);
@@ -748,11 +722,9 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
 }
 
   public updateGroup(group: CooperativeLoanGroup): Observable<CooperativeLoanGroup> {
-    console.log('[CooperativeService] Updating group via API:', group);
     const payload = this.buildGroupApiPayload(group);
     return this.cooperativeGroupService.updateCooperativeGroup(group.id, payload).pipe(
       map((rawGroup) => {
-        console.log('[CooperativeService] Group updated successfully:', rawGroup);
         const updatedGroup = this.mergeGroupLocalFields(this.mapApiGroupToGroup(rawGroup), group);
         this.persistGroupOverride(updatedGroup);
         this.upsertGroupInCache(updatedGroup, true, rawGroup);
@@ -1402,6 +1374,22 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
 
   public refreshLoans(): Observable<CooperativeLoan[]> {
     return this.fetchLoans();
+  }
+
+  /**
+   * Fresh cooperative loans from every page. Unlike getLoans/refreshLoans, a failure is reported as an
+   * error rather than an empty list, so eligibility checks can't pass just because loading failed.
+   */
+  public fetchLoansOrFail(): Observable<CooperativeLoan[]> {
+    return this.cooperativeLoanApiService.getAllLoansAllPages().pipe(
+      map((rawLoans) => rawLoans.flatMap((loan) => {
+        try {
+          return [this.mapApiLoanToLoan(loan)];
+        } catch {
+          return [];
+        }
+      }))
+    );
   }
 
   private fetchLoans(): Observable<CooperativeLoan[]> {
@@ -2186,8 +2174,11 @@ public sendLoanToAccountingForDisbursement(
       totalLoans: this.loans.length,
       activeLoans: this.loans.filter(l => l.status === 'ACTIVE').length,
       pendingLoans: this.loans.filter(l => l.status === 'PENDING').length,
-      totalFund: this.members.reduce((sum, m) => sum + m.shareCapital, 0),
-      loanPortfolio: this.loans.filter(l => l.status === 'ACTIVE').reduce((sum, l) => sum + l.amount, 0)
+      // Money members have paid in, from the backend's per-group membership totals. (Member share
+      // capital isn't returned by the API, so summing it always gave ₦0.)
+      totalFund: this.groupMemberships.reduce((sum, membership) => sum + Number(membership.totalContribution || 0), 0),
+      // Money still lent out, including at-risk loans, so available funds aren't overstated.
+      loanPortfolio: this.loans.filter(l => hasOutstandingBalanceStatus(l.status)).reduce((sum, l) => sum + l.amount, 0)
     };
   }
 
@@ -2236,11 +2227,7 @@ public sendLoanToAccountingForDisbursement(
   // ==================== UTILITY METHODS ====================
 
   public formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 0
-    }).format(amount);
+    return formatNaira(amount, { omitZeroKobo: true });
   }
 
   public getMembersSnapshot(): CooperativeMember[] {
@@ -4096,24 +4083,8 @@ private buildGroupApiPayload(
       || String(previousStage || '') !== String(loan.applicationStage || '');
   }
 
-  private debugTokenStatus(): void {
-    const token = sessionStorage.getItem('token');
-    const Token = sessionStorage.getItem('Token');
-    const accessToken = sessionStorage.getItem('accessToken');
-    console.log('=== Token Debug ===');
-    console.log('token (lowercase):', token ? `${token.substring(0, 50)}...` : 'NOT FOUND');
-    console.log('Token (capital T):', Token ? `${Token.substring(0, 50)}...` : 'NOT FOUND');
-    console.log('accessToken:', accessToken ? `${accessToken.substring(0, 50)}...` : 'NOT FOUND');
-    console.log('User:', sessionStorage.getItem('username'));
-    console.log('User ID:', sessionStorage.getItem('userid'));
-    console.log('Role:', sessionStorage.getItem('role'));
-    console.log('==================');
-  }
-
   private checkUserPermissions(): boolean {
     const role = sessionStorage.getItem('role');
-    console.log('Checking user permissions for cooperative access...');
-    console.log('User role:', role);
     return true;
   }
 }

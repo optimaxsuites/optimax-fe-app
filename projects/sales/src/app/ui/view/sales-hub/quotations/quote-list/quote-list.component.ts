@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil, forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Quote, QuoteStatus, DeliveryNote, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
+import { Quote, QuoteStatus, SalesDeliveryNote, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
@@ -35,7 +35,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   selectedQuoteIds: any[] = [];
 
   orderIdByQuoteId = new Map<number, string>();
-  deliveryNoteByQuoteId = new Map<number, DeliveryNote>();
+  deliveryNoteByQuoteId = new Map<number, SalesDeliveryNote>();
 
   openNewQuoteModal(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
@@ -127,12 +127,21 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   pendingSignedDeliveryNoteQuote: Quote | null = null;
   private signedDeliveryNoteFile: QuoteDocumentAttachment | null = null;
   isSavingSignedDeliveryNote = false;
+  /** From the signed copy's Name / Date sign-off — saved on the delivery note. */
+  receivedByName = '';
+  receivedDate = '';
 
   openSignedDeliveryNoteModal(quote: Quote): void {
     this.pendingSignedDeliveryNoteQuote = quote;
     this.signedDeliveryNoteFileName = '';
     this.signedDeliveryNoteFile = null;
+    this.receivedByName = '';
+    this.receivedDate = new Date().toISOString().substring(0, 10);
     this.showSignedDeliveryNoteModal = true;
+  }
+
+  get canSubmitSignedDeliveryNote(): boolean {
+    return !!this.signedDeliveryNoteFileName && !!this.receivedByName.trim() && !!this.receivedDate && !this.isSavingSignedDeliveryNote;
   }
 
   closeSignedDeliveryNoteModal(): void {
@@ -158,14 +167,20 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   }
 
   submitSignedDeliveryNote(): void {
-    if (!this.pendingSignedDeliveryNoteQuote || !this.signedDeliveryNoteFile || this.isSavingSignedDeliveryNote) return;
+    const quote = this.pendingSignedDeliveryNoteQuote;
+    if (!quote || !this.signedDeliveryNoteFile || !this.canSubmitSignedDeliveryNote) return;
     this.isSavingSignedDeliveryNote = true;
-    this.salesService.saveSignedDeliveryNoteDocument(this.pendingSignedDeliveryNoteQuote.id, this.signedDeliveryNoteFile).subscribe({
-      next: () => {
+    this.salesService.recordSignedDeliveryNote(quote.id, this.signedDeliveryNoteFile, this.deliveryNoteByQuoteId.get(quote.id), {
+      receivedByName: this.receivedByName.trim(),
+      receivedAt: new Date(this.receivedDate).toISOString()
+    }).subscribe({
+      next: ({ noteSaved }) => {
         this.isSavingSignedDeliveryNote = false;
         this.showSignedDeliveryNoteModal = false;
         this.pendingSignedDeliveryNoteQuote = null;
-        this.messageService.add({ severity: 'success', summary: 'Uploaded', detail: 'Signed delivery note uploaded — you can now create the invoice.' });
+        this.messageService.add(noteSaved
+          ? { severity: 'success', summary: 'Uploaded', detail: 'Signed delivery note uploaded and the delivery marked as delivered — you can now create the invoice.' }
+          : { severity: 'warn', summary: 'Uploaded', detail: 'Signed copy uploaded, but who received it couldn\'t be saved on the delivery note.' });
         this.loadQuotes();
       },
       error: (err) => {

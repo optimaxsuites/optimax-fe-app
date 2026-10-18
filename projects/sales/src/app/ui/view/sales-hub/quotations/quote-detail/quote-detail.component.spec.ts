@@ -7,6 +7,7 @@ import { Quote, QuoteStatus } from '../../../../domain/sales/sales.dto';
 describe('QuoteDetailComponent', () => {
   let component: QuoteDetailComponent;
   let salesService: jasmine.SpyObj<SalesService>;
+  let documentEmail: jasmine.SpyObj<any>;
 
   const quote = (over: Partial<Quote> = {}): Quote => ({
     id: 1, quoteNumber: 'QUO-1', status: 'SENT' as QuoteStatus, ...over
@@ -20,17 +21,20 @@ describe('QuoteDetailComponent', () => {
   beforeEach(() => {
     salesService = jasmine.createSpyObj<SalesService>('SalesService', [
       'getQuoteById', 'updateQuote', 'getOrderIdLookup', 'getQuoteDeliveryNoteMap',
-      'hasSignedDeliveryNoteDocument', 'convertQuote', 'saveSignedDeliveryNoteDocument'
+      'hasSignedDeliveryNoteDocument', 'convertQuote', 'saveSignedDeliveryNoteDocument', 'recordSignedDeliveryNote', 'markQuoteSent', 'getCustomers'
     ]);
     salesService.getQuoteById.and.returnValue(of(null));
-    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map() }));
+    salesService.getOrderIdLookup.and.returnValue(of({ byQuoteId: new Map(), byTransactionId: new Map(), byInvoiceId: new Map() }));
     salesService.getQuoteDeliveryNoteMap.and.returnValue(of(new Map()));
     salesService.hasSignedDeliveryNoteDocument.and.returnValue(false);
+    documentEmail = jasmine.createSpyObj('SalesDocumentEmailService', ['sendQuote', 'isSent']);
+    documentEmail.isSent.and.callFake((r: string) => r === 'SENT' || r === 'QUEUED');
     component = new QuoteDetailComponent(
       { add: jasmine.createSpy('add') } as any,
       activatedRoute(),
       { navigate: jasmine.createSpy('navigate') } as any,
-      salesService
+      salesService,
+      documentEmail
     );
   });
 
@@ -120,7 +124,8 @@ describe('QuoteDetailComponent', () => {
         { add: jasmine.createSpy('add') } as any,
         activatedRoute(paramMap$.asObservable()),
         { navigate: jasmine.createSpy('navigate') } as any,
-        salesService
+        salesService,
+        documentEmail
       );
 
       c.ngOnInit();
@@ -130,6 +135,88 @@ describe('QuoteDetailComponent', () => {
       paramMap$.next({ get: () => '2' } as any);
       expect(salesService.getQuoteById).toHaveBeenCalledWith('2');
       expect(salesService.getQuoteById).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('submitSignedDeliveryNote: records who received the goods on the delivery note', () => {
+    const file: any = { fileName: 'signed.pdf', base64Content: 'x', contentType: 'application/pdf', uploadedAt: new Date() };
+
+    beforeEach(() => {
+      component.quote = quote({ status: 'CONVERTED' as QuoteStatus });
+      component.deliveryNote = { id: 5, deliveryNumber: 'DN-5' } as any;
+      component.openSignedDeliveryNoteModal();
+      component.signedDeliveryNoteFileName = 'signed.pdf';
+      (component as any).signedDeliveryNoteFile = file;
+    });
+
+    it('requires the receiver\'s name before it can be submitted', () => {
+      expect(component.canSubmitSignedDeliveryNote).toBeFalse();
+      component.submitSignedDeliveryNote();
+      expect(salesService.recordSignedDeliveryNote).not.toHaveBeenCalled();
+    });
+
+    it('sends the file, the note and the receiver details, and keeps the updated note', () => {
+      component.receivedByName = '  J. Okafor ';
+      component.receivedDate = '2026-10-15';
+      const savedNote = { id: 5, receivedByName: 'J. Okafor' } as any;
+      salesService.recordSignedDeliveryNote.and.returnValue(of({ quote: quote({ id: 1 }), note: savedNote, noteSaved: true }));
+
+      component.submitSignedDeliveryNote();
+
+      expect(salesService.recordSignedDeliveryNote).toHaveBeenCalledWith(1, file, jasmine.objectContaining({ id: 5 }), {
+        receivedByName: 'J. Okafor', receivedAt: new Date('2026-10-15').toISOString()
+      });
+      expect(component.deliveryNote).toBe(savedNote);
+      expect(component.showSignedDeliveryNoteModal).toBeFalse();
+    });
+  });
+
+  describe('Send Quote: the same email dialog, a real email, then Customer Accepted / Declined', () => {
+    const draft = () => quote({ id: 1, quoteNumber: 'QUO-1', status: 'DRAFT' as QuoteStatus, customerName: { id: 7, name: 'Acme Co', email: 'a@acme.com' } as any });
+
+    it('opens the email dialog pre-filled with an editable subject and message', () => {
+      component.quote = draft();
+      component.sendQuote();
+      expect(component.showSendQuoteModal).toBeTrue();
+      expect(component.emailSubject).toContain('QUO-1');
+      expect(component.emailMessage).toContain('Acme Co');
+    });
+
+    it('emails the edited subject/message to the customer, then marks the quote SENT', async () => {
+      component.quote = draft();
+      component.sendQuote();
+      component.emailSubject = 'Edited subject';
+      documentEmail.sendQuote.and.returnValue(Promise.resolve('SENT'));
+      salesService.markQuoteSent.and.returnValue(of(quote({ id: 1, status: 'SENT' as QuoteStatus })));
+
+      await component.confirmSendQuote();
+
+      expect(documentEmail.sendQuote).toHaveBeenCalledWith(jasmine.objectContaining({ id: 1 }), jasmine.objectContaining({ to: 'a@acme.com', subject: 'Edited subject' }));
+      expect(component.quote?.status).toBe('SENT');
+      expect(component.showSendQuoteModal).toBeFalse();
+    });
+
+    it('looks the email up from the customer list when the quote does not carry it', async () => {
+      component.quote = quote({ id: 1, status: 'DRAFT' as QuoteStatus, customerName: { id: 7, name: 'Acme Co' } as any });
+      salesService.getCustomers.and.returnValue(of({ data: [{ id: 7, email: 'lookup@acme.com' }], total: 1 } as any));
+      documentEmail.sendQuote.and.returnValue(Promise.resolve('SENT'));
+      salesService.markQuoteSent.and.returnValue(of(quote({ id: 1, status: 'SENT' as QuoteStatus })));
+
+      await component.confirmSendQuote();
+
+      expect(documentEmail.sendQuote).toHaveBeenCalledWith(jasmine.any(Object), jasmine.objectContaining({ to: 'lookup@acme.com' }));
+    });
+
+    it('keeps the dialog open and the quote a DRAFT when the email fails', async () => {
+      component.quote = draft();
+      component.sendQuote();
+      documentEmail.sendQuote.and.returnValue(Promise.resolve('FAILED'));
+
+      await component.confirmSendQuote();
+
+      expect(salesService.markQuoteSent).not.toHaveBeenCalled();
+      expect(component.quote?.status).toBe('DRAFT');
+      expect(component.showSendQuoteModal).toBeTrue();
     });
   });
 });

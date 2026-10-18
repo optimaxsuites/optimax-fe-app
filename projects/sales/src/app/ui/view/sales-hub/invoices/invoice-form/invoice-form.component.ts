@@ -7,12 +7,14 @@ import { SalesService } from '../../../../service/sales/sales.service';
 import { PdfGenerationService } from '../../../../service/procurement/pdf-generation.service';
 import { SalesEmailService } from '../../../../service/sales/sales-email.service';
 import { lastValueFrom } from 'rxjs';
-import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails, InvoiceAttachments, SendSalesEmailRequest, SalesEmailAttachment, MerchantInfo } from '../../../../domain/sales/sales.dto';
-import { toDateInputValue, formatApiDate } from '../../../../service/sales/date.util';
+import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails, InvoiceAttachments, MerchantInfo, SalesDeliveryNote, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
+import { toDateInputValue, formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { SendEmailModalComponent } from '../../send-email-modal/send-email-modal.component';
+import { SalesDocumentEmailService } from '../../../../service/sales/sales-document-email.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { CompanyProfileService } from '../../../../shared-component/service/company-profile/company-profile.service';
@@ -52,8 +54,9 @@ export function dateAfterValidator(otherControlName: string): ValidatorFn {
 @Component({
   selector: 'app-invoice-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent, TemplateTypesComponent, ToastModule],
-  providers: [MessageService],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent, TemplateTypesComponent, ToastModule, SendEmailModalComponent],
+  // No component-level MessageService: toasts go through the app-wide one (shown by app.html's
+  // <p-toast>) so a result like "Email sent" stays visible after routing to the detail page.
   templateUrl: './invoice-form.component.html',
   styleUrls: ['./invoice-form.component.scss']
 })
@@ -81,7 +84,24 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   generatedInvoiceNumber: string = '';
 
   // ============ WIZARD STATE ============
-  currentStep: 1 | 2 | 3 | 4 = 1;
+  /** 0 is "Upload Signed Delivery Note" — only in the flow started from a delivered delivery note
+   *  (Generate Invoice), whose steps are 0 → 3 (Template) → 4 (Preview & Send). */
+  currentStep: 0 | 1 | 2 | 3 | 4 = 1;
+
+  // ── Generate Invoice from a delivery note ──
+  deliveryNoteId = '';
+  deliveryNote: SalesDeliveryNote | null = null;
+  /** File name of a signed copy already stored on the quote, if any. */
+  signedCopyOnFile = '';
+  signedFileName = '';
+  private signedFile: QuoteDocumentAttachment | null = null;
+  receivedByName = '';
+  receivedDate = '';
+  isSavingSignedCopy = false;
+
+  get fromDeliveryNote(): boolean {
+    return !!this.deliveryNoteId;
+  }
   totalSteps = 4;
   selectedTemplate: QuoteTemplate | null = null;
   selectedAction: 'pdf' | 'email' | 'both' = 'pdf';
@@ -184,6 +204,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   modalDiscountType: 'PERCENTAGE' | 'FIXED' = 'FIXED';
 
   showSendInvoiceModal = false;
+  isSendingEmail = false;
   pendingSendInvoiceNumber = '';
   pendingSendCustomerName = '';
   emailSubject = '';
@@ -279,7 +300,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     private pdfGenerationService: PdfGenerationService,
     private salesEmailService: SalesEmailService,
     private cdr: ChangeDetectorRef,
-    router: Router
+    router: Router,
+    private documentEmail: SalesDocumentEmailService
   ) {
     this.router = router;
     this.invoiceForm = this.fb.group({
@@ -316,6 +338,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.invoiceId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.quoteId = this.fromQuoteId || this.route.snapshot.queryParamMap.get('quoteId') || '';
+    this.deliveryNoteId = this.route.snapshot.queryParamMap.get('deliveryNoteId') || '';
     this.isEditMode = !!this.invoiceId;
     if (!this.duplicateId) {
       this.duplicateId = this.route.snapshot.queryParamMap.get('duplicateId') || '';
@@ -398,7 +421,12 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
           this.loadInvoice();
         } else if (this.quoteId) {
           this.loadQuoteForInvoice();
-          this.currentStep = 3;
+          if (this.fromDeliveryNote) {
+            this.currentStep = 0;
+            this.loadDeliveryNoteForInvoice();
+          } else {
+            this.currentStep = 3;
+          }
         } else if (this.duplicateId) {
           this.loadInvoiceForDuplicate();
         } else {
@@ -520,8 +548,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     const unitPrice = itemForm.get('unitPrice')?.value || 0;
     const taxRate = itemForm.get('taxRate')?.value || 0;
 
-    const total = quantity * unitPrice;
-    const taxAmount = total * (taxRate / 100);
+    // A line's amount includes its own tax, so it changes as soon as a tax rate is entered; the
+    // subtotal (calculateTotals) stays net of tax, with tax as its own row underneath.
+    const net = quantity * unitPrice;
+    const taxAmount = net * (taxRate / 100);
+    const total = net + taxAmount;
 
     itemForm.patchValue({ total: total, taxAmount: taxAmount }, { emitEvent: false });
     this.calculateTotals();
@@ -551,7 +582,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       const total = item.get('total')?.value || 0;
       const taxAmount = item.get('taxAmount')?.value || 0;
 
-      this.subtotal += total;
+      this.subtotal += total - taxAmount;
       this.totalTax += taxAmount;
     }
 
@@ -788,6 +819,87 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** The delivery note (and any signed copy already on its quote) for the Upload Signed
+   *  Delivery Note step. */
+  private loadDeliveryNoteForInvoice(): void {
+    this.receivedDate = new Date().toISOString().substring(0, 10);
+    this.salesService.getDeliveryNoteById(this.deliveryNoteId).pipe(takeUntil(this.destroy$)).subscribe(note => {
+      this.deliveryNote = note;
+      if (note?.receivedByName) this.receivedByName = note.receivedByName;
+      const received = parseApiDate(note?.receivedAt);
+      if (received) this.receivedDate = received.toISOString().substring(0, 10);
+    });
+    this.salesService.getQuoteById(this.quoteId).pipe(takeUntil(this.destroy$)).subscribe(quote => {
+      if (this.salesService.hasSignedDeliveryNoteDocument(quote)) {
+        this.signedCopyOnFile = (quote?.additionalOptions as any)?.signedDeliveryNoteDocument?.fileName
+          || (quote?.additionalOptions as any)?.[0]?.signedDeliveryNoteDocument?.fileName
+          || 'Signed delivery note';
+      }
+    });
+  }
+
+  onSignedFileSelected(event: any): void {
+    const file: File | undefined = event.target.files?.[0];
+    if (!file) return;
+    this.signedFileName = file.name;
+    this.signedFile = null;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      this.signedFile = {
+        fileName: file.name,
+        base64Content: dataUrl.split(',')[1] || '',
+        contentType: file.type || 'application/pdf',
+        uploadedAt: new Date().toISOString()
+      };
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /** Step 0 → Template: stores a newly chosen signed copy (and who received the goods, when) on
+   *  the delivery note; with one already on file it just moves on. */
+  submitSignedCopy(): void {
+    if (this.isSavingSignedCopy) return;
+    if (!this.signedFileName) {
+      if (this.signedCopyOnFile) {
+        this.currentStep = 3;
+        return;
+      }
+      this.messageService.add({ severity: 'warn', summary: 'Signed Copy Needed', detail: 'Upload the signed delivery note to continue.' });
+      return;
+    }
+    if (!this.signedFile) {
+      this.messageService.add({ severity: 'info', summary: 'Still Reading', detail: 'The file is still loading — try again in a moment.' });
+      return;
+    }
+    if (!this.receivedByName.trim() || !this.receivedDate) {
+      this.messageService.add({ severity: 'warn', summary: 'Missing Details', detail: 'Enter who received the goods and the date received.' });
+      return;
+    }
+    this.isSavingSignedCopy = true;
+    this.salesService.recordSignedDeliveryNote(this.quoteId, this.signedFile, this.deliveryNote, {
+      receivedByName: this.receivedByName.trim(),
+      receivedAt: new Date(this.receivedDate).toISOString()
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: ({ note, noteSaved }) => {
+        this.isSavingSignedCopy = false;
+        if (note) this.deliveryNote = note;
+        this.signedCopyOnFile = this.signedFileName;
+        this.signedFileName = '';
+        this.signedFile = null;
+        if (!noteSaved) {
+          this.messageService.add({ severity: 'warn', summary: 'Uploaded', detail: 'Signed copy uploaded, but who received it couldn\'t be saved on the delivery note.' });
+        }
+        this.currentStep = 3;
+      },
+      error: (err) => {
+        console.error('Error uploading signed delivery note:', err);
+        this.isSavingSignedCopy = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to upload the signed delivery note. Please try again.' });
+      }
+    });
+  }
+
   private loadQuoteForInvoice(): void {
     this.isLoading = true;
     this.salesService.getQuoteById(this.quoteId).subscribe({
@@ -1015,6 +1127,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         description: raw.description || '',
         quantity: Number(raw.quantity) || 1,
         unitPrice: Number(raw.unitPrice) || 0,
+        taxRate: Number(raw.taxRate) || 0,
         total: Number(raw.total) || 0
       };
     });
@@ -1071,7 +1184,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         // finalizeInvoiceSubmit() below must NOT run yet in that case (it navigates away, which
         // would tear this component and the modal down before the seller can type a message and
         // confirm). confirmSendInvoice() calls it itself once they actually send.
-        await this.handleDeliveryAction(response, this.selectedAction);
+        await this.handleDeliveryAction(this.withFormTax(response), this.selectedAction);
         if (this.selectedAction === 'pdf') {
           this.finalizeInvoiceSubmit(response);
         }
@@ -1103,6 +1216,13 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       });
     }
 
+    if (!this.isEditMode && this.deliveryNote?.id && response.id) {
+      const note = this.deliveryNote;
+      this.salesService.updateDeliveryNote(note.id!, { ...note, invoiceId: Number(response.id) }).subscribe({
+        error: (err) => console.error('Error linking the delivery note to its invoice:', err)
+      });
+    }
+
     this.messageService.add({ severity: 'success', summary: 'Success', detail: this.isEditMode ? 'Invoice updated successfully!' : 'Invoice created successfully!' });
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/invoices', response.id, uuid] : ['/admin/sales/invoices', response.id];
@@ -1126,6 +1246,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         description: raw.description || '',
         quantity: Number(raw.quantity) || 1,
         unitPrice: Number(raw.unitPrice) || 0,
+        taxRate: Number(raw.taxRate) || 0,
         total: Number(raw.total) || 0
       };
     });
@@ -1513,7 +1634,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   // ============ WIZARD NAVIGATION ============
-  goToStep(step: 1 | 2 | 3 | 4): void {
+  goToStep(step: 0 | 1 | 2 | 3 | 4): void {
+    if (this.fromDeliveryNote && this.currentStep === 0 && step > 0) {
+      this.submitSignedCopy();
+      return;
+    }
     if (step > this.currentStep) {
       if (this.currentStep === 1 && !this.validateStep1()) return;
       if (this.currentStep === 2 && !this.validateStep2()) return;
@@ -1524,7 +1649,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   nextStep(): void {
-    if (this.currentStep === 1) {
+    if (this.currentStep === 0) {
+      this.submitSignedCopy();
+    } else if (this.currentStep === 1) {
       if (this.validateStep1()) {
         this.currentStep = 2;
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1543,7 +1670,10 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   prevStep(): void {
-    if (this.currentStep > 1) {
+    if (this.fromDeliveryNote && this.currentStep === 3) {
+      this.currentStep = 0;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (this.currentStep > 1) {
       this.currentStep = (this.currentStep - 1) as 1 | 2 | 3 | 4;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -1713,6 +1843,22 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** The saved invoice with each line's tax rate (and the tax total) taken from this form when
+   *  the save response leaves them out — the email and PDF are built from it, and would
+   *  otherwise show every line at 0% tax. */
+  private withFormTax<T extends { items?: any[]; taxAmount?: number }>(saved: T): T {
+    const formItems = this.items.getRawValue();
+    return {
+      ...saved,
+      taxAmount: saved.taxAmount ?? this.totalTax,
+      items: (saved.items || []).map((item: any, i: number) => ({
+        ...item,
+        taxRate: item.taxRate ?? formItems[i]?.taxRate ?? 0,
+        total: item.total ?? formItems[i]?.total
+      }))
+    };
+  }
+
   private async handleDeliveryAction(invoice: Invoice, action: 'pdf' | 'email' | 'both'): Promise<void> {
     try {
       if (action === 'pdf') {
@@ -1736,10 +1882,22 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     }
   }
 
-  async confirmSendInvoice(): Promise<void> {
-    if (!this.pendingDeliveryInvoice) return;
-    const invoice = this.pendingDeliveryInvoice;
+  /** Closing the Send modal without sending — the invoice is already saved, so finish the submit
+   *  (mark the source quote CONVERTED, go to the detail page) instead of stranding the seller on a
+   *  submitted form. Skipping finalize here used to leave the quote convertible a second time. */
+  skipSendInvoice(): void {
     this.showSendInvoiceModal = false;
+    const invoice = this.pendingDeliveryInvoice;
+    if (!invoice) return;
+    this.pendingDeliveryInvoice = null;
+    this.messageService.add({ severity: 'info', summary: 'Not Emailed', detail: `${invoice.invoiceNumber} was saved but not emailed.` });
+    this.finalizeInvoiceSubmit(invoice);
+  }
+
+  async confirmSendInvoice(): Promise<void> {
+    if (!this.pendingDeliveryInvoice || this.isSendingEmail) return;
+    const invoice = this.pendingDeliveryInvoice;
+    this.isSendingEmail = true;
 
     // "Both" downloads a PDF and emails one — reuse the same rendered blob for the email
     // attachment instead of running the (slow) html2canvas capture twice.
@@ -1749,6 +1907,10 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     }
 
     await this.sendInvoiceEmail(invoice, pdfBlob);
+    this.isSendingEmail = false;
+    this.showSendInvoiceModal = false;
+    this.pendingDeliveryInvoice = null;
+    // Sent → SENT on its detail page; not sent → still a DRAFT there, with Send Invoice to retry.
     this.finalizeInvoiceSubmit(invoice);
   }
 
@@ -1824,7 +1986,10 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     return pdf.output('blob');
   }
 
-  private async sendInvoiceEmail(invoice: Invoice, pdfBlob?: Blob | null): Promise<void> {
+  /** Emails the invoice through the shared SalesDocumentEmailService (same email as the detail
+   *  page's Send), and on success marks it SENT so its detail page no longer offers Send Invoice.
+   *  Returns whether it was sent. */
+  private async sendInvoiceEmail(invoice: Invoice, pdfBlob?: Blob | null): Promise<boolean> {
     const customerId = this.invoiceForm.get('customerId')?.value;
     const customerObj = this.customers.find(c =>
       c.customerId === customerId || String(c.id) === String(customerId)
@@ -1832,193 +1997,35 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     const email = customerObj?.email || (invoice.customerName as any)?.email || (invoice.customerId as any)?.email || '';
     const name = customerObj?.name || (invoice.customerName as any)?.name || 'Customer';
 
-    if (!email) {
-      console.warn('Cannot send email, customer email is missing');
-      this.messageService.add({ severity: 'warn', summary: 'Missing Email', detail: 'Could not find recipient email address' });
-      return;
-    }
-
-    const addOpts = Array.isArray(invoice.additionalOptions) ? invoice.additionalOptions[0] : (invoice.additionalOptions as any);
-    const currency = invoice.currency || 'NGN';
-    const fmt = (n: number) => (n || 0).toLocaleString('en-NG');
-
-    const itemsRows = (invoice.items || []).map(item => `
-          <tr>
-            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">
-              <div style="font-weight: 600;">${item.productName || ''}</div>
-              ${item.description ? `<div style="font-size: 12px; color: #6b7280;">${item.description}</div>` : ''}
-            </td>
-            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${currency} ${fmt(item.unitPrice)}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${item.taxRate || 0}%</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">${currency} ${fmt(item.total)}</td>
-          </tr>`).join('');
-
-    const additionalChargeRows = (invoice.additionalCharges || []).map((amount, i) => `
-          <tr>
-            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">${invoice.additionalChargesLabel?.[i] || 'Additional Charge'}:</td>
-            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(amount)}</td>
-          </tr>`).join('');
-
-    // Match the same accent color and section visibility the customer saw on the Step 3
-    // template screen, so the emailed copy doesn't look like a different document.
-    const accent = this.templateAccentColor;
-
-    const termsAndConditions = (addOpts?.terms && this.showSection('showTermsConditions'))
-      ? `<div style="margin-top: 20px;">
-           <h3 style="font-size: 14px; color: ${accent}; margin-bottom: 6px;">Terms &amp; Conditions</h3>
-           <p style="font-size: 13px; color: #374151; white-space: pre-line;">${addOpts.terms}</p>
-         </div>`
-      : '';
-
-    const invoiceNotes = invoice.notes || addOpts?.notes;
-    const notesSection = (invoiceNotes && this.showSection('showNotes'))
-      ? `<div style="margin-top: 12px;">
-           <h3 style="font-size: 14px; color: ${accent}; margin-bottom: 6px;">Notes</h3>
-           <p style="font-size: 13px; color: #374151; white-space: pre-line;">${invoiceNotes}</p>
-         </div>`
-      : '';
-
-    const taxRow = this.showSection('showTaxBreakdown')
-      ? `<tr>
-            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Tax:</td>
-            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(invoice.taxAmount)}</td>
-          </tr>`
-      : '';
-
-    const htmlBody = `
-      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px;">
-        <h2 style="color: ${accent}; margin-top: 0;">Invoice Details</h2>
-        ${this.renderEmailMessageHtml(this.emailMessage || `Dear ${name},\n\nPlease find the details of your invoice below:`)}
-        <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
-          <tr>
-            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Invoice Number:</td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${invoice.invoiceNumber}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Due Date:</td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${formatApiDate(invoice.dueDate)}</td>
-          </tr>
-        </table>
-
-        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
-          <thead>
-            <tr style="background: #f8fafc;">
-              <th style="text-align: left; padding: 8px; border-bottom: 2px solid #e5e7eb;">Item</th>
-              <th style="text-align: center; padding: 8px; border-bottom: 2px solid #e5e7eb;">Qty</th>
-              <th style="text-align: right; padding: 8px; border-bottom: 2px solid #e5e7eb;">Unit Price</th>
-              <th style="text-align: right; padding: 8px; border-bottom: 2px solid #e5e7eb;">Tax</th>
-              <th style="text-align: right; padding: 8px; border-bottom: 2px solid #e5e7eb;">Line Total</th>
-            </tr>
-          </thead>
-          <tbody>${itemsRows}</tbody>
-        </table>
-
-        <table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px;">
-          <tr>
-            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Subtotal:</td>
-            <td style="padding: 4px 8px; text-align: right;">${currency} ${fmt(invoice.subtotal)}</td>
-          </tr>
-          ${invoice.discountAmount ? `<tr>
-            <td colspan="4" style="padding: 4px 8px; text-align: right; color: #374151;">Discount:</td>
-            <td style="padding: 4px 8px; text-align: right;">-${currency} ${fmt(invoice.discountAmount)}</td>
-          </tr>` : ''}
-          ${taxRow}
-          ${additionalChargeRows}
-          <tr>
-            <td colspan="4" style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid ${accent};">Total Amount:</td>
-            <td style="padding: 10px 8px; text-align: right; font-weight: bold; border-top: 2px solid ${accent}; color: ${accent};">${currency} ${fmt(invoice.totalAmount)}</td>
-          </tr>
-        </table>
-
-        ${termsAndConditions}
-        ${notesSection}
-
-        <p style="margin-top: 24px;">Thank you for your business!</p>
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-        <p style="font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 0;">This is an automated notification from ${this.billedBy.name || invoice.merchantDetails?.name || invoice.merchantDetails?.companyName || 'our company'}.</p>
-      </div>
-    `;
-
-    // Carry over any files already attached to the invoice (Additional Options → Attachments).
-    const attachments: SalesEmailAttachment[] = (addOpts?.attachments || [])
-      .filter((a: InvoiceAttachments) => !!a.fileUrl)
-      .map((a: InvoiceAttachments) => ({
-        fileName: a.fileName || `Invoice-${invoice.invoiceNumber}.pdf`,
-        fileUrl: a.fileUrl as string,
-        size: a.size || 0,
-        type: a.type || 'application/pdf'
-      }));
-
-    // Reuse a PDF already generated (e.g. by the "PDF + Email" flow) instead of re-rendering it.
-    try {
-      const attachmentBlob = pdfBlob ?? await this.generateInvoicePDF(invoice);
-      const base64 = await this.blobToBase64(attachmentBlob);
-      attachments.push({
-        fileName: `Invoice-${invoice.invoiceNumber}.pdf`,
-        base64Content: base64,
-        contentType: 'application/pdf',
-        type: 'application/pdf'
+    // Reuse a PDF already generated (e.g. by the "PDF + Email" flow) instead of re-rendering it
+    let attachment = pdfBlob ?? null;
+    if (!attachment && email) {
+      attachment = await this.generateInvoicePDF(invoice).catch(err => {
+        console.warn('[InvoiceFormComponent] PDF attachment generation failed, sending without attachment:', err);
+        return null;
       });
-    } catch (pdfErr) {
-      console.warn('[InvoiceFormComponent] PDF attachment generation failed, sending without attachment:', pdfErr);
     }
 
-    const payload: SendSalesEmailRequest = {
-      documentType: 'INVOICE',
-      documentId: invoice.id,
-      documentNumber: invoice.invoiceNumber,
+    const result = await this.documentEmail.sendInvoice(invoice, {
       to: email,
-      cc: [],
-      bcc: [],
-      subject: this.emailSubject || `Invoice ${invoice.invoiceNumber} from ${this.billedBy.name || invoice.merchantDetails?.name || invoice.merchantDetails?.companyName || 'our company'}`,
-      message: htmlBody,
-      attachments,
-      sentBy: invoice.merchantDetails?.email || 'system'
-    };
+      recipientName: name,
+      subject: this.emailSubject,
+      message: this.emailMessage || `Dear ${name},\n\nPlease find the details of your invoice below:`,
+      companyName: this.billedBy.name || invoice.merchantDetails?.name || invoice.merchantDetails?.companyName || 'our company',
+      sentBy: invoice.merchantDetails?.email,
+      accent: this.templateAccentColor,
+      showSection: key => this.showSection(key),
+      pdfBlob: attachment
+    });
+    if (!this.documentEmail.isSent(result)) return false;
 
     try {
-      const response = await lastValueFrom(this.salesEmailService.send(payload));
-      console.log('[InvoiceFormComponent] Send response:', response);
-      // A 2xx here only means the backend logged the send request — it doesn't
-      // mean the email actually left the building. Trust `status`, not the HTTP call.
-      if (response?.status === 'FAILED' || response?.status === 'BOUNCED') {
-        this.messageService.add({ severity: 'error', summary: 'Email Not Delivered', detail: response.failureReason || `Delivery to ${email} failed.` });
-      } else if (response?.status === 'PENDING') {
-        this.messageService.add({ severity: 'info', summary: 'Email Queued', detail: `Invoice queued for delivery to ${email}. It hasn't been confirmed sent yet.` });
-      } else {
-        this.messageService.add({ severity: 'success', summary: 'Email Sent', detail: `Invoice sent successfully to ${email}` });
-      }
+      await lastValueFrom(this.salesService.markInvoiceSent(invoice));
     } catch (err) {
-      console.error('[InvoiceFormComponent] Failed to send invoice email:', err);
-      this.messageService.add({ severity: 'error', summary: 'Email Error', detail: 'Failed to send invoice email.' });
+      console.error('Invoice emailed, but marking it SENT failed:', err);
+      this.messageService.add({ severity: 'warn', summary: 'Status Not Updated', detail: 'The invoice was emailed, but its status could not be changed to Sent.' });
     }
-  }
-
-  private blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
-        resolve(dataUrl.replace(/^data:[^;]+;base64,/, ''));
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  /** Renders the seller's free-typed email message (plain text from the Send modal's textarea)
-   *  as safe HTML paragraphs — escaped so pasted/typed `<`, `>`, `&` can't break the email markup
-   *  or inject anything, since this text goes straight into an HTML email body. */
-  private renderEmailMessageHtml(message: string): string {
-    const escape = (s: string) => s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    return message
-      .split(/\n{2,}/)
-      .map(para => `<p style="margin:0 0 12px;">${escape(para).replace(/\n/g, '<br>')}</p>`)
-      .join('');
+    return true;
   }
 
   getProductSku(productId: string): string {

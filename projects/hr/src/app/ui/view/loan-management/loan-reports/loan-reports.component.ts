@@ -1,4 +1,5 @@
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subject, Subscription, forkJoin } from 'rxjs';
@@ -22,6 +23,8 @@ import {
   resolveLoanTotalRepayableAmount,
   resolveLoanTotalLateFees
 } from '../../../service/loan/loan-display.util';
+import { toCsvCell } from '../../../service/loan/csv-export.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 interface LoanReportRow {
   loan: LoanApplication;
@@ -44,6 +47,7 @@ interface LoanReportRow {
   encapsulation: ViewEncapsulation.None 
 })
 export class LoanReportsComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   readonly pageSize = 10;
   currentPage = 1;
   isLoading = false;
@@ -130,7 +134,6 @@ export class LoanReportsComponent implements OnInit {
     this.loanPurposeService.getAllPurposes(false).subscribe({
       next: (purposes: LoanPurposeData[]) => {
         this.loanPurposes = purposes;
-        console.log('Loaded loan purposes:', this.loanPurposes.length);
         // Now load loans
         this.loadLoans();
       },
@@ -183,7 +186,7 @@ export class LoanReportsComponent implements OnInit {
   loadLoans(): void {
     const loadProfiler = startLoanLoadProfiler('advance-loan-reports');
     
-    this.loanApplicationService.getApplicationsObservable().subscribe({
+    this.loanApplicationService.getApplicationsObservable().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (applications) => {
         if (!applications || applications.length === 0) {
           this.loanApplicationService.refreshApplications().subscribe({
@@ -228,7 +231,6 @@ export class LoanReportsComponent implements OnInit {
       fullName: loan.fullName || `Employee ${loan.employeeId}`
     }));
     
-    console.log('Loaded loans:', this.allLoans.length);
     
     this.filteredLoans = [...this.allLoans];
     this.extractDepartments();
@@ -294,9 +296,9 @@ export class LoanReportsComponent implements OnInit {
     return resolveLoanTotalLateFees(loan);
   }
 
-  // Get active loans only for summary cards
+  // Loans still in repayment (including overdue/defaulted) for the financial summary cards
   get activeLoans(): LoanApplication[] {
-    return this.allLoans.filter(loan => loan.status === 'ACTIVE');
+    return this.allLoans.filter(loan => hasOutstandingBalanceStatus(loan.status));
   }
 
   get activeTotalAmount(): number {
@@ -506,30 +508,11 @@ export class LoanReportsComponent implements OnInit {
   // ============================================
   
   getStatusClass(status: string | undefined): string {
-    switch (status) {
-      case 'PENDING': return 'status-pending';
-      case 'APPROVED': return 'status-approved';
-      case 'READY_FOR_DISBURSEMENT': return 'status-ready_for_disbursement';
-      case 'ACTIVE': return 'status-active';
-      case 'REJECTED': return 'status-rejected';
-      case 'COMPLETED': return 'status-completed';
-      case 'SKIPPED': return 'status-skipped';
-      case 'OVERDUE': return 'status-overdue';
-      case 'DEFAULTED': return 'status-defaulted';
-      case 'PAUSED': return 'status-paused';
-      default: return 'status-default';
-    }
+    return getLoanStatusClass(status);
   }
 
   getStatusLabel(status: string | undefined): string {
-    if (!status) return '';
-    if (status.toUpperCase() === 'READY_FOR_DISBURSEMENT') {
-      return 'Disbursable';
-    }
-    return String(status)
-      .toLowerCase()
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, c => c.toUpperCase());
+    return getLoanStatusLabel(status);
   }
 
   getStatusCount(status: string): number {
@@ -541,11 +524,7 @@ export class LoanReportsComponent implements OnInit {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2
-    }).format(amount);
+    return formatNaira(amount);
   }
 
   // ============================================
@@ -779,8 +758,7 @@ export class LoanReportsComponent implements OnInit {
   // ============================================
   
   private escapeCsvValue(value: unknown): string {
-    const normalized = String(value ?? '');
-    return `"${normalized.replace(/"/g, '""')}"`;
+    return toCsvCell(value);
   }
 
   private downloadBlob(blob: Blob, filename: string): void {

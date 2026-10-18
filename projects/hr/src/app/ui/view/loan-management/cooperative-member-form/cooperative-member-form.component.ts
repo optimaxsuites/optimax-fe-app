@@ -1,16 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { formatNaira } from '../../../service/loan/loan-format.util';
 @Component({
   selector: 'app-cooperative-member-form',
   templateUrl: './cooperative-member-form.component.html',
   styleUrls: ['./cooperative-member-form.component.scss']
 })
 export class CooperativeMemberFormComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   currentUuid = uuidV4();
   memberForm!: FormGroup;
   isEdit = false;
@@ -68,7 +71,7 @@ export class CooperativeMemberFormComponent implements OnInit {
   }
 
   checkEditMode(): void {
-    this.route.params.subscribe(params => {
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       if (params['id']) {
         this.isEdit = true;
         this.memberId = params['id'];
@@ -175,10 +178,6 @@ export class CooperativeMemberFormComponent implements OnInit {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 0
-    }).format(amount);
+    return formatNaira(amount, { omitZeroKobo: true });
   }
 }

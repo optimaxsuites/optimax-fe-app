@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewEncapsulation, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router'; 
 import { Subscription } from 'rxjs';
@@ -14,8 +15,10 @@ import {
   formatLoanRepaymentDayDisplay,
   formatLoanRepaymentMonthYear,
   resolveLoanTotalRepayableAmount,
-  isLoanEligibleForExtension
+  isLoanEligibleForExtension,
+  resolveSessionUserId
 } from '../../../service/loan/loan-display.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 interface EmployeeLoanHistoryRow {
   loan: LoanApplication;
@@ -37,6 +40,7 @@ interface EmployeeLoanHistoryRow {
   encapsulation: ViewEncapsulation.None 
 })
 export class EmployeeDashboardComponent implements OnInit, OnDestroy {
+  private readonly destroyRef = inject(DestroyRef);
   private hasInitializedLoanSubscription = false;
   tableRefreshInProgress = false;
 
@@ -225,7 +229,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   get totalBalanceSum(): number {
     return this.allLoans
-      .filter(loan => loan.status === 'ACTIVE')
+      .filter(loan => hasOutstandingBalanceStatus(loan.status))
       .reduce((sum, loan) => sum + (loan.currentBalance || 0), 0);
   }
 
@@ -308,7 +312,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   loadEmployeeData(): void {
     this.isLoading = true;
 
-    this.route.params.subscribe(params => {
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       this.uuid = params['uuid'];
 
       const userId = this.resolveSessionUserId();
@@ -341,31 +345,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   private resolveSessionUserId(): string {
-    const isUsable = (value: unknown): boolean => {
-      const normalized = String(value ?? '').trim().toLowerCase();
-      return !!normalized && normalized !== 'undefined' && normalized !== 'null';
-    };
-
-    const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
-    if (isUsable(storedUserId)) {
-      return String(storedUserId).trim();
-    }
-
-    try {
-      const rawUserRegData = sessionStorage.getItem('userRegData') || localStorage.getItem('userRegData');
-      if (rawUserRegData) {
-        const parsed = JSON.parse(rawUserRegData);
-        const payload = Array.isArray(parsed) ? parsed[0] : parsed;
-        const regUserId = payload?.id ?? payload?.userId;
-        if (isUsable(regUserId)) {
-          return String(regUserId).trim();
-        }
-      }
-    } catch {
-      // Ignore malformed registration payload.
-    }
-
-    return '';
+    return resolveSessionUserId();
   }
 
   private handleEmployeeLookupFailure(detail: string): void {
@@ -438,11 +418,10 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     }));
   }
 
+  /** Matched on employee id only: names aren't unique, so a name match could show someone else's loans. */
   private isCurrentEmployeeLoan(loan: LoanApplication): boolean {
-    if (String(loan.employeeId) === this.employeeId) {
-      return true;
-    }
-    return (loan.fullName ?? '').trim().toLowerCase() === this.employeeName.trim().toLowerCase();
+    const currentEmployeeId = String(this.employeeId || '').trim();
+    return !!currentEmployeeId && String(loan.employeeId ?? '').trim() === currentEmployeeId;
   }
 
   calculateLoanCounts(): void {
@@ -617,6 +596,10 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     }];
   }
 
+  openPaymentHistory(): void {
+    this.router.navigate(['/admin/hr/loan-management/payment-history', this.uuid || uuidV4()]);
+  }
+
   viewDetailedHistory(): void {
     if (this.uuid) {
       this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.employeeId, this.uuid], {
@@ -642,11 +625,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 0
-    }).format(amount);
+    return formatNaira(amount, { omitZeroKobo: true });
   }
 
   formatPurposeDisplay(purpose?: string | null): string {
@@ -684,30 +663,11 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   getStatusClass(status: string): string {
-    switch(status) {
-      case 'PENDING': return 'pending';
-      case 'APPROVED': return 'approved';
-      case 'READY_FOR_DISBURSEMENT': return 'ready_for_disbursement';
-      case 'ACTIVE': return 'active';
-      case 'REJECTED': return 'rejected';
-      case 'COMPLETED': return 'completed';
-      case 'SKIPPED': return 'skipped';
-      case 'OVERDUE': return 'overdue';
-      case 'DEFAULTED': return 'defaulted';
-      case 'PAUSED': return 'paused';
-      default: return status?.toLowerCase() || '';
-    }
+    return getLoanStatusClass(status, '', '_');
   }
 
   getStatusDisplay(status: string): string {
-    if (!status) return '';
-    if (status.toUpperCase() === 'READY_FOR_DISBURSEMENT') {
-      return 'Disbursable';
-    }
-    return String(status)
-      .toLowerCase()
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, c => c.toUpperCase());
+    return getLoanStatusLabel(status);
   }
 
   getStatusIconClass(status: string): string {
@@ -753,7 +713,6 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   viewRepaymentSchedule(loan: LoanApplication): void {
-    console.log('viewRepaymentSchedule called with loan:', loan);
     this.selectedLoanForSchedule = loan;
     
     this.loanApplicationService.getApplicationById(String(loan.id)).subscribe({
@@ -920,6 +879,5 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     
     const sortedUpdates = allUpdates.sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime());
     this.applicationUpdates = sortedUpdates;
-    console.log('Status updates loaded:', this.applicationUpdates.length);
   }
 }

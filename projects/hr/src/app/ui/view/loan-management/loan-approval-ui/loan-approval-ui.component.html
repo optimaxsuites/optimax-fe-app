@@ -65,7 +65,7 @@
         </div>
         <div class="stat-content">
           <div class="stat-value">{{ formatCurrency(totalActiveLoanBalance) }}</div>
-          <div class="stat-label">Total Balance of Active Loans</div>
+          <div class="stat-label">Outstanding Balance (Active &amp; At-Risk)</div>
         </div>
       </div>
     </div>
@@ -239,10 +239,33 @@
 
       <div class="form-group">
         <label>Interest Rate (%) <span class="required">*</span></label>
-        <input type="number" [(ngModel)]="proposedInterestRate" min="0" max="100" step="0.1" class="form-input" [readonly]="interestRateLocked">
-        <div class="field-hint" *ngIf="interestRateLocked">Fixed rate for this loan purpose: <strong>{{ proposedInterestRate }}%</strong> (set in Loan Purpose Management; the employee accepted it when applying)</div>
-        <div class="field-hint" *ngIf="!interestRateLocked">This purpose has no fixed rate. Pre-filled with the suggested rate for the repayment period; adjust if needed.</div>
-        <div class="field-hint error-text" *ngIf="!interestRateLocked && !isApprovalRateValid">Enter a rate between 0% and 100%.</div>
+        <ng-container *ngIf="purposeRateStatus === 'custom'; else lockedRate">
+          <input type="number" class="form-input" [(ngModel)]="customInterestRate" min="0.01" max="100" step="0.1"
+            placeholder="Enter the interest rate for this loan" aria-describedby="approval-custom-rate-hint">
+          <div id="approval-custom-rate-hint" class="field-hint">
+            <i class="fas fa-pen"></i> "{{ ratePurposeName }}" isn't a purpose defined in Loan Purpose Management, so set the rate for this loan.
+          </div>
+          <div class="field-hint error-text" *ngIf="customInterestRate !== null && !isCustomRateValid">Enter a rate above 0% and at most 100%.</div>
+        </ng-container>
+        <ng-template #lockedRate>
+          <input type="text" class="form-input" readonly
+            [value]="purposeRateStatus === 'set' ? purposeInterestRate + '%' : (purposeRateStatus === 'loading' ? 'Loading…' : 'Not set')"
+            aria-describedby="approval-rate-hint">
+        </ng-template>
+        <div id="approval-rate-hint" class="field-hint" *ngIf="purposeRateStatus === 'set'">
+          <i class="fas fa-lock"></i> Set by the loan purpose in Loan Purpose Management. The employee accepted this rate when applying, and it can only be changed there.
+        </div>
+        <ng-container *ngIf="purposeRateStatus === 'missing' || purposeRateStatus === 'error'">
+          <p-message
+            severity="warn"
+            styleClass="approval-rate-message"
+            [text]="purposeRateStatus === 'missing'
+              ? 'This loan\'s purpose has no interest rate, so it can\'t be approved yet. Set the rate in Loan Purpose Management first.'
+              : 'The loan purpose\'s interest rate couldn\'t be loaded. Close this window and try again.'"></p-message>
+          <button type="button" class="link-btn" *ngIf="purposeRateStatus === 'missing'" (click)="openPurposeManagement()">
+            <i class="fas fa-arrow-right"></i> Go to Loan Purpose Management
+          </button>
+        </ng-container>
       </div>
 
       <div class="form-group">
@@ -280,7 +303,7 @@
 
     <div class="modal-footer">
       <button class="cancel-btn" (click)="closeApprovalModal()">Cancel</button>
-      <button class="approve-btn" (click)="submitApproval()" [disabled]="isSubmitting || !isApprovalRateValid">
+      <button class="approve-btn" (click)="submitApproval()" [disabled]="!canSubmitApproval">
         <i class="fas" [ngClass]="isSubmitting ? 'fa-spinner fa-spin' : 'fa-check'"></i> Approve Loan
       </button>
     </div>

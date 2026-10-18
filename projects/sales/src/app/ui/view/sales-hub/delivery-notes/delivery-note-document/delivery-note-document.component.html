@@ -1,42 +1,34 @@
-<div [attr.id]="elementId" class="dnx-sheet" *ngIf="note">
+<div [attr.id]="elementId" class="dnx-sheet" *ngIf="note"
+     [class.dnx-sheet--themed]="accentColor"
+     [ngClass]="template ? 'dnx-sheet--' + template.fontSize : ''"
+     [style.--dnx-accent]="accentColor">
 
   <div class="dnx-header">
     <div class="dnx-sender-box">
       <strong>{{ merchantInfo?.companyName || merchantInfo?.name || 'Your Company' }}</strong>
       <p *ngFor="let line of merchantAddressLines">{{ line }}</p>
     </div>
-    <img *ngIf="logoUrl" [src]="logoUrl" class="dnx-logo" alt="Company logo">
+    <img *ngIf="logoUrl && showSection('showCompanyLogo')" [src]="logoUrl" class="dnx-logo" alt="Company logo">
   </div>
 
   <h1 class="dnx-title">DELIVERY NOTE</h1>
 
+  <!-- Recipient section. Same arrangement as the paper template (To / Address / Attention on the
+       left, references on the right); rows are built in metaRows so templates can drop optional
+       fields without leaving holes. -->
   <table class="dnx-meta-table">
     <tbody>
-      <tr>
-        <td class="dnx-label">To :</td>
-        <td class="dnx-value">{{ customerName || '—' }}</td>
-        <td class="dnx-label">PO Number /Date:</td>
-        <td class="dnx-value">{{ poNumber || '—' }}</td>
-      </tr>
-      <tr>
-        <td class="dnx-label">Address :</td>
-        <td class="dnx-value" rowspan="3" style="white-space: pre-line;">{{ note.customerAddress }}</td>
-        <td class="dnx-label">Date Sent :</td>
-        <td class="dnx-value">{{ formatDate(note.createdAt) }}</td>
-      </tr>
-      <tr>
-        <td class="dnx-label">Per Invoice Number :</td>
-        <td class="dnx-value">{{ invoiceNumber || '—' }}</td>
-      </tr>
-      <tr>
-        <td class="dnx-label">Our Contact Person :</td>
-        <td class="dnx-value">{{ contactPerson || '—' }}</td>
-      </tr>
-      <tr>
-        <td class="dnx-label">Attention :</td>
-        <td class="dnx-value">{{ attention || '—' }}</td>
-        <td class="dnx-label">Telephone :</td>
-        <td class="dnx-value">{{ customerPhone || '—' }}</td>
+      <tr *ngFor="let row of metaRows">
+        <ng-container *ngIf="row.left">
+          <!-- Label and value both span, so the right-hand references keep their own columns -->
+          <td class="dnx-label" [attr.rowspan]="row.left.rowspan || 1">{{ row.left.label }}</td>
+          <td class="dnx-value" [attr.rowspan]="row.left.rowspan || 1" [class.dnx-pre]="row.left.rowspan">{{ row.left.value }}</td>
+        </ng-container>
+        <ng-container *ngIf="row.right; else emptyRight">
+          <td class="dnx-label">{{ row.right.label }}</td>
+          <td class="dnx-value">{{ row.right.value }}</td>
+        </ng-container>
+        <ng-template #emptyRight><td class="dnx-label"></td><td class="dnx-value"></td></ng-template>
       </tr>
     </tbody>
   </table>
@@ -63,6 +55,7 @@
     </tbody>
   </table>
 
+  <!-- Sign-off — on every template -->
   <div class="dnx-goods-bar">Goods received in good order</div>
   <div class="dnx-goods-sign">
     <span>Name : <span class="dnx-line"></span></span>

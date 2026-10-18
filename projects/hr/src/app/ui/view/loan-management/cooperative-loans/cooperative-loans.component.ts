@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { Message } from 'primeng/api';
 import { ActivatedRoute } from '@angular/router';
@@ -12,6 +13,7 @@ import { CooperativeLoanGroup } from '../../../service/loan/cooperative-loan/coo
 import { compareLoanSortValues, formatLoanPurposeDisplay, resolveLoanActorName } from '../../../service/loan/loan-display.util';
 import { EmployeeService } from '../../../service/employee.service';
 import { MailNotificationService } from '../../../service/mailNotification.service';
+import { getLoanStatusClass, getLoanStatusLabel, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 type CooperativeLoanAuditEntryView = {
   status: string;
@@ -26,6 +28,7 @@ type CooperativeLoanAuditEntryView = {
   styleUrls: ['./cooperative-loans.component.scss']
 })
 export class CooperativeLoansComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
 
     formatMemberId(memberId: number | string | undefined): string {
       const idNum = Number(memberId);
@@ -121,7 +124,7 @@ export class CooperativeLoansComponent implements OnInit {
 
     const dedicatedDisbursementRoute = this.isDedicatedDisbursementRoute();
 
-    this.route.queryParamMap.subscribe(params => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       const status = params.get('status');
       if (this.isAdvanceStatusFilter(status)) {
         this.statusFilter = status;
@@ -449,14 +452,11 @@ export class CooperativeLoansComponent implements OnInit {
   }
 
   getStatusClass(status: string): string {
-    return `status-${status.toLowerCase()}`;
+    return getLoanStatusClass(status);
   }
 
   getStatusLabel(status: string | undefined): string {
-    if (status === 'READY_FOR_DISBURSEMENT') {
-      return 'Disbursable';
-    }
-    return String(status || '').replace(/_/g, ' ');
+    return getLoanStatusLabel(status);
   }
 
   getLifecycleBadges(loan: CooperativeLoan): string[] {
@@ -629,7 +629,7 @@ export class CooperativeLoansComponent implements OnInit {
 
   get totalPortfolio(): number {
     return this.loans
-      .filter(l => l.status === 'ACTIVE')
+      .filter(l => hasOutstandingBalanceStatus(l.status))
       .reduce((sum, l) => sum + l.amount, 0);
   }
 

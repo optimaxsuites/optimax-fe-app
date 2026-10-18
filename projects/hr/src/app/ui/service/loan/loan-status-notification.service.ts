@@ -30,13 +30,6 @@ export class LoanStatusNotificationService {
       return of(null);
     }
 
-    console.log('[LoanStatusEmail] Preparing status email', {
-      loanId: application.id,
-      loanCode: application.loanCode,
-      employeeId: application.employeeId,
-      currentStatus: application.status,
-      previousStatus: previousStatus || null
-    });
 
     return this.resolveEmployeeForLoan(application).pipe(
       switchMap((employee) => {
@@ -45,19 +38,6 @@ export class LoanStatusNotificationService {
         ).trim();
         const recipientEmail = this.getStatusRecipientEmail(resolvedEmployeeEmail);
 
-        console.log('[LoanStatusEmail] Resolved employee recipient', {
-          loanId: application.id,
-          employeeId: application.employeeId,
-          employeeRecordId: employee?.id || employee?.employeeId || null,
-          employeeName: [employee?.firstName, employee?.lastName].filter(Boolean).join(' ') || employee?.fullName || application.fullName || null,
-          recipientEmail: recipientEmail || null,
-          forcedRecipientEmail: this.forcedStatusRecipientEmail,
-          availableEmails: {
-            email: employee?.email || null,
-            workEmail: employee?.workEmail || null,
-            userEmail: employee?.user?.email || null
-          }
-        });
 
         if (!recipientEmail) {
           console.warn('Loan status email skipped: employee email not found', application.employeeId);
@@ -103,13 +83,6 @@ export class LoanStatusNotificationService {
   private resolveEmployeeForLoan(application: LoanApplication): Observable<any> {
     return this.employeeService.getEmployeeById(application.employeeId).pipe(
       switchMap((employee) => {
-        console.log('[LoanStatusEmail] Primary employee lookup result', {
-          loanId: application.id,
-          employeeId: application.employeeId,
-          found: !!employee,
-          employeeRecordId: employee?.id || employee?.employeeId || null,
-          hasRecipientEmail: this.hasRecipientEmail(employee)
-        });
 
         if (this.hasRecipientEmail(employee)) {
           return of(employee);
@@ -132,14 +105,6 @@ export class LoanStatusNotificationService {
     return this.employeeService.getAllEmployee().pipe(
       map((employees) => {
         const matchedEmployee = this.matchEmployeeRecord(employees || [], application, preferredMatch);
-        console.log('[LoanStatusEmail] Directory lookup evaluated', {
-          loanId: application.id,
-          employeeId: application.employeeId,
-          totalEmployees: Array.isArray(employees) ? employees.length : 0,
-          preferredMatchRecordId: preferredMatch?.id || preferredMatch?.employeeId || null,
-          matchedEmployeeRecordId: matchedEmployee?.id || matchedEmployee?.employeeId || null,
-          matchedRecipientEmail: matchedEmployee?.email || matchedEmployee?.workEmail || matchedEmployee?.user?.email || null
-        });
         if (!matchedEmployee) {
           throw new Error(`No employee directory match for loan employee identifier ${application.employeeId}`);
         }
@@ -199,15 +164,6 @@ export class LoanStatusNotificationService {
   ): Observable<null> {
     const resolvedMemberEmail = String(member?.email || '').trim();
     const recipientEmail = this.getStatusRecipientEmail(resolvedMemberEmail);
-    console.log('[CooperativeLoanStatusEmail] Preparing status email', {
-      loanId: loan.id,
-      currentStatus: loan.status,
-      previousStatus: previousStatus || null,
-      previousStage: previousStage || null,
-      recipientEmail: recipientEmail || null,
-      forcedRecipientEmail: this.forcedStatusRecipientEmail,
-      resolvedMemberEmail: resolvedMemberEmail || null
-    });
 
     if (!recipientEmail) {
       console.warn('Cooperative loan status email skipped: member email not found', loan.id);

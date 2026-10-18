@@ -4,6 +4,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment';
+import { resolveTenantId } from './loan-tenant.util';
 
 
 export interface LoanPurposeData {
@@ -68,10 +69,9 @@ export class LoanPurposeService {
   }
 
   getAllPurposes(onlyActive: boolean = true): Observable<LoanPurposeData[]> {
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     const token = sessionStorage.getItem('token');
     
-    console.log('Fetching all loan purposes');
     
     return this.http.get<any>(this.standardPurposeUrl, {
       headers: { 
@@ -88,7 +88,6 @@ export class LoanPurposeService {
         } else if (data?.content && Array.isArray(data.content)) {
           purposes = data.content;
         }
-        console.log(`Loaded ${purposes.length} loan purposes`);
         return onlyActive ? purposes.filter(p => p.isActive === true) : purposes;
       }),
       catchError((error: HttpErrorResponse) => {
@@ -99,7 +98,7 @@ export class LoanPurposeService {
   }
 
   createPurpose(payload: CreatePurposePayload): Observable<LoanPurposeData> {
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     const token = sessionStorage.getItem('token');
     
     const cleanPayload: any = {
@@ -113,10 +112,11 @@ export class LoanPurposeService {
     
     if (payload.minLoanAmount != null) cleanPayload.minLoanAmount = payload.minLoanAmount;
     if (payload.maxLoanAmount != null) cleanPayload.maxLoanAmount = payload.maxLoanAmount;
-    if (payload.defaultInterestRate == null || isNaN(payload.defaultInterestRate)) {
-      throw new Error('Default interest rate is required and must be a number');
+    const rateError = this.validateInterestRate(payload.defaultInterestRate);
+    if (rateError) {
+      return throwError(() => new Error(rateError));
     }
-    cleanPayload.defaultInterestRate = payload.defaultInterestRate;
+    cleanPayload.defaultInterestRate = Number(payload.defaultInterestRate);
     
     return this.http.post<LoanPurposeData>(this.standardPurposeUrl, cleanPayload, {
       headers: { 
@@ -131,8 +131,16 @@ export class LoanPurposeService {
   }
 
   updatePurpose(id: number, payload: Partial<CreatePurposePayload>): Observable<LoanPurposeData> {
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     const token = sessionStorage.getItem('token');
+
+    // Partial updates (e.g. toggling isActive) may omit the rate, but it can never be cleared.
+    if ('defaultInterestRate' in payload) {
+      const rateError = this.validateInterestRate(payload.defaultInterestRate);
+      if (rateError) {
+        return throwError(() => new Error(rateError));
+      }
+    }
     
     return this.http.put<LoanPurposeData>(`${this.standardPurposeUrl}/${id}`, payload, {
       headers: { 
@@ -146,9 +154,24 @@ export class LoanPurposeService {
     );
   }
 
+  /**
+   * Every purpose must carry an interest rate above 0%: approval applies it automatically and admins
+   * can't override it, so a missing rate would block approval of that purpose's loans.
+   */
+  private validateInterestRate(rate: unknown): string | null {
+    const value = Number(rate);
+    if (rate === null || rate === undefined || String(rate).trim() === '' || !Number.isFinite(value)) {
+      return 'An interest rate is required for every loan purpose.';
+    }
+    if (value <= 0 || value > 100) {
+      return 'The interest rate must be greater than 0% and at most 100%.';
+    }
+    return null;
+  }
+
   // ADD THIS DELETE METHOD
   deletePurpose(id: number): Observable<void> {
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     const token = sessionStorage.getItem('token');
     
     return this.http.delete<void>(`${this.standardPurposeUrl}/${id}`, {
@@ -162,7 +185,7 @@ export class LoanPurposeService {
   }
 
   getPurposeById(id: number): Observable<LoanPurposeData> {
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     const token = sessionStorage.getItem('token');
     
     return this.http.get<LoanPurposeData>(`${this.standardPurposeUrl}/${id}`, {

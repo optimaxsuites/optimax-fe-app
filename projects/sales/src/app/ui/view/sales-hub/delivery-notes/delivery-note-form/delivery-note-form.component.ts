@@ -5,7 +5,7 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { PdfGenerationService } from '../../../../service/procurement/pdf-generation.service';
-import { Customer, Product, DeliveryNote, DeliveryNoteItem, DeliveryNoteStatus, MerchantInfo } from '../../../../domain/sales/sales.dto';
+import { Customer, Product, SalesDeliveryNote, SalesDeliveryNoteItem, SalesDeliveryNoteStatus, MerchantInfo } from '../../../../domain/sales/sales.dto';
 import { formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { jsPDF } from 'jspdf';
@@ -31,7 +31,7 @@ import { ToastModule } from 'primeng/toast';
 export class DeliveryNoteFormComponent implements OnInit, OnDestroy {
   @Input() editId?: string;
   @Input() orderId?: string;
-  @Output() saved = new EventEmitter<DeliveryNote>();
+  @Output() saved = new EventEmitter<SalesDeliveryNote>();
   @Output() cancelled = new EventEmitter<void>();
 
   deliveryNoteForm: FormGroup;
@@ -49,7 +49,9 @@ export class DeliveryNoteFormComponent implements OnInit, OnDestroy {
   generatedNumber = '';
   sourceOrderId?: string | number;
   salesOrderId?: number;
-  currentStatus: DeliveryNoteStatus = 'PENDING';
+  currentStatus: SalesDeliveryNoteStatus = 'PENDING';
+  /** The note as loaded, so a save doesn't drop fields this form doesn't edit. */
+  private loadedNote?: SalesDeliveryNote;
 
   // "From Order" provenance chip — set when this note was started from an order's
   // "Generate Delivery Note" action instead of created from scratch.
@@ -86,18 +88,19 @@ export class DeliveryNoteFormComponent implements OnInit, OnDestroy {
     return this.fb.group({
       customerId: ['', Validators.required],
       customerAddress: ['', Validators.required],
-      carrier: [''],
-      trackingNumber: [''],
       signature: [''],
       items: this.fb.array([])
     });
   }
 
-  private createItemForm(item?: Partial<DeliveryNoteItem>): FormGroup {
+  /** `source` carries the loaded item through unedited, so fields the form doesn't show
+   *  (productId, orderedQuantity, …) survive the full-record PUT on save. */
+  private createItemForm(item?: Partial<SalesDeliveryNoteItem>): FormGroup {
     return this.fb.group({
       productName: [item?.productName || '', Validators.required],
       quantity: [item?.quantity ?? 1, [Validators.required, Validators.min(0)]],
-      unit: [item?.unit || '']
+      unit: [item?.unit || ''],
+      source: [item ?? null]
     });
   }
 
@@ -180,20 +183,19 @@ export class DeliveryNoteFormComponent implements OnInit, OnDestroy {
     });
   }
 
-  private populateForm(note: DeliveryNote): void {
+  private populateForm(note: SalesDeliveryNote): void {
+    this.loadedNote = note;
     this.generatedNumber = note.deliveryNumber;
     this.salesOrderId = note.salesOrderId;
     this.currentStatus = note.status || 'PENDING';
     this.deliveryNoteForm.patchValue({
       customerId: note.customerId ? String(note.customerId) : '',
       customerAddress: note.customerAddress || '',
-      carrier: note.carrier || '',
-      trackingNumber: note.trackingNumber || '',
       signature: note.signature || ''
     });
 
     this.items.clear();
-    const noteItems = note.items && note.items.length > 0 ? note.items : [{ productName: '', quantity: 1, unit: '' } as DeliveryNoteItem];
+    const noteItems = note.items && note.items.length > 0 ? note.items : [{ productName: '', quantity: 1, unit: '' } as SalesDeliveryNoteItem];
     noteItems.forEach(item => this.items.push(this.createItemForm(item)));
   }
 
@@ -282,20 +284,22 @@ export class DeliveryNoteFormComponent implements OnInit, OnDestroy {
   // SAVE
   // ============================================================
 
-  private buildPayload(): Partial<DeliveryNote> {
+  /** The update is a full-record PUT, so the loaded note is spread underneath the form's fields —
+   *  anything the form doesn't edit (quoteId, lpoId, attention, templateId, …) is kept. */
+  private buildPayload(): Partial<SalesDeliveryNote> {
     const formValue = this.deliveryNoteForm.value;
+    const items = this.items.getRawValue().map(({ source, ...edited }: any) => ({ ...(source || {}), ...edited }));
     return {
+      ...(this.loadedNote || {}),
       deliveryNumber: this.generatedNumber,
       status: this.currentStatus,
       salesOrderId: this.salesOrderId,
       customerId: formValue.customerId ? Number(formValue.customerId) : undefined,
       customerAddress: formValue.customerAddress,
-      carrier: formValue.carrier || undefined,
-      trackingNumber: formValue.trackingNumber || undefined,
       signature: formValue.signature || undefined,
-      items: this.items.getRawValue(),
+      items,
       ...(this.isEditMode ? {} : { createdBy: Number(sessionStorage.getItem('userid')) || undefined })
-    } as Partial<DeliveryNote>;
+    } as Partial<SalesDeliveryNote>;
   }
 
   onSubmit(): void {

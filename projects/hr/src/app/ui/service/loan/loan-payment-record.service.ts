@@ -4,11 +4,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment';
+import { fetchAllPages } from './paginated-fetch.util';
+import { resolveTenantId } from './loan-tenant.util';
+import { PaymentRecordType } from './loan-payment-types';
 
 export interface PaymentRecord {
   id?: number;
   loanId: number;
-  paymentType: 'PRINCIPAL_REPAYMENT' | 'INTEREST_REPAYMENT' | 'LATE_FEE';
+  paymentType: PaymentRecordType;
   installmentNumber: number;
   amount: number;
   principalApplied?: number;
@@ -27,7 +30,7 @@ export interface PaymentRecord {
 
 export interface CreatePaymentRecordPayload {
   loanId: number;
-  paymentType: 'PRINCIPAL_REPAYMENT' | 'INTEREST_REPAYMENT' | 'LATE_FEE';
+  paymentType: PaymentRecordType;
   installmentNumber: number;
   amount: number;
   paymentMethod: 'BANK_TRANSFER' | 'CARD' | 'CASH' | 'PAYROLL_DEDUCTION' | 'MOBILE_MONEY';
@@ -44,7 +47,7 @@ export class AdvancePaymentRecordService {
 
   private getHeaders() {
     const token = sessionStorage.getItem('token');
-    const tenantId = 'optimax';
+    const tenantId = resolveTenantId();
     return {
       'Authorization': `Bearer ${token}`,
       'X-Tenant-ID': tenantId,
@@ -52,16 +55,23 @@ export class AdvancePaymentRecordService {
     };
   }
 
+  /** All matching records across every page, or just `params.page` when one is given. */
   getAllPaymentRecords(params?: { page?: number; size?: number; loanId?: number }): Observable<PaymentRecord[]> {
-    let httpParams = new HttpParams();
-    if (params?.page) httpParams = httpParams.set('page', params.page.toString());
-    if (params?.size) httpParams = httpParams.set('size', params.size.toString());
-    if (params?.loanId) httpParams = httpParams.set('loanId', params.loanId.toString());
+    const fetchPage = (page: number) => {
+      let httpParams = new HttpParams().set('page', page.toString());
+      if (params?.size) httpParams = httpParams.set('size', params.size.toString());
+      if (params?.loanId) httpParams = httpParams.set('loanId', params.loanId.toString());
 
-    return this.http.get<PaymentRecord[]>(this.baseUrl, {
-      headers: this.getHeaders(),
-      params: httpParams
-    }).pipe(map(res => this.safeParseResponse(res)));
+      return this.http.get<unknown>(this.baseUrl, {
+        headers: this.getHeaders(),
+        params: httpParams
+      }).pipe(map(res => this.safeParseResponse(res)));
+    };
+
+    if (params?.page) {
+      return fetchPage(params.page).pipe(map((res: any) => (Array.isArray(res) ? res : res?.content || []) as PaymentRecord[]));
+    }
+    return fetchAllPages<PaymentRecord>(fetchPage);
   }
 
   getPaymentRecordById(id: number): Observable<PaymentRecord> {

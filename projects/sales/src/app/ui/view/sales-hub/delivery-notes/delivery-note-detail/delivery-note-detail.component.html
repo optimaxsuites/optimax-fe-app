@@ -1,49 +1,414 @@
 <p-toast position="top-right"></p-toast>
 
-<div class="dnd-page">
+<!-- Same page chrome as Quote/Invoice detail (shares quote-detail.component.scss) around the
+     delivery note document itself. -->
+<div class="quote-detail-container" *ngIf="!isLoading && note">
+  <div class="detail-wrapper">
 
-  <div class="dnd-topbar no-print">
-    <div class="dnd-topbar-left">
-      <app-back-button (close)="goBack()"></app-back-button>
-      <div class="dnd-breadcrumb">Sales &gt; Delivery Notes &gt; {{ note?.deliveryNumber || 'Detail' }}</div>
+    <!-- Header -->
+    <div class="detail-header no-print">
+      <div class="header-back-title-group">
+        <app-back-button (close)="goBack()"></app-back-button>
+        <div class="header-content">
+          <div class="header-badge">
+            <i class="fas fa-truck"></i>
+            <span>Delivery Note Details</span>
+          </div>
+          <h1 class="header-title">Delivery Note #{{ note.deliveryNumber }}</h1>
+          <p class="header-subtitle">Review and track this delivery</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="quote-status">
+          <span class="status-badge-large" [class]="'status-' + getStatusClass(note.status)">
+            <span class="status-dot"></span>
+            {{ getStatusLabel(note.status) }}
+          </span>
+        </div>
+        <button (click)="goToDeliveryNotesList()" class="btn-save-header btn-see-list">
+          <i class="fas fa-list"></i> See Delivery Notes
+        </button>
+        <button *ngIf="canEdit()" (click)="editNote()" class="btn-save-header">
+          <i class="fas fa-pencil-alt"></i> Edit
+        </button>
+      </div>
     </div>
-    <div class="dnd-topbar-right" *ngIf="note">
-      <span class="dnd-status-badge dnd-status-badge--{{ getStatusBadgeClass(note.status) }}">{{ note.status }}</span>
-      <button type="button" class="dnd-btn dnd-btn--ghost" (click)="printNote()"><i class="fas fa-print"></i> Print</button>
-      <button type="button" class="dnd-btn dnd-btn--ghost" [disabled]="isDownloading" (click)="downloadPDF()">
-        <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"></i>
-        {{ isDownloading ? 'Generating...' : 'Download PDF' }}
-      </button>
-      <button type="button" class="dnd-btn dnd-btn--ghost" *ngIf="canEdit()" (click)="editNote()"><i class="fas fa-pencil-alt"></i> Edit</button>
-      <button type="button" class="dnd-btn dnd-btn--primary" *ngIf="canMarkDispatched()" [disabled]="isUpdatingStatus" (click)="updateStatus('DISPATCHED')">
-        <i class="fas fa-truck"></i> Mark Dispatched
-      </button>
-      <button type="button" class="dnd-btn dnd-btn--primary" *ngIf="canMarkDelivered()" [disabled]="isUpdatingStatus" (click)="updateStatus('DELIVERED')">
-        <i class="fas fa-check-circle"></i> Mark Delivered
-      </button>
+
+    <!-- Action Bar -->
+    <div class="action-bar glass no-print">
+      <div class="action-bar-left">
+        <div class="meta-info">
+          <span *ngIf="orderId"><i class="fas fa-hashtag"></i> Order: {{ orderId }}</span>
+          <span class="meta-divider" *ngIf="orderId"></span>
+          <span><i class="fas fa-calendar-alt"></i> Created: {{ formatDate(note.createdAt) }}</span>
+          <ng-container *ngIf="note.dispatchedAt">
+            <span class="meta-divider"></span>
+            <span><i class="fas fa-truck"></i> Dispatched: {{ formatDate(note.dispatchedAt) }}</span>
+          </ng-container>
+          <ng-container *ngIf="note.deliveredAt">
+            <span class="meta-divider"></span>
+            <span><i class="fas fa-check-circle"></i> Delivered: {{ formatDate(note.deliveredAt) }}</span>
+          </ng-container>
+        </div>
+      </div>
+      <div class="action-bar-right">
+        <button *ngIf="canMarkDispatched()" (click)="updateStatus('DISPATCHED')" class="btn-action send" [disabled]="isUpdatingStatus">
+          <i class="fas fa-truck"></i> Mark Dispatched
+        </button>
+        <button *ngIf="canMarkInTransit()" (click)="updateStatus('IN_TRANSIT')" class="btn-action send" [disabled]="isUpdatingStatus">
+          <i class="fas fa-shipping-fast"></i> Mark In Transit
+        </button>
+        <button *ngIf="canMarkDelivered()" (click)="updateStatus('DELIVERED')" class="btn-action accept" [disabled]="isUpdatingStatus">
+          <i class="fas fa-check-circle"></i> Mark Delivered
+        </button>
+        <button *ngIf="canMarkReturned()" (click)="askReturn()" class="btn-action decline" [disabled]="isUpdatingStatus">
+          <i class="fas fa-undo"></i> Mark Returned
+        </button>
+        <button *ngIf="canCancel()" (click)="askCancel()" class="btn-action decline" [disabled]="isUpdatingStatus">
+          <i class="fas fa-ban"></i> Cancel
+        </button>
+        <button *ngIf="canGenerateInvoice()" (click)="generateInvoice()" class="btn-action send">
+          <i class="fas fa-file-invoice-dollar"></i> Generate Invoice
+        </button>
+        <button *ngIf="note.invoiceId != null" (click)="viewInvoice()" class="btn-action download">
+          <i class="fas fa-file-invoice"></i> View Invoice
+        </button>
+        <button (click)="printNote()" class="btn-action download">
+          <i class="fas fa-print"></i> Print
+        </button>
+        <button (click)="downloadPDF()" class="btn-action download" [disabled]="isDownloading">
+          <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"></i>
+          {{ isDownloading ? 'Downloading...' : 'Download PDF' }}
+        </button>
+        <button *ngIf="canDelete()" (click)="askDelete()" class="btn-action delete" [disabled]="isDeleting">
+          <i class="fas fa-trash-alt"></i> Delete
+        </button>
+      </div>
+    </div>
+
+    <p-message *ngIf="flash" class="dnd-flash no-print" [severity]="flash.severity" [text]="flash.text"></p-message>
+
+    <!-- Main Content -->
+    <div class="detail-grid">
+
+      <!-- Left Column: the delivery note document -->
+      <div class="detail-main">
+        <div class="dnd-sheet-card">
+          <app-delivery-note-document
+            elementId="delivery-note-detail-sheet"
+            [note]="note"
+            [merchantInfo]="merchantInfo"
+            [customerName]="customerName"
+            [customerPhone]="customerPhone"
+            [poNumber]="poNumber"
+            [attention]="attention"
+            [contactPerson]="contactPerson"
+            [customerAddress]="customerAddressFallback"
+            [logo]="logo"
+            [deliveryDate]="deliveryDate || note.dispatchedAt || note.createdAt"
+            [template]="template">
+          </app-delivery-note-document>
+        </div>
+      </div>
+
+      <!-- Right Column: Sidebar -->
+      <div class="detail-sidebar no-print">
+
+        <!-- Delivery Note Information -->
+        <div class="info-card glass">
+          <div class="card-header">
+            <div class="card-header-icon"><i class="fas fa-info-circle"></i></div>
+            <h3>Delivery Note Information</h3>
+          </div>
+          <div class="card-body">
+            <div class="details-list">
+              <div class="detail-row">
+                <span class="detail-label">Status</span>
+                <span class="detail-value">
+                  <span class="status-badge" [class]="'status-' + getStatusClass(note.status)">
+                    <span class="status-dot"></span>
+                    {{ getStatusLabel(note.status) }}
+                  </span>
+                </span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Delivery Note #</span>
+                <span class="detail-value">{{ note.deliveryNumber }}</span>
+              </div>
+              <div class="detail-row" *ngIf="orderId">
+                <span class="detail-label">Order #</span>
+                <span class="detail-value">{{ orderId }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">LPO Number</span>
+                <span class="detail-value">{{ poNumber || '—' }}</span>
+              </div>
+              <div class="detail-row" *ngIf="invoiceNumber">
+                <span class="detail-label">Invoice #</span>
+                <span class="detail-value">{{ invoiceNumber }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Created</span>
+                <span class="detail-value">{{ formatDate(note.createdAt) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Signed Copy</span>
+                <span class="detail-value">{{ hasSignedCopy ? 'Uploaded' : 'Not uploaded yet' }}</span>
+              </div>
+              <div class="detail-row" *ngIf="note.receivedByName">
+                <span class="detail-label">Received By</span>
+                <span class="detail-value">{{ note.receivedByName }}</span>
+              </div>
+              <div class="detail-row" *ngIf="note.receivedAt">
+                <span class="detail-label">Received</span>
+                <span class="detail-value">{{ formatDate(note.receivedAt) }}</span>
+              </div>
+              <div class="detail-row" *ngIf="template">
+                <span class="detail-label">Template</span>
+                <span class="detail-value">{{ template.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LPO -->
+        <div class="info-card glass">
+          <div class="card-header">
+            <div class="card-header-icon"><i class="fas fa-file-import"></i></div>
+            <h3>LPO</h3>
+          </div>
+          <div class="card-body">
+            <ng-container *ngIf="lpo; else noLpo">
+              <div class="details-list">
+                <div class="detail-row">
+                  <span class="detail-label">Status</span>
+                  <span class="detail-value">
+                    <span class="status-badge" [class]="'status-' + getLpoStatusClass(lpo.status)">
+                      <span class="status-dot"></span>
+                      {{ getLpoStatusLabel(lpo.status) }}
+                    </span>
+                  </span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">LPO Number</span>
+                  <span class="detail-value">{{ lpo.lpoNumber || '—' }}</span>
+                </div>
+                <div class="detail-row" *ngIf="lpo.document?.fileName">
+                  <span class="detail-label">File</span>
+                  <span class="detail-value">{{ lpo.document.fileName }}</span>
+                </div>
+                <div class="detail-row" *ngIf="lpo.status === 'REJECTED' && lpo.notes">
+                  <span class="detail-label">Reason</span>
+                  <span class="detail-value">{{ lpo.notes }}</span>
+                </div>
+              </div>
+              <div class="dnd-lpo-actions">
+                <button *ngIf="canViewLpo" type="button" class="btn-action download" (click)="viewLpo()">
+                  <i class="fas fa-eye"></i> View LPO
+                </button>
+                <button *ngIf="lpo.status === 'RECEIVED'" type="button" class="btn-action accept" [disabled]="isUpdatingLpo" (click)="verifyLpo()">
+                  <i class="fas fa-check"></i> Verify
+                </button>
+                <button *ngIf="lpo.status === 'RECEIVED'" type="button" class="btn-action decline" [disabled]="isUpdatingLpo" (click)="askRejectLpo()">
+                  <i class="fas fa-times"></i> Reject
+                </button>
+                <button type="button" class="btn-action delete" [disabled]="isUpdatingLpo" (click)="askDeleteLpo()">
+                  <i class="fas fa-trash-alt"></i> Delete
+                </button>
+              </div>
+            </ng-container>
+            <ng-template #noLpo>
+              <p class="dnd-muted" *ngIf="!canViewLpo">No LPO has been uploaded for this delivery note.</p>
+              <ng-container *ngIf="canViewLpo">
+                <div class="details-list">
+                  <div class="detail-row">
+                    <span class="detail-label">File</span>
+                    <span class="detail-value">{{ lpoFileName }}</span>
+                  </div>
+                </div>
+                <div class="dnd-lpo-actions">
+                  <button type="button" class="btn-action download" (click)="viewLpo()">
+                    <i class="fas fa-eye"></i> View LPO
+                  </button>
+                </div>
+              </ng-container>
+            </ng-template>
+          </div>
+        </div>
+
+        <!-- Customer -->
+        <div class="info-card glass">
+          <div class="card-header">
+            <div class="card-header-icon"><i class="fas fa-user"></i></div>
+            <h3>Customer</h3>
+          </div>
+          <div class="card-body">
+            <div class="customer-info">
+              <div class="customer-avatar">
+                <span>{{ customerName.charAt(0).toUpperCase() || '?' }}</span>
+              </div>
+              <div class="customer-details">
+                <strong>{{ customerName }}</strong>
+                <span *ngIf="customerPhone">{{ customerPhone }}</span>
+              </div>
+            </div>
+            <p class="dnd-address" *ngIf="note.customerAddress">{{ note.customerAddress }}</p>
+            <button class="btn-view-customer" *ngIf="note.customerId" (click)="viewCustomer()">
+              <i class="fas fa-external-link-alt"></i> View Customer
+            </button>
+          </div>
+        </div>
+
+        <!-- Contacts -->
+        <div class="info-card glass">
+          <div class="card-header">
+            <div class="card-header-icon"><i class="fas fa-address-book"></i></div>
+            <h3>Contacts</h3>
+          </div>
+          <div class="card-body">
+            <div class="details-list">
+              <div class="detail-row">
+                <span class="detail-label">Attention</span>
+                <span class="detail-value">{{ attention || '—' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Contact Person</span>
+                <span class="detail-value">{{ contactPerson || '—' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="info-card summary-card glass">
+          <div class="card-header">
+            <div class="card-header-icon"><i class="fas fa-boxes"></i></div>
+            <h3>Summary</h3>
+          </div>
+          <div class="card-body">
+            <div class="summary-mini">
+              <div class="summary-mini-row">
+                <span>Items</span>
+                <span>{{ note.items.length || 0 }}</span>
+              </div>
+              <div class="summary-mini-row total">
+                <span>Total Quantity</span>
+                <span>{{ getTotalQuantity() }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions Card (Mobile) -->
+        <div class="info-card glass mobile-actions">
+          <div class="card-header">
+            <div class="card-header-icon"><i class="fas fa-cog"></i></div>
+            <h3>Actions</h3>
+          </div>
+          <div class="card-body">
+            <div class="mobile-action-buttons">
+              <button *ngIf="canMarkDispatched()" (click)="updateStatus('DISPATCHED')" class="btn-action-mobile send" [disabled]="isUpdatingStatus">
+                <i class="fas fa-truck"></i> Mark Dispatched
+              </button>
+              <button *ngIf="canMarkInTransit()" (click)="updateStatus('IN_TRANSIT')" class="btn-action-mobile send" [disabled]="isUpdatingStatus">
+                <i class="fas fa-shipping-fast"></i> Mark In Transit
+              </button>
+              <button *ngIf="canMarkDelivered()" (click)="updateStatus('DELIVERED')" class="btn-action-mobile accept" [disabled]="isUpdatingStatus">
+                <i class="fas fa-check-circle"></i> Mark Delivered
+              </button>
+              <button *ngIf="canMarkReturned()" (click)="askReturn()" class="btn-action-mobile decline" [disabled]="isUpdatingStatus">
+                <i class="fas fa-undo"></i> Mark Returned
+              </button>
+              <button *ngIf="canCancel()" (click)="askCancel()" class="btn-action-mobile decline" [disabled]="isUpdatingStatus">
+                <i class="fas fa-ban"></i> Cancel
+              </button>
+              <button *ngIf="canGenerateInvoice()" (click)="generateInvoice()" class="btn-action-mobile send">
+                <i class="fas fa-file-invoice-dollar"></i> Generate Invoice
+              </button>
+              <button *ngIf="canEdit()" (click)="editNote()" class="btn-action-mobile edit">
+                <i class="fas fa-pencil-alt"></i> Edit
+              </button>
+              <button (click)="downloadPDF()" class="btn-action-mobile download" [disabled]="isDownloading">
+                <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"></i>
+                {{ isDownloading ? 'Downloading...' : 'Download PDF' }}
+              </button>
+              <button *ngIf="canDelete()" (click)="askDelete()" class="btn-action-mobile delete" [disabled]="isDeleting">
+                <i class="fas fa-trash-alt"></i> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+</div>
 
-  <div *ngIf="isLoading" class="dnd-loading no-print"><div class="spinner"></div><p>Loading...</p></div>
+<!-- Loading State -->
+<div *ngIf="isLoading" class="loading-state">
+  <div class="spinner-glow"></div>
+  <p>Loading delivery note...</p>
+</div>
 
-  <div class="dnd-doc-wrapper" *ngIf="!isLoading && note">
-    <app-delivery-note-document
-      elementId="delivery-note-detail-sheet"
-      [note]="note"
-      [merchantInfo]="merchantInfo"
-      [customerName]="customerName"
-      [customerPhone]="customerPhone"
-      [poNumber]="poNumber"
-      [attention]="attention"
-      [contactPerson]="contactPerson"
-      [invoiceNumber]="invoiceNumber"
-      [deliveryDate]="note.dispatchedAt || note.createdAt">
-    </app-delivery-note-document>
-  </div>
-
-  <div class="dnd-error" *ngIf="!isLoading && !note">
+<!-- Not Found -->
+<div *ngIf="!isLoading && !note" class="error-state">
+  <div class="error-content">
     <i class="fas fa-triangle-exclamation"></i>
     <h3>Delivery Note Not Found</h3>
-    <button type="button" class="dnd-btn dnd-btn--primary" (click)="goBack()">Back</button>
+    <button type="button" class="btn-primary" (click)="goBack()">Back</button>
+  </div>
+</div>
+
+<!-- Confirmation modal (cancel / return / delete / LPO reject & delete) — same modal styling as Quote detail -->
+<div class="custom-modal-backdrop" *ngIf="pendingAction as action" (click)="closePendingAction()">
+  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge" [class.dnd-icon-danger]="action.danger">
+          <i class="fas {{ action.icon }}"></i>
+        </div>
+        <h3>{{ action.title }}</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="closePendingAction()">&times;</button>
+    </div>
+
+    <div class="custom-modal-body dnd-modal-body">
+      <p class="dnd-modal-message">{{ action.message }}</p>
+      <ng-container *ngIf="action.reasonLabel">
+        <label class="dnd-modal-label" for="dnd-action-reason">{{ action.reasonLabel }} <span class="dnd-req">*</span></label>
+        <textarea id="dnd-action-reason" class="dnd-modal-input" rows="3" [(ngModel)]="actionReason"></textarea>
+      </ng-container>
+    </div>
+
+    <div class="custom-modal-footer dnd-modal-footer">
+      <button type="button" class="btn-modal-cancel" (click)="closePendingAction()">Back</button>
+      <button type="button" class="btn-modal-save" [class.dnd-btn-danger]="action.danger"
+              [disabled]="!!action.reasonLabel && !actionReason.trim()" (click)="confirmPendingAction()">
+        <i class="fas {{ action.icon }}"></i> {{ action.confirmLabel }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- View LPO — the order document the customer sent back -->
+<div class="custom-modal-backdrop" *ngIf="showLpoViewer" (click)="closeLpoViewer()">
+  <div class="custom-modal-card dnd-lpo-viewer" (click)="$event.stopPropagation()">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge"><i class="fas fa-file-import"></i></div>
+        <h3>LPO{{ lpo?.lpoNumber ? ' — ' + lpo?.lpoNumber : '' }}</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="closeLpoViewer()">&times;</button>
+    </div>
+
+    <div class="dnd-lpo-frame">
+      <img *ngIf="lpoIsImage" [src]="lpoViewUrl" [alt]="lpoFileName">
+      <iframe *ngIf="!lpoIsImage" [src]="lpoViewUrl" [title]="lpoFileName"></iframe>
+    </div>
+
+    <div class="custom-modal-footer dnd-modal-footer">
+      <span class="dnd-lpo-name">{{ lpoFileName }}</span>
+      <button type="button" class="btn-modal-cancel" (click)="openLpoInNewTab()"><i class="fas fa-external-link-alt"></i> Open in New Tab</button>
+      <button type="button" class="btn-modal-save" (click)="downloadLpo()"><i class="fas fa-download"></i> Download</button>
+    </div>
   </div>
 </div>

@@ -4,6 +4,8 @@ import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../shared-component/service/environments/environment.prod';
 import { getTokenFromStorage } from './token-util';
+import { resolveTenantId } from '../loan-tenant.util';
+import { fetchAllPages } from '../paginated-fetch.util';
 
 export interface CooperativeLoanApiAuditUser {
   id: number;
@@ -423,7 +425,6 @@ export class CooperativeLoanApiService {
   const token = getTokenFromStorage();
   const tenantId = this.getTenantId();
   
-  console.log('[CooperativeLoanApi] Building auth headers, token exists:', !!token);
   
   let headers: Record<string, string> = {
     'X-Tenant-ID': tenantId,
@@ -442,25 +443,15 @@ export class CooperativeLoanApiService {
   }
   
   // Log headers for debugging (without exposing full token)
-  console.log('[CooperativeLoanApi] Headers:', {
-    'X-Tenant-ID': headers['X-Tenant-ID'],
-    'Authorization': headers['Authorization'] ? 'Bearer [REDACTED]' : 'MISSING'
-  });
   
   return new HttpHeaders(headers);
 }
 
   private getTenantId(): string {
-    const tenant = sessionStorage.getItem('tenantId')
-      || sessionStorage.getItem('tenant')
-      || localStorage.getItem('tenantId')
-      || localStorage.getItem('tenant')
-      || 'optimax';
-    return tenant && tenant !== 'undefined' && tenant !== 'null' ? tenant : 'optimax';
+    return resolveTenantId();
   }
 
   private logRequest(method: string, url: string): void {
-    console.log(`[CooperativeLoanApi] ${method} ${url}`);
   }
 
   private mapCollectionResponse<T>(response: unknown): T[] {
@@ -710,7 +701,6 @@ export class CooperativeLoanApiService {
     const paginatedUrl = `${this.membersBaseUrl}?page=1&size=100`;
     return this.getWithCollectionFallback<CooperativeLoanApiMemberRef>(paginatedUrl, this.membersBaseUrl, 'getAllMembers').pipe(
       map((members) => {
-        console.log(`[CooperativeLoanApi] Members received: ${members.length}`);
         return members;
       })
     );
@@ -775,6 +765,18 @@ export class CooperativeLoanApiService {
     return this.getWithCollectionFallback<CooperativeLoanApiResponse>(paginatedUrl, this.loansBaseUrl, 'getAllLoans');
   }
 
+  /**
+   * Every cooperative loan across all pages (getAllLoans only reads the first 100). Errors propagate,
+   * for callers that must not mistake a failed load for "no loans", such as the borrowing-limit check.
+   */
+  getAllLoansAllPages(): Observable<CooperativeLoanApiResponse[]> {
+    const headers = this.getAuthHeaders();
+    const fetchPage = (page: number) => this.http.get(`${this.loansBaseUrl}?page=${page}&size=100`, { headers, responseType: 'text' }).pipe(
+      map((response) => this.mapCollectionResponse<CooperativeLoanApiResponse>(this.safeParseResponse(response)))
+    );
+    return fetchAllPages<CooperativeLoanApiResponse>(fetchPage);
+  }
+
   createLoan(payload: CooperativeLoanApiCreatePayload): Observable<CooperativeLoanApiResponse> {
     const url = `${this.loansBaseUrl}`;
     this.logRequest('POST', url);
@@ -811,7 +813,6 @@ export class CooperativeLoanApiService {
     return this.http.get<unknown>(url, { headers }).pipe(
       map((groups) => {
         const records = this.mapCollectionResponse<CooperativeGroupApiResponse>(groups);
-        console.log(`[CooperativeLoanApi] Groups received: ${records.length}`);
         return records;
       }),
       catchError((error: HttpErrorResponse) => this.handleError(error, 'getAllCooperativeGroups'))

@@ -1,5 +1,10 @@
 <div class="loan-purpose-container">
   <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+  <p-message
+    *ngIf="purposesMissingInterestRate.length"
+    severity="warn"
+    [text]="missingInterestRateMessage"
+    styleClass="missing-rate-banner"></p-message>
 
   <div class="page-header">
     <div class="header-left">
@@ -66,7 +71,7 @@
           <td class="description-cell">{{ getDescriptionDisplay(purpose.description) }}</td>
           <td class="amount-cell">{{ getAmountDisplay(purpose.minLoanAmount) }}</td>
           <td class="amount-cell">{{ getAmountDisplay(purpose.maxLoanAmount) }}</td>
-          <td class="interest-cell">{{ getInterestRateDisplay(purpose.defaultInterestRate) }}</td>
+          <td class="interest-cell" [class.missing-rate]="!hasInterestRate(purpose.defaultInterestRate)">{{ getInterestRateDisplay(purpose.defaultInterestRate) }}</td>
           <td class="status-cell">
             <span class="status-badge" [class.status-active]="purpose.isActive" [class.status-inactive]="!purpose.isActive">
               {{ purpose.isActive ? 'Active' : 'Inactive' }}
@@ -195,10 +200,10 @@
             <div class="error-message" *ngIf="purposeForm.get('defaultInterestRate')?.invalid && purposeForm.get('defaultInterestRate')?.touched">
               <i class="fas fa-exclamation-circle"></i>
               <span *ngIf="purposeForm.get('defaultInterestRate')?.errors?.['required']">Default interest rate is required</span>
-              <span *ngIf="purposeForm.get('defaultInterestRate')?.errors?.['min']">Interest rate cannot be negative</span>
+              <span *ngIf="purposeForm.get('defaultInterestRate')?.errors?.['min']">Interest rate must be greater than 0%</span>
               <span *ngIf="purposeForm.get('defaultInterestRate')?.errors?.['max']">Interest rate cannot exceed 100%</span>
             </div>
-            <div class="field-hint">Enter the default interest rate for this purpose</div>
+            <div class="field-hint">Applied automatically when loans with this purpose are approved. Admins can't change it at approval, so update it here when the rate changes.</div>
           </div>
 
           <div class="checkbox-group">

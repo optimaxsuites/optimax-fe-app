@@ -33,10 +33,13 @@ import { CooperativeService } from '../../../service/loan/cooperative-loan/coope
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeMember, CooperativeLoanGroup, CooperativeGroupMembership } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { RepaymentDayHelperService } from '../../../service/loan/repayment-day-helper.service';
-import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import { compareLoanSortValues, formatLoanPurposeDisplay,
+  toLocalDateString
+} from '../../../service/loan/loan-display.util';
 import { resolveCooperativeTotalRepayable } from '../../../service/loan/cooperative-loan/cooperative-loan-amounts.util';
 import { BackButtonModule } from '../../../shared-component/view/back-button/back-button.module';
 import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
+import { formatNaira, getLoanStatusClass, getLoanStatusLabel, hasOutstandingBalanceStatus } from '../../../service/loan/loan-format.util';
 
 @Component({
   selector: 'app-cooperative-loan-approval-ui',
@@ -290,7 +293,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   setDefaultRepaymentStartDate(): void {
     const d = new Date();
     d.setMonth(d.getMonth() + 1);
-    this.approvalRepaymentStartDate = d.toISOString().split('T')[0];
+    this.approvalRepaymentStartDate = toLocalDateString(d);
     this.onRepaymentStartDateChange(this.approvalRepaymentStartDate);
   }
 
@@ -360,11 +363,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2
-    }).format(amount);
+    return formatNaira(amount);
   }
 
   formatPurposeDisplay(purpose?: string | null): string {
@@ -390,43 +389,11 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   getStatusClass(status: string | undefined): string {
-    if (!status) return 'status-pending';
-    const normalized = String(status).trim().toUpperCase().replace(/\s+/g, '_');
-    const statusClassMap: Record<string, string> = {
-      'PENDING': 'status-pending',
-      'APPROVED': 'status-approved',
-      'READY_FOR_DISBURSEMENT': 'status-ready_for_disbursement',
-      'ACTIVE': 'status-active',
-      'COMPLETED': 'status-completed',
-      'REJECTED': 'status-rejected',
-      'OVERDUE': 'status-overdue',
-      'DEFAULTED': 'status-defaulted',
-      'PAUSED': 'status-paused',
-      'SKIPPED': 'status-skipped'
-    };
-    return statusClassMap[normalized] || 'status-pending';
+    return getLoanStatusClass(status);
   }
 
   getStatusLabel(status: string | undefined): string {
-    const map: Record<string, string> = {
-      'PENDING': 'Pending',
-      'APPROVED': 'Approved',
-      'READY_FOR_DISBURSEMENT': 'Disbursable',
-      'ACTIVE': 'Active',
-      'COMPLETED': 'Completed',
-      'REJECTED': 'Rejected',
-      'OVERDUE': 'Overdue',
-      'DEFAULTED': 'Defaulted',
-      'PAUSED': 'Paused',
-      'SKIPPED': 'Skipped'
-    };
-    const key = (status || '').toUpperCase();
-    if (map[key]) return map[key];
-    // Convert any unmapped status to Title Case
-    return String(status || '')
-      .toLowerCase()
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, c => c.toUpperCase());
+    return getLoanStatusLabel(status);
   }
 
   getStageLabel(stage: string | undefined): string {
@@ -442,7 +409,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   getMinRepaymentDate(): string {
     const d = new Date();
     d.setDate(d.getDate() + 7);
-    return d.toISOString().split('T')[0];
+    return toLocalDateString(d);
   }
 
   // ==================== STATS CARDS ====================
@@ -460,7 +427,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
 
   get totalActiveLoanBalance(): number {
     return this.loans
-      .filter((loan) => loan.status === 'ACTIVE')
+      .filter((loan) => hasOutstandingBalanceStatus(loan.status))
       .reduce((sum, loan) => sum + Number(
         loan.outstandingBalance ||
         loan.outstandingPrincipal ||

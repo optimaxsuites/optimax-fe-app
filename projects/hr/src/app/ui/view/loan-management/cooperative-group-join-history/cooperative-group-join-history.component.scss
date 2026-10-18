@@ -3,7 +3,7 @@
 // ==========================================
 @use '../_loan-status-badges' as loanBadges;
 
-.group-join-history-container {
+:where(app-cooperative-group-join-history) .group-join-history-container {
   padding: 24px;
   min-height: 100vh;
   font-size: 2rem;
@@ -706,7 +706,7 @@
 
 // Responsive
 @media (max-width: 768px) {
-  .group-join-history-container {
+  :where(app-cooperative-group-join-history) .group-join-history-container {
     padding: 16px;
 
     .page-header {
