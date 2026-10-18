@@ -318,6 +318,11 @@ export class TemplateTypesComponent implements OnInit {
     return labels[this.documentType];
   }
 
+  /** Sample document number on the thumbnails. */
+  get sampleNumber(): string {
+    return this.documentType === 'invoice' ? 'INV-2026-001' : this.documentType === 'delivery-note' ? 'DN-2026-001' : 'QT-2026-001';
+  }
+
   get isDeliveryNote(): boolean {
     return this.documentType === 'delivery-note';
   }
@@ -399,6 +404,10 @@ export class TemplateTypesComponent implements OnInit {
 
   /** Delivery notes get their own wording — the shared descriptions talk about quotes, totals and invoices. */
   getTemplateDescription(template: QuoteTemplate): string {
+    // The shared descriptions are written for quotes — say "invoice" when picking an invoice's template
+    if (this.documentType === 'invoice') {
+      return template.description.replace(/\bquote(s?)\b/gi, (_m, plural) => `invoice${plural}`);
+    }
     if (!this.isDeliveryNote) return template.description;
     const descriptions: Record<string, string> = {
       'standard': 'Balanced layout with logo and full recipient details',

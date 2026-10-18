@@ -37,6 +37,12 @@
 }
 .dnd-lpo-name { margin-right: auto; align-self: center; font-size: 0.85rem; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+.dnd-doc-box { margin-top: 1rem; padding: 0.85rem 1rem; border: 1px dashed #cbd5e1; border-radius: 10px; background: #f8fafc;
+  .dnd-lpo-actions { margin-top: 0.6rem; }
+}
+.dnd-doc-box-head { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #475569; margin-bottom: 0.4rem; i { color: #ef4444; margin-right: 4px; } }
+.dnd-doc-file { font-size: 0.85rem; font-weight: 600; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 @media print {
   .no-print { display: none !important; }
   .quote-detail-container, .detail-wrapper { background: #fff !important; padding: 0 !important; min-height: 0 !important; }

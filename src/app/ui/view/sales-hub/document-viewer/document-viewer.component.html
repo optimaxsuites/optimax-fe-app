@@ -1,0 +1,31 @@
+<div class="dv-backdrop" (click)="onBackdropClick($event)">
+  <div class="dv-card" role="dialog" aria-modal="true" [attr.aria-label]="title">
+    <div class="dv-head">
+      <div class="dv-title">
+        <span class="dv-icon"><i class="fas fa-file-alt"></i></span>
+        <h3>{{ title }}</h3>
+      </div>
+      <button type="button" class="dv-close" (click)="closed.emit()" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="dv-frame">
+      <ng-container *ngIf="safeUrl; else missing">
+        <img *ngIf="isImage" [src]="safeUrl" [alt]="document?.fileName">
+        <iframe *ngIf="!isImage" [src]="safeUrl" [title]="document?.fileName"></iframe>
+      </ng-container>
+      <ng-template #missing>
+        <p class="dv-missing"><i class="fas fa-exclamation-triangle"></i> This file isn't available.</p>
+      </ng-template>
+    </div>
+
+    <div class="dv-foot">
+      <span class="dv-name">{{ document?.fileName }}</span>
+      <button type="button" class="dv-btn dv-btn--ghost" [disabled]="!safeUrl" (click)="openInNewTab()">
+        <i class="fas fa-external-link-alt"></i> Open in New Tab
+      </button>
+      <button type="button" class="dv-btn dv-btn--primary" [disabled]="!safeUrl" (click)="download()">
+        <i class="fas fa-download"></i> Download
+      </button>
+    </div>
+  </div>
+</div>

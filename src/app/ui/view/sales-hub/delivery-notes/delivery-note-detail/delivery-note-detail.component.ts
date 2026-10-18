@@ -6,7 +6,8 @@ import { Observable, Subject, of, takeUntil } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, SalesDeliveryNote, SalesDeliveryNoteStatus, SalesLpo, MerchantInfo, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { DocumentViewerComponent } from '../../document-viewer/document-viewer.component';
+import { ViewableDocument, downloadDocument, hasDocumentContent } from '../../../../service/sales/document-file.util';
 import { formatApiDate, formatApiDateTime } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { DeliveryNoteDocumentComponent } from '../delivery-note-document/delivery-note-document.component';
@@ -32,7 +33,7 @@ interface PendingAction {
 @Component({
   selector: 'app-delivery-note-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, MessageModule, BackButtonComponent, DeliveryNoteDocumentComponent, ToastModule],
+  imports: [CommonModule, FormsModule, MessageModule, DocumentViewerComponent, BackButtonComponent, DeliveryNoteDocumentComponent, ToastModule],
   providers: [MessageService],
   templateUrl: './delivery-note-detail.component.html',
   // Page chrome (header, action bar, sidebar cards) is shared with the Quote detail page rather
@@ -72,8 +73,9 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
   /** The LPO file the seller uploaded, kept on the quote until the backend stores it (see View LPO). */
   lpoFile: QuoteDocumentAttachment | null = null;
   showLpoViewer = false;
-  lpoViewUrl: SafeResourceUrl | null = null;
-  private lpoObjectUrl: string | null = null;
+  /** Set once the note's quote has been looked for — "not uploaded" isn't said before then. */
+  quoteChecked = false;
+  private quoteRequestedFor: string | null = null;
   /** The logo uploaded for this delivery note, or its quote's (see SalesService.getDeliveryNoteLogo). */
   logo: string | null = null;
   actionReason = '';
@@ -84,8 +86,7 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private salesService: SalesService,
-    private messageService: MessageService,
-    private sanitizer: DomSanitizer
+    private messageService: MessageService
   ) { }
 
   // Same navigation-staleness fix as the other detail pages in this module — subscribes to the
@@ -109,7 +110,6 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.lpoObjectUrl) URL.revokeObjectURL(this.lpoObjectUrl);
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -134,15 +134,9 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
    *  columns fall back to the legacy values stored on the quote (SalesDeliveryNoteMeta). */
   private loadContext(note: SalesDeliveryNote): void {
     this.hasSignedCopy = !!(note.receivedAt || note.signedDocumentUrl);
-    if (note.quoteId != null) {
-      this.salesService.getQuoteById(note.quoteId).pipe(takeUntil(this.destroy$)).subscribe(quote => {
-        if (this.salesService.hasSignedDeliveryNoteDocument(quote)) this.hasSignedCopy = true;
-        this.logo = this.salesService.getDeliveryNoteLogo(quote);
-        this.sourceCustomer = this.salesService.quoteCustomer(quote) || this.sourceCustomer;
-        this.lpoFile = this.salesService.getQuoteLpoDocument(quote) || this.lpoFile;
-        this.backfillFromQuote(note, quote);
-      });
-    }
+    this.quoteChecked = false;
+    this.quoteRequestedFor = null;
+    if (note.quoteId != null) this.loadQuote(note, note.quoteId);
     this.attention = note.attention || '';
     this.contactPerson = note.contactPerson || '';
     this.deliveryDate = note.deliveryDate ? String(note.deliveryDate) : '';
@@ -154,16 +148,37 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
     lpo$.pipe(takeUntil(this.destroy$)).subscribe(lpo => {
       this.lpo = lpo;
       if (lpo?.lpoNumber) this.poNumber = lpo.lpoNumber;
+      if (lpo?.quoteId != null) this.loadQuote(note, lpo.quoteId);
     });
 
-    if (note.salesOrderId == null) return;
+    if (note.salesOrderId == null) {
+      this.quoteChecked ||= note.quoteId == null && note.lpoId == null;
+      return;
+    }
     const transactionId = note.salesOrderId;
     this.salesService.getOrderIdLookup().pipe(takeUntil(this.destroy$)).subscribe(lookup => {
       this.orderId = lookup.byTransactionId.get(transactionId) || null;
     });
     this.salesService.getSalesandTransactionsById(transactionId).pipe(takeUntil(this.destroy$)).subscribe(tx => {
-      if (!tx) return;
+      if (!tx) {
+        this.quoteChecked ||= this.quoteRequestedFor == null;
+        return;
+      }
       this.invoiceNumber = (tx.invoiceId as any)?.invoiceNumber || '';
+      // Older notes have no quoteId of their own — find the quote (where the LPO file is kept)
+      // through the order instead
+      const txQuoteId = (tx.quoteId as any)?.id ?? (typeof tx.quoteId !== 'object' ? tx.quoteId : null);
+      if (txQuoteId != null) {
+        this.loadQuote(note, txQuoteId);
+        if (note.lpoId == null && note.quoteId == null) {
+          this.salesService.getSalesLpoForQuote(txQuoteId).pipe(takeUntil(this.destroy$)).subscribe(lpo => {
+            this.lpo ||= lpo;
+            if (lpo?.lpoNumber) this.poNumber ||= lpo.lpoNumber;
+          });
+        }
+      } else {
+        this.quoteChecked ||= this.quoteRequestedFor == null;
+      }
       this.sourceCustomer ||= this.salesService.quoteCustomer(tx.quoteId) || (typeof tx.customerId === 'object' ? tx.customerId : null);
       this.lpoFile ||= this.salesService.getQuoteLpoDocument(tx.quoteId as any);
       if (this.salesService.hasSignedDeliveryNoteDocument(tx.quoteId as any)) this.hasSignedCopy = true;
@@ -173,6 +188,22 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
       this.contactPerson ||= meta.contactPerson || '';
       this.deliveryDate ||= meta.deliveryDate || '';
       this.template ||= QUOTE_TEMPLATES.find(t => t.id === meta.templateId) || null;
+    });
+  }
+
+  /** Fetches the note's quote once (whichever link found it first) — the LPO file, signed copy and
+   *  logo are kept on it, and its customer/items fill in older notes. */
+  private loadQuote(note: SalesDeliveryNote, quoteId: number | string): void {
+    if (this.quoteRequestedFor != null) return;
+    this.quoteRequestedFor = String(quoteId);
+    this.salesService.getQuoteById(quoteId).pipe(takeUntil(this.destroy$)).subscribe(quote => {
+      this.quoteChecked = true;
+      if (!quote) return;
+      if (this.salesService.hasSignedDeliveryNoteDocument(quote)) this.hasSignedCopy = true;
+      this.logo = this.salesService.getDeliveryNoteLogo(quote);
+      this.sourceCustomer = this.salesService.quoteCustomer(quote) || this.sourceCustomer;
+      this.lpoFile = this.salesService.getQuoteLpoDocument(quote) || this.lpoFile;
+      this.backfillFromQuote(note, quote);
     });
   }
 
@@ -215,36 +246,33 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
   // VIEW LPO — the order document the customer sent back
   // ============================================================
 
+  /** The LPO file: the backend's stored copy once it has one (document.fileUrl), else the file
+   *  kept on the quote. */
+  get lpoDocument(): ViewableDocument | null {
+    const stored = this.lpo?.document;
+    if (stored?.fileUrl) {
+      return { fileName: stored.fileName || 'LPO', contentType: stored.contentType, url: stored.fileUrl, uploadedAt: stored.uploadedAt };
+    }
+    if (this.lpoFile?.base64Content) {
+      return { fileName: this.lpoFile.fileName || stored?.fileName || 'LPO', contentType: this.lpoFile.contentType,
+        base64Content: this.lpoFile.base64Content, uploadedAt: this.lpoFile.uploadedAt };
+    }
+    return null;
+  }
+
   get canViewLpo(): boolean {
-    return !!(this.lpo?.document?.fileUrl || this.lpoFile?.base64Content);
+    return hasDocumentContent(this.lpoDocument);
   }
 
   get lpoFileName(): string {
-    return this.lpo?.document?.fileName || this.lpoFile?.fileName || 'LPO';
-  }
-
-  get lpoIsImage(): boolean {
-    return (this.lpo?.document?.contentType || this.lpoFile?.contentType || '').startsWith('image/');
-  }
-
-  /** The backend's stored copy once it has one (document.fileUrl), else the file kept on the quote. */
-  private get lpoSourceUrl(): string | null {
-    if (this.lpo?.document?.fileUrl) return this.lpo.document.fileUrl;
-    if (!this.lpoFile?.base64Content) return null;
-    if (!this.lpoObjectUrl) {
-      const bytes = Uint8Array.from(atob(this.lpoFile.base64Content), ch => ch.charCodeAt(0));
-      this.lpoObjectUrl = URL.createObjectURL(new Blob([bytes], { type: this.lpoFile.contentType || 'application/pdf' }));
-    }
-    return this.lpoObjectUrl;
+    return this.lpoDocument?.fileName || this.lpo?.document?.fileName || 'LPO';
   }
 
   viewLpo(): void {
-    const url = this.lpoSourceUrl;
-    if (!url) {
-      this.messageService.add({ severity: 'warn', summary: 'No LPO File', detail: 'No LPO file has been uploaded for this delivery note.' });
+    if (!this.canViewLpo) {
+      this.messageService.add({ severity: 'warn', summary: 'No LPO File', detail: 'No LPO file is available for this delivery note.' });
       return;
     }
-    this.lpoViewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
     this.showLpoViewer = true;
   }
 
@@ -252,18 +280,11 @@ export class DeliveryNoteDetailComponent implements OnInit, OnDestroy {
     this.showLpoViewer = false;
   }
 
-  openLpoInNewTab(): void {
-    const url = this.lpoSourceUrl;
-    if (url) window.open(url, '_blank', 'noopener');
-  }
-
   downloadLpo(): void {
-    const url = this.lpoSourceUrl;
-    if (!url) return;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = this.lpoFileName;
-    a.click();
+    const doc = this.lpoDocument;
+    if (!doc || !downloadDocument(doc)) {
+      this.messageService.add({ severity: 'warn', summary: 'No LPO File', detail: 'No LPO file is available for this delivery note.' });
+    }
   }
 
   getTotalQuantity(): number {

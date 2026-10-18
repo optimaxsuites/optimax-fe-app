@@ -7,7 +7,6 @@ import { SalesDeliveryNote } from '../../../../domain/sales/sales.dto';
 describe('DeliveryNoteDetailComponent', () => {
   let component: DeliveryNoteDetailComponent;
   let salesService: jasmine.SpyObj<SalesService>;
-  const sanitizer: any = { bypassSecurityTrustResourceUrl: (url: string) => ({ safe: url }) };
 
   const note = (over: Partial<SalesDeliveryNote> = {}): SalesDeliveryNote => ({
     id: 1, deliveryNumber: 'DN-1', status: 'PENDING', items: [], customerAddress: '', ...over
@@ -46,8 +45,7 @@ describe('DeliveryNoteDetailComponent', () => {
       activatedRoute(),
       { navigate: jasmine.createSpy('navigate') } as any,
       salesService,
-      { add: jasmine.createSpy('add') } as any,
-      sanitizer
+      { add: jasmine.createSpy('add') } as any
     );
   });
 
@@ -240,26 +238,34 @@ describe('DeliveryNoteDetailComponent', () => {
     });
   });
 
-  describe('View LPO', () => {
+  describe('LPO Document — view or download the LPO the seller uploaded', () => {
     const lpoDoc = { fileName: 'lpo.pdf', base64Content: btoa('%PDF-1.4'), contentType: 'application/pdf', uploadedAt: 'then' };
 
-    it('shows the LPO uploaded for this delivery note', () => {
+    it('finds the LPO file on the note\'s quote', () => {
       salesService.getQuoteById.and.returnValue(of({ id: 3, additionalOptions: { lpoDocument: lpoDoc } } as any));
       component.note = note({ quoteId: 3 });
       (component as any).loadContext(component.note);
 
       expect(component.canViewLpo).toBeTrue();
+      expect(component.lpoDocument).toEqual(jasmine.objectContaining({ fileName: 'lpo.pdf', base64Content: lpoDoc.base64Content }));
       component.viewLpo();
-
       expect(component.showLpoViewer).toBeTrue();
-      expect((component.lpoViewUrl as any).safe).toMatch(/^blob:/);
-      expect(component.lpoFileName).toBe('lpo.pdf');
+    });
+
+    it('finds it through the order for older notes that have no quote link of their own', () => {
+      salesService.getSalesandTransactionsById.and.returnValue(of({ id: 10, quoteId: { id: 3 } } as any));
+      salesService.getQuoteById.and.returnValue(of({ id: 3, additionalOptions: { lpoDocument: lpoDoc } } as any));
+      component.note = note({ salesOrderId: 10 });
+      (component as any).loadContext(component.note);
+
+      expect(salesService.getQuoteById).toHaveBeenCalledWith(3);
+      expect(component.canViewLpo).toBeTrue();
+      expect(component.quoteChecked).toBeTrue();
     });
 
     it('uses the backend\'s stored copy once the LPO record has one', () => {
       component.lpo = { id: 9, document: { fileName: 'lpo.pdf', fileUrl: 'https://files/lpo.pdf', contentType: 'application/pdf' } } as any;
-      component.viewLpo();
-      expect((component.lpoViewUrl as any).safe).toBe('https://files/lpo.pdf');
+      expect(component.lpoDocument?.url).toBe('https://files/lpo.pdf');
     });
 
     it('says so when there is nothing to show', () => {
@@ -351,8 +357,7 @@ describe('DeliveryNoteDetailComponent', () => {
         activatedRoute(paramMap$.asObservable()),
         { navigate: jasmine.createSpy('navigate') } as any,
         salesService,
-        { add: jasmine.createSpy('add') } as any,
-        sanitizer
+        { add: jasmine.createSpy('add') } as any
       );
 
       c.ngOnInit();

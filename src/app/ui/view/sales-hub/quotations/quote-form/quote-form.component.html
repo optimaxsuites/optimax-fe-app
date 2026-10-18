@@ -384,6 +384,7 @@
   <!-- ══ STEP 2: TEMPLATE ══════════════════════════════════════════════ -->
   <div class="qf-body qf-body--centered" *ngIf="currentStep === 2">
     <app-template-types
+      documentType="quote"
       [quoteData]="quoteDataForTemplate"
       (templateSelected)="selectedTemplate = $event">
     </app-template-types>
