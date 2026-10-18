@@ -7,6 +7,7 @@ import { CorrectionrequestComponent } from './employee/correctionrequest/correct
 import { ReportsComponent } from './admin/reports/reports.component';
 import { RemoteCheckinComponent } from './employee/remote-checkin/remote-checkin.component';
 import { BiometricEnrollmentComponent } from '../biometric/biometric-enrollment/biometric-enrollment.component';
+import { BiometricEventsComponent } from './admin/biometric-events/biometric-events.component';
 import { SupervisorApprovalQueueComponent } from './admin/supervisor-approval-queue/supervisor-approval-queue.component';
 
 @Component({
@@ -30,6 +31,11 @@ export class AttendanceComponent implements OnInit {
         name: 'Admin Dashboard',
         component: AttendashboardComponent,
         icon: 'fa-solid fa-chart-line'
+      },
+      {
+        name: 'Biometric Events',
+        component: BiometricEventsComponent,
+        icon: 'fa-solid fa-fingerprint'
       },
       {
         name: 'Reports',

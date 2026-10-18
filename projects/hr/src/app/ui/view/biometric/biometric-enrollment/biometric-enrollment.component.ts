@@ -27,6 +27,7 @@ export class BiometricEnrollmentComponent implements OnInit, OnDestroy {
   templateQuality: number = 0;
   isScanning: boolean = false;
   isSaving: boolean = false;
+  pingingDeviceId: number | null = null;
   errorMessage: string = '';
   successMessage: string = '';
 
@@ -75,6 +76,27 @@ export class BiometricEnrollmentComponent implements OnInit, OnDestroy {
         error: (err) => {
           this.errorMessage = 'Failed to load biometric devices';
           console.error(err);
+        }
+      });
+  }
+
+  pingDevice(device: BiometricDeviceDTO, event: Event): void {
+    event.stopPropagation();
+    this.pingingDeviceId = device.id;
+    this.errorMessage = '';
+    this.biometricService.pingDevice(device.id, device.ipAddress)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (updated) => {
+          this.pingingDeviceId = null;
+          const idx = this.availableDevices.findIndex(d => d.id === updated.id);
+          if (idx !== -1) this.availableDevices[idx] = updated;
+          if (this.selectedDevice?.id === updated.id) this.selectedDevice = updated;
+        },
+        error: () => {
+          this.pingingDeviceId = null;
+          this.errorMessage = `Could not reach device "${device.name}" at ${device.ipAddress ?? 'unknown IP'}. ` +
+            `Ensure you are on the same network as the device and that HTTP is enabled on the device.`;
         }
       });
   }
@@ -221,5 +243,15 @@ export class BiometricEnrollmentComponent implements OnInit, OnDestroy {
   getSelectedFingerLabel(): string {
     const finger = this.fingers.find(f => f.id === this.selectedFinger);
     return finger?.label || 'Unknown Finger';
+  }
+
+  toDate(value: any): Date | null {
+    if (!value) return null;
+    if (Array.isArray(value)) {
+      const [year, month, day, hour = 0, min = 0, sec = 0] = value;
+      return new Date(year, month - 1, day, hour, min, sec);
+    }
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? null : d;
   }
 }
