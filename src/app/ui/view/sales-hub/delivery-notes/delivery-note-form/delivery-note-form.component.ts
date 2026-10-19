@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
+import { renderElementToPdf } from '../../../../service/sales/sales-document-email.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
@@ -8,8 +9,6 @@ import { PdfGenerationService } from '../../../../service/procurement/pdf-genera
 import { Customer, Product, SalesDeliveryNote, SalesDeliveryNoteItem, SalesDeliveryNoteStatus, MerchantInfo } from '../../../../domain/sales/sales.dto';
 import { formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 
@@ -356,21 +355,20 @@ export class DeliveryNoteFormComponent implements OnInit, OnDestroy {
       return;
     }
     this.isDownloading = true;
-    setTimeout(() => {
-      html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 210;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        pdf.save(`DeliveryNote-${this.generatedNumber || 'draft'}.pdf`);
-        this.isDownloading = false;
-      }).catch(err => {
-        console.error('Error generating PDF:', err);
-        this.isDownloading = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to build PDF document.' });
-      });
-    }, 100);
+    // Shared renderer: compressed, sharp and multi-page (this used to keep only page one).
+    renderElementToPdf(element).then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `DeliveryNote-${this.generatedNumber || 'draft'}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      this.isDownloading = false;
+    }).catch(err => {
+      console.error('Error generating PDF:', err);
+      this.isDownloading = false;
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to build PDF document.' });
+    });
   }
 
   printPreview(): void {

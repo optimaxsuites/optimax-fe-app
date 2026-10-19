@@ -11,10 +11,8 @@ import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { DeliveryNoteDocumentComponent } from '../delivery-note-document/delivery-note-document.component';
 import { TemplateTypesComponent, QuoteTemplate, QUOTE_TEMPLATES } from '../../template-types/template-types.component';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { SendEmailModalComponent } from '../../send-email-modal/send-email-modal.component';
-import { SalesDocumentEmailService } from '../../../../service/sales/sales-document-email.service';
+import { SalesDocumentEmailService, renderElementToPdf } from '../../../../service/sales/sales-document-email.service';
 import { MessageModule } from 'primeng/message';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
@@ -476,13 +474,8 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   private async generatePdfBlob(): Promise<Blob> {
     const element = document.getElementById('generate-dn-preview');
     if (!element) throw new Error('Preview element not found');
-    const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-    return pdf.output('blob');
+    // Shared renderer: compressed (the old uncompressed one made ~9 MB email attachments) and multi-page.
+    return renderElementToPdf(element);
   }
 
   async downloadPDF(): Promise<void> {
