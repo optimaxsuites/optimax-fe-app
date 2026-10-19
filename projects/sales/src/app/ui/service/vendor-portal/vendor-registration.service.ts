@@ -9,6 +9,7 @@ import {
   UploadedDocument, DocumentUploadType,
 } from '../../domain/vendor-portal/vendor-registration.dto';
 import { environment } from '../../shared-component/service/environments/environment';
+import { registrationFromApi, registrationStepToApi } from './registration-api-mapping.util';
 
 /**
  * Thrown by submit() with a message that is safe to show the vendor. `failedDocuments` lists the labels
@@ -65,7 +66,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step1: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step1`, data).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step1`, registrationStepToApi(1, data)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep1 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -75,7 +76,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step2: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step2`, data).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step2`, registrationStepToApi(2, data)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep2 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -85,7 +86,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step3: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step3`, data).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step3`, registrationStepToApi(3, data)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep3 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -95,7 +96,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step4: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step4`, data).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step4`, registrationStepToApi(4, data)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep4 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -105,7 +106,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step5: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step5`, data).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step5`, registrationStepToApi(5, data)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep5 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -115,7 +116,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step6: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step6`, data).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step6`, registrationStepToApi(6, data)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep6 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -150,7 +151,7 @@ export class VendorRegistrationService {
 
     const ensureVendor$: Observable<string> = existingId
       ? of(String(existingId))
-      : this.http.post<any>(`${this.baseUrl}/vendors`, { ...(reg.step1 ?? {}), tenantId: this.tenantId }).pipe(
+      : this.http.post<any>(`${this.baseUrl}/vendors`, { ...registrationStepToApi(1, reg.step1 ?? {}), tenantId: this.tenantId }).pipe(
           map(res => {
             const id = this.extractId(res);
             if (!id) {
@@ -164,12 +165,12 @@ export class VendorRegistrationService {
           }),
           catchError(err => throwError(() => err instanceof RegistrationSubmitError
             ? err
-            : new RegistrationSubmitError('We could not create your application. Please check your connection and try again.')))
+            : new RegistrationSubmitError(this.failureMessage(err, 'We could not create your application.'))))
         );
 
     const saveSteps = (id: string): Observable<unknown> => {
       const puts: Observable<unknown>[] = [];
-      const put = (n: number, body: unknown) => puts.push(this.http.put(`${this.baseUrl}/vendors/${id}/step${n}`, body));
+      const put = (n: number, body: unknown) => puts.push(this.http.put(`${this.baseUrl}/vendors/${id}/step${n}`, registrationStepToApi(n, body)));
       // A brand-new vendor already has step 1 (it was the POST body); a retried one may have edits.
       if (existingId && reg.step1) put(1, reg.step1);
       if (reg.step2) put(2, reg.step2);
@@ -178,7 +179,7 @@ export class VendorRegistrationService {
       if (reg.step5) put(5, reg.step5);
       if (reg.step6) put(6, this.serializableStep6(reg.step6));
       return (puts.length ? forkJoin(puts) : of([])).pipe(
-        catchError(() => throwError(() => new RegistrationSubmitError('Some of your details could not be saved. Please try again.')))
+        catchError(err => throwError(() => new RegistrationSubmitError(this.failureMessage(err, 'Some of your details could not be saved.'))))
       );
     };
 
@@ -204,7 +205,7 @@ export class VendorRegistrationService {
     const markSubmitted = (id: string): Observable<{ applicationNumber: string }> =>
       this.http.patch<any>(`${this.baseUrl}/vendors/${id}/submit`, {}).pipe(
         map(res => ({ applicationNumber: String(res?.applicationNumber || id) })),
-        catchError(() => throwError(() => new RegistrationSubmitError('Your details were saved, but the application could not be submitted. Please try again.')))
+        catchError(err => throwError(() => new RegistrationSubmitError(this.failureMessage(err, 'Your details were saved, but the application could not be submitted.'))))
       );
 
     return ensureVendor$.pipe(
@@ -217,6 +218,19 @@ export class VendorRegistrationService {
         this.clearDraft();
       })
     );
+  }
+
+  /**
+   * What went wrong, in a sentence the vendor can act on: a real connection problem (status 0) says so;
+   * otherwise the server's own reason is shown instead of blaming the vendor's connection.
+   */
+  private failureMessage(err: any, what: string): string {
+    if (err?.status === 0) return `${what} Please check your connection and try again.`;
+    const body = err?.error;
+    const reason = typeof body === 'string' ? body : (body?.message || body?.error || '');
+    const trimmed = String(reason || '').trim();
+    if (!trimmed) return `${what} Please try again.`;
+    return `${what} The server said: ${trimmed.length > 300 ? trimmed.slice(0, 300) + '…' : trimmed}`;
   }
 
   /** Vendor id from a create response — either `{ id }` / `{ vendorId }` or a bare id — or '' if absent. */
@@ -292,6 +306,7 @@ export class VendorRegistrationService {
   // ── Fetch existing registration ───────────────────────────────────────────
   loadRegistration(vendorId: string): Observable<VendorRegistration> {
     return this.http.get<VendorRegistration>(`${this.baseUrl}/vendors/${vendorId}`).pipe(
+      map(reg => registrationFromApi(reg)),
       tap((reg) => this.registration$$.next(reg)),
       catchError((err) => {
         console.error('[VendorRegistrationService] loadRegistration failed:', err);

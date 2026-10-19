@@ -121,6 +121,35 @@ describe('VendorRegistrationService.submit', () => {
     // http.verify() (afterEach) proves no PUT/PATCH/document requests were issued
   });
 
+  it('sends enum fields in the backend\'s spelling (LIMITED_LIABILITY, not limited_liability)', () => {
+    const reg = makeReg();
+    reg.step1.businessType = 'government_entity';
+    reg.step6.uploadedDocuments = [];
+    run(reg);
+    const create = http.expectOne(`${BASE}/vendors`);
+    expect(create.request.body.businessType).toBe('GOVERNMENT');
+    create.flush({ id: 42 });
+    const step5 = http.expectOne(`${BASE}/vendors/42/step5`);
+    expect(step5.request.body.supplyCategories).toEqual(['IT']);
+    step5.flush({});
+    flushSteps('42', [2, 3, 4, 6]);
+    http.expectOne(`${BASE}/vendors/42/submit`).flush({});
+  });
+
+  it('shows the server\'s reason instead of blaming the connection', () => {
+    const out = run(makeReg());
+    http.expectOne(`${BASE}/vendors`).flush(
+      { httpStatus: 500, message: 'JSON parse error: bad BusinessType' }, { status: 500, statusText: 'Server Error' });
+    expect(out.error.message).toContain('bad BusinessType');
+    expect(out.error.message).not.toContain('connection');
+  });
+
+  it('only mentions the connection when the request never reached the server', () => {
+    const out = run(makeReg());
+    http.expectOne(`${BASE}/vendors`).error(new ProgressEvent('error'), { status: 0 });
+    expect(out.error.message).toContain('check your connection');
+  });
+
   it('rejects a create response with no id', () => {
     const out = run(makeReg());
     http.expectOne(`${BASE}/vendors`).flush({});
