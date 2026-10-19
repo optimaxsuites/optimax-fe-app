@@ -170,6 +170,8 @@ export class SalesDocumentEmailService {
     let rejected: unknown = null;
     try {
       const response = await lastValueFrom(this.salesEmailService.send(payload));
+      // An empty reply (`{}`) means nothing was logged or sent — fall through to the general endpoint.
+      if (!response?.status && response?.id == null) throw new Error('Sales email endpoint returned an empty response');
       if (response?.status === 'FAILED' || response?.status === 'BOUNCED') {
         return this.outcome('FAILED', 'Email Not Delivered', response.failureReason || `Delivery to ${opts.to} failed.`);
       }
@@ -249,6 +251,11 @@ export class SalesDocumentEmailService {
     try {
       const response = await lastValueFrom(this.salesEmailService.send(payload));
       // A 2xx only means the backend logged the send request — trust `status`, not the HTTP call.
+      // An empty reply (`{}`) means nothing was logged or sent, so it isn't a success either.
+      if (!response?.status && response?.id == null) {
+        this.messageService.add({ severity: 'error', summary: 'Email Not Sent', detail: `The server didn't confirm the ${label.toLowerCase()} email to ${opts.to}. Please try again.` });
+        return 'FAILED';
+      }
       if (response?.status === 'FAILED' || response?.status === 'BOUNCED') {
         this.messageService.add({ severity: 'error', summary: 'Email Not Delivered', detail: response.failureReason || `Delivery to ${opts.to} failed.` });
         return 'FAILED';
@@ -447,12 +454,15 @@ export async function renderElementToPdf(element: HTMLElement, scale = 3): Promi
     const pageH = 297;
     const imgW = 210;
     const imgH = (canvas.height * imgW) / canvas.width;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
+    // Without compression jsPDF stores the page image raw: ~19 MB at scale 3, which the email
+    // endpoint can't take (it answered `{}` and sent nothing). Compressed it's a few hundred KB.
+    // The alias embeds the image once even when it spans several pages.
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
+    pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH, 'document-page', 'FAST');
     let heightLeft = imgH - pageH;
     while (heightLeft > 0) {
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, heightLeft - imgH, imgW, imgH);
+      pdf.addImage(imgData, 'PNG', 0, heightLeft - imgH, imgW, imgH, 'document-page', 'FAST');
       heightLeft -= pageH;
     }
     return pdf.output('blob');

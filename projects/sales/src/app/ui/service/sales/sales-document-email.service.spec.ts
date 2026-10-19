@@ -57,6 +57,13 @@ describe('SalesDocumentEmailService', () => {
     expect(await service.sendQuote(quote, opts())).toBe('FAILED');
   });
 
+  it('treats an empty `{}` reply as not sent — the backend logged and sent nothing', async () => {
+    emailApi.send.and.returnValue(of({}));
+    expect(await service.sendQuote(quote, opts())).toBe('FAILED');
+    emailApi.send.and.returnValue(of({ id: 7 }));
+    expect(await service.sendQuote(quote, opts())).toBe('SENT');
+  });
+
   it('does not call the API without a recipient', async () => {
     expect(await service.sendInvoice({ ...quote, invoiceNumber: 'INV-1' }, opts({ to: '' }))).toBe('NO_EMAIL');
     expect(emailApi.send).not.toHaveBeenCalled();
@@ -84,6 +91,13 @@ describe('SalesDocumentEmailService', () => {
       emailApi.send.and.returnValue(throwError(() => ({ status: 400, error: { message: 'Unknown documentType' } })));
       const outcome = await service.sendDeliveryNote(note, opts());
       expect(notifications.sendDirectEmail).toHaveBeenCalledWith(jasmine.objectContaining({ to: 'a@acme.com', html: true }));
+      expect(outcome.result).toBe('SENT');
+    });
+
+    it('treats an empty `{}` reply as not sent and falls back to the general endpoint', async () => {
+      emailApi.send.and.returnValue(of({}));
+      const outcome = await service.sendDeliveryNote(note, opts());
+      expect(notifications.sendDirectEmail).toHaveBeenCalled();
       expect(outcome.result).toBe('SENT');
     });
 
