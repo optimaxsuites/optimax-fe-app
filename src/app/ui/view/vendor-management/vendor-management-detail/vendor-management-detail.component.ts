@@ -10,6 +10,7 @@ import { Subject, takeUntil } from 'rxjs';
 import {
   VendorService
 } from '../../../service/vendor-management/vendor-management.service';
+import { enumFromApi } from '../../../service/vendor-portal/registration-api-mapping.util';
 import { ApprovalService } from '../../../service/approval-inbox/approval.service';
 import {
   Vendor,
@@ -477,19 +478,19 @@ export class VendorManagementDetailComponent implements OnInit, OnDestroy, After
   }
 
   getBusinessTypeLabel(type?: string): string {
-    return (type && BUSINESS_TYPE_LABELS[type as keyof typeof BUSINESS_TYPE_LABELS]) || type || '—';
+    return (type && BUSINESS_TYPE_LABELS[enumFromApi(type, 'businessType') as keyof typeof BUSINESS_TYPE_LABELS]) || type || '—';
   }
 
   getBusinessSizeLabel(size?: string): string {
-    return (size && BUSINESS_SIZE_LABELS[size as keyof typeof BUSINESS_SIZE_LABELS]) || size || '—';
+    return (size && BUSINESS_SIZE_LABELS[enumFromApi(size) as keyof typeof BUSINESS_SIZE_LABELS]) || size || '—';
   }
 
   getOwnershipTypeLabel(type?: string): string {
-    return (type && OWNERSHIP_TYPE_LABELS[type as keyof typeof OWNERSHIP_TYPE_LABELS]) || type || '—';
+    return (type && OWNERSHIP_TYPE_LABELS[enumFromApi(type) as keyof typeof OWNERSHIP_TYPE_LABELS]) || type || '—';
   }
 
   getSupplyCategoryLabel(cat?: string): string {
-    return (cat && SUPPLY_CATEGORY_LABELS[cat as keyof typeof SUPPLY_CATEGORY_LABELS]) || cat || '—';
+    return (cat && SUPPLY_CATEGORY_LABELS[enumFromApi(cat) as keyof typeof SUPPLY_CATEGORY_LABELS]) || cat || '—';
   }
 
   getSupplyCategoryLabels(cats?: string[]): string {
