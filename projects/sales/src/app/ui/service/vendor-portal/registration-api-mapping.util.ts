@@ -6,7 +6,7 @@
 // and back on the way in, so the form, its labels and drafts keep the lowercase values.
 
 import {
-  VendorRegistration, BusinessIdentity, ContactLocation, BankingFinance,
+  EMPLOYEE_RANGES, VendorRegistration, BusinessIdentity, ContactLocation, BankingFinance,
   CapabilitiesExperience, DocumentsDeclaration, UploadedDocument,
 } from '../../domain/vendor-portal/vendor-registration.dto';
 
@@ -24,9 +24,33 @@ const each = (list: unknown, fn: (v: unknown) => any): any => Array.isArray(list
 
 type Convert = (v: unknown, special?: Record<string, string>) => any;
 
-function step1(s: BusinessIdentity | undefined, c: Convert, businessTypes: Record<string, string>): any {
+// The backend stores the employee count as an Integer, but the form offers ranges ('6–10'), which it
+// rejects with a 500. Send the range's lowest number and map a number back to the range holding it.
+const parseCount = (s: string): number => Number(s.replace(/[^0-9]/g, ''));
+const EMPLOYEE_BOUNDS = EMPLOYEE_RANGES.map(range => {
+  if (range.endsWith('+')) return { range, min: parseCount(range) + 1, max: Infinity };  // '5,000+' → 5001+
+  const [lo, hi] = range.split(/[–-]/);
+  return { range, min: parseCount(lo), max: parseCount(hi) };
+});
+
+export function employeeCountToApi(value: unknown): unknown {
+  if (typeof value !== 'string' || !value) return value;
+  return EMPLOYEE_BOUNDS.find(b => b.range === value)?.min ?? (parseCount(value) || value);
+}
+
+export function employeeCountFromApi(value: unknown): unknown {
+  const n = typeof value === 'number' ? value : (typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : NaN);
+  if (isNaN(n)) return value;   // already a range label, or empty
+  return EMPLOYEE_BOUNDS.find(b => n >= b.min && n <= b.max)?.range ?? String(n);
+}
+
+function step1(s: BusinessIdentity | undefined, c: Convert, businessTypes: Record<string, string>, employees: (v: unknown) => unknown): any {
   if (!s) return s;
-  return { ...s, businessType: c(s.businessType, businessTypes), businessSize: c(s.businessSize), ownershipType: c(s.ownershipType) };
+  return {
+    ...s,
+    businessType: c(s.businessType, businessTypes), businessSize: c(s.businessSize), ownershipType: c(s.ownershipType),
+    ...('numberOfEmployees' in s ? { numberOfEmployees: employees(s.numberOfEmployees) } : {}),
+  };
 }
 
 function step3(s: ContactLocation | undefined, c: Convert): any {
@@ -51,7 +75,7 @@ function step6(s: DocumentsDeclaration | undefined, c: Convert): any {
 /** One step's body in the backend's enum spelling, ready for POST /vendors or PUT /vendors/{id}/stepN. */
 export function registrationStepToApi(n: number, body: any): any {
   switch (n) {
-    case 1: return step1(body, toApi, BUSINESS_TYPE_TO_API);
+    case 1: return step1(body, toApi, BUSINESS_TYPE_TO_API, employeeCountToApi);
     case 3: return step3(body, toApi);
     case 4: return step4(body, toApi);
     case 5: return step5(body, toApi);
@@ -65,7 +89,7 @@ export function registrationFromApi<T extends Partial<VendorRegistration> | null
   if (!reg) return reg;
   return {
     ...reg,
-    step1: step1(reg.step1, fromApi, BUSINESS_TYPE_FROM_API),
+    step1: step1(reg.step1, fromApi, BUSINESS_TYPE_FROM_API, employeeCountFromApi),
     step3: step3(reg.step3, fromApi),
     step4: step4(reg.step4, fromApi),
     step5: step5(reg.step5, fromApi),

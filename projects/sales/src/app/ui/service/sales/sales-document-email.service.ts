@@ -268,7 +268,8 @@ export class SalesDocumentEmailService {
       return 'SENT';
     } catch (err) {
       console.error(`[SalesDocumentEmailService] Failed to send ${label.toLowerCase()} email:`, err);
-      this.messageService.add({ severity: 'error', summary: 'Email Error', detail: `Failed to send ${label.toLowerCase()} email.` });
+      const reason = httpReason(err);
+      this.messageService.add({ severity: 'error', summary: 'Email Error', detail: `Failed to send ${label.toLowerCase()} email${reason ? ` (${reason})` : ''}.` });
       return 'FAILED';
     }
   }
