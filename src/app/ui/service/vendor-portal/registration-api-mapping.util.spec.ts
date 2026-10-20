@@ -1,4 +1,4 @@
-import { enumFromApi, registrationFromApi, registrationStepToApi } from './registration-api-mapping.util';
+import { employeeCountFromApi, employeeCountToApi, enumFromApi, registrationFromApi, registrationStepToApi } from './registration-api-mapping.util';
 
 describe('registration API enum mapping', () => {
   it('uppercases step 1 enums, mapping government_entity to GOVERNMENT', () => {
@@ -38,5 +38,22 @@ describe('registration API enum mapping', () => {
     expect(enumFromApi('LIMITED_LIABILITY', 'businessType')).toBe('limited_liability');
     expect(enumFromApi('GOVERNMENT', 'businessType')).toBe('government_entity');
     expect(enumFromApi('limited_liability')).toBe('limited_liability');
+  });
+
+  it('sends the employee range as a whole number (the backend field is an Integer)', () => {
+    expect(registrationStepToApi(1, { numberOfEmployees: '6–10' }).numberOfEmployees).toBe(6);
+    expect(employeeCountToApi('1,001–5,000')).toBe(1001);
+    expect(employeeCountToApi('5,000+')).toBe(5001);
+    expect(employeeCountToApi('')).toBe('');
+    expect('numberOfEmployees' in registrationStepToApi(1, { businessName: 'x' })).toBeFalse();
+  });
+
+  it('reads a stored employee count back as the range that holds it', () => {
+    expect(employeeCountFromApi(6)).toBe('6–10');
+    expect(employeeCountFromApi(8)).toBe('6–10');
+    expect(employeeCountFromApi(5000)).toBe('1,001–5,000');
+    expect(employeeCountFromApi(5001)).toBe('5,000+');
+    expect(employeeCountFromApi('6–10')).toBe('6–10');
+    expect((registrationFromApi({ step1: { numberOfEmployees: 26 } } as any) as any).step1.numberOfEmployees).toBe('26–50');
   });
 });
