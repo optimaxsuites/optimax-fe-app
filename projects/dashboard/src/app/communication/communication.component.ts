@@ -254,19 +254,6 @@ interface ChatArrivalToast {
   threadRootMessageBackendId?: number;
 }
 
-interface CollabReminder {
-  id: string;
-  taskId: string;
-  taskTitle: string;
-  sprint?: string;
-  dueDate: string;
-  reminderAt: string;
-  note?: string;
-  assignee?: string;
-  fired: boolean;
-  source: 'task' | 'issue';
-}
-
 interface ChatReactionOption {
   code: string;
   emoji: string;
@@ -672,9 +659,6 @@ export class CommunicationComponent
   taskRoutineTodos: TaskRoutineSummary[] = [];
   upcomingBirthdays: BirthdayReminderItem[] = [];
 
-  scheduledReminders: CollabReminder[] = [];
-  private reminderPollRef: ReturnType<typeof setInterval> | null = null;
-
   workspaceFocusItems: CollaborationFocusItem[] = [];
   chatArrivalToasts: ChatArrivalToast[] = [];
   private chatArrivalToastTimers = new Map<number, ReturnType<typeof setTimeout>>();
@@ -909,12 +893,9 @@ export class CommunicationComponent
       this.startConversationSync();
     }
     this.processMentionHashNavigation();
-    this.loadScheduledReminders();
-    this.reminderPollRef = setInterval(() => this.loadScheduledReminders(), 60_000);
   }
 
   ngOnDestroy() {
-    if (this.reminderPollRef !== null) { clearInterval(this.reminderPollRef); this.reminderPollRef = null; }
     this.stopJitsiListener();
     if (this.flashTimer) clearTimeout(this.flashTimer);
     if (this.typingTimer) clearTimeout(this.typingTimer);
@@ -2382,6 +2363,44 @@ export class CommunicationComponent
     return roots;
   }
 
+  private isSignalOrSystemFrame(frameBody: string): boolean {
+    if (!frameBody) return false;
+    try {
+      const parsed = JSON.parse(frameBody);
+      const obj = (parsed && typeof parsed === 'object') ? parsed : {};
+      const msg = (obj.message && typeof obj.message === 'object') ? obj.message : obj;
+
+      const type = (obj.type || obj.actionType || obj.eventType || obj.messageType || msg.type || msg.actionType || msg.eventType || msg.messageType || '').toString().toUpperCase();
+      const signalTypes = [
+        'CALL_SIGNAL', 'CALL', 'VIDEO_CALL', 'CALL_STATUS', 'CALL_SUMMARY', 'CALL_CARD',
+        'SEEN', 'READ', 'PLAYED', 'TYPING', 'PRESENCE', 'OFFER', 'ANSWER', 'CANDIDATE',
+        'BYE', 'ICE_CANDIDATE', 'SDP', 'ACK', 'PING', 'PONG', 'POST', 'FEED_POST'
+      ];
+      if (signalTypes.includes(type)) return true;
+
+      const payloadObj = obj.payload || msg.payload;
+      if (payloadObj && typeof payloadObj === 'object') {
+        const pType = (payloadObj.type || payloadObj.callType || payloadObj.callStatus || '').toString().toUpperCase();
+        if (signalTypes.includes(pType) || payloadObj.callStatus) return true;
+      }
+
+      const content = (msg.content || obj.content || '').toString().trim();
+      if (content.startsWith('{') && content.endsWith('}')) {
+        try {
+          const inner = JSON.parse(content);
+          const innerType = (inner.type || inner.actionType || inner.eventType || '').toString().toUpperCase();
+          if (signalTypes.includes(innerType)) return true;
+          if (inner.__optimaxReadReceipt || inner.__signal || inner.callStatus) return true;
+          if (inner.payload && typeof inner.payload === 'object') {
+            const ipType = (inner.payload.type || inner.payload.callType || inner.payload.callStatus || '').toString().toUpperCase();
+            if (signalTypes.includes(ipType) || inner.payload.callStatus) return true;
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+    return false;
+  }
+
   private parseIncomingNotification(frameBody: string): {
     senderName: string;
     content: string;
@@ -2390,7 +2409,10 @@ export class CommunicationComponent
     contextLabel?: string;
     messageBackendId?: number;
     threadRootMessageBackendId?: number;
-  } {
+  } | null {
+    if (this.isSignalOrSystemFrame(frameBody)) {
+      return null;
+    }
     try {
       const payload = JSON.parse(frameBody || '{}');
       const msg = (payload.message && typeof payload.message === 'object') ? payload.message : payload;
@@ -2401,10 +2423,19 @@ export class CommunicationComponent
         this.notificationFieldText(msg.authorName, '') ||
         'New message';
       const rawContent = this.notificationFieldText(msg.content, '');
-      const content = this.formatMessagePreview(rawContent)
+      const formatted = this.formatMessagePreview(rawContent);
+      if (!formatted || (formatted.trim().startsWith('{') && formatted.trim().endsWith('}'))) {
+        return null;
+      }
+      const content = formatted
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/g, ' ')
         .replace(/\s+/g, ' ')
         .trim()
         .slice(0, 120);
+      if (!content || (content.startsWith('{') && content.endsWith('}'))) {
+        return null;
+      }
       return {
         senderName,
         content,
@@ -2419,7 +2450,7 @@ export class CommunicationComponent
         threadRootMessageBackendId: Number(msg.threadRootMessageId ?? 0) || undefined,
       };
     } catch (_) {
-      return { senderName: 'New message', content: '', contextLabel: 'New message' };
+      return null;
     }
   }
 
@@ -2517,9 +2548,16 @@ export class CommunicationComponent
     }
     this.seenFeedNotificationIds.add(notification.id);
     this.persistSeenFeedNotificationIds();
+
+    const rawBody = notification.body || notification.title || '@all notification';
+    const cleanBody = this.formatMessagePreview(rawBody);
+    if (!cleanBody || (cleanBody.startsWith('{') && cleanBody.endsWith('}'))) {
+      return;
+    }
+
     this.headerStateService.pushNotification({
       title: `${this.feedAuthorName(notification.actor)} mentioned everyone`,
-      body: notification.body || notification.title || '@all notification',
+      body: cleanBody,
       category: 'feed',
       route: this.resolveCollaborationRoute(),
       avatarUrl: this.feedAuthorAvatarUrl(notification.actor),
@@ -3506,62 +3544,65 @@ export class CommunicationComponent
             chFrameMessageType = msg2.messageType || null;
           } catch (_) {}
           const isChCallSystemMessage = chFrameMessageType === 'CALL_SUMMARY' || chFrameMessageType === 'CALL_CARD';
+          const isChSystemOrSignal = isChCallSystemMessage || this.isSignalOrSystemFrame(frame.body);
 
           if (!isOwnMessage) {
             this.loadChannels(true, true);
           }
-          if (!isOwnMessage && !isChCallSystemMessage) {
+          if (!isOwnMessage && !isChSystemOrSignal) {
             const incoming = this.parseIncomingNotification(frame.body);
-            this.pushChatMessagePreview({
-              title: incoming.senderName || ch.name,
-              body: incoming.content || `New message in ${ch.name}`,
-              avatarUrl: incoming.avatarUrl,
-              contextLabel: ch.name,
-              channelBackendId: ch.backendId,
-              messageBackendId: incoming.messageBackendId,
-              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
-            });
-            this.pushWorkspaceNotification({
-              title: incoming.senderName || ch.name,
-              body: incoming.content || `New message in ${ch.name}`,
-              category: 'chat',
-              route: this.resolveCollaborationRoute(),
-              avatarUrl: incoming.avatarUrl,
-              contextLabel: ch.name,
-              workspaceMode: 'chat',
-              channelBackendId: ch.backendId,
-              messageBackendId: incoming.messageBackendId,
-              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
-            });
-            this.pushChatArrivalToast({
-              title: incoming.senderName || ch.name,
-              body: incoming.content || `New message in ${ch.name}`,
-              avatarUrl: incoming.avatarUrl,
-              tone: 'channel',
-              channelId: ch.id,
-              messageBackendId: incoming.messageBackendId,
-              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
-            });
-            this.showBrowserNotification(
-              incoming.senderName || ch.name,
-              incoming.content || `New message in ${ch.name}`,
-              {
-                tag: `channel-${ch.id}`,
-                icon: incoming.avatarUrl,
-                target: {
-                  workspaceMode: 'chat',
-                  channelBackendId: ch.backendId,
-                  messageBackendId: incoming.messageBackendId,
-                  threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+            if (incoming) {
+              this.pushChatMessagePreview({
+                title: incoming.senderName || ch.name,
+                body: incoming.content || `New message in ${ch.name}`,
+                avatarUrl: incoming.avatarUrl,
+                contextLabel: ch.name,
+                channelBackendId: ch.backendId,
+                messageBackendId: incoming.messageBackendId,
+                threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+              });
+              this.pushWorkspaceNotification({
+                title: incoming.senderName || ch.name,
+                body: incoming.content || `New message in ${ch.name}`,
+                category: 'chat',
+                route: this.resolveCollaborationRoute(),
+                avatarUrl: incoming.avatarUrl,
+                contextLabel: ch.name,
+                workspaceMode: 'chat',
+                channelBackendId: ch.backendId,
+                messageBackendId: incoming.messageBackendId,
+                threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+              });
+              this.pushChatArrivalToast({
+                title: incoming.senderName || ch.name,
+                body: incoming.content || `New message in ${ch.name}`,
+                avatarUrl: incoming.avatarUrl,
+                tone: 'channel',
+                channelId: ch.id,
+                messageBackendId: incoming.messageBackendId,
+                threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+              });
+              this.showBrowserNotification(
+                incoming.senderName || ch.name,
+                incoming.content || `New message in ${ch.name}`,
+                {
+                  tag: `channel-${ch.id}`,
+                  icon: incoming.avatarUrl,
+                  target: {
+                    workspaceMode: 'chat',
+                    channelBackendId: ch.backendId,
+                    messageBackendId: incoming.messageBackendId,
+                    threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+                  },
                 },
-              },
-            );
-            this.playNotificationSound(this.shouldUseUrgentNotificationSound());
+              );
+              this.playNotificationSound(this.shouldUseUrgentNotificationSound());
+            }
           }
 
           const isActiveChannelFeed = this.workspaceMode === 'chat' && this.activeView === 'channel' && this.activeChannelId === ch.id;
           if (!isActiveChannelFeed) {
-            if (!isOwnMessage && !isChCallSystemMessage) {
+            if (!isOwnMessage && !isChSystemOrSignal) {
               ch.unreadCount = (ch.unreadCount || 0) + 1;
               ch.hasUnread = true;
               this.channels = [...this.channels];
@@ -3623,62 +3664,65 @@ export class CommunicationComponent
             frameMessageType = msg2.messageType || null;
           } catch (_) {}
           const isCallSystemMessage = frameMessageType === 'CALL_SUMMARY' || frameMessageType === 'CALL_CARD';
+          const isDmSystemOrSignal = isCallSystemMessage || this.isSignalOrSystemFrame(frame.body);
           const isOwnMessage =
             senderUserId !== null && senderUserId === this.me.userId;
           if (!isOwnMessage) {
             this.loadChannels(true, true);
           }
-          if (!isOwnMessage && !isCallSystemMessage) {
+          if (!isOwnMessage && !isDmSystemOrSignal) {
             const incoming = this.parseIncomingNotification(frame.body);
-            this.pushChatMessagePreview({
-              title: incoming.senderName || contact.fullName,
-              body: incoming.content || `New direct message from ${contact.fullName}`,
-              avatarUrl: incoming.avatarUrl || contact.avatarUrl,
-              contextLabel: 'Direct message',
-              dmUserId: contact.userId,
-              messageBackendId: incoming.messageBackendId,
-              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
-            });
-            this.pushWorkspaceNotification({
-              title: incoming.senderName || contact.fullName,
-              body: incoming.content || `New direct message from ${contact.fullName}`,
-              category: 'chat',
-              route: this.resolveCollaborationRoute(),
-              avatarUrl: incoming.avatarUrl || contact.avatarUrl,
-              contextLabel: 'Direct message',
-              workspaceMode: 'chat',
-              dmUserId: contact.userId,
-              messageBackendId: incoming.messageBackendId,
-              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
-            });
-            this.pushChatArrivalToast({
-              title: incoming.senderName || contact.fullName,
-              body: incoming.content || `New direct message from ${contact.fullName}`,
-              avatarUrl: incoming.avatarUrl || contact.avatarUrl,
-              tone: 'dm',
-              dmId: contact.id,
-              messageBackendId: incoming.messageBackendId,
-              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
-            });
-            this.showBrowserNotification(
-              incoming.senderName || contact.fullName,
-              incoming.content || `New direct message from ${contact.fullName}`,
-              {
-                tag: `dm-${contact.id}`,
-                icon: incoming.avatarUrl || contact.avatarUrl,
-                target: {
-                  workspaceMode: 'chat',
-                  dmUserId: contact.userId,
-                  messageBackendId: incoming.messageBackendId,
-                  threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+            if (incoming) {
+              this.pushChatMessagePreview({
+                title: incoming.senderName || contact.fullName,
+                body: incoming.content || `New direct message from ${contact.fullName}`,
+                avatarUrl: incoming.avatarUrl || contact.avatarUrl,
+                contextLabel: 'Direct message',
+                dmUserId: contact.userId,
+                messageBackendId: incoming.messageBackendId,
+                threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+              });
+              this.pushWorkspaceNotification({
+                title: incoming.senderName || contact.fullName,
+                body: incoming.content || `New direct message from ${contact.fullName}`,
+                category: 'chat',
+                route: this.resolveCollaborationRoute(),
+                avatarUrl: incoming.avatarUrl || contact.avatarUrl,
+                contextLabel: 'Direct message',
+                workspaceMode: 'chat',
+                dmUserId: contact.userId,
+                messageBackendId: incoming.messageBackendId,
+                threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+              });
+              this.pushChatArrivalToast({
+                title: incoming.senderName || contact.fullName,
+                body: incoming.content || `New direct message from ${contact.fullName}`,
+                avatarUrl: incoming.avatarUrl || contact.avatarUrl,
+                tone: 'dm',
+                dmId: contact.id,
+                messageBackendId: incoming.messageBackendId,
+                threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+              });
+              this.showBrowserNotification(
+                incoming.senderName || contact.fullName,
+                incoming.content || `New direct message from ${contact.fullName}`,
+                {
+                  tag: `dm-${contact.id}`,
+                  icon: incoming.avatarUrl || contact.avatarUrl,
+                  target: {
+                    workspaceMode: 'chat',
+                    dmUserId: contact.userId,
+                    messageBackendId: incoming.messageBackendId,
+                    threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+                  },
                 },
-              },
-            );
-            this.playNotificationSound(this.shouldUseUrgentNotificationSound());
+              );
+              this.playNotificationSound(this.shouldUseUrgentNotificationSound());
+            }
           }
           const isActiveDmFeed = this.workspaceMode === 'chat' && this.activeView === 'dm' && this.activeDmId === contact.id;
           if (!isActiveDmFeed) {
-            if (!isOwnMessage && !isCallSystemMessage) {
+            if (!isOwnMessage && !isDmSystemOrSignal) {
               contact.unreadCount = (contact.unreadCount || 0) + 1;
               contact.hasUnread = true;
               this.dmContacts = [...this.dmContacts];
@@ -4651,7 +4695,7 @@ export class CommunicationComponent
             0,
         ) || profile.userId,
       jobTitle:
-        employee?.jobTitle || 
+        employee?.jobTitle ||
         employee?.designation ||
         employee?.position ||
         profile.jobTitle,
@@ -4860,31 +4904,6 @@ export class CommunicationComponent
         : undefined;
     contact.daysUntilBirthday = reminder?.daysUntilBirthday ?? null;
     contact.birthdayIsToday = reminder?.birthdayIsToday ?? false;
-  }
-
-  loadScheduledReminders(): void {
-    const taskKey = 'hr_productivity_task_reminders_v1';
-    const issueKey = 'hr_issue_reminders_v1';
-    const parse = (key: string, source: 'task' | 'issue') => {
-      try {
-        return (JSON.parse(localStorage.getItem(key) || '[]') as any[]).map(r => ({ ...r, source }));
-      } catch { return []; }
-    };
-    const all: CollabReminder[] = [
-      ...parse(taskKey, 'task'),
-      ...parse(issueKey, 'issue'),
-    ];
-    all.sort((a, b) => new Date(a.reminderAt).getTime() - new Date(b.reminderAt).getTime());
-    this.scheduledReminders = all;
-  }
-
-  dismissCollabReminder(taskId: string, source: 'task' | 'issue'): void {
-    const key = source === 'task' ? 'hr_productivity_task_reminders_v1' : 'hr_issue_reminders_v1';
-    try {
-      const all = JSON.parse(localStorage.getItem(key) || '[]') as any[];
-      localStorage.setItem(key, JSON.stringify(all.filter((r: any) => r.taskId !== taskId)));
-    } catch { /* ignore */ }
-    this.loadScheduledReminders();
   }
 
   private buildUpcomingBirthdays(contacts: DmContact[]): BirthdayReminderItem[] {
@@ -8098,10 +8117,6 @@ export class CommunicationComponent
           optimistic.id = `backend-${saved.id}`;
           optimistic.deliveryState = 'DELIVERED';
           optimistic.retryMeta = undefined;
-          if (saved.sentAt) {
-            optimistic.sentAtRaw = saved.sentAt;
-            optimistic.time = formatRelativeTime(saved.sentAt);
-          }
           this.sendingMessage = false;
           this.syncActiveConversationState();
           if (capturedFiles.length && capturedAttachments.length) {
@@ -8177,10 +8192,6 @@ export class CommunicationComponent
           optimistic.id = `backend-${saved.id}`;
           optimistic.deliveryState = 'DELIVERED';
           optimistic.retryMeta = undefined;
-          if (saved.sentAt) {
-            optimistic.sentAtRaw = saved.sentAt;
-            optimistic.time = formatRelativeTime(saved.sentAt);
-          }
           this.sendingMessage = false;
           this.syncActiveConversationState();
           if (capturedFiles.length && capturedAttachments.length) {
@@ -8700,10 +8711,6 @@ export class CommunicationComponent
           optimistic.id = `backend-${saved.id}`;
           optimistic.deliveryState = 'DELIVERED';
           optimistic.retryMeta = undefined;
-          if (saved.sentAt) {
-            optimistic.sentAtRaw = saved.sentAt;
-            optimistic.time = formatRelativeTime(saved.sentAt);
-          }
           this.sendingReply = false;
           this.syncActiveConversationState();
           this.refreshSelectedThreadFromSource(stableRootMsg.id);
@@ -10899,18 +10906,48 @@ export class CommunicationComponent
   }
 
   private formatMessagePreview(content: string): string {
-    try {
-      const d = JSON.parse(content);
-      if (d?.__callSummary) {
-        const label = d.callType === 'VIDEO_CALL' ? 'Video call' : 'Voice call';
-        return d.duration >= 0 ? `📞 ${label} · ${this.formatCallDuration(d.duration)}` : '📞 Missed call';
+    if (!content) return '';
+    const trimmed = typeof content === 'string' ? content.trim() : '';
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        if (this.isSignalOrSystemFrame(trimmed)) {
+          return '';
+        }
+        const d = JSON.parse(trimmed);
+        if (d?.__callSummary) {
+          const label = d.callType === 'VIDEO_CALL' ? 'Video call' : 'Voice call';
+          return d.duration >= 0 ? `📞 ${label} · ${this.formatCallDuration(d.duration)}` : '📞 Missed call';
+        }
+        if (d?.__callInvite) {
+          const label = d.callType === 'VIDEO_CALL' ? 'video' : 'voice';
+          return `📞 ${d.callerName || 'Someone'} started a ${label} call`;
+        }
+        if (d.content) {
+          return this.formatMessagePreview(String(d.content));
+        }
+        if (d.text) {
+          return this.formatMessagePreview(String(d.text));
+        }
+        if (d.message && typeof d.message === 'string') {
+          return this.formatMessagePreview(d.message);
+        }
+        if (d.title && typeof d.title === 'string') {
+          return this.formatMessagePreview(d.title);
+        }
+        return '';
+      } catch (_) {
+        return '';
       }
-      if (d?.__callInvite) {
-        const label = d.callType === 'VIDEO_CALL' ? 'video' : 'voice';
-        return `📞 ${d.callerName} started a ${label} call`;
-      }
-    } catch (_) {}
-    return content;
+    }
+    const cleaned = String(content)
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (cleaned.startsWith('{') && cleaned.endsWith('}')) {
+      return '';
+    }
+    return cleaned;
   }
 
   private formatCallDuration(secs: number): string {
@@ -11736,7 +11773,6 @@ export class CommunicationComponent
         minute: '2-digit',
         hour12: true,
       }),
-      sentAtRaw: new Date().toISOString(),
       content,
       replies: [],
       liked: false,
@@ -11774,10 +11810,6 @@ export class CommunicationComponent
           msg.backendId = saved.id;
           msg.id = `backend-${saved.id}`;
           msg.deliveryState = 'DELIVERED';
-          if (saved.sentAt) {
-            msg.sentAtRaw = saved.sentAt;
-            msg.time = formatRelativeTime(saved.sentAt);
-          }
           const files = retryMeta.files || [];
           const attachments = retryMeta.attachments || [];
           msg.retryMeta = undefined;
