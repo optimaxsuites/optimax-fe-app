@@ -63,6 +63,7 @@
       [showSearch]="showSearch"
       [searchResults]="searchResults"
       [totalDmUnread]="totalDmUnread"
+      [typingMap]="typingMap"
       [selfStats]="selfStats"
       (channelSelected)="onSidebarChannelSelected($event)"
       (dmSelected)="onSidebarDmSelected($event)"
@@ -1152,8 +1153,32 @@
               <ng-container *ngIf="activeView === 'threads'">All threads</ng-container>
             </h2>
             <span class="chat-subtitle">
-              <ng-container *ngIf="activeView === 'channel'">{{ activeChannel?.description }}</ng-container>
-              <ng-container *ngIf="activeView === 'dm'">{{ activeDmContact?.jobTitle || activeDmContact?.lastMessagePreview }}</ng-container>
+              <ng-container *ngIf="activeView === 'channel'">
+                <span *ngIf="typingUsersLabel" class="text-emerald-600 font-medium inline-flex items-center gap-1.5">
+                  <span class="inline-flex items-center gap-0.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse [animation-delay:200ms]"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse [animation-delay:400ms]"></span>
+                  </span>
+                  <span class="italic">{{ typingUsersLabel }}</span>
+                </span>
+                <ng-container *ngIf="!typingUsersLabel">
+                  {{ activeChannel?.description }}
+                </ng-container>
+              </ng-container>
+              <ng-container *ngIf="activeView === 'dm'">
+                <span *ngIf="isUserTyping(activeDmContact?.userId || 0)" class="text-emerald-600 font-medium inline-flex items-center gap-1.5">
+                  <span class="inline-flex items-center gap-0.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse [animation-delay:200ms]"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse [animation-delay:400ms]"></span>
+                  </span>
+                  <span class="italic">typing…</span>
+                </span>
+                <ng-container *ngIf="!isUserTyping(activeDmContact?.userId || 0)">
+                  {{ activeDmContact?.jobTitle || activeDmContact?.lastMessagePreview }}
+                </ng-container>
+              </ng-container>
               <ng-container *ngIf="activeView === 'threads'">Grouped replies from channels and direct conversations in one searchable inbox.</ng-container>
             </span>
             </div>

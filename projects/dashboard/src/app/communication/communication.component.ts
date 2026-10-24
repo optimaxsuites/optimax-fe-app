@@ -788,6 +788,7 @@ export class CommunicationComponent
   private presenceUpdatedAtMap: Record<number, string> = {};
   typingMap: Record<number, boolean> = {};
   private typingTimer: any = null;
+  private typingSafetyTimeouts: Record<number, any> = {};
   private presencePollTimer: any = null;
   private presenceChannelId: number | null = null;
 
@@ -3535,6 +3536,9 @@ export class CommunicationComponent
             const msg = (body.message && typeof body.message === 'object') ? body.message : body;
             senderUserId = Number(msg.senderUserId ?? msg.userId ?? null);
           } catch (_) {}
+          if (senderUserId) {
+            this.clearUserTyping(senderUserId);
+          }
           const isOwnMessage =
             senderUserId !== null && senderUserId === this.me.userId;
           let chFrameMessageType: string | null = null;
@@ -3657,6 +3661,9 @@ export class CommunicationComponent
             const msg = (body.message && typeof body.message === 'object') ? body.message : body;
             senderUserId = Number(msg.senderUserId ?? msg.userId ?? null);
           } catch (_) {}
+          if (senderUserId) {
+            this.clearUserTyping(senderUserId);
+          }
           let frameMessageType: string | null = null;
           try {
             const body2 = JSON.parse(frame.body || '{}');
@@ -6359,6 +6366,7 @@ export class CommunicationComponent
     this.cancelEdit();
     this.confirmDeleteId = null;
     this.conversationAccessMessage = '';
+    this.clearAllTyping();
     this.workspaceMode = 'chat';
     this.showChannelDetails = false;
     this.preserveFeedScrollOffset = null;
@@ -6442,6 +6450,7 @@ export class CommunicationComponent
     this.cancelEdit();
     this.confirmDeleteId = null;
     this.conversationAccessMessage = '';
+    this.clearAllTyping();
     this.workspaceMode = 'chat';
     this.activeDmId = contactId;
     this.activeView = 'dm';
@@ -7303,35 +7312,87 @@ export class CommunicationComponent
 
   isUserTyping(userId: number): boolean {
     return (
-      Boolean(this.typingMap[userId]) &&
+      Boolean(this.typingMap && this.typingMap[userId]) &&
       Number(userId) !== Number(this.me.userId)
     );
   }
 
   private applyPresenceEntries(entries: any[]): void {
+    let updated = false;
     for (const p of entries || []) {
       if (p?.userId == null) continue;
       const userId = Number(p.userId);
       this.presenceMap[userId] = p.presenceStatus || 'OFFLINE';
-      this.typingMap[userId] = Boolean(p.typing);
+      const isTyping = Boolean(p.typing);
+      if (this.typingMap[userId] !== isTyping) {
+        this.typingMap = { ...this.typingMap, [userId]: isTyping };
+        updated = true;
+      }
       if (p.updatedAt) {
         this.presenceUpdatedAtMap[userId] = String(p.updatedAt);
       }
+      if (this.typingSafetyTimeouts[userId]) {
+        clearTimeout(this.typingSafetyTimeouts[userId]);
+        delete this.typingSafetyTimeouts[userId];
+      }
+      if (isTyping) {
+        this.typingSafetyTimeouts[userId] = setTimeout(() => {
+          this.clearUserTyping(userId);
+        }, 4000);
+      }
+    }
+    if (updated) {
+      this.cdr.detectChanges();
     }
   }
 
-  get typingUsersLabel(): string {
-    const typing: string[] = [];
-    for (const [uid, isTyping] of Object.entries(this.typingMap)) {
-      if (!isTyping || Number(uid) === Number(this.me.userId)) continue;
-      typing.push(
-        (this.userDirectory[Number(uid)] || '').split(' ')[0] || `User ${uid}`,
-      );
+  private clearUserTyping(userId: number): void {
+    if (!userId) return;
+    if (this.typingSafetyTimeouts[userId]) {
+      clearTimeout(this.typingSafetyTimeouts[userId]);
+      delete this.typingSafetyTimeouts[userId];
     }
-    if (!typing.length) return '';
-    if (typing.length === 1) return `${typing[0]} is typing…`;
-    if (typing.length === 2) return `${typing[0]} and ${typing[1]} are typing…`;
-    return 'Several people are typing…';
+    if (this.typingMap[userId]) {
+      this.typingMap = { ...this.typingMap, [userId]: false };
+      this.cdr.detectChanges();
+    }
+  }
+
+  private clearAllTyping(): void {
+    for (const tid of Object.values(this.typingSafetyTimeouts)) {
+      if (tid) clearTimeout(tid);
+    }
+    this.typingSafetyTimeouts = {};
+    this.typingMap = {};
+  }
+
+  get typingUsersLabel(): string {
+    if (this.activeView === 'dm') {
+      const dmTargetUserId = Number(this.activeDmContact?.userId || 0);
+      if (dmTargetUserId && this.isUserTyping(dmTargetUserId)) {
+        const name = (this.userDirectory[dmTargetUserId] || this.activeDmContact?.fullName || '').split(' ')[0] || 'Contact';
+        return `${name} is typing…`;
+      }
+      return '';
+    }
+
+    if (this.activeView === 'channel') {
+      const channelMemberIds = new Set((this.channelMembers || []).map((m: any) => Number(m.userId ?? m.id)));
+      const typing: string[] = [];
+      for (const [uid, isTyping] of Object.entries(this.typingMap)) {
+        const numUid = Number(uid);
+        if (!isTyping || !this.isUserTyping(numUid)) continue;
+        if (channelMemberIds.size > 0 && !channelMemberIds.has(numUid)) continue;
+        const name = (this.userDirectory[numUid] || '').split(' ')[0] || `User ${uid}`;
+        typing.push(name);
+      }
+      if (!typing.length) return '';
+      if (typing.length === 1) return `${typing[0]} is typing…`;
+      if (typing.length === 2) return `${typing[0]} and ${typing[1]} are typing…`;
+      return 'Several people are typing…';
+    }
+
+    return '';
   }
 
   private shouldDisableTypingEndpoint(err: any): boolean {
@@ -7355,7 +7416,20 @@ export class CommunicationComponent
       },
     });
     this.typingTimer = setTimeout(() => {
-      if (this.typingEndpointBlocked) return;
+      this.stopComposerTyping();
+    }, 2500);
+  }
+
+  private stopComposerTyping(): void {
+    if (this.typingTimer) {
+      clearTimeout(this.typingTimer);
+      this.typingTimer = null;
+    }
+    const chId =
+      this.activeView === 'channel'
+        ? this.activeChannel?.backendId
+        : this.activeDmContact?.dmChannelId;
+    if (chId && !this.typingEndpointBlocked) {
       this.collabService.setTyping(chId, false).subscribe({
         error: (err) => {
           if (this.shouldDisableTypingEndpoint(err)) {
@@ -7363,7 +7437,7 @@ export class CommunicationComponent
           }
         },
       });
-    }, 2000);
+    }
   }
 
   playNotificationSound(urgent = false): void {
@@ -8082,6 +8156,7 @@ export class CommunicationComponent
     if (!channel) return;
     const outboundContent = text || this.attachmentsPlaceholderText(this.pendingAttachments);
     this.sendingMessage = true;
+    this.stopComposerTyping();
     const optimistic = this.makeLocalMsg(
       outboundContent,
       this.pendingAttachments,
@@ -8157,6 +8232,7 @@ export class CommunicationComponent
     }
     const outboundContent = text || this.attachmentsPlaceholderText(this.pendingAttachments);
     this.sendingMessage = true;
+    this.stopComposerTyping();
     const optimistic = this.makeLocalMsg(
       outboundContent,
       this.pendingAttachments,
