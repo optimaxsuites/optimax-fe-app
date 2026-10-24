@@ -3414,6 +3414,7 @@ export class CommunicationComponent
         },
       );
       this.loadChannels(true, true);
+      this.collabService.upsertPresence(0, 'ONLINE').subscribe({ error: () => {} });
       client.subscribe('/topic/collab/chat/presence', (frame: any) => {
         try {
           const list = JSON.parse(frame.body || '[]');
@@ -4121,7 +4122,7 @@ export class CommunicationComponent
 
   private syncDmOnlineStatus(): void {
     for (const dm of this.dmContacts) {
-      dm.online = (this.presenceMap[dm.userId] || 'OFFLINE') === 'ONLINE';
+      dm.online = this.isUserOnline(dm.userId);
     }
   }
 
@@ -5824,8 +5825,16 @@ export class CommunicationComponent
   getMemberName = (userId: number): string =>
     this.userDirectory[userId] || `User ${userId}`;
   colorFor = (seed: number): string => _colorFor(seed);
-  isUserOnline = (userId: number): boolean =>
-    (this.presenceMap[userId] || 'OFFLINE') === 'ONLINE';
+  isUserOnline = (userId: number): boolean => {
+    if (Number(userId) === Number(this.me.userId)) return true;
+    if ((this.presenceMap[userId] || 'OFFLINE') !== 'ONLINE') return false;
+    const rawUpdated = this.presenceUpdatedAtMap[userId];
+    if (!rawUpdated) return false;
+    const parsed = parseServerDate(rawUpdated);
+    if (!parsed) return false;
+    const ageSec = (Date.now() - parsed.getTime()) / 1000;
+    return ageSec <= 90;
+  };
   getEmpName = (e: EmployeeProfile): string =>
     `${e.firstName || ''} ${e.lastName || ''}`.trim() ||
     e.fullname ||
@@ -7214,6 +7223,9 @@ export class CommunicationComponent
     }
     this.ngZone.runOutsideAngular(() => {
       this.presencePollTimer = setInterval(() => {
+        // Heartbeat so our own presence stays fresh on server
+        this.collabService.upsertPresence(0, 'ONLINE').subscribe({ error: () => {} });
+
         this.collabService.getAllPresence().subscribe({
           next: (list: any[]) => {
             const byUser = new Map<number, any>();
@@ -7222,7 +7234,7 @@ export class CommunicationComponent
               if (!prev || (p.updatedAt || '') >= (prev.updatedAt || ''))
                 byUser.set(Number(p.userId), p);
             }
-            this.applyPresenceEntries(Array.from(byUser.values()));
+            this.applyPresenceEntries(Array.from(byUser.values()), true);
             this.syncDmOnlineStatus();
             this.cdr.detectChanges();
           },
@@ -7318,7 +7330,7 @@ export class CommunicationComponent
   private pollChannelPresence(channelId: number): void {
     this.collabService.getChannelPresence(channelId).subscribe({
       next: (list: any[]) => {
-        this.applyPresenceEntries(list || []);
+        this.applyPresenceEntries(list || [], true);
         this.syncDmOnlineStatus();
         this.cdr.detectChanges();
       },
@@ -7333,7 +7345,7 @@ export class CommunicationComponent
     );
   }
 
-  private applyPresenceEntries(entries: any): void {
+  private applyPresenceEntries(entries: any, isFromHttpPoll = false): void {
     if (!entries) return;
     const list = Array.isArray(entries) ? entries : [entries];
     let updated = false;
@@ -7344,7 +7356,11 @@ export class CommunicationComponent
       if (p.presenceStatus) {
         this.presenceMap[userId] = p.presenceStatus;
       }
-      if (p.typing !== undefined) {
+      if (p.updatedAt) {
+        this.presenceUpdatedAtMap[userId] = String(p.updatedAt);
+      }
+      // ONLY accept typing from live STOMP frames, NEVER from HTTP database polling!
+      if (!isFromHttpPoll && p.typing !== undefined) {
         const isTyping = Boolean(p.typing);
         if (this.typingMap[userId] !== isTyping) {
           this.typingMap = { ...this.typingMap, [userId]: isTyping };
@@ -7357,11 +7373,8 @@ export class CommunicationComponent
         if (isTyping) {
           this.typingSafetyTimeouts[userId] = setTimeout(() => {
             this.clearUserTyping(userId);
-          }, 4500);
+          }, 3500);
         }
-      }
-      if (p.updatedAt) {
-        this.presenceUpdatedAtMap[userId] = String(p.updatedAt);
       }
     }
     if (updated) {
