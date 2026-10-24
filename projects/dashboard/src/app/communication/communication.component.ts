@@ -3414,6 +3414,22 @@ export class CommunicationComponent
         },
       );
       this.loadChannels(true, true);
+      client.subscribe('/topic/collab/chat/presence', (frame: any) => {
+        try {
+          const list = JSON.parse(frame.body || '[]');
+          this.applyPresenceEntries(list);
+          this.syncDmOnlineStatus();
+          this.cdr.detectChanges();
+        } catch (_) {}
+      });
+      client.subscribe('/topic/collab/presence', (frame: any) => {
+        try {
+          const list = JSON.parse(frame.body || '[]');
+          this.applyPresenceEntries(list);
+          this.syncDmOnlineStatus();
+          this.cdr.detectChanges();
+        } catch (_) {}
+      });
       for (const ch of this.channels) {
         this.subscribeToChannel(ch.backendId);
       }
@@ -7317,28 +7333,35 @@ export class CommunicationComponent
     );
   }
 
-  private applyPresenceEntries(entries: any[]): void {
+  private applyPresenceEntries(entries: any): void {
+    if (!entries) return;
+    const list = Array.isArray(entries) ? entries : [entries];
     let updated = false;
-    for (const p of entries || []) {
+    for (const p of list) {
       if (p?.userId == null) continue;
       const userId = Number(p.userId);
-      this.presenceMap[userId] = p.presenceStatus || 'OFFLINE';
-      const isTyping = Boolean(p.typing);
-      if (this.typingMap[userId] !== isTyping) {
-        this.typingMap = { ...this.typingMap, [userId]: isTyping };
-        updated = true;
+      if (userId === Number(this.me.userId)) continue;
+      if (p.presenceStatus) {
+        this.presenceMap[userId] = p.presenceStatus;
+      }
+      if (p.typing !== undefined) {
+        const isTyping = Boolean(p.typing);
+        if (this.typingMap[userId] !== isTyping) {
+          this.typingMap = { ...this.typingMap, [userId]: isTyping };
+          updated = true;
+        }
+        if (this.typingSafetyTimeouts[userId]) {
+          clearTimeout(this.typingSafetyTimeouts[userId]);
+          delete this.typingSafetyTimeouts[userId];
+        }
+        if (isTyping) {
+          this.typingSafetyTimeouts[userId] = setTimeout(() => {
+            this.clearUserTyping(userId);
+          }, 4500);
+        }
       }
       if (p.updatedAt) {
         this.presenceUpdatedAtMap[userId] = String(p.updatedAt);
-      }
-      if (this.typingSafetyTimeouts[userId]) {
-        clearTimeout(this.typingSafetyTimeouts[userId]);
-        delete this.typingSafetyTimeouts[userId];
-      }
-      if (isTyping) {
-        this.typingSafetyTimeouts[userId] = setTimeout(() => {
-          this.clearUserTyping(userId);
-        }, 4000);
       }
     }
     if (updated) {
@@ -7401,20 +7424,42 @@ export class CommunicationComponent
   }
 
   onComposerTyping(): void {
-    if (this.typingEndpointBlocked) return;
     const chId =
       this.activeView === 'channel'
         ? this.activeChannel?.backendId
         : this.activeDmContact?.dmChannelId;
     if (!chId) return;
+
+    if (this.stompClient?.connected) {
+      try {
+        const payload = JSON.stringify([{
+          userId: this.me.userId,
+          presenceStatus: 'ONLINE',
+          typing: true,
+          updatedAt: new Date().toISOString(),
+        }]);
+        this.stompClient.publish({
+          destination: `/topic/collab/chat/presence/channel/${chId}`,
+          body: payload,
+        });
+        this.stompClient.publish({
+          destination: `/topic/collab/chat/presence`,
+          body: payload,
+        });
+      } catch (_) {}
+    }
+
+    if (!this.typingEndpointBlocked) {
+      this.collabService.setTyping(chId, true).subscribe({
+        error: (err) => {
+          if (this.shouldDisableTypingEndpoint(err)) {
+            this.typingEndpointBlocked = true;
+          }
+        },
+      });
+    }
+
     clearTimeout(this.typingTimer);
-    this.collabService.setTyping(chId, true).subscribe({
-      error: (err) => {
-        if (this.shouldDisableTypingEndpoint(err)) {
-          this.typingEndpointBlocked = true;
-        }
-      },
-    });
     this.typingTimer = setTimeout(() => {
       this.stopComposerTyping();
     }, 2500);
@@ -7429,7 +7474,28 @@ export class CommunicationComponent
       this.activeView === 'channel'
         ? this.activeChannel?.backendId
         : this.activeDmContact?.dmChannelId;
-    if (chId && !this.typingEndpointBlocked) {
+    if (!chId) return;
+
+    if (this.stompClient?.connected) {
+      try {
+        const payload = JSON.stringify([{
+          userId: this.me.userId,
+          presenceStatus: 'ONLINE',
+          typing: false,
+          updatedAt: new Date().toISOString(),
+        }]);
+        this.stompClient.publish({
+          destination: `/topic/collab/chat/presence/channel/${chId}`,
+          body: payload,
+        });
+        this.stompClient.publish({
+          destination: `/topic/collab/chat/presence`,
+          body: payload,
+        });
+      } catch (_) {}
+    }
+
+    if (!this.typingEndpointBlocked) {
       this.collabService.setTyping(chId, false).subscribe({
         error: (err) => {
           if (this.shouldDisableTypingEndpoint(err)) {
