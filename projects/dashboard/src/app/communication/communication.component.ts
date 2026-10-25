@@ -871,6 +871,9 @@ export class CommunicationComponent
       this.workspaceMode = 'feed';
     }
     if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        this.retryAllFailedMessages();
+      });
       window.addEventListener(
         'optimax-open-collab-target',
         this.handleNotificationTarget as EventListener,
@@ -7236,6 +7239,7 @@ export class CommunicationComponent
             }
             this.applyPresenceEntries(Array.from(byUser.values()), true);
             this.syncDmOnlineStatus();
+            this.retryAllFailedMessages();
             this.cdr.detectChanges();
           },
           error: () => {},
@@ -8230,11 +8234,10 @@ export class CommunicationComponent
       return;
     }
     const text = this.draft.trim();
-    if ((!text && !this.pendingAttachments.length) || this.sendingMessage) return;
+    if (!text && !this.pendingAttachments.length) return;
     const channel = this.activeChannel;
     if (!channel) return;
     const outboundContent = text || this.attachmentsPlaceholderText(this.pendingAttachments);
-    this.sendingMessage = true;
     this.stopComposerTyping();
     const optimistic = this.makeLocalMsg(
       outboundContent,
@@ -8297,7 +8300,7 @@ export class CommunicationComponent
   sendDmMessage(): void {
     const text = this.draft.trim(),
       contact = this.activeDmContact;
-    if (!contact || (!text && !this.pendingAttachments.length) || this.sendingMessage)
+    if (!contact || (!text && !this.pendingAttachments.length))
       return;
     const chId = contact.dmChannelId;
     if (!chId) {
@@ -8310,7 +8313,6 @@ export class CommunicationComponent
       return;
     }
     const outboundContent = text || this.attachmentsPlaceholderText(this.pendingAttachments);
-    this.sendingMessage = true;
     this.stopComposerTyping();
     const optimistic = this.makeLocalMsg(
       outboundContent,
@@ -11989,6 +11991,23 @@ export class CommunicationComponent
           this.cdr.detectChanges();
         },
       });
+  }
+
+  retryAllFailedMessages(): void {
+    for (const msgs of Object.values(this.channelMessages)) {
+      for (const m of msgs || []) {
+        if (m && m.deliveryState === 'FAILED' && m.retryMeta) {
+          this.retryFailedMessage(m);
+        }
+      }
+    }
+    for (const msgs of Object.values(this.dmMessages)) {
+      for (const m of msgs || []) {
+        if (m && m.deliveryState === 'FAILED' && m.retryMeta) {
+          this.retryFailedMessage(m);
+        }
+      }
+    }
   }
 
   // Legacy aliases kept for compatibility
