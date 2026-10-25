@@ -2420,12 +2420,22 @@ export class CommunicationComponent
     try {
       const payload = JSON.parse(frameBody || '{}');
       const msg = (payload.message && typeof payload.message === 'object') ? payload.message : payload;
-      const senderUserId = Number(msg.senderUserId ?? msg.userId ?? 0);
+      const senderUserId = Number(msg.senderUserId ?? msg.sender_user_id ?? msg.userId ?? msg.authorId ?? payload.senderUserId ?? 0);
+      const rawMsgSender =
+        msg.senderName ??
+        msg.sender_name ??
+        msg.authorName ??
+        msg.userName ??
+        (msg.user && (msg.user.fullname || msg.user.fullName || msg.user.name)) ??
+        (msg.sender && (msg.sender.fullName || msg.sender.fullname || msg.sender.name)) ??
+        payload.senderName ??
+        payload.authorName ??
+        '';
       const senderName =
         this.userDirectory[senderUserId] ||
-        this.notificationFieldText(msg.senderName, '') ||
-        this.notificationFieldText(msg.authorName, '') ||
-        'New message';
+        this.notificationFieldText(rawMsgSender, '') ||
+        (this.directMessages.find((d: any) => d.userId === senderUserId)?.fullName) ||
+        '';
       const rawContent = this.notificationFieldText(msg.content, '');
       const formatted = this.formatMessagePreview(rawContent);
       if (!formatted || (formatted.trim().startsWith('{') && formatted.trim().endsWith('}'))) {
@@ -3576,8 +3586,12 @@ export class CommunicationComponent
           if (!isOwnMessage && !isChSystemOrSignal) {
             const incoming = this.parseIncomingNotification(frame.body);
             if (incoming) {
+              const rawSender = (incoming.senderName && incoming.senderName !== 'New message')
+                ? incoming.senderName
+                : (this.userDirectory[incoming.senderUserId || 0] || '');
+              const channelTitle = rawSender ? `${rawSender} (#${ch.name})` : `#${ch.name}`;
               this.pushChatMessagePreview({
-                title: incoming.senderName || ch.name,
+                title: channelTitle,
                 body: incoming.content || `New message in ${ch.name}`,
                 avatarUrl: incoming.avatarUrl,
                 contextLabel: ch.name,
@@ -3586,7 +3600,7 @@ export class CommunicationComponent
                 threadRootMessageBackendId: incoming.threadRootMessageBackendId,
               });
               this.pushWorkspaceNotification({
-                title: incoming.senderName || ch.name,
+                title: channelTitle,
                 body: incoming.content || `New message in ${ch.name}`,
                 category: 'chat',
                 route: this.resolveCollaborationRoute(),
@@ -3598,7 +3612,7 @@ export class CommunicationComponent
                 threadRootMessageBackendId: incoming.threadRootMessageBackendId,
               });
               this.pushChatArrivalToast({
-                title: incoming.senderName || ch.name,
+                title: channelTitle,
                 body: incoming.content || `New message in ${ch.name}`,
                 avatarUrl: incoming.avatarUrl,
                 tone: 'channel',
@@ -3607,7 +3621,7 @@ export class CommunicationComponent
                 threadRootMessageBackendId: incoming.threadRootMessageBackendId,
               });
               this.showBrowserNotification(
-                incoming.senderName || ch.name,
+                channelTitle,
                 incoming.content || `New message in ${ch.name}`,
                 {
                   tag: `channel-${ch.id}`,
@@ -3700,8 +3714,11 @@ export class CommunicationComponent
           if (!isOwnMessage && !isDmSystemOrSignal) {
             const incoming = this.parseIncomingNotification(frame.body);
             if (incoming) {
+              const dmTitle = (incoming.senderName && incoming.senderName !== 'New message')
+                ? incoming.senderName
+                : contact.fullName;
               this.pushChatMessagePreview({
-                title: incoming.senderName || contact.fullName,
+                title: dmTitle,
                 body: incoming.content || `New direct message from ${contact.fullName}`,
                 avatarUrl: incoming.avatarUrl || contact.avatarUrl,
                 contextLabel: 'Direct message',
@@ -3710,7 +3727,7 @@ export class CommunicationComponent
                 threadRootMessageBackendId: incoming.threadRootMessageBackendId,
               });
               this.pushWorkspaceNotification({
-                title: incoming.senderName || contact.fullName,
+                title: dmTitle,
                 body: incoming.content || `New direct message from ${contact.fullName}`,
                 category: 'chat',
                 route: this.resolveCollaborationRoute(),
@@ -3722,7 +3739,7 @@ export class CommunicationComponent
                 threadRootMessageBackendId: incoming.threadRootMessageBackendId,
               });
               this.pushChatArrivalToast({
-                title: incoming.senderName || contact.fullName,
+                title: dmTitle,
                 body: incoming.content || `New direct message from ${contact.fullName}`,
                 avatarUrl: incoming.avatarUrl || contact.avatarUrl,
                 tone: 'dm',
@@ -3731,7 +3748,7 @@ export class CommunicationComponent
                 threadRootMessageBackendId: incoming.threadRootMessageBackendId,
               });
               this.showBrowserNotification(
-                incoming.senderName || contact.fullName,
+                dmTitle,
                 incoming.content || `New direct message from ${contact.fullName}`,
                 {
                   tag: `dm-${contact.id}`,
