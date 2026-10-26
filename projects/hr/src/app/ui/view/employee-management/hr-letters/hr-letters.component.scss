@@ -298,6 +298,66 @@
   }
 }
 
+/* ── Letter details (manual placeholders) ── */
+.hl-details-panel {
+  padding: 14px 20px;
+  background: #f0fdfa;
+  border-bottom: 1px solid #99f6e4;
+}
+
+.hl-details-heading {
+  font-size: 12px;
+  font-weight: 700;
+  color: #115e59;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hl-details-hint {
+  font-size: 11px;
+  color: #0f766e;
+  margin: 2px 0 10px;
+}
+
+.hl-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px 14px;
+}
+
+.hl-details-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hl-details-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.hl-details-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: #1e293b;
+  background: #ffffff;
+  outline: none;
+
+  &:focus {
+    border-color: #0f766e;
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+  }
+
+  &--missing {
+    border-color: #fbbf24;
+  }
+}
+
 /* ── Editor panel ── */
 .hl-editor-panel {
   padding: 16px 20px;

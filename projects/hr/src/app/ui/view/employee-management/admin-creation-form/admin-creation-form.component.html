@@ -39,10 +39,14 @@
       <div class="flex items-center justify-between rounded bg-white border border-amber-200 px-3 py-2">
         <div class="overflow-hidden">
           <p class="text-[10px] uppercase tracking-wide text-amber-600">Password</p>
-          <p class="truncate text-sm font-mono font-medium text-slate-800">{{ pendingCredentials.password }}</p>
+          <p class="truncate text-sm font-mono font-medium text-slate-800">{{ showPendingPassword ? pendingCredentials.password : '••••••••••••' }}</p>
         </div>
+        <button type="button" (click)="showPendingPassword = !showPendingPassword"
+          class="ml-2 flex-shrink-0 rounded px-1.5 py-1 text-[11px] font-medium text-amber-700 hover:bg-amber-100">
+          {{ showPendingPassword ? 'Hide' : 'Show' }}
+        </button>
         <button type="button" (click)="copyToClipboard(pendingCredentials!.password)" title="Copy password"
-          class="ml-2 flex-shrink-0 rounded p-1 text-amber-600 hover:bg-amber-100">
+          class="flex-shrink-0 rounded p-1 text-amber-600 hover:bg-amber-100">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
@@ -448,6 +452,14 @@
           <div *ngFor="let control of getFormControls('leaveForm')">
             <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong>  <span class=" ml-1">{{ control.value }}</span></p>
           </div>
+        </div>
+
+        <div class="summary-card" *ngIf="importedSummary.length > 0 || importedUnsavedFields.length > 0">
+          <p class="summary-title">From Imported Form</p>
+          <p *ngFor="let row of importedSummary"><strong>{{ row.label }}:</strong> <span class="ml-1">{{ row.value }}</span></p>
+          <p *ngIf="importedUnsavedFields.length > 0" class="mt-2 text-xs text-amber-700">
+            Not stored on the employee record (keep the paper form): {{ importedUnsavedFields.join(', ') }}.
+          </p>
         </div>
 
         <div class="summary-card">

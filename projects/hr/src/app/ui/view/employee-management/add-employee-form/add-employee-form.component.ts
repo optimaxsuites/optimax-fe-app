@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnDestroy } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -53,7 +53,7 @@ interface Employee {
   styleUrl: './add-employee-form.component.scss',
   providers: [MessageService]
 })
-export class AddEmployeeFormComponent {
+export class AddEmployeeFormComponent implements OnDestroy {
   @Input() close: () => void = () => {};
   @Input() admin: boolean = true
 
@@ -72,6 +72,8 @@ export class AddEmployeeFormComponent {
   loading = false
   draftLoading = false;
   imageURL: string =''
+  /** Object URL behind `imageURL` when the photo came from the server; released when replaced or on destroy. */
+  private photoObjectUrl: string | null = null;
   salaryStructure: any = [];
   departments = [
     "Human Resources",
@@ -334,11 +336,24 @@ export class AddEmployeeFormComponent {
     return formatDate(parsed, 'yyyy-MM-dd', 'en-US');
   }
 
+  ngOnDestroy(): void {
+    this.releasePhotoObjectUrl();
+  }
+
+  private releasePhotoObjectUrl(): void {
+    if (this.photoObjectUrl) {
+      URL.revokeObjectURL(this.photoObjectUrl);
+      this.photoObjectUrl = null;
+    }
+  }
+
   private loadProfilePhoto(mediaNo: string): void {
     this.employeeService.getEmployeeImage(mediaNo).subscribe({
       next: (response) => {
         const blob = new Blob([response], { type: 'image/png' });
-        this.imageURL = URL.createObjectURL(blob);
+        this.releasePhotoObjectUrl();
+        this.photoObjectUrl = URL.createObjectURL(blob);
+        this.imageURL = this.photoObjectUrl;
       },
       error: (err) => {
         console.error('Failed to load profile photo:', err);
@@ -812,6 +827,7 @@ private buildEmployeeFormData(): FormData {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event: any) => {
+        this.releasePhotoObjectUrl();
         this.imageURL = event.target.result;
         if (this.employeeId) {
           sessionStorage.setItem(`onboarding_photo_${this.employeeId}`, event.target.result);

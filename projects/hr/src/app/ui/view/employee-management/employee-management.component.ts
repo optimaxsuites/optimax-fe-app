@@ -26,6 +26,7 @@ import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { buildOnboardingEmailHtml, buildOnboardingLink, escapeHtml, generateTemporaryPassword, onboardingLinkExpiry } from './onboarding-credentials.util';
 
 @Component({
   selector: 'app-employee-management',
@@ -270,6 +271,7 @@ deletingEmployeeIds: Record<string, boolean> = {};
 activatingEmployeeIds: Record<number, boolean> = {};
 resendingOnboardingIds: Record<number, boolean> = {};
 resendCredentials: { name: string; username: string; password: string } | null = null;
+  showResendPassword = false;
 viewMode: 'card' | 'list' = 'card';
 selectedStatus: string = 'ACTIVE';
 statusOptions = [
@@ -305,8 +307,20 @@ handleDateClick(arg: DateClickArg) {
     this.openImportDialog = false;
     this.openAddForm = true;
   }
-  private readonly presenceUrl = 'https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/presence';
+  private get presenceUrl(): string {
+    return `${this.employeeService.baseurl}/x/api/v2/ai/collab/chat/presence`;
+  }
   private readonly PRESENCE_STALE_MS = 2 * 60 * 1000; // 2 minutes
+  private readonly PRESENCE_POLL_MS = 60_000;
+  private presenceRequestInFlight = false;
+  /** Polls again as soon as the tab is visible, since polling pauses while it's hidden. */
+  private readonly onVisibilityChange = () => {
+    if (document.visibilityState === 'visible') this.pollPresence();
+  };
+  /** Profile photos by media number, so a list refresh doesn't download them all again. */
+  private readonly photoUrlCache = new Map<string, SafeUrl>();
+  private readonly photoRequests = new Set<string>();
+  private readonly photoObjectUrls: string[] = [];
 
   ngOnInit() {
     this.fetchEmployees();
@@ -332,6 +346,8 @@ handleDateClick(arg: DateClickArg) {
 
   ngOnDestroy(): void {
     clearInterval(this.presenceInterval);
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    this.photoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
   }
 
   private getAuthToken(): string | null {
@@ -344,16 +360,20 @@ handleDateClick(arg: DateClickArg) {
 
   private startPresencePolling(): void {
     this.pollPresence();
-    this.presenceInterval = setInterval(() => this.pollPresence(), 30_000);
+    this.presenceInterval = setInterval(() => this.pollPresence(), this.PRESENCE_POLL_MS);
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
   private pollPresence(): void {
+    // Nobody sees the dots while the tab is hidden, and a slow response shouldn't stack requests.
+    if (document.visibilityState === 'hidden' || this.presenceRequestInFlight) return;
     const token = this.getAuthToken();
     if (!token) return;
     const now = Date.now();
+    this.presenceRequestInFlight = true;
     this.http.get<any[]>(this.presenceUrl, {
       headers: { Authorization: `Bearer ${token}` }
-    }).subscribe({
+    }).pipe(finalize(() => { this.presenceRequestInFlight = false; })).subscribe({
       next: (records) => {
         const onlineIds = new Set<number>();
         (records || []).forEach(r => {
@@ -497,14 +517,31 @@ handleDateClick(arg: DateClickArg) {
   }
 
   fetchProfilePhoto(employee: any): void {
+    const mediaNo = String(employee.employeeMedia.mediaNo);
+    const cached = this.photoUrlCache.get(mediaNo);
+    if (cached) {
+      employee.imageUrl = cached;
+      return;
+    }
+    // Shows the placeholder until the photo arrives; a refresh mid-download picks it up from the cache.
+    employee.imageUrl = this.employeeProfilePhotoUrl;
+    if (this.photoRequests.has(mediaNo)) return;
+    this.photoRequests.add(mediaNo);
     this.employeeService
-      .getEmployeeImage(employee.employeeMedia.mediaNo)
+      .getEmployeeImage(mediaNo)
+      .pipe(finalize(() => this.photoRequests.delete(mediaNo)))
       .subscribe({
         next: (response) => {
           const blob = new Blob([response], { type: 'image/png' });
-          employee.imageUrl = this.sanitizer.bypassSecurityTrustUrl(
-            URL.createObjectURL(blob),
-          );
+          const objectUrl = URL.createObjectURL(blob);
+          this.photoObjectUrls.push(objectUrl);
+          const safeUrl = this.sanitizer.bypassSecurityTrustUrl(objectUrl);
+          this.photoUrlCache.set(mediaNo, safeUrl);
+          // Apply to whichever employee objects hold this photo now (the list may have been refetched).
+          this.employees
+            .filter((emp: any) => String(emp?.employeeMedia?.mediaNo) === mediaNo)
+            .forEach((emp: any) => (emp.imageUrl = safeUrl));
+          employee.imageUrl = safeUrl;
         },
         error: (err) => {
           console.error('Failed to load image for employee:', err);
@@ -731,7 +768,14 @@ handleDateClick(arg: DateClickArg) {
     const logoUrl = business?.logoUrl || '';
     const hrEmail = business?.contactEmail || business?.email || '';
     const subject = `Welcome to ${companyName}! 🎉`;
-    const htmlBody = this.buildWelcomeActiveEmailHtml({ name, companyName, logoUrl, hrEmail, jobTitle: employee?.jobTitle || '', department: employee?.department?.name || employee?.department || '' });
+    const htmlBody = this.buildWelcomeActiveEmailHtml({
+      name: escapeHtml(name),
+      companyName: escapeHtml(companyName),
+      logoUrl: escapeHtml(logoUrl),
+      hrEmail: escapeHtml(hrEmail),
+      jobTitle: escapeHtml(employee?.jobTitle || ''),
+      department: escapeHtml(employee?.department?.name || employee?.department || ''),
+    });
 
     const sendTo: string[] = [];
     if (employee?.email) sendTo.push(employee.email);
@@ -847,7 +891,7 @@ handleDateClick(arg: DateClickArg) {
     const username = email.split('@')[0] || email;
     const name = `${employee?.firstName ?? ''} ${employee?.lastName ?? ''}`.trim();
     const idKey = +employee.id;
-    const newPassword = this.generateRandomPassword();
+    const newPassword = generateTemporaryPassword();
 
     if (!resolvedUserId) {
       if (!email) {
@@ -918,10 +962,11 @@ handleDateClick(arg: DateClickArg) {
     const companyName = business?.companyName || 'The Company';
     const hrEmail = business?.contactEmail || business?.email || '';
     const toEmail = resolvedEmail || employee?.workEmail || employee?.email || '';
-    const url = `${window.location.origin}/onboarding/${employee.id}/wer23456fghi367ghj?onboarding=1`;
+    const expiresAt = onboardingLinkExpiry();
+    const url = buildOnboardingLink(employee.id, expiresAt);
 
     const subject = `${companyName} — Your Onboarding Credentials`;
-    const htmlBody = this.buildOnboardingEmailHtml({ name, username, password, url, companyName, hrEmail });
+    const htmlBody = buildOnboardingEmailHtml({ name, username, password, url, companyName, hrEmail, expiresAt });
     this.employeeService.sendNotificationEmail(toEmail, subject, htmlBody).subscribe({
       next: () => {
         delete this.resendingOnboardingIds[idKey];
@@ -931,91 +976,10 @@ handleDateClick(arg: DateClickArg) {
       error: () => {
         delete this.resendingOnboardingIds[idKey];
         this.resendCredentials = { name, username, password };
+        this.showResendPassword = false;
         this.messageService.add({ severity: 'warn', summary: 'Email Failed', detail: 'Credentials set but email failed — shown on screen.', key: 'tl', life: 6000 });
       }
     });
-  }
-
-  private buildOnboardingEmailHtml(d: { name: string; username: string; password: string; url: string; companyName: string; hrEmail: string }): string {
-    const hrLine = d.hrEmail
-      ? `Please contact the <strong>HR Department</strong> at <a href="mailto:${d.hrEmail}" style="color:#1e3a5f;text-decoration:none;">${d.hrEmail}</a> for any queries regarding your onboarding.`
-      : `Please contact the <strong>HR Department</strong> for any queries regarding your onboarding.`;
-    return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:36px 16px;">
-  <tr><td align="center">
-    <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
-      <tr>
-        <td style="background:#1b3358;padding:36px 40px;text-align:center;">
-          <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:2px;color:#7aa7d4;text-transform:uppercase;">Human Resources</p>
-          <h1 style="margin:0;font-size:24px;font-weight:700;color:#ffffff;">${d.companyName}</h1>
-          <p style="margin:8px 0 0;font-size:13px;color:#a8c5e8;">Staff Onboarding</p>
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:40px 40px 28px;">
-          <p style="margin:0 0 20px;font-size:15px;color:#1a2b3c;font-weight:600;">Dear ${d.name},</p>
-          <p style="margin:0 0 16px;font-size:14px;color:#475569;line-height:1.7;">
-            We are delighted to welcome you to <strong>${d.companyName}</strong>. Please complete your onboarding by submitting the required documentation through the portal below.
-          </p>
-          <p style="margin:0 0 8px;font-size:13px;color:#64748b;">You will be required to provide:</p>
-          <ul style="margin:0 0 24px;padding-left:20px;font-size:13px;color:#64748b;line-height:2;">
-            <li>Passport photograph / Valid ID</li>
-            <li>Guarantor information</li>
-            <li>Next-of-kin details</li>
-            <li>Bank account number</li>
-            <li>Any other requested personal information</li>
-          </ul>
-          <table cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
-            <tr>
-              <td style="background:#1b3358;border-radius:6px;padding:13px 30px;">
-                <a href="${d.url}" style="color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;letter-spacing:0.3px;">Begin Onboarding Process →</a>
-              </td>
-            </tr>
-          </table>
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:24px;">
-            <tr>
-              <td style="padding:22px 26px;">
-                <p style="margin:0 0 14px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Your Portal Credentials</p>
-                <table cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td style="padding:5px 16px 5px 0;font-size:13px;color:#94a3b8;white-space:nowrap;">Username</td>
-                    <td style="padding:5px 0;font-size:13px;color:#1e293b;font-weight:600;">${d.username}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding:5px 16px 5px 0;font-size:13px;color:#94a3b8;white-space:nowrap;">Password</td>
-                    <td style="padding:5px 0;font-size:13px;color:#1e293b;font-family:monospace;font-weight:700;letter-spacing:1.5px;background:#f1f5f9;border-radius:4px;padding-left:8px;padding-right:8px;">${d.password}</td>
-                  </tr>
-                </table>
-                <p style="margin:14px 0 0;font-size:11px;color:#94a3b8;">You will be prompted to change your password after your first login.</p>
-              </td>
-            </tr>
-          </table>
-          <p style="margin:0 0 4px;font-size:12px;color:#94a3b8;">If the button above does not work, copy and paste the link below into your browser:</p>
-          <p style="margin:0;font-size:12px;color:#3b82f6;word-break:break-all;">${d.url}</p>
-        </td>
-      </tr>
-      <tr>
-        <td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:24px 40px;">
-          <p style="margin:0 0 10px;font-size:13px;color:#475569;line-height:1.6;">${hrLine}</p>
-          <p style="margin:0;font-size:13px;color:#475569;line-height:1.6;">
-            We look forward to a productive and rewarding journey together.<br/>
-            <strong>Human Resources Department</strong><br/>
-            ${d.companyName}
-          </p>
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:16px 40px;text-align:center;">
-          <p style="margin:0;font-size:11px;color:#cbd5e1;">This is a system-generated message. Please do not reply to this email.</p>
-        </td>
-      </tr>
-    </table>
-  </td></tr>
-</table>
-</body></html>`;
   }
 
   private buildOnboardingSignupPayload(username: string, password: string, email: string, firstName = '', lastName = '') {
@@ -1040,14 +1004,11 @@ handleDateClick(arg: DateClickArg) {
     };
   }
 
-  dismissResendCredentials() { this.resendCredentials = null; }
-  copyToClipboard(value: string) { navigator.clipboard.writeText(value).catch(() => {}); }
-
-  private generateRandomPassword(length = 12): string {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%*?';
-    const pick = () => chars[Math.floor(Math.random() * chars.length)];
-    return Array.from({ length }, pick).join('');
+  dismissResendCredentials() {
+    this.resendCredentials = null;
+    this.showResendPassword = false;
   }
+  copyToClipboard(value: string) { navigator.clipboard.writeText(value).catch(() => {}); }
 
   closeViewEmployee() {
     this.viewEmployee = false;
