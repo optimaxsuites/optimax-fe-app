@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { GenerateDeliveryNoteComponent } from './generate-delivery-note.component';
 import { SalesService } from '../../../../service/sales/sales.service';
@@ -23,12 +23,13 @@ describe('GenerateDeliveryNoteComponent', () => {
     snapshot: { queryParamMap: { get: () => quoteId }, paramMap: { get: () => null } }
   } as any);
 
-  const lpoFile = () => ({ fileName: 'lpo.pdf', base64Content: 'xyz', contentType: 'application/pdf', uploadedAt: new Date() });
+  const lpoUpload = () => new File(['%PDF'], 'lpo.pdf', { type: 'application/pdf' });
+  const pickLpo = (file = lpoUpload()) => { component.onLpoFileSelected({ target: { files: [file] } }); return file; };
 
   beforeEach(() => {
     salesService = jasmine.createSpyObj<SalesService>('SalesService', [
       'getQuoteById', 'getCustomers', 'getMyMerchantInfo', 'getQuoteDeliveryNoteMap',
-      'saveQuoteLpoDocument', 'getOrCreateDeliveryNoteForQuote', 'updateDeliveryNote',
+      'uploadSalesLpoDocument', 'getOrCreateDeliveryNoteForQuote', 'updateDeliveryNote',
       'getDeliveryNoteMeta', 'getSalesLpoForQuote', 'createSalesLpo', 'updateSalesLpo', 'getQuoteLpoDocument', 'fillMissingFromQuote', 'getDeliveryNoteLogo', 'saveDeliveryNoteLogo'
     ]);
     salesEmailService = jasmine.createSpyObj<SalesEmailService>('SalesEmailService', ['send']);
@@ -47,6 +48,9 @@ describe('GenerateDeliveryNoteComponent', () => {
     salesService.saveDeliveryNoteLogo.and.returnValue(of(quote()));
     salesService.createSalesLpo.and.callFake(body => of({ ...body, id: 9 } as SalesLpo));
     salesService.updateSalesLpo.and.callFake((id, body) => of({ ...body, id } as SalesLpo));
+    salesService.uploadSalesLpoDocument.and.callFake((id, file) => of({
+      id: Number(id), document: { fileName: file.name, fileUrl: 'https://files/lpo.pdf', contentType: file.type, size: file.size, uploadedAt: '2026-10-26' }
+    } as SalesLpo));
     salesService.updateDeliveryNote.and.callFake((id, body) => of(body as SalesDeliveryNote));
 
     component = new GenerateDeliveryNoteComponent(
@@ -143,46 +147,62 @@ describe('GenerateDeliveryNoteComponent', () => {
 
     it('does nothing without a file selected', () => {
       component.submitLpo();
-      expect(salesService.saveQuoteLpoDocument).not.toHaveBeenCalled();
+      expect(salesService.createSalesLpo).not.toHaveBeenCalled();
+      expect(salesService.uploadSalesLpoDocument).not.toHaveBeenCalled();
     });
 
-    it('keeps the file on the quote, records a SalesLpo, and creates the note linked to it', () => {
-      (component as any).lpoFile = lpoFile();
-      (component as any).lpoFileChanged = true;
+    it('records a SalesLpo, uploads the file to it, and creates the note linked to it', () => {
+      const file = pickLpo();
       component.poNumberInput = 'PR-1';
-      salesService.saveQuoteLpoDocument.and.returnValue(of(quote()));
       salesService.getOrCreateDeliveryNoteForQuote.and.returnValue(of(note()));
 
       component.submitLpo();
 
-      expect(salesService.saveQuoteLpoDocument).toHaveBeenCalledWith(1, jasmine.objectContaining({ fileName: 'lpo.pdf' }));
       expect(salesService.createSalesLpo).toHaveBeenCalledWith(jasmine.objectContaining({
-        lpoNumber: 'PR-1', quoteId: 1, status: 'RECEIVED',
-        document: jasmine.objectContaining({ fileName: 'lpo.pdf', fileUrl: '' })
+        lpoNumber: 'PR-1', quoteId: 1, status: 'RECEIVED'
       }));
+      expect(salesService.uploadSalesLpoDocument).toHaveBeenCalledWith(9, file);
       expect(salesService.getOrCreateDeliveryNoteForQuote).toHaveBeenCalledWith(1, jasmine.objectContaining({ lpoId: 9 }));
       expect(component.currentStep).toBe(2);
       expect(component.lpo?.id).toBe(9);
+      expect(component.lpo?.lpoNumber).toBe('PR-1');
+      expect(component.lpo?.document.fileUrl).toBe('https://files/lpo.pdf');
     });
 
     it('updates the quote\'s existing SalesLpo on a re-upload instead of creating another', () => {
       component.lpo = { id: 4, lpoNumber: 'OLD', status: 'RECEIVED' } as SalesLpo;
-      (component as any).lpoFile = lpoFile();
-      (component as any).lpoFileChanged = true;
+      const file = pickLpo();
       component.poNumberInput = 'NEW';
-      salesService.saveQuoteLpoDocument.and.returnValue(of(quote()));
       salesService.getOrCreateDeliveryNoteForQuote.and.returnValue(of(note()));
 
       component.submitLpo();
 
       expect(salesService.updateSalesLpo).toHaveBeenCalledWith(4, jasmine.objectContaining({ lpoNumber: 'NEW' }));
       expect(salesService.createSalesLpo).not.toHaveBeenCalled();
+      expect(salesService.uploadSalesLpoDocument).toHaveBeenCalledWith(4, file);
+    });
+
+    it('retries a failed upload against the LPO it already created', () => {
+      const file = pickLpo();
+      salesService.uploadSalesLpoDocument.and.returnValue(throwError(() => new Error('upload failed')));
+
+      component.submitLpo();
+
+      expect(component.currentStep).toBe(1);
+      expect(component.lpo?.id).toBe(9);
+      salesService.uploadSalesLpoDocument.and.returnValue(of({ id: 9 } as SalesLpo));
+      salesService.getOrCreateDeliveryNoteForQuote.and.returnValue(of(note()));
+
+      component.submitLpo();
+
+      expect(salesService.createSalesLpo).toHaveBeenCalledTimes(1);
+      expect(salesService.uploadSalesLpoDocument).toHaveBeenCalledTimes(2);
+      expect(salesService.uploadSalesLpoDocument.calls.mostRecent().args).toEqual([9, file]);
+      expect(component.currentStep).toBe(2);
     });
 
     it('stays on step 1 if the delivery note could not be saved', () => {
-      (component as any).lpoFile = lpoFile();
-      (component as any).lpoFileChanged = true;
-      salesService.saveQuoteLpoDocument.and.returnValue(of(quote()));
+      pickLpo();
       salesService.getOrCreateDeliveryNoteForQuote.and.returnValue(of(note({ id: undefined })));
 
       component.submitLpo();
@@ -195,17 +215,8 @@ describe('GenerateDeliveryNoteComponent', () => {
   describe('LPO step: one click on Continue', () => {
     beforeEach(() => component.ngOnInit());
 
-    it('waits for the chosen file to finish reading before Continue can run', () => {
-      (component as any).lpoFile = lpoFile();
-      component.isReadingLpo = true;
-      component.submitLpo();
-      expect(salesService.saveQuoteLpoDocument).not.toHaveBeenCalled();
-    });
-
     it('fills a freshly created note from its quote straight away', () => {
-      (component as any).lpoFile = lpoFile();
-      (component as any).lpoFileChanged = true;
-      salesService.saveQuoteLpoDocument.and.returnValue(of(quote()));
+      pickLpo();
       salesService.getOrCreateDeliveryNoteForQuote.and.returnValue(of(note()));
 
       component.submitLpo();
@@ -245,14 +256,12 @@ describe('GenerateDeliveryNoteComponent', () => {
   describe('Save Draft — on every step, saves and stays put', () => {
     it('step 1: saves the LPO file and number without generating the note', () => {
       component.ngOnInit();
-      (component as any).lpoFile = lpoFile();
-      (component as any).lpoFileChanged = true;
+      pickLpo();
       component.poNumberInput = 'PR-1';
-      salesService.saveQuoteLpoDocument.and.returnValue(of(quote()));
 
       component.saveDraft();
 
-      expect(salesService.saveQuoteLpoDocument).toHaveBeenCalled();
+      expect(salesService.uploadSalesLpoDocument).toHaveBeenCalled();
       expect(salesService.createSalesLpo).toHaveBeenCalledWith(jasmine.objectContaining({ lpoNumber: 'PR-1' }));
       expect(salesService.getOrCreateDeliveryNoteForQuote).not.toHaveBeenCalled();
       expect(component.currentStep).toBe(1);
@@ -294,6 +303,15 @@ describe('GenerateDeliveryNoteComponent', () => {
       component.ngOnInit();
       expect(component.lpoFileName).toBe('saved-lpo.pdf');
     });
+
+    it('restores an LPO file already uploaded to the SalesLpo', () => {
+      salesService.getSalesLpoForQuote.and.returnValue(of({
+        id: 9, lpoNumber: 'PR-1', status: 'RECEIVED',
+        document: { fileName: 'uploaded-lpo.pdf', fileUrl: 'https://files/lpo.pdf', contentType: 'application/pdf', uploadedAt: 'then' }
+      } as SalesLpo));
+      component.ngOnInit();
+      expect(component.lpoFileName).toBe('uploaded-lpo.pdf');
+    });
   });
 
   describe('moving between steps', () => {
@@ -313,14 +331,14 @@ describe('GenerateDeliveryNoteComponent', () => {
     it('continuing from step 1 with nothing changed reuses the LPO and the note, and keeps edits', () => {
       component.lpo = { id: 9, lpoNumber: 'PR-1', status: 'RECEIVED' } as SalesLpo;
       component.poNumberInput = 'PR-1';
-      (component as any).lpoFile = lpoFile();
+      component.lpoFileName = 'lpo.pdf';
       component.deliveryDate = '2026-12-01';
       salesService.getOrCreateDeliveryNoteForQuote.and.returnValue(of(note()));
       component.goToStep(1);
 
       component.submitLpo();
 
-      expect(salesService.saveQuoteLpoDocument).not.toHaveBeenCalled();
+      expect(salesService.uploadSalesLpoDocument).not.toHaveBeenCalled();
       expect(salesService.updateSalesLpo).not.toHaveBeenCalled();
       expect(salesService.createSalesLpo).not.toHaveBeenCalled();
       expect(component.currentStep).toBe(2);

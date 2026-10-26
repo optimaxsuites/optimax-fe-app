@@ -65,10 +65,17 @@ import { BranchManagerDashboardComponent } from './ui/view/inventory/branch-mana
 import { BranchInventoryComponent } from './ui/view/inventory/branch/branch-inventory/branch-inventory.component';
 
 
+// export const routes: Routes = [
+//   {
+//     path: "",
+//     redirectTo: 'sales-hub',
+//     pathMatch: 'full'
+//   },
+
 export const routes: Routes = [
   {
     path: "",
-    redirectTo: 'sales-hub',
+    redirectTo: 'vendor-portal',
     pathMatch: 'full'
   },
 

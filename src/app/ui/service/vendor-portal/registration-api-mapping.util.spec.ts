@@ -1,3 +1,4 @@
+import { SUPPLY_CATEGORY_LABELS } from '../../domain/vendor-portal/vendor-registration.dto';
 import { employeeCountFromApi, employeeCountToApi, enumFromApi, registrationFromApi, registrationStepToApi } from './registration-api-mapping.util';
 
 describe('registration API enum mapping', () => {
@@ -10,8 +11,8 @@ describe('registration API enum mapping', () => {
   it('uppercases list and account-type enums in later steps, leaving step 2 alone', () => {
     expect(registrationStepToApi(3, { deliveryRegions: ['lagos', 'cross_river'] }).deliveryRegions).toEqual(['LAGOS', 'CROSS_RIVER']);
     expect(registrationStepToApi(4, { primaryAccountType: 'current' }).primaryAccountType).toBe('CURRENT');
-    expect(registrationStepToApi(5, { supplyCategories: ['oil_gas'], primaryCategory: 'other' }))
-      .toEqual(jasmine.objectContaining({ supplyCategories: ['OIL_GAS'], primaryCategory: 'OTHER' }));
+    expect(registrationStepToApi(5, { supplyCategories: ['electrical_materials'], primaryCategory: 'other' }))
+      .toEqual(jasmine.objectContaining({ supplyCategories: ['ELECTRICAL_MATERIALS'], primaryCategory: 'OTHER' }));
     expect(registrationStepToApi(6, { uploadedDocuments: [{ type: 'tax_clearance', status: 'pending' }] }).uploadedDocuments[0])
       .toEqual(jasmine.objectContaining({ type: 'TAX_CLEARANCE', status: 'PENDING' }));
     const step2 = { tinNumber: 'abc' };
@@ -27,10 +28,10 @@ describe('registration API enum mapping', () => {
   it('maps backend values back to the form\'s values', () => {
     const reg: any = registrationFromApi({
       step1: { businessType: 'GOVERNMENT', businessSize: 'SMALL', ownershipType: 'GOVERNMENT' },
-      step5: { supplyCategories: ['OIL_GAS'], primaryCategory: 'OTHER' }
+      step5: { supplyCategories: ['ICT_SERVICES'], primaryCategory: 'OTHER' }
     } as any);
     expect(reg.step1).toEqual(jasmine.objectContaining({ businessType: 'government_entity', businessSize: 'small', ownershipType: 'government' }));
-    expect(reg.step5.supplyCategories).toEqual(['oil_gas']);
+    expect(reg.step5.supplyCategories).toEqual(['ict_services']);
     expect(registrationFromApi(undefined)).toBeUndefined();
   });
 
@@ -55,5 +56,14 @@ describe('registration API enum mapping', () => {
     expect(employeeCountFromApi(5001)).toBe('5,000+');
     expect(employeeCountFromApi('6–10')).toBe('6–10');
     expect((registrationFromApi({ step1: { numberOfEmployees: 26 } } as any) as any).step1.numberOfEmployees).toBe('26–50');
+  });
+
+  it('offers exactly the backend\'s SupplyCategory values', () => {
+    const backend = ['BUILDING_MATERIALS', 'PHARMACEUTICAL', 'LEGAL_SERVICES', 'VEHICLES', 'FUEL_LUBRICANTS', 'ENGINEERING_SERVICES',
+      'CONSULTANCY', 'OFFICE_SUPPLIES', 'FURNITURE', 'FOOD_BEVERAGES', 'ELECTRICAL_MATERIALS', 'MAINTENANCE_REPAIR', 'IT_EQUIPMENT',
+      'MEDICAL_SUPPLIES', 'SECURITY_SERVICES', 'CATERING_SERVICES', 'SAFETY_EQUIPMENT', 'TRAINING_EDUCATION', 'OTHER',
+      'CLEANING_SUPPLIES', 'PRINTING_PUBLISHING', 'PLUMBING_MATERIALS', 'ICT_SERVICES', 'LOGISTICS_TRANSPORT', 'UNIFORMS_WORKWEAR'];
+    const sent = registrationStepToApi(5, { supplyCategories: Object.keys(SUPPLY_CATEGORY_LABELS) }).supplyCategories;
+    expect([...sent].sort()).toEqual([...backend].sort());
   });
 });

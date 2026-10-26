@@ -59,7 +59,7 @@
         </div>
 
         <button type="button" class="gdn-btn gdn-btn--primary" style="width:100%;justify-content:center;"
-                [disabled]="!lpoFileName || isReadingLpo || isSavingLpo" (click)="submitLpo()">
+                [disabled]="!lpoFileName || isSavingLpo" (click)="submitLpo()">
           <i class="fas" [class.fa-arrow-right]="!isSavingLpo" [class.fa-spinner]="isSavingLpo" [class.fa-spin]="isSavingLpo"></i>
           {{ isSavingLpo ? 'Processing...' : 'Continue' }}
         </button>

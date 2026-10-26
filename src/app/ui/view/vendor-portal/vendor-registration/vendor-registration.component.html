@@ -522,7 +522,7 @@
                 <label class="vr-label">Other Licences</label
                 ><input
                   type="text"
-                  formControlName="otherLicences"
+                  formControlName="otherLicences" [attr.maxlength]="STEP2_TEXT_MAX"
                   class="vr-input"
                   placeholder="Any other licence numbers"
                 />
@@ -689,7 +689,7 @@
               >
               <input
                 type="text"
-                formControlName="otherCertifications"
+                formControlName="otherCertifications" [attr.maxlength]="STEP2_TEXT_MAX"
                 class="vr-input"
                 placeholder="e.g. COREN, MDCN, NIA — list any other professional certifications"
               />
@@ -774,11 +774,13 @@
                     [formControlName]="decl.detailCtrl"
                     rows="3"
                     class="vr-textarea"
+                    [attr.maxlength]="STEP2_TEXT_MAX"
                     [class.err]="isInvalid(form2, decl.detailCtrl)"
                     [placeholder]="decl.placeholder"
                   ></textarea>
+                  <span class="vr-hint">{{ (form2.get(decl.detailCtrl)?.value || '').length }}/{{ STEP2_TEXT_MAX }} characters</span>
                   <span *ngIf="isInvalid(form2, decl.detailCtrl)" class="vr-err"
-                    >Details are required</span
+                    >{{ form2.get(decl.detailCtrl)?.hasError('maxlength') ? 'Keep this under ' + STEP2_TEXT_MAX + ' characters' : 'Details are required' }}</span
                   >
                 </div>
               </div>
