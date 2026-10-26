@@ -254,19 +254,6 @@ interface ChatArrivalToast {
   threadRootMessageBackendId?: number;
 }
 
-interface CollabReminder {
-  id: string;
-  taskId: string;
-  taskTitle: string;
-  sprint?: string;
-  dueDate: string;
-  reminderAt: string;
-  note?: string;
-  assignee?: string;
-  fired: boolean;
-  source: 'task' | 'issue';
-}
-
 interface ChatReactionOption {
   code: string;
   emoji: string;
@@ -672,9 +659,6 @@ export class CommunicationComponent
   taskRoutineTodos: TaskRoutineSummary[] = [];
   upcomingBirthdays: BirthdayReminderItem[] = [];
 
-  scheduledReminders: CollabReminder[] = [];
-  private reminderPollRef: ReturnType<typeof setInterval> | null = null;
-
   workspaceFocusItems: CollaborationFocusItem[] = [];
   chatArrivalToasts: ChatArrivalToast[] = [];
   private chatArrivalToastTimers = new Map<number, ReturnType<typeof setTimeout>>();
@@ -804,6 +788,7 @@ export class CommunicationComponent
   private presenceUpdatedAtMap: Record<number, string> = {};
   typingMap: Record<number, boolean> = {};
   private typingTimer: any = null;
+  private typingSafetyTimeouts: Record<number, any> = {};
   private presencePollTimer: any = null;
   private presenceChannelId: number | null = null;
 
@@ -886,6 +871,9 @@ export class CommunicationComponent
       this.workspaceMode = 'feed';
     }
     if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        this.retryAllFailedMessages();
+      });
       window.addEventListener(
         'optimax-open-collab-target',
         this.handleNotificationTarget as EventListener,
@@ -909,12 +897,9 @@ export class CommunicationComponent
       this.startConversationSync();
     }
     this.processMentionHashNavigation();
-    this.loadScheduledReminders();
-    this.reminderPollRef = setInterval(() => this.loadScheduledReminders(), 60_000);
   }
 
   ngOnDestroy() {
-    if (this.reminderPollRef !== null) { clearInterval(this.reminderPollRef); this.reminderPollRef = null; }
     this.stopJitsiListener();
     if (this.flashTimer) clearTimeout(this.flashTimer);
     if (this.typingTimer) clearTimeout(this.typingTimer);
@@ -2382,6 +2367,44 @@ export class CommunicationComponent
     return roots;
   }
 
+  private isSignalOrSystemFrame(frameBody: string): boolean {
+    if (!frameBody) return false;
+    try {
+      const parsed = JSON.parse(frameBody);
+      const obj = (parsed && typeof parsed === 'object') ? parsed : {};
+      const msg = (obj.message && typeof obj.message === 'object') ? obj.message : obj;
+
+      const type = (obj.type || obj.actionType || obj.eventType || obj.messageType || msg.type || msg.actionType || msg.eventType || msg.messageType || '').toString().toUpperCase();
+      const signalTypes = [
+        'CALL_SIGNAL', 'CALL', 'VIDEO_CALL', 'CALL_STATUS', 'CALL_SUMMARY', 'CALL_CARD',
+        'SEEN', 'READ', 'PLAYED', 'TYPING', 'PRESENCE', 'OFFER', 'ANSWER', 'CANDIDATE',
+        'BYE', 'ICE_CANDIDATE', 'SDP', 'ACK', 'PING', 'PONG', 'POST', 'FEED_POST'
+      ];
+      if (signalTypes.includes(type)) return true;
+
+      const payloadObj = obj.payload || msg.payload;
+      if (payloadObj && typeof payloadObj === 'object') {
+        const pType = (payloadObj.type || payloadObj.callType || payloadObj.callStatus || '').toString().toUpperCase();
+        if (signalTypes.includes(pType) || payloadObj.callStatus) return true;
+      }
+
+      const content = (msg.content || obj.content || '').toString().trim();
+      if (content.startsWith('{') && content.endsWith('}')) {
+        try {
+          const inner = JSON.parse(content);
+          const innerType = (inner.type || inner.actionType || inner.eventType || '').toString().toUpperCase();
+          if (signalTypes.includes(innerType)) return true;
+          if (inner.__optimaxReadReceipt || inner.__signal || inner.callStatus) return true;
+          if (inner.payload && typeof inner.payload === 'object') {
+            const ipType = (inner.payload.type || inner.payload.callType || inner.payload.callStatus || '').toString().toUpperCase();
+            if (signalTypes.includes(ipType) || inner.payload.callStatus) return true;
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+    return false;
+  }
+
   private parseIncomingNotification(frameBody: string): {
     senderName: string;
     content: string;
@@ -2390,21 +2413,43 @@ export class CommunicationComponent
     contextLabel?: string;
     messageBackendId?: number;
     threadRootMessageBackendId?: number;
-  } {
+  } | null {
+    if (this.isSignalOrSystemFrame(frameBody)) {
+      return null;
+    }
     try {
       const payload = JSON.parse(frameBody || '{}');
       const msg = (payload.message && typeof payload.message === 'object') ? payload.message : payload;
-      const senderUserId = Number(msg.senderUserId ?? msg.userId ?? 0);
+      const senderUserId = Number(msg.senderUserId ?? msg.sender_user_id ?? msg.userId ?? msg.authorId ?? payload.senderUserId ?? 0);
+      const rawMsgSender =
+        msg.senderName ??
+        msg.sender_name ??
+        msg.authorName ??
+        msg.userName ??
+        (msg.user && (msg.user.fullname || msg.user.fullName || msg.user.name)) ??
+        (msg.sender && (msg.sender.fullName || msg.sender.fullname || msg.sender.name)) ??
+        payload.senderName ??
+        payload.authorName ??
+        '';
       const senderName =
         this.userDirectory[senderUserId] ||
-        this.notificationFieldText(msg.senderName, '') ||
-        this.notificationFieldText(msg.authorName, '') ||
-        'New message';
+        this.notificationFieldText(rawMsgSender, '') ||
+        (this.directMessages.find((d: any) => d.userId === senderUserId)?.fullName) ||
+        '';
       const rawContent = this.notificationFieldText(msg.content, '');
-      const content = this.formatMessagePreview(rawContent)
+      const formatted = this.formatMessagePreview(rawContent);
+      if (!formatted || (formatted.trim().startsWith('{') && formatted.trim().endsWith('}'))) {
+        return null;
+      }
+      const content = formatted
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/g, ' ')
         .replace(/\s+/g, ' ')
         .trim()
         .slice(0, 120);
+      if (!content || (content.startsWith('{') && content.endsWith('}'))) {
+        return null;
+      }
       return {
         senderName,
         content,
@@ -2419,7 +2464,7 @@ export class CommunicationComponent
         threadRootMessageBackendId: Number(msg.threadRootMessageId ?? 0) || undefined,
       };
     } catch (_) {
-      return { senderName: 'New message', content: '', contextLabel: 'New message' };
+      return null;
     }
   }
 
@@ -2517,9 +2562,16 @@ export class CommunicationComponent
     }
     this.seenFeedNotificationIds.add(notification.id);
     this.persistSeenFeedNotificationIds();
+
+    const rawBody = notification.body || notification.title || '@all notification';
+    const cleanBody = this.formatMessagePreview(rawBody);
+    if (!cleanBody || (cleanBody.startsWith('{') && cleanBody.endsWith('}'))) {
+      return;
+    }
+
     this.headerStateService.pushNotification({
       title: `${this.feedAuthorName(notification.actor)} mentioned everyone`,
-      body: notification.body || notification.title || '@all notification',
+      body: cleanBody,
       category: 'feed',
       route: this.resolveCollaborationRoute(),
       avatarUrl: this.feedAuthorAvatarUrl(notification.actor),
@@ -3375,6 +3427,23 @@ export class CommunicationComponent
         },
       );
       this.loadChannels(true, true);
+      this.collabService.upsertPresence(0, 'ONLINE').subscribe({ error: () => {} });
+      client.subscribe('/topic/collab/chat/presence', (frame: any) => {
+        try {
+          const list = JSON.parse(frame.body || '[]');
+          this.applyPresenceEntries(list);
+          this.syncDmOnlineStatus();
+          this.cdr.detectChanges();
+        } catch (_) {}
+      });
+      client.subscribe('/topic/collab/presence', (frame: any) => {
+        try {
+          const list = JSON.parse(frame.body || '[]');
+          this.applyPresenceEntries(list);
+          this.syncDmOnlineStatus();
+          this.cdr.detectChanges();
+        } catch (_) {}
+      });
       for (const ch of this.channels) {
         this.subscribeToChannel(ch.backendId);
       }
@@ -3497,6 +3566,9 @@ export class CommunicationComponent
             const msg = (body.message && typeof body.message === 'object') ? body.message : body;
             senderUserId = Number(msg.senderUserId ?? msg.userId ?? null);
           } catch (_) {}
+          if (senderUserId) {
+            this.clearUserTyping(senderUserId);
+          }
           const isOwnMessage =
             senderUserId !== null && senderUserId === this.me.userId;
           let chFrameMessageType: string | null = null;
@@ -3506,62 +3578,69 @@ export class CommunicationComponent
             chFrameMessageType = msg2.messageType || null;
           } catch (_) {}
           const isChCallSystemMessage = chFrameMessageType === 'CALL_SUMMARY' || chFrameMessageType === 'CALL_CARD';
+          const isChSystemOrSignal = isChCallSystemMessage || this.isSignalOrSystemFrame(frame.body);
 
           if (!isOwnMessage) {
             this.loadChannels(true, true);
           }
-          if (!isOwnMessage && !isChCallSystemMessage) {
+          if (!isOwnMessage && !isChSystemOrSignal) {
             const incoming = this.parseIncomingNotification(frame.body);
-            this.pushChatMessagePreview({
-              title: incoming.senderName || ch.name,
-              body: incoming.content || `New message in ${ch.name}`,
-              avatarUrl: incoming.avatarUrl,
-              contextLabel: ch.name,
-              channelBackendId: ch.backendId,
-              messageBackendId: incoming.messageBackendId,
-              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
-            });
-            this.pushWorkspaceNotification({
-              title: incoming.senderName || ch.name,
-              body: incoming.content || `New message in ${ch.name}`,
-              category: 'chat',
-              route: this.resolveCollaborationRoute(),
-              avatarUrl: incoming.avatarUrl,
-              contextLabel: ch.name,
-              workspaceMode: 'chat',
-              channelBackendId: ch.backendId,
-              messageBackendId: incoming.messageBackendId,
-              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
-            });
-            this.pushChatArrivalToast({
-              title: incoming.senderName || ch.name,
-              body: incoming.content || `New message in ${ch.name}`,
-              avatarUrl: incoming.avatarUrl,
-              tone: 'channel',
-              channelId: ch.id,
-              messageBackendId: incoming.messageBackendId,
-              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
-            });
-            this.showBrowserNotification(
-              incoming.senderName || ch.name,
-              incoming.content || `New message in ${ch.name}`,
-              {
-                tag: `channel-${ch.id}`,
-                icon: incoming.avatarUrl,
-                target: {
-                  workspaceMode: 'chat',
-                  channelBackendId: ch.backendId,
-                  messageBackendId: incoming.messageBackendId,
-                  threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+            if (incoming) {
+              const rawSender = (incoming.senderName && incoming.senderName !== 'New message')
+                ? incoming.senderName
+                : (this.userDirectory[incoming.senderUserId || 0] || '');
+              const channelTitle = rawSender ? `${rawSender} (#${ch.name})` : `#${ch.name}`;
+              this.pushChatMessagePreview({
+                title: channelTitle,
+                body: incoming.content || `New message in ${ch.name}`,
+                avatarUrl: incoming.avatarUrl,
+                contextLabel: ch.name,
+                channelBackendId: ch.backendId,
+                messageBackendId: incoming.messageBackendId,
+                threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+              });
+              this.pushWorkspaceNotification({
+                title: channelTitle,
+                body: incoming.content || `New message in ${ch.name}`,
+                category: 'chat',
+                route: this.resolveCollaborationRoute(),
+                avatarUrl: incoming.avatarUrl,
+                contextLabel: ch.name,
+                workspaceMode: 'chat',
+                channelBackendId: ch.backendId,
+                messageBackendId: incoming.messageBackendId,
+                threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+              });
+              this.pushChatArrivalToast({
+                title: channelTitle,
+                body: incoming.content || `New message in ${ch.name}`,
+                avatarUrl: incoming.avatarUrl,
+                tone: 'channel',
+                channelId: ch.id,
+                messageBackendId: incoming.messageBackendId,
+                threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+              });
+              this.showBrowserNotification(
+                channelTitle,
+                incoming.content || `New message in ${ch.name}`,
+                {
+                  tag: `channel-${ch.id}`,
+                  icon: incoming.avatarUrl,
+                  target: {
+                    workspaceMode: 'chat',
+                    channelBackendId: ch.backendId,
+                    messageBackendId: incoming.messageBackendId,
+                    threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+                  },
                 },
-              },
-            );
-            this.playNotificationSound(this.shouldUseUrgentNotificationSound());
+              );
+              this.playNotificationSound(this.shouldUseUrgentNotificationSound());
+            }
           }
 
           const isActiveChannelFeed = this.workspaceMode === 'chat' && this.activeView === 'channel' && this.activeChannelId === ch.id;
           if (!isActiveChannelFeed) {
-            if (!isOwnMessage && !isChCallSystemMessage) {
+            if (!isOwnMessage && !isChSystemOrSignal) {
               ch.unreadCount = (ch.unreadCount || 0) + 1;
               ch.hasUnread = true;
               this.channels = [...this.channels];
@@ -3616,6 +3695,9 @@ export class CommunicationComponent
             const msg = (body.message && typeof body.message === 'object') ? body.message : body;
             senderUserId = Number(msg.senderUserId ?? msg.userId ?? null);
           } catch (_) {}
+          if (senderUserId) {
+            this.clearUserTyping(senderUserId);
+          }
           let frameMessageType: string | null = null;
           try {
             const body2 = JSON.parse(frame.body || '{}');
@@ -3623,62 +3705,68 @@ export class CommunicationComponent
             frameMessageType = msg2.messageType || null;
           } catch (_) {}
           const isCallSystemMessage = frameMessageType === 'CALL_SUMMARY' || frameMessageType === 'CALL_CARD';
+          const isDmSystemOrSignal = isCallSystemMessage || this.isSignalOrSystemFrame(frame.body);
           const isOwnMessage =
             senderUserId !== null && senderUserId === this.me.userId;
           if (!isOwnMessage) {
             this.loadChannels(true, true);
           }
-          if (!isOwnMessage && !isCallSystemMessage) {
+          if (!isOwnMessage && !isDmSystemOrSignal) {
             const incoming = this.parseIncomingNotification(frame.body);
-            this.pushChatMessagePreview({
-              title: incoming.senderName || contact.fullName,
-              body: incoming.content || `New direct message from ${contact.fullName}`,
-              avatarUrl: incoming.avatarUrl || contact.avatarUrl,
-              contextLabel: 'Direct message',
-              dmUserId: contact.userId,
-              messageBackendId: incoming.messageBackendId,
-              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
-            });
-            this.pushWorkspaceNotification({
-              title: incoming.senderName || contact.fullName,
-              body: incoming.content || `New direct message from ${contact.fullName}`,
-              category: 'chat',
-              route: this.resolveCollaborationRoute(),
-              avatarUrl: incoming.avatarUrl || contact.avatarUrl,
-              contextLabel: 'Direct message',
-              workspaceMode: 'chat',
-              dmUserId: contact.userId,
-              messageBackendId: incoming.messageBackendId,
-              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
-            });
-            this.pushChatArrivalToast({
-              title: incoming.senderName || contact.fullName,
-              body: incoming.content || `New direct message from ${contact.fullName}`,
-              avatarUrl: incoming.avatarUrl || contact.avatarUrl,
-              tone: 'dm',
-              dmId: contact.id,
-              messageBackendId: incoming.messageBackendId,
-              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
-            });
-            this.showBrowserNotification(
-              incoming.senderName || contact.fullName,
-              incoming.content || `New direct message from ${contact.fullName}`,
-              {
-                tag: `dm-${contact.id}`,
-                icon: incoming.avatarUrl || contact.avatarUrl,
-                target: {
-                  workspaceMode: 'chat',
-                  dmUserId: contact.userId,
-                  messageBackendId: incoming.messageBackendId,
-                  threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+            if (incoming) {
+              const dmTitle = (incoming.senderName && incoming.senderName !== 'New message')
+                ? incoming.senderName
+                : contact.fullName;
+              this.pushChatMessagePreview({
+                title: dmTitle,
+                body: incoming.content || `New direct message from ${contact.fullName}`,
+                avatarUrl: incoming.avatarUrl || contact.avatarUrl,
+                contextLabel: 'Direct message',
+                dmUserId: contact.userId,
+                messageBackendId: incoming.messageBackendId,
+                threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+              });
+              this.pushWorkspaceNotification({
+                title: dmTitle,
+                body: incoming.content || `New direct message from ${contact.fullName}`,
+                category: 'chat',
+                route: this.resolveCollaborationRoute(),
+                avatarUrl: incoming.avatarUrl || contact.avatarUrl,
+                contextLabel: 'Direct message',
+                workspaceMode: 'chat',
+                dmUserId: contact.userId,
+                messageBackendId: incoming.messageBackendId,
+                threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+              });
+              this.pushChatArrivalToast({
+                title: dmTitle,
+                body: incoming.content || `New direct message from ${contact.fullName}`,
+                avatarUrl: incoming.avatarUrl || contact.avatarUrl,
+                tone: 'dm',
+                dmId: contact.id,
+                messageBackendId: incoming.messageBackendId,
+                threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+              });
+              this.showBrowserNotification(
+                dmTitle,
+                incoming.content || `New direct message from ${contact.fullName}`,
+                {
+                  tag: `dm-${contact.id}`,
+                  icon: incoming.avatarUrl || contact.avatarUrl,
+                  target: {
+                    workspaceMode: 'chat',
+                    dmUserId: contact.userId,
+                    messageBackendId: incoming.messageBackendId,
+                    threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+                  },
                 },
-              },
-            );
-            this.playNotificationSound(this.shouldUseUrgentNotificationSound());
+              );
+              this.playNotificationSound(this.shouldUseUrgentNotificationSound());
+            }
           }
           const isActiveDmFeed = this.workspaceMode === 'chat' && this.activeView === 'dm' && this.activeDmId === contact.id;
           if (!isActiveDmFeed) {
-            if (!isOwnMessage && !isCallSystemMessage) {
+            if (!isOwnMessage && !isDmSystemOrSignal) {
               contact.unreadCount = (contact.unreadCount || 0) + 1;
               contact.hasUnread = true;
               this.dmContacts = [...this.dmContacts];
@@ -4054,7 +4142,7 @@ export class CommunicationComponent
 
   private syncDmOnlineStatus(): void {
     for (const dm of this.dmContacts) {
-      dm.online = (this.presenceMap[dm.userId] || 'OFFLINE') === 'ONLINE';
+      dm.online = this.isUserOnline(dm.userId);
     }
   }
 
@@ -4651,7 +4739,7 @@ export class CommunicationComponent
             0,
         ) || profile.userId,
       jobTitle:
-        employee?.jobTitle || 
+        employee?.jobTitle ||
         employee?.designation ||
         employee?.position ||
         profile.jobTitle,
@@ -4860,31 +4948,6 @@ export class CommunicationComponent
         : undefined;
     contact.daysUntilBirthday = reminder?.daysUntilBirthday ?? null;
     contact.birthdayIsToday = reminder?.birthdayIsToday ?? false;
-  }
-
-  loadScheduledReminders(): void {
-    const taskKey = 'hr_productivity_task_reminders_v1';
-    const issueKey = 'hr_issue_reminders_v1';
-    const parse = (key: string, source: 'task' | 'issue') => {
-      try {
-        return (JSON.parse(localStorage.getItem(key) || '[]') as any[]).map(r => ({ ...r, source }));
-      } catch { return []; }
-    };
-    const all: CollabReminder[] = [
-      ...parse(taskKey, 'task'),
-      ...parse(issueKey, 'issue'),
-    ];
-    all.sort((a, b) => new Date(a.reminderAt).getTime() - new Date(b.reminderAt).getTime());
-    this.scheduledReminders = all;
-  }
-
-  dismissCollabReminder(taskId: string, source: 'task' | 'issue'): void {
-    const key = source === 'task' ? 'hr_productivity_task_reminders_v1' : 'hr_issue_reminders_v1';
-    try {
-      const all = JSON.parse(localStorage.getItem(key) || '[]') as any[];
-      localStorage.setItem(key, JSON.stringify(all.filter((r: any) => r.taskId !== taskId)));
-    } catch { /* ignore */ }
-    this.loadScheduledReminders();
   }
 
   private buildUpcomingBirthdays(contacts: DmContact[]): BirthdayReminderItem[] {
@@ -5782,8 +5845,16 @@ export class CommunicationComponent
   getMemberName = (userId: number): string =>
     this.userDirectory[userId] || `User ${userId}`;
   colorFor = (seed: number): string => _colorFor(seed);
-  isUserOnline = (userId: number): boolean =>
-    (this.presenceMap[userId] || 'OFFLINE') === 'ONLINE';
+  isUserOnline = (userId: number): boolean => {
+    if (Number(userId) === Number(this.me.userId)) return true;
+    if ((this.presenceMap[userId] || 'OFFLINE') !== 'ONLINE') return false;
+    const rawUpdated = this.presenceUpdatedAtMap[userId];
+    if (!rawUpdated) return false;
+    const parsed = parseServerDate(rawUpdated);
+    if (!parsed) return false;
+    const ageSec = (Date.now() - parsed.getTime()) / 1000;
+    return ageSec <= 90;
+  };
   getEmpName = (e: EmployeeProfile): string =>
     `${e.firstName || ''} ${e.lastName || ''}`.trim() ||
     e.fullname ||
@@ -6340,6 +6411,7 @@ export class CommunicationComponent
     this.cancelEdit();
     this.confirmDeleteId = null;
     this.conversationAccessMessage = '';
+    this.clearAllTyping();
     this.workspaceMode = 'chat';
     this.showChannelDetails = false;
     this.preserveFeedScrollOffset = null;
@@ -6423,6 +6495,7 @@ export class CommunicationComponent
     this.cancelEdit();
     this.confirmDeleteId = null;
     this.conversationAccessMessage = '';
+    this.clearAllTyping();
     this.workspaceMode = 'chat';
     this.activeDmId = contactId;
     this.activeView = 'dm';
@@ -7170,6 +7243,9 @@ export class CommunicationComponent
     }
     this.ngZone.runOutsideAngular(() => {
       this.presencePollTimer = setInterval(() => {
+        // Heartbeat so our own presence stays fresh on server
+        this.collabService.upsertPresence(0, 'ONLINE').subscribe({ error: () => {} });
+
         this.collabService.getAllPresence().subscribe({
           next: (list: any[]) => {
             const byUser = new Map<number, any>();
@@ -7178,8 +7254,9 @@ export class CommunicationComponent
               if (!prev || (p.updatedAt || '') >= (prev.updatedAt || ''))
                 byUser.set(Number(p.userId), p);
             }
-            this.applyPresenceEntries(Array.from(byUser.values()));
+            this.applyPresenceEntries(Array.from(byUser.values()), true);
             this.syncDmOnlineStatus();
+            this.retryAllFailedMessages();
             this.cdr.detectChanges();
           },
           error: () => {},
@@ -7274,7 +7351,7 @@ export class CommunicationComponent
   private pollChannelPresence(channelId: number): void {
     this.collabService.getChannelPresence(channelId).subscribe({
       next: (list: any[]) => {
-        this.applyPresenceEntries(list || []);
+        this.applyPresenceEntries(list || [], true);
         this.syncDmOnlineStatus();
         this.cdr.detectChanges();
       },
@@ -7284,35 +7361,95 @@ export class CommunicationComponent
 
   isUserTyping(userId: number): boolean {
     return (
-      Boolean(this.typingMap[userId]) &&
+      Boolean(this.typingMap && this.typingMap[userId]) &&
       Number(userId) !== Number(this.me.userId)
     );
   }
 
-  private applyPresenceEntries(entries: any[]): void {
-    for (const p of entries || []) {
+  private applyPresenceEntries(entries: any, isFromHttpPoll = false): void {
+    if (!entries) return;
+    const list = Array.isArray(entries) ? entries : [entries];
+    let updated = false;
+    for (const p of list) {
       if (p?.userId == null) continue;
       const userId = Number(p.userId);
-      this.presenceMap[userId] = p.presenceStatus || 'OFFLINE';
-      this.typingMap[userId] = Boolean(p.typing);
+      if (userId === Number(this.me.userId)) continue;
+      if (p.presenceStatus) {
+        this.presenceMap[userId] = p.presenceStatus;
+      }
       if (p.updatedAt) {
         this.presenceUpdatedAtMap[userId] = String(p.updatedAt);
       }
+      // ONLY accept typing from live STOMP frames, NEVER from HTTP database polling!
+      if (!isFromHttpPoll && p.typing !== undefined) {
+        const isTyping = Boolean(p.typing);
+        if (this.typingMap[userId] !== isTyping) {
+          this.typingMap = { ...this.typingMap, [userId]: isTyping };
+          updated = true;
+        }
+        if (this.typingSafetyTimeouts[userId]) {
+          clearTimeout(this.typingSafetyTimeouts[userId]);
+          delete this.typingSafetyTimeouts[userId];
+        }
+        if (isTyping) {
+          this.typingSafetyTimeouts[userId] = setTimeout(() => {
+            this.clearUserTyping(userId);
+          }, 3500);
+        }
+      }
+    }
+    if (updated) {
+      this.cdr.detectChanges();
     }
   }
 
-  get typingUsersLabel(): string {
-    const typing: string[] = [];
-    for (const [uid, isTyping] of Object.entries(this.typingMap)) {
-      if (!isTyping || Number(uid) === Number(this.me.userId)) continue;
-      typing.push(
-        (this.userDirectory[Number(uid)] || '').split(' ')[0] || `User ${uid}`,
-      );
+  private clearUserTyping(userId: number): void {
+    if (!userId) return;
+    if (this.typingSafetyTimeouts[userId]) {
+      clearTimeout(this.typingSafetyTimeouts[userId]);
+      delete this.typingSafetyTimeouts[userId];
     }
-    if (!typing.length) return '';
-    if (typing.length === 1) return `${typing[0]} is typing…`;
-    if (typing.length === 2) return `${typing[0]} and ${typing[1]} are typing…`;
-    return 'Several people are typing…';
+    if (this.typingMap[userId]) {
+      this.typingMap = { ...this.typingMap, [userId]: false };
+      this.cdr.detectChanges();
+    }
+  }
+
+  private clearAllTyping(): void {
+    for (const tid of Object.values(this.typingSafetyTimeouts)) {
+      if (tid) clearTimeout(tid);
+    }
+    this.typingSafetyTimeouts = {};
+    this.typingMap = {};
+  }
+
+  get typingUsersLabel(): string {
+    if (this.activeView === 'dm') {
+      const dmTargetUserId = Number(this.activeDmContact?.userId || 0);
+      if (dmTargetUserId && this.isUserTyping(dmTargetUserId)) {
+        const name = (this.userDirectory[dmTargetUserId] || this.activeDmContact?.fullName || '').split(' ')[0] || 'Contact';
+        return `${name} is typing…`;
+      }
+      return '';
+    }
+
+    if (this.activeView === 'channel') {
+      const channelMemberIds = new Set((this.channelMembers || []).map((m: any) => Number(m.userId ?? m.id)));
+      const typing: string[] = [];
+      for (const [uid, isTyping] of Object.entries(this.typingMap)) {
+        const numUid = Number(uid);
+        if (!isTyping || !this.isUserTyping(numUid)) continue;
+        if (channelMemberIds.size > 0 && !channelMemberIds.has(numUid)) continue;
+        const name = (this.userDirectory[numUid] || '').split(' ')[0] || `User ${uid}`;
+        typing.push(name);
+      }
+      if (!typing.length) return '';
+      if (typing.length === 1) return `${typing[0]} is typing…`;
+      if (typing.length === 2) return `${typing[0]} and ${typing[1]} are typing…`;
+      return 'Several people are typing…';
+    }
+
+    return '';
   }
 
   private shouldDisableTypingEndpoint(err: any): boolean {
@@ -7321,22 +7458,78 @@ export class CommunicationComponent
   }
 
   onComposerTyping(): void {
-    if (this.typingEndpointBlocked) return;
     const chId =
       this.activeView === 'channel'
         ? this.activeChannel?.backendId
         : this.activeDmContact?.dmChannelId;
     if (!chId) return;
+
+    if (this.stompClient?.connected) {
+      try {
+        const payload = JSON.stringify([{
+          userId: this.me.userId,
+          presenceStatus: 'ONLINE',
+          typing: true,
+          updatedAt: new Date().toISOString(),
+        }]);
+        this.stompClient.publish({
+          destination: `/topic/collab/chat/presence/channel/${chId}`,
+          body: payload,
+        });
+        this.stompClient.publish({
+          destination: `/topic/collab/chat/presence`,
+          body: payload,
+        });
+      } catch (_) {}
+    }
+
+    if (!this.typingEndpointBlocked) {
+      this.collabService.setTyping(chId, true).subscribe({
+        error: (err) => {
+          if (this.shouldDisableTypingEndpoint(err)) {
+            this.typingEndpointBlocked = true;
+          }
+        },
+      });
+    }
+
     clearTimeout(this.typingTimer);
-    this.collabService.setTyping(chId, true).subscribe({
-      error: (err) => {
-        if (this.shouldDisableTypingEndpoint(err)) {
-          this.typingEndpointBlocked = true;
-        }
-      },
-    });
     this.typingTimer = setTimeout(() => {
-      if (this.typingEndpointBlocked) return;
+      this.stopComposerTyping();
+    }, 2500);
+  }
+
+  private stopComposerTyping(): void {
+    if (this.typingTimer) {
+      clearTimeout(this.typingTimer);
+      this.typingTimer = null;
+    }
+    const chId =
+      this.activeView === 'channel'
+        ? this.activeChannel?.backendId
+        : this.activeDmContact?.dmChannelId;
+    if (!chId) return;
+
+    if (this.stompClient?.connected) {
+      try {
+        const payload = JSON.stringify([{
+          userId: this.me.userId,
+          presenceStatus: 'ONLINE',
+          typing: false,
+          updatedAt: new Date().toISOString(),
+        }]);
+        this.stompClient.publish({
+          destination: `/topic/collab/chat/presence/channel/${chId}`,
+          body: payload,
+        });
+        this.stompClient.publish({
+          destination: `/topic/collab/chat/presence`,
+          body: payload,
+        });
+      } catch (_) {}
+    }
+
+    if (!this.typingEndpointBlocked) {
       this.collabService.setTyping(chId, false).subscribe({
         error: (err) => {
           if (this.shouldDisableTypingEndpoint(err)) {
@@ -7344,7 +7537,7 @@ export class CommunicationComponent
           }
         },
       });
-    }, 2000);
+    }
   }
 
   playNotificationSound(urgent = false): void {
@@ -8058,11 +8251,11 @@ export class CommunicationComponent
       return;
     }
     const text = this.draft.trim();
-    if ((!text && !this.pendingAttachments.length) || this.sendingMessage) return;
+    if (!text && !this.pendingAttachments.length) return;
     const channel = this.activeChannel;
     if (!channel) return;
     const outboundContent = text || this.attachmentsPlaceholderText(this.pendingAttachments);
-    this.sendingMessage = true;
+    this.stopComposerTyping();
     const optimistic = this.makeLocalMsg(
       outboundContent,
       this.pendingAttachments,
@@ -8098,10 +8291,6 @@ export class CommunicationComponent
           optimistic.id = `backend-${saved.id}`;
           optimistic.deliveryState = 'DELIVERED';
           optimistic.retryMeta = undefined;
-          if (saved.sentAt) {
-            optimistic.sentAtRaw = saved.sentAt;
-            optimistic.time = formatRelativeTime(saved.sentAt);
-          }
           this.sendingMessage = false;
           this.syncActiveConversationState();
           if (capturedFiles.length && capturedAttachments.length) {
@@ -8128,7 +8317,7 @@ export class CommunicationComponent
   sendDmMessage(): void {
     const text = this.draft.trim(),
       contact = this.activeDmContact;
-    if (!contact || (!text && !this.pendingAttachments.length) || this.sendingMessage)
+    if (!contact || (!text && !this.pendingAttachments.length))
       return;
     const chId = contact.dmChannelId;
     if (!chId) {
@@ -8141,7 +8330,7 @@ export class CommunicationComponent
       return;
     }
     const outboundContent = text || this.attachmentsPlaceholderText(this.pendingAttachments);
-    this.sendingMessage = true;
+    this.stopComposerTyping();
     const optimistic = this.makeLocalMsg(
       outboundContent,
       this.pendingAttachments,
@@ -8177,10 +8366,6 @@ export class CommunicationComponent
           optimistic.id = `backend-${saved.id}`;
           optimistic.deliveryState = 'DELIVERED';
           optimistic.retryMeta = undefined;
-          if (saved.sentAt) {
-            optimistic.sentAtRaw = saved.sentAt;
-            optimistic.time = formatRelativeTime(saved.sentAt);
-          }
           this.sendingMessage = false;
           this.syncActiveConversationState();
           if (capturedFiles.length && capturedAttachments.length) {
@@ -8700,10 +8885,6 @@ export class CommunicationComponent
           optimistic.id = `backend-${saved.id}`;
           optimistic.deliveryState = 'DELIVERED';
           optimistic.retryMeta = undefined;
-          if (saved.sentAt) {
-            optimistic.sentAtRaw = saved.sentAt;
-            optimistic.time = formatRelativeTime(saved.sentAt);
-          }
           this.sendingReply = false;
           this.syncActiveConversationState();
           this.refreshSelectedThreadFromSource(stableRootMsg.id);
@@ -10899,18 +11080,48 @@ export class CommunicationComponent
   }
 
   private formatMessagePreview(content: string): string {
-    try {
-      const d = JSON.parse(content);
-      if (d?.__callSummary) {
-        const label = d.callType === 'VIDEO_CALL' ? 'Video call' : 'Voice call';
-        return d.duration >= 0 ? `📞 ${label} · ${this.formatCallDuration(d.duration)}` : '📞 Missed call';
+    if (!content) return '';
+    const trimmed = typeof content === 'string' ? content.trim() : '';
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        if (this.isSignalOrSystemFrame(trimmed)) {
+          return '';
+        }
+        const d = JSON.parse(trimmed);
+        if (d?.__callSummary) {
+          const label = d.callType === 'VIDEO_CALL' ? 'Video call' : 'Voice call';
+          return d.duration >= 0 ? `📞 ${label} · ${this.formatCallDuration(d.duration)}` : '📞 Missed call';
+        }
+        if (d?.__callInvite) {
+          const label = d.callType === 'VIDEO_CALL' ? 'video' : 'voice';
+          return `📞 ${d.callerName || 'Someone'} started a ${label} call`;
+        }
+        if (d.content) {
+          return this.formatMessagePreview(String(d.content));
+        }
+        if (d.text) {
+          return this.formatMessagePreview(String(d.text));
+        }
+        if (d.message && typeof d.message === 'string') {
+          return this.formatMessagePreview(d.message);
+        }
+        if (d.title && typeof d.title === 'string') {
+          return this.formatMessagePreview(d.title);
+        }
+        return '';
+      } catch (_) {
+        return '';
       }
-      if (d?.__callInvite) {
-        const label = d.callType === 'VIDEO_CALL' ? 'video' : 'voice';
-        return `📞 ${d.callerName} started a ${label} call`;
-      }
-    } catch (_) {}
-    return content;
+    }
+    const cleaned = String(content)
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (cleaned.startsWith('{') && cleaned.endsWith('}')) {
+      return '';
+    }
+    return cleaned;
   }
 
   private formatCallDuration(secs: number): string {
@@ -11736,7 +11947,6 @@ export class CommunicationComponent
         minute: '2-digit',
         hour12: true,
       }),
-      sentAtRaw: new Date().toISOString(),
       content,
       replies: [],
       liked: false,
@@ -11774,10 +11984,6 @@ export class CommunicationComponent
           msg.backendId = saved.id;
           msg.id = `backend-${saved.id}`;
           msg.deliveryState = 'DELIVERED';
-          if (saved.sentAt) {
-            msg.sentAtRaw = saved.sentAt;
-            msg.time = formatRelativeTime(saved.sentAt);
-          }
           const files = retryMeta.files || [];
           const attachments = retryMeta.attachments || [];
           msg.retryMeta = undefined;
@@ -11802,6 +12008,23 @@ export class CommunicationComponent
           this.cdr.detectChanges();
         },
       });
+  }
+
+  retryAllFailedMessages(): void {
+    for (const msgs of Object.values(this.channelMessages)) {
+      for (const m of msgs || []) {
+        if (m && m.deliveryState === 'FAILED' && m.retryMeta) {
+          this.retryFailedMessage(m);
+        }
+      }
+    }
+    for (const msgs of Object.values(this.dmMessages)) {
+      for (const m of msgs || []) {
+        if (m && m.deliveryState === 'FAILED' && m.retryMeta) {
+          this.retryFailedMessage(m);
+        }
+      }
+    }
   }
 
   // Legacy aliases kept for compatibility
