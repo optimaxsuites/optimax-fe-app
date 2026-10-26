@@ -79,15 +79,20 @@ export class BulkEmployeeInstructionComponent {
   }
   
   createExcelSheet() {
-    const departments = this.departments.map(dept => dept.name).join(',');
-    const levels = this.levels.map(level => level.name).join(',');
-    const employmentTypes = this.employmentTypes.map(type => type.name).join(',');
-
-
-
-  
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Employees');
+
+    // Dropdown values live on a hidden sheet: Excel caps a typed-in list ("A,B,C") at 255 characters,
+    // which a company's departments or levels soon pass, and names containing commas would split.
+    const lists = workbook.addWorksheet('Lists', { state: 'hidden' });
+    const writeList = (column: string, values: string[]): string | null => {
+      const names = values.filter((value) => !!value);
+      names.forEach((value, index) => (lists.getCell(`${column}${index + 1}`).value = value));
+      return names.length ? `Lists!$${column}$1:$${column}$${names.length}` : null;
+    };
+    const departmentList = writeList('A', this.departments.map(dept => dept.name));
+    const levelList = writeList('B', this.levels.map(level => level.name));
+    const employmentTypeList = writeList('C', this.employmentTypes.map(type => type.name));
   
     const headers = [
       'Employee ID', 'First Name', 'Last Name', 'Email', 'Work Email',
@@ -103,31 +108,20 @@ export class BulkEmployeeInstructionComponent {
     ];
     rows.forEach(row => worksheet.addRow(row));
   
-    for (let i = 1; i <= 500; i++) {
-      worksheet.getCell(`G${i}`).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae:[`"${departments}"`],
-        showErrorMessage: true,
-        errorTitle: 'Invalid Selection',
-        error: 'Please select a value from the dropdown.',
-      };
-      worksheet.getCell(`I${i}`).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: [`"${levels}"`],
-        showErrorMessage: true,
-        errorTitle: 'Invalid Selection',
-        error: 'Please select a value from the dropdown.',
-      };
-      worksheet.getCell(`H${i}`).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae:[`"${employmentTypes}"`],
-        showErrorMessage: true,
-        errorTitle: 'Invalid Selection',
-        error: 'Please select a value from the dropdown.',
-      };
+    const listValidation = (formula: string) => ({
+      type: 'list' as const,
+      allowBlank: true,
+      formulae: [formula],
+      showErrorMessage: true,
+      errorTitle: 'Invalid Selection',
+      error: 'Please select a value from the dropdown.',
+    });
+
+    // Row 1 is the header row, so dropdowns start at row 2.
+    for (let i = 2; i <= 500; i++) {
+      if (departmentList) worksheet.getCell(`G${i}`).dataValidation = listValidation(departmentList);
+      if (levelList) worksheet.getCell(`I${i}`).dataValidation = listValidation(levelList);
+      if (employmentTypeList) worksheet.getCell(`H${i}`).dataValidation = listValidation(employmentTypeList);
       worksheet.getCell(`K${i}`).dataValidation = {
         type: 'list',
         allowBlank: true,
@@ -144,6 +138,7 @@ export class BulkEmployeeInstructionComponent {
       link.href = URL.createObjectURL(blob);
       link.download = 'employee_data.xlsx';
       link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 0);
     });
   }
   

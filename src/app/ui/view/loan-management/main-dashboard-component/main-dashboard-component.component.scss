@@ -2,52 +2,12 @@
   display: block;
 }
 
-.dashboard-toggle {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.toggle-btn {
-  padding: 0.75rem 1.25rem;
-  border: none;
-  background: none;
-  font-weight: 500;
-  color: #6b7280;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: color 0.2s ease, border-color 0.2s ease;
-
-  &:hover {
-    color: #111827;
-  }
-
-  &.active {
-    color: #0f766e;
-    border-bottom-color: #0f766e;
-  }
-}
-
 .dashboard-section {
   display: block;
   margin-bottom: 2rem;
 }
 
-// Small screens: the two toggle tabs split the width evenly so both stay visible and tappable.
 @media (max-width: 600px) {
-  .dashboard-toggle {
-    gap: 0;
-    margin-bottom: 1rem;
-  }
-
-  .toggle-btn {
-    flex: 1;
-    padding: 0.75rem 0.5rem;
-    font-size: 0.9rem;
-    text-align: center;
-  }
-
   .dashboard-section {
     margin-bottom: 1.25rem;
   }

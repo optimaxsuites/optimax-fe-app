@@ -2,7 +2,7 @@ import { EmployeeDetailDTO, PagedResponse } from '../attendance/attendance-event
 
 export type { PagedResponse };
 
-export type BiometricDeviceType = 'FINGERPRINT' | 'IRIS' | 'FACE' | 'PALM';
+export type BiometricDeviceType = 'FINGERPRINT' | 'IRIS' | 'FACE' | 'PALM' | 'MULTI';
 
 /** GET/POST/PUT /biometric-devices — identical shape for request and response. */
 export interface BiometricDeviceDTO {

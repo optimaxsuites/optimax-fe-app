@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, EventEmitter, inject, Output } from '@angular/core';
+import { Component, EventEmitter, inject, OnDestroy, Output } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../shared-component/service/environments/environment.prod';
 
@@ -46,7 +46,7 @@ export interface ImportedEmployeeData {
   templateUrl: './pre-onboarding-import.component.html',
   styleUrl: './pre-onboarding-import.component.scss'
 })
-export class PreOnboardingImportComponent {
+export class PreOnboardingImportComponent implements OnDestroy {
   @Output() importComplete = new EventEmitter<ImportedEmployeeData>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -89,7 +89,7 @@ export class PreOnboardingImportComponent {
     this.error = '';
     this.state = 'processing';
     this.progress = 10;
-    this.previewUrl = null;
+    this.setPreviewUrl(null);
 
     try {
       let imageFile: File;
@@ -98,11 +98,11 @@ export class PreOnboardingImportComponent {
         this.progressLabel = 'Rendering PDF page...';
         this.progress = 20;
         const blob = await this.pdfFirstPageToBlob(file);
-        this.previewUrl = URL.createObjectURL(blob);
+        this.setPreviewUrl(URL.createObjectURL(blob));
         imageFile = new File([blob], 'form.jpg', { type: 'image/jpeg' });
       } else {
         imageFile = file;
-        this.previewUrl = URL.createObjectURL(file);
+        this.setPreviewUrl(URL.createObjectURL(file));
       }
 
       this.progressLabel = 'Reading form with AI...';
@@ -141,31 +141,42 @@ export class PreOnboardingImportComponent {
     }
   }
 
-  // ── PDF → PNG ───────────────────────────────────────────────────────────────
+  // ── PDF → JPEG ──────────────────────────────────────────────────────────────
+  /**
+   * Loads pdf.js from the pdfjs-dist package the first time a PDF is dropped. Its worker code is
+   * loaded into the page too (`globalThis.pdfjsWorker`), so parsing runs on the main thread and no
+   * separate worker file has to be served; for one page of a form that only takes a moment.
+   * The legacy build is used because the modern one needs very recent browsers (Chrome 122+,
+   * Safari 18.4+) and fails outright on anything older.
+   */
+  private async loadPdfJs() {
+    const [pdfjs, worker] = await Promise.all([
+      import('pdfjs-dist/legacy/build/pdf.mjs'),
+      import('pdfjs-dist/legacy/build/pdf.worker.min.mjs'),
+    ]);
+    (globalThis as any).pdfjsWorker ??= worker;
+    return pdfjs;
+  }
+
   private async pdfFirstPageToBlob(file: File): Promise<Blob> {
-    const arrayBuffer = await file.arrayBuffer();
+    const pdfjs = await this.loadPdfJs();
+    const loadingTask = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
+    try {
+      const pdf = await loadingTask.promise;
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 2.5 });
 
-    const pdfjs: any = (window as any).pdfjsLib;
-    if (!pdfjs) throw new Error('PDF library not available. Please ensure pdf.js is loaded.');
+      const canvas = document.createElement('canvas');
+      canvas.width  = viewport.width;
+      canvas.height = viewport.height;
+      await page.render({ canvas, viewport }).promise;
 
-    if (!pdfjs.GlobalWorkerOptions.workerSrc) {
-      const v: string = pdfjs.version || '4.8.69';
-      pdfjs.GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${v}/pdf.worker.min.js`;
+      return await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas export failed')), 'image/jpeg', 0.95);
+      });
+    } finally {
+      await loadingTask.destroy();
     }
-
-    const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
-    const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 2.5 });
-
-    const canvas = document.createElement('canvas');
-    canvas.width  = viewport.width;
-    canvas.height = viewport.height;
-    await page.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise;
-
-    return new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas export failed')), 'image/jpeg', 0.95);
-    });
   }
 
   // ── Map AI response → ImportedEmployeeData ─────────────────────────────────
@@ -210,13 +221,23 @@ export class PreOnboardingImportComponent {
     };
   }
 
+  ngOnDestroy(): void {
+    this.setPreviewUrl(null);
+  }
+
+  /** Replaces the preview, releasing the previous object URL. */
+  private setPreviewUrl(url: string | null): void {
+    if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+    this.previewUrl = url;
+  }
+
   // ── Actions ─────────────────────────────────────────────────────────────────
   createEmployee() { this.importComplete.emit({ ...this.data }); }
 
   reset() {
     this.state = 'upload';
     this.data = {};
-    this.previewUrl = null;
+    this.setPreviewUrl(null);
     this.error = '';
     this.progress = 0;
     this.progressLabel = 'Initialising...';

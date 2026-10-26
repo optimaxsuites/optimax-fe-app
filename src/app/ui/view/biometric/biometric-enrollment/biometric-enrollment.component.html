@@ -36,6 +36,7 @@
               <i class="fas fa-fingerprint"></i>
               <span class="device-name">{{ device.name }}</span>
               <span class="badge bg-success" *ngIf="device.isOnline">Online</span>
+              <span class="badge bg-warning text-dark" *ngIf="!device.isOnline">Offline / Not pinged yet</span>
             </div>
             <div class="device-details">
               <p><strong>Type:</strong> {{ device.deviceType }}</p>

@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -7,14 +7,13 @@ import { Subscription } from 'rxjs';
   templateUrl: './main-dashboard-component.component.html',
   styleUrls: ['./main-dashboard-component.component.scss']
 })
-export class MainDashboardComponent {
+export class MainDashboardComponent implements OnInit, OnDestroy {
   selectedDashboard: 'advance' | 'cooperative' = 'advance';
 
   private readonly subscription = new Subscription();
 
   constructor(
-    private readonly route: ActivatedRoute,
-    private readonly router: Router
+    private readonly route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -28,18 +27,5 @@ export class MainDashboardComponent {
 
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
-  }
-
-  onDashboardChange(value: 'advance' | 'cooperative'): void {
-    this.selectedDashboard = value;
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { dashboard: value },
-      queryParamsHandling: 'merge'
-    });
-  }
-
-  onDashboardSelect(value: string): void {
-    this.onDashboardChange(value === 'cooperative' ? 'cooperative' : 'advance');
   }
 }

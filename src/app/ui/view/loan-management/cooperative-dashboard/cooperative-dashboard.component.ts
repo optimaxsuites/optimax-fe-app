@@ -89,6 +89,12 @@ interface GroupJoinApplicationRow {
   encapsulation: ViewEncapsulation.None  // Add this line
 })
 export class CooperativeDashboardComponent implements OnInit, OnDestroy {
+  /**
+   * "Distribute Patronage" in Admin Tools is hidden for now. Set to true to show it again; the
+   * patronage screen's figures need fixing first (they're placeholder values, not real interest data).
+   */
+  readonly showPatronageDistribution = false;
+
         // Helper to format membership ID (matches dashboard logic)
         // Format membership ID as [group code letters]-[memberId]-[membershipId]
         private formatMembershipId(membershipIdRaw: string, groupCode: string, memberIdNum: string | number): string {

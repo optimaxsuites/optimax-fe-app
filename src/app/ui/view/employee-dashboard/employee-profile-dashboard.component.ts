@@ -19,6 +19,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { PayrollService } from '../../service/payroll.service';
 import { AttendancetableService } from '../../service/attendance/attendancetable.service';
+import { buildOnboardingEmailHtml, buildOnboardingLink, escapeHtml, generateTemporaryPassword, onboardingLinkExpiry } from '../employee-management/onboarding-credentials.util';
 
 export interface NextOfKin {
   id?: number;
@@ -1455,7 +1456,7 @@ export class EmployeeProfileDashboardComponent {
     const resolvedUserId = employee?.userId ?? employee?.user?.id ?? employee?.user?.userId;
     const username = email;
     const name = `${employee?.firstName ?? ''} ${employee?.lastName ?? ''}`.trim();
-    const newPassword = this.generateRandomPassword();
+    const newPassword = generateTemporaryPassword();
     this.resendingCredentials = true;
 
     if (!resolvedUserId) {
@@ -1507,9 +1508,10 @@ export class EmployeeProfileDashboardComponent {
   private dispatchOnboardingEmail(employee: any, name: string, username: string, password: string): void {
     const companyName = 'The Company';
     const hrEmail = '';
-    const url = `${window.location.origin}/onboarding/${employee.id}/wer23456fghi367ghj?onboarding=1`;
+    const expiresAt = onboardingLinkExpiry();
+    const url = buildOnboardingLink(employee.id, expiresAt);
     const subject = `${companyName} — Your Onboarding Credentials`;
-    const htmlBody = this.buildOnboardingEmailHtml({ name, username, password, url, companyName, hrEmail });
+    const htmlBody = buildOnboardingEmailHtml({ name, username, password, url, companyName, hrEmail, expiresAt });
     this.employeeService.sendNotificationEmail(employee.email, subject, htmlBody).subscribe({
       next: () => {
         this.resendingCredentials = false;
@@ -1656,7 +1658,14 @@ export class EmployeeProfileDashboardComponent {
     const logoUrl = '';
     const hrEmail = '';
     const subject = `Welcome to ${companyName}! 🎉`;
-    const htmlBody = this.buildWelcomeActiveEmailHtml({ name, companyName, logoUrl, hrEmail, jobTitle: employee?.jobTitle || '', department: employee?.department?.name || employee?.department || '' });
+    const htmlBody = this.buildWelcomeActiveEmailHtml({
+      name: escapeHtml(name),
+      companyName: escapeHtml(companyName),
+      logoUrl: escapeHtml(logoUrl),
+      hrEmail: escapeHtml(hrEmail),
+      jobTitle: escapeHtml(employee?.jobTitle || ''),
+      department: escapeHtml(employee?.department?.name || employee?.department || ''),
+    });
 
     const sendTo: string[] = [];
     if (employee?.email) sendTo.push(employee.email);
@@ -1701,38 +1710,6 @@ ${d.jobTitle ? `<p style="margin:0 0 16px;font-size:14px;color:#475569;line-heig
 </table></td></tr></table></body></html>`;
   }
 
-  private buildOnboardingEmailHtml(d: { name: string; username: string; password: string; url: string; companyName: string; hrEmail: string }): string {
-    const hrLine = d.hrEmail
-      ? `Please contact HR at <a href="mailto:${d.hrEmail}" style="color:#1e3a5f;">${d.hrEmail}</a> for queries.`
-      : `Please contact the HR Department for queries.`;
-    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:36px 16px;">
-<tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.08);">
-<tr><td style="background:#1b3358;padding:36px 40px;text-align:center;">
-<p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:2px;color:#7aa7d4;text-transform:uppercase;">Human Resources</p>
-<h1 style="margin:0;font-size:24px;font-weight:700;color:#fff;">${d.companyName}</h1>
-<p style="margin:8px 0 0;font-size:13px;color:#a8c5e8;">Staff Onboarding</p></td></tr>
-<tr><td style="padding:40px 40px 28px;">
-<p style="margin:0 0 20px;font-size:15px;color:#1a2b3c;font-weight:600;">Dear ${d.name},</p>
-<p style="margin:0 0 16px;font-size:14px;color:#475569;line-height:1.7;">Please complete your onboarding via the portal below.</p>
-<table cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
-<tr><td style="background:#1b3358;border-radius:6px;padding:13px 30px;">
-<a href="${d.url}" style="color:#fff;text-decoration:none;font-size:14px;font-weight:600;">Begin Onboarding Process →</a></td></tr></table>
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:24px;">
-<tr><td style="padding:22px 26px;">
-<p style="margin:0 0 14px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Your Portal Credentials</p>
-<table cellpadding="0" cellspacing="0">
-<tr><td style="padding:5px 16px 5px 0;font-size:13px;color:#94a3b8;">Username</td><td style="font-size:13px;color:#1e293b;font-weight:600;">${d.username}</td></tr>
-<tr><td style="padding:5px 16px 5px 0;font-size:13px;color:#94a3b8;">Password</td><td style="font-size:13px;color:#1e293b;font-family:monospace;font-weight:700;">${d.password}</td></tr>
-</table></td></tr></table>
-</td></tr>
-<tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:24px 40px;">
-<p style="margin:0;font-size:13px;color:#475569;">${hrLine}<br/><strong>Human Resources Department</strong><br/>${d.companyName}</p></td></tr>
-</table></td></tr></table></body></html>`;
-  }
-
   private buildOnboardingSignupPayload(username: string, password: string, email: string, firstName = '', lastName = '') {
     const business = sessionStorage.getItem('userPrimaryInfoRegData')
       ? JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}')
@@ -1753,11 +1730,5 @@ ${d.jobTitle ? `<p style="margin:0 0 16px;font-size:14px;color:#475569;line-heig
         timeZone: business?.timeZone,
       }
     };
-  }
-
-  private generateRandomPassword(length = 12): string {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%*?';
-    const pick = () => chars[Math.floor(Math.random() * chars.length)];
-    return Array.from({ length }, pick).join('');
   }
 }
