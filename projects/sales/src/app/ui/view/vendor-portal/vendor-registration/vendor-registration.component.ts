@@ -70,6 +70,8 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   readonly BUSINESS_SIZE_LABELS    = BUSINESS_SIZE_LABELS;
   readonly OWNERSHIP_TYPE_LABELS   = OWNERSHIP_TYPE_LABELS;
   readonly SUPPLY_CATEGORY_LABELS  = SUPPLY_CATEGORY_LABELS;
+  /** Step 2's free-text columns are varchar(255) in the backend database; longer text fails the whole save. */
+  readonly STEP2_TEXT_MAX = 255;
   readonly NIGERIAN_STATES         = NIGERIAN_STATES;
   readonly NIGERIAN_BANKS          = NIGERIAN_BANKS;
   readonly PAYMENT_TERMS_OPTIONS   = PAYMENT_TERMS_OPTIONS;
@@ -205,7 +207,7 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
       sonCertificationNumber:  [''],
       pencomNumber:            [''],
       nscNumber:               [''],
-      otherLicences:           [''],
+      otherLicences:           ['', Validators.maxLength(this.STEP2_TEXT_MAX)],
       hasPublicLiabilityInsurance: [false],
       publicLiabilityInsurer:  [''],
       publicLiabilityPolicyNo: [''],
@@ -214,13 +216,13 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
       professionalIndemnityInsurer:  [''],
       professionalIndemnityPolicyNo: [''],
       professionalIndemnityExpiry:   [''],
-      otherCertifications:     [''],
+      otherCertifications:     ['', Validators.maxLength(this.STEP2_TEXT_MAX)],
       hasBeenBlacklisted:      [false],
-      blacklistedDetails:      [''],
+      blacklistedDetails:      ['', Validators.maxLength(this.STEP2_TEXT_MAX)],
       hasLitigationPending:    [false],
-      litigationDetails:       [''],
+      litigationDetails:       ['', Validators.maxLength(this.STEP2_TEXT_MAX)],
       hasCriminalConviction:   [false],
-      criminalDetails:         [''],
+      criminalDetails:         ['', Validators.maxLength(this.STEP2_TEXT_MAX)],
     });
 
     this.form3 = this.fb.group({
@@ -342,15 +344,19 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
    * itself is reset to null alongside the validators.
    */
   private wireToggle(form: FormGroup, toggleField: string, dependentFields: string[], requiredValidators: Record<string, any> = {}): void {
+    // A field's own validators (e.g. step 2's 255-character limit) stay through every toggle; only
+    // the toggle's "required" ones come and go.
+    const base = new Map(dependentFields.map(field => [field, form.get(field)?.validator ?? null]));
     form.get(toggleField)?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(on => {
       dependentFields.forEach(field => {
         const c = form.get(field);
         if (!c) return;
+        const own = base.get(field) ? [base.get(field)!] : [];
         if (!on) {
           c.reset(null);
-          c.clearValidators();
+          c.setValidators(own);
         } else if (requiredValidators[field]) {
-          c.setValidators(requiredValidators[field]);
+          c.setValidators([...own, ...[].concat(requiredValidators[field])]);
         }
         c.updateValueAndValidity();
       });

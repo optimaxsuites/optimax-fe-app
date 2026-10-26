@@ -150,6 +150,28 @@ describe('VendorRegistrationService.submit', () => {
     expect(out.error.message).toContain('check your connection');
   });
 
+  it('includes vendorId in the step 2-6 bodies (the backend requires it there too)', () => {
+    const reg = makeReg();
+    reg.step6.uploadedDocuments = [];
+    run(reg);
+    http.expectOne(`${BASE}/vendors`).flush({ id: 15 });
+    [2, 3, 4, 5, 6].forEach(n => {
+      const req = http.expectOne(`${BASE}/vendors/15/step${n}`);
+      expect(req.request.body.vendorId).toBe(15);
+      req.flush({});
+    });
+    http.expectOne(`${BASE}/vendors/15/submit`).flush({});
+  });
+
+  it('spells out validation errors that only come as fieldErrors', () => {
+    const out = run(makeReg());
+    http.expectOne(`${BASE}/vendors`).flush({ id: 42 });
+    http.expectOne(`${BASE}/vendors/42/step3`).flush(
+      { httpStatus: 400, message: null, fieldErrors: [{ field: 'vendorId', errorCode: 'NotNull' }] }, { status: 400, statusText: 'Bad Request' });
+    flushSteps('42', [2, 4, 5, 6]);
+    expect(out.error.message).toContain('Contact & Location: vendorId is required');
+  });
+
   it('rejects a create response with no id', () => {
     const out = run(makeReg());
     http.expectOne(`${BASE}/vendors`).flush({});
@@ -160,15 +182,18 @@ describe('VendorRegistrationService.submit', () => {
   it('a failed step save stops the submit — the application is NOT marked submitted', () => {
     const out = run(makeReg());
     http.expectOne(`${BASE}/vendors`).flush({ id: 42 });
-    http.expectOne(`${BASE}/vendors/42/step4`).flush('bad', { status: 400, statusText: 'Bad Request' });
+    http.expectOne(`${BASE}/vendors/42/step4`).flush({ message: 'bad account type' }, { status: 500, statusText: 'Server Error' });
+    http.expectOne(`${BASE}/vendors/42/step5`).flush({ message: 'bad SupplyCategory' }, { status: 500, statusText: 'Server Error' });
+    flushSteps('42', [2, 3, 6]);
 
     expect(out.result).toBeUndefined();
     expect(out.error instanceof RegistrationSubmitError).toBeTrue();
+    // Every failing step is named, with the server's reason — not just the first one.
     expect(out.error.message).toContain('could not be saved');
-    // The other in-flight step saves were cancelled rather than left running.
-    expect(http.match(`${BASE}/vendors/42/step2`).every(r => r.cancelled)).toBeTrue();
-    expect(http.match(`${BASE}/vendors/42/submit`).length).toBe(0);
+    expect(out.error.message).toContain('Banking & Finance: bad account type');
+    expect(out.error.message).toContain('Capabilities & Experience: bad SupplyCategory');
     expect(http.match(`${BASE}/vendors/42/documents`).length).toBe(0);
+    expect(http.match(`${BASE}/vendors/42/submit`).length).toBe(0);
   });
 
   it('a failed document upload names the document and blocks the submit', () => {

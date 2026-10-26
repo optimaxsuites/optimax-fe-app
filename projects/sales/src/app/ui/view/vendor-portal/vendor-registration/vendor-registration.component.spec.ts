@@ -52,6 +52,35 @@ describe('VendorRegistrationComponent', () => {
     });
   });
 
+  describe('step 2 free text fits the backend\'s 255-character columns', () => {
+    it('rejects declaration details over 255 characters, and still requires them when the box is ticked', () => {
+      const details = component.form2.get('litigationDetails')!;
+      component.form2.get('hasLitigationPending')!.setValue(true);
+      details.setValue('');
+      expect(details.hasError('required')).toBeTrue();
+      details.setValue('x'.repeat(256));
+      expect(details.hasError('maxlength')).toBeTrue();
+      details.setValue('x'.repeat(255));
+      expect(details.valid).toBeTrue();
+    });
+
+    it('keeps the limit after the box is unticked and ticked again', () => {
+      component.form2.get('hasBeenBlacklisted')!.setValue(true);
+      component.form2.get('hasBeenBlacklisted')!.setValue(false);
+      component.form2.get('hasBeenBlacklisted')!.setValue(true);
+      const details = component.form2.get('blacklistedDetails')!;
+      details.setValue('x'.repeat(300));
+      expect(details.hasError('maxlength')).toBeTrue();
+    });
+
+    it('limits the other licences and certifications fields too', () => {
+      component.form2.get('otherLicences')!.setValue('x'.repeat(256));
+      component.form2.get('otherCertifications')!.setValue('x'.repeat(256));
+      expect(component.form2.get('otherLicences')!.hasError('maxlength')).toBeTrue();
+      expect(component.form2.get('otherCertifications')!.hasError('maxlength')).toBeTrue();
+    });
+  });
+
   describe('delivery region options', () => {
     it('covers every Nigerian state, not just the first two dozen (previously stopped at Kaduna)', () => {
       const values = component.deliveryRegionOptions.map(r => r.value);

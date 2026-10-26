@@ -364,7 +364,8 @@ export class SalesService {
     try { return docId != null ? localStorage.getItem(this.templateKey(kind, docId)) : null; } catch { return null; }
   }
 
-  /** The scanned LPO file stored on the quote (the SalesLpo record has no file storage yet). */
+  /** The scanned LPO file stored on the quote — only LPOs saved before
+   *  /sales-lpos/{id}/upload-document existed; newer ones are on SalesLpo.document.fileUrl. */
   getQuoteLpoDocument(quote: Quote | null | undefined): QuoteDocumentAttachment | null {
     return this.firstAdditionalOptions(quote)?.lpoDocument || null;
   }
@@ -411,10 +412,6 @@ export class SalesService {
         return this.updateQuote(quoteId, { additionalOptions: addOpts as unknown as AdditionalQuoteOptions[] });
       })
     );
-  }
-
-  saveQuoteLpoDocument(quoteId: string | number, doc: QuoteDocumentAttachment): Observable<Quote> {
-    return this.patchAdditionalOptions(quoteId, { lpoDocument: doc });
   }
 
   saveSignedDeliveryNoteDocument(quoteId: string | number, doc: QuoteDocumentAttachment): Observable<Quote> {
@@ -1194,8 +1191,9 @@ export class SalesService {
 
   // ============================================
   // SALES LPOs — /commerce/sales-lpos
-  // The customer's Local Purchase Order. The scanned file itself still lives on the quote's
-  // additionalOptions.lpoDocument (no upload endpoint yet), so document.fileUrl stays empty.
+  // The customer's Local Purchase Order. The scanned file is uploaded to /{id}/upload-document,
+  // which fills in document.fileUrl. LPOs from before that endpoint existed still have their
+  // file on the quote's additionalOptions.lpoDocument (see getQuoteLpoDocument()).
   // ============================================
 
   getSalesLpos(filters?: { quoteId?: number | string; status?: string }): Observable<SalesLpo[]> {
@@ -1245,6 +1243,17 @@ export class SalesService {
   deleteSalesLpo(id: string | number): Observable<void> {
     const params = new HttpParams().set('tenantId', this.tenantId);
     return this.http.delete<void>(`${this.base}/sales-lpos/${id}`, { params });
+  }
+
+  /** Uploads the signed LPO file (multipart, `file` field) — returns the LPO with its
+   *  document (fileName, fileUrl, contentType, size, uploadedAt) filled in by the backend. */
+  uploadSalesLpoDocument(id: string | number, file: File): Observable<SalesLpo> {
+    const params = new HttpParams().set('tenantId', this.tenantId);
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.http.post<any>(`${this.base}/sales-lpos/${id}/upload-document`, form, { params }).pipe(
+      map(res => (res?.data ?? res) as SalesLpo)
+    );
   }
 
   verifySalesLpo(lpo: SalesLpo): Observable<SalesLpo> {

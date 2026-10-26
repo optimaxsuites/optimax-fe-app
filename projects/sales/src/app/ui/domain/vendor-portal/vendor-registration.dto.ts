@@ -17,15 +17,17 @@ export type AccountType = 'current' | 'savings' | 'domiciliary';
 
 export type DocumentStatus = 'pending' | 'verified' | 'expired' | 'rejected';
 
+// Must match the backend's SupplyCategory enum (sent uppercased) — it rejects any other value.
 export type SupplyCategory =
-  | 'technology_it' | 'construction_civil' | 'healthcare_medical'
-  | 'office_supplies' | 'industrial_equipment' | 'food_beverage'
-  | 'logistics_transport' | 'furniture_fixtures' | 'safety_ppe'
-  | 'cleaning_facilities' | 'marketing_print' | 'engineering_mechanical'
-  | 'electrical_electronics' | 'oil_gas' | 'agriculture_farming'
-  | 'financial_services' | 'consulting_professional' | 'catering_hospitality'
-  | 'security_services' | 'real_estate' | 'telecoms' | 'pharmaceuticals'
-  | 'automotive' | 'textiles_apparel' | 'other';
+  | 'building_materials' | 'pharmaceutical' | 'legal_services'
+  | 'vehicles' | 'fuel_lubricants' | 'engineering_services'
+  | 'consultancy' | 'office_supplies' | 'furniture'
+  | 'food_beverages' | 'electrical_materials' | 'maintenance_repair'
+  | 'it_equipment' | 'medical_supplies' | 'security_services'
+  | 'catering_services' | 'safety_equipment' | 'training_education'
+  | 'cleaning_supplies' | 'printing_publishing' | 'plumbing_materials'
+  | 'ict_services' | 'logistics_transport' | 'uniforms_workwear'
+  | 'other';
 
 export type DeliveryRegion =
   | 'lagos' | 'abuja' | 'rivers' | 'kano' | 'oyo' | 'delta'
@@ -361,31 +363,31 @@ export const OWNERSHIP_TYPE_LABELS: Record<OwnershipType, string> = {
 };
 
 export const SUPPLY_CATEGORY_LABELS: Record<SupplyCategory, string> = {
-  technology_it:           'Technology & IT',
-  construction_civil:      'Construction & Civil Works',
-  healthcare_medical:      'Healthcare & Medical Supplies',
-  office_supplies:         'Office Supplies & Stationery',
-  industrial_equipment:    'Industrial Equipment & Parts',
-  food_beverage:           'Food & Beverage',
-  logistics_transport:     'Logistics & Transportation',
-  furniture_fixtures:      'Furniture & Fixtures',
-  safety_ppe:              'Safety Equipment & PPE',
-  cleaning_facilities:     'Cleaning & Facilities Management',
-  marketing_print:         'Marketing, Print & Branded Items',
-  engineering_mechanical:  'Engineering & Mechanical Works',
-  electrical_electronics:  'Electrical & Electronics',
-  oil_gas:                 'Oil & Gas Services',
-  agriculture_farming:     'Agriculture & Farming',
-  financial_services:      'Financial & Insurance Services',
-  consulting_professional: 'Consulting & Professional Services',
-  catering_hospitality:    'Catering & Hospitality',
-  security_services:       'Security Services',
-  real_estate:             'Real Estate & Property',
-  telecoms:                'Telecommunications',
-  pharmaceuticals:         'Pharmaceuticals & Healthcare Products',
-  automotive:              'Automotive & Vehicle Services',
-  textiles_apparel:        'Textiles & Apparel',
-  other:                   'Other',
+  building_materials:   'Building Materials',
+  pharmaceutical:       'Pharmaceuticals',
+  legal_services:       'Legal Services',
+  vehicles:             'Vehicles',
+  fuel_lubricants:      'Fuel & Lubricants',
+  engineering_services: 'Engineering Services',
+  consultancy:          'Consultancy',
+  office_supplies:      'Office Supplies & Stationery',
+  furniture:            'Furniture',
+  food_beverages:       'Food & Beverages',
+  electrical_materials: 'Electrical Materials',
+  maintenance_repair:   'Maintenance & Repair',
+  it_equipment:         'IT Equipment',
+  medical_supplies:     'Medical Supplies',
+  security_services:    'Security Services',
+  catering_services:    'Catering Services',
+  safety_equipment:     'Safety Equipment & PPE',
+  training_education:   'Training & Education',
+  cleaning_supplies:    'Cleaning Supplies',
+  printing_publishing:  'Printing & Publishing',
+  plumbing_materials:   'Plumbing Materials',
+  ict_services:         'ICT Services',
+  logistics_transport:  'Logistics & Transport',
+  uniforms_workwear:    'Uniforms & Workwear',
+  other:                'Other',
 };
 
 export const NIGERIAN_STATES = [

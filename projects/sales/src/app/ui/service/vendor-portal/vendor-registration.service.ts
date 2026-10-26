@@ -22,6 +22,18 @@ export class RegistrationSubmitError extends Error {
   }
 }
 
+/** Plain wording for the backend's bean-validation codes. */
+const FIELD_ERROR_TEXT: Record<string, string> = {
+  NotNull: 'is required', NotBlank: 'is required', NotEmpty: 'is required',
+  Email: 'must be a valid email address', Size: 'has the wrong length', Pattern: 'is in the wrong format',
+};
+
+/** How each registration step is named in the form, for error messages. */
+const STEP_NAMES: Record<number, string> = {
+  1: 'Business Identity', 2: 'Legal & Compliance', 3: 'Contact & Location',
+  4: 'Banking & Finance', 5: 'Capabilities & Experience', 6: 'Documents & Declaration',
+};
+
 @Injectable({ providedIn: 'root' })
 export class VendorRegistrationService {
 
@@ -76,7 +88,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step2: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step2`, registrationStepToApi(2, data)).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step2`, this.stepBody(2, data, id)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep2 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -86,7 +98,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step3: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step3`, registrationStepToApi(3, data)).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step3`, this.stepBody(3, data, id)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep3 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -96,7 +108,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step4: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step4`, registrationStepToApi(4, data)).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step4`, this.stepBody(4, data, id)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep4 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -106,7 +118,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step5: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step5`, registrationStepToApi(5, data)).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step5`, this.stepBody(5, data, id)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep5 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -116,7 +128,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step6: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step6`, registrationStepToApi(6, data)).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step6`, this.stepBody(6, data, id)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep6 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -168,9 +180,15 @@ export class VendorRegistrationService {
             : new RegistrationSubmitError(this.failureMessage(err, 'We could not create your application.'))))
         );
 
+    // Every step is saved even if one fails (no cancelling the others), so a single attempt reports
+    // every step the server rejected instead of revealing them one retry at a time.
     const saveSteps = (id: string): Observable<unknown> => {
-      const puts: Observable<unknown>[] = [];
-      const put = (n: number, body: unknown) => puts.push(this.http.put(`${this.baseUrl}/vendors/${id}/step${n}`, registrationStepToApi(n, body)));
+      const puts: Observable<{ step: number; err: any } | null>[] = [];
+      const put = (n: number, body: unknown) => puts.push(
+        this.http.put(`${this.baseUrl}/vendors/${id}/step${n}`, this.stepBody(n, body, id)).pipe(
+          map(() => null),
+          catchError(err => of({ step: n, err }))
+        ));
       // A brand-new vendor already has step 1 (it was the POST body); a retried one may have edits.
       if (existingId && reg.step1) put(1, reg.step1);
       if (reg.step2) put(2, reg.step2);
@@ -179,7 +197,15 @@ export class VendorRegistrationService {
       if (reg.step5) put(5, reg.step5);
       if (reg.step6) put(6, this.serializableStep6(reg.step6));
       return (puts.length ? forkJoin(puts) : of([])).pipe(
-        catchError(err => throwError(() => new RegistrationSubmitError(this.failureMessage(err, 'Some of your details could not be saved.'))))
+        switchMap(results => {
+          const failed = results.filter((r): r is { step: number; err: any } => !!r);
+          if (!failed.length) return of(null);
+          if (failed.every(f => f.err?.status === 0)) {
+            return throwError(() => new RegistrationSubmitError('Some of your details could not be saved. Please check your connection and try again.'));
+          }
+          const lines = failed.map(f => `${STEP_NAMES[f.step] || `Step ${f.step}`}: ${this.serverReason(f.err) || 'could not be saved'}`);
+          return throwError(() => new RegistrationSubmitError(`Some of your details could not be saved. ${lines.join(' | ')}`));
+        })
       );
     };
 
@@ -226,11 +252,30 @@ export class VendorRegistrationService {
    */
   private failureMessage(err: any, what: string): string {
     if (err?.status === 0) return `${what} Please check your connection and try again.`;
+    const reason = this.serverReason(err);
+    return reason ? `${what} The server said: ${reason}` : `${what} Please try again.`;
+  }
+
+  /**
+   * The backend's own message, kept long enough to include the full list of accepted values it names.
+   * Validation errors come with `message: null` and the detail in `fieldErrors`, so those are spelled out.
+   */
+  private serverReason(err: any): string {
     const body = err?.error;
-    const reason = typeof body === 'string' ? body : (body?.message || body?.error || '');
-    const trimmed = String(reason || '').trim();
-    if (!trimmed) return `${what} Please try again.`;
-    return `${what} The server said: ${trimmed.length > 300 ? trimmed.slice(0, 300) + '…' : trimmed}`;
+    const fields = Array.isArray(body?.fieldErrors)
+      ? body.fieldErrors.map((f: any) => `${f?.field || 'a field'} ${FIELD_ERROR_TEXT[f?.errorCode] || `is invalid (${f?.errorCode || 'unknown'})`}`).join(', ')
+      : '';
+    const reason = String((typeof body === 'string' ? body : (body?.message || fields || body?.error || '')) || '').trim();
+    return reason.length > 1000 ? reason.slice(0, 1000) + '…' : reason;
+  }
+
+  /** A step's request body: backend enum spellings, plus the `vendorId` the step endpoints require in
+   *  the body (they reject it as NotNull even though the id is already in the URL). Step 1 doesn't need it. */
+  private stepBody(n: number, data: unknown, vendorId: string | number): unknown {
+    const body = registrationStepToApi(n, data);
+    if (n === 1) return body;
+    const numeric = Number(vendorId);
+    return { ...body, vendorId: isNaN(numeric) ? vendorId : numeric };
   }
 
   /** Vendor id from a create response — either `{ id }` / `{ vendorId }` or a bare id — or '' if absent. */
