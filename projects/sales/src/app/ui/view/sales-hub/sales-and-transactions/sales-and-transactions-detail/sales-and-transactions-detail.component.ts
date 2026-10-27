@@ -161,10 +161,12 @@ export class SalesAndTransactionsDetailComponent implements OnInit, OnDestroy {
     return this.transaction?.currency || this.pricedDoc?.currency || 'NGN';
   }
 
-  get subtotal(): number { return this.transaction?.subtotal || this.pricedDoc?.subtotal || 0; }
-  get discountAmount(): number { return this.transaction?.discountAmount || this.pricedDoc?.discountAmount || 0; }
-  get taxAmount(): number { return this.transaction?.taxAmount || this.pricedDoc?.taxAmount || 0; }
-  get totalAmount(): number { return this.transaction?.totalAmount || this.pricedDoc?.totalAmount || 0; }
+  // From the priced document first — the order's own figures are a copy taken at quote time and
+  // go stale once the quote is edited or invoiced (see the list's amountOf()).
+  get subtotal(): number { return this.pricedDoc?.subtotal || this.transaction?.subtotal || 0; }
+  get discountAmount(): number { return this.pricedDoc ? this.pricedDoc.discountAmount || 0 : this.transaction?.discountAmount || 0; }
+  get taxAmount(): number { return this.pricedDoc ? this.pricedDoc.taxAmount || 0 : this.transaction?.taxAmount || 0; }
+  get totalAmount(): number { return this.pricedDoc?.totalAmount || this.transaction?.totalAmount || 0; }
   get paidAmount(): number { return this.transaction?.paidAmount || 0; }
   get balanceDue(): number {
     const due = this.transaction?.balanceDue;
