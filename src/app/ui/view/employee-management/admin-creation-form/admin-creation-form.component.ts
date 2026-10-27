@@ -692,26 +692,41 @@ private setProbationValidators(): void {
   const username = resolvedEmail.split('@')[0] || resolvedEmail;
   const password = generateTemporaryPassword();
 
+  const createUserThenPersist = () => {
+    const signupDetails = this.buildSignupDetails(username, password, resolvedEmail, firstName, lastName);
+    this.authenticationService.userRegistrationByAdmin(signupDetails).subscribe({
+      next: (userData) => {
+        // The shared auth interceptor turns a 401 into an empty 200, so a reply without an id is a failure.
+        if (!userData?.id) {
+          this.failSubmit('The user account was not created: the server refused the request. Sign in again and retry, or contact support if it keeps happening.');
+          return;
+        }
+        this.persistEmployeeWithUser(newEmployee, userData.id, hasOptiMaxAccess, shouldRedirect, username, password);
+      },
+      error: (error) => {
+        this.failSubmit(this.errorMessageService.getUserMessage(error, 'Failed to create user account. Please try again.'));
+      }
+    });
+  };
+
   this.authenticationService.getRegDataByUsername(username).subscribe({
     next: (existingUser) => {
       const existingId = existingUser?.id ?? existingUser?.userId;
-      this.persistEmployeeWithUser(newEmployee, existingId ?? null, hasOptiMaxAccess, shouldRedirect, username, password);
+      if (existingId) {
+        this.persistEmployeeWithUser(newEmployee, existingId, hasOptiMaxAccess, shouldRedirect, username, password);
+      } else {
+        createUserThenPersist();
+      }
     },
-    error: () => {
-      const signupDetails = this.buildSignupDetails(username, password, resolvedEmail, firstName, lastName);
-      this.authenticationService.userRegistrationByAdmin(signupDetails).subscribe({
-        next: (userData) => {
-          this.persistEmployeeWithUser(newEmployee, userData?.id ?? null, hasOptiMaxAccess, shouldRedirect, username, password);
-        },
-        error: (error) => {
-          this.resetSubmitLoading();
-          const detail = this.errorMessageService.getUserMessage(error, 'Failed to create user account. Please try again.');
-          this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
-        }
-      });
-    }
+    error: () => createUserThenPersist()
   });
 }
+
+  /** Ends a failed submit: re-enables the buttons and says why. */
+  private failSubmit(detail: string): void {
+    this.resetSubmitLoading();
+    this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 6000 });
+  }
 
   private persistEmployeeWithUser(
     newEmployee: any,
@@ -726,7 +741,12 @@ private setProbationValidators(): void {
     formData.append('employee', JSON.stringify(newEmployee));
     this.employeeService.addEmployee(formData).subscribe({
       next: (data: any) => {
-        this.saveImportedRelatives(data?.id);
+        // The shared auth interceptor turns a 401 into an empty 200, so a reply without an id means nothing was saved.
+        if (!data?.id) {
+          this.failSubmit('The employee was not saved: the server refused the request. Sign in again and retry, or contact support if it keeps happening.');
+          return;
+        }
+        this.saveImportedRelatives(data.id);
         if (hasOptiMaxAccess && userId) {
           const roleRequest = { userId, appRoleId: this.guarantorForm.get('roleId')?.value };
           this.authenticationService.userApplicationRole(roleRequest).subscribe({

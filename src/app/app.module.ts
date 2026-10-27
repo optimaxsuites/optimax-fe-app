@@ -167,6 +167,7 @@ import { BiometricEnrollmentComponent } from './ui/view/biometric/biometric-enro
 import { StaffNumbersComponent } from './ui/view/employee-management/staff-numbers/staff-numbers.component';
 import { RemoteCheckinComponent } from './ui/view/attendance/employee/remote-checkin/remote-checkin.component';
 import { SupervisorApprovalQueueComponent } from './ui/view/attendance/admin/supervisor-approval-queue/supervisor-approval-queue.component';
+import { BiometricEventsComponent } from './ui/view/attendance/admin/biometric-events/biometric-events.component';
 import { CalendarModule } from 'primeng/calendar';
 import { AttendanceDetailsComponent } from './ui/view/attendance/attendance-details/attendance-details.component';
 import { ProjectComponent } from './ui/view/project/project.component';
@@ -343,6 +344,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     StaffNumbersComponent,
     RemoteCheckinComponent,
     SupervisorApprovalQueueComponent,
+    BiometricEventsComponent,
     ProjectComponent,
     ProjectDetailComponent,
     ProjectListComponent,

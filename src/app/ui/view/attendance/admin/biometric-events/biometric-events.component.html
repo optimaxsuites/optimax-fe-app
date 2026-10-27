@@ -1,0 +1,102 @@
+<div class="be-container">
+
+  <!-- Header -->
+  <div class="be-header">
+    <div class="be-header-text">
+      <h2><i class="fa-solid fa-fingerprint"></i> Biometric Event Log</h2>
+      <p>Raw scan events received from biometric devices — processed every 2 minutes into attendance records</p>
+    </div>
+    <div class="be-header-actions">
+      <button class="btn-refresh" (click)="loadEvents()" [disabled]="isLoading">
+        <i class="fa-solid fa-rotate" [class.spinning]="isLoading"></i> Refresh
+      </button>
+      <button class="btn-process" (click)="processAll()" [disabled]="isProcessing || isLoading">
+        <i class="fa-solid fa-bolt" [class.spinning]="isProcessing"></i>
+        {{ isProcessing ? 'Processing…' : 'Process Now' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter Pills -->
+  <div class="be-filters">
+    <button class="pill" [class.active]="!showUnprocessedOnly" (click)="toggleFilter(false)">
+      All Events <span class="badge">{{ totalSize }}</span>
+    </button>
+    <button class="pill" [class.active]="showUnprocessedOnly" (click)="toggleFilter(true)">
+      <i class="fa-solid fa-clock"></i> Unprocessed Only
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="be-table-wrapper">
+    <table class="be-table">
+      <thead>
+        <tr>
+          <th>Date &amp; Time</th>
+          <th>Employee</th>
+          <th>Staff No.</th>
+          <th>Type</th>
+          <th>Source</th>
+          <th>Device ID</th>
+          <th>Device IP</th>
+          <th>Branch</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngIf="!isLoading && events.length > 0">
+          <tr *ngFor="let ev of events">
+            <td class="col-time">{{ toDate(ev.eventTime) | date:'dd MMM yyyy, HH:mm:ss' }}</td>
+            <td class="col-name">{{ employeeName(ev) }}</td>
+            <td class="col-code">{{ ev.employeeCode || '—' }}</td>
+            <td>
+              <span class="badge-type" [class.in]="ev.eventType === 'IN'" [class.out]="ev.eventType === 'OUT'">
+                <i class="fa-solid" [class.fa-arrow-right-to-bracket]="ev.eventType === 'IN'" [class.fa-arrow-right-from-bracket]="ev.eventType === 'OUT'"></i>
+                {{ ev.eventType }}
+              </span>
+            </td>
+            <td>
+              <span class="badge-source" [class.biometric]="ev.source === 'BIOMETRIC'" [class.remote]="ev.source === 'REMOTE'" [class.manual]="ev.source === 'MANUAL'">
+                {{ ev.source }}
+              </span>
+            </td>
+            <td class="col-mono">{{ ev.deviceId || '—' }}</td>
+            <td class="col-mono">{{ ev.deviceIpAddress || '—' }}</td>
+            <td>{{ ev.branchCode || '—' }}</td>
+            <td>
+              <span class="badge-status" [class.processed]="ev.processed" [class.pending]="!ev.processed">
+                <i class="fa-solid" [class.fa-circle-check]="ev.processed" [class.fa-clock]="!ev.processed"></i>
+                {{ ev.processed ? 'Processed' : 'Pending' }}
+              </span>
+            </td>
+          </tr>
+        </ng-container>
+
+        <tr *ngIf="isLoading">
+          <td colspan="9" class="state-cell">
+            <i class="fa-solid fa-spinner spinning"></i> Loading…
+          </td>
+        </tr>
+
+        <tr *ngIf="!isLoading && events.length === 0">
+          <td colspan="9" class="state-cell">
+            <i class="fa-solid fa-inbox"></i>
+            {{ showUnprocessedOnly ? 'No unprocessed events — all scans have been converted to attendance records.' : 'No biometric events found.' }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="be-pagination" *ngIf="totalPages > 1">
+    <button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+    <span>Page {{ currentPage }} of {{ totalPages }} &nbsp;·&nbsp; {{ totalSize }} total</span>
+    <button (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
+  </div>
+
+</div>
