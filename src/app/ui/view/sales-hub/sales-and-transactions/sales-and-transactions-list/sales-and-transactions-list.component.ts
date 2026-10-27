@@ -97,6 +97,8 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
 
   /** Each order's progress, worked out from its quote, LPO, delivery note and invoice. */
   private progressById = new Map<number, OrderProgress>();
+  /** Each order's full quote and invoice — the order may only carry their ids. */
+  private linkedById = new Map<number, { quote: any; invoice: any }>();
 
   progressOf(tx: SalesandTransactions): OrderProgress {
     return this.progressById.get(tx.id) || deriveOrderProgress({ tx, quote: tx.quoteId, invoice: tx.invoiceId });
@@ -157,13 +159,15 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
       transactions: this.salesService.getSalesandTransactions({ size: 1000 }),
       customers: this.salesService.getCustomers({ page: 0, size: 1000 }),
       notes: this.salesService.getDeliveryNotes({ size: 1000 }),
-      lpos: this.salesService.getSalesLpos()
+      lpos: this.salesService.getSalesLpos(),
+      quotes: this.salesService.getQuotes({ size: 1000 }),
+      invoices: this.salesService.getInvoices({ size: 1000 })
     }).pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ({ transactions, customers, notes, lpos }: any) => {
+        next: ({ transactions, customers, notes, lpos, quotes, invoices }: any) => {
           this.customers = customers.data || [];
           this.transactions = transactions.data || [];
-          this.indexProgress(notes?.data || [], lpos || []);
+          this.indexProgress(notes?.data || [], lpos || [], quotes?.data || [], invoices?.data || []);
           this.applyFilters();
           this.isLoading = false;
         },
@@ -175,7 +179,9 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
   }
 
   /** Works out every order's stage once per load, from its linked documents. */
-  private indexProgress(notes: any[], lpos: any[]): void {
+  private indexProgress(notes: any[], lpos: any[], quotes: any[], invoices: any[]): void {
+    const quoteById = new Map(quotes.map(q => [String(q.id), q]));
+    const invoiceById = new Map(invoices.map(i => [String(i.id), i]));
     const noteByOrder = new Map<string, any>();
     const noteByQuote = new Map<string, any>();
     notes.forEach(n => {
@@ -185,12 +191,17 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
     const lpoQuotes = new Set(lpos.filter(l => l.status !== 'REJECTED').map(l => String(l.quoteId)));
 
     this.progressById.clear();
+    this.linkedById.clear();
     this.transactions.forEach(tx => {
-      const quote: any = typeof tx.quoteId === 'object' ? tx.quoteId : null;
-      const quoteId = quote?.id ?? tx.quoteId;
+      const nestedQuote: any = tx.quoteId && typeof tx.quoteId === 'object' ? tx.quoteId : null;
+      const quoteId = nestedQuote?.id ?? tx.quoteId;
+      const quote: any = (quoteId != null ? quoteById.get(String(quoteId)) : undefined) || nestedQuote;
+      const nestedInvoice: any = tx.invoiceId && typeof tx.invoiceId === 'object' ? tx.invoiceId : null;
+      const invoiceId = nestedInvoice?.id ?? tx.invoiceId;
+      const invoice: any = (invoiceId != null ? invoiceById.get(String(invoiceId)) : undefined) || nestedInvoice;
+      this.linkedById.set(tx.id, { quote, invoice });
       const hasLpo = (quoteId != null && lpoQuotes.has(String(quoteId))) || !!this.salesService.getQuoteLpoDocument(quote);
       const deliveryNote = noteByOrder.get(String(tx.id)) || (quoteId != null ? noteByQuote.get(String(quoteId)) : undefined);
-      const invoice: any = typeof tx.invoiceId === 'object' ? tx.invoiceId : null;
       this.progressById.set(tx.id, deriveOrderProgress({ tx, quote, hasLpo, deliveryNote, invoice }));
     });
   }
@@ -206,7 +217,7 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
       const term = this.searchTerm.toLowerCase().trim();
       result = result.filter(tx =>
         this.orderNumberOf(tx).toLowerCase().includes(term) ||
-        (tx.quoteId?.quoteNumber || '').toLowerCase().includes(term) ||
+        this.getQuoteNumber(tx).toLowerCase().includes(term) ||
         (tx.paymentNumber || '').toLowerCase().includes(term) ||
         (tx.reference || '').toLowerCase().includes(term) ||
         (this.getCustomerName(tx)).toLowerCase().includes(term)
@@ -359,10 +370,21 @@ export class SalesAndTransactionsListComponent implements OnInit, OnDestroy {
 
   getQuoteNumber(tx: SalesandTransactions): string {
     if (!tx) return '-';
-    if (tx.quoteId && typeof tx.quoteId === 'object') {
-      return tx.quoteId.quoteNumber || '-';
-    }
-    return '-';
+    const quote = this.linkedById.get(tx.id)?.quote || (tx.quoteId && typeof tx.quoteId === 'object' ? tx.quoteId : null);
+    return quote?.quoteNumber || '-';
+  }
+
+  /** The order's value from the priced document behind it — the invoice once there is one, else
+   *  the quote. The order's own totalAmount is only a copy taken when the quote was created or
+   *  converted, so it goes stale when the quote is edited or invoiced for a different amount. */
+  amountOf(tx: SalesandTransactions): number {
+    const linked = this.linkedById.get(tx.id);
+    return Number(linked?.invoice?.totalAmount) || Number(linked?.quote?.totalAmount) || tx.totalAmount || 0;
+  }
+
+  currencyOf(tx: SalesandTransactions): string {
+    const linked = this.linkedById.get(tx.id);
+    return tx.currency || linked?.invoice?.currency || linked?.quote?.currency || 'NGN';
   }
 
   viewDetails(tx: SalesandTransactions): void {

@@ -15,13 +15,15 @@ describe('SalesAndTransactionsListComponent', () => {
   let salesService: jasmine.SpyObj<SalesService>;
 
   beforeEach(() => {
-    salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getSalesandTransactions', 'getCustomers', 'updateSalesandTransactions', 'updateInvoice', 'orderNumberFor', 'getDeliveryNotes', 'getSalesLpos', 'getQuoteLpoDocument']);
+    salesService = jasmine.createSpyObj<SalesService>('SalesService', ['getSalesandTransactions', 'getCustomers', 'updateSalesandTransactions', 'updateInvoice', 'orderNumberFor', 'getDeliveryNotes', 'getSalesLpos', 'getQuoteLpoDocument', 'getQuotes', 'getInvoices']);
     salesService.orderNumberFor.and.callFake((tx: any) => tx?.orderId || '');
     salesService.getSalesandTransactions.and.returnValue(of({ data: [], total: 0 } as any));
     salesService.getCustomers.and.returnValue(of({ data: [], total: 0 } as any));
     salesService.getDeliveryNotes.and.returnValue(of({ data: [], total: 0 }));
     salesService.getSalesLpos.and.returnValue(of([]));
     salesService.getQuoteLpoDocument.and.returnValue(null);
+    salesService.getQuotes.and.returnValue(of({ data: [], total: 0 }));
+    salesService.getInvoices.and.returnValue(of({ data: [], total: 0 }));
     component = new SalesAndTransactionsListComponent(
       salesService,
       { navigate: jasmine.createSpy('navigate') } as any,
@@ -123,6 +125,49 @@ describe('SalesAndTransactionsListComponent', () => {
       component.selectedStatus = 'IN_DELIVERY';
       component.applyFilters();
       expect(component.filteredTransactions.map((t: any) => t.id)).toEqual([42]);
+    });
+  });
+
+  describe('quote number and amount come from the linked quote/invoice', () => {
+    const load = (orders: any[], quotes: any[] = [], invoices: any[] = []) => {
+      salesService.getSalesandTransactions.and.returnValue(of({ data: orders, total: orders.length } as any));
+      salesService.getQuotes.and.returnValue(of({ data: quotes, total: quotes.length } as any));
+      salesService.getInvoices.and.returnValue(of({ data: invoices, total: invoices.length } as any));
+      component.loadTransactions();
+    };
+
+    it('shows the quote number when the order only carries the quote\'s id', () => {
+      load([tx({ id: 1, quoteId: 3 as any })], [{ id: 3, quoteNumber: 'QUO-003', totalAmount: 1000 }]);
+      expect(component.getQuoteNumber(component.transactions[0])).toBe('QUO-003');
+    });
+
+    it('still reads a quote number nested on the order', () => {
+      load([tx({ id: 1, quoteId: { id: 3, quoteNumber: 'QUO-003' } as any })]);
+      expect(component.getQuoteNumber(component.transactions[0])).toBe('QUO-003');
+    });
+
+    it('finds orders by their quote number when it is only linked by id', () => {
+      load([tx({ id: 1, quoteId: 3 as any }), tx({ id: 2, orderId: 'ORD-2', quoteId: 4 as any })],
+        [{ id: 3, quoteNumber: 'QUO-003' }, { id: 4, quoteNumber: 'QUO-004' }]);
+      component.searchTerm = 'quo-004';
+      component.applyFilters();
+      expect(component.filteredTransactions.map((t: any) => t.id)).toEqual([2]);
+    });
+
+    it('uses the invoice total once invoiced, over a stale copy on the order', () => {
+      load([tx({ id: 1, totalAmount: 1000, quoteId: 3 as any, invoiceId: 7 as any })],
+        [{ id: 3, totalAmount: 1200 }], [{ id: 7, totalAmount: 1290 }]);
+      expect(component.amountOf(component.transactions[0])).toBe(1290);
+    });
+
+    it('uses the quote total before there is an invoice', () => {
+      load([tx({ id: 1, totalAmount: 1000, quoteId: 3 as any })], [{ id: 3, totalAmount: 1200 }]);
+      expect(component.amountOf(component.transactions[0])).toBe(1200);
+    });
+
+    it('falls back to the order\'s own total when neither document is found', () => {
+      load([tx({ id: 1, totalAmount: 1000, quoteId: 99 as any })]);
+      expect(component.amountOf(component.transactions[0])).toBe(1000);
     });
   });
 });

@@ -16,6 +16,10 @@ import {
   EMPLOYEE_RANGES, TURNOVER_RANGES,
 } from '../../../domain/vendor-portal/vendor-registration.dto';
 
+// TEMPORARY: lets registration be submitted without the required documents, to test the flow
+// without them. Set back to false (or remove) to enforce them again.
+const DOCUMENTS_OPTIONAL_FOR_TESTING = true;
+
 @Component({
   selector: 'app-vendor-registration',
   templateUrl: './vendor-registration.component.html',
@@ -145,7 +149,7 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   uploadingDocType: DocumentUploadType | null = null;
   uploadingDocLabel = '';
 
-  readonly requiredDocTypes: { type: DocumentUploadType; label: string; required: boolean; hint: string }[] = [
+  readonly requiredDocTypes = ([
     { type: 'cac_certificate',           label: 'CAC Certificate of Incorporation',  required: true,  hint: 'Issued by the Corporate Affairs Commission' },
     { type: 'tax_clearance',             label: 'Tax Clearance Certificate',          required: true,  hint: 'Must be current — valid for current year' },
     { type: 'vat_certificate',           label: 'VAT Registration Certificate',       required: false, hint: 'Required if VAT registered' },
@@ -155,7 +159,8 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
     { type: 'annual_accounts',           label: 'Audited Annual Accounts',            required: false, hint: 'Last two years of audited accounts' },
     { type: 'company_profile',           label: 'Company Profile',                    required: false, hint: 'Detailed company overview document' },
     { type: 'bank_reference_letter',     label: 'Bank Reference Letter',              required: false, hint: 'Reference letter from your primary bank' },
-  ];
+  ] as { type: DocumentUploadType; label: string; required: boolean; hint: string }[])
+    .map(d => ({ ...d, required: d.required && !DOCUMENTS_OPTIONAL_FOR_TESTING }));
 
   constructor(
     private fb: FormBuilder,
