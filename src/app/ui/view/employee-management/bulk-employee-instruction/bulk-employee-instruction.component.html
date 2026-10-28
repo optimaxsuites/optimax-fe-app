@@ -23,7 +23,8 @@
       #fileInput
     />
     <button
-      class="mt-4 px-4 py-2 text-white bg-customGreen rounded"
+      class="mt-4 px-4 py-2 text-white bg-customGreen rounded disabled:opacity-60 disabled:cursor-not-allowed"
+      [disabled]="submitting"
       (click)="readExcelFile()"
     >
       {{buttonText}}
@@ -33,6 +34,13 @@
   <p *ngIf="alert.length > 0" class="text-center mt-4 text-customRed">
    {{alert}}
   </p>
+
+  <div *ngIf="rowErrors.length > 0" class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-left">
+    <p class="text-sm font-semibold text-amber-800">{{ rowErrors.length }} row(s) skipped</p>
+    <ul class="mt-2 max-h-60 list-disc overflow-y-auto pl-5 text-xs text-amber-800">
+      <li *ngFor="let error of rowErrors">{{ error }}</li>
+    </ul>
+  </div>
 <p-toast position="top-right" key="tl"></p-toast>
  
 </div>
