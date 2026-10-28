@@ -14,43 +14,9 @@ import { RolesService } from '../../../service/roles.service';
 import { NavigationLinksService } from '../../../shared-component/service/navigation-links/navigation-links.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 import { catchError, forkJoin, map, Observable, of } from 'rxjs';
+import { findIdByName, parseImportedDate } from '../employee-import.util';
 import { buildOnboardingEmailHtml, buildOnboardingLink, generateTemporaryPassword, onboardingLinkExpiry } from '../onboarding-credentials.util';
 // // import { CompanyProfileService }
-
-/** Lowercase letters and digits only, so "Full-Time", "full time" and "FULL_TIME" compare equal. */
-function normalizeName(value: unknown): string {
-  return String(value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-/**
- * The id of the metadata item (`{ id, name }`) whose name matches `name`: an exact match first, then one
- * that starts with the other (e.g. "Christian" / "Christianity"). Undefined when nothing matches.
- */
-function findIdByName(items: any[], name: string | undefined): number | undefined {
-  const wanted = normalizeName(name);
-  if (!wanted) return undefined;
-  const exact = items.find((item) => normalizeName(item?.name) === wanted);
-  if (exact) return exact.id;
-  if (wanted.length < 4) return undefined;
-  return items.find((item) => {
-    const candidate = normalizeName(item?.name);
-    return candidate.length >= 4 && (candidate.startsWith(wanted) || wanted.startsWith(candidate));
-  })?.id;
-}
-
-/** A date read from a scanned form: ISO (2024-05-31) or day-first (31/05/2024), as Nigerian forms write it. */
-function parseImportedDate(value: string | undefined): Date | null {
-  const text = String(value ?? '').trim();
-  if (!text) return null;
-  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(text);
-  const dayFirst = /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/.exec(text);
-  const date = iso
-    ? new Date(+iso[1], +iso[2] - 1, +iso[3])
-    : dayFirst
-      ? new Date(+dayFirst[3], +dayFirst[2] - 1, +dayFirst[1])
-      : new Date(text);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
 
 @Component({
   selector: 'app-admin-creation-form',
@@ -173,8 +139,8 @@ export class AdminCreationFormComponent implements OnChanges {
       gender: ["", [Validators.required]],
       title: ["", [Validators.required]],
       department: ["", [Validators.required]],
-      level: [0, [Validators.required]],
-      jobType: [0, [Validators.required]],
+      level: [null, [Validators.required]],
+      jobType: [null, [Validators.required]],
       supervisor: ["", [Validators.required]],
     });
 
@@ -665,7 +631,7 @@ private setProbationValidators(): void {
   const newEmployee: any = {
     firstName: this.basicForm.get('firstName')?.value,
     lastName: this.basicForm.get('lastName')?.value,
-    email: this.basicForm.get('workemail')?.value || this.basicForm.get('email')?.value,
+    email: this.basicForm.get('email')?.value,
     workEmail: this.basicForm.get('workemail')?.value,
     genderId: this.basicForm.get('gender')?.value,
     jobTitle: this.basicForm.get('title')?.value,

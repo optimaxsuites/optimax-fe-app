@@ -5,8 +5,31 @@ import { RandomTokenService } from '../../../shared-component/service/random-tok
 import { MessageService } from 'primeng/api';
 import { MetadataService } from '../../../service/metadata.service';
 import { formatDate } from '@angular/common';
-import { EmailValidator } from '@angular/forms';
+import { finalize } from 'rxjs';
 import { EmployeeService } from '../../../service/employee.service';
+import { findIdByName, parseSpreadsheetDate } from '../employee-import.util';
+
+/** Template columns, in order. The upload is read by these header names. */
+const COLUMNS = [
+  'First Name', 'Last Name', 'Email', 'Work Email', 'Job Title', 'Department', 'Employment Type', 'Level',
+  'Supervisor', 'Status', 'Employment Start Date', 'Employment End Date', 'On Probation',
+  'Probation Start Date', 'Probation End Date', 'Appraisal Due Date',
+];
+
+const REQUIRED_COLUMNS = [
+  'First Name', 'Last Name', 'Email', 'Work Email', 'Job Title', 'Department', 'Employment Type', 'Level',
+  'Supervisor', 'Status', 'Employment Start Date', 'Appraisal Due Date',
+];
+
+/** Statuses a new employee can be created with; the template's Status dropdown offers these. */
+const IMPORT_STATUSES = ['JOINING', 'ACTIVE'];
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Spreadsheet column letter for a template column. */
+function columnLetter(column: string): string {
+  return String.fromCharCode('A'.charCodeAt(0) + COLUMNS.indexOf(column));
+}
 
 @Component({
   selector: 'app-bulk-employee-instruction',
@@ -18,9 +41,12 @@ export class BulkEmployeeInstructionComponent {
   fileName: string | null = null;
   isDragging = false;
   alert: string = ""
-  file!: File; 
+  file!: File;
   @Output() close = new EventEmitter<void>()
   buttonText: string = "Submit"
+  submitting = false;
+  /** Why each skipped row was skipped ("Row 4: Department "Sales" not found"), shown under the upload. */
+  rowErrors: string[] = [];
   levels: any[]=[]
   leaves: any[]=[]
   employmentTypes: any[]=[]
@@ -71,16 +97,18 @@ export class BulkEmployeeInstructionComponent {
         this.fileName = file.name;
         this.file=file
         this.alert = ""
-        console.log('File uploaded:', file);
+        this.rowErrors = [];
       } else {
         this.alert = 'Please upload a valid .xlsx file';
       }
     }
   }
-  
+
   createExcelSheet() {
     const workbook = new ExcelJS.Workbook();
+    // The upload reads the first sheet, so the empty Employees sheet must come first.
     const worksheet = workbook.addWorksheet('Employees');
+    const example = workbook.addWorksheet('Example');
 
     // Dropdown values live on a hidden sheet: Excel caps a typed-in list ("A,B,C") at 255 characters,
     // which a company's departments or levels soon pass, and names containing commas would split.
@@ -93,21 +121,21 @@ export class BulkEmployeeInstructionComponent {
     const departmentList = writeList('A', this.departments.map(dept => dept.name));
     const levelList = writeList('B', this.levels.map(level => level.name));
     const employmentTypeList = writeList('C', this.employmentTypes.map(type => type.name));
-  
-    const headers = [
-      'Employee ID', 'First Name', 'Last Name', 'Email', 'Work Email',
-      'Job Title', 'Department', 'Employment Type', 'Level', 'Supervisor', 
-      'Status', 'Employment Start Date', 'Employment End Date', 'On Probation', 
-      'Probation Start Date', 'Probation End Date', 'Appraisal Due Date'
-    ];
-    worksheet.addRow(headers);
-  
-    const rows = [
-      [1, 'John', 'Doe', 'john@email.com', 'john.work@email', 'HR Manager', 'HR', 'Contract', 'Senior', 'Jon Bellion', 
-      'Active', '2022-01-01', '2022-12-31', 'No', '2022-01-01', '2022-12-31', '2022-12-31']
-    ];
-    rows.forEach(row => worksheet.addRow(row));
-  
+
+    worksheet.addRow(COLUMNS);
+    worksheet.getRow(1).font = { bold: true };
+
+    // A filled-in row on its own sheet, so it can't be uploaded by mistake.
+    example.addRow(COLUMNS);
+    example.getRow(1).font = { bold: true };
+    example.addRow([
+      'John', 'Doe', 'john.doe@gmail.com', 'john.doe@company.com', 'HR Manager',
+      this.departments[0]?.name ?? 'Human Resources', this.employmentTypes[0]?.name ?? 'Full-Time',
+      this.levels[0]?.name ?? 'Senior', 'Jane Smith', 'Active', '2026-01-05', '', 'No', '', '', '2026-04-05',
+    ]);
+    example.addRow([]);
+    example.addRow(['Fill in the Employees sheet, not this one. Dates as YYYY-MM-DD (or an Excel date). Status is Joining or Active.']);
+
     const listValidation = (formula: string) => ({
       type: 'list' as const,
       allowBlank: true,
@@ -116,22 +144,18 @@ export class BulkEmployeeInstructionComponent {
       errorTitle: 'Invalid Selection',
       error: 'Please select a value from the dropdown.',
     });
+    const dateColumns = ['Employment Start Date', 'Employment End Date', 'Probation Start Date', 'Probation End Date', 'Appraisal Due Date'];
 
     // Row 1 is the header row, so dropdowns start at row 2.
     for (let i = 2; i <= 500; i++) {
-      if (departmentList) worksheet.getCell(`G${i}`).dataValidation = listValidation(departmentList);
-      if (levelList) worksheet.getCell(`I${i}`).dataValidation = listValidation(levelList);
-      if (employmentTypeList) worksheet.getCell(`H${i}`).dataValidation = listValidation(employmentTypeList);
-      worksheet.getCell(`K${i}`).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: ['"Joining, Active,"'],
-        showErrorMessage: true,
-        errorTitle: 'Invalid Selection',
-        error: 'Please select a value from the dropdown.',
-      };
+      if (departmentList) worksheet.getCell(`${columnLetter('Department')}${i}`).dataValidation = listValidation(departmentList);
+      if (levelList) worksheet.getCell(`${columnLetter('Level')}${i}`).dataValidation = listValidation(levelList);
+      if (employmentTypeList) worksheet.getCell(`${columnLetter('Employment Type')}${i}`).dataValidation = listValidation(employmentTypeList);
+      worksheet.getCell(`${columnLetter('Status')}${i}`).dataValidation = listValidation('"Joining,Active"');
+      worksheet.getCell(`${columnLetter('On Probation')}${i}`).dataValidation = listValidation('"Yes,No"');
+      dateColumns.forEach((column) => (worksheet.getCell(`${columnLetter(column)}${i}`).numFmt = 'yyyy-mm-dd'));
     }
-  
+
     workbook.xlsx.writeBuffer().then((buffer: BlobPart) => {
       const blob = new Blob([buffer], { type: 'application/octet-stream' });
       const link = document.createElement('a');
@@ -141,137 +165,145 @@ export class BulkEmployeeInstructionComponent {
       setTimeout(() => URL.revokeObjectURL(link.href), 0);
     });
   }
-  
 
-
-  s2ab(s: string) {
-  const buf = new ArrayBuffer(s.length);
-  const view = new Uint8Array(buf);
-  for (let i = 0; i !== s.length; ++i) {
-    view[i] = s.charCodeAt(i) & 0xFF;
-  }
-  return buf;
-  }
- 
-  
   readExcelFile(): void {
+    if (this.submitting) return;
+    if (!this.file) {
+      this.alert = 'Please choose an .xlsx file first.';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (event) => {
-      const data = new Uint8Array(event.target?.result as ArrayBuffer);
-      const workbook = XLSX.read(data, { type: 'array' });
-      
-    //   Get the first sheet's data
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-
-    //   Convert the sheet to JSON
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-
-    // console.log(jsonData)
-      this.addNewEmployee(jsonData);
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        // Date cells come through as Excel serial numbers; parseSpreadsheetDate converts them.
+        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: '' });
+        this.importRows(rows);
+      } catch {
+        this.alert = 'The file could not be read. Please fill in the template downloaded from this page.';
+      }
     };
     reader.readAsArrayBuffer(this.file);
   }
 
-  // Validate the extracted data
-  async validateData(data: any[]): Promise<void> {
-    const requiredFields = [
-      'First Name', 'Last Name', 'Email', 'Work Email',
-      'Job Title', 'Department', 'Employment Type', 'Level', 'Supervisor', 
-      'Status', 'Employment Start Date', 'Appraisal Due Date'
-    ];
-  
-    let skippedCount = 0;
-    let successfullyAddedCount = 0;
-  console.log(data)
-    for (const row of data) {
-      const isMissingFields = requiredFields.some(field => !row[field]);
-      
-      if (isMissingFields) {
-        skippedCount++;
-        console.warn(`Skipped row due to missing fields:`, row);
-      } else if (!(await this.addNewEmployee(data))) {
-        skippedCount++;
+  /** Checks every row, uploads the valid ones in one request, and lists why the rest were skipped. */
+  private importRows(rows: Record<string, unknown>[]): void {
+    this.alert = '';
+    this.rowErrors = [];
+    const employees: any[] = [];
+
+    rows.forEach((row, index) => {
+      // Spreadsheet row number: data starts on row 2, under the header.
+      const rowNumber = index + 2;
+      if (COLUMNS.every((column) => this.text(row[column]) === '')) return;
+      const result = this.buildEmployee(row);
+      if (typeof result === 'string') {
+        this.rowErrors.push(`Row ${rowNumber}: ${result}`);
       } else {
-        successfullyAddedCount++;
+        employees.push(result);
       }
-    }
-  
-    this.fileName = "";
-  
-    // Display appropriate message
-    if (successfullyAddedCount > 0) {
-      const message = skippedCount > 0 
-        ? `${successfullyAddedCount} employees added successfully. ${skippedCount} rows were skipped due to errors or duplicates.`
-        : 'Employees added successfully!';
-      this.messageService.add({ severity: 'success', summary: 'Success', detail: message, key: 'tl', life: 3000 });
-    } else {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No employees were added due to errors or duplicates. Please check your file.', key: 'tl', life: 3000 });
-    }
-  
-    this.buttonText = "Submit";
-    setTimeout(() => { this.close.emit() }, 2000);
-  }
-  
-  
-  toLocalDateTime(date: Date | string | null): string {
-    if (!date) return '';
-    const parsedDate = new Date(date);
-    return formatDate(parsedDate, "yyyy-MM-dd'T'HH:mm:ss", 'en-US');
-  }
-  addNewEmployee(data: any): Promise<boolean> {
-    console.log(this.levels)
-    console.log(data[0]['Department'])
-
-    const newEmployees = data.map((item: any) => ({
-      ...(item['Employee ID'] && !isNaN(Number(item['Employee ID'])) && Number(item['Employee ID']) > 0
-        ? { id: Number(item['Employee ID']) }
-        : {}),
-      firstName: item['First Name'],
-      lastName: item['Last Name'],
-      email: item['Email'],
-      workEmail: item['Work Email'],
-      jobTitle: item['Job Title'],
-      departmentId: this.departments.find(dept => dept.name === item['Department'])?.id,
-      levelId: this.levels.find(level => level.name === item['Level'])?.id,
-      jobTypeId: this.employmentTypes.find(type => type.name === item['Employment Type'])?.id,
-      supervisor: item['Supervisor'],
-      status: item['Status'].toUpperCase() || 'ACTIVE',
-      startDate: this.toLocalDateTime(this.validateDate(item['Employment Start Date'])),
-      endDate: this.toLocalDateTime(this.validateDate(item['Employment End Date'])),
-      onProbation: item['On Probation']?.toLowerCase() === 'yes' ? true : false,
-      probationStartDate: this.toLocalDateTime(this.validateDate(item['Probation Start Date'])),
-      probationEndDate: this.toLocalDateTime(this.validateDate(item['Probation End Date'])),
-      appraisalDueDate: this.toLocalDateTime(this.validateDate(item['Appraisal Due Date'])),
-    }));
-    
-    console.log(newEmployees);
-    
- 
-    return new Promise<boolean>((resolve) => {
-      this.employeeService.addBulkEmployee(newEmployees).subscribe(
-        {
-          next: () => {
-            this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee added successfully!', key: 'tl', life: 3000 });
-            resolve(true);
-          },
-          error: (err: any) => {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add employee. Please check your input.', key: 'tl', life: 3000 });
-            console.error('Failed to add employee:', err);
-            resolve(false);
-          }
-        }
-      );
-
     });
+
+    if (employees.length === 0) {
+      this.alert = this.rowErrors.length
+        ? 'No employees were added. Fix the rows below and upload again.'
+        : 'The sheet has no employee rows.';
+      return;
+    }
+
+    this.submitting = true;
+    this.buttonText = 'Submitting...';
+    this.employeeService.addBulkEmployee(employees)
+      .pipe(finalize(() => {
+        this.submitting = false;
+        this.buttonText = 'Submit';
+      }))
+      .subscribe({
+        next: () => {
+          const skipped = this.rowErrors.length;
+          const detail = skipped > 0
+            ? `${employees.length} employee(s) added. ${skipped} row(s) skipped; see the list below.`
+            : `${employees.length} employee(s) added successfully.`;
+          this.messageService.add({ severity: 'success', summary: 'Success', detail, key: 'tl', life: 4000 });
+          this.fileName = '';
+          // Stay open when rows were skipped, so HR can read why.
+          if (skipped === 0) {
+            setTimeout(() => this.close.emit(), 2000);
+          }
+        },
+        error: (err: any) => {
+          const detail = err?.error?.message || 'Failed to add employees. Please check the file and try again.';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 5000 });
+        }
+      });
   }
-  
-  
-  
-  
-  validateDate(date: string): string | null {
-    const parsedDate = new Date(date);
-    return isNaN(parsedDate.getTime()) ? null : parsedDate.toISOString().split('T')[0];
+
+  /** The create payload for one row, or why the row can't be imported. */
+  private buildEmployee(row: Record<string, unknown>): any | string {
+    const problems: string[] = [];
+    const value = (column: string) => this.text(row[column]);
+
+    const missing = REQUIRED_COLUMNS.filter((column) => value(column) === '');
+    if (missing.length) problems.push(`missing ${missing.join(', ')}`);
+
+    ['Email', 'Work Email'].forEach((column) => {
+      if (value(column) && !EMAIL_PATTERN.test(value(column))) problems.push(`${column} "${value(column)}" is not a valid email`);
+    });
+
+    const lookup = (column: string, items: any[]) => {
+      const id = findIdByName(items, value(column));
+      if (value(column) && id === undefined) problems.push(`${column} "${value(column)}" not found`);
+      return id;
+    };
+    const departmentId = lookup('Department', this.departments);
+    const levelId = lookup('Level', this.levels);
+    const jobTypeId = lookup('Employment Type', this.employmentTypes);
+
+    const status = value('Status').toUpperCase();
+    if (status && !IMPORT_STATUSES.includes(status)) problems.push(`Status "${value('Status')}" must be Joining or Active`);
+
+    const date = (column: string) => {
+      if (value(column) === '') return '';
+      const parsed = parseSpreadsheetDate(row[column]);
+      if (!parsed) {
+        problems.push(`${column} "${value(column)}" is not a date`);
+        return '';
+      }
+      return formatDate(parsed, "yyyy-MM-dd'T'HH:mm:ss", 'en-US');
+    };
+    const employementStartDate = date('Employment Start Date');
+    const employmentEndDate = date('Employment End Date');
+    const probationStartDate = date('Probation Start Date');
+    const probationEndDate = date('Probation End Date');
+    const appraisalDueDate = date('Appraisal Due Date');
+
+    if (problems.length) return problems.join('; ');
+
+    // Same field names as the single-employee create. No id: this only creates, it never updates.
+    return {
+      firstName: value('First Name'),
+      lastName: value('Last Name'),
+      email: value('Email'),
+      workEmail: value('Work Email'),
+      jobTitle: value('Job Title'),
+      departmentId,
+      levelId,
+      jobTypeId,
+      supervisor: value('Supervisor'),
+      employeeStatus: status,
+      employementStartDate,
+      employmentEndDate,
+      onProbation: value('On Probation').toLowerCase() === 'yes',
+      probationStartDate,
+      probationEndDate,
+      appraisalDueDate,
+    };
   }
-  
+
+  /** A cell as trimmed text; numbers and dates included, so a numeric cell can't crash string methods. */
+  private text(cell: unknown): string {
+    return cell === null || cell === undefined ? '' : String(cell).trim();
+  }
 }
