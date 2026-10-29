@@ -1,48 +1,40 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { EmployeeService } from '../../../service/employee.service';
+import { SelectedEmployeeStore } from '../selected-employee.store';
 
 @Component({
   selector: 'app-employee-nok',
   templateUrl: './employee-nok.component.html',
   styleUrl: './employee-nok.component.scss'
 })
-export class EmployeeNokComponent {
-  employeeInView: any; 
-  onboardingStatus: any;
-  emergencyContacts: any;
+export class EmployeeNokComponent implements OnInit {
+  employeeInView: any;
+  onboardingStatus: 'loading' | 'missing' | 'error' | 'inProgress' | 'completed' = 'loading';
+  nextOfKin: any[] = [];
+  emergencyContacts: any[] = [];
 
-  constructor(private employeeService: EmployeeService){
-
-  }
+  constructor(
+    private employeeService: EmployeeService,
+    private selectedEmployee: SelectedEmployeeStore
+  ) {}
 
   ngOnInit(): void {
-    const employee = localStorage.getItem("employeeInView");
-    this.employeeInView = JSON.parse(employee || "");
-    // console.log(employee)
-    // if (employee) {
-    //   this.employeeInView = JSON.parse(employee);
-    //   this.employeeService.getNOKByEmployeeId(this.employeeInView.id).subscribe((res: any) => {
-    //     this.employeeInView.nextOfKin = res;
-    //     if(this.employeeInView.nextOfKin){
-    //       this.onboardingStatus = "completed"
-    //       this.emergencyContacts = this.employeeInView.nextOfKin.filter((kin: any) => kin.emergencyContact === true);
-    
-    //     }
-    //     else{
-    //       this.onboardingStatus = 'inProgress'
-    //     }
-    //   })
-    // }
-// console.log(this.employeeInView)
-    if(this.employeeInView.nextOfKin){
-      this.onboardingStatus = "completed"
-      this.emergencyContacts = this.employeeInView.nextOfKin.filter((kin: any) => kin.emergencyContact === true);
-
-    }
-    else{
-      this.onboardingStatus = 'inProgress'
+    this.employeeInView = this.selectedEmployee.get();
+    const id = this.selectedEmployee.id;
+    if (id === null) {
+      this.onboardingStatus = 'missing';
+      return;
     }
 
-
+    this.employeeService.getNOKByEmployeeId(id).subscribe({
+      next: (res: any) => {
+        this.nextOfKin = Array.isArray(res) ? res : (res?.content ?? []);
+        this.emergencyContacts = this.nextOfKin.filter((kin: any) => kin.emergencyContact === true || kin.emergencyContact === 'YES');
+        this.onboardingStatus = this.nextOfKin.length ? 'completed' : 'inProgress';
+      },
+      error: () => {
+        this.onboardingStatus = 'error';
+      }
+    });
   }
 }

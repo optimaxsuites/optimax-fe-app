@@ -7,7 +7,7 @@ import { EmployeeService } from '../../../service/employee.service';
 import { formatDate } from '@angular/common';
 import { MetadataService } from '../../../service/metadata.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
-import { catchError, forkJoin, map, Observable, of } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { environment } from '../../../shared-component/environments/environment';
 // // import { CompanyProfileService }
 
@@ -252,8 +252,28 @@ export class AddEmployeeFormComponent implements OnDestroy {
           const userId = employee?.userId ?? employee?.user?.userId ?? employee?.createdBy;
           if (userId) this.loadCompanyBranding(userId);
         }
+      },
+      error: (err) => {
+        const detail = this.errorMessageService.getUserMessage(
+          err,
+          'Could not load your onboarding details. Please reload the page or contact HR.'
+        );
+        this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 6000 });
       }
     });
+  }
+
+  /** The employee record has to be loaded first: the saved payload is built on top of it. */
+  private ensureEmployeeLoaded(): boolean {
+    if (this.employeeId && this.employeeData) return true;
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Your onboarding details have not loaded yet. Please reload the page and try again.',
+      key: 'tl',
+      life: 5000
+    });
+    return false;
   }
 
   private loadCompanyBranding(userId: number): void {
@@ -547,14 +567,14 @@ export class AddEmployeeFormComponent implements OnDestroy {
   }
 
   onSubmit() {
-    if (this.loading) return;
+    if (this.loading || !this.ensureEmployeeLoaded()) return;
     this.loading = true;
     // Entries are saved when leaving their tab; retry any that failed so the submission is complete.
     this.saveNextOfKinEntries(() => this.saveGuarantorEntries(() => this.addNewEmployee()));
   }
 
   saveDraft() {
-    if (this.draftLoading || this.loading) return;
+    if (this.draftLoading || this.loading || !this.ensureEmployeeLoaded()) return;
 
     const isValid = this.validateCurrentSectionForDraft();
     if (!isValid) return;
@@ -581,8 +601,7 @@ export class AddEmployeeFormComponent implements OnDestroy {
       return;
     }
 
-    const formData = this.buildEmployeeFormData();
-    this.employeeService.addEmployee(formData).subscribe({
+    this.saveEmployee().subscribe({
       next: () => {
         this.draftLoading = false;
         this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Draft saved successfully!', key: 'tl', life: 3000 });
@@ -631,15 +650,9 @@ export class AddEmployeeFormComponent implements OnDestroy {
   }
 
 addNewEmployee(){
-  const formData = this.buildEmployeeFormData();
-
-  this.employeeService.addEmployee(formData).subscribe({
+  this.saveEmployee().subscribe({
     next: (data: any) => {
       const vettingPayload = this.buildEmployeePayload();
-      if (data?.id) {
-        vettingPayload.employee.id = data.id;
-        vettingPayload.employeeId = data.id;
-      }
       this.employeeService.sendOnboardingVetting(vettingPayload, data).subscribe({
         error: (err) => {
           const detail = this.errorMessageService.getUserMessage(
@@ -672,31 +685,30 @@ private buildEmployeePayload(): {
   nextOfKin: any[];
   guarantors: any[];
 } {
-  const employeeMediaId = this.employeeData?.employeeMedia?.id;
-  const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
+  const employee = this.employeeData || {};
+  const employeeMediaId = employee.employeeMedia?.id;
   const newEmployee: any = {
- 
-
-   id: this.employeeId,
-    userId: this.employeeData?.userId ?? this.employeeData?.user?.userId ?? storedUserId ?? null,
-    firstName:  this.employeeData.firstName,
-    lastName:  this.employeeData.lastName,
-    email:  this.employeeData.email,
-    workEmail: this.employeeData.workEmail,
-    jobTitle: this.employeeData.jobTitle,
-    // departmentId: this.employeeData.departmentId,
-    levelId: this.employeeData.level.id,
-    employmentType:  this.employeeData.employmentType,
-    supervisor: this.employeeData.supervisor,
+    id: this.employeeId,
+    // Only the employee's own account. Never the signed-in user's: when HR opens this form, that
+    // would attach HR's account to the new hire.
+    userId: employee.userId ?? employee.user?.userId ?? null,
+    firstName: employee.firstName,
+    lastName: employee.lastName,
+    email: employee.email,
+    workEmail: employee.workEmail,
+    jobTitle: employee.jobTitle,
+    levelId: employee.levelId ?? employee.level?.id ?? null,
+    employmentType: employee.employmentType,
+    supervisor: employee.supervisor,
 
     // Employment Information
-    employeeStatus: this.employeeData.employeeStatus,
-    employementStartDate: this.employeeData.employementStartDate,
-    employmentEndDate: this.employeeData.employmentEndDate,
-    onProbation: this.employeeData.onProbation,
-    probationStartDate: this.employeeData.probationStartDate,
-    probationEndDate: this.employeeData.probationEndDate,
-    appraisalDueDate: this.employeeData.appraisalDueDate,
+    employeeStatus: employee.employeeStatus,
+    employementStartDate: employee.employementStartDate,
+    employmentEndDate: employee.employmentEndDate,
+    onProbation: employee.onProbation,
+    probationStartDate: employee.probationStartDate,
+    probationEndDate: employee.probationEndDate,
+    appraisalDueDate: employee.appraisalDueDate,
 
 
     phone: this.basicForm.get('phone')?.value,
@@ -709,13 +721,8 @@ private buildEmployeePayload(): {
     accountNumber: this.employeeForm.get('accountNumber')?.value,
     nin: this.employeeForm.get('nin')?.value,
     bvn: this.employeeForm.get('bvn')?.value,
-  
-
-    // levelId: this.employeeData.levelId,
-    departmentId: this.employeeData.department.id,
-    jobTypeId: this.employeeData.jobType.id
-
-  
+    departmentId: employee.departmentId ?? employee.department?.id ?? null,
+    jobTypeId: employee.jobTypeId ?? employee.jobType?.id ?? null
   };
   if (employeeMediaId) {
     newEmployee.employeeMediaId = employeeMediaId;
@@ -750,18 +757,19 @@ private buildEmployeePayload(): {
   };
 }
 
-private buildEmployeeFormData(): FormData {
-  const payload = this.buildEmployeePayload();
-  const employee = payload.employee || {};
-  const formData = new FormData();
-  formData.append('employee', JSON.stringify(employee));
-
+/**
+ * Updates the employee HR already created (PUT /employees/{id}), then uploads a newly picked
+ * photo. This used to POST to the create endpoint with the id set, which could add another
+ * employee on every submit or draft save.
+ */
+private saveEmployee(): Observable<any> {
+  const { employee } = this.buildEmployeePayload();
   const profilePhoto = this.basicForm.get('profilePhoto')?.value;
-  if (profilePhoto instanceof File) {
-    formData.append('file', profilePhoto, profilePhoto.name);
-  }
-
-  return formData;
+  return this.employeeService.updateEmployee(employee, this.employeeId).pipe(
+    switchMap((saved: any) => profilePhoto instanceof File
+      ? this.employeeService.uploadEmployeePhoto({ id: this.employeeId }, profilePhoto).pipe(map(() => saved))
+      : of(saved))
+  );
 }
 
 

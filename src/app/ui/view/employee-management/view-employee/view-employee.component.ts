@@ -7,6 +7,7 @@ import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
+import { SelectedEmployeeStore } from '../selected-employee.store';
 
 export interface NextOfKin {
   id?: number;
@@ -50,14 +51,14 @@ export class ViewEmployeeComponent {
 
   employeeProfilePhotoUrl: SafeUrl | string = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='
 
-  constructor(private employeeService: EmployeeService, private sanitizer: DomSanitizer, private http: HttpClient, private messageService: MessageService){}
+  constructor(private employeeService: EmployeeService, private sanitizer: DomSanitizer, private http: HttpClient, private messageService: MessageService, private selectedEmployee: SelectedEmployeeStore){}
   
   ngOnInit(): void {
     this.loading = true;
-    const employee = localStorage.getItem("employeeInView");
+    const employee = this.selectedEmployee.get();
 
     if (employee) {
-      this.employeeInView = JSON.parse(employee);
+      this.employeeInView = { ...employee };
 
       console.log(this.employeeInView)
 
@@ -83,7 +84,7 @@ export class ViewEmployeeComponent {
     this.getEmployeesProfilePhotoUrl(this.employeeInView?.employeeMedia?.mediaNo);
 
     
-    if(this.employeeInView.leaveDetails){
+    if(this.employeeInView?.leaveDetails){
         this.calendarOptions = {
           initialView: 'dayGridMonth',
           plugins: [dayGridPlugin, interactionPlugin],

@@ -3,6 +3,7 @@ import { EmployeeService } from '../../../service/employee.service';
 import { PayrollService } from '../../../service/payroll.service';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { SelectedEmployeeStore } from '../selected-employee.store';
 
 @Component({
   selector: 'app-employment-letter',
@@ -20,13 +21,11 @@ export class EmploymentLetterComponent implements OnInit {
   constructor(
     private employeeService: EmployeeService,
     private payrollService: PayrollService,
+    private selectedEmployee: SelectedEmployeeStore,
   ) {}
 
   ngOnInit() {
-    const stored = localStorage.getItem('employeeInView');
-    if (stored) {
-      try { this.employee = JSON.parse(stored); } catch { this.employee = {}; }
-    }
+    this.employee = this.selectedEmployee.get() ?? {};
 
     if (this.employee?.salaryDetails) {
       this.salaryDetails = this.employee.salaryDetails;

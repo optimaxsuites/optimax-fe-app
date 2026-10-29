@@ -20,6 +20,7 @@ import jsPDF from 'jspdf';
 import { PayrollService } from '../../service/payroll.service';
 import { AttendancetableService } from '../../service/attendance/attendancetable.service';
 import { buildOnboardingEmailHtml, buildOnboardingLink, escapeHtml, generateTemporaryPassword, onboardingLinkExpiry } from '../employee-management/onboarding-credentials.util';
+import { SelectedEmployeeStore } from '../employee-management/selected-employee.store';
 
 export interface NextOfKin {
   id?: number;
@@ -188,6 +189,7 @@ export class EmployeeProfileDashboardComponent {
     private attendanceService: AttendancetableService,
     // // private companyProfileService: CompanyProfileService,
     private authenticationService: AuthenticationService,
+    private selectedEmployee: SelectedEmployeeStore,
   ) {
     this.editForm = this.fb.group({
       phone: [''],
@@ -407,8 +409,8 @@ export class EmployeeProfileDashboardComponent {
       employee?.accountNumber,
       employee?.nin,
       employee?.bvn,
-      employee?.nextOfKin?.length ? 'yes' : '',
-      employee?.guarantor?.length ? 'yes' : '',
+      this.nextOfKinList?.length ? 'yes' : '',
+      this.guarantorList?.length ? 'yes' : '',
       employee?.employeeMedia?.mediaNo || employee?.imageUrl,
     ];
     const complete = checks.filter((value) => String(value ?? '').trim() !== '').length;
@@ -526,17 +528,10 @@ export class EmployeeProfileDashboardComponent {
   }
 
   private fetchEmployeeForCurrentUser(): void {
-    const selectedEmployee = localStorage.getItem('employeeInView');
+    const selectedEmployee = this.selectedEmployee.get();
     if (selectedEmployee && this.isEmployeeManagementContext()) {
-      try {
-        const parsedEmployee = JSON.parse(selectedEmployee);
-        if (parsedEmployee) {
-          this.applyEmployeeView(parsedEmployee);
-          return;
-        }
-      } catch {
-        localStorage.removeItem('employeeInView');
-      }
+      this.applyEmployeeView(selectedEmployee);
+      return;
     }
 
     const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
@@ -848,7 +843,7 @@ export class EmployeeProfileDashboardComponent {
         this.employeeService.getEmployeeById(this.employeeInView.id).subscribe({
           next: (fresh: any) => {
             this.applyEmployeeView(fresh);
-            localStorage.setItem('employeeInView', JSON.stringify(fresh));
+            this.selectedEmployee.set(fresh);
           },
           error: () => {
             this.employeeInView = { ...this.employeeInView, ...patch };
@@ -1066,10 +1061,10 @@ export class EmployeeProfileDashboardComponent {
 
   private buildUpdatePayload(): { data: any; patch: any } {
     const employee = this.employeeInView || {};
-    const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
     const patch: any = {
       id: employee.id,
-      userId: employee.userId ?? employee.user?.userId ?? storedUserId ?? null,
+      // Only the account already linked to this employee, never the signed-in HR user's.
+      userId: employee.userId ?? employee.user?.userId ?? null,
       firstName: this.editForm.get('firstName')?.value ?? employee.firstName,
       lastName: this.editForm.get('lastName')?.value ?? employee.lastName,
       email: this.editForm.get('email')?.value ?? employee.email,
@@ -1246,7 +1241,6 @@ export class EmployeeProfileDashboardComponent {
     this.employeeService.getNOKByEmployeeId(this.employeeInView.id).subscribe({
       next: (res: any) => {
         this.nextOfKinList = res;
-        // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
       },
       error: () => {
         this.nextOfKinList = [];
@@ -1256,7 +1250,6 @@ export class EmployeeProfileDashboardComponent {
     this.employeeService.getGuarantor(this.employeeInView.id).subscribe({
       next: (res: any) => {
         this.guarantorList = res;
-        // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
       },
       error: () => {
         this.guarantorList = [];
@@ -1397,7 +1390,7 @@ export class EmployeeProfileDashboardComponent {
     ).subscribe({
       next: () => {
         this.employeeInView = { ...this.employeeInView, employeeStatus: newStatus, exitReason, exitReasonBy: currentUser };
-        localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView));
+        this.selectedEmployee.set(this.employeeInView);
         this.messageService.add({ severity: 'success', summary: 'Status Updated', detail: `${name} is now marked as ${label}.`, key: 'tl', life: 3000 });
         if (newStatus === 'ACTIVE' && prevStatus !== 'ACTIVE') {
           this.dispatchWelcomeToActiveNotifications(this.employeeInView, name);
@@ -1432,7 +1425,7 @@ export class EmployeeProfileDashboardComponent {
     ).subscribe({
       next: () => {
         this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Employee record removed.', key: 'tl', life: 3000 });
-        localStorage.removeItem('employeeInView');
+        this.selectedEmployee.clear();
         window.dispatchEvent(new CustomEvent('employee-record-changed'));
       },
       error: (err) => {
@@ -1667,23 +1660,11 @@ export class EmployeeProfileDashboardComponent {
       department: escapeHtml(employee?.department?.name || employee?.department || ''),
     });
 
-    const sendTo: string[] = [];
-    if (employee?.email) sendTo.push(employee.email);
-    if (employee?.workEmail && employee.workEmail !== employee.email) sendTo.push(employee.workEmail);
-    sendTo.forEach(email => {
-      this.employeeService.sendNotificationEmail(email, subject, htmlBody).subscribe({ error: () => { } });
-    });
-
-    this.employeeService.sendWelcomeEmail({
-      name,
-      email: employee?.email || '',
-      workEmail: employee?.workEmail || '',
-      jobTitle: employee?.jobTitle || '',
-      department: employee?.department?.name || employee?.department || '',
-      companyName,
-      event: 'JOINING_TO_ACTIVE',
-      timestamp: new Date().toISOString(),
-    }).subscribe({ error: () => { } });
+    // One email: to the work mailbox now they're staff, or the personal one if there isn't one.
+    const to = employee?.workEmail || employee?.email;
+    if (to) {
+      this.employeeService.sendNotificationEmail(to, subject, htmlBody).subscribe({ error: () => { } });
+    }
   }
 
   private buildWelcomeActiveEmailHtml(d: { name: string; companyName: string; logoUrl: string; hrEmail: string; jobTitle: string; department: string }): string {

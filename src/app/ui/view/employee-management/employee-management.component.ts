@@ -27,6 +27,10 @@ import JsBarcode from 'jsbarcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { buildOnboardingEmailHtml, buildOnboardingLink, escapeHtml, generateTemporaryPassword, onboardingLinkExpiry } from './onboarding-credentials.util';
+import { SelectedEmployeeStore } from './selected-employee.store';
+
+/** Statuses of people who have left; the "Left / Offboarded" filter shows all of them. */
+const LEFT_STATUSES = ['TERMINATED', 'RESIGNED', 'FIRED', 'INTERNSHIP_ENDED'];
 
 @Component({
   selector: 'app-employee-management',
@@ -296,6 +300,7 @@ handleDateClick(arg: DateClickArg) {
     private navLinks: NavigationLinksService,
     // // private companyProfileService: CompanyProfileService,
     private authenticationService: AuthenticationService,
+    private selectedEmployee: SelectedEmployeeStore,
   ) {}
 
   openPreOnboardingForm(): void {
@@ -325,30 +330,34 @@ handleDateClick(arg: DateClickArg) {
   ngOnInit() {
     this.fetchEmployees();
     this.startPresencePolling();
-    window.addEventListener('employee-record-changed', () => {
-      this.fetchEmployees();
-      this.viewEmployee = false;
-      this.employeeInView = {};
-      localStorage.removeItem('employeeInView');
-    });
-
-    // Narrower event: only update the changed employee in-place (no full refresh)
-    window.addEventListener('employee-status-changed', (e: any) => {
-      const { id, employeeStatus } = e.detail || {};
-      if (!id) return;
-      const target = this.employees.find((emp: any) => emp.id === id);
-      if (target) {
-        target.employeeStatus = employeeStatus;
-        this.applyFilters();
-      }
-    });
+    window.addEventListener('employee-record-changed', this.onEmployeeRecordChanged);
+    window.addEventListener('employee-status-changed', this.onEmployeeStatusChanged);
   }
 
   ngOnDestroy(): void {
     clearInterval(this.presenceInterval);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    window.removeEventListener('employee-record-changed', this.onEmployeeRecordChanged);
+    window.removeEventListener('employee-status-changed', this.onEmployeeStatusChanged);
     this.photoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+    this.selectedEmployee.clear();
   }
+
+  private readonly onEmployeeRecordChanged = () => {
+    this.fetchEmployees();
+    this.closeViewEmployee();
+  };
+
+  /** Narrower event: only update the changed employee in place (no full refresh). */
+  private readonly onEmployeeStatusChanged = (e: any) => {
+    const { id, employeeStatus } = e.detail || {};
+    if (!id) return;
+    const target = this.employees.find((emp: any) => emp.id === id);
+    if (target) {
+      target.employeeStatus = employeeStatus;
+      this.applyFilters();
+    }
+  };
 
   private getAuthToken(): string | null {
     for (const key of ['Token', 'token', 'accessToken', 'Token2', 'accessToken2']) {
@@ -457,6 +466,7 @@ handleDateClick(arg: DateClickArg) {
       },
       error: (err) => {
         console.log(err);
+        this.finishLoading(startedAt);
         this.messageService.add({
           severity: 'error',
           summary: 'Load failed',
@@ -570,26 +580,12 @@ handleDateClick(arg: DateClickArg) {
     if (employee) {
       console.log(employee);
       this.viewEmployee = false;
-      localStorage.setItem('employeeInView', JSON.stringify(employee));
-
-      this.employeeService.getNOKByEmployeeId(employee.id).subscribe({
-        next: (res: any) => {
-          employee.nextOfKin = res;
-          localStorage.setItem('employeeInView', JSON.stringify(employee));
-          this.employeeInView = employee;
-        },
-        error: () => {
-          this.employeeInView = employee;
-          window.setTimeout(() => {
-            this.viewEmployee = true;
-          }, 0);
-        },
-        complete: () => {
-          window.setTimeout(() => {
-            this.viewEmployee = true;
-          }, 0);
-        },
-      });
+      this.employeeInView = employee;
+      this.selectedEmployee.set(employee);
+      // Tabs fetch their own details (next of kin, guarantors…), so the drawer can open straight away.
+      window.setTimeout(() => {
+        this.viewEmployee = true;
+      }, 0);
     }
   }
 
@@ -746,7 +742,7 @@ handleDateClick(arg: DateClickArg) {
             employee.employeeStatus = 'ACTIVE';
             if (this.employeeInView?.id === employee.id) {
               this.employeeInView = { ...this.employeeInView, employeeStatus: 'ACTIVE' };
-              localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView));
+              this.selectedEmployee.set(this.employeeInView);
             }
             this.messageService.add({ severity: 'success', summary: 'Activated', detail: `${name} is now an active staff member.`, key: 'tl', life: 3000 });
             this.applyFilters();
@@ -777,24 +773,11 @@ handleDateClick(arg: DateClickArg) {
       department: escapeHtml(employee?.department?.name || employee?.department || ''),
     });
 
-    const sendTo: string[] = [];
-    if (employee?.email) sendTo.push(employee.email);
-    if (employee?.workEmail && employee.workEmail !== employee.email) sendTo.push(employee.workEmail);
-
-    sendTo.forEach(email => {
-      this.employeeService.sendNotificationEmail(email, subject, htmlBody).subscribe({ error: () => {} });
-    });
-
-    this.employeeService.sendWelcomeEmail({
-      name,
-      email: employee?.email || '',
-      workEmail: employee?.workEmail || '',
-      jobTitle: employee?.jobTitle || '',
-      department: employee?.department?.name || employee?.department || '',
-      companyName,
-      event: 'JOINING_TO_ACTIVE',
-      timestamp: new Date().toISOString(),
-    }).subscribe({ error: () => {} });
+    // One email: to the work mailbox now they're staff, or the personal one if there isn't one.
+    const to = employee?.workEmail || employee?.email;
+    if (to) {
+      this.employeeService.sendNotificationEmail(to, subject, htmlBody).subscribe({ error: () => {} });
+    }
   }
 
 
@@ -1013,7 +996,7 @@ handleDateClick(arg: DateClickArg) {
   closeViewEmployee() {
     this.viewEmployee = false;
     this.employeeInView = {};
-    localStorage.removeItem('employeeInView');
+    this.selectedEmployee.clear();
   }
 
   getAllowanceKeys(allowances: object): string[] {
@@ -1026,10 +1009,22 @@ handleDateClick(arg: DateClickArg) {
       .replace(/^./, (str) => str.toUpperCase());
   }
 
+  /** "Probation" is a flag, not a status, and "Left" covers every exit status. */
+  private matchesStatusFilter(employee: any): boolean {
+    const filter = this.selectedStatus;
+    if (!filter || filter === 'ALL') return true;
+    const status = String(employee?.employeeStatus ?? '').toUpperCase();
+    if (filter === 'PROBATION') {
+      const flag = employee?.onProbation;
+      return flag === true || ['TRUE', 'YES'].includes(String(flag ?? '').toUpperCase());
+    }
+    if (filter === 'LEFT') return LEFT_STATUSES.includes(status);
+    return status === filter;
+  }
+
   applyFilters() {
     this.filteredEmployees = this.employees.filter((employee: any) => {
-      const matchesStatus = !this.selectedStatus || this.selectedStatus === 'ALL' ||
-        (employee.employeeStatus ?? '').toUpperCase() === this.selectedStatus;
+      const matchesStatus = this.matchesStatusFilter(employee);
 
       const matchesLevelType = !this.selectedEmployeeType ||
                                this.selectedEmployeeType.length === 0 ||
