@@ -11,6 +11,7 @@ import { ProfileChangeRequestDTO } from '../../../model/profile-change-request.m
 import { MailNotificationService } from '../../../service/mailNotification.service';
 import { HrNotificationListenerService, HrBankChangeNotification } from '../../../service/hr-notification-listener.service';
 import { EmployeeService } from '../../../service/employee.service';
+import { SelectedEmployeeStore } from '../../employee-management/selected-employee.store';
 
 @Component({
   selector: 'app-bank-details-change-request',
@@ -35,7 +36,8 @@ export class BankDetailsChangeRequestComponent implements OnInit, OnChanges {
     private messageService: MessageService,
     private mailNotificationService: MailNotificationService,
     private hrNotificationService: HrNotificationListenerService,
-    private employeeService: EmployeeService
+    private employeeService: EmployeeService,
+    private selectedEmployee: SelectedEmployeeStore
   ) {}
 
   ngOnInit(): void {
@@ -405,7 +407,9 @@ export class BankDetailsChangeRequestComponent implements OnInit, OnChanges {
   }
 
   private getStoredEmployeeProfile(): any | null {
-    const keys = ['currentEmployee', 'employeeInView', 'employeeProfile'];
+    const selected = this.selectedEmployee.get();
+    if (selected) return selected;
+    const keys = ['currentEmployee', 'employeeProfile'];
     for (const key of keys) {
       const stored = localStorage.getItem(key) || sessionStorage.getItem(key);
       if (!stored) continue;

@@ -574,7 +574,7 @@ export class AddEmployeeFormComponent implements OnDestroy {
   }
 
   saveDraft() {
-    if (this.draftLoading || this.loading) return;
+    if (this.draftLoading || this.loading || !this.ensureEmployeeLoaded()) return;
 
     const isValid = this.validateCurrentSectionForDraft();
     if (!isValid) return;
@@ -601,10 +601,6 @@ export class AddEmployeeFormComponent implements OnDestroy {
       return;
     }
 
-    if (!this.ensureEmployeeLoaded()) {
-      this.draftLoading = false;
-      return;
-    }
     this.saveEmployee().subscribe({
       next: () => {
         this.draftLoading = false;
@@ -657,10 +653,6 @@ addNewEmployee(){
   this.saveEmployee().subscribe({
     next: (data: any) => {
       const vettingPayload = this.buildEmployeePayload();
-      if (data?.id) {
-        vettingPayload.employee.id = data.id;
-        vettingPayload.employeeId = data.id;
-      }
       this.employeeService.sendOnboardingVetting(vettingPayload, data).subscribe({
         error: (err) => {
           const detail = this.errorMessageService.getUserMessage(
@@ -729,7 +721,6 @@ private buildEmployeePayload(): {
     accountNumber: this.employeeForm.get('accountNumber')?.value,
     nin: this.employeeForm.get('nin')?.value,
     bvn: this.employeeForm.get('bvn')?.value,
-
     departmentId: employee.departmentId ?? employee.department?.id ?? null,
     jobTypeId: employee.jobTypeId ?? employee.jobType?.id ?? null
   };

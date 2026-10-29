@@ -3,6 +3,7 @@ import { ProfileChangeRequestService } from '../../../service/profile-change-req
 import { ProfileChangeRequestDTO } from '../../../model/profile-change-request.model';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { SelectedEmployeeStore } from '../../employee-management/selected-employee.store';
 
 @Component({
   selector: 'app-employee-change-requests-summary',
@@ -19,7 +20,10 @@ export class EmployeeChangeRequestsSummaryComponent implements OnInit, OnChanges
   loading = false;
   private destroy$ = new Subject<void>();
 
-  constructor(private profileChangeRequestService: ProfileChangeRequestService) {}
+  constructor(
+    private profileChangeRequestService: ProfileChangeRequestService,
+    private selectedEmployee: SelectedEmployeeStore
+  ) {}
 
   ngOnInit(): void {
     this.loadRequests();
@@ -91,16 +95,9 @@ export class EmployeeChangeRequestsSummaryComponent implements OnInit, OnChanges
       return String(this.employeeId);
     }
 
-    const employeeInView = localStorage.getItem('employeeInView');
-    if (employeeInView) {
-      try {
-        const parsed = JSON.parse(employeeInView);
-        if (parsed?.id) {
-          return String(parsed.id);
-        }
-      } catch {
-        // Fall through to current employee cache/session fallback.
-      }
+    const selectedId = this.selectedEmployee.id;
+    if (selectedId !== null) {
+      return String(selectedId);
     }
 
     const currentEmployee = localStorage.getItem('currentEmployee') || sessionStorage.getItem('currentEmployee');

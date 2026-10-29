@@ -3,6 +3,7 @@ import { EmployeeService } from '../../../service/employee.service';
 import { PayrollService } from '../../../service/payroll.service';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { SelectedEmployeeStore } from '../selected-employee.store';
 
 @Component({
   selector: 'app-employment-letter',
@@ -20,21 +21,20 @@ export class EmploymentLetterComponent implements OnInit {
   constructor(
     private employeeService: EmployeeService,
     private payrollService: PayrollService,
+    private selectedEmployee: SelectedEmployeeStore,
   ) {}
 
   ngOnInit() {
-    // Fetched fresh rather than read from localStorage's copy, which goes stale.
-    this.employeeService.getEmployeeInView().subscribe((employee) => {
-      this.employee = employee || {};
-      if (this.employee?.salaryDetails) {
-        this.salaryDetails = this.employee.salaryDetails;
-      } else if (this.employee?.level?.id) {
-        this.employeeService.getSalaryById(this.employee.level.id).subscribe({
-          next: (data: any) => { this.salaryDetails = Array.isArray(data) ? data[0] : data; },
-          error: () => {}
-        });
-      }
-    });
+    this.employee = this.selectedEmployee.get() ?? {};
+
+    if (this.employee?.salaryDetails) {
+      this.salaryDetails = this.employee.salaryDetails;
+    } else if (this.employee?.level?.id) {
+      this.employeeService.getSalaryById(this.employee.level.id).subscribe({
+        next: (data: any) => { this.salaryDetails = Array.isArray(data) ? data[0] : data; },
+        error: () => {}
+      });
+    }
 
     this.payrollService.getGeneralSettingsById().subscribe({
       next: (res: any) => {

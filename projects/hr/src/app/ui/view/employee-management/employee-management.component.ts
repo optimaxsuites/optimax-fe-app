@@ -27,6 +27,10 @@ import JsBarcode from 'jsbarcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { buildOnboardingEmailHtml, buildOnboardingLink, escapeHtml, generateTemporaryPassword, onboardingLinkExpiry } from './onboarding-credentials.util';
+import { SelectedEmployeeStore } from './selected-employee.store';
+
+/** Statuses of people who have left; the "Left / Offboarded" filter shows all of them. */
+const LEFT_STATUSES = ['TERMINATED', 'RESIGNED', 'FIRED', 'INTERNSHIP_ENDED'];
 
 @Component({
   selector: 'app-employee-management',
@@ -281,21 +285,6 @@ statusOptions = [
   { label: 'Left / Offboarded', value: 'LEFT' },
   { label: 'All',         value: 'ALL' },
 ];
-/** Filters that aren't an employeeStatus value of their own: probation is the onProbation flag,
- *  and "Left" covers every exit status. */
-private static readonly LEFT_STATUSES = ['TERMINATED', 'RESIGNED', 'FIRED', 'INTERNSHIP_ENDED'];
-
-private matchesStatusFilter(employee: any): boolean {
-  const status = (employee?.employeeStatus ?? '').toUpperCase();
-  switch (this.selectedStatus) {
-    case '':
-    case 'ALL':       return true;
-    case 'PROBATION': return employee?.onProbation === true
-      && !EmployeeManagementComponent.LEFT_STATUSES.includes(status);
-    case 'LEFT':      return EmployeeManagementComponent.LEFT_STATUSES.includes(status);
-    default:          return status === this.selectedStatus;
-  }
-}
 
 handleDateClick(arg: DateClickArg) {
   alert('date click! ' + arg.dateStr)
@@ -311,6 +300,7 @@ handleDateClick(arg: DateClickArg) {
     private navLinks: NavigationLinksService,
     // // private companyProfileService: CompanyProfileService,
     private authenticationService: AuthenticationService,
+    private selectedEmployee: SelectedEmployeeStore,
   ) {}
 
   openPreOnboardingForm(): void {
@@ -344,16 +334,21 @@ handleDateClick(arg: DateClickArg) {
     window.addEventListener('employee-status-changed', this.onEmployeeStatusChanged);
   }
 
-  // Kept as fields so ngOnDestroy can remove them — otherwise every visit to this page added
-  // another pair of handlers that kept running for destroyed instances.
+  ngOnDestroy(): void {
+    clearInterval(this.presenceInterval);
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    window.removeEventListener('employee-record-changed', this.onEmployeeRecordChanged);
+    window.removeEventListener('employee-status-changed', this.onEmployeeStatusChanged);
+    this.photoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+    this.selectedEmployee.clear();
+  }
+
   private readonly onEmployeeRecordChanged = () => {
     this.fetchEmployees();
-    this.viewEmployee = false;
-    this.employeeInView = {};
-    localStorage.removeItem('employeeInView');
+    this.closeViewEmployee();
   };
 
-  /** Narrower event: only update the changed employee in-place (no full refresh). */
+  /** Narrower event: only update the changed employee in place (no full refresh). */
   private readonly onEmployeeStatusChanged = (e: any) => {
     const { id, employeeStatus } = e.detail || {};
     if (!id) return;
@@ -363,14 +358,6 @@ handleDateClick(arg: DateClickArg) {
       this.applyFilters();
     }
   };
-
-  ngOnDestroy(): void {
-    window.removeEventListener('employee-record-changed', this.onEmployeeRecordChanged);
-    window.removeEventListener('employee-status-changed', this.onEmployeeStatusChanged);
-    clearInterval(this.presenceInterval);
-    document.removeEventListener('visibilitychange', this.onVisibilityChange);
-    this.photoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
-  }
 
   private getAuthToken(): string | null {
     for (const key of ['Token', 'token', 'accessToken', 'Token2', 'accessToken2']) {
@@ -479,6 +466,7 @@ handleDateClick(arg: DateClickArg) {
       },
       error: (err) => {
         console.log(err);
+        this.finishLoading(startedAt);
         this.messageService.add({
           severity: 'error',
           summary: 'Load failed',
@@ -486,7 +474,6 @@ handleDateClick(arg: DateClickArg) {
           key: 'tl',
           life: 3000,
         });
-        this.finishLoading(startedAt);
       },
       complete: () => {
         this.finishLoading(startedAt);
@@ -593,26 +580,12 @@ handleDateClick(arg: DateClickArg) {
     if (employee) {
       console.log(employee);
       this.viewEmployee = false;
-      localStorage.setItem('employeeInView', JSON.stringify(employee));
-
-      this.employeeService.getNOKByEmployeeId(employee.id).subscribe({
-        next: (res: any) => {
-          employee.nextOfKin = res;
-          localStorage.setItem('employeeInView', JSON.stringify(employee));
-          this.employeeInView = employee;
-        },
-        error: () => {
-          this.employeeInView = employee;
-          window.setTimeout(() => {
-            this.viewEmployee = true;
-          }, 0);
-        },
-        complete: () => {
-          window.setTimeout(() => {
-            this.viewEmployee = true;
-          }, 0);
-        },
-      });
+      this.employeeInView = employee;
+      this.selectedEmployee.set(employee);
+      // Tabs fetch their own details (next of kin, guarantors…), so the drawer can open straight away.
+      window.setTimeout(() => {
+        this.viewEmployee = true;
+      }, 0);
     }
   }
 
@@ -769,7 +742,7 @@ handleDateClick(arg: DateClickArg) {
             employee.employeeStatus = 'ACTIVE';
             if (this.employeeInView?.id === employee.id) {
               this.employeeInView = { ...this.employeeInView, employeeStatus: 'ACTIVE' };
-              localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView));
+              this.selectedEmployee.set(this.employeeInView);
             }
             this.messageService.add({ severity: 'success', summary: 'Activated', detail: `${name} is now an active staff member.`, key: 'tl', life: 3000 });
             this.applyFilters();
@@ -800,8 +773,7 @@ handleDateClick(arg: DateClickArg) {
       department: escapeHtml(employee?.department?.name || employee?.department || ''),
     });
 
-    // One welcome email, to one address. This used to go to both email and workEmail and also
-    // through the welcome webhook (which emails them as well), so people got it two or three times.
+    // One email: to the work mailbox now they're staff, or the personal one if there isn't one.
     const to = employee?.workEmail || employee?.email;
     if (to) {
       this.employeeService.sendNotificationEmail(to, subject, htmlBody).subscribe({ error: () => {} });
@@ -1024,7 +996,7 @@ handleDateClick(arg: DateClickArg) {
   closeViewEmployee() {
     this.viewEmployee = false;
     this.employeeInView = {};
-    localStorage.removeItem('employeeInView');
+    this.selectedEmployee.clear();
   }
 
   getAllowanceKeys(allowances: object): string[] {
@@ -1035,6 +1007,19 @@ handleDateClick(arg: DateClickArg) {
     return key
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, (str) => str.toUpperCase());
+  }
+
+  /** "Probation" is a flag, not a status, and "Left" covers every exit status. */
+  private matchesStatusFilter(employee: any): boolean {
+    const filter = this.selectedStatus;
+    if (!filter || filter === 'ALL') return true;
+    const status = String(employee?.employeeStatus ?? '').toUpperCase();
+    if (filter === 'PROBATION') {
+      const flag = employee?.onProbation;
+      return flag === true || ['TRUE', 'YES'].includes(String(flag ?? '').toUpperCase());
+    }
+    if (filter === 'LEFT') return LEFT_STATUSES.includes(status);
+    return status === filter;
   }
 
   applyFilters() {

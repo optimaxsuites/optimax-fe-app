@@ -1,29 +1,43 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { SafeUrl } from '@angular/platform-browser';
 import { EmployeeService } from '../../../service/employee.service';
+import { SelectedEmployeeStore } from '../selected-employee.store';
 
 @Component({
   selector: 'app-employee-guarantor',
   templateUrl: './employee-guarantor.component.html',
   styleUrl: './employee-guarantor.component.scss'
 })
-export class EmployeeGuarantorComponent {
-  employeeInView: any; 
-  onboardingStatus: any;
+export class EmployeeGuarantorComponent implements OnInit {
+  employeeInView: any;
+  onboardingStatus: 'loading' | 'missing' | 'error' | 'inProgress' | 'completed' = 'loading';
+  guarantors: any[] = [];
   fileDataUrl: SafeUrl = '';
   imageURL: string =''
   showModal: boolean = false;
   currentFile: string = '';
 
-  constructor(private employeeService: EmployeeService) {}
+  constructor(
+    private employeeService: EmployeeService,
+    private selectedEmployee: SelectedEmployeeStore
+  ) {}
 
   ngOnInit(): void {
-    // Fetched fresh rather than read from localStorage's copy, which goes stale (and used to
-    // crash this tab on null.guarantor when it was missing).
-    this.employeeService.getEmployeeInView().subscribe((employee) => {
-      this.employeeInView = employee;
-      const guarantors = employee?.guarantor;
-      this.onboardingStatus = Array.isArray(guarantors) && guarantors.length ? "completed" : 'inProgress';
+    this.employeeInView = this.selectedEmployee.get();
+    const id = this.selectedEmployee.id;
+    if (id === null) {
+      this.onboardingStatus = 'missing';
+      return;
+    }
+
+    this.employeeService.getGuarantor(id).subscribe({
+      next: (res: any) => {
+        this.guarantors = Array.isArray(res) ? res : (res?.content ?? []);
+        this.onboardingStatus = this.guarantors.length ? 'completed' : 'inProgress';
+      },
+      error: () => {
+        this.onboardingStatus = 'error';
+      }
     });
   }
 

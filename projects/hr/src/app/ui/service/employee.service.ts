@@ -150,21 +150,6 @@ export class EmployeeService {
   }
 
   /**
-   * The employee open in the directory, fetched fresh. localStorage's employeeInView is only used
-   * for which employee that is (and as a fallback if the request fails) — its copy goes stale as
-   * soon as anything is edited elsewhere. Emits null when no employee is selected.
-   */
-  getEmployeeInView(): Observable<any | null> {
-    let stored: any = null;
-    try { stored = JSON.parse(localStorage.getItem('employeeInView') || 'null'); } catch { stored = null; }
-    if (!stored?.id) return of(null);
-    return this.getEmployeeById(stored.id).pipe(
-      map((res: any) => res?.data ?? res ?? stored),
-      catchError(() => of(stored))
-    );
-  }
-
-  /**
    * Get employee by user ID
    * This endpoint might not work for all users due to permissions
    */

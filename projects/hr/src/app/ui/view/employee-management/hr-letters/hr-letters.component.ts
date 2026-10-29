@@ -7,6 +7,7 @@ import { PayrollService } from '../../../service/payroll.service';
 import { pickSalaryRecordForLevel } from '../../../service/loan/level-salary.util';
 import { escapeHtml } from '../onboarding-credentials.util';
 import { saveElementAsPdf } from '../letter-pdf.util';
+import { SelectedEmployeeStore } from '../selected-employee.store';
 
 export type LetterTone = 'formal' | 'professional' | 'friendly';
 
@@ -370,6 +371,7 @@ export class HrLettersComponent implements OnInit {
     private employeeService: EmployeeService,
     private payrollService: PayrollService,
     private messageService: MessageService,
+    private selectedEmployee: SelectedEmployeeStore,
   ) {}
 
   ngOnInit(): void {
@@ -378,18 +380,7 @@ export class HrLettersComponent implements OnInit {
       this.companyProfile = { companyName: biz?.companyName || biz?.company?.name || '', logoUrl: biz?.logoUrl || biz?.logo || '' };
     } catch {}
 
-    // Fetched fresh rather than read from localStorage's copy, which goes stale.
-    this.employeeService.getEmployeeInView().subscribe((employee) => {
-      this.employee = employee || {};
-      if (this.employee?.salaryDetails) {
-        this.salaryDetails = this.employee.salaryDetails;
-      } else if (this.employee?.level?.id) {
-        this.employeeService.getSalaryById(this.employee.level.id).subscribe({
-          next: (data: any) => { this.salaryDetails = (Array.isArray(data) ? pickSalaryRecordForLevel(data) : data) ?? null; },
-          error: () => {}
-        });
-      }
-    });
+    this.loadEmployee();
 
     this.payrollService.getGeneralSettingsById().subscribe({
       next: (res: any) => { this.salaryInputMode = res?.salaryInputMode === 'yearly' ? 'yearly' : 'monthly'; },
@@ -404,6 +395,35 @@ export class HrLettersComponent implements OnInit {
     this.employeeService.getAllDeductionTypes().subscribe({ next: (d: any) => this.deductionTypes = Array.isArray(d) ? d : (d?.content ?? []), error: () => {} });
 
     this.loadTemplate();
+  }
+
+  /** Fetches the selected employee fresh, so letters don't quote a stale salary level or title. */
+  private loadEmployee(): void {
+    this.employee = this.selectedEmployee.get() ?? {};
+    const id = this.selectedEmployee.id;
+    if (id === null) {
+      this.messageService.add({ severity: 'warn', summary: 'No employee', detail: 'Open an employee from the directory to write a letter.', key: 'tl', life: 4000 });
+      return;
+    }
+    this.employeeService.getEmployeeById(id).subscribe({
+      next: (fresh: any) => {
+        this.employee = fresh?.data ?? fresh ?? this.employee;
+        this.loadSalaryDetails();
+      },
+      error: () => {
+        this.messageService.add({ severity: 'warn', summary: 'Using saved details', detail: 'The latest employee record could not be loaded, so letters may show older details.', key: 'tl', life: 4000 });
+        this.loadSalaryDetails();
+      }
+    });
+  }
+
+  private loadSalaryDetails(): void {
+    const levelId = this.employee?.levelId ?? this.employee?.level?.id;
+    if (!levelId) return;
+    this.employeeService.getSalaryById(levelId).subscribe({
+      next: (data: any) => { this.salaryDetails = (Array.isArray(data) ? pickSalaryRecordForLevel(data) : data) ?? null; },
+      error: () => {}
+    });
   }
 
   selectLetter(key: string): void {

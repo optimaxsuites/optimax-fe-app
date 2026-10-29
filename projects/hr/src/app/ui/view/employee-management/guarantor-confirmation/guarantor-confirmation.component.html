@@ -1,4 +1,3 @@
-<!-- Messages here use key 'global'; this public page has no app-wide toast to show them. -->
 <p-toast position="top-right" key="global"></p-toast>
 <div class="min-h-screen bg-slate-50 py-12 px-4 sm:px-6">
   <div class="max-w-3xl mx-auto">
@@ -30,7 +29,7 @@
           />
         </div>
       </div>
-      <div *ngIf="!responded" class="mt-6 flex flex-col items-center gap-4 rounded-xl border border-slate-100 bg-white p-4">
+      <div *ngIf="!submittedResponse" class="mt-6 flex flex-col items-center gap-4 rounded-xl border border-slate-100 bg-white p-4">
         <p class="text-sm font-semibold text-slate-700">Do you know this person?</p>
         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <button
@@ -84,16 +83,18 @@
         </div>
       </div>
 
-    <div *ngIf="securityState === 'valid' && responded" class="bg-white rounded-b-2xl shadow-sm p-8 text-center space-y-2">
+    <div *ngIf="submittedResponse" class="bg-white rounded-b-2xl shadow-sm p-8 text-center space-y-3">
+      <div class="mx-auto h-14 w-14 rounded-full bg-emerald-50 text-customGreen flex items-center justify-center text-2xl">&#10003;</div>
       <h2 class="text-xl font-bold text-slate-900">Thank you</h2>
-      <p class="text-sm text-slate-600">
-        {{ responded === 'confirmed'
-          ? 'Your confirmation has been submitted. You can close this page.'
-          : 'Your response has been recorded. You can close this page.' }}
+      <p *ngIf="submittedResponse === 'confirmed'" class="text-sm text-slate-600">
+        Your guarantor confirmation for <span class="font-semibold capitalize">{{ employeeName || 'the employee' }}</span> has been submitted. HR may contact you to verify the details. You can close this page.
+      </p>
+      <p *ngIf="submittedResponse === 'declined'" class="text-sm text-slate-600">
+        Your response has been recorded and HR has been told you don't know this person. You can close this page.
       </p>
     </div>
 
-    <form *ngIf="securityState === 'valid' && acknowledgment === 'yes' && !responded" [formGroup]="form" (ngSubmit)="submit()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-8">
+    <form *ngIf="securityState === 'valid' && acknowledgment === 'yes' && !submittedResponse" [formGroup]="form" (ngSubmit)="submit()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-8">
 
       <section>
         <h2 class="text-xs font-uppercase font-bold text-slate-400 uppercase tracking-widest mb-4">Personal Details</h2>
@@ -167,7 +168,7 @@
       </div>
     </form>
 
-    <form *ngIf="securityState === 'valid' && acknowledgment === 'no' && !responded" [formGroup]="declineForm" (ngSubmit)="submitDecline()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-6">
+    <form *ngIf="securityState === 'valid' && acknowledgment === 'no' && !submittedResponse" [formGroup]="declineForm" (ngSubmit)="submitDecline()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-6">
       <section>
         <h2 class="text-xs font-uppercase font-bold text-slate-400 uppercase tracking-widest mb-2">Acknowledgment</h2>
         <p class="text-sm text-slate-600">

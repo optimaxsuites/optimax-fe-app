@@ -1,3 +1,14 @@
+<div *ngIf="onboardingStatus === 'loading' || onboardingStatus === 'missing' || onboardingStatus === 'error'" class="drawer-state">
+  <div class="drawer-state-card">
+    <i class="fa-solid" [ngClass]="onboardingStatus === 'loading' ? 'fa-spinner fa-spin' : 'fa-circle-exclamation'"></i>
+    <div>
+      <h3>{{ onboardingStatus === 'loading' ? 'Loading next of kin…' : 'Next of kin could not be loaded' }}</h3>
+      <p *ngIf="onboardingStatus === 'missing'">No employee is selected. Close this profile and open it again from the directory.</p>
+      <p *ngIf="onboardingStatus === 'error'">Something went wrong fetching these details. Close this profile and open it again to retry.</p>
+    </div>
+  </div>
+</div>
+
 <div *ngIf="onboardingStatus == 'inProgress'" class="drawer-state">
   <div class="drawer-state-card">
     <i class="fa-solid fa-lock"></i>
@@ -13,7 +24,7 @@
   <section class="drawer-summary-grid">
     <article class="drawer-summary-card">
       <span class="drawer-summary-label">Next of kin</span>
-      <strong class="drawer-summary-value">{{ employeeInView?.nextOfKin?.length || 0 }}</strong>
+      <strong class="drawer-summary-value">{{ nextOfKin.length }}</strong>
     </article>
     <article class="drawer-summary-card">
       <span class="drawer-summary-label">Emergency contacts</span>
@@ -22,7 +33,7 @@
   </section>
 
   <section class="drawer-grid">
-    <article *ngFor="let kin of employeeInView?.nextOfKin" class="drawer-card">
+    <article *ngFor="let kin of nextOfKin" class="drawer-card">
       <div class="drawer-card-header">
         <div>
           <p class="drawer-card-eyebrow">Next of kin</p>
