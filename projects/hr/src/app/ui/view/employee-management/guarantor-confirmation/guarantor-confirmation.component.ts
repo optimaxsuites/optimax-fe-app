@@ -19,6 +19,8 @@ export class GuarantorConfirmationComponent implements OnDestroy {
   mediaNo = '';
   employeeInView: any;
   acknowledgment: 'yes' | 'no' | null = null;
+  /** Set once a response has been recorded; the page then shows a thank-you instead of the forms. */
+  responded: 'confirmed' | 'declined' | null = null;
   securityState: 'checking' | 'valid' | 'missing' | 'invalid' | 'expired' | 'error' = 'checking';
   securityTitle = '';
   securityDetail = '';
@@ -68,6 +70,7 @@ export class GuarantorConfirmationComponent implements OnDestroy {
       this.securityTitle = '';
       this.securityDetail = '';
       this.acknowledgment = null;
+      this.responded = null;
       if (nameFromParam) {
         this.employeeName = nameFromParam.split('-').join(' ');
       }
@@ -135,13 +138,8 @@ export class GuarantorConfirmationComponent implements OnDestroy {
         return false;
       }
 
-      const [firstName = '', lastName = ''] = (this.employeeName || '').trim().split(/\s+/);
-      const message = `${this.uuid}${firstName}${lastName}${this.mediaNo}${expiryTimestamp}`;
-
       const encoder = new TextEncoder();
       const keyData = encoder.encode('10esCTg2bhOloagm5XE9WEXukzUOaivZzFLxc/cyVP8=');
-      const messageData = encoder.encode(message);
-
       const key = await window.crypto.subtle.importKey(
         'raw',
         keyData,
@@ -149,12 +147,29 @@ export class GuarantorConfirmationComponent implements OnDestroy {
         false,
         ['sign']
       );
-      const signatureBuffer = await window.crypto.subtle.sign('HMAC', key, messageData);
+      const sign = async (message: string) => {
+        const signatureBuffer = await window.crypto.subtle.sign('HMAC', key, encoder.encode(message));
+        return Array.from(new Uint8Array(signatureBuffer))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('');
+      };
 
-      const localSignature = Array.from(new Uint8Array(signatureBuffer))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-      const status = localSignature === securityParam;
+      // The link is signed outside this app, so the name part is matched every way it may have
+      // been built: the first two words (the original check), every word, or first + last word.
+      // Checking only the first two words failed every three-part name.
+      const words = (this.employeeName || '').trim().split(/\s+/).filter(Boolean);
+      const nameVariants = Array.from(new Set([
+        words.slice(0, 2).join(''),
+        words.join(''),
+        words.length > 1 ? `${words[0]}${words[words.length - 1]}` : words.join(''),
+      ]));
+      let status = false;
+      for (const name of nameVariants) {
+        if (await sign(`${this.uuid}${name}${this.mediaNo}${expiryTimestamp}`) === securityParam) {
+          status = true;
+          break;
+        }
+      }
       const now = Math.floor(Date.now() / 1000);
       const isExpired = now > expiryTimestamp;
 
@@ -236,6 +251,7 @@ export class GuarantorConfirmationComponent implements OnDestroy {
   }
 
   submit(): void {
+    if (this.responded || this.submitting) return;
     if (this.securityState !== 'valid') {
       this.messageService.add({
         severity: 'error',
@@ -275,6 +291,7 @@ export class GuarantorConfirmationComponent implements OnDestroy {
     this.employeeService.submitGuarantorConfirmation(formData).subscribe({
       next: () => {
         this.submitting = false;
+        this.responded = 'confirmed';
         this.messageService.add({ severity: 'success', summary: 'Thank you', detail: 'Your confirmation has been submitted successfully.', key: 'global', life: 4000 });
         this.form.reset();
       },
@@ -290,6 +307,7 @@ export class GuarantorConfirmationComponent implements OnDestroy {
   }
 
   submitDecline(): void {
+    if (this.responded || this.submitting) return;
     if (this.securityState !== 'valid') {
       this.messageService.add({
         severity: 'error',
@@ -314,7 +332,10 @@ export class GuarantorConfirmationComponent implements OnDestroy {
     formData.append('token', this.token);
     formData.append('acknowledgment', 'false');
     if (this.employeeName) formData.append('employeeName', this.employeeName);
-    if (this.employeeInView?.id) formData.append('employeeId', `${this.employeeInView.id}`);
+    // The link's uuid is the employee's id (it's what fetchEmployee() looks them up by), so the
+    // decline is tied to the employee even though their record isn't loaded on this page.
+    const employeeId = this.employeeInView?.id ?? this.uuid;
+    if (employeeId) formData.append('employeeId', `${employeeId}`);
     if (this.employeeInView?.email) formData.append('employeeEmail', this.employeeInView.email);
     formData.append('guarantorName', this.declineForm.get('fullName')?.value || '');
     formData.append('guarantorEmail', this.declineForm.get('email')?.value || '');
@@ -322,6 +343,7 @@ export class GuarantorConfirmationComponent implements OnDestroy {
     this.employeeService.submitGuarantorConfirmation(formData).subscribe({
       next: () => {
         this.submitting = false;
+        this.responded = 'declined';
         this.messageService.add({ severity: 'success', summary: 'Thank you', detail: 'Your response has been recorded.', key: 'global', life: 4000 });
         this.declineForm.reset();
       },

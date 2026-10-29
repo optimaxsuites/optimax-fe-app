@@ -5,7 +5,7 @@
       <h3>Guarantor records are not available yet</h3>
       <p>Finish onboarding to capture guarantor contact details and uploaded identity evidence.</p>
     </div>
-    <a class="drawer-link" routerLink="/onboarding/{{employeeInView.id}}/uthedhk45678j">Continue onboarding</a>
+    <a class="drawer-link" routerLink="/onboarding/{{employeeInView?.id}}/uthedhk45678j">Continue onboarding</a>
   </div>
 </div>
 
@@ -22,7 +22,7 @@
   </section>
 
   <section class="drawer-grid">
-    <article *ngFor="let kin of employeeInView.guarantor; let i = index" class="drawer-card">
+    <article *ngFor="let kin of employeeInView?.guarantor; let i = index" class="drawer-card">
       <div class="drawer-card-header">
         <div>
           <p class="drawer-card-eyebrow">Guarantor {{ i + 1 }}</p>
@@ -37,7 +37,7 @@
           <ng-container *ngIf="isFile(kin[key]); else textField">
             <div class="file-actions">
               <button type="button" class="file-link-btn" (click)="previewFile(kin[key])">View</button>
-              <a [href]="kin[key]" download="{{employeeInView.firstName}}-guarantor-{{i+1}}-{{key}}.png" class="file-link-btn">Download</a>
+              <a [href]="kin[key]" download="{{employeeInView?.firstName}}-guarantor-{{i+1}}-{{key}}.png" class="file-link-btn">Download</a>
             </div>
           </ng-container>
           <ng-template #textField>

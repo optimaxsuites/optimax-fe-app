@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { SafeUrl } from '@angular/platform-browser';
+import { EmployeeService } from '../../../service/employee.service';
 
 @Component({
   selector: 'app-employee-guarantor',
@@ -13,20 +14,17 @@ export class EmployeeGuarantorComponent {
   imageURL: string =''
   showModal: boolean = false;
   currentFile: string = '';
+
+  constructor(private employeeService: EmployeeService) {}
+
   ngOnInit(): void {
-    const employee = localStorage.getItem("employeeInView");
-    if (employee) {
-      this.employeeInView = JSON.parse(employee);
-    }
-console.log(this.employeeInView)
-    if(this.employeeInView.guarantor){
-      this.onboardingStatus = "completed"
-    }
-    else{
-      this.onboardingStatus = 'inProgress'
-    }
-
-
+    // Fetched fresh rather than read from localStorage's copy, which goes stale (and used to
+    // crash this tab on null.guarantor when it was missing).
+    this.employeeService.getEmployeeInView().subscribe((employee) => {
+      this.employeeInView = employee;
+      const guarantors = employee?.guarantor;
+      this.onboardingStatus = Array.isArray(guarantors) && guarantors.length ? "completed" : 'inProgress';
+    });
   }
 
   getKeys(obj: any): string[] {

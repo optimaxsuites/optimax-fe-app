@@ -53,6 +53,16 @@ export class AuthenticationService {
     sessionStorage.removeItem("tenantId");
     sessionStorage.removeItem("postLoginRedirect");
 
+    // Employee records cached for the HR screens hold personal data (bank details, NIN, BVN), so
+    // they mustn't outlive the session on a shared computer.
+    ['employeeInView', 'currentEmployee', 'currentEmployeeUserId'].forEach((key) => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith('offboarding_data_v1') || key.startsWith('employee_offboarded_'))
+      .forEach((key) => localStorage.removeItem(key));
+
     // this.router.navigate([''])
     const loginLink = this.navigationLink.getLink('signinLink')
     this.router.navigate([loginLink]);

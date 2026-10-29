@@ -281,6 +281,21 @@ statusOptions = [
   { label: 'Left / Offboarded', value: 'LEFT' },
   { label: 'All',         value: 'ALL' },
 ];
+/** Filters that aren't an employeeStatus value of their own: probation is the onProbation flag,
+ *  and "Left" covers every exit status. */
+private static readonly LEFT_STATUSES = ['TERMINATED', 'RESIGNED', 'FIRED', 'INTERNSHIP_ENDED'];
+
+private matchesStatusFilter(employee: any): boolean {
+  const status = (employee?.employeeStatus ?? '').toUpperCase();
+  switch (this.selectedStatus) {
+    case '':
+    case 'ALL':       return true;
+    case 'PROBATION': return employee?.onProbation === true
+      && !EmployeeManagementComponent.LEFT_STATUSES.includes(status);
+    case 'LEFT':      return EmployeeManagementComponent.LEFT_STATUSES.includes(status);
+    default:          return status === this.selectedStatus;
+  }
+}
 
 handleDateClick(arg: DateClickArg) {
   alert('date click! ' + arg.dateStr)
@@ -325,26 +340,33 @@ handleDateClick(arg: DateClickArg) {
   ngOnInit() {
     this.fetchEmployees();
     this.startPresencePolling();
-    window.addEventListener('employee-record-changed', () => {
-      this.fetchEmployees();
-      this.viewEmployee = false;
-      this.employeeInView = {};
-      localStorage.removeItem('employeeInView');
-    });
-
-    // Narrower event: only update the changed employee in-place (no full refresh)
-    window.addEventListener('employee-status-changed', (e: any) => {
-      const { id, employeeStatus } = e.detail || {};
-      if (!id) return;
-      const target = this.employees.find((emp: any) => emp.id === id);
-      if (target) {
-        target.employeeStatus = employeeStatus;
-        this.applyFilters();
-      }
-    });
+    window.addEventListener('employee-record-changed', this.onEmployeeRecordChanged);
+    window.addEventListener('employee-status-changed', this.onEmployeeStatusChanged);
   }
 
+  // Kept as fields so ngOnDestroy can remove them — otherwise every visit to this page added
+  // another pair of handlers that kept running for destroyed instances.
+  private readonly onEmployeeRecordChanged = () => {
+    this.fetchEmployees();
+    this.viewEmployee = false;
+    this.employeeInView = {};
+    localStorage.removeItem('employeeInView');
+  };
+
+  /** Narrower event: only update the changed employee in-place (no full refresh). */
+  private readonly onEmployeeStatusChanged = (e: any) => {
+    const { id, employeeStatus } = e.detail || {};
+    if (!id) return;
+    const target = this.employees.find((emp: any) => emp.id === id);
+    if (target) {
+      target.employeeStatus = employeeStatus;
+      this.applyFilters();
+    }
+  };
+
   ngOnDestroy(): void {
+    window.removeEventListener('employee-record-changed', this.onEmployeeRecordChanged);
+    window.removeEventListener('employee-status-changed', this.onEmployeeStatusChanged);
     clearInterval(this.presenceInterval);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.photoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
@@ -464,6 +486,7 @@ handleDateClick(arg: DateClickArg) {
           key: 'tl',
           life: 3000,
         });
+        this.finishLoading(startedAt);
       },
       complete: () => {
         this.finishLoading(startedAt);
@@ -777,24 +800,12 @@ handleDateClick(arg: DateClickArg) {
       department: escapeHtml(employee?.department?.name || employee?.department || ''),
     });
 
-    const sendTo: string[] = [];
-    if (employee?.email) sendTo.push(employee.email);
-    if (employee?.workEmail && employee.workEmail !== employee.email) sendTo.push(employee.workEmail);
-
-    sendTo.forEach(email => {
-      this.employeeService.sendNotificationEmail(email, subject, htmlBody).subscribe({ error: () => {} });
-    });
-
-    this.employeeService.sendWelcomeEmail({
-      name,
-      email: employee?.email || '',
-      workEmail: employee?.workEmail || '',
-      jobTitle: employee?.jobTitle || '',
-      department: employee?.department?.name || employee?.department || '',
-      companyName,
-      event: 'JOINING_TO_ACTIVE',
-      timestamp: new Date().toISOString(),
-    }).subscribe({ error: () => {} });
+    // One welcome email, to one address. This used to go to both email and workEmail and also
+    // through the welcome webhook (which emails them as well), so people got it two or three times.
+    const to = employee?.workEmail || employee?.email;
+    if (to) {
+      this.employeeService.sendNotificationEmail(to, subject, htmlBody).subscribe({ error: () => {} });
+    }
   }
 
 
@@ -1028,8 +1039,7 @@ handleDateClick(arg: DateClickArg) {
 
   applyFilters() {
     this.filteredEmployees = this.employees.filter((employee: any) => {
-      const matchesStatus = !this.selectedStatus || this.selectedStatus === 'ALL' ||
-        (employee.employeeStatus ?? '').toUpperCase() === this.selectedStatus;
+      const matchesStatus = this.matchesStatusFilter(employee);
 
       const matchesLevelType = !this.selectedEmployeeType ||
                                this.selectedEmployeeType.length === 0 ||

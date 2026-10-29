@@ -7,7 +7,7 @@ import { EmployeeService } from '../../../service/employee.service';
   styleUrl: './employee-nok.component.scss'
 })
 export class EmployeeNokComponent {
-  employeeInView: any; 
+  employeeInView: any;
   onboardingStatus: any;
   emergencyContacts: any;
 
@@ -16,33 +16,18 @@ export class EmployeeNokComponent {
   }
 
   ngOnInit(): void {
-    const employee = localStorage.getItem("employeeInView");
-    this.employeeInView = JSON.parse(employee || "");
-    // console.log(employee)
-    // if (employee) {
-    //   this.employeeInView = JSON.parse(employee);
-    //   this.employeeService.getNOKByEmployeeId(this.employeeInView.id).subscribe((res: any) => {
-    //     this.employeeInView.nextOfKin = res;
-    //     if(this.employeeInView.nextOfKin){
-    //       this.onboardingStatus = "completed"
-    //       this.emergencyContacts = this.employeeInView.nextOfKin.filter((kin: any) => kin.emergencyContact === true);
-    
-    //     }
-    //     else{
-    //       this.onboardingStatus = 'inProgress'
-    //     }
-    //   })
-    // }
-// console.log(this.employeeInView)
-    if(this.employeeInView.nextOfKin){
-      this.onboardingStatus = "completed"
-      this.emergencyContacts = this.employeeInView.nextOfKin.filter((kin: any) => kin.emergencyContact === true);
-
-    }
-    else{
-      this.onboardingStatus = 'inProgress'
-    }
-
-
+    // Fetched fresh rather than read from localStorage's copy, which goes stale (and used to
+    // crash this tab with JSON.parse("") when it was missing).
+    this.employeeService.getEmployeeInView().subscribe((employee) => {
+      this.employeeInView = employee;
+      const nextOfKin = employee?.nextOfKin;
+      if (Array.isArray(nextOfKin) && nextOfKin.length) {
+        this.onboardingStatus = "completed"
+        this.emergencyContacts = nextOfKin.filter((kin: any) => kin.emergencyContact === true);
+      }
+      else{
+        this.onboardingStatus = 'inProgress'
+      }
+    });
   }
 }

@@ -5,7 +5,7 @@
       <h3>Onboarding still in progress</h3>
       <p>Next of kin and emergency contact details will appear here when onboarding is completed.</p>
     </div>
-    <a class="drawer-link" routerLink="/onboarding/{{employeeInView.id}}/uthedhk45678j">Continue onboarding</a>
+    <a class="drawer-link" routerLink="/onboarding/{{employeeInView?.id}}/uthedhk45678j">Continue onboarding</a>
   </div>
 </div>
 
@@ -22,7 +22,7 @@
   </section>
 
   <section class="drawer-grid">
-    <article *ngFor="let kin of employeeInView.nextOfKin" class="drawer-card">
+    <article *ngFor="let kin of employeeInView?.nextOfKin" class="drawer-card">
       <div class="drawer-card-header">
         <div>
           <p class="drawer-card-eyebrow">Next of kin</p>

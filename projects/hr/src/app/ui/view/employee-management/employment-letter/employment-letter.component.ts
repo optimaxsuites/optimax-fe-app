@@ -23,19 +23,18 @@ export class EmploymentLetterComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    const stored = localStorage.getItem('employeeInView');
-    if (stored) {
-      try { this.employee = JSON.parse(stored); } catch { this.employee = {}; }
-    }
-
-    if (this.employee?.salaryDetails) {
-      this.salaryDetails = this.employee.salaryDetails;
-    } else if (this.employee?.level?.id) {
-      this.employeeService.getSalaryById(this.employee.level.id).subscribe({
-        next: (data: any) => { this.salaryDetails = Array.isArray(data) ? data[0] : data; },
-        error: () => {}
-      });
-    }
+    // Fetched fresh rather than read from localStorage's copy, which goes stale.
+    this.employeeService.getEmployeeInView().subscribe((employee) => {
+      this.employee = employee || {};
+      if (this.employee?.salaryDetails) {
+        this.salaryDetails = this.employee.salaryDetails;
+      } else if (this.employee?.level?.id) {
+        this.employeeService.getSalaryById(this.employee.level.id).subscribe({
+          next: (data: any) => { this.salaryDetails = Array.isArray(data) ? data[0] : data; },
+          error: () => {}
+        });
+      }
+    });
 
     this.payrollService.getGeneralSettingsById().subscribe({
       next: (res: any) => {

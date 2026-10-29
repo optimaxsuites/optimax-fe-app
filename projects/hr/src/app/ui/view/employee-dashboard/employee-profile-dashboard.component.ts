@@ -1667,23 +1667,11 @@ export class EmployeeProfileDashboardComponent {
       department: escapeHtml(employee?.department?.name || employee?.department || ''),
     });
 
-    const sendTo: string[] = [];
-    if (employee?.email) sendTo.push(employee.email);
-    if (employee?.workEmail && employee.workEmail !== employee.email) sendTo.push(employee.workEmail);
-    sendTo.forEach(email => {
-      this.employeeService.sendNotificationEmail(email, subject, htmlBody).subscribe({ error: () => { } });
-    });
-
-    this.employeeService.sendWelcomeEmail({
-      name,
-      email: employee?.email || '',
-      workEmail: employee?.workEmail || '',
-      jobTitle: employee?.jobTitle || '',
-      department: employee?.department?.name || employee?.department || '',
-      companyName,
-      event: 'JOINING_TO_ACTIVE',
-      timestamp: new Date().toISOString(),
-    }).subscribe({ error: () => { } });
+    // One welcome email, to one address (see employee-management's dispatchWelcomeToActiveNotifications).
+    const to = employee?.workEmail || employee?.email;
+    if (to) {
+      this.employeeService.sendNotificationEmail(to, subject, htmlBody).subscribe({ error: () => { } });
+    }
   }
 
   private buildWelcomeActiveEmailHtml(d: { name: string; companyName: string; logoUrl: string; hrEmail: string; jobTitle: string; department: string }): string {
