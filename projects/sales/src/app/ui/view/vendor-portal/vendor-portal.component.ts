@@ -19,7 +19,7 @@ export class VendorPortalComponent {
   tabsConfig: TabConfig[] = [
 
     {
-      name: 'Register',
+      name: 'Upload Your Details',
       component: VendorRegistrationComponent,
       icon: 'fa-solid fa-table-columns',
     },
