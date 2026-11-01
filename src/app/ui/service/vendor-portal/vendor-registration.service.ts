@@ -8,8 +8,25 @@ import {
   BankingFinance, CapabilitiesExperience, DocumentsDeclaration,
   UploadedDocument, DocumentUploadType,
 } from '../../domain/vendor-portal/vendor-registration.dto';
+import { VendorStatus } from '../../domain/vendor-management/vendor-management.dto';
 import { environment } from '../../shared-component/service/environments/environment';
+import { VendorService as VendorManagementService } from '../vendor-management/vendor-management.service';
 import { registrationFromApi, registrationStepToApi } from './registration-api-mapping.util';
+
+/** The logged-in vendor's own record, as Vendor Management holds it. */
+export interface OwnVendorRecord {
+  vendorId: string;
+  status: VendorStatus;
+  registration?: VendorRegistration;
+}
+
+/**
+ * Whether a record holds details uploaded through the portal. Signup only captures the company name
+ * and email, so step 1 can't tell; these are required fields no signup record has.
+ */
+export function hasUploadedDetails(reg?: Partial<VendorRegistration> | null): boolean {
+  return !!(reg?.step2?.cacRegistrationNumber || reg?.step3?.primaryContactName || reg?.step4?.primaryBankName);
+}
 
 /**
  * Thrown by submit() with a message that is safe to show the vendor. `failedDocuments` lists the labels
@@ -46,11 +63,24 @@ export class VendorRegistrationService {
 
   readonly registration$ = this.registration$$.asObservable();
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private vendorManagement: VendorManagementService) { }
 
-  private get tenantId(): string {
-    const h = window.location.hostname;
-    return (h.includes('localhost') || h.includes('127.0.0.1')) ? 'optimax' : h.split('.')[0] || 'optimax';
+  // ── The logged-in vendor's record ─────────────────────────────────────────
+  /**
+   * Finds the record created at signup, or null if this login doesn't map to exactly one vendor.
+   * Login only gives us a user id, which is not a vendor id — fetching `vendors/{userid}` could load
+   * and then overwrite another vendor — so the record is matched on the login's email instead.
+   */
+  loadOwnVendor(): Observable<OwnVendorRecord | null> {
+    const email = (sessionStorage.getItem('email') || '').trim().toLowerCase();
+    if (!email) return of(null);
+    return this.vendorManagement.getVendors(1, 200, { search: email }).pipe(
+      map(res => res.vendors.filter(v => (v.email || '').trim().toLowerCase() === email)),
+      switchMap(matches => matches.length === 1
+        ? this.vendorManagement.getVendorById(String(matches[0].id)).pipe(
+            map(v => ({ vendorId: String(v.id), status: v.status, registration: v.registration })))
+        : of(null))
+    );
   }
 
   // ── Draft persistence ─────────────────────────────────────────────────────
@@ -136,11 +166,14 @@ export class VendorRegistrationService {
 
   // ── Submit ────────────────────────────────────────────────────────────────
   /**
-   * Submits the finished registration: create the vendor record (once), save every step, upload the
-   * documents, then mark the application submitted. Every stage reports failure to the caller — nothing
-   * is swallowed and there is no offline/"pretend it worked" fallback.
+   * Saves the vendor's details onto their existing record (`reg.id`): save every step, upload the
+   * documents, then send a not-yet-approved vendor for review. Used for the first upload and every
+   * later edit. Every stage reports failure to the caller — nothing is swallowed and there is no
+   * offline/"pretend it worked" fallback.
    *
    * What this replaces, and why:
+   *  - Vendors have a record from signup, and this used to POST a second one, so their details never
+   *    reached the record Vendor Management shows. It never creates a vendor now.
    *  - A failed POST /vendors used to be converted into a fake `APP-<timestamp>` record in localStorage
    *    plus a success screen ("received and under review… confirmation email sent"). The admin never
    *    saw those applications, and the vendor was told they were in.
@@ -149,48 +182,28 @@ export class VendorRegistrationService {
    *    reported as success.
    *  - The documents were never sent at all: only a `blob:` URL (meaningless outside this tab) and an
    *    unserialisable `File` (which JSON turns into `{}`) went into the step-6 payload.
-   *  - Every submit POSTed a new vendor, because the draft's id was never reused, so retrying after any
-   *    failure created duplicates.
    *  - The full registration, including bank account and tax numbers, was written to localStorage in
    *    plaintext and never removed.
    *
-   * The created vendor's id is remembered in the draft, so retrying after a failure continues the same
-   * record instead of creating another. On success the draft is cleared.
+   * On success the draft is cleared.
    */
-  submit(reg: VendorRegistration): Observable<{ applicationNumber: string }> {
-    const existingId = reg.id ?? this.registration$$.getValue()?.id;
+  submit(reg: VendorRegistration, vendorStatus: VendorStatus): Observable<void> {
+    if (!reg.id) {
+      return throwError(() => new RegistrationSubmitError('We could not find your vendor record, so your details were not saved.'));
+    }
+    const id = String(reg.id);
     const docs = reg.step6?.uploadedDocuments ?? [];
-
-    const ensureVendor$: Observable<string> = existingId
-      ? of(String(existingId))
-      : this.http.post<any>(`${this.baseUrl}/vendors`, { ...registrationStepToApi(1, reg.step1 ?? {}), tenantId: this.tenantId }).pipe(
-          map(res => {
-            const id = this.extractId(res);
-            if (!id) {
-              throw new RegistrationSubmitError('The server did not return an application reference. Please try again.');
-            }
-            return id;
-          }),
-          tap(id => {
-            const current = this.registration$$.getValue() ?? this.blankRegistration();
-            this.registration$$.next({ ...current, ...reg, id } as VendorRegistration);
-          }),
-          catchError(err => throwError(() => err instanceof RegistrationSubmitError
-            ? err
-            : new RegistrationSubmitError(this.failureMessage(err, 'We could not create your application.'))))
-        );
 
     // Every step is saved even if one fails (no cancelling the others), so a single attempt reports
     // every step the server rejected instead of revealing them one retry at a time.
-    const saveSteps = (id: string): Observable<unknown> => {
+    const saveSteps = (): Observable<unknown> => {
       const puts: Observable<{ step: number; err: any } | null>[] = [];
       const put = (n: number, body: unknown) => puts.push(
         this.http.put(`${this.baseUrl}/vendors/${id}/step${n}`, this.stepBody(n, body, id)).pipe(
           map(() => null),
           catchError(err => of({ step: n, err }))
         ));
-      // A brand-new vendor already has step 1 (it was the POST body); a retried one may have edits.
-      if (existingId && reg.step1) put(1, reg.step1);
+      if (reg.step1) put(1, reg.step1);
       if (reg.step2) put(2, reg.step2);
       if (reg.step3) put(3, reg.step3);
       if (reg.step4) put(4, reg.step4);
@@ -209,36 +222,44 @@ export class VendorRegistrationService {
       );
     };
 
-    const uploadDocuments = (id: string): Observable<unknown> => {
+    const uploadDocuments = (): Observable<unknown> => {
       const pending = docs.filter(d => d.file && !this.uploadedDocIds.has(d.id));
       if (!pending.length) return of(null);
       return forkJoin(pending.map(doc =>
         this.uploadRegistrationDocument(id, doc, reg.step2).pipe(
           tap(() => this.uploadedDocIds.add(doc.id)),
-          map(() => null as string | null),
-          catchError(() => of(doc.label || doc.fileName || 'a document'))
+          map(() => null as { name: string; reason: string } | null),
+          // Keep the server's reason: without it a rejected field (an enum spelling, a missing date)
+          // is indistinguishable from a network failure.
+          catchError(err => of({
+            name: doc.label || doc.fileName || 'a document',
+            reason: err?.status === 0 ? 'connection problem' : this.serverReason(err),
+          }))
         )
       )).pipe(
         switchMap(results => {
-          const failed = results.filter((r): r is string => !!r);
-          return failed.length
-            ? throwError(() => new RegistrationSubmitError(`These documents could not be uploaded: ${failed.join(', ')}. Please try again.`, failed))
-            : of(null);
+          const failed = results.filter((r): r is { name: string; reason: string } => !!r);
+          if (!failed.length) return of(null);
+          const lines = failed.map(f => f.reason ? `${f.name} (${f.reason})` : f.name);
+          return throwError(() => new RegistrationSubmitError(
+            `These documents could not be uploaded: ${lines.join(', ')}. Please try again.`,
+            failed.map(f => f.name)));
         })
       );
     };
 
-    const markSubmitted = (id: string): Observable<{ applicationNumber: string }> =>
-      this.http.patch<any>(`${this.baseUrl}/vendors/${id}/submit`, {}).pipe(
-        map(res => ({ applicationNumber: String(res?.applicationNumber || id) })),
-        catchError(err => throwError(() => new RegistrationSubmitError(this.failureMessage(err, 'Your details were saved, but the application could not be submitted.'))))
-      );
+    // Only a vendor still awaiting review is sent for it: this must never put an approved vendor back
+    // in the queue, and their edits apply straight away.
+    const sendForReview = (): Observable<unknown> => vendorStatus !== VendorStatus.PENDING_ONBOARDING
+      ? of(null)
+      : this.http.patch<any>(`${this.baseUrl}/vendors/${id}/submit`, {}).pipe(
+          catchError(err => throwError(() => new RegistrationSubmitError(this.failureMessage(err, 'Your details were saved, but could not be sent for review.'))))
+        );
 
-    return ensureVendor$.pipe(
-      switchMap(id => saveSteps(id).pipe(
-        switchMap(() => uploadDocuments(id)),
-        switchMap(() => markSubmitted(id))
-      )),
+    return saveSteps().pipe(
+      switchMap(() => uploadDocuments()),
+      switchMap(() => sendForReview()),
+      map(() => undefined),
       tap(() => {
         this.uploadedDocIds.clear();
         this.clearDraft();
@@ -276,12 +297,6 @@ export class VendorRegistrationService {
     if (n === 1) return body;
     const numeric = Number(vendorId);
     return { ...body, vendorId: isNaN(numeric) ? vendorId : numeric };
-  }
-
-  /** Vendor id from a create response — either `{ id }` / `{ vendorId }` or a bare id — or '' if absent. */
-  private extractId(res: any): string {
-    const raw = res?.id ?? res?.vendorId ?? (typeof res === 'string' || typeof res === 'number' ? res : null);
-    return raw != null && typeof raw !== 'object' && String(raw).trim() !== '' ? String(raw) : '';
   }
 
   /** Step 6 minus each document's `File` and `blob:` URL — neither can be sent as JSON (a File becomes `{}`). */
