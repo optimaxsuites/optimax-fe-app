@@ -169,7 +169,9 @@ export class PreOnboardingImportComponent implements OnDestroy {
       const canvas = document.createElement('canvas');
       canvas.width  = viewport.width;
       canvas.height = viewport.height;
-      await page.render({ canvas, viewport }).promise;
+      // The main app installs pdfjs 4 (needs canvasContext); this project declares pdfjs 6 (uses canvas).
+      const renderParams: any = { canvas, canvasContext: canvas.getContext('2d'), viewport };
+      await page.render(renderParams).promise;
 
       return await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas export failed')), 'image/jpeg', 0.95);
