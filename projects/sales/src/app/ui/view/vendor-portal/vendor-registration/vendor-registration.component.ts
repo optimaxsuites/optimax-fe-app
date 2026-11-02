@@ -40,6 +40,9 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   // first-time: no details uploaded yet. saved: read-only, with an Edit button. editing: changes apply on Save.
   viewState: 'loading' | 'no-record' | 'load-error' | 'first-time' | 'saved' | 'editing' = 'loading';
   successMessage: string | null = null;
+  // The backend returned only a summary. Saving sends whole steps, so an edit would overwrite every
+  // answer we can't see with whatever the form holds — Edit stays off until the full details come back.
+  detailsArePartial = false;
   private vendorId = '';
   private vendorStatus = VendorStatus.PENDING_ONBOARDING;
   /** What Cancel goes back to: the details as last saved. */
@@ -202,6 +205,9 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
         this.vendorId = record.vendorId;
         this.vendorStatus = record.status;
         if (hasUploadedDetails(record.registration)) {
+          this.detailsArePartial = record.isPartial;
+          // Without this, the form's defaults (year 2000, not blacklisted…) would read as the vendor's answers.
+          if (record.isPartial) this.allForms.forEach(f => f.reset());
           this.applyRegistration(record.registration!);
           this.rememberSavedDetails();
           this.viewState = 'saved';
@@ -216,6 +222,7 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   }
 
   startEditing(): void {
+    if (this.detailsArePartial) return;
     this.successMessage = null;
     this.viewState = 'editing';
   }
@@ -482,7 +489,7 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
 
   /** Captures the current values so Cancel can put them back, including the lists kept outside the forms. */
   private rememberSavedDetails(): void {
-    const forms = [this.form1, this.form2, this.form3, this.form4, this.form5, this.form6];
+    const forms = this.allForms;
     const values = forms.map(f => f.getRawValue());
     const iso = [...this.selectedIsoStandards];
     const regions = [...this.selectedRegions];
@@ -531,6 +538,10 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
     }
   }
 
+  private get allForms(): FormGroup[] {
+    return [this.form1, this.form2, this.form3, this.form4, this.form5, this.form6];
+  }
+
   get currentFormGroup(): FormGroup {
     const map: Record<number, FormGroup> = {
       1: this.form1, 2: this.form2, 3: this.form3,
@@ -572,8 +583,7 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
 
   /** The first step with something to fix: edits can reach Save without passing through every step. */
   private firstInvalidStep(): number | null {
-    const forms = [this.form1, this.form2, this.form3, this.form4, this.form5, this.form6];
-    const index = forms.findIndex((form, i) =>
+    const index = this.allForms.findIndex((form, i) =>
       form.invalid ||
       (i === 2 && this.selectedRegions.length === 0) ||
       (i === 4 && this.selectedCategories.length === 0));

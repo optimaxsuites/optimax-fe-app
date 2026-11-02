@@ -1098,6 +1098,12 @@
     border-bottom: 1px solid #fecaca;
   }
 
+  &--info {
+    background: #eff6ff;
+    color: #1e40af;
+    border-bottom: 1px solid #bfdbfe;
+  }
+
   &--success {
     background: var(--green-pale);
     color: #166534;

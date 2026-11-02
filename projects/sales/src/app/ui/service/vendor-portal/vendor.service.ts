@@ -1,8 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { BehaviorSubject, Observable, of } from 'rxjs';
-import { map, tap, catchError } from 'rxjs/operators';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { map, tap, catchError, shareReplay, switchMap } from 'rxjs/operators';
 import {
+  invoiceFromApi, invoiceToApi, listFromApi, lpoFromApi, quotationFromApi, quotationToApi, rfqFromApi,
+} from './vendor-api-mapping.util';
+import {
+  QuotationStatus,
   Rfq,
   Quotation,
   QuotationItem,
@@ -168,8 +172,55 @@ export class VendorService {
   readonly invoices$ = this.invoices$$.asObservable();
   readonly documents$ = this.documents$$.asObservable();
 
-  private get vendorId(): string {
-    return sessionStorage.getItem('userid') || '';
+  /** Marks a quotation that only exists in this tab; saving it for the first time gets it a real id. */
+  private static readonly LOCAL_QUOTATION_PREFIX = 'quot-';
+
+  private vendorIdLookup?: { userId: string; vendorId$: Observable<string> };
+  /** Quotations as the API sent them: mapping one needs the RFQs, which may load after it. */
+  private rawQuotations: any[] = [];
+
+  private loadFailures = new Set<string>();
+  private loadError$$ = new BehaviorSubject<string | null>(null);
+  /** Set while a list failed to load, so a failure isn't mistaken for having no RFQs or LPOs. */
+  readonly loadError$ = this.loadError$$.asObservable();
+
+  /**
+   * This login's vendor id, or '' if it has none. Login only gives a user id, which isn't a vendor id:
+   * buyers address RFQs and LPOs to vendor ids, so asking with a user id finds someone else's or nothing.
+   */
+  private ownVendorId(): Observable<string> {
+    const userId = sessionStorage.getItem('userid') || '';
+    if (this.vendorIdLookup?.userId !== userId) {
+      this.vendorIdLookup = {
+        userId,
+        vendorId$: !userId ? of('') : this.http.get<any>(`${this.baseUrl}/vendors/by-user/${userId}`).pipe(
+          map(vendor => (vendor?.id != null ? String(vendor.id) : '')),
+          catchError(err => (err?.status === 404 ? of('') : throwError(() => err))),
+          shareReplay(1),
+        ),
+      };
+    }
+    return this.vendorIdLookup.vendorId$;
+  }
+
+  private withVendorId<T>(request: (vendorId: string) => Observable<T>): Observable<T> {
+    return this.ownVendorId().pipe(
+      switchMap(id => (id ? request(id) : throwError(() => new Error('This login is not linked to a vendor record.')))),
+    );
+  }
+
+  private noteLoad(what: string, failed: boolean): void {
+    if (failed) this.loadFailures.add(what); else this.loadFailures.delete(what);
+    this.loadError$$.next(this.loadFailures.size
+      ? `We couldn't load your ${[...this.loadFailures].join(', ')}. What's shown may be incomplete; please refresh and try again.`
+      : null);
+  }
+
+  /** Republishes every saved quotation, plus any draft that hasn't been saved yet. */
+  private publishQuotations(): void {
+    const unsaved = this.quotations$$.getValue().filter(q => q.id.startsWith(VendorService.LOCAL_QUOTATION_PREFIX));
+    const rfqs = this.rfqs$$.getValue();
+    this.quotations$$.next([...unsaved, ...this.rawQuotations.map(raw => quotationFromApi(raw, rfqs))]);
   }
 
   private get tenantId(): string {
@@ -252,25 +303,39 @@ export class VendorService {
   }
 
   loadRfqs(): void {
-    const params = new HttpParams()
-      .set('vendorId', this.vendorId)
-      .set('page', '1')
-      .set('size', '100');
-    this.http.get<any>(`${this.baseUrl}/vendor-rfqs`, { params }).pipe(
-      map(res => Array.isArray(res) ? res : (res?.data ?? res ?? [])),
-      catchError((err) => { console.error('[VendorService] loadRfqs failed:', err); return of([] as Rfq[]); }),
-    ).subscribe((rfqs) => this.rfqs$$.next(rfqs));
+    this.withVendorId(vendorId => {
+      const params = new HttpParams().set('vendorId', vendorId).set('page', '1').set('size', '100');
+      return this.http.get<any>(`${this.baseUrl}/vendor-rfqs`, { params });
+    }).pipe(
+      map(res => listFromApi(res).map(rfqFromApi)),
+    ).subscribe({
+      next: (rfqs) => {
+        this.noteLoad('RFQs', false);
+        this.rfqs$$.next(rfqs);
+        this.publishQuotations();
+      },
+      error: (err) => {
+        console.error('[VendorService] loadRfqs failed:', err);
+        this.noteLoad('RFQs', true);
+      },
+    });
   }
 
   loadQuotations(): void {
-    const params = new HttpParams()
-      .set('vendorId', this.vendorId)
-      .set('page', '1')
-      .set('size', '100');
-    this.http.get<any>(`${this.baseUrl}/vendor-quotations/`, { params }).pipe(
-      map(res => Array.isArray(res) ? res : (res?.data ?? res ?? [])),
-      catchError((err) => { console.error('[VendorService] loadQuotations failed:', err); return of([] as Quotation[]); }),
-    ).subscribe((quotations) => this.quotations$$.next(quotations));
+    this.withVendorId(vendorId => {
+      const params = new HttpParams().set('vendorId', vendorId).set('page', '1').set('size', '100');
+      return this.http.get<any>(`${this.baseUrl}/vendor-quotations/`, { params });
+    }).subscribe({
+      next: (res) => {
+        this.noteLoad('quotations', false);
+        this.rawQuotations = listFromApi(res);
+        this.publishQuotations();
+      },
+      error: (err) => {
+        console.error('[VendorService] loadQuotations failed:', err);
+        this.noteLoad('quotations', true);
+      },
+    });
   }
 
   // ── Quotation ─────────────────────────────────────────────────────────────────
@@ -281,8 +346,8 @@ export class VendorService {
     );
   }
 
-  /** Local factory: builds a Quotation object from an Rfq without an API call.
-   *  The resulting draft is then saved via createQuotation() → POST /vendor-quotations. */
+  /** Local factory: builds a draft from an Rfq without an API call. Nothing reaches the server until the
+   *  vendor saves or submits it, so opening the editor doesn't leave an empty quotation behind. */
   createQuotationFromRfq(rfq: Rfq): Quotation {
     const items: QuotationItem[] = rfq.items.map((item) => ({
       rfqItemId: item.id,
@@ -298,7 +363,7 @@ export class VendorService {
       substituteDescription: null,
     }));
     const q: Quotation = {
-      id: `quot-${Date.now()}`,
+      id: `${VendorService.LOCAL_QUOTATION_PREFIX}${Date.now()}`,
       quotationNumber: `QT-${new Date().getFullYear()}-${String(this.quotations$$.getValue().length + 1).padStart(3, '0')}`,
       rfqId: rfq.id,
       rfqNumber: rfq.rfqNumber,
@@ -315,7 +380,6 @@ export class VendorService {
       vendorId: this.profile$$.getValue().id,
       vendorName: this.profile$$.getValue().companyName,
       vendorCode: this.profile$$.getValue().rcNumber,
-      vendorRating: 4.6,
       version: 1,
       revisionCount: 0,
       includeSignature: true,
@@ -324,61 +388,52 @@ export class VendorService {
       ],
     };
 
-    // Optimistically update local state; persist to backend
     this.quotations$$.next([q, ...this.quotations$$.getValue()]);
-    this.rfqs$$.next(
-      this.rfqs$$.getValue().map((r) => (r.id === rfq.id ? { ...r, status: 'converted' } : r)),
-    );
-    this.http.post<Quotation>(`${this.baseUrl}/vendor-quotations/`, q).pipe(
-      tap((saved) => {
-        // Replace the optimistic entry with the server-assigned record
-        this.quotations$$.next(
-          this.quotations$$.getValue().map((x) => (x.id === q.id ? saved : x)),
-        );
-      }),
-      catchError((err) => { console.error('[VendorService] createQuotationFromRfq (POST) failed:', err); return of(null); }),
-    ).subscribe();
-
     return q;
   }
 
-  updateQuotation(q: Quotation): void {
-    const recalculated = computeQuotationTotals(q);
-    this.quotations$$.next(
-      this.quotations$$.getValue().map((x) => (x.id === q.id ? recalculated : x)),
-    );
-    this.http.put<Quotation>(`${this.baseUrl}/vendor-quotations/${q.id}`, recalculated).pipe(
-      catchError((err) => { console.error('[VendorService] updateQuotation failed:', err); return of(null); }),
-    ).subscribe();
-  }
-
-  /** First submission — draft becomes visible to the client. */
-  sendQuotation(id: string): void {
-    let sentQuote: Quotation | undefined;
-    this.quotations$$.next(
-      this.quotations$$.getValue().map((q) => {
-        if (q.id !== id) return q;
-        const recalculated = computeQuotationTotals(q);
-        const entry: QuotationHistoryEntry = {
-          id: `hist-${Date.now()}`,
-          version: recalculated.version,
-          action: 'SUBMITTED',
-          actor: 'VENDOR',
-          total: recalculated.total,
-          timestamp: new Date(),
-        };
-        sentQuote = {
-          ...recalculated,
-          status: 'sent' as const,
-          sentDate: new Date(),
-          history: [...recalculated.history, entry],
-        };
-        return sentQuote;
+  /**
+   * Saves a quotation in one request: POST the first time (the server assigns its id), PUT after that.
+   * The list only changes once the server has it, so a failure can't look like success.
+   */
+  private saveQuotation(q: Quotation, status: QuotationStatus, failure: string): Observable<Quotation> {
+    const toSave = computeQuotationTotals({ ...q, status });
+    const rfq = this.rfqs$$.getValue().find((r) => r.id === q.rfqId);
+    const isNew = q.id.startsWith(VendorService.LOCAL_QUOTATION_PREFIX);
+    return this.withVendorId((vendorId) => {
+      const body = quotationToApi(toSave, vendorId, this.tenantId, rfq);
+      return isNew
+        ? this.http.post<any>(`${this.baseUrl}/vendor-quotations/`, body)
+        : this.http.put<any>(`${this.baseUrl}/vendor-quotations/${q.id}`, body);
+    }).pipe(
+      map((raw) => {
+        if (isNew) this.quotations$$.next(this.quotations$$.getValue().filter((x) => x.id !== q.id));
+        this.rawQuotations = [raw, ...this.rawQuotations.filter((x) => String(x.id) !== String(raw.id))];
+        this.publishQuotations();
+        return quotationFromApi(raw, this.rfqs$$.getValue());
+      }),
+      catchError((err) => {
+        console.error('[VendorService] saveQuotation failed:', err);
+        return throwError(() => new Error(failure));
       }),
     );
-    this.http.patch(`${this.baseUrl}/vendor-quotations/${id}/accept`, {}).pipe(
-      catchError((err) => { console.error('[VendorService] sendQuotation failed:', err); return of(null); }),
-    ).subscribe();
+  }
+
+  updateQuotation(q: Quotation): Observable<Quotation> {
+    return this.saveQuotation(q, q.status, 'Your quotation could not be saved. Please try again.');
+  }
+
+  /**
+   * First submission — draft becomes visible to the client. There is no vendor submit endpoint: this used to
+   * call PATCH .../accept, which is the buyer accepting a quotation, so submitting could mark it accepted
+   * before anyone reviewed it.
+   */
+  sendQuotation(q: Quotation): Observable<Quotation> {
+    return this.saveQuotation(q, 'sent', 'Your quotation could not be submitted. Please try again.').pipe(
+      tap((saved) => this.rfqs$$.next(
+        this.rfqs$$.getValue().map((r) => (r.id === saved.rfqId ? { ...r, status: 'converted' } : r)),
+      )),
+    );
   }
 
   // ── Negotiation / revision cycle ────────────────────────────────────────────
@@ -512,31 +567,8 @@ export class VendorService {
   }
 
   /** Vendor's action: resubmit an updated quotation after a revision request. */
-  resubmitQuotation(q: Quotation): void {
-    const previous = this.quotations$$.getValue().find((x) => x.id === q.id);
-    const recalculated = computeQuotationTotals(q);
-    const newVersion = recalculated.version + 1;
-    const entry: QuotationHistoryEntry = {
-      id: `hist-${Date.now()}`,
-      version: newVersion,
-      action: 'RESUBMITTED',
-      actor: 'VENDOR',
-      total: recalculated.total,
-      note: previous ? summarizeQuotationChanges(previous, recalculated) : undefined,
-      timestamp: new Date(),
-    };
-    const updated: Quotation = {
-      ...recalculated,
-      version: newVersion,
-      status: 'sent',
-      sentDate: new Date(),
-      revisionRequestNote: undefined,
-      history: [...recalculated.history, entry],
-    };
-    this.quotations$$.next(this.quotations$$.getValue().map((x) => (x.id === q.id ? updated : x)));
-    this.http.put<Quotation>(`${this.baseUrl}/vendor-quotations/${q.id}`, updated).pipe(
-      catchError((err) => { console.error('[VendorService] resubmitQuotation (PUT) failed:', err); return of(null); }),
-    ).subscribe();
+  resubmitQuotation(q: Quotation): Observable<Quotation> {
+    return this.saveQuotation(q, 'sent', 'Your quotation could not be resubmitted. Please try again.');
   }
 
   /** Vendor pulls back a quotation that hasn't been decided on yet. */
@@ -561,14 +593,21 @@ export class VendorService {
   }
 
   loadLpos(): void {
-    const params = new HttpParams()
-      .set('vendorId', this.vendorId)
-      .set('page', '1')
-      .set('size', '100');
-    this.http.get<any>(`${this.baseUrl}/vendor-lpos`, { params }).pipe(
-      map(res => Array.isArray(res) ? res : (res?.data ?? res ?? [])),
-      catchError((err) => { console.error('[VendorService] loadLpos failed:', err); return of([] as Lpo[]); }),
-    ).subscribe((lpos) => this.lpos$$.next(lpos));
+    this.withVendorId(vendorId => {
+      const params = new HttpParams().set('vendorId', vendorId).set('page', '1').set('size', '100');
+      return this.http.get<any>(`${this.baseUrl}/vendor-lpos`, { params });
+    }).pipe(
+      map(res => listFromApi(res).map(lpoFromApi)),
+    ).subscribe({
+      next: (lpos) => {
+        this.noteLoad('LPOs', false);
+        this.lpos$$.next(lpos);
+      },
+      error: (err) => {
+        console.error('[VendorService] loadLpos failed:', err);
+        this.noteLoad('LPOs', true);
+      },
+    });
   }
 
   // ── LPO ──────────────────────────────────────────────────────────────────────
@@ -586,24 +625,32 @@ export class VendorService {
     ).subscribe();
   }
 
-  acceptLpo(id: string): void {
-    this.lpos$$.next(
-      this.lpos$$.getValue().map((l) => (l.id === id ? { ...l, status: 'accepted' as const } : l)),
+  acceptLpo(id: string): Observable<void> {
+    return this.http.patch(`${this.baseUrl}/vendor-lpos/${id}/accept`, {}).pipe(
+      tap(() => this.lpos$$.next(
+        this.lpos$$.getValue().map((l) => (l.id === id ? { ...l, status: 'accepted' as const } : l)),
+      )),
+      map(() => undefined),
+      catchError((err) => {
+        console.error('[VendorService] acceptLpo failed:', err);
+        return throwError(() => new Error('This LPO could not be accepted. Please try again.'));
+      }),
     );
-    this.http.patch(`${this.baseUrl}/vendor-lpos/${id}/accept`, {}).pipe(
-      catchError((err) => { console.error('[VendorService] acceptLpo failed:', err); return of(null); }),
-    ).subscribe();
   }
 
-  rejectLpo(id: string, reason: string): void {
-    this.lpos$$.next(
-      this.lpos$$.getValue().map((l) =>
-        l.id === id ? { ...l, status: 'rejected' as const, rejectionReason: reason } : l,
-      ),
+  rejectLpo(id: string, reason: string): Observable<void> {
+    return this.http.patch(`${this.baseUrl}/vendor-lpos/${id}/reject`, { rejectionReason: reason }).pipe(
+      tap(() => this.lpos$$.next(
+        this.lpos$$.getValue().map((l) =>
+          l.id === id ? { ...l, status: 'rejected' as const, rejectionReason: reason } : l,
+        ),
+      )),
+      map(() => undefined),
+      catchError((err) => {
+        console.error('[VendorService] rejectLpo failed:', err);
+        return throwError(() => new Error('This LPO could not be rejected. Please try again.'));
+      }),
     );
-    this.http.patch(`${this.baseUrl}/vendor-lpos/${id}/reject`, { rejectionReason: reason }).pipe(
-      catchError((err) => { console.error('[VendorService] rejectLpo failed:', err); return of(null); }),
-    ).subscribe();
   }
 
   // How much of each LPO line item has already been invoiced, across every
@@ -625,47 +672,68 @@ export class VendorService {
   // Vendor's action: raise an invoice (optionally against an LPO). Persists it
   // via POST /vendor-invoices and, if every LPO line is now fully billed,
   // marks that LPO fulfilled.
-  createInvoice(invoice: Invoice): Invoice {
-    this.invoices$$.next([invoice, ...this.invoices$$.getValue()]);
-
-    if (invoice.lpoId) {
-      const lpo = this.lpos$$.getValue().find((l) => l.id === invoice.lpoId);
-      if (lpo) {
-        const invoicedNow = this.getInvoicedQuantities(lpo.id);
-        const fullyBilled = lpo.items.every((li) => (invoicedNow[li.id] ?? 0) >= li.quantity);
-        if (fullyBilled && lpo.status !== 'fulfilled') {
-          this.lpos$$.next(
-            this.lpos$$.getValue().map((l) => (l.id === lpo.id ? { ...l, status: 'fulfilled' as const } : l)),
-          );
-          this.http.patch(`${this.baseUrl}/vendor-lpos/${lpo.id}/mark-fulfilled`, {}).pipe(
-            catchError((err) => { console.error('[VendorService] markLpoFulfilled failed:', err); return of(null); }),
-          ).subscribe();
-        }
-      }
-    }
-
-    this.http.post<Invoice>(`${this.baseUrl}/vendor-invoices`, invoice).pipe(
-      tap((saved) => {
-        this.invoices$$.next(
-          this.invoices$$.getValue().map((x) => (x.id === invoice.id ? saved : x)),
-        );
+  /**
+   * Creates the invoice and sends it to the buyer: POST only saves a draft, and `submit` is what sends it.
+   * If the draft saved but the send failed, the error has `savedAsDraft` set, so the form isn't submitted
+   * again and doesn't create a second invoice.
+   */
+  createInvoice(invoice: Invoice): Observable<Invoice> {
+    return this.withVendorId((vendorId) =>
+      this.http.post<any>(`${this.baseUrl}/vendor-invoices`, invoiceToApi(invoice, vendorId)),
+    ).pipe(
+      catchError((err) => {
+        console.error('[VendorService] createInvoice failed:', err);
+        return throwError(() => new Error('This invoice could not be created. Please try again.'));
       }),
-      catchError((err) => { console.error('[VendorService] createInvoice failed:', err); return of(null); }),
-    ).subscribe();
+      map(invoiceFromApi),
+      tap((draft) => this.invoices$$.next([draft, ...this.invoices$$.getValue()])),
+      switchMap((draft) => this.http.patch<any>(`${this.baseUrl}/vendor-invoices/${draft.id}/submit`, {}).pipe(
+        map((res): Invoice => (res?.id != null ? invoiceFromApi(res) : { ...draft, status: 'submitted' })),
+        catchError((err) => {
+          console.error('[VendorService] submit invoice failed:', err);
+          return throwError(() => Object.assign(
+            new Error(`Invoice ${draft.invoiceNumber} was saved as a draft, but could not be sent to the client.`),
+            { savedAsDraft: true },
+          ));
+        }),
+      )),
+      tap((sent) => {
+        this.invoices$$.next(this.invoices$$.getValue().map((x) => (x.id === sent.id ? sent : x)));
+        this.markLpoFulfilledIfFullyBilled(sent);
+      }),
+    );
+  }
 
-    return invoice;
+  private markLpoFulfilledIfFullyBilled(invoice: Invoice): void {
+    const lpo = this.lpos$$.getValue().find((l) => l.id === invoice.lpoId);
+    if (!lpo || lpo.status === 'fulfilled') return;
+    const invoicedNow = this.getInvoicedQuantities(lpo.id);
+    if (!lpo.items.every((li) => (invoicedNow[li.id] ?? 0) >= li.quantity)) return;
+    this.http.patch(`${this.baseUrl}/vendor-lpos/${lpo.id}/mark-fulfilled`, {}).subscribe({
+      next: () => this.lpos$$.next(
+        this.lpos$$.getValue().map((l) => (l.id === lpo.id ? { ...l, status: 'fulfilled' as const } : l)),
+      ),
+      error: (err) => console.error('[VendorService] markLpoFulfilled failed:', err),
+    });
   }
 
   // ── Finance ───────────────────────────────────────────────────────────────────
   getInvoices(): Observable<Invoice[]> {
-    const params = new HttpParams()
-      .set('vendorId', this.vendorId)
-      .set('page', '1')
-      .set('size', '100');
-    this.http.get<any>(`${this.baseUrl}/vendor-invoices`, { params }).pipe(
-      map(res => Array.isArray(res) ? res : (res?.data ?? res ?? [])),
-      catchError((err) => { console.error('[VendorService] getInvoices failed:', err); return of([] as Invoice[]); }),
-    ).subscribe((invoices) => this.invoices$$.next(invoices));
+    this.withVendorId(vendorId => {
+      const params = new HttpParams().set('vendorId', vendorId).set('page', '1').set('size', '100');
+      return this.http.get<any>(`${this.baseUrl}/vendor-invoices`, { params });
+    }).pipe(
+      map(res => listFromApi(res).map(invoiceFromApi)),
+    ).subscribe({
+      next: (invoices) => {
+        this.noteLoad('invoices', false);
+        this.invoices$$.next(invoices);
+      },
+      error: (err) => {
+        console.error('[VendorService] getInvoices failed:', err);
+        this.noteLoad('invoices', true);
+      },
+    });
 
     return this.invoices$.pipe(
       map((l) => [...l].sort((a, b) => new Date(b.issuedDate).getTime() - new Date(a.issuedDate).getTime())),
@@ -673,9 +741,9 @@ export class VendorService {
   }
 
   getFinanceStats(): Observable<FinanceStats> {
-    return this.http.get<FinanceStats>(`${this.baseUrl}/vendor-invoices/stats`, {
-      params: new HttpParams().set('vendorId', this.vendorId),
-    }).pipe(
+    return this.withVendorId(vendorId => this.http.get<FinanceStats>(`${this.baseUrl}/vendor-invoices/stats`, {
+      params: new HttpParams().set('vendorId', vendorId),
+    })).pipe(
       catchError((err) => {
         console.error('[VendorService] getFinanceStats failed:', err);
         // Derive stats from local BehaviorSubject state as fallback
@@ -745,32 +813,28 @@ export class VendorService {
 
   // ── Vendor Profile ─────────────────────────────────────────────────────────────
   getProfile(): Observable<VendorProfile> {
-    const vendorId = this.vendorId;
-    if (vendorId) {
-      this.http.get<VendorProfile>(`${this.baseUrl}/vendor-profiles/${vendorId}`).pipe(
-        tap((profile) => { if (profile) this.profile$$.next(profile); }),
-        catchError((err) => { console.error('[VendorService] getProfile failed:', err); return of(null); }),
-      ).subscribe();
-    }
+    this.withVendorId(vendorId => this.http.get<VendorProfile>(`${this.baseUrl}/vendor-profiles/${vendorId}`)).pipe(
+      tap((profile) => { if (profile) this.profile$$.next(profile); }),
+      catchError((err) => { console.error('[VendorService] getProfile failed:', err); return of(null); }),
+    ).subscribe();
     return this.profile$;
   }
 
   updateProfile(patch: Partial<VendorProfile>): void {
     const updated = { ...this.profile$$.getValue(), ...patch };
     this.profile$$.next(updated);
-    const vendorId = this.vendorId;
-    if (vendorId) {
-      this.http.put(`${this.baseUrl}/vendor-profiles/${vendorId}`, updated).pipe(
-        catchError((err) => { console.error('[VendorService] updateProfile failed:', err); return of(null); }),
-      ).subscribe();
-    }
+    this.withVendorId(vendorId => this.http.put(`${this.baseUrl}/vendor-profiles/${vendorId}`, updated)).pipe(
+      catchError((err) => { console.error('[VendorService] updateProfile failed:', err); return of(null); }),
+    ).subscribe();
   }
 
   // ── Document Templates (branding) ────────────────────────────────────────────
   getTemplates(docType?: TemplateDocType): Observable<DocumentTemplate[]> {
-    const params = new HttpParams().set('vendorId', this.vendorId);
     const url = `${this.baseUrl}/document-templates`;
-    this.http.get<DocumentTemplate[]>(url, { params: docType ? params.set('docType', docType) : params }).pipe(
+    this.withVendorId(vendorId => {
+      const params = new HttpParams().set('vendorId', vendorId);
+      return this.http.get<DocumentTemplate[]>(url, { params: docType ? params.set('docType', docType) : params });
+    }).pipe(
       tap((list) => this.templates$$.next(list)),
       catchError((err) => { console.error('[VendorService] getTemplates failed:', err); return of([] as DocumentTemplate[]); }),
     ).subscribe();
@@ -837,9 +901,9 @@ export class VendorService {
 
   // ── Performance ───────────────────────────────────────────────────────────────
   getPerformanceStats(): Observable<PerformanceStats> {
-    return this.http.get<PerformanceStats>(`${this.baseUrl}/vendor-dashboard/performance`, {
-      params: new HttpParams().set('vendorId', this.vendorId),
-    }).pipe(
+    return this.withVendorId(vendorId => this.http.get<PerformanceStats>(`${this.baseUrl}/vendor-dashboard/performance`, {
+      params: new HttpParams().set('vendorId', vendorId),
+    })).pipe(
       catchError((err) => {
         console.error('[VendorService] getPerformanceStats failed:', err);
         return of(this.buildPerformanceStats());
@@ -849,9 +913,9 @@ export class VendorService {
 
   // ── Shared vendor stats ───────────────────────────────────────────────────────
   getVendorStats(): Observable<VendorStats> {
-    return this.http.get<VendorStats>(`${this.baseUrl}/vendor-dashboard/stats`, {
-      params: new HttpParams().set('vendorId', this.vendorId),
-    }).pipe(
+    return this.withVendorId(vendorId => this.http.get<VendorStats>(`${this.baseUrl}/vendor-dashboard/stats`, {
+      params: new HttpParams().set('vendorId', vendorId),
+    })).pipe(
       catchError((err) => {
         console.error('[VendorService] getVendorStats failed:', err);
         const rfqs = this.rfqs$$.getValue();
@@ -879,9 +943,9 @@ export class VendorService {
   }
 
   getLpoStats(): Observable<LpoStats> {
-    return this.http.get<LpoStats>(`${this.baseUrl}/vendor-dashboard/lpo-stats`, {
-      params: new HttpParams().set('vendorId', this.vendorId),
-    }).pipe(
+    return this.withVendorId(vendorId => this.http.get<LpoStats>(`${this.baseUrl}/vendor-dashboard/lpo-stats`, {
+      params: new HttpParams().set('vendorId', vendorId),
+    })).pipe(
       catchError((err) => {
         console.error('[VendorService] getLpoStats failed:', err);
         const lpos = this.lpos$$.getValue();

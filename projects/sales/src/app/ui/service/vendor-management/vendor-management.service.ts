@@ -283,8 +283,7 @@ export class VendorService {
 
     const hasSource = !!(
       raw.step1 || raw.step2 || raw.step3 || raw.step4 || raw.step5 || raw.step6 ||
-      s1.businessName || s2.cacRegistrationNumber || s3.primaryContactName ||
-      raw.cacRegistrationNumber || raw.primaryContactName || raw.primaryBankName
+      s1.businessName || s2.cacRegistrationNumber || s3.primaryContactName
     );
     if (!hasSource) return undefined;
 

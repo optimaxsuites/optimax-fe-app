@@ -30,7 +30,7 @@
       <span class="vr-topbar-sub">{{ steps[currentStep - 1].label }}</span>
     </div>
     <div class="vr-topbar-right">
-      <button *ngIf="isReadOnly" type="button" class="vr-btn vr-btn-primary" (click)="startEditing()">
+      <button *ngIf="isReadOnly && !detailsArePartial" type="button" class="vr-btn vr-btn-primary" (click)="startEditing()">
         Edit Details
       </button>
       <button
@@ -66,6 +66,11 @@
     <button type="button" class="vr-banner__close" (click)="stepError = null" aria-label="Dismiss">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
+  </div>
+
+  <div class="vr-banner vr-banner--info" *ngIf="isReadOnly && detailsArePartial" role="status">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    <span>Only some of your saved details can be shown here, and editing isn't available yet. To change anything, please contact the vendor management team.</span>
   </div>
 
   <div class="vr-banner vr-banner--success" *ngIf="successMessage" role="status">

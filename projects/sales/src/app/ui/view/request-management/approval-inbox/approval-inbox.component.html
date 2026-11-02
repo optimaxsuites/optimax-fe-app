@@ -69,7 +69,7 @@
     <div class="il-body">
 
       <!-- LEFT: Request list -->
-      <div class="il-list">
+      <div class="il-list" #requestList>
 
         <!-- Loading state -->
         <div class="il-loading" *ngIf="isLoading">
@@ -84,7 +84,7 @@
         </div>
 
         <!-- Request cards -->
-        <div *ngFor="let req of filtered"
+        <div *ngFor="let req of pagedRequests"
              class="il-card"
              [class.il-card--active]="selected?.id === req.id"
              (click)="select(req)">
@@ -99,7 +99,26 @@
           </div>
           <div class="il-card-footer">
             <span class="il-card-budget">{{ formatBudget(req) }}</span>
-            <span class="il-card-date">Due {{ formatDate(req.deliveryDeadline) }}</span>
+            <span class="il-card-date">Due {{ formatDeadline(req.deliveryDeadline) }}</span>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="il-pagination" *ngIf="!isLoading && filtered.length > 0">
+          <span>{{ currentPage * pageSize + 1 }}–{{ pageRangeEnd }} of {{ filtered.length }}</span>
+          <div class="il-page-btns">
+            <button type="button" class="il-page-btn" aria-label="Previous page" [disabled]="currentPage === 0"
+                    (click)="currentPage = currentPage - 1; requestList.scrollTop = 0">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <button type="button" class="il-page-btn"
+                    *ngFor="let p of getPageNumbers()"
+                    [class.il-page-btn--active]="p === currentPage"
+                    (click)="currentPage = p; requestList.scrollTop = 0">{{ p + 1 }}</button>
+            <button type="button" class="il-page-btn" aria-label="Next page" [disabled]="currentPage >= totalPages - 1"
+                    (click)="currentPage = currentPage + 1; requestList.scrollTop = 0">
+              <i class="fas fa-chevron-right"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -132,7 +151,7 @@
           </div>
           <div class="il-summary-card">
             <span class="il-summary-label">Deadline</span>
-            <span class="il-summary-val">{{ formatDate(selected.deliveryDeadline) }}</span>
+            <span class="il-summary-val">{{ formatDeadline(selected.deliveryDeadline) }}</span>
           </div>
         </div>
 

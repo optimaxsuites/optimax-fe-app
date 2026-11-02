@@ -6,9 +6,9 @@ import {
   VendorRegistration, RegistrationStatus,
   BusinessIdentity, LegalCompliance, ContactLocation,
   BankingFinance, CapabilitiesExperience, DocumentsDeclaration,
-  UploadedDocument, DocumentUploadType,
+  UploadedDocument, DocumentUploadType, SUPPLY_CATEGORY_LABELS,
 } from '../../domain/vendor-portal/vendor-registration.dto';
-import { VendorStatus } from '../../domain/vendor-management/vendor-management.dto';
+import { Vendor, VendorStatus } from '../../domain/vendor-management/vendor-management.dto';
 import { environment } from '../../shared-component/service/environments/environment';
 import { VendorService as VendorManagementService } from '../vendor-management/vendor-management.service';
 import { registrationFromApi, registrationStepToApi } from './registration-api-mapping.util';
@@ -18,6 +18,8 @@ export interface OwnVendorRecord {
   vendorId: string;
   status: VendorStatus;
   registration?: VendorRegistration;
+  /** The backend only returned its summary of the details, so `registration` is missing most fields. */
+  isPartial: boolean;
 }
 
 /**
@@ -26,6 +28,38 @@ export interface OwnVendorRecord {
  */
 export function hasUploadedDetails(reg?: Partial<VendorRegistration> | null): boolean {
   return !!(reg?.step2?.cacRegistrationNumber || reg?.step3?.primaryContactName || reg?.step4?.primaryBankName);
+}
+
+/** Only the values present, so patching a form with the result leaves every other field alone. */
+const present = (fields: Record<string, unknown>): any => Object.fromEntries(
+  Object.entries(fields).filter(([, value]) => value !== undefined && value !== null && value !== '' && value !== 'Pending'));
+
+/**
+ * What can be recovered from Vendor Management's summary of a vendor, for when the backend doesn't return
+ * the 6 steps themselves. Each summary field is the form field it was saved from.
+ */
+export function registrationFromVendorSummary(v: Vendor): VendorRegistration {
+  const contact = v.contacts?.find(c => c.isPrimary) ?? v.contacts?.[0];
+  return {
+    step1: present({ businessName: v.companyName, websiteUrl: v.website, businessDescription: v.description }),
+    step2: present({ cacRegistrationNumber: v.registrationNumber, tinNumber: v.taxId }),
+    step3: present({
+      primaryContactName: contact?.name, primaryContactTitle: contact?.role,
+      primaryContactEmail: contact?.email || v.email, primaryContactPhone: contact?.phone || v.phone,
+      registeredAddressLine1: v.address?.street, registeredCity: v.address?.city, registeredState: v.address?.state,
+      registeredCountry: v.address?.country, registeredPostalCode: v.address?.postalCode,
+    }),
+    step4: present({
+      primaryBankName: v.bankDetails?.bankName, primaryAccountName: v.bankDetails?.accountName,
+      primaryAccountNumber: v.bankDetails?.accountNumber, primarySwiftCode: v.bankDetails?.swiftCode,
+      preferredPaymentTerms: v.paymentTerms,
+    }),
+    step5: {
+      supplyCategories: (v.categories ?? [])
+        .map(c => String(c).trim().toLowerCase().replace(/[\s-]+/g, '_'))
+        .filter(c => c in SUPPLY_CATEGORY_LABELS),
+    },
+  } as unknown as VendorRegistration;
 }
 
 /**
@@ -57,6 +91,13 @@ export class VendorRegistrationService {
   /** Client ids of documents already uploaded to the backend, so a retry doesn't upload them twice. */
   private uploadedDocIds = new Set<string>();
 
+  /**
+   * What this session last saved. No endpoint returns the 6 steps, so without this a vendor's details
+   * disappear as soon as they leave the tab. Memory only, because it holds bank and tax details: a refresh
+   * still loses it, until the backend returns the steps (which then take priority over this).
+   */
+  private lastSaved: VendorRegistration | null = null;
+
   private readonly baseUrl = environment.apiBaseUrl + '/x/api/v2/commerce';
 
   private registration$$ = new BehaviorSubject<VendorRegistration | null>(null);
@@ -67,18 +108,28 @@ export class VendorRegistrationService {
 
   // ── The logged-in vendor's record ─────────────────────────────────────────
   /**
-   * Finds the record created at signup, or null if this login doesn't map to exactly one vendor.
-   * Login only gives us a user id, which is not a vendor id — fetching `vendors/{userid}` could load
-   * and then overwrite another vendor — so the record is matched on the login's email instead.
+   * Finds the record created at signup, or null if this login has no vendor (a 404). Login only gives
+   * us a user id, which is not a vendor id — fetching `vendors/{userid}` could load and then overwrite
+   * another vendor — so it is converted first.
    */
   loadOwnVendor(): Observable<OwnVendorRecord | null> {
-    const email = (sessionStorage.getItem('email') || '').trim().toLowerCase();
-    if (!email) return of(null);
-    return this.vendorManagement.getVendors(1, 200, { search: email }).pipe(
-      map(res => res.vendors.filter(v => (v.email || '').trim().toLowerCase() === email)),
-      switchMap(matches => matches.length === 1
-        ? this.vendorManagement.getVendorById(String(matches[0].id)).pipe(
-            map(v => ({ vendorId: String(v.id), status: v.status, registration: v.registration })))
+    const userId = sessionStorage.getItem('userid');
+    if (!userId) return of(null);
+    return this.http.get<any>(`${this.baseUrl}/vendors/by-user/${userId}`).pipe(
+      catchError(err => err?.status === 404 ? of(null) : throwError(() => err)),
+      switchMap(vendor => vendor?.id
+        ? this.vendorManagement.getVendorById(String(vendor.id)).pipe(
+            map(v => {
+              const vendorId = String(v.id);
+              const saved = this.lastSaved?.id === vendorId ? this.lastSaved : null;
+              const hasSteps = hasUploadedDetails(v.registration);
+              return {
+                vendorId,
+                status: v.status,
+                registration: hasSteps ? v.registration : saved ?? registrationFromVendorSummary(v),
+                isPartial: !hasSteps && !saved,
+              };
+            }))
         : of(null))
     );
   }
@@ -263,6 +314,9 @@ export class VendorRegistrationService {
       tap(() => {
         this.uploadedDocIds.clear();
         this.clearDraft();
+        // Without its File, or a later edit would upload every document again.
+        const uploadedDocuments = docs.map(({ file, ...doc }) => doc as UploadedDocument);
+        this.lastSaved = { ...reg, step6: reg.step6 && { ...reg.step6, uploadedDocuments } };
       })
     );
   }

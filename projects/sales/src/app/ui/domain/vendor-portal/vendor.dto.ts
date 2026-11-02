@@ -66,6 +66,7 @@ export interface RfqAttachment {
 
 export interface Rfq {
   id: string;
+  procurementRequestId?: string;   // the buyer's request this vendor's copy came from; what a quotation's rfqId refers to
   rfqNumber: string;
   clientName: string;
   clientEmail?: string;
