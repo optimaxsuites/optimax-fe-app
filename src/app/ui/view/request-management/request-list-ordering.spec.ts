@@ -1,5 +1,8 @@
 import { Subject, of } from 'rxjs';
 
+import { toApiDate } from '../../service/sales/date.util';
+import { RequestForQuotationFormComponent } from './request-for-quotation-form/request-for-quotation-form.component';
+import { RequestForQuotationServiceFormComponent } from './request-for-quotation-service-form/request-for-quotation-service-form.component';
 import { ApprovalInboxComponent } from './approval-inbox/approval-inbox.component';
 import { RequestForQuotationListComponent } from './request-for-quotation-list/request-for-quotation-list.component';
 
@@ -183,5 +186,27 @@ describe('Approval inbox order', () => {
     ];
     component.applyFilters();
     expect(ids()).toEqual([2, 1]);
+  });
+});
+
+describe('toApiDate', () => {
+  it('reads seconds, milliseconds and text as the same moment', () => {
+    const expected = Date.UTC(2026, 7, 10);
+    expect(toApiDate(1786320000).getTime()).toBe(expected);
+    expect(toApiDate(1786320000000).getTime()).toBe(expected);
+    expect(toApiDate('2026-08-10T00:00:00Z').getTime()).toBe(expected);
+  });
+
+  it('behaves like new Date() on bad values, so existing invalid-date checks still work', () => {
+    expect(isNaN(toApiDate(null).getTime())).toBeTrue();
+    expect(isNaN(toApiDate('not a date').getTime())).toBeTrue();
+  });
+});
+
+describe('Reopening a draft', () => {
+  [RequestForQuotationFormComponent, RequestForQuotationServiceFormComponent].forEach((type: any) => {
+    it(`${type.name} keeps its saved deadline instead of dropping it as 1970`, () => {
+      expect(Object.create(type.prototype).parseDateSafe(1786320000)).toBe('2026-08-10');
+    });
   });
 });

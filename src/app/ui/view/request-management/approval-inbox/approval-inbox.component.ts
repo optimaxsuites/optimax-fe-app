@@ -4,7 +4,7 @@ import { ApprovalService } from '../../../service/approval-inbox/approval.servic
 import { WorkflowInstance, WorkflowStage, WorkflowAction } from '../../../domain/approval-inbox/approval-request.dto';
 import { ProcurementRequest } from '../../../domain/procurement-request/procurement.dto';
 import { MessageService } from 'primeng/api';
-import { formatApiDate } from '../../../service/sales/date.util';
+import { formatApiDate, toApiDate } from '../../../service/sales/date.util';
 
 // Created and approval times are real moments, so they show the time, in the viewer's timezone. Deadlines
 // are stored as midnight UTC with no real time, so they show the date alone, in UTC so it can't shift a day.
@@ -125,7 +125,7 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
         String(r.id).includes(q)
       );
     }
-    this.filtered = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    this.filtered = list.sort((a, b) => toApiDate(b.createdAt).getTime() - toApiDate(a.createdAt).getTime());
     this.currentPage = Math.min(this.currentPage, this.totalPages - 1);
   }
 
@@ -311,14 +311,14 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
   getStageActionAt(stage: WorkflowStage): string {
     const action = this.wfActions
       .filter(a => a.stageOrderIndex === stage.orderIndex && (a.action === 'APPROVED' || a.action === 'REJECTED'))
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      .sort((a, b) => toApiDate(b.createdAt).getTime() - toApiDate(a.createdAt).getTime())[0];
     return action ? this.formatDate(action.createdAt) : '';
   }
 
   getStageComment(stage: WorkflowStage): string {
     const action = this.wfActions
       .filter(a => a.stageOrderIndex === stage.orderIndex)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      .sort((a, b) => toApiDate(b.createdAt).getTime() - toApiDate(a.createdAt).getTime())[0];
     return action?.comment || '';
   }
 

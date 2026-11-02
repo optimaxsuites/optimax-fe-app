@@ -1,3 +1,4 @@
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Subject } from 'rxjs';
@@ -165,7 +166,7 @@ export class DeliveryTrackingComponent implements OnInit, OnDestroy {
 
   getDaysUntilDelivery(): number {
     if (!this.delivery?.estimatedDeliveryDate) return 0;
-    return Math.ceil((new Date(this.delivery.estimatedDeliveryDate).getTime() - Date.now()) / 86_400_000);
+    return Math.ceil((toApiDate(this.delivery.estimatedDeliveryDate).getTime() - Date.now()) / 86_400_000);
   }
 
   get computedOrderedValue(): number {
@@ -310,7 +311,7 @@ export class DeliveryTrackingComponent implements OnInit, OnDestroy {
   formatDate(date: Date | string | undefined): string {
     if (!date) return '—';
     try {
-      return new Date(date).toLocaleDateString('en-NG', {
+      return toApiDate(date).toLocaleDateString('en-NG', {
         day: '2-digit', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit'
       });

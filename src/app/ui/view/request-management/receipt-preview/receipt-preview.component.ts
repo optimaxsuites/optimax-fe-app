@@ -1,3 +1,4 @@
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, Input, OnInit } from '@angular/core';
 import { PdfGenerationService } from '../../../service/procurement/pdf-generation.service';
 import { MessageService } from 'primeng/api';
@@ -190,7 +191,7 @@ export class ReceiptPreviewComponent implements OnInit {
 
   formatDate(d: Date | string | undefined): string {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('en-NG', {
+    return toApiDate(d).toLocaleDateString('en-NG', {
       day: '2-digit',
       month: 'long',
       year: 'numeric'

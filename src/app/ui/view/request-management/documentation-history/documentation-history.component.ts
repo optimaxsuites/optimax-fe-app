@@ -1,3 +1,4 @@
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, OnInit } from '@angular/core';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 import { QuotationManagementService } from '../../../service/procurement/quotation-management.service';
@@ -220,7 +221,7 @@ export class DocumentationHistoryComponent implements OnInit {
 
   formatDate(date: any): string {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', {
+    return toApiDate(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'

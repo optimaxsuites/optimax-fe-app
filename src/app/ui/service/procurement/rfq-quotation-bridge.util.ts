@@ -30,6 +30,7 @@
  * against procurement's own local seed data as before.
  */
 
+import { toApiDate } from '../sales/date.util';
 import {
   ProcurementRequest,
   RequestStatus,
@@ -103,7 +104,7 @@ function mapRequestStatusToRfqStatus(req: ProcurementRequest): RfqStatus {
   if (req.status === 'CANCELLED' || req.status === 'REJECTED') return 'closed';
   if (
     req.rfqExpiryDate &&
-    new Date(req.rfqExpiryDate).getTime() < Date.now() &&
+    toApiDate(req.rfqExpiryDate).getTime() < Date.now() &&
     (req.status === 'VENDORS_QUOTING' || req.status === 'APPROVED')
   ) {
     return 'expired';
@@ -173,7 +174,7 @@ const HISTORY_ACTION_TO_PROCUREMENT: Record<SharedHistoryAction, ProcHistoryActi
 function mapSharedStatus(q: Quotation, hasLpo: boolean): VendorQuotationStatus {
   switch (q.status) {
     case 'sent':
-      return new Date(q.validUntil).getTime() < Date.now() ? 'EXPIRED' : 'SUBMITTED';
+      return toApiDate(q.validUntil).getTime() < Date.now() ? 'EXPIRED' : 'SUBMITTED';
     case 'revision_requested':
       return 'REVIEW_REQUESTED';
     case 'accepted':
@@ -231,7 +232,7 @@ export function sharedQuotationToVendorQuotation(
     validityDays: Math.max(
       0,
       Math.round(
-        (new Date(q.validUntil).getTime() - new Date(q.createdDate).getTime()) / 86_400_000,
+        (toApiDate(q.validUntil).getTime() - toApiDate(q.createdDate).getTime()) / 86_400_000,
       ),
     ),
     termsAndConditions: undefined,

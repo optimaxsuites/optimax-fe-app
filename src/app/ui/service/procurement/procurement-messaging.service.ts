@@ -1,3 +1,4 @@
+import { toApiDate } from '../sales/date.util';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
@@ -50,7 +51,7 @@ export class ProcurementMessagingService {
         const raw: any[] = Array.isArray(res) ? res : (res?.data ?? []);
         return raw.map(m => ({
           ...m,
-          createdAt: m.createdAt ? new Date(m.createdAt) : new Date()
+          createdAt: m.createdAt ? toApiDate(m.createdAt) : new Date()
         })) as ProcurementMessage[];
       }),
       catchError(err => {
@@ -82,7 +83,7 @@ export class ProcurementMessagingService {
     return this.http.post<any>(`${this.baseUrl}/rfq-messages`, payload).pipe(
       map((res: any) => ({
         ...res,
-        createdAt: res.createdAt ? new Date(res.createdAt) : new Date()
+        createdAt: res.createdAt ? toApiDate(res.createdAt) : new Date()
       }) as ProcurementMessage),
       catchError(err => {
         console.error('[ProcurementMessaging] Failed to send message:', err);

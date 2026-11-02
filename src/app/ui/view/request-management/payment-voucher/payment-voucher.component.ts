@@ -1,3 +1,4 @@
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject } from 'rxjs';
@@ -214,7 +215,7 @@ export class PaymentVoucherComponent implements OnInit, OnDestroy {
   }
 
   formatDate(d: Date | string): string {
-    return new Date(d).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' });
+    return toApiDate(d).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
   printReceipt(): void {
