@@ -40,6 +40,14 @@ export function parseApiDate(value: unknown): Date | null {
   return null;
 }
 
+/**
+ * A drop-in for `new Date(value)` on API values, for code that goes on to call Date methods: always returns
+ * a Date, which is invalid if the value can't be parsed, exactly as `new Date()` would be.
+ */
+export function toApiDate(value: unknown): Date {
+  return parseApiDate(value) ?? new Date(NaN);
+}
+
 /** Formats a raw API date value as "21 Jan 2026", or `fallback` if it can't be parsed. */
 export function formatApiDate(
   value: unknown,

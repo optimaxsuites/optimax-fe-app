@@ -1,3 +1,4 @@
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
@@ -139,7 +140,7 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
 
   formatDate(date: any): string {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleString();
+    return toApiDate(date).toLocaleString();
   }
 
   formatCurrency(amount: number, currency: string): string {

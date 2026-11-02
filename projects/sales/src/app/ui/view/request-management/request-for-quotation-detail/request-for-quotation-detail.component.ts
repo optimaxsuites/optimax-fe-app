@@ -1,3 +1,4 @@
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProcurementRequest, RFQTemplate, VendorSuggestion } from '../../../domain/procurement-request/procurement.dto';
@@ -95,7 +96,7 @@ export class RequestForQuotationDetailComponent implements OnInit {
 
   formatDate(date: any): string {
     if (!date) return '';
-    return new Date(date).toLocaleDateString('en-US', {
+    return toApiDate(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'

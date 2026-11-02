@@ -1,3 +1,4 @@
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -15,6 +16,8 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
   @Input() compact = false;
 
   private destroy$ = new Subject<void>();
+  readonly toApiDate = toApiDate;
+
   notifications: ProcurementNotification[] = [];
   isLoading = false;
   retryingId: number | null = null;

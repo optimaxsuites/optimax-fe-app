@@ -1,4 +1,5 @@
 // grn-list.component.ts
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
@@ -190,7 +191,7 @@ export class GrnListComponent implements OnInit, OnDestroy {
 
   formatDate(date?: Date | string): string {
     if (!date) return '—';
-    const d = new Date(date);
+    const d = toApiDate(date);
     return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 }
