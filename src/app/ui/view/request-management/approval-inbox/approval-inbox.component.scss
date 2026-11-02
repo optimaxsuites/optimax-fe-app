@@ -269,6 +269,46 @@
   background: var(--bg);
 }
 
+// Stays in view while the cards scroll. Wraps because this panel is narrow.
+.il-pagination {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.il-page-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.il-page-btn {
+  padding: 5px 9px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+.il-page-btn--active {
+  background: var(--p);
+  border-color: var(--p);
+  color: #fff;
+}
+
 .il-loading {
   display: flex;
   align-items: center;

@@ -7,6 +7,10 @@
        quotation-editor — inline quotation form
 ════════════════════════════════════════════════════════════════════════ -->
 
+<div *ngIf="loadError || draftError" role="alert" style="padding: 10px 24px; font-size: 13px; background: #fef2f2; color: #991b1b; border-bottom: 1px solid #fecaca">
+  {{ draftError || loadError }}
+</div>
+
 <div class="qrc-root">
 
   <!-- ══════════════════════════════════════════════════════════════════════
@@ -828,6 +832,8 @@
         <strong>{{ validityDays }} days</strong>
       </div>
     </div>
+
+    <p *ngIf="submitError" role="alert" style="margin: 0 0 12px; font-size: 13px; color: #b91c1c">{{ submitError }}</p>
 
     <div class="qrc-modal__actions">
       <button class="qrc-btn qrc-btn--ghost" (click)="showSubmitConfirm=false" type="button">Cancel</button>

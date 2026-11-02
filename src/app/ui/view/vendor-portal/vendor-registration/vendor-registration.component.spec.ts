@@ -13,7 +13,7 @@ describe('VendorRegistrationComponent', () => {
     regService = jasmine.createSpyObj<VendorRegistrationService>(
       'VendorRegistrationService', ['getDraft', 'loadOwnVendor', 'submit', 'saveStep1']);
     regService.getDraft.and.returnValue(null);
-    regService.loadOwnVendor.and.returnValue(of({ vendorId: '7', status: VendorStatus.ACTIVE }));
+    regService.loadOwnVendor.and.returnValue(of({ vendorId: '7', status: VendorStatus.ACTIVE, isPartial: true }));
     component = new VendorRegistrationComponent(new FormBuilder(), {} as any, regService);
     component.ngOnInit();
   });
@@ -29,7 +29,34 @@ describe('VendorRegistrationComponent', () => {
       regService.loadOwnVendor.and.returnValue(result);
       component.ngOnInit();
     };
-    const savedRecord = () => of({ vendorId: '7', status: VendorStatus.ACTIVE, registration: saved });
+    const savedRecord = () => of({ vendorId: '7', status: VendorStatus.ACTIVE, registration: saved, isPartial: false });
+    const partialRecord = () => of({
+      vendorId: '7', status: VendorStatus.ACTIVE, isPartial: true,
+      registration: { step1: { businessName: 'Acme Ltd' }, step2: { cacRegistrationNumber: 'RC1' } } as any,
+    });
+
+    it('details recovered from the summary are shown, but Edit stays off so they can\'t overwrite real answers', () => {
+      reload(partialRecord());
+      expect(component.viewState).toBe('saved');
+      expect(component.detailsArePartial).toBeTrue();
+      expect(component.form1.get('businessName')!.value).toBe('Acme Ltd');
+
+      component.startEditing();
+      expect(component.viewState).toBe('saved');
+    });
+
+    it('partial details don\'t show the form\'s defaults as if they were the vendor\'s answers', () => {
+      expect(component.form1.get('yearEstablished')!.value).toBe(2000);
+      reload(partialRecord());
+      expect(component.form1.get('yearEstablished')!.value).toBeNull();
+    });
+
+    it('full details keep Edit available', () => {
+      reload(savedRecord());
+      expect(component.detailsArePartial).toBeFalse();
+      component.startEditing();
+      expect(component.viewState).toBe('editing');
+    });
 
     it('a vendor with only a signup record gets the blank form', () => {
       expect(component.viewState).toBe('first-time');

@@ -262,7 +262,6 @@ describe('VendorRegistrationService.loadOwnVendor', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    sessionStorage.setItem('email', 'Sales@Acme.example');
     sessionStorage.setItem('userid', '65');
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     service = TestBed.inject(VendorRegistrationService);
@@ -271,7 +270,6 @@ describe('VendorRegistrationService.loadOwnVendor', () => {
 
   afterEach(() => {
     http.verify();
-    sessionStorage.removeItem('email');
     sessionStorage.removeItem('userid');
   });
 
@@ -280,11 +278,11 @@ describe('VendorRegistrationService.loadOwnVendor', () => {
     service.loadOwnVendor().subscribe({ next: r => (out.record = r), error: e => (out.error = e) });
     return out;
   };
-  const list = () => http.expectOne(r => r.url === VENDORS_LIST);
+  const byUser = () => http.expectOne(`${BASE}/vendors/by-user/65`);
 
-  it('finds the signup record by login email, ignoring case, and reads it by vendor id — never by user id', () => {
+  it('converts the login\'s user id to its vendor id, and reads the record by vendor id — never by user id', () => {
     const out = load();
-    list().flush({ vendors: [{ id: 7, email: 'sales@acme.example', status: 'ACTIVE' }] });
+    byUser().flush({ id: 7, userAccountId: 65, status: 'ACTIVE' });
     http.expectOne(`${VENDORS_LIST}/7`).flush({
       id: 7, email: 'sales@acme.example', status: 'ACTIVE',
       step2: { cacRegistrationNumber: 'RC1' },
@@ -294,34 +292,115 @@ describe('VendorRegistrationService.loadOwnVendor', () => {
     expect(out.record.vendorId).toBe('7');
     expect(out.record.status).toBe(VendorStatus.ACTIVE);
     expect(out.record.registration.step2.cacRegistrationNumber).toBe('RC1');
+    expect(out.record.isPartial).toBeFalse();
   });
 
-  it('does not treat a partial email match as this vendor', () => {
+  it('with only the vendor summary, recovers what it can and says the details are partial', () => {
     const out = load();
-    list().flush({ vendors: [{ id: 7, email: 'presales@acme.example.ng', status: 'ACTIVE' }] });
-    expect(out.record).toBeNull();
+    byUser().flush({ id: 7 });
+    http.expectOne(`${VENDORS_LIST}/7`).flush({
+      id: 7, companyName: 'Acme Ltd', registrationNumber: 'RC1', taxId: 'T1', email: 'sales@acme.example',
+      status: 'ACTIVE',
+      address: { street: '1 Road', city: 'Ikeja', state: 'Lagos', country: 'Nigeria', postalCode: '' },
+      categories: ['IT Equipment', 'FUEL_LUBRICANTS', 'not a category'],
+      bankDetails: { bankName: 'GTB', accountName: 'Acme', accountNumber: '0123456789', verified: false },
+      contacts: [{ id: 1, name: 'Ada', role: 'MD', email: 'ada@acme.example', phone: '080', isPrimary: true }],
+    });
+
+    const reg = out.record.registration;
+    expect(out.record.isPartial).toBeTrue();
+    expect(hasUploadedDetails(reg)).toBeTrue();
+    expect(reg.step1.businessName).toBe('Acme Ltd');
+    expect(reg.step2).toEqual({ cacRegistrationNumber: 'RC1', tinNumber: 'T1' });
+    expect(reg.step3.primaryContactName).toBe('Ada');
+    expect(reg.step3.registeredCity).toBe('Ikeja');
+    expect('registeredPostalCode' in reg.step3).toBeFalse();   // blank values mustn't clear form fields
+    expect(reg.step4.primaryAccountNumber).toBe('0123456789');
+    expect(reg.step5.supplyCategories).toEqual(['it_equipment', 'fuel_lubricants']);
   });
 
-  it('refuses to guess when several vendors share the email, so it can\'t overwrite the wrong one', () => {
+  it('a signup-only record doesn\'t count as uploaded details, and "Pending" placeholders aren\'t values', () => {
     const out = load();
-    list().flush({ vendors: [
-      { id: 7, email: 'sales@acme.example', status: 'ACTIVE' },
-      { id: 8, email: 'sales@acme.example', status: 'ACTIVE' },
-    ] });
-    expect(out.record).toBeNull();
+    byUser().flush({ id: 7 });
+    http.expectOne(`${VENDORS_LIST}/7`).flush({ id: 7, companyName: 'Test Vendor', email: 'sales@acme.example', status: 'ACTIVE' });
+
+    expect(hasUploadedDetails(out.record.registration)).toBeFalse();
+    expect(out.record.registration.step2).toEqual({});
+    expect('primaryContactPhone' in out.record.registration.step3).toBeFalse();
   });
 
-  it('asks for nothing when the login has no email', () => {
-    sessionStorage.removeItem('email');
+  describe('after saving, when the backend returns no steps', () => {
+    const save = (id = '7') => {
+      const reg: any = {
+        id, status: 'submitted',
+        step2: { cacRegistrationNumber: 'RC1' },
+        step6: { uploadedDocuments: [{ id: 'd1', type: 'tax_clearance', label: 'Tax', fileName: 'a.pdf', fileUrl: 'blob:x' }] },
+      };
+      service.submit(reg, VendorStatus.ACTIVE).subscribe();
+      http.expectOne(`${BASE}/vendors/${id}/step2`).flush({});
+      http.expectOne(`${BASE}/vendors/${id}/step6`).flush({});
+      reg.step6.uploadedDocuments[0].file = new File(['x'], 'a.pdf');
+    };
+    const reload = () => {
+      const out = load();
+      byUser().flush({ id: 7 });
+      http.expectOne(`${VENDORS_LIST}/7`).flush({ id: 7, companyName: 'Test Vendor', status: 'ACTIVE' });
+      return out;
+    };
+
+    it('switching tabs still shows what was saved, and it can still be edited', () => {
+      save();
+      const out = reload();
+      expect(out.record.registration.step2.cacRegistrationNumber).toBe('RC1');
+      expect(out.record.isPartial).toBeFalse();
+    });
+
+    it('a later edit won\'t upload the documents again', () => {
+      save();
+      const out = reload();
+      expect('file' in out.record.registration.step6.uploadedDocuments[0]).toBeFalse();
+    });
+
+    it('never shows one vendor what another login saved', () => {
+      save('8');
+      const out = reload();
+      expect(hasUploadedDetails(out.record.registration)).toBeFalse();
+    });
+
+    it('prefers the backend\'s steps once it returns them', () => {
+      save();
+      const out = load();
+      byUser().flush({ id: 7 });
+      http.expectOne(`${VENDORS_LIST}/7`).flush({ id: 7, status: 'ACTIVE', step2: { cacRegistrationNumber: 'FROM-SERVER' } });
+      expect(out.record.registration.step2.cacRegistrationNumber).toBe('FROM-SERVER');
+    });
+  });
+
+  it('a login with no vendor (404) is "no record", not an error', () => {
+    const out = load();
+    byUser().flush('x', { status: 404, statusText: 'Not Found' });
+    expect(out.record).toBeNull();
+    expect(out.error).toBeUndefined();
+  });
+
+  it('asks for nothing when there is no logged-in user', () => {
+    sessionStorage.removeItem('userid');
     const out = load();
     expect(out.record).toBeNull();
   });
 
   it('a failed lookup is an error, not "no record"', () => {
     const out = load();
-    list().flush('x', { status: 403, statusText: 'Forbidden' });
+    byUser().flush('x', { status: 403, statusText: 'Forbidden' });
     expect(out.error).toBeTruthy();
     expect(out.record).toBeUndefined();
+  });
+
+  it('a failure reading the vendor itself is an error too', () => {
+    const out = load();
+    byUser().flush({ id: 7 });
+    http.expectOne(`${VENDORS_LIST}/7`).flush('x', { status: 500, statusText: 'Server Error' });
+    expect(out.error).toBeTruthy();
   });
 });
 

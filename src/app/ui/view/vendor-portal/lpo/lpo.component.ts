@@ -102,7 +102,7 @@ export class LpoComponent implements OnInit, OnDestroy {
 
   confirmAccept(): void {
     if (!this.lpoToAccept) return;
-    this.vendorService.acceptLpo(this.lpoToAccept.id);
+    this.vendorService.acceptLpo(this.lpoToAccept.id).subscribe({ error: () => {} });
     // Refresh selectedLpo so the panel reflects new status
     if (this.selectedLpo?.id === this.lpoToAccept.id) {
       this.selectedLpo = { ...this.selectedLpo, status: 'accepted' };
@@ -129,7 +129,7 @@ export class LpoComponent implements OnInit, OnDestroy {
   confirmReject(): void {
     if (!this.lpoToReject) return;
     if (!this.rejectionReason.trim()) { this.rejectionError = true; return; }
-    this.vendorService.rejectLpo(this.lpoToReject.id, this.rejectionReason.trim());
+    this.vendorService.rejectLpo(this.lpoToReject.id, this.rejectionReason.trim()).subscribe({ error: () => {} });
     if (this.selectedLpo?.id === this.lpoToReject.id) {
       this.selectedLpo = { ...this.selectedLpo, status: 'rejected', rejectionReason: this.rejectionReason.trim() };
     }

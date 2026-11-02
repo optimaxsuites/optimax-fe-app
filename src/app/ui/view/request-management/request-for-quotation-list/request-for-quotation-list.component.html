@@ -259,7 +259,7 @@
             <td class="il-td-amount text-right">{{ formatBudget(row) }}</td>
 
             <td class="il-td-date">
-              {{ formatDate(row.deliveryDeadline) }}
+              {{ formatDeadline(row.deliveryDeadline) }}
               <span class="il-overdue-badge" *ngIf="isDeadlineSoon(row.deliveryDeadline) && row.status !== 'CANCELLED' && row.status !== 'DELIVERED'">
                 Due soon
               </span>
