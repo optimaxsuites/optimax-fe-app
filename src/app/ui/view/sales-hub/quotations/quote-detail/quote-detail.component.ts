@@ -28,6 +28,8 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
   @Output() edit = new EventEmitter<string>();
 
   quote: Quote | null = null;
+  /** The quote's customer, looked up by id when the quote doesn't embed it — see SalesService.documentCustomer. */
+  customer: any = null;
   isLoading = true;
   isDownloading = false;
 
@@ -77,6 +79,7 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
         this.quote = quote;
         this.isLoading = false;
         if (quote) {
+          this.loadCustomer(quote);
           this.loadOrderId(quote.id);
           this.loadDeliveryNoteState(quote.id);
         }
@@ -231,7 +234,12 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
     return this.quote?.validUntil ?? ((this.quote as any).expiresAt ?? (this.quote as any).expiryDate ?? null);
   }
 
+  private loadCustomer(quote: Quote): void {
+    this.salesService.documentCustomer(quote).pipe(takeUntil(this.destroy$)).subscribe(c => this.customer = c);
+  }
+
   getQuoteCustomerName(): string {
+    if (this.customer?.name) return this.customer.name;
     if (!this.quote) return 'Customer';
 
     const { customerName, customerId } = this.quote as any;
@@ -323,7 +331,7 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
   }
 
   getCustomerAddressStr(): string {
-    const c = (this.quote?.customerId || this.quote?.customerName) as any;
+    const c = (this.customer || this.quote?.customerId || this.quote?.customerName) as any;
     const addr = c?.address;
     if (!addr) return '';
     return Array.isArray(addr) ? addr.filter(Boolean).join(', ') : String(addr);
@@ -412,14 +420,14 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
   isSendingEmail = false;
 
   private get quoteCustomerName(): string {
-    return (this.quote?.customerName as any)?.name || (typeof this.quote?.customerName === 'string' ? this.quote.customerName : '') || 'Customer';
+    return this.customer?.name || (this.quote?.customerName as any)?.name || (typeof this.quote?.customerName === 'string' ? this.quote.customerName : '') || 'Customer';
   }
 
   /** The customer's email from the nested customer on the quote, or — when the record doesn't
    *  carry it — from the customer list. */
   private async resolveCustomerEmail(quote: any): Promise<string> {
     const nested = quote.customerName || quote.customerId;
-    const direct = nested?.email || quote.customerId?.email;
+    const direct = this.customer?.email || nested?.email || quote.customerId?.email;
     if (direct || nested?.id == null) return direct || '';
     try {
       const res = await lastValueFrom(this.salesService.getCustomers({ page: 0, size: 200 }));
@@ -478,7 +486,7 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
 
   acceptQuote(): void {
     if (!this.quote) return;
-    const custName = (this.quote.customerName as any)?.name || this.quote.customerName || 'Customer';
+    const custName = this.quoteCustomerName;
     this.pendingQuoteNumber = this.quote.quoteNumber || '';
     this.pendingCustomerName = custName;
     this.showAcceptQuoteModal = true;
@@ -504,7 +512,7 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
 
   declineQuote(): void {
     if (!this.quote) return;
-    const custName = (this.quote.customerName as any)?.name || this.quote.customerName || 'Customer';
+    const custName = this.quoteCustomerName;
     this.pendingQuoteNumber = this.quote.quoteNumber || '';
     this.pendingCustomerName = custName;
     this.showDeclineQuoteModal = true;
@@ -538,7 +546,7 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
       this.messageService.add({ severity: 'warn', summary: 'Cannot Delete', detail: `Quote ${this.quote.quoteNumber} has already been converted to an order and can no longer be deleted.` });
       return;
     }
-    const custName = (this.quote.customerName as any)?.name || this.quote.customerName || 'Customer';
+    const custName = this.quoteCustomerName;
     this.pendingQuoteNumber = this.quote.quoteNumber || '';
     this.pendingCustomerName = custName;
     this.showDeleteQuoteModal = true;
@@ -642,10 +650,10 @@ export class QuoteDetailComponent implements OnInit, OnDestroy {
       this.merchantRequested = true;
       this.salesService.getMyMerchantInfo().pipe(takeUntil(this.destroy$)).subscribe(m => this.merchant = m);
     }
-    const key = [this.quote, this.merchant];
+    const key = [this.quote, this.merchant, this.customer];
     if (!this.docCache || this.docCache.key.some((v, i) => v !== key[i])) {
       const merchant = this.merchant ? { ...this.quote?.merchantDetails, ...this.merchant } : this.quote?.merchantDetails;
-      this.docCache = { key, doc: quoteDocument(this.quote, merchant, undefined) };
+      this.docCache = { key, doc: quoteDocument(this.quote, merchant, this.customer || undefined) };
     }
     return this.docCache.doc;
   }

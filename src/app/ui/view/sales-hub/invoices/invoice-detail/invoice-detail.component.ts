@@ -35,6 +35,8 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
   @Output() edit = new EventEmitter<string>();
 
   invoice: any = null;
+  /** The invoice's customer, looked up by id when the invoice doesn't embed it — see SalesService.documentCustomer. */
+  customer: any = null;
   isLoading = true;
   showPaymentModal = false;
   paymentAmount = 0;
@@ -173,6 +175,7 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
       next: (invoice: Invoice | null) => {
         this.invoice = invoice;
         if (invoice) {
+          this.salesService.documentCustomer(invoice).pipe(takeUntil(this.destroy$)).subscribe(c => this.customer = c);
           this.loadPaymentsForInvoice(invoice.id);
           this.loadSignedDeliveryNote(invoice);
           this.salesService.getOrderIdLookup().pipe(takeUntil(this.destroy$)).subscribe(lookup => {
@@ -399,13 +402,14 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
   }
 
   getCustomerAddressStr(): string {
-    const c = (this.invoice?.customerId || this.invoice?.customerName) as any;
+    const c = (this.customer || this.invoice?.customerId || this.invoice?.customerName) as any;
     const addr = c?.address;
     if (!addr) return '';
     return Array.isArray(addr) ? addr.filter(Boolean).join(', ') : String(addr);
   }
 
   getInvoiceCustomerName(): string {
+    if (this.customer?.name) return this.customer.name;
     const inv = this.invoice as any;
     const cName = inv?.customerName;
     if (!cName) return 'Customer';
@@ -437,14 +441,14 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
   isSendingEmail = false;
 
   private get invoiceCustomerName(): string {
-    return (this.invoice?.customerName as any)?.name || (typeof this.invoice?.customerName === 'string' ? this.invoice.customerName : '') || 'Customer';
+    return this.customer?.name || (this.invoice?.customerName as any)?.name || (typeof this.invoice?.customerName === 'string' ? this.invoice.customerName : '') || 'Customer';
   }
 
   /** The customer's email from the nested customer on the invoice, or — when the record doesn't
    *  carry it — from the customer list. */
   private async resolveCustomerEmail(invoice: any): Promise<string> {
     const nested = invoice.customerName || invoice.customerId;
-    const direct = nested?.email || invoice.customerId?.email;
+    const direct = this.customer?.email || nested?.email || invoice.customerId?.email;
     if (direct || nested?.id == null) return direct || '';
     try {
       const res = await lastValueFrom(this.salesService.getCustomers({ page: 0, size: 200 }));
@@ -589,10 +593,10 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
       this.merchantRequested = true;
       this.salesService.getMyMerchantInfo().pipe(takeUntil(this.destroy$)).subscribe(m => this.merchant = m);
     }
-    const key = [this.invoice, this.merchant, this.orderNumber];
+    const key = [this.invoice, this.merchant, this.orderNumber, this.customer];
     if (!this.docCache || this.docCache.key.some((v, i) => v !== key[i])) {
       const merchant = this.merchant ? { ...this.invoice?.merchantDetails, ...this.merchant } : this.invoice?.merchantDetails;
-      this.docCache = { key, doc: invoiceDocument(this.invoice, merchant, undefined, this.orderNumber || undefined) };
+      this.docCache = { key, doc: invoiceDocument(this.invoice, merchant, this.customer || undefined, this.orderNumber || undefined) };
     }
     return this.docCache.doc;
   }

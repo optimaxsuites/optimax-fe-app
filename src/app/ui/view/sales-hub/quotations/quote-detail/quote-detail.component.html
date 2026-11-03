@@ -140,7 +140,7 @@
           <div class="card-body">
             <div class="customer-info">
               <div class="customer-avatar">
-                <span>{{ ($any(quote).customerName?.name || '').charAt(0).toUpperCase() || '?' }}</span>
+                <span>{{ (customer?.name || $any(quote).customerName?.name || '').charAt(0).toUpperCase() || '?' }}</span>
               </div>
               <div class="customer-details">
                 <strong>{{ getQuoteCustomerName() }}</strong>

@@ -1444,6 +1444,20 @@ export class SalesService {
     return c && typeof c === 'object' ? c : null;
   }
 
+  /**
+   * The full customer behind a quote or invoice. Records often carry only the customer's id, and the detail
+   * pages and PDFs then had no name to show; the lists already looked customers up by id, so this does the
+   * same. Falls back to whatever is embedded when there's no id or the lookup fails.
+   */
+  documentCustomer(doc: any): Observable<any | null> {
+    const embedded = this.quoteCustomer(doc);
+    if (embedded?.name) return of(embedded);
+    const raw = embedded?.id ?? doc?.customerId;
+    const id = raw !== null && typeof raw === 'object' ? raw.id : raw;
+    if (id === null || id === undefined || id === '') return of(embedded);
+    return this.getCustomerById(String(id)).pipe(map(found => found ?? embedded));
+  }
+
   /** Where the goods go: the first customer's delivery address, then their main address (what the
    *  quote itself shows), then the same from the second customer. A quote's
    *  additionalOptions.address is deliberately not used — that's the seller's own contact address. */
