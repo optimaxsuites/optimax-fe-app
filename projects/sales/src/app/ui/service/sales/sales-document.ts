@@ -120,7 +120,9 @@ function bankOf(doc: any, merchant: any) {
 /** The customer embedded on a quote/invoice (customerName and customerId both carry it). */
 function embeddedCustomer(doc: any): any {
   const c = typeof doc?.customerName === 'object' ? doc.customerName : doc?.customerId;
-  return c && typeof c === 'object' ? c : null;
+  if (c && typeof c === 'object') return c;
+  // Some records carry just the name as text, which used to print "Customer" on the document instead.
+  return typeof doc?.customerName === 'string' && doc.customerName.trim() ? { name: doc.customerName } : null;
 }
 
 export function quoteDocument(quote: any, merchant?: any, customer?: any): SalesDocumentModel {

@@ -250,10 +250,10 @@
           <div class="card-body">
             <div class="customer-info">
               <div class="customer-avatar">
-                <span>{{ (invoice.customerName?.name || '').charAt(0).toUpperCase() || '?' }}</span>
+                <span>{{ (customer?.name || invoice.customerName?.name || '').charAt(0).toUpperCase() || '?' }}</span>
               </div>
               <div class="customer-details">
-                <strong>{{ invoice.customerName?.name || invoice.customerName }}</strong>
+                <strong>{{ getInvoiceCustomerName() }}</strong>
               </div>
             </div>
             <button class="btn-view-customer" (click)="viewCustomer()">
