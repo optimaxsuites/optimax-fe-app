@@ -2369,6 +2369,17 @@ export class CommunicationComponent
 
   private isSignalOrSystemFrame(frameBody: string): boolean {
     if (!frameBody) return false;
+    const rawTrimmed = typeof frameBody === 'string' ? frameBody.trim() : '';
+    if (
+      rawTrimmed.includes('__receiptSignal') ||
+      rawTrimmed.includes('__callSignal') ||
+      rawTrimmed.includes('DELIVERY_RECEIPT') ||
+      rawTrimmed.includes('READ_RECEIPT') ||
+      rawTrimmed.includes('"type":"RECEIPT"') ||
+      rawTrimmed.includes('"receiptStatus"')
+    ) {
+      return true;
+    }
     try {
       const parsed = JSON.parse(frameBody);
       const obj = (parsed && typeof parsed === 'object') ? parsed : {};
@@ -2378,26 +2389,37 @@ export class CommunicationComponent
       const signalTypes = [
         'CALL_SIGNAL', 'CALL', 'VIDEO_CALL', 'CALL_STATUS', 'CALL_SUMMARY', 'CALL_CARD',
         'SEEN', 'READ', 'PLAYED', 'TYPING', 'PRESENCE', 'OFFER', 'ANSWER', 'CANDIDATE',
-        'BYE', 'ICE_CANDIDATE', 'SDP', 'ACK', 'PING', 'PONG', 'POST', 'FEED_POST'
+        'BYE', 'ICE_CANDIDATE', 'SDP', 'ACK', 'PING', 'PONG', 'POST', 'FEED_POST',
+        'DELIVERY_RECEIPT', 'READ_RECEIPT', 'RECEIPT_SIGNAL', 'RECEIPT', 'DELIVERY'
       ];
-      if (signalTypes.includes(type)) return true;
+      if (signalTypes.includes(type) || type.includes('RECEIPT') || type.includes('SIGNAL')) return true;
 
       const payloadObj = obj.payload || msg.payload;
       if (payloadObj && typeof payloadObj === 'object') {
         const pType = (payloadObj.type || payloadObj.callType || payloadObj.callStatus || '').toString().toUpperCase();
-        if (signalTypes.includes(pType) || payloadObj.callStatus) return true;
+        if (signalTypes.includes(pType) || pType.includes('RECEIPT') || pType.includes('SIGNAL') || payloadObj.callStatus) return true;
       }
 
       const content = (msg.content || obj.content || '').toString().trim();
+      if (
+        content.includes('__receiptSignal') ||
+        content.includes('__callSignal') ||
+        content.includes('DELIVERY_RECEIPT') ||
+        content.includes('READ_RECEIPT') ||
+        content.includes('"type":"RECEIPT"') ||
+        content.includes('"receiptStatus"')
+      ) {
+        return true;
+      }
       if (content.startsWith('{') && content.endsWith('}')) {
         try {
           const inner = JSON.parse(content);
           const innerType = (inner.type || inner.actionType || inner.eventType || '').toString().toUpperCase();
-          if (signalTypes.includes(innerType)) return true;
-          if (inner.__optimaxReadReceipt || inner.__signal || inner.callStatus) return true;
+          if (signalTypes.includes(innerType) || innerType.includes('RECEIPT') || innerType.includes('SIGNAL')) return true;
+          if (inner.__optimaxReadReceipt || inner.__signal || inner.callStatus || inner.__receiptSignal || inner.receiptStatus) return true;
           if (inner.payload && typeof inner.payload === 'object') {
             const ipType = (inner.payload.type || inner.payload.callType || inner.payload.callStatus || '').toString().toUpperCase();
-            if (signalTypes.includes(ipType) || inner.payload.callStatus) return true;
+            if (signalTypes.includes(ipType) || ipType.includes('RECEIPT') || ipType.includes('SIGNAL') || inner.payload.callStatus) return true;
           }
         } catch (_) {}
       }
@@ -2434,7 +2456,7 @@ export class CommunicationComponent
       const senderName =
         this.userDirectory[senderUserId] ||
         this.notificationFieldText(rawMsgSender, '') ||
-        (this.dmContacts.find((d) => d.userId === senderUserId)?.fullName) ||
+        (this.directMessages.find((d: any) => d.userId === senderUserId)?.fullName) ||
         '';
       const rawContent = this.notificationFieldText(msg.content, '');
       const formatted = this.formatMessagePreview(rawContent);
@@ -3811,15 +3833,45 @@ export class CommunicationComponent
     existing: Message[],
     serverMessages: CollabMessage[],
   ): Message[] {
-    const serverIds = new Set(serverMessages.map((m) => m.id));
-    const serverMap = new Map(serverMessages.map((m) => [m.id, m]));
+    const cleanServerMessages = (serverMessages || []).filter((m) => {
+      const c = (m.content || '').toString();
+      if (
+        c.includes('__receiptSignal') ||
+        c.includes('__callSignal') ||
+        c.includes('DELIVERY_RECEIPT') ||
+        c.includes('READ_RECEIPT') ||
+        c.includes('"type":"RECEIPT"') ||
+        c.includes('"receiptStatus"')
+      ) {
+        return false;
+      }
+      return !this.isSignalOrSystemFrame(c);
+    });
+    const serverIds = new Set(cleanServerMessages.map((m) => m.id));
+    const serverMap = new Map(cleanServerMessages.map((m) => [m.id, m]));
     const existingPersistedCount = existing.filter((message) => !!message.backendId).length;
-    const looksPartialSnapshot = serverMessages.length > 0 && serverMessages.length < existingPersistedCount;
+    const looksPartialSnapshot = cleanServerMessages.length > 0 && cleanServerMessages.length < existingPersistedCount;
 
     // 1. Remove deleted messages (not in server list). Keep local-only (no backendId).
     let filtered = looksPartialSnapshot
       ? [...existing]
       : existing.filter((m) => !m.backendId || serverIds.has(m.backendId));
+
+    // Also purge any accidental signals that may already be in the local message list
+    filtered = filtered.filter((m) => {
+      const c = (m.content || '').toString();
+      if (
+        c.includes('__receiptSignal') ||
+        c.includes('__callSignal') ||
+        c.includes('DELIVERY_RECEIPT') ||
+        c.includes('READ_RECEIPT') ||
+        c.includes('"type":"RECEIPT"') ||
+        c.includes('"receiptStatus"')
+      ) {
+        return false;
+      }
+      return !this.isSignalOrSystemFrame(c);
+    });
 
     // 2. Apply edits + remove deleted replies
     for (const msg of filtered) {
@@ -3878,7 +3930,7 @@ export class CommunicationComponent
     collectIds(filtered);
 
     // 4. Add new messages that aren't present yet
-    for (const m of serverMessages) {
+    for (const m of cleanServerMessages) {
       if (allExistingIds.has(m.id)) continue; // already present (existing or reply)
 
       const author =
@@ -11082,6 +11134,17 @@ export class CommunicationComponent
   private formatMessagePreview(content: string): string {
     if (!content) return '';
     const trimmed = typeof content === 'string' ? content.trim() : '';
+    if (
+      trimmed.includes('__receiptSignal') ||
+      trimmed.includes('__callSignal') ||
+      trimmed.includes('DELIVERY_RECEIPT') ||
+      trimmed.includes('READ_RECEIPT') ||
+      trimmed.includes('"type":"RECEIPT"') ||
+      trimmed.includes('"receiptStatus"') ||
+      this.isSignalOrSystemFrame(trimmed)
+    ) {
+      return '';
+    }
     if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
       try {
         if (this.isSignalOrSystemFrame(trimmed)) {
